@@ -573,7 +573,27 @@ UpdateType Decide_Update(std::wstring const & installed, ReleaseType const & rel
 	}
 
 	update.Offer = true;
+	update.Tag = release.Tag;
 	update.Reason = Beta_Label(update.Offered) + L" is available; this install has " + Beta_Label(update.Installed) + L".";
+	return update;
+}
+
+
+UpdateType Evaluate_Feed(std::wstring const & installed, std::wstring const & feed, std::string const & body)
+{
+	UpdateType update;
+	ReleaseType release;
+	std::wstring error;
+	if (!Parse_Release(body, release, error)) {
+		update.Reason = L"Update check skipped: " + error;
+		return update;
+	}
+
+	update = Decide_Update(installed, release);
+	if (update.Offer && !Asset_Sources_Allowed(feed, update, error)) {
+		update.Offer = false;
+		update.Reason = L"Update check skipped: " + error;
+	}
 	return update;
 }
 
@@ -616,6 +636,34 @@ bool Download_Size_Allowed(std::uint64_t declared, std::uint64_t received)
 }
 
 
+std::wstring Update_Now_Command(std::wstring const & launcher_path, std::uint32_t game_process)
+{
+	return Quote_Argument(launcher_path) + L" " + Quote_Argument(UpdateNowSwitch + std::to_wstring(game_process));
+}
+
+
+bool Parse_Process_Id(std::wstring const & text, std::uint32_t & process)
+{
+	if (text.empty() || text.size() > 10) {
+		return false;
+	}
+
+	std::uint64_t value = 0;
+	for (wchar_t digit : text) {
+		if (digit < L'0' || digit > L'9') {
+			return false;
+		}
+		value = value * 10 + static_cast<std::uint64_t>(digit - L'0');
+	}
+
+	if (value == 0 || value > 0xFFFFFFFFull) {
+		return false;
+	}
+	process = static_cast<std::uint32_t>(value);
+	return true;
+}
+
+
 ConfigType Read_Config(std::wstring const & ini_text)
 {
 	ConfigType config;
@@ -637,6 +685,11 @@ ConfigType Read_Config(std::wstring const & ini_text)
 	if (Ini_Value(ini_text, L"Update", L"Check", value)) {
 		std::wstring const word = Lower_Wide(value);
 		config.Check = !(word == L"no" || word == L"0" || word == L"off" || word == L"false");
+	}
+
+	if (Ini_Value(ini_text, L"Update", L"AskInLauncher", value)) {
+		std::wstring const word = Lower_Wide(value);
+		config.AskInLauncher = (word == L"yes" || word == L"1" || word == L"on" || word == L"true");
 	}
 
 	return config;

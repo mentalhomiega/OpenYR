@@ -224,6 +224,7 @@ long Start_Audio_Handler(VQAHandleP * vqap)
 		AudioEngine.Feeder_Ref().Detach((unsigned)_sink.Slot);
 		return(VQAERR_AUDIO);
 	}
+	DebugString("Movie audio: movie group gain %.2f\n", AudioEngine.Group_Gain(AUDIO_GROUP_MOVIE));
 	_sink.Started = true;
 	return(VQAERR_NONE);
 }

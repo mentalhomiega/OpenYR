@@ -1,0 +1,19 @@
+; Chrono sparkle over a Chrono Legionnaire. gamemd plays ChronoSparkle1 (CHRONOSK) over an object every 24 frames while it is erased by a
+; temporal beam or holds at its chronoshift landing (IsWarpingIn), 120 leptons east and south of a unit or soldier (UnitClass::Update 0x7360C0,
+; InfantryClass::Update 0x51BAB0). The Legionnaire jumps at frame 60 and holds until frame 254, so a sparkle starts at frames 72, 96, 120 and 144.
+; The liveanims lines on the frame after each count the CHRONOSK animations: expect at least 1 on each, and 0 on frame 85, after the first
+; one has run out. Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sw-anim-chrono-sparkle.txt -Width 800 -Height 600 -Seconds 120 -RenderFrameRate 30 -Filter "AUTOTEST   liveanims CHRONOSK|AUTOTEST   warp|Exception"
+10 command CenterBase
+20 reveal
+30 view 75 40
+40 own CLEG 40 40
+50 order CLEG 75 40
+66 view 75 40
+73 liveanims CHRONOSK
+73 windowshot swsparkle-a
+76 windowshot swsparkle-b
+85 liveanims CHRONOSK
+97 liveanims CHRONOSK
+121 liveanims CHRONOSK
+145 liveanims CHRONOSK
+200 quit

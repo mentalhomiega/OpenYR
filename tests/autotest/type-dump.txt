@@ -1,0 +1,7 @@
+; Writes the main fields of every weapon, projectile and warhead type to the log, one line each, to compare two builds'
+; rules. Stock rules give the same lines whether or not types created after their list was read have their sections read.
+; Pass a type name after typedump to write only that type.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/type-dump.txt -Seconds 60 -Filter "typedump"
+30 command CenterBase
+35 typedump
+40 quit

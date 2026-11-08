@@ -34,6 +34,9 @@ int Find_Available_Scenario(char const * filename);
 void Commit_Session_Specials(void);
 void PregameSetup(void);
 bool Update_Network_Dialog_Preview(void);
+// Shows the random map's picture as the network dialog preview. When the picture is missing, it calls
+// Update_Network_Dialog_Preview instead.
+void Show_Random_Map_Preview(void);
 void Receive_Random_Map_Preview(void);
 void Send_Preview_To_Guests(void);
 int CountAliveTeams(HouseClass * house);

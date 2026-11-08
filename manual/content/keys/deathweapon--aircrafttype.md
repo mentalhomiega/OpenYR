@@ -8,7 +8,7 @@ when_omitted:
   value: "none"
 ---
 
-An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) object of this type sets off this weapon where it dies, for the weapon's `Damage` times [`DeathWeaponDamageModifier`](/keys/deathweapondamagemodifier/). Without it, the object uses its `Primary` weapon, or the rules' [`DeathWeapon`](/keys/deathweapon/#scope-global-rules) when it has none.
+An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) object of this type sets off this weapon where it dies, for the weapon's `Damage` times [`DeathWeaponDamageModifier`](/keys/deathweapondamagemodifier/). So does an object of this type whose current weapon is a [`Suicide`](/keys/suicide/#scope-weapontype) weapon, whatever its `Explodes` setting. Without it, the object uses its `Primary` weapon, or the rules' [`DeathWeapon`](/keys/deathweapon/#scope-global-rules) when it has none.
 
 ```ini title="rulesmd.ini"
 [MYDEMOTRUCK] ; example VehicleType

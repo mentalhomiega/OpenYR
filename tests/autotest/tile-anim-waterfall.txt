@@ -1,0 +1,16 @@
+; Waterfall tiles carry a looping animation (Tile01Anim= and its offset keys in the theater INI). On the stock map Sea of
+; Isolation (SeaofIso.mmx, temperate) the cells 64,40 / 65,39 / 64,36 hold WB01X, WB03X and WB04X, attached to their cell.
+; Expected: each liveanim line reports cellattached 1 and loops 255 (the art's LoopCount=-1), and the stage advances between
+; lines; the screenshots show the waterfall frames changing.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/tile-anim-waterfall.txt -Map SeaofIso.mmx -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 90 -ShotDir "E:/Claude ra2 decomp/scratch-agent/terrain-overlay-anims/waterfall" -Filter "AUTOTEST|Exception"
+20 command CenterBase
+25 reveal
+30 view 64 38
+60 liveanims WB01X
+64 liveanims WB01X
+68 liveanims WB01X
+72 liveanims WB01X
+80 command ScreenCapture
+86 command ScreenCapture
+92 command ScreenCapture
+100 quit

@@ -9,7 +9,7 @@ when_omitted:
 
 When an object of this type starts moving, one entry picked at random from this list starts playing at its position. The sound is placed, so it fades and pans with where the object is on screen; see [Placed sounds](/systems/sound-effects/#placed-sounds).
 
-The sound keeps playing while the object moves. Once the object has stopped for a few game frames, a looping sound is told to finish its current loop and stop, so a brief halt does not cut it off. The sound also stops when the object leaves the map, for example by entering a transport or a structure. The next time the object moves, a new entry is picked.
+The sound keeps playing while the object moves. Once the object has stopped for a few game frames, a looping sound is told to finish its current loop and stop, so a brief halt does not cut it off. The sound also stops when the object leaves the map, for example by entering a transport or a structure. If it was still playing then, it stays silent until the object has stopped for a few game frames, even if the object lands and moves before then. Otherwise, a move after landing picks a new entry.
 
 Names are matched as described in [Writing the list](/keys/voiceselect/#writing-the-list).
 

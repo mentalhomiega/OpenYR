@@ -1,0 +1,10 @@
+; Chronoshift screen effect on a skirmish map. The chrono step starts the effect as the Chrono Screen Effect trigger action does, with 40 frames per swirl at frame 60:
+; the first swirl runs to frame 100, the white hold to 145, and the second swirl to 185. The captures at frames 80 and 165 fall 20 frames into each swirl.
+; The swirl covers the map view. In the modern layout that reaches the bottom edge of the screen; in the classic layout the command bar strip stays unswirled.
+; Run (modern): scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/autotest/chrono-screen-effect.txt -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Exception" -Settings "[Options]`r`nInterfaceStyle=Modern" -ShotDir "E:/Claude ra2 decomp/scratch-agent/chrono-strip/modern"
+; For the classic layout, use InterfaceStyle=Classic.
+30 command CenterBase
+60 chrono 40
+80 command ScreenCapture
+165 command ScreenCapture
+200 quit

@@ -22,6 +22,8 @@ inline DWORD HangWatchMainThread = 0;
 inline std::atomic<unsigned int> HangWatchBeats { 0 };
 inline std::atomic<unsigned int> HangWatchDialogs { 0 };
 inline std::atomic<unsigned int> HangWatchLoads { 0 };
+// Set once a crash report has begun. The crashing thread then waits on purpose, and the report pumps no messages.
+inline std::atomic<bool> HangWatchCrashing { false };
 
 inline void Hang_Watchdog_Beat(void)
 {
@@ -31,28 +33,26 @@ inline void Hang_Watchdog_Beat(void)
 }
 
 
-// Holds the watchdog back while the player answers a native dialog, which pumps no messages of
-// the engine's own.
-class HangWatchDialogScope
+// Adds one to Counter for as long as the object exists.
+template<std::atomic<unsigned int> & Counter>
+class HangWatchCounterScope
 {
 	public:
-		HangWatchDialogScope(void) { HangWatchDialogs.fetch_add(1, std::memory_order_relaxed); }
-		~HangWatchDialogScope(void) { HangWatchDialogs.fetch_sub(1, std::memory_order_relaxed); }
-		HangWatchDialogScope(HangWatchDialogScope const &) = delete;
-		HangWatchDialogScope & operator=(HangWatchDialogScope const &) = delete;
+		HangWatchCounterScope(void) { Counter.fetch_add(1, std::memory_order_relaxed); }
+		~HangWatchCounterScope(void) { Counter.fetch_sub(1, std::memory_order_relaxed); }
+		HangWatchCounterScope(HangWatchCounterScope const &) = delete;
+		HangWatchCounterScope & operator=(HangWatchCounterScope const &) = delete;
 };
+
+
+// Holds the watchdog back while the player answers a native dialog, which pumps no messages of
+// the engine's own.
+using HangWatchDialogScope = HangWatchCounterScope<HangWatchDialogs>;
 
 
 // Lets a scenario load stall for longer before it is reported, since a load reads the whole
 // scenario without pumping messages.
-class HangWatchLoadScope
-{
-	public:
-		HangWatchLoadScope(void) { HangWatchLoads.fetch_add(1, std::memory_order_relaxed); }
-		~HangWatchLoadScope(void) { HangWatchLoads.fetch_sub(1, std::memory_order_relaxed); }
-		HangWatchLoadScope(HangWatchLoadScope const &) = delete;
-		HangWatchLoadScope & operator=(HangWatchLoadScope const &) = delete;
-};
+using HangWatchLoadScope = HangWatchCounterScope<HangWatchLoads>;
 
 
 // Keeps the calling thread busy without pumping messages, so the watchdog has a stall to report.

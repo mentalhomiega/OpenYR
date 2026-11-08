@@ -33,6 +33,8 @@
 
 #include "surface.h"
 
+#include <vector>
+
 /*
 **	This is a concrete (mostly) derived class that handles a surface. This layer presumes that
 **	pixels are compositied into a contiguous integral (usually a byte) linear array. The
@@ -81,6 +83,7 @@ class XSurface : public Surface
 		virtual bool Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth = false, bool shade_by_alpha = true, int fade = 256) override;
 		virtual bool Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, int glow_strength, int start_depth, int end_depth, bool write_depth = false) override;
 		virtual bool Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass & color, int start_depth, int end_depth, bool write_depth, bool blend_red, bool blend_green, bool blend_blue, float intensity) override;
+		virtual bool Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass const & color, float intensity, int start_depth, int end_depth) override;
 
 		virtual bool Plot_Line(Rect const &area, Point2D &start, Point2D &end, void(*drawer_callback)(Point2D const &)) override;
 
@@ -147,3 +150,7 @@ class XSurface : public Surface
 
 bool Blit_Clip(Rect & drect, Rect const & dwindow, Rect & srect, Rect const & swindow);
 bool Clip_Line_To_Rect(Point2D & point1, Point2D & point2, Rect const & rect);
+
+// While set, Draw_Line on a 16-bit surface passes the pixels it would set to this hook, in surface
+// coordinates; a true result means the hook draws them and the line writes nothing.
+extern bool (*Draw_Line_Record)(Surface const & surface, int color, std::vector<Point2D> const & pixels);

@@ -19,6 +19,7 @@
 #include "stimer.h"
 #include "timer.h"
 
+#include <memory>
 #include <vector>
 
 template<class T> class DynamicVectorClass;
@@ -27,6 +28,7 @@ class Cell;
 class HouseClass;
 class RGBClass;
 class ShadowControlClass;
+class ShapeSet;
 class Surface;
 
 /*
@@ -170,7 +172,7 @@ class Tactical : public AbstractClass
 		/*
 		 * Object selection and the rubber band.
 		 */
-		void Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object) = NULL);
+		void Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object) = NULL, Rect const * keep_out = NULL);
 		ObjectClass * Get_Selectable_Object(Point2D const & point);
 
 		bool Contains_Selectable_Buildings(Rect rect);
@@ -186,7 +188,7 @@ class Tactical : public AbstractClass
 
 		void Start_Rubber_Band(Point2D const & point);
 		void Modify_Rubber_Band(Point2D const & point);
-		void Select_Rubber_Band(void (*select_callback)(ObjectClass * object));
+		void Select_Rubber_Band(void (*select_callback)(ObjectClass * object), Rect const * keep_out = NULL);
 		void End_Rubber_Band(void);
 		void Draw_Rubber_Band(void);
 		void Draw_Mind_Control_Links(void);
@@ -210,6 +212,7 @@ class Tactical : public AbstractClass
 		void Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
 		void Render_Outside_Map(Surface & surface);
 		void Render(Surface & surface, bool fullredraw, int drawpass);
+		void Render_Foreground(Surface & composite);
 		bool Blit_Tiles(void);
 
 		/*
@@ -235,6 +238,7 @@ class Tactical : public AbstractClass
 		void Draw_Placement_Range(void);
 		void Draw_Super_Range(void);
 		void Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color);
+		void Draw_Range_Ring_Pixels(Coord const & center, int radius, RGBClass const & color);
 		static int Radial_Ring_Radius(double cells);
 		void Draw_Fence_Placement(bool drawtrans, Cell cell);
 		void Draw_Firestorm_Wall_Placement(bool drawtrans, Cell cell);
@@ -255,14 +259,23 @@ class Tactical : public AbstractClass
 		/*
 		 * Caption text and map overlays.
 		 */
-		void Set_Caption_Text(int text_id);
+		void Set_Caption_Text(wchar_t const * text, int style);
 		void Clear_Caption_Text(void);
-		void Draw_Screen_Text(char const * text);
+		void Draw_Screen_Text(wchar_t const * text);
+		ShapeSet const * Caption_Art(void);
+
+		// The frame of GRFXTXT.SHP shown for each caption style.
+		enum CaptionStyleType {
+			CAPTION_NONE = -1,
+			CAPTION_MISSION_ACCOMPLISHED = 0,
+			CAPTION_MISSION_FAILED = 1,
+			CAPTION_VICTORIOUS = 2,
+			CAPTION_GAME_OVER = 3
+		};
 
 		void Draw_Rally_Points(bool inshroud);
 		void Draw_Waypoints(bool inshroud);
-		void Draw_Planned_Orders(bool inshroud);
-		static void Draw_Radial_Indicators(void);
+		void Draw_Planned_Orders(void);
 
 		/*
 		 * Debug overlays.
@@ -283,9 +296,23 @@ class Tactical : public AbstractClass
 		/*
 		 * This is the caption text drawn across the middle of the tactical view. It is empty
 		 * whenever there is no caption to show, which is how the message is taken down again.
-		 * The scenario won and scenario lost announcements are put up through it.
+		 * The scenario won and scenario lost announcements are put up through it. The text is
+		 * what the string table gives, so it is wide, as gamemd keeps it (0x6d4db0).
 		 */
-		char ScreenText[64];
+		wchar_t ScreenText[64];
+
+		/*
+		 * This is the frame of the caption art (GRFXTXT.SHP) drawn in the middle of the view in
+		 * place of the text, or -1 when there is none.
+		 */
+		int CaptionStyle;
+
+		/*
+		 * This is the caption art, GRFXTXT.SHP, once Caption_Art has read it. CaptionArtTried is
+		 * set after the first attempt, so a missing file is not probed again.
+		 */
+		std::unique_ptr<char[]> CaptionArtData;
+		bool CaptionArtTried;
 
 		/*
 		 * This is the game frame the per-frame housekeeping was last done on. The AI routine
@@ -420,7 +447,8 @@ class Tactical : public AbstractClass
 		/*
 		 * This is the forward isometric projection, built at construction from a 60 degree
 		 * tilt, a 45 degree rotation and the tile-to-cell scale. The forward conversions work
-		 * from the integer Rectangular_To_Isometric instead, so nothing reads it.
+		 * from the integer Rectangular_To_Isometric instead; TechnoTypeClass::Particle_System_Offset
+		 * is the only reader of this matrix.
 		 */
 		Matrix3D CoordToPixelMatrix;
 
@@ -445,6 +473,10 @@ class Tactical : public AbstractClass
 		static DynamicVectorClass<ShadowControlClass *> ShadowControls;
 };
 
+
+// The area of absolute pixels the scroll limits keep a tactical view inside, from the map's local area.
+// A view no wider or taller than the area fits on the local map, in every layout.
+Rect Tactical_Visible_Map_Area(void);
 
 // Starts the chronoshift screen effect, with each fade lasting the frames given.
 void Start_Chrono_Screen_Effect(int frames);

@@ -1,0 +1,18 @@
+; Two E1 soldiers board a Soviet Amphibious Transport (SAPC at 60,24) and are unloaded again. The rules mod names
+; the transport's EnterTransportSound TextBleep and LeaveTransportSound SlaveMinerDeploy.
+; gamemd's TechnoClass::AddPassenger (0x710670) plays EnterTransportSound at the transport's position for each
+; passenger that boards. UnitClass::Mission_Unload (0x73DC67) plays LeaveTransportSound at the transport's position
+; once for each passenger it puts on the map. Here both soldiers are placed, so the expected log is two
+; "Sound: TextBleep at 60,24" lines as they board and two "Sound: SlaveMinerDeploy at 60,24" lines as they leave.
+; A passenger that cannot be placed plays no leave sound, which this test does not cover.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/transport-leave-sound.txt -Mods src-agent14/tests/autotest/transport-sounds-rules -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Exception|Sound: TextBleep|Sound: SlaveMinerDeploy"
+10 command CenterBase
+20 reveal
+25 view 62 24
+30 own SAPC 60 24
+40 own E1 58 24
+41 own E1 58 25
+60 sounds 1
+100 enter E1 60 24
+300 unload 60 24
+400 quit

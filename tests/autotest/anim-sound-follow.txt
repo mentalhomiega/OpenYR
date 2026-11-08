@@ -1,0 +1,25 @@
+; A cloud animation (WCCLOUD1) is played over 60,40. The anim-sound-follow art overlay gives it OilDerrickLoop, an
+; endless loop, as its StartSound. gamemd's AnimClass::Start (0x424CE0) starts that sound, and AnimClass::Update
+; (0x423AC0) re-aims it on every update through AudioController::PlayEvent (0x750D40). Removing the animation ends an
+; endless loop (AudioController::EndLooping in the destructor). The runner mutes sound effects, so the observable is the
+; LogSoundEffects line "Sound follows: OilDerrickLoop" (one per update, at the animation's cell) and the liveanims probe.
+; Before this change the loop was logged once as "Sound: OilDerrickLoop" when the animation started, and never re-aimed.
+; Expected: no line before the animation is played. From the update after frame 60 there is one "Sound follows" line
+; per update at 60,40, 118 in all. The animation is removed between the frame 170 and frame 180 probes, and the last
+; line is written before the frame 180 probe, so none follows the removal.
+1 sounds 1
+10 command CenterBase
+20 reveal
+25 view 62 40
+30 liveanims WCCLOUD1
+60 playanim WCCLOUD1 60 40
+62 liveanims WCCLOUD1
+80 liveanims WCCLOUD1
+100 liveanims WCCLOUD1
+130 liveanims WCCLOUD1
+160 liveanims WCCLOUD1
+170 liveanims WCCLOUD1
+180 liveanims WCCLOUD1
+190 liveanims WCCLOUD1
+200 liveanims WCCLOUD1
+240 quit

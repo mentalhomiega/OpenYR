@@ -19,6 +19,14 @@
 class UIViewClass;
 
 
+// Why the controls screen refuses a key press that cannot be a binding. A "refuse" intent carries one of these as its value.
+enum UIKeyboardRefusal
+{
+	UI_KEYBOARD_REFUSE_MOUSE = 2,
+	UI_KEYBOARD_REFUSE_UNMAPPED = 3,
+};
+
+
 // One command the controls screen lists.
 struct UIHotkeyCommand
 {
@@ -80,11 +88,13 @@ struct UIKeyboardState
 
 	// The binding that already holds the captured key with the trigger, when assigning would conflict.
 	int ConflictCommand = -1;
-	int ConflictSlot = 0;
 	std::string Conflict;
 
 	// What the last reset or scheme change did, such as the bindings it removed.
 	std::string Notice;
+
+	// Counts the intents that hand the keys back to the capture box. A click on a button takes the focus from it.
+	int FocusCount = 0;
 };
 
 
@@ -101,10 +111,13 @@ class UIKeyboardPresenterClass : public UIPresenterClass
 		void Reload_Rows(void);
 		void Select(int command, int slot);
 		void Check_Capture(void);
+		void Clear_Capture(void);
 		void Assign(bool swap);
 		void Reset_Category(void);
 		void Reset_All(void);
 		void Change_Scheme(int scheme);
+		void Refuse(int reason);
+		std::string Unbound_Notice(std::vector<HotkeyEntry> const & before, int category) const;
 		std::string Slot_Text(int command, int slot);
 		std::string Name_Of_Key(int key);
 

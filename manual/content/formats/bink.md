@@ -31,4 +31,4 @@ The game reads the whole movie file into memory, then draws it a frame at a time
 
 - Escape ends the movie. In a game against other machines, the votes described in [Multiplayer movies](/systems/multiplayer-movies/) decide.
 - The movie pauses while the game window is in the background and continues when it returns.
-- The sound plays through Bink's own DirectSound output, at the engine's master volume. The movie, music and sound volume settings do not change it. While the master volume is zero, as in a scripted test run, the movie plays without opening a sound device.
+- The sound plays through Bink's own DirectSound output, at the engine's master volume times the [movies volume](/keys/movievolume/). The music and sound effect volume settings do not change it. While either is zero, the movie plays without opening a sound device.

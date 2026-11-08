@@ -9,7 +9,6 @@
 
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
 #include <RmlUi/Core/Element.h>
@@ -43,14 +42,14 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 			Model.DirtyVariable("notice");
 			Model.DirtyVariable("playable");
 			Model.DirtyVariable("haspreview");
-			Show_Preview();
+			Show_Surface("preview", Shown, Data.State.Preview);
 		}
 
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
 			Rml::StructHandle<UIBrowserRow> row = model.RegisterStruct<UIBrowserRow>();
-			Rml::StructHandle<UIBrowserOption> option = model.RegisterStruct<UIBrowserOption>();
+			Rml::StructHandle<UIChoice> option = model.RegisterStruct<UIChoice>();
 			if (!row || !option) {
 				return(false);
 			}
@@ -59,12 +58,12 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 			row.RegisterMember("disabled", &UIBrowserRow::Disabled);
 			row.RegisterMember("index", &UIBrowserRow::Index);
 			row.RegisterMember("text", &UIBrowserRow::Text);
-			option.RegisterMember("label", &UIBrowserOption::Label);
-			option.RegisterMember("value", &UIBrowserOption::Value);
+			option.RegisterMember("label", &UIChoice::Label);
+			option.RegisterMember("value", &UIChoice::Value);
 
 			UIMissionBrowserState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIBrowserRow>>()
-				&& model.RegisterArray<std::vector<UIBrowserOption>>()
+				&& model.RegisterArray<std::vector<UIChoice>>()
 				&& model.Bind("rows", &state.Rows)
 				&& model.Bind("difficulties", &state.Difficulties)
 				&& model.Bind("difficulty", &state.Difficulty)
@@ -81,22 +80,6 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 		/// <summary>
 		/// Shows the selected mission's picture once per change. An empty picture clears the surface.
 		/// </summary>
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
-		}
-
 		UIMissionBrowserPresenterClass & Data;
 		int Shown;
 };

@@ -21,6 +21,7 @@
 #include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
+#include "perfstat.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -34,6 +35,8 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cstdlib>
+#include <xmmintrin.h>
 #include <utility>
 
 
@@ -376,6 +379,15 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 		std::optional<RegularOpenNode> temp_node;
 		int from_index = from_id.X + MapCellStride * from_id.Y;
 
+		// Start the neighbours' cache misses together; the loop below reads each of these.
+		for (int ahead = FACING_FIRST; ahead < FACING_COUNT; ahead++) {
+			char const * neighbor_ptr = (char const *)working_from[_offsets[ahead]];
+			_mm_prefetch(neighbor_ptr, _MM_HINT_T0);
+			_mm_prefetch(neighbor_ptr + 64, _MM_HINT_T0);
+			_mm_prefetch((char const *)&Map.CellSubzones[from_index + AStarFacingToOffset[ahead]], _MM_HINT_T0);
+			_mm_prefetch((char const *)&RegularVisited[from_index + AStarFacingToOffset[ahead]], _MM_HINT_T0);
+		}
+
 		for (face = FACING_FIRST; face <= FACING_COUNT; face++) {
 
 			CellClass ** neighbor_slot;
@@ -667,8 +679,23 @@ AStarClass::AStarClass(void) :
 	IsHSEnabled(true),
 	Avoidance(AVOIDANCE_NONE),
 	HierNodeIndex(-1),
-	HierLastNodeCell(0,0)
+	HierLastNodeCell(0,0),
+	HierCacheGeneration(1),
+	HierCache(new HierCacheEntry[HIER_CACHE_SLOTS]),
+	IsHierCacheEnabled(true),
+	IsHierCacheChecked(false),
+	HierCacheLookups(0),
+	HierCacheHits(0),
+	HierCacheCompared(0),
+	HierCacheDifferences(0)
 {
+	// Debug switches: OPENYR_ASTAR_CACHE=0 turns the corridor cache off, OPENYR_ASTAR_CHECK=1 runs
+	// the full search beside every cache hit and logs any difference.
+	char const * cache_env = std::getenv("OPENYR_ASTAR_CACHE");
+	IsHierCacheEnabled = cache_env == NULL || cache_env[0] != '0';
+	char const * check_env = std::getenv("OPENYR_ASTAR_CHECK");
+	IsHierCacheChecked = check_env != NULL && check_env[0] == '1';
+
 	RegularQueue = new PriorityQueueClass<RegularOpenNode>(65536);
 	HierQueue = new PriorityQueueClass<AStarHierarchicalNode>(10000);
 	RegularNodes = new RegularNodePool;
@@ -694,6 +721,9 @@ AStarClass::AStarClass(void) :
 /// </summary>
 AStarClass::~AStarClass(void)
 {
+	delete [] HierCache;
+	HierCache = NULL;
+
 	delete RegularQueue;
 	RegularQueue = NULL;
 
@@ -820,6 +850,8 @@ PathStruct * AStarClass::Build_Final_Path(RegularOpenNode const & final_node, Fa
 /// requested.</remarks>
 void AStarClass::Update_Map_Dimensions(Rect const & dimensions)
 {
+	Invalidate_Hierarchical_Cache();
+
 	if (RegularVisited != NULL) {
 		delete [] RegularVisited;
 		RegularVisited = NULL;
@@ -1564,6 +1596,8 @@ void AStarClass::Reset(void)
 {
 	int j;
 
+	Invalidate_Hierarchical_Cache();
+
 	for (int i = 0; i < ARRAY_SIZE(HierOnPath); i++) {
 		if (HierOnPath[i] != NULL) {
 			delete[] HierOnPath[i];
@@ -1596,6 +1630,150 @@ void AStarClass::Reset(void)
 
 
 /// <summary>
+/// Finds a coarse route through the map's subzone graph, reusing the corridor from an
+/// earlier identical search when the graph has not changed since.
+/// The corridor tables, path lists and counts are left exactly as Search_Hierarchical would
+/// leave them.
+/// </summary>
+/// <returns>bool; Was a corridor found at every level?</returns>
+bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot)
+{
+	HierCacheKey key;
+	HierCacheEntry * entry = NULL;
+	if (IsHierCacheEnabled && Make_Hier_Cache_Key(from, to, mzone, foot, key)) {
+		unsigned int hash = 2166136261u;
+		for (unsigned int i = 0; i < sizeof(key) / sizeof(int); i++) {
+			hash = (hash ^ (unsigned int)((int const *)&key)[i]) * 16777619u;
+		}
+		entry = &HierCache[(hash ^ (hash >> 15)) & (HIER_CACHE_SLOTS - 1)];
+		HierCacheLookups++;
+		if (entry->Generation == HierCacheGeneration && entry->Key == key) {
+			HierCacheHits++;
+			if (IsHierCacheChecked) {
+				return(Check_Hier_Cache_Hit(from, to, mzone, foot, *entry));
+			}
+			Restore_Hier_Cache(*entry);
+			return(true);
+		}
+	}
+
+	bool found = Search_Hierarchical(from, to, mzone, foot);
+	if (found && entry != NULL) {
+		Store_Hier_Cache(*entry, key);
+	}
+	return(found);
+}
+
+
+/// <summary>
+/// Builds the cache key for a hierarchical search.
+/// A search with banned edges, or one for a unit that avoids threats, is not remembered because
+/// its result depends on more than the key.
+/// </summary>
+/// <returns>bool; Can this search be remembered?</returns>
+bool AStarClass::Make_Hier_Cache_Key(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot, HierCacheKey & key) const
+{
+	if (foot != NULL && foot->Threat_Avoidance_Value() > 0.00001) {
+		return(false);
+	}
+	for (int level = 0; level < SUBZONE_COUNT; level++) {
+		if (!HierBannedEdges[level].empty()) {
+			return(false);
+		}
+	}
+	CellSubzoneStruct const & start = Map.CellSubzones[Map.Get_Cell_Zone_Index(from)];
+	CellSubzoneStruct const & end = Map.CellSubzones[Map.Get_Cell_Zone_Index(to)];
+	for (int level = 0; level < SUBZONE_COUNT; level++) {
+		key.Subzones[0][level] = start.SubzoneID[level];
+		key.Subzones[1][level] = end.SubzoneID[level];
+	}
+	key.MZone = mzone;
+	return(true);
+}
+
+
+void AStarClass::Store_Hier_Cache(HierCacheEntry & entry, HierCacheKey const & key) const
+{
+	entry.Generation = HierCacheGeneration;
+	entry.Key = key;
+	for (int level = 0; level < SUBZONE_COUNT; level++) {
+		entry.Path[level].assign(HierSubzonePath[level], HierSubzonePath[level] + HierSubzonePathCount[level]);
+	}
+}
+
+
+// Writes what Search_Hierarchical writes for a successful search: the path lists and counts, and
+// the corridor stamp of every subzone on a path (the start and goal are on it).
+void AStarClass::Restore_Hier_Cache(HierCacheEntry const & entry)
+{
+	for (int level = SUBZONE_COUNT - 1; level >= 0; level--) {
+		std::vector<int> const & path = entry.Path[level];
+		int * final_ids = HierOnPath[level];
+		for (size_t i = 0; i < path.size(); i++) {
+			HierSubzonePath[level][i] = path[i];
+			final_ids[path[i]] = UniqueID;
+		}
+		HierSubzonePathCount[level] = (int)path.size();
+	}
+}
+
+
+// Restores the remembered corridor under the next search id, runs the real search under the current
+// one, and logs any difference in the result, path lists, counts or stamped subzones.
+bool AStarClass::Check_Hier_Cache_Hit(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot, HierCacheEntry const & entry)
+{
+	struct Snapshot {
+		int Counts[SUBZONE_COUNT];
+		std::vector<int> Path[SUBZONE_COUNT];
+		std::vector<int> Stamped[SUBZONE_COUNT];
+	};
+
+	auto take = [this](Snapshot & snap) {
+		for (int level = 0; level < SUBZONE_COUNT; level++) {
+			snap.Counts[level] = HierSubzonePathCount[level];
+			snap.Path[level].assign(HierSubzonePath[level], HierSubzonePath[level] + HierSubzonePathCount[level]);
+			snap.Stamped[level].clear();
+			for (int i = 0; i < Map.SubzoneTrackingEntryCount[level]; i++) {
+				if (HierOnPath[level][i] == UniqueID) {
+					snap.Stamped[level].push_back(i);
+				}
+			}
+		}
+	};
+
+	int search_id = UniqueID;
+	Snapshot restored;
+	UniqueID = search_id + 1;
+	Restore_Hier_Cache(entry);
+	take(restored);
+	for (int level = 0; level < SUBZONE_COUNT; level++) {
+		for (int subzone : restored.Stamped[level]) {
+			HierOnPath[level][subzone] = 0;
+		}
+	}
+	UniqueID = search_id;
+
+	bool found = Search_Hierarchical(from, to, mzone, foot);
+	Snapshot searched;
+	take(searched);
+
+	HierCacheCompared++;
+	bool same = found;
+	for (int level = 0; level < SUBZONE_COUNT; level++) {
+		same = same && restored.Counts[level] == searched.Counts[level] && restored.Path[level] == searched.Path[level] && restored.Stamped[level] == searched.Stamped[level];
+	}
+	if (!same) {
+		HierCacheDifferences++;
+		DebugString("AStar cache check: DIFFERENCE for (%d,%d) to (%d,%d) mzone %d, search found %d\n", from.X, from.Y, to.X, to.Y, (int)mzone, (int)found);
+	}
+	if ((HierCacheCompared % 5000) == 0) {
+		DebugString("AStar cache check: %u lookups, %u hits, %u compared, %u differences\n", HierCacheLookups, HierCacheHits, HierCacheCompared, HierCacheDifferences);
+	}
+	return(found);
+}
+
+
+/// <summary>
 /// Finds a coarse route through the map's subzone graph.
 /// This routine searches the subzone connection graph at each level of coarseness in turn,
 /// every level confined to the corridor the coarser one came up with. The corridor that
@@ -1606,7 +1784,7 @@ void AStarClass::Reset(void)
 /// <param name="foot">The object being pathed for, consulted for threat avoidance. May be
 /// NULL.</param>
 /// <returns>bool; Was a corridor found at every level?</returns>
-bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot)
+bool AStarClass::Search_Hierarchical(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot)
 {
 	int *pass_table = (int *)MZonePassability[mzone];
 
@@ -1680,7 +1858,7 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 
 					double extra_score = is_cross_block ? 0.001 : 0.0;
 
-					static const float _passability_scores[PASSABLE_COUNT] = {1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0};
+					static const float _passability_scores[PASSABLE_COUNT] = {1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0};
 					float score = _passability_scores[passability] + best_node->Score + (double)threat + extra_score;
 
 					if ((working_ids[to_subzone] != UniqueID || costs[to_subzone] > score) && (is_coarse || coarser_final_ids[to_coarser_subzone] == UniqueID || passability == PASSABLE_CRUSH) && pass_table[passability] == TRAVERSAL_PASSABLE) {
@@ -1754,6 +1932,8 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 /// <returns>Returns with a pointer to the path found, or NULL if there is no route.</returns>
 PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass * foot, FacingType * moves, int max_loops, MZoneType mzone, ObstacleAvoidanceType avoidance)
 {
+	Perf_Count(PERF_COUNT_PATHS);
+	PerfScope pathfind_scope(PERF_FRAME_PATHFIND);
 	int i;
 
 	IsHSEnabled = true;

@@ -90,7 +90,7 @@ void HDR_Encode_Pixel(float const * srgb, float paperwhite, float peak, float * 
 void HDR_Colour_Adjust_Reset(HDRColourAdjust & adjust)
 {
 	for (int index = 0; index < 9; index++) {
-		adjust.Matrix[index] = (index % 4 == 0) ? 1.0f : 0.0f;
+		adjust.Matrix[index] = HDR_COLOUR_ADJUST_IDENTITY[index];
 	}
 	adjust.Brightness = 1.0f;
 	adjust.Gamma = 1.0f;
@@ -100,7 +100,7 @@ void HDR_Colour_Adjust_Reset(HDRColourAdjust & adjust)
 bool HDR_Colour_Adjust_Is_Identity(HDRColourAdjust const & adjust)
 {
 	for (int index = 0; index < 9; index++) {
-		if (adjust.Matrix[index] != ((index % 4 == 0) ? 1.0f : 0.0f)) {
+		if (adjust.Matrix[index] != HDR_COLOUR_ADJUST_IDENTITY[index]) {
 			return(false);
 		}
 	}

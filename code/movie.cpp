@@ -30,6 +30,7 @@
 #include "movies.h"
 #include "movieskip.h"
 #include "session.h"
+#include "strutil.h"
 #include "vector.h"
 #include "vqa.h"
 
@@ -107,7 +108,7 @@ void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool str
 
 	// Yuri's Revenge ships its movies as Bink files. A .VQA name with no such file plays the .BIK of the same name.
 	std::string bink_name(name);
-	std::size_t const dot = bink_name.rfind('.');
+	std::size_t const dot = Extension_Start(bink_name);
 	bool const is_bink = dot != std::string::npos && _stricmp(bink_name.c_str() + dot, ".BIK") == 0;
 	if (!is_bink && !CCFileClass(name).Is_Available() && dot != std::string::npos) {
 		bink_name.replace(dot, std::string::npos, ".BIK");

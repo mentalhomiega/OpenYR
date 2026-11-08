@@ -63,6 +63,10 @@ class AudioEngineClass
 		// or states more than a day.
 		static float Stream_Seconds(char const * filename);
 
+		// Whether the file opens and states a format the decoders handle. A file that
+		// cannot be read, is empty, or is not audio gives false.
+		static bool Can_Decode(char const * filename);
+
 		// Finds the file for an extensionless sound name, trying extensions in the
 		// sample cache's order and skipping files that do not decode. Returns false,
 		// with the name emptied, when none is found.

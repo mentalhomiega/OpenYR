@@ -19,11 +19,7 @@ UIClassicOptionsPresenterClass::UIClassicOptionsPresenterClass(UIGameControlsSer
 		UIDisplayServiceClass & display, UIDisplayState displaystate) :
 	Game(game, std::move(gamestate)),
 	Sound(sound, soundstate),
-	Display(display, std::move(displaystate)),
-	SoundService(sound),
-	StartScore(soundstate.Score),
-	StartSound(soundstate.Sound),
-	StartVoice(soundstate.Voice)
+	Display(display, std::move(displaystate))
 {
 }
 
@@ -40,11 +36,11 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 
 	if (intent.Name == "scroll" || intent.Name == "detail" || intent.Name == "difficulty" || intent.Name == "cameo"
 			|| intent.Name == "lines" || intent.Name == "tooltips" || intent.Name == "coasting" || intent.Name == "edge"
-			|| intent.Name == "hidden") {
+			|| intent.Name == "hidden" || intent.Name == "defencerange") {
 		Game.Execute(forwarded);
 
-	} else if (intent.Name == "music" || intent.Name == "sfx" || intent.Name == "voice") {
-		forwarded.Name = (intent.Name == "music") ? "score" : (intent.Name == "sfx") ? "sound" : "voice";
+	} else if (intent.Name == "music" || intent.Name == "sfx" || intent.Name == "voice" || intent.Name == "unit" || intent.Name == "movie") {
+		forwarded.Name = (intent.Name == "music") ? "score" : (intent.Name == "sfx") ? "sound" : intent.Name;
 		Sound.Execute(forwarded);
 
 	} else if (intent.Name == "select" || intent.Name == "scale" || intent.Name == "stretch" || intent.Name == "systemcursor"
@@ -66,15 +62,7 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 		Result = UI_RESULT_ACCEPTED;
 
 	} else if (intent.Name == "cancel") {
-		if (Sound.State.Score != StartScore) {
-			SoundService.Set_Score_Volume(UISoundPresenterClass::Volume_Of(StartScore), false);
-		}
-		if (Sound.State.Sound != StartSound) {
-			SoundService.Set_Sound_Volume(UISoundPresenterClass::Volume_Of(StartSound), false);
-		}
-		if (Sound.State.Voice != StartVoice) {
-			SoundService.Set_Voice_Volume(UISoundPresenterClass::Volume_Of(StartVoice), false);
-		}
+		Sound.Restore_Changed_Volumes();
 		Result = UI_RESULT_CANCELLED;
 	}
 }
@@ -110,26 +98,9 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("scroll");
-			Model.DirtyVariable("detail");
-			Model.DirtyVariable("difficulty");
-			Model.DirtyVariable("cameo");
-			Model.DirtyVariable("lines");
-			Model.DirtyVariable("tooltips");
-			Model.DirtyVariable("coasting");
-			Model.DirtyVariable("edge");
-			Model.DirtyVariable("hidden");
-			Model.DirtyVariable("scrollname");
-			Model.DirtyVariable("detailname");
-			Model.DirtyVariable("difficultyname");
-			Model.DirtyVariable("music");
-			Model.DirtyVariable("sfx");
-			Model.DirtyVariable("voice");
-			Model.DirtyVariable("selected");
-			Model.DirtyVariable("stretch");
-			Model.DirtyVariable("systemcursor");
-			Model.DirtyVariable("classicmenus");
-			Model.DirtyVariable("scale");
+			Dirty({"scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
+				"hidden", "defencerange", "scrollname", "detailname", "difficultyname", "music", "sfx",
+				"voice", "unit", "movie", "selected", "stretch", "systemcursor", "classicmenus", "scale"});
 		}
 
 	protected:
@@ -155,9 +126,12 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			labels.RegisterMember("music", &UIClassicOptionsLabels::Music);
 			labels.RegisterMember("sound", &UIClassicOptionsLabels::Sound);
 			labels.RegisterMember("voice", &UIClassicOptionsLabels::Voice);
+			labels.RegisterMember("unit", &UIClassicOptionsLabels::Unit);
+			labels.RegisterMember("movie", &UIClassicOptionsLabels::Movie);
 			labels.RegisterMember("tooltips", &UIClassicOptionsLabels::Tooltips);
 			labels.RegisterMember("targetlines", &UIClassicOptionsLabels::TargetLines);
 			labels.RegisterMember("showhidden", &UIClassicOptionsLabels::ShowHidden);
+			labels.RegisterMember("showdefencerange", &UIClassicOptionsLabels::ShowDefenceRange);
 			labels.RegisterMember("keyboard", &UIClassicOptionsLabels::Keyboard);
 			labels.RegisterMember("mods", &UIClassicOptionsLabels::Mods);
 			labels.RegisterMember("more", &UIClassicOptionsLabels::More);
@@ -177,30 +151,14 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			return(model.RegisterArray<std::vector<UIDisplayMode>>()
 				&& model.RegisterArray<std::vector<UIDisplayScale>>()
 				&& model.Bind("labels", &Data.Labels)
-				&& model.Bind("scroll", &game.Scroll)
-				&& model.Bind("detail", &game.Detail)
-				&& model.Bind("difficulty", &game.Difficulty)
-				&& model.Bind("cameo", &game.CameoText)
-				&& model.Bind("lines", &game.ActionLines)
-				&& model.Bind("tooltips", &game.ToolTips)
-				&& model.Bind("coasting", &game.Coasting)
-				&& model.Bind("edge", &game.EdgeScroll)
-				&& model.Bind("hidden", &game.ShowHidden)
-				&& model.Bind("hasdifficulty", &game.HasDifficulty)
-				&& model.Bind("scrollname", &game.ScrollName)
-				&& model.Bind("detailname", &game.DetailName)
-				&& model.Bind("difficultyname", &game.DifficultyName)
+				&& UI_Bind_Game_Controls(model, game)
 				&& model.Bind("music", &sound.Score)
 				&& model.Bind("sfx", &sound.Sound)
 				&& model.Bind("voice", &sound.Voice)
+				&& model.Bind("unit", &sound.Unit)
+				&& model.Bind("movie", &sound.Movie)
 				&& model.Bind("audible", &sound.Enabled)
-				&& model.Bind("modes", &display.Modes)
-				&& model.Bind("selected", &display.Selected)
-				&& model.Bind("stretch", &display.StretchMovies)
-				&& model.Bind("systemcursor", &display.SystemCursor)
-				&& model.Bind("classicmenus", &display.ClassicMenus)
-				&& model.Bind("scales", &display.Scales)
-				&& model.Bind("scale", &display.Scale));
+				&& UI_Bind_Display_Basics(model, display));
 		}
 
 	private:

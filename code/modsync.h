@@ -41,7 +41,7 @@ namespace ModSync
 	{
 		std::vector<Entry> Mods;
 
-		// Set when the list was too long to send, so that Opaque_Hash stands in for the entries.
+		// Set when the list was too long to send, so that DigestCount and DigestHash stand in for the entries.
 		bool IsDigest = false;
 		std::uint32_t DigestCount = 0;
 		std::uint32_t DigestHash = 0;
@@ -68,6 +68,13 @@ namespace ModSync
 	std::uint32_t Hash_Mod(ModClass const & mod);
 
 	Signature Describe(std::vector<ModClass> const & mods);
+
+	// The signature of the mods in force now.
+	inline Signature Describe_Active(void)
+	{
+		return(Describe(Active_Mods()));
+	}
+
 	std::string Encode(Signature const & signature);
 
 	// Reads the text form. Text that is not a signature gives false, and counts as a signature

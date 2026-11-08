@@ -105,9 +105,19 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	HeapID = AircraftType(AircraftTypes.ID(this));
 
 	IsMoveToShroud = false;
+	IsConsideredAircraft = true;
 	Rotation = 32;
 	IsCrashable = true;
 	IsConsideredAircraft = true;
+}
+
+
+/// <summary>
+/// Aircraft never take an attack-move order, whatever weapons they carry.
+/// </summary>
+bool AircraftTypeClass::Can_Attack_Move(void) const
+{
+	return(false);
 }
 
 

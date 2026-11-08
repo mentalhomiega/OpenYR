@@ -251,6 +251,13 @@ diagnostics; it is not a save or network compatibility stamp. An official
 build configured with `-DOPENTS_OFFICIAL_BUILD=ON` shows only its declared
 version.
 
+A build configured with `-DOPENTS_NIGHTLY=ON` also shows a nightly number and
+the local time of its commit, such as `0.2.0 Nightly 3 after Beta 32,
+2026-11-01 17:34 (ab12cd3, x86)`. The number counts first-parent commits since
+the newest `beta*` tag that the commit contains, so each merge into the
+integration branch raises it by one. Without such a tag, the build shows the
+normal version and commit. `-DOPENTS_OFFICIAL_BUILD=ON` takes precedence.
+
 `opents_version.h` changes only with the version, so an ordinary commit does not
 rebuild code that reads only that header. `opents_build.h` is checked on every
 build, so a new commit appears without reconfiguring; an unchanged header is

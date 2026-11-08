@@ -18,20 +18,24 @@
 #include <cstring>
 #include <float.h>
 #include <system_error>
+#include <type_traits>
 
 
 namespace numparse_detail
 {
 
-/*
-**	Sets round to nearest for the life of the object and restores the previous mode after it.
-*/
+/// <summary>
+/// Sets round to nearest for the life of the object and restores the previous mode after it.
+/// </summary>
 class Nearest_Rounding_Scope
 {
 	public:
 		Nearest_Rounding_Scope()
 		{
-			_controlfp_s(&previous_, _RC_NEAR, _MCW_RC);
+			// _controlfp_s returns the word it stores, so the previous mode is read before it is changed.
+			_controlfp_s(&previous_, 0, 0);
+			unsigned int ignored = 0;
+			_controlfp_s(&ignored, _RC_NEAR, _MCW_RC);
 		}
 
 		~Nearest_Rounding_Scope()
@@ -47,6 +51,55 @@ class Nearest_Rounding_Scope
 		unsigned int previous_ = 0;
 };
 
+/// <summary>
+/// Reads the number for Parse_Nearest_Double and Parse_Nearest_Single. T is the type read, and the
+/// fallback is strtod or strtof to match, since reading a double and narrowing it would round twice.
+/// </summary>
+template<class T>
+T Parse_Nearest(char const * text, char ** end)
+{
+	char const * cursor = text;
+	while (std::isspace(static_cast<unsigned char>(*cursor))) {
+		cursor++;
+	}
+	if (*cursor == '+') {
+		cursor++;
+	}
+
+	// std::from_chars does not read hexadecimal, and it reports a value outside the range of the type
+	// without a value. strtod handles both, so those cases use it under round to nearest.
+	bool const hexadecimal = cursor[0] == '0' && (cursor[1] == 'x' || cursor[1] == 'X');
+	T value = 0;
+	std::from_chars_result result{cursor, std::errc::invalid_argument};
+	if (!hexadecimal) {
+		result = std::from_chars(cursor, cursor + std::strlen(cursor), value);
+	}
+	if (hexadecimal || result.ec == std::errc::result_out_of_range) {
+		Nearest_Rounding_Scope const nearest;
+		char * tail = NULL;
+		if constexpr (std::is_same_v<T, float>) {
+			value = std::strtof(text, &tail);
+		} else {
+			value = std::strtod(text, &tail);
+		}
+		if (end != nullptr) {
+			*end = tail;
+		}
+		return(value);
+	}
+
+	if (result.ec != std::errc()) {
+		if (end != nullptr) {
+			*end = const_cast<char *>(text);
+		}
+		return(0);
+	}
+	if (end != nullptr) {
+		*end = const_cast<char *>(result.ptr);
+	}
+	return(value);
+}
+
 }
 
 
@@ -60,44 +113,7 @@ class Nearest_Rounding_Scope
 /// <returns>The value read, or 0.0 when no number is read.</returns>
 inline double Parse_Nearest_Double(char const * text, char ** end)
 {
-	char const * cursor = text;
-	while (std::isspace(static_cast<unsigned char>(*cursor))) {
-		cursor++;
-	}
-	if (*cursor == '+') {
-		cursor++;
-	}
-
-	/*
-	**	std::from_chars does not read hexadecimal, and it reports a value outside the double range
-	**	without a value. strtod handles both, so those cases use it under round to nearest.
-	*/
-	bool const hexadecimal = cursor[0] == '0' && (cursor[1] == 'x' || cursor[1] == 'X');
-	double value = 0.0;
-	std::from_chars_result result{cursor, std::errc::invalid_argument};
-	if (!hexadecimal) {
-		result = std::from_chars(cursor, cursor + std::strlen(cursor), value);
-	}
-	if (hexadecimal || result.ec == std::errc::result_out_of_range) {
-		numparse_detail::Nearest_Rounding_Scope const nearest;
-		char * tail = NULL;
-		value = std::strtod(text, &tail);
-		if (end != nullptr) {
-			*end = tail;
-		}
-		return(value);
-	}
-
-	if (result.ec != std::errc()) {
-		if (end != nullptr) {
-			*end = const_cast<char *>(text);
-		}
-		return(0.0);
-	}
-	if (end != nullptr) {
-		*end = const_cast<char *>(result.ptr);
-	}
-	return(value);
+	return(numparse_detail::Parse_Nearest<double>(text, end));
 }
 
 
@@ -111,40 +127,7 @@ inline double Parse_Nearest_Double(char const * text, char ** end)
 /// <returns>The value read, or 0.0f when no number is read.</returns>
 inline float Parse_Nearest_Single(char const * text, char ** end)
 {
-	char const * cursor = text;
-	while (std::isspace(static_cast<unsigned char>(*cursor))) {
-		cursor++;
-	}
-	if (*cursor == '+') {
-		cursor++;
-	}
-
-	bool const hexadecimal = cursor[0] == '0' && (cursor[1] == 'x' || cursor[1] == 'X');
-	float value = 0.0f;
-	std::from_chars_result result{cursor, std::errc::invalid_argument};
-	if (!hexadecimal) {
-		result = std::from_chars(cursor, cursor + std::strlen(cursor), value);
-	}
-	if (hexadecimal || result.ec == std::errc::result_out_of_range) {
-		numparse_detail::Nearest_Rounding_Scope const nearest;
-		char * tail = NULL;
-		value = std::strtof(text, &tail);
-		if (end != nullptr) {
-			*end = tail;
-		}
-		return(value);
-	}
-
-	if (result.ec != std::errc()) {
-		if (end != nullptr) {
-			*end = const_cast<char *>(text);
-		}
-		return(0.0f);
-	}
-	if (end != nullptr) {
-		*end = const_cast<char *>(result.ptr);
-	}
-	return(value);
+	return(numparse_detail::Parse_Nearest<float>(text, end));
 }
 
 

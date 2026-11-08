@@ -79,6 +79,7 @@ class OverlayClass : public ObjectClass
 		*/
 		virtual RTTIType Fetch_RTTI(void) const override {return(RTTI_OVERLAY);}
 		virtual bool Mark(MarkType) override;
+		virtual bool Unlimbo(Coord const & coord, Dir256 facing = DIR_N) override;
 		virtual ObjectTypeClass const * Class_Of(void) const override;
 		virtual void Draw_It(Point2D const &, Rect const &) const override {}
 		virtual void Editor_Draw_It(Point2D const & point, Rect const & cliprect) const override;

@@ -122,6 +122,7 @@
 #include "globals.h"
 #include "hud.h"
 #include "goptions.h"
+#include "gpumap.h"
 #include "incdec.h"
 #include "infatype.h"
 #include "inline.h"
@@ -132,7 +133,9 @@
 #include "mixfile.h"
 #include "overtype.h"
 #include "palette.h"
+#include "planning.h"
 #include "queue.h"
+#include "replay.h"
 #include "rules.h"
 #include "saveload.h"
 #include "savestream.h"
@@ -163,6 +166,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 /*
@@ -379,6 +383,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 
 		Hide_Mouse();
 
+		GpuMap_Release_References();
 		if (DepthBuffer != NULL) {
 			DebugString("Deleting ZBuffer\n");
 			delete DepthBuffer;
@@ -413,8 +418,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		tooltip.ID = 500;
 		tooltip.Text = TXT_NONE;
 		tooltip.Region = ScreenTacticalRect;
-		ToolTips->Remove(500);
-		ToolTips->Add(&tooltip);
+		ToolTips->Replace(&tooltip);
 	}
 
 	/*
@@ -698,13 +702,13 @@ Cell DisplayClass::Set_Cursor_Pos(Cell const & xpos)
 	if (pos == CELL_NONE) {
 		Point2D tl = TacticalRect.TopLeft;
 		if (ScreenTacticalRect.Is_Point_Within(MouseCursor->Get_Mouse_Point())) {
-			Point2D mouse = tl + Screen_To_View_Offset(MouseCursor->Get_Mouse_Point() - ScreenTacticalRect.TopLeft);
+			Point2D mouse = tl + Screen_To_View_Point(MouseCursor->Get_Mouse_Point());
 			Cell click = Map.Click_Cell_Calc(mouse);
 			if (click != CELL_NONE) {
 				pos = click;
 			}
 		} else {
-			Point2D mouse = Screen_To_View_Offset(MouseCursor->Get_Mouse_Point() - ScreenTacticalRect.TopLeft);
+			Point2D mouse = Screen_To_View_Point(MouseCursor->Get_Mouse_Point());
 			pos = TacticalMap->Pixel_To_Cell(mouse);
 		}
 
@@ -1228,6 +1232,14 @@ ObjectClass * DisplayClass::Cell_Object(Cell const & cell, Point2D const & point
 }
 
 
+// gamemd's TechnoClass::CanBeSelectedNow (0x6FC030) refuses a slave owned by a Slave Miner. Its callers are
+// MapClass::NextObject (0x4AA2B0), DisplayClass::Prev_Object (0x4AA380) and the rubber band callback (0x4AC2B0).
+static bool Is_Slave_Object(ObjectClass const * object)
+{
+	return(object->Is_Techno() && ((TechnoClass const *)object)->SlaveOwner != NULL);
+}
+
+
 /***********************************************************************************************
  * DisplayClass::Next_Object -- Searches for next object on display.                           *
  *                                                                                             *
@@ -1266,7 +1278,7 @@ ObjectClass * DisplayClass::Next_Object(ObjectClass * object) const
 			/*
 			**	Verify that the object can be selected by and is owned by the player.
 			*/
-			if (obj != NULL && obj->Is_Players_Army()) {
+			if (obj != NULL && obj->Is_Players_Army() && !Is_Slave_Object(obj)) {
 				if (firstobj == NULL) firstobj = obj;
 				if (foundmatch) return(obj);
 				if (object == obj) foundmatch = true;
@@ -1315,7 +1327,7 @@ ObjectClass * DisplayClass::Prev_Object(ObjectClass * object)  const
 			/*
 			**	Verify that the object can be selected by and is owned by the player.
 			*/
-			if (obj != NULL && obj->Is_Players_Army()) {
+			if (obj != NULL && obj->Is_Players_Army() && !Is_Slave_Object(obj)) {
 				if (firstobj == NULL) firstobj = obj;
 				if (foundmatch) return(obj);
 				if (object == obj) foundmatch = true;
@@ -1653,7 +1665,7 @@ int DisplayClass::TacticalClass::Action(unsigned flags, KeyNumType & key)
 	TacticalMap->Pixel_To_Coord(pixel);
 	Cell cell;
 
-	pixel = Screen_To_View_Offset(pixel - ScreenTacticalRect.Top_Left());
+	pixel = Screen_To_View_Point(pixel);
 
 	Map.Resolve_Point(pixel, cell, coord, object, fog, shadow);
 
@@ -1855,6 +1867,179 @@ static MouseType Super_Weapon_Mouse(ActionType action)
 		return(SuperWeaponTypes[Map.IsTargettingMode]->Mouse_For(action, stock));
 	}
 	return(stock);
+/*
+ * Whether the action is one of the waypoint actions that show MOUSE_DISALLOWED, over shadowed
+ * terrain or in view.
+ */
+static bool Is_Disallowed_Waypoint_Action(ActionType action)
+{
+	switch (action) {
+		case ACTION_TOTE:
+		case ACTION_HEAL:
+		case ACTION_TOGGLE_POWER:
+		case ACTION_NO_TOGGLE_POWER:
+		case ACTION_PLACE_WAYPOINT:
+		case ACTION_NO_PLACE_WAYPOINT:
+		case ACTION_ENTER_WAYPOINT_MODE:
+		case ACTION_FOLLOW_WAYPOINT:
+		case ACTION_SELECT_WAYPOINT:
+		case ACTION_LOOP_WAYPOINT_PATH:
+		case ACTION_ATTACK_WAYPOINT:
+		case ACTION_ENTER_WAYPOINT:
+		case ACTION_PATROL_WAYPOINT:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+/*
+ * The cursor for an action over a visible cell. An action that leaves the cursor as it was gives no value.
+ */
+static std::optional<MouseType> Visible_Cursor_For_Action(ActionType action, AbstractClass * target, ObjectClass const * object)
+{
+	if (Is_Disallowed_Waypoint_Action(action)) {
+		return(MOUSE_DISALLOWED);
+	}
+
+	switch (action) {
+		case ACTION_MOVE:
+		case ACTION_RALLY_TO_POINT:
+			return(Type_Cursor(MOUSE_CAN_MOVE, action, object));
+
+		case ACTION_NOMOVE:
+			return(Type_Cursor(MOUSE_NO_MOVE, action, object));
+
+		case ACTION_ENTER:
+		case ACTION_CAPTURE:
+		case ACTION_ENTER_TUNNEL:
+			return(Type_Cursor(MOUSE_ENTER, action, object));
+
+		case ACTION_SELF:
+			return(Type_Cursor(MOUSE_DEPLOY, action, object));
+
+		case ACTION_ATTACK:
+			if (target != NULL && CurrentObject.Count() == 1 && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->In_Range(target, 0)) {
+				return(Weapon_Cursor(MOUSE_STAY_ATTACK, true, target));
+			}
+			return(Weapon_Cursor(MOUSE_CAN_ATTACK, false, target));
+
+		case ACTION_HARVEST:
+			return(MOUSE_CAN_ATTACK);
+
+		case ACTION_TOGGLE_SELECT:
+		case ACTION_SELECT:
+			return(MOUSE_CAN_SELECT);
+
+		case ACTION_REPAIR:
+			return(MOUSE_REPAIR);
+
+		case ACTION_SELL:
+			return(MOUSE_SELL_BACK);
+
+		case ACTION_SELL_UNIT:
+			return(MOUSE_SELL_UNIT);
+
+		case ACTION_NO_SELL:
+			return(MOUSE_NO_SELL_BACK);
+
+		case ACTION_NO_REPAIR:
+		case ACTION_NO_GREPAIR:
+			return(MOUSE_NO_REPAIR);
+
+		case ACTION_SABOTAGE:
+		case ACTION_DEMOLISH:
+			return(MOUSE_DEMOLITIONS);
+
+		case ACTION_AIR_STRIKE:
+			return(MOUSE_AIR_STRIKE);
+
+		case ACTION_IVAN_BOMB:
+			return(MOUSE_IVAN_BOMB);
+
+		case ACTION_NO_IVAN_BOMB:
+			return(MOUSE_NO_MOVE);
+
+		case ACTION_DISARM_BOMB:
+			return(MOUSE_DISARM);
+
+		case ACTION_DETONATE:
+			return(MOUSE_DEMOLITIONS);
+
+		case ACTION_NUKE_BOMB:
+			return(MOUSE_NUCLEAR_BOMB);
+
+		case ACTION_GUARD_AREA:
+			return(MOUSE_AREA_GUARD);
+
+		case ACTION_DAMAGE:
+			// Yuri's Revenge leaves the cursor as it was.
+			return(std::nullopt);
+
+		case ACTION_GREPAIR:
+			return(MOUSE_GREPAIR);
+
+		case ACTION_NO_DEPLOY:
+			return(Type_Cursor(MOUSE_NO_DEPLOY, action, object));
+
+		case ACTION_NO_ENTER:
+			return(Type_Cursor(MOUSE_NO_ENTER, action, object));
+
+		default:
+			return(Super_Weapon_Mouse(action));
+	}
+}
+
+
+/*
+ * The cursor for an action over shadowed terrain. Most actions show the plain or a restricted
+ * cursor, so the terrain stays a mystery.
+ */
+static MouseType Shadowed_Cursor_For_Action(ActionType action)
+{
+	if (Is_Disallowed_Waypoint_Action(action)) {
+		return(MOUSE_DISALLOWED);
+	}
+
+	switch (action) {
+		case ACTION_MOVE:
+		case ACTION_ATTACK:
+			return(MOUSE_CAN_MOVE);
+
+		case ACTION_NOMOVE:
+			if (CurrentObject.Count() && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->TClass->IsMoveToShroud) {
+				return(MOUSE_CAN_MOVE);
+			}
+			return(MOUSE_NO_MOVE);
+
+		case ACTION_NO_SELL:
+		case ACTION_SELL:
+		case ACTION_SELL_UNIT:
+			return(MOUSE_NO_SELL_BACK);
+
+		case ACTION_NO_GREPAIR:
+		case ACTION_NO_REPAIR:
+		case ACTION_REPAIR:
+			return(MOUSE_NO_REPAIR);
+
+		case ACTION_NUKE_BOMB:
+			return(MOUSE_NUCLEAR_BOMB);
+
+		case ACTION_GUARD_AREA:
+			return(MOUSE_AREA_GUARD);
+
+		case ACTION_NO_DEPLOY:
+			return(MOUSE_NO_DEPLOY);
+
+		case ACTION_NO_ENTER:
+		case ACTION_NO_ENTER_TUNNEL:
+			return(MOUSE_NO_ENTER);
+
+		default:
+			return(Super_Weapon_Mouse(action));
+	}
 }
 
 
@@ -1946,225 +2131,48 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 	}
 
 	/*
-	**	Don't allow selection of an object that is located in shadowed terrain.
-	**	In fact, just show the normal move cursor in order to keep the shadowed
-	**	terrain a mystery.
-	*/
-	/*
 	**	Pick the cursor for the action, as Yuri's Revenge does (DisplayClass::ConvertAction,
 	**	0x4AAE90). Under the shroud, most actions show the plain cursor and an attack shows
 	**	the move cursor, to keep the shrouded ground a mystery.
 	*/
-	if (shadow) {
-		switch (waypoint_action) {
-			case ACTION_MOVE:
-			case ACTION_ATTACK:
-				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
-				break;
-
-			case ACTION_NOMOVE:
-				if (CurrentObject.Count() && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->TClass->IsMoveToShroud) {
-					Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
-					break;
-				}
-				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
-				break;
-
-			case ACTION_NO_SELL:
-			case ACTION_SELL:
-			case ACTION_SELL_UNIT:
-				Set_Default_Mouse(MOUSE_NO_SELL_BACK, wsmall);
-				break;
-
-			case ACTION_NO_GREPAIR:
-			case ACTION_NO_REPAIR:
-			case ACTION_REPAIR:
-				Set_Default_Mouse(MOUSE_NO_REPAIR, wsmall);
-				break;
-
-			case ACTION_NUKE_BOMB:
-				Set_Default_Mouse(MOUSE_NUCLEAR_BOMB, wsmall);
-				break;
-
-			case ACTION_GUARD_AREA:
-				Set_Default_Mouse(MOUSE_AREA_GUARD, wsmall);
-				break;
-
-			case ACTION_NO_DEPLOY:
-				Set_Default_Mouse(MOUSE_NO_DEPLOY, wsmall);
-				break;
-
-			case ACTION_NO_ENTER:
-			case ACTION_NO_ENTER_TUNNEL:
-				Set_Default_Mouse(MOUSE_NO_ENTER, wsmall);
-				break;
-
-			case ACTION_TOTE:
-			case ACTION_HEAL:
-			case ACTION_TOGGLE_POWER:
-			case ACTION_NO_TOGGLE_POWER:
-			case ACTION_PLACE_WAYPOINT:
-			case ACTION_NO_PLACE_WAYPOINT:
-			case ACTION_ENTER_WAYPOINT_MODE:
-			case ACTION_FOLLOW_WAYPOINT:
-			case ACTION_SELECT_WAYPOINT:
-			case ACTION_LOOP_WAYPOINT_PATH:
-			case ACTION_ATTACK_WAYPOINT:
-			case ACTION_ENTER_WAYPOINT:
-			case ACTION_PATROL_WAYPOINT:
-				Set_Default_Mouse(MOUSE_DISALLOWED, wsmall);
-				break;
-
-			default:
-				Set_Default_Mouse(Super_Weapon_Mouse(waypoint_action), wsmall);
-				break;
-		}
+	// An attack-move under the mouse shows MOUSE_CAN_ATTACK_2 over ground and over an object, shrouded or not. gamemd's ConvertAction
+	// (0x4AAE90) maps a move or an attack to 0x3E or 0x3F while FUN_00731BF0 holds (the arm, or Ctrl with Shift), and both show cursor 71.
+	if ((waypoint_action == ACTION_MOVE || waypoint_action == ACTION_ATTACK) && Attack_Move_Pending()) {
+		Set_Default_Mouse(MOUSE_CAN_ATTACK_2, wsmall);
+	} else if (shadow) {
+		Set_Default_Mouse(Shadowed_Cursor_For_Action(waypoint_action), wsmall);
 	} else {
 
 		/*
 		**	Change the mouse shape according to the default action that will occur
 		**	if the mouse button were clicked at this location.
 		*/
-		switch (waypoint_action) {
-			case ACTION_MOVE:
-				// An armed or held attack-move shows the attack cursor over open ground, where its click gives the order.
-				if (object == NULL && (AttackMoveArmed || Attack_Move_Key_Held())) {
-					Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
-					break;
-				}
-				Set_Default_Mouse(Type_Cursor(MOUSE_CAN_MOVE, waypoint_action, object), wsmall);
-				break;
-
-			case ACTION_RALLY_TO_POINT:
-				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
-				break;
-
-			case ACTION_NOMOVE:
-				Set_Default_Mouse(Type_Cursor(MOUSE_NO_MOVE, waypoint_action, object), wsmall);
-				break;
-
-			case ACTION_ENTER:
-			case ACTION_CAPTURE:
-			case ACTION_ENTER_TUNNEL:
-				Set_Default_Mouse(Type_Cursor(MOUSE_ENTER, waypoint_action, object), wsmall);
-				break;
-
-			case ACTION_SELF:
-				Set_Default_Mouse(Type_Cursor(MOUSE_DEPLOY, waypoint_action, object), wsmall);
-				break;
-
-			case ACTION_ATTACK:
-				if (target != NULL && CurrentObject.Count() == 1 && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->In_Range(target, 0)) {
-					Set_Default_Mouse(Weapon_Cursor(MOUSE_STAY_ATTACK, true, target), wsmall);
-					break;
-				}
-				Set_Default_Mouse(Weapon_Cursor(MOUSE_CAN_ATTACK, false, target), wsmall);
-				break;
-
-			case ACTION_HARVEST:
-				Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
-				break;
-
-			case ACTION_TOGGLE_SELECT:
-			case ACTION_SELECT:
-				Set_Default_Mouse(MOUSE_CAN_SELECT, wsmall);
-				break;
-
-			case ACTION_REPAIR:
-				Set_Default_Mouse(MOUSE_REPAIR, wsmall);
-				break;
-
-			case ACTION_SELL:
-				Set_Default_Mouse(MOUSE_SELL_BACK, wsmall);
-				break;
-
-			case ACTION_SELL_UNIT:
-				Set_Default_Mouse(MOUSE_SELL_UNIT, wsmall);
-				break;
-
-			case ACTION_NO_SELL:
-				Set_Default_Mouse(MOUSE_NO_SELL_BACK, wsmall);
-				break;
-
-			case ACTION_NO_REPAIR:
-			case ACTION_NO_GREPAIR:
-				Set_Default_Mouse(MOUSE_NO_REPAIR, wsmall);
-				break;
-
-			case ACTION_SABOTAGE:
-			case ACTION_DEMOLISH:
-				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
-				break;
-
-			case ACTION_AIR_STRIKE:
-				Set_Default_Mouse(MOUSE_AIR_STRIKE, wsmall);
-				break;
-
-			case ACTION_IVAN_BOMB:
-				Set_Default_Mouse(MOUSE_IVAN_BOMB, wsmall);
-				break;
-
-			case ACTION_NO_IVAN_BOMB:
-				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
-				break;
-
-			case ACTION_DISARM_BOMB:
-				Set_Default_Mouse(MOUSE_DISARM, wsmall);
-				break;
-
-			case ACTION_DETONATE:
-				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
-				break;
-
-			case ACTION_NUKE_BOMB:
-				Set_Default_Mouse(MOUSE_NUCLEAR_BOMB, wsmall);
-				break;
-
-			case ACTION_GUARD_AREA:
-				Set_Default_Mouse(MOUSE_AREA_GUARD, wsmall);
-				break;
-
-			case ACTION_DAMAGE:
-				// Yuri's Revenge leaves the cursor as it was.
-				break;
-
-			case ACTION_GREPAIR:
-				Set_Default_Mouse(MOUSE_GREPAIR, wsmall);
-				break;
-
-			case ACTION_NO_DEPLOY:
-				Set_Default_Mouse(Type_Cursor(MOUSE_NO_DEPLOY, waypoint_action, object), wsmall);
-				break;
-
-			case ACTION_NO_ENTER:
-				Set_Default_Mouse(Type_Cursor(MOUSE_NO_ENTER, waypoint_action, object), wsmall);
-				break;
-
-			case ACTION_TOTE:
-			case ACTION_HEAL:
-			case ACTION_TOGGLE_POWER:
-			case ACTION_NO_TOGGLE_POWER:
-			case ACTION_PLACE_WAYPOINT:
-			case ACTION_NO_PLACE_WAYPOINT:
-			case ACTION_ENTER_WAYPOINT_MODE:
-			case ACTION_FOLLOW_WAYPOINT:
-			case ACTION_SELECT_WAYPOINT:
-			case ACTION_LOOP_WAYPOINT_PATH:
-			case ACTION_ATTACK_WAYPOINT:
-			case ACTION_ENTER_WAYPOINT:
-			case ACTION_PATROL_WAYPOINT:
-				Set_Default_Mouse(MOUSE_DISALLOWED, wsmall);
-				break;
-
-			default:
-				Set_Default_Mouse(Super_Weapon_Mouse(waypoint_action), wsmall);
-				break;
+		std::optional<MouseType> const visible_mouse = Visible_Cursor_For_Action(waypoint_action, target, object);
+		if (visible_mouse.has_value()) {
+			Set_Default_Mouse(visible_mouse.value(), wsmall);
 		}
 	}
 }
 
 
 void Bandbox_Selection_Callback(ObjectClass *object);
+
+/// <summary>
+/// Gives the part of the tactical view that the modern build panel covers, in view coordinates.
+/// A rubber band passes over this area without selecting what is drawn under it.
+/// </summary>
+/// <returns>The panel's rectangle, or an empty rectangle in the classic layout, whose sidebar
+/// is outside the view.</returns>
+static Rect Modern_Panel_View_Rect(void)
+{
+	if (!Modern_Interface()) {
+		return(Rect(0, 0, 0, 0));
+	}
+	Rect const panel = Hud_Layout().Panel;
+	Point2D const top_left = Screen_To_View_Point(Point2D(panel.X, panel.Y));
+	Point2D const bottom_right = Screen_To_View_Point(Point2D(panel.X + panel.Width, panel.Y + panel.Height));
+	return(Rect(top_left.X, top_left.Y, bottom_right.X - top_left.X, bottom_right.Y - top_left.Y));
+}
 
 /***********************************************************************************************
  * DisplayClass::Mouse_Left_Release -- Handles the left mouse button release.                  *
@@ -2207,6 +2215,17 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 			AttackMoveOrdering = false;
 		}
 	} attack_move_scope;
+
+	// A replay is watched, not played: a click selects and inspects, and places, sells, repairs and targets nothing.
+	if (Replay_Is_Playing()) {
+		if (PendingObjectPtr || IsPlaceBeaconMode) {
+			IsTentative = false;
+			return;
+		}
+		if (action != ACTION_SELECT && action != ACTION_TOGGLE_SELECT && action != ACTION_NONE) {
+			action = ACTION_NONE;
+		}
+	}
 
 	if (object != NULL && ScenarioActive && GameActive && !Debug_Map && object->Visual_Character() == VISUAL_HIDDEN) {
 		object = NULL;
@@ -2268,7 +2287,8 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 				Unselect_All();
 			}
 
-			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback);
+			Rect const panel = Modern_Panel_View_Rect();
+			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback, panel.Is_Valid() ? &panel : NULL);
 			TechnoClass::Reset_Action_Line_Timer();
 
 			IsRubberBand = false;
@@ -2423,7 +2443,8 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 /// Selects an object that the rubber band has caught.
 /// This routine is handed to the tactical map's rubber band scan so that it is called for
 /// every object inside the band. Only the player's own selectable objects are taken, and
-/// buildings are passed over unless they are of the sort that can undeploy into a unit.
+/// buildings are passed over unless they are of the sort that can undeploy into a unit. A slave
+/// owned by a Slave Miner is passed over too, as gamemd's rubber band callback (0x4AC2B0) refuses it.
 /// </summary>
 /// <param name="object">The object that the rubber band has caught.</param>
 void Bandbox_Selection_Callback(ObjectClass *object)
@@ -2431,7 +2452,7 @@ void Bandbox_Selection_Callback(ObjectClass *object)
 	HouseClass *house = object->Owner_HouseClass();
 	BuildingClass *bptr = object->RTTI == RTTI_BUILDING ? (BuildingClass *)object : NULL;
 
-	if (house != NULL && house->Is_Player_Control()) {
+	if (house != NULL && house->Is_Player_Control() && !Is_Slave_Object(object)) {
 		if (object->Class_Of()->IsSelectable) {
 			bool selectable = false;
 			if (bptr != NULL) {
@@ -2518,6 +2539,7 @@ void DisplayClass::Mouse_Left_Held(Point2D const & point)
 	if (IsRubberBand && !IsWaypointMode) {
 		Rect rect = TacticalRect;
 		Point2D npoint = point;
+
 		int x = Bound2(npoint.X, 0, rect.Width);
 		int y = Bound2(npoint.Y, 0, rect.Height);
 		npoint.X = x;
@@ -2726,6 +2748,28 @@ namespace {
 }
 
 
+/*
+ * The state that a mode control call selects: 0 turns the mode off, 1 turns it on and -1 toggles it.
+ * Any other control keeps the current state.
+ */
+static bool Resolve_Mode(int control, bool current)
+{
+	switch (control) {
+		case 0:
+			return(false);
+
+		case -1:
+			return(current == false);
+
+		case 1:
+			return(true);
+
+		default:
+			return(current);
+	}
+}
+
+
 /// <summary>
 /// Turns planning mode on or off.
 /// Turning it on cancels the repair, sell, power and waypoint modes and keeps the selection.
@@ -2739,21 +2783,7 @@ namespace {
 /// (see HouseClass::Is_Watching).</remarks>
 void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 {
-	bool mode = IsPlanningMode;
-	switch (control) {
-		case 0:
-			mode = false;
-			break;
-
-		case -1:
-			mode = (mode == false);
-			break;
-
-		case 1:
-			mode = true;
-			break;
-	}
-
+	bool const mode = Resolve_Mode(control, IsPlanningMode);
 	if (mode == IsPlanningMode) {
 		return;
 	}
@@ -2774,12 +2804,7 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 	if (PendingObject || PlayerPtr->Is_Watching()) {
 		return;
 	}
-	IsRepairMode = false;
-	IsSellMode = false;
-	IsPowerMode = false;
-	if (IsWaypointMode) {
-		Waypoint_Mode_Control(0);
-	}
+	Cancel_Other_Modes();
 	IsPlanningMode = true;
 	PlanningHoldKey = hold_key;
 	Revert_Mouse_Shape();
@@ -2832,21 +2857,7 @@ void DisplayClass::Reset_Planning_Mode(void)
 /// <param name="control">The mode to set. Zero turns the mode off, one turns it on, and -1 toggles it.</param>
 void DisplayClass::Place_Beacon_Mode_Control(int control)
 {
-	bool mode = IsPlaceBeaconMode;
-	switch (control) {
-		case 0:
-			mode = false;
-			break;
-
-		case -1:
-			mode = (mode == false);
-			break;
-
-		case 1:
-			mode = true;
-			break;
-	}
-
+	bool const mode = Resolve_Mode(control, IsPlaceBeaconMode);
 	if (mode == IsPlaceBeaconMode) {
 		return;
 	}
@@ -2860,15 +2871,35 @@ void DisplayClass::Place_Beacon_Mode_Control(int control)
 	if (PendingObject || !Beacons.Is_Available() || PlayerPtr->Is_Watching() || !Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
 		return;
 	}
+	Cancel_Other_Modes();
+	Unselect_All();
+	IsPlaceBeaconMode = true;
+	Revert_Mouse_Shape();
+}
+
+
+// Turns off the power, waypoint, repair and sell modes, and beacon placement when with_beacon is true.
+void DisplayClass::Cancel_Order_Modes(bool with_beacon)
+{
+	Power_Mode_Control(0);
+	Waypoint_Mode_Control(0);
+	Repair_Mode_Control(0);
+	Sell_Mode_Control(0);
+	if (with_beacon) {
+		Place_Beacon_Mode_Control(0);
+	}
+}
+
+
+// Clears the repair, sell and power flags directly and cancels waypoint mode, for a mode that is about to turn on.
+void DisplayClass::Cancel_Other_Modes(void)
+{
 	IsRepairMode = false;
 	IsSellMode = false;
 	IsPowerMode = false;
 	if (IsWaypointMode) {
 		Waypoint_Mode_Control(0);
 	}
-	Unselect_All();
-	IsPlaceBeaconMode = true;
-	Revert_Mouse_Shape();
 }
 
 
@@ -3869,7 +3900,7 @@ char const * DisplayClass::Help_Text(int id)
 	ObjectClass * object;
 	bool fog, shadow;
 
-	Map.Resolve_Point(Screen_To_View_Offset(Get_Mouse_Point() - ScreenTacticalRect.TopLeft), cell, coord, object, fog, shadow);
+	Map.Resolve_Point(Screen_To_View_Point(Get_Mouse_Point()), cell, coord, object, fog, shadow);
 
 	/*
 	**	Give a generic help message when over shadow terrain.
@@ -4067,6 +4098,11 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		return;
 	}
 
+	// A replay runs the orders it recorded. A click on the map selects and inspects but gives no order.
+	if (Replay_Is_Playing()) {
+		return;
+	}
+
 	// Planning mode refuses the whole order when a selected object cannot take a plan (gamemd's FUN_0063A5A0, path B),
 	// or when the selection would take the house past its planned unit limit (CanCreatePlanningNode, 0x639130).
 	if (IsPlanningMode) {
@@ -4089,6 +4125,17 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 	if (waypoint != NULL) {
 		PlayerPtr->Fetch_Waypoint_Data(waypoint, waypoint_path, waypoint_id);
 	}
+
+	// An attack on a waypoint is an attack on its path: the path starts at its first waypoint, so the legs before the attack run first.
+	if (waypoint_path != PATH_NONE && action == ACTION_ATTACK && !IsPlanningMode && Rule->WaypointAttackFromFirst && PlayerPtr->Paths[waypoint_path]->Waypoint_Count() > 0) {
+		cell = PlayerPtr->Paths[waypoint_path]->Get_Waypoint(0)->Location.As_Cell();
+		waypoint_id = 0;
+		object = NULL;
+		action = ACTION_MOVE;
+	}
+
+	// Only the first selected object answers the order, whichever object is handled first (gamemd clears MoveFeedback after the first of the selection).
+	VoiceSpeaker = CurrentObject.Count() > 0 ? CurrentObject[0] : NULL;
 
 	for (index = 0; index < CurrentObject.Count(); index++) {
 		// A planning click leaves each unit's house waypoint path alone.
@@ -4274,6 +4321,7 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		}
 	}
 	AllowVoice = true;
+	VoiceSpeaker = NULL;
 }
 
 

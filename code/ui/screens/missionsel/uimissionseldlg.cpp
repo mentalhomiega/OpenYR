@@ -19,15 +19,17 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "diff.hh"
-#include "gamedlg.h"
 #include "globals.h"
+#include "goptions.h"
 #include "init.h"
 #include "options.h"
+#include "scenario.h"
 #include "ui/screens/missionsel/uimissionsel.h"
 #include "ui/uienginehost.h"
 #include "ui/uiview.h"
 
 #include <cstring>
+#include <optional>
 #include <utility>
 
 
@@ -38,8 +40,9 @@ namespace
 std::string Mission_Name(CCINIClass const & missions, char const * map)
 {
 	std::string const label = missions.Get_String(map, "UIName");
-	if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-		return(StringTable.Find_UTF8(label.c_str()));
+	std::optional<std::string> const name = Mission_UI_Text(label);
+	if (name.has_value()) {
+		return(*name);
 	}
 	return(map);
 }
@@ -49,7 +52,7 @@ std::string Mission_Name(CCINIClass const & missions, char const * map)
 // "Player House" rather than a side. The campaign's map name is upper case.
 bool Mission_Is_Soviet(char const * map)
 {
-	return(std::strncmp(map, "SOV", 3) == 0);
+	return(Campaign_Side_Of_Map(map) == CAMPAIGN_SIDE_SOVIET);
 }
 
 
@@ -63,9 +66,7 @@ UIMissionSelState Mission_Select_State(int difficulty)
 	UIMissionSelState state;
 	state.Title = "Mission Select (testing)";
 
-	for (int index = 0; index < OptionsClass::MAX_DIFFICULTY_SETTING; index++) {
-		state.DifficultyNames.push_back(Fetch_String(GameDifficultyNames[index]));
-	}
+	state.DifficultyNames = UI_Difficulty_Names();
 	state.Difficulty = difficulty;
 
 	CCINIClass missions;
@@ -87,7 +88,7 @@ UIMissionSelState Mission_Select_State(int difficulty)
 
 		CampaignType const type = CampaignClass::From_Name(name);
 		CampaignClass * campaign = (type == CAMPAIGN_NONE) ? nullptr : Campaigns[type];
-		if (campaign == nullptr || !Campaign_Is_Mission_File(campaign->ScenarioName) || !Campaign_Available(campaign)) {
+		if (!Campaign_Is_Offered(campaign)) {
 			continue;
 		}
 
@@ -137,6 +138,6 @@ std::optional<UIMissionEntry> UI_Mission_Select_Dialog(int difficulty)
 
 	Options.Difficulty = presenter.State.Difficulty;
 	DebugString("Mission select: %s at difficulty %d, with the computers at %d\n",
-		presenter.Picked->Map.c_str(), Options.Difficulty, (int)DIFF_COUNT - 1 - Options.Difficulty);
+		presenter.Picked->Map.c_str(), Options.Difficulty, Opposite_Difficulty(Options.Difficulty));
 	return(presenter.Picked);
 }

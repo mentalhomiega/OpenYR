@@ -1,0 +1,18 @@
+; A finished Pillbox (GAPILL) pending placement draws its range ring around the cursor cell, as the placement
+; ring does, with one Pillbox already standing beside the cursor so the nearest-structure ring draws too.
+; Run: scripts/run_autotest.ps1 -Script src-agent22/tests/autotest/defense-range-reticle.txt -Build agent22 -Filter "AUTOTEST|Exception"
+20 command CenterBase
+30 own GACNST 50 30
+31 own GAPOWR 56 40
+32 own GAPILE 56 46
+33 own GAWEAP 62 46
+34 own GAPILL 58 40
+35 view 57 40
+40 produce GAPILL
+600 cameopress GAPILL left
+610 cellpixel 58 40
+612 windowmove 300 260
+620 placement
+625 where GAPILL
+630 command ScreenCapture
+640 quit

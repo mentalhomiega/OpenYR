@@ -8,11 +8,13 @@
  ******************************************************************************/
 
 #include "inicheck.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <utility>
@@ -88,57 +90,30 @@ bool Is_Blank(char letter)
 }
 
 
-std::string_view Trim(std::string_view text)
-{
-	while (!text.empty() && Is_Blank(text.front())) {
-		text.remove_prefix(1);
-	}
-	while (!text.empty() && Is_Blank(text.back())) {
-		text.remove_suffix(1);
-	}
-	return(text);
-}
-
-
-std::string Lower(std::string_view text)
-{
-	std::string result(text);
-	for (char & letter : result) {
-		letter = (char)std::tolower((unsigned char)letter);
-	}
-	return(result);
-}
-
-
-std::vector<std::string> Split(std::string_view text, char separator)
-{
-	std::vector<std::string> parts;
-	std::size_t start = 0;
-	while (true) {
-		std::size_t const end = text.find(separator, start);
-		parts.emplace_back(text.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start));
-		if (end == std::string_view::npos) {
-			break;
-		}
-		start = end + 1;
-	}
-	return(parts);
-}
+// The bytes Is_Blank accepts: NUL, the control characters and space.
+constexpr char BLANK_BYTES[] = "\0\1\2\3\4\5\6\7\10\11\12\13\14\15\16\17\20\21\22\23\24\25\26\27\30\31\32\33\34\35\36\37 ";
+constexpr std::string_view BLANKS(BLANK_BYTES, sizeof(BLANK_BYTES) - 1);
 
 
 // The engine reads a whole number with atoi unless the value starts with '$' or ends with 'h',
-// which both read as hexadecimal.
-bool Integer_Fits(std::string const & value)
+// which both read as hexadecimal. The result is empty when the value holds no number.
+std::optional<int> Parse_Whole_Number(std::string const & value)
 {
 	if (value.empty()) {
-		return(false);
+		return(std::nullopt);
 	}
-	unsigned int hex = 0;
+	int number = 0;
 	if (value[0] == '$') {
-		return(std::sscanf(value.c_str(), "$%x", &hex) == 1);
+		if (std::sscanf(value.c_str(), "$%x", &number) != 1) {
+			return(std::nullopt);
+		}
+		return(number);
 	}
 	if (std::tolower((unsigned char)value.back()) == 'h') {
-		return(std::sscanf(value.c_str(), "%xh", &hex) == 1);
+		if (std::sscanf(value.c_str(), "%xh", &number) != 1) {
+			return(std::nullopt);
+		}
+		return(number);
 	}
 	std::size_t index = 0;
 	while (index < value.size() && std::isspace((unsigned char)value[index])) {
@@ -147,7 +122,16 @@ bool Integer_Fits(std::string const & value)
 	if (index < value.size() && (value[index] == '+' || value[index] == '-')) {
 		index++;
 	}
-	return(index < value.size() && std::isdigit((unsigned char)value[index]));
+	if (index >= value.size() || !std::isdigit((unsigned char)value[index])) {
+		return(std::nullopt);
+	}
+	return(std::atoi(value.c_str()));
+}
+
+
+bool Integer_Fits(std::string const & value)
+{
+	return(Parse_Whole_Number(value).has_value());
 }
 
 
@@ -253,7 +237,7 @@ std::vector<Section> Parse(std::string_view text)
 			line.remove_suffix(1);
 		}
 
-		std::string_view const lead = Trim(line);
+		std::string_view const lead = Trim_Chars(line, BLANKS);
 		if (!lead.empty() && lead.front() == '[' && lead.find(']') != std::string_view::npos) {
 			std::string const name(lead.substr(1, lead.find(']') - 1));
 			auto found = index.find(name);
@@ -276,8 +260,8 @@ std::vector<Section> Parse(std::string_view text)
 		if (divider == std::string_view::npos) {
 			continue;
 		}
-		std::string_view const key = Trim(line.substr(0, divider));
-		std::string_view const value = Trim(line.substr(divider + 1));
+		std::string_view const key = Trim_Chars(line.substr(0, divider), BLANKS);
+		std::string_view const value = Trim_Chars(line.substr(divider + 1), BLANKS);
 		if (key.empty() || value.empty()) {
 			continue;
 		}
@@ -369,8 +353,8 @@ bool Value_Fits(ValueKind kind, std::string_view text)
 			return(Whole_Numbers_Fit(value, 3));
 
 		case ValueKind::INTEGER_LIST:
-			for (std::string const & part : Split(value, ',')) {
-				if (!Integer_Fits(std::string(Trim(part)))) {
+			for (std::string const & part : Split_Parts(value, ',')) {
+				if (!Integer_Fits(std::string(Trim_Chars(part, BLANKS)))) {
 					return(false);
 				}
 			}
@@ -404,7 +388,7 @@ bool Catalog::Load(std::istream & in, std::string & error)
 		if (line.empty() || line[0] == '#') {
 			continue;
 		}
-		std::vector<std::string> const fields = Split(line, '\t');
+		std::vector<std::string> const fields = Split_Parts(line, '\t');
 		if (fields.size() != 5 || fields[0].empty() || fields[2].empty()) {
 			error = "line " + std::to_string(line_number) + " does not hold five tab separated fields";
 			return(false);
@@ -413,9 +397,8 @@ bool Catalog::Load(std::istream & in, std::string & error)
 		scope.File = fields[1];
 		scope.Section = fields[2] == "*" ? std::string() : fields[2];
 		if (!fields[3].empty()) {
-			scope.AppliesTo = Split(fields[3], ',');
+			scope.AppliesTo = Split_Parts(fields[3], ',');
 		}
-		scope.ValueType = fields[4];
 		scope.Kind = Kind_From_Name(fields[4]);
 		Add(fields[0], std::move(scope));
 	}
@@ -593,7 +576,7 @@ static void Follow_References(std::vector<Section> const & sections, KindMap & k
 			for (Entry const & entry : section.Entries) {
 				for (Reference const & reference : RULES_REFERENCES) {
 					bool from = false;
-					for (std::string const & type : Split(reference.From, ',')) {
+					for (std::string const & type : Split_Parts(reference.From, ',')) {
 						from = from || kind->second.contains(type);
 					}
 					if (from && Names_Key(reference.Key, entry.Key) && !kinds[entry.Value].contains(reference.Kind)) {
@@ -816,18 +799,10 @@ Report Check_Art(Catalog const & catalog, std::string_view text, std::string_vie
 
 
 // Reads a whole number as INIClass::Get_Int does: '$' or a trailing 'h' marks hexadecimal, and
-// anything else reads as atoi does.
+// anything else reads as atoi does. A value without a number reads as 0.
 static int Read_Whole_Number(std::string const & value)
 {
-	int number = 0;
-	if (!value.empty() && value[0] == '$') {
-		std::sscanf(value.c_str(), "$%x", &number);
-	} else if (!value.empty() && std::tolower((unsigned char)value.back()) == 'h') {
-		std::sscanf(value.c_str(), "%xh", &number);
-	} else {
-		number = std::atoi(value.c_str());
-	}
-	return(number);
+	return(Parse_Whole_Number(value).value_or(0));
 }
 
 

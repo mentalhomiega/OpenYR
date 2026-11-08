@@ -50,7 +50,6 @@ class PowerClass : public RadarClass
 		virtual void One_Time(void) override;							// One-time inits
 
 		virtual void Init_Clear(void) override;						// Clears all to known state
-		virtual void Draw_It(bool complete=false) override;
 		virtual void AI(KeyNumType &input, Point2D const & xy) override;
 		void Flash_Power(void);
 

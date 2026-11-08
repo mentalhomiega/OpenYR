@@ -30,6 +30,7 @@
 #include "msgbox.h"
 #include "newmenu.h"
 #include "sdl/sdlwindow.h"
+#include "shellmap.h"
 #include "sidebar.h"
 #include "sounddlg.h"
 #include "stimer.h"
@@ -50,7 +51,6 @@
 
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
-static bool Try_Display_Mode(UIDisplayMode const & picked, float scale);
 static void Draw_Display_Backdrop(void);
 static bool Classic_Options_Page(void);
 
@@ -226,9 +226,7 @@ bool Change_Display_Mode(int width, int height)
 		Main_Window_Resize(width, height);
 	}
 
-	Rect temp = Tactical_View_Rect();
-
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, Sidebar_Surface_Width(), VisibleRect.Height));
+	Rect temp = Allocate_Tactical_Surfaces();
 	LogicalSurface = HiddenSurface;
 
 	Map.Set_View_Dimensions(temp);
@@ -248,6 +246,37 @@ bool Change_Display_Mode(int width, int height)
 	DebugString("Mode change complete.\n");
 
 	return(true);
+}
+
+
+/// <summary>
+/// Switches the running interface to the style chosen in the settings when they differ. Call it
+/// only from the menus: every drawing surface is rebuilt and the menu battle starts over, so a
+/// switch is skipped while that battle is loading or running a frame.
+/// </summary>
+void Apply_Interface_Choice(void)
+{
+	if (Options.ModernInterface == Options.IsModernInterfaceChosen) {
+		return;
+	}
+
+	Shellmap_Stop();
+	if (Shellmap_Running()) {
+		return;
+	}
+
+	bool const was = Options.ModernInterface;
+	Options.ModernInterface = Options.IsModernInterfaceChosen;
+	if (!Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight)) {
+		Options.ModernInterface = was;
+		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+	}
+	DebugString("Interface style is now %s\n", Options.ModernInterface ? "Modern" : "Classic");
+
+	Map.Lay_Out_Radar();
+	Map.Reposition_Sidebar();
+	Draw_Menu_Background();
+	Shellmap_Start();
 }
 
 
@@ -308,23 +337,7 @@ void Display_Options_Dialog(int page)
 		if (Try_Display_Mode(*picked, scale)) {
 			break;
 		}
-
-		// The player was leaving for another tab, so the screen does not open again.
-		if (UI_Settings_Moving()) {
-			break;
-		}
 	}
-}
-
-
-
-/// <summary>
-/// Applies a picked mode as a trial, as the display options do after they close.
-/// </summary>
-/// <returns>bool; False if the player did not keep the mode.</returns>
-bool Display_Mode_Kept(UIDisplayMode const & picked, float scale)
-{
-	return(Try_Display_Mode(picked, scale));
 }
 
 
@@ -335,7 +348,7 @@ bool Display_Mode_Kept(UIDisplayMode const & picked, float scale)
 /// <param name="picked">The mode to try; the current mode when only the scale changed.</param>
 /// <param name="scale">The interface scale from before the options opened, put back unless the player keeps the change.</param>
 /// <returns>bool; False if the player tried the mode and did not keep it, so the options open again.</returns>
-static bool Try_Display_Mode(UIDisplayMode const & picked, float scale)
+bool Try_Display_Mode(UIDisplayMode const & picked, float scale)
 {
 	bool const rescaled = (Options.InterfaceScale != scale);
 	if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) != 0) {

@@ -1,0 +1,33 @@
+; Where a Chrono Legionnaire (CLEG, Teleporter=yes) lands when its destination cell is occupied. gamemd's destination choice
+; (TeleportLocomotionClass::Move_To, 0x718B70) takes a free spot inside the cell it is sent to, never removes a soldier that
+; stands there, and ends the order when the cell cannot hold it and the order has no unit or structure as its target.
+; Trial 1 (frame 100): a Rhino (HTNK) stands on 56,24 and a CLEG at 50,24 is ordered there. Expected: "warp refused", the CLEG
+;   stays on 50,24 and the Rhino is untouched.
+; Trial 2 (frame 300): a rifleman (E1) stands on 56,28 and a CLEG at 50,28 is ordered there. Expected: the CLEG lands on 56,28 on a
+;   spot other than the one the rifleman holds, and both are alive (the "spot" lines name different spots).
+; Trial 3 (frame 500): a CLEG at 50,32 is ordered to 56,32, which is free. Expected: it lands on 56,32.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/teleport/cleg-landing.txt -Seconds 150 -Filter "AUTOTEST   (warp|where|spot )|AUTOTEST frame|Exception"
+30 command CenterBase
+35 reveal
+40 own HTNK 56 24
+41 own E1 56 28
+42 own CLEG 50 24
+80 select CLEG
+100 move CLEG 56 24
+130 where CLEG
+130 where HTNK
+140 kill CLEG 1
+290 own CLEG 50 28
+295 select CLEG
+300 move CLEG 56 28
+340 where CLEG
+340 where E1
+340 spots E1
+340 spots CLEG
+350 kill CLEG 1
+490 own CLEG 50 32
+495 select CLEG
+500 move CLEG 56 32
+540 where CLEG
+540 spots CLEG
+560 quit

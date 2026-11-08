@@ -75,6 +75,7 @@
 #include "combat.h"
 #include "conquer.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "draw.h"
 #include "emissive.h"
 #include "globals.h"
@@ -89,6 +90,7 @@
 #include "particle.h"
 #include "partsys.h"
 #include "playerdisplay.h"
+#include "ringglow.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -102,6 +104,8 @@
 #include "techno.h"
 #include "tiberium.h"
 #include "tracker.h"
+#include "voc.h"
+#include "zbuffer.h"
 
 #include "bench.hh"
 #include "houstype.h"
@@ -159,6 +163,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	IsFlamingGuyEnd(false),
 	AttachedBullet(NULL),
 	IsToDelete(false),
+	TimeToDie(false),
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
@@ -168,7 +173,8 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	Delay(timedelay),
 	Accum(1),
 	TranslucencyLevel(0),
-	ShapeFlags(flags)
+	ShapeFlags(flags),
+	StartSoundVoc(VOC_NONE)
 {
 	Create_ID();
 	Sync_Record_Anim(*this, coord, (unsigned)(uintptr_t)_ReturnAddress());
@@ -197,7 +203,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 
 	Set_Stage(0);
 
-	if (!Class->IsGroundLayer) {
+	if (Class->Layer == LAYER_AIR || Class->Layer == LAYER_TOP) {
 		Height = Rule->FlightLevel;
 	} else {
 		HeightAGL = 0;
@@ -215,16 +221,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	} else {
 		IsBouncing = true;
 		if (Class->IsMeteor) {
-			// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x421EA0).
-			int const y_draw = abs(Scen->RandomNumber);
-			int const x_draw = abs(Scen->RandomNumber);
-			Vector3 velocity((x_draw % int(Class->MaxXYVel * 2)) - Class->MaxXYVel,
-							(y_draw % int(Class->MaxXYVel * 2)) - Class->MaxXYVel, Class->MinZVel);
-
-			if (velocity.X < -velocity.Y) {
-				velocity.X = -velocity.X;
-				velocity.Y = -velocity.Y;
-			}
+			Vector3 velocity = Random_Meteor_Velocity(Class->MaxXYVel, Class->MinZVel);
 
 			int time = 70 - abs(Scen->RandomNumber() % 20);
 			int x = coord.X - time * velocity.X;
@@ -284,6 +281,7 @@ AnimClass::AnimClass(void) :
 	Loops(1),
 	AttachedBullet(NULL),
 	IsToDelete(false),
+	TimeToDie(false),
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
@@ -300,7 +298,8 @@ AnimClass::AnimClass(void) :
 	IsReversed(false),
 	IsBouncing(false),
 	IsAttachedToCell(false),
-	IsToDeleteOnOverpass(false)
+	IsToDeleteOnOverpass(false),
+	StartSoundVoc(VOC_NONE)
 {
 	Anims.Add(this);
 	IsActive = true;
@@ -443,6 +442,38 @@ void Shorten_Attached_Anims(ObjectClass * obj)
 }
 
 
+/// <summary>
+/// Starts a single-loop animation of the named animation type at a coordinate.
+/// </summary>
+/// <param name="name">The rules name of the animation type.</param>
+/// <param name="coord">Where the animation plays.</param>
+/// <param name="timedelay">The frames to wait before the animation starts.</param>
+/// <param name="zadjust">The height adjustment of the animation.</param>
+/// <param name="flags">The shape flags the animation is drawn with.</param>
+/// <returns>The new animation, or NULL when no animation type has that name. Nothing is created then.</returns>
+AnimClass * Spawn_Named_Anim(char const * name, Coord const & coord, int timedelay, int zadjust, ShapeFlags_Type flags)
+{
+	AnimType const anim = AnimTypeClass::From_Name(name);
+	if (anim == ANIM_NONE) {
+		return(NULL);
+	}
+	return(new AnimClass(AnimTypes[anim], coord, timedelay, 1, flags, zadjust));
+}
+
+
+/// <summary>
+/// Starts the wake animation the rules name, at a coordinate, with the default timing and flags.
+/// </summary>
+/// <param name="where">Where the wake plays.</param>
+/// <remarks>Nothing is started when the rules name no wake animation.</remarks>
+void Spawn_Wake(Coord const & where)
+{
+	if (Rule->Wake != NULL) {
+		new AnimClass(Rule->Wake, where);
+	}
+}
+
+
 /***********************************************************************************************
  * AnimClass::Sort_Y -- Returns with the sorting coordinate for the animation.                 *
  *                                                                                             *
@@ -514,30 +545,6 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 }
 
 
-// The frame rate threshold for detail-gated animations, with gamemd's hysteresis (Detail::GetMinFrameRate, 0x55AF60).
-// Once the rate falls below the minimum, it must regain the minimum plus the buffer before the threshold drops back.
-// Draw calls update the state; a negative rules value counts as 0.
-static unsigned Detail_Min_Frame_Rate(void)
-{
-	static bool reduced = false;
-	unsigned const minimum = Rule->DetailMinFrameRateNormal > 0 ? (unsigned)Rule->DetailMinFrameRateNormal : 0;
-	unsigned const buffer = Rule->DetailBufferZoneWidth > 0 ? (unsigned)Rule->DetailBufferZoneWidth : 0;
-
-	if (reduced) {
-		if (minimum + buffer <= LastFramesPerSecond) {
-			reduced = false;
-			return(minimum);
-		}
-		return(minimum + buffer);
-	}
-	if (LastFramesPerSecond < minimum) {
-		reduced = true;
-		return(minimum + buffer);
-	}
-	return(minimum);
-}
-
-
 /***********************************************************************************************
  * AnimClass::Draw_It -- Draws the animation at the location specified.                        *
  *                                                                                             *
@@ -558,6 +565,17 @@ static unsigned Detail_Min_Frame_Rate(void)
  *=============================================================================================*/
 void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
+	// Yuri's Revenge draws a RING1 animation as a glow on the ground and not as its shape when Direct3D is
+	// usable (0x422CA0). The glow is queued here and drawn after the frame's other objects.
+	if (Rule->IsRing1Glow && DepthBuffer != NULL && stricmp(Class->Name(), "RING1") == 0) {
+		int const rate = Fetch_Rate();
+		int const elapsed = rate * Fetch_Stage() - Fetch_Time_Left() + rate;
+		Point2D const center = point + cliprect.Top_Left();
+		int const depth = (unsigned short)(DepthBuffer->Get_Scroll() + DepthBuffer->Bounds.Y - center.Y) + ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2;
+		Ring_Glow_Add(center, elapsed, Class->Stages * rate, depth, cliprect);
+		return;
+	}
+
 	unsigned const min_frame_rate = Detail_Min_Frame_Rate();
 	if (!IsInvisible && !IsPsychicHidden && Class->DetailLevel <= Options.DetailLevel && (Class->DetailLevel <= 1 || LastFramesPerSecond >= min_frame_rate) && (!IsFogged || !Class->IsShouldFogRemove)) {
 		BStart(BENCH_ANIMS);
@@ -566,6 +584,11 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		if (shapefile != NULL) {
 			ShapeFlags_Type flags = ShapeFlags;
 			int shapenum = Class->Start + Fetch_Stage();
+
+			// A warped animation starts at half or three quarters translucent; the translucency below is added to that, as the bit flags combine (0x422CA0).
+			if (IsUnderTemporal) {
+				flags = ShapeFlags_Type(flags|(Class->IsDoubleThick ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50));
+			}
 
 			/*
 			**	If the translucent table hasn't been determined yet, then check to see if it
@@ -600,11 +623,6 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT25);
 					}
 				}
-			}
-
-			// The blitter picks one translucency, so an animation that already has one keeps it.
-			if (IsUnderTemporal && (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) == 0) {
-				flags = ShapeFlags_Type(flags|(Class->IsDoubleThick ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50));
 			}
 
 			if ((flags & SHAPE_DARKEN) == 0) {
@@ -658,23 +676,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			// The bounce pass above draws ordinary light; only the picture itself is emissive.
 			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
 			// translucency is three quarters opaque, as the blitter's opacity is.
-			int opacity = 255;
-			switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
-				case SHAPE_TRANSLUCENT25:
-					opacity = 192;
-					break;
-
-				case SHAPE_TRANSLUCENT50:
-					opacity = 128;
-					break;
-
-				case SHAPE_TRANSLUCENT75:
-					opacity = 64;
-					break;
-
-				default:
-					break;
-			}
+			int const opacity = Shape_Opacity(flags);
 			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
 			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
@@ -683,11 +685,12 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Point2D origin = point;
 				Point2D drawpoint = origin - Point2D(0, frameheight / 2);
 				bool done = false;
-				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2;
+				// Each tile is depth-tested and sits 50 pixels toward the camera, then a tile and a half farther for every tile up the screen (0x422CA0).
+				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 50;
 				while (!done) {
-					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + Class->YDrawOffset), TacticalRect, flags, NULL, height_offset, ZGRAD_90DEG, brightness);
+					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + Class->YDrawOffset), TacticalRect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, height_offset, ZGRAD_90DEG, brightness);
 					if (drawpoint.Y < 0) done = true;
-					height_offset -= frameheight;
+					height_offset -= frameheight / 2 + frameheight;
 					drawpoint.Y -= frameheight;
 				}
 			} else if (Class->IsFlat) {
@@ -859,6 +862,12 @@ static bool Psychic_Warning_Seen(CellClass const & cell, HouseClass const * owne
  *=============================================================================================*/
 void AnimClass::AI(void)
 {
+	// Re-aims the start sound on every update, and starts it again once it has ended, as gamemd's
+	// AnimClass::Update (0x423AC0) does. An inert animation leaves its sound at the last place it was aimed.
+	if (!IsInert && StartSoundVoc != VOC_NONE) {
+		Follow_Sound(StartSoundVoc, Center_Coord(), &StartSoundHandle);
+	}
+
 	if (Class->IsPsiWarning) {
 		HouseClass const * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
 		IsPsychicHidden = !Psychic_Warning_Seen(Map[Center_Coord()], owner);
@@ -891,9 +900,7 @@ void AnimClass::AI(void)
 						new AnimClass(Rule->SplashList[splashes - 1], PositionCoord + Coord(0, 0, 3));
 					}
 				} else {
-					if (Rule->Wake != NULL) {
-						new AnimClass(Rule->Wake, PositionCoord);
-					}
+					Spawn_Wake(PositionCoord);
 					if (splashes > 0 && Rule->SplashList[0] != NULL) {
 						new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0, 0, 3));
 					}
@@ -953,7 +960,10 @@ void AnimClass::AI(void)
 				}
 			}
 
-			Delete_Me();
+			// Bounce_AI has already deleted a settled animation, so it is not deleted twice.
+			if (bounce_result == BOUNCE_IMPACT) {
+				Delete_Me();
+			}
 			return;
 		}
 	}
@@ -1090,7 +1100,9 @@ void AnimClass::AI(void)
 			**	animation either ends or loops.
 			*/
 			// The stage is relative to Class->Start, so a reversed animation ends at stage 0 (gamemd AnimClass::Update, 0x424752).
-			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (IsReversed && stage <= 0)) {
+			// A forward shadow animation that plays once ends at LoopEnd, so frames past it never show (gamemd AnimClass::Update, 0x42470C to 0x42475A).
+			bool const shadow_ends_at_loop_end = Loops <= 1 && Class->IsShadow && !Class->IsReverse && !IsReversed && stage >= Class->LoopEnd - Class->Start;
+			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || shadow_ends_at_loop_end || (IsReversed && stage <= 0)) {
 
 				/*
 				**	Determine if this animation should loop another time. If so, then start the loop
@@ -1147,6 +1159,7 @@ void AnimClass::AI(void)
 								return;
 							}
 						}
+						TimeToDie = true;
 						Delete_Me();
 					}
 				}
@@ -1246,8 +1259,11 @@ void AnimClass::Attach_To(ObjectClass * obj)
  *=============================================================================================*/
 LayerType AnimClass::In_Which_Layer(void) const
 {
-	if (xObject != NULL || (Class != NULL && Class->IsGroundLayer)) {
+	if (xObject != NULL) {
 		return(LAYER_GROUND);
+	}
+	if (Class != NULL) {
+		return(Class->Layer);
 	}
 	return(LAYER_AIR);
 }
@@ -1277,11 +1293,14 @@ void AnimClass::Start(void)
 	if (!IsInert && Class->Sound != VOC_NONE) {
 
 		/*
-		**	Play the sound effect for this animation.
+		**	Play the sound effect for this animation. Each update after this re-aims it.
 		*/
-		Sound_Effect_Fixed(Class->Sound, Center_Coord(), &StartSoundHandle);
+		StartSoundVoc = Class->Sound;
+		Start_Placed_Sound(StartSoundVoc, Center_Coord(), &StartSoundHandle);
 	} else {
 		StartSoundHandle.Stop();
+		StartSoundHandle.Clear();
+		StartSoundVoc = VOC_NONE;
 	}
 
 	/*
@@ -1695,6 +1714,17 @@ void AnimClass::Delete_Me(void)
 	if (!IsInert && Class->StopSound != VOC_NONE) {
 		Sound_Effect(Class->StopSound, Center_Coord());
 	}
+	BASECLASS::Delete_Me();
+}
+
+
+/// <summary>
+/// Removes this animation from the game without playing its StopSound.
+/// The removal is otherwise the same as Delete_Me.
+/// </summary>
+void AnimClass::Delete_Me_Silently(void)
+{
+	Attach_To(NULL);
 	BASECLASS::Delete_Me();
 }
 

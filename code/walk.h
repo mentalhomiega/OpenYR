@@ -39,7 +39,7 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker.Has_Locomotor());}
 
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
@@ -98,5 +98,5 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		 * temporarily -- a jump jet coming down to cover the last few cells on foot, say --
 		 * and the suspended locomotor is handed back when the walk is finished.
 		 */
-		std::unique_ptr<ILocomotion> Piggybacker;
+		PiggybackSlot Piggybacker;
 };

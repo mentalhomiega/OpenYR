@@ -20,6 +20,7 @@
 #include "dbgprint.h"
 #include "ini.h"
 #include "side.h"
+#include "strutil.h"
 #include "voc.h"
 
 #include <algorithm>
@@ -96,10 +97,7 @@ void ThemeControl::Read_Sides(char const * text)
 		if (end == std::string::npos) {
 			end = list.size();
 		}
-		std::string name = list.substr(start, end - start);
-		size_t first = name.find_first_not_of(" \t");
-		size_t last = name.find_last_not_of(" \t");
-		name = (first == std::string::npos) ? std::string() : name.substr(first, last - first + 1);
+		std::string const name = Trimmed(std::string_view(list).substr(start, end - start), TRIM_SPACE_TAB);
 
 		if (!name.empty()) {
 			if (stricmp(name.c_str(), "<none>") == 0) {

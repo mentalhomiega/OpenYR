@@ -1,0 +1,24 @@
+; A virus death of a NotHuman soldier (the DOG) or of a paradropper (a GI in its Paradrop sequence) leaves no animation. gamemd builds the InfantryVirus
+; animation, spawns one more particle of the animation's particle type at the soldier and destroys the animation (InfantryClass::Destroy, 0x517FA0).
+; The cloudcheck lines give whether the type is NotHuman, how many InfantryVirus animations the map holds and how many particles of the animation's particle type are live.
+; Expected: virusanims stays 0 after both deaths. virusparticles rises by 4 for each death, the three the animation spawns as it starts and the one spawned beside them,
+; at frame 32 for the DOG and by 4 for each of the 6 paradroppers the hit at frame 520 kills (28 in all at frame 521).
+; Run: scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/infantry-virus-cloud.txt -Map XMP29U2.MAP -Seconds 100 -Filter "AUTOTEST   cloudcheck|Exception"
+5 view 66 66
+6 reveal
+10 own GGI 56 70
+10 own DOG 56 66
+20 grant ParaDropSpecial
+25 fire ParaDropSpecial 66 66
+30 cloudcheck DOG
+31 hit DOG:Virus@GGI 400
+32 cloudcheck DOG
+34 cloudcheck DOG
+40 cloudcheck DOG
+515 infstate E1
+519 cloudcheck E1
+520 hit E1:Virus@GGI 400
+521 cloudcheck E1
+523 cloudcheck E1
+530 cloudcheck E1
+540 quit

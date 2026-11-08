@@ -18,6 +18,13 @@
 class UIViewClass;
 
 
+struct UISoundTrack
+{
+	std::string Label;
+	int Theme = 0;
+};
+
+
 class UISoundServiceClass
 {
 	public:
@@ -25,17 +32,22 @@ class UISoundServiceClass
 		virtual void Set_Score_Volume(float volume, bool feedback) = 0;
 		virtual void Set_Sound_Volume(float volume, bool feedback) = 0;
 		virtual void Set_Voice_Volume(float volume, bool feedback) = 0;
+		virtual void Set_Unit_Voice_Volume(float volume, bool feedback) = 0;
+		virtual void Set_Movie_Volume(float volume, bool feedback) = 0;
 		virtual void Set_Shuffle(bool on) = 0;
 		virtual void Set_Repeat(bool on) = 0;
+		// The playlist source: 0 stock and custom tracks, 1 stock only, 2 custom only.
+		virtual void Set_Custom_Music(int mode) = 0;
+		// The tracks the music list offers now.
+		virtual std::vector<UISoundTrack> Tracks(void) = 0;
 		virtual void Play(int theme) = 0;
 		virtual void Stop(void) = 0;
 };
 
 
-struct UISoundTrack
+struct UISoundChoice
 {
 	std::string Label;
-	int Theme = 0;
 };
 
 
@@ -44,10 +56,14 @@ struct UISoundState
 	int Score = 0;
 	int Sound = 0;
 	int Voice = 0;
+	int Unit = 0;
+	int Movie = 0;
 	bool Shuffle = false;
 	bool Repeat = false;
 	bool Enabled = false;
 	bool InGame = false;
+	int CustomMusic = 0;
+	std::vector<UISoundChoice> CustomMusics;
 	std::vector<UISoundTrack> Tracks;
 	int Selected = -1;
 };
@@ -65,17 +81,16 @@ class UISoundPresenterClass : public UIPresenterClass
 		virtual void Refresh(void) override;
 		static int Level_Of(float volume);
 		static float Volume_Of(int level);
+		// Puts back, without feedback, each volume that differs from how the screen opened.
+		void Restore_Changed_Volumes(void);
 
 		UISoundState State;
 
 	private:
+		void Refresh_Tracks(void);
 		UISoundServiceClass & Service;
 		// The levels and switches the screen opened with, which Cancel puts back.
-		int InitialScore = 0;
-		int InitialSound = 0;
-		int InitialVoice = 0;
-		bool InitialShuffle = false;
-		bool InitialRepeat = false;
+		UISoundState const Start;
 };
 
 

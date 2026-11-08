@@ -1,0 +1,19 @@
+; The built-in CnCNet lobby against the local IRC stand-in. Start the stand-in first:
+;   python scripts/cncnet_irc_standin.py --port 16667 --bots 3 --game-version 9.3.5
+; then run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent8/tests/autotest/cncnet-lobby.txt -Build agent8 -Menus -Width 1280 -Height 720 -Seconds 120 -Filter "UISCRIPT|Exception" -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16667"
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Online lobby
+ui wait 34000
+ui shot cncnet-lobby
+ui choose Tanya's game
+ui wait 1000
+ui shot cncnet-lobby-selected
+ui press Back
+ui wait 1500
+ui press OK
+ui wait 1000
+ui quit

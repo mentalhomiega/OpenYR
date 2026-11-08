@@ -1,0 +1,10 @@
+; Probe: can a Magnetron (TELE) fire at a Dolphin (DLPH) and a Boomer (BSUB) on land, compared with a Rhino (HTNK)?
+300 own TELE 54 40
+301 spawn DLPH 62 40
+302 spawn BSUB 62 46
+303 spawn HTNK 62 42
+304 reveal
+320 canfire TELE 62 40
+321 canfire TELE 62 42
+322 canfire TELE 62 46
+330 quit

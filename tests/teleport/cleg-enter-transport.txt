@@ -1,0 +1,29 @@
+; A Chrono Legionnaire (CLEG, Teleporter=yes) ordered into a friendly transport boards it. Its jump lands on the
+; transport's cell with the order still set, so the arrival boards it (gamemd: destination choice 0x718B70 ignores the
+; target's cell contents; the arrival is processed at 0x7196AB before SetDestination(NULL) at 0x719733). The jump does not
+; destroy the transport: the occupant-destroying landing (0x718260) belongs to the chronosphere warp only.
+; Three trials, each a CLEG two cells west of a transport: an IFV (FV), a Flak Track (HTK) and a Battle Fortress (BFRT).
+; Expected: each "where CLEG" line ends with limbo 1 and each transport's line shows strength unchanged and limbo 0.
+; The last trial moves a CLEG over open ground: it warps there and is not in limbo (a plain move order is unchanged).
+; Run: scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/teleport/cleg-enter-transport.txt -Seconds 120
+30 command CenterBase
+35 reveal
+40 own FV 60 20
+41 own HTK 60 26
+42 own BFRT 60 32
+43 own CLEG 58 20
+60 enter CLEG 60 20
+150 where CLEG
+150 where FV
+152 own CLEG 58 26
+160 enter CLEG 60 26
+250 where CLEG
+250 where HTK
+252 own CLEG 58 32
+260 enter CLEG 60 32
+350 where CLEG
+350 where BFRT
+352 own CLEG 50 40
+360 move CLEG 56 40
+440 where CLEG
+480 quit

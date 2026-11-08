@@ -18,6 +18,8 @@
 #include "coord.h"
 #include "event.h"
 #include "face.h"
+#include "fnv.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "mission.h"
 #include "object.h"
@@ -26,14 +28,17 @@
 #include "except.h"
 #include "session.h"
 #include "win.h"
+#include "dbgprint.h"
+
+#include <set>
 
 
 static uintptr_t ModuleBase = 0;
 static uint32_t ModuleSize = 0;
 static uint32_t MapImageBase = 0;
 
-// Word-wise FNV-style hash of the scenario draws (value and call site) since the last SYNC_DRAWS line.
-static uint32_t Scenario_Draw_Digest = 2166136261u;
+// Word-wise hash of the scenario draws (value and call site) since the last SYNC_DRAWS line; see Draw_Digest_Mix.
+static uint32_t Scenario_Draw_Digest = FNV_BASIS;
 static unsigned Scenario_Draw_Count = 0;
 
 
@@ -51,6 +56,43 @@ static uint32_t Sync_Caller_RVA(unsigned caller)
 	// The image is large address aware, so an address outside it can carry the flag bit itself
 	// and loses it here. Such an address only says the call came from elsewhere.
 	return(SYNC_CALLER_EXTERN | ((uint32_t)address & ~SYNC_CALLER_EXTERN));
+}
+
+
+static bool OutsideLogicCheck = false;
+static bool InFrameLogic = false;
+static std::set<uint64_t> OutsideLogicSeen;
+
+
+void Sync_Check_Outside_Logic(bool on)
+{
+	OutsideLogicCheck = on;
+	OutsideLogicSeen.clear();
+}
+
+
+void Sync_Enter_Frame_Logic(void)
+{
+	InFrameLogic = true;
+}
+
+
+void Sync_Leave_Frame_Logic(void)
+{
+	InFrameLogic = false;
+}
+
+
+static void Note_Outside_Logic(char const * what, uint32_t rva)
+{
+	if (!OutsideLogicCheck || InFrameLogic) {
+		return;
+	}
+	if (OutsideLogicSeen.insert(((uint64_t)(uintptr_t)what << 32) | rva).second) {
+		char caller[256];
+		Sync_Format_Caller(caller, sizeof(caller), rva);
+		DebugString("AUTOTEST syncrec outside frame logic: %s at frame %d from %s\n", what, Frame, caller);
+	}
 }
 
 
@@ -76,12 +118,12 @@ namespace {
 /// <returns>The preferred base, or zero when the header could not be read.</returns>
 static uint32_t Sync_Preferred_Image_Base(void)
 {
-	char path[MAX_PATH];
-	if (GetModuleFileName(GetModuleHandle(nullptr), path, sizeof(path)) == 0) {
+	std::string const path = Executable_Path();
+	if (path.empty()) {
 		return(0);
 	}
 
-	HANDLE const file = CreateFile(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+	HANDLE const file = CreateFile(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 					nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (file == INVALID_HANDLE_VALUE) {
 		return(0);
@@ -137,6 +179,13 @@ static char const * Sync_Describe_Caller(uint32_t rva)
 }
 
 
+// Mixes one whole 32-bit word into the draw digest. The word is XORed in at once, not byte by byte as FNV-1a does.
+static uint32_t Draw_Digest_Mix(uint32_t digest, uint32_t word)
+{
+	return((digest ^ word) * FNV_PRIME);
+}
+
+
 void Sync_Record_Random_Impl(Random2Class const & gen, int value, int minval, int maxval, bool ranged, unsigned caller)
 {
 	SyncRandomEntryType entry {};
@@ -150,11 +199,14 @@ void Sync_Record_Random_Impl(Random2Class const & gen, int value, int minval, in
 	entry.Kind = (Scen != nullptr && &gen == &Scen->RandomNumber) ? SYNC_RANDOM_CRITICAL : SYNC_RANDOM_NONCRITICAL;
 	entry.Shape = ranged ? SYNC_DRAW_RANGED : (SyncRecorder.In_Ranged_Draw() ? SYNC_DRAW_INNER : SYNC_DRAW_PLAIN);
 	if (entry.Kind == SYNC_RANDOM_CRITICAL) {
-		Scenario_Draw_Digest = (Scenario_Draw_Digest ^ (uint32_t)value) * 16777619u;
-		Scenario_Draw_Digest = (Scenario_Draw_Digest ^ entry.Caller) * 16777619u;
+		Scenario_Draw_Digest = Draw_Digest_Mix(Scenario_Draw_Digest, (uint32_t)value);
+		Scenario_Draw_Digest = Draw_Digest_Mix(Scenario_Draw_Digest, entry.Caller);
 		Scenario_Draw_Count++;
 	}
 	SyncRecorder.Add_Random(entry);
+	if (entry.Kind == SYNC_RANDOM_CRITICAL) {
+		Note_Outside_Logic("scenario random draw", entry.Caller);
+	}
 }
 
 
@@ -162,7 +214,7 @@ uint32_t Sync_Take_Draw_Digest(unsigned & count)
 {
 	uint32_t const digest = Scenario_Draw_Digest;
 	count = Scenario_Draw_Count;
-	Scenario_Draw_Digest = 2166136261u;
+	Scenario_Draw_Digest = FNV_BASIS;
 	Scenario_Draw_Count = 0;
 	return(digest);
 }
@@ -176,6 +228,7 @@ void Sync_Record_Facing_Impl(DirType const & facing, unsigned caller)
 	entry.Facing = (int16_t)(int)facing.As_Dir256();
 	entry.Kind = SYNC_FACING_SET;
 	SyncRecorder.Add_Facing(entry);
+	Note_Outside_Logic("facing", entry.Caller);
 }
 
 
@@ -189,6 +242,7 @@ void Sync_Record_Target_Impl(AbstractClass const & subject, AbstractClass const 
 	entry.TargetRTTI = (int8_t)(target != nullptr ? target->Fetch_RTTI() : RTTI_NONE);
 	entry.TargetID = (target != nullptr ? target->Fetch_ID() : 0);
 	SyncRecorder.Add_Target(entry);
+	Note_Outside_Logic("target", entry.Caller);
 }
 
 
@@ -203,6 +257,7 @@ void Sync_Record_Mission_Impl(ObjectClass const & subject, int before, int after
 	entry.After = (int8_t)after;
 	entry.Kind = (uint8_t)kind;
 	SyncRecorder.Add_Mission(entry);
+	Note_Outside_Logic("mission", entry.Caller);
 }
 
 
@@ -217,6 +272,7 @@ void Sync_Record_Anim_Impl(AnimClass const & anim, Coord const & coord, unsigned
 	entry.Y = coord.Y;
 	entry.Z = coord.Z;
 	SyncRecorder.Add_Anim(entry);
+	Note_Outside_Logic("animation", entry.Caller);
 }
 
 
@@ -240,15 +296,7 @@ void Sync_Record_Event_Impl(EventClass const & event, int source)
 	entry.Type = event.Type;
 	entry.Source = (uint8_t)source;
 
-	unsigned length = 0;
-	if (event.Type < EventClass::LAST_EVENT) {
-		length = EventClass::EventLength[event.Type];
-	}
-	if (length > sizeof(entry.Bytes)) {
-		length = sizeof(entry.Bytes);
-	}
-	entry.Length = (uint8_t)length;
-	memcpy(entry.Bytes, &event.Data, length);
+	entry.Length = (uint8_t)event.Sync_Record_Bytes(entry.Bytes, sizeof(entry.Bytes));
 
 	if (source == SYNC_EVENT_QUEUED) {
 		SyncRecorder.Add_Queued_Event(entry);

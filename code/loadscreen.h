@@ -23,15 +23,13 @@ class ProgressScreenClass;
 class ShapeSet;
 class Surface;
 
-/*
-**	The Yuri's Revenge loading screen. A campaign mission shows the picture MISSIONMD.INI names
-**	for it between a title bar, which holds the mission's loading message, and a strip that holds
-**	the progress bar, with the mission's loading briefing over the picture. A skirmish or
-**	multiplayer match shows the local player's country with its name, special unit and
-**	description, the map's preview, and a row for each player with a progress bar, a flag and a
-**	name. The screen is laid out at 800x600, or at 640x480 on a screen 640 pixels wide, and is
-**	drawn centred on the screen, smoothly enlarged to fill its height at any resolution.
-*/
+// The Yuri's Revenge loading screen. A campaign mission shows the picture MISSIONMD.INI names
+// for it between a title bar, which holds the mission's loading message, and a strip that holds
+// the progress bar, with the mission's loading briefing over the picture. A skirmish or
+// multiplayer match shows the local player's country with its name, special unit and
+// description, the map's preview, and a row for each player with a progress bar, a flag and a
+// name. The screen is laid out at 800x600, or at 640x480 on a screen 640 pixels wide, and is
+// drawn centred on the screen, smoothly enlarged to fill its height at any resolution.
 class LoadScreenClass
 {
 	public:
@@ -68,7 +66,7 @@ class LoadScreenClass
 		class ShapeFile;
 
 		bool Begin_Campaign(char const * scenario, CCINIClass const * mission);
-		bool Begin_Match(CCINIClass const * ini, int players);
+		bool Begin_Match(char const * scenario, CCINIClass const * ini, int players);
 		void Draw_Preview(void);
 		void Draw_Rows(int players);
 		void Draw_Campaign_Progress(ProgressScreenClass const & progress);

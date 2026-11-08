@@ -12,16 +12,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 namespace
 {
-
-int Clamp(int value, int low, int high)
-{
-	return(std::clamp(value, low, high));
-}
-
 
 /// Sets the working hue, saturation and value from a packed color.
 void Load_HSV(UIColorPickState & state, unsigned int packed)
@@ -118,6 +113,51 @@ bool Clashes_With(RGBClass const & candidate, bool candidate_custom, std::vector
 	return(false);
 }
 
+// The index below count whose color is closest to rgb, the first one on a tie. color_at(index) gives the color to compare.
+template <typename ColorAt>
+int Nearest_Index(RGBClass const & rgb, int count, ColorAt color_at)
+{
+	int nearest = 0;
+	double nearest_distance = 0.0;
+	for (int index = 0; index < count; index++) {
+		double const distance = Player_Color_Distance(rgb, color_at(index));
+		if (index == 0 || distance < nearest_distance) {
+			nearest = index;
+			nearest_distance = distance;
+		}
+	}
+	return(nearest);
+}
+
+// The name of the stock lobby color that looks closest to a color.
+char const * Nearest_Standard_Name(RGBClass const & rgb)
+{
+	return(Player_Color_Preset_At(Nearest_Index(rgb, PLAYER_COLOR_SEATS, UI_Stock_Color_RGB)).Name);
+}
+
+// Brings the swatch, the numbers, the nearest standard color and the remap ramp preview in line with the chosen color.
+void Show_Choice(UIColorPickState & state)
+{
+	RGBClass const rgb = UI_Color_Pick_Color(state);
+	state.Swatch = UI_Color_CSS(rgb);
+
+	char text[96];
+	std::snprintf(text, sizeof(text), "Red %d, green %d, blue %d (%c%02X%02X%02X)", rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue(),
+		'#', (unsigned)rgb.Get_Red(), (unsigned)rgb.Get_Green(), (unsigned)rgb.Get_Blue());
+	state.ReadRGB = text;
+	std::snprintf(text, sizeof(text), "Hue %d, saturation %d%%, brightness %d%%", state.Hue * 360 / 256, state.Saturation * 100 / 255, state.Value * 100 / 255);
+	state.ReadHSV = text;
+	state.Nearest = std::string("Closest standard color: ") + Nearest_Standard_Name(rgb);
+
+	HSVClass const base((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value);
+	state.Ramp.clear();
+	for (int step = 0; step < 16; step++) {
+		UIColorRampStep entry;
+		entry.Color = UI_Color_CSS(RGBClass(Player_Ramp_Entry(base, step)));
+		state.Ramp.push_back(entry);
+	}
+}
+
 }
 
 
@@ -161,15 +201,9 @@ std::string UI_Color_Name(std::string const & stock_label, unsigned int custom)
 	}
 
 	RGBClass const chosen = Player_Color_Preview(custom);
-	int nearest = 0;
-	double nearest_distance = 0.0;
-	for (int index = 0; index < Shown_Count(); index++) {
-		double const distance = Player_Color_Distance(chosen, Preset_Applied(Shown_At(index)));
-		if (index == 0 || distance < nearest_distance) {
-			nearest = index;
-			nearest_distance = distance;
-		}
-	}
+	int const nearest = Nearest_Index(chosen, Shown_Count(), [](int index) {
+		return(Preset_Applied(Shown_At(index)));
+	});
 	return(std::string("Custom (near ") + Shown_At(nearest).Name + ")");
 }
 
@@ -243,12 +277,12 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 
 	state.Open = true;
 	state.Row = row;
-	state.Seat = Clamp(seat, 0, UI_Stock_Color_Count() - 1);
+	state.Seat = std::clamp(seat, 0, UI_Stock_Color_Count() - 1);
 	state.Notice.clear();
 	state.Custom = Player_Color_Is_Custom(custom) ? custom : 0;
 	Load_HSV(state, state.Custom != 0 ? state.Custom : Player_Color_From_RGB(UI_Stock_Color_RGB(state.Seat)));
 	Place_Marker(state);
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 	state.Generation++;
 }
 
@@ -260,14 +294,14 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 /// <param name="y">The row, from 0 at the top edge to UI_COLOR_FIELD_SIZE - 1.</param>
 void UI_Color_Pick_Field(UIColorPickState & state, int x, int y)
 {
-	x = Clamp(x, 0, UI_COLOR_FIELD_SIZE - 1);
-	y = Clamp(y, 0, UI_COLOR_FIELD_SIZE - 1);
+	x = std::clamp(x, 0, UI_COLOR_FIELD_SIZE - 1);
+	y = std::clamp(y, 0, UI_COLOR_FIELD_SIZE - 1);
 
 	state.Hue = x * 256 / UI_COLOR_FIELD_SIZE;
 	state.Saturation = 255 - (y * 255) / (UI_COLOR_FIELD_SIZE - 1);
 	state.Custom = Player_Color_Pack(HSVClass((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value));
 	Place_Marker(state);
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 }
 
 
@@ -278,14 +312,14 @@ void UI_Color_Pick_Value(UIColorPickState & state, int value)
 {
 	// The brightness slider reports its own value when the picker opens. An unchanged brightness is
 	// not a choice, so it leaves a stock color as it is.
-	int const chosen = std::max(Clamp(value, 0, 255), (int)PLAYER_COLOR_MIN_VALUE);
+	int const chosen = std::max(std::clamp(value, 0, 255), (int)PLAYER_COLOR_MIN_VALUE);
 	if (chosen == state.Value) {
 		return;
 	}
 
 	state.Value = chosen;
 	state.Custom = Player_Color_Pack(HSVClass((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value));
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 	state.Generation++;
 }
 
@@ -310,8 +344,32 @@ void UI_Color_Pick_Preset(UIColorPickState & state, int index)
 		Load_HSV(state, state.Custom);
 	}
 	Place_Marker(state);
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 	state.Generation++;
+}
+
+
+bool UI_Color_Pick_Intent(UIColorPickState & state, std::string const & name, int value, std::string const & text)
+{
+	if (name == "pickfield") {
+		if (state.Open) {
+			UI_Color_Pick_Field(state, value, std::atoi(text.c_str()));
+		}
+	} else if (name == "pickvalue") {
+		if (state.Open) {
+			UI_Color_Pick_Value(state, value);
+		}
+	} else if (name == "pickpreset") {
+		if (state.Open) {
+			UI_Color_Pick_Preset(state, value);
+		}
+	} else if (name == "pickcancel") {
+		state.Open = false;
+		state.Notice.clear();
+	} else {
+		return(false);
+	}
+	return(true);
 }
 
 

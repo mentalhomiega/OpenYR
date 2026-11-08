@@ -28,6 +28,7 @@
 
 			<p class="section">Effects</p>
 			<label class="check setting" id="switch-shake" desc="Shakes the screen during heavy fire and explosions. Off keeps the picture still."><span class="caption">Screen shake</span><input type="checkbox" id="shake" data-attrif-checked="screenshake" data-event-click="queue('screenshake', screenshake ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-scripted-zoom" desc="Scripted scenes zoom the map to one height whatever zoom the player picked, and the player's zoom returns afterward. Off leaves the zoom alone."><span class="caption">Cinematic zoom for scripted scenes</span><input type="checkbox" id="scripted-zoom" data-attrif-checked="scriptedzoom" data-event-click="queue('scriptedzoom', scriptedzoom ? 0 : 1)"/></label>
 		</div>
 		<div id="side">
 			<p id="side-title">Description</p>

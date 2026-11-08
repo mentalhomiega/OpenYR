@@ -17,6 +17,19 @@
 */
 
 bool AutoTest_Active(void);
+
+// -AUTOTEST-UNCAPPED lets an unattended run play without the frame limit. Each tick does the same work.
+void AutoTest_Set_Uncapped(void);
+bool AutoTest_Uncapped(void);
+
+// -AUTOTEST-STOP-AFTER-STEPS ends the run on the first game frame after the script's last step, so a script that
+// only stops by its time limit does not play on. The log ends with "AUTOTEST steps done".
+void AutoTest_Set_Stop_After_Steps(void);
+
+// Writes an "AUTOTEST " debug line only in an unattended run. The format and its arguments are not evaluated
+// otherwise, so they may follow pointers that only exist during a test.
+#define AUTOTEST_LOG(...) do { if (AutoTest_Active()) DebugString("AUTOTEST " __VA_ARGS__); } while (0)
+
 bool AutoTest_Key_Held(int virtualkey);
 
 // Where an unattended run's pointer rests, in window pixels. A script moves it with the windowmove
@@ -28,9 +41,12 @@ void AutoTest_Frame(void);
 // Ends an unattended run when the game is won or lost, instead of waiting at the score screen.
 void AutoTest_Game_Over(bool won);
 
-// True once a won mission carried on under continuewin, and for the rest of the run. The score
-// screen then takes its default instead of waiting for a click, because no script step runs while
-// it shows.
+// Ends a run whose script has requirera2 when the mission was read without Red Alert 2 house numbering.
+void AutoTest_Require_RA2_Numbering(bool numbered);
+
+// True once a won mission carried on under continuewin, or a lost one under continuelose, and for the
+// rest of the run. The score screen then takes its default instead of waiting for a click, because
+// no script step runs while it shows.
 bool AutoTest_Post_Win(void);
 
 void AutoTest_Loading_Screen_Shown(void);

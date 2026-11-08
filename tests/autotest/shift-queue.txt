@@ -1,0 +1,45 @@
+; Shift-click queues five units of one type, a Shift-right-click abandons them all, and a queue at its limit refuses the next click.
+; Americans skirmish. The construction yard, power plant and barracks come first, so ENGINEER (500 credits, about 315 frames to build) has a cameo.
+; NextSidebarTab twice brings the infantry tab forward for the screenshots.
+; Expected: queuestate at 210 reads pending 0 and credits 10000. The Shift-click at 225 gives pending 5, queued 4, at 260.
+; The first Shift-right-click at 275 suspends the unit in production (pending 5 at 300). The second at 315 abandons all five:
+; pending 0 at 340, and credits back to 10000. Shift-clicks from empty at 355 to 380 give pending 30 (one in production, 29 queued,
+; the rules' MaximumQueuedObjects=29), and the click at 385 is refused, so pending stays 30 at 392.
+; Run: scripts/run_autotest.ps1 -Script src-agent7/tests/autotest/shift-queue.txt -Build agent7 -Seconds 120 -Filter "AUTOTEST +(cameopress|queuestate|log)|Exception" -ShotDir <folder>
+1 log shift-queue: the construction yard, power plant and barracks first
+30 own GACNST 50 96
+40 own GAPOWR 46 92
+50 own GAPILE 56 100
+200 cameos
+205 command NextSidebarTab
+207 command NextSidebarTab
+210 queuestate ENGINEER
+215 command ScreenCapture
+220 hold 16
+225 cameopress ENGINEER left
+230 release 16
+260 queuestate ENGINEER
+262 command ScreenCapture
+270 hold 16
+275 cameopress ENGINEER right
+280 release 16
+300 queuestate ENGINEER
+302 command ScreenCapture
+310 hold 16
+315 cameopress ENGINEER right
+320 release 16
+340 queuestate ENGINEER
+342 command ScreenCapture
+350 hold 16
+355 cameopress ENGINEER left
+360 cameopress ENGINEER left
+365 cameopress ENGINEER left
+370 cameopress ENGINEER left
+375 cameopress ENGINEER left
+380 cameopress ENGINEER left
+382 queuestate ENGINEER
+385 cameopress ENGINEER left
+390 release 16
+392 queuestate ENGINEER
+395 command ScreenCapture
+400 quit

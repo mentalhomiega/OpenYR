@@ -71,6 +71,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "team.h"
 #include "lstorm.h"
@@ -119,6 +120,7 @@
 #include "tube.h"
 #include "unit.h"
 #include "unittype.h"
+#include "viewzoom.h"
 #include "voc.h"
 #include "vox.h"
 
@@ -132,21 +134,6 @@
 BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *house, FootClass *unit, TargetPropertyType prop, bool only_enemy);
 
 bool TeamClass::TraceScripts = false;
-
-/// <summary>
-/// Finds the house's super weapon of the given type, or NULL when it has none.
-/// </summary>
-static SuperClass * Find_Super(HouseClass const * house, SuperWeaponType type)
-{
-	SuperClass * found = NULL;
-	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
-		if (house->SuperWeapon[index]->Class->Type == type) {
-			found = house->SuperWeapon[index];
-		}
-	}
-	return(found);
-}
-
 
 /// <summary>
 /// Tells whether a team waiting for a super weapon that is not ready yet should keep waiting:
@@ -611,9 +598,11 @@ void TeamClass::AI(void)
 		if (IsLeaveMap) {
 			for (int index = 0; index < LogicTags.Count(); index++) {
 				TagClass * trig = LogicTags[index];
-				if (trig->Spring(TEVENT_LEAVES_MAP)) {
+				trig->Spring(TEVENT_LEAVES_MAP);
+
+				// Step back only if this tag left the list; a persistent tag that keeps springing is not retried.
+				if (index >= LogicTags.Count() || LogicTags[index] != trig) {
 					index--;
-					if (LogicTags.Count() == 0) break;
 				}
 			}
 		}
@@ -1252,9 +1241,10 @@ bool TeamClass::Remove(FootClass * obj, int typeindex, bool enter_idle)
 	}
 
 	/*
-	**	A unit that breaks off of a team will enter idle mode.
+	**	A unit that breaks off of a team enters idle mode unless it is falling or ScenarioInit is set
+	**	(TeamClass::LiberateMember, 0x6EA870).
 	*/
-	if (enter_idle && GameActive && obj->IsActive && !obj->IsInLimbo) {
+	if (enter_idle && ScenarioInit == 0 && obj->IsActive && !obj->IsInLimbo && !obj->IsCrashing) {
 		obj->Enter_Idle_Mode();
 	}
 
@@ -1958,6 +1948,8 @@ void TeamClass::Coordinate_Move(void)
 
 				if (_Is_It_Playing(unit) && unit->Mission != MISSION_UNLOAD && unit->MissionQueue != MISSION_UNLOAD) {
 					int stray = Stray_Distance();
+					// Airborne members double stray, as gamemd's move coordinator (0x6EBAD0) does.
+					// Lagging_Units uses a different multiplier on purpose.
 					if (unit->In_Air()) {
 						stray *= 2;
 					}
@@ -2076,6 +2068,8 @@ bool TeamClass::Lagging_Units(void)
 
 		if (_Is_It_Playing(unit)) {
 			int stray = Stray_Distance();
+			// Aircraft triple stray, as gamemd's lagging check (0x6EBF50) does. Coordinate_Move
+			// doubles airborne members on purpose.
 			if (unit->RTTI ==  RTTI_AIRCRAFT) {
 				stray *= 3;
 			}
@@ -2575,7 +2569,7 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 	}
 
 	HouseClass * house = chosen->House;
-	SuperClass * super = Find_Super(house, SUPER_IRON_CURTAIN);
+	SuperClass * super = house->Find_Super(SUPER_IRON_CURTAIN);
 	if (super == NULL) {
 		IsNextMission = true;
 		return;
@@ -2598,7 +2592,7 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 /// Fetches how far a member may stray from the team's center before it is called back: the
 /// RelaxedStray distance while the team runs a gather line, Stray otherwise.
 /// </summary>
-LEPTON TeamClass::Stray_Distance(void)
+LEPTON TeamClass::Stray_Distance(void) const
 {
 	TeamMissionType const mission = Script != NULL ? Script->Get_Current_Mission().Mission : TMISSION_NONE;
 	return(mission == TMISSION_GATHER_AT_ENEMY || mission == TMISSION_GATHER_AT_BASE ? Rule->RelaxedStrayDistance : Rule->StrayDistance);
@@ -2622,8 +2616,8 @@ void TeamClass::Chrono_Prep(TeamMissionClass * mission, bool by_building)
 	}
 
 	HouseClass * house = leader->House;
-	SuperClass * sphere = Find_Super(house, SUPER_CHRONOSPHERE);
-	SuperClass * warp = Find_Super(house, SUPER_CHRONO_WARP);
+	SuperClass * sphere = house->Find_Super(SUPER_CHRONOSPHERE);
+	SuperClass * warp = house->Find_Super(SUPER_CHRONO_WARP);
 	if (sphere == NULL || warp == NULL) {
 		IsNextMission = true;
 		return;
@@ -2641,6 +2635,7 @@ void TeamClass::Chrono_Prep(TeamMissionClass * mission, bool by_building)
 		HouseClass * enemy = house->Enemy != HOUSE_NONE ? Houses[house->Enemy] : NULL;
 		target = Pick_Building_With_Property(BuildingTypes[mission->Data.Type], enemy, leader, TargetPropertyType((unsigned short)mission->Data.Prop), Class->OnlyTargetHouseEnemy);
 	} else {
+		Perf_Count(PERF_COUNT_SCAN_TEAM);
 		target = leader->Greatest_Threat(Quarry_Threat(QuarryType(mission->Data.Value)), leader->PositionCoord, Class->OnlyTargetHouseEnemy);
 	}
 
@@ -2800,6 +2795,7 @@ void TeamClass::TMission_PATROL(TeamMissionClass * mission, bool first_time)
 	if (Frame % int(Rule->PatrolTime * TICKS_PER_MINUTE) == 0) {
 		FootClass * leader = Fetch_A_Leader();
 		if (leader != NULL) {
+			Perf_Count(PERF_COUNT_SCAN_TEAM);
 			AbstractClass * target = leader->Greatest_Threat(ThreatType(THREAT_NORMAL|THREAT_RANGE), leader->PositionCoord, false);
 
 			if (target != NULL) {
@@ -2880,15 +2876,6 @@ void TeamClass::TMission_SCATTER(TeamMissionClass * mission, bool)
 
 
 /// <summary>
-/// Hands a team member to another house, announced, as the change house mission does.
-/// </summary>
-static void Give_To_House(FootClass * unit, HouseClass * newowner)
-{
-	unit->Set_Owning_House(newowner, true);
-}
-
-
-/// <summary>
 /// Handles the change house team mission.
 /// This routine hands every member of the team over to the scripted house as a mind control
 /// capture does, with no "entered" trigger.
@@ -2900,7 +2887,7 @@ void TeamClass::TMission_CHANGE_HOUSE(TeamMissionClass * mission, bool)
 		FootClass *unit = Member;
 		while (unit != NULL) {
 			FootClass *next = unit->Member;
-			Give_To_House(unit, newowner);
+			unit->Set_Owning_House(newowner, true);
 			unit = next;
 		}
 	}
@@ -2975,6 +2962,7 @@ void TeamClass::TMission_ATTACK(TeamMissionClass * mission, bool)
 		/*
 		**	Have the team leader pick what the next team target will be.
 		*/
+		Perf_Count(PERF_COUNT_SCAN_TEAM);
 		Assign_Mission_Target(candidate->Greatest_Threat(Quarry_Threat(QuarryType(mission->Data.Value)), candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
 		if (MissionTarget == NULL || !Ammo_Check()) IsNextMission = true;
 	}
@@ -3619,6 +3607,7 @@ void TeamClass::TMission_CENTER_VIEWPOINT(TeamMissionClass * mission, bool)
 	}
 
 	TacticalMap->Setup_Trigger_Scroll(coord, mission->Data.Speed);
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	IsNextMission = true;
 }
 
@@ -4233,7 +4222,7 @@ RTTIType TeamClass::Fetch_RTTI(void) const
 /// structures are considered unless own_only is false. Distance runs to each structure's centre,
 /// and an exact tie goes to the structure listed last.
 /// </summary>
-void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only)
+void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only, MissionType mission)
 {
 	std::map<BuildingClass const *, int> sent;
 
@@ -4258,8 +4247,14 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 		if (best != NULL) {
 			DebugString("Team %s sends %s into %s\n", Class->Name(), member->TClass->Name(), best->Class->Name());
 			Remove(member);
-			member->Assign_Mission(MISSION_ENTER);
-			member->Assign_Destination(best);
+			if (mission == MISSION_ENTER) {
+				member->Assign_Mission(MISSION_ENTER);
+				member->Assign_Destination(best);
+			} else {
+				// A garrison is entered on the Capture mission, with the destination set first (FootClass::GarrisonStructure, 0x4DFE00).
+				member->Assign_Destination(best);
+				member->Assign_Mission(mission);
+			}
 			sent[best]++;
 		}
 		member = next;
@@ -4311,7 +4306,7 @@ void TeamClass::TMission_GARRISON_STRUCTURE(TeamMissionClass *, bool)
 {
 	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
 		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
-	}, false);
+	}, false, MISSION_CAPTURE);
 }
 
 
@@ -4325,5 +4320,5 @@ void TeamClass::TMission_ENTER_BATTLE_BUNKER(TeamMissionClass *, bool)
 {
 	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
 		return(member->RTTI == RTTI_INFANTRY && building->Class->Level >= 0 && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
-	});
+	}, true, MISSION_CAPTURE);
 }

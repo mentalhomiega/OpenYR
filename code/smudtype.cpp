@@ -355,16 +355,9 @@ SmudgeTypeClass * SmudgeTypeClass::Find_Or_Make(const char *name)
 }
 
 
-/// <summary>
-/// Scorches the ground at the specified location.
-/// This routine is called when fire or an explosion should leave a burn mark on the
-/// terrain. A scorch that suits the location and the size of the blast is picked at random
-/// from the scorch types the rules declare.
-/// </summary>
-/// <param name="width">The width of the blast, in pixels.</param>
-/// <param name="height">The height of the blast, in pixels.</param>
-/// <param name="large">Should only the multiple cell scorches be considered?</param>
-bool SmudgeTypeClass::Scorch_The_Ground(Coord const & coord, int width, int height, bool large)
+// Lays a random smudge of the scorch kind (`scorch_kind` true) or the crater kind that suits the blast at `coord`.
+// Always returns false, as Scorch_The_Ground and Crater_The_Ground do.
+static bool Lay_Random_Smudge(bool scorch_kind, Coord const & coord, int width, int height, bool large)
 {
 	int i;
 
@@ -375,7 +368,7 @@ bool SmudgeTypeClass::Scorch_The_Ground(Coord const & coord, int width, int heig
 	DynamicVectorClass<SmudgeTypeClass const *> list;
 	for (i = 0; i < SmudgeTypes.Count(); i++) {
 		SmudgeTypeClass const * smudge = SmudgeTypes[i];
-		if (smudge->IsScorch) {
+		if (scorch_kind ? smudge->IsScorch : smudge->IsCrater) {
 			if (smudge->Can_Place_Here(coord.As_Cell(), large)) {
 				list.Add(smudge);
 			}
@@ -407,6 +400,21 @@ bool SmudgeTypeClass::Scorch_The_Ground(Coord const & coord, int width, int heig
 
 
 /// <summary>
+/// Scorches the ground at the specified location.
+/// This routine is called when fire or an explosion should leave a burn mark on the
+/// terrain. A scorch that suits the location and the size of the blast is picked at random
+/// from the scorch types the rules declare.
+/// </summary>
+/// <param name="width">The width of the blast, in pixels.</param>
+/// <param name="height">The height of the blast, in pixels.</param>
+/// <param name="large">Should only the multiple cell scorches be considered?</param>
+bool SmudgeTypeClass::Scorch_The_Ground(Coord const & coord, int width, int height, bool large)
+{
+	return(Lay_Random_Smudge(true, coord, width, height, large));
+}
+
+
+/// <summary>
 /// Craters the ground at the specified location.
 /// This routine is called when an explosion should leave a permanent mark on the terrain.
 /// A crater that suits the location and the size of the blast is picked at random from the
@@ -417,43 +425,7 @@ bool SmudgeTypeClass::Scorch_The_Ground(Coord const & coord, int width, int heig
 /// <param name="large">Should only the multiple cell craters be considered?</param>
 bool SmudgeTypeClass::Crater_The_Ground(Coord const & coord, int width, int height, bool large)
 {
-	int i;
-
-	if (coord.As_Cell() == CELL_NONE) {
-		return(false);
-	}
-
-	DynamicVectorClass<SmudgeTypeClass const *> list;
-	for (i = 0; i < SmudgeTypes.Count(); i++) {
-		SmudgeTypeClass const * smudge = SmudgeTypes[i];
-		if (smudge->IsCrater) {
-			if (smudge->Can_Place_Here(coord.As_Cell(), large)) {
-				list.Add(smudge);
-			}
-		}
-	}
-
-	DynamicVectorClass<SmudgeTypeClass const *> largelist;
-	for (i = 0; i < list.Count(); i++) {
-		SmudgeTypeClass const * scorch = list[i];
-		if (!large) {
-			if (scorch->Width == 1 && scorch->Height == 1 || width > CELL_PIXEL_H && height > (CELL_PIXEL_W * 5 / 3)) {
-				largelist.Add(scorch);
-			}
-		} else {
-			if (scorch->Width > 1 && scorch->Height > 1) {
-				largelist.Add(scorch);
-			}
-		}
-	}
-
-	if (largelist.Count() > 0) {
-		new SmudgeClass(largelist[Random_Pick(0, largelist.Count() - 1)], coord);
-	} else if (list.Count() > 0) {
-		new SmudgeClass(list[Random_Pick(0, list.Count() - 1)], coord);
-	}
-
-	return(false);
+	return(Lay_Random_Smudge(false, coord, width, height, large));
 }
 
 

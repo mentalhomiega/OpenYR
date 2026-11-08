@@ -42,3 +42,21 @@ class Blitter;
 
 void Draw_Shape(Surface & surface, ConvertClass & convert, ShapeSet const * shapefile, int shapenum, Point2D const & point, Rect const & window, ShapeFlags_Type flags = SHAPE_NORMAL, unsigned char const * remap = NULL, int height_offset = 0, ZGradientType zgrad = ZGRAD_GROUND, int intensity = 1000, ShapeSet const * z_shapefile = NULL, int z_shapenum = 0, Point2D z_off = Point2D(0,0));
 void Blit_Block(Surface & surface, ConvertClass & convert, Surface const & source, Rect const & sourcerect, Point2D const & point, Rect const & clipwindow, unsigned char const * remap = NULL, Blitter const * blitter = NULL, int = 0, ZGradientType zgrad = ZGRAD_GROUND, int = 1000, int = 0);
+
+// The opacity from 0 to 255 that a translucency flag gives a shape. Shapes with no translucency flag are 255.
+inline int Shape_Opacity(ShapeFlags_Type flags)
+{
+	switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
+		case SHAPE_TRANSLUCENT25:
+			return(192);
+
+		case SHAPE_TRANSLUCENT50:
+			return(128);
+
+		case SHAPE_TRANSLUCENT75:
+			return(64);
+
+		default:
+			return(255);
+	}
+}

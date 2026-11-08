@@ -37,6 +37,8 @@
 extern bool AttackMoveArmed;
 extern bool AttackMoveOrdering;
 bool Attack_Move_Key_Held(void);
+bool Attack_Move_Pending(void);
+bool All_Selected_Can_Attack_Move(void);
 
 #include "_voxel.h"
 #include "audio/audiohandle.h"
@@ -85,6 +87,34 @@ class WaveClass;
 class WeaponTypeClass;
 class ShapeSet;
 struct WeaponDataStruct;
+
+/*
+ * The recoil of one part of a techno's turret, the turret body or the barrel. The part slides
+ * back while it compresses, stays back while it holds, and returns while it recovers. The state
+ * is not saved, so a save taken mid-recoil loads with the part at rest.
+ */
+struct TechnoRecoilState {
+	enum Phase {
+		PHASE_IDLE,
+		PHASE_COMPRESSING,
+		PHASE_HOLDING,
+		PHASE_RECOVERING
+	};
+
+	TechnoRecoilState(void) : CurrentPhase(PHASE_IDLE), FramesLeft(0), TravelPerFrame(0.0f), TravelSoFar(0.0f) {}
+
+	void Fire(TechnoTypeClass::RecoilControlType const & control);
+	void Update(TechnoTypeClass::RecoilControlType const & control);
+
+	Phase CurrentPhase;
+	int FramesLeft;
+	float TravelPerFrame;
+
+	/*
+	 * How far the part is back from its rest position, in leptons along its own axis.
+	 */
+	float TravelSoFar;
+};
 
 
 /****************************************************************************
@@ -189,6 +219,18 @@ class TechnoClass :	public RadioClass,
 		std::vector<TechnoClass *> AttackedTargets;
 		AbstractClass * Distributed_Target(void);
 		AbstractClass * Greatest_Threat_Scan(ThreatType method, Coord const & coord, bool onlyenemy) const;
+		void Draw_Spawner_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Occupant_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Passenger_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Tiberium_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Mind_Control_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Ammo_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pips2, Rect const & rect) const;
+		void Draw_Charge_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Heal_Icon(Point2D const & xy, Rect const & rect) const;
+		void Draw_Group_Number(Point2D const & bottomleft, Rect const & rect) const;
+		void Scan_Threats_Air(ThreatType method, int mask, int range, bool onlyenemy, ObjectClass const *& bestobject, int & bestval) const;
+		bool Scan_Threats_Ring(ThreatType method, int mask, int range, int crange, Cell const & cell, bool onlyenemy, int zone, ObjectClass const *& bestobject, int & bestval, AbstractClass *& found) const;
+		void Scan_Threats_Full(ThreatType method, int mask, bool onlyenemy, int zone, Coord const & coord, ObjectClass const *& bestobject, int & bestval) const;
 		bool Is_Bunkered(void) const { return(BunkerLinkedItem != NULL && RTTI != RTTI_BUILDING); }
 		void Transfer_Slaves(TechnoClass * to);
 
@@ -207,10 +249,15 @@ class TechnoClass :	public RadioClass,
 		bool IsLetGoByLocomotor;
 		bool IsCrashing;
 
+		// The unit this object tipped with a DirectRocker warhead, or the firer that tipped this one (DirectRockerLinkedUnit, 0x4699AD).
+		// While the link stands, a unit that is not Pushy takes no click orders and does not move, and a vehicle cannot fire.
+		FootClass * DirectRockerLinkedUnit;
+
 		// The object and house that held this one, as they are credited with what it crushes when it lands.
 		TechnoClass * LetGoBy;
 		HouseClass * LetGoByHouse;
-		void Crush_On_Landing(void);
+		bool Crush_On_Landing(void);
+		void Explode_On_Landing(void);
 
 		// The threat this object has added to the cell it stands in, so it can be taken back exactly.
 		int ThreatPosed;
@@ -218,6 +265,7 @@ class TechnoClass :	public RadioClass,
 		void Release_Held_Vehicle(TechnoClass * holder);
 		void Release_Locomotor(bool clear_target);
 		void Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor);
+		void Clear_Direct_Rocker_Link(void);
 
 		// The frame this object can call its next airstrike, and the planes of the strike still out.
 		int AirstrikeReadyFrame;
@@ -259,6 +307,9 @@ class TechnoClass :	public RadioClass,
 		// The open-topped transport this object rides and fires from, if any.
 		TechnoClass * Transporter;
 		bool IsInOpenToppedTransport;
+
+		// True while a soldier is being set down on the map and enters its idle mode (gamemd TechnoClass+0x1F8). A teleport it is ordered then clears the occupants off its destination cell. Only set inside Unlimbo, so it is not saved.
+		bool IsBeingPlaced;
 
 		/*
 		 * Temporal weapons: the warp this object holds when its primary warhead is Temporal, the
@@ -308,16 +359,27 @@ class TechnoClass :	public RadioClass,
 		bool IsTurretSoundPlaying;
 
 		/*
+		 * The one voice reply this object has waiting, the reply its own voice channel last
+		 * started, and that channel. A new reply replaces the waiting one, and starts only when
+		 * the channel is idle (TechnoClass::QueueVoice, 0x708D90; TechnoClass::Update, 0x6F9E50). Audio only: none of
+		 * these is saved or part of the checksum, so a loaded object has no reply waiting.
+		 */
+		VocType QueuedVoice;
+		VocType PlayedVoice;
+		AudioHandle VoiceChannel;
+
+		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
 		 * tracking table is keyed by it, so a moved object untracks here before plotting anew.
 		 */
 		Point2D RadarPos;
 
 		/*
-		**	This is a list of bits of which houses are spying on this building,
-		**	if in fact this is a building.
+		**	The countries that have spied on this building, if in fact this is a building.
+		**	Every house of a spying country shares the bit, as gamemd's DisplayProductionTo
+		**	does, so a second house of that country also sees what the spy learned.
 		*/
-		HouseSet SpiedBy;
+		CountrySet SpiedBy;
 
 		/*
 		**	If this object is part of a pseudo-team that the player is managing, then
@@ -466,6 +528,9 @@ class TechnoClass :	public RadioClass,
 		// up per shot and wraps to zero at the segment count (TechnoClass::Fire, 0x6FDD50).
 		int RadialFireIndex;
 
+		// The point of the SprayAttack ring that this object's last shot struck, from 0 (east) to 7.
+		int SprayIndex;
+
 		/*
 		 * Losing a target partway through a burst starts this countdown. The burst keeps its
 		 * next-shot index until a new target is acquired or the full rearm interval expires.
@@ -550,12 +615,11 @@ class TechnoClass :	public RadioClass,
 		bool IsLocked;
 
 		/*
-		**	Buildings and units with turrets usually have a recoil animation when they
-		**	fire. If this flag is true, then the next rendering of the object will be
-		**	in the "recoil state". The flag will then be cleared pending the next
-		**	firing event.
+		**	The recoil of the turret body and of the barrel. Both start when the object fires,
+		**	if its type sets TurretRecoil=yes, and the draw moves each part by its travel.
 		*/
-		bool IsInRecoilState;
+		TechnoRecoilState TurretRecoil;
+		TechnoRecoilState BarrelRecoil;
 
 		/*
 		**	If this unit is "loosely attached" to another unit it is given special
@@ -696,6 +760,9 @@ class TechnoClass :	public RadioClass,
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual TechnoTypeClass const * Techno_Type_Class(void) const override;
 
+		ConvertClass * Palette_Converter(void) const;
+		ConvertClass * Remap_Converter(void) const;
+
 		virtual bool Is_Move_Override(void) const;
 		virtual bool Is_Allowed_To_Recloak(void) const;
 		virtual bool Can_Scatter(void) const;
@@ -720,6 +787,8 @@ class TechnoClass :	public RadioClass,
 		virtual int How_Many_Survivors(void) const;
 		virtual void Scatter_Incoming_Infantry(void) const;
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
+		WeaponTypeClass const * Weapon_Against(AbstractClass * target) const;	// NULL when the selected slot is empty.
+		bool Is_Firing_Garrison(void) const;
 		int Naval_Weapon(TechnoClass const * target) const;
 		void Set_Turret_Weapon(int position);
 		void Receive_Gunner(FootClass * gunner);
@@ -730,6 +799,8 @@ class TechnoClass :	public RadioClass,
 		 * Is a chrono teleport holding this object? Its AI waits while the teleport runs.
 		 */
 		virtual bool Is_Chrono_Warping(void) const {return(false);}
+		// Warping out, or held by a chrono teleport.
+		bool Is_Warp_Fading(void) const {return(IsBeingWarpedOut || Is_Chrono_Warping());}
 		void Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon = NULL);
 		int Bomb_Delay(void) const;
 		bool Can_Detonate_Bomb(void) const;
@@ -742,6 +813,9 @@ class TechnoClass :	public RadioClass,
 		void Disarm_Bomb(void);
 		void Gattling_Rate_Up(int frames);
 		void Gattling_Rate_Down(int frames);
+		int const * Gattling_Stages(void) const;
+		void Stop_Gattling_Sound(void);
+		void Stop_Turret_Sound(void);
 		virtual int Get_Collateral_Damage(void) const;
 		virtual int Get_Z_Adjust(void) const;
 		bool Is_Z_Fudge_Bridge(void) const;
@@ -810,6 +884,12 @@ class TechnoClass :	public RadioClass,
 		virtual void Response_Move(void);
 		virtual void Response_Attack(void);
 		VocType Weapon_Attack_Voice(AbstractClass * target) const;
+		bool May_Speak(void) const;
+		void Queue_Voice(VocType voc);
+		void Voice_AI(void);
+		void Order_Voice(MissionType mission, AbstractClass * target);
+		virtual VocType Deploy_Voice(void) const;
+		bool Can_Attack_Move(void) const;
 		virtual void Player_Assign_Mission(MissionType order, AbstractClass * target=NULL, AbstractClass * destination=NULL);
 		Coord Predict_Target_Coord(void) const;
 
@@ -823,6 +903,9 @@ class TechnoClass :	public RadioClass,
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;
+		void Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self);
+		void Release_Warp(void);
+		void Powered_Unit_AI(void);
 		void Spring_Kill_Events(bool credited);
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
@@ -833,10 +916,12 @@ class TechnoClass :	public RadioClass,
 		bool Can_Passive_Acquire_Targets(void);
 		bool Can_Opportunity_Fire(void);
 		bool Opportunity_Fire(void);
+		void Shorten_Targeting_Delay(void);
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
 		bool Is_Close_Enough(AbstractClass * target, int which=0) const;
+		bool Is_Close_Enough_With_Selected_Weapon(AbstractClass * target) const;
 		bool Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const;
 		Coord Fire_Origin(AbstractClass const * target, WeaponTypeClass const * weapon) const;
 		int Elevation_Range_Bonus(AbstractClass const * target, bool withheight = true) const;
@@ -873,6 +958,9 @@ class TechnoClass :	public RadioClass,
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		bool Evaluate_Cell(ThreatType method, int mask, Cell const & cell, int range, TechnoClass const ** object, int & value, int zone=0) const;
 		bool Evaluate_Object(ThreatType method, int mask, int range, TechnoClass const * object, int & value, int zone=-1, Coord const & coord=COORD_NONE) const;
+		bool Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const;
+		bool Passes_Mirage_Roll(TechnoClass const * object) const;
+		bool Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const;
 		int Evaluate_Just_Cell(Cell const & cell) const;
 
 		void Assign_Archive_Target(AbstractClass * target);
@@ -912,18 +1000,23 @@ class TechnoClass :	public RadioClass,
 
 		virtual void Draw_Pre_Render(Point2D const & point, Rect const & cliprect) const override;
 		virtual void Draw_Post_Render(Point2D const & point, Rect const & cliprect) const override;
+		void Draw_Bomb_Icon(Point2D const & point, Rect const & cliprect) const;
+		// Draws a structure's repair wrench between the bomb icon and the rank insignia. Nothing else has one.
+		virtual void Draw_Wrench_Icon(Rect const & cliprect) const {}
 		virtual void Draw_Action_Line(void) const;
 
 		virtual void Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, int brightness, ShapeFlags_Type negflags) const;
 
 		void Techno_Blit_Voxel(StaticBufferClass::Entry const & cache, Point2D const & point, Rect const & cliprect, ShapeFlags_Type flags, int brightness) const;
 		void Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const;
+		bool Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const;
 		SurfaceRegion Techno_Render_Voxel_Object(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int frame, ShapeFlags_Type flags, int brightness) const;
 		SurfaceRegion Techno_Render_Voxel_Shadow(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int layer_index, ShapeFlags_Type flags, bool cached) const;
 
 		bool Is_Decoration_Visible(void) const;
 		bool Is_Hidden_Behind_Building(void) const;
 		Point2D Pip_Origin(Point2D const & point) const;
+		bool Pips_Visible_To_Player(void) const;
 		virtual void Draw_Health_Bar_Old(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Pips(Point2D const & bottomleft, Point2D const & bottomright, Rect const & rect) const;
@@ -954,6 +1047,8 @@ class TechnoClass :	public RadioClass,
 		int Iron_Curtain_Brightness(int brightness) const;
 		ConvertClass * Effect_Converter(ColorScheme * scheme) const;
 		void Iron_Tint_AI(void);
+		void Start_Turret_Recoil(void);
+		void Turret_Recoil_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
 		bool Is_Immune_To_Iron_Curtain(bool force_shield) const;
@@ -1015,6 +1110,20 @@ class TechnoClass :	public RadioClass,
 		**	it renders 45 degree angles.
 		*/
 		static int const BodyShape[FACING_COUNT * 4];
+
+	private:
+		FireErrorType Weapon_Target_Refusal(WeaponTypeClass const * weapon, TechnoClass const * techno, AbstractClass * target, CellClass const * cellptr) const;
+		AbstractClass * Spray_Or_Area_Fire_Target(AbstractClass * target, WeaponTypeClass const * weapon);
+		bool Fire_Without_Projectile(AbstractClass * target, WeaponTypeClass * weapon, int which);
+		void Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & displacement, Coord const & turret_coord, int which);
+		DirType Launch_Direction(BulletClass * bullet, WeaponTypeClass const * weapon, Coord const & displacement, Coord & fire_coord, int & max_speed);
+		bool Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const;
+		void Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord const & fire_coord, BuildingClass * garrison, bool garrison_fire);
+		void Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord);
+		bool Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative);
+		void Release_Dependents_On_Death(TechnoClass * source);
+		void Play_Death_Voices(WarheadTypeClass const * warhead);
+		void Spawn_Death_Debris(void);
 };
 
 inline bool TechnoClass::Is_Allowed_To_Leave_Map(void) const { return(false); }
@@ -1038,6 +1147,12 @@ inline WeaponDataStruct const * TechnoClass::Get_Class_Weapon_Data(int which) co
 	}
 
 	return(TClass->Get_Weapon(which));
+}
+
+
+inline int const * TechnoClass::Gattling_Stages(void) const
+{
+	return(Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage);
 }
 
 
@@ -1069,3 +1184,35 @@ inline TechnoClass const * AbstractClass::As_TechnoClass(void) const
 {
 	return(dynamic_cast<TechnoClass const *>(this));
 }
+
+
+/// <summary>
+/// Selects several objects with one reply. Selecting through this scope lets the first object that is selected
+/// speak, and keeps the rest quiet, as gamemd clears MoveFeedback after the first object of a group select. A
+/// scope made with speaks false keeps every object quiet, as gamemd's type select does.
+/// </summary>
+class SelectionVoiceScope
+{
+	public:
+		explicit SelectionVoiceScope(bool speaks = true)
+		{
+			AllowVoice = speaks;
+		}
+
+		~SelectionVoiceScope()
+		{
+			AllowVoice = true;
+		}
+
+		bool Select(ObjectClass * object)
+		{
+			bool const selected = object->Select();
+			if (selected) {
+				AllowVoice = false;
+			}
+			return(selected);
+		}
+
+		SelectionVoiceScope(SelectionVoiceScope const &) = delete;
+		SelectionVoiceScope & operator=(SelectionVoiceScope const &) = delete;
+};

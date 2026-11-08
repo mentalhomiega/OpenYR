@@ -90,19 +90,12 @@ struct UIBrowserRow
 };
 
 
-struct UIBrowserOption
-{
-	std::string Label;
-	int Value = 0;
-};
-
-
 struct UIMissionBrowserState
 {
 	std::vector<UIBrowserMission> Missions;
 	std::vector<UIBrowserGroup> Groups;
 	std::vector<UIBrowserRow> Rows;
-	std::vector<UIBrowserOption> Difficulties;
+	std::vector<UIChoice> Difficulties;
 
 	/// The mission the briefing shows, as an index into Missions, or -1 for none.
 	int Selected = -1;

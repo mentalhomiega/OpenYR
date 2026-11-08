@@ -35,6 +35,12 @@ struct UIColorPresetOption
 	std::string Caption;
 };
 
+// One step of the remap ramp preview, as a CSS color.
+struct UIColorRampStep
+{
+	std::string Color;
+};
+
 // One player's color as another lobby row sees it, for the duplicate check.
 struct UIColorPickRival
 {
@@ -55,6 +61,13 @@ struct UIColorPickState
 	// The inline style that places the marker over the chosen hue and saturation, in dp.
 	std::string MarkerStyle = "left: 0dp; top: 0dp";
 	std::string Swatch = "#000000";
+	// The chosen color as numbers, for a player who cannot rely on the swatch: RGB with its hex form, then
+	// hue, saturation and brightness. Nearest names the closest of the eight standard lobby colors.
+	std::string ReadRGB;
+	std::string ReadHSV;
+	std::string Nearest;
+	// The sixteen steps of the remap ramp that units are drawn with, lightest first.
+	std::vector<UIColorRampStep> Ramp;
 	std::string Notice;
 	std::vector<UIColorPresetOption> Presets;
 	int Generation = 0;
@@ -73,5 +86,8 @@ void UI_Color_Pick_Mark_Taken(UIColorPickState & state, std::vector<UIColorPickR
 void UI_Color_Pick_Field(UIColorPickState & state, int x, int y);
 void UI_Color_Pick_Value(UIColorPickState & state, int value);
 void UI_Color_Pick_Preset(UIColorPickState & state, int index);
+// Applies a picker intent that the skirmish and net lobby screens share. Returns false, changing nothing, for any
+// other name. A field, value or preset pick is ignored while the picker is closed; a cancel closes it.
+bool UI_Color_Pick_Intent(UIColorPickState & state, std::string const & name, int value, std::string const & text);
 bool UI_Color_Pick_Clashes(UIColorPickState const & state, std::vector<UIColorPickRival> const & rivals);
 std::vector<std::uint8_t> UI_Color_Pick_Pixels(UIColorPickState const & state);

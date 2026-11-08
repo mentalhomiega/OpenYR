@@ -340,6 +340,7 @@ class ObjectClass : public AbstractClass
 		virtual bool In_Range(Coord const & coord, int which=0) const;
 		virtual int Weapon_Range(int =0) const;
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL);
+		bool Spring_First_Damaged(TechnoClass * source);
 		virtual void Scatter(Coord const &, bool forced=false, bool nokidding=false);
 		virtual bool Catch_Fire(void);
 		virtual void Fire_Out(void);
@@ -397,6 +398,12 @@ class ObjectClass : public AbstractClass
 			}
 		}
 
+		// Whether this object is active, down, out of limbo, and has a tag with trig attached.
+		bool Is_Tagged_By(TriggerClass * trig) const
+		{
+			return(IsActive && IsDown && !IsInLimbo && Tag != NULL && Tag->Is_Trigger_Attached(trig));
+		}
+
 		/*
 		**	Scenario and debug support.
 		*/
@@ -425,6 +432,27 @@ inline ObjectClass const * AbstractClass::As_ObjectClass(void) const
 inline ObjectClass * As_Object(AbstractClass * target)
 {
 	return(dynamic_cast<ObjectClass *>(target));
+}
+
+
+/*
+ * The point a projectile or missile homes on: an object's Target_Coord, or a cell's As_Coord.
+ * Beam_Coord uses a cell's Center_Coord instead, which leaves out a bridge's height.
+ */
+inline Coord Aim_Coord(AbstractClass const & target)
+{
+	ObjectClass const * object = target.As_ObjectClass();
+	return(object != NULL ? object->Target_Coord() : target.As_Coord());
+}
+
+
+/*
+ * The point a beam is drawn to: an object's Target_Coord, or a cell's Center_Coord.
+ */
+inline Coord Beam_Coord(AbstractClass const & target)
+{
+	ObjectClass const * object = target.As_ObjectClass();
+	return(object != NULL ? object->Target_Coord() : target.Center_Coord());
 }
 
 Coord Vector_Center(DynamicVectorClass<ObjectClass *> const & list);

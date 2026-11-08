@@ -35,6 +35,7 @@
 #include "foot.h"
 
 #include <cstdint>
+#include <optional>
 
 class Surface;
 
@@ -105,6 +106,7 @@ class UnitClass : public FootClass
 		bool IsLandingToDeploy;
 		int SimpleDeployFrame;
 		int Simple_Deploy_AI(void);
+		Cell Deploy_Landing_Cell(void) const;
 		bool Convert_To(UnitTypeClass const * type);
 
 		// The passenger count a gunner vehicle last acted on.
@@ -235,6 +237,8 @@ class UnitClass : public FootClass
 		virtual void Unit_Draw_Voxel(Point2D xyoff, Rect rect, int intensity) const;
 		virtual void Unit_Draw_Shape(Point2D xyoff, Rect rect, int intensity) const;
 		virtual void Unit_Blit_Voxel(Surface& surface, Point2D xyoff, Rect rect, int alpha) const;
+		bool Is_Composite_Fudged(void) const;
+		bool Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness, StaticBufferClass::Entry const & entry) const;
 
 		/*
 		**	User I/O.
@@ -254,6 +258,7 @@ class UnitClass : public FootClass
 		virtual bool Deploy_To_Fire(void) const override;
 		void EMPulse_Blast(void);
 		void Explode(void);
+		void Land_Crashed(void);
 
 		/*
 		**	AI.
@@ -298,6 +303,7 @@ class UnitClass : public FootClass
 		virtual bool Enter_Idle_Mode(bool initial=false, bool=true) override;
 		virtual MoveType Can_Enter_Cell(CellClass const * cell, FacingType dir = FACING_NONE, int cell_height = -1, CellClass const * = 0, bool = true) const override;
 		virtual void Per_Cell_Process(PCPType why) override;
+		void Break_Away_From_Contact(void);
 
 		/*
 		**	File I/O.
@@ -310,6 +316,27 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		bool Restricted_Land_Blocks_Entry(CellClass const * cellptr, int cell_height) const;
+		bool Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const;
+		std::optional<MoveType> Building_Occupant_Verdict(ObjectClass * obj, CellClass const * cellptr, FacingType dir, MoveType & retval, bool & skip) const;
+		std::optional<MoveType> Occupant_Verdict(ObjectClass * obj, MoveType & retval, bool & crushable) const;
+		bool Do_Special_Unload(int & delay);
+		bool Unload_Next_Passenger(void);
+		int Unload_Passengers(void);
+		int Unload_Into_Structure(void);
+		bool Finish_Harvester_Unload(void);
+		int Dump_Harvester_Load(void);
+		int Unload_Harvester(void);
+		bool Balloon_Hover_Holds_Destination(AbstractClass const * target);
+		void Update_Teleporter_Locomotor(AbstractClass const * target);
+		bool Negotiate_Entry_Contact(AbstractClass *& target, BuildingClass * b);
+		void Retarget_Subterranean_Drive(AbstractClass *& target, bool & immediate);
+		bool Plan_Subterranean_Route(AbstractClass *& target, bool & needsswap);
+		void Swap_Tunnel_For_Drive_Locomotor(AbstractClass * target, bool needsswap);
+		bool Dock_At_Repair_Facility(BuildingClass * b, AbstractClass *& target, bool immediate);
+		bool Queue_For_Weapons_Factory(AbstractClass * target);
+		void Send_Harvester_To_Dock(BuildingClass * b, AbstractClass *& target);
+		void Power_On_At_Repair_Facility(void);
 		void Eject_Passengers(void);
 		bool Place_Passenger_Beside(FootClass * passenger);
 		void Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select);

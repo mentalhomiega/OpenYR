@@ -1,0 +1,16 @@
+; A snow dusk map for rmg-snow.txt.
+[Basic]
+Name=Random snow dusk
+RandomMap=yes
+
+[RandomMap]
+Width=2
+Height=1
+NumPlayers=2
+Biome=1
+Time=2
+WaterAmount=20
+Tiberium=30
+TiberiumLayout=50
+Vegetation=100
+UrbanPresence=0

@@ -110,9 +110,6 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	ConvertWater(NULL),
 	ConvertLand(NULL),
 	IsDeployer(false),
-	IsDeployToLand(false),
-	IsDeployFire(false),
-	DeployFireWeapon(1),
 	DeployingAnim(NULL),
 	IsToHarvest(false),
 	IsToVeinHarvest(false),
@@ -120,7 +117,6 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsTilter(true),
 	DeathFrameRate(1),
 	IsLockTurret(false),
-	IsTurretRecoil(false),
 	IsTurretBob(false),
 	IsNoFireWhileMoving(false),
 	IsDeployToFire(false),
@@ -133,7 +129,6 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	WreckReleasesPassengers(true),
 	AltImageData(NULL),
 	IsNonVehicle(false),
-	IsDisguiseWhenStill(false),
 	IsJellyfish(false),
 	IsLimpetDrone(false),
 	IsMobileEMP(false),
@@ -161,6 +156,9 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	UnitTypes.Add(this);
 	HeapID = (UnitType)UnitTypes.ID(this);
 	FiringSyncFrame[0] = FiringSyncFrame[1] = -1;
+	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
+		BurstDelay[i] = -1;
+	}
 }
 
 
@@ -383,11 +381,8 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		ConvertWater = TGet_Class(ini, Name(), "Convert.Water", ConvertWater);
 		ConvertLand = TGet_Class(ini, Name(), "Convert.Land", ConvertLand);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
-		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
-		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
-		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
 		DeployingAnim = TGet_Class(ini, Name(), "DeployingAnim", DeployingAnim);
 		IsNoFireWhileMoving = ini.Get_Bool(Name(), "NoMovingFire", IsNoFireWhileMoving);
 		IsDeployToFire = ini.Get_Bool(Name(), "DeployToFire", IsDeployToFire);
@@ -405,7 +400,6 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsCarriesCrate = ini.Get_Bool(Name(), "CarriesCrate", IsCarriesCrate);
 		WreckReleasesPassengers = ini.Get_Bool(Name(), "WreckReleasesPassengers", WreckReleasesPassengers);
 		IsLockTurret = !IsTurretEquipped;
-		IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
 		IsTurretBob = ini.Get_Bool(Name(), "TurretBob", IsTurretBob);
 		IsTooBigToFitUnderBridge = ini.Get_Bool(Name(), "TooBigToFitUnderBridge", IsTooBigToFitUnderBridge);
 		IsTotable = ini.Get_Bool(Name(), "Totable", IsTotable);
@@ -426,7 +420,6 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsLargeVisceroid = ini.Get_Bool(Name(), "LargeVisceroid", IsLargeVisceroid);
 		IsJellyfish = ini.Get_Bool(Name(), "Jellyfish", IsJellyfish);
 		IsNonVehicle = ini.Get_Bool(Name(), "NonVehicle", IsNonVehicle);
-		IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
 
 		/*
 		 * As UnitTypeClass::LoadFromINI (0x747620): only the type named FV reads which turret each
@@ -505,8 +498,13 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		StartDeathFrame = ArtINI.Get_Int(Graphic_Name(), "StartDeathFrame", StartDeathFrame);
 		MaxDeathCounter = ArtINI.Get_Int(Graphic_Name(), "MaxDeathCounter", MaxDeathCounter);
 
-		FiringSyncFrame[0] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame1", FiringSyncFrame[0]);
-		FiringSyncFrame[1] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame2", FiringSyncFrame[1]);
+		FiringSyncFrame[0] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame0", FiringSyncFrame[0]);
+		FiringSyncFrame[1] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame1", FiringSyncFrame[1]);
+		for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
+			char buf[20];
+			sprintf(buf, "BurstDelay%d", i);
+			BurstDelay[i] = ini.Get_Int(Name(), buf, BurstDelay[i]);
+		}
 
 		ini.Get_String(Name(), "AltImage", AltImageFile);
 
@@ -555,6 +553,15 @@ bool UnitTypeClass::Is_Immune_To_EMP(void) const
 }
 
 
+/// <summary>
+/// Can a unit of this type fire while its locomotor moves it? A unit that cannot must stop first.
+/// </summary>
+bool UnitTypeClass::Fires_While_Moving(void) const
+{
+	return(!IsNoFireWhileMoving && IsMobileFire);
+}
+
+
 ClassID UnitTypeClass::Class_ID(void) const
 {
 	return(ClassID_UnitTypeClass);
@@ -579,7 +586,6 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsToVeinHarvest);
 	crc(IsFireAnim);
 	crc(IsLockTurret);
-	crc(IsTurretRecoil);
 	crc(IsNoFireWhileMoving);
 	crc(IsTilter);
 	crc(IsUseTurretShadow);
@@ -625,15 +631,11 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ConvertWater);
 	stream.Serialize(ConvertLand);
 	stream.Serialize(IsDeployer);
-	stream.Serialize(IsDeployToLand);
-	stream.Serialize(IsDeployFire);
-	stream.Serialize(DeployFireWeapon);
 	stream.Serialize(DeployingAnim);
 	stream.Serialize(IsToHarvest);
 	stream.Serialize(IsToVeinHarvest);
 	stream.Serialize(IsFireAnim);
 	stream.Serialize(IsLockTurret);
-	stream.Serialize(IsTurretRecoil);
 	stream.Serialize(IsNoFireWhileMoving);
 	stream.Serialize(IsDeployToFire);
 	stream.Serialize(IsTilter);
@@ -646,7 +648,6 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(WreckReleasesPassengers);
 	// AltImageData -- artwork, fetched from the mix files again as this loads.
 	stream.Serialize(IsNonVehicle);
-	stream.Serialize(IsDisguiseWhenStill);
 	stream.Serialize(IsJellyfish);
 	stream.Serialize(IsLimpetDrone);
 	stream.Serialize(IsMobileEMP);
@@ -657,6 +658,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxCharge);
 	stream.Serialize(StartCharge);
 	stream.Serialize(FiringSyncFrame);
+	stream.Serialize(BurstDelay);
 	stream.Serialize(StartStandFrame);
 	stream.Serialize(StartWalkFrame);
 	stream.Serialize(StartFiringFrame);

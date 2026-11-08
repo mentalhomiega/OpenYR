@@ -55,7 +55,7 @@ double const VIEW_ZOOM_MIN_MULTIPLAYER = 0.75;
 double View_Zoom_Native(void);
 
 // The furthest out and in the current game zooms, as ViewZoom values. The furthest out is
-// VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game.
+// VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game, raised on a small map so the view stays on the map.
 double View_Zoom_Min(void);
 double View_Zoom_Max(void);
 
@@ -68,6 +68,12 @@ Point2D Screen_To_View_Offset(Point2D const & screen_offset);
 
 // Converts an offset from TacticalRect's corner into an offset from ScreenTacticalRect's corner.
 Point2D View_To_Screen_Offset(Point2D const & view_offset);
+
+// Converts an absolute screen pixel into an offset from TacticalRect's corner.
+Point2D Screen_To_View_Point(Point2D const & screen_pixel);
+
+// Converts an offset from TacticalRect's corner into an absolute screen pixel.
+Point2D View_To_Screen_Point(Point2D const & view_offset);
 
 // The part of the map surfaces shown in ScreenTacticalRect.
 Rect Shown_Map_Rect(void);
@@ -83,8 +89,12 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame);
 void Allocate_Map_Surfaces(void);
 
 // Changes the zoom at once to the given multiple of the screen's own pixels, keeping the map
-// centered where it was. Returns whether it changed.
+// centered where it was. Returns whether it changed. While the map is being drawn the change waits for
+// the next Apply_Pending_View_Zoom, since it replaces the map surfaces the draw is using.
 bool Set_View_Zoom(double zoom);
+
+// Tells the zoom that GScreenClass::Render is drawing the map, from its start until the frame is shown.
+void Set_View_Zoom_Drawing(bool drawing);
 
 // Asks for a zoom change by the given step, in the same units, around a screen point, which stays over the same part
 // of the map; the next Apply_Pending_View_Zoom starts a glide to it.
@@ -92,3 +102,20 @@ void Request_View_Zoom_Step(double step, Point2D const & screen_point);
 
 // Applies a requested zoom change. Call it between frames, never while the map is being drawn.
 void Apply_Pending_View_Zoom(void);
+
+// Scripted scenes zoom the view to the rules' ScriptedCameraHeight, so the view shows the same amount of
+// map on any screen, when Options.ScriptedCameraZoom is on. A scripted action that takes the input away
+// calls this with input_locked set, which keeps the player's zoom, and Restore_Player_View_Zoom puts it back
+// when control returns. A camera move while the input is free calls it without, and nothing is restored
+// afterward, so the player zooms back by hand. Both set the zoom at once rather than gliding, so a camera scroll
+// still under way keeps its place.
+void Scripted_View_Zoom(bool input_locked);
+
+// Glides back to the zoom the player had when a scripted scene took the input, if one was kept.
+void Restore_Player_View_Zoom(void);
+
+// Drops any zoom kept for a scene, as when a scenario is cleared, so that unlocking keeps the zoom on screen.
+void Forget_Player_View_Zoom(void);
+
+// Whether a scene has the player's zoom kept, to be put back by Restore_Player_View_Zoom.
+bool Scripted_View_Zoom_Saved(void);

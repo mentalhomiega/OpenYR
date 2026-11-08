@@ -1,0 +1,57 @@
+; Waypoint mode (V): a move waypoint at 62,62 (index 0), then a waypoint on the Construction Yard at 72,62 (index 1), for
+; six Rhino tanks (HTNK). The path starts from an attack click on the yard (wpsend attack), as a click on the yard with the Rhinos
+; selected would be. With WaypointAttackFromFirst=yes (the default) the Rhinos drive to 62,62 first and attack once they arrive.
+; Expected AUTOTEST lines:
+;   frames 351 to 480: every HTNK on mission Move, toward 62,61 or 62,62.
+;   frame 500 on: the first HTNK on mission Attack with target GACNST's cell (74,64), all six by frame 560.
+;   frame 800: the yard has lost HP.
+; Before the key (run with -Mods src-agent23/tests/autotest/waypoint-attack-classic, which sets it to no): all six are
+; on mission Attack at frame 351, so the move is skipped, and the yard is at 211 HP at frame 800.
+; Run: scripts/run_autotest.ps1 -Build agent23 -Script src-agent23/tests/autotest/waypoint-attack-click-rhino.txt -Width 800 -Height 600 -Seconds 150
+30 command CenterBase
+300 grantunit HTNK 50 50
+300 grantunit HTNK 50 56
+300 grantunit HTNK 50 62
+300 grantunit HTNK 50 68
+300 grantunit HTNK 50 74
+300 grantunit HTNK 44 62
+305 reveal
+306 spawn GACNST 72 62
+310 view 60 62
+320 select HTNK
+321 selected
+330 selected
+330 command WaypointMode
+331 selected
+332 waypoint x 62 62
+334 waypoint x 72 62
+340 selected
+340 command WaypointMode
+341 selected
+342 select HTNK
+343 selected
+350 wpsend attack 72 62
+351 command ScreenCapture
+351 where HTNK
+355 where HTNK
+360 where HTNK
+370 where HTNK
+380 where HTNK
+400 where HTNK
+420 where HTNK
+440 where HTNK
+460 where HTNK
+480 where HTNK
+500 where HTNK
+520 where HTNK
+540 where HTNK
+560 where HTNK
+600 command ScreenCapture
+600 where HTNK
+650 where HTNK
+700 where HTNK
+800 where GACNST
+1000 where GACNST
+1200 where HTNK
+1400 where HTNK
+1600 quit

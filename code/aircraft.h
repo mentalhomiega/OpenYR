@@ -64,6 +64,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 
+		virtual bool In_Air(void) const override;
+		virtual bool On_Ground(void) const override;
+
 
 		/*
 		 * IFlyControl methods.
@@ -113,6 +116,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		virtual FacingType Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) const override;
 		AbstractClass * Good_Fire_Location(AbstractClass * target) const;
 		bool Cell_Seems_Ok(Cell const & cell, bool landing=false) const;
+		bool Waypoint_Reached(void) const;
 		Dir256 Pose_Dir(void) const;
 		AbstractClass * Good_LZ(void) const;
 		BuildingClass * Find_Dock_Building(void);
@@ -243,6 +247,7 @@ class AircraftClass : public FootClass, public IFlyControl
 
 		int Do_MISSION_MOVE_Carryall(void);
 		int Do_MISSION_MOVE_Normal(void);
+		void Announce_Incoming(void) const;
 
 		/*
 		 * This is the name of the scenario INI section that lists the aircraft to be

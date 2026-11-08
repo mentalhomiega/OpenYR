@@ -19,32 +19,92 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "gamedlg.h"
 #include "globals.h"
 #include "goptions.h"
+#include "houstype.h"
+#include "init.h"
 #include "keyboard.h"
+#include "language/language.h"
+#include "lobbycolor.h"
 #include "mainloop.h"
 #include "mixfile.h"
 #include "movies.h"
 #include "msgloop.h"
+#include "netshare.h"
 #include "rules.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shellmap.h"
 #include "side.h"
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/uishell.h"
 #include "ui/uitheme.h"
 #include "video.h"
 #include "voc.h"
 #include "wwmouse.h"
 
-#include <cstdio>
-
 
 std::string UI_Color_Text(COLORREF color)
 {
-	char text[16];
-	std::snprintf(text, sizeof(text), "#%02x%02x%02x", (unsigned)GetRValue(color), (unsigned)GetGValue(color), (unsigned)GetBValue(color));
-	return(std::string(text));
+	return(UI_Color_CSS(RGBClass(GetRValue(color), GetGValue(color), GetBValue(color))));
+}
+
+
+static int const UI_STOCK_COLORS[] = {
+	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
+};
+
+
+int UI_Multiplay_House_Count(void)
+{
+	return((int)HouseTypeClass::Lobby_Countries().size());
+}
+
+
+int UI_Multiplay_House_At(int position)
+{
+	std::vector<int> const list = HouseTypeClass::Lobby_Countries();
+	return(position >= 0 && position < (int)list.size() ? list[position] : -1);
+}
+
+
+char const * UI_House_Name(int house)
+{
+	return(HouseTypes[house]->Full_Name());
+}
+
+
+std::string UI_House_Tip(int house)
+{
+	HouseTypeClass const * type = HouseTypes[house];
+	return(type->StatusText.empty() ? std::string() : Fetch_String_UTF8(type->StatusText.c_str()));
+}
+
+
+std::string UI_Stock_Color_Label(int index)
+{
+	std::string name = UI_Stock_Color_Name(index);
+	if (name.empty() && index < ARRAY_SIZE(UI_STOCK_COLORS)) {
+		name = Fetch_String(UI_STOCK_COLORS[index]);
+	}
+	return(name);
+}
+
+
+std::string UI_Stock_Color_Text(int index)
+{
+	return(UI_Color_Text(Lobby_Color_Ref(index)));
+}
+
+
+std::vector<std::string> UI_Difficulty_Names(void)
+{
+	std::vector<std::string> names;
+	for (int index = 0; index < OptionsClass::MAX_DIFFICULTY_SETTING; index++) {
+		names.push_back(Fetch_String(GameDifficultyNames[index]));
+	}
+	return(names);
 }
 
 
@@ -296,6 +356,18 @@ bool UI_Service_Game(void)
 	}
 
 	return(false);
+}
+
+
+/// <summary>
+/// Services the game as UI_Service_Game does, then restores the title screen behind a modal dialog.
+/// </summary>
+/// <returns>True once the match has ended, which closes the screen.</returns>
+bool UI_Service_Title(void)
+{
+	bool ended = UI_Service_Game();
+	Title_Screen_Restore();
+	return(ended);
 }
 
 

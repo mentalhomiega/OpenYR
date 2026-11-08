@@ -11,6 +11,7 @@
 #pragma once
 
 #include "house.hh"
+#include "nettiming.h"
 
 #include <array>
 #include <string>
@@ -68,6 +69,10 @@ class SpawnerConfigClass
 		};
 
 		void Read_INI(INIClass const & ini);
+
+		// The launch file text that Read_INI reads back into the same match. A person's seat is written
+		// as a section and a computer's by position, so a game started from the menus can be launched again.
+		std::string Write_INI(void) const;
 		LaunchType Launch_Type(void) const;
 		int Session_Identity_CRC(void) const;
 
@@ -138,6 +143,12 @@ class SpawnerConfigClass
 		// TimingPolicy=Adaptive selects the adaptive rung table. Any other value, and the default, plays
 		// gamemd's timing. Each machine's own, like the timeouts.
 		bool AdaptiveTiming = false;
+		// The send period and look-ahead the host chose, from FrameSendRate and MaxAhead. The CnCNet client writes
+		// its default send period (7) with no look-ahead when its host chose nothing, which reads as no choice.
+		// Shared by every machine, so it is part of the session identity. Unset plays gamemd's timing.
+		NetTiming::HostTimingChoice TimingChoice;
+		// The network protocol the match plays: 2, or 0 when the host chose it.
+		int Protocol = 2;
 
 		// A debugging aid that logs the frame check value each frame. It does not change the match,
 		// so it stays out of the session identity.

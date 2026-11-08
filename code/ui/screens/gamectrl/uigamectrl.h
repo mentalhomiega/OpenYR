@@ -18,13 +18,6 @@
 class UIViewClass;
 
 
-struct UIGameControlsChoice
-{
-	int Value = 0;
-	std::string Label;
-};
-
-
 class UIGameControlsServiceClass
 {
 	public:
@@ -38,6 +31,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Scroll_Coasting(bool on) = 0;
 		virtual void Set_Edge_Scroll(bool on) = 0;
 		virtual void Set_Show_Hidden(bool on) = 0;
+		virtual void Set_Show_Defence_Range(bool on) = 0;
 		virtual void Set_Difficulty(int difficulty) = 0;
 		virtual void Set_Alt_To_Rally(bool on) = 0;
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
@@ -45,6 +39,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Sidebar_Sorting(bool on) = 0;
 		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
+		virtual void Set_Record_Replays(bool on) = 0;
 		virtual void Save(void) = 0;
 };
 
@@ -61,6 +56,9 @@ struct UIGameControlsState
 	bool Coasting = false;
 	bool EdgeScroll = false;
 	bool ShowHidden = false;
+	bool ShowDefenceRange = false;
+	// The interface style chosen in Display; the defence range ring starts on for Modern and off for Classic.
+	bool ModernInterface = false;
 	bool InGame = false;
 	bool HasSpeed = true;
 	bool HasDifficulty = true;
@@ -73,7 +71,8 @@ struct UIGameControlsState
 	bool AircraftBodyPick = true;
 	bool SidebarSorting = false;
 	bool DebugMode = false;
-	std::vector<UIGameControlsChoice> Autosaves;
+	bool RecordReplays = false;
+	std::vector<UIChoice> Autosaves;
 	int Autosave = 0;
 
 	std::vector<std::string> SpeedNames;
@@ -118,16 +117,21 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		void Update_Names(void);
 
 		UIGameControlsServiceClass & Service;
-		bool InitialAltToRally;
-		bool InitialSimulateUnfocused;
-		bool InitialAircraftBodyPick;
-		bool InitialSidebarSorting;
-		int InitialAutosave;
-		bool InitialDebugMode;
+		// The settings as the page opened. OK compares against these, and a bad pick falls back to them.
+		UIGameControlsState const Start;
 };
 
 
 std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
+
+namespace Rml
+{
+	class DataModelConstructor;
+}
+
+// Binds the game control fields the Game Controls and Classic Options pages share. The UIChoice array must be registered first.
+bool UI_Bind_Game_Controls(Rml::DataModelConstructor & model, UIGameControlsState & state);
+
 // The presenter of the game controls, with the settings as they stand now. Tabbed, it leaves with the Back label.
 std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(bool tabbed);
 

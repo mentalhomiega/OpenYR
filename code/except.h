@@ -68,7 +68,8 @@ bool Describe_Code_Address(void const * address, char * buffer, unsigned size);
 void Exception_Refresh_Module_Table(void);
 bool Exception_Stall_Lock(unsigned wait_milliseconds);
 void Exception_Stall_Unlock(void);
-bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, char * text, unsigned size);
+bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, ULONGLONG busy_milliseconds,
+			ULONGLONG stalled_milliseconds, char * text, unsigned size);
 bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folder_size, DWORD * error);
 
 #endif

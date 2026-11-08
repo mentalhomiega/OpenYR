@@ -6,6 +6,7 @@ opents_add_test(SkirmishSetup
     SOURCES skirmishsetup.cpp
         ../uishell/uicolorstub.cpp
         ../uishell/uidevstub.cpp
+        ../uishell/updatestub.cpp
         ../uishell/uiscriptstub.cpp
         ../uishell/uitexturestub.cpp
     ENGINE
@@ -20,6 +21,7 @@ opents_add_test(SkirmishSetup
         modchoice.cpp
         playercolor.cpp
         ui/screens/colorpick/uicolorpick.cpp
+        ui/screens/colorpick/uicolorpickview.cpp
         rgb.cpp
         ui/rml/rmlfont.cpp
         ui/rml/rmlfontfon.cpp

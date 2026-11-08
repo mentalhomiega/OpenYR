@@ -1,0 +1,20 @@
+; Siege Chopper (SCHP) given a player move order while its deploy animation runs. A deploying unit takes no move:
+; gamemd's ReadyToNextMission (UnitClass, 0x744270) holds the queued order until the deploy ends, and Mission_Unload
+; (0x73D630) then replaces it with Guard. The deploy finishes, logging "Deploy: SCHP deploys", and the chopper stays put.
+30 reveal
+40 grantunit SCHP 62 46
+50 select SCHP
+55 where SCHP
+60 command DeployObject
+70 where SCHP
+75 order SCHP 70 46
+80 where SCHP
+100 where SCHP
+130 where SCHP
+160 where SCHP
+200 where SCHP
+260 where SCHP
+330 where SCHP
+400 where SCHP
+500 where SCHP
+600 quit

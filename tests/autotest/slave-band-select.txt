@@ -1,0 +1,33 @@
+; A rubber band over a player's Slave Miner and its slaves selects the miner and the tank, and no slave.
+; gamemd's rubber band callback (FUN_004AC2B0 at 0x4AC2B0) calls TechnoClass::CanBeSelectedNow (0x6FC030) through
+; vtable slot 0x13C at 0x4AC2D9, so a slave whose SlaveOwner is set is passed over. The second band covers the slaves only
+; and should select nothing. Expected: "selected" after the first band lists YAREFN (the deployed miner) and HTNK, and
+; after the second band lists nothing. Before the band gate, both bands also listed three SLAV.
+; A band is dragged with windowpress, hold 01 (virtual-key 1, the left button, held for the drag), windowmove steps and
+; windowrelease, then release 01. Coordinates are window pixels at 800x600.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/slave-band-select.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 own SMIN 62 38
+41 own HTNK 58 40
+42 own E1 56 42
+600 where SLAV
+700 windowpress 200 200
+701 hold 01
+702 windowmove 350 280
+703 windowmove 500 380
+704 windowmove 500 380
+705 windowrelease 500 380
+706 release 01
+710 selected
+720 windowpress 450 300
+721 hold 01
+722 windowmove 480 330
+723 windowmove 500 360
+724 windowmove 500 360
+725 windowrelease 500 360
+726 release 01
+730 selected
+800 quit

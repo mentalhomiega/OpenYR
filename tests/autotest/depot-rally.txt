@@ -1,0 +1,55 @@
+; Allied Service Depot (GADEPT, UnitRepair=yes, no Factory key) on the XMP29U2 land at 60,22, with a Grizzly (MTNK) at 60,28.
+; The depot takes a rally point from a click on open ground at 66,24, as gamemd's BuildingClass::CellClickedAction (0x4436F0)
+; calls SetRallypoint for an IsUnitFactory building (0x455DA0 counts UnitRepair). The Grizzly is damaged and then enters the
+; depot. When repaired, gamemd's BuildingClass::Mission_Repair (0x44B780) sends a human's unit to the depot's ArchiveTarget
+; (the rally cell) when one is set, and to the exit cell otherwise. Before the fix the depot had no rally, and the Grizzly
+; left for the exit cell.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/depot-rally.txt -Map XMP29U2.MAP -Seconds 150 -Filter "AUTOTEST|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+300 own GADEPT 60 22
+302 own MTNK 60 28
+304 reveal
+305 view 61 23
+306 canrepair 60 22
+310 rallyof GADEPT
+312 clickcell GADEPT 66 24
+314 rallyof GADEPT
+320 damage MTNK 200
+322 where MTNK
+330 command ScreenCapture
+340 enter MTNK 60 22
+341 where MTNK
+360 where MTNK
+390 where MTNK
+420 where MTNK
+450 where MTNK
+480 where MTNK
+510 where MTNK
+540 where MTNK
+570 where MTNK
+600 where MTNK
+630 where MTNK
+660 where MTNK
+690 where MTNK
+720 where MTNK
+750 where MTNK
+780 where MTNK
+810 where MTNK
+840 where MTNK
+870 where MTNK
+900 where MTNK
+930 where MTNK
+960 where MTNK
+990 where MTNK
+1020 where MTNK
+1050 where MTNK
+1080 where MTNK
+1110 where MTNK
+1140 where MTNK
+1170 where MTNK
+1200 where MTNK
+1210 rallyof GADEPT
+1220 command ScreenCapture
+1230 where MTNK
+1240 quit

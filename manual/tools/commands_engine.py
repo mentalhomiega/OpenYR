@@ -431,35 +431,50 @@ def discover_fixed_sites(code_directory=CODE):
     return sorted(unique.values(), key=lambda site: (site.file, site.line, site.expression))
 
 
+# Parse_Command_Line hands each argument to these helpers, so the launch options are read in all of them.
+LAUNCH_FUNCTIONS = (
+    "Parse_Command_Line",
+    "Parse_Directory_Option",
+    "Parse_Launch_Option",
+    "Parse_Network_Option",
+    "Parse_Screen_Option",
+    "Parse_Debug_Option",
+    "Parse_Switch_Letters",
+)
+
+
 def discover_launch_sites(init_text=None):
     raw = read(INIT_SOURCE) if init_text is None else init_text
     stripped = extract_engine.strip_comments(raw)
-    opening, closing, _ = function_span(stripped, "Parse_Command_Line")
-    body = stripped[opening + 1:closing]
     guards = _guard_map(raw)
     source_lines = raw.splitlines()
     sites = []
 
-    def add(expression, position):
-        absolute = opening + 1 + position
-        line = line_number(raw, absolute)
-        sites.append(Site("code/init.cpp", "Parse_Command_Line", expression,
-                          guards[line], line, source_lines[line - 1].strip()))
+    for function in LAUNCH_FUNCTIONS:
+        opening, closing, _ = function_span(stripped, function)
+        body = stripped[opening + 1:closing]
 
-    for match in re.finditer(r"\bcase\s+(PARM_[A-Z0-9_]+)\s*:", body):
-        add("obfuscated:" + match.group(1), match.start())
-    for match in re.finditer(r"^.*\b(?:stricmp|strcmp|strstr|memcmp|strnicmp)\s*\(.*$", body, re.M):
-        line = match.group(0)
-        for literal in re.findall(r'"((?:[^"\\]|\\.)*)"', line):
-            value = _decode_rc_string(literal)
-            if value.startswith(("-", "/")):
-                add("literal:" + value, match.start())
-            elif value.lower() == ".map":
-                add("pattern:*.MAP", match.start())
-    for match in re.finditer(r"\bisdigit\s*\(\s*(?:\(\s*unsigned\s+char\s*\)\s*)?string\s*\[\s*1\s*\]\s*\)", body):
-        add("pattern:-<width>X<height>", match.start())
-    for match in re.finditer(r"\bcase\s+'([A-Z])'\s*:", body):
-        add("compact:-X" + match.group(1), match.start())
+        def add(expression, position):
+            absolute = opening + 1 + position
+            line = line_number(raw, absolute)
+            sites.append(Site("code/init.cpp", function, expression,
+                              guards[line], line, source_lines[line - 1].strip()))
+
+        for match in re.finditer(r"\bcase\s+(PARM_[A-Z0-9_]+)\s*:", body):
+            add("obfuscated:" + match.group(1), match.start())
+        # Option_Value tests a prefix as strnicmp does.
+        for match in re.finditer(r"^.*\b(?:stricmp|strcmp|strstr|memcmp|strnicmp|Option_Value)\s*\(.*$", body, re.M):
+            line = match.group(0)
+            for literal in re.findall(r'"((?:[^"\\]|\\.)*)"', line):
+                value = _decode_rc_string(literal)
+                if value.startswith(("-", "/")):
+                    add("literal:" + value, match.start())
+                elif value.lower() == ".map":
+                    add("pattern:*.MAP", match.start())
+        for match in re.finditer(r"\bisdigit\s*\(\s*(?:\(\s*unsigned\s+char\s*\)\s*)?string\s*\[\s*1\s*\]\s*\)", body):
+            add("pattern:-<width>X<height>", match.start())
+        for match in re.finditer(r"\bcase\s+'([A-Z])'\s*:", body):
+            add("compact:-X" + match.group(1), match.start())
 
     unique = {}
     for site in sites:

@@ -145,12 +145,7 @@ void LineTrailClass::Update_And_Draw_All(void)
 void LineTrailClass::All_Clear(void)
 {
 	for (int index = 0; index < Lines.Count(); index++) {
-		LineTrailClass * line = Lines[index];
-		if (line->Owner != NULL) {
-			line->Owner->LineTrailer = NULL;
-			line->Owner = NULL;
-		}
-		delete line;
+		delete Lines[index];
 	}
 	Lines.Clear();
 }

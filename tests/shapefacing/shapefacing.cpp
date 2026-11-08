@@ -8,7 +8,8 @@
  ******************************************************************************/
 
 // Holds Shape_Facing_Index to the facing a shape cut into 8, 16, 32 or 64 facings draws from,
-// and to the first facing for any other count. Needs no game data.
+// and to the first facing for any other count. Holds Eight_Facing_Entry to the eight entries a
+// parasite's bite reads. Needs no game data.
 
 #include <cstdio>
 
@@ -126,6 +127,40 @@ int main(void)
 		}
 		std::printf("  a direction carrying padding from a save\n");
 		Check(wrapped, "    still lands inside the range the artwork provides");
+	}
+
+	// A parasite's bite reads eight entries from north, with no offset, whatever the list's length.
+	{
+		bool from_north = true;
+		for (int index = 0; index < 8; index++) {
+			if (Eight_Facing_Entry(At(index, 8), 8) != index) {
+				from_north = false;
+			}
+		}
+		bool short_list = true;
+		int const short_counts[] = {1, 2, 3, 7};
+		for (int count : short_counts) {
+			for (int raw = 0; raw < 65536; raw += 1021) {
+				if (Eight_Facing_Entry(DirType(raw), count) != 0) {
+					short_list = false;
+				}
+			}
+		}
+		bool long_list = true;
+		int const long_counts[] = {16, 32, 64};
+		for (int count : long_counts) {
+			for (int raw = 0; raw < 65536; raw += 1021) {
+				int const entry = Eight_Facing_Entry(DirType(raw), count);
+				if (entry < 0 || entry >= 8) {
+					long_list = false;
+				}
+			}
+		}
+		std::printf("  the entry a parasite's bite plays\n");
+		Check(from_north, "    reads each eighth of a turn as its own entry, north first");
+		Check(Eight_Facing_Entry(DirType(0x8000), 8) == 4, "    south reads entry four");
+		Check(short_list, "    plays entry zero of a list shorter than eight");
+		Check(long_list, "    never plays past entry seven of a longer list");
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Checks FAILED.");

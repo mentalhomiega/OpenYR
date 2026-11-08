@@ -77,9 +77,6 @@ class UnitTypeClass : public TechnoTypeClass
 
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
-		bool IsDeployToLand;
-		bool IsDeployFire;
-		int DeployFireWeapon;
 		AnimTypeClass * DeployingAnim;
 
 		/*
@@ -106,9 +103,6 @@ class UnitTypeClass : public TechnoTypeClass
 		**	are good examples of this kind of unit.
 		*/
 		bool IsLockTurret;
-
-		// Set by TurretRecoil=. When true, the turret jerks back for one frame each time the unit fires.
-		bool IsTurretRecoil;
 
 		// Set by TurretBob=. When true, the turret and barrel shift up one or two pixels by the walk frame.
 		bool IsTurretBob;
@@ -195,9 +189,6 @@ class UnitTypeClass : public TechnoTypeClass
 		 */
 		bool IsNonVehicle;
 
-		// Does this vehicle look like a tree to other houses while it stands still?
-		bool IsDisguiseWhenStill;
-
 		// The numbered turrets and barrels a multi-turret vehicle that is not a gattling type swaps between.
 		VoxelDataStruct ChargerTurrets[WEAPON_SLOT_COUNT];
 		VoxelDataStruct ChargerBarrels[WEAPON_SLOT_COUNT];
@@ -271,6 +262,13 @@ class UnitTypeClass : public TechnoTypeClass
 		 * the recoil artwork. If -1, then that round is not tied to the animation.
 		 */
 		int FiringSyncFrame[FIRING_SYNC_FRAME_MAX];
+
+		/*
+		 * These are the delays, in game frames, between the successive shots of a burst. The
+		 * entry used is chosen by which shot of the burst has just been fired, and an entry
+		 * of -1 leaves that gap to a short random delay instead.
+		 */
+		int BurstDelay[4];
 
 		/*
 		 * This is the frame that the standing animation begins at within the shape file.
@@ -375,6 +373,7 @@ class UnitTypeClass : public TechnoTypeClass
 		virtual bool Is_Immune_To_EMP(void) const override;
 
 		TPoint2D<int> Turret_Adjust(Dir256 dir, TPoint2D<int> const & xy) const;
+		bool Fires_While_Moving(void) const;
 
 		/*
 		 * These point to the shape sets that the small and large visceroids are drawn

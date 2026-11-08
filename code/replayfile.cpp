@@ -1,0 +1,424 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#include "replayfile.h"
+#include "diskfile.h"
+
+#include <cstring>
+
+#include "hexformat.h"
+#include "littleendian.h"
+
+
+namespace ReplayFile {
+
+namespace {
+
+constexpr char MAGIC[8] = {'O', 'Y', 'R', 'R', 'E', 'P', 'L', 'Y'};
+
+constexpr std::uint8_t TAG_EVENT = 'E';
+constexpr std::uint8_t TAG_HASH = 'H';
+constexpr std::uint8_t TAG_END = 'Z';
+
+
+void Put_U8(std::vector<std::uint8_t> & out, std::uint8_t value)
+{
+	out.push_back(value);
+}
+
+
+void Put_Text(std::vector<std::uint8_t> & out, std::string const & text)
+{
+	Put_U32_LE(out, static_cast<std::uint32_t>(text.size()));
+	out.insert(out.end(), text.begin(), text.end());
+}
+
+
+void Put_Header(std::vector<std::uint8_t> & out, HeaderType const & header)
+{
+	out.insert(out.end(), MAGIC, MAGIC + sizeof(MAGIC));
+	Put_U32_LE(out, REVISION);
+	Put_U32_LE(out, header.Version);
+	Put_Text(out, header.Commit);
+	Put_U8(out, header.Modified ? 1 : 0);
+	Put_Text(out, header.Architecture);
+	Put_Text(out, header.Map);
+	Put_U32_LE(out, header.MapCrc);
+	Put_U32_LE(out, header.RulesCrc);
+	Put_U32_LE(out, header.ArtCrc);
+	Put_U32_LE(out, header.AiCrc);
+	Put_Text(out, header.Mods);
+	Put_U32_LE(out, header.Seed);
+	Put_U32_LE(out, static_cast<std::uint32_t>(header.GameSpeed));
+	Put_U32_LE(out, header.HashInterval);
+	Put_U32_LE(out, static_cast<std::uint32_t>(header.LocalHouse));
+	Put_Text(out, header.SpawnIni);
+	Put_Text(out, header.MapTitle);
+	Put_U32_LE(out, header.Recorded);
+	Put_U32_LE(out, static_cast<std::uint32_t>(header.Players.size()));
+	for (PlayerType const & player : header.Players) {
+		Put_Text(out, player.Name);
+		Put_U8(out, player.IsComputer ? 1 : 0);
+	}
+}
+
+
+// Reads fields from a byte range. A field that would run past the end fails and reads nothing.
+class ReaderClass
+{
+	public:
+
+		explicit ReaderClass(std::vector<std::uint8_t> const & bytes) : Bytes(bytes) {}
+
+		bool At_End(void) const { return(Position >= Bytes.size()); }
+
+		bool Get_U8(std::uint8_t & value)
+		{
+			if (Bytes.size() - Position < 1) {
+				return(false);
+			}
+			value = Bytes[Position++];
+			return(true);
+		}
+
+		bool Get_U32(std::uint32_t & value)
+		{
+			if (Bytes.size() - Position < 4) {
+				return(false);
+			}
+			value = 0;
+			for (int shift = 0; shift < 32; shift += 8) {
+				value |= static_cast<std::uint32_t>(Bytes[Position++]) << shift;
+			}
+			return(true);
+		}
+
+		bool Get_I32(std::int32_t & value)
+		{
+			std::uint32_t raw = 0;
+			if (!Get_U32(raw)) {
+				return(false);
+			}
+			value = static_cast<std::int32_t>(raw);
+			return(true);
+		}
+
+		bool Get_Bytes(std::vector<std::uint8_t> & out)
+		{
+			std::uint32_t length = 0;
+			if (!Get_U32(length) || length > FIELD_LIMIT || Bytes.size() - Position < length) {
+				return(false);
+			}
+			out.assign(Bytes.begin() + Position, Bytes.begin() + Position + length);
+			Position += length;
+			return(true);
+		}
+
+		bool Get_Text(std::string & out)
+		{
+			std::vector<std::uint8_t> raw;
+			if (!Get_Bytes(raw)) {
+				return(false);
+			}
+			out.assign(raw.begin(), raw.end());
+			return(true);
+		}
+
+		bool Get_Magic(void)
+		{
+			if (Bytes.size() < sizeof(MAGIC) || std::memcmp(Bytes.data(), MAGIC, sizeof(MAGIC)) != 0) {
+				return(false);
+			}
+			Position = sizeof(MAGIC);
+			return(true);
+		}
+
+	private:
+
+		std::vector<std::uint8_t> const & Bytes;
+		std::size_t Position = 0;
+};
+
+
+bool Get_Header(ReaderClass & reader, HeaderType & header)
+{
+	std::uint8_t modified = 0;
+	bool const read = reader.Get_U32(header.Version)
+		&& reader.Get_Text(header.Commit)
+		&& reader.Get_U8(modified)
+		&& reader.Get_Text(header.Architecture)
+		&& reader.Get_Text(header.Map)
+		&& reader.Get_U32(header.MapCrc)
+		&& reader.Get_U32(header.RulesCrc)
+		&& reader.Get_U32(header.ArtCrc)
+		&& reader.Get_U32(header.AiCrc)
+		&& reader.Get_Text(header.Mods)
+		&& reader.Get_U32(header.Seed)
+		&& reader.Get_I32(header.GameSpeed)
+		&& reader.Get_U32(header.HashInterval)
+		&& reader.Get_I32(header.LocalHouse)
+		&& reader.Get_Text(header.SpawnIni)
+		&& reader.Get_Text(header.MapTitle)
+		&& reader.Get_U32(header.Recorded);
+	header.Modified = modified != 0;
+	if (!read) {
+		return(false);
+	}
+
+	std::uint32_t count = 0;
+	if (!reader.Get_U32(count) || count > PLAYER_LIMIT) {
+		return(false);
+	}
+	for (std::uint32_t index = 0; index < count; index++) {
+		PlayerType player;
+		std::uint8_t computer = 0;
+		if (!reader.Get_Text(player.Name) || !reader.Get_U8(computer)) {
+			return(false);
+		}
+		player.IsComputer = computer != 0;
+		header.Players.push_back(std::move(player));
+	}
+	return(true);
+}
+
+
+bool Get_Hash(ReaderClass & reader, HashType & hash)
+{
+	return(reader.Get_U32(hash.Frame) && reader.Get_U32(hash.State) && reader.Get_U32(hash.Targets));
+}
+
+
+std::string Or_None(std::string const & text)
+{
+	return(text.empty() ? std::string("none") : text);
+}
+
+
+std::string Difference(char const * what, std::string const & recorded, std::string const & current)
+{
+	return(std::string("The replay was made with ") + what + " " + Or_None(recorded)
+		+ ", and this game has " + Or_None(current) + ".");
+}
+
+}
+
+
+/// <summary>
+/// Reads a replay from its bytes. A recording that stops between records, as one does when the
+/// game crashed, loads as far as it goes and is not complete.
+/// </summary>
+LoadResult Parse(std::vector<std::uint8_t> const & bytes, ReplayType & replay)
+{
+	replay = ReplayType();
+
+	ReaderClass reader(bytes);
+	if (!reader.Get_Magic()) {
+		return(LoadResult::NOT_A_REPLAY);
+	}
+
+	std::uint32_t revision = 0;
+	if (!reader.Get_U32(revision)) {
+		return(LoadResult::DAMAGED);
+	}
+	if (revision != REVISION) {
+		return(LoadResult::OTHER_REVISION);
+	}
+	if (!Get_Header(reader, replay.Header)) {
+		return(LoadResult::DAMAGED);
+	}
+
+	while (!reader.At_End()) {
+		std::uint8_t tag = 0;
+		reader.Get_U8(tag);
+
+		if (tag == TAG_EVENT) {
+			EventType event;
+			if (!reader.Get_U32(event.Frame) || !reader.Get_U8(event.Type) || !reader.Get_I32(event.EventFrame)
+				|| !reader.Get_I32(event.House) || !reader.Get_Bytes(event.Data)) {
+				break;
+			}
+			replay.Events.push_back(std::move(event));
+		} else if (tag == TAG_HASH) {
+			HashType hash;
+			if (!Get_Hash(reader, hash)) {
+				break;
+			}
+			replay.Hashes.push_back(hash);
+		} else if (tag == TAG_END) {
+			std::uint8_t result = 0;
+			if (!Get_Hash(reader, replay.End) || !reader.Get_U8(result)) {
+				break;
+			}
+			replay.Result = result == static_cast<std::uint8_t>(ResultType::WON) ? ResultType::WON
+				: result == static_cast<std::uint8_t>(ResultType::LOST) ? ResultType::LOST : ResultType::UNKNOWN;
+			replay.IsComplete = true;
+			if (!reader.At_End()) {
+				return(LoadResult::DAMAGED);
+			}
+		} else {
+			return(LoadResult::DAMAGED);
+		}
+	}
+
+	return(LoadResult::OK);
+}
+
+
+LoadResult Load(char const * path, ReplayType & replay)
+{
+	std::string text;
+	if (!Read_Disk_File(path, text)) {
+		return(LoadResult::CANNOT_OPEN);
+	}
+
+	return(Parse(std::vector<std::uint8_t>(text.begin(), text.end()), replay));
+}
+
+
+char const * Load_Result_Text(LoadResult result)
+{
+	switch (result) {
+		case LoadResult::OK:
+			return("The replay was read.");
+		case LoadResult::CANNOT_OPEN:
+			return("The replay file could not be opened.");
+		case LoadResult::NOT_A_REPLAY:
+			return("The file is not a replay.");
+		case LoadResult::OTHER_REVISION:
+			return("The replay was written in a file format this game does not read.");
+		case LoadResult::DAMAGED:
+			return("The replay file is damaged.");
+	}
+	return("");
+}
+
+
+std::string Find_Incompatibility(HeaderType const & recorded, HeaderType const & current)
+{
+	if (recorded.Version != current.Version || recorded.Commit != current.Commit) {
+		return(Difference("build", recorded.Commit, current.Commit));
+	}
+	if (recorded.Map != current.Map) {
+		return(Difference("the map", recorded.Map, current.Map));
+	}
+	if (recorded.MapCrc != current.MapCrc) {
+		return(Difference("a map file with checksum", Hex_Text(recorded.MapCrc, 8, true), Hex_Text(current.MapCrc, 8, true)));
+	}
+	if (recorded.RulesCrc != current.RulesCrc) {
+		return(Difference("rules with checksum", Hex_Text(recorded.RulesCrc, 8, true), Hex_Text(current.RulesCrc, 8, true)));
+	}
+	if (recorded.ArtCrc != current.ArtCrc) {
+		return(Difference("art rules with checksum", Hex_Text(recorded.ArtCrc, 8, true), Hex_Text(current.ArtCrc, 8, true)));
+	}
+	if (recorded.AiCrc != current.AiCrc) {
+		return(Difference("AI rules with checksum", Hex_Text(recorded.AiCrc, 8, true), Hex_Text(current.AiCrc, 8, true)));
+	}
+	if (recorded.Mods != current.Mods) {
+		return(Difference("the mods", recorded.Mods, current.Mods));
+	}
+	return(std::string());
+}
+
+
+WriterClass::~WriterClass(void)
+{
+	Close();
+}
+
+
+/// <summary>
+/// Creates the file and writes the header to it.
+/// </summary>
+/// <returns>bool; Is the file ready for records?</returns>
+bool WriterClass::Open(char const * path, HeaderType const & header)
+{
+	Close();
+
+	File = std::fopen(path, "wb");
+	if (File == nullptr) {
+		return(false);
+	}
+
+	std::vector<std::uint8_t> bytes;
+	Put_Header(bytes, header);
+	Put(bytes);
+	if (File != nullptr) {
+		std::fflush(File);
+	}
+
+	return(File != nullptr);
+}
+
+
+void WriterClass::Put(std::vector<std::uint8_t> const & bytes)
+{
+	if (File != nullptr && std::fwrite(bytes.data(), 1, bytes.size(), File) != bytes.size()) {
+		std::fclose(File);
+		File = nullptr;
+	}
+}
+
+
+void WriterClass::Add_Event(EventType const & event)
+{
+	std::vector<std::uint8_t> bytes;
+	Put_U8(bytes, TAG_EVENT);
+	Put_U32_LE(bytes, event.Frame);
+	Put_U8(bytes, event.Type);
+	Put_U32_LE(bytes, static_cast<std::uint32_t>(event.EventFrame));
+	Put_U32_LE(bytes, static_cast<std::uint32_t>(event.House));
+	Put_U32_LE(bytes, static_cast<std::uint32_t>(event.Data.size()));
+	bytes.insert(bytes.end(), event.Data.begin(), event.Data.end());
+	Put(bytes);
+}
+
+
+/// <summary>
+/// Appends a state hash and flushes the file, so that a crash loses at most the frames since the last hash.
+/// </summary>
+void WriterClass::Add_Hash(HashType const & hash)
+{
+	std::vector<std::uint8_t> bytes;
+	Put_U8(bytes, TAG_HASH);
+	Put_U32_LE(bytes, hash.Frame);
+	Put_U32_LE(bytes, hash.State);
+	Put_U32_LE(bytes, hash.Targets);
+	Put(bytes);
+	if (File != nullptr) {
+		std::fflush(File);
+	}
+}
+
+
+/// <summary>
+/// Writes the end record, which names the last frame played and the result, and closes the file.
+/// </summary>
+void WriterClass::Finish(HashType const & end, ResultType result)
+{
+	std::vector<std::uint8_t> bytes;
+	Put_U8(bytes, TAG_END);
+	Put_U32_LE(bytes, end.Frame);
+	Put_U32_LE(bytes, end.State);
+	Put_U32_LE(bytes, end.Targets);
+	Put_U8(bytes, static_cast<std::uint8_t>(result));
+	Put(bytes);
+	Close();
+}
+
+
+void WriterClass::Close(void)
+{
+	if (File != nullptr) {
+		std::fclose(File);
+		File = nullptr;
+	}
+}
+
+}

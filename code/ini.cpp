@@ -74,6 +74,7 @@
 #include "b64straw.h"
 #include "cstraw.h"
 #include "dbgprint.h"
+#include "hexdigit.h"
 #include "numparse.h"
 #include "pk.h"
 #include "rect.h"
@@ -1061,20 +1062,12 @@ static bool Parse_Hex_Field(char const * & ptr, int digits, unsigned int & value
 	value = 0;
 
 	for (int index = 0; index < digits; index++) {
-		char const letter = *ptr++;
-		unsigned int digit;
-
-		if (letter >= '0' && letter <= '9') {
-			digit = (unsigned int)(letter - '0');
-		} else if (letter >= 'A' && letter <= 'F') {
-			digit = (unsigned int)(letter - 'A') + 10;
-		} else if (letter >= 'a' && letter <= 'f') {
-			digit = (unsigned int)(letter - 'a') + 10;
-		} else {
+		int const digit = Hex_Digit_Value(*ptr++);
+		if (digit < 0) {
 			return(false);
 		}
 
-		value = (value << 4) | digit;
+		value = (value << 4) | (unsigned int)digit;
 	}
 
 	return(true);
@@ -1307,6 +1300,34 @@ int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) co
 }
 
 
+/// <summary>
+/// Reads the entry's text with parse, and applies percent when the text has a '%'. A missing
+/// entry, or one that is not a number, gives defvalue; the second case is logged.
+/// </summary>
+template<class Parse, class Percent>
+double INIClass::Read_Scalar(char const * section, char const * entry, double defvalue, Parse parse, Percent percent) const
+{
+	INIEntry * entryptr = Find_Entry(section, entry);
+	if (entryptr == NULL) {
+		return(defvalue);
+	}
+
+	char const * text = entryptr->Value.c_str();
+	char * end = NULL;
+	double result = parse(text, &end);
+	if (end == text) {
+		char const * source = Source_Of(*entryptr);
+		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
+		return(defvalue);
+	}
+
+	if (strchr(text, '%') != NULL) {
+		result = percent(result);
+	}
+	return(result);
+}
+
+
 /***********************************************************************************************
  * INIClass::Get_Float -- Fetch a floating point number from the database.                     *
  *                                                                                             *
@@ -1328,25 +1349,8 @@ int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) co
  *=============================================================================================*/
 double INIClass::Get_Float(char const * section, char const * entry, double defvalue) const
 {
-	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr == NULL) {
-		return(defvalue);
-	}
-
-	char const * text = entryptr->Value.c_str();
-	char * end = NULL;
 	// gamemd reads the text with sscanf "%f", so the value is the nearest float widened to double.
-	double result = Parse_Nearest_Single(text, &end);
-	if (end == text) {
-		char const * source = Source_Of(*entryptr);
-		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
-		return(defvalue);
-	}
-
-	if (strchr(text, '%') != NULL) {
-		result *= 0.01;
-	}
-	return(result);
+	return(Read_Scalar(section, entry, defvalue, Parse_Nearest_Single, [](double value) {return(value * 0.01);}));
 }
 
 
@@ -1357,24 +1361,8 @@ double INIClass::Get_Float(char const * section, char const * entry, double defv
 /// <returns>Returns with the entry's value, or defvalue when it is missing or not a number.</returns>
 double INIClass::Get_Double(char const * section, char const * entry, double defvalue) const
 {
-	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr == NULL) {
-		return(defvalue);
-	}
-
-	char const * text = entryptr->Value.c_str();
-	char * end = NULL;
-	double result = strtod(text, &end);
-	if (end == text) {
-		char const * source = Source_Of(*entryptr);
-		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
-		return(defvalue);
-	}
-
-	if (strchr(text, '%') != NULL) {
-		result /= 100.0;
-	}
-	return(result);
+	// Parse_Nearest_Double gives the nearest double whatever the mode; strtod rounds in the mode in force.
+	return(Read_Scalar(section, entry, defvalue, Parse_Nearest_Double, [](double value) {return(value / 100.0);}));
 }
 
 

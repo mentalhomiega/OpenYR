@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 
 // One byte per pixel, row by row. Zero is an ordinary pixel and 255 is the strongest boost.
 struct EmissivePlane
@@ -21,7 +23,122 @@ struct EmissivePlane
 	int Width;
 	int Height;
 	int Pitch;
+	// One byte per row, zero only where the whole row is zero; NULL treats every row as lit.
+	unsigned char * Lit = nullptr;
 };
+
+
+// The planes of up to N surfaces, one slot each. A slot is free while its plane has no pixels. A
+// plane keeps its address until it is released, so a caller may hold a pointer to it across frames.
+template <int N>
+class SurfacePlaneTable
+{
+	public:
+		// The plane bound to surface, or NULL when no plane is bound to it.
+		EmissivePlane * Find(void const * surface)
+		{
+			for (Binding & binding : _Slots) {
+				if (binding.Surface == surface && binding.Plane.Pixels != nullptr) {
+					return(&binding.Plane);
+				}
+			}
+			return(nullptr);
+		}
+
+		// The plane for surface at width by height, reallocated when its size changed. Its Lit rows
+		// are allocated only when withLit is set. Returns NULL when no slot is free for surface.
+		EmissivePlane * Acquire(void const * surface, int width, int height, bool withLit)
+		{
+			Binding * slot = nullptr;
+			for (Binding & binding : _Slots) {
+				if (binding.Surface == surface) {
+					slot = &binding;
+					break;
+				}
+				if (slot == nullptr && binding.Plane.Pixels == nullptr) {
+					slot = &binding;
+				}
+			}
+			if (slot == nullptr) {
+				return(nullptr);
+			}
+
+			EmissivePlane & plane = slot->Plane;
+			if (slot->Surface == surface && plane.Pixels != nullptr && plane.Width == width && plane.Height == height) {
+				return(&plane);
+			}
+
+			Release_Slot(*slot);
+			plane.Pixels = new unsigned char[(std::size_t)width * height]();
+			plane.Lit = withLit ? new unsigned char[(std::size_t)height]() : nullptr;
+			plane.Width = width;
+			plane.Height = height;
+			plane.Pitch = width;
+			slot->Surface = surface;
+			return(&plane);
+		}
+
+		// Releases every plane whose surface is not one of the count entries of keep.
+		void Retain(void const * const * keep, int count)
+		{
+			for (Binding & binding : _Slots) {
+				if (binding.Plane.Pixels == nullptr) {
+					continue;
+				}
+				bool kept = false;
+				for (int index = 0; index < count; index++) {
+					if (keep[index] == binding.Surface) {
+						kept = true;
+					}
+				}
+				if (!kept) {
+					Release_Slot(binding);
+				}
+			}
+		}
+
+		// Releases the plane bound to surface. A NULL surface releases nothing.
+		void Forget(void const * surface)
+		{
+			if (surface == nullptr) {
+				return;
+			}
+			for (Binding & binding : _Slots) {
+				if (binding.Surface == surface) {
+					Release_Slot(binding);
+				}
+			}
+		}
+
+		void Release_All(void)
+		{
+			for (Binding & binding : _Slots) {
+				Release_Slot(binding);
+			}
+		}
+
+	private:
+		struct Binding
+		{
+			void const * Surface = nullptr;
+			EmissivePlane Plane = {};
+		};
+
+		static void Release_Slot(Binding & binding)
+		{
+			delete [] binding.Plane.Pixels;
+			delete [] binding.Plane.Lit;
+			binding = Binding();
+		}
+
+		Binding _Slots[N];
+};
+
+// Whether a row may hold a value other than zero.
+inline bool Emissive_Row_Lit(EmissivePlane const & plane, int row) { return(plane.Lit == nullptr || plane.Lit[row] != 0); }
+
+// Marks rows as possibly holding values. A caller that writes Pixels directly marks the rows it wrote.
+void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count);
 
 
 // Each row of the default table. Strength is the mask value 0-255 that the kind writes.
@@ -66,11 +183,13 @@ unsigned char Emissive_Anim_Name_Default(char const * name);
 unsigned char Emissive_Voxel_Highlight(int shade_row);
 
 // Gain on paper white for one pixel: 1 + mask/255 * (peak/paper - 1). Peak and paper white are
-// in the same unit and peak is at least paper white.
+// in the same unit and peak is at least paper white. The composite pass in code/shaders/composite.sc
+// applies this gain on the GPU; keep the two in step.
 float Emissive_Gain(unsigned char mask, float peak_over_paper);
 
 // Output luminance for one linear channel value, clamped to the display peak:
-// min(peak, paper * linear * gain(mask)).
+// min(peak, paper * linear * gain(mask)). The composite pass in code/shaders/composite.sc does the
+// same on the GPU; keep the two in step.
 float Emissive_Output_Nits(float linear, unsigned char mask, float paper_white, float peak);
 
 // The mask for a draw that is drawn at the given opacity, from 0 for none to 255 for the whole picture.
@@ -102,7 +221,8 @@ void Emissive_Set_Enabled(bool enabled);
 bool Emissive_Debug_View(void);
 void Emissive_Set_Debug_View(bool debug);
 
-// The plane bound to a surface, or NULL when the surface has none or the dimensions do not match.
+// The plane bound to a surface, or NULL when the surface has none. A plane is bound at the surface's own size
+// and is freed by Emissive_Forget when the surface is deleted, so the size always matches the surface.
 EmissivePlane * Emissive_Plane_For(void const * surface);
 
 // Binds a plane whose pixels the caller owns for the whole run, such as the voxel draw surface. Retain and
@@ -115,7 +235,11 @@ EmissivePlane * Emissive_Bind(void const * surface, int width, int height);
 // Frees every plane whose surface is not listed in keep. Called when the surfaces are replaced.
 void Emissive_Retain(void const * const * keep, int count);
 
-// Frees every plane. Called when masks are switched off or the surfaces are replaced.
+// Frees the plane bound to a surface, if it has one. Called as a surface is deleted, since the allocator may give
+// a new surface the same address and it must not inherit the old plane.
+void Emissive_Forget(void const * surface);
+
+// Frees every plane, as Emissive_Retain does with no surfaces kept.
 void Emissive_Release_All(void);
 
 // Writes value over a rectangle of the plane, clipped to the plane.

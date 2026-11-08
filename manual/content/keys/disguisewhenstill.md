@@ -7,9 +7,11 @@ when_omitted:
   value: "no"
 ---
 
-A vehicle of this type [hides as terrain](/systems/disguises/#vehicles-that-hide-as-terrain) while it stands still.
+A vehicle with this key [hides as terrain](/systems/disguises/#vehicles-that-hide-as-terrain) while it stands still.
 
 ```ini title="rulesmd.ini"
 [MYMIRAGE] ; example VehicleType
 DisguiseWhenStill=yes
 ```
+
+The key is read on every object type, but only vehicles hide as terrain.

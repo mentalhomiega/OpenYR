@@ -664,7 +664,7 @@ if (fixturesEnabled) {
 }
 
 const baselineAction = readFileSync(
-	resolve('dist/mapping/actions/taction-play-anim/index.html'),
+	resolve('dist/mapping/actions/taction-add-timer/index.html'),
 	'utf8',
 );
 if (baselineAction.includes('Added in') || baselineAction.includes('<h2 id="entity-history">History</h2>')) {

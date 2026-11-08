@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "ftimer.h"
+
 #include <vector>
 
 class AbstractClass;
@@ -33,6 +35,14 @@ class SpawnManagerClass
 		void Kill_Nodes(void);
 		void Detach(AbstractClass const * target);
 		int Docked_Count(void) const;
+		int Launching_Count(void) const;
+		// Read by the autotest probes; the cycle state is otherwise private.
+		AbstractClass const * Current_Target(void) const { return Target; }
+		AbstractClass const * Queued_Target(void) const { return NewTarget; }
+		int Cycle_Status(void) const { return Status; }
+		int Next_Spawn_Frame(void) const { return NextSpawnFrame; }
+		int Node_Count(void) const { return (int)Nodes.size(); }
+		int Node_Status(int index) const { return Nodes[index].Status; }
 		int Alive_Count(void) const;
 		void Serialize(SaveStreamClass & stream);
 
@@ -57,8 +67,7 @@ class SpawnManagerClass
 		struct NodeType {
 			AircraftClass * Unit = nullptr;
 			int Status = NODE_DEAD;
-			int TimerStart = 0;
-			int TimerLength = 0;
+			FrameCountdown Timer;
 			bool IsMissile = false;
 
 			bool Is_Timer_Expired(void) const;
@@ -68,7 +77,7 @@ class SpawnManagerClass
 
 		AircraftClass * Create_Spawn(NodeType & node) const;
 		void Launch(NodeType & node, int index);
-		void Unlink_Pointer(AbstractClass const * target);
+		void Release_To_Kamikaze(AircraftClass * unit);
 		void Send_Home(AircraftClass * unit) const;
 
 		TechnoClass * Owner = nullptr;

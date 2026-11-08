@@ -53,6 +53,8 @@
 #include "waypoint.hh"
 
 #include <cstdlib>
+#include <optional>
+#include <string>
 
 #define SCEN_LOCAL_COUNT 100
 #define SCEN_GLOBAL_COUNT 50
@@ -174,6 +176,17 @@ class ScenarioClass {
 		**	mission.
 		*/
 		mutable TTimerClass<SystemTimerClass> ElapsedTimer;
+
+		/*
+		**	The [Ranking] section of the mission. ParTime is indexed by difficulty (easy, normal,
+		**	hard) and holds timer ticks, TIMER_SECOND a second. The titles and messages are CSF
+		**	labels. The under-par pair is shown when the mission time is not over par.
+		*/
+		int ParTime[3];
+		char UnderParTitle[32];
+		char UnderParMessage[32];
+		char OverParTitle[32];
+		char OverParMessage[32];
 
 	private:
 		/*
@@ -652,6 +665,15 @@ void Do_Restart(void);
 void Do_Abort(void);
 void Fill_In_Data(void);
 bool Restate_Mission(char const * name, int button1, int button2);
+
+// The string table text of a UIName label, or nothing when the label is empty or the table has no such label.
+std::optional<std::string> Mission_UI_Text(std::string const & label);
+
+// The string table text of a label. A label the table lacks reads as MISSING:'<label>'; log_missing writes it to the debug log.
+std::string Mission_Label_Text(char const * label, bool log_missing);
+
+// The label MISSIONMD.INI gives a map's briefing, empty when it names none. has_database is whether MISSIONMD.INI exists.
+std::string Mission_Database_Briefing_Label(char const * map, bool & has_database);
 
 void Lock_Scenario_Input(void);
 void Unlock_Scenario_Input(void);

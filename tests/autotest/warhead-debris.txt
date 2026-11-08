@@ -1,0 +1,22 @@
+; A player Brute (BRUTE, Secondary=Smash, Smashing warhead with MinDebris=1 and MaxDebris=3) smashes a computer
+; tank one cell away. The Smashing warhead has no DebrisTypes, so each detonation throws MetallicDebris animations
+; 20 leptons above the impact point. The AUTOTEST debris line gives the voxel and metallic count per detonation.
+; Screenshots every 6 frames from the strike show the debris after the blast.
+; Run: scripts/run_autotest.ps1 -Script src-agent14/tests/autotest/warhead-debris.txt -Build agent14 -Seconds 90 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+60 view 62 62
+62 zoom 2.5
+70 reveal
+80 own BRUTE 62 62
+90 spawn HTNK 63 62
+100 strike BRUTE 63 62
+110 command ScreenCapture
+116 command ScreenCapture
+122 command ScreenCapture
+128 command ScreenCapture
+134 command ScreenCapture
+140 command ScreenCapture
+146 command ScreenCapture
+152 command ScreenCapture
+158 command ScreenCapture
+200 quit

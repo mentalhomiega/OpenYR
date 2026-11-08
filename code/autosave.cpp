@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "autosave.h"
+#include "strutil.h"
 
 #include <cctype>
 #include <cstdio>
@@ -98,7 +99,7 @@ std::string Multiplayer_Save_File_Name(int slot)
 
 int Multiplayer_Save_Slot(char const * file_name)
 {
-	if (file_name == NULL || std::strlen(file_name) != 12 || _strnicmp(file_name, "SVGM_", 5) != 0
+	if (file_name == NULL || std::strlen(file_name) != 12 || !Starts_With_No_Case(file_name, "SVGM_")
 		|| _stricmp(file_name + 8, ".NET") != 0) {
 		return(-1);
 	}

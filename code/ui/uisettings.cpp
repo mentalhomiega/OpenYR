@@ -12,7 +12,6 @@
 #include "ui/uisettings.h"
 
 #include "audio/audioengine.h"
-#include "csf.h"
 #include "globals.h"
 #include "goptions.h"
 #include "mainopt.h"
@@ -53,12 +52,11 @@ struct UISettingsSessionClass
 };
 
 
-void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_ptr<UIViewClass> view, UIPresenterClass * presenter, std::function<void(void)> enter = nullptr)
+void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_ptr<UIViewClass> view, std::function<void(void)> enter = nullptr)
 {
 	UISettingsPageClass page;
 	page.Tab = tab;
 	page.View = view.get();
-	page.Presenter = presenter;
 	page.Enter = std::move(enter);
 	session.Pages.push_back(page);
 	session.Views.push_back(std::move(view));
@@ -67,9 +65,7 @@ void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_p
 
 void Add_Presenter(UISettingsSessionClass & session, UIPresenterClass * presenter)
 {
-	if (presenter != nullptr) {
-		session.Presenters.push_back(presenter);
-	}
+	session.Presenters.push_back(presenter);
 }
 
 
@@ -79,7 +75,7 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 	session.Display = UI_Display_New_Presenter();
 	UIDisplayPresenterClass * display = session.Display.get();
 	for (UISettingsTab tab : { UI_TAB_DISPLAY, UI_TAB_GRAPHICS, UI_TAB_ACCESSIBILITY }) {
-		Add_Page(session, tab, UI_Display_View(*display, tab), display, [display, tab]() {
+		Add_Page(session, tab, UI_Display_View(*display, tab), [display, tab]() {
 			display->State.Page = tab;
 		});
 	}
@@ -87,22 +83,22 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 
 	if ((offered & (1u << UI_TAB_GAME)) != 0) {
 		session.Game = UI_Game_Controls_New_Presenter(true);
-		Add_Page(session, UI_TAB_GAME, UI_Game_Controls_View(*session.Game), session.Game.get());
+		Add_Page(session, UI_TAB_GAME, UI_Game_Controls_View(*session.Game));
 		Add_Presenter(session, session.Game.get());
 	}
 	if ((offered & (1u << UI_TAB_AUDIO)) != 0) {
 		session.Sound = UI_Sound_New_Presenter();
-		Add_Page(session, UI_TAB_AUDIO, UI_Sound_View(*session.Sound), session.Sound.get());
+		Add_Page(session, UI_TAB_AUDIO, UI_Sound_View(*session.Sound));
 		Add_Presenter(session, session.Sound.get());
 	}
 	if ((offered & (1u << UI_TAB_KEYBOARD)) != 0) {
 		session.Keyboard = UI_Keyboard_New_Presenter();
-		Add_Page(session, UI_TAB_KEYBOARD, UI_Keyboard_View(*session.Keyboard), session.Keyboard.get());
+		Add_Page(session, UI_TAB_KEYBOARD, UI_Keyboard_View(*session.Keyboard));
 		Add_Presenter(session, session.Keyboard.get());
 	}
 	if ((offered & (1u << UI_TAB_MODS)) != 0) {
 		session.Mods = UI_Mods_New_Presenter();
-		Add_Page(session, UI_TAB_MODS, UI_Mods_View(*session.Mods), session.Mods.get());
+		Add_Page(session, UI_TAB_MODS, UI_Mods_View(*session.Mods));
 		Add_Presenter(session, session.Mods.get());
 	}
 
@@ -113,36 +109,9 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 }
 
 
-std::string UI_Settings_Back_Label(void)
-{
-	std::string const text = StringTable.Find_UTF8("GUI:Back");
-	return(text.empty() ? std::string("Back") : text);
-}
-
-
 bool UI_Settings_Tabbed(void)
 {
 	return(!Options.IsClassicMenus);
-}
-
-
-// The tabbed Settings opens its pages as one screen, so a page never runs its own modal run.
-void UI_Settings_Join(UIPresenterClass & presenter, UISettingsTab tab)
-{
-	(void)presenter;
-	(void)tab;
-}
-
-
-void UI_Settings_Leave(UIPresenterClass const & presenter)
-{
-	(void)presenter;
-}
-
-
-bool UI_Settings_Moving(void)
-{
-	return(false);
 }
 
 
@@ -173,9 +142,14 @@ void UI_Settings_Run(UISettingsTab first)
 		}
 
 		tab = session.Host->Shown_Tab();
-		if (result == UI_RESULT_FAILED_TO_OPEN || !picked.has_value() || Display_Mode_Kept(*picked, scale)) {
+		if (result == UI_RESULT_FAILED_TO_OPEN || !picked.has_value() || Try_Display_Mode(*picked, scale)) {
 			break;
 		}
+	}
+
+	// A game keeps the interface it started with; the menus switch to the chosen one at once.
+	if (!ingame) {
+		Apply_Interface_Choice();
 	}
 
 	Options.Save_Settings();

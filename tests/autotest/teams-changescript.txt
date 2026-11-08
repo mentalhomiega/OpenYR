@@ -4,7 +4,7 @@
 30 command CenterBase
 1 teamtrace 1
 300 spawn MTNK 70 60
-310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-changescript.ini
+310 teamini teams-changescript.ini
 320 team TSTCSCT
 330 teams
 900 teams

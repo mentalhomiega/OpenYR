@@ -9,7 +9,6 @@ targets:
 - type: key
   id: DeployToLand
   effect: changed
-  scope: unittype
 credit: [MentalHomiega]
 ---
 

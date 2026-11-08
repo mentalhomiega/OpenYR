@@ -9,6 +9,12 @@ Combine it with `-SPAWN` to start a skirmish straight away. `scripts/run_autotes
 workspace that hosts this repository writes a muted settings file and a `SPAWN.INI`, then starts
 the game this way.
 
+`-AUTOTEST-UNCAPPED` removes the frame limit from a skirmish or campaign run, so the game plays as fast as the machine
+allows. Each tick does the same work, but anything that reads the clock differs: frames counted per second, the
+scenario's elapsed timer (which the state checksum and the par-time rank use), and menu waits given in milliseconds.
+`-AUTOTEST-STOP-AFTER-STEPS` ends the run on the first game frame after the script's last step, once no `ui` step is
+left, and logs `AUTOTEST steps done`. `run_autotest.ps1` passes them as `-Uncapped` and `-StopAfterSteps`.
+
 ## The script
 
 Each line is `<frame> <command> [arguments]`. Blank lines and lines starting with `;` are ignored.
@@ -16,13 +22,30 @@ A command runs once the game frame reaches its frame, in file order.
 
 | Command | Effect |
 | --- | --- |
-| `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture` |
+| `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture`. The menu scripts have a `ui command <Name>` step that does the same on a clock instead of a frame, so it still runs while a replay is paused |
 | `hotkey <key>` | Writes the name of the command that key is bound to, or `none`. A letter or a single digit is read as that character; any other number is a virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt |
 | `chrono <frames>` | Starts the chronoshift screen effect for that many frames per swirl, as the Chrono Screen Effect trigger action does |
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
+| `selectadd <TypeID>` | Adds the player's objects of that type, structures included, to the selection, as a shift-click would |
+| `loadgems <TypeID>` | Puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type. It logs how much each holds |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
+| `produceai <TypeID> x y` | Starts building that type in the structure on that cell, as `BuildingClass::Factory_AI` starts a computer house's production. The structure's own factory then holds the object, so a spied factory has a cameo to show. A structure already producing is left alone; the log says `started` or `refused`. Changes this copy only |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
+| `placeat <TypeID> x y` | Places the finished structure on that cell through the same placement event as `place`, and writes `queued` or `not legal` for the cell |
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
+| `chargeai <SuperWeaponTypeID> <percent>` | Sets the charge of the first computer house's super weapon that has a construction yard, as a SetSuperCharge trigger action does (`SuperClass::Set_Charge`). The log gets `ready` and `suspended` |
+| `houseunit <TypeID>@<House> x y` | Like `spawn`, but the object belongs to the named house, on Guard. `<House>` is a spawn name such as `Spawn2` (an underscore stands for a space), or `#<n>` for the house at position `n` in the house list, which reaches a computer house with no spawn name. The log says `no such house` or `no such type` when a name does not resolve |
+| `drawdigest <0\|1>` | `1` logs one `DRAW_DIGEST` line each time the map view is drawn, with the game frame, the draw index and a hash of the map view. `0` stops the lines. See [Comparing map draws](#comparing-map-draws) |
+| `drawprobe <0\|1>` | `1` starts counting what draws into the map view during its object pass; `0` logs the counts and stops. See [Listing map draws](#listing-map-draws) |
+| `gpureplay <0\|1>` | `1` records each blit of the map view's object pass, replays the record over the picture the pass started from, and logs a `GPU_REPLAY` line per pass: the game frame, the blits recorded, the draws the record cannot hold (other blitter kinds and other writes such as particle pixels), the pixels where the replay differs from the real picture, and the first such pixel. `0` stops |
+| `gpucheck <0\|1>` | `1` records each object pass of the map view as `gpureplay` does, draws the record on the GPU over the picture the pass started from, reads the result back, and logs a `GPU_DIFF` line: the game frame, the blits, the pixels compared, the pixels that differ, the largest difference in one 565 channel, and the first differing pixel relative to the map view. Direct3D 11 only; a pass is skipped while the previous one is still being read back. `0` stops |
+| `presentdigest <0\|1>` | `1` logs one `PRESENT_DIGEST` line at each present that reaches the presenter, with the game frame, the present index and a hash of the frame and the map layer. `0` stops the lines. See [Comparing presented frames](#comparing-presented-frames) |
+| `musicstage` | Writes sample files into the `Music` folder of the user directory unless they are there: two valid WAV tracks, an empty MP3, a text file named `.ogg` and a text file |
+| `musicscan` | Reads the `Music` folder again and logs each track found or skipped, as the game does at start-up |
+| `musicmode <Both\|Stock\|Custom>` | Sets `CustomMusic` and logs how many tracks the music list then offers, and how many of those are custom |
+| `musiclist` | Logs each custom track with its title, whether the list allows it and its length in seconds |
+| `musicopen <n>` | Opens the n-th custom track's stream at no volume, counting from 0, logs `opened` or `failed`, and closes it |
+| `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
 | `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
 | `stop <TypeID>` | Sends the Stop command's idle event to the player's objects of that type that can move or fire. It logs how many it sent |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
@@ -35,25 +58,51 @@ A command runs once the game frame reaches its frame, in file order.
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `canbuild <TypeID>` | Writes each house's own and acted country, the type's `RequiredHouses` and `ForbiddenHouses`, and whether `Can_Build` allows the type for that house now |
 | `anims` | Writes the first entries of the animation list to the debug log |
+| `liveanims [TypeID]` | Writes each live animation, or only those of the named type, with its cell, loops left, delay, rate, stage, and whether it is attached to a cell or an object, then how many it listed. With `sounds 1`, each update of an animation with a start sound writes a `Sound follows:` line at its cell |
+| `particles [TypeID]` | Writes each live particle, or only those of the named type, with its animation state, the frames between state steps, translucency, speed, drift, position and flight path, then how many it listed |
+| `vanims [TypeID]` | Writes each live voxel animation, or only those of the named type, with its position and cell, then how many it listed. With `sounds 1`, each update of an animation with a start sound writes a `Sound follows:` line at its cell |
+| `movesounds [TypeID]` | Writes each foot object, or only those of the named type, with its cell, whether its move sound is playing, the frames left before it ends, and the sound, then how many are playing. With `sounds 1`, each update of a playing move sound writes a `Sound follows:` line at its cell |
+| `psoffset <TypeID>` | Writes the type's `DamageSmokeOffset` and `DamSmkOffScrnRel`, then the offset its damage smoke and spark systems are placed at, in leptons |
+| `veinholes` | Writes each veinhole monster with its cell, state, drawn frame, growth timer in frames, veins grown and cells queued, then how many there are |
 | `truecolour <NAME.SHP>` | Writes whether a PNG replaces that shape (see [TRUECOLOUR.md](TRUECOLOUR.md)), whether the shape is an SHP (`shp`) or was made from a sheet that has none (`png-only`), with the shape's frame count and size, the sheet's size, the frames it covers, whether it has a house-colour mask, whether the shadows come from the PNG or the SHP, and the centre pixel of its first frame |
 | `truecolourdir <path>` | Adds a directory to the places the game looks for files, so a test can supply PNG sprites without copying them into the game directory; a PNG not found before is looked for again |
 | `exportshape <NAME.SHP> <out.png>` | Writes every frame of that shape to a PNG sheet in the layout [TRUECOLOUR.md](TRUECOLOUR.md) reads, coloured with the current theater's unit palette, with index 0 transparent; when the shape has house-colour pixels, also writes `<out>_hc.png`, the matching house-colour mask. The output path is the rest of the line |
+| `requirera2` | Ends the run at load with an `AUTOTEST error` line and exit code 1 when the mission has no Red Alert 2 house numbering: no Red Alert 2 campaign entry names it (as without `-Mods tests/autotest/ra2-campaigns`), or the RA2Rules file is missing. It takes effect when the script is read, before the first game frame, whatever frame the line names |
+| `recordreplay <name>` | Records the skirmish that starts to `Replays/<name>` in the user directory, as `RecordReplays=yes` does. It takes effect when the script is read, whatever frame the line names. See [REPLAYS.md](REPLAYS.md) |
+| `playreplay <name>` | Starts the match from the replay `<name>` in the `Replays` folder and plays its recorded events in place of the orders this script and the player give, as `-REPLAY=` does. The run ends with a `REPLAY result` line and exit code 0 on a match, 1 on a mismatch and 2 when the replay is refused. It takes effect when the script is read, whatever frame the line names |
 | `loadshot <name>` | Saves what the window shows each time a loading screen is complete, as `<name>-<count>.tga` in the `Screenshots` folder. It takes effect when the script is read, before the first game frame, whatever frame the line names |
-| `triggers [all]` | Writes the trigger types with their owner, the events they wait for and whether a live trigger of each is enabled (only the enabled ones, unless `all`), then every tag with the objects and cells it rides on, and the local and global variables that are set |
+| `triggers [all]` | Writes the trigger types with their owner, how many events and actions each holds, the events they wait for and whether a live trigger of each is enabled (only the enabled ones, unless `all`), then every tag with the objects and cells it rides on, and the local and global variables that are set |
+| `restart` | Asks for the Restart mission command that the options menu gives in a campaign |
 | `typecounts` | Writes how many structure, vehicle, soldier and aircraft types there are, and any whose ID is not a plain name, which is how a list read as one name shows up |
 | `airstrike <TypeID>` | Writes each object of that type, whoever owns it, with the frame its next airstrike is ready, the weapon its target gets and whether that is an Airstrike weapon, and each plane its strike still has out, with its cell, mission, ammunition and target |
 | `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in |
 | `animlog <TypeID>` | Writes each object of that type, whoever owns it, with its walk counter and the body voxel frame that counter selects, its turret frame and facings, whether its locomotor moves, its target, and whether a DiskLaser ring is active |
+| `plantbomb <TypeID>` | Fixes an Ivan bomb to each of the player's objects of that type, planted by the player's first soldier, as the bomb icon draws over it |
+| `planguard <TypeID> x y` | Gives each of the player's foot objects of that type a guard area order on the cell. While planning is on, the order is recorded as a planned leg |
 | `forceattack <TypeID> x y` | Orders the player's objects of that type to force-attack the object on that cell, or the ground there, as a Ctrl+click does. Autotests never report Ctrl as held, so the order is given directly |
 | `planmove <TypeID> x y` | Gives each of the player's foot objects of that type a move to the cell, as a click on the ground does. While planning is on, the move is recorded as a planned leg |
 | `quantity <TypeID>` | Writes how many of that type each house is counted as having, owned and active, which are the two counts the map events read. A structure uses the building counts, a unit, infantry or aircraft type its own |
-| `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in; a teleporting object gets its warp phase (0 idle, 1 warping out, 2 holding), the frame the phase ends, whether it is warping, whether a chrono warp holds it, and whether it is selected |
+| `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength, then a `usable` line with whether its cell lies in the usable area (`inlocal`); a soldier also gets a line with its action and whether it is dug in; a teleporting object gets its warp phase (0 idle, 1 waiting on its cell, 2 holding after landing, 3 clearing the landing cell, 4 clearing it again after a change of cell, 5 setting down, 6 checking the landing), the frame the phase ends, whether it is warping, whether a chrono warp holds it, whether it is selected, and whether a temporal beam is erasing it (`warped`) |
+| `landed <TypeID>` | Writes the live objects of the type that are on the map and not in limbo, then how many of them lie outside the usable area (`inlocal 0` in `where`), with the cell of each one that does |
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. Kind 3 destroys only the vehicles, soldiers and aircraft on cells the player can see. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
-| `counts <House>` | Writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read (`CurUnits` and so on); an underscore in the name stands for a space |
+| `counts <House>` | Writes the house's owned unit, building, infantry and aircraft counts (`CurUnits` and so on), then its active unit and soldier counts, which the Destroyed all units and Destroyed all events read and which leave out soldiers held inside a building; an underscore in the name stands for a space |
 | `listhouse <House>` | Writes each object the house has in the technos list, limbo'd ones included, with its cell (`-` in limbo), limbo and active state, strength, transporter, cargo, team, a building's occupant count and whether the player can see its cell (`visible`); then the active land, naval and infantry counts and the owned counts. An underscore in the name stands for a space |
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
+| `aistrike <TypeID> x y` | the computer players' objects of that type attack what stands on that cell, as strike does for the player's |
+| `cameopcx <TypeID>` | writes the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing |
+| `exp <TypeID>` | writes the experience of the player's objects of that type |
+| `fall <TypeID> <height>` | puts the player's objects of that type that high in the air, falling, with or without a parachute as the type's animations decide |
+| `flash <TypeID>` | writes the flash count of each object of that type, whoever owns it |
+| `forceshield <TypeID> <frames>` | puts the player's objects of that type under the Force Shield for that many frames, as the superweapon does, and writes the frames each has left |
+| `graphic <TypeID>` | writes the art name the type draws and reads its art keys from |
+| `lighting` | writes the ambient light now and wanted, whether a storm or dominator blast lights the map, and the tint the tile palette wears |
+| `link <kind>:<TypeA>:<TypeB>` | ties the player's objects for a test: spawn (TypeA is TypeB's spawner), mindcontrol (TypeA controls TypeB), passenger (TypeB fires from inside TypeA, an open-topped transport) or airstrike (TypeB is a plane of TypeA's air strike) |
+| `lose <TypeID>` | gives the first object of that type the player owns to the first computer house with a construction yard through Set_Owning_House |
+| `maphelp` | writes the help text of the object under the pointer (windowmove puts the pointer there) |
+| `scenarios` | writes the scenarios on the multiplayer map list |
+| `seatflh <TypeID>` | writes the passenger seat mountings (AlternateFLH) of the type |
 | `primary <TypeID>` | Toggles the primary flag of the player's first structure of that type, as the structure's self action does when the house has more than one factory of its kind |
 | `factories` | Writes each structure that builds something, whoever owns it, with what it builds (`vehicle`, `infantry`, `aircraft` or `structure`), whether it is naval, whether it is its house's primary factory and whether it is in limbo |
 | `kill <TypeID> [1]` | Destroys every computer object of the type with no attacker, the C4 warhead forced; with a `1`, every player object of the type instead |
@@ -62,25 +111,36 @@ A command runs once the game frame reaches its frame, in file order.
 | `stockcheck` | Reads every VXL, HVA, SHP and PCX that the art and rules INI files name, through the game's own loaders, and logs each one a loader refuses with its reason; the summary counts what was read and lists the MIX archives attached with their entry counts |
 | `previewtime` | Reads the preview of each map on the multiplayer list that is on hand, three times, and logs how long each pass took |
 | `dumpfile <name>` | Copies the file the game finds under that name, from a MIX or the game folder, to `dump-<name>` in the working directory, and logs its size |
+| `mixof <name>` | Logs each attached MIX archive that holds that name, in lookup order, with its size; the first one is the copy `Retrieve` returns |
 | `trigaction <number>[@<House>] <value> <waypoint>` | Carries out the trigger action with that number for the player's house, or for the named house with an underscore in place of a space, as a trigger would. The value fills the action's number, house or time field and the waypoint its waypoint field. The log gets `done` or `failed` |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
+| `statecrc [frames]` | Writes three checksums to the debug log, now and again every that many frames when given: `objects`, which is `Object_CRCs` over every object's `Compute_CRC` and the scenario's, wall-clock elapsed timer included, so it differs between two runs of the same game; `heaps`, the checksum of every game object's `Compute_CRC` alone (no object types, no scenario), which two runs of the same game share; and `targets`, which covers each object's `TarCom`. None of them is used by multiplayer sync, and logging them does not change the game; `statecrc 0` logs once and stops the repeats |
+| `syncrec on`, `syncrec <path>` | `on` starts the desync recorder: it keeps the recent scenario random draws, facings, targets, missions and animations with the code that made each one, and the debug log gets an `AUTOTEST syncrec outside frame logic` line, once per place in the code, for each of them made outside a game frame's logic, such as while drawing or waiting for the next frame. With a path, the step writes the recorded entries to that file in the out-of-sync report's format. The path cannot hold a space. Recording does not change the game |
 | `speed <TypeID> [interval]` | Writes the current and target speed of the player's objects of that type that fly or jump, with their cell, height, mission and destination. A flying object's speed is a fraction of its full speed; a jump-jet object's is in leptons per frame. Repeats every interval frames when given |
 | `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
+| `wpcell <n>` | Writes the cell of the map's waypoint `n` and the structure standing on it, or that the waypoint is not set |
+| `spyon <House> x y` | Runs the effect of a spy from the named house entering the structure on that cell (`BuildingClass::Spied_By`): the house's country gains the structure's spied view, as a spy's entry gives it. The spy's walk in is not part of the step. `#<n>` and spawn names resolve as in `houseunit` |
 | `infiltrate barracks\|warfactory` | Marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans |
 | `occupy <TypeID> x y` | Puts the player's first infantry of that type inside the structure on that cell, without walking there |
+| `shield <TypeID>` | Writes each building of that type, whoever owns it, with whether it is under the Iron Curtain and the Force Shield, the shield tint flag, whether its body draws with the shield tint, and each animation with its drawer (`shield`, `scheme`, `other` or `none`) and brightness |
 | `radar <TypeID>` | Writes each of the player's objects of that type with whether it is in limbo, whether the radar tracks it, whether the player has discovered it, and its radar pixel |
+| `own <TypeID> x y` | Puts an object of the type on that cell, owned by the player. A building is not placed when the game's placement check (`Legal_Placement`, the check `placeat` uses) fails for its foundation and a structure stands on one of the foundation's cells. The log then gets `refused: footprint overlaps <TYPE> at x,y`, where `x,y` is the first foundation cell that holds a structure. A building blocked only by a unit or by terrain, a building whose type has `PlaceAnywhere`, and every unit, infantry or aircraft is placed if its origin cell accepts it, with no check on the rest of its foundation. `spawn`, `grantunit`, `houseunit`, `neutral` and `enemy` apply the same rule |
 | `neutral <TypeID> x y` | Puts an object of the type on that cell, owned by the house of the Civilian side, as `own` does for the player |
 | `enemy <TypeID> x y` | Puts an object of the type on that cell, owned by the first computer house with a construction yard that the player is not allied with, as `own` does for the player |
-| `spy <TypeID> x y` | Gives the player's objects of that type the capture order a click on the structure on that cell gives, so a spy walks in and infiltrates it |
+| `disguiseas <TypeID> <house>` | Every computer soldier of that type disguises as the player's AlliedDisguise soldier, copying the house at that position in the house list. The log gets whether the player's house is allied with the copied house, whether the soldier's owner is, and whether the soldier fools the player's house in `InfantryClass::Is_Disguised_As` and `TechnoClass::Looks_Friendly_To` |
+| `ewall <OverlayType> x y` | Builds a section of that wall on that cell, owned by the computer house `enemy` picks. It logs the overlay index and owner, or `no such overlay` or `no computer house`. The `wall` command makes the same section owned by the player |
+| `spy <TypeID> x y` | Gives the player-controlled objects of that type (see `select`) the capture order a click on the structure on that cell gives, so a spy walks in and infiltrates it |
 | `terrain x y` | Logs the land type of that cell (2 is water, 6 is beach), whether it is a shore piece and whether it holds any water |
 | `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
 | `veterancy <TypeID>` | Writes the rules' `VeteranRatio` and `VeteranCap`, the player's score, then each object of that type with its rank, experience and cost |
 | `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
 | `warpout <TypeID> <0|1>` | Sets or clears the warping-out flag of the player's objects of that type, without a warp effect |
 | `unload <x> <y>` | Starts the unload mission of the player's structure on that cell. A vehicle on a cell with no structure unloads its passengers instead |
+| `repairon <TypeID>` | Turns repair on for the player's structures of that type. Unlike a click with the repair cursor, which toggles repair, a structure already repairing keeps repairing. The REPAIR event runs one queue step later, so two `repairon` steps in one frame turn repair off again |
+| `poweroff <TypeID>` | Turns off the player's structures of that type, as a click with the power cursor does |
 | `rally <TypeID> x y` | Sets the rally point of the player's structures of that type to the cell, without the nearby-cell search an Alt-click makes |
 | `census cells` | Writes the eight tiberium cells nearest the player's first building, nearest first, with their squared distance in cells |
-| `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers and destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
+| `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers it counts, the ones actually on the map and the slave miners among them, the destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
 | `rallyof <TypeID>` | Writes the rally point (archive target) of each of the player's structures of that type, as the cell it names, or `-1,-1` when none is set |
@@ -88,6 +148,9 @@ A command runs once the game frame reaches its frame, in file order.
 | `pickable <TypeID>` | Writes each object of that type the player owns, with whether the clickable list holds it and, when it does, the window pixel its entry is drawn at (`window x,y`, or `-1,-1` when it is not listed). The list is the one the last render built |
 | `pickat x y` | Writes the object a left click at that window pixel would pick from the clickable list and the cell under it, without selecting anything |
 | `cellpixel x y` | Writes the window pixel of the centre of that cell under the current view, for a `windowclick` step |
+| `windowdouble x y` | A left click at that window pixel, as `windowclick` gives it, but its press carries `Clicks` 2: the second click of a quick pair, as SDL reports it |
+| `commandbutton <Name>` | A left click at the centre of the command bar's button with that `ButtonList` name (`Beacon`, `Stop` and so on), at the same window pixel it covers in a window the size of the frame. The log gets the pixel, or `not shown` when the bar has no such button |
+| `beams` | Writes the emissive mask strength of each live electric bolt and laser beam, one `beam` line each, and nothing while there are none |
 | `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
 | `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
 | `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |
@@ -98,23 +161,173 @@ A command runs once the game frame reaches its frame, in file order.
 | `modes` | Writes the repair, sell, power, waypoint and beacon placement flags and the targeting flag as 0 or 1, then the object pending placement |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
-| `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
-| `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
-| `strikeobj <TypeID> x y [radius] [land\|naval\|all]` | The player's armed units and infantry attack the nearest live object of that type within `radius` cells (default 3) of the cell. The target is chosen when the line runs, so a target that has moved is still found; the units keep it until it dies or leaves the map. `land` orders only units that are not ships, `naval` only ships, and `all` (the default) every armed unit |
+| `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1), `BallisticScatter` (leptons) and `AircraftWaypointReload` (0 or 1). Any other name logs `unknown` and changes nothing |
+| `strike <TypeID> x y` | The player-controlled objects of that type (see `select`) attack the object on that cell |
+| `settarget <TypeID> x y [computer] [attack|hunt]` | Gives the player's objects of that type the object on that cell as a target, with `Assign_Target`. With `attack`, they also get the attack mission, which a computer's soldier turns into a capture (see `InfantryClass::Mission_Attack`); With `hunt`, they get the hunt mission instead (`InfantryClass::Mission_Hunt`); otherwise the mission is not changed. With `computer`, the objects of that type that neither the player nor an ally owns get it instead. It writes the target's type or `(none)` |
+| `threat <TypeID> [computer]` | Writes the target each of the player's objects of that type picks for itself, from the map-wide `Greatest_Threat` scan with no threat bits set (the scan a hunting or idle soldier makes): the object's cell, then the target's type and cell, or `(none)`. With `computer`, the objects of that type that neither the player nor an ally owns are asked instead |
+| `team <TeamTypeID> [plane]` | Makes a team of that type for the first computer house and adds its free units. With `plane`, it adds the house's first free aircraft instead, with `Team::Add`, which keeps the aircraft's mission and target (`TeamClass::Recruit` clears the target) |
+| `strikeobj <TypeID> x y [radius] [land\|naval\|all] [AttackerTypeID]` | The player's armed units and infantry attack the nearest live object of that type within `radius` cells (default 3) of the cell. The target is chosen when the line runs, so a target that has moved is still found; the units keep it until it dies or leaves the map. `land` orders only units that are not ships, `naval` only ships, and `all` (the default) every armed unit. With an `AttackerTypeID`, only the objects of that type attack, whether they belong to the player or to a house the map marks `PlayerControl=yes`. A `<TypeID>` of `*` stands for any type that is neither `Insignificant` nor `DontScore`, the objects the destroyed-house events count |
 | `treehit <Warhead> x y` | Hits the terrain object on that cell with 100 points of damage from the warhead, with no firer, and writes its strength before and after |
-| `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |
+| `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune, and the overlay index on its cell |
+| `randommap` | Writes the scenario's ambient light, current ambient light, red, green and blue tints, ground and level light and ion storm ambient light, then the number of trees (terrain objects whose type name starts with `TREE`), the number of other terrain objects, the number of `GALITE` lamps, and how many more trees the generator's woods could have planted under the `MaxTrees` limit, then the checksum of the `RMGMD.INI` settings and the rules checksum that includes it. Use it after a random map is generated |
+| `terrainonore <TerrainType>` | Places a terrain object of that type on the first ore or gem cell without one, and writes the cell's overlay index before and after, to show whether the object cleared the ore. The object is placed as the scenario reader places it |
 | `waitcell <TypeID> <x> <y> [radius] [timeout]` | Pauses the script until one of the player's objects of that type is within `radius` cells of the cell (default 2), measured as a straight line. Objects not on the map do not count. See [Waiting for conditions](#waiting-for-conditions) |
 | `waittrigger <TriggerID or name> [timeout]` | Pauses the script until that trigger has sprung at least once. `runtrigger` and `trigaction` carry out actions without a spring, so they do not count |
 | `waitowns <House> <TypeID> <count> [timeout]` | Pauses the script until at least `count` objects of the type that the house owns are on the map. A structure still in production does not count, and neither does an object in limbo. `player` names the player, and an underscore stands for a space |
 | `waitlocal <index> <0\|1> [timeout]` | Pauses the script until that scenario local variable has that value |
+| `waitgone <TypeID> <x> <y> [radius] [timeout]` | Pauses the script until no object of that type that `strikeobj` could pick, one owned by a house that is not the player or its ally, is within `radius` cells of the cell (default 3). A script can strike a target and wait for it to die before giving the next order |
 | `triggerlog <0\|1>` | With `1`, writes `AUTOTEST trigger fired frame N: <ID> <name> house <house>` each time a trigger springs |
 | `triggercoverage` | Writes each trigger type in the scenario with how many times it has sprung since the run started, then the types that never sprung. A long list runs over several lines, the later ones marked `(continued)` |
 | `modsig [text]` | Writes the mods in force as a join request carries them: each folder name with a hash of its `mod.ini` and overlay files. With a signature as text, which is another machine's, also writes whether a host with these mods would take that machine in, and how the mods differ |
+| `ranking` | Writes the scenario's par times for easy, normal and hard in seconds, the elapsed mission time in seconds and the four rank labels, so a save and load can be checked for the values the score screen uses |
 | `skipscore` | A won multiplayer or skirmish game passes over its score screen, as `SkipScoreScreen=yes` in a launch file does |
 | `stall <ms>` | Holds the main thread for that long without pumping messages, so the hang watchdog reports it with the thread's call stack. The menu scripts have a `ui stall <ms>` step with the same effect |
+| `cameopress <TypeID> <left\|right>` | Presses the type's visible sidebar cameo as a left or right click does, through the cameo's own action. With Shift held by `hold`, a left press queues [`ShiftQueueCount`](/keys/shiftqueuecount/) units. A right press on a unit that is building suspends it; the next one abandons every unit of the type, as a Shift-right-click does |
+| `queuestate <TypeID>` | Writes how many of the type the player's factory holds, in production and queued, how many are queued behind it, and the player's credits |
+| `rounding <near\|chop\|up\|down>` | Sets the game thread's rounding mode for the rest of the run, so one copy of a network test can play in a different mode from the others. The game starts in round toward zero, logged as `Rounding mode at frame 0` with `(toward zero)`, and a later change is logged as `Rounding mode changed` |
 | `quit` | Ends the process |
+| `options` | opens the options menu, as Escape does during play |
+| `scatter <TypeID> x y [forced] [nokidding]` | calls Scatter on each live soldier of that type, whoever owns it, with the threat at the centre of the cell (x -1 for no threat), then writes its cell and sub-cell position, the destination it was given and how many numbers the game's random generator handed out |
+| `cameos` | writes each sidebar strip's cameos in order, with the type and whether the player can build it now |
+| `clickcameo <TypeID>` | Left-clicks the type's visible cameo, which starts, resumes or places its production as a click does; the Shift state the script holds applies |
+| `prereqs <TypeID>` | writes the prerequisites the type lists, then each type whose Prerequisite list names it |
+| `bridge x y` | writes a cell's bridge tile, overlay, deck and under-bridge flags |
+| `bridgecensus` | writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are, and the cell of each concrete-bridge overlay |
+| `bridgearea x y` | writes the bridge tile, overlay and flags of each cell within four cells of x,y |
+| `wallcensus` | writes each overlay type the rules mark as a wall, with the wall overlays the scenario's OverlayPack names (outside the radar counted apart) and the ones the loaded map holds, and whether the type has an image and a cell animation |
+| `repairbridge x y` | writes what MapClass::Can_Repair_Bridge says about the cell |
+| `bridgehit x y` | damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down |
+| `bridgehut x y` | brings the bridge near the cell down as a bridge repair hut's C4 does (MapClass::Destroy_Bridge_At) |
+| `bridgedecks x0 x1 y` | writes how many high bridge deck overlays are left on row y from x0 to x1 |
+| `blast <Warhead\|ion>[:damage] x y` | explodes the warhead on the cell as a weapon impact does (Explosion_Damage) with that damage at ground zero (1000 without one); a wood low bridge there takes one hit |
+| `concretehit x y` | damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down |
+| `passable x y` | writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell |
+| `targetaction <AttackerTypeID> <TargetTypeID>` | writes the action the player's first object of the attacker type gets over the first live enemy object of the target type, with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it |
+| `enemystrike <TypeID> x y` | orders the first computer-owned object of that type to attack what stands on that cell |
+| `hutaction <TypeID> x y` | writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes |
+| `hutclick <TypeID> x y` | clicks the building on that cell with the player's object of that type, through the object path a real click takes |
+| `hutc4 x y` | writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength |
+| `c4watch <frames> x y` | follows the building on that cell for that many frames: writes its charge's placement, countdown and strength changes, and its destruction with the saboteur's experience and the player's money and points |
+| `click x y` | queues a left click at that screen position |
+| `windowmove x y` | moves the pointer to that window pixel, which the hover and placement code reads |
+| `key <Key> [ctrl\|shift\|alt]` | presses and releases that key on the keyboard queue, skipping the interface; the key is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or digit, so Tab is written 09); the modifier words hold that key with the modifier |
+| `release <Key> [ctrl\|shift\|alt]` | lets go of a key a hold step left down; Keyboard->Down stays false in autotests, so the held state is the queue's |
+| `winkey <Key> [ctrl\|shift\|alt]` | presses and releases that key through the game window, so the interface sees it first as it does a player's key; a one-character name is read as a letter or digit, so Backspace is written 08 |
+| `binding <Key> [Double\|Hold\|Held]` | writes the command the key's binding of that trigger runs, with the modifier words |
+| `camera` | writes the tactical position the view is centred on, in leptons |
+| `wintype <text>` | types the text through the game window, one character at a time, each as a press, its text event and a release |
+| `alliance <house>` | queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame |
+| `tab` | writes the sidebar tab shown, how many items each tab lists, and the object pending placement |
+| `placement` | writes the object pending placement, the cell its cursor is on, how many cells of its footprint are marked, and whether the pointer is over the tactical view and over the map |
+| `windowpress x y` | moves the pointer to that window pixel and presses the left button there, as the start of a drag does |
+| `windowrelease x y` | moves the pointer to that window pixel and releases the left button there, as the end of a drag does |
+| `face <dir256> x y` | turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north) |
+| `voxelshade <type>` | writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight |
+| `cover x y` | writes how many buildings screen that cell and whether it counts as covered |
+| `hiddenmarker <mode>` | 0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of the Behind animation |
+| `typesounds <TypeID>` | writes the sound numbers the type's create and transport sounds resolved to |
+| `maps` | writes every XMP multiplayer map the file system finds |
+| `cratesounds` | writes the sound numbers the crate pickup sounds resolved to |
+| `elite <TypeID>` | makes the player's objects of that type elite |
+| `canrepair x y` | writes whether the structure on that cell can be repaired with the repair cursor |
+| `overpower x y` | writes how many objects charge the structure on that cell and whether it is overpowered |
+| `ruleanims` | writes the animations some rules settings resolved to |
+| `canfire <TypeID> x y` | writes whether the player's object of that type could fire its primary weapon at the object on that cell now, and why not, then the weapon it would choose and whether that one could fire |
+| `weapons <TypeID>` | writes each weapon slot of the type with its bullet's AA and AG flags and range |
+| `waypoint <any> x y` | places a waypoint on the cell on the selected path, as a click in waypoint mode does |
+| `wpsend <any> x y` | gives the selected objects the follow-path order a click on the waypoint at the cell gives |
+| `wpstate <TypeID>` | writes each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status, ammo, the waypoint path and next waypoint it follows, whether it moves, and its radio contact |
+| `airborne <TypeID>` | writes each object of the type with its height above ground, whether it is in the air, its render layer, and whether the ground or bridge occupier chain of its cell holds it |
+| `rocket <TypeID>` | writes each foot object of the type with its coordinate in leptons, its height above ground, its flat and vertical distance to the destination its locomotor flies to, and whether that locomotor is moving |
+| `shake <Warhead>` | starts the screen shake that warhead's detonation would |
+| `screen` | writes the current screen shake offset |
+| `hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>` | hits every object of that type, whoever owns it, with that warhead, fired by one of the player's objects of another type, or of the named type, and writes each one's strength, berzerk, stun, curtain and disabled-weapons state |
+| `action <TypeID> x y` | writes what the player's object of that type would do when clicked on the object standing on that cell |
+| `clickon <TypeID> x y` | clicks the player's object of that type on the object standing on that cell, as the player would with it selected |
+| `enter <TypeID> x y` | sends the player's soldiers or vehicles of that type into the structure on that cell |
+| `capture <TypeID> x y` | sends the player's idle objects of that type to capture or infiltrate the structure on that cell |
+| `tabflash` | writes which tabs of the modern sidebar panel flash, one bit per tab |
+| `ambient <TypeID>` | writes the ambient sound each object of that type has attached |
+| `trails` | writes how many line trails exist and how many of their places still show |
+| `ammo <TypeID>` | writes the ammunition and reload countdown of each vehicle of that type |
+| `enable <SuperWeaponTypeID>` | gives the player that super weapon to charge from empty, as a structure does |
+| `houses` | writes each house's money, power, spy effects, resource gatherers and powered unit centres |
+| `houseobjects <house>` | writes the units, infantry, aircraft and buildings the house owns outside limbo, its objects in limbo, the objects it originally owns, and the living vehicles it owns |
+| `shortgame <0\|1>` | sets the Short Game option on this copy, as the setup screen does |
+| `statics` | writes how many sounds that Play Sound Effect At started are still going |
+| `garrisons` | writes every structure that can be garrisoned |
+| `radarall <TypeID>` | writes each object of that type whoever owns it, with its owner and whether Is_Radar_Visible plots it |
+| `stripfill <column> <count>` | offers building types 0 to count-1 to that sidebar strip and writes how many it took |
+| `aiscan` | writes each foot object no player owns with its mission, team, target, range and area scan picks, and the nearest player object with whether it is in range and can be fired at |
+| `lockscan` | writes each object outside limbo whose IsLocked flag is clear, whoever owns it, with whether its cell is in the local radar now, then the count of such objects and how many of them are in the local radar |
+| `gattling <TypeID>` | writes each object of that type, whoever owns it, with its primary facing and the facing it turns to, a building's aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret animation frame, target cell, and a building's turret and barrel frame counts |
+| `turretcoord <TypeID>` | writes each object of that type, whoever owns it, with its body and turret facings in 256 directions, its TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point, with the body's draw matrix rows |
+| `recoil <TypeID>` | writes the recoil phase, frames left and travel of the turret body and barrel of each building of that type |
+| `rock <TypeID>` | writes the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it |
+| `load <TypeID>` | fills the player's objects of that type, a harvester for one, with ore to capacity |
+| `partsys` | writes each live particle system with its type, the frames it has left and the object it rides on |
+| `bullets` | writes each live projectile with its type, the house whose color scheme it uses and its type's trail delays |
+| `radbeams` | writes how many radiation beams of each kind are live and how many eruption beams are visible |
+| `radlevel x y` | writes the radiation level of a cell on a line of its own |
+| `effects <TypeID>` | writes the AttachEffect count and multipliers, speed, strength and reload countdown of every live object of that type |
+| `price <TypeID>` | writes what the player pays for the type |
+| `types <prefix>` | writes every structure type whose ID starts with the prefix |
+| `schemes` | writes the color schemes and the scheme each house draws with |
+| `seq <TypeID>` | writes an infantry type's art sequences |
+| `plan` | writes each computer house's base plan |
+| `fps` | writes the game frames counted in the last whole second, which the game's FPS readout shows |
+| `uploadverify <0\|1>` | 1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches |
+| `ally <TypeID> x y` | like `spawn`, but the object belongs to the first house that is an ally of the player. The log says `placed` or `failed`, `no such type`, or `no house allied with the player` |
+| `banimstate <TypeID>` | writes each building of that type with its cell, health, building state, animation stage and rate, power and house, then its construction animation, then each animation slot with the animation wanted, the one running, its stage and rate, and whether it is held still |
+| `bind <Command> <vk> [trigger]` | gives the command that virtual-key code (decimal) with the trigger, `0` Press, `1` Double, `2` Hold or `3` Held, which is Press when left out. A conflicting binding is displaced, as the keyboard screen does. The log gets the key and the trigger name |
+| `blackout <frames>` | starts a spy's power blackout of that many frames on the player's house |
+| `bridgeunit <TypeID>` | writes each foot object of that type the player owns with its cell, whether it stands on a bridge, whether its cell is under a bridge or is a bridge deck, and its height |
+| `bshadow <TypeID>` | writes each building of that type with the frame its body is drawn from, the frame its shadow is drawn from (half the image's frames further on), that frame's size and how many pixels it sets |
+| `bshape <TypeID>` | writes each building of that type with its health, the `ConditionYellow` ratio, building state, mission, shape number, the body frame drawn, the image's frame count and whether its animations are the damaged forms |
+| `bunkers` | writes each `Bunker=yes` structure with its cell and the vehicle inside it, or `nothing` |
+| `cloudcheck <SoldierTypeID>` | writes whether the type is `NotHuman`, or -1 when no such type exists, how many `InfantryVirus` animations the map holds and how many particles of that animation's particle type are live, so a virus death can be told from an animation to a bare particle |
+| `crushcheck <CrusherTypeID> <SoldierTypeID>` | writes, for each vehicle of the first type and each soldier of the second, the soldier's sequence, its dug-in crush protection and whether the vehicle may crush it |
+| `cursor <TypeID> x y` | selects the player's first object of that type alone, hovers it over the object standing on that cell, and writes the action and the mouse shape number it shows. The selection is cleared afterwards |
+| `damage <TypeID> <amount>` | hits every living object of that type the player owns for that much unforced damage, and writes its cell, the damage, its strength after and its Iron Curtain timer |
+| `defencerange <0\|1>` | Turns the Show defence range option off or on, as the options screen does, and writes the setting |
+| `evafile <EVA name>` | opens that announcer line's sample for the player's side at no volume, and writes the file and `opened` or `failed`, or `-` when the line has no file |
+| `glideclock` | times zoom glides by game frames instead of real time, for recordings |
+| `overlaypresent` | marks the UI overlay changed and runs the window message handler, which presents the frame if the refresh interval allows. It is the present a window message makes between draws |
+| `helptext <id>` | writes the tooltip text the map gives for the mouse position now, or `(none)` |
+| `holdmove <0\|1>` | Turns `MissileLaunchHoldsMove` off or on for the rest of the run, and writes the setting |
+| `hoverat x y` | moves the pointer to the centre of that cell, as `windowmove` does, so the object there is hovered from the next frame, and writes the pointer position |
+| `infstate <TypeID>` | writes each soldier of that type with its cell, sequence, stage, shape, facing, whether it is prone, mission, height, fear, whether its type turns as a jump jet, and the direction to its target or -1 |
+| `ironcurtain <TypeID> <frames>` | puts each object of that type, whoever owns it, under an Iron Curtain for that many frames, and writes its cell |
+| `lansession` | marks the game as a network game, so the steps can see the multiplayer limits |
+| `lift <TypeID>` | writes each object of that type with its cell, height above the ground, locomotor, jump jet state, the state of its magnetron hold (attacked, let go, crashing) with the types of the object holding it and the object it holds, then its strength, limbo state, weight, layer, Iron Curtain, sinking state, facing, bridge state, height and sequence |
+| `mapclick x y` | a left click at that screen point, given straight to the map as the window gives it |
+| `padstate <TypeID>` | writes each building of that type, whoever owns it, with its owner, cell, link count and the type of the object in each radio slot, `-` for an empty slot |
+| `pips <TypeID> x y` | writes the inputs of the occupant pip gate for the building of that type on that cell: owner, passive, allied, pips for all, can be occupied, shows pips, maximum and current occupants, hover, selection, whether the pips are visible to the player, and whether occupant pips are drawn. A cell with another building or none gives `no such building` |
+| `pitch <dir256> x y` | sets the barrel pitch of the player's objects on that cell to that direction in 256 steps, 64 level and 0 straight up, and writes each |
+| `planes` | writes each aircraft on the map with its cell, mission and passenger count |
+| `playanim <AnimTypeID> x y` | plays one loop of that animation over the cell |
+| `raise x y width height level` | sets the ground height of that block of cells to the level, so a test can put a cliff under a building. Cells off the map are skipped, and the rest are not redrawn or re-zoned |
+| `repairmission <TypeID>` | puts the player's foot objects of that type on the repair mission, so the depot search of `UnitClass::Do_MISSION_REPAIR` runs |
+| `scriptedzoom <0\|1>` | Turns the scripted scene zoom option off or on, and writes the setting |
+| `scriptzoom` | writes the game frame, the zoom drawn and the zoom shown, the map pixels the view shows, its centre, whether a scene holds the player's zoom, and the input lock |
+| `selected` | writes how many objects are selected and their types |
+| `sensors` | writes each vehicle, soldier or aircraft with `SensorsSight` coverage, with its cell, the cell and radius it last laid coverage for, and whether its own cell counts as sensed for its owner, then the number laying coverage and the cells sensed for the player |
+| `shape` | writes the mouse shape the map shows now (`MouseType` number, 21 is can-attack), the first frame of its cursor entry, the frames the loaded cursor sheet holds, and the shape on screen, which an override such as the panel's normal pointer can change |
+| `spawns <TypeID>` | writes each object of that type with its owner, cell, body and desired facing in 256 steps, whether it is rotating or moving, its locomotor destination, its target and mission. An object with a spawn manager also gets a `spawncycle` line with the current and queued targets, cycle status, next spawn frame and the status of each spawn |
+| `swaim <SuperSection> x y` | aims that super weapon as its cameo click does, then writes whether the cell is under shroud, the object under it, the action they give, the mouse shape that action shows, and the weapon's range and line multiplier. A name that is no super weapon gives `no such super weapon` |
+| `teams` | writes each team with its house, member count, current script mission, flags and script line. A team below full strength also gets lines with the members it lacks and why, and its recruiting values |
+| `teamtrace <0\|1>` | `1` writes a `TEAMTRACE` line for each team script line a team starts. `0` stops them |
+| `threatscan <TypeID> <ThreatType flags>` | writes the target that the first object of that type, owned by a house that is no ally of the player, picks anywhere on the map for those flags, or `-` for none |
+| `typedump [Name]` | writes the main fields of every weapon, projectile and warhead type, or only those with that name, one line each |
+| `water x y` | writes the open water cell nearest to that cell |
+| `wheel <step> [x y]` | glides the zoom by that step around a screen point, as the mouse wheel does. Without a point the zoom centres on the middle of the map view |
+| `windowshot <name>` | saves what the window shows, map layer included, as `<name>.tga` in the screenshots folder |
+| `xbutton <1\|2>` | A press and release of side button 1 or 2 at the pointer, given to the window as the mouse gives it |
+| `zoom <factor>` | sets the map view zoom at once, measured from the screen's own pixels (0.5 shows twice as much), and writes the view and screen sizes |
 
-Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to
+Some steps count the objects of a house the map marks `PlayerControl=yes` as the player's, and others do not. `select`, `selectadd`, `waitcell`, `strike`, `strikeobj` with an attacker type, `spy` and `teamspy` count those houses' objects as the player's. `move` and `attack` select them too, but they order only the player's own objects (`Is_Player_Object`), in local and network runs alike. `order`, `planmove`, `planguard`, `forceattack` and `capture` order only the player's own objects.
+
+Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to A shot's flash writes `AUTOTEST muzzle frame`, with the firer, weapon, anim, the size of the weapon's `Anim` list, the turret facing and the start point. A bolt or radiation beam writes `AUTOTEST beam end`, the point it ends on and the target's center. A bullet's blast writes `AUTOTEST explode frame`, with the warhead, the land type, the damage and the animation picked. A wave made for a sonic or magnetron weapon writes `AUTOTEST wave`, with its type number, the points it runs between and whether it is aimed at an object or a cell. A laser shot writes `AUTOTEST laser zap`, with the firer, the weapon that fired, the weapon the beam takes its look from and the beam's duration; the beam itself writes `AUTOTEST laser beam`.
 the `Screenshots` folder of the user data directory, numbered in order, so a recording can be joined
 into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 
@@ -128,6 +341,31 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 2000 command ScreenCapture
 2100 quit
 ```
+
+To add a command, write a `static void <Name>_Step(StepType const & step)` in `code/autotest.cpp`,
+add the command's name and that function to the handler table in `Run`, and add its row to the
+table above. A command missing from the handler table writes `unknown command` to the log.
+
+The menu script step `ui hudrows` logs `AUTOTEST hud rows <rows> saved <setting>`. The first value is the sidebar
+rows the build panel uses at that moment, including a preview still open. The second is the `SidebarRows` setting.
+Use it to check a settings screen after a `ui choose`, `ui click` or cancel.
+
+The menu script step `ui checked <id>` logs `AUTOTEST checked <id> 1` or `0`, for whether the element has its `checked`
+attribute. A check box has it while ticked.
+
+### File paths
+
+The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.
+
+| Steps | Path | A relative path is taken from |
+| --- | --- | --- |
+| `rules`, `art`, `teamini`, `searchdir`, `truecolourdir` | Read from disk, or a folder the game searches | The folder of the script file |
+| `exportshape`, `exportpal`, `extract` (second argument), `syncrec <path>` | Written to disk | The working directory |
+| `dumpfile`, `extract` (first argument), `pcxcameo`, `inifile` | A game file name, found the way the game finds its files; not a disk path | Not applicable |
+
+The script's folder is the folder of the path given to `-AUTOTEST=`, which `scripts/run_autotest.ps1` makes absolute. Under that runner the working directory is the build's `bin\Release` folder. An absolute path is used as written. If the script's folder cannot be determined, a relative path in the first row is used as written, so the game resolves it from the working directory.
+
+A relative `rules`, `art` or `teamini` path that names no file beside the script logs `not found` with the full path tried.
 
 ### Waiting for conditions
 
@@ -154,6 +392,10 @@ and does nothing.
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
 
+`win-all04-remote-refineries.txt` plays Allied 4 the way a player does: it destroys the Yuri base and every unit by type and leaves the two Slave Miners that deployed far from the base. The mission is won with those refineries still standing.
+
+The Red Alert 2 scripts, `tests/campaign/win-ra2-<mission>.txt`, begin with `0 requirera2` and need `-Mods tests/autotest/ra2-campaigns`. Without that mod the run stops at load with an `AUTOTEST error` line and exit code 1.
+
 ## Skirmish lobby
 
 `tests/autotest/skirmish-lobby-restore.txt` checks that the skirmish lobby keeps its setup after a
@@ -178,6 +420,28 @@ The unit test `skirmishsetup` (CTest name `skirmishsetup`) restores saved rows o
 start spots and checks the fallbacks for a missing country or start, a kind past the list, and clashing
 colors and starts. It needs no game data.
 
+`tests/autotest/map-picker.txt` opens the map picker from the skirmish lobby, searches, filters by player count, orders by players, walks the list with the keys and picks a map with Enter, with a `ui shot` after each step. `tests/autotest/cncnet-room-ui.txt` opens the same picker from a hosted CnCNet room; its header gives the stand-in command. `tests/autotest/cncnet-room-screens.txt` walks the CnCNet game list, a guest room and a hosted room with a ready guest bot, picks a player for Kick Player and opens the picker, with a `ui shot` at each step. A `ui set` step with only a text box's id empties the box.
+
+## Solo skirmish
+
+A skirmish with no computer player is a solo game: the person plays alone, and the game does not end
+because no opponent exists. The scripts below pass `-AIPlayers 0` unless they say otherwise.
+
+- `tests/autotest/skirmish-solo-spawn.txt` plays a skirmish from a launch file to frame 3000. The log has no
+  `AUTOTEST game over` line before the quit at frame 3010.
+- `tests/autotest/skirmish-solo-lobby.txt` starts the same game from the skirmish lobby. It runs with `-Menus`
+  and `-Settings` set to a `[Skirmish]` section with `Slot2=0,-1,1,0,0,0`, which opens the second row.
+- `tests/autotest/skirmish-solo-defeat.txt` defeats the person, and the log has `AUTOTEST game over frame N: lost`.
+  With `CoachMode=yes` under `[Settings]` in `-Settings`, the same script checks the coach mode run.
+- `tests/autotest/skirmish-solo-score.txt` wins the game with the Win Mission cheat, which needs
+  `DebugMode=yes` under `[Options]`, and `tests/autotest/skirmish-solo-lose-score.txt` loses it. Both carry
+  the game over on to the score screen with `continuewin` or `continuelose`, and the log has
+  `AUTOTEST score screen shown`.
+
+`tests/autotest/skirmish-1v1-win.txt` checks the rule for a game with a computer player: run with `-AIPlayers 1`,
+destroying the computer house (Africans with the default `-AICountries`) ends the game with
+`AUTOTEST game over frame N: won`.
+
 ## Saving and loading
 
 `command QuickSave` writes `QUICKSAVE.SAV` in the `Saved Games` folder of the user directory, and `command QuickLoad` loads it. A save made while the scenario's input is
@@ -201,12 +465,91 @@ state. Logging it does not change the game. Run the same script, map and seed in
 first frame whose hash differs is where their gameplay diverged. A script that starts with
 `1 hash 60` logs once a second at 60 game frames a second.
 
-## Two-copy sync test
+## Pacing
 
-`scripts/run_netsync.ps1`, in the workspace that hosts this repository, runs two copies of one build as a two-player match over 127.0.0.1. It then reports whether the copies stayed in step. Both copies run hidden and muted, as in `run_autotest.ps1`.
+The game must play the same at any frame pacing: a frame that takes longer, the draws between frames, and the fast-forward cheat change only how fast the frames come. `tests/autotest/pacing-determinism.txt` and `pacing-determinism-fast.txt` play one skirmish both ways and log the `hash` every 4 frames; their header gives the runs and the `scripts/compare_digests.py --hash` comparison, which should print `identical`. Both turn on `syncrec`, so a log line names the code if something changes the game outside a frame's logic.
+
+`GameSpeed` is part of the game rather than the pacing. As in Yuri's Revenge, it scales the rate of some animations, such as infantry idle animations, and so it changes when those objects act. To compare pacing, keep `GameSpeed` the same in both runs and use the fast-forward cheat (`command DebugFastForward` with `DebugMode=yes` under `[Options]`) for the fast run.
+
+## Comparing presented frames
+
+`presentdigest 1` logs one line at each present that reaches the presenter:
 
 ```text
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_netsync.ps1 -Build agent17 -Seconds 400
+PRESENT_DIGEST frame 1234 present 56 hash 9c1f0a2b3d4e5f60 layer none
+```
+
+- `frame` is the game frame when the present is made.
+- `present` counts the logged presents from 0, starting when the step runs.
+- `hash` is a 64-bit FNV-1a hash over 8-byte words of every row of the visible frame, as the presenter receives it. A present that uploads nothing still hashes the frame. The UI overlay is not hashed.
+- `layer` is a hash of the map layer rows the presenter draws under the frame, as a zoomed view does. It is `none` when no layer is drawn.
+
+When no map layer is drawn and the frame's map area still holds the layer key, the present also logs `AUTOTEST present keyed N pixels without map layer`, with N the number of keyed pixels in that area. The presenter shows those pixels as magenta, so the line should not appear in a correct run. `tests/autotest/scripted-camera-zoom-present.txt` checks for it.
+
+A present that the refresh interval skips is not logged. Set `FrameRateLimit=0` under `[Video]` in `RA2MD.INI` to log every present; the default follows the display's refresh rate.
+
+Presents also come from the message loop between draws, for example when the mouse pointer or the sidebar
+changes, and those change with the clock. Two runs of one build can therefore differ in their present lines.
+Use the draw digest below to compare the map view.
+
+## Log lines in every game
+
+Most test probes print only in a run started with `-AUTOTEST`, and their lines start with `AUTOTEST`. The events below print a line in every game, with no `AUTOTEST` prefix:
+
+| Prefix | Printed for |
+|---|---|
+| `Shrapnel:` | each shrapnel piece thrown at a target |
+| `Slave:` | each slave ore unload, deploy, pack-up and free |
+| `Disk laser:` | each disk laser charge and strike |
+| `Spawn:` | each spawned unit launched |
+| `Rocket:` | each rocket explosion |
+| `AICapture:` | each AI capture roll |
+
+The test scripts in `tests/autotest/` filter on or expect the `Slave:` and `Disk laser:` lines (`slave-*.txt` and `floating-disc-force-attack.txt`). No script there mentions the other four. A normal game writes all six, so keep only the lines a run needs with `-Filter`, for example `-Filter "AUTOTEST|Slave: |Exception"`.
+
+## Listing map draws
+
+`drawprobe 1` counts every lock of the map view during the pass that draws objects and their overlays, and every blit into it. `drawprobe 0` logs the counts and stops:
+
+```text
+DRAW_PROBE count 125746 stack 0002f1a3 00056c10 ...
+DRAW_PROBE_BLIT count 252190 pixels 1016212261 kind class RLEBlitTransXlatAlphaZRead<unsigned short>
+```
+
+- A `DRAW_PROBE` line gives how many locks came from one call stack, most frequent first, as the return addresses of up to six callers relative to `Game.exe`. Add the image base 0x400000 and pass them to `llvm-symbolizer --obj=Game.exe` with the build's `Game.pdb` to get the functions. The stacks are recorded on Windows only.
+- A `DRAW_PROBE_BLIT` line gives the number of blits of one blitter type and the clipped pixels they covered.
+
+## Comparing map draws
+
+`drawdigest 1` logs one line each time the map view is drawn:
+
+```text
+DRAW_DIGEST frame 1234 draw 56 hash 9c1f0a2b3d4e5f60
+```
+
+- `frame` is the game frame of the draw.
+- `draw` counts the logged draws from 0, starting when the step runs.
+- `hash` is the same 64-bit hash over the map view's pixels (`TacticalRect`) after the objects and their overlays are drawn, before the sidebar, panels and buttons. When the view is zoomed, it hashes the map's own surface.
+
+With `RenderFrameRate=0` the game draws the map once per game frame, so two runs of one build give the same lines. With `RenderFrameRate` above zero, the draws between game frames depend on the clock.
+
+`scripts/compare_digests.py` compares the lines of two logs, draw lines by default and present lines with `--present`:
+
+```text
+python -I scripts/compare_digests.py run-a.log run-b.log
+python -I scripts/compare_digests.py --present run-a.log run-b.log
+```
+
+It pairs the lines by frame and by their order within that frame, so a line missing from one log does not shift the rest. It prints the number of lines in each log, the first differing line, and the first line that only one log has. Exit codes: `0` when every line in both logs matches; `3` when a hash or layer differs, or a line is in one log only; `4` when the logs share no line; `1` for a usage or read error.
+
+`tests/autotest/digest-large-battle.txt` runs the large battle with both steps on. `tests/autotest/digest-aircraft.txt` does the same for 20 flying Orcas.
+
+## Two-copy sync test
+
+`scripts/run_netsync.ps1` runs two copies of one build as a two-player match over 127.0.0.1. It then reports whether the copies stayed in step. Both copies run hidden and muted, with no movies and no question about sending problem reports. `-GameExe` names the `Game.exe` to run and `-DataDir` the Yuri's Revenge folder that holds the game data; the runner only reads that folder.
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_netsync.ps1 -GameExe build\bin\Release\Game.exe -DataDir "C:\Games\Yuri's Revenge" -Seconds 400
 ```
 
 Each copy starts with `-SYNCLOG`, which writes one line to its debug log for every game frame:
@@ -228,7 +571,9 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 
 | Parameter | Default | Effect |
 | --- | --- | --- |
-| `-Build` | `src` | The build to run, named as in `run_autotest.ps1` |
+| `-GameExe` | required | The `Game.exe` both copies run |
+| `-DataDir` | required | The Yuri's Revenge folder with the game data |
+| `-WorkDir` | `netsync` beside `Game.exe` | Holds each copy's user folder and the relay log |
 | `-Map` | `XMP29U2.MAP` | The skirmish map |
 | `-Seconds` | `120` | How long both copies run before the runner stops them |
 | `-AI` | `2` | Computer players, seated the same way on both copies |
@@ -253,25 +598,26 @@ The `XMP29U2.MAP` pair desynced at frame 14726 in two of five runs before the mi
 
 An earlier note put the first differing random draw at frame 14636. That came from comparing the draws by table cursor, which is offset between the copies. Compared in draw order, the draws agree through frame 14725. The first difference is at frame 14726, after a building's guard scan found a target on one copy only.
 
-Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
+Each copy has its own user folder, `side-a-user` or `side-b-user` in the work folder, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
 
 - `[Settings] BindAddress=127.0.0.1` makes each socket listen on loopback only, so nothing listens on the network.
 - The runner writes `0 log NETSYNC_SIDE_A` (or `_B`) as the first line of each copy's script, and finds each copy's debug log by that marker.
 - Both copies write to the build's `Debug` folder. Each run deletes the `DEBUG_*.LOG` and `SYNC_*.LOG` files there first, so use `-KeepDir` to keep a run's logs.
-- Runs of one build take turns, as with `run_autotest.ps1`, and the runner holds two of the four game slots.
+- Runs of one `Game.exe` take turns. The runner holds two of four game slots that every runner on the machine shares, so at most four copies run at once.
 
 ### Orders in a network game
 
-In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that gives an order queues it as an event, as a player's click does, so the other copy applies it too. Outside a network game, `move`, `attack`, `strike`, `strikeobj`, `rally` and `sell` change the object directly.
+In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that gives an order queues it as an event, as a player's click does, so the other copy applies it too. `move`, `attack`, `rally`, `sell`, `repairon` and `poweroff` queue their event in every game. Outside a network game, `strike` and `strikeobj` change the object directly.
 
 | Steps | In a network game |
 | --- | --- |
 | `produce`, `place`, `primary`, `stop`, `order`, `command DeployObject`, `clickcell`, `fire` | Already queue events, as the sidebar and the map clicks do |
-| `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell` | Queue an event: a mission for each object, an archive target or a sale |
+| `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell`, `repairon`, `poweroff` | Queue an event: a mission for each object, an archive target, a sale, a repair or a power-off |
+| `clickcameo` | Presses the visible cameo as a click does, so the cameo's own events are queued |
 | `planning 1`, `planning 0` | `planning 1` sets this copy's mode only. Orders given while the mode is on are recorded as planned orders, and `planning 0` queues the commit that starts them |
 | `beacon place x y`, `beacontext <text>` | Queue the beacon event: a placement on the cell, or the text of the selected beacon. `beacon select x y` and `beacon delete` change this copy's selection, and `beacon delete` queues a removal only for a beacon the player owns |
 
-A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state: with `1000 own E1 60 60` on one side only, the runner reports a desync at frame 1000. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
+A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `chargeai`, `produceai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state: with `1000 own E1 60 60` on one side only, the runner reports a desync at frame 1000. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
 
 The out-of-sync comparison is positional: it compares line N of one report with line N of the other. One object that appears only on one side shifts every line after it, so read the first difference, not the whole list.
 

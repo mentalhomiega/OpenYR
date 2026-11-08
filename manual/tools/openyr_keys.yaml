@@ -16,9 +16,13 @@ version: 1
 # in its From column.
 records:
   # Our own keys.
+  added-usecameosortorder: OpenYR
+  added-rmgvegetationmaptype: OpenYR
   animation-fires-key: OpenYR
   added-barrelanimzadjust: OpenYR
-  added-lightningrodrange: OpenYR
+  added-extendedanimfacings: OpenYR
+  added-ring1glow: OpenYR
+  added-bodyframefromidle: OpenYR
   added-synclog: OpenYR
   added-turretbob: OpenYR
   added-voxelshadescale: OpenYR
@@ -29,9 +33,9 @@ records:
   interface-scale: OpenYR
   map-packs-and-yrm-maps: OpenYR
   menu-styles: OpenYR
-  modern-interface-side-colors: OpenYR
   modern-ingame-interface: OpenYR
   modern-sidebar-rows: OpenYR
+  sidebar-opacity: OpenYR
   mods-screen: OpenYR
   render-frame-rate: OpenYR
   sidebar-strip-default-capacity: OpenYR
@@ -48,6 +52,8 @@ records:
   mutate-friendly-key: OpenYR
   screen-shake-option: OpenYR
   show-fps-option: OpenYR
+  unit-voice-volume: OpenYR
+  movie-volume: OpenYR
   # Keys OpenTS added.
   action-lines-and-ui-ini: OpenTS
   autosave: OpenTS
@@ -77,34 +83,6 @@ records:
   stacking-crate-upgrades: OpenTS
   ui-documents-replace-dialogs: OpenTS
   # Keys we read as the Ares or Phobos documentation describes them.
-  ares-superweapon-keys: Ares
-  added-abductor: Ares
-  added-abductor-maxhealth: Ares
-  added-abductor-temporal: Ares
-  added-ai-powerplants: Ares
-  added-hunterseeker-ignore: Ares
-  added-sonar-duration: Ares
-  added-aibasenormal: Ares
-  added-aibuildcounts: Ares
-  added-affectsenemies: Ares
-  added-airburstspread: Ares
-  added-anim-damage-delay: Ares
-  added-bolt-beam-colors: Ares
-  added-ballisticscatter-range: Ares
-  added-preimpactanim: Ares
-  added-railgun-detached: Ares
-  added-subjecttobuildings: Ares
-  added-effectsrequire: Ares
-  added-emp-duration: Ares
-  added-forceshield-modifier: Ares
-  added-altcameopcx: Ares
-  added-immunetoabduction: Ares
-  added-infdeathanim: Ares
-  added-ironcurtain-modifier: Ares
-  added-ivanbomb-keys: Ares
-  added-killdriver: Ares
-  added-preventscatter: Ares
-  added-urban-combat: Ares
   attach-effects: Ares
   bounty: Ares
   cameo-pcx: Ares
@@ -114,26 +92,7 @@ records:
   group-and-keep-alive: Ares
   reverse-engineering: Ares
   object-type-keys: Ares, Phobos
-  ares-side-interface-keys: Ares
-  ares-side-survivor-keys: Ares
-  ares-side-score-screen-keys: Ares
-  ares-lobby-colors: Ares
-  ares-country-lobby-keys: Ares
-  ares-country-interface-keys: Ares
-  menu-buttons-follow-uimd: Ares
   rank-insignia-keys: Ares, Phobos
-  ares-survivor-keys: Ares
-  ares-eva-keys: Ares
-  ares-spy-effect-keys: Ares
-  ares-warhead-effect-keys: Ares
-  ares-more-mo-keys: Ares
-  ares-small-keys-e: Ares
-  ares-small-keys-f: Ares
-  phobos-more-mo-keys: Phobos
-  ares-convert-deploy: Ares
-  ares-type-presentation-keys: Ares
-  ares-type-cursor-keys: Ares
-  ares-cloak-guard-and-gattling-keys: Ares
   phobos-opentopped-values: Phobos
   # Added keys that the original gamemd.exe has no string for, checked on 2026-10-16.
   healer-target-kinds: OpenYR
@@ -141,6 +100,7 @@ records:
   pip-row-length: OpenYR
   spawn-house-base-nodes: OpenYR
   totable: OpenYR
+  scripted-camera-zoom: OpenYR
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
@@ -228,6 +188,7 @@ gamemd_records:
   - threat-per-occupant
   - unloading-class
   - water-crate-setting
+  - warhead-debris
 
 # Records whose keys we could not place. The index leaves them out until
 # someone with the gamemd rules decides.
@@ -372,16 +333,6 @@ opents_ini:
   Saves/CarryScenarioFile:
     effect: "`yes` stores a copy of the scenario file in every saved game, and a restart reads that copy."
     anchor: what-a-save-carries
-  Archives/ExpandPrefix:
-    effect: "The prefixes of the numbered expansion archives a mod mounts."
-    anchor: ""
-  Archives/CachePrefix:
-    effect: "The prefixes of the numbered cache archives a mod mounts."
-    anchor: ""
-  Menu/FollowMenuButtons:
-    effect: "`no` keeps every title menu button, whatever `[UISettings]` in the UI file says."
-    default: "yes"
-    anchor: ""
   Files/Rules:
     effect: "The rules file."
     anchor: the-files-it-reads
@@ -424,15 +375,6 @@ opents_ini:
   Files/Keyboard:
     effect: "The hotkey file, read at startup and saved by the keyboard dialog."
     anchor: the-files-it-reads
-  Files/Mission:
-    effect: "The campaign mission list, which names each mission's briefing and loading screen."
-    anchor: the-files-it-reads
-  Files/MapSelect:
-    effect: "The campaign map selection file."
-    anchor: the-files-it-reads
-  Files/TheaterSuffix:
-    effect: "The suffix of each theater's tile set file, such as `MD` for TEMPERATMD.INI."
-    anchor: the-files-it-reads
   Files/*Expansion:
     effect: "The expansion's copy of the matching base file, read after it."
     anchor: the-files-it-reads
@@ -442,9 +384,3 @@ opents_ini:
   Palettes/Game:
     effect: "The palette the game is drawn with until a theater loads."
     anchor: the-palettes-it-starts-with
-  Archives/ExpandPrefix:
-    effect: "Comma separated prefixes of the numbered expansion archives. Each prefix mounts the archives numbered 99 down to 00, and an earlier prefix is searched first."
-    anchor: the-files-it-reads
-  Archives/CachePrefix:
-    effect: "The same for the cached archives."
-    anchor: the-files-it-reads

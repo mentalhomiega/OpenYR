@@ -23,11 +23,14 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
+#include "house.h"
 #include "inline.h"
+#include "logic.h"
 #include "mouse.h"
 #include "rgb.h"
 #include "scenario.h"
 #include "tactical.h"
+#include "weapon.h"
 
 #include <algorithm>
 
@@ -37,6 +40,17 @@
 DynamicVectorClass<LaserDrawClass *> LaserDrawClass::LaserDraws;
 
 
+void Weapon_Beam_Colors(WeaponTypeClass const * weapon, HouseClass const * house, RGBClass & inner, RGBClass & outer)
+{
+	inner = weapon->LaserInnerColor;
+	outer = weapon->LaserOuterColor;
+	if (weapon->IsHouseColor) {
+		inner = house->Laser_Color();
+		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
+	}
+}
+
+
 /// <summary>
 /// Creates a laser beam between two points in the world.
 /// This routine is used by the weapon code whenever a laser, railgun or similar beam
@@ -44,19 +58,20 @@ DynamicVectorClass<LaserDrawClass *> LaserDrawClass::LaserDraws;
 /// about it entirely -- it will be updated, drawn and finally retired on its own.
 /// </summary>
 /// <param name="zadjust">The depth bias applied to the beam's starting end.</param>
-/// <param name="unknown">Vestigial flag; recorded on the beam but never consulted.</param>
 /// <param name="outer_spread">The maximum random color deviation of the outer glow.</param>
 /// <param name="duration">The lifetime of the beam, in game frames.</param>
 /// <param name="blinks">Should the beam flicker on and off as it ages?</param>
 /// <param name="fades">Should the beam's intensity slide from start to end over its life?</param>
-LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown, RGBClass inner_color, RGBClass outer_color, RGBClass outer_spread, int duration, bool blinks, bool fades, float start_intensity, float end_intensity) :
+LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, RGBClass inner_color, RGBClass outer_color, RGBClass outer_spread, int duration, bool blinks, bool fades, float start_intensity, float end_intensity) :
 	StageClass(),
+	Thickness(1),
+	IsHouseColor(false),
+	IsSupported(false),
 	Start(start),
 	End(end),
 	ZAdjust(zadjust),
-	UnusedBool1(unknown),
 	EmissiveStrength(EmissiveDefaults[EMISSIVE_LASER].Strength),
-	Thickness(1),
+	CoreThickness(1),
 	InnerColor(),
 	OuterColor(),
 	OuterSpread(),
@@ -76,9 +91,7 @@ LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown
 
 	LaserDraws.Add(this);
 
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST laser beam from %d,%d,%d to %d,%d,%d duration %d\n", start.X, start.Y, start.Z, end.X, end.Y, end.Z, duration);
-	}
+	AUTOTEST_LOG("laser beam from %d,%d,%d to %d,%d,%d duration %d\n", start.X, start.Y, start.Z, end.X, end.Y, end.Z, duration);
 }
 
 
@@ -151,16 +164,68 @@ void LaserDrawClass::Draw_All(void)
 }
 
 
+namespace {
+
+// A beam's two ends in pixels, and the depth of each end for sorting against the scene.
+struct BeamPixels
+{
+	Point2D Start;
+	Point2D End;
+	int StartZ;
+	int EndZ;
+};
+
+
+BeamPixels Project_Beam(Coord const & start, Coord const & end, int zadjust, unsigned char emissive_strength)
+{
+	BeamPixels pixels;
+	TacticalMap->Coord_To_Pixel(start, pixels.Start);
+	TacticalMap->Coord_To_Pixel(end, pixels.End);
+	if (Emissive_Is_Enabled() && emissive_strength != 0) {
+		Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, pixels.Start, pixels.End, emissive_strength);
+	}
+	pixels.StartZ = zadjust - TacticalMap->Z_Lepton_To_Pixel(start.Z) - 2;
+	pixels.EndZ = -TacticalMap->Z_Lepton_To_Pixel(end.Z) - 2;
+	return(pixels);
+}
+
+}
+
+
+/// <summary>
+/// The intensity the beam is drawn at now: 1 when it does not fade, otherwise its fade between the start and end intensities.
+/// </summary>
+float LaserDrawClass::Current_Intensity(void)
+{
+	if (!Fades) {
+		return(1.0f);
+	}
+	return((StartIntensity - EndIntensity) * (Duration - Fetch_Stage()) / Duration + EndIntensity);
+}
+
+
 /// <summary>
 /// Draws the laser beam onto the logical surface.
-/// This routine draws the beam as a thin inner core and, when an outer color was
-/// specified, a pair of parallel glow lines flanking it. A beam that lies under the fog
-/// of war, or that is currently blinked off, draws nothing at all. At the lowest detail
-/// level the beam degrades to a plain depth shaded line.
+/// This routine draws an ordinary beam as a thin inner core and, when an outer color was specified, a pair
+/// of parallel glow lines flanking it. A beam of a house colored weapon is drawn by Draw_House_Color
+/// instead. A beam that lies under the fog of war, that is currently blinked off, or that has no duration
+/// draws nothing at all. At the lowest detail level the beam degrades to a plain depth shaded line.
 /// </summary>
+/// <remarks>This is gamemd's LaserDrawClass draw routine (0x550260). Only the detail level gates the
+/// ordinary beam; the frame rate gates the house colored one.</remarks>
 void LaserDrawClass::Draw_It(void)
 {
+	if (Duration <= 0) {
+		return;
+	}
+
 	if (!Scen->Special.IsFogOfWar || !Map.Is_Fogged(Start) || !Map.Is_Fogged(End)) {
+
+		if (IsHouseColor) {
+			Draw_House_Color();
+			return;
+		}
+
 		static Point2D _glow_offsets[16] = {
 			Point2D(0, -1),
 			Point2D(1, 0),
@@ -181,6 +246,7 @@ void LaserDrawClass::Draw_It(void)
 		};
 
 		if (!BlinkState) {
+
 			/// The "thin" core (InnerColor) is drawn once with no offset. The "thick"
 			/// outer glow (OuterColor) is two extra lines, each a 1-pixel parallel copy
 			/// of the core shifted by _glow_offsets[2*facing] / [2*facing+1].
@@ -200,16 +266,11 @@ void LaserDrawClass::Draw_It(void)
 			DirType dir = Direction(Start, End);
 			FacingType facing = dir.As_Facing();
 
-			Point2D start_pixel;
-			TacticalMap->Coord_To_Pixel(Start, start_pixel);
-			Point2D end_pixel;
-			TacticalMap->Coord_To_Pixel(End, end_pixel);
-			if (Emissive_Is_Enabled() && EmissiveStrength != 0) {
-				Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, start_pixel, end_pixel, EmissiveStrength);
-			}
-
-			int start_z = ZAdjust - TacticalMap->Z_Lepton_To_Pixel(Start.Z) - 2;
-			int end_z = -TacticalMap->Z_Lepton_To_Pixel(End.Z) - 2;
+			BeamPixels const pixels = Project_Beam(Start, End, ZAdjust, EmissiveStrength);
+			Point2D const & start_pixel = pixels.Start;
+			Point2D const & end_pixel = pixels.End;
+			int const start_z = pixels.StartZ;
+			int const end_z = pixels.EndZ;
 
 			RGBClass outer_color;
 			int outer_hicolor = 0;
@@ -240,25 +301,21 @@ void LaserDrawClass::Draw_It(void)
 				outer_color.Set_Blue(blue);
 			}
 
-			float current_intensity = 1.0;
-
 			bool has_r = InnerColor.Get_Red() > 0;
 			bool has_g = InnerColor.Get_Green() > 0;
 			bool has_b = InnerColor.Get_Blue() > 0;
 
-			if (Fades) {
-				current_intensity = (StartIntensity - EndIntensity) * (Duration - Fetch_Stage()) / Duration + EndIntensity;
-			}
+			float const current_intensity = Current_Intensity();
 
 			if (Options.DetailLevel != 0) {
 				// A wider core is the core line repeated side by side across the beam.
-				if (Thickness > 1 && !Blinks) {
+				if (CoreThickness > 1 && !Blinks) {
 					double const length = std::sqrt((double)(end_pixel.X - start_pixel.X) * (end_pixel.X - start_pixel.X) + (double)(end_pixel.Y - start_pixel.Y) * (end_pixel.Y - start_pixel.Y));
 					if (length > 0.0) {
 						double const across_x = -(end_pixel.Y - start_pixel.Y) / length;
 						double const across_y = (end_pixel.X - start_pixel.X) / length;
-						for (int line = 0; line < Thickness; line++) {
-							double const shift = line - (Thickness - 1) / 2.0;
+						for (int line = 0; line < CoreThickness; line++) {
+							double const shift = line - (CoreThickness - 1) / 2.0;
 							if (shift == 0.0) {
 								continue;
 							}
@@ -286,25 +343,28 @@ void LaserDrawClass::Draw_It(void)
 							start_z, end_z, false, true, true, true, 1.0
 						);
 					}
+				} else if (has_outer_glow) {
+					/// A steady beam with a glow adds all three of its lines to the pixels beneath
+					/// (0x4BDF00), the glow lines first, and the glow takes the beam's intensity as the core does.
+					LogicalSurface->Draw_Depth_Additive_Line(
+						TacticalRect,
+						start_pixel + _glow_offsets[2 * facing],
+						end_pixel + _glow_offsets[2 * facing],
+						outer_color,
+						current_intensity, start_z, end_z
+					);
+
+					LogicalSurface->Draw_Depth_Additive_Line(
+						TacticalRect,
+						start_pixel + _glow_offsets[2 * facing + 1],
+						end_pixel + _glow_offsets[2 * facing + 1],
+						outer_color,
+						current_intensity, start_z, end_z
+					);
+
+					LogicalSurface->Draw_Depth_Additive_Line(TacticalRect, start_pixel, end_pixel, InnerColor, current_intensity, start_z, end_z);
 				} else {
 					LogicalSurface->Draw_Depth_Antialiased_Line(TacticalRect, start_pixel, end_pixel, InnerColor, start_z, end_z, false, has_r, has_g, has_b, current_intensity);
-					if (has_outer_glow) {
-						LogicalSurface->Draw_Depth_Antialiased_Line(
-							TacticalRect,
-							start_pixel + _glow_offsets[2 * facing],
-							end_pixel + _glow_offsets[2 * facing],
-							outer_color,
-							start_z, end_z, false, true, false, false, 1.0
-						);
-
-						LogicalSurface->Draw_Depth_Antialiased_Line(
-							TacticalRect,
-							start_pixel + _glow_offsets[2 * facing + 1],
-							end_pixel + _glow_offsets[2 * facing + 1],
-							outer_color,
-							start_z, end_z, false, true, false, false, 1.0
-						);
-					}
 				}
 			} else {
 				LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, start_pixel, end_pixel,
@@ -318,7 +378,7 @@ void LaserDrawClass::Draw_It(void)
 						start_pixel + _glow_offsets[2 * facing],
 						end_pixel + _glow_offsets[2 * facing],
 						outer_hicolor,
-						start_z, end_z
+						start_z, end_z, false
 					);
 
 					LogicalSurface->Draw_Depth_Shaded_Line(
@@ -326,10 +386,117 @@ void LaserDrawClass::Draw_It(void)
 						start_pixel + _glow_offsets[2 * facing + 1],
 						end_pixel + _glow_offsets[2 * facing + 1],
 						outer_hicolor,
-						start_z, end_z
+						start_z, end_z, false
 					);
 				}
 			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws the beam of a house colored weapon, which is thicker than an ordinary one.
+/// This routine draws up to Thickness pairs of parallel lines on either side of the beam's path, each pair
+/// one step further out than the last and half as bright. The pairs march outward by a step that depends
+/// on which of the eight compass facings the beam lies nearest, and the beam has no line of its own along
+/// its center. A beam that carries IsSupported starts bright: its first pair is drawn at twice the house
+/// color, the second at the house color itself, and the pairs after that halve from there. Otherwise the
+/// first pair is drawn at half the house color. The pairs stop early once all three guns fall below 8,
+/// or below 64 when the frame rate is under the detail minimum.
+/// </summary>
+/// <remarks>This is gamemd's routine at 0x5509F0. It takes the software path of that routine; the
+/// textured quads it draws when a Direct3D device is in use are not part of this engine.</remarks>
+void LaserDrawClass::Draw_House_Color(void)
+{
+	/*
+	**	How far each pair of lines moves out per step, by facing. Each facing lists the
+	**	step of the first line (x, y), then the step of the second line (x, y). A facing
+	**	that is even moves one axis of each line on alternate steps; an odd one moves both.
+	*/
+	static int const steps[8][4] = {
+		{ -1, -1, 1, 1 },
+		{ 0, -1, 0, 1 },
+		{ -1, 1, 1, -1 },
+		{ -1, 0, 1, 0 },
+		{ -1, -1, 1, 1 },
+		{ 0, -1, 0, 1 },
+		{ -1, 1, 1, -1 },
+		{ -1, 0, 1, 0 }
+	};
+
+	DirType dir = Direction(Start, End);
+	int const facing = dir.As_Facing();
+
+	BeamPixels const pixels = Project_Beam(Start, End, ZAdjust, EmissiveStrength);
+	Point2D const & start_pixel = pixels.Start;
+	Point2D const & end_pixel = pixels.End;
+	int const start_z = pixels.StartZ;
+	int const end_z = pixels.EndZ;
+
+	bool const detailed = Detail_Min_Frame_Rate() <= LastFramesPerSecond && Options.DetailLevel != 0;
+
+	float const intensity = Current_Intensity();
+	int const intensity_level = (int)((double)intensity * 255.0);
+
+	RGBClass color;
+	if (IsSupported) {
+		color = RGBClass((unsigned char)std::min(2 * InnerColor.Get_Red(), 255), (unsigned char)std::min(2 * InnerColor.Get_Green(), 255), (unsigned char)std::min(2 * InnerColor.Get_Blue(), 255));
+	} else {
+		color = RGBClass((unsigned char)(InnerColor.Get_Red() >> 1), (unsigned char)(InnerColor.Get_Green() >> 1), (unsigned char)(InnerColor.Get_Blue() >> 1));
+	}
+
+	/*
+	**	The first line runs between start1 and end1, the second between start2 and end2.
+	*/
+	Point2D start1 = start_pixel;
+	Point2D end1 = end_pixel;
+	Point2D start2 = start_pixel;
+	Point2D end2 = end_pixel;
+
+	int const * const step = steps[facing];
+	int const dim_limit = detailed ? 8 : 64;
+
+	for (int i = 1; i <= Thickness; i++) {
+		if ((facing & 1) != 0) {
+			start1 += Point2D(step[0], step[1]);
+			end1 += Point2D(step[0], step[1]);
+			start2 += Point2D(step[2], step[3]);
+			end2 += Point2D(step[2], step[3]);
+		} else if ((i & 1) != 0) {
+			start1.X += step[0];
+			end1.X += step[0];
+			start2.Y += step[3];
+			end2.Y += step[3];
+		} else {
+			start1.Y += step[1];
+			end1.Y += step[1];
+			start2.X += step[2];
+			end2.X += step[2];
+		}
+
+		if (detailed) {
+			LogicalSurface->Draw_Depth_Additive_Line(TacticalRect, start1, end1, color, intensity, start_z, end_z);
+			LogicalSurface->Draw_Depth_Additive_Line(TacticalRect, start2, end2, color, intensity, start_z, end_z);
+		} else {
+			/// The reduced path draws plain shaded lines in the color pulled toward white by the intensity.
+			RGBClass shown = color;
+			shown.Adjust(intensity_level, RGBClass(255, 255, 255));
+			unsigned const hicolor = DSurface::Build_Hicolor_Pixel(shown);
+			LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, start1, end1, hicolor, start_z, end_z, false);
+			LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, start2, end2, hicolor, start_z, end_z, false);
+		}
+
+		if (IsSupported && i == 1) {
+			color = InnerColor;
+		} else {
+			int const red = color.Get_Red() >> 1;
+			int const green = color.Get_Green() >> 1;
+			int const blue = color.Get_Blue() >> 1;
+			if (red < dim_limit && green < dim_limit && blue < dim_limit) {
+				break;
+			}
+			color = RGBClass((unsigned char)red, (unsigned char)green, (unsigned char)blue);
 		}
 	}
 }

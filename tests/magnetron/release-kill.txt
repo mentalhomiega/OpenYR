@@ -1,6 +1,6 @@
 ; A Magnetron lifts an enemy Rhino (HTNK) with its beam, then is killed while the beam still stands. The Rhino is let go
 ; in the air: it is stunned, keeps its hold and falls straight down without climbing, cruising or hovering. It lands,
-; crushes what is under it and takes the drop damage. Each "AUTOTEST   lift" line gives the Rhino's height, locomotor,
+; crushes what is under it and takes no damage from the landing. Each "AUTOTEST   lift" line gives the Rhino's height, locomotor,
 ; jumpjet state and hold flags.
 ; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/release-kill.txt -Seconds 150
 300 own TELE 54 40

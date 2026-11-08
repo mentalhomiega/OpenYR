@@ -190,18 +190,16 @@ class InfantryTypeClass : public TechnoTypeClass
 		// A Deployer=yes soldier digs in when told to deploy. With DeployFire=yes it fires the
 		// weapon in slot DeployFireWeapon while dug in and its first weapon otherwise.
 		bool IsDeployer;
-		bool IsDeployFire;
-		int DeployFireWeapon;
-
-		// Frames a dug-in soldier stays dug in before it packs up on its own. A negative value leaves
-		// it to the orders it is given, as the rules' default does (UndeployDelay=-1).
-		int UndeployDelay;
 
 		// A deployed soldier with DeployedCrushable=no cannot be crushed by a vehicle while dug in.
 		bool IsDeployedCrushable;
 
+		// A JumpJetTurn=yes jumpjet soldier turns its body toward its target while it hovers and
+		// holds its fire until it has landed or settled. Without it the soldier is drawn facing the
+		// target without turning.
+		bool IsJumpJetTurn;
+
 		// A slave shovels one bail of ore every HarvestRate frames.
-		bool IsSlaved;
 		int HarvestRate;
 		VocType DeploySound;
 		VocType UndeploySound;

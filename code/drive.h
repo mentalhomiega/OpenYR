@@ -41,6 +41,7 @@
 #include "timer.h"
 
 #include <memory>
+#include <optional>
 
 #include "mark.hh"
 
@@ -68,7 +69,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
 		virtual Coord Head_To_Coord(void) override;
-		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual Matrix3D Build_Draw_Matrix(int *key, bool matrix) override;
 		virtual int Z_Adjust(void) override;
 		virtual ZGradientType Z_Gradient(void) override;
 		virtual bool Process(void) override;
@@ -92,7 +93,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker.Has_Locomotor());}
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
@@ -116,7 +117,11 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		enum DriveLocomotionClassEnum {
 			BACKUP_INTO_REFINERY=64,    // Track to backup into refinery.
 			OUT_OF_REFINERY,            // Track to leave refinery.
-			OUT_OF_WEAPON_FACTORY       // Track to leave weapons factory.
+			OUT_OF_WEAPON_FACTORY,      // Track to leave weapons factory.
+			ENTER_BUNKER_NE,            // Tracks onto the middle of a tank bunker, heading northeast, southeast, southwest and northwest.
+			ENTER_BUNKER_SE,
+			ENTER_BUNKER_SW,
+			ENTER_BUNKER_NW
 		};
 
 		/****************************************************************************
@@ -135,6 +140,10 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		static int Travel_Frames(int maxspeed, int leptons);
 
 	private:
+
+		// Tells a friendly blocker in the cell in direction `dir` to move. Returns Abandon_Navigation()'s
+		// result when the unit stops here, else nothing.
+		std::optional<bool> Scatter_Friendly_Blockage(FacingType dir);
 
 		struct TurnTrackType {
 			char					Track;      // Which track to use.
@@ -246,7 +255,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		 * driver answers for it rather than for itself. If NULL, this driver is in sole
 		 * charge of the unit.
 		 */
-		std::unique_ptr<ILocomotion> Piggybacker;
+		PiggybackSlot Piggybacker;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
@@ -256,8 +265,9 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		void Lay_Track(void);
 		Point2D Smooth_Turn(Point2D const & adj, Dir256 & dir);
 
-		static TurnTrackType const TrackControl[67];
-		static RawTrackType const RawTracks[13];
+		static TurnTrackType const TrackControl[71];
+		static RawTrackType const RawTracks[14];
+		static TrackType const Track14[];
 		static TrackType const Track13[];
 		static TrackType const Track12[];
 		static TrackType const Track11[];

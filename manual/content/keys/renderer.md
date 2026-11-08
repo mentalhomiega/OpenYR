@@ -14,10 +14,12 @@ The number selects the graphics interface the game asks for when it starts. It e
 | `0` | Chosen automatically |
 | `1` | Direct3D 11 |
 | `2` | Direct3D 12 |
-| `3` | Vulkan |
+| `3` | Vulkan (experimental) |
 | `4` | OpenGL |
 
 A value outside this range is treated as `0`.
+
+Avoid `3` for normal play. On one NVIDIA system the Vulkan interface stopped responding when the in-game Options menu opened, and the whole computer froze.
 
 The [debug log](/using/debug-logging/) names the interface that started. Check it to confirm that a requested interface is in use.
 

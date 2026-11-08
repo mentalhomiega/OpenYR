@@ -270,3 +270,27 @@ ClassID TubeClass::Class_ID(void) const
 {
 	return(ClassID_TubeClass);
 }
+
+
+bool Tunnel_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass const * tunnel)
+{
+	if (tunnel != NULL) {
+		int dist = abs(dir - tunnel->EnterDir);
+		if (dist > 2 && dist < 6 && dir != FACING_NONE) {
+			return(true);
+		}
+	}
+
+	/*
+	 * Check the tunnel of the cell entered from (the cell in the opposite
+	 * direction) so that the unit can't drive through a tunnel sideways.
+	 */
+	TubeClass *backtunnel = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
+	if (backtunnel != NULL) {
+		int dist = abs(Facing_Sub(dir, FACING_180) - backtunnel->EnterDir);
+		if (dist > FACING_90 && dist < FACING_270 && dir != FACING_NONE) {
+			return(true);
+		}
+	}
+	return(false);
+}

@@ -15,6 +15,7 @@
 #include <vector>
 
 class AbstractClass;
+class AnimTypeClass;
 class HouseClass;
 class SaveStreamClass;
 class TechnoClass;
@@ -31,12 +32,14 @@ class CaptureManagerClass
 
 		bool Can_Capture(TechnoClass const * target) const;
 		bool Capture_Unit(TechnoClass * target);
-		bool Free_Unit(TechnoClass * unit);
+		void Free_Unit(TechnoClass * unit);
 		void Free_All(void);
 		void Handle_Overload(void);
 		bool Is_Overloading(void) const;
 		bool Cannot_Control_Any_More(void) const;
 		int Controlled_Count(void) const {return((int)Nodes.size());}
+		int Max_Nodes(void) const {return(MaxControlNodes);}
+		bool Is_Overload_Pip_Lit(void) const {return(OverloadPipState > 0);}
 		TechnoClass * Controlled(int index) const {return(Nodes[index].Unit);}
 		bool Holds(TechnoClass const * unit) const;
 		HouseClass * Original_Owner_Of(TechnoClass const * unit) const;
@@ -55,6 +58,8 @@ class CaptureManagerClass
 			void Serialize(SaveStreamClass & stream);
 		};
 
+		NodeType const * Find_Node(TechnoClass const * unit) const;
+
 		TechnoClass * Owner = nullptr;
 		std::vector<NodeType> Nodes;
 		int MaxControlNodes = 0;
@@ -63,3 +68,5 @@ class CaptureManagerClass
 		int OverloadDamageDelay = 30;
 		int OverloadPipState = 0;
 };
+
+void Attach_Control_Ring(TechnoClass * techno, AnimTypeClass const * type);

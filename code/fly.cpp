@@ -540,7 +540,7 @@ void FlyLocomotionClass::Movement_AI(void)
 		if (LinkedTo->Strength == 0 && Riser == 0) {
 			Sound_Effect(LinkedTo->TClass->CrashingSound, LinkedTo->Center_Coord());
 			if (LinkedTo->House->Is_Player_Control()) {
-				Sound_Effect(LinkedTo->TClass->VoiceCrashing, LinkedTo->Center_Coord());
+				Unit_Voice_Effect(LinkedTo->TClass->VoiceCrashing, LinkedTo->Center_Coord());
 			}
 		}
 		if (LinkedTo->Strength == 0) {
@@ -916,7 +916,7 @@ void FlyLocomotionClass::Rotation_AI(void)
  *                                                                                             *
  * INPUT:   none                                                                               *
  *                                                                                             *
- * OUTPUT:  Has the helicopter reached flight level now?                                       *
+ * OUTPUT:  Always true: the take-off state ends on the first frame, as in gamemd.            *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
  *                                                                                             *
@@ -925,7 +925,6 @@ void FlyLocomotionClass::Rotation_AI(void)
  *=============================================================================================*/
 bool FlyLocomotionClass::Process_Take_Off(void)
 {
-	bool took_off = false;
 	int height = LinkedTo->HeightAGL;
 	if (!LinkedTo->IsOnBridge && Map[(Coord const &)LinkedTo->PositionCoord].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
 		height -= BRIDGE_LEPTON_HEIGHT;
@@ -937,11 +936,10 @@ bool FlyLocomotionClass::Process_Take_Off(void)
 		landing_altitude = flyctrl->Landing_Altitude();
 	}
 
-	if (height >= FlightLevel) {
-		IsTakingOff = false;
-		IsLanding = false;
-		took_off = true;
-	}
+	// gamemd ends the take-off state on the first frame (0x4CE680). The climb and the speed-up that follow belong to the
+	// flight logic, so the aircraft flies off while it climbs.
+	IsTakingOff = false;
+	IsLanding = false;
 
 	int relative_height = height - landing_altitude;
 	int relative_flight_level = FlightLevel - landing_altitude;
@@ -954,7 +952,7 @@ bool FlyLocomotionClass::Process_Take_Off(void)
 		TargetSpeed = 1;
 	}
 
-	return(took_off);
+	return(true);
 }
 
 
@@ -1360,8 +1358,9 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 /// </summary>
 /// <param name="key">Optional cache key for the resulting orientation. It may be NULL, and
 /// is set to -1 for an attitude that is not worth caching.</param>
+/// <param name="matrix">Ignored: an aircraft always builds the matrix, as its key and matrix are folded together.</param>
 /// <returns>Returns with the matrix to draw the aircraft with.</returns>
-Matrix3D FlyLocomotionClass::Draw_Matrix(int * key)
+Matrix3D FlyLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 {
 	Matrix3D mtx;
 	mtx.Make_Identity();
@@ -1555,8 +1554,9 @@ void FlyLocomotionClass::Land_If_Allowed(void)
 /// </summary>
 /// <param name="key">Optional cache key for the shadow orientation. It may be NULL, and a
 /// value of -1 marks the shadow as not worth caching.</param>
+/// <param name="build">Ignored: the aircraft shadow always builds the matrix.</param>
 /// <returns>Returns with the matrix to draw the shadow with.</returns>
-Matrix3D FlyLocomotionClass::Shadow_Matrix(int * key)
+Matrix3D FlyLocomotionClass::Build_Shadow_Matrix(int * key, bool build)
 {
 	int ramp = Map[(Coord const &)LinkedTo->PositionCoord].Ramp;
 	if (LinkedTo->TClass->IsDropship) {

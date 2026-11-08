@@ -10,6 +10,7 @@
 #include "ui/screens/gameopt/uigameopt.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/ElementDocument.h>
 #include <utility>
@@ -76,7 +77,7 @@ void UIGameOptionsPresenterClass::Refresh(void)
 
 void UIGameOptionsPresenterClass::Update_Name(void)
 {
-	State.SpeedName = (State.Speed >= 0 && State.Speed < (int)State.SpeedNames.size())
+	State.SpeedName = Index_In_Range(State.Speed, State.SpeedNames.size())
 		? State.SpeedNames[State.Speed] : std::string();
 }
 

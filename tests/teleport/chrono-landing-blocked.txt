@@ -1,0 +1,17 @@
+; A chronosphere warp onto a cell with a structure on it sets the unit down on a nearby cell instead (0x718260 looks for one only
+; when something that is not a unit stands on the landing spot). The search takes the cells of the zone the unit leaves, the
+; passability of a tracked vehicle, and the game frame to pick among the cells of the nearest ring that has any.
+; A Rhino (HTNK) at 40,40 is sphered and warped onto the power plant (GAPOWR) at 56,40.
+; Expected: "chrono landed HTNK" names a cell next to the structure's footprint, not 56,40 itself, and the Rhino and the plant
+; are both alive at frame 200.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/teleport/chrono-landing-blocked.txt -Seconds 120 -Filter "AUTOTEST   (where|chrono)|AUTOTEST frame|Exception"
+20 own GAPOWR 56 40
+30 own HTNK 40 40
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 56 40
+200 where HTNK
+200 where GAPOWR
+230 quit

@@ -1,0 +1,364 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#include "cncnet/cncnetspawn.h"
+
+#include "cncnet/cncnetlobby.h"
+#include "cncnet/cncnettext.h"
+#include "cncnet/spawnkeys.h"
+#include "strutil.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <set>
+#include <string_view>
+
+
+namespace {
+
+std::string Join(std::vector<std::string> const & values)
+{
+	std::string text;
+	for (std::string const & value : values) {
+		text += (text.empty() ? "" : ",") + value;
+	}
+	return(text);
+}
+
+
+template<typename Get>
+std::string Join_Seats(CnCNetMatchType const & match, Get get)
+{
+	std::vector<std::string> values;
+	for (CnCNetMatchSeatType const & seat : match.Seats) {
+		values.push_back(get(seat));
+	}
+	return(Join(values));
+}
+
+
+std::string Option(std::map<std::string, std::string> const & options, char const * key, char const * fallback)
+{
+	auto const found = options.find(key);
+	return(found == options.end() || found->second.empty() ? std::string(fallback) : found->second);
+}
+
+
+// The fallback is held to the same range, so an absent option never writes a value the lobby would refuse.
+std::string Number_Option(std::map<std::string, std::string> const & options, char const * key, int fallback, int low, int high)
+{
+	return(std::to_string(CnCNet_Option_Number(options, key, std::clamp(fallback, low, high), low, high)));
+}
+
+
+std::string Without_Controls(std::string_view text)
+{
+	std::string clean;
+	for (char ch : text) {
+		if (!CnCNet_Is_Control_Byte(ch)) {
+			clean.push_back(ch);
+		}
+	}
+	return(clean);
+}
+
+
+std::string Yes_No(std::map<std::string, std::string> const & options, char const * key, bool fallback)
+{
+	auto const found = options.find(key);
+	bool const on = found == options.end() ? fallback : std::atoi(found->second.c_str()) != 0;
+	return(on ? "yes" : "no");
+}
+
+
+// A spectator still needs a country for the house the game makes; the first one serves.
+int Spawn_Side(CnCNetMatchSeatType const & seat)
+{
+	return(seat.Side == CNCNET_SPECTATOR_SIDE ? 0 : seat.Side);
+}
+
+
+}
+
+
+CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & players, std::vector<int> const & sides,
+	int colors, std::vector<int> const & starts, std::string const & tunnel_host, uint16_t tunnel_port, std::mt19937 & random)
+{
+	CnCNetMatchType match;
+	match.Seed = static_cast<int>(random() & 0x7FFFFFFF);
+	match.TunnelHost = tunnel_host;
+	match.TunnelPort = tunnel_port;
+
+	std::set<int> taken_colors;
+	std::set<int> taken_starts;
+	std::set<uint32_t> taken_ids;
+	for (CnCNetRoomPlayerType const & player : players) {
+		if (player.Color >= 0) taken_colors.insert(player.Color);
+		if (player.Start >= 0) taken_starts.insert(player.Start);
+	}
+
+	for (CnCNetRoomPlayerType const & player : players) {
+		bool const spectator = player.Side == CNCNET_SPECTATOR_SIDE;
+		CnCNetMatchSeatType seat;
+		seat.Name = player.Name;
+		seat.Team = player.Team;
+		seat.Side = player.Side;
+		if (spectator) {
+			seat.Team = -1;
+		} else if (seat.Side < 0 && !sides.empty()) {
+			seat.Side = sides[random() % sides.size()];
+		}
+		seat.Color = player.Color;
+		for (int color = 0; seat.Color < 0 && color < colors; ++color) {
+			if (taken_colors.insert(color).second) {
+				seat.Color = color;
+			}
+		}
+		seat.Start = spectator ? -1 : player.Start;
+		if (seat.Start < 0 && !spectator) {
+			std::vector<int> free;
+			for (int start : starts) {
+				if (taken_starts.count(start) == 0) {
+					free.push_back(start);
+				}
+			}
+			if (!free.empty()) {
+				seat.Start = free[random() % free.size()];
+				taken_starts.insert(seat.Start);
+			}
+		}
+		do {
+			seat.TunnelId = 1 + random() % 65535;
+		} while (!taken_ids.insert(seat.TunnelId).second);
+		match.Seats.push_back(seat);
+	}
+	return(match);
+}
+
+
+std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & match)
+{
+	return(std::map<std::string, std::string>{
+		{"Seed", std::to_string(match.Seed)},
+		{"Tunnel", match.TunnelHost + ":" + std::to_string(match.TunnelPort)},
+		{"Names", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(seat.Name); })},
+		{"Sides", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.Side)); })},
+		{"Colors", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.Color)); })},
+		{"Starts", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.Start)); })},
+		{"Teams", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.Team)); })},
+		{"Ids", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.TunnelId)); })},
+		// The room message is sent with its keys in sorted order, so a message cut short by the chat server loses the
+		// last key first. ZEnd sorts after every other key and Count says how many seats the lists hold.
+		{"Count", std::to_string(match.Seats.size())},
+		{"ZEnd", "1"},
+	});
+}
+
+
+bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMatchType & match)
+{
+	for (char const * key : {"Seed", "Tunnel", "Names", "Sides", "Colors", "Starts", "Teams", "Ids", "Count", "ZEnd"}) {
+		if (info.find(key) == info.end()) {
+			return(false);
+		}
+	}
+	// A message that lost its tail has no end marker; one cut inside a list has the wrong count.
+	if (info.at("ZEnd") != "1") {
+		return(false);
+	}
+	match = CnCNetMatchType();
+	match.Seed = std::atoi(info.at("Seed").c_str());
+	std::string const tunnel = info.at("Tunnel");
+	std::optional<HostPortText> const address = Split_Host_Port(tunnel);
+	if (!address) {
+		return(false);
+	}
+	match.TunnelHost = std::string(address->Host);
+	int const port = std::atoi(std::string(address->Port).c_str());
+	if (port <= 0 || port > 65535) {
+		return(false);
+	}
+	match.TunnelPort = static_cast<uint16_t>(port);
+
+	std::vector<std::string> const names = Split_Parts(info.at("Names"), ',');
+	std::vector<std::string> const sides = Split_Parts(info.at("Sides"), ',');
+	std::vector<std::string> const colors = Split_Parts(info.at("Colors"), ',');
+	std::vector<std::string> const starts = Split_Parts(info.at("Starts"), ',');
+	std::vector<std::string> const teams = Split_Parts(info.at("Teams"), ',');
+	std::vector<std::string> const ids = Split_Parts(info.at("Ids"), ',');
+	std::size_t const count = names.size();
+	if (info.at("Count") != std::to_string(count)) {
+		return(false);
+	}
+	if (count == 0 || sides.size() != count || colors.size() != count || starts.size() != count || teams.size() != count || ids.size() != count) {
+		return(false);
+	}
+	for (std::size_t index = 0; index < count; ++index) {
+		CnCNetMatchSeatType seat;
+		seat.Name = names[index];
+		seat.Side = std::atoi(sides[index].c_str());
+		seat.Color = std::atoi(colors[index].c_str());
+		seat.Start = std::atoi(starts[index].c_str());
+		seat.Team = std::atoi(teams[index].c_str());
+		seat.TunnelId = static_cast<uint32_t>(std::strtoul(ids[index].c_str(), nullptr, 10));
+		if (seat.Name.empty() || Without_Controls(seat.Name) != seat.Name || seat.TunnelId == 0 || seat.TunnelId > 65535) {
+			return(false);
+		}
+		match.Seats.push_back(seat);
+	}
+	return(true);
+}
+
+
+NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::string> const & options)
+{
+	NetTiming::HostNetworkOptions network;
+	// The host's word is checked as the game checks a launch file, so a value out of range is no choice.
+	int const frame_send_rate = CnCNet_Option_Number(options, "FrameSendRate", 0, 0, 1000);
+	int const max_ahead = CnCNet_Option_Number(options, "MaxAhead", 0, 0, 1000);
+	int const protocol = CnCNet_Option_Number(options, "Protocol", 2, 0, 1000);
+	network.Timing = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
+	network.Protocol = NetTiming::Host_Protocol_Is_Valid(protocol) ? protocol : 2;
+	return(network);
+}
+
+
+std::map<std::string, std::string> CnCNet_Network_Option_Values(NetTiming::HostNetworkOptions const & network)
+{
+	std::map<std::string, std::string> values;
+	if (network.Timing.FrameSendRate != 0) {
+		values["FrameSendRate"] = std::to_string(network.Timing.FrameSendRate);
+	}
+	if (network.Timing.MaxAhead != 0) {
+		values["MaxAhead"] = std::to_string(network.Timing.MaxAhead);
+	}
+	if (network.Protocol != 2) {
+		values["Protocol"] = std::to_string(network.Protocol);
+	}
+	return(values);
+}
+
+
+std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
+	std::string const & own_name, uint16_t bridge_port, CnCNetRuleLimitsType const & limits, bool adaptive_timing)
+{
+	CnCNetMatchSeatType const * own = nullptr;
+	for (CnCNetMatchSeatType const & seat : match.Seats) {
+		if (CnCNetLobbyClass::Same_Nick(seat.Name, own_name)) {
+			own = &seat;
+		}
+	}
+	if (own == nullptr) {
+		return(std::string());
+	}
+
+	std::string ini = "[Settings]\n";
+	auto const line = [&ini](std::string const & key, std::string const & value) { ini += Without_Controls(key) + "=" + Without_Controls(value) + "\n"; };
+	line("Name", own->Name);
+	line("Scenario", Option(options, CNCNET_OPTION_MAP, ""));
+	line("UIMapName", Option(options, CNCNET_OPTION_MAP_NAME, ""));
+	line("UIGameMode", "Standard");
+	auto const seat_lines = [&line](CnCNetMatchSeatType const & seat) {
+		line("Side", std::to_string(Spawn_Side(seat)));
+		line("Color", std::to_string(seat.Color));
+		line("IsSpectator", seat.Side == CNCNET_SPECTATOR_SIDE ? "yes" : "no");
+	};
+	line("PlayerCount", std::to_string(match.Seats.size()));
+	seat_lines(*own);
+	line("Host", CnCNetLobbyClass::Same_Nick(match.Seats.front().Name, own_name) ? "yes" : "no");
+	line("Port", std::to_string(own->TunnelId));
+	line("Seed", std::to_string(match.Seed));
+	NetTiming::HostNetworkOptions const network = CnCNet_Network_Options(options);
+	if (network.Is_Default()) {
+		// The client's own defaults, which the game reads as no choice.
+		line("FrameSendRate", "7");
+		line("Protocol", "2");
+	} else {
+		// HostTiming makes the game take these literally. A value left out is the policy's.
+		line("HostTiming", "yes");
+		if (network.Timing.FrameSendRate != 0) {
+			line("FrameSendRate", std::to_string(network.Timing.FrameSendRate));
+		}
+		if (network.Timing.MaxAhead != 0) {
+			line("MaxAhead", std::to_string(network.Timing.MaxAhead));
+		}
+		line("Protocol", std::to_string(network.Protocol));
+	}
+	// Only the host's choice counts, since the host sets the timing for every player.
+	// The host's send period and look-ahead are defined against gamemd's timing, so any choice plays that policy.
+	line("TimingPolicy", adaptive_timing && network.Is_Default() ? "Adaptive" : "Gamemd");
+	line("GameID", "1");
+	int const max_credits = std::max(CNCNET_MIN_CREDITS, limits.MaxCredits);
+	line("Credits", Number_Option(options, CNCNET_OPTION_CREDITS, 10000, CNCNET_MIN_CREDITS, max_credits));
+	line("UnitCount", Number_Option(options, CNCNET_OPTION_UNIT_COUNT, 10, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT));
+	line("TechLevel", Number_Option(options, CNCNET_OPTION_TECH_LEVEL, 10, CNCNET_MIN_TECH_LEVEL, std::max(CNCNET_MIN_TECH_LEVEL, limits.MaxTechLevel)));
+	line("GameSpeed", Number_Option(options, CNCNET_OPTION_GAME_SPEED, 0, 0, CNCNET_MAX_GAME_SPEED));
+	line("AIPlayers", Number_Option(options, CNCNET_OPTION_AI_PLAYERS, 0, 0, CNCNET_MAX_AI_PLAYERS));
+	line("AIDifficulty", Number_Option(options, CNCNET_OPTION_AI_DIFFICULTY, 1, 0, CNCNET_MAX_AI_DIFFICULTY));
+	line("Bases", Yes_No(options, CNCNET_OPTION_BASES, true));
+	line("ShortGame", Yes_No(options, CNCNET_OPTION_SHORT_GAME, false));
+	line("Crates", Yes_No(options, CNCNET_OPTION_CRATES, false));
+	line("BridgeDestroy", Yes_No(options, CNCNET_OPTION_BRIDGES, true));
+	line("AlliesAllowed", Yes_No(options, CNCNET_OPTION_ALLIES, true));
+	line("HarvesterTruce", Yes_No(options, CNCNET_OPTION_HARV_TRUCE, false));
+	line("FogOfWar", Yes_No(options, CNCNET_OPTION_FOG_OF_WAR, false));
+	line("MCVRedeploy", Yes_No(options, CNCNET_OPTION_MCV_REDEPLOY, true));
+	line("MultiEngineer", Yes_No(options, CNCNET_OPTION_MULTI_ENGINEER, false));
+
+	int other = 0;
+	for (CnCNetMatchSeatType const & seat : match.Seats) {
+		if (&seat == own) {
+			continue;
+		}
+		ini += "\n[Other" + std::to_string(++other) + "]\n";
+		line("Name", seat.Name);
+		seat_lines(seat);
+		line("Ip", "0.0.0.0");
+		line("Port", std::to_string(seat.TunnelId));
+	}
+
+	ini += "\n[Tunnel]\n";
+	line("Ip", "127.0.0.1");
+	line("Port", std::to_string(bridge_port));
+
+	// The game numbers human seats by colour, then by name; starts and teams follow that order.
+	std::vector<CnCNetMatchSeatType const *> sorted;
+	for (CnCNetMatchSeatType const & seat : match.Seats) {
+		sorted.push_back(&seat);
+	}
+	std::stable_sort(sorted.begin(), sorted.end(), [](CnCNetMatchSeatType const * left, CnCNetMatchSeatType const * right) {
+		if (left->Color != right->Color) {
+			return(left->Color < right->Color);
+		}
+		return(CnCNet_Less_No_Case(left->Name, right->Name));
+	});
+
+	ini += "\n[SpawnLocations]\n";
+	for (std::size_t index = 0; index < sorted.size(); ++index) {
+		line("Multi" + std::to_string(index + 1), std::to_string(sorted[index]->Start));
+	}
+
+	for (std::size_t index = 0; index < sorted.size(); ++index) {
+		if (sorted[index]->Team < 0) {
+			continue;
+		}
+		int ally = 0;
+		std::string section;
+		for (std::size_t friend_index = 0; friend_index < sorted.size() && ally < 8; ++friend_index) {
+			if (friend_index != index && sorted[friend_index]->Team == sorted[index]->Team) {
+				section += std::string(SPAWN_ALLY_KEYS[ally++]) + "=" + std::to_string(friend_index) + "\n";
+			}
+		}
+		if (!section.empty()) {
+			ini += "\n[Multi" + std::to_string(index + 1) + "_Alliances]\n" + section;
+		}
+	}
+	return(ini);
+}

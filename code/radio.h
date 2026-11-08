@@ -96,6 +96,7 @@ class RadioClass : public MissionClass
 
 		int Link_Count(void) const {return((int)Links.size());}
 		TechnoClass * Link(int index) const {return((TechnoClass *)Links[index]);}
+		std::vector<TechnoClass *> Linked_Objects(void) const;
 		void Set_Link_Count(int count);
 		int Find_Link_Index(RadioClass const * object) const;
 		bool Contains_Link(RadioClass const * object) const {return(Find_Link_Index(object) != -1);}

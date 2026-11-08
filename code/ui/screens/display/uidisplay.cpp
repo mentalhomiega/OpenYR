@@ -12,6 +12,7 @@
 #include "hdrcolour.h"
 #include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 #include "ui/uisettingpreview.h"
 #include "video.h"
 #include "colourblind.h"
@@ -26,37 +27,13 @@
 UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service, UIDisplayState state) :
 	State(std::move(state)),
 	Service(service),
-	Initial(State.Selected),
-	InitialScale(State.Scale),
-	InitialFullscreen(State.Fullscreen),
-	InitialVSync(State.VSync),
-	InitialIntegerScaling(State.IntegerScaling),
-	InitialFilter(State.Filter),
-	InitialFrameRate(State.FrameRate),
-	InitialCursorScale(State.CursorScale),
-	InitialMenuTheme(State.MenuTheme),
-	InitialMenuBattle(State.MenuBattle),
-	InitialRenderer(State.Renderer),
-	InitialBitmapSystemFont(State.BitmapSystemFont),
-	InitialShowFPS(State.ShowFPS),
-	InitialFrameLimit(State.FrameLimit),
-	InitialWindowSize(State.WindowSize),
-	InitialHighlights(State.Highlights),
-	InitialHDROutput(State.HDROutput),
-	InitialPaperWhite(State.PaperWhite),
-	InitialPeakBrightness(State.PeakBrightness),
-	InitialColorBlindMode(State.ColorBlindMode),
-	InitialColorBlindStrength(State.ColorBlindStrength),
-	InitialBrightness(State.Brightness),
-	InitialGamma(State.Gamma),
-	InitialPlayerColors(State.PlayerColors),
-	InitialScreenShake(State.ScreenShake)
+	Start(State)
 {
 	ShownRowIndex = State.RowCount;
-	PreviewedMode = InitialColorBlindMode;
-	PreviewedStrength = InitialColorBlindStrength;
-	PreviewedBrightness = InitialBrightness;
-	PreviewedGamma = InitialGamma;
+	PreviewedMode = Start.ColorBlindMode;
+	PreviewedStrength = Start.ColorBlindStrength;
+	PreviewedBrightness = Start.Brightness;
+	PreviewedGamma = Start.Gamma;
 	Refresh_Preview();
 }
 
@@ -65,11 +42,11 @@ void UIDisplayPresenterClass::Chosen_Frame(int & width, int & height)
 {
 	int screen_width = State.ScreenWidth;
 	int screen_height = State.ScreenHeight;
-	if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+	if (Index_In_Range(State.Selected, State.Modes.size())) {
 		screen_width = State.Modes[State.Selected].Width;
 		screen_height = State.Modes[State.Selected].Height;
 	}
-	float const scale = (State.Scale >= 0 && State.Scale < (int)State.Scales.size()) ? State.Scales[State.Scale].Value : 0.0f;
+	float const scale = Index_In_Range(State.Scale, State.Scales.size()) ? State.Scales[State.Scale].Value : 0.0f;
 
 	width = 0;
 	height = 0;
@@ -81,7 +58,7 @@ void UIDisplayPresenterClass::Chosen_Frame(int & width, int & height)
 
 int UIDisplayPresenterClass::Chosen_Rows(void) const
 {
-	return((ShownRowIndex >= 0 && ShownRowIndex < (int)State.RowCounts.size()) ? State.RowCounts[ShownRowIndex].Value : -1);
+	return(Index_In_Range(ShownRowIndex, State.RowCounts.size()) ? State.RowCounts[ShownRowIndex].Value : -1);
 }
 
 
@@ -93,26 +70,18 @@ void UIDisplayPresenterClass::Refresh_Rows(void)
 	Chosen_Frame(width, height);
 
 	// The rows the new frame allows. The row count stays the largest one that does not exceed the rows before.
-	std::vector<UIDisplayChoice> const before = State.RowCounts;
+	std::vector<UIChoice> const before = State.RowCounts;
 	State.RowCounts.clear();
 	State.RowCount = -1;
 	if (height > 0) {
-		for (int value : Service.Sidebar_Row_Counts(height)) {
-			UIDisplayChoice choice;
-			choice.Value = value;
-			choice.Label = std::to_string(value);
-			if (value <= previous) {
-				State.RowCount = (int)State.RowCounts.size();
-			}
-			State.RowCounts.push_back(choice);
-		}
+		State.RowCount = Fill_Count_Choices(State.RowCounts, Service.Sidebar_Row_Counts(height), previous);
 		if (State.RowCount < 0 && !State.RowCounts.empty()) {
 			State.RowCount = 0;
 		}
 	}
 	ShownRowIndex = State.RowCount;
 	bool const same = before.size() == State.RowCounts.size() && std::equal(before.begin(), before.end(), State.RowCounts.begin(),
-		[](UIDisplayChoice const & a, UIDisplayChoice const & b) { return(a.Value == b.Value); });
+		[](UIChoice const & a, UIChoice const & b) { return(a.Value == b.Value); });
 	RowCountsChanged = RowCountsChanged || !same;
 	Refresh_Preview();
 }
@@ -133,7 +102,7 @@ void UIDisplayPresenterClass::Refresh_Preview(void)
 			State.Preview = *screen;
 
 			std::string label;
-			if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+			if (Index_In_Range(State.Selected, State.Modes.size())) {
 				label = State.Modes[State.Selected].Label;
 			} else {
 				char buffer[64];
@@ -148,20 +117,20 @@ void UIDisplayPresenterClass::Refresh_Preview(void)
 }
 
 
-static int Pick_Choice(std::vector<UIDisplayChoice> const & choices, int index, int fallback)
+static int Pick_Choice(std::vector<UIChoice> const & choices, int index, int fallback)
 {
-	return((index >= 0 && index < (int)choices.size()) ? index : fallback);
+	return(Index_In_Range(index, choices.size()) ? index : fallback);
 }
 
 
-static bool Choice_Changed(std::vector<UIDisplayChoice> const & choices, int index, int initial)
+static bool Choice_Changed(std::vector<UIChoice> const & choices, int index, int initial)
 {
-	return(index != initial && index >= 0 && index < (int)choices.size());
+	return(index != initial && Index_In_Range(index, choices.size()));
 }
 
 
 // The index of the choice with the value given, or the fallback when no choice has it.
-static int Index_Of(std::vector<UIDisplayChoice> const & choices, int value, int fallback)
+static int Index_Of(std::vector<UIChoice> const & choices, int value, int fallback)
 {
 	for (int index = 0; index < (int)choices.size(); index++) {
 		if (choices[index].Value == value) {
@@ -197,6 +166,13 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		// A frame rate of -1 is match the display, and highlights 1 is Enhanced.
 		State.Filter = Index_Of(State.Filters, VIDEO_SCALE_PIXELART, State.Filter);
 		State.IntegerScaling = false;
+		State.GpuRender = true;
+		State.SoftShadows = false;
+		State.Shockwaves = false;
+		State.Bloom = false;
+		State.WaterRipples = false;
+		State.CloudShadows = false;
+		State.Weather = false;
 		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
 		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
 		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
@@ -210,9 +186,10 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.StretchMovies = false;
 		State.Brightness = 100;
 		State.Gamma = 100;
+		State.SidebarOpacity = HUD_DEFAULT_OPACITY;
 
 		int const row = Index_Of(State.RowCounts, HUD_DEFAULT_ROWS, ShownRowIndex);
-		if (row >= 0 && row < (int)State.RowCounts.size()) {
+		if (Index_In_Range(row, State.RowCounts.size())) {
 			ShownRowIndex = row;
 			State.RowCount = row;
 			PickedRows = State.RowCounts[row].Value;
@@ -226,6 +203,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.ColorBlindStrength = COLORBLIND_STRENGTH_MAX;
 		State.PlayerColors = Index_Of(State.PlayerColorChoices, 0, State.PlayerColors);
 		State.ScreenShake = true;
+		State.ScriptedCameraZoom = true;
 		Show_Colour_Preview();
 	}
 }
@@ -247,7 +225,7 @@ void UIDisplayPresenterClass::Show_Colour_Preview(void)
 	PreviewedBrightness = State.Brightness;
 	PreviewedGamma = State.Gamma;
 
-	int const mode = (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size())
+	int const mode = Index_In_Range(State.ColorBlindMode, State.ColorBlindModes.size())
 		? State.ColorBlindModes[State.ColorBlindMode].Value : COLORBLIND_OFF;
 	Service.Preview_Colour(mode, State.ColorBlindStrength, State.Brightness, State.Gamma);
 	PreviewShown = true;
@@ -261,83 +239,229 @@ void UIDisplayPresenterClass::Restore_Preview(void)
 		return;
 	}
 	PreviewRestored = true;
-	int const mode = (InitialColorBlindMode >= 0 && InitialColorBlindMode < (int)State.ColorBlindModes.size())
-		? State.ColorBlindModes[InitialColorBlindMode].Value : COLORBLIND_OFF;
-	Service.Preview_Colour(mode, InitialColorBlindStrength, InitialBrightness, InitialGamma);
+	int const mode = Index_In_Range(Start.ColorBlindMode, State.ColorBlindModes.size())
+		? State.ColorBlindModes[Start.ColorBlindMode].Value : COLORBLIND_OFF;
+	Service.Preview_Colour(mode, Start.ColorBlindStrength, Start.Brightness, Start.Gamma);
+}
+
+
+void UIDisplayPresenterClass::Set_Gpu_Switch(bool & field, int value, bool needs_gpu)
+{
+	if (State.ModernInterface && (!needs_gpu || State.GpuRender)) {
+		field = (value != 0);
+	}
+}
+
+
+void UIDisplayPresenterClass::Apply_Settings(void)
+{
+	Service.Set_Stretch_Movies(State.StretchMovies);
+	Service.Set_System_Cursor(State.SystemCursor);
+	Service.Set_Classic_Menus(State.ClassicMenus);
+	Service.Set_Modern_Interface(State.ModernInterface);
+	if (State.BitmapSystemFont != Start.BitmapSystemFont) {
+		Service.Set_Bitmap_System_Font(State.BitmapSystemFont);
+	}
+	if (State.ShowFPS != Start.ShowFPS) {
+		Service.Set_Show_FPS(State.ShowFPS);
+	}
+	if (Choice_Changed(State.FrameLimits, State.FrameLimit, Start.FrameLimit)) {
+		Service.Set_Frame_Limit(State.FrameLimits[State.FrameLimit].Value);
+	}
+	if (State.WindowSize != Start.WindowSize && Index_In_Range(State.WindowSize, State.WindowSizes.size())) {
+		Service.Set_Window_Size(State.WindowSizes[State.WindowSize].Width, State.WindowSizes[State.WindowSize].Height);
+	}
+	if (Choice_Changed(State.PlayerColorChoices, State.PlayerColors, Start.PlayerColors)) {
+		Service.Set_Player_Colors(State.PlayerColorChoices[State.PlayerColors].Value);
+	}
+	if (State.ScreenShake != Start.ScreenShake) {
+		Service.Set_Screen_Shake(State.ScreenShake);
+	}
+	if (State.ScriptedCameraZoom != Start.ScriptedCameraZoom) {
+		Service.Set_Scripted_Camera_Zoom(State.ScriptedCameraZoom);
+	}
+	if (State.Fullscreen != Start.Fullscreen) {
+		Service.Set_Fullscreen(State.Fullscreen);
+	}
+	if (State.VSync != Start.VSync) {
+		Service.Set_VSync(State.VSync);
+	}
+	if (State.IntegerScaling != Start.IntegerScaling) {
+		Service.Set_Integer_Scaling(State.IntegerScaling);
+	}
+	if (State.GpuRender != Start.GpuRender || State.SoftShadows != Start.SoftShadows || State.Shockwaves != Start.Shockwaves || State.Bloom != Start.Bloom || State.WaterRipples != Start.WaterRipples
+		|| State.CloudShadows != Start.CloudShadows
+		|| State.Weather != Start.Weather) {
+		Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves, State.Bloom, State.WaterRipples, State.CloudShadows, State.Weather);
+	}
+	if (Choice_Changed(State.Filters, State.Filter, Start.Filter)) {
+		Service.Set_Filter(State.Filters[State.Filter].Value);
+	}
+	if (Choice_Changed(State.FrameRates, State.FrameRate, Start.FrameRate)) {
+		Service.Set_Frame_Rate(State.FrameRates[State.FrameRate].Value);
+	}
+	if (Choice_Changed(State.CursorScales, State.CursorScale, Start.CursorScale)) {
+		Service.Set_Cursor_Scale(State.CursorScales[State.CursorScale].Value);
+	}
+	if (Choice_Changed(State.MenuThemes, State.MenuTheme, Start.MenuTheme)) {
+		Service.Set_Menu_Theme(State.MenuThemes[State.MenuTheme].Value);
+	}
+	if (State.MenuBattle != Start.MenuBattle) {
+		Service.Set_Menu_Battle(State.MenuBattle);
+	}
+	if (Choice_Changed(State.Renderers, State.Renderer, Start.Renderer)) {
+		Service.Set_Renderer(State.Renderers[State.Renderer].Value);
+	}
+	if (Choice_Changed(State.HDROutputs, State.HDROutput, Start.HDROutput)) {
+		Service.Set_HDR_Output(State.HDROutputs[State.HDROutput].Value);
+	}
+	if (HDRLevelsReset) {
+		// Zero is the automatic level, which the engine follows from the display.
+		Service.Set_HDR_Paper_White(0);
+		Service.Set_HDR_Peak_Brightness(0);
+	} else {
+		if (State.PaperWhite != Start.PaperWhite) {
+			Service.Set_HDR_Paper_White(State.PaperWhite);
+		}
+		if (State.PeakBrightness != Start.PeakBrightness) {
+			Service.Set_HDR_Peak_Brightness(State.PeakBrightness);
+		}
+	}
+	if (State.Highlights != Start.Highlights) {
+		Service.Set_HDR_Highlights(State.Highlights);
+	}
+	if (Index_In_Range(State.ColorBlindMode, State.ColorBlindModes.size())
+		&& (State.ColorBlindMode != Start.ColorBlindMode || State.ColorBlindStrength != Start.ColorBlindStrength)) {
+		Service.Set_Colour_Blind(State.ColorBlindModes[State.ColorBlindMode].Value, State.ColorBlindStrength);
+	}
+	if (State.Brightness != Start.Brightness || State.Gamma != Start.Gamma) {
+		Service.Set_Brightness_Gamma(State.Brightness, State.Gamma);
+	}
+	if (PickedRows >= 0) {
+		Service.Set_Sidebar_Rows(PickedRows);
+	}
+	if (State.SidebarOpacity != Start.SidebarOpacity) {
+		Service.Set_Sidebar_Opacity(State.SidebarOpacity);
+	}
+	UI_Setting_Preview_Commit();
+	if (State.Scale != Start.Scale && Index_In_Range(State.Scale, State.Scales.size())) {
+		Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
+		ScaleChanged = true;
+	}
+	if (State.Selected >= 0 && State.Selected != Start.Selected) {
+		Picked = State.Modes[State.Selected];
+	}
+	Result = UI_RESULT_ACCEPTED;
+}
+
+
+bool UI_Bind_Display_Basics(Rml::DataModelConstructor & model, UIDisplayState & state)
+{
+	return(model.Bind("scales", &state.Scales)
+		&& model.Bind("scale", &state.Scale)
+		&& model.Bind("modes", &state.Modes)
+		&& model.Bind("selected", &state.Selected)
+		&& model.Bind("stretch", &state.StretchMovies)
+		&& model.Bind("systemcursor", &state.SystemCursor)
+		&& model.Bind("classicmenus", &state.ClassicMenus));
+}
+
+
+namespace
+{
+
+// An intent that sets one On/Off option to its value.
+struct UIDisplayFlagIntentClass
+{
+	char const * Name;
+	bool UIDisplayState::* Field;
+};
+
+
+const UIDisplayFlagIntentClass Flag_Intents[] = {
+	{ "stretch", &UIDisplayState::StretchMovies },
+	{ "systemcursor", &UIDisplayState::SystemCursor },
+	{ "classicmenus", &UIDisplayState::ClassicMenus },
+	{ "moderninterface", &UIDisplayState::ModernInterface },
+	{ "bitmapfont", &UIDisplayState::BitmapSystemFont },
+	{ "showfps", &UIDisplayState::ShowFPS },
+	{ "screenshake", &UIDisplayState::ScreenShake },
+	{ "scriptedzoom", &UIDisplayState::ScriptedCameraZoom },
+	{ "fullscreen", &UIDisplayState::Fullscreen },
+	{ "vsync", &UIDisplayState::VSync },
+	{ "integerscaling", &UIDisplayState::IntegerScaling },
+	{ "menubattle", &UIDisplayState::MenuBattle },
+};
+
 }
 
 
 void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 {
+	for (UIDisplayFlagIntentClass const & flag : Flag_Intents) {
+		if (intent.Name == flag.Name) {
+			State.*flag.Field = (intent.Value != 0);
+			return;
+		}
+	}
+
 	if (intent.Name == "select") {
-		State.Selected = (intent.Value >= 0 && intent.Value < (int)State.Modes.size()) ? intent.Value : -1;
+		State.Selected = Index_In_Range(intent.Value, State.Modes.size()) ? intent.Value : -1;
 		Refresh_Rows();
 
-	} else if (intent.Name == "stretch") {
-		State.StretchMovies = (intent.Value != 0);
-
-	} else if (intent.Name == "systemcursor") {
-		State.SystemCursor = (intent.Value != 0);
-
-	} else if (intent.Name == "classicmenus") {
-		State.ClassicMenus = (intent.Value != 0);
-
-	} else if (intent.Name == "moderninterface") {
-		State.ModernInterface = (intent.Value != 0);
-
-	} else if (intent.Name == "bitmapfont") {
-		State.BitmapSystemFont = (intent.Value != 0);
-
-	} else if (intent.Name == "showfps") {
-		State.ShowFPS = (intent.Value != 0);
-
 	} else if (intent.Name == "framelimit") {
-		State.FrameLimit = Pick_Choice(State.FrameLimits, intent.Value, InitialFrameLimit);
+		State.FrameLimit = Pick_Choice(State.FrameLimits, intent.Value, Start.FrameLimit);
 
 	} else if (intent.Name == "windowsize") {
-		State.WindowSize = (intent.Value >= 0 && intent.Value < (int)State.WindowSizes.size()) ? intent.Value : InitialWindowSize;
+		State.WindowSize = Index_In_Range(intent.Value, State.WindowSizes.size()) ? intent.Value : Start.WindowSize;
 	} else if (intent.Name == "playercolors") {
-		State.PlayerColors = Pick_Choice(State.PlayerColorChoices, intent.Value, InitialPlayerColors);
-
-	} else if (intent.Name == "screenshake") {
-		State.ScreenShake = (intent.Value != 0);
+		State.PlayerColors = Pick_Choice(State.PlayerColorChoices, intent.Value, Start.PlayerColors);
 
 	} else if (intent.Name == "reset") {
 		Reset_Page();
 
 	} else if (intent.Name == "scale") {
-		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
+		State.Scale = Index_In_Range(intent.Value, State.Scales.size()) ? intent.Value : Start.Scale;
 		Refresh_Rows();
 
-	} else if (intent.Name == "fullscreen") {
-		State.Fullscreen = (intent.Value != 0);
+	} else if (intent.Name == "gpurender") {
+		Set_Gpu_Switch(State.GpuRender, intent.Value, false);
 
-	} else if (intent.Name == "vsync") {
-		State.VSync = (intent.Value != 0);
+	} else if (intent.Name == "softshadows") {
+		Set_Gpu_Switch(State.SoftShadows, intent.Value, true);
 
-	} else if (intent.Name == "integerscaling") {
-		State.IntegerScaling = (intent.Value != 0);
+	} else if (intent.Name == "shockwaves") {
+		Set_Gpu_Switch(State.Shockwaves, intent.Value, true);
+
+	} else if (intent.Name == "bloom") {
+		Set_Gpu_Switch(State.Bloom, intent.Value, true);
+
+	} else if (intent.Name == "waterripples") {
+		Set_Gpu_Switch(State.WaterRipples, intent.Value, true);
+
+	} else if (intent.Name == "cloudshadows") {
+		Set_Gpu_Switch(State.CloudShadows, intent.Value, true);
+
+	} else if (intent.Name == "weather") {
+		Set_Gpu_Switch(State.Weather, intent.Value, true);
 
 	} else if (intent.Name == "filter") {
-		State.Filter = Pick_Choice(State.Filters, intent.Value, InitialFilter);
+		State.Filter = Pick_Choice(State.Filters, intent.Value, Start.Filter);
 
 	} else if (intent.Name == "framerate") {
-		State.FrameRate = Pick_Choice(State.FrameRates, intent.Value, InitialFrameRate);
+		State.FrameRate = Pick_Choice(State.FrameRates, intent.Value, Start.FrameRate);
 
 	} else if (intent.Name == "cursorscale") {
-		State.CursorScale = Pick_Choice(State.CursorScales, intent.Value, InitialCursorScale);
+		State.CursorScale = Pick_Choice(State.CursorScales, intent.Value, Start.CursorScale);
 
 	} else if (intent.Name == "menutheme") {
-		State.MenuTheme = Pick_Choice(State.MenuThemes, intent.Value, InitialMenuTheme);
-
-	} else if (intent.Name == "menubattle") {
-		State.MenuBattle = (intent.Value != 0);
+		State.MenuTheme = Pick_Choice(State.MenuThemes, intent.Value, Start.MenuTheme);
 
 	} else if (intent.Name == "renderer") {
-		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
+		State.Renderer = Pick_Choice(State.Renderers, intent.Value, Start.Renderer);
 
 	} else if (intent.Name == "hdroutput") {
-		State.HDROutput = Pick_Choice(State.HDROutputs, intent.Value, InitialHDROutput);
+		State.HDROutput = Pick_Choice(State.HDROutputs, intent.Value, Start.HDROutput);
 
 	} else if (intent.Name == "paperwhite") {
 		State.PaperWhite = std::clamp(intent.Value, HDR_PAPER_WHITE_MIN, HDR_PAPER_WHITE_MAX);
@@ -352,22 +476,26 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		State.Highlights = std::clamp(intent.Value, 0, 1);
 
 	} else if (intent.Name == "colorblindmode") {
-		State.ColorBlindMode = Pick_Choice(State.ColorBlindModes, intent.Value, InitialColorBlindMode);
+		State.ColorBlindMode = Pick_Choice(State.ColorBlindModes, intent.Value, Start.ColorBlindMode);
+		Show_Colour_Preview();
 
 	} else if (intent.Name == "colorblindstrength") {
 		State.ColorBlindStrength = std::clamp(intent.Value, COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
+		Show_Colour_Preview();
 
 	} else if (intent.Name == "brightness") {
 		State.Brightness = std::clamp(intent.Value, VIDEO_BRIGHTNESS_MIN, VIDEO_BRIGHTNESS_MAX);
+		Show_Colour_Preview();
 
 	} else if (intent.Name == "gamma") {
 		State.Gamma = std::clamp(intent.Value, VIDEO_GAMMA_MIN, VIDEO_GAMMA_MAX);
+		Show_Colour_Preview();
 
 	} else if (intent.Name == "sidebarrows") {
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
 		int const index = Pick_Choice(State.RowCounts, intent.Value, ShownRowIndex);
-		if (index != ShownRowIndex && index >= 0 && index < (int)State.RowCounts.size()) {
+		if (index != ShownRowIndex && Index_In_Range(index, State.RowCounts.size())) {
 			ShownRowIndex = index;
 			State.RowCount = index;
 			PickedRows = State.RowCounts[State.RowCount].Value;
@@ -378,101 +506,15 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 			State.RowCount = ShownRowIndex;
 		}
 
+	} else if (intent.Name == "sidebaropacity") {
+		State.SidebarOpacity = std::clamp(intent.Value, 0, 100);
+
 	} else if (intent.Name == "ok") {
-		Service.Set_Stretch_Movies(State.StretchMovies);
-		Service.Set_System_Cursor(State.SystemCursor);
-		Service.Set_Classic_Menus(State.ClassicMenus);
-		Service.Set_Modern_Interface(State.ModernInterface);
-		if (State.BitmapSystemFont != InitialBitmapSystemFont) {
-			Service.Set_Bitmap_System_Font(State.BitmapSystemFont);
-		}
-		if (State.ShowFPS != InitialShowFPS) {
-			Service.Set_Show_FPS(State.ShowFPS);
-		}
-		if (Choice_Changed(State.FrameLimits, State.FrameLimit, InitialFrameLimit)) {
-			Service.Set_Frame_Limit(State.FrameLimits[State.FrameLimit].Value);
-		}
-		if (State.WindowSize != InitialWindowSize && State.WindowSize >= 0 && State.WindowSize < (int)State.WindowSizes.size()) {
-			Service.Set_Window_Size(State.WindowSizes[State.WindowSize].Width, State.WindowSizes[State.WindowSize].Height);
-		}
-		if (Choice_Changed(State.PlayerColorChoices, State.PlayerColors, InitialPlayerColors)) {
-			Service.Set_Player_Colors(State.PlayerColorChoices[State.PlayerColors].Value);
-		}
-		if (State.ScreenShake != InitialScreenShake) {
-			Service.Set_Screen_Shake(State.ScreenShake);
-		}
-		if (State.Fullscreen != InitialFullscreen) {
-			Service.Set_Fullscreen(State.Fullscreen);
-		}
-		if (State.VSync != InitialVSync) {
-			Service.Set_VSync(State.VSync);
-		}
-		if (State.IntegerScaling != InitialIntegerScaling) {
-			Service.Set_Integer_Scaling(State.IntegerScaling);
-		}
-		if (Choice_Changed(State.Filters, State.Filter, InitialFilter)) {
-			Service.Set_Filter(State.Filters[State.Filter].Value);
-		}
-		if (Choice_Changed(State.FrameRates, State.FrameRate, InitialFrameRate)) {
-			Service.Set_Frame_Rate(State.FrameRates[State.FrameRate].Value);
-		}
-		if (Choice_Changed(State.CursorScales, State.CursorScale, InitialCursorScale)) {
-			Service.Set_Cursor_Scale(State.CursorScales[State.CursorScale].Value);
-		}
-		if (Choice_Changed(State.MenuThemes, State.MenuTheme, InitialMenuTheme)) {
-			Service.Set_Menu_Theme(State.MenuThemes[State.MenuTheme].Value);
-		}
-		if (State.MenuBattle != InitialMenuBattle) {
-			Service.Set_Menu_Battle(State.MenuBattle);
-		}
-		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
-			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
-		}
-		if (Choice_Changed(State.HDROutputs, State.HDROutput, InitialHDROutput)) {
-			Service.Set_HDR_Output(State.HDROutputs[State.HDROutput].Value);
-		}
-		if (HDRLevelsReset) {
-			// Zero is the automatic level, which the engine follows from the display.
-			Service.Set_HDR_Paper_White(0);
-			Service.Set_HDR_Peak_Brightness(0);
-		} else {
-			if (State.PaperWhite != InitialPaperWhite) {
-				Service.Set_HDR_Paper_White(State.PaperWhite);
-			}
-			if (State.PeakBrightness != InitialPeakBrightness) {
-				Service.Set_HDR_Peak_Brightness(State.PeakBrightness);
-			}
-		}
-		if (State.Highlights != InitialHighlights) {
-			Service.Set_HDR_Highlights(State.Highlights);
-		}
-		if (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size()
-			&& (State.ColorBlindMode != InitialColorBlindMode || State.ColorBlindStrength != InitialColorBlindStrength)) {
-			Service.Set_Colour_Blind(State.ColorBlindModes[State.ColorBlindMode].Value, State.ColorBlindStrength);
-		}
-		if (State.Brightness != InitialBrightness || State.Gamma != InitialGamma) {
-			Service.Set_Brightness_Gamma(State.Brightness, State.Gamma);
-		}
-		if (PickedRows >= 0) {
-			Service.Set_Sidebar_Rows(PickedRows);
-		}
-		UI_Setting_Preview_Commit();
-		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
-			Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
-			ScaleChanged = true;
-		}
-		if (State.Selected >= 0 && State.Selected != Initial) {
-			Picked = State.Modes[State.Selected];
-		}
-		Result = UI_RESULT_ACCEPTED;
+		Apply_Settings();
 
 	} else if (intent.Name == "cancel") {
 		Restore_Preview();
 		Result = UI_RESULT_CANCELLED;
-	}
-
-	if (intent.Name == "brightness" || intent.Name == "gamma" || intent.Name == "colorblindmode" || intent.Name == "colorblindstrength") {
-		Show_Colour_Preview();
 	}
 }
 
@@ -538,8 +580,8 @@ void Update_Gamma_Label(UIDisplayState & state)
 /// </summary>
 void Update_HDR_Tips(UIDisplayState & state)
 {
-	bool forced = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_ON;
-	bool off = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_OFF;
+	bool forced = Index_In_Range(state.HDROutput, state.HDROutputs.size()) && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_ON;
+	bool off = Index_In_Range(state.HDROutput, state.HDROutputs.size()) && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_OFF;
 	if (forced) {
 		state.HDROutputTip = "On forces HDR10 output. Turn on HDR in Windows for this display first, or the picture will look wrong. Applies at the next start.";
 	} else if (off) {
@@ -608,6 +650,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
 			Model.DirtyVariable("integerscaling");
+			Model.DirtyVariable("gpurender");
+			Model.DirtyVariable("softshadows");
+			Model.DirtyVariable("shockwaves");
+			Model.DirtyVariable("bloom");
+			Model.DirtyVariable("waterripples");
+			Model.DirtyVariable("cloudshadows");
+			Model.DirtyVariable("weather");
 			Model.DirtyVariable("filter");
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
@@ -621,11 +670,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("colorblindmode");
 			Model.DirtyVariable("colorblindstrength");
 			Model.DirtyVariable("screenshake");
+			Model.DirtyVariable("scriptedzoom");
 			Update_Gamma_Label(Data.State);
 			Model.DirtyVariable("brightness");
 			Model.DirtyVariable("gamma");
 			Model.DirtyVariable("gammalabel");
 			Model.DirtyVariable("rowcount");
+			Model.DirtyVariable("sidebaropacity");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
 				Model.DirtyVariable("preview");
@@ -653,24 +704,20 @@ class UIDisplayViewClass : public UIRmlViewClass
 			}
 			scale.RegisterMember("label", &UIDisplayScale::Label);
 
-			Rml::StructHandle<UIDisplayChoice> choice = model.RegisterStruct<UIDisplayChoice>();
+			Rml::StructHandle<UIChoice> choice = model.RegisterStruct<UIChoice>();
 			if (!choice) {
 				return(false);
 			}
-			choice.RegisterMember("label", &UIDisplayChoice::Label);
+			choice.RegisterMember("label", &UIChoice::Label);
 
 			UIDisplayState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIDisplayMode>>()
 				&& model.RegisterArray<std::vector<UIDisplayScale>>()
-				&& model.RegisterArray<std::vector<UIDisplayChoice>>()
-				&& model.Bind("scales", &state.Scales)
-				&& model.Bind("scale", &state.Scale)
-				&& model.Bind("modes", &state.Modes)
-				&& model.Bind("selected", &state.Selected)
-				&& model.Bind("stretch", &state.StretchMovies)
-				&& model.Bind("systemcursor", &state.SystemCursor)
-				&& model.Bind("classicmenus", &state.ClassicMenus)
+				&& model.RegisterArray<std::vector<UIChoice>>()
+				&& UI_Bind_Display_Basics(model, state)
 				&& model.Bind("moderninterface", &state.ModernInterface)
+				&& model.Bind("moderninterfacerunning", &state.ModernInterfaceRunning)
+				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("bitmapfont", &state.BitmapSystemFont)
 				&& model.Bind("showfps", &state.ShowFPS)
 				&& model.Bind("framelimits", &state.FrameLimits)
@@ -682,6 +729,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)
+				&& model.Bind("gpurender", &state.GpuRender)
+				&& model.Bind("softshadows", &state.SoftShadows)
+				&& model.Bind("shockwaves", &state.Shockwaves)
+				&& model.Bind("bloom", &state.Bloom)
+				&& model.Bind("waterripples", &state.WaterRipples)
+				&& model.Bind("cloudshadows", &state.CloudShadows)
+				&& model.Bind("weather", &state.Weather)
 				&& model.Bind("filters", &state.Filters)
 				&& model.Bind("filter", &state.Filter)
 				&& model.Bind("framerates", &state.FrameRates)
@@ -705,11 +759,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("gamma", &state.Gamma)
 				&& model.Bind("gammalabel", &state.GammaLabel)
 				&& model.Bind("screenshake", &state.ScreenShake)
+				&& model.Bind("scriptedzoom", &state.ScriptedCameraZoom)
 				&& model.Bind("hdractive", &state.HDRActive)
 				&& model.Bind("hdroutputtip", &state.HDROutputTip)
 				&& model.Bind("highlightstip", &state.HighlightsTip)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
+				&& model.Bind("sidebaropacity", &state.SidebarOpacity)
 				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));
 		}
 

@@ -7,7 +7,7 @@ when_omitted:
   value: "999"
 ---
 
-`ChargedAnimTime` sets when a building that owns a superweapon changes the animation it shows for that weapon. While the weapon has more than this many minutes left to charge, the building plays its [`SuperAnim`](/keys/superanim/). Once it has no more than that many left, the building swaps to its [`SuperAnimTwo`](/keys/superanimtwo/), which plays through once. When the weapon is ready the building plays [`SuperAnimThree`](/keys/superanimthree/) for as long as it stays ready. After the weapon is fired and starts charging again, [`SuperAnimFour`](/keys/superanimfour/) plays through once and the first animation begins again.
+`ChargedAnimTime` sets when a building that owns a superweapon changes the animation it shows for that weapon. While the weapon has more than this many minutes left to charge, the building plays its [`SuperAnim`](/keys/superanim/). Once it has no more than that many left, the building swaps to its [`SuperAnimTwo`](/keys/superanimtwo/), which plays through once. [`SuperAnimThree`](/keys/superanimthree/) starts when that animation ends, and plays for as long as the weapon stays ready, so it runs for the last part of the charge as well. After the weapon is fired and starts charging again, [`SuperAnimFour`](/keys/superanimfour/) plays through once and the first animation begins again.
 
 A minute counts as 900 game frames. Without the key, the value is large enough that the building never changes its superweapon animation, and none of these four animations play.
 

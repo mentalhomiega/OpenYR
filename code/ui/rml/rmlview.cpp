@@ -8,8 +8,11 @@
  ******************************************************************************/
 
 #include "numparse.h"
+#include "strutil.h"
+#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
+#include "ui/uipreview.h"
 #include "ui/uishell.h"
 
 // windowsx.h defines macros with the names of these RmlUi Element methods.
@@ -107,25 +110,15 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 }
 
 
-static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
-
-// A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
-static bool UI_Tab_Keyboard = false;
-
-
-/// <summary>
-/// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
-/// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
-/// </summary>
 UISettingsTab UIRmlViewClass::Tab_Of_View(void) const
 {
-	return((ViewTab != UI_TAB_NONE) ? ViewTab : Owner.Settings_Tab());
+	return(ViewTab);
 }
 
 
 unsigned UIRmlViewClass::Offered_Of_View(void) const
 {
-	return((ViewTab != UI_TAB_NONE) ? ViewOffered : Owner.Settings_Tabs_Offered());
+	return(ViewOffered);
 }
 
 
@@ -141,6 +134,16 @@ void UIRmlViewClass::Set_Tab(int tab, unsigned offered)
 }
 
 
+static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
+
+// A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
+static bool UI_Tab_Keyboard = false;
+
+
+/// <summary>
+/// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
+/// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
+/// </summary>
 void UIRmlViewClass::Apply_Tabs(void)
 {
 	UISettingsTab const tab = Tab_Of_View();
@@ -289,6 +292,7 @@ void UIRmlViewClass::Release(void)
 		Doc->RemoveEventListener(Rml::EventId::Textinput, this, true);
 		Doc->RemoveEventListener(Rml::EventId::Mousedown, this);
 		Doc->RemoveEventListener(Rml::EventId::Mousemove, this, true);
+		Doc->RemoveEventListener(Rml::EventId::Focus, this, true);
 	}
 
 
@@ -417,6 +421,14 @@ void UIRmlViewClass::Follow_Lists(void)
 }
 
 
+// The context's density-independent pixel ratio, or 1 when there is no context or the ratio is zero or below.
+static float Pixel_Ratio(Rml::Context * context)
+{
+	float const ratio = (context != nullptr) ? context->GetDensityIndependentPixelRatio() : 1.0f;
+	return(ratio <= 0.0f ? 1.0f : ratio);
+}
+
+
 void UIRmlViewClass::Size_Grips(void)
 {
 	Rml::Context * context = Doc != nullptr ? Doc->GetContext() : nullptr;
@@ -424,10 +436,7 @@ void UIRmlViewClass::Size_Grips(void)
 		return;
 	}
 
-	float ratio = context->GetDensityIndependentPixelRatio();
-	if (ratio <= 0.0f) {
-		ratio = 1.0f;
-	}
+	float const ratio = Pixel_Ratio(context);
 
 	Rml::ElementList lists;
 	Doc->GetElementsByClassName(lists, "list");
@@ -474,10 +483,7 @@ void UIRmlViewClass::Place_Wallpaper(void)
 		return;
 	}
 
-	float ratio = context->GetDensityIndependentPixelRatio();
-	if (ratio <= 0.0f) {
-		ratio = 1.0f;
-	}
+	float const ratio = Pixel_Ratio(context);
 
 	float middle = (dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize().y * 0.5f) / ratio;
 	float top = std::floor(((float)context->GetDimensions().y / ratio - 400.0f) * 0.5f);
@@ -793,7 +799,7 @@ bool UIRmlViewClass::Type_Ahead(Rml::Element * list, Rml::String const & text)
 	for (int step = 1; step <= (int)rows.size(); step++) {
 		int index = (current + step) % (int)rows.size();
 		std::string label = Row_Text(rows[index]);
-		if (strnicmp(label.c_str(), wanted.c_str(), wanted.size()) == 0) {
+		if (Starts_With_No_Case(label, wanted)) {
 			if (index != current) {
 				rows[index]->Click();
 			}
@@ -801,6 +807,15 @@ bool UIRmlViewClass::Type_Ahead(Rml::Element * list, Rml::String const & text)
 		}
 	}
 	return(false);
+}
+
+
+void UIRmlViewClass::Click_From_Key(void)
+{
+	if (Shell != nullptr) {
+		Shell->Play_Click();
+	}
+	Mark_Keyboard();
 }
 
 
@@ -873,10 +888,7 @@ void UIRmlViewClass::Serve_Tip(void)
 
 	// Placed while it is still hidden, so the layout has settled before it is shown.
 	Rml::Context * context = Doc->GetContext();
-	float ratio = (context != nullptr) ? context->GetDensityIndependentPixelRatio() : 1.0f;
-	if (ratio <= 0.0f) {
-		ratio = 1.0f;
-	}
+	float const ratio = Pixel_Ratio(context);
 
 	Rml::Vector2f size = tip->GetBox().GetSize(Rml::BoxArea::Border);
 	Rml::Vector2f bounds = (context != nullptr) ? Rml::Vector2f(context->GetDimensions()) : size;
@@ -995,10 +1007,7 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 			return;
 		}
 		if (target != nullptr && target->GetTagName() == "button" && !Is_Disabled(target)) {
-			if (Shell != nullptr) {
-				Shell->Play_Click();
-			}
-			Mark_Keyboard();
+			Click_From_Key();
 			return;
 		}
 		Queue("ok");
@@ -1018,10 +1027,7 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 				event.StopPropagation();
 				return;
 			}
-			if (Shell != nullptr) {
-				Shell->Play_Click();
-			}
-			Mark_Keyboard();
+			Click_From_Key();
 			return;
 		}
 		if (List_Of(target) != nullptr) {
@@ -1046,6 +1052,30 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 	if (list != nullptr && !list->IsClassSet("log") && Navigate_List(list, key)) {
 		Mark_Keyboard();
 		event.StopPropagation();
+	}
+}
+
+
+void UIRmlViewClass::Show_Surface(char const * id, int & shown, UIMapPreviewImage const & image)
+{
+	if (image.Generation == shown || Doc == nullptr) {
+		return;
+	}
+
+	UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Doc->GetElementById(id));
+	if (surface == nullptr) {
+		return;
+	}
+
+	shown = image.Generation;
+	surface->Set_Image(image.Width, image.Height, image.Pixels);
+}
+
+
+void UIRmlViewClass::Dirty(std::initializer_list<char const *> names)
+{
+	for (char const * name : names) {
+		Model.DirtyVariable(name);
 	}
 }
 

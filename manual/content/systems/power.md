@@ -229,7 +229,7 @@ The house checks its radar structures in the order they were created and stops a
 
 ### Superweapons
 
-A superweapon that comes from a structure is enabled while its house owns a switched-on structure that grants it, through the structure's type or through a plug. A stunned structure still counts. The weapon is disabled whenever its house is short of power.
+A superweapon that comes from a structure is enabled while its house owns a switched-on structure that grants it, through the structure's type or through a plug. A stunned structure still counts. A structure that a temporal beam is erasing does not count, unless [`ChronoErasedSuperWeapons=yes`](/keys/chronoerasedsuperweapons/). The weapon is disabled whenever its house is short of power.
 
 A disabled weapon is suspended only if its type is [`IsPowered=yes`](/keys/ispowered/). Suspension stops the charge timer where it stands, replaces the status text on the sidebar cameo with a hold caption, and refuses the targeting cursor. The weapon resumes when it is enabled again.
 

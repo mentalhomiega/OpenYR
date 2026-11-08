@@ -30,6 +30,7 @@
 #include "autotest.h"
 #include "beacon.h"
 #include "bench.h"
+#include "bgfxbackend.h"
 #include "chat.h"
 #include "command.h"
 #include "conquer.h"
@@ -39,7 +40,9 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "fog.h"
+#include "framewait.h"
 #include "hangwatch.h"
+#include "perfstat.h"
 #include "init.h"
 #include "globals.h"
 #include "goptions.h"
@@ -49,12 +52,14 @@
 #include "misc.h"
 #include "mpscore.h"
 #include "msgbox.h"
+#include "monotonic.h"
 #include "msgloop.h"
 #include "mstimer.h"
 #include "netdlg.h"
 #include "nettiming.h"
 #include "pcx.h"
 #include "queue.h"
+#include "replay.h"
 #include "rules.h"
 #include "savemgr.h"
 #include "scenario.h"
@@ -62,6 +67,7 @@
 #include "session.h"
 #include "stats.h"
 #include "stimer.h"
+#include "syncrechook.h"
 #include "surface.h"
 #include "tactical.h"
 #include "theme.h"
@@ -76,6 +82,9 @@
 #include "special.hh"
 
 #include <algorithm>
+#include <cstring>
+#include <float.h>
+#include <xmmintrin.h>
 #include "bullet.h"
 #include "dbgprint.h"
 #include "foot.h"
@@ -224,7 +233,7 @@ static int Target_Frame_Rate(void)
 {
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
-		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD)) {
+		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast() || AutoTest_Uncapped()) {
 			return(0);
 		}
 		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
@@ -234,13 +243,149 @@ static int Target_Frame_Rate(void)
 	return(Session.Play ? 0 : Session.DesiredFrameRate);
 }
 
-// Recent time a view redraw took, in milliseconds, averaged over the last few draws.
-static unsigned int RenderCost = 0;
-
-
-static void Note_Render_Cost(unsigned int took)
+/// <summary>
+/// How long a game frame lasts, or zero for no limit. A solo game takes it from the game speed table.
+/// </summary>
+static NetTiming::FramePeriod Target_Frame_Period(void)
 {
-	RenderCost = (RenderCost * 3 + took + 3) / 4;
+	if ((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && Target_Frame_Rate() != 0) {
+		return(NetTiming::Solo_Game_Speed_Frame_Period(Options.GameSpeed));
+	}
+	return(NetTiming::Frame_Period_For_Rate(Target_Frame_Rate()));
+}
+
+// Recent time a view redraw took, in milliseconds, averaged over the last few draws.
+static double RenderCost = 0.0;
+
+
+/// <summary>
+/// With performance recording on, logs once a second how evenly the game frames ended and how much processor time
+/// the process used. Call it as each game frame ends.
+/// </summary>
+static void Log_Tick_Intervals(void)
+{
+	static NetTiming::IntervalStats intervals;
+	static std::int64_t last_tick = 0;
+	static std::int64_t window_start = 0;
+	static std::uint64_t window_cpu = 0;
+
+	if (!Perf_Enabled) {
+		last_tick = 0;
+		return;
+	}
+
+	std::int64_t const now = Monotonic_Nanoseconds();
+	if (last_tick != 0) {
+		intervals.Add((now - last_tick) / 1e6);
+	}
+	last_tick = now;
+
+	if (window_start == 0) {
+		window_start = now;
+		window_cpu = Process_Cpu_Microseconds();
+	} else if (now - window_start >= 1000000000) {
+		std::uint64_t const cpu = Process_Cpu_Microseconds();
+		NetTiming::IntervalStats::Summary const sum = intervals.Take();
+		DebugString("Pacing: %u ticks in %.1f ms, interval ms min/mean/max/sd %.3f/%.3f/%.3f/%.3f, cpu %.1f ms\n",
+			sum.Count, (now - window_start) / 1e6, sum.Min, sum.Mean, sum.Max, sum.Deviation, (cpu - window_cpu) / 1e3);
+		window_start = now;
+		window_cpu = cpu;
+	}
+}
+
+
+static void Note_Render_Cost(double took)
+{
+	RenderCost = (RenderCost * 3 + took) / 4;
+}
+
+
+// A solo or skirmish frame ends at a deadline on the nanosecond clock; a fixed-wait network frame is timed by FrameTimer.
+static bool FineFrame = false;
+static std::int64_t FineDeadline = 0;
+
+
+/// <summary>
+/// The milliseconds left before the current game frame ends, zero or less once it is over.
+/// </summary>
+static double Frame_Time_Left(void)
+{
+	return(FineFrame ? (FineDeadline - Monotonic_Nanoseconds()) / 1e6 : (double)FrameTimer());
+}
+
+
+/// <summary>
+/// Gives the processor back until the time given on the nanosecond clock, or until the frame ends if that is sooner.
+/// Out of focus nothing is drawn, so the wait is a millisecond sleep.
+/// </summary>
+static void Wait_Within_Frame(std::int64_t until)
+{
+	PerfScope wait_scope(PERF_FRAME_WAIT);
+	if (!GameInFocus) {
+		Sleep(1);
+	} else if (FineFrame) {
+		Fine_Wait_Until(std::min(until, FineDeadline));
+	} else {
+		Sleep(0);
+	}
+}
+
+
+/// <summary>
+/// Notes the rounding mode of the game thread, which every sum of the simulation's floats depends on. The mode
+/// in force on the first game frame is logged, and a frame whose mode differs from the last one logged is logged
+/// too, so a driver, an overlay or a plug-in that resets it shows up in the debug log. The mode is never changed
+/// here: a machine that played a match in another mode than the rest would show it beside its out-of-sync report.
+/// </summary>
+static void Log_Rounding_Mode(void)
+{
+	static unsigned int LastX87 = 0;
+	static unsigned int LastSse = 0;
+	static bool Started = false;
+
+	unsigned int x87 = 0;
+	_controlfp_s(&x87, 0, 0);
+	unsigned int const sse = static_cast<unsigned int>(_mm_getcsr());
+	unsigned int const x87_bits = x87 & (_MCW_RC | _MCW_PC | _MCW_DN);
+	unsigned int const sse_bits = sse & 0xE040;
+	if (!Started || Frame <= 0) {
+		Started = true;
+		LastX87 = x87_bits;
+		LastSse = sse_bits;
+		DebugString("Rounding mode at frame %d: x87 %08x, MXCSR %08x (%s)\n", Frame, x87, sse,
+			(x87 & _MCW_RC) == _RC_CHOP ? "toward zero" : (x87 & _MCW_RC) == _RC_NEAR ? "nearest" : "other");
+		return;
+	}
+	if (x87_bits == LastX87 && sse_bits == LastSse) {
+		return;
+	}
+	DebugString("Rounding mode changed at frame %d to x87 %08x, MXCSR %08x\n", Frame, x87, sse);
+	LastX87 = x87_bits;
+	LastSse = sse_bits;
+}
+
+
+/// <summary>
+/// Sets the game thread's rounding mode for the rest of the run, so a test can play one machine in a different
+/// mode from the others. "near", "chop", "up" and "down" name the modes.
+/// </summary>
+void Rounding_Test_Set(char const * mode)
+{
+	unsigned int bits = _RC_NEAR;
+	unsigned int sse = 0x0000;
+	if (std::strcmp(mode, "chop") == 0) {
+		bits = _RC_CHOP;
+		sse = 0x6000;
+	} else if (std::strcmp(mode, "up") == 0) {
+		bits = _RC_UP;
+		sse = 0x4000;
+	} else if (std::strcmp(mode, "down") == 0) {
+		bits = _RC_DOWN;
+		sse = 0x2000;
+	}
+	unsigned int ignored = 0;
+	_controlfp_s(&ignored, bits, _MCW_RC);
+	_mm_setcsr((_mm_getcsr() & ~0x6000u) | sse);
 }
 
 
@@ -300,6 +445,28 @@ bool Main_Loop(void)
 	}
 
 	/*
+	**	A paused replay keeps the view drawn and answers the keys and the mouse, so that it can be
+	**	resumed, but runs no frame.
+	*/
+	if (Replay_Is_Paused()) {
+		Call_Back();
+		if (SpecialDialog == SDLG_NONE && GameInFocus) {
+			UIShell.Tick();
+			Map.Input(input, x, y);
+			Hotkey_Poll();
+			if (input) {
+				Keyboard_Process(input);
+			}
+			Apply_Pending_View_Zoom();
+			Map.Render();
+		} else {
+			Hotkey_Reset_Pending();
+		}
+		Sleep(10);
+		return(!GameActive);
+	}
+
+	/*
 	**	Sync-bug trapping code
 	*/
 	if (Frame >= Session.TrapFrame) {
@@ -336,7 +503,7 @@ bool Main_Loop(void)
 	/*
 	**	Setup the timer so that the Main_Loop function processes at the correct rate.
 	*/
-	static NetTiming::FramePacer pacer;
+	static NetTiming::FrameDeadline deadline;
 	if ((Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) && !Session.NetworkTimingAdaptive) {
 		// gamemd arms each network frame for 1000 / rate whole milliseconds. Online games (mode 4) add 10 ms per pacing threshold.
 		NetTiming::Milliseconds wait = NetTiming::Gamemd_Frame_Wait(Target_Frame_Rate());
@@ -344,8 +511,10 @@ bool Main_Loop(void)
 			wait += NetTiming::Gamemd_Local_Pacing(Session.MaxAhead, Session.NetworkPeerLag);
 		}
 		FrameTimer = wait;
+		FineFrame = false;
 	} else {
-		FrameTimer = pacer.Next_Wait(Target_Frame_Rate());
+		FineDeadline = deadline.Arm(Monotonic_Nanoseconds(), Target_Frame_Period());
+		FineFrame = true;
 	}
 
 	/*
@@ -364,9 +533,9 @@ bool Main_Loop(void)
 			}
 			Apply_Pending_View_Zoom();
 			Update_Fogged_Objects();
-			unsigned int const render_start = timeGetTime();
+			std::int64_t const render_start = Monotonic_Nanoseconds();
 			Map.Render();
-			Note_Render_Cost(timeGetTime() - render_start);
+			Note_Render_Cost((Monotonic_Nanoseconds() - render_start) / 1e6);
 		} else {
 			Hotkey_Reset_Pending();
 		}
@@ -390,21 +559,18 @@ bool Main_Loop(void)
 	*/
 	DisplayClass::Layer[LAYER_GROUND].Sort();
 
-	// Remember where moving objects stand before this frame's logic, so drawing between frames can blend toward their new places.
-	if (Options.Render_Frame_Rate() > 0) {
-		for (int index = 0; index < Feet.Count(); index++) {
-			// An object off the map has no position to blend from when it is placed again.
-			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
-		}
-		for (int index = 0; index < Bullets.Count(); index++) {
-			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
-		}
-	}
+	Remember_Render_Coords();
+
+	Log_Rounding_Mode();
 
 	/*
 	**	AI logic operations are performed here.
 	*/
-	Logic.AI();
+	{
+		PerfScope logic_scope(PERF_FRAME_LOGIC);
+		Sync_Enter_Frame_Logic();
+		Logic.AI();
+	}
 	AutoTest_Frame();
 
 	/*
@@ -422,7 +588,11 @@ bool Main_Loop(void)
 	/*
 	**	Process all commands that are ready to be processed.
 	*/
-	Queue_AI();
+	{
+		PerfScope queue_scope(PERF_FRAME_QUEUE);
+		Queue_AI();
+	}
+	Sync_Leave_Frame_Logic();
 
 	Call_Back();
 
@@ -489,6 +659,7 @@ bool Main_Loop(void)
 #endif
 
 		Sync_Delay();
+		Perf_Frame_End();
 		Process_Deferred_Deletion();
 		SaveManager.Service();
 	}
@@ -498,6 +669,24 @@ bool Main_Loop(void)
 	InMainLoop = false;
 
 	return(!GameActive);
+}
+
+
+/// <summary>
+/// Records where each moving object stands before a logic frame, so that drawing between frames can
+/// blend from there toward its new place. Nothing is recorded unless the render frame rate is above zero.
+/// </summary>
+void Remember_Render_Coords(void)
+{
+	if (Options.Render_Frame_Rate() > 0) {
+		for (int index = 0; index < Feet.Count(); index++) {
+			// An object off the map has no position to blend from when it is placed again.
+			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
+		}
+		for (int index = 0; index < Bullets.Count(); index++) {
+			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
+		}
+	}
 }
 
 
@@ -655,7 +844,7 @@ void Sync_Delay(void)
 	/*
 	**	Accumulate the number of 'spare' ticks that are frittered away here.
 	*/
-	SpareTicks += FrameTimer;
+	SpareTicks += (int)std::max(Frame_Time_Left(), 0.0);
 
 	// With RenderFrameRate set, the wait is filled with redraws at that rate, each drawing moving
 	// objects further along their move from the previous game frame.
@@ -666,32 +855,47 @@ void Sync_Delay(void)
 		static unsigned int stat_draws = 0;
 		static unsigned int stat_wait = 0;
 		stat_frames++;
-		stat_wait += FrameTimer;
-		unsigned int const period = std::max<unsigned int>(FrameTimer, 1);
-		unsigned int const spacing = std::max(1000 / render_frame_rate, 1);
-		unsigned int next_draw = timeGetTime();
-		while (FrameTimer) {
+		stat_wait += (unsigned int)std::max(Frame_Time_Left(), 0.0);
+		double const period = std::max(Frame_Time_Left(), 1.0);
+		std::int64_t const spacing = 1000000000 / render_frame_rate;
+		std::int64_t next_draw = Monotonic_Nanoseconds();
+		bool skipped_slot = false;
+		while (Frame_Time_Left() > 0) {
 			Call_Back();
+			std::int64_t wake = 0;
 			if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
-				unsigned int const now = timeGetTime();
+				std::int64_t const now = Monotonic_Nanoseconds();
+				double const left = Frame_Time_Left();
 				// A draw is skipped when less time is left before the next game frame than recent draws took, so drawing never slows the game.
-				if ((int)(now - next_draw) >= 0 && FrameTimer > RenderCost) {
-					next_draw = now + spacing;
+				if (now >= next_draw && left > RenderCost) {
+					skipped_slot = false;
+					// Draws keep their spacing on the clock; a draw that ran long does not push the later ones back.
+					next_draw = std::max(next_draw + spacing, now);
 					KeyNumType input = KN_NONE;
 					int x, y;
 					Map.Input(input, x, y);
 					Keyboard_Process(input);
 					TacticalMap->AI();
-					RenderBlend = std::clamp(1.0 - (double)FrameTimer / period, 0.0, 1.0);
+					RenderBlend = std::clamp(1.0 - left / period, 0.0, 1.0);
 					Map.Render();
 					RenderBlend = 1.0;
-					Note_Render_Cost(timeGetTime() - now);
+					Note_Render_Cost((Monotonic_Nanoseconds() - now) / 1e6);
 					stat_draws++;
+					wake = next_draw;
+				} else if (now >= next_draw) {
+					if (!skipped_slot) {
+						skipped_slot = true;
+						Perf_Count(PERF_COUNT_DRAWS_SKIPPED);
+					}
+					wake = FineDeadline;
+				} else {
+					wake = next_draw;
 				}
 			} else {
 				UI_Serve_Screen();
+				wake = Monotonic_Nanoseconds() + 1000000;
 			}
-			Sleep(GameInFocus ? 0 : 1);
+			Wait_Within_Frame(wake);
 		}
 		RenderBlend = 1.0;
 
@@ -699,6 +903,7 @@ void Sync_Delay(void)
 		if (stat_now - stat_start >= 1000) {
 			DebugString("Render: %u game frames, %u extra draws, %u presents, %u ms waiting in the last %u ms, %u shifted draws\n",
 				stat_frames, stat_draws, Video_Presents_Per_Second(), stat_wait, stat_now - stat_start, RenderBlendShifts);
+			Backend_Log_Resource_Counts("game");
 			RenderBlendShifts = 0;
 			stat_start = stat_now;
 			stat_frames = 0;
@@ -707,42 +912,60 @@ void Sync_Delay(void)
 		}
 	}
 
-	while (FrameTimer) {
+	while (Frame_Time_Left() > 0) {
 		Call_Back();
+		std::int64_t wake = FineDeadline;
 		if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
-			KeyNumType input = KN_NONE;
-			int x, y;
-			if (FrameTimer > 10) {
+			if (Frame_Time_Left() > 10) {
+				KeyNumType input = KN_NONE;
+				int x, y;
 				Map.Input(input, x, y);
 				Keyboard_Process(input);
 				TacticalMap->AI();
 				Map.Render();
-			} else {
-				Sleep(0);
+				// Drawing again at once is what fills the early part of the frame.
+				wake = 0;
 			}
-			if (!FrameTimer()) {
+			if (Frame_Time_Left() <= 0) {
 				break;
 			}
 		} else {
 			UI_Serve_Screen();
 		}
 
-		// Out of focus nothing is drawn, so the wait gives the processor back.
-		Sleep(GameInFocus ? 0 : 1);
+		Wait_Within_Frame(wake);
 	}
 
+	// The frame count is taken over 960 ms, as gamemd.exe's 60 SystemTimer units, and feeds the detail gate.
 	static CDTimerClass<MillisecondSystemTimerClass> fps_timer;
 	if (!fps_timer) {
 		LastFramesPerSecond = FramesThisSecond;
 		FramesThisSecond = 0;
-		TotalFrames += LastFramesPerSecond;
+		fps_timer = 960;
+	}
+
+	// The shown rate is timed between frame ends over at least a real second, so a steady 60 reads 60.
+	static unsigned int tick_window_start = timeGetTime();
+	static unsigned int tick_window_frames = TotalFrames;
+	unsigned int const tick_now = timeGetTime();
+	unsigned int const tick_elapsed = tick_now - tick_window_start;
+	if (tick_elapsed >= 1000) {
+		GameTicksPerSecond = ((TotalFrames - tick_window_frames) * 1000 + tick_elapsed / 2) / tick_elapsed;
+		tick_window_start = tick_now;
+		tick_window_frames = TotalFrames;
+	}
+
+	static CDTimerClass<MillisecondSystemTimerClass> second_timer;
+	if (!second_timer) {
 		SecondsPassed++;
 		if (TotalFrames > 0x7FFFFFFF) {
 			TotalFrames = 0;
 			SecondsPassed = 0;
 		}
-		fps_timer = 1000;
+		second_timer = 1000;
 	}
+
+	Log_Tick_Intervals();
 }
 
 

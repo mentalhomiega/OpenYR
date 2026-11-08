@@ -1,0 +1,13 @@
+; Opens the Replays list from the main menu, saves a picture of it, and plays the newest recording (replay-menu-test.rep, which
+; record-menu-skirmish.txt wrote) from the list. The match must end with "REPLAY result: MATCH". Run the recording first.
+; Run from the workspace root, in PowerShell:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent23/tests/replay/menu-replays.txt -Build agent23 -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 300 -Filter "REPLAY|UISCRIPT|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Replays
+ui wait 2500
+ui shot replays-list
+ui click play
+ui wait 1000
+1 log replay-started-from-menu
+100 command ReplayFast

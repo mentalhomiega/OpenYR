@@ -45,7 +45,11 @@
 
 #include "airctype.h"
 #include "builtype.h"
+#include "campaign.h"
+#include "ccfile.h"
 #include "ccini.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 #include "crc.h"
 #include "dbgprint.h"
 #include "findmake.h"
@@ -60,6 +64,8 @@
 #include "vector.h"
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 /***********************************************************************************************
  * HouseTypeClass::HouseTypeClass -- Constructor for house type objects.                       *
@@ -531,6 +537,88 @@ ClassID HouseTypeClass::Class_ID(void) const
 HouseTypeClass * HouseTypeClass::Find_Or_Make(char const * ininame)
 {
 	return(TFind_Or_Make<HouseTypeClass>(ininame, HouseTypes));
+}
+
+
+namespace
+{
+
+// The countries in the order a Red Alert 2 mission numbers them: Red Alert 2's own list, then the mission's [Countries].
+// Empty unless the running mission is a Red Alert 2 one.
+std::vector<std::string> RA2_Country_Order;
+
+// False while numbers are being read from a file that follows Yuri's Revenge's numbering.
+bool RA2_Numbering_Enabled = true;
+
+}
+
+
+/// <summary>
+/// Learns the country numbering a Red Alert 2 mission uses. Red Alert 2 lists 13 countries and Yuri's Revenge lists 14,
+/// with YuriCountry inserted at 9, so a mission's house number from 9 up names a different country in Yuri's Revenge.
+/// Without a Red Alert 2 mission, or without the rules file RA2Rules= names, numbers are left as written.
+/// </summary>
+/// <param name="scenario">The mission's INI, whose [Countries] follow Red Alert 2's list.</param>
+void HouseTypeClass::Prepare_RA2_Numbering(CCINIClass const & scenario)
+{
+	RA2_Country_Order.clear();
+	RA2_Numbering_Enabled = true;
+	if (!Scenario_Is_From_RA2()) {
+		return;
+	}
+
+	CCFileClass file(DeploymentConfig.RA2RulesFile.c_str());
+	CCINIClass rules;
+	if (!file.Is_Available() || !rules.Load(file, false)) {
+		DebugString("RA2 mission: %s is missing, so its house numbers are read as Yuri's Revenge's.\n", DeploymentConfig.RA2RulesFile.c_str());
+		return;
+	}
+
+	static char const * const COUNTRIES = "Countries";
+	CCINIClass const * const lists[] = {&rules, &scenario};
+	for (CCINIClass const * ini : lists) {
+		int const count = ini->Entry_Count(COUNTRIES);
+		for (int index = 0; index < count; index++) {
+			RA2_Country_Order.push_back(ini->Get_String(COUNTRIES, ini->Get_Entry(COUNTRIES, index)));
+		}
+	}
+}
+
+
+/// <summary>
+/// Reports whether Prepare_RA2_Numbering converted the running mission's house numbers. False for a mission that
+/// is not Red Alert 2's, and for one whose RA2Rules file is missing.
+/// </summary>
+bool HouseTypeClass::RA2_Numbering_Loaded(void)
+{
+	return(!RA2_Country_Order.empty());
+}
+
+
+/// <summary>
+/// Converts a house number written for Red Alert 2 into the country it names here.
+/// A number outside Red Alert 2's list, and every number outside a Red Alert 2 mission, is returned as it is.
+/// </summary>
+HousesType HouseTypeClass::From_RA2_Number(HousesType number)
+{
+	if (!RA2_Numbering_Enabled || number < 0 || number >= (int)RA2_Country_Order.size()) {
+		return(number);
+	}
+	HousesType const type = From_Name(RA2_Country_Order[number].c_str());
+	return(type == HOUSE_NONE ? number : type);
+}
+
+
+/// <summary>
+/// Turns the Red Alert 2 conversion of house numbers on or off.
+/// The conversion is off while a file that numbers its houses as Yuri's Revenge does is read.
+/// </summary>
+/// <returns>bool; Was the conversion on before this call?</returns>
+bool HouseTypeClass::Set_RA2_Numbering(bool enabled)
+{
+	bool const previous = RA2_Numbering_Enabled;
+	RA2_Numbering_Enabled = enabled;
+	return(previous);
 }
 
 

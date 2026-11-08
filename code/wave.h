@@ -23,7 +23,7 @@ class WaveClass : public ObjectClass
 		typedef ObjectClass BASECLASS;
 
 	public:
-		WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target, WeaponTypeClass const * weapon = NULL);
+		WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, AbstractClass * target, WeaponTypeClass const * weapon = NULL);
 		WaveClass(void);
 		virtual ~WaveClass(void) override;
 
@@ -48,6 +48,8 @@ class WaveClass : public ObjectClass
 		virtual void AI(void) override;
 
 		static void Init_Statics(void);
+		static Point2D Sonic_Shift(int amplitude, FacingType facing);
+		static unsigned short Sonic_Tint(unsigned short color, int amplitude, bool magnetron);
 
 	private:
 		void Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned short * buffer, Rect const & cliprect) const;
@@ -67,10 +69,10 @@ class WaveClass : public ObjectClass
 
 	private:
 		/*
-		 * This is the object that the wave was fired at. A sonic wave stays tethered to it,
+		 * This is the object or cell that the wave was fired at. A sonic wave stays tethered to it,
 		 * and stops growing and fades once the firer stops aiming at it or it strays too far.
 		 */
-		TechnoClass * Target;
+		AbstractClass * Target;
 
 		/*
 		 * This specifies what kind of wave this is. It selects the drawing and logic

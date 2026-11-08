@@ -12,10 +12,14 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "playerdisplay.h"
+#include "gpudraw.h"
+#include "shadowplane.h"
 #include "tactical.h"
 #include "flyingtext.h"
+#include "utf16.h"
 
 #include "_alpha.h"
 #include "_convert.h"
@@ -45,6 +49,8 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "linetrail.h"
 #include "radbeam.h"
 #include "fog.h"
@@ -66,10 +72,12 @@
 #include "isotype.h"
 #include "laser.h"
 #include "layer.h"
+#include "lightcon.h"
 #include "mixfile.h"
 #include "mouse.h"
 #include "overtype.h"
 #include "ovrlight.h"
+#include "ringglow.h"
 #include "rules.h"
 #include "savestream.h"
 #include "csf.h"
@@ -83,6 +91,7 @@
 #include "viewzoom.h"
 #include "terrain.h"
 #include "terrtype.h"
+#include "utf8.h"
 #include "vector.h"
 #include "vein.h"
 #include "waypoint.h"
@@ -94,7 +103,9 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 
 extern Point2D Lerp(Point2D const & a, Point2D const & b, float t);
@@ -146,7 +157,9 @@ Tactical::Tactical(void) :
 	WaypointAnimCounter(0),
 	WaypointAnimTimer()
 {
-	ScreenText[0] = '\0';
+	ScreenText[0] = L'\0';
+	CaptionStyle = CAPTION_NONE;
+	CaptionArtTried = false;
 
 	CoordToPixelMatrix.Make_Identity();
 	CoordToPixelMatrix.Rotate_X(RAD_60);
@@ -200,7 +213,8 @@ Tactical::~Tactical(void)
  * Pixel_To_Z_Lepton         - vertical pixel -> height lepton.
  * Coord_To_Cell - height-aware coord -> cell (picking).
  * Only the inverse uses a matrix (PixelToCoordMatrix); the forward path uses the integer
- * Rectangular_To_Isometric. CoordToPixelMatrix is the forward matrix but is currently unused.
+ * Rectangular_To_Isometric. CoordToPixelMatrix is the forward matrix; only the screen-relative
+ * damage smoke offset (TechnoTypeClass::Particle_System_Offset) applies it.
  */
 
 
@@ -1039,6 +1053,14 @@ void Tactical::Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool
 }
 
 
+static void Fill_Outside_Map(Surface & surface, Rect const & rect)
+{
+	if (!GpuDraw_Fill(surface, rect, TBLACK)) {
+		surface.Fill_Rect(rect, TBLACK);
+	}
+}
+
+
 /// <summary>
 /// Blacks out the parts of the tactical view that the map does not reach.
 /// </summary>
@@ -1056,19 +1078,19 @@ void Tactical::Render_Outside_Map(Surface & surface)
 	int bottom = TacticalRect.Y + maximum.Y + TacticalRect.Height / 2 - TacPixelY;
 
 	if (left > TacticalRect.X) {
-		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height));
 	}
 
 	if (right < TacticalRect.X + TacticalRect.Width) {
-		surface.Fill_Rect(Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height), TBLACK);
+		Fill_Outside_Map(surface, Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height));
 	}
 
 	if (top > TacticalRect.Y) {
-		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y));
 	}
 
 	if (bottom < TacticalRect.Y + TacticalRect.Height) {
-		surface.Fill_Rect(Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom));
 	}
 }
 
@@ -1216,6 +1238,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		LogicalSurface->Lock();
 
 		if (drawpass == DRAW_PASS_BACKGROUND || drawpass == DRAW_PASS_FULL) {
+			PerfScope terrain_scope(PERF_DRAW_TERRAIN);
 
 			/*
 			 * Build the two redraw strips that the pan exposed. 'xpanrect' is the full-height strip
@@ -1263,8 +1286,16 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 				ypanrect = bottomclip;
 			}
 
+			// The strip draws repaint colour without touching the emissive mask, so the mask in each strip starts clear.
+			Emissive_After_Fill(*LogicalSurface, xpanrect);
+			Emissive_After_Fill(*LogicalSurface, ypanrect);
+			ShadowPlane_After_Fill(*LogicalSurface, fullredraw ? TacticalRect : xpanrect);
+			ShadowPlane_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
-			Render_Shroud(xpanrect, ypanrect, bounds, fullredraw);
+			{
+				PerfScope shroud_scope(PERF_DRAW_SHROUD);
+				Render_Shroud(xpanrect, ypanrect, bounds, fullredraw);
+			}
 			Render_Tiles(xpanrect, ypanrect, fullredraw);
 			Render_Fogged_Objects(xpanrect, ypanrect, fullredraw);
 			Render_Overlays(xpanrect, ypanrect, fullredraw);
@@ -1290,30 +1321,54 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	LastTacPixelX = TacPixelX;
 	LastTacPixelY = TacPixelY;
 
-	if (drawpass == DRAW_PASS_BACKGROUND || drawpass == DRAW_PASS_FULL) {
+	if ((drawpass == DRAW_PASS_BACKGROUND && !GpuDraw_Tiles_Left()) || drawpass == DRAW_PASS_FULL) {
+		PerfScope tilecopy_scope(PERF_DRAW_TILECOPY);
 		LogicalSurface->Blit_From(TacticalRect, *TileSurface, TacticalRect);
+		if (drawpass == DRAW_PASS_FULL || !GpuDraw_Planned()) {
+			ShadowPlane_Darken(*LogicalSurface, TacticalRect, DSurface::Get_Halfbright_Mask());
+		}
+	} else if (drawpass == DRAW_PASS_BACKGROUND && Emissive_Is_Enabled()) {
+		// The pixels stay behind for the GPU pass, but the emissive values the last frame's objects left must go.
+		Emissive_After_Bit_Blit(*LogicalSurface, TacticalRect.X, TacticalRect.Y, *TileSurface, TacticalRect.X, TacticalRect.Y, TacticalRect.Width, TacticalRect.Height);
 	}
 
 	if (drawpass == DRAW_PASS_FOREGROUND || drawpass == DRAW_PASS_FULL) {
-		int i;
+		Render_Foreground(*composite);
+	}
+}
 
-		Add_Buildings_To_Selectable(TacticalRect);
-		composite->Lock();
-		Surface * savedlogical = LogicalSurface;
-		LogicalSurface = composite;
+
+void Tactical::Render_Foreground(Surface & composite)
+{
+	int i;
+
+	Add_Buildings_To_Selectable(TacticalRect);
+	composite.Lock();
+	Surface * savedlogical = LogicalSurface;
+	LogicalSurface = &composite;
+	{
+		PerfScope overlay_scope(PERF_DRAW_OVERLAY);
 		Draw_Waypoints(false);
-		Draw_Planned_Orders(false);
 		Draw_Rally_Points(false);
 		Draw_Placement(false);
+	}
 
 #ifdef _DEBUG
-		if (DrawOccupierLinks) Debug_Draw_Occupier_Links();
-		if (OccupationBitPrint) Debug_Draw_Occupation_Flags();
+	if (DrawOccupierLinks) Debug_Draw_Occupier_Links();
+	if (OccupationBitPrint) Debug_Draw_Occupation_Flags();
 #endif
 
+	{
+		PerfScope fx_scope(PERF_DRAW_FX);
 		VeinholeMonsterClass::Draw_All();
 		IonBlastClass::Draw_All();
+	}
+	{
+		PerfScope objects_scope(PERF_DRAW_OBJECTS);
 		Draw_Objects(true);
+	}
+	{
+		PerfScope fx_scope(PERF_DRAW_FX);
 		SpotLightClass::Draw_All();
 		LaserDrawClass::Draw_All();
 		EBoltClass::Draw_All();
@@ -1323,17 +1378,27 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Psychic_Lines();
 		Draw_Hidden_Markers();
 		Draw_Beacons();
+	}
 
-		for (i = 0; i < CurrentObject.Count(); i++) {
-			ObjectClass * object = CurrentObject[i];
-			if (object->Class_Of() != NULL && object->Class_Of()->IsHasRadialIndicator) {
-				object->Draw_Radial_Indicator();
-			}
+	for (i = 0; i < CurrentObject.Count(); i++) {
+		ObjectClass * object = CurrentObject[i];
+		if (object->Class_Of() != NULL && object->Class_Of()->IsHasRadialIndicator) {
+			object->Draw_Radial_Indicator();
 		}
+	}
 
+	for (i = 0; i < CurrentObject.Count(); i++) {
+		ObjectClass * object = CurrentObject[i];
+		if (object->Fetch_RTTI() == RTTI_BUILDING) {
+			static_cast<BuildingClass *>(object)->Draw_Defence_Range();
+		}
+	}
+
+	{
+		PerfScope overlay_scope(PERF_DRAW_OVERLAY);
 		Draw_Rubber_Band();
 		Draw_Waypoints(true);
-		Draw_Planned_Orders(true);
+		Draw_Planned_Orders();
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
 		Draw_Placement_Range();
@@ -1350,75 +1415,102 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			}
 		}
 
-		Render_Outside_Map(*composite);
-
-		LogicalSurface = savedlogical;
-		composite->Unlock();
-		Draw_Screen_Text(ScreenText);
-
-		IsFirstRender = false;
-		IsToRedraw = false;
+		Render_Outside_Map(composite);
+		Ring_Glow_Flush(composite);
 	}
+
+	LogicalSurface = savedlogical;
+	composite.Unlock();
+	Draw_Screen_Text(ScreenText);
+
+	IsFirstRender = false;
+	IsToRedraw = false;
 }
 
 
 /// <summary>
-/// Sets the caption text shown over the tactical view.
-/// The text is pulled from the string table, so the caller only has to know which message it
-/// wants displayed.
+/// Sets the caption shown over the tactical view.
+/// A caption is the text from the string table and the frame of the caption art that goes
+/// with it, as gamemd keeps them (0x6d4db0). A null text takes the text down.
 /// </summary>
-/// <param name="text_id">The string table identifier of the caption, or -1 to clear it.</param>
-void Tactical::Set_Caption_Text(int text_id)
+/// <param name="text">The caption text, or NULL for none.</param>
+/// <param name="style">The frame of GRFXTXT.SHP that is drawn in place of the text, or -1 for none.</param>
+void Tactical::Set_Caption_Text(wchar_t const * text, int style)
 {
-	if (text_id == -1) {
-		Clear_Caption_Text();
+	if (text == NULL) {
+		ScreenText[0] = L'\0';
 	} else {
-		strcpy(ScreenText, Fetch_String(text_id));
+		wcsncpy(ScreenText, text, ARRAY_SIZE(ScreenText) - 1);
+		ScreenText[ARRAY_SIZE(ScreenText) - 1] = L'\0';
 	}
+	CaptionStyle = style;
 }
 
 
 /// <summary>
-/// Clears the caption text shown over the tactical view.
+/// Clears the caption shown over the tactical view.
 /// </summary>
 void Tactical::Clear_Caption_Text(void)
 {
-	ScreenText[0] = '\0';
+	Set_Caption_Text(NULL, CAPTION_NONE);
 }
 
 
 /// <summary>
-/// Draws a line of text across the middle of the tactical view.
-/// This routine paints straight onto the composite surface with GDI, so it does nothing
-/// unless that surface can hand out a device context. It also stays quiet while the map
-/// editor is running.
+/// Fetches the caption art, GRFXTXT.SHP, which the game reads when it is first wanted, as
+/// gamemd reads it at start up (0x52ba60, GRFXTXT_SHP) when the file exists.
+/// </summary>
+/// <returns>The shape, or NULL when the game has no such file.</returns>
+ShapeSet const * Tactical::Caption_Art(void)
+{
+	if (!CaptionArtTried) {
+		CaptionArtTried = true;
+		CCFileClass file("GRFXTXT.SHP");
+		if (file.Is_Available()) {
+			CaptionArtData.reset((char *)Load_Alloc_Data(file));
+		}
+	}
+	return((ShapeSet const *)CaptionArtData.get());
+}
+
+
+/// <summary>
+/// Draws the caption across the middle of the tactical view.
+/// As gamemd does (0x6d4e20), the caption art, frame CaptionStyle of GRFXTXT.SHP, is centred in
+/// the area of the view that is not under the sidebar. Without the art or its palette, or when
+/// the style names no frame of it, the text is printed centred in the view in the interface's text
+/// colour instead. Nothing is drawn while the map editor is running.
 /// </summary>
 /// <param name="text">The text to display. A NULL or empty string draws nothing.</param>
-void Tactical::Draw_Screen_Text(char const * text)
+void Tactical::Draw_Screen_Text(wchar_t const * text)
 {
 	if (Debug_Map) {
 		return;
 	}
-	if (text == NULL || !strlen(text)) {
+	if ((text == NULL || !wcslen(text)) && CaptionStyle == CAPTION_NONE) {
 		return;
 	}
-	if (CompositeSurface->Is_GDI_Backed()) {
-		DSurface * surface = (DSurface *)CompositeSurface;
-		Rect rect = TacticalRect;
-		HDC hdc = surface->GetDC();
-		if (hdc != NULL) {
-			HFONT font = CreateFont(28, 20, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_RASTER_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_SWISS | DEFAULT_PITCH, NULL);
-			HGDIOBJ h = SelectObject(hdc, font);
-			Point2D point = Point2D(TacticalRect.Width / 2, TacticalRect.Height / 2);
-			SetBkMode(hdc, TRANSPARENT);
-			SetTextAlign(hdc, TA_CENTER);
-			SetTextColor(hdc, RGB(255, 255, 255));
-			TextOut(hdc, rect.X + point.X, rect.Y + point.Y, text, strlen(text));
-			SelectObject(hdc, h);
-			DeleteObject(font);
-			surface->ReleaseDC(hdc);
+
+	if (CaptionStyle != CAPTION_NONE && GrfxTxtDrawer != NULL) {
+		ShapeSet const * art = Caption_Art();
+		if (art != NULL && CaptionStyle < art->Get_Count()) {
+			// gamemd centres the art in its view, which has no sidebar in it. Horizontally this is the
+			// map area left of the modern panel, or the classic layout's view; vertically it is the whole view.
+			Rect const view = Tactical_View_Rect();
+			int const right = Modern_Interface() ? Hud_Layout().Panel.X : view.X + view.Width;
+			Point2D const centre = Screen_To_View_Offset(Point2D(view.X + (right - view.X) / 2 - ScreenTacticalRect.X, 0));
+			Point2D point(TacticalRect.X + centre.X - art->Get_Width() / 2, TacticalRect.Y + (TacticalRect.Height - art->Get_Height()) / 2);
+			Draw_Shape(*CompositeSurface, *GrfxTxtDrawer, art, CaptionStyle, point, TacticalRect, SHAPE_NORMAL);
+			return;
 		}
 	}
+
+	if (text == NULL || !wcslen(text)) {
+		return;
+	}
+	std::string const line = Wide_To_UTF8(text);
+	Point2D const point(TacticalRect.X + TacticalRect.Width / 2, TacticalRect.Y + TacticalRect.Height / 2);
+	Simple_Text_Print(line.c_str(), *CompositeSurface, TacticalRect, point, ColorSchemes[GadgetClass::Get_Color_Scheme()], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT | TPF_FULLSHADOW), 1);
 }
 
 
@@ -1437,8 +1529,9 @@ void Tactical::Draw_Placement(bool drawtrans)
 		return;
 	}
 
+	// The pointer is in screen pixels, so it is tested against the view's screen rectangle, not the zoomed map rectangle.
 	Point2D mouse = MouseCursor->Get_Mouse_Point();
-	if (!TacticalRect.Is_Point_Within(mouse)) {
+	if (!ScreenTacticalRect.Is_Point_Within(mouse)) {
 		return;
 	}
 
@@ -1511,28 +1604,14 @@ void Tactical::Draw_Placement(bool drawtrans)
 
 
 /// <summary>
-/// Fetches the horizontal radius, in pixels, of a range ring that spans a number of cells.
-/// The vertical radius is half of it. The projection makes a sensor array's ring and a placement
-/// ring of the same radius the same size.
+/// Fetches the horizontal radius, in pixels, of a range ring that spans a number of cells, as
+/// Game::DrawRadialIndicator (0x456980) sizes it. The vertical radius is half of it.
 /// </summary>
 /// <param name="cells">The radius in cells.</param>
-/// <returns>Returns with the radius in pixels, which is 0 or less for a radius under one cell.</returns>
+/// <returns>Returns with the radius in pixels.</returns>
 int Tactical::Radial_Ring_Radius(double cells)
 {
-	static const int _iso_tile_edge = 34;
-
-	/*
-	 * Project the radius onto the isometric axes and express it in pixels. The
-	 * 16/17 factor is cos(atan(1/4)) squared, so the spans are the radius resolved
-	 * along the view axes, and 0.265625 is 34/128 -- one isometric tile edge per
-	 * half cell. The final tile edge comes back off to cancel the half cell that
-	 * was added to the radius.
-	 */
-	double leptons = cells * CELL_LEPTON + CELL_LEPTON / 2;
-	double xspan = std::sqrt(leptons * leptons * (16.0 / 17.0));
-	double yspan = xspan * 0.25;
-	double spansq = 0.25 * (4.0 * yspan * yspan + xspan * xspan);
-	return((int)(std::sqrt(spansq) * 0.265625 - _iso_tile_edge));
+	return((int)(((double)cells + 0.5) / std::sqrt(2.0) * 60.0));
 }
 
 
@@ -1545,8 +1624,24 @@ int Tactical::Radial_Ring_Radius(double cells)
 /// <param name="color">The colour of the outline.</param>
 void Tactical::Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color)
 {
-	int radius = Radial_Ring_Radius(cells);
-	if (cells < 1 || radius < 1) {
+	if (cells < 1) {
+		return;
+	}
+	Draw_Range_Ring_Pixels(center, Radial_Ring_Radius(cells), color);
+}
+
+
+/// <summary>
+/// Draws a range ring of a horizontal radius in pixels, two pixels thick, as
+/// Game::DrawRadialIndicator (0x456980) draws it. Nothing is drawn for a radius under one
+/// pixel, or a ring that lies wholly outside the tactical view.
+/// </summary>
+/// <param name="center">The world coordinate at the centre of the ring.</param>
+/// <param name="radius">The horizontal radius in pixels; the vertical radius is half of it.</param>
+/// <param name="color">The colour of the outline.</param>
+void Tactical::Draw_Range_Ring_Pixels(Coord const & center, int radius, RGBClass const & color)
+{
+	if (radius < 1) {
 		return;
 	}
 
@@ -1556,7 +1651,9 @@ void Tactical::Draw_Range_Ring(Coord const & center, double cells, RGBClass cons
 
 	Rect bounds = Rect(Point2D(point.X - radius, point.Y - radius / 2), 2 * radius, radius);
 	if (Intersect(bounds, TacticalRect).Is_Valid()) {
-		LogicalSurface->Draw_Ellipse(point, radius, radius / 2, TacticalRect, DSurface::Build_Hicolor_Pixel(color.Get_Red(), color.Get_Green(), color.Get_Blue()));
+		unsigned const pixel = DSurface::Build_Hicolor_Pixel(color.Get_Red(), color.Get_Green(), color.Get_Blue());
+		LogicalSurface->Draw_Ellipse(point, radius, radius / 2, TacticalRect, pixel);
+		LogicalSurface->Draw_Ellipse(point, radius - 1, radius / 2 - 1, TacticalRect, pixel);
 	}
 }
 
@@ -1573,8 +1670,9 @@ void Tactical::Draw_Placement_Range(void)
 		return;
 	}
 
+	// The pointer is in screen pixels, so it is tested against the view's screen rectangle, not the zoomed map rectangle.
 	Point2D mouse = MouseCursor->Get_Mouse_Point();
-	if (!TacticalRect.Is_Point_Within(mouse) || !Map.In_Radar(Map.ZoneCell)) {
+	if (!ScreenTacticalRect.Is_Point_Within(mouse) || !Map.In_Radar(Map.ZoneCell)) {
 		return;
 	}
 
@@ -1633,7 +1731,7 @@ void Tactical::Draw_Super_Range(void)
 	}
 
 	Point2D mouse = MouseCursor->Get_Mouse_Point();
-	if (!TacticalRect.Is_Point_Within(mouse)) {
+	if (!ScreenTacticalRect.Is_Point_Within(mouse)) {
 		return;
 	}
 
@@ -1642,7 +1740,9 @@ void Tactical::Draw_Super_Range(void)
 		return;
 	}
 
-	Cell cell = Pixel_To_Cell(mouse);
+	// Pixel_To_Cell takes a map pixel, so the screen pointer goes through the zoom first, as a click does (ScrollClass::Resolve_Point).
+	Point2D const view = TacticalRect.Top_Left() + Screen_To_View_Point(mouse);
+	Cell cell = Pixel_To_Cell(view);
 	if (!Map.In_Radar(cell)) {
 		return;
 	}
@@ -2670,17 +2770,35 @@ void Tactical::Scroll_Map(FacingType facing, int distance)
 
 
 /// <summary>
+/// Returns the area of absolute pixels that the scroll limits keep a tactical view inside.
+/// A view no wider or taller than the area fits on the local map. The view stops at the map's
+/// edges in every layout, so the modern panel covers the top right of the map rather than
+/// letting the view show past the edge.
+/// </summary>
+Rect Tactical_Visible_Map_Area(void)
+{
+	int const left = -(ISO_TILE_PIXEL_W >> 1) * (Map.PlayRect.Width - 2 * Map.LocalRect.X);
+	int const top = (ISO_TILE_PIXEL_H >> 1) * (Map.PlayRect.Width + 2 * Map.LocalRect.Y - 5);
+	int const width = ISO_TILE_PIXEL_W * Map.LocalRect.Width;
+	int const height = ISO_TILE_PIXEL_H * (2 * Map.LocalRect.Height + 9) / 2;
+	return(Rect(left, top, width, height));
+}
+
+
+/// <summary>
 /// Works out the limits a tactical view position may take.
 /// An axis whose playable area is smaller than the view comes back with its maximum below its
 /// minimum.
 /// </summary>
 void Tactical::Tactical_Position_Limits(Point2D & minimum, Point2D & maximum)
 {
-	minimum.X = TacticalRect.Width / 2 - (ISO_TILE_PIXEL_W >> 1) * (Map.PlayRect.Width - 2 * Map.LocalRect.X);
-	maximum.X = minimum.X + ISO_TILE_PIXEL_W * Map.LocalRect.Width - TacticalRect.Width;
+	Rect const area = Tactical_Visible_Map_Area();
 
-	minimum.Y = TacticalRect.Height / 2 + (ISO_TILE_PIXEL_H >> 1) * (Map.PlayRect.Width + 2 * Map.LocalRect.Y - 5);
-	maximum.Y = minimum.Y + ISO_TILE_PIXEL_H * (2 * Map.LocalRect.Height + 9) / 2 - TacticalRect.Height;
+	minimum.X = area.X + TacticalRect.Width / 2;
+	maximum.X = minimum.X + area.Width - TacticalRect.Width;
+
+	minimum.Y = area.Y + TacticalRect.Height / 2;
+	maximum.Y = minimum.Y + area.Height - TacticalRect.Height;
 }
 
 
@@ -2696,12 +2814,6 @@ bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
 	Point2D minimum;
 	Point2D maximum;
 	Tactical_Position_Limits(minimum, maximum);
-
-	// The modern build panel covers the right of the view, so the view may scroll that far past the map's edge.
-	// The menu battle has no panel, so its view stops at the edge.
-	if (Modern_Interface() && !Shellmap_Running()) {
-		maximum.X += Screen_To_View_Offset(Point2D(HUD_PANEL_WIDTH, 0)).X;
-	}
 
 	if (maximum.X < minimum.X) {
 		minimum.X = maximum.X = (minimum.X + maximum.X) / 2;
@@ -2920,12 +3032,17 @@ void Tactical::Draw_Objects(bool forced)
 	 * Each entry is an object whose post-render hook is due, with the pixel it was drawn at. The
 	 * entries stay in layer order, as gamemd's second pass (Tactical::Draw_Objects, 0x6D8DB0) runs them.
 	 */
-	std::vector<std::pair<ObjectClass *, Point2D>> post_render;
+	// Kept between draws so that a draw allocates only when the list grows; nothing draws objects re-entrantly.
+	static std::vector<std::pair<ObjectClass *, Point2D>> post_render;
+	post_render.clear();
 
 	for (int layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {
 		for (int index = 0; index < DisplayClass::Layer[layer].Count(); index++) {
 			ObjectClass * obj = DisplayClass::Layer[layer][index];
 			RTTIType rtti = obj->RTTI;
+			if (rtti != RTTI_TERRAIN) {
+				Perf_Count(PERF_COUNT_OBJECTS);
+			}
 
 			if (rtti == RTTI_BUILDING || (rtti == RTTI_TERRAIN && !((TerrainClass *)obj)->Is_Animating())) {
 
@@ -3245,7 +3362,8 @@ void Tactical::Modify_Rubber_Band(Point2D const & point)
 /// proper screen rectangle, handed to the region selector, and then cleared.
 /// </summary>
 /// <param name="select_callback">Routine to call for each object the band caught.</param>
-void Tactical::Select_Rubber_Band(void (*select_callback)(ObjectClass * object))
+/// <param name="keep_out">View rectangle, such as the modern build panel, whose objects the band passes over; NULL for none.</param>
+void Tactical::Select_Rubber_Band(void (*select_callback)(ObjectClass * object), Rect const * keep_out)
 {
 	if (RubberBandStart != Point2D(0, 0)) {
 
@@ -3263,7 +3381,7 @@ void Tactical::Select_Rubber_Band(void (*select_callback)(ObjectClass * object))
 			std::swap(start.Y, end.Y);
 		}
 
-		Select_These(Rect(start, end.X - start.X + 1, end.Y - start.Y + 1), select_callback);
+		Select_These(Rect(start, end.X - start.X + 1, end.Y - start.Y + 1), select_callback, keep_out);
 		RubberBandStart = Point2D(0, 0);
 	}
 }
@@ -3494,9 +3612,12 @@ void Tactical::Detach(AbstractClass const * target, bool all)
  *   04/25/1995 JLB : Limited to non-building type.                                            *
  *   03/06/1996 JLB : Allows selection of aircraft with bounding box.                          *
  *=============================================================================================*/
-void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object))
+void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object), Rect const * keep_out)
 {
-	AllowVoice = true;
+	// A callback's selection decides for itself whether its objects speak.
+	if (select_callback == NULL) {
+		AllowVoice = true;
+	}
 
 	if (rect.Is_Valid()) {
 
@@ -3522,6 +3643,11 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 			**	selected, and are within the bounding box.
 			*/
 			if (!rect.Is_Point_Within(pos)) {
+				continue;
+			}
+
+			// An object under the keep-out area is not caught, even where the region covers it.
+			if (keep_out != NULL && keep_out->Is_Point_Within(pos)) {
 				continue;
 			}
 
@@ -3619,15 +3745,91 @@ void Tactical::Reset_Dirty_Rectangles(void)
 }
 
 
+// A beacon message wraps at this width in pixels (BeaconClass::Draw, 0x430250, passes 200 to the text measure).
+static constexpr int BEACON_LABEL_WIDTH = 200;
+
+
 /// <summary>
-/// Draws rally point lines for the player's selected production buildings. For every selected,
-/// player-owned factory that has a rally point assigned, a green dashed line is drawn from the
-/// building to its rally point cell. Rally points that fall under a high bridge are raised by
-/// the bridge height so the line terminates at the correct screen position.
+/// Splits a beacon message into lines no wider than the label width. A line ends at the last space
+/// that fits, or before the character that overflows when the line holds no space.
 /// </summary>
-/// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
+static std::vector<std::string> Split_Beacon_Label(char const * text, FontClass const & font)
+{
+	std::vector<std::string> lines;
+	char const * start = text;
+
+	while (*start != '\0') {
+		int width = 0;
+		char const * pos = start;
+		char const * space = NULL;
+		char const * after_space = NULL;
+		bool overflow = false;
+
+		while (*pos != '\0') {
+			char const * next = pos;
+			int const advance = font.Char_Pixel_Width(UTF8::Decode(next));
+			if (width + advance > BEACON_LABEL_WIDTH && pos > start) {
+				overflow = true;
+				break;
+			}
+			width += advance;
+			if (*pos == ' ') {
+				space = pos;
+				after_space = next;
+			}
+			pos = next;
+		}
+
+		char const * end = pos;
+		char const * next_start = pos;
+		if (overflow && space != NULL && space > start) {
+			end = space;
+			next_start = after_space;
+		}
+		lines.emplace_back(start, end);
+		start = next_start;
+	}
+	return(lines);
+}
+
+
 /// <summary>
-/// Draws each beacon the local player can see, with its message above it.
+/// Draws a beacon message in a black box, outlined in the house colour, whose top is 32 pixels below
+/// the beacon's point. The text is left-aligned in the box, inset by four pixels.
+/// </summary>
+/// <param name="clip">The view rectangle that the box and text are clipped to.</param>
+static void Draw_Beacon_Label(char const * text, Point2D const & point, ColorScheme * scheme, Rect const & clip)
+{
+	FontClass const * font = Font_From_TPF(TPF_EFNT);
+	std::vector<std::string> const lines = Split_Beacon_Label(text, *font);
+	if (lines.empty()) {
+		return;
+	}
+
+	int width = 0;
+	for (std::string const & line : lines) {
+		width = std::max(width, font->String_Pixel_Width(line.c_str()));
+	}
+	int const line_height = font->Get_Height();
+
+	Rect const box(point.X - width / 2 - 4, point.Y + 32, width + 8, int(lines.size()) * line_height + 8);
+	Rect const shown = Intersect(box, clip);
+	if (!shown.Is_Valid()) {
+		return;
+	}
+
+	LogicalSurface->Fill_Rect(shown, scheme->Converter->Convert_Pixel(TBLACK));
+	LogicalSurface->Draw_Rect(shown, scheme->Converter->Convert_Pixel(scheme->Color));
+
+	for (int row = 0; row < int(lines.size()); row++) {
+		Point2D const at(box.X + 4, box.Y + 4 + row * line_height);
+		Simple_Text_Print(lines[row].c_str(), *LogicalSurface, clip, at, scheme, 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW), 1);
+	}
+}
+
+
+/// <summary>
+/// Draws each beacon the local player can see: its marker, then its message below the marker.
 /// </summary>
 void Tactical::Draw_Beacons(void)
 {
@@ -3641,30 +3843,33 @@ void Tactical::Draw_Beacons(void)
 	}
 	int const half = shapes->Get_Count() / 2;
 
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			BeaconClass * beacon = Beacons.Get(house, slot);
-			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
-				continue;
-			}
+	Beacons.For_Each_Visible([&](int house, BeaconClass & beacon) {
+		Point2D pixel;
+		Coord_To_Pixel(beacon.Where, pixel);
+		pixel.Y += TacticalRect.Y;
 
-			Point2D pixel;
-			Coord_To_Pixel(beacon->Where, pixel);
-			pixel.Y += TacticalRect.Y;
+		// A selected beacon draws from the second half of its frames.
+		int const frame = (beacon.IsSelected ? half : 0) + Frame % half;
 
-			// A selected beacon draws from the second half of its frames.
-			int const frame = (beacon->IsSelected ? half : 0) + Frame % half;
-			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA));
+		// Without alpha lighting, shroud does not darken the marker, as in gamemd's beacon draw (0x430250, flags 0x600).
+		Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
-			if (beacon->Text[0] != '\0') {
-				Point2D label(pixel.X, pixel.Y - 25);
-				Simple_Text_Print(beacon->Text, *LogicalSurface, TacticalRect, label, ColorSchemes[House_Display_Scheme(Houses[house])], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
-			}
+		if (beacon.Text[0] != '\0') {
+			Draw_Beacon_Label(beacon.Text, pixel, ColorSchemes[House_Display_Scheme(Houses[house])], TacticalRect);
 		}
-	}
+	});
 }
 
 
+/// <summary>
+/// Draws rally point lines for the player's selected production buildings, as gamemd's
+/// TacticalClass::RenderLinkLines (0x6DA9D0) does. For every selected, player-owned factory that
+/// has a rally point assigned, a dashed line runs from the building's center to its rally point
+/// cell, two pixels thick in the owner's color with a black line under it. Rally points that fall
+/// under a high bridge are raised by the bridge height so the line ends at the correct screen
+/// position.
+/// </summary>
+/// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
 void Tactical::Draw_Rally_Points(bool inshroud)
 {
 	static bool _pattern[8] = {
@@ -3686,7 +3891,7 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 
 		/*
 		 * Only player-owned, selected, factory buildings with an assigned rally
-		 * point (and not currently deconstructing) should display a rally line.
+		 * point should display a rally line.
 		 */
 		if (object->What_Am_I() != RTTI_BUILDING) {
 			continue;
@@ -3714,10 +3919,6 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 			continue;
 		}
 
-		if (building->CurrentMission == MISSION_DECONSTRUCTION) {
-			continue;
-		}
-
 		/*
 		 * Compute the screen-space start point at the building's center.
 		 */
@@ -3740,10 +3941,18 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 		end += Point2D(TacticalRect.X, TacticalRect.Y);
 
 		/*
-		 * Clip the line to the tactical view and draw it as a marching green dash.
+		 * Draw the line three times, each clipped to the tactical view and each with the same
+		 * dash phase: black two pixels below the center line, then the owner's color one pixel
+		 * below it and on it.
 		 */
-		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
-			LogicalSurface->Draw_Masked_Dashed_Line(start, end, DSurface::Build_Hicolor_Pixel(0, 255, 0), _pattern, phase, inshroud);
+		int const shadow = DSurface::Build_Hicolor_Pixel(0, 0, 0);
+		int const color = DSurface::Build_Hicolor_Pixel(House_Display_RGB(building->House));
+		for (int pass = 0; pass < 3; pass++) {
+			Point2D from = start + Point2D(0, 2 - pass);
+			Point2D to = end + Point2D(0, 2 - pass);
+			if (Clip_Line_To_Rect(from, to, TacticalRect)) {
+				LogicalSurface->Draw_Masked_Dashed_Line(from, to, pass == 0 ? shadow : color, _pattern, phase, inshroud);
+			}
 		}
 	}
 }
@@ -3814,7 +4023,6 @@ class Dash_Table_Restore
 void Tactical::Draw_Waypoints(bool inshroud)
 {
 	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = WAYPOINT_MARKER_FRAME;
 
 	if (Debug_Map) {
 		return;
@@ -3822,8 +4030,15 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 	Dash_Table_Restore const dashtable;
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
-	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
+	ShapeSet const * mouseshapes = MouseClass::MouseShapes;
+
+	// The number is printed in color scheme 2, or 0 on a snow theater, as gamemd does (0x6DAD60). Each [Colors]
+	// entry makes two schemes, so scheme 2 is the plain one of the second entry (Gold) and scheme 0 the first
+	// entry's (LightGold) in the stock rules.
+	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? 0 : 2;
+	if (coloridx >= ColorSchemes.Count()) {
+		coloridx = 0;
+	}
 
 	for (PathType path = PATH_FIRST; path < PATH_COUNT; path++) {
 		PlayerPtr->Ensure_Path(path);
@@ -3855,10 +4070,11 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 			if (onscreen) {
 				Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
-				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
+				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, WAYPOINT_MARKER_FRAME, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
-				static char buffer[4];
-				sprintf(buffer, "%d", index);
+				// Holds any int, since MaxWaypointPathLength lets a path exceed 999 waypoints.
+				static char buffer[12];
+				std::snprintf(buffer, sizeof(buffer), "%d", index);
 				Point2D label(pixel.X - 1, pixel.Y - (TacticalRect.Y + 1) - 25);
 				Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, label, ColorSchemes[coloridx], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
 			}
@@ -3909,64 +4125,32 @@ static bool Planned_Leg_Coord(xTargetClass const & leg, Coord & coord)
 
 
 /// <summary>
-/// Draws the planned orders of the local player's units over the tactical view.
-/// Each plan runs from its unit through the destination of each leg still to run. The leg in
-/// progress is drawn unnumbered, and each queued order is marked with the waypoint cursor and
-/// its index in the queue. Every leg is an animated dashed line.
+/// Blends a color toward another by factor / 256, as gamemd's color blend (0x6612C0) does: each
+/// channel moves by the distance to the target times the factor, divided by 256 and truncated.
 /// </summary>
-/// <param name="inshroud">Draw the plans under shroud rather than the visible ones?</param>
-void Tactical::Draw_Planned_Orders(bool inshroud)
+static RGBClass Planned_Blend(RGBClass const & from, RGBClass const & toward, int factor)
 {
-	if (Debug_Map) {
-		return;
-	}
-
-	Dash_Table_Restore const dashtable;
-
-	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = Map.Get_Mouse_Start_Frame(MOUSE_WAYPOINT);
-	frame += WaypointAnimCounter % Map.Get_Mouse_Frame_Count(MOUSE_WAYPOINT);
-
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHP");
-	unsigned color = MouseDrawer->Convert_Pixel(3);
-	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
-
-	auto draw_leg = [&](Coord const & from, Coord const & to) {
-		Point2D start;
-		Point2D end;
-		Coord_To_Pixel(from, start);
-		Coord_To_Pixel(to, end);
-		start.Y += TacticalRect.Y;
-		end.Y += TacticalRect.Y;
-
-		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
-			phase = LogicalSurface->Draw_Masked_Dashed_Line(start, end, color, Draw_WaypointPoint_Line_Style, phase, inshroud);
-		}
+	auto channel = [factor](int value, int target) {
+		int const step = (target - value) * factor;
+		return(value + ((step + (step < 0 ? 255 : 0)) >> 8));
 	};
+	return(RGBClass(channel(from.Get_Red(), toward.Get_Red()), channel(from.Get_Green(), toward.Get_Green()), channel(from.Get_Blue(), toward.Get_Blue())));
+}
 
-	/*
-	 * The marker is drawn only when the place lies within the padded view and on the requested
-	 * side of the shroud. A negative index leaves the marker unnumbered.
-	 */
-	auto draw_marker = [&](Coord const & at, int index) {
-		Point2D pixel;
-		bool onscreen = Coord_To_Pixel(at, pixel) && (Map.Is_Shrouded(at) == inshroud);
-		pixel.Y += TacticalRect.Y;
-		if (!onscreen) {
-			return;
-		}
 
-		Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
-		Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
+struct Leg
+{
+	Point2D From;
+	Point2D To;
+	MissionType Mission;
+	bool IsSelected;
+	bool IsRunning;
+	RGBClass Owner;
+};
 
-		if (index >= 0) {
-			char buffer[8];
-			sprintf(buffer, "%d", index);
-			Point2D label(pixel.X - 1, pixel.Y - (TacticalRect.Y + 1) - 25);
-			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, label, ColorSchemes[coloridx], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
-		}
-	};
 
+static void Collect_Planned_Legs(Tactical & tactical, std::vector<Leg> & legs)
+{
 	for (int footindex = 0; footindex < Feet.Count(); footindex++) {
 		FootClass * foot = Feet[footindex];
 		if (foot->House != PlayerPtr || !foot->IsActive || foot->IsInLimbo) {
@@ -3976,11 +4160,23 @@ void Tactical::Draw_Planned_Orders(bool inshroud)
 			continue;
 		}
 
+		auto add_leg = [&](Coord const & from, Coord const & to, MissionType mission) {
+			Leg leg;
+			tactical.Coord_To_Pixel(from, leg.From);
+			tactical.Coord_To_Pixel(to, leg.To);
+			leg.From += Point2D(TacticalRect.X, TacticalRect.Y);
+			leg.To += Point2D(TacticalRect.X, TacticalRect.Y);
+			leg.Mission = mission;
+			leg.IsSelected = foot->IsSelected;
+			leg.IsRunning = foot->IsPlanRunning;
+			leg.Owner = House_Display_RGB(foot->House);
+			legs.push_back(leg);
+		};
+
 		Coord from = foot->Center_Coord();
 		Coord to;
 		if (Planned_Leg_Coord(foot->PlannedLeg, to)) {
-			draw_leg(from, to);
-			draw_marker(to, -1);
+			add_leg(from, to, foot->HasPlannedRunningOrder ? foot->PlannedRunningOrder.Mission : MISSION_NONE);
 			from = to;
 		}
 
@@ -3988,12 +4184,132 @@ void Tactical::Draw_Planned_Orders(bool inshroud)
 			PlannedOrderClass const & order = foot->PlannedOrders[index];
 			xTargetClass const & place = order.Destination.Is_Valid() ? order.Destination : order.Target;
 			if (Planned_Leg_Coord(place, to)) {
-				draw_leg(from, to);
-				draw_marker(to, index);
+				add_leg(from, to, order.Mission);
 				from = to;
 			}
 		}
 	}
+}
+
+
+static void Draw_Planned_Legs(std::vector<Leg> const & legs)
+{
+	// Four on, four off, as the table at 0x836880 reads.
+	static bool pattern[16] = {
+		true, true, true, true, false, false, false, false,
+		true, true, true, true, false, false, false, false
+	};
+
+	if (legs.empty()) {
+		return;
+	}
+
+	RGBClass const black(0, 0, 0);
+	RGBClass const white(255, 255, 255);
+	int const phase = (((int)(0u - (unsigned)timeGetTime())) >> 5) & 0xf;
+
+	// A line is moved sideways by the offset: up or down when it runs more across than down, otherwise left or right.
+	auto draw_line = [&](Leg const & leg, int offset, unsigned color, bool animated) {
+		Point2D start = leg.From;
+		Point2D end = leg.To;
+		Point2D const shift = abs(end.X - start.X) > abs(end.Y - start.Y) ? Point2D(0, offset) : Point2D(offset, 0);
+		start += shift;
+		end += shift;
+		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
+			if (animated) {
+				LogicalSurface->Draw_Dashed_Line(start, end, color, pattern, phase);
+			} else {
+				LogicalSurface->Draw_Line(TacticalRect, start, end, color);
+			}
+		}
+	};
+
+	// The cursor frame of a leg's order, or -1 for none: area guard and attack move legs carry one.
+	auto icon_frame = [](Leg const & leg) {
+		if (leg.Mission == MISSION_GUARD_AREA) {
+			return(Map.Get_Mouse_Start_Frame(MOUSE_CURSOR_4C));
+		}
+		if (leg.Mission == MISSION_ATTACK_MOVE) {
+			return(Map.Get_Mouse_Start_Frame(MOUSE_CURSOR_4D));
+		}
+		return(-1);
+	};
+
+	// The middle of a leg, rounded toward zero; a leg has a box when it is longer than 36 pixels.
+	auto has_box = [](Leg const & leg, Point2D & middle) {
+		double const dx = leg.From.X - leg.To.X;
+		double const dy = leg.From.Y - leg.To.Y;
+		middle = Point2D((leg.From.X + leg.To.X) / 2, (leg.From.Y + leg.To.Y) / 2);
+		return((int)sqrt(dx * dx + dy * dy) > 36);
+	};
+
+	auto pixel = [](RGBClass const & rgb) {
+		return((unsigned)DSurface::Build_Hicolor_Pixel(rgb));
+	};
+
+	for (Leg const & leg : legs) {
+		unsigned const node = pixel(leg.IsSelected ? white : black);
+		for (int offset = -1; offset <= 2; offset++) {
+			draw_line(leg, offset, node, false);
+		}
+
+		Point2D middle;
+		if (icon_frame(leg) != -1 && has_box(leg, middle)) {
+			LogicalSurface->Draw_Rect(TacticalRect, Rect(middle.X - 10, middle.Y - 10, 21, 21), node);
+		}
+	}
+
+	ShapeSet const * mouseshapes = MouseClass::MouseShapes;
+	for (Leg const & leg : legs) {
+		unsigned const node = pixel(leg.IsSelected ? white : black);
+		unsigned const branch = pixel(leg.IsRunning ? Planned_Blend(leg.Owner, white, 0x64) : Planned_Blend(leg.Owner, black, 0x50));
+		for (int offset = 0; offset <= 1; offset++) {
+			draw_line(leg, offset, branch, true);
+		}
+
+		int const frame = icon_frame(leg);
+		Point2D middle;
+		if (frame != -1 && has_box(leg, middle)) {
+			Rect box(middle.X - 9, middle.Y - 9, 19, 19);
+			LogicalSurface->Draw_Rect(TacticalRect, box, branch);
+			LogicalSurface->Fill_Rect(TacticalRect, Rect(box.X + 1, box.Y + 1, box.Width - 2, box.Height - 2), node);
+
+			// The cursor is centred by hand, one pixel left of the middle, in window coordinates.
+			Point2D corner(middle.X - TacticalRect.X - mouseshapes->Get_Width() / 2 - 1, middle.Y - TacticalRect.Y - mouseshapes->Get_Height() / 2);
+			Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, corner, TacticalRect, SHAPE_WIN_REL);
+		}
+	}
+
+	for (Leg const & leg : legs) {
+		unsigned const mark = pixel(Planned_Blend(leg.Owner, black, 0x50));
+		LogicalSurface->Fill_Rect(TacticalRect, Rect(leg.To.X - 3, leg.To.Y - 3, 6, 6), mark);
+	}
+}
+
+
+/// <summary>
+/// Draws the planned orders of the local player's units over the tactical view, while planning mode
+/// is on, as gamemd's planning overlay (0x63B0A0, 0x63B150) does. Each plan runs from its unit
+/// through the destination of each leg still to run.
+/// </summary>
+/// <remarks>
+/// The overlay is drawn once, over the finished view, in three passes over every leg. The first
+/// is four solid lines in black, or in white for a selected unit, with an outline square at
+/// the middle of an area guard or attack move leg (0x63C690). The second is an animated line two
+/// pixels thick in the owner's color, dim before the plan runs and bright once it does, with a
+/// box holding that order's cursor on such a leg (0x63CAE0). The third is a square at each
+/// destination. A leg shorter than 37 pixels gets no box. The dashes march with the wall clock
+/// (timeGetTime), which only moves the picture and never the game state.
+/// </remarks>
+void Tactical::Draw_Planned_Orders(void)
+{
+	if (Debug_Map || !Map.IsPlanningMode) {
+		return;
+	}
+
+	std::vector<Leg> legs;
+	Collect_Planned_Legs(*this, legs);
+	Draw_Planned_Legs(legs);
 }
 
 
@@ -4063,10 +4379,7 @@ void Tactical::Draw_Mind_Control_Link(Coord const & from, Coord const & to, RGBC
 		unsigned const band = (8u * step - phase) & 0x1f8u;
 		if (band != 0 && band <= 0xf8) {
 			// Blends the channel toward 255 by band / 256, as gamemd's color blend (0x6612C0) does.
-			auto toward_white = [band](int channel) {
-				return(channel + (((255 - channel) * int(band)) >> 8));
-			};
-			segment = RGBClass(toward_white(rgb.Get_Red()), toward_white(rgb.Get_Green()), toward_white(rgb.Get_Blue()));
+			segment = Planned_Blend(rgb, RGBClass(255, 255, 255), int(band));
 		}
 		LogicalSurface->Draw_Line(TacticalRect, previous_pixel, pixel, DSurface::Build_Hicolor_Pixel(segment));
 
@@ -4234,7 +4547,16 @@ void Tactical::Serialize(SaveStreamClass & stream)
 {
 	BASECLASS::Serialize(stream);
 
-	stream.Serialize(ScreenText);
+	// The caption is saved as UTF-16 code units, so the layout is the same on every platform.
+	char16_t caption[ARRAY_SIZE(ScreenText)] = {};
+	if (stream.Is_Saving()) {
+		UTF16::From_Wide(ScreenText, caption);
+	}
+	stream.Serialize(caption);
+	if (stream.Is_Loading() && !stream.Was_Error()) {
+		UTF16::To_Wide(caption, ScreenText);
+	}
+	stream.Serialize(CaptionStyle);
 	stream.Serialize(LastAIFrame);
 	stream.Serialize(field_58);
 	stream.Serialize(field_59);
@@ -4269,18 +4591,12 @@ void Tactical::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Draws the radial range indicators for the selected objects.
-/// This routine is used by the tactical map render pass to show the effect radius of any
-/// currently selected object whose type asks for one.
-/// </summary>
-void Tactical::Draw_Radial_Indicators(void)
+static void Format_Timer_Line(char * buffer, std::size_t size, char const * label, int seconds)
 {
-	for (int i = 0; i < CurrentObject.Count(); i++) {
-		ObjectClass * obj = CurrentObject[i];
-		if (obj->Class_Of() && obj->Class_Of()->IsHasRadialIndicator) {
-			obj->Draw_Radial_Indicator();
-		}
+	if (seconds >= 3600) {
+		std::snprintf(buffer, size, "%s  %d:%02d:%02d", label, seconds / 3600, (seconds / 60) % 60, seconds % 60);
+	} else {
+		std::snprintf(buffer, size, "%s  %02d:%02d", label, seconds / 60, seconds % 60);
 	}
 }
 
@@ -4316,11 +4632,7 @@ void Tactical::Draw_Super_Timers(void)
 		int const seconds = (int)Scen->MissionTimer / TICKS_PER_SECOND;
 		std::string const label = Scen->MissionTimerText[0] != '\0' ? StringTable.Find_UTF8(Scen->MissionTimerText) : std::string();
 		char buffer[160];
-		if (seconds >= 3600) {
-			std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", label.c_str(), seconds / 3600, (seconds / 60) % 60, seconds % 60);
-		} else {
-			std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", label.c_str(), seconds / 60, seconds % 60);
-		}
+		Format_Timer_Line(buffer, sizeof(buffer), label.c_str(), seconds);
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
 		if (scheme == NULL) scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
@@ -4340,11 +4652,7 @@ void Tactical::Draw_Super_Timers(void)
 			int const seconds = left / 15;
 			char buffer[96];
 			char const * name = super->Class->Full_Name() != NULL && super->Class->Full_Name()[0] != '\0' ? super->Class->Full_Name() : super->Class->Name();
-			if (seconds >= 3600) {
-				std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", name, seconds / 3600, (seconds / 60) % 60, seconds % 60);
-			} else {
-				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
-			}
+			Format_Timer_Line(buffer, sizeof(buffer), name, seconds);
 			// A ready weapon's timer blinks once a second between the house colour and a grey (the original blinks
 			// between the house colour and a palette entry of its scheme).
 			ColorScheme * scheme = ColorSchemes[House_Display_Scheme(house)];
@@ -4368,9 +4676,6 @@ void Tactical::Draw_Super_Timers(void)
 static int ChronoEffectStart = -1;
 static int ChronoEffectFrames = 0;
 static int const CHRONO_EFFECT_HOLD = 45;
-
-// The bottom rows the swirl leaves untouched, as the original does with its status strip.
-static int const CHRONO_EFFECT_BOTTOM = 32;
 
 // The picture the swirl is drawn from: the scene before the white, then the scene after it.
 static std::unique_ptr<DSurface> ChronoPicture;
@@ -4402,6 +4707,7 @@ void Start_Chrono_Screen_Effect(int frames)
 	if (Rule->LetsDoTheTimeWarpOutAgain != VOC_NONE) {
 		Sound_Effect(Rule->LetsDoTheTimeWarpOutAgain, 1.0f, SOUND_PAN_CENTER, &ChronoSound);
 	}
+	Scripted_View_Zoom(true);
 }
 
 
@@ -4431,6 +4737,7 @@ static void End_Chrono_Screen_Effect(void)
 	if (ChronoLockedInput) {
 		ChronoLockedInput = false;
 		Unlock_Scenario_Input();
+		Restore_Player_View_Zoom();
 	}
 }
 
@@ -4449,7 +4756,8 @@ static void Take_Chrono_Picture(void)
 
 /// <summary>
 /// Draws the picture twirled into a swirl of the strength the count gives, with each pixel blended
-/// toward white by the count out of the total. Nothing is drawn when a surface is not 16 bits deep.
+/// toward white by the count out of the total. Only TacticalRect, the map view, is swirled; the rest of
+/// the surface keeps the scene drawn before the swirl. Nothing is drawn when a surface is not 16 bits deep.
 /// </summary>
 static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count, int total)
 {
@@ -4457,8 +4765,10 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 		return;
 	}
 
-	int const width = dest.Get_Width();
-	int const height = dest.Get_Height() - CHRONO_EFFECT_BOTTOM;
+	// The map surfaces share TacticalRect's coordinates while the map is zoomed, so one rect serves both.
+	Rect const area = Intersect(TacticalRect, dest.Get_Rect());
+	int const width = area.Width;
+	int const height = area.Height;
 	if (width <= 0 || height <= 0 || total <= 0) {
 		return;
 	}
@@ -4479,12 +4789,14 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 		{DSurface::GreenRight, (1 << (8 - DSurface::GreenLeft)) - 1},
 		{DSurface::BlueRight, (1 << (8 - DSurface::BlueLeft)) - 1}};
 
-	char const * spixels = (char const *)picture.Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock picture_lock(picture);
+	SurfaceLock dest_lock(dest);
+	char const * spixels = picture_lock.As<char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < height; y++) {
 			double const dy = y - cy;
-			unsigned short * drow = (unsigned short *)(dpixels + y * dest.Stride());
+			unsigned short * drow = (unsigned short *)(dpixels + (area.Y + y) * dest.Stride()) + area.X;
 			for (int x = 0; x < width; x++) {
 				double const dx = x - cx;
 				double angle = (1.0 - (dx * dx + dy * dy) / radius2) * 5.0;
@@ -4494,7 +4806,7 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 
 				int const sx = std::clamp((int)std::floor(s * dx + c * dy + cx + 0.5), 0, width - 1);
 				int const sy = std::clamp((int)std::floor(s * dy - c * dx + cy + 0.5), 0, height - 1);
-				unsigned short const source = ((unsigned short const *)(spixels + sy * picture.Stride()))[sx];
+				unsigned short const source = ((unsigned short const *)(spixels + (area.Y + sy) * picture.Stride()))[area.X + sx];
 
 				int pixel = 0;
 				for (int index = 0; index < 3; index++) {
@@ -4504,12 +4816,6 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 				drow[x] = (unsigned short)pixel;
 			}
 		}
-	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (spixels != NULL) {
-		picture.Unlock();
 	}
 }
 

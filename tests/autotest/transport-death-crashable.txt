@@ -11,7 +11,7 @@
 42 own E1 59 21
 50 enter E1 60 20
 150 where E1
-160 rules E:\Claude ra2 decomp\src-agent17\tests\autotest\crashable-ifv.ini
+160 rules crashable-ifv.ini
 170 hit FV:AP 5000
 180 where E1
 180 where FV

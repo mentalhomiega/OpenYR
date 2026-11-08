@@ -69,6 +69,8 @@
 #include "_keyboar.h"
 #include "_map.h"
 #include "_palette.h"
+#include "replay.h"
+#include "spawner.h"
 #include "_rules.h"
 #include "_source.h"
 #include "_surface.h"
@@ -112,6 +114,7 @@
 #include "netshare.h"
 #include "progress.h"
 #include "queue.h"
+#include "report/reportsend.h"
 #include "restate.h"
 #include "rules.h"
 #include "savemgr.h"
@@ -378,6 +381,9 @@ void Main_Game(int argc, char * argv[])
 	// The watchdog times only what runs after one-time initialization.
 	Hang_Watchdog_Start();
 
+	// Offers the reports of a crash or freeze in an earlier run, if ReportURL is set.
+	Report_Startup();
+
 	/*
 	**	Game processing loop:
 	**	1) Select which game to play, or whether to exit (don't fade the palette
@@ -480,10 +486,16 @@ void Main_Game(int argc, char * argv[])
 
 		DebugString("Game loop finished. Average FPS = %d\n", SecondsPassed ? TotalFrames / SecondsPassed : 0);
 
+		Replay_Finish();
+		Spawner_Release();
+
 		Print_MP_Stats();
 
 		//VisiblePage.Clear();
 		Title_Screen_Restore(true);
+
+		// Offers an out-of-sync report this seat wrote during the match, if ReportURL is set.
+		Report_After_Match();
 
 		Prep_For_No_Side();
 
@@ -544,8 +556,19 @@ void Call_Back(void)
 	**	Music and speech maintenance
 	*/
 	if (AudioEngine.Is_Available() && GameInFocus == true) {
-		AudioEngine.Sound_Callback();
-		Sound_Effect_AI();
+		// The loop runs this thousands of times a second when drawing is uncapped. Voices are serviced
+		// every 2 ms, and positional and ambient sounds about 60 times a second; gamemd refreshes them once per game frame.
+		static unsigned last_service;
+		static unsigned last_effects;
+		unsigned const now = AudioEngine.Now_Ms();
+		if (now - last_service >= 2) {
+			last_service = now;
+			AudioEngine.Sound_Callback();
+		}
+		if (now - last_effects >= 16) {
+			last_effects = now;
+			Sound_Effect_AI();
+		}
 		Theme.AI();
 		Speak_AI();
 	}
@@ -690,7 +713,7 @@ void IPX_Call_Back(void)
 							std::string const name = sender->Name;
 							if (Ipx.Connection_Index(house) >= 0) {
 								Forget_Kick_Player(house);
-								Destroy_Connection(house, 0);
+								Destroy_Connection_And_Frame_Sync(house, 0);
 								DesyncDialog.Notify_Player_Left(house, name.c_str());
 							} else if (SaveManager.Multiplayer_Load_Is_In_Progress()) {
 								// The connections are rebuilt after the load, so the seat itself goes.

@@ -1,0 +1,108 @@
+; A healthy Service Depot (GADEPT) repairs a damaged Grizzly (MTNK), which then drives away. Logs the depot's animation slots (banimstate) as the repair goes.
+; Expected, from gamemd's BuildingClass::AnimExpired (0x451B40): the idle animation (slot 18) plays before the repair and is ended when it starts;
+; SpecialAnim (slot 10, the opening) is followed by SpecialAnimTwo (slot 11, the repair loop); when the repair is done SpecialAnimThree (slot 12, the closing)
+; and the active animation (slot 3) start; and when the closing animation ends, the idle animation (slot 18) returns.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/depot-repair-idle.txt -Map XMP29U2.MAP -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir "E:/Claude ra2 decomp/scratch-agent/building-anim-expired/depot" -Filter "AUTOTEST   banimstate|AUTOTEST     slot|AUTOTEST   where|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 own GADEPT 60 22
+102 own MTNK 60 28
+104 reveal
+105 view 61 23
+200 banimstate GADEPT
+202 damage MTNK 200
+204 command ScreenCapture
+210 enter MTNK 60 22
+215 banimstate GADEPT
+216 command ScreenCapture
+216 where MTNK
+230 banimstate GADEPT
+245 banimstate GADEPT
+246 command ScreenCapture
+246 where MTNK
+260 banimstate GADEPT
+275 banimstate GADEPT
+276 command ScreenCapture
+276 where MTNK
+290 banimstate GADEPT
+305 banimstate GADEPT
+306 command ScreenCapture
+306 where MTNK
+320 banimstate GADEPT
+335 banimstate GADEPT
+336 command ScreenCapture
+336 where MTNK
+350 banimstate GADEPT
+365 banimstate GADEPT
+366 command ScreenCapture
+366 where MTNK
+380 banimstate GADEPT
+395 banimstate GADEPT
+396 command ScreenCapture
+396 where MTNK
+410 banimstate GADEPT
+425 banimstate GADEPT
+426 command ScreenCapture
+426 where MTNK
+440 banimstate GADEPT
+455 banimstate GADEPT
+456 command ScreenCapture
+456 where MTNK
+470 banimstate GADEPT
+485 banimstate GADEPT
+486 command ScreenCapture
+486 where MTNK
+500 banimstate GADEPT
+515 banimstate GADEPT
+516 command ScreenCapture
+516 where MTNK
+530 banimstate GADEPT
+545 banimstate GADEPT
+546 command ScreenCapture
+546 where MTNK
+560 banimstate GADEPT
+575 banimstate GADEPT
+576 command ScreenCapture
+576 where MTNK
+590 banimstate GADEPT
+605 banimstate GADEPT
+606 command ScreenCapture
+606 where MTNK
+620 banimstate GADEPT
+635 banimstate GADEPT
+636 command ScreenCapture
+636 where MTNK
+650 banimstate GADEPT
+665 banimstate GADEPT
+666 command ScreenCapture
+666 where MTNK
+680 banimstate GADEPT
+695 banimstate GADEPT
+696 command ScreenCapture
+696 where MTNK
+710 banimstate GADEPT
+725 banimstate GADEPT
+726 command ScreenCapture
+726 where MTNK
+740 banimstate GADEPT
+755 banimstate GADEPT
+756 command ScreenCapture
+756 where MTNK
+770 banimstate GADEPT
+785 banimstate GADEPT
+786 command ScreenCapture
+786 where MTNK
+800 banimstate GADEPT
+815 banimstate GADEPT
+816 command ScreenCapture
+816 where MTNK
+830 banimstate GADEPT
+845 banimstate GADEPT
+846 command ScreenCapture
+846 where MTNK
+860 banimstate GADEPT
+875 banimstate GADEPT
+876 command ScreenCapture
+876 where MTNK
+890 banimstate GADEPT
+905 quit

@@ -1,0 +1,106 @@
+; Resource census: glides the map zoom out and in many times, then opens and closes the in-game options menu six times,
+; then glides and scrolls again. The GPU: lines (bgfx counts) and the UI gameopt.rml lines show whether live textures and
+; buffers keep rising across the cycles. Each menu step waits for the Resume button, so a step never runs before its menu opens.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/zoom-options-census.txt -Width 1920 -Height 1080 -Seconds 200 -RenderFrameRate 60 -Filter "AUTOTEST|Exception|GPU:|UI: gameopt|UISCRIPT"
+; -RenderFrameRate 60 makes the game log a GPU: game line each second; without it the zoom phase logs no counts.
+1 glideclock
+30 command CenterBase
+60 wheel -0.3
+74 wheel 0.3
+88 wheel -0.3
+102 wheel 0.3
+116 wheel -0.3
+130 wheel 0.3
+144 wheel -0.3
+158 wheel 0.3
+172 wheel -0.3
+186 wheel 0.3
+200 wheel -0.3
+214 wheel 0.3
+228 wheel -0.3
+242 wheel 0.3
+256 wheel -0.3
+270 wheel 0.3
+284 wheel -0.3
+298 wheel 0.3
+312 wheel -0.3
+326 wheel 0.3
+340 wheel -0.3
+354 wheel 0.3
+368 wheel -0.3
+382 wheel 0.3
+396 options
+456 options
+516 options
+576 options
+636 options
+696 options
+756 wheel -0.3
+770 wheel 0.3
+784 wheel -0.3
+798 wheel 0.3
+812 wheel -0.3
+826 wheel 0.3
+840 wheel -0.3
+854 wheel 0.3
+868 wheel -0.3
+882 wheel 0.3
+896 wheel -0.3
+910 wheel 0.3
+924 wheel -0.3
+938 wheel 0.3
+952 wheel -0.3
+966 wheel 0.3
+980 wheel -0.3
+994 wheel 0.3
+1008 wheel -0.3
+1022 wheel 0.3
+1036 wheel -0.3
+1050 wheel 0.3
+1064 wheel -0.3
+1078 wheel 0.3
+1092 wheel -0.3
+1106 wheel 0.3
+1120 wheel -0.3
+1134 wheel 0.3
+1148 wheel -0.3
+1162 wheel 0.3
+1176 wheel -0.3
+1190 wheel 0.3
+1204 wheel -0.3
+1218 wheel 0.3
+1232 wheel -0.3
+1246 wheel 0.3
+1260 wheel -0.3
+1274 wheel 0.3
+1288 wheel -0.3
+1302 wheel 0.3
+1316 view 33 42
+1320 view 36 44
+1324 view 39 46
+1328 view 42 48
+1332 view 45 50
+1336 view 48 52
+1340 view 51 54
+1344 view 54 56
+1348 view 57 58
+1352 view 60 60
+1396 quit
+ui waitfor resume
+ui wait 1500
+ui press Resume Mission
+ui waitfor resume
+ui wait 1500
+ui press Resume Mission
+ui waitfor resume
+ui wait 1500
+ui press Resume Mission
+ui waitfor resume
+ui wait 1500
+ui press Resume Mission
+ui waitfor resume
+ui wait 1500
+ui press Resume Mission
+ui waitfor resume
+ui wait 1500
+ui press Resume Mission

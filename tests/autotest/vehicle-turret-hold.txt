@@ -1,0 +1,68 @@
+; A Grizzly (MTNK) at 60,36 faces north and shoots an Allied Pill Box (GAPILL) at 63,36, due east, so its turret turns to 64 while the
+; body stays at 0. The pill box is then destroyed with kill. gamemd's UnitClass::UpdateRotation (0x736990) leaves an idle
+; turret where it is until GuardAreaTargetingDelay plus 5 frames (41 in the stock rules) have passed since the last shot, then turns
+; it back to the hull. The turretcoord lines give the turret facing every few frames.
+; Expected: the turret stays at 64 after the kill until 41 frames after the tank's last shot (about frame 262 in the stock rules), then turns back to 0.
+; Without the hold it starts turning back at frame 241, the first frame with no target.
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/vehicle-turret-hold.txt -Build agentNN -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   turretcoord [A-Z]|AUTOTEST   (damage|strike)|Exception"
+30 command CenterBase
+60 reveal
+100 own MTNK 60 36
+120 spawn GAPILL 63 36
+140 turretcoord MTNK
+150 turretcoord MTNK
+160 turretcoord MTNK
+170 turretcoord MTNK
+180 turretcoord MTNK
+190 turretcoord MTNK
+200 turretcoord MTNK
+210 turretcoord MTNK
+220 turretcoord MTNK
+230 turretcoord MTNK
+240 kill GAPILL
+244 turretcoord MTNK
+248 turretcoord MTNK
+252 turretcoord MTNK
+256 turretcoord MTNK
+260 turretcoord MTNK
+264 turretcoord MTNK
+268 turretcoord MTNK
+272 turretcoord MTNK
+276 turretcoord MTNK
+280 turretcoord MTNK
+284 turretcoord MTNK
+288 turretcoord MTNK
+292 turretcoord MTNK
+296 turretcoord MTNK
+300 turretcoord MTNK
+304 turretcoord MTNK
+308 turretcoord MTNK
+312 turretcoord MTNK
+316 turretcoord MTNK
+320 turretcoord MTNK
+324 turretcoord MTNK
+328 turretcoord MTNK
+332 turretcoord MTNK
+336 turretcoord MTNK
+340 turretcoord MTNK
+344 turretcoord MTNK
+348 turretcoord MTNK
+352 turretcoord MTNK
+356 turretcoord MTNK
+360 turretcoord MTNK
+364 turretcoord MTNK
+368 turretcoord MTNK
+372 turretcoord MTNK
+376 turretcoord MTNK
+380 turretcoord MTNK
+384 turretcoord MTNK
+388 turretcoord MTNK
+392 turretcoord MTNK
+396 turretcoord MTNK
+400 turretcoord MTNK
+404 turretcoord MTNK
+408 turretcoord MTNK
+412 turretcoord MTNK
+416 turretcoord MTNK
+420 turretcoord MTNK
+430 quit

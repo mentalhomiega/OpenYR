@@ -1,0 +1,16 @@
+; A player destroyer (DEST) at 86,70 on the lake of XMP08T2 shoots a neutral destroyer at 80,67, then a Grizzly (MTNK) on the shore shells the ship too.
+; Expected, from gamemd's FUN_0048A4F0 (WarheadTypeClass animation choice, 0x48A4F0): a Conventional warhead that explodes on a water cell, at no more than two levels
+; above it, shows the SplashList animation chosen by damage (35 points per entry, the last for anything larger), and any other warhead shows its AnimList entry.
+; The AUTOTEST explode lines give the land type and animation of each blast; the screenshots (every 3 frames) show the splashes.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/weapon-anim-water-shell.txt -Map XMP08T2.MAP -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/scratch-agent/weapon-effect-anims/water" -Filter "AUTOTEST explode|AUTOTEST own|AUTOTEST neutral|Exception"
+30 command CenterBase
+35 reveal
+40 neutral DEST 80 67
+50 own DEST 86 70
+60 view 83 68
+61 zoom 2
+62 follow DEST
+80 record 3
+90 strike DEST 80 67
+300 record 0
+310 quit

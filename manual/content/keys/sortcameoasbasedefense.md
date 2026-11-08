@@ -13,4 +13,4 @@ A wall or a gate stays in its own group whatever this key says, because those gr
 
 A mod that sets [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-buildingtype) only so the computer rates a structure as a base defense can write `SortCameoAsBaseDefense=no` to keep its cameo among the ordinary structures.
 
-With [`SidebarSorting=no`](/keys/sidebarsorting/), the strips are not sorted and this key has no effect.
+The key has an effect only with [`UseCameoSortOrder=yes`](/keys/usecameosortorder/) and [`SidebarSorting`](/keys/sidebarsorting/) on.

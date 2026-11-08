@@ -29,7 +29,7 @@
  *---------------------------------------------------------------------------------------------*
  * Functions:                                                                                  *
  *   PowerClass::AI -- Process the power bar logic.                                            *
- *   PowerClass::Draw_It -- Renders the power bar graphic.                                     *
+ *   PowerClass::Draw_Power_Bar -- Renders the power bar graphic.                              *
  *   PowerClass::Init_Clear -- Clears all the power bar variables.                             *
  *   PowerClass::One_Time -- One time processing for the power bar.                            *
  *   PowerClass::PowerButtonClass::Action -- Handles the mouse over the power bar area.        *
@@ -356,19 +356,6 @@ int PowerClass::Desired_Levels(int & green, int & yellow, int & red)
 }
 
 
-/// <summary>
-/// Draws the power bar and then the radar.
-/// The sidebar calls Draw_Power_Bar itself, after its body, so this routine is only used where
-/// the bar comes first.
-/// </summary>
-/// <param name="complete">Should the power bar be redrawn even if it isn't flagged to do so?</param>
-void PowerClass::Draw_It(bool complete)
-{
-	Draw_Power_Bar(complete);
-	BASECLASS::Draw_It(complete);
-}
-
-
 /***********************************************************************************************
  * PowerClass::Draw_Power_Bar -- Renders the power bar graphic.                                *
  *                                                                                             *
@@ -612,8 +599,7 @@ void PowerClass::Reposition_Sidebar(void)
 		tt.Region = Bar_Rect();
 		tt.Region.X += SidebarRect.X;
 
-		ToolTips->Remove(tt.ID);
-		ToolTips->Add(&tt);
+		ToolTips->Replace(&tt);
 	}
 }
 

@@ -1,0 +1,20 @@
+; A neutral CAPOWR shot before and after an engineer captures it. gamemd freezes a NeedsEngineer structure's Powered animations
+; at placement (DisableStuff, 0x452480) and resumes them in SetOwningHouse (0x448260); animations with Powered=no run all along.
+; Expected: banimstate shows the Powered slots disabled 1 at frame 200 and disabled 0 at frame 520, and the shots at 200 and 216
+; show no change in the frozen parts while the shots at 520 and 528 do.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/tech-capowr-screens.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/scratch-agent/tech-building-anims/capowr" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 neutral CAPOWR 66 40
+110 own ENGINEER 62 40
+120 view 66 40
+130 reveal
+200 banimstate CAPOWR
+200 command ScreenCapture
+216 command ScreenCapture
+300 capture ENGINEER 66 40
+520 banimstate CAPOWR
+520 command ScreenCapture
+528 command ScreenCapture
+600 quit

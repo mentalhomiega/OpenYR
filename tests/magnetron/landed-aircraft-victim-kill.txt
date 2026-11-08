@@ -1,0 +1,33 @@
+; Same set-up as landed-aircraft.txt: the player's Magnetron (TELE) lifts an enemy Harrier (ORCA) from its Air Force Command pad (GAAIRC).
+; The Harrier is destroyed with no attacker at frame 640 while the beam holds it and it flies toward the Magnetron. The hold ends with it:
+; the Magnetron's target reads '-' in the lift line for TELE, no ORCA is left, and the pad's four radio slots stay empty.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/magnetron/landed-aircraft-victim-kill.txt -Seconds 200
+300 enemy GAAIRC 62 40
+310 spawn ORCA 62 44
+320 view 60 42
+330 enter ORCA 62 40 enemy
+540 own TELE 54 40
+541 reveal
+561 padstate GAAIRC
+565 strikeobj ORCA 63 40 3 land TELE
+580 lift ORCA
+580 lift TELE
+620 lift ORCA
+620 lift TELE
+636 lift ORCA
+636 lift TELE
+640 kill ORCA
+644 lift ORCA
+644 lift TELE
+644 padstate GAAIRC
+660 lift ORCA
+660 lift TELE
+660 padstate GAAIRC
+700 lift ORCA
+700 lift TELE
+700 padstate GAAIRC
+760 lift ORCA
+760 lift TELE
+760 padstate GAAIRC
+800 where TELE
+810 quit

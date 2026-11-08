@@ -1,0 +1,105 @@
+; A Tesla Coil (TESLA, art NATSLA, IsAnimDelayedFire=yes) shoots an enemy soldier. Its SpecialAnim (slot 10, NATSLA_B) is the charge animation, and the ActiveAnim (slot 3, NATSLA_A) is the idle one.
+; Expected, from gamemd's BuildingClass::AnimExpired (0x451B40, slot 10 without UnitRepair, IsAnimDelayedFire and TimeToDie): when the charge animation plays to its end, the active animation starts again.
+; The log shows slot 3 held through the charge; the screenshots show the coil charging and then idling.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/tesla-charge-anim.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/scratch-agent/building-anim-expired/tesla" -Filter "AUTOTEST   banimstate|AUTOTEST     slot (3|10) |Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+10 command CenterBase
+20 own NAPOWR 50 40
+21 own NAPOWR 50 44
+22 own TESLA 56 44
+30 reveal
+31 view 57 45
+100 banimstate TESLA
+110 enemy E1 62 44
+111 banimstate TESLA
+114 banimstate TESLA
+117 banimstate TESLA
+120 banimstate TESLA
+121 command ScreenCapture
+123 banimstate TESLA
+126 banimstate TESLA
+129 banimstate TESLA
+132 banimstate TESLA
+133 command ScreenCapture
+135 banimstate TESLA
+138 banimstate TESLA
+141 banimstate TESLA
+144 banimstate TESLA
+145 command ScreenCapture
+147 banimstate TESLA
+150 banimstate TESLA
+153 banimstate TESLA
+156 banimstate TESLA
+157 command ScreenCapture
+159 banimstate TESLA
+162 banimstate TESLA
+165 banimstate TESLA
+168 banimstate TESLA
+169 command ScreenCapture
+171 banimstate TESLA
+174 banimstate TESLA
+177 banimstate TESLA
+180 banimstate TESLA
+181 command ScreenCapture
+183 banimstate TESLA
+186 banimstate TESLA
+189 banimstate TESLA
+192 banimstate TESLA
+193 command ScreenCapture
+195 banimstate TESLA
+198 banimstate TESLA
+201 banimstate TESLA
+204 banimstate TESLA
+205 command ScreenCapture
+207 banimstate TESLA
+210 banimstate TESLA
+213 banimstate TESLA
+216 banimstate TESLA
+217 command ScreenCapture
+219 banimstate TESLA
+222 banimstate TESLA
+225 banimstate TESLA
+228 banimstate TESLA
+229 command ScreenCapture
+231 banimstate TESLA
+234 banimstate TESLA
+237 banimstate TESLA
+240 banimstate TESLA
+241 command ScreenCapture
+243 banimstate TESLA
+246 banimstate TESLA
+249 banimstate TESLA
+252 banimstate TESLA
+253 command ScreenCapture
+255 banimstate TESLA
+258 banimstate TESLA
+261 banimstate TESLA
+264 banimstate TESLA
+265 command ScreenCapture
+267 banimstate TESLA
+270 banimstate TESLA
+273 banimstate TESLA
+276 banimstate TESLA
+277 command ScreenCapture
+279 banimstate TESLA
+282 banimstate TESLA
+285 banimstate TESLA
+288 banimstate TESLA
+289 command ScreenCapture
+291 banimstate TESLA
+294 banimstate TESLA
+297 banimstate TESLA
+300 banimstate TESLA
+301 command ScreenCapture
+303 banimstate TESLA
+306 banimstate TESLA
+309 banimstate TESLA
+312 banimstate TESLA
+313 command ScreenCapture
+315 banimstate TESLA
+318 banimstate TESLA
+321 banimstate TESLA
+324 banimstate TESLA
+325 command ScreenCapture
+327 banimstate TESLA
+340 quit

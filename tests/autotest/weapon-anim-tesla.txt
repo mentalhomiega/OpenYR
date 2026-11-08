@@ -1,0 +1,24 @@
+; A Tesla Coil (TESLA) and a Tesla Trooper (SHK) shoot enemy soldiers (E1), one every 25 frames,. The coil needs power, from the player's power plant (NAPOWR is the Soviet plant, so the
+; player gets GAPOWR when Allied; this run uses a Soviet player with -Country 8).
+; Expected, from gamemd's TechnoClass::Fire (0x6FDD50) and EBolt creation (0x6FD570): the bolt is drawn from the weapon's firing point to the target for the few frames the
+; EBolt lives. The screenshots (every 2 frames) show the bolts.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/weapon-anim-tesla.txt -Country 8 -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir "E:/Claude ra2 decomp/scratch-agent/weapon-effect-anims/tesla" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own NAPOWR 50 40
+41 own NAPOWR 50 43
+42 own TESLA 55 44
+43 own SHK 55 47
+60 view 61 45
+61 zoom 2
+95 record 2
+100 enemy E1 63 43
+125 enemy E1 64 44
+150 enemy E1 63 45
+175 enemy E1 64 43
+200 enemy E1 63 44
+225 enemy E1 64 45
+250 enemy E1 63 43
+275 enemy E1 64 44
+330 record 0
+331 quit

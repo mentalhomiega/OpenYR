@@ -125,6 +125,7 @@ class ColorScheme
 
 ConvertClass *Build_Converter(HSVClass & hsv, const PaletteClass & base, const PaletteClass & screenpalette, Surface const & typicalsurface, PaletteClass *remapped);
 ConvertClass *Build_Light_Converter(HSVClass & hsv, const PaletteClass & base, const PaletteClass & screenpalette, PaletteClass *remapped, Surface const & typicalsurface, int intensity_levels, int r, int g, int b, bool *indexes);
+extern bool _indexes[256];
 
 ColorScheme * Fetch_Scheme_By_Name(const char * name, int intensity_levels = 1);
 int Fetch_Scheme_Index_By_Name(char const * name, int intensity_levels = 1);

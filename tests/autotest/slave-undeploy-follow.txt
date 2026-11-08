@@ -1,0 +1,24 @@
+; A player's Slave Miner (YAREFN, the deployed Yuri slave refinery) is sold, which undeploys it into a mobile SMIN.
+; The slaves it owns must stay owned by the new SMIN and follow it home. gamemd's BuildingClass::Mission_Selling
+; (0x449C30) creates the SMIN, unlimbos it, then calls SlaveManagerClass::SetOwner (0x6AF580) when the unlimbo works,
+; so each slave's SlaveOwner (+0x2DC) becomes the new SMIN and the slaves are not freed.
+; The player's miner deploys by itself near the ore at 62,38 (as slave-cycle-skip.txt does).
+; "sell 61 39" starts the sale of the refinery (YAREFN at 61,39). "where" prints each slave's house and mission, and
+; after the undeploy the slaves should still be Americans (the player's house) on Move or Guard as they walk home,
+; not Civilian (the Neutral house Free_All uses) or Guard after being freed.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/slave-undeploy-follow.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST|Slave: |Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 own SMIN 62 38
+41 own HTNK 58 40
+600 waitowns Americans YAREFN 1 2000
+610 where SLAV
+620 sell 61 39
+630 waitowns Americans SMIN 1 900
+640 where SMIN
+650 where SLAV
+660 where YAREFN
+670 houses
+700 quit

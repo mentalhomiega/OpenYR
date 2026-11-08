@@ -23,7 +23,7 @@ related:
     id: capture
 ---
 
-An object of a [`CanDisguise=yes`](/keys/candisguise/) type that hits a soldier with a [`MakesDisguise=yes`](/keys/makesdisguise/) warhead takes on that soldier's look: its type's artwork and name, in its house's colors. A weapon with `Range=-2` reaches any target, so a spy can copy a soldier anywhere on the map.
+An object of a [`CanDisguise=yes`](/keys/candisguise/) type that hits a soldier with a [`MakesDisguise=yes`](/keys/makesdisguise/) warhead takes on that soldier's look: its type's artwork and name, in its house's colors. If that soldier is itself disguised, the object takes on the look the soldier shows instead, so a spy that copies a spy wears the default soldier of the other spy's side. A weapon with `Range=-2` reaches any target, so a spy can copy a soldier anywhere on the map.
 
 ```ini title="rulesmd.ini"
 [MYSPY] ; example InfantryType

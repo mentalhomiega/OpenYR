@@ -1,0 +1,35 @@
+; Muzzle flash of a Grizzly (MTNK, 105mm, Anim=GUNFIRE) and then an elite one (105mmE, Anim=VTMUZZLE) shooting eight enemy power plants (NAPOWR, which cannot shoot back)
+; placed four cells away in the eight directions around it. Each strike order turns the tank to its target.
+; Expected, from gamemd's TechnoClass::Fire (0x6FDD50): a weapon whose Anim list holds exactly eight entries plays the entry at (Round_To_8 + 1) % 8 of the turret
+; facing, any other list plays entry 0, and the flash starts at the firing point (the FLH). The AUTOTEST muzzle lines give the entry count, the turret facing and the
+; coordinate the anim starts at, and the screenshots (one every 3 frames) show the flashes.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/weapon-anim-facings.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 300 -ShotDir "E:/Claude ra2 decomp/scratch-agent/weapon-effect-anims/facings" -Filter "AUTOTEST muzzle MTNK|Exception"
+30 command CenterBase
+35 reveal
+40 own MTNK 56 44
+50 view 56 44
+51 zoom 2
+60 enemy NAPOWR 55 40
+61 enemy NAPOWR 59 40
+62 enemy NAPOWR 59 43
+63 enemy NAPOWR 59 47
+64 enemy NAPOWR 55 47
+65 enemy NAPOWR 50 47
+66 enemy NAPOWR 50 43
+67 enemy NAPOWR 50 40
+75 record 3
+80 strike MTNK 55 40
+155 strike MTNK 59 40
+230 strike MTNK 59 43
+305 strike MTNK 59 47
+380 strike MTNK 55 47
+455 strike MTNK 50 47
+530 strike MTNK 50 43
+605 strike MTNK 50 40
+675 rank MTNK 2
+680 strike MTNK 55 40
+755 strike MTNK 59 40
+830 strike MTNK 59 43
+905 strike MTNK 59 47
+975 record 0
+980 quit

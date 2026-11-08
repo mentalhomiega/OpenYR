@@ -255,8 +255,16 @@ bool FactoryClass::Set(TechnoTypeClass const & object, HouseClass & house, bool 
 		Abandon();
 	}
 
+	// gamemd's production click (SidebarClass, 0x50B370 gate) refuses a limited object on an idle factory too.
+	if (object.RTTI != RTTI_BUILDINGTYPE && !resume && house.Is_Build_Limited(&object)) {
+		if (house.Is_Player_Control()) {
+			Sound_Effect(Rule->ScoldSound);
+		}
+		return(false);
+	}
+
 	if (object.RTTI != RTTI_BUILDINGTYPE && (Is_Building() || QueuedObjects.Count() > 0 || Is_Suspended()) && !resume) {
-		if (QueuedObjects.Count() < Rule->MaximumQueuedObjects && !House->Is_Build_Limited(&object)) {
+		if (QueuedObjects.Count() < Rule->MaximumQueuedObjects) {
 			QueuedObjects.Add(&object);
 			return(true);
 		}
@@ -477,10 +485,11 @@ bool FactoryClass::Abandon(void)
 		/*
 		**	Delete the object under construction.
 		*/
-		ScenarioInit++;
-		delete Object;
-		Object = NULL;
-		ScenarioInit--;
+		{
+			ScenarioInitScope const scope;
+			delete Object;
+			Object = NULL;
+		}
 
 		return(true);
 	}
@@ -771,6 +780,17 @@ bool FactoryClass::Is_Queued(const TechnoTypeClass *type)
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Returns how many objects a factory holds at once: the one in production and up to
+/// MaximumQueuedObjects queued behind it. The build limit is not applied here.
+/// </summary>
+/// <returns>int; The capacity under the current rules.</returns>
+int FactoryClass::Capacity(void)
+{
+	return(Rule->MaximumQueuedObjects + 1);
 }
 
 

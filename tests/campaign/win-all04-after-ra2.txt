@@ -1,0 +1,57 @@
+; Chained campaign check: plays Red Alert 2 Allied 1, aborts it through the options menu back to the main menu, then plays
+; Yuri's Revenge Allied 4 from the mission browser in the same process and wins it as win-all04.txt does. It guards against
+; state a Red Alert 2 mission leaves behind for the next mission. Expected: "AUTOTEST game over frame N: won" (frame 501 in the last run).
+; Run from the repository root: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script tests/campaign/win-all04-after-ra2.txt -Menus -MenuStyle Modern -Mods tests/campaign/ra2-then-yr -Width 1920 -Height 1080 -Seconds 150 -Filter "AUTOTEST +(game over|frame 36)|Reading scenario|UISCRIPT.*no such|Exception"
+; The game steps use frames above the abort frame of the first mission (110), because the steps run in order and the frame count restarts with each mission.
+; Both missions are chosen by the row text of the mission browser, so the first lines wait for the browser to finish opening ("ui shot" gives it time).
+0 continuelose
+ui waitfor backdrop
+ui wait 1500
+ui press Single Player
+ui wait 1200
+ui press New Campaign
+ui waitfor missions
+ui wait 800
+ui shot pick-ra2
+ui choose Operation: Lone Guardian
+ui wait 800
+ui press Play
+ui waitfor more
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click resume
+ui wait 1000
+ui waitfor abort
+ui wait 500
+ui click abort
+ui wait 1000
+ui waitfor abort
+ui click abort
+ui wait 1500
+ui waitfor stamp
+ui waitfor stamp
+ui waitfor stamp
+ui press Single Player
+ui wait 1200
+ui press New Campaign
+ui waitfor missions
+ui wait 800
+ui shot pick-yr
+ui choose YR test Allied 4
+ui wait 800
+ui press Play
+ui wait 1500
+110 command Options
+360 killtag 09275E6C
+361 killtag 0A82822C
+362 killhouse YuriCountry 0
+363 killhouse Arabs 0
+1500 quit

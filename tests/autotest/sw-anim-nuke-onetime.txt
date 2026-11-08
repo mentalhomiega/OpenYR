@@ -1,0 +1,21 @@
+; A one-time nuclear missile (the Add One-Time Special Weapon trigger action) fires with no silo. gamemd (SuperClass::Launch 0x6CC390, Nuke case with
+; IsOneTime and IsPresent) puts the NukeDown shell 20000 leptons above the target cell, moving straight down at 100 leptons a frame, and raises the
+; PSIWARN marker on the target cell (HouseClass::PsiWarn 0x43B5E0), which the shell takes over until it is removed.
+; The AUTOTEST nuke lines give the blast build-up and detonation frames and coordinates; liveanims PSIWARN counts the marker, which stays until the blast.
+; Before the fix the game crashed when the missile was fired, because it looked for a weapon named MultiLauncher that Yuri's Revenge does not define.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sw-anim-nuke-onetime.txt -Width 800 -Height 600 -Seconds 200 -RenderFrameRate 30 -Filter "AUTOTEST nuke|AUTOTEST   liveanims PSIWARN|AUTOTEST   supers|Exception"
+24 own E1 41 50
+30 view 42 50
+35 reveal
+40 trigaction 33 0 0
+60 fire NukeSpecial 42 50
+62 liveanims PSIWARN
+80 liveanims PSIWARN
+100 windowshot swnuke1-a0-descent
+140 liveanims PSIWARN
+200 windowshot swnuke1-a1
+300 liveanims PSIWARN
+400 liveanims PSIWARN
+500 liveanims PSIWARN
+600 liveanims PSIWARN
+900 quit

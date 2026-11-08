@@ -40,7 +40,7 @@ class TunnelLocomotionClass : public LocomotionClass
 		virtual void Stop_Moving(void) override;
 		virtual bool Process(void) override;
 		virtual VisualType Visual_Character(bool flag) override;
-		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual Matrix3D Build_Draw_Matrix(int *key, bool matrix) override;
 		virtual int Z_Adjust(void) override;
 		virtual ZGradientType Z_Gradient(void) override;
 		virtual bool Is_To_Have_Shadow(void) override;

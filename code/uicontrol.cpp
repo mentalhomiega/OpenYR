@@ -15,6 +15,7 @@
 #include "ccini.h"
 #include "netglobal.h"
 #include "playerdisplay.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -30,19 +31,7 @@ char const * const COLORBLIND_SAFE = "ColorBlindSafe";
 // Empty names between commas are skipped.
 std::vector<std::string> Split_Button_List(std::string const & value)
 {
-	std::vector<std::string> list;
-	std::size_t start = 0;
-	while (start <= value.size()) {
-		std::size_t end = value.find(',', start);
-		if (end == std::string::npos) {
-			end = value.size();
-		}
-		if (end > start) {
-			list.push_back(value.substr(start, end - start));
-		}
-		start = end + 1;
-	}
-	return(list);
+	return(Split_List(value, ',', std::string_view(), true));
 }
 
 }

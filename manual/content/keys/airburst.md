@@ -1,7 +1,7 @@
 ---
 key: Airburst
 summary: Holds a homing projectile at cruising height so that it goes off above its target rather than diving onto it.
-see_also: [AirburstSpread, Splits, AirburstWeapon, Cluster, VeryHigh, ROT]
+see_also: [Splits, AirburstWeapon, Cluster, VeryHigh, ROT]
 when_omitted:
   kind: value
   value: "no"
@@ -21,7 +21,7 @@ An airburst projectile is also exempt from the check that detonates a homing pro
 
 A projectile chasing an aircraft never follows the terrain; it flies straight at its target. On that shot the clearance above does not apply, but the horizontal distance measure, the detonation changes and the exemption from the stall check all do.
 
-When an airburst projectile goes off it fires its [`AirburstWeapon`](/keys/airburstweapon/) once at each of nine cells: the cell it burst over and its eight neighbours. [`AirburstSpread`](/keys/airburstspread/) changes which cells. [`Cluster`](/keys/cluster/) is not used, and the projectile detonates once. An airburst projectile that writes `Splits=yes` splits into `Cluster` bomblets instead, as [`Splits`](/keys/splits/) describes.
+When an airburst projectile goes off it fires its [`AirburstWeapon`](/keys/airburstweapon/) once at each of nine cells: the cell it burst over and its eight neighbours. [`Cluster`](/keys/cluster/) is not used, and the projectile detonates once. An airburst projectile that writes `Splits=yes` splits into `Cluster` bomblets instead, as [`Splits`](/keys/splits/) describes.
 
 An airburst projectile whose `AirburstWeapon` is missing, or whose weapon has no [`Projectile`](/keys/projectile/), detonates but releases no bomblets.
 

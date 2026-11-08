@@ -29,6 +29,7 @@
 #include "mpload.h"
 #include "netdlg.h"
 #include "netglobal.h"
+#include "queue.h"
 #include "savemgr.h"
 #include "session.h"
 #include "syncreport.h"
@@ -352,7 +353,7 @@ void DesyncDialogClass::Check_Timeouts(void)
 			Session.Players[index]->Name, house, (int)(DesyncClass::HEARTBEAT_TIMEOUT_MS / 1000));
 
 		std::string const name = Session.Players[index]->Name;
-		Destroy_Connection(house, 1);
+		Destroy_Connection_And_Frame_Sync(house, 1);
 		Notify_Player_Left(house, name.c_str());
 	}
 }

@@ -9,9 +9,10 @@
 
 #pragma once
 
-#include <cctype>
 #include <cstddef>
 #include <string>
+
+#include "strutil.h"
 
 
 /*
@@ -29,17 +30,36 @@ inline bool Campaign_Split_Scenario(std::string const & value, std::string & arc
 		return(false);
 	}
 
-	std::string prefix = value.substr(0, arrow);
-	for (char & ch : prefix) {
-		ch = (char)std::toupper((unsigned char)ch);
-	}
-	if (prefix != "RA2") {
+	if (Upper(value.substr(0, arrow)) != "RA2") {
 		return(false);
 	}
 
 	archive = "RA2";
 	file = value.substr(arrow + 2);
 	return(true);
+}
+
+
+/*
+ * Which side a campaign's first map belongs to. The battle files name Allied maps with an ALL
+ * prefix and Soviet maps with an SOV prefix; anything else, such as a tutorial, is neither. The
+ * map name is upper case.
+ */
+enum CampaignSideType {
+	CAMPAIGN_SIDE_ALLIED,
+	CAMPAIGN_SIDE_SOVIET,
+	CAMPAIGN_SIDE_OTHER
+};
+
+inline CampaignSideType Campaign_Side_Of_Map(std::string const & map)
+{
+	if (map.compare(0, 3, "ALL") == 0) {
+		return(CAMPAIGN_SIDE_ALLIED);
+	}
+	if (map.compare(0, 3, "SOV") == 0) {
+		return(CAMPAIGN_SIDE_SOVIET);
+	}
+	return(CAMPAIGN_SIDE_OTHER);
 }
 
 
@@ -53,9 +73,5 @@ inline bool Campaign_Is_Mission_File(std::string const & file)
 		return(false);
 	}
 
-	std::string extension = file.substr(file.size() - 4);
-	for (char & ch : extension) {
-		ch = (char)std::toupper((unsigned char)ch);
-	}
-	return(extension == ".MAP");
+	return(Ends_With_No_Case(file, ".MAP"));
 }

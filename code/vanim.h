@@ -13,8 +13,10 @@
 
 #pragma once
 
+#include "audio/audiohandle.h"
 #include "bounce.h"
 #include "object.h"
+#include "typelist.h"
 
 class VoxelAnimTypeClass;
 class ParticleSystemClass;
@@ -95,4 +97,19 @@ class VoxelAnimClass : public ObjectClass, public BounceClass
 		 * when the voxel settles or splashes into water, so a wreck expires where it lands.
 		 */
 		int ECCounter;
+
+		/*
+		 * This is the handle of the sound started from the type's StartSound. It is not saved, so
+		 * a loaded animation starts its sound again on its first update. The sound is stopped
+		 * when the animation is removed.
+		 */
+		AudioHandle StartSoundHandle;
 };
+
+
+// Throws voxel debris pieces for a destroyed object or a detonated warhead, up to `remaining` of them,
+// and returns how many were thrown (`remaining` drops by that number). Pieces are dealt out round the
+// type list, each draw up to that type's figure in `maximums`. The Random calls follow
+// BulletClass::Detonate (0x469D06) and TechnoClass::ReceiveDamage (0x701900), so their order must not change.
+int Throw_Voxel_Debris(TypeList<VoxelAnimTypeClass const *> const & types, TypeList<int> const & maximums, int & remaining, Coord const & origin, HouseClass * house);
+

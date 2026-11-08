@@ -19,8 +19,8 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "dsurface.h"
-#include "gamedlg.h"
 #include "globals.h"
+#include "goptions.h"
 #include "gscreen.h"
 #include "init.h"
 #include "loadscreen.h"
@@ -29,6 +29,7 @@
 #include "pcx.h"
 #include "scenario.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
+#include "ui/uiclamp.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uiview.h"
@@ -43,16 +44,6 @@
 namespace
 {
 
-// A label the string table lacks reads as MISSING:'<label>', as the objectives screen shows it.
-std::string Label_Text(char const * label)
-{
-	if (StringTable.Find(label) == nullptr) {
-		return(std::string("MISSING:'") + label + "'");
-	}
-	return(StringTable.Find_UTF8(label));
-}
-
-
 /// <summary>
 /// The briefing a mission's objectives screen gives, read from the files before the map loads. The sources and their
 /// order follow Briefing_Text in restate.cpp: the text MISSIONMD.INI names, then the map's own briefing, then the
@@ -60,15 +51,10 @@ std::string Label_Text(char const * label)
 /// </summary>
 std::string Mission_Briefing(char const * map)
 {
-	CCFileClass database(DeploymentConfig.MissionFile.c_str());
-	bool const has_database = database.Is_Available();
-	if (has_database) {
-		CCINIClass missions;
-		missions.Load(database, false);
-		std::string const label = missions.Get_String(map, "Briefing");
-		if (!label.empty()) {
-			return(Label_Text(label.c_str()));
-		}
+	bool has_database;
+	std::string const label = Mission_Database_Briefing_Label(map, has_database);
+	if (!label.empty()) {
+		return(Mission_Label_Text(label.c_str(), false));
 	}
 
 	char text[1024] = "";
@@ -87,7 +73,7 @@ std::string Mission_Briefing(char const * map)
 			// Red Alert 2 names a string table label here, and Yuri's Revenge's text blocks name a section.
 			std::string const entry = ini.Get_String(map, "Briefing");
 			if (!entry.empty() && StringTable.Find(entry.c_str()) != nullptr) {
-				return(Label_Text(entry.c_str()));
+				return(Mission_Label_Text(entry.c_str(), false));
 			}
 			if (!entry.empty()) {
 				ini.Get_TextBlock(entry.c_str(), text, sizeof(text));
@@ -96,7 +82,7 @@ std::string Mission_Briefing(char const * map)
 	}
 
 	if (text[0] == '\0' && has_database) {
-		return(Label_Text("Brief:Error"));
+		return(Mission_Label_Text("Brief:Error", false));
 	}
 	return(std::string(text));
 }
@@ -113,12 +99,13 @@ UIBrowserGroupType Group_Of(CampaignClass const & campaign)
 	}
 
 	bool const ra2 = campaign.ScenarioArchive == "RA2";
-	std::string const map = campaign.ScenarioName;
-	if (map.compare(0, 3, "ALL") == 0) {
-		return(ra2 ? UI_BROWSER_RA2_ALLIED : UI_BROWSER_YR_ALLIED);
-	}
-	if (map.compare(0, 3, "SOV") == 0) {
-		return(ra2 ? UI_BROWSER_RA2_SOVIET : UI_BROWSER_YR_SOVIET);
+	switch (Campaign_Side_Of_Map(campaign.ScenarioName)) {
+		case CAMPAIGN_SIDE_ALLIED:
+			return(ra2 ? UI_BROWSER_RA2_ALLIED : UI_BROWSER_YR_ALLIED);
+		case CAMPAIGN_SIDE_SOVIET:
+			return(ra2 ? UI_BROWSER_RA2_SOVIET : UI_BROWSER_YR_SOVIET);
+		default:
+			break;
 	}
 	return(UI_BROWSER_OTHER);
 }
@@ -133,13 +120,13 @@ std::string Mission_Title(CampaignClass const & campaign, CCINIClass const & ra2
 {
 	if (campaign.ScenarioArchive == "RA2") {
 		std::string const label = ra2_missions.Get_String(campaign.ScenarioName, "UIName");
-		if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-			return(StringTable.Find_UTF8(label.c_str()));
+		std::optional<std::string> const name = Mission_UI_Text(label);
+		if (name.has_value()) {
+			return(*name);
 		}
 	}
 
-	std::string title = StringTable.Find_UTF8(campaign.Description);
-	return(title.empty() ? std::string(campaign.Description) : title);
+	return(StringTable.Find_UTF8(campaign.Description, campaign.Description));
 }
 
 
@@ -157,9 +144,10 @@ UIMissionBrowserState Mission_Browser_State(void)
 		ra2_missions.Load(ra2_file, false);
 	}
 
-	for (int level = 0; level < OptionsClass::MAX_DIFFICULTY_SETTING; level++) {
-		UIBrowserOption option;
-		option.Label = Fetch_String(GameDifficultyNames[level]);
+	std::vector<std::string> const difficulty_names = UI_Difficulty_Names();
+	for (int level = 0; level < (int)difficulty_names.size(); level++) {
+		UIChoice option;
+		option.Label = difficulty_names[level];
 		option.Value = level;
 		state.Difficulties.push_back(option);
 	}
@@ -167,7 +155,7 @@ UIMissionBrowserState Mission_Browser_State(void)
 
 	for (int index = 0; index < Campaigns.Count(); index++) {
 		CampaignClass * campaign = Campaigns[index];
-		if (campaign == nullptr || !Campaign_Available(campaign) || !Campaign_Is_Mission_File(campaign->ScenarioName)) {
+		if (!Campaign_Is_Offered(campaign)) {
 			continue;
 		}
 
@@ -342,7 +330,7 @@ std::optional<int> UI_Mission_Browser_Dialog(void)
 	bool const played = UI_Run_Modal(*view) == UI_RESULT_ACCEPTED && presenter.Picked.has_value();
 
 	UIMissionBrowserState const & final_state = presenter.State;
-	if (final_state.Selected >= 0 && final_state.Selected < (int)final_state.Missions.size()) {
+	if (Index_In_Range(final_state.Selected, final_state.Missions.size())) {
 		Options.LastMission = final_state.Missions[final_state.Selected].Key;
 	}
 

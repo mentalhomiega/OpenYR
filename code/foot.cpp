@@ -77,6 +77,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "foot.h"
 
@@ -127,6 +128,8 @@
 #include "tracker.h"
 #include "tube.h"
 #include "uicontrol.h"
+#include "dbgprint.h"
+#include "jumpjet.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -179,9 +182,11 @@ FootClass::FootClass(HouseClass * house) :
 	IsLocomotorProcessing(false),
 	IsPiggybackEndPending(false),
 	WasSinking(false),
+	ChronoArrivalHold(0),
 	MoveSoundHandle(),
 	IsMoveSoundPlaying(false),
 	MoveSoundDelay(0),
+	MoveSoundVoc(VOC_NONE),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
 	SensorRadius(0),
@@ -192,6 +197,8 @@ FootClass::FootClass(HouseClass * house) :
 	IsScattering(false),
 	IsIdle(false),
 	IsPlanRunning(false),
+	IsPlanAdvanceDeferred(false),
+	PlannedRunningOrder(),
 	HasPlannedRunningOrder(false),
 	IonBlastYDrawOffset(0),
 	IsCrushing(false),
@@ -235,6 +242,8 @@ FootClass::FootClass(HouseClass * house) :
 /// </summary>
 FootClass::~FootClass(void)
 {
+	// A sound still playing when the object is removed stops with it, as gamemd's AudioController destructor does.
+	MoveSoundHandle.Stop();
 	if (Team != NULL && GameActive) {
 		Team->Remove(this);
 	}
@@ -674,22 +683,63 @@ int FootClass::Do_MISSION_MOVE(void)
 
 /// <summary>
 /// Handles the attack-move state machine. The unit travels to its destination, breaks off to engage a
-/// threat it can reach, and resumes travel to the same destination once that target is gone.
+/// threat it can reach, and resumes travel to the same destination once that target is gone. An attack-move
+/// on an object or a cell has no destination: the unit pursues that target, and takes a threat within reach
+/// first while the target is out of reach (FootClass::UpdateAttackMove, 0x4DF3A0, with MegaTarget).
 /// </summary>
 /// <returns>The delay in game frames before this mission should be processed again.</returns>
 int FootClass::Do_MISSION_ATTACK_MOVE(void)
 {
 	enum {
 		ATTACK_MOVE_TRAVEL,		/// travelling; a threat within reach is taken
-		ATTACK_MOVE_ENGAGE		/// fighting the target until it is gone or out of reach
+		ATTACK_MOVE_ENGAGE,		/// fighting the target until it is gone or out of reach
+		ATTACK_MOVE_PURSUE		/// pursuing the ordered target, kept in ArchiveTarget, and taking a threat within reach on the way
 	};
+
+	// The order's target is kept in ArchiveTarget, which a travelling attack-move leaves empty until it engages.
+	if (Status == ATTACK_MOVE_TRAVEL && ArchiveTarget != NULL) {
+		Status = ATTACK_MOVE_PURSUE;
+	}
 
 	switch (Status) {
 
+		case ATTACK_MOVE_PURSUE: {
+			AbstractClass * ordered = ArchiveTarget;
+
+			// The ordered target is gone, so the order ends and the unit idles.
+			if (ordered == NULL || (ordered->As_ObjectClass() != NULL && !ordered->As_ObjectClass()->IsActive)) {
+				ArchiveTarget = NULL;
+				Assign_Target(NULL);
+				Enter_Idle_Mode();
+				return(1);
+			}
+
+			// The unit holds the target while it is within reach. Out of reach, it keeps a threat it took while that stays within reach,
+			// and otherwise scans for another threat within reach and falls back to the ordered target.
+			if (Is_Close_Enough_With_Selected_Weapon(ordered)) {
+				if (TarCom == NULL) {
+					Assign_Target(ordered);
+				}
+			} else if (TarCom == NULL || TarCom == ordered || !Is_Close_Enough_With_Selected_Weapon(TarCom)) {
+				Perf_Count(PERF_COUNT_SCAN_MISSION);
+				AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
+				ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
+				AbstractClass * next = (optr != NULL && Is_Close_Enough_With_Selected_Weapon(optr)) ? target : ordered;
+				if (TarCom != next) {
+					Assign_Target(next);
+				}
+			}
+			if (TarCom != NULL) {
+				Approach_Target();
+			}
+			break;
+		}
+
 		case ATTACK_MOVE_TRAVEL: {
+			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
 			ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
-			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
+			if (optr != NULL && Is_Close_Enough_With_Selected_Weapon(optr)) {
 				ArchiveTarget = NavCom;
 				Assign_Destination(NULL);
 				Assign_Target(target);
@@ -705,7 +755,7 @@ int FootClass::Do_MISSION_ATTACK_MOVE(void)
 
 		case ATTACK_MOVE_ENGAGE: {
 			ObjectClass * optr = (TarCom != NULL) ? TarCom->As_ObjectClass() : NULL;
-			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
+			if (optr != NULL && Is_Close_Enough_With_Selected_Weapon(optr)) {
 				Approach_Target();
 				if (TarCom != NULL) {
 					break;
@@ -757,6 +807,7 @@ int FootClass::Do_MISSION_PATROL(void)
 			break;
 
 		case PATROL_FIND_TARGET: {
+			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
 			ObjectClass * optr = target->As_ObjectClass();
 			int primary = What_Weapon_Should_I_Use(optr);
@@ -832,6 +883,7 @@ int FootClass::Do_MISSION_PATROL(void)
 			 * the patrol cell before giving up the engagement.
 			 */
 			if (TarCom == NULL) {
+				Perf_Count(PERF_COUNT_SCAN_MISSION);
 				AbstractClass * target = Greatest_Threat(THREAT_AREA, PatrolCell->Center_Coord(), false);
 				ObjectClass * scanptr = target->As_ObjectClass();
 				int scanweapon = What_Weapon_Should_I_Use(scanptr);
@@ -867,6 +919,7 @@ int FootClass::Do_MISSION_PATROL(void)
 		}
 
 		case PATROL_RETURN: {
+			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, PatrolCell->Center_Coord(), false);
 			ObjectClass * optr = target->As_ObjectClass();
 			int primary = What_Weapon_Should_I_Use(optr);
@@ -927,7 +980,9 @@ int FootClass::Do_MISSION_CAPTURE(void)
 	/*
 	**	If there is a valid TarCom but the NavCom isn't set, then set the NavCom accordingly.
 	*/
-	if (Is_Target_Building(TarCom) && NavCom == NULL && inf != NULL && (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4) || inf->Class->IsEngineer)) {
+	// A soldier with C4, the C4 ability, Engineer, Occupier, Assaulter or Infiltrate sets out for its target structure (FootClass::Mission_Capture, 0x4D4B20).
+	if (Is_Target_Building(TarCom) && NavCom == NULL && inf != NULL
+		&& (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4) || inf->Class->IsEngineer || inf->Class->IsOccupier || inf->Class->IsAssaulter || inf->Class->IsCapture)) {
 		Assign_Destination(TarCom);
 	}
 
@@ -948,7 +1003,8 @@ int FootClass::Do_MISSION_CAPTURE(void)
 		}
 	}
 
-	if (TarCom == NULL && !House->Is_Human_Player()) {
+	// A computer's object with no target goes hunting, except an Occupier=yes soldier, which stays on the Capture mission (0x4D4C14).
+	if (TarCom == NULL && !House->Is_Human_Player() && (inf == NULL || !inf->Class->IsOccupier)) {
 		Assign_Target(NULL);
 		Assign_Destination(NULL);
 		Assign_Mission(MISSION_HUNT);
@@ -1107,8 +1163,9 @@ int FootClass::Do_MISSION_HUNT(void)
 				Commence();
 			}
 		} else {
+			// Any structure target sends a C4 soldier to sabotage it; Mission_Capture drops the order for one that cannot take C4 (FootClass::Mission_Hunt, 0x4D5416).
 			BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-			if (infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && building != NULL && building->Class->Can_Plant_C4()) {
+			if (infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && building != NULL) {
 				Assign_Destination(TarCom);
 				Assign_Mission(MISSION_SABOTAGE);
 				if (Ready_To_Commence()) {
@@ -1121,6 +1178,10 @@ int FootClass::Do_MISSION_HUNT(void)
 					Commence();
 				}
 			} else {
+				// A soldier drops its destination before it approaches again (FootClass::Mission_Hunt, 0x4D54BE).
+				if (infantry != NULL) {
+					Assign_Destination(NULL);
+				}
 				Approach_Target();
 			}
 		}
@@ -1142,14 +1203,8 @@ bool FootClass::Is_Chrono_Warping(void) const
 
 
 /// <summary>
-/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
-/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
-/// way through. The place is not checked: the caller sees to what stands there.
-/// </summary>
-/// <param name="dest">Where the object goes.</param>
-/// <summary>
-/// Starts a chronosphere warp that lands the object at dest. The object stays on its cell, under the
-/// warp-out animation, for ChronoDelay frames, then its teleport locomotor sets it down at dest. A
+/// Starts a chronosphere warp that lands the object at dest. The object stays on its cell for 60 frames
+/// (gamemd 0x7197E4), then its teleport locomotor clears the landing cell and sets it down at dest. A
 /// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
 /// is dropped.
 /// </summary>
@@ -1177,10 +1232,16 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 		Locomotion->Power_On();
 	}
 	TeleportLocomotionClass * teleport = static_cast<TeleportLocomotionClass *>(Locomotion.get());
-	teleport->Begin_Chrono_Warp(dest, Rule->ChronoDelay);
+	teleport->Begin_Chrono_Warp(dest, TeleportLocomotionClass::CHRONO_WAIT_FRAMES);
 }
 
 
+/// <summary>
+/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
+/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
+/// way through. The place is not checked: the caller sees to what stands there.
+/// </summary>
+/// <param name="dest">Where the object goes.</param>
 void FootClass::Teleport_To(Coord dest)
 {
 	CellClass * cellptr = &Map[dest.As_Cell()];
@@ -1277,6 +1338,58 @@ void FootClass::Stun(void)
 }
 
 
+/// <summary>
+/// Sends a destroyed or doomed soldier or vehicle falling out of the sky (FootClass::Crash, 0x4DEBB0).
+/// The object is stunned, its cargo dies with it, and a vehicle is set rocking. Its jumpjet locomotor
+/// then drops it spinning to the ground, where Land_Crashed ends it. An object on the ground, or one
+/// a locomotor warhead holds, or one without a jumpjet locomotor to fall with, does not crash.
+/// </summary>
+/// <param name="source">The object responsible for the kill. This may be NULL.</param>
+/// <returns>bool; Was the object sent into a crash?</returns>
+bool FootClass::Crash(TechnoClass * source)
+{
+	// Nothing else can carry an object down, so one that cannot fall is destroyed where it is.
+	if (HeightAGL <= 0 || IsAttackedByLocomotor || dynamic_cast<JumpjetLocomotionClass const *>(Locomotion.get()) == NULL) {
+		return(false);
+	}
+
+	if (Strength > 0) {
+		if (!Spring_First_Damaged(source)) {
+			return(true);
+		}
+		Record_The_Kill(source);
+		if (!IsActive) {
+			return(true);
+		}
+		Strength = 0;
+	}
+
+	DebugString("Crash: %s falls from %d leptons\n", TClass->Name(), HeightAGL);
+	IsCrashing = true;
+	Transmit_Message(RADIO_OVER_OUT);
+	Stun();
+	Kill_Cargo(source);
+
+	// The crash sound and voice start as the fall does (FootClass::Update, 0x4D9920).
+	Sound_Effect(TClass->CrashingSound, Center_Coord());
+	if (House->Is_Player_Control()) {
+		Unit_Voice_Effect(TClass->VoiceCrashing, Center_Coord());
+	}
+
+	// A soldier does not rock as it falls.
+	if (RTTI != RTTI_INFANTRY && ScenarioInit == 0) {
+		RockingSidewaysPerFrame = Random_Double(0.10, 0.25);
+		if (Random_Pick(0, 1) == 0) {
+			RockingSidewaysPerFrame = -RockingSidewaysPerFrame;
+		}
+		RockingForwardsPerFrame = Random_Double(0.0, 0.1);
+	}
+
+	Detach_This_From_All(this, false);
+	return(true);
+}
+
+
 /***********************************************************************************************
  * FootClass::Approach_Target -- Sets the navigation computer to approach target object.       *
  *                                                                                             *
@@ -1351,13 +1464,20 @@ void FootClass::Approach_Target(void)
 			return;
 		}
 
-		// A CanApproachTarget=no object, or a vehicle in a bunker, forgets a target out of reach
-		// instead of chasing it, except while a human player has it guard an area
+		// A CanApproachTarget=no object, a magnetron holding its victim, a vehicle in a bunker or a passenger
+		// of an open-topped transport forgets a target out of reach instead of chasing it. An attack order
+		// still chases, as does an attack-move (gamemd runs one as Attack), a human player's area guard and a computer player's hunt
 		// (FootClass::ApproachTarget, 0x4D5690).
-		if (!inrange && (!TClass->IsCanApproachTarget || BunkerLinkedItem != NULL) && !(CurrentMission == MISSION_GUARD_AREA && House->Is_Human_Player())) {
-			Assign_Target(NULL);
-			Assign_Destination(NULL);
-			return;
+		bool const can_approach = TClass->IsCanApproachTarget && LocomotorTarget == NULL && BunkerLinkedItem == NULL && !IsInOpenToppedTransport;
+		if (!inrange && !can_approach) {
+			bool const chase = CurrentMission == MISSION_ATTACK || CurrentMission == MISSION_ATTACK_MOVE
+				|| (CurrentMission == MISSION_GUARD_AREA && House->Is_Human_Player())
+				|| (CurrentMission == MISSION_HUNT && !House->Is_Human_Player());
+			if (!chase) {
+				Assign_Target(NULL);
+				Assign_Destination(NULL);
+				return;
+			}
 		}
 
 		/*
@@ -1562,14 +1682,47 @@ void FootClass::Approach_Target(void)
 
 					// A CloseRange object also takes a spot within 1.2 cells of the target, whatever its weapon's reach.
 					WeaponTypeClass * approach_weapon = Get_Class_Weapon_Data(primary)->Weapon;
-					bool reaches = TClass->In_Range(trycoord, TarCom, approach_weapon) && Clear_Line_Of_Fire(trycoord, TarCom, approach_weapon);
-					if (!reaches && TClass->IsCloseRange) {
-						Coord const at = TarCom->Center_Coord();
-						reaches = Gamemd_Length_2D(trycoord.X - at.X, trycoord.Y - at.Y) < 307.2;
-					}
+					auto reaches_from = [&](Coord const & spot) {
+						bool reach = TClass->In_Range(spot, TarCom, approach_weapon) && Clear_Line_Of_Fire(spot, TarCom, approach_weapon);
+						if (!reach && TClass->IsCloseRange) {
+							Coord const at = TarCom->Center_Coord();
+							reach = Gamemd_Length_2D(spot.X - at.X, spot.Y - at.Y) < 307.2;
+						}
+						return(reach);
+					};
+					bool reaches = reaches_from(trycoord);
 					if (reaches) {
 						trycell = trycoord.As_Cell();
-						if (Map.In_Local_Radar(trycell) && clear_to_move(trycell)) {
+						bool const usable = Map.In_Local_Radar(trycell);
+						bool clear = usable && clear_to_move(trycell);
+
+						/*
+						**	A spot the unit cannot enter, a wall or another object's cell for one, is not dropped. A vehicle
+						**	steps off it, one adjacent cell after another, and takes the first cell its weapon reaches from
+						**	that it can enter (FootClass::ApproachTarget, 0x4D6342 to 0x4D6723). Each step starts from the
+						**	cell the last one reached, so the eight steps walk N, NE+N, and so on, not the eight neighbours of the
+						**	first spot; the reach test uses a ground height of 0.
+						*/
+						if (usable && !clear && RTTI != RTTI_INFANTRY) {
+							Cell const spot = trycell;
+							Cell walk = spot;
+							for (int step = 0; step < 8; step++) {
+								walk = walk + AdjacentCell[step];
+								if (!Map.Is_Valid(walk)) continue;
+								Coord const centre = Coord(walk.X * CELL_LEPTON_W + CELL_LEPTON_W / 2, walk.Y * CELL_LEPTON_H + CELL_LEPTON_H / 2, 0);
+								bool near_reach = reaches_from(centre);
+								if (near_reach && clear_to_move(walk)) {
+									trycell = walk;
+									clear = true;
+									break;
+								}
+							}
+							if (!clear) {
+								trycell = spot;
+							}
+						}
+
+						if (clear) {
 
 							int maxdist = std::max(abs(trycell.X - tcell.X), abs(trycell.Y - tcell.Y));
 							CellClass * cellptr = &Map[trycell];
@@ -1951,6 +2104,11 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
 {
 	assert(object != NULL);
 
+	// A DirectRocker-linked unit that is not Pushy refuses the click (FootClass::ObjectClickedAction, 0x4D74E0).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(false);
+	}
+
 	switch (action) {
 		case ACTION_DETONATE:
 			if (BombHouse != NULL) {
@@ -2099,6 +2257,11 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
  *=============================================================================================*/
 bool FootClass::Active_Click_With(ActionType action, Cell const & cell, bool is_waypoint)
 {
+	// A DirectRocker-linked unit that is not Pushy refuses the click (FootClass::CellClickedAction, 0x4D7D50).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(false);
+	}
+
 	action = What_Action(cell, false, is_waypoint);
 
 	if (!Map.In_Local_Radar(cell) && action != ACTION_NOMOVE) {
@@ -2208,7 +2371,7 @@ bool FootClass::Active_Click_With(ActionType action, Cell const & cell, bool is_
 /// </summary>
 /// <param name="resume_waypoint">Should an interrupted waypoint path be resumed?</param>
 /// <returns>bool; Was other work taken up instead of going idle?</returns>
-bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
+bool FootClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 {
 	if (!IsIdle) {
 		IsIdle = true;
@@ -2231,15 +2394,17 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 			return(true);
 		}
 
-		if (Advance_Planned_Order()) {
+		// gamemd queues the next planned order as an event (TechnoClass::TryNextPlanningTokenNode, 0x6385c0), so the order
+		// reaches a unit that is placed on the map (TechnoClass::Unlimbo, 0x6F6E1B) after the order of whatever placed it.
+		if (initial && IsPlanRunning) {
+			IsPlanAdvanceDeferred = true;
+		} else if (Advance_Planned_Order()) {
 			return(true);
 		}
 
 		if (CurrentMission != MISSION_PATROL || Status == 0) {
-			if (CurrentPath != PATH_NONE && resume_waypoint) {
-				WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-				WaypointClass * next_wp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-				Execute_Waypoint_Path(next_wp);
+			if (resume_waypoint) {
+				Advance_Waypoint_Path();
 			}
 		}
 
@@ -2333,16 +2498,6 @@ namespace {
 
 
 /// <summary>
-/// Tells whether the unit can take one more planned order.
-/// </summary>
-/// <returns>bool; True when Planned_Order_Block reports no block.</returns>
-bool FootClass::Can_Take_Planned_Order(void) const
-{
-	return(Planned_Order_Block() == PLANNED_ORDER_OPEN);
-}
-
-
-/// <summary>
 /// Tells why the unit cannot take another planned order, checking the last queued order first.
 /// </summary>
 /// <returns>PlannedOrderBlock; PLANNED_ORDER_OPEN when the unit can take one.</returns>
@@ -2371,13 +2526,19 @@ PlannedOrderBlock FootClass::Planned_Order_Block(void) const
 }
 
 
+bool FootClass::Planned_Leg_Replaces_Idle(bool result) const
+{
+	return(result && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission));
+}
+
+
 /// <summary>
 /// Appends a planned order to the unit's queue.
 /// </summary>
 /// <returns>bool; Was the order queued? False when the unit cannot take one (see Planned_Order_Block).</returns>
 bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
 {
-	if (!Can_Take_Planned_Order()) {
+	if (Planned_Order_Block() != PLANNED_ORDER_OPEN) {
 		return(false);
 	}
 	PlannedOrders.Add(order);
@@ -2386,14 +2547,40 @@ bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
 
 
 /// <summary>
-/// Starts the unit's committed plan by issuing its first order now. Each later order is issued
+/// Tells whether the unit is idle enough for a committed plan to take it over at once.
+/// </summary>
+/// <returns>bool; True on a guard mission, and on an attack or guard area mission aimed at a cell (a guard area
+/// with no target counts too). A unit on any other mission, such as a move or an enter order, is busy.</returns>
+/// <remarks>The plan commit starts a plan only for such a unit (EventClass plan commit 0x637e00, testing 0x638c70).
+/// A busy unit keeps its order and takes the plan when it goes idle (TechnoClass::TryNextPlanningTokenNode, 0x6385c0,
+/// called from EnterIdleMode and the mission handlers). So a soldier walking to a transport still boards it.</remarks>
+bool FootClass::Is_Free_For_Plan(void) const
+{
+	if (CurrentMission == MISSION_GUARD) {
+		return(true);
+	}
+	if (CurrentMission == MISSION_ATTACK || CurrentMission == MISSION_GUARD_AREA) {
+		if (TarCom != NULL) {
+			return(TarCom->RTTI == RTTI_CELL);
+		}
+		return(CurrentMission == MISSION_GUARD_AREA);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Starts the unit's committed plan. A unit that is free for it issues its first order now; a busy unit keeps its
+/// current order and takes the plan when it goes idle (see Is_Free_For_Plan). Each later order is issued
 /// when the unit goes idle.
 /// </summary>
 void FootClass::Start_Planned_Orders(void)
 {
 	if (PlannedOrders.Count() > 0) {
 		IsPlanRunning = true;
-		Advance_Planned_Order();
+		if (Is_Free_For_Plan()) {
+			Advance_Planned_Order();
+		}
 	}
 }
 
@@ -2482,6 +2669,7 @@ void FootClass::Clear_Planned_Orders(void)
 {
 	PlannedOrders.Clear();
 	IsPlanRunning = false;
+	IsPlanAdvanceDeferred = false;
 	HasPlannedRunningOrder = false;
 	PlannedLeg.Invalidate();
 }
@@ -2916,38 +3104,11 @@ int FootClass::Do_MISSION_ENTER(void)
 		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
 			grinder = (BuildingClass *)ArchiveTarget;
 		}
-		if (grinder != NULL && (grinder->Class->IsGrinding || grinder->Class->IsInfantryAbsorb || grinder->Class->IsUnitAbsorb || grinder->Class->IsBunker)) {
+		if (grinder != NULL && (grinder->Class->Is_Walk_In_Facility() || grinder->Class->IsBunker)) {
 			if (grinder->Takes_Walk_Ins(this)) {
 				ArchiveTarget = grinder;
 				if (NavCom == NULL) {
 					Assign_Destination(grinder);
-				}
-				return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
-			}
-			ArchiveTarget = NULL;
-			Assign_Destination(NULL);
-			Enter_Idle_Mode();
-			return(Current_Mission_Control().Normal_Delay());
-		}
-	}
-
-	/*
-	 * A soldier sent to garrison a structure remembers it and keeps walking there, trying again
-	 * if its path gives out; it goes inside on arrival. It gives up once the structure cannot
-	 * take it.
-	 */
-	if (RTTI == RTTI_INFANTRY && (static_cast<InfantryClass *>(this)->Class->IsOccupier || static_cast<InfantryClass *>(this)->Class->IsAssaulter)) {
-		BuildingClass * building = NULL;
-		if (NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
-			building = (BuildingClass *)NavCom;
-		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
-			building = (BuildingClass *)ArchiveTarget;
-		}
-		if (building != NULL && building->Class->IsCanBeOccupied) {
-			if (building->Can_Be_Occupied_By(static_cast<InfantryClass *>(this))) {
-				ArchiveTarget = building;
-				if (NavCom == NULL) {
-					Assign_Destination(building);
 				}
 				return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 			}
@@ -2990,6 +3151,12 @@ int FootClass::Do_MISSION_ENTER(void)
 					Assign_Destination(RouteQueue[0], false);
 					RouteQueue.Delete_Index(0);
 				}
+			} else if (TClass->IsTeleporter) {
+				// A teleporter is given its destination again each time, as gamemd's Mission_Enter does
+				// (0x4D9290), because its locomotor refuses a destination while it holds after a jump.
+				AbstractClass * destination = NavCom;
+				NavCom = NULL;
+				Assign_Destination(destination, true);
 			}
 		}
 
@@ -3047,13 +3214,6 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 	}
 	if (LocomotorTarget != NULL && target != NULL) {
 		Release_Locomotor(true);
-	}
-
-	// A held vehicle that is given no destination lets go of its holder (FootClass::SetDestination, 0x4D94B0).
-	if (target == NULL && IsAttackedByLocomotor && LocomotorSource != NULL) {
-		LocomotorSource->LocomotorTarget = NULL;
-		LocomotorSource = NULL;
-		IsLetGoByLocomotor = true;
 	}
 
 	NavCom = target;
@@ -3262,6 +3422,7 @@ void FootClass::Death_Announcement(TechnoClass const * ) const
  *=============================================================================================*/
 AbstractClass * FootClass::Greatest_Threat(ThreatType method, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
 	/*
 	**	If the scan is forced to be limited, then limit the scan now.
 	*/
@@ -3961,33 +4122,23 @@ void FootClass::AI(void)
 {
 	BASECLASS::AI();
 
+	if (IsPlanAdvanceDeferred) {
+		IsPlanAdvanceDeferred = false;
+		if (IsActive && !IsInLimbo) {
+			Advance_Planned_Order();
+		}
+	}
+
 	// An object that starts to sink plays its VoiceSinking and its SinkingSound, or the rules' (FootClass::Update, 0x4DA530).
 	if (IsSinking != WasSinking) {
 		WasSinking = IsSinking;
 		if (IsSinking) {
-			Sound_Effect(TClass->VoiceSinking, Center_Coord());
+			Unit_Voice_Effect(TClass->VoiceSinking, Center_Coord());
 			Sound_Effect(TClass->SinkingSound != VOC_NONE ? TClass->SinkingSound : Rule->SinkingSound, Center_Coord());
 		}
 	}
 
 	Update_Sensors(false);
-
-	// A moving object plays a sound from its MoveSound list and ends its loop three frames after it stops (FootClass::Update).
-	if (IsActive && !IsInLimbo && Locomotion && Locomotion->Is_Moving_Now()) {
-		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
-			MoveSoundHandle.Stop();
-			Sound_Effect((VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber()), Center_Coord(), &MoveSoundHandle);
-			IsMoveSoundPlaying = true;
-		}
-		MoveSoundDelay = 3;
-	} else if (IsMoveSoundPlaying) {
-		if (MoveSoundDelay == 0) {
-			MoveSoundHandle.End_Looping();
-			IsMoveSoundPlaying = false;
-		} else {
-			MoveSoundDelay--;
-		}
-	}
 
 	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
 		ParasiteEatingMe->ParasiteImUsing->Update();
@@ -4031,7 +4182,10 @@ void FootClass::AI(void)
 			}
 		}
 
-		if (Locomotion != NULL && !IsSinking && !IsFalling) {
+		bool stepped = false;
+
+		// A DirectRocker-linked unit that is not Pushy runs no locomotor step (FootClass::Update, 0x4DA530).
+		if (Locomotion != NULL && !IsSinking && !IsFalling && (DirectRockerLinkedUnit == NULL || TClass->IsPushy)) {
 			IsLocomotorProcessing = true;
 			Locomotion->Process();
 			IsLocomotorProcessing = false;
@@ -4048,7 +4202,7 @@ void FootClass::AI(void)
 			}
 			// FootClass::Update (0x4DA530) steps the walk counter on the walk rate while the locomotor moves, and on the idle rate
 			// while it stands still. A unit that stands still on a hover-attack target, and is not deployed, also steps on each
-			// walk-rate frame, and a DeployToLand unit in the air steps every frame. Warp-in is taken as a chrono teleport hold.
+			// walk-rate frame, and a DeployToLand foot of any kind in the air steps every frame. Warp-in is taken as a chrono teleport hold.
 			bool const moving = Locomotion->Is_Moving_Now();
 			bool const warp_out = IsBeingWarpedOut;
 			bool const warp_in = Is_Chrono_Warping();
@@ -4057,7 +4211,7 @@ void FootClass::AI(void)
 			bool const is_unit = RTTI == RTTI_UNIT;
 			bool const hover_holding = is_unit && TClass->IsHoverAttack && TarCom != NULL;
 			bool const deployed = is_unit && static_cast<UnitClass const *>(this)->IsSimpleDeployed;
-			bool const deploy_to_land = is_unit && static_cast<UnitClass const *>(this)->Class->IsDeployToLand;
+			bool const deploy_to_land = TClass->IsDeployToLand;
 			bool const holds_still = (!moving || warp_in) && (!hover_holding || deployed);
 			bool const off_walk_frame = (Frame % TClass->WalkRate) != 0 || busy;
 			bool step = !holds_still && !off_walk_frame;
@@ -4073,8 +4227,11 @@ void FootClass::AI(void)
 			}
 			if (step) {
 				TotalFramesWalked++;
+				stepped = true;
 			}
 		}
+
+		Update_Move_Sound(stepped);
 
 
 		if ((Frame & 63) == 63 && NavCom == NULL && !IsOnBridge && Get_Cell_Ptr()->Ramp == 0 && Is_On_Elevation() && HeightAGL == 0) {
@@ -4104,6 +4261,44 @@ void FootClass::AI(void)
 }
 
 
+// Starts, re-aims and ends the MoveSound loop. A move starts a sound when the walk counter stepped
+// this frame or the locomotor reports movement, unless the object is falling, crashing, or a
+// DirectRocker-linked unit that is not Pushy. A playing sound is re-aimed at the object's place on
+// every update, as gamemd's FootClass::Update (0x4DA530) does through AudioController::PlayEvent
+// (0x750D40). After the object stops, the sound plays on for three updates and ends on the fourth.
+// gamemd's update does not test InLimbo here, so a limboed object that is still moving keeps the flag set.
+void FootClass::Update_Move_Sound(bool stepped)
+{
+	bool const moving = stepped || (Locomotion != NULL && Locomotion->Is_Moving_Now());
+	bool const may_move = !IsFalling && !IsCrashing && (DirectRockerLinkedUnit == NULL || TClass->IsPushy);
+
+	if (moving && may_move) {
+		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
+			MoveSoundHandle.Stop();
+			MoveSoundHandle.Clear();
+			MoveSoundVoc = (VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber());
+			IsMoveSoundPlaying = true;
+			Start_Placed_Sound(MoveSoundVoc, Center_Coord(), &MoveSoundHandle);
+		}
+		MoveSoundDelay = 3;
+	} else if (IsMoveSoundPlaying) {
+		if (MoveSoundDelay == 0 || IsFalling || IsCrashing) {
+			MoveSoundHandle.End_Looping();
+			IsMoveSoundPlaying = false;
+			MoveSoundDelay = 0;
+			MoveSoundVoc = VOC_NONE;
+		} else {
+			MoveSoundDelay--;
+		}
+	}
+
+	// A loop that Limbo ended has no voc, so it is not re-aimed or restarted.
+	if (IsMoveSoundPlaying && MoveSoundVoc != VOC_NONE) {
+		Follow_Sound(MoveSoundVoc, Center_Coord(), &MoveSoundHandle);
+	}
+}
+
+
 /// <summary>
 /// Sinks this object one frame and lays a wake every fourth frame. The caller removes the
 /// object when this returns true.
@@ -4122,9 +4317,7 @@ bool FootClass::Advance_Sinking(void)
 
 		// The wake sits on the ground under the object, not at its sinking height.
 		Coord const wake(PositionCoord.X + dx, PositionCoord.Y + dy, PositionCoord.Z - HeightAGL);
-		if (Rule->Wake != NULL) {
-			new AnimClass(Rule->Wake, wake);
-		}
+		Spawn_Wake(wake);
 	}
 	return(false);
 }
@@ -4216,6 +4409,22 @@ void FootClass::Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_i
 
 
 /// <summary>
+/// Draws the ground shadow from the voxel cache when that settles the draw.
+/// This does what Draw_Voxel_Shadow does for a shadow that is cached or not wanted, and needs no matrix
+/// for it; the caller builds the matrix only when this returns false.
+/// </summary>
+/// <returns>Returns true when the shadow is done (drawn from the cache, or none is to be drawn), false
+/// when Draw_Voxel_Shadow must render it.</returns>
+bool FootClass::Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const
+{
+	if (Locomotion == nullptr || Locomotion->Is_To_Have_Shadow() != (bool)true) {
+		return(true);
+	}
+	return(Techno_Draw_Cached_Voxel_Shadow(voxeldata, key, cache, cliprect, Point2D(Locomotion->Shadow_Point()) + point));
+}
+
+
+/// <summary>
 /// Fetches the speed this object should be traveling at.
 /// This is the type's maximum speed after the owner country's speed multiplier for the type's
 /// category, the object's own speed bias, any veteran speed ability, and the object's current
@@ -4267,8 +4476,11 @@ bool FootClass::Limbo(void)
 {
 	Update_Sensors(true);
 
+	// As gamemd's FootClass::Limbo (0x4DB260) does, this ends the loop and leaves IsMoveSoundPlaying alone.
+	// Clearing the voc stops the per-update follow from restarting the ended loop.
 	MoveSoundHandle.Stop();
-	IsMoveSoundPlaying = false;
+	MoveSoundHandle.Clear();
+	MoveSoundVoc = VOC_NONE;
 
 	if (!IsInLimbo) {
 		Cell cell = LastAdjacencyCell;
@@ -4318,6 +4530,7 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BlockagePathDelay);
 	stream.Serialize(ParalysisTimer);
 	stream.Serialize(WasSinking);
+	stream.Serialize(ChronoArrivalHold);
 
 	/*
 	 * The locomotor is a sub-object rather than a member, so it travels as a record of
@@ -4342,9 +4555,6 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDeploying);
 	stream.Serialize(SensorCell);
 	stream.Serialize(SensorHouse);
-	if (!stream.Is_Saving()) {
-		SensorRadius = SensorCell != CELL_NONE ? TClass->SensorsSight : 0;
-	}
 	stream.Serialize(IsFiring);
 	stream.Serialize(IsRotating);
 	stream.Serialize(IsUnloading);
@@ -4487,6 +4697,7 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScattering);
 	crc(IsIdle);
 	crc(IonBlastYDrawOffset);
+	crc(ChronoArrivalHold);
 }
 
 
@@ -5310,6 +5521,23 @@ ActionType FootClass::Transport_Enter_Action(ObjectClass const * object, ActionT
 
 
 /// <summary>
+/// Takes this object off the map and into the cargo of a transport that has accepted it. A gunner transport
+/// takes it as its gunner when it is the only passenger, and the transport then plays its entering sound.
+/// </summary>
+/// <param name="transport">The transport that takes this object aboard.</param>
+void FootClass::Board_Transport(TechnoClass * transport)
+{
+	Limbo();
+	transport->Cargo.Attach(this);
+	if (transport->TClass->IsGunner && transport->Cargo.How_Many() == 1) {
+		transport->Receive_Gunner(this);
+	}
+	transport->Play_Transport_Sound(true);
+	Hidden();
+}
+
+
+/// <summary>
 /// Handles the rescue mission state machine.
 /// This routine will have the object engage any threat close to the spot the mission began
 /// at, then head for whatever destination its house nominates. Once it arrives, it settles
@@ -5496,23 +5724,37 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 }
 
 
-void Cloak_Cell_Occupiers(CellClass * cellptr);
-
-
 /// <summary>
-/// Looks around once each time SightTimer expires, while this object is in the air, moving, and
-/// owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
+/// Looks around once each time SightTimer expires, while this object is in the air, moving now (a hovering
+/// jump jet is not), and owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
 /// aircraft and vehicles. The timer runs whether or not the object qualifies. Infantry keep their
 /// own once-a-second look in InfantryClass::AI.
 /// </summary>
 void FootClass::Airborne_Look(void)
 {
-	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving() || !House->Is_Ally(PlayerPtr)) {
+	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving_Now() || !House->Is_Ally(PlayerPtr)) {
 		return;
 	}
 	if (SightTimer == 0) {
 		Look();
 		SightTimer = TICKS_PER_SECOND;
+	}
+}
+
+
+/// <summary>
+/// Rebuilds the radius that every loaded object's sensor coverage was laid down with.
+/// Call once the swizzler has resolved the type pointers; the radius is not saved, and the type
+/// is not known while the object's own record is being read.
+/// </summary>
+void FootClass::Restore_Sensor_Radii(void)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * const techno = Technos[index];
+		if (techno->Is_Foot()) {
+			FootClass * const foot = static_cast<FootClass *>(techno);
+			foot->SensorRadius = foot->SensorCell != CELL_NONE ? foot->TClass->SensorsSight : 0;
+		}
 	}
 }
 
@@ -5547,7 +5789,7 @@ void FootClass::Update_Sensors(bool lift)
 				}
 				CellClass * cellptr = &Map[cell];
 				if (pass == 0) {
-					// A cell is lowered only while this house still senses it, so counts never go negative.
+					// Only a count above zero is lowered, so this object never takes a cell below zero.
 					if (!cellptr->Is_Sensed(house)) {
 						continue;
 					}

@@ -20,12 +20,15 @@
 #include "building.h"
 #include "builtype.h"
 #include "animtype.h"
+#include "autotest.h"
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
 #include "csf.h"
+#include "dbgprint.h"
 #include "dialog.hh"
 #include "globals.h"
+#include "gpudraw.h"
 #include "house.h"
 #include "ion.h"
 #include "playerdisplay.h"
@@ -38,6 +41,7 @@
 #include "stimer.h"
 #include "suprkeys.h"
 #include "suprtype.h"
+#include "super.h"
 #include "tactical.h"
 #include "techno.h"
 #include "voc.h"
@@ -132,14 +136,6 @@ void NukeFlashClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(StartTime);
 	stream.Serialize(Duration);
 	stream.Serialize(Type);
-}
-
-
-static void Storm_Message(char const * label, TextPrintType style)
-{
-	int const scheme = PlayerPtr != NULL ? House_Display_Scheme(PlayerPtr) : 3;
-	std::string const text = Fetch_String_UTF8(label);
-	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, style, TICKS_PER_SECOND * 10);
 }
 
 
@@ -296,9 +292,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 		// A storm with no owner counts every house as an enemy.
 		bool const hit = Owner == NULL ? (affected & SuperRules::HOUSE_ENEMIES) != 0 : SuperRules::House_Passes(affected, house == Owner, Owner->Is_Ally(house));
 		if (hit && (!outage_set || outage > 0)) {
-			house->RadarBlackout = outage;
-			house->IsRadarBlackout = true;
-			house->RecalcRadar = true;
+			house->Start_Radar_Blackout(outage);
 		}
 	}
 	if (PlayerPtr != NULL) {
@@ -308,7 +302,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 
 	if (Print_Text()) {
 		Sound_Effect(Rule->StormSound);
-		Storm_Message("TXT_LIGHTNING_STORM", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
+		Show_Super_Message("TXT_LIGHTNING_STORM", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 	}
 }
 
@@ -319,7 +313,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 /// </summary>
 void LightningStormClass::Print_Refusal(void)
 {
-	Storm_Message("Msg:LightningStormActive", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
+	Show_Super_Message("Msg:LightningStormActive", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 }
 
 
@@ -346,19 +340,27 @@ void LightningStormClass::AI(void)
 		}
 	}
 
-	for (int index = Clouds.Count() - 1; index >= 0; index--) {
-		if (Cloud_Finished(Clouds[index])) {
-			Clouds.Delete_Index(index);
+	// A storm that has run its time ends on the first frame that starts with no cloud left, so the light
+	// returns a frame after the last cloud is dropped from the list (LightningStorm::Update, 0x53A6C0).
+	if (Clouds.Count() < 1) {
+		if (IsTimeToEnd) {
+			if (IsActive) {
+				IsActive = false;
+				Owner = NULL;
+				IonStormClass::Update_Special_Lighting();
+				AUTOTEST_LOG("storm ends at frame %d\n", Frame);
+			}
+			IsTimeToEnd = false;
 		}
-	}
-
-	if (Clouds.Count() == 0 && IsTimeToEnd) {
-		if (IsActive) {
-			IsActive = false;
-			Owner = NULL;
-			IonStormClass::Update_Special_Lighting();
+	} else {
+		for (int index = Clouds.Count() - 1; index >= 0; index--) {
+			if (Cloud_Finished(Clouds[index])) {
+				Clouds.Delete_Index(index);
+			}
 		}
-		IsTimeToEnd = false;
+		if (Clouds.Count() < 1) {
+			AUTOTEST_LOG("storm drops its last cloud at frame %d\n", Frame);
+		}
 	}
 
 	if (!IsActive || IsTimeToEnd) {
@@ -368,7 +370,7 @@ void LightningStormClass::AI(void)
 				Start(Duration, 0, Center, Owner, Active_Type());
 			} else if (Deferment % WARNING_INTERVAL == 0 && Print_Text()) {
 				Speak_Eva("EVA_LightningStormCreated");
-				Storm_Message("TXT_LIGHTNING_STORM_APPROACHING", TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW));
+				Show_Super_Message("TXT_LIGHTNING_STORM_APPROACHING", TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW));
 			}
 		}
 		return;
@@ -535,6 +537,8 @@ void LightningStormClass::Bolt(Coord const & from)
 	int const level = cellptr.Height;
 	coord.Z = level * LEVEL_LEPTON_H + (cellptr.IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
 
+	GpuDraw_Add_Flash();
+
 	if (sounds.Count() > 0) {
 		Sound_Effect((VocType)sounds.Pick(Scen->RandomNumber()), coord);
 	}
@@ -544,43 +548,14 @@ void LightningStormClass::Bolt(Coord const & from)
 		new AnimClass(explosion, coord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER));
 	}
 
-	BuildingClass * building = cellptr.Cell_Building();
-	TechnoClass * techno = cellptr.Cell_Techno();
-	bool const infantry = techno != NULL && techno->RTTI == RTTI_INFANTRY;
-	bool debris = false;
-	if (building == NULL && techno == NULL) {
-		switch (cellptr.Land_Type()) {
-			case LAND_ROAD:
-			case LAND_ROCK:
-			case LAND_WALL:
-			case LAND_WEEDS:
-				debris = true;
-				break;
-
-			default:
-				break;
-		}
-	}
-
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST storm bolt on %d,%d at frame %d damage %d\n", cell.X, cell.Y, Frame, damage);
 	}
-	Combat_Lighting(coord, damage, warhead);
+	int const least = keys != nullptr ? keys->LightningDebrisMin : 2;
+	int const most = keys != nullptr ? keys->LightningDebrisMax : 4;
 	IsBolting = true;
-	Explosion_Damage(coord, damage, NULL, warhead, true, Owner);
+	Strike_Cell_Damage(cellptr, coord, damage, warhead, Owner, false, debris_types, least, most);
 	IsBolting = false;
-
-	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
-		debris = true;
-	}
-	if (!infantry && debris && debris_types.Count() > 0) {
-		int const least = keys != nullptr ? keys->LightningDebrisMin : 2;
-		int const most = keys != nullptr ? keys->LightningDebrisMax : 4;
-		int const count = most > least ? Random_Pick(least, most) : std::max(least, 0);
-		for (int piece = count; piece > 0; piece--) {
-			new AnimClass(debris_types[Random_Pick(0, debris_types.Count() - 1)], coord);
-		}
-	}
 }
 
 

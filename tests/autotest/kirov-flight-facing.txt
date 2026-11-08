@@ -1,0 +1,11 @@
+; A Kirov (ZEP) granted at 63,22 climbs off the ground, then is ordered to fly to 80,40 at frame 150. The speed probe
+; logs each object's facing, primary facing and the locomotor's own, every 5 frames from frame 50 to 400.
+; Used to check that the Kirov's normal flight facing is the same before and after a locomotor change.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/kirov-flight-facing.txt -Country 8 -Width 800 -Height 600 -Seconds 120 -Settings "[Options]`r`nDebugMode=yes" -ShotDir <dir> -Filter "facing|speed|Exception"
+30 command CenterBase
+35 reveal
+40 grantunit ZEP 63 22
+50 speed ZEP 5
+150 move ZEP 80 40
+400 speed ZEP 0
+410 quit

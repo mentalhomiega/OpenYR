@@ -65,14 +65,7 @@ ConvertClass * Create_Drawer(char const * palette_name)
 		return(NULL);
 	}
 
-	unsigned char * pal_ptr = ((unsigned char *)*palette);
-
-	for (int gindex = 0; gindex < 256; gindex++) {
-	CCPalette[gindex] = RGBClass(
-		((unsigned char *)*palette)[gindex*3]<<2,
-		((unsigned char *)*palette)[gindex*3+1]<<2,
-		((unsigned char *)*palette)[gindex*3+2]<<2);
-	}
+	CCPalette = Widen_Six_Bit_Palette(palette);
 
 	delete palette;
 

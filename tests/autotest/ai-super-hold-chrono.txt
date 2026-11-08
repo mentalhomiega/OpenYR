@@ -1,0 +1,30 @@
+; A Chrono Legionnaire erases the computer's Missile Silo (NAMISL), which grants its charged Nuke, so the erase holds the Nuke
+; (ChronoErasedSuperWeapons=no, the default). The beam is released by killing the legionnaire at frame 200.
+; Expected: suspended 1 and usable 0 from the strike at frame 70 until the kill, with no "ready 0" line in that span; the Nuke
+; fires after the release.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/ai-super-hold-chrono.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   (super house Africans index 0|chargeai|kill|strike)|Exception"
+10 command CenterBase
+20 reveal
+30 view 56 40
+40 enemy NAMISL 60 50
+41 enemy GAPOWR 46 34
+42 enemy GAPOWR 46 38
+43 enemy GAPOWR 46 42
+50 grantunit CLEG 52 48
+51 chargeai NukeSpecial 100
+52 supers
+65 supers
+70 strike CLEG 60 50
+80 supers
+100 supers
+120 supers
+140 supers
+160 supers
+180 supers
+200 kill CLEG 1
+210 supers
+230 supers
+250 supers
+270 supers
+290 supers
+300 quit

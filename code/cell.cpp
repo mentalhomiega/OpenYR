@@ -413,7 +413,7 @@ static RGBClass Radar_Tile_Color(RGBStruct const & color, float brightness)
  *   04/30/1994 JLB : Converted to member function.                                            *
  *   05/31/1994 JLB : Takes into account any stealth characteristics of object.                *
  *=============================================================================================*/
-void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
+RGBClass CellClass::Cell_Color(void) const
 {
 	/*
 	 * A terrain object (tree, etc.) draws in one fixed light tan, whatever its artwork or RadarColor
@@ -421,16 +421,14 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 	 */
 	TerrainClass * tptr = Cell_Terrain();
 	if (tptr != NULL) {
-		highcolor = lowcolor = RGBClass(200, 200, 160);
-		return;
+		return(RGBClass(200, 200, 160));
 	}
 
 	/*
 	 * Cells covered by a (high) bridge use the bridge overlay radar color.
 	 */
 	if (IsUnderBridge) {
-		highcolor = lowcolor = OverlayTypes[OVERLAY_BRIDGE1]->Get_Radar_Color(0);
-		return;
+		return(OverlayTypes[OVERLAY_BRIDGE1]->Get_Radar_Color(0));
 	}
 
 	IsometricTileTypeClass * itype = (ITType != ISOTILE_NONE) ? IsometricTileTypes[ITType] : IsometricTileTypes[TILE_CLEAR];
@@ -444,11 +442,9 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 		 */
 		if (!otype->IsTiberium) {
 			if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_26) {
-				highcolor = lowcolor = OverlayTypes[overlay]->Get_Radar_Color(1);
-			} else {
-				highcolor = lowcolor = OverlayTypes[overlay]->Get_Radar_Color(OverlayData);
+				return(OverlayTypes[overlay]->Get_Radar_Color(1));
 			}
-			return;
+			return(OverlayTypes[overlay]->Get_Radar_Color(OverlayData));
 		}
 
 		/*
@@ -456,14 +452,13 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 		 */
 		if (otype->CellAnim != NULL) {
 			ShapeSet * shape = (ShapeSet *)otype->CellAnim->Get_Image_Data();
-			highcolor = lowcolor = shape->Get_Color(OverlayData);
-			return;
+			return(shape->Get_Color(OverlayData));
 		}
 
 		/*
 		 * Tiberium present in this cell. Pick the overlay shape for the tiberium type
-		 * (taking ramp/variety into account) and use its palette color. The high and
-		 * low colors are swapped for the second and third tiberium types and veinholes.
+		 * (taking ramp/variety into account) and use its palette color. A cell whose overlay is a
+		 * second or third tiberium overlay swaps green and blue.
 		 */
 		TiberiumType tib = Tiberium_Type_Here();
 		if (tib != TIBERIUM_NONE) {
@@ -484,8 +479,7 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 					color = RGBClass(color.Get_Red(), color.Get_Blue(), color.Get_Green());
 				}
 
-				highcolor = lowcolor = color;
-				return;
+				return(color);
 			}
 		}
 	}
@@ -515,10 +509,9 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 	IsoTileRecord const * record = ((IsoTileSet *)next->ImageData)->Fetch_Record_Pointer_Unsafe(SubTile);
 	if (record != NULL) {
 		TheaterClass const & theater = TheaterClass::As_Reference(Scen->Theater);
-		lowcolor = highcolor = Radar_Tile_Color(record->LowColor, theater.LowRadarBrightness);
-	} else {
-		lowcolor = highcolor = RGBClass(60, 60, 60);
+		return(Radar_Tile_Color(record->LowColor, theater.LowRadarBrightness));
 	}
+	return(RGBClass(60, 60, 60));
 }
 
 
@@ -1627,119 +1620,35 @@ void CellClass::Set_Under_Bridge(FacingType facing, bool state)
 /// bridge down here.</param>
 void CellClass::Set_Under_Rail_Bridge(FacingType facing, bool state)
 {
-	/*
-	 * Preload this deck cell's overlay frame for the bridge orientation. This is
-	 * immediately overwritten by the assignment below, so it is redundant.
-	 */
-	if (facing == FACING_N) {
-		OverlayData = OVERLAYDATA_BRIDGE_EW_FULL1;
-	} else {
-		OverlayData = OVERLAYDATA_BRIDGE_NS_FULL1;
-	}
+	Set_Under_Bridge(facing, state);
+}
 
-	/*
-	 * This cell hosts the raised bridge deck piece: mark it as the deck, under the
-	 * bridge, traversable, drawn surface, and overshadowed. WasUnderBridge is the
-	 * inverse of IsUnderBridge so a destroyed span can be found and repaired later.
-	 */
-	IsBridgeDeck = state;
-	IsUnderBridge = state;
-	IsBridgeTraversable = state;
-	IsBridgeSurface = state;
-	IsOvershadowed = state;
-	WasUnderBridge = !state;
-	IsBridgeEastWest = (facing == FACING_N);
-	if (state) {
-		OverlayData = (facing != FACING_N) ? OVERLAYDATA_BRIDGE_NS_FULL1 : OVERLAYDATA_BRIDGE_EW_FULL1;
-	} else {
-		OverlayData = 0;
-		Destroy_Bridge();
-	}
-	Map.Radar_Background(CellID);
 
-	/*
-	 * One cell across the deck (a single step in the `facing` direction): under the
-	 * deck, part of the walkable surface, and traversable. Every cell other than the
-	 * deck cell points its BridgeDeckCell back at this deck.
-	 */
-	CellClass * across1 = &Adjacent_Cell(facing);
-	across1->BridgeDeckCell = state ? this : NULL;
-	across1->IsUnderBridge = state;
-	across1->IsBridgeTraversable = state;
-	across1->IsBridgeSurface = state;
-	across1->IsOvershadowed = state;
-	across1->WasUnderBridge = !state;
-	across1->IsBridgeEastWest = (facing == FACING_N);
-	if (state) {
-		across1->OverlayData = (facing != FACING_N) ? OVERLAYDATA_BRIDGE_NS_FULL1 : OVERLAYDATA_BRIDGE_EW_FULL1;
-	} else {
-		across1->OverlayData = 0;
-		across1->Destroy_Bridge();
-	}
-	Map.Radar_Background(across1->CellID);
+/// <summary>
+/// Finds the object that follows this one in the cell's occupation chain.
+/// A building has one Next link for every cell of its footprint, so when two footprints overlap the
+/// link leads to a building that does not stand on this cell. Such buildings are skipped, which keeps
+/// the cell from retaining a pointer to a building that is later deleted.
+/// </summary>
+static ObjectClass * Occupant_After(ObjectClass const * object, Cell const & cell)
+{
+	ObjectClass * next = object->Next;
 
-	/*
-	 * Two cells across -- the far edge of the under-bridge strip. Under the deck and
-	 * part of the surface, but deliberately NOT traversable: a unit cannot step off
-	 * the far edge of the deck here.
-	 */
-	CellClass * across2 = &across1->Adjacent_Cell(facing);
-	across2->BridgeDeckCell = state ? this : NULL;
-	across2->IsUnderBridge = state;
-	across2->IsBridgeTraversable = false;
-	across2->IsBridgeSurface = state;
-	across2->IsOvershadowed = state;
-	across2->WasUnderBridge = !state;
-	across2->IsBridgeEastWest = (facing == FACING_N);
-	if (state) {
-		across2->OverlayData = (facing != FACING_N) ? OVERLAYDATA_BRIDGE_NS_FULL1 : OVERLAYDATA_BRIDGE_EW_FULL1;
-	} else {
-		across2->OverlayData = 0;
-		across2->Destroy_Bridge();
+	while (next != NULL && next->RTTI == RTTI_BUILDING) {
+		bool stands_here = false;
+		Cell const anchor = next->PositionCell;
+		for (Cell const * offset = next->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+			if (anchor + *offset == cell) {
+				stands_here = true;
+				break;
+			}
+		}
+		if (stands_here) {
+			break;
+		}
+		next = next->Next;
 	}
-	Map.Radar_Background(across2->CellID);
-
-	/*
-	 * Three cells across -- only the raised deck surface reaches this far. The surface
-	 * strip is the under-bridge strip shifted one cell along `facing` (the deck is
-	 * drawn lifted), so this edge is surface-only.
-	 */
-	CellClass * across3 = &across2->Adjacent_Cell(facing);
-	across3->IsBridgeSurface = state;
-
-	/*
-	 * One cell across the deck on the opposite side (a step against `facing`): under
-	 * the deck and traversable (the approach cell where a unit steps onto the bridge),
-	 * but not part of the drawn surface.
-	 */
-	CellClass * back = &Adjacent_Cell(Facing_Sub(facing, FACING_180));
-	back->BridgeDeckCell = state ? this : NULL;
-	back->IsUnderBridge = state;
-	back->IsBridgeTraversable = state;
-	back->WasUnderBridge = !state;
-	back->IsBridgeSurface = false;
-	back->IsOvershadowed = state;
-	back->IsBridgeEastWest = (facing == FACING_N);
-	if (state) {
-		back->OverlayData = (facing != FACING_N) ? OVERLAYDATA_BRIDGE_NS_FULL1 : OVERLAYDATA_BRIDGE_EW_FULL1;
-	} else {
-		back->OverlayData = 0;
-		back->Destroy_Bridge();
-	}
-	Map.Radar_Background(back->CellID);
-
-	/*
-	 * A north-south bridge (FACING_W) reaches one cell further across on the opposite
-	 * side than an east-west bridge does: its isometric footprint overshadows a second
-	 * cell beyond `back`. Flag that cell as overshadowed and link it to this deck. It is
-	 * shadow-only -- not under the bridge, not surface, not traversable. An east-west
-	 * bridge (FACING_N) does not reach this far and has no equivalent cell.
-	 */
-	if (facing == FACING_W) {
-		CellClass * back2 = &back->Adjacent_Cell(FACING_E);
-		back2->BridgeDeckCell = state ? this : NULL;
-		back2->IsOvershadowed = state;
-	}
+	return(next);
 }
 
 
@@ -1842,17 +1751,18 @@ void CellClass::Occupy_Up(ObjectClass * object, bool bridge)
 	ObjectClass * optr = Cell_Occupier(bridge);		// Working pointer to the objects in the chain.
 
 	if (optr == object) {
+		ObjectClass * following = Occupant_After(object, CellID);
 		if (bridge) {
-			BridgeOccupierPtr = object->Next;
+			BridgeOccupierPtr = following;
 		} else {
-			OccupierPtr = object->Next;
+			OccupierPtr = following;
 		}
 		object->Next = NULL;
 	} else {
 		bool found = false;
 		while (optr != NULL) {
 			if (optr->Next == object) {
-				optr->Next = object->Next;
+				optr->Next = Occupant_After(object, CellID);
 				object->Next = NULL;
 				found = true;
 				break;
@@ -2412,6 +2322,22 @@ void CellClass::Draw_Overlay(Point2D const & xpoint, Rect const & cliprect)
 }
 
 
+/*
+ * The screen rectangle of a rubble overlay's artwork, or an empty rectangle when the rubble has no
+ * frame to draw.
+ */
+static Rect Rubble_Render_Rect(CellClass const & cell, bool shadow)
+{
+	ShapeSet const * image = NULL;
+	int frame = 0;
+	Point2D point;
+	if (!Rubble_Image(cell, image, frame, point, shadow)) {
+		return(Rect(0, 0, 0, 0));
+	}
+	return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+}
+
+
 /// <summary>
 /// Fetches the screen rectangle this cell's overlay occupies.
 /// This routine is used by the tactical map when working out how much of the display an
@@ -2430,12 +2356,7 @@ Rect CellClass::Overlay_Render_Rect(void) const
 	OverlayTypeClass const * overlay = OverlayTypes[Overlay];
 
 	if (overlay->IsRubble) {
-		int frame = 0;
-		Point2D point;
-		if (!Rubble_Image(*this, image, frame, point, false)) {
-			return(Rect(0, 0, 0, 0));
-		}
-		return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+		return(Rubble_Render_Rect(*this, false));
 	}
 
 	if (overlay->IsTiberium) {
@@ -2480,12 +2401,7 @@ Rect CellClass::Overlay_Shadow_Render_Rect(void) const
 	if (Overlay != OVERLAY_NONE) {
 		OverlayTypeClass const * overlay = OverlayTypes[Overlay];
 		if (overlay->IsRubble) {
-			int frame = 0;
-			Point2D point;
-			if (!Rubble_Image(*this, image, frame, point, true)) {
-				return(Rect(0, 0, 0, 0));
-			}
-			return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+			return(Rubble_Render_Rect(*this, true));
 		}
 		if (overlay->IsTiberium) {
 			TiberiumType tibtype = Tiberium_Type_Here();
@@ -3633,108 +3549,72 @@ bool CellClass::Goodie_Check(FootClass * object)
 				powerup = Rule->WaterCrate;
 			}
 
-		} else if (Session.Type == GAME_NORMAL) {
-			powerup = fixed ? CrateType(OverlayData) : random_powerup();
 		} else {
 			powerup = fixed ? CrateType(OverlayData) : random_powerup();
 
-			/*
-			**	Possibly force it to be an MCV if there is
-			**	sufficient money and no buildings left.
-			*/
-			if (object->House->CurBuildings == 0 &&
-					object->House->Available_Money() > 1500 &&
-					object->House->Count_Owned(object->House->UQuantity, Rule->BaseUnit) == 0 &&
-					Session.Options.Bases) {
-				powerup = CRATE_UNIT;
-				force_mcv = true;
-			}
+			if (Session.Type != GAME_NORMAL) {
+				/*
+				**	Possibly force it to be an MCV if there is
+				**	sufficient money and no buildings left.
+				*/
+				if (object->House->CurBuildings == 0 &&
+						object->House->Available_Money() > 1500 &&
+						object->House->Count_Owned(object->House->UQuantity, Rule->BaseUnit) == 0 &&
+						Session.Options.Bases) {
+					powerup = CRATE_UNIT;
+					force_mcv = true;
+				}
 
-			/*
-			**	Depending on what was picked, there might be an alternate goodie if the selected
-			**	goodie would have no effect.
-			*/
-			switch (powerup) {
-				case CRATE_UNIT:
-					if (object->House->CurUnits > 50) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_SQUAD:
-					if (object->House->CurInfantry > 100) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_DARKNESS:
-					//if (object->House->IsGPSActive) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_ARMOR:
-					if (!Rule->IsArmorCrateStacking && object->ArmorBias != 1) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_SPEED:
-					if (object->SpeedBias != 1 || object->RTTI == RTTI_AIRCRAFT) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_FIREPOWER:
-					if ((!Rule->IsFirepowerCrateStacking && object->FirepowerBias != 1) || !object->Is_Weapon_Equipped()) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_REVEAL:
-//					if (object->House->IsVisionary) {
-//						if (object->House->IsGPSActive) {
-//							powerup = CRATE_MONEY;
-//						} else {
-//							powerup = CRATE_DARKNESS;
-//						}
-//					}
-					break;
-
-				case CRATE_CLOAK:
-					if (object->IsCloakable) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_HEAL_BASE:
-//					if (object->House->BScan == 0) powerup = CRATE_UNIT;
-					break;
-
-				case CRATE_VETERAN:
-					{
-						// A collector that cannot train, or is already elite, takes the money instead.
-						TechnoClass * collector = Dynamic_Cast<TechnoClass *>(object);
-						if (collector != NULL && (!collector->TClass->IsTrainable || collector->Veterancy.Is_Elite())) powerup = CRATE_MONEY;
-					}
-					break;
-
-				case CRATE_MONEY:
-					break;
-			}
-			/*
-			**	If the powerup is money but there is insufficient money to build a refinery but there is a construction
-			**	yard available, then force the money to be enough to rebuild the refinery.
-			*/
-#if 0
-			if (powerup == CRATE_MONEY && (object->House->BScan & (STRUCTF_CONST|STRUCTF_REFINERY)) == STRUCTF_CONST &&
-						object->House->Available_Money() < BuildingTypeClass::As_Reference(STRUCT_REFINERY).Cost * object->House->CostBias) {
-
-				force_money = BuildingTypeClass::As_Reference(STRUCT_REFINERY).Cost * object->House->CostBias;
-			}
-
-			/*
-			**	Special override for water crates so that illegal goodies items
-			**	won't appear.
-			*/
-			if (OverlayTypes[Overlay] == Rule->WaterCrateImg) {
+				/*
+				**	Depending on what was picked, there might be an alternate goodie if the selected
+				**	goodie would have no effect.
+				*/
 				switch (powerup) {
 					case CRATE_UNIT:
-					case CRATE_SQUAD:
-						powerup = CRATE_MONEY;
+						if (object->House->CurUnits > 50) powerup = CRATE_MONEY;
 						break;
 
-					default:
+					case CRATE_SQUAD:
+						if (object->House->CurInfantry > 100) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_DARKNESS:
+						break;
+
+					case CRATE_ARMOR:
+						if (!Rule->IsArmorCrateStacking && object->ArmorBias != 1) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_SPEED:
+						if (object->SpeedBias != 1 || object->RTTI == RTTI_AIRCRAFT) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_FIREPOWER:
+						if ((!Rule->IsFirepowerCrateStacking && object->FirepowerBias != 1) || !object->Is_Weapon_Equipped()) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_REVEAL:
+						break;
+
+					case CRATE_CLOAK:
+						if (object->IsCloakable) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_HEAL_BASE:
+						break;
+
+					case CRATE_VETERAN:
+						{
+							// A collector that cannot train, or is already elite, takes the money instead.
+							TechnoClass * collector = Dynamic_Cast<TechnoClass *>(object);
+							if (collector != NULL && (!collector->TClass->IsTrainable || collector->Veterancy.Is_Elite())) powerup = CRATE_MONEY;
+						}
+						break;
+
+					case CRATE_MONEY:
 						break;
 				}
 			}
-#endif
 		}
 
 		/*
@@ -4043,9 +3923,8 @@ crate_money:
 						break;
 					}
 				}
-				if (sindex != -1 && object->House->SuperWeapon[super->HeapID]->Enable(true, false, false) && object->IsOwnedByPlayer) {
-					Map.Add(RTTI_SPECIAL, super->HeapID);
-					Map.Flag_Strips_To_Redraw();
+				if (super != NULL && sindex != -1 && object->House->SuperWeapon[super->HeapID]->Enable(true, false, false) && object->IsOwnedByPlayer) {
+					object->House->Add_Super_Cameo(super->HeapID);
 				}
 				break;
 			}
@@ -4287,7 +4166,8 @@ bool CellClass::Is_Clear_To_Move(SpeedType loco, bool ignoreinfantry, bool ignor
 	 	overlay = OverlayTypes[Overlay];
 	}
 	if (overlay != NULL && overlay->IsWall) {
-		if (check != MZONE_DESTROYER && check != MZONE_AMPHIBIOUS_DESTROYER && check != MZONE_INFANTRY_DESTROYER && (check != MZONE_CRUSHER && check != MZONE_AMPHIBIOUS_CRUSHER && check != MZONE_CRUSHER_ALL || !overlay->IsCrushable)) {
+		// CrusherAll takes every wall, crushable or not (CellClass::IsClearToMove, 0x4834A0).
+		if (check != MZONE_DESTROYER && check != MZONE_AMPHIBIOUS_DESTROYER && check != MZONE_INFANTRY_DESTROYER && (check != MZONE_CRUSHER && check != MZONE_AMPHIBIOUS_CRUSHER || !overlay->IsCrushable) && check != MZONE_CRUSHER_ALL) {
 			return(false);
 		}
 
@@ -4684,8 +4564,14 @@ void CellClass::Recalc_Passability(void)
 		}
 	}
 
-	if (Land == LAND_WATER || Land == LAND_BEACH) {
+	// gamemd (0x00483c80) keeps beach apart from water, so a ship's zone ends at the shore.
+	if (Land == LAND_WATER) {
 		Passability = PASSABLE_WATER;
+		return;
+	}
+
+	if (Land == LAND_BEACH) {
+		Passability = PASSABLE_BEACH;
 		return;
 	}
 
@@ -6229,11 +6115,12 @@ bool CellClass::Is_Cloaked(HouseClass const * house) const
 
 /// <summary>
 /// Determines if the house specified has a sensor covering this cell.
+/// A count below zero does not sense the cell.
 /// </summary>
 /// <returns>bool; Is the cell sensed by that house?</returns>
 bool CellClass::Is_Sensed(HouseClass const * house) const
 {
-	return(SensorCount[house] != 0);
+	return(SensorCount[house] > 0);
 }
 
 
@@ -6273,15 +6160,12 @@ bool CellClass::Add_Sensor(HouseClass const * house)
 
 
 /// <summary>
-/// Counts one sensor array of the house specified off this cell.
+/// Counts one sensor array of the house specified off this cell. The count is not floored at
+/// zero, as gamemd's is, so a removal with no matching addition leaves it negative.
 /// </summary>
-/// <returns>bool; Is the cell no longer sensed by that house?</returns>
+/// <returns>bool; Did the count reach zero?</returns>
 bool CellClass::Remove_Sensor(HouseClass const * house)
 {
-	assert(SensorCount[house] > 0);
-	if (SensorCount[house] == 0) {
-		return(false);
-	}
 	return(--SensorCount[house] == 0);
 }
 

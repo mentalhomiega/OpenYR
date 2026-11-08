@@ -1,0 +1,82 @@
+; A V3 launcher fires at a tank parked under the high road bridge on Deadman, whose deck covers the cells 55-56, 39-42. The
+; tank's cell is under the bridge, so the rocket's destination is the ground there, 416 leptons (a bridge's height)
+; below the deck. A rocket in a cell under a bridge, with its nose within a bridge's height above that destination,
+; detonates there (gamemd 0x6621C8): it explodes above the ground, over the first cell under the deck that it reaches.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/v3-attack-under-bridge.txt -Map Deadman.mmx -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Rocket: |Exception"
+10 command CenterBase
+30 reveal
+40 own V3 56 52
+41 face 0 56 52
+42 neutral HTNK 56 40
+50 cell 56 40
+100 strike V3 56 40
+120 rocket V3ROCKET
+124 rocket V3ROCKET
+128 rocket V3ROCKET
+132 rocket V3ROCKET
+136 rocket V3ROCKET
+140 rocket V3ROCKET
+144 rocket V3ROCKET
+148 rocket V3ROCKET
+152 rocket V3ROCKET
+156 rocket V3ROCKET
+160 rocket V3ROCKET
+164 rocket V3ROCKET
+168 rocket V3ROCKET
+172 rocket V3ROCKET
+176 rocket V3ROCKET
+180 rocket V3ROCKET
+184 rocket V3ROCKET
+188 rocket V3ROCKET
+192 rocket V3ROCKET
+196 rocket V3ROCKET
+200 rocket V3ROCKET
+204 rocket V3ROCKET
+208 rocket V3ROCKET
+212 rocket V3ROCKET
+216 rocket V3ROCKET
+220 rocket V3ROCKET
+224 rocket V3ROCKET
+228 rocket V3ROCKET
+232 rocket V3ROCKET
+236 rocket V3ROCKET
+240 rocket V3ROCKET
+244 rocket V3ROCKET
+248 rocket V3ROCKET
+252 rocket V3ROCKET
+256 rocket V3ROCKET
+260 rocket V3ROCKET
+264 rocket V3ROCKET
+268 rocket V3ROCKET
+272 rocket V3ROCKET
+276 rocket V3ROCKET
+280 rocket V3ROCKET
+284 rocket V3ROCKET
+288 rocket V3ROCKET
+292 rocket V3ROCKET
+296 rocket V3ROCKET
+300 rocket V3ROCKET
+304 rocket V3ROCKET
+312 rocket V3ROCKET
+320 rocket V3ROCKET
+328 rocket V3ROCKET
+336 rocket V3ROCKET
+344 rocket V3ROCKET
+352 rocket V3ROCKET
+360 rocket V3ROCKET
+368 rocket V3ROCKET
+376 rocket V3ROCKET
+384 rocket V3ROCKET
+392 rocket V3ROCKET
+400 rocket V3ROCKET
+408 rocket V3ROCKET
+416 rocket V3ROCKET
+424 rocket V3ROCKET
+432 rocket V3ROCKET
+440 rocket V3ROCKET
+448 rocket V3ROCKET
+456 rocket V3ROCKET
+464 rocket V3ROCKET
+472 rocket V3ROCKET
+480 rocket V3ROCKET
+560 quit

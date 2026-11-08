@@ -10,6 +10,7 @@
 #include "ui/screens/menu/uimenu.h"
 
 #include "ui/rml/rmlview.h"
+#include "updatecheck.h"
 
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Element.h>
@@ -38,6 +39,15 @@ void UIMenuPresenterClass::Execute(UIIntent const & intent)
 
 		Choice = item.Choice;
 		Result = UI_RESULT_ACCEPTED;
+
+	} else if (intent.Name == "update_later") {
+		Update_Later();
+
+	} else if (intent.Name == "update_now") {
+		if (Update_Now()) {
+			Choice = State.UpdateExitChoice;
+			Result = UI_RESULT_ACCEPTED;
+		}
 
 	} else if (intent.Name == "cancel") {
 		Choice = 0;
@@ -73,10 +83,6 @@ class UIMenuViewClass : public UIRmlViewClass
 		explicit UIMenuViewClass(UIMenuPresenterClass & presenter) :
 			UIRmlViewClass(presenter, "menu.rml", "menu"),
 			Data(presenter)
-		{
-		}
-
-		virtual void Sync(void) override
 		{
 		}
 
@@ -145,8 +151,38 @@ class UIMenuViewClass : public UIRmlViewClass
 			dialog->SetProperty("margin-top", "0dp");
 		}
 
+		// Shows the update offer on the title menus once the check has found a newer beta.
+		virtual void Sync(void) override
+		{
+			UpdateOfferType const offer = Update_Offer();
+			if (Document() == nullptr || offer.Visible == OfferShown && offer.Error == ErrorShown) {
+				return;
+			}
+			OfferShown = offer.Visible;
+			ErrorShown = offer.Error;
+
+			Document()->SetClass("update-offer", offer.Visible);
+			Set_Text("update-title", offer.Title);
+			Set_Text("update-line", offer.Line);
+			Set_Text("update-error", offer.Error);
+			Rml::Element * error = Document()->GetElementById("update-error");
+			if (error != nullptr) {
+				error->SetClass("shown", !offer.Error.empty());
+			}
+		}
+
 	private:
+		void Set_Text(char const * id, std::string const & text)
+		{
+			Rml::Element * element = Document()->GetElementById(id);
+			if (element != nullptr) {
+				element->SetInnerRML(text);
+			}
+		}
+
 		UIMenuPresenterClass & Data;
+		bool OfferShown = false;
+		std::string ErrorShown;
 };
 
 }

@@ -117,7 +117,8 @@ class SidebarClass : public PowerClass
 		virtual void Init_IO(void) override;                        // Inits button list
 		virtual void Init_For_House(void) override;
 		virtual void Clear_For_House(void) override;
-		void Reload_Sidebar(void);							// Loads house-specific sidebar art
+		void Reload_Sidebar(void);							// Resets each strip to the sidebar grid
+		void Layout_Strips(void);
 		void Toggle_Cameo_Text(bool on);
 
 		virtual void AI(KeyNumType & input, Point2D const & xy) override;
@@ -204,6 +205,9 @@ class SidebarClass : public PowerClass
 
 					// Does what a left press on the cameo does, without a mouse event.
 					void Press_Left(void);
+
+					// Does what a right press on the cameo does, without a mouse event.
+					void Press_Right(void);
 
 					StripClass * Strip;
 					int Index;
@@ -507,3 +511,6 @@ class SidebarClass : public PowerClass
 		// The completed building each of the structure and defense tabs holds, or NULL.
 		BuildingClass * CompletedBuilding[2];
 };
+
+
+void Queue_Produce(RTTIType type, int id, int count = 1);

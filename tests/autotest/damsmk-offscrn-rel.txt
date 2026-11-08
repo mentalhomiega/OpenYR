@@ -1,0 +1,14 @@
+; Placement of the damage smoke and spark systems for DamSmkOffScrnRel, as gamemd's TechnoTypeClass::GetParticleSysOffset
+; (0x7178C0) computes it. The psoffset command writes DamageSmokeOffset, the flag and the offset the systems are placed at.
+; For a screen-relative type, X and Y go through the isometric matrix and truncate to pixels (cell step 256 leptons
+; gives 30 pixels across and 15 down), then X and Y each lose 10 times Z, and the result Z is minus the truncated
+; sqrt(2) * 10 * |Z| when Z is 0 or more and plus it when Z is below 0.
+; Expected:
+;   HTNK (300,0,40, screen): pixels 35,17; X 35-400, Y 17-400, Z -565, so particle -365,-383,-565.
+;   E1 (-300,120,-25, screen): pixels -49,-10; X -49+250, Y -10+250, Z +353, so particle 201,240,353.
+;   MTNK (300,0,40, no flag): the offset as written, particle 300,0,40.
+1 command CenterBase
+10 psoffset HTNK
+10 psoffset E1
+10 psoffset MTNK
+20 quit

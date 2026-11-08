@@ -1,0 +1,65 @@
+; The player's Magnetron (TELE, 54,40) lifts an enemy Harrier (ORCA) that rests on its Air Force Command pad (GAAIRC, 62,40), a landed aircraft on the
+; ground layer. The Harrier is sent onto the pad with "enter ... enemy" and has landed with radio contact GAAIRC when the strike is ordered at frame 565.
+; padstate lists the pad's four radio slots (ORCA before the lift, empty from it on), wpstate the Harrier's mission, height and radio contact, and lift the
+; hold. At frame 579 the beam takes the Harrier: its contact and the pad slot clear at once (AircraftClass::SetDestination, 0x41AA80, unlinks from the pad
+; under it). It climbs on the beam's jumpjet carrier, flies west to the Magnetron and is let go next to it at about frame 910. It falls, lands at about frame 1000 with its
+; strength unchanged and its own locomotor back (loco other), and the pad stays free.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/magnetron/landed-aircraft.txt -Seconds 200
+300 enemy GAAIRC 62 40
+310 spawn ORCA 62 44
+320 view 60 42
+330 enter ORCA 62 40 enemy
+360 wpstate ORCA
+400 wpstate ORCA
+440 wpstate ORCA
+480 wpstate ORCA
+520 wpstate ORCA
+540 own TELE 54 40
+541 reveal
+560 wpstate ORCA
+561 padstate GAAIRC
+565 strikeobj ORCA 63 40 3 land TELE
+580 wpstate ORCA
+580 lift ORCA
+580 padstate GAAIRC
+620 wpstate ORCA
+620 lift ORCA
+620 padstate GAAIRC
+660 wpstate ORCA
+660 lift ORCA
+660 padstate GAAIRC
+700 wpstate ORCA
+700 lift ORCA
+700 padstate GAAIRC
+740 wpstate ORCA
+740 lift ORCA
+740 padstate GAAIRC
+780 wpstate ORCA
+780 lift ORCA
+780 padstate GAAIRC
+820 wpstate ORCA
+820 lift ORCA
+820 padstate GAAIRC
+860 wpstate ORCA
+860 lift ORCA
+860 padstate GAAIRC
+900 wpstate ORCA
+900 lift ORCA
+900 padstate GAAIRC
+940 wpstate ORCA
+940 lift ORCA
+940 padstate GAAIRC
+980 wpstate ORCA
+980 lift ORCA
+980 padstate GAAIRC
+1020 wpstate ORCA
+1020 lift ORCA
+1020 padstate GAAIRC
+1060 wpstate ORCA
+1060 lift ORCA
+1060 padstate GAAIRC
+1100 wpstate ORCA
+1100 lift ORCA
+1100 padstate GAAIRC
+1100 where ORCA
+1110 quit

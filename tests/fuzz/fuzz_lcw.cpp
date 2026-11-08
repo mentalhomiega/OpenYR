@@ -25,6 +25,7 @@
 #include "lcw.h"
 #include "lcwpipe.h"
 #include "lcwstraw.h"
+#include "overlaylayer.h"
 #include "scenpack.h"
 #include "xpipe.h"
 #include "xstraw.h"
@@ -171,7 +172,7 @@ void Read_Overlay_Cells(Bytes const & stream)
 			unsigned char value = 0xFF;
 			int const got = uncomp.Get(&value, sizeof(value));
 			Require(got == 0 || got == 1, "a one-byte read returned another count");
-			int const type = Overlay_Pack_Type(value, OVERLAY_TYPE_COUNT);
+			int const type = Overlay_Index_From_Byte(value, OVERLAY_TYPE_COUNT);
 			Require(type >= -1 && type < OVERLAY_TYPE_COUNT, "an overlay type is outside the type list");
 		}
 	});

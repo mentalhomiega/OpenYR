@@ -1,0 +1,22 @@
+; Passengers of an open-topped transport that is being chrono-erased. TechnoClass::GetFireError (gamemd 0x6FC0B0,
+; TechnoClass.c:5746) returns 5 for a passenger whose transport IsBeingWarpedOut (0x70C5C0 reads BeingWarpedOut),
+; so an open-topped passenger cannot fire while its Battle Fortress is under a temporal beam or a chrono erase.
+; warpout sets the flag without a warp effect. canfire writes the code: 0 OK, 5 ILLEGAL.
+; Expected: 0 before the flag (frame 410) and after it clears (frame 426); 5 while the flag is set (frame 421).
+; Run: scripts/run_autotest.ps1 -Build agent11 -Script src-agent11/tests/autotest/bfrt-passenger-warpout-fire.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   canfire|AUTOTEST   warpout|AUTOTEST   where|Exception"
+10 command CenterBase
+20 reveal
+30 view 62 22
+40 grantunit BFRT 62 24
+50 grantunit E1 60 22
+60 grantunit DOG 66 24
+120 enter E1 62 24
+400 where BFRT
+400 where E1
+410 canfire E1 66 24
+420 warpout BFRT 1
+421 canfire E1 66 24
+422 where E1
+425 warpout BFRT 0
+426 canfire E1 66 24
+430 quit

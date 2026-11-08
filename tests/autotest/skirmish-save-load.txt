@@ -1,0 +1,19 @@
+; A skirmish game saves and loads again, and plays on, with a structure whose rally point is off the map.
+; A rally point is kept as a pointer to the map cell it names, and a cell off the map is the scratch cell
+; that the save has no record of. Loading such a save used to stop the game with a "pointers could not be
+; remapped" message, so a game saved after a unit stood or was sent off the map could not be loaded.
+; The player is given a barracks, and the barracks a rally point at cell 0,0, which is off the map. The quick save at
+; frame 151 is loaded at frame 200 and the state hash is logged before and after, so a game that continues
+; from the load shows the same hash at frame 400 on every run. The run passes when the log has
+; "LOADING GAME [QUICKSAVE_SKIRMISH.SAV] - Complete", the hash lines and "AUTOTEST quit", and no "SWIZZLE" line.
+; Run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent23 -Script src-agent23/tests/autotest/skirmish-save-load.txt -AIPlayers 1 -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|SAVING GAME|LOADING GAME|SWIZZLE|Exception"
+10 command CenterBase
+30 own GAPILE 56 34
+100 rally GAPILE 0 0
+150 hash 0
+151 command QuickSave
+200 command QuickLoad
+201 rallyof GAPILE
+400 hash 0
+450 quit

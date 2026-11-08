@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
+#include "ui/uiclamp.h"
 
 #include <utility>
 
@@ -81,7 +82,7 @@ void UI_Mission_Browser_Build_Groups(UIMissionBrowserState & state)
 	}
 
 	// A selected mission is shown, so its group opens even when the group was closed.
-	if (state.Selected >= 0 && state.Selected < (int)state.Missions.size()) {
+	if (Index_In_Range(state.Selected, state.Missions.size())) {
 		for (UIBrowserGroup & group : state.Groups) {
 			for (int index : group.Missions) {
 				if (index == state.Selected) {
@@ -140,7 +141,7 @@ UIMissionBrowserPresenterClass::UIMissionBrowserPresenterClass(UIMissionBrowserS
 		UI_Mission_Browser_Build_Groups(State);
 	}
 	UI_Mission_Browser_Layout(State);
-	if (State.Selected >= 0 && State.Selected < (int)State.Missions.size()) {
+	if (Index_In_Range(State.Selected, State.Missions.size())) {
 		Select(State.Selected);
 	} else {
 		State.Notice = "Pick a mission to start it.";
@@ -155,7 +156,7 @@ UIMissionBrowserPresenterClass::UIMissionBrowserPresenterClass(UIMissionBrowserS
 void UIMissionBrowserPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "rowclick" || intent.Name == "rowplay") {
-		if (intent.Value < 0 || intent.Value >= (int)State.Rows.size()) {
+		if (!Index_In_Range(intent.Value, State.Rows.size())) {
 			return;
 		}
 
@@ -172,11 +173,11 @@ void UIMissionBrowserPresenterClass::Execute(UIIntent const & intent)
 			Execute(UIIntent{"ok", 0, std::string()});
 		}
 	} else if (intent.Name == "difficulty") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Difficulties.size()) {
+		if (Index_In_Range(intent.Value, State.Difficulties.size())) {
 			State.Difficulty = State.Difficulties[intent.Value].Value;
 		}
 	} else if (intent.Name == "ok") {
-		if (State.Selected >= 0 && State.Selected < (int)State.Missions.size() && State.Missions[State.Selected].Playable) {
+		if (Index_In_Range(State.Selected, State.Missions.size()) && State.Missions[State.Selected].Playable) {
 			Picked = State.Missions[State.Selected].Campaign;
 			Result = UI_RESULT_ACCEPTED;
 		}
@@ -196,7 +197,7 @@ void UIMissionBrowserPresenterClass::Refresh(void)
 /// </summary>
 void UIMissionBrowserPresenterClass::Select(int index)
 {
-	if (index < 0 || index >= (int)State.Missions.size()) {
+	if (!Index_In_Range(index, State.Missions.size())) {
 		return;
 	}
 
@@ -217,7 +218,7 @@ void UIMissionBrowserPresenterClass::Select(int index)
 /// </summary>
 void UIMissionBrowserPresenterClass::Toggle(int group)
 {
-	if (group < 0 || group >= (int)State.Groups.size()) {
+	if (!Index_In_Range(group, State.Groups.size())) {
 		return;
 	}
 

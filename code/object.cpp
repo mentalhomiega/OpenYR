@@ -1629,6 +1629,27 @@ RadioMessageType ObjectClass::Receive_Message(RadioClass *, RadioMessageType mes
 }
 
 
+/// <summary>
+/// Springs the first-damage triggers after a hit that leaves this object damaged, and reports whether
+/// the object is still active. A trigger can deactivate the object, so a false result means the caller
+/// must return without using it.
+/// </summary>
+/// <returns>bool; Is the object still active?</returns>
+bool ObjectClass::Spring_First_Damaged(TechnoClass * source)
+{
+	if (source != NULL && Tag != NULL) {
+		Tag->Spring(TEVENT_FIRST_DAMAGED, this);
+	}
+	if (Tag != NULL && IsActive) {
+		Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
+	}
+	if (Tag != NULL && IsActive && source != NULL) {
+		Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
+	}
+	return(IsActive);
+}
+
+
 /***********************************************************************************************
  * ObjectClass::Take_Damage -- Applies damage to the object.                                   *
  *                                                                                             *
@@ -1793,15 +1814,8 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 		if (IsActive) {
 			if (Strength != oldstrength && Class_Of() != NULL && oldstrength == Class_Of()->MaxStrength) {
-				if (source && Tag != NULL) Tag->Spring(TEVENT_FIRST_DAMAGED, this);
-				if (Tag != NULL && IsActive) Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
-
-				if (Tag != NULL) {
-					if (IsActive) {
-						if (source) Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
-					} else {
-						return(RESULT_ALREADY_DESTROYED);
-					}
+				if (!Spring_First_Damaged(source)) {
+					return(RESULT_ALREADY_DESTROYED);
 				}
 			}
 		} else {
@@ -2017,6 +2031,14 @@ bool ObjectClass::Paradrop(Coord const & coord)
 		*/
 		if (anim != NULL) {
 			anim->Attach_To(this);
+
+			// gamemd ObjectClass::SpawnParachuted (0x5F5940) draws a unit's canopy through its own GetRemapColour,
+			// which is its Palette= drawer or its house colours, and tints it with the cell's brightness.
+			TechnoClass * techno = dynamic_cast<TechnoClass *>(this);
+			if (techno != NULL) {
+				anim->AlternativeDrawer = techno->Remap_Converter();
+				anim->AlternativeBrightness = Map[coord].Brightness;
+			}
 		}
 		return(true);
 	}
@@ -2830,7 +2852,8 @@ int ObjectClass::Sort_Y(void) const
 {
 	assert(this != NULL);
 
-	return(Render_Coord().Y);
+	// The isometric screen row follows X + Y, so that is the depth order (gamemd GetYSort).
+	return(Render_Coord().X + Render_Coord().Y);
 }
 
 

@@ -9,9 +9,10 @@
 
 #include "ui/screens/skirmish/uiskirmish.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 #include "ui/screens/colorpick/uicolorpick.h"
+#include "ui/screens/colorpick/uicolorpickview.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -35,15 +36,6 @@ enum SlotField
 	FIELD_START,
 	FIELD_TEAM,
 };
-
-
-int Clamp(int value, int low, int high)
-{
-	if (value < low) {
-		return(low);
-	}
-	return(value > high ? high : value);
-}
 
 
 /// The position of the first option holding the value, or none.
@@ -99,15 +91,15 @@ void UISkirmishPresenterClass::Settle_Slots(void)
 
 	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
 	state.Rows = state.Starts.size() > 1 ? (int)state.Starts.size() - 1 : state.Rows;
-	state.Rows = Clamp(state.Rows, 2, UI_SKIRMISH_MAX_SLOTS);
+	state.Rows = Clamp_Low_Wins(state.Rows, 2, UI_SKIRMISH_MAX_SLOTS);
 
 	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
 		UISkirmishSlot & slot = state.Slots[row];
-		slot.Kind = Clamp(slot.Kind, 0, UI_SKIRMISH_SLOT_KINDS - 1);
-		slot.Side = Clamp(slot.Side, 0, state.Sides.empty() ? 0 : (int)state.Sides.size() - 1);
-		slot.Color = Clamp(slot.Color, 0, state.Colors.empty() ? 0 : (int)state.Colors.size() - 1);
-		slot.Start = Clamp(slot.Start, 0, state.Starts.empty() ? 0 : (int)state.Starts.size() - 1);
-		slot.Team = Clamp(slot.Team, 0, UI_SKIRMISH_MAX_TEAMS);
+		slot.Kind = Clamp_Low_Wins(slot.Kind, 0, UI_SKIRMISH_SLOT_KINDS - 1);
+		slot.Side = Clamp_Low_Wins(slot.Side, 0, state.Sides.empty() ? 0 : (int)state.Sides.size() - 1);
+		slot.Color = Clamp_Low_Wins(slot.Color, 0, state.Colors.empty() ? 0 : (int)state.Colors.size() - 1);
+		slot.Start = Clamp_Low_Wins(slot.Start, 0, state.Starts.empty() ? 0 : (int)state.Starts.size() - 1);
+		slot.Team = Clamp_Low_Wins(slot.Team, 0, UI_SKIRMISH_MAX_TEAMS);
 	}
 
 	// A color already taken by an earlier row goes to the first one nobody holds.
@@ -175,13 +167,13 @@ void UISkirmishPresenterClass::Choose(int row, int field, int index)
 			break;
 
 		case FIELD_SIDE:
-			if (index >= 0 && index < (int)state.Sides.size()) {
+			if (Index_In_Range(index, state.Sides.size())) {
 				slot.Side = index;
 			}
 			break;
 
 		case FIELD_START:
-			if (index >= 0 && index < (int)state.Starts.size()) {
+			if (Index_In_Range(index, state.Starts.size())) {
 				for (int other = 0; index > 0 && other < state.Rows; other++) {
 					if (other != row && state.Is_Active(other) && state.Slots[other].Start == index) {
 						state.Slots[other].Start = slot.Start;
@@ -209,7 +201,7 @@ void UISkirmishPresenterClass::Choose(int row, int field, int index)
 void UISkirmishPresenterClass::Take_Color(int row, int index)
 {
 	UISkirmishState & state = State;
-	if (row < 0 || row >= state.Rows || index < 0 || index >= (int)state.Colors.size()) {
+	if (row < 0 || row >= state.Rows || !Index_In_Range(index, state.Colors.size())) {
 		return;
 	}
 
@@ -229,16 +221,17 @@ void UISkirmishPresenterClass::Take_Color(int row, int index)
 
 
 /// <summary>
-/// Judges whether the player list describes a game: somebody to play against, and not everyone on
-/// one team, which nothing could win. A refusal leaves its reason in the state's notice.
+/// Judges whether the player list describes a game. With no computer player the person plays alone
+/// and the list is accepted. With computer players, not everyone may be on one team, which nothing
+/// could win. A refusal leaves its reason in the state's notice.
 /// </summary>
 bool UISkirmishPresenterClass::Judge_Setup(void)
 {
 	UISkirmishState & state = State;
 
 	if (state.Computer_Count() == 0) {
-		state.Notice = "Add a computer player to start.";
-		return(false);
+		state.Notice.clear();
+		return(true);
 	}
 
 	int shared = -1;
@@ -266,6 +259,9 @@ bool UISkirmishPresenterClass::Judge_Setup(void)
 
 void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 {
+	if (UI_Color_Pick_Intent(State.Picker, intent.Name, intent.Value, intent.Text)) {
+		return;
+	}
 	if (intent.Name == "handle") {
 		State.Handle = intent.Text;
 	} else if (intent.Name == "slotkind") {
@@ -302,36 +298,21 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "buildoffally") {
 		State.BuildOffAlly = intent.Value != 0;
 	} else if (intent.Name == "units") {
-		State.UnitCount = Clamp(intent.Value, State.UnitCountMin, State.UnitCountMax);
+		State.UnitCount = Clamp_Low_Wins(intent.Value, State.UnitCountMin, State.UnitCountMax);
 	} else if (intent.Name == "credits") {
-		State.Credits = Clamp(intent.Value, State.CreditsMin, State.CreditsMax);
+		State.Credits = Clamp_Low_Wins(intent.Value, State.CreditsMin, State.CreditsMax);
 	} else if (intent.Name == "tech") {
-		State.TechLevel = Clamp(intent.Value, 1, State.TechLevelMax);
+		State.TechLevel = Clamp_Low_Wins(intent.Value, 1, State.TechLevelMax);
 	} else if (intent.Name == "speed") {
-		State.GameSpeed = Clamp(intent.Value, 0, 6);
+		State.GameSpeed = Clamp_Low_Wins(intent.Value, 0, 6);
 	} else if (intent.Name == "map") {
 		Service.Pick_Map(State);
 		State.Notice.clear();
 		Settle_Slots();
 	} else if (intent.Name == "pickopen") {
 		Open_Picker(intent.Value);
-	} else if (intent.Name == "pickfield") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Field(State.Picker, intent.Value, std::atoi(intent.Text.c_str()));
-		}
-	} else if (intent.Name == "pickvalue") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Value(State.Picker, intent.Value);
-		}
-	} else if (intent.Name == "pickpreset") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Preset(State.Picker, intent.Value);
-		}
 	} else if (intent.Name == "pickok") {
 		Apply_Picker();
-	} else if (intent.Name == "pickcancel") {
-		State.Picker.Open = false;
-		State.Picker.Notice.clear();
 	} else if (intent.Name == "ok") {
 		if (Judge_Setup() && Service.Can_Start(State)) {
 			Choice = UI_SKIRMISH_START;
@@ -418,7 +399,7 @@ void UISkirmishPresenterClass::Apply_Picker(void)
 /// </summary>
 std::string UI_Skirmish_Slot_Text(UISkirmishState const & state, int row)
 {
-	if (row < 0 || row >= (int)state.Slots.size()) {
+	if (!Index_In_Range(row, state.Slots.size())) {
 		return(std::string());
 	}
 
@@ -438,7 +419,7 @@ std::string UI_Skirmish_Slot_Text(UISkirmishState const & state, int row)
 /// </summary>
 void UI_Skirmish_Slot_Parse(UISkirmishState & state, int row, std::string const & text)
 {
-	if (row < 0 || row >= (int)state.Slots.size()) {
+	if (!Index_In_Range(row, state.Slots.size())) {
 		return;
 	}
 
@@ -465,15 +446,13 @@ void UI_Skirmish_Slot_Parse(UISkirmishState & state, int row, std::string const 
 namespace
 {
 
-class UISkirmishViewClass : public UIRmlViewClass
+class UISkirmishViewClass : public UIColorPickViewClass
 {
 	public:
 		explicit UISkirmishViewClass(UISkirmishPresenterClass & presenter) :
-			UIRmlViewClass(presenter, "skirmish.rml", "skirmish"),
+			UIColorPickViewClass(presenter, "skirmish.rml", "skirmish"),
 			Data(presenter),
-			Shown(-1),
-			PickerShown(-1),
-			Dragging(false)
+			Shown(-1)
 		{
 			for (auto & row : Chosen) {
 				for (int & chosen : row) {
@@ -484,32 +463,12 @@ class UISkirmishViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("handle");
-			Model.DirtyVariable("slots");
-			Model.DirtyVariable("rows");
-			Model.DirtyVariable("starts");
-			Model.DirtyVariable("notice");
-			Model.DirtyVariable("mapname");
-			Model.DirtyVariable("bases");
-			Model.DirtyVariable("crates");
-			Model.DirtyVariable("fog");
-			Model.DirtyVariable("bridges");
-			Model.DirtyVariable("redeploy");
-			Model.DirtyVariable("shortgame");
-			Model.DirtyVariable("engineer");
-			Model.DirtyVariable("units");
-			Model.DirtyVariable("credits");
-			Model.DirtyVariable("tech");
-			Model.DirtyVariable("speed");
-			Model.DirtyVariable("pickopen");
-			Model.DirtyVariable("pickswatch");
-			Model.DirtyVariable("picknotice");
-			Model.DirtyVariable("pickvalue");
-			Model.DirtyVariable("pickstyle");
-			Model.DirtyVariable("pickpresets");
+			for (char const * name : Live) {
+				Model.DirtyVariable(name);
+			}
 
-			Show_Preview();
-			Show_Picker();
+			Show_Surface("preview", Shown, Data.State.Preview);
+			Show_Picker(Data.State.Picker);
 		}
 
 		/// <summary>
@@ -565,138 +524,66 @@ class UISkirmishViewClass : public UIRmlViewClass
 			slot.RegisterMember("colorname", &UISkirmishSlot::ColorName);
 			slot.RegisterMember("colortip", &UISkirmishSlot::ColorTip);
 
-			Rml::StructHandle<UIColorPresetOption> preset = model.RegisterStruct<UIColorPresetOption>();
-			if (!preset) {
+			if (!UI_Register_Color_Structs(model)) {
 				return(false);
 			}
-			preset.RegisterMember("label", &UIColorPresetOption::Label);
-			preset.RegisterMember("value", &UIColorPresetOption::Value);
-			preset.RegisterMember("color", &UIColorPresetOption::Color);
-			preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
-			preset.RegisterMember("taken", &UIColorPresetOption::Taken);
-			preset.RegisterMember("caption", &UIColorPresetOption::Caption);
 
 			UISkirmishState & state = Data.State;
+			// A value the presenter changes is bound through live, so Sync dirties exactly the names bound here.
+			Live.clear();
+			auto live = [&](char const * name, auto * value) {
+				Live.push_back(name);
+				return(model.Bind(name, value));
+			};
 			return(model.RegisterArray<std::vector<UISkirmishOption>>()
 				&& model.RegisterArray<std::vector<UISkirmishSlot>>()
 				&& model.RegisterArray<std::vector<UIColorPresetOption>>()
-				&& model.Bind("handle", &state.Handle)
+				&& model.RegisterArray<std::vector<UIColorRampStep>>()
+				&& live("handle", &state.Handle)
 				&& model.Bind("kinds", &state.Kinds)
 				&& model.Bind("sides", &state.Sides)
-				&& model.Bind("starts", &state.Starts)
+				&& live("starts", &state.Starts)
 				&& model.Bind("teams", &state.Teams)
-				&& model.Bind("slots", &state.Slots)
-				&& model.Bind("rows", &state.Rows)
-				&& model.Bind("notice", &state.Notice)
-				&& model.Bind("mapname", &state.MapName)
-				&& model.Bind("bases", &state.Bases)
-				&& model.Bind("crates", &state.Crates)
-				&& model.Bind("fog", &state.Fog)
-				&& model.Bind("bridges", &state.Bridges)
-				&& model.Bind("redeploy", &state.Redeploy)
-				&& model.Bind("shortgame", &state.ShortGame)
-				&& model.Bind("engineer", &state.MultiEngineer)
-				&& model.Bind("superweapons", &state.SuperWeapons)
-				&& model.Bind("buildoffally", &state.BuildOffAlly)
-				&& model.Bind("units", &state.UnitCount)
+				&& live("slots", &state.Slots)
+				&& live("rows", &state.Rows)
+				&& live("notice", &state.Notice)
+				&& live("mapname", &state.MapName)
+				&& live("bases", &state.Bases)
+				&& live("crates", &state.Crates)
+				&& live("fog", &state.Fog)
+				&& live("bridges", &state.Bridges)
+				&& live("redeploy", &state.Redeploy)
+				&& live("shortgame", &state.ShortGame)
+				&& live("engineer", &state.MultiEngineer)
+				&& live("superweapons", &state.SuperWeapons)
+				&& live("buildoffally", &state.BuildOffAlly)
+				&& live("units", &state.UnitCount)
 				&& model.Bind("unitsmin", &state.UnitCountMin)
 				&& model.Bind("unitsmax", &state.UnitCountMax)
-				&& model.Bind("credits", &state.Credits)
+				&& live("credits", &state.Credits)
 				&& model.Bind("creditsmin", &state.CreditsMin)
 				&& model.Bind("creditsmax", &state.CreditsMax)
 				&& model.Bind("creditsstep", &state.CreditsStep)
-				&& model.Bind("tech", &state.TechLevel)
+				&& live("tech", &state.TechLevel)
 				&& model.Bind("techmax", &state.TechLevelMax)
-				&& model.Bind("speed", &state.GameSpeed)
-				&& model.Bind("pickopen", &state.Picker.Open)
-				&& model.Bind("pickswatch", &state.Picker.Swatch)
-				&& model.Bind("picknotice", &state.Picker.Notice)
-				&& model.Bind("pickvalue", &state.Picker.Value)
-				&& model.Bind("pickstyle", &state.Picker.MarkerStyle)
-				&& model.Bind("pickpresets", &state.Picker.Presets));
+				&& live("speed", &state.GameSpeed)
+				&& live("pickopen", &state.Picker.Open)
+				&& live("pickswatch", &state.Picker.Swatch)
+				&& live("picknotice", &state.Picker.Notice)
+				&& live("pickvalue", &state.Picker.Value)
+				&& live("pickstyle", &state.Picker.MarkerStyle)
+				&& live("pickpresets", &state.Picker.Presets)
+				&& live("pickrgb", &state.Picker.ReadRGB)
+				&& live("pickhsv", &state.Picker.ReadHSV)
+				&& live("picknear", &state.Picker.Nearest)
+				&& live("pickramp", &state.Picker.Ramp));
 		}
 
 	private:
-		/// Routes the free color square's pointer input into the picker while a button is held on it.
-		virtual void Loaded(void) override
-		{
-			UIRmlViewClass::Loaded();
-			if (Document() != nullptr) {
-				Document()->AddEventListener(Rml::EventId::Mouseup, this);
-			}
-		}
-
-		virtual void ProcessEvent(Rml::Event & event) override
-		{
-			Rml::ElementDocument * document = Document();
-			Rml::Element * field = document != nullptr ? document->GetElementById("colorfield") : nullptr;
-			if (field != nullptr) {
-				if (event.GetId() == Rml::EventId::Mouseup) {
-					Dragging = false;
-				} else if (event.GetId() == Rml::EventId::Mousedown && event.GetTargetElement() == field && event.GetParameter<int>("button", 0) == 0) {
-					Dragging = true;
-				}
-				if (Dragging && (event.GetId() == Rml::EventId::Mousedown || event.GetId() == Rml::EventId::Mousemove)) {
-					Queue_Field(field, event);
-				}
-			}
-			UIRmlViewClass::ProcessEvent(event);
-		}
-
-		void Queue_Field(Rml::Element * field, Rml::Event & event)
-		{
-			Rml::Vector2f const origin = field->GetAbsoluteOffset(Rml::BoxArea::Border);
-			Rml::Vector2f const size = field->GetBox().GetSize(Rml::BoxArea::Border);
-			if (size.x <= 0.0f || size.y <= 0.0f) {
-				return;
-			}
-			float const mouse_x = event.GetParameter<float>("mouse_x", 0.0f);
-			float const mouse_y = event.GetParameter<float>("mouse_y", 0.0f);
-			int const x = (int)((mouse_x - origin.x) * UI_COLOR_FIELD_SIZE / size.x);
-			int const y = (int)((mouse_y - origin.y) * UI_COLOR_FIELD_SIZE / size.y);
-			Queue("pickfield", x, std::to_string(y).c_str());
-		}
-
-		void Show_Picker(void)
-		{
-			UIColorPickState const & picker = Data.State.Picker;
-			Rml::Element * chip = Document() != nullptr ? Document()->GetElementById("picker-chip") : nullptr;
-			if (chip != nullptr && picker.Swatch != ShownSwatch) {
-				chip->SetProperty("background-color", picker.Swatch);
-				ShownSwatch = picker.Swatch;
-			}
-			if (picker.Generation == PickerShown || Document() == nullptr) {
-				return;
-			}
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("colorfield"));
-			if (surface == nullptr) {
-				return;
-			}
-			PickerShown = picker.Generation;
-			surface->Set_Image(UI_COLOR_FIELD_SIZE, UI_COLOR_FIELD_SIZE, UI_Color_Pick_Pixels(picker));
-		}
-
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
-		}
-
 		UISkirmishPresenterClass & Data;
+		// The names of the bound values Sync dirties, filled in by Bind.
+		std::vector<char const *> Live;
 		int Shown;
-		int PickerShown;
-		std::string ShownSwatch;
-		bool Dragging;
 		int Chosen[UI_SKIRMISH_MAX_SLOTS][FIELDS];
 };
 

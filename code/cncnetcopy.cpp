@@ -8,6 +8,11 @@
  ******************************************************************************/
 
 #include "cncnetcopy.h"
+#include "cncnet/cncnettext.h"
+#include "diskfile.h"
+#include "fnv.h"
+#include "hexformat.h"
+#include "strutil.h"
 
 #include "win.h"
 
@@ -16,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <system_error>
 #include <utility>
 
@@ -59,27 +65,10 @@ bool Is_Folder(std::string const & path)
 }
 
 
-bool Same_Text(std::string const & left, std::string const & right)
-{
-	return(_stricmp(left.c_str(), right.c_str()) == 0);
-}
-
-
 bool Same_Folder(std::string const & left, std::string const & right)
 {
 	std::error_code ec;
 	return(fs::equivalent(Path(left), Path(right), ec));
-}
-
-
-std::string Trim(std::string const & text)
-{
-	std::size_t const first = text.find_first_not_of(" \t\r\n");
-	if (first == std::string::npos) {
-		return(std::string());
-	}
-	std::size_t const last = text.find_last_not_of(" \t\r\n");
-	return(text.substr(first, last - first + 1));
 }
 
 
@@ -94,26 +83,10 @@ void Clear_Read_Only(std::string const & path)
 }
 
 
-bool Read_File(std::string const & path, std::string & text)
-{
-	std::ifstream in(Path(path), std::ios::binary);
-	if (!in) {
-		return(false);
-	}
-	text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-	return(true);
-}
-
-
 bool Write_File(std::string const & path, std::string const & text)
 {
 	Clear_Read_Only(path);
-	std::ofstream out(Path(path), std::ios::binary | std::ios::trunc);
-	if (!out) {
-		return(false);
-	}
-	out.write(text.data(), static_cast<std::streamsize>(text.size()));
-	return(static_cast<bool>(out));
+	return(Write_Disk_File(Path(path), text));
 }
 
 
@@ -128,7 +101,7 @@ struct TextType
 bool Read_Lines(std::string const & path, TextType & text)
 {
 	std::string bytes;
-	if (!Read_File(path, bytes)) {
+	if (!Read_Disk_File(Path(path), bytes)) {
 		return(false);
 	}
 
@@ -169,7 +142,7 @@ bool Write_Lines(std::string const & path, TextType const & text)
 // The name in a "[Section]" line, or false when the line is not a section header.
 bool Section_Name(std::string const & line, std::string & name)
 {
-	std::string const text = Trim(line);
+	std::string const text = Trimmed(line, TRIM_SPACE_TAB_EOL);
 	if (text.size() < 2 || text.front() != '[' || text.back() != ']') {
 		return(false);
 	}
@@ -182,10 +155,7 @@ bool Section_Name(std::string const & line, std::string & name)
 bool Key_Value(std::string const & line, std::string const & key, std::string & value)
 {
 	std::size_t const at = line.find_first_not_of(" \t");
-	if (at == std::string::npos || line.size() - at < key.size()) {
-		return(false);
-	}
-	if (_strnicmp(line.c_str() + at, key.c_str(), key.size()) != 0) {
+	if (at == std::string::npos || !Starts_With_No_Case(std::string_view(line).substr(at), key)) {
 		return(false);
 	}
 	std::size_t pos = at + key.size();
@@ -207,12 +177,12 @@ bool Ini_Value(std::vector<std::string> const & lines, char const * section, std
 	for (std::string const & line : lines) {
 		std::string name;
 		if (Section_Name(line, name)) {
-			inside = Same_Text(name, section);
+			inside = CnCNet_Equals_No_Case(name, section);
 			continue;
 		}
 		std::string current;
 		if (inside && Key_Value(line, key, current)) {
-			value = Trim(current);
+			value = Trimmed(current, TRIM_SPACE_TAB_EOL);
 			return(true);
 		}
 	}
@@ -236,7 +206,7 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 	std::size_t header = std::string::npos;
 	for (std::size_t index = 0; index < lines.size(); index++) {
 		std::string name;
-		if (Section_Name(lines[index], name) && Same_Text(name, section)) {
+		if (Section_Name(lines[index], name) && CnCNet_Equals_No_Case(name, section)) {
 			header = index;
 			break;
 		}
@@ -251,8 +221,8 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 
 	std::size_t end = lines.size();
 	for (std::size_t index = header + 1; index < lines.size(); index++) {
-		std::size_t const first = lines[index].find_first_not_of(" \t");
-		if (first != std::string::npos && lines[index][first] == '[') {
+		std::string_view const trimmed = Trim_Chars(lines[index], " \t");
+		if (!trimmed.empty() && trimmed.front() == '[') {
 			end = index;
 			break;
 		}
@@ -261,10 +231,10 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 	for (std::size_t index = header + 1; index < end; index++) {
 		std::string current;
 		if (Key_Value(lines[index], key, current)) {
-			if (Trim(current) == value) {
+			if (Trimmed(current, TRIM_SPACE_TAB_EOL) == value) {
 				return(false);
 			}
-			edit = EditType{Trim(lines[index]), wanted};
+			edit = EditType{Trimmed(lines[index], TRIM_SPACE_TAB_EOL), wanted};
 			lines[index] = wanted;
 			return(true);
 		}
@@ -278,16 +248,10 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 
 bool List_Has(std::string const & list, std::string const & item)
 {
-	std::size_t start = 0;
-	while (start <= list.size()) {
-		std::size_t comma = list.find(',', start);
-		if (comma == std::string::npos) {
-			comma = list.size();
-		}
-		if (Same_Text(Trim(list.substr(start, comma - start)), item)) {
+	for (std::string const & entry : Split_Parts(list, ',')) {
+		if (CnCNet_Equals_No_Case(Trimmed(entry, TRIM_SPACE_TAB_EOL), item)) {
 			return(true);
 		}
-		start = comma + 1;
 	}
 	return(false);
 }
@@ -300,16 +264,13 @@ bool Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & h
 		return(false);
 	}
 
-	std::uint64_t value = 1469598103934665603ull;
+	std::uint64_t value = FNV64_BASIS;
 	std::vector<char> buffer(1024 * 1024);
 	size = 0;
 	while (in) {
 		in.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
 		std::streamsize const count = in.gcount();
-		for (std::streamsize index = 0; index < count; index++) {
-			value ^= static_cast<unsigned char>(buffer[static_cast<std::size_t>(index)]);
-			value *= 1099511628211ull;
-		}
+		value = Fnv64_Add_Bytes(value, buffer.data(), static_cast<std::size_t>(count));
 		size += static_cast<std::uint64_t>(count);
 	}
 	hash = value;
@@ -348,17 +309,9 @@ std::uint64_t Folder_Bytes(std::string const & folder, std::uint64_t & files)
 }
 
 
-std::string Hex(std::uint64_t value)
-{
-	char text[24];
-	std::snprintf(text, sizeof(text), "%016llx", static_cast<unsigned long long>(value));
-	return(std::string(text));
-}
-
-
 std::string Game_Info(std::uint64_t size, std::uint64_t hash)
 {
-	return(std::to_string(size) + " bytes, hash " + Hex(hash));
+	return(std::to_string(size) + " bytes, hash " + Hex_Text(hash, 16, false));
 }
 
 
@@ -366,10 +319,11 @@ std::string Game_Info(std::uint64_t size, std::uint64_t hash)
 std::string Marker_Install(std::string const & copy)
 {
 	std::string bytes;
-	if (!Read_File(Under(copy, CNCNET_MARKER_FILE), bytes)) {
+	if (!Read_Disk_File(Path(Under(copy, CNCNET_MARKER_FILE)), bytes)) {
 		return(std::string());
 	}
 
+	std::string_view const install_label = "Install:";
 	std::size_t start = 0;
 	while (start < bytes.size()) {
 		std::size_t end = bytes.find('\n', start);
@@ -377,8 +331,8 @@ std::string Marker_Install(std::string const & copy)
 			end = bytes.size();
 		}
 		std::string const line = bytes.substr(start, end - start);
-		if (line.compare(0, 8, "Install:") == 0) {
-			return(Trim(line.substr(8)));
+		if (line.starts_with(install_label)) {
+			return(Trimmed(line.substr(install_label.size()), TRIM_SPACE_TAB_EOL));
 		}
 		start = end + 1;
 	}
@@ -465,6 +419,18 @@ bool Copy_One(RunType & run, fs::path const & from, fs::path const & to, std::ui
 }
 
 
+// Copies one build file into the copy and returns its size. A failed copy returns nothing and leaves error set.
+std::optional<std::uint64_t> Copy_File(RunType & run, std::string const & from, std::string const & to, std::string & error)
+{
+	std::error_code ec;
+	std::uint64_t const size = static_cast<std::uint64_t>(fs::file_size(Path(from), ec));
+	if (!Copy_One(run, from, to, size, error)) {
+		return(std::nullopt);
+	}
+	return(size);
+}
+
+
 bool Copy_Tree(RunType & run, fs::path const & from, fs::path const & to, std::string & error)
 {
 	std::error_code ec;
@@ -526,6 +492,41 @@ void Roll_Back(RunType & run)
 }
 
 
+// Copies a file to its backup, records it for rollback and in the change list, and leaves error set when the copy fails.
+bool Keep_Original(RunType & run, fs::path const & from, std::string const & backup, std::string const & failure, std::string const & change, std::string & error)
+{
+	std::error_code ec;
+	fs::copy_file(from, Path(backup), fs::copy_options::none, ec);
+	if (ec) {
+		error = failure;
+		return(false);
+	}
+	run.Created.push_back(backup);
+	run.Changes.push_back(change);
+	return(true);
+}
+
+
+// Keeps the file's original once as a backup, then reads its lines. name is how the file is called in the change list
+// and the error text.
+bool Open_For_Edit(RunType & run, std::string const & path, std::string const & name, TextType & text, std::string & error)
+{
+	std::string const backup = path + BACKUP_SUFFIX;
+	if (!Is_File(backup)) {
+		std::string const failure = "Could not keep the original " + name + ".";
+		std::string const change = "backup    " + name + " -> " + name + ".cncnet-orig";
+		if (!Keep_Original(run, Path(path), backup, failure, change, error)) {
+			return(false);
+		}
+	}
+	if (!Read_Lines(path, text)) {
+		error = "Could not read " + name + ".";
+		return(false);
+	}
+	return(true);
+}
+
+
 // Copies Game.exe, Language.dll and the ui folder from the build. A stock game.exe is kept once as game.exe.cncnet-orig.
 bool Install_Engine(RunType & run, std::string const & build, std::string const & destination, std::string & error)
 {
@@ -541,7 +542,7 @@ bool Install_Engine(RunType & run, std::string const & build, std::string const 
 	fs::path stock;
 	for (fs::directory_iterator it(Path(destination), ec), end; !ec && it != end; it.increment(ec)) {
 		std::error_code entry_ec;
-		if (it->is_regular_file(entry_ec) && Same_Text(it->path().filename().string(), "game.exe")) {
+		if (it->is_regular_file(entry_ec) && CnCNet_Equals_No_Case(it->path().filename().string(), "game.exe")) {
 			stock = it->path();
 			break;
 		}
@@ -549,27 +550,18 @@ bool Install_Engine(RunType & run, std::string const & build, std::string const 
 
 	std::string const backup = Under(destination, std::string("game.exe") + BACKUP_SUFFIX);
 	if (!stock.empty() && !Is_File(backup) && !Same_Content(stock.string(), build_exe)) {
-		fs::copy_file(stock, Path(backup), fs::copy_options::none, ec);
-		if (ec) {
-			error = "Could not keep the stock game.exe.";
+		if (!Keep_Original(run, stock, backup, "Could not keep the stock game.exe.", "backup    game.exe -> game.exe.cncnet-orig (the stock file, kept)", error)) {
 			return(false);
 		}
-		run.Created.push_back(backup);
-		run.Changes.push_back("backup    game.exe -> game.exe.cncnet-orig (the stock file, kept)");
 	}
 
-	std::uint64_t size = 0;
-	std::error_code size_ec;
-	size = static_cast<std::uint64_t>(fs::file_size(Path(build_exe), size_ec));
-	if (!Copy_One(run, build_exe, copy_exe, size, error)) {
+	std::optional<std::uint64_t> const exe_size = Copy_File(run, build_exe, copy_exe, error);
+	if (!exe_size) {
 		return(false);
 	}
-	run.Changes.push_back("replaced  Game.exe (" + std::to_string(size) + " bytes, from " + build + ")");
+	run.Changes.push_back("replaced  Game.exe (" + std::to_string(*exe_size) + " bytes, from " + build + ")");
 
-	std::string const build_dll = Under(build, "Language.dll");
-	std::error_code dll_ec;
-	std::uintmax_t const dll_size = fs::file_size(Path(build_dll), dll_ec);
-	if (!Copy_One(run, build_dll, Under(destination, "Language.dll"), static_cast<std::uint64_t>(dll_size), error)) {
+	if (!Copy_File(run, Under(build, "Language.dll"), Under(destination, "Language.dll"), error)) {
 		return(false);
 	}
 	run.Changes.push_back("added     Language.dll");
@@ -605,21 +597,8 @@ bool Edit_Definitions(RunType & run, std::string const & destination, std::strin
 		return(false);
 	}
 
-	std::string const backup = path + BACKUP_SUFFIX;
-	if (!Is_File(backup)) {
-		std::error_code ec;
-		fs::copy_file(Path(path), Path(backup), fs::copy_options::none, ec);
-		if (ec) {
-			error = "Could not keep the original " + std::string(DEFINITIONS) + ".";
-			return(false);
-		}
-		run.Created.push_back(backup);
-		run.Changes.push_back(std::string("backup    ") + DEFINITIONS + " -> " + DEFINITIONS + ".cncnet-orig");
-	}
-
 	TextType text;
-	if (!Read_Lines(path, text)) {
-		error = "Could not read " + std::string(DEFINITIONS) + ".";
+	if (!Open_For_Edit(run, path, DEFINITIONS, text, error)) {
 		return(false);
 	}
 
@@ -639,7 +618,7 @@ bool Edit_Definitions(RunType & run, std::string const & destination, std::strin
 		std::string value;
 		if (Key_Value(line, "CompatibilityCheckExecutables", value)) {
 			has_compat = true;
-			compat = Trim(value);
+			compat = Trimmed(value, TRIM_SPACE_TAB_EOL);
 		}
 	}
 	if (has_compat && !compat.empty() && !List_Has(compat, "Game.exe")) {
@@ -686,7 +665,7 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 	std::error_code ec;
 	for (fs::directory_iterator it(Path(destination) / UPDATER_DIR, ec), end; !ec && it != end; it.increment(ec)) {
 		std::string const name = it->path().filename().string();
-		if (_strnicmp(name.c_str(), "UpdaterConfig_", 14) == 0 && name.size() > 4 && Same_Text(name.substr(name.size() - 4), ".ini")) {
+		if (Starts_With_No_Case(name, "UpdaterConfig_") && Ends_With_No_Case(name, ".ini")) {
 			files.push_back(it->path().string());
 		}
 	}
@@ -697,21 +676,8 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 		}
 		std::string const name = Path(file).lexically_relative(Path(destination)).string();
 
-		std::string const backup = file + BACKUP_SUFFIX;
-		if (!Is_File(backup)) {
-			std::error_code copy_ec;
-			fs::copy_file(Path(file), Path(backup), fs::copy_options::none, copy_ec);
-			if (copy_ec) {
-				error = "Could not keep the original " + name + ".";
-				return(false);
-			}
-			run.Created.push_back(backup);
-			run.Changes.push_back("backup    " + name + " -> " + name + ".cncnet-orig");
-		}
-
 		TextType text;
-		if (!Read_Lines(file, text)) {
-			error = "Could not read " + name + ".";
+		if (!Open_For_Edit(run, file, name, text, error)) {
 			return(false);
 		}
 
@@ -721,8 +687,8 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 		for (std::size_t index = 0; index < text.Lines.size(); index++) {
 			std::string const & line = text.Lines[index];
 			bool const ends_file = index + 1 == text.Lines.size() && line.empty();
-			std::size_t const first = line.find_first_not_of(" \t\r");
-			if (!ends_file && (first == std::string::npos || line[first] == ';')) {
+			std::string_view const trimmed = Trim_Chars(line, " \t\r");
+			if (!ends_file && (trimmed.empty() || trimmed.front() == ';')) {
 				kept.Lines.push_back(line);
 			}
 		}
@@ -807,7 +773,7 @@ bool Is_Inside(std::string const & path, std::string const & folder)
 	fs::path const outer = Path(folder).lexically_normal();
 	auto part = inside.begin();
 	for (auto outer_part = outer.begin(); outer_part != outer.end(); ++outer_part, ++part) {
-		if (part == inside.end() || !Same_Text(part->string(), outer_part->string())) {
+		if (part == inside.end() || !CnCNet_Equals_No_Case(part->string(), outer_part->string())) {
 			return(false);
 		}
 	}
@@ -827,6 +793,12 @@ CNCNetJobClass::~CNCNetJobClass(void)
 {
 	Cancel();
 	Wait();
+}
+
+
+bool CNCNet_Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & hash)
+{
+	return(Hash_File(path, size, hash));
 }
 
 
@@ -855,7 +827,7 @@ std::string CNCNet_Registry_Install_Folder(void)
 
 		value[sizeof(value) - 1] = '\0';
 		std::string path = value;
-		if (path.size() >= 4 && Same_Text(path.substr(path.size() - 4), ".exe")) {
+		if (Ends_With_No_Case(path, ".exe")) {
 			path = Path(path).parent_path().string();
 		}
 		if (!path.empty()) {
@@ -935,7 +907,7 @@ std::vector<std::string> CNCNet_Find_Installs(std::string const & build)
 			return;
 		}
 		for (std::string const & seen : found) {
-			if (Same_Text(seen, folder)) {
+			if (CnCNet_Equals_No_Case(seen, folder)) {
 				return;
 			}
 		}
@@ -952,14 +924,12 @@ std::vector<std::string> CNCNet_Find_Installs(std::string const & build)
 }
 
 
-CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & destination, std::string const & build)
+CNCNetStatusType CNCNet_Status(std::string const & destination, std::string const & build)
 {
 	CNCNetStatusType status;
-	status.Install_Valid = CNCNet_Is_Install(install);
 
 	status.Copy_Folder = destination;
 	status.Copy_Present = CNCNet_Is_Marked_Copy(status.Copy_Folder);
-	status.Marker_Install = status.Copy_Present ? Marker_Install(status.Copy_Folder) : std::string();
 
 	if (Is_File(Build_Exe(build))) {
 		Hash_File(Build_Exe(build), status.Build_Game_Size, status.Build_Game_Hash);
@@ -986,7 +956,7 @@ CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & 
 	bool mirror = Read_Lines(Under(status.Copy_Folder, UPDATER_FILE), updater);
 	bool found = false;
 	for (std::string const & line : updater.Lines) {
-		found = found || Trim(line) == MIRROR_LINE;
+		found = found || Trimmed(line, TRIM_SPACE_TAB_EOL) == MIRROR_LINE;
 	}
 	intact = intact && mirror && found;
 	intact = intact && Is_File(Under(status.Copy_Folder, "OPENTS.INI"));
@@ -1101,6 +1071,29 @@ bool CNCNet_Launch(std::string const & copy, std::string & error)
 }
 
 
+void CNCNetJobClass::Begin(std::uint64_t total)
+{
+	Stop = false;
+	DoneBytes = 0;
+	TotalBytes = total;
+	{
+		std::lock_guard<std::mutex> guard(Lock);
+		Text.clear();
+	}
+	Phase = CNCNetJobStateType::Running;
+}
+
+
+void CNCNetJobClass::Finish(CNCNetJobStateType state, std::string const & text)
+{
+	{
+		std::lock_guard<std::mutex> guard(Lock);
+		Text = text;
+	}
+	Phase = state;
+}
+
+
 bool CNCNetJobClass::Start_Copy(CNCNetPlanType const & plan, std::string const & build)
 {
 	if (State() == CNCNetJobStateType::Running || !plan.Problem.empty()) {
@@ -1108,14 +1101,7 @@ bool CNCNetJobClass::Start_Copy(CNCNetPlanType const & plan, std::string const &
 	}
 	Wait();
 
-	Stop = false;
-	DoneBytes = 0;
-	TotalBytes = plan.Update ? Engine_Bytes(build) : plan.Install_Bytes + Engine_Bytes(build);
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		Text.clear();
-	}
-	Phase = CNCNetJobStateType::Running;
+	Begin(plan.Update ? Engine_Bytes(build) : plan.Install_Bytes + Engine_Bytes(build));
 	Worker = std::thread([this, plan, build]() { Run_Copy(plan, build); });
 	return(true);
 }
@@ -1128,14 +1114,7 @@ bool CNCNetJobClass::Start_Remove(std::string const & destination, std::string c
 	}
 	Wait();
 
-	Stop = false;
-	DoneBytes = 0;
-	TotalBytes = 0;
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		Text.clear();
-	}
-	Phase = CNCNetJobStateType::Running;
+	Begin(0);
 	Worker = std::thread([this, destination]() { Run_Remove(destination); });
 	return(true);
 }
@@ -1183,7 +1162,6 @@ std::string CNCNetJobClass::Message(void) const
 void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 {
 	RunType run { DoneBytes, Stop, Created, Changes };
-	Destination = plan.Destination;
 	Created.clear();
 	Changes.clear();
 
@@ -1200,24 +1178,12 @@ void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 		error = "The copy was cancelled.";
 		ok = false;
 	}
-	if (ok) {
-		ok = Install_Engine(run, build, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Edit_Definitions(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Add_Opents(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Edit_Updater(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Protect_Definitions(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Write_Marker(run, plan.Install, build, plan.Destination, error);
-	}
+	ok = ok && Install_Engine(run, build, plan.Destination, error);
+	ok = ok && Edit_Definitions(run, plan.Destination, error);
+	ok = ok && Add_Opents(run, plan.Destination, error);
+	ok = ok && Edit_Updater(run, plan.Destination, error);
+	ok = ok && Protect_Definitions(run, plan.Destination, error);
+	ok = ok && Write_Marker(run, plan.Install, build, plan.Destination, error);
 
 	if (!ok && !plan.Update) {
 		Roll_Back(run);
@@ -1227,15 +1193,11 @@ void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 	if (!ok) {
 		result = Stop.load() ? CNCNetJobStateType::Cancelled : CNCNetJobStateType::Failed;
 	}
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		if (ok) {
-			Text = plan.Update ? "The copy was updated in place." : "The copy is ready.";
-		} else {
-			Text = error;
-		}
+	std::string text = error;
+	if (ok) {
+		text = plan.Update ? "The copy was updated in place." : "The copy is ready.";
 	}
-	Phase = result;
+	Finish(result, text);
 }
 
 
@@ -1252,13 +1214,9 @@ void CNCNetJobClass::Run_Remove(std::string destination)
 	fs::remove_all(Path(destination), ec);
 	bool const gone = !fs::exists(Path(destination), ec);
 
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		if (gone) {
-			Text = "Removed the OpenYR copy at " + destination + ". The install was not changed.";
-		} else {
-			Text = "Could not remove every file in " + destination + ". A file may be in use; close the game and try again.";
-		}
+	std::string text = "Could not remove every file in " + destination + ". A file may be in use; close the game and try again.";
+	if (gone) {
+		text = "Removed the OpenYR copy at " + destination + ". The install was not changed.";
 	}
-	Phase = gone ? CNCNetJobStateType::Done : CNCNetJobStateType::Failed;
+	Finish(gone ? CNCNetJobStateType::Done : CNCNetJobStateType::Failed, text);
 }

@@ -1,0 +1,30 @@
+; Pips: a V3 launcher, a mind controller, loaded harvesters, a slave and a refinery, beside a tech hospital.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-scale-pips.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200
+; Expected in the shot: the V3 shows one green pip; the mind controller shows a green pip for the unit it holds; the full War Miner shows five orange pips and the Chrono Miner one blue pip then four empty ones; the slave shows three empty pips; the soldiers show a red cross to the right of the health bar; the refinery shows no pips and no group number.
+30 command CenterBase
+35 reveal
+40 own V3 60 40
+41 own MIND 64 40
+42 own HARV 68 40
+43 own CMIN 60 44
+44 own E1 64 44
+45 own SLAV 66 44
+46 own CAHOSP 72 48
+47 own GAREFN 64 48
+48 own YAPSYT 60 48
+49 enemy E1 64 36
+50 enemy E1 65 36
+60 view 64 44
+100 load HARV
+101 loadgems CMIN
+102 strike MIND 64 36
+300 select V3
+301 selectadd MIND
+302 selectadd HARV
+303 selectadd CMIN
+304 selectadd E1
+305 selectadd SLAV
+306 selectadd GAREFN
+307 selectadd YAPSYT
+360 windowshot a4-pips
+370 quit

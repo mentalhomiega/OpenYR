@@ -104,6 +104,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "campaign.h"
+#include "campaignname.hh"
 #include "ccfile.h"
 #include "cctooltip.h"
 #include "cdfile.h"
@@ -136,6 +137,7 @@
 #include "getcpu.h"
 #include "globals.h"
 #include "houstype.h"
+#include "hud.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -171,9 +173,11 @@
 #include "ovrlight.h"
 #include "ownrdraw.h"
 #include "partsys.h"
+#include "planning.h"
 #include "png.h"
 #include "queue.h"
 #include "ramfile.h"
+#include "recordingvalues.h"
 #include "revent.h"
 #include "rndstraw.h"
 #include "rules.h"
@@ -186,11 +190,13 @@
 #include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shellmap.h"
+#include "replay.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
 #include "spawner.h"
 #include "stimer.h"
+#include "strutil.h"
 #include "suprtype.h"
 #include "tactical.h"
 #include "tag.h"
@@ -206,8 +212,11 @@
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/screens/cncnet/uicncnet.h"
+#include "updatecheck.h"
+#include "ui/screens/cncnetlobby/uicncnetlobby.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
+#include "ui/screens/replays/uireplays.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
@@ -285,7 +294,6 @@ static bool Init_Rules(void);
 static void Init_Commands(void);
 static CampaignType Choose_Campaign(void);
 static void Init_Threads(void);
-void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
 
 void Init_Random(void);
@@ -759,6 +767,19 @@ bool Campaign_Available(CampaignClass * campaign)
 
 
 /// <summary>
+/// Can this campaign's first map be started from a campaign list?
+/// The campaign must exist, be available with the addons that are enabled, and name a map rather than a
+/// movie sequence or a header line.
+/// </summary>
+/// <param name="campaign">The campaign to be tested; may be null.</param>
+/// <returns>bool; Should the campaign pickers list the campaign?</returns>
+bool Campaign_Is_Offered(CampaignClass * campaign)
+{
+	return(campaign != NULL && Campaign_Available(campaign) && Campaign_Is_Mission_File(campaign->ScenarioName));
+}
+
+
+/// <summary>
 /// Asks the player which campaign to play.
 /// This routine reads the campaign list first if that has not already happened, and then
 /// runs the campaign dialog until the player either commits or backs out.
@@ -951,7 +972,6 @@ restart:
 	PlayerRestarts = false;
 	PlayerAborts = false;
 	Session.ObiWan = false;
-	Session.AIOnly = false;
 	Debug_Cheats_Reset();
 #ifdef _DEBUG
 	Debug_Unshroud = false;
@@ -1011,11 +1031,11 @@ restart:
 		**	the menu loop.  Hide the now-useless mouse pointer.
 		*/
 		if (Session.Play && Session.RecordFile.Is_Available()) {
-			if (Session.RecordFile.Open(FileClass::READ)) {
-				Load_Recording_Values(Session.RecordFile);
+			if (Session.RecordFile.Open(FileClass::READ) && Load_Recording_Values(Session.RecordFile)) {
 				process = false;
 				Theme.Stop(true);
 			} else {
+				Session.RecordFile.Close();
 				Session.Play = false;
 			}
 		}
@@ -1221,6 +1241,19 @@ restart:
 					break;
 				}
 
+				/*
+				**	Play a recorded skirmish. A replay that cannot start leaves the menu as it was.
+				*/
+				case SEL_REPLAYS: {
+					selection = SEL_NONE;
+					std::string file;
+					if (UI_Replays_Dialog(file) && Spawner_Play_Replay(file.c_str(), gameloaded)) {
+						process = false;
+						Theme.Stop(true);
+					}
+					break;
+				}
+
 				case SEL_VIEW_CREDITS: {
 						selection = SEL_NONE;
 						Show_Who_Was_Responsible();
@@ -1255,11 +1288,11 @@ restart:
 						if (Session.Attract && Session.RecordFile.Is_Available()) {
 							Session.Play = true;
 
-							if (Session.RecordFile.Open(FileClass::READ)) {
-								Load_Recording_Values(Session.RecordFile);
+							if (Session.RecordFile.Open(FileClass::READ) && Load_Recording_Values(Session.RecordFile)) {
 								process = false;
 								Theme.Stop(true);
 							} else {
+								Session.RecordFile.Close();
 								Session.Play = false;
 								selection = SEL_NONE;
 							}
@@ -1323,7 +1356,7 @@ restart:
 		// The menu sets the difficulty pair on every path but a client launch, which chose it.
 		if (!Spawner_Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
-			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
+			Session.CampaignCDifficulty = (DiffType)Opposite_Difficulty(Options.Difficulty);
 		}
 
 		// A launched game whose scenario cannot be read has shown its error, and ends here. A restart
@@ -1353,13 +1386,16 @@ restart:
 			}
 		}
 
+		if (!Replay_Begin()) {
+			return(false);
+		}
+
 		/*
 		**	Save initialization values if we're recording this game.
 		*/
 		if (Session.Record) {
-			if (Session.RecordFile.Open(FileClass::WRITE)) {
-				Save_Recording_Values(Session.RecordFile);
-			} else {
+			if (!Session.RecordFile.Open(FileClass::WRITE) || !Save_Recording_Values(Session.RecordFile)) {
+				Session.RecordFile.Close();
 				Session.Record = false;
 			}
 		}
@@ -1486,6 +1522,250 @@ void Anim_Init(void)
 }
 
 
+// Returns the text after prefix when string starts with it, ignoring case, else NULL. The text is taken
+// from original, the copy of the argument that kept its case; an option read in upper case passes string again.
+template<class Char>
+static Char * Option_Value(char const * string, Char * original, char const * prefix)
+{
+	std::size_t const length = strlen(prefix);
+	return(strnicmp(string, prefix, length) == 0 ? original + length : NULL);
+}
+
+
+static bool Parse_Directory_Option(char const * string, char * original)
+{
+	if (char * value = Option_Value(string, original, "-DATADIR=")) {
+		Set_Data_Directory(value);
+		return(true);
+	}
+
+	if (char * value = Option_Value(string, original, "-USERDIR=")) {
+		Set_User_Directory(value);
+		return(true);
+	}
+
+	if (char * value = Option_Value(string, original, "-MOD=")) {
+		Add_Command_Line_Mod(value);
+		return(true);
+	}
+	return(false);
+}
+
+
+static bool Parse_Launch_Option(char const * string, char * original)
+{
+	if (char const * script = Option_Value(string, original, "-AUTOTEST=")) {
+		if (AutoTest_Load(script)) {
+			GameInFocus = true;
+		} else {
+			DebugString("AUTOTEST: cannot read %s\n", script);
+		}
+		return(true);
+	}
+
+	if (stricmp(string, "-AUTOTEST-UNCAPPED") == 0) {
+		AutoTest_Set_Uncapped();
+		return(true);
+	}
+
+	if (stricmp(string, "-AUTOTEST-STOP-AFTER-STEPS") == 0) {
+		AutoTest_Set_Stop_After_Steps();
+		return(true);
+	}
+
+	// A client asking the game to launch what SPAWN.INI describes.
+	if (stricmp(string, "-SPAWN") == 0) {
+		Spawner_Request();
+		return(true);
+	}
+
+	// Plays a recorded skirmish in place of the launch file's match.
+	if (char const * recording = Option_Value(string, original, "-REPLAY=")) {
+		Replay_Request_Playback(recording);
+		Spawner_Request();
+		return(true);
+	}
+	return(false);
+}
+
+
+// -TIME= and -MPDEBUG set their globals and leave the argument for the options after them.
+static bool Parse_Network_Option(char const * string)
+{
+	if (memcmp(string, "-TIME=", 6) == 0) {
+		sscanf(&string[6], "%d", &TournamentTime);
+	}
+
+	if (strstr(string, "-MPDEBUG")) {
+		Session.ShowInternetDebug = true;
+		Session.DrawMPDebugStats = true;
+	}
+
+	/*
+	**	Set the Net Stealth option
+	*/
+	if (strstr(string, "-STEALTH")) {
+		Session.NetStealth = true;
+		return(true);
+	}
+
+	/*
+	**	Allow "attract" mode
+	*/
+	if (strstr(string, "-ATTRACT")) {
+		Session.Attract = true;
+		return(true);
+	}
+	return(false);
+}
+
+
+static bool Parse_Screen_Option(char const * string)
+{
+	if (isdigit((unsigned char)string[1])) {
+		sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
+		return(true);
+	}
+
+	/*
+	**	Set screen to 640x480 instead of 640x400
+	*/
+	if (strcmp(string, "-480") == 0) {
+		Options.ScreenHeight = 480;
+		return(true);
+	}
+
+	if (stricmp(string, "-WIN") == 0) {
+		WindowedMode = true;
+		return(true);
+	}
+	return(false);
+}
+
+
+static bool Parse_Debug_Option(char const * string)
+{
+	if (stricmp(string, "-MULTIINSTANCE") == 0) {
+		Debug_MultipleInstances = true;
+		return(true);
+	}
+
+	/*
+	 * Writes the frame check value to the debug log on every game frame, for comparing two copies.
+	 */
+	if (stricmp(string, "-SYNCLOG") == 0) {
+		Debug_SyncLog = true;
+		return(true);
+	}
+
+	/*
+	 * Arms a deliberate fault; the mode decides where it is raised later.
+	 */
+	if (char const * mode = Option_Value(string, string, "-EXCEPTIONTEST=")) {
+		Exception_Set_Test_Mode(mode);
+		return(true);
+	}
+
+	/*
+	 * Arms one deliberate checksum mismatch, so that the out-of-sync path can be
+	 * exercised without waiting for a real desynchronization.
+	 */
+	if (char const * frame = Option_Value(string, string, "-DESYNCTEST=")) {
+		Session.ForceDesyncFrame = atoi(frame);
+		return(true);
+	}
+#ifdef _DEBUG
+	/*
+	**	Specify the random number seed (for debugging)
+	*/
+	if (strstr(string, "-SEED")) {
+		CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
+		return(true);
+	}
+#endif
+	return(false);
+}
+
+
+// Applies each debug letter after -X. At the first unknown letter, prints the invalid-option text and returns false;
+// letters before it stay applied.
+static bool Parse_Switch_Letters(char const * letters)
+{
+	while (*letters) {
+		char code = *letters++;
+		switch (toupper((unsigned char)code)) {
+
+#ifdef _DEBUG
+
+			/*
+			**	Monochrome debug screen enable.
+			*/
+			case 'M':
+				MonoClass::Enable();
+				break;
+
+			/*
+			**	Inert weapons -- no units take damage.
+			*/
+			case 'I':
+				Special.IsInert = true;
+				Debug_Inert = true;
+				break;
+
+			/*
+			**	Hussled recharge timer.
+			*/
+			case 'H':
+				Special.IsSpeedBuild = true;
+				Debug_SpeedBuild = true;
+				break;
+
+			/*
+			**	"Record" a multi-player game
+			*/
+			case 'X':
+				Session.Record = 1;
+				break;
+
+			/*
+			**	"Play Back" a multi-player game
+			*/
+			case 'Y':
+				Session.Play = 1;
+				break;
+
+			/*
+			**	Print lots of debug stuff about events & packets
+			*/
+			case 'P':
+				Debug_Print_Events = true;
+				break;
+#endif
+
+			/*
+			 * Enable debug output to a console.
+			 */
+			case 'C':
+				Debug_Console = true;
+				Debug_Init_Console();
+				break;
+
+			/*
+			**	Quiet mode override control.
+			*/
+			case 'Q':
+				Debug_Quiet = true;
+				break;
+
+			default:
+				puts(Fetch_String(TXT_INVALID));
+				return(false);
+		}
+	}
+	return(true);
+}
+
+
 /***********************************************************************************************
  * Parse_Command_Line -- Parses the command line parameters.                                   *
  *                                                                                             *
@@ -1598,197 +1878,21 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 #endif
 
-		if (strnicmp(string, "-DATADIR=", strlen("-DATADIR=")) == 0) {
-			Set_Data_Directory(&original[strlen("-DATADIR=")]);
+		if (Parse_Directory_Option(string, original) || Parse_Launch_Option(string, original)) {
 			continue;
 		}
 
-		if (strnicmp(string, "-USERDIR=", strlen("-USERDIR=")) == 0) {
-			Set_User_Directory(&original[strlen("-USERDIR=")]);
+		if (Parse_Network_Option(string) || Parse_Screen_Option(string) || Parse_Debug_Option(string)) {
 			continue;
 		}
-
-		if (strnicmp(string, "-MOD=", strlen("-MOD=")) == 0) {
-			Add_Command_Line_Mod(&original[strlen("-MOD=")]);
-			continue;
-		}
-
-		if (strnicmp(string, "-AUTOTEST=", strlen("-AUTOTEST=")) == 0) {
-			char const * script = &original[strlen("-AUTOTEST=")];
-			if (AutoTest_Load(script)) {
-				GameInFocus = true;
-			} else {
-				DebugString("AUTOTEST: cannot read %s\n", script);
-			}
-			continue;
-		}
-
-		// A client asking the game to launch what SPAWN.INI describes.
-		if (stricmp(string, "-SPAWN") == 0) {
-			Spawner_Request();
-			continue;
-		}
-
-		if (memcmp(string, "-TIME=", 6) == 0) {
-			sscanf(&string[6], "%d", &TournamentTime);
-		}
-
-		if (strstr(string, "-MPDEBUG")) {
-			Session.ShowInternetDebug = true;
-			Session.DrawMPDebugStats = true;
-		}
-
-		/*
-		**	Set the Net Stealth option
-		*/
-		if (strstr(string, "-STEALTH")) {
-			Session.NetStealth = true;
-			continue;
-		}
-
-		/*
-		**	Allow "attract" mode
-		*/
-		if (strstr(string, "-ATTRACT")) {
-			Session.Attract = true;
-			continue;
-		}
-
-		if (isdigit((unsigned char)string[1])) {
-			sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
-			continue;
-		}
-
-		/*
-		**	Set screen to 640x480 instead of 640x400
-		*/
-		if (strcmp(string, "-480") == 0) {
-			Options.ScreenHeight = 480;
-			continue;
-		}
-
-		if (stricmp(string, "-WIN") == 0) {
-			WindowedMode = true;
-			continue;
-		}
-
-		if (stricmp(string, "-MULTIINSTANCE") == 0) {
-			Debug_MultipleInstances = true;
-			continue;
-		}
-
-		/*
-		 * Writes the frame check value to the debug log on every game frame, for comparing two copies.
-		 */
-		if (stricmp(string, "-SYNCLOG") == 0) {
-			Debug_SyncLog = true;
-			continue;
-		}
-
-		/*
-		 * Arms a deliberate fault; the mode decides where it is raised later.
-		 */
-		if (strnicmp(string, "-EXCEPTIONTEST=", strlen("-EXCEPTIONTEST=")) == 0) {
-			Exception_Set_Test_Mode(string + strlen("-EXCEPTIONTEST="));
-			continue;
-		}
-
-		/*
-		 * Arms one deliberate checksum mismatch, so that the out-of-sync path can be
-		 * exercised without waiting for a real desynchronization.
-		 */
-		if (strnicmp(string, "-DESYNCTEST=", strlen("-DESYNCTEST=")) == 0) {
-			Session.ForceDesyncFrame = atoi(string + strlen("-DESYNCTEST="));
-			continue;
-		}
-#ifdef _DEBUG
-		/*
-		**	Specify the random number seed (for debugging)
-		*/
-		if (strstr(string, "-SEED")) {
-			CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
-			continue;
-		}
-#endif
 
 		/*
 		**	Special command line control parsing.
 		*/
 		if (strnicmp(string, "-X", strlen("-O")) == 0) {
-			string += strlen("-X");
-			while (*string) {
-				char code = *string++;
-				switch (toupper((unsigned char)code)) {
-
-#ifdef _DEBUG
-
-					/*
-					**	Monochrome debug screen enable.
-					*/
-					case 'M':
-						MonoClass::Enable();
-						break;
-
-					/*
-					**	Inert weapons -- no units take damage.
-					*/
-					case 'I':
-						Special.IsInert = true;
-						Debug_Inert = true;
-						break;
-
-					/*
-					**	Hussled recharge timer.
-					*/
-					case 'H':
-						Special.IsSpeedBuild = true;
-						Debug_SpeedBuild = true;
-						break;
-
-					/*
-					**	"Record" a multi-player game
-					*/
-					case 'X':
-						Session.Record = 1;
-						break;
-
-					/*
-					**	"Play Back" a multi-player game
-					*/
-					case 'Y':
-						Session.Play = 1;
-						break;
-
-					/*
-					**	Print lots of debug stuff about events & packets
-					*/
-					case 'P':
-						Debug_Print_Events = true;
-						break;
-#endif
-
-					/*
-					 * Enable debug output to a console.
-					 */
-					case 'C':
-						Debug_Console = true;
-						Debug_Init_Console();
-						break;
-
-					/*
-					**	Quiet mode override control.
-					*/
-					case 'Q':
-						Debug_Quiet = true;
-						break;
-
-					default:
-						puts(Fetch_String(TXT_INVALID));
-						return(false);
-				}
-
+			if (!Parse_Switch_Letters(string + strlen("-X"))) {
+				return(false);
 			}
-
 			continue;
 		}
 	}
@@ -1876,6 +1980,9 @@ void Init_Random(void)
 		/*
 		**	Set the optional user-specified seed
 		*/
+		if (Replay_Is_Playing()) {
+			CustomSeed = Replay_Seed();
+		}
 		if (CustomSeed != 0) {
 			Seed = CustomSeed;
 		} else {
@@ -2114,8 +2221,8 @@ static bool Init_Fonts(void)
 	*/
 	CCFileClass unicode("GAME.FNT");
 	if (unicode.Is_Available()) {
-		std::vector<unsigned char> image(unicode.Size());
-		if (!image.empty() && unicode.Read(image.data(), (int)image.size()) == (int)image.size()) {
+		std::vector<unsigned char> image;
+		if (Read_File_Bytes(unicode, image)) {
 			std::shared_ptr<BitFontData const> data = BitFontData::Parse(image.data(), image.size());
 			if (data != NULL) {
 				Metal12FontPtr = new BitFontClass(data);
@@ -2218,44 +2325,57 @@ static bool Add_CC_Expansion_Mix(const char *name)
 
 
 /// <summary>
+/// Mounts a named expansion mixfile that is a loose file in any of the game's folders.
+/// Unlike the cached variant, it never finds one buried inside another mixfile.
+/// </summary>
+/// <param name="name">The filename of the mixfile to mount.</param>
+/// <param name="resident">Are its members fetched from memory?</param>
+static void Add_Disk_Expansion_Mix(const char *name, bool resident = false)
+{
+	if (CDFileClass(name).Is_Available()) {
+		MFCD * expand = new MFCD(name, &FastKey);
+		expand->Set_Resident_Members(resident);
+		ExpandMix.Add(expand);
+		DebugStringNoPrefix(" %s", name);
+	}
+}
+
+
+/// <summary>
+/// Returns a newly mounted mixfile, or NULL if the game cannot find it.
+/// </summary>
+static MFCD * Mount_If_Available(const char *name)
+{
+	if (CCFileClass(name).Is_Available()) {
+		return(new MFCD(name, &FastKey));
+	}
+	return(NULL);
+}
+
+
+/// <summary>
 /// Mounts the numbered expansion mixfiles.
 /// This routine brings in the loose expansion archives and the cached ones, which is how
 /// added content gets to override what the game ships with.
 /// </summary>
 static void Init_Expand_Mixfiles(void)
 {
-	int index;
 	char name[64];
-	MFCD * expand;
 
 	// The prefixes come from the deployment and from the active mods, so a mod can bring
 	// archives such as EXPANDMO99.MIX ahead of the game's EXPANDMD01.MIX.
 	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.ExpandPrefixes.c_str())) {
-		for (index = 99; index >= 0; index--) {
+		for (int index = 99; index >= 0; index--) {
 			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
-			// Searched for as a loose file wherever the game's files are kept, but never
-			// inside another archive.
-			if (CDFileClass(name).Is_Available()) {
-				expand = new MFCD(name, &FastKey);
-
-				// A mod's archives are too big to cache, yet its files are fetched from memory.
-				expand->Set_Resident_Members(!Active_Mods().empty());
-				ExpandMix.Add(expand);
-				DebugStringNoPrefix(" %s", name);
-			}
+			// A mod's archives are too big to cache, yet its files are fetched from memory.
+			Add_Disk_Expansion_Mix(name, !Active_Mods().empty());
 		}
 	}
 
 	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.CachePrefixes.c_str())) {
-		for (index = 99; index >= 0; index--) {
+		for (int index = 99; index >= 0; index--) {
 			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
-			if (CCFileClass(name).Is_Available()) {
-				expand = new MFCD(name, &FastKey);
-
-				ExpandMix.Add(expand);
-				DebugStringNoPrefix(" %s", name);
-				expand->Cache();
-			}
+			Add_CC_Expansion_Mix(name);
 		}
 	}
 }
@@ -2268,26 +2388,10 @@ static void Init_Expand_Mixfiles(void)
 /// </summary>
 static void Init_Patch_Mixfiles(void)
 {
-	MFCD * expand;
-
 	// As with the expansion archives, found loose in any of the game's folders but never
 	// inside another archive.
-	if (CDFileClass("PATCH.MIX").Is_Available()) {
-		expand = new MFCD("PATCH.MIX", &FastKey);
-
-		ExpandMix.Add(expand);
-		DebugStringNoPrefix(" %s", "PATCH.MIX");
-	}
-
-
-	if (CCFileClass("PCACHE.MIX").Is_Available()) {
-		expand = new MFCD("PCACHE.MIX", &FastKey);
-
-		ExpandMix.Add(expand);
-		DebugStringNoPrefix(" %s", "PCACHE.MIX");
-		expand->Cache();
-	}
-
+	Add_Disk_Expansion_Mix("PATCH.MIX");
+	Add_CC_Expansion_Mix("PCACHE.MIX");
 }
 
 
@@ -2305,14 +2409,7 @@ static void Read_Palette(PaletteClass & palette, char const * name)
 		return;
 	}
 
-	memmove(&palette[0], data, sizeof(palette));
-
-	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-		palette[index] = RGBClass(
-				(unsigned char)(palette[index].Get_Red()<<2),
-				(unsigned char)(palette[index].Get_Green()<<2),
-				(unsigned char)(palette[index].Get_Blue()<<2));
-	}
+	palette = Widen_Six_Bit_Palette(data);
 }
 
 
@@ -2479,9 +2576,7 @@ static bool Init_Secondary_Mixfiles(void)
 {
 	// Each pair mounts Yuri's Revenge's archive before Red Alert 2's, so YR's copy of a
 	// file is found first.
-	if (CCFileClass("CONQMD.MIX").Is_Available()) {
-		ConquerMix = new MFCD("CONQMD.MIX", &FastKey);
-	}
+	ConquerMix = Mount_If_Available("CONQMD.MIX");
 
 	DebugStringNoPrefix(" CONQMD.MIX");
 
@@ -2499,9 +2594,7 @@ static bool Init_Secondary_Mixfiles(void)
 	BaseIsoGenericMix = new MFCD("ISOGEN.MIX", &FastKey);
 	BaseIsoGenericMix->Set_Resident_Members(true);
 
-	if (CCFileClass("CONQUER.MIX").Is_Available()) {
-		BaseConquerMix = new MFCD("CONQUER.MIX", &FastKey);
-	}
+	BaseConquerMix = Mount_If_Available("CONQUER.MIX");
 
 	DebugStringNoPrefix(" CONQUER.MIX");
 
@@ -2509,9 +2602,7 @@ static bool Init_Secondary_Mixfiles(void)
 		return(false);
 	}
 
-	if (CCFileClass("CAMEOMD.MIX").Is_Available()) {
-		CameoMix = new MFCD("CAMEOMD.MIX", &FastKey);
-	}
+	CameoMix = Mount_If_Available("CAMEOMD.MIX");
 
 	DebugStringNoPrefix(" CAMEOMD.MIX");
 
@@ -2519,9 +2610,7 @@ static bool Init_Secondary_Mixfiles(void)
 		return(false);
 	}
 
-	if (CCFileClass("CAMEO.MIX").Is_Available()) {
-		BaseCameoMix = new MFCD("CAMEO.MIX", &FastKey);
-	}
+	BaseCameoMix = Mount_If_Available("CAMEO.MIX");
 
 	DebugStringNoPrefix(" CAMEO.MIX");
 
@@ -2561,21 +2650,16 @@ static bool Init_Secondary_Mixfiles(void)
 
 #ifndef _DEMO
 
-	if (CCFileClass("MULTIMD.MIX").Is_Available()) {
-		MultiMix = new MFCD("MULTIMD.MIX", &FastKey);
-
+	MultiMix = Mount_If_Available("MULTIMD.MIX");
+	if (MultiMix != NULL) {
 		DebugStringNoPrefix(" MULTIMD.MIX");
 	}
 
 #endif
 
-	if (CCFileClass("THEMEMD.MIX").Is_Available()) {
-		ThemeMix = new MFCD("THEMEMD.MIX", &FastKey);
-	}
+	ThemeMix = Mount_If_Available("THEMEMD.MIX");
 
-	if (CCFileClass("THEME.MIX").Is_Available()) {
-		BaseThemeMix = new MFCD("THEME.MIX", &FastKey);
-	}
+	BaseThemeMix = Mount_If_Available("THEME.MIX");
 
 	DebugStringNoPrefix(" THEME.MIX");
 
@@ -2733,6 +2817,15 @@ static bool Bootstrap(void)
 	Read_Palette(pal, "MOUSEPAL.PAL");
 	MouseDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface);
 
+	/*
+	**	The mission caption art (GRFXTXT.SHP) has a palette of its own, and the caption falls
+	**	back to plain text without it, as gamemd's Init_Game (0x52ba60) does.
+	*/
+	if (MFCD::Retrieve("GRFXTXT.PAL") != NULL) {
+		Read_Palette(pal, "GRFXTXT.PAL");
+		GrfxTxtDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface);
+	}
+
 	TiberiumDrawer = VoxelDrawer;
 
 	/*
@@ -2770,7 +2863,7 @@ void Init_Mouse(void)
 
 	/// The menus run on the Windows cursor. The real game cursor is not loaded and assigned
 	/// until play begins -- see MouseClass::One_Time, where these shapes are loaded again.
-	ShapeSet const * temp_mouse_shapes = (ShapeSet const *)MFCD::Retrieve("MOUSE.SHP");
+	ShapeSet const * temp_mouse_shapes = (ShapeSet const *)MFCD::Retrieve("MOUSE.SHA");
 
 	if (temp_mouse_shapes) {
 		Hide_Mouse();
@@ -2893,17 +2986,18 @@ bool Save_Recording_Values(CCFileClass & file)
 {
 	//Session.Save(file);
 	DebugString("Saving recording values for scenario : %s\n", Scen->ScenarioName);
-	file.Write(&BuildLevel, sizeof(BuildLevel));
-#if defined(_DEBUG)
-	file.Write(&Debug_Unshroud, sizeof(Debug_Unshroud));
-#endif
-	file.Write(&Seed, sizeof(Seed));
-	file.Write(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Write(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Write(&Whom, sizeof(Whom));
-	file.Write(&Special, sizeof(SpecialClass));
-	file.Write(&Options, sizeof(OptionsClass));
-	return(true);
+	RecordingValues::ValuesType values;
+	values.BuildLevel = BuildLevel;
+	values.Unshroud = Debug_Unshroud;
+	values.Seed = Seed;
+	values.Scenario = Scen->Scenario;
+	values.ScenarioName = Scen->ScenarioName;
+	values.Whom = Whom;
+	values.Special = Special;
+	values.GameSpeed = Options.GameSpeed;
+	values.Difficulty = Options.Difficulty;
+	std::vector<std::uint8_t> const bytes = RecordingValues::Encode(values);
+	return(file.Write(bytes.data(), static_cast<int>(bytes.size())) == static_cast<int>(bytes.size()));
 }
 
 
@@ -2924,17 +3018,30 @@ bool Save_Recording_Values(CCFileClass & file)
  *=========================================================================*/
 bool Load_Recording_Values(CCFileClass & file)
 {
+	static_assert(RecordingValues::GAME_SPEED_COUNT == OptionsClass::MAX_SPEED_SETTING, "a recording checks the game speeds the options offer");
+	static_assert(RecordingValues::DIFFICULTY_COUNT == DIFF_COUNT, "a recording checks the difficulties the game defines");
 	//Session.Load(file);
-	file.Read(&BuildLevel, sizeof(BuildLevel));
+	RecordingValues::ValuesType values;
+	RecordingValues::LoadResult const result = RecordingValues::Read(values, HouseTypes.Count(), [&file](void * buffer, std::size_t size) {
+		return(file.Read(buffer, static_cast<int>(size)) == static_cast<int>(size));
+	});
+	if (result != RecordingValues::LoadResult::OK) {
+		DebugString("Recording %s refused: %s\n", file.File_Name(),
+			result == RecordingValues::LoadResult::OTHER_REVISION ? "another revision" : "not a recording or damaged");
+		return(false);
+	}
+
+	BuildLevel = values.BuildLevel;
 #if defined(_DEBUG)
-	file.Read(&Debug_Unshroud, sizeof(Debug_Unshroud));
+	Debug_Unshroud = values.Unshroud;
 #endif
-	file.Read(&Seed, sizeof(Seed));
-	file.Read(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Read(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Read(&Whom, sizeof(Whom));
-	file.Read(&Special, sizeof(SpecialClass));
-	file.Read(&Options, sizeof(OptionsClass));
+	Seed = values.Seed;
+	Scen->Scenario = values.Scenario;
+	std::snprintf(Scen->ScenarioName, sizeof(Scen->ScenarioName), "%s", values.ScenarioName.c_str());
+	Whom = static_cast<HousesType>(values.Whom);
+	Special = values.Special;
+	Options.GameSpeed = values.GameSpeed;
+	Options.Difficulty = values.Difficulty;
 	DebugString("Loaded recording values for scenario : %s\n", Scen->ScenarioName);
 	return(true);
 }
@@ -3063,29 +3170,25 @@ static int const MENU_SKIRMISH = 103;
 static int const MENU_BACK = 104;
 static int const MENU_PLAY_MOVIES = 105;
 static int const MENU_CNCNET = 106;
-
-
-// The text of a string table label, or the fallback when the table lacks it.
-static std::string Menu_Text(char const * label, char const * fallback)
-{
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
-}
+static int const MENU_CNCNET_LOBBY = 107;
+static int const MENU_REPLAYS = 108;
 
 
 // The button that leaves a sub-menu: Yuri's Revenge's "Main Menu", or "Back" in the modern style.
 static UIMenuItemType Back_Item(void)
 {
 	if (Options.IsClassicMenus) {
-		return(UIMenuItemType{Menu_Text("GUI:MainMenu", "Main Menu"), MENU_BACK, true});
+		return(UIMenuItemType{StringTable.Find_UTF8("GUI:MainMenu", "Main Menu"), MENU_BACK, true});
 	}
-	return(UIMenuItemType{Menu_Text("GUI:Back", "Back"), MENU_BACK, true});
+	return(UIMenuItemType{StringTable.Find_UTF8("GUI:Back", "Back"), MENU_BACK, true});
 }
 
 
 // The modern style shows the player's name and the version on every title menu; the classic style shows neither.
+// Both styles end the game when the player presses Update in the offer panel.
 static void Show_Title_Badges(UIMenuState & menu)
 {
+	menu.UpdateExitChoice = SEL_EXIT;
 	if (!Options.IsClassicMenus) {
 		menu.Version = Version_Text();
 		menu.Profile = (Session.Handle[0] != 0) ? Session.Handle : Fetch_String(TXT_NONAME);
@@ -3107,7 +3210,7 @@ static void Add_Button(UIMenuState & menu, UIMenuButtonType button, char const *
 	if (action == UI_ACTION_HIDE) {
 		return;
 	}
-	menu.Items.push_back(UIMenuItemType{Menu_Text(label, fallback), selection, enabled && action != UI_ACTION_DISABLE});
+	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8(label, fallback), selection, enabled && action != UI_ACTION_DISABLE});
 }
 
 
@@ -3139,9 +3242,9 @@ static int Single_Player_Menu(void)
 	while (true) {
 		UIMenuState menu;
 		menu.Kind = UI_MENU_SINGLE_PLAYER;
-		menu.Title = Menu_Text("GUI:SinglePlayerMenu", "Single Player");
+		menu.Title = StringTable.Find_UTF8("GUI:SinglePlayerMenu", "Single Player");
 		Add_Button(menu, UI_BUTTON_CAMPAIGN, "GUI:NewCampaign", "New Campaign", SEL_CAMPAIGN_GAME, true);
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
 		Add_Button(menu, UI_BUTTON_SKIRMISH, "GUI:Skirmish", "Skirmish", MENU_SKIRMISH, true);
 		menu.Items.push_back(Back_Item());
 		Show_Title_Badges(menu);
@@ -3165,7 +3268,7 @@ static int Movies_Menu(void)
 	while (true) {
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MOVIES;
-		menu.Title = Menu_Text("GUI:MoviesAndCredits", "Movies & Credits");
+		menu.Title = StringTable.Find_UTF8("GUI:MoviesAndCredits", "Movies & Credits");
 		Add_Button(menu, UI_BUTTON_SNEAK_PEEKS, "GUI:SneakPeeks", "Sneak Peeks", SEL_INTRO, true);
 		Add_Button(menu, UI_BUTTON_PLAY_MOVIES, "GUI:PlayMovies", "Play Movies", MENU_PLAY_MOVIES, true);
 		Add_Button(menu, UI_BUTTON_VIEW_CREDITS, "GUI:ViewCredits", "View Credits", SEL_VIEW_CREDITS, true);
@@ -3207,6 +3310,14 @@ static int Menu_Selection(int choice)
 		case MENU_CNCNET:
 			return(UI_CNCNet_Dialog() ? SEL_EXIT : SEL_NONE);
 
+		// The built-in lobby opens straight from the main menu and returns to it.
+		case MENU_CNCNET_LOBBY:
+			UI_CnCNet_Lobby_Dialog();
+			return(SEL_NONE);
+
+		case MENU_REPLAYS:
+			return(SEL_REPLAYS);
+
 		case MENU_NETWORK:
 		case MENU_SKIRMISH:
 			Session.Type = (choice == MENU_NETWORK) ? GAME_IPX : GAME_SKIRMISH;
@@ -3241,6 +3352,9 @@ int Main_Menu(unsigned int timeout)
 
 	timeout = 0;
 
+	// A style picked during the last game takes effect on the way back to the menu.
+	Apply_Interface_Choice();
+
 	if (Options.IsClassicMenus) {
 		char * background = Get_New_Menu()->Background;
 		Load_Title_Screen(background, HiddenSurface, &CCPalette);
@@ -3252,19 +3366,26 @@ int Main_Menu(unsigned int timeout)
 	// The modern menus' loading notice stays up while the battle loads behind the menu.
 	Shellmap_Start();
 	Startup_Notice_Hide();
+	Update_Check_Begin();
 
 	while (retval == SEL_NONE) {
 		MainMenuKeyResult = SEL_NONE;
 
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MAIN;
-		menu.Title = Menu_Text("GUI:MainMenu", "Main Menu");
+		menu.Title = StringTable.Find_UTF8("GUI:MainMenu", "Main Menu");
 		Add_Button(menu, UI_BUTTON_SINGLE_PLAYER, "GUI:SinglePlayer", "Single Player", MENU_SINGLE_PLAYER, true);
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
+		if (UI_CnCNet_Lobby_Enabled()) {
+			menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:CnCNetLobby", "CnCNet (experimental)"), MENU_CNCNET_LOBBY, true});
+		}
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
 		Add_Button(menu, UI_BUTTON_NETWORK, "GUI:Network", "Network", MENU_NETWORK, true);
+		if (!Options.IsClassicMenus) {
+			menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Replays", "Replays"), MENU_REPLAYS, true});
+		}
 		Add_Button(menu, UI_BUTTON_MOVIES_AND_CREDITS, "GUI:MoviesAndCredits", "Movies & Credits", MENU_MOVIES, true);
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Options", "Options"), SEL_OPTIONS, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
 		if (Options.IsClassicMenus) {
 			menu.Stamp.push_back(Version_Text());
 		}
@@ -3330,7 +3451,8 @@ void Title_Screen_Restore(bool force)
 
 
 // The modern menus show a loading notice over their backdrop from the start of the data load until the
-// title menu stands, so the wait is not a bare screen. The notice is left allocated at exit.
+// title menu stands, so the wait is not a bare screen. Startup_Notice_Hide frees the notice; a notice
+// still shown at exit is not freed.
 static UIWaitBoxClass * StartupNotice = NULL;
 
 
@@ -3376,14 +3498,13 @@ static std::string Version_Text(void)
 /// <param name="surface">The surface to print the version text upon.</param>
 void Draw_Version_Text(Surface * surface)
 {
-	char version[128];
 	Rect rect;
 
 	if (Fetch_Scheme_By_Name("Green") == NULL) {
 		return;
 	}
 
-	strcpy(version, Version_Text().c_str());
+	std::string const version = Version_Text();
 
 	rect = surface->Get_Rect();
 
@@ -3395,7 +3516,7 @@ void Draw_Version_Text(Surface * surface)
 		Fetch_Scheme_By_Name("Green"),
 		TBLACK,
 		(TextPrintType)(TPF_EFNT|TPF_NOSHADOW|TPF_RIGHT),
-		version
+		version.c_str()
 	);
 
 	Fancy_Text_Print(
@@ -3423,14 +3544,35 @@ static char const * Team_Command_String(std::string & cache, char const * format
 }
 
 
-static void Select_Team_Members(int team)
+static bool Is_Team_Member(TechnoClass const * obj, int team)
+{
+	return obj != NULL && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Control();
+}
+
+
+/// <summary>
+/// Reports whether any player-controlled object that is not in limbo belongs to the team.
+/// </summary>
+bool Team_Has_Members(int team)
 {
 	for (int i = 0; i < Technos.Count(); i++) {
+		if (Is_Team_Member(Technos[i], team)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+static void Select_Team_Members(int team)
+{
+	// The first member selected speaks (gamemd's team select, 0x7311C0, clears MoveFeedback after it).
+	SelectionVoiceScope voice;
+	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
-		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Control()) {
+		if (Is_Team_Member(obj, team)) {
 			if (!obj->IsSelected) {
-				obj->Select();
-				AllowVoice = false;
+				voice.Select(obj);
 			}
 		}
 	}
@@ -3450,6 +3592,19 @@ static void Assign_Selection_To_Team(int team)
 			}
 		}
 	}
+}
+
+
+
+// Refuses an order during planning mode, showing the message, and returns true so the caller issues nothing.
+// gamemd's TechnoClass::ClickedEvent (0x6FFE39) refuses stop, deploy and scatter the same way.
+static bool Refused_In_Planning(char const * label)
+{
+	if (!Map.IsPlanningMode) {
+		return(false);
+	}
+	Planning_Refusal(label);
+	return(true);
 }
 
 
@@ -3503,18 +3658,13 @@ class SelectTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Map.Cancel_Order_Modes(true);
 
 			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
 				Unselect_All();
 			}
 			Select_Team_Members(Team);
-			AllowVoice = false;
 			TechnoClass::Reset_Action_Line_Timer();
 
 			// A second press within half a second brings a team that was already selected into view.
@@ -3562,11 +3712,7 @@ class AddTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Map.Cancel_Order_Modes(true);
 
 			Select_Team_Members(Team);
 		}
@@ -3599,11 +3745,7 @@ class AddToTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Map.Cancel_Order_Modes(true);
 
 			// The team joins the selection first, or the assignment would drop its existing members.
 			Select_Team_Members(Team);
@@ -3638,11 +3780,7 @@ class CenterTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Map.Cancel_Order_Modes(true);
 
 			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
 				Unselect_All();
@@ -3681,10 +3819,7 @@ class PrevObjectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
+			Map.Cancel_Order_Modes(false);
 
 			ObjectClass * obj = Map.Prev_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
@@ -3716,9 +3851,7 @@ class StopCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the stop order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_STOP);
+				if (Refused_In_Planning(PLANNING_MSG_NO_STOP)) {
 					return;
 				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -3762,9 +3895,7 @@ class DeployCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the deploy order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_DEPLOY);
+				if (Refused_In_Planning(PLANNING_MSG_NO_DEPLOY)) {
 					return;
 				}
 				// Matches the mixed-selection test in gamemd's deploy command (FUN_00730AF0, 0x730AF0): with
@@ -3786,7 +3917,7 @@ class DeployCommandClass : public CommandClass
 					ObjectClass * obj = CurrentObject[index];
 					BuildingClass const * garrison = (obj != NULL && obj->RTTI == RTTI_BUILDING) ? (BuildingClass const *)obj : NULL;
 					bool evacuate = garrison != NULL && garrison->House->Is_Player_Control() && (garrison->Occupants.Count() > 0
-						|| ((garrison->Class->IsInfantryAbsorb || garrison->Class->IsUnitAbsorb) && garrison->Cargo.How_Many() > 0));
+						|| garrison->Holds_Absorbed());
 					if (obj != NULL && (obj->Can_Player_Move() || obj->Can_Player_Fire() || evacuate)) {
 						InfantryClass const * soldier = Deployer_Soldier(obj);
 						if (mixed && soldier != NULL && soldier->Is_Deployed()) {
@@ -3825,12 +3956,13 @@ class AllToCheerCommandClass : public CommandClass
 			return(Fetch_String(TXT_ALL_TO_CHEER_DESC));
 		}
 
-		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together. A watching house sends nothing.</summary>
+		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together. A watching house sends nothing, and so does a player who cheered within the last MaximumCheerRate frames.</summary>
 		virtual void Execute(void) const {
-			if (PlayerPtr->Is_Watching()) {
+			if (PlayerPtr->Is_Watching() || Frame <= LastCheerFrame + Rule->MaximumCheerRate) {
 				return;
 			}
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALL_CHEER));
+			LastCheerFrame = Frame;
 		}
 };
 
@@ -3853,8 +3985,7 @@ class GuardCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			// Planning mode refuses guard before it reads the selection (gamemd's guard command, 0x730D60).
-			if (Map.IsPlanningMode) {
-				Planning_Refusal(PLANNING_MSG_NO_GUARD_AREA);
+			if (Refused_In_Planning(PLANNING_MSG_NO_GUARD_AREA)) {
 				return;
 			}
 			if (CurrentObject.Count() > 0) {
@@ -3906,9 +4037,7 @@ class ScatterCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the scatter order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_SCATTER);
+				if (Refused_In_Planning(PLANNING_MSG_NO_SCATTER)) {
 					return;
 				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -4041,7 +4170,7 @@ class AllianceCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			if (Session.Type != GAME_NORMAL && !Scen->Special.IsAllianceFixed && Session.Options.AlliesAllowed) {
+			if (Session.Type != GAME_NORMAL && !Scen->Special.IsAllianceFixed && Session.Options.AlliesAllowed && Rule->AllyChangeAllowed) {
 				if (CurrentObject.Count() && !PlayerPtr->IsDefeated) {
 					if (CurrentObject[0]->Owner_HouseClass() != PlayerPtr && CurrentObject[0]->Owner_HouseClass()->IsHuman) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALLY, CurrentObject[0]->Owner()));
@@ -4634,6 +4763,13 @@ class AttackMoveCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
+			// gamemd arms the order only when every selected object can attack-move, and says so when none is selected or one cannot (0x731AF0).
+			if (CurrentObject.Count() == 0) {
+				Post_Player_Message("No units are selected.", TICKS_PER_SECOND * 4);
+			} else if (!All_Selected_Can_Attack_Move()) {
+				Post_Player_Message("A selected unit cannot attack-move.", TICKS_PER_SECOND * 4);
+				return;
+			}
 			AttackMoveArmed = true;
 		}
 };
@@ -5173,7 +5309,7 @@ class ReloadRulesCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			char const * text = Reload_Rules() ? "Rules reloaded." : "Rules can only be reloaded in single-player and skirmish games.";
-			Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+			Post_Player_Message(text, 300);
 			Map.Flag_To_Redraw();
 		}
 };
@@ -5222,10 +5358,7 @@ class NextObjectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
+			Map.Cancel_Order_Modes(false);
 
 			ObjectClass * obj = Map.Next_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
@@ -5371,7 +5504,7 @@ static void Step_Theme(int step)
 		Theme.Queue_Song(theme);
 		char buffer[128];
 		snprintf(buffer, sizeof(buffer), Fetch_String(TXT_NOW_PLAYING), Theme.Full_Name(theme));
-		Session.Messages.Add_Message(NULL, 0, buffer, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+		Post_Player_Message(buffer, TICKS_PER_SECOND * 4);
 		return;
 	}
 }
@@ -5461,6 +5594,8 @@ class SelectSameTypeCommandClass : public CommandClass
 				return;
 			}
 
+			// Selecting every object of the same types is silent, like gamemd's type select.
+			SelectionVoiceScope const quiet(false);
 			if (widen) {
 				for (int i = 0; i < Technos.Count(); i++) {
 					TechnoClass * techno = Technos[i];
@@ -5470,8 +5605,8 @@ class SelectSameTypeCommandClass : public CommandClass
 				}
 			} else {
 				TacticalMap->Select_These(TacticalRect, Select_Callback);
-				}
 			}
+		}
 
 	private:
 		/// <summary>
@@ -5574,8 +5709,9 @@ void SelectionFilterClass::Execute(bool add_lower)
 				techno->Unselect();
 			}
 		}
-		for (TechnoClass * techno : current_tiers[best]) {
-			techno->Response_Select();
+		// One reply answers the group, the first of the tier kept.
+		if (!current_tiers[best].empty()) {
+			current_tiers[best].front()->Response_Select();
 		}
 		return;
 	}
@@ -5600,8 +5736,9 @@ void SelectionFilterClass::Execute(bool add_lower)
 			techno->Unselect();
 		}
 	}
+	SelectionVoiceScope voice;
 	for (TechnoClass * techno : last_tiers[next]) {
-		techno->Select();
+		voice.Select(techno);
 	}
 }
 
@@ -5848,7 +5985,7 @@ static void Repeat_Last_Production(RTTIType type, int id)
 	}
 
 	if (type == RTTI_BUILDINGTYPE) {
-		FactoryClass * factory = PlayerPtr->Fetch_Factory(type, HouseClass::Build_Category(type, id), HouseClass::Is_Naval_Type(type, id));
+		FactoryClass * factory = PlayerPtr->Fetch_Factory(type, id);
 		if (factory != NULL && factory->Get_Object() != NULL) {
 			if (factory->Is_Building() || factory->Has_Production_Target()) {
 				Speak(VOX_NO_FACTORY);
@@ -5857,8 +5994,7 @@ static void Repeat_Last_Production(RTTIType type, int id)
 		}
 	}
 
-	Speak(type == RTTI_INFANTRYTYPE ? VOX_TRAINING : VOX_BUILDING);
-	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type, id));
+	Queue_Produce(type, id);
 }
 
 
@@ -6013,7 +6149,7 @@ class QuickLoadCommandClass : public CommandClass
 
 			AutosaveClass::KindType kind = Session.Type == GAME_NORMAL ? AutosaveClass::KindType::Campaign : AutosaveClass::KindType::Skirmish;
 			SaveVersionInfo info;
-			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion) {
+			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || !info.Is_Expected_Version(ExpectedGameVersion)) {
 				SaveManager.Post_Save_Notice(TXT_NO_QUICKSAVE);
 				return;
 			}
@@ -6026,6 +6162,50 @@ class QuickLoadCommandClass : public CommandClass
 
 			// The load has to wait until the frame is over, where the menu dialogs run.
 			SpecialDialog = SDLG_QUICKLOAD;
+		}
+};
+
+
+class ReplayPauseCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("ReplayPause");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Pause replay");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Pauses and resumes a replay. It does nothing in any other game.");
+		}
+
+		virtual void Execute(void) const {
+			Replay_Toggle_Pause();
+		}
+};
+
+
+class ReplayFastCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("ReplayFast");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Fast replay");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Plays a replay without the frame limit of the game speed, and back at the game speed on the next press. It does nothing in any other game.");
+		}
+
+		virtual void Execute(void) const {
+			Replay_Toggle_Fast();
 		}
 };
 
@@ -6496,8 +6676,9 @@ class CombatantSelectCommandClass : public CommandClass
 			}
 
 			Unselect_All();
+			SelectionVoiceScope voice;
 			for (TechnoClass * techno : chosen) {
-				techno->Select();
+				voice.Select(techno);
 			}
 		}
 
@@ -6567,8 +6748,9 @@ class TierNavigationClass
 
 				if (!matches.empty()) {
 					Unselect_All();
+					SelectionVoiceScope voice;
 					for (TechnoClass * techno : matches) {
-						techno->Select();
+						voice.Select(techno);
 					}
 					Shown = matches;
 					return;
@@ -6697,11 +6879,7 @@ class TypeSelectCommandClass : public CommandClass
 	private:
 		static std::string Type_Name(TechnoTypeClass const * type)
 		{
-			std::string name = type->Name();
-			for (char & letter : name) {
-				letter = (char)toupper((unsigned char)letter);
-			}
-			return(name);
+			return(Upper(type->Name()));
 		}
 
 		// The names the selection sought: each selected type, and the types it deploys into or undeploys from (0x732D10).
@@ -6779,15 +6957,19 @@ class TypeSelectCommandClass : public CommandClass
 				}
 			}
 
-			for (TechnoClass * techno : chosen) {
-				if (Matches(techno, sought)) {
-					techno->Select();
+			// Type select is silent: gamemd clears MoveFeedback for the whole selection (Game::UICommands_TypeSelect, 0x7327D0).
+			{
+				SelectionVoiceScope const quiet(false);
+				for (TechnoClass * techno : chosen) {
+					if (Matches(techno, sought)) {
+						techno->Select();
+					}
 				}
 			}
 
 			char const * label = CurrentObject.Count() == 0 ? "MSG:NothingSelected" : (Widen ? "MSG:SelAcrossMap" : "MSG:SelAcrossScreen");
 			// gamemd shows the message for 240 ticks (TypeSelect apply, 0x732BD5).
-			Session.Messages.Add_Message(NULL, 0, Fetch_String_UTF8(label).c_str(), House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), TICKS_PER_SECOND * 16);
+			Post_Player_Message(Fetch_String_UTF8(label).c_str(), TICKS_PER_SECOND * 16);
 			TypeSelectCycle = true;
 		}
 
@@ -6820,7 +7002,7 @@ class TauntCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (Session.Type != GAME_NORMAL) {
-				Session.Messages.Add_Message(NULL, 0, "Taunts are not available in this build.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+				Post_Player_Message("Taunts are not available in this build.", 300);
 			}
 		}
 
@@ -6890,6 +7072,15 @@ static void Claim_Free_Key(KeyNumType key, CommandClass const * command)
 		}
 	}
 	HotkeyBindings.push_back(HotkeyEntry{ name, key, 0, HOTKEY_PRESS });
+}
+
+
+/// <summary>
+/// Claims the Ctrl+Shift chord of the letter for a debug cheat, under the rule of Claim_Free_Key.
+/// </summary>
+static void Claim_Debug_Key(KeyNumType letter, CommandClass const * command)
+{
+	Claim_Free_Key((KeyNumType)(letter | KN_CTRL_BIT | KN_SHIFT_BIT), command);
 }
 
 
@@ -7081,6 +7272,9 @@ static void Init_Commands(void)
 	AllCommands.Add(new QuickSaveCommandClass);
 	AllCommands.Add(new QuickLoadCommandClass);
 
+	AllCommands.Add(new ReplayPauseCommandClass);
+	AllCommands.Add(new ReplayFastCommandClass);
+
 	const CommandClass * chatallcmd = new ChatToAllCommandClass;
 	AllCommands.Add(chatallcmd);
 
@@ -7133,19 +7327,19 @@ static void Init_Commands(void)
 	Claim_Free_Key((KeyNumType)(KN_C | KN_CTRL_BIT), cheercmd);
 
 	// The debug cheats do nothing unless the Debug mode setting is on, so their keys are harmless otherwise.
-	Claim_Free_Key((KeyNumType)(KN_I | KN_CTRL_BIT | KN_SHIFT_BIT), debugmoneycmd);
-	Claim_Free_Key((KeyNumType)(KN_U | KN_CTRL_BIT | KN_SHIFT_BIT), debugunlockcmd);
-	Claim_Free_Key((KeyNumType)(KN_B | KN_CTRL_BIT | KN_SHIFT_BIT), debuginstantcmd);
-	Claim_Free_Key((KeyNumType)(KN_V | KN_CTRL_BIT | KN_SHIFT_BIT), debugrevealcmd);
-	Claim_Free_Key((KeyNumType)(KN_P | KN_CTRL_BIT | KN_SHIFT_BIT), debugfullpowercmd);
-	Claim_Free_Key((KeyNumType)(KN_G | KN_CTRL_BIT | KN_SHIFT_BIT), debuginvulnerablecmd);
-	Claim_Free_Key((KeyNumType)(KN_W | KN_CTRL_BIT | KN_SHIFT_BIT), debugwincmd);
-	Claim_Free_Key((KeyNumType)(KN_L | KN_CTRL_BIT | KN_SHIFT_BIT), debuglosecmd);
-	Claim_Free_Key((KeyNumType)(KN_K | KN_CTRL_BIT | KN_SHIFT_BIT), debugchargecmd);
-	Claim_Free_Key((KeyNumType)(KN_H | KN_CTRL_BIT | KN_SHIFT_BIT), debughealcmd);
-	Claim_Free_Key((KeyNumType)(KN_E | KN_CTRL_BIT | KN_SHIFT_BIT), debugpromotecmd);
-	Claim_Free_Key((KeyNumType)(KN_D | KN_CTRL_BIT | KN_SHIFT_BIT), debugdestroycmd);
-	Claim_Free_Key((KeyNumType)(KN_F | KN_CTRL_BIT | KN_SHIFT_BIT), debugfastforwardcmd);
+	Claim_Debug_Key(KN_I, debugmoneycmd);
+	Claim_Debug_Key(KN_U, debugunlockcmd);
+	Claim_Debug_Key(KN_B, debuginstantcmd);
+	Claim_Debug_Key(KN_V, debugrevealcmd);
+	Claim_Debug_Key(KN_P, debugfullpowercmd);
+	Claim_Debug_Key(KN_G, debuginvulnerablecmd);
+	Claim_Debug_Key(KN_W, debugwincmd);
+	Claim_Debug_Key(KN_L, debuglosecmd);
+	Claim_Debug_Key(KN_K, debugchargecmd);
+	Claim_Debug_Key(KN_H, debughealcmd);
+	Claim_Debug_Key(KN_E, debugpromotecmd);
+	Claim_Debug_Key(KN_D, debugdestroycmd);
+	Claim_Debug_Key(KN_F, debugfastforwardcmd);
 
 	Apply_Hotkeys();
 }
@@ -7161,7 +7355,7 @@ static KeyNumType GridModifierKeys[HOTKEY_SLOT_COUNT] = { KN_NONE, KN_NONE };
 /// <summary>
 /// Returns the HotkeyTriggered index of the key with the trigger.
 /// </summary>
-static int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger)
+int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger)
 {
 	return(key * 4 + (int)trigger);
 }
@@ -7194,13 +7388,38 @@ static bool Key_Has_Binding(int key)
 
 
 /// <summary>
+/// Returns whether a replay in play refuses the command: the commands that order the selection, set an
+/// order mode or save and load the game. Selection, view and interface commands work as usual.
+/// </summary>
+static bool Replay_Refuses_Command(CommandClass const * command)
+{
+	if (!Replay_Is_Playing()) {
+		return(false);
+	}
+
+	static char const * const refused[] = {
+		"ToggleRepair", "ToggleSell", "PlanningMode", "WaypointMode", "DeleteWaypoint", "AttackMove", "PlaceBeacon", "Delete",
+		"RepeatLastBuilding", "RepeatLastInfantry", "RepeatLastUnit", "RepeatLastAircraft", "ManualPlace", "QuickSave", "QuickLoad",
+		"ChatToAll", "ChatToAllies",
+	};
+	char const * name = command->Get_Unique_Name();
+	for (char const * entry : refused) {
+		if (strcmp(name, entry) == 0) {
+			return(true);
+		}
+	}
+	return(strcmp(command->Get_Category(), Fetch_String(TXT_CONTROL)) == 0);
+}
+
+
+/// <summary>
 /// Runs the command of each fired binding, in the order given.
 /// </summary>
 static void Run_Hotkey_Fires(std::vector<HotkeyTimingClass::Fire> const & fires)
 {
 	for (HotkeyTimingClass::Fire const & fire : fires) {
 		CommandClass const * command = (fire.Trigger == HOTKEY_PRESS) ? HotkeyCommands[fire.Key] : HotkeyTriggered[Hotkey_Trigger_Index(fire.Key, fire.Trigger)];
-		if (command != NULL) {
+		if (command != NULL && !Replay_Refuses_Command(command)) {
 			command->Execute();
 		}
 	}
@@ -7212,12 +7431,8 @@ static void Run_Hotkey_Fires(std::vector<HotkeyTimingClass::Fire> const & fires)
 /// </summary>
 static KeyNumType Held_Key_Of(char const * command, int slot)
 {
-	for (HotkeyEntry const & entry : HotkeyBindings) {
-		if (entry.Command == command && entry.Slot == slot && entry.Trigger == HOTKEY_HELD) {
-			return((KeyNumType)entry.Key);
-		}
-	}
-	return(KN_NONE);
+	int const key = Hotkey_Held_Key(HotkeyBindings, command, slot);
+	return((key != 0) ? (KeyNumType)key : KN_NONE);
 }
 
 
@@ -7232,6 +7447,16 @@ static KeyNumType Bound_Key_Of(char const * command, int slot)
 		}
 	}
 	return(KN_NONE);
+}
+
+
+/// <summary>
+/// Sets both slots of a modifier pair from the keys bound in them. A key bound in one slot only serves both slots.
+/// </summary>
+static void Pair_Modifier_Keys(KeyNumType & slot_1, KeyNumType & slot_2, KeyNumType key_1, KeyNumType key_2)
+{
+	slot_1 = (key_1 != KN_NONE) ? key_1 : key_2;
+	slot_2 = (key_2 != KN_NONE) ? key_2 : key_1;
 }
 
 
@@ -7257,6 +7482,11 @@ void Apply_Hotkeys(void)
 	for (HotkeyEntry const & entry : HotkeyBindings) {
 		CommandClass const * command = Command_Named(entry.Command);
 		if (command == NULL) {
+			continue;
+		}
+
+		// A modifier-only binding never arrives as a press, so the commands read it as held state instead.
+		if (Hotkey_Is_Modifier_Only(entry.Key)) {
 			continue;
 		}
 
@@ -7290,32 +7520,27 @@ void Apply_Hotkeys(void)
 		HotkeyTiming.Set_Triggers(entry->first, entry->second.Press, entry->second.Doubled, entry->second.Hold, entry->second.Held);
 	}
 
-	// The held modifiers are read from the options, which Keyboard->Down tests. A key bound in one slot only serves both slots.
+	// The held modifiers are read from the options, which Keyboard->Down tests.
 	KeyNumType const attack_1 = Held_Key_Of("ForceFire", 0);
 	KeyNumType const attack_2 = Held_Key_Of("ForceFire", 1);
-	Options.KeyForceAttack1 = (attack_1 != KN_NONE) ? attack_1 : attack_2;
-	Options.KeyForceAttack2 = (attack_2 != KN_NONE) ? attack_2 : attack_1;
+	Pair_Modifier_Keys(Options.KeyForceAttack1, Options.KeyForceAttack2, attack_1, attack_2);
 
 	KeyNumType const move_1 = Held_Key_Of("ForceMove", 0);
 	KeyNumType const move_2 = Held_Key_Of("ForceMove", 1);
-	Options.KeyForceMove1 = (move_1 != KN_NONE) ? move_1 : move_2;
-	Options.KeyForceMove2 = (move_2 != KN_NONE) ? move_2 : move_1;
+	Pair_Modifier_Keys(Options.KeyForceMove1, Options.KeyForceMove2, move_1, move_2);
 
 	KeyNumType const select_1 = Held_Key_Of("SelectModifier", 0);
 	KeyNumType const select_2 = Held_Key_Of("SelectModifier", 1);
-	Options.KeySelect1 = (select_1 != KN_NONE) ? select_1 : select_2;
-	Options.KeySelect2 = (select_2 != KN_NONE) ? select_2 : select_1;
+	Pair_Modifier_Keys(Options.KeySelect1, Options.KeySelect2, select_1, select_2);
 
 	KeyNumType const queue_1 = Held_Key_Of("QueueMove", 0);
 	KeyNumType const queue_2 = Held_Key_Of("QueueMove", 1);
-	Options.KeyQueueMove1 = (queue_1 != KN_NONE) ? queue_1 : queue_2;
-	Options.KeyQueueMove2 = (queue_2 != KN_NONE) ? queue_2 : queue_1;
+	Pair_Modifier_Keys(Options.KeyQueueMove1, Options.KeyQueueMove2, queue_1, queue_2);
 
 	// The attack-move key is read as held, whatever its trigger, so holding it keeps attack-move on for the clicks made meanwhile.
 	KeyNumType const attack_move_1 = Bound_Key_Of("AttackMove", 0);
 	KeyNumType const attack_move_2 = Bound_Key_Of("AttackMove", 1);
-	Options.KeyAttackMove1 = (attack_move_1 != KN_NONE) ? attack_move_1 : attack_move_2;
-	Options.KeyAttackMove2 = (attack_move_2 != KN_NONE) ? attack_move_2 : attack_move_1;
+	Pair_Modifier_Keys(Options.KeyAttackMove1, Options.KeyAttackMove2, attack_move_1, attack_move_2);
 
 	for (int slot = 0; slot < HOTKEY_SLOT_COUNT; slot++) {
 		GridModifierKeys[slot] = Held_Key_Of("GridBuildModifier", slot);
@@ -7329,7 +7554,7 @@ void Apply_Hotkeys(void)
 static bool Grid_Modifier_Held(void)
 {
 	for (KeyNumType key : GridModifierKeys) {
-		if (key != KN_NONE && HotkeyTiming.Is_Held(key)) {
+		if (key != KN_NONE && (HotkeyTiming.Is_Held(key) || (Hotkey_Is_Modifier_Only(key) && Keyboard->Down(key)))) {
 			return(true);
 		}
 	}
@@ -7428,15 +7653,7 @@ void Hotkey_Reset_Pending(void)
 bool Hotkey_Wheel(int delta, int modifiers)
 {
 	int key = (delta > 0) ? VK_WHEEL_UP : VK_WHEEL_DOWN;
-	if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
-		key |= WWKEY_SHIFT_BIT;
-	}
-	if ((modifiers & WINDOW_MOD_CTRL) != 0) {
-		key |= WWKEY_CTRL_BIT;
-	}
-	if ((modifiers & WINDOW_MOD_ALT) != 0) {
-		key |= WWKEY_ALT_BIT;
-	}
+	key |= Key_Bits_From_Window(modifiers);
 	if (!Key_Has_Binding(key)) {
 		return(false);
 	}
@@ -7584,14 +7801,14 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 	}
 
 	if (composite_rect.Is_Valid()) {
-		CompositeSurface = new DSurface(composite_rect.Width, composite_rect.Height);
+		CompositeSurface = new DSurface(composite_rect.Width, composite_rect.Height, true);
 		CompositeSurface->Fill(0);
 
 		DebugString("CompositeSurface (%dx%d)\n", composite_rect.Width, composite_rect.Height);
 	}
 
 	if (tile_rect.Is_Valid()) {
-		TileSurface = new DSurface(tile_rect.Width, tile_rect.Height);
+		TileSurface = new DSurface(tile_rect.Width, tile_rect.Height, true);
 		TileSurface->Fill(0);
 
 		DebugString("TileSurface (%dx%d)\n", tile_rect.Width, tile_rect.Height);
@@ -7621,6 +7838,22 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 
 
 	return(success);
+}
+
+
+/// <summary>
+/// Allocates the drawing surfaces for the tactical view the interface currently has.
+/// The hidden surface covers the visible area, while the composite and tile surfaces are as wide as the tactical
+/// view and the sidebar surface as wide as the sidebar. The caller sets the map's view dimensions afterwards.
+/// </summary>
+/// <returns>Rect; The tactical view rectangle the surfaces were sized for.</returns>
+Rect Allocate_Tactical_Surfaces(void)
+{
+	Rect view = Tactical_View_Rect();
+
+	Allocate_Surfaces(VisibleRect, Rect(0, 0, view.Width, VisibleRect.Height), Rect(0, 0, view.Width, VisibleRect.Height), Rect(0, 0, Sidebar_Surface_Width(), VisibleRect.Height));
+
+	return(view);
 }
 
 
@@ -7903,12 +8136,7 @@ void Init_Theater(TheaterType theater)
 			SchemePalette = *unitpal;
 		}
 
-		for (int index = 0; index < 256; index++) {
-			SchemePalette[index] = RGBClass(
-					(unsigned char)(SchemePalette[index].Get_Red()<<2),
-					(unsigned char)(SchemePalette[index].Get_Green()<<2),
-					(unsigned char)(SchemePalette[index].Get_Blue()<<2));
-		}
+		SchemePalette = Widen_Six_Bit_Palette(&SchemePalette[0]);
 
 		int last_percent = 12;
 		int prog_step = ColorSchemes.Count() / (25 - 12);

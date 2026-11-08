@@ -54,6 +54,10 @@
 
 #include <cassert>
 #include <utility>
+#include <vector>
+
+bool (*Draw_Line_Record)(Surface const & surface, int color, std::vector<Point2D> const & pixels) = NULL;
+
 
 /***********************************************************************************************
  * XSurface::Draw_Line -- Draws a line upon the surface.                                       *
@@ -131,6 +135,17 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 	void * buffer = Lock(start);
 	if (buffer != NULL) {
 
+		bool const collect = bpp == 2 && Draw_Line_Record != NULL;
+		char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * bpp;
+		std::vector<unsigned short *> collected;
+		auto const put = [&](unsigned short * pixel) {
+			if (collect) {
+				collected.push_back(pixel);
+			} else {
+				*pixel = (unsigned short)color;
+			}
+		};
+
 		if (start.Y == end.Y) {
 
 			/*
@@ -140,7 +155,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 				memset(buffer, color, end.X - start.X + 1);
 			} else {
 				for (int i = 0; i <= end.X - start.X; i++) {
-					*((unsigned short *)buffer + i) = color;
+					put((unsigned short *)buffer + i);
 				}
 			}
 
@@ -155,7 +170,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 				if (bpp == 1) {
 					*(unsigned char *)buffer = color;
 				} else {
-					*(unsigned short *)buffer = color;
+					put((unsigned short *)buffer);
 				}
 				buffer = (unsigned char *)buffer + pitch;
 			}
@@ -191,7 +206,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 					if (bpp == 1) {
 						*((unsigned char *)buffer + i) = color;
 					} else {
-						*((unsigned short *)buffer + i) = color;
+						put((unsigned short *)buffer + i);
 					}
 
 					if (delta > 0) {
@@ -216,7 +231,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 					if (bpp == 1) {
 						*((unsigned char *)buffer + k) = color;
 					} else {
-						*((unsigned short *)buffer + k) = color;
+						put((unsigned short *)buffer + k);
 					}
 
 					if (delta > 0) {
@@ -230,6 +245,19 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 			}
 		}
 
+		if (collect) {
+			std::vector<Point2D> pixels;
+			pixels.reserve(collected.size());
+			for (unsigned short * pixel : collected) {
+				std::ptrdiff_t const offset = (char const *)pixel - origin;
+				pixels.push_back(Point2D((int)(offset % Stride()) / 2, (int)(offset / Stride())));
+			}
+			if (!Draw_Line_Record(*this, color, pixels)) {
+				for (unsigned short * pixel : collected) {
+					*pixel = (unsigned short)color;
+				}
+			}
+		}
 		Unlock();
 		return(true);
 	}
@@ -465,6 +493,17 @@ bool XSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 
 
 /// <summary>
+/// Draws a line that adds its color to the pixels beneath it, shaded between a start and an end depth.
+/// The plain surface has no depth buffer to work against, so it refuses the request.
+/// DSurface supplies the working version of this routine.
+/// </summary>
+bool XSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass const & color, float intensity, int start_depth, int end_depth)
+{
+	return(false);
+}
+
+
+/// <summary>
 /// Walks a clipped line, handing each point to a callback.
 /// This routine is for callers that must do more at each step than store a color -- the
 /// radar event boxes stamp their edges through it. Points that fall outside the clipping
@@ -671,14 +710,13 @@ bool XSurface::Draw_Rect(Rect const & cliprect, Rect const & crect, int color)
 int XSurface::Get_Pixel(Point2D const & point) const
 {
 	int color = 0;
-	void * pointer = ((Surface*)this)->Lock(point);
-	if (pointer != NULL) {
+	SurfaceLock lock(*this, point);
+	if (lock.Is_Valid()) {
 		if (Bytes_Per_Pixel() == 2) {
-			color = *((unsigned short*)pointer);
+			color = *lock.As<unsigned short>();
 		} else {
-			color = *((unsigned char*)pointer);
+			color = *lock.As<unsigned char>();
 		}
-		((Surface*)this)->Unlock();
 	}
 	return(color);
 }
@@ -703,14 +741,13 @@ int XSurface::Get_Pixel(Point2D const & point) const
  *=============================================================================================*/
 bool XSurface::Put_Pixel(Point2D const & point, int color)
 {
-	void * pointer = Lock(point);
-	if (pointer != NULL) {
+	SurfaceLock lock(*this, point);
+	if (lock.Is_Valid()) {
 		if (Bytes_Per_Pixel() == 2) {
-			*((unsigned short*)pointer) = (unsigned short)color;
+			*lock.As<unsigned short>() = (unsigned short)color;
 		} else {
-			*((unsigned char*)pointer) = (unsigned char)color;
+			*lock.As<unsigned char>() = (unsigned char)color;
 		}
-		Unlock();
 		return(true);
 	}
 	return(false);
@@ -728,15 +765,14 @@ int XSurface::Get_Pixel_Clip(Point2D const & point, Rect const & rect) const
 	unsigned pixel = 0;
 
 	if (rect.Is_Point_Within(point)) {
-		void *buffptr = Lock(point);
+		SurfaceLock lock(*this, point);
 
-		if (buffptr != NULL) {
+		if (lock.Is_Valid()) {
 			if (Bytes_Per_Pixel() == 2) {
-				pixel = *static_cast<unsigned short *>(buffptr);
+				pixel = *lock.As<unsigned short>();
 			} else {
-				pixel = *static_cast<unsigned char *>(buffptr);
+				pixel = *lock.As<unsigned char>();
 			}
-			Unlock();
 		}
 	}
 	return(pixel);
@@ -751,15 +787,14 @@ int XSurface::Get_Pixel_Clip(Point2D const & point, Rect const & rect) const
 bool XSurface::Put_Pixel_Clip(Point2D const & point, int color, Rect const & rect)
 {
 	if (rect.Is_Point_Within(point)) {
-		void *buffptr = Lock(point);
+		SurfaceLock lock(*this, point);
 
-		if (buffptr != NULL) {
+		if (lock.Is_Valid()) {
 			if (Bytes_Per_Pixel() == 2) {
-				*static_cast<unsigned short *>(buffptr) = color;
+				*lock.As<unsigned short>() = color;
 			} else {
-				*static_cast<unsigned char *>(buffptr) = color;
+				*lock.As<unsigned char>() = color;
 			}
-			Unlock();
 			return(true);
 		}
 	}
@@ -851,7 +886,8 @@ bool XSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 	int width = crect.Width;
 	int pitch = Stride();
 
-	void * buffer = Lock(crect.Top_Left());
+	SurfaceLock lock(*this, crect.Top_Left());
+	void * buffer = lock.As<void>();
 	if (buffer != NULL) {
 		if (Bytes_Per_Pixel() == 1) {
 			for (int y = 0; y < crect.Height; y++) {
@@ -910,7 +946,6 @@ bool XSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 				}
 			}
 		}
-		Unlock();
 		return(true);
 	}
 	return(false);

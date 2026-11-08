@@ -15,12 +15,10 @@ targets:
   scope: unittype
 - type: key
   id: DeployFire
-  effect: added
-  scope: unittype
+  effect: changed
 - type: key
   id: DeployFireWeapon
-  effect: added
-  scope: unittype
+  effect: changed
 - type: key
   id: Shadow
   effect: added

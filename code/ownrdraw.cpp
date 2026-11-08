@@ -106,6 +106,14 @@ std::string Build_Hotkey_String(KeyNumType key)
 		name += Main_Window_Key_Name(VK_SHIFT) + "+";
 	}
 
+	// A modifier-only binding has no key, so the separator after its last modifier goes.
+	if ((code & 0xFF) == 0) {
+		if (!name.empty()) {
+			name.pop_back();
+		}
+		return(name);
+	}
+
 	std::string const mouse = Mouse_Key_Name(code & 0xFF);
 	name += mouse.empty() ? Main_Window_Key_Name(code & 0xFF) : mouse;
 	return(name);

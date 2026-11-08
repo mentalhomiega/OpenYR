@@ -105,6 +105,10 @@ class InfantryClass : public FootClass
 		// Set when a computer's soldier stops to dig in (InfantryClass::Do_Guard_Deploy, 0x521320).
 		bool ShouldDeploy;
 
+		// Set when a DeployedCrushable=no soldier finishes digging in and cleared when it finishes packing up. While it is
+		// set, vehicles cannot crush the soldier (InfantryClass::Doing_AI, 0x520AE0; ObjectClass::IsCrushable, 0x5F6CD0).
+		bool IsDugInSafe;
+
 		// Whether an AmphibiousDestroyer soldier was last animated on land (1), in water (0) or neither yet (2).
 		int LandState;
 
@@ -147,6 +151,10 @@ class InfantryClass : public FootClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual bool Is_Ready_To_Random_Animate(void) const override;
 		bool Is_Deployed(void) const;
+		bool Is_Digging_In(void) const;
+		bool Can_Infiltrate(BuildingClass const * building) const;
+		// Sends this soldier to capture TarCom when it is a building the soldier can take; returns true when it did.
+		bool Try_Capture_Building_Target(void);
 		// Does a disguised soldier, such as a spy, look like a soldier of that house to this house (InfantryClass::IsDisguisedAs, 0x5227F0)?
 		bool Is_Disguised_As(HouseClass const * house) const;
 		bool Can_Cheer(void) const;
@@ -212,7 +220,9 @@ class InfantryClass : public FootClass
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const override;
 		virtual bool Ready_To_Commence(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;
+		virtual int Do_MISSION_HUNT(void) override;
 		virtual int Do_MISSION_GUARD(void) override;
+		virtual int Do_MISSION_GUARD_AREA(void) override;
 		virtual int Do_MISSION_UNLOAD(void) override;
 		virtual int Do_MISSION_MOVE(void) override;
 		virtual void Berzerk(void) override;
@@ -245,6 +255,7 @@ class InfantryClass : public FootClass
 		**	Movement and animation.
 		*/
 		virtual bool Do_Action(DoType todo, bool force=false, bool randomize=false);
+		void Land_Crashed(void);
 		virtual bool Random_Animate(void) override;
 		virtual MoveType Can_Enter_Cell(CellClass const * cell, FacingType dir = FACING_NONE, int cell_height = -1, CellClass const * = 0, bool = true) const override;
 		virtual void Per_Cell_Process(PCPType why) override;
@@ -266,6 +277,22 @@ class InfantryClass : public FootClass
 		static int const HumanShape[32];
 
 	private:
+
+		bool Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const;
+		std::optional<MoveType> Mission_Destination_Verdict(ObjectClass * obj, TechnoClass * techno, CellClass const * cellptr, MissionType mission, bool isbridge, bool & skip) const;
+		std::optional<MoveType> Special_Building_Verdict(ObjectClass * obj, MoveType & retval, bool & skip) const;
+		std::optional<MoveType> Occupant_Verdict(ObjectClass * obj, TechnoClass * techno, MoveType & retval, int & trynum) const;
+
+		bool Garrison_Arrival(CellClass * cellptr);
+		void Repair_Bridge_Hut(TechnoClass * tech);
+		bool Engineer_Arrival(TechnoClass * tech);
+		void Infiltrate_Building(TechnoClass * tech);
+		bool Capture_Arrival(CellClass * cellptr);
+		bool Transport_Arrival(void);
+		bool Sabotage_Arrival(CellClass * cellptr);
+		void Release_Tether(CellClass * cellptr);
+		void Settle_Into_Cell(void);
+		bool Take_Cell_Hazard_Damage(void);
 
 		static DoStruct const MasterDoControls[DO_COUNT];
 

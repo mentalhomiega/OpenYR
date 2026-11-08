@@ -53,11 +53,13 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "gmmath.h"
+#include "goptions.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
 #include "isotype.h"
+#include "logic.h"
 #include "mouse.h"
 #include "overtype.h"
 #include "ovrlight.h"
@@ -78,7 +80,6 @@
 #include "bullettype.h"
 #include "warheadrules.h"
 #include <map>
-#include <vector>
 #include "warhead.h"
 
 #include "mph.hh"
@@ -153,24 +154,6 @@ int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor,
 }
 
 
-/// <summary>
-/// Determines the distance between two points, ignoring a slight height difference.
-/// This routine is used when explosion damage is being dealt out, so that a victim
-/// perched a fraction of a level above or below the blast is not judged to be further
-/// away than one standing level with it.
-/// </summary>
-/// <returns>Returns with the distance between the two coordinates.</returns>
-inline static int Explosion_Distance(Coord const & coord1, Coord const & coord2)
-{
-	int z1 = coord1.Z;
-	int z2 = coord2.Z;
-	if (abs(z2 - z1) < LEVEL_LEPTON_H) {
-		z2 = coord1.Z;
-	}
-	return(Coord(coord1.X - coord2.X, coord1.Y - coord2.Y, z1 - z2).Gamemd_Length());
-}
-
-
 int Cell_Spread_Count(int radius)
 {
 	return(CellSpread::Count(radius));
@@ -179,6 +162,392 @@ int Cell_Spread_Count(int radius)
 Cell Cell_Spread_Offset(int index)
 {
 	return(Cell(CellSpread::Table[index].X, CellSpread::Table[index].Y));
+}
+
+
+/*
+ * Concrete low bridge overlays from OVERLAY_CONCRETE_BRIDGE_FIRST through this id take the strength
+ * roll (gamemd 0x48A214). The span end pieces after it do not, so this is not OVERLAY_CONCRETE_BRIDGE_LAST.
+ */
+constexpr int CONCRETE_LOW_BRIDGE_ROLL_LAST = 230;
+
+
+static bool Bridge_Takes_Hit(WarheadTypeClass const * warhead, int strength)
+{
+	return(warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength);
+}
+
+
+/*
+ * Each bridge set holds its four middle pieces as consecutive tile ids from its BridgeMiddle value,
+ * and the two sets are read from the INI separately.
+ */
+static bool Is_Bridge_Middle(IsometricTileType ittype)
+{
+	return((ittype >= IsometricTileTypeClass::BridgeMiddle1 && ittype <= IsometricTileTypeClass::BridgeMiddle1 + 3) ||
+		(ittype >= IsometricTileTypeClass::BridgeMiddle2 && ittype <= IsometricTileTypeClass::BridgeMiddle2 + 3));
+}
+
+
+/*
+ * Damages the bridge span at the cell when the blast reaches its deck height. The redraw area is
+ * dirty_size pixels square, centered on the blast.
+ */
+static void Damage_Bridge_Span(Cell const & cell, CellClass * cellptr, Coord const & coord, WarheadTypeClass const * warhead, int strength, int dirty_size)
+{
+	if (!cellptr->IsUnderBridge || (coord.Z <= BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height + 1) && coord.Z > BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height - 2))) {
+		if (warhead->IsWallDestroyer && Bridge_Takes_Hit(warhead, strength)) {
+			bool bridge_damaged = false;
+			int tries = 4;
+			bool const ion_cannon = warhead == Rule->IonCannonWarhead;
+			do {
+				bridge_damaged = Map.Damage_Bridge(cell);
+				tries--;
+				if (bridge_damaged) {
+					break;
+				}
+			} while (ion_cannon && tries > 0);
+
+			if (bridge_damaged) {
+				TechnoClass::Remove_Target(cellptr);
+			}
+			Point2D point;
+			TacticalMap->Coord_To_Pixel(coord, point);
+			TacticalMap->Register_Dirty_Area(Rect(point.X - dirty_size / 2, point.Y - dirty_size / 2, dirty_size, dirty_size), false);
+		}
+	}
+}
+
+
+// One object in reach of a blast and its distance from ground zero.
+struct BlastHit {
+	ObjectClass * Object;
+	int Distance;
+};
+
+
+// Adds the airborne objects in range of the blast to hits. A pinpoint blast on an Iron Curtained one sets curtain_hit.
+static void Collect_Flying_Hits(Coord const & coord, Cell const & cell, WarheadTypeClass const * warhead, int range, bool pinpoint, std::vector<BlastHit> & hits, bool & curtain_hit)
+{
+	/*
+	 * Objects flying over the blast. A pinpoint blast on an object under the Iron Curtain
+	 * spends itself there and spares everything else.
+	 */
+	if (coord.Z - Map.Get_Height_GL(cell) > warhead->DamageAirThreshold) {
+		DynamicVectorClass<FootClass *> flyers;
+		for (int index = 0; index < Aircraft.Count(); index++) {
+			flyers.Add(Aircraft[index]);
+		}
+		for (int index = 0; index < Infantry.Count(); index++) {
+			if (Infantry[index]->Class->IsJumpJet) flyers.Add(Infantry[index]);
+		}
+		for (int index = 0; index < Units.Count(); index++) {
+			if (Units[index]->Class->IsJellyfish || Units[index]->In_Air()) flyers.Add(Units[index]);
+		}
+		for (int index = 0; index < flyers.Count(); index++) {
+			FootClass * flyer = flyers[index];
+			if (flyer->IsActive && flyer->IsDown && flyer->Strength > 0 && flyer->In_Air()) {
+				int const distance = (coord - flyer->PositionCoord).Gamemd_Length();
+				if (distance <= range) {
+					if (pinpoint && distance < 85 && flyer->Is_Iron_Curtained() && !flyer->IsForceShielded) {
+						curtain_hit = true;
+					}
+					hits.push_back({flyer, distance});
+				}
+			}
+		}
+	}
+}
+
+
+// Ore and walls in the cell take their share of the blast.
+static void Damage_Overlay_In_Reach(CellClass * cptr, int strength, WarheadTypeClass const * warhead, bool dochainreaction)
+{
+	if (cptr->Overlay != OVERLAY_NONE) {
+		OverlayTypeClass const * optr = OverlayTypes[cptr->Overlay];
+		if (optr->IsChainReaction && (!optr->IsTiberium || warhead->IsTiberiumDestroyer) && dochainreaction) {
+			cptr->Reduce_Tiberium(strength / 10);
+		}
+		if (optr->IsWall) {
+			if (warhead->IsWallAbsoluteDestroyer) {
+				cptr->Reduce_Wall(-1);
+			} else if (warhead->IsWallDestroyer || (warhead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
+				cptr->Reduce_Wall(strength);
+			}
+		}
+		if (cptr->Overlay == OVERLAY_NONE) {
+			TechnoClass::Remove_Target(cptr);
+		}
+	}
+}
+
+
+// Adds the occupiers and veinhole monsters of every cell in reach to hits. A pinpoint blast on an Iron Curtained one sets curtain_hit.
+static void Collect_Cell_Hits(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass const * spare_infantry_of, Cell const & cell, bool pinpoint, bool isbridge, std::vector<BlastHit> & hits, bool & curtain_hit)
+{
+	int const radius = CellSpread::Radius_For(warhead->CellSpread);
+	int const count = Cell_Spread_Count(radius);
+	for (int index = 0; index < count; index++) {
+		Cell const where = cell + Cell_Spread_Offset(index);
+		if (!Map.In_Radar(where)) continue;
+		CellClass * cptr = &Map[where];
+
+		Damage_Overlay_In_Reach(cptr, strength, warhead, dochainreaction);
+
+		/*
+		 * A structure is measured from the cell it is found in, so a large one is struck once
+		 * for each of its cells in reach. The firer is spared unless its type is DamageSelf or
+		 * the blast is CrushWarhead's. Harvesters are spared in a scenario that protects them.
+		 */
+		Coord const cell_coord = cptr->Center_Coord();
+		for (ObjectClass * object = cptr->Cell_Occupier(isbridge); object != NULL; object = object->Next) {
+			if (object == source && !source->TClass->IsDamageSelf && warhead != Rule->CrushWarhead) continue;
+			if (!object->IsActive) continue;
+			if (object->RTTI == RTTI_UNIT && Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List((UnitTypeClass *)object->Class_Of())) continue;
+			if (spare_infantry_of != NULL && object->RTTI == RTTI_INFANTRY && spare_infantry_of->Is_Ally(((InfantryClass *)object)->House)) continue;
+
+			int distance;
+			if (object->RTTI == RTTI_BUILDING) {
+				if (index != 0) {
+					distance = (cell_coord - coord).Gamemd_Length();
+				} else if (coord.Z - cell_coord.Z > 2 * LEVEL_LEPTON_H) {
+					distance = (cell_coord - coord).Gamemd_Length() - 2 * LEVEL_LEPTON_H;
+				} else {
+					distance = 0;
+				}
+			} else {
+				distance = (object->Target_Coord() - coord).Gamemd_Length();
+			}
+
+			if (pinpoint && index == 0 && object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained() && !((TechnoClass *)object)->IsForceShielded && distance < 85) {
+				curtain_hit = true;
+			}
+			hits.push_back({object, distance});
+		}
+
+		if (cptr->Overlay != OVERLAY_NONE && OverlayTypes[cptr->Overlay]->IsVeinholeMonster) {
+			VeinholeMonsterClass * veinhole = VeinholeMonsterClass::Get_Monster_At(where);
+			if (veinhole != NULL) {
+				hits.push_back({veinhole, (veinhole->Target_Coord() - coord).Gamemd_Length()});
+			}
+		}
+	}
+}
+
+
+// Damages every collected object that is still alive and in range. After a curtain_hit only Iron Curtained objects are damaged.
+static void Deal_Blast_Damage(std::vector<BlastHit> const & hits, Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, HouseClass * sourcehouse, int range, bool curtain_hit)
+{
+	/*
+	 * Deal the damage. An aircraft in the air counts as half as far away.
+	 */
+	for (BlastHit const & hit : hits) {
+		ObjectClass * object = hit.Object;
+		object->IsToDamage = false;
+		if (!object->IsActive) continue;
+		if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) continue;
+		if (curtain_hit && !(object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained())) continue;
+
+		int distance = hit.Distance;
+		if (object->RTTI == RTTI_AIRCRAFT && object->In_Air()) {
+			distance /= 2;
+		}
+		if (object->Strength > 0 && object->IsDown && !object->IsInLimbo && distance <= range) {
+			int damage = strength;
+			if (warhead != Rule->IonStormWarhead || !object->Is_Foot() || ((FootClass *)object)->Team == NULL || !((FootClass *)object)->Team->Class->IsIonImmune) {
+				AUTOTEST_LOG("blast %s at %d,%d,%d hits %s at %d,%d,%d in air %d distance %d range %d\n", warhead->Name(), coord.X, coord.Y, coord.Z, object->Class_Of()->Name(), object->Center_Coord().X, object->Center_Coord().Y, object->Center_Coord().Z, (int)object->In_Air(), distance, range);
+				object->Take_Damage(damage, distance, warhead, source, false, false, sourcehouse);
+			}
+		}
+	}
+}
+
+
+// Rocks the vehicles and infantry around ground zero when the warhead is a Rocker.
+static void Rock_Blast_Cells(Coord const & coord, Cell const & cell, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool isbridge)
+{
+	double rocking_force = std::min(strength * 0.01, 4.0);
+	if (warhead->IsRocker && rocking_force > 0.3) {
+		for (int x = cell.X - 3; x <= cell.X + 3; x++) {
+			for (int y = cell.Y - 3; y <= cell.Y + 3; y++) {
+				ObjectClass * object = isbridge ? Map[Cell(x, y)].Cell_Occupier(true) : Map[Cell(x, y)].Cell_Occupier(false);
+
+				while (object) {
+					TechnoClass * techno = Dynamic_Cast<TechnoClass *>(object);
+					if (techno != NULL) {
+						if (Cell(x, y) == cell && source) {
+							Coord tcoord = techno->PositionCoord;
+
+							Coord scoord = source->PositionCoord;
+							TPoint3D<float> rockdirf((float)(scoord.X - tcoord.X), (float)(scoord.Y - tcoord.Y), (float)(scoord.Z - tcoord.Z));
+							rockdirf = rockdirf.Normalize() * 10;
+
+							tcoord += Coord(rockdirf.X, rockdirf.Y, rockdirf.Z);
+							techno->Rock(tcoord, rocking_force);
+						} else {
+							techno->Rock(coord, rocking_force);
+						}
+					}
+					object = object->Next;
+				}
+			}
+		}
+	}
+}
+
+
+// Damages the bridge piece at the cell when the warhead destroys bridges.
+static void Damage_Blast_Bridges(Coord const & coord, Cell const & cell, CellClass * cellptr, int strength, WarheadTypeClass const * warhead)
+{
+	/*
+	**	If there is a bridge at this location, then it may be destroyed by the
+	**	combat damage.
+	*/
+	if (Scen->Special.IsDestroyBridges && warhead->IsWallDestroyer) {
+
+		IsometricTileType ittype1 = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+		CellClass * bridge_deck = cellptr->Get_Bridge_Deck_CellClass();
+
+		if (bridge_deck && bridge_deck->Is_Overlay_Bridge() || Is_Bridge_Middle(ittype1)) {
+			Damage_Bridge_Span(cell, cellptr, coord, warhead, strength, 256);
+		}
+
+		IsometricTileType ittype2 = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
+
+		if (bridge_deck && bridge_deck->Is_Overlay_Rail_Bridge() || Is_Bridge_Middle(ittype2)) {
+			Damage_Bridge_Span(cell, cellptr, coord, warhead, strength, 192);
+		}
+
+		if (cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_26) {
+			if (Bridge_Takes_Hit(warhead, strength)) {
+				// gamemd's wood gate (0x48A214) calls MapClass::Damage_Bridge once per impact (0x48A25A).
+				bool destroyed = Map.Damage_Bridge(cell);
+				if (destroyed) {
+					TechnoClass::Remove_Target(cellptr);
+				}
+			}
+		}
+
+		/*
+		 * A concrete low bridge piece (overlays 205 to 230) takes the same strength roll, once, and
+		 * then its state routine runs (gamemd 0x48A214, FUN_0057CCF0).
+		 */
+		if (cellptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cellptr->Overlay <= CONCRETE_LOW_BRIDGE_ROLL_LAST) {
+			if (Bridge_Takes_Hit(warhead, strength)) {
+				bool const destroyed = Map.Damage_Concrete_Bridge(cell);
+				if (destroyed) {
+					TechnoClass::Remove_Target(cellptr);
+				}
+			}
+		}
+	}
+}
+
+
+// Detonates the explosive barrel at the cell, if there is one, and sets fire to explosive neighbours.
+static void Explode_Barrel(Coord const & coord, CellClass * cellptr)
+{
+	if (cellptr->Overlay != OVERLAY_NONE && OverlayTypes[cellptr->Overlay]->IsExplosive) {
+		cellptr->Register_For_Redraw();
+		cellptr->Overlay = OVERLAY_NONE;
+		cellptr->Recalc_Attributes();
+		Map.Update_Cell_Zone(cellptr->CellID);
+		Map.Update_Cell_Subzones(cellptr->CellID);
+		TechnoClass::Remove_Target(cellptr);
+
+		new AnimClass(Rule->BarrelExplode, coord);
+		Explosion_Damage(coord, Rule->AmmoCrateDamage, NULL, Rule->C4Warhead, true);
+		for (int i = 0; i < Rule->BarrelDebris.Count(); i++) {
+			if (Percent_Chance(15)) {
+				new VoxelAnimClass(Rule->BarrelDebris[i], coord);
+				break;
+			}
+		}
+		if (Percent_Chance(25)) {
+			ParticleSystemClass * psys = new ParticleSystemClass(Rule->BarrelParticle, coord);
+			psys->Spawn_Held_Particle(coord, coord);
+		}
+
+		static FacingType _part_facings[] = { FACING_N, FACING_E, FACING_S, FACING_W };
+
+		for (int f = 0; f < ARRAY_SIZE(_part_facings); f++) {
+			Coord adjacent = Adjacent_Coord_With_Height(coord, _part_facings[f]);
+			if (Map[adjacent].Overlay != OVERLAY_NONE && OverlayTypes[Map[adjacent].Overlay]->IsExplosive) {
+				new AnimClass(AnimTypes[AnimTypeClass::From_Name("FIRE3")], adjacent, Random_Pick(1, 3) + 3);
+			}
+		}
+	}
+}
+
+
+// Deforms the terrain, collapses cliffs, spawns the warhead's particle and cracks ice at the blast.
+static void Apply_Blast_Terrain_Effects(Coord const & coord, CellClass * cellptr, int strength, WarheadTypeClass const * warhead, HouseClass * sourcehouse)
+{
+	if (strength > warhead->DeformThreshhold) {
+		if (Percent_Chance((strength * 0.01) * warhead->Deform * 100.0) && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
+			Map.Deform_Terrain(coord.As_Cell(), false);
+		}
+	}
+
+	if (cellptr->Is_Tile_Destroyable_Cliff()) {
+		if (Percent_Chance(Rule->CollapseChance)) {
+			Map.Collapse_Cliff(cellptr);
+		}
+	}
+
+	if (warhead->Particle) {
+		ParticleSystemClass * psys;
+		if (warhead->Particle->BehavesLike == PSYS_BEHAVIOR_GAS) {
+			psys = GasSystem;
+		} else {
+			psys = new ParticleSystemClass(warhead->Particle, coord);
+		}
+		ParticleClass * particle = psys->Spawn_Held_Particle(coord, coord);
+		if (particle != NULL) {
+			particle->SourceHouse = sourcehouse;
+		}
+	}
+
+	if ((warhead->IsWallDestroyer || warhead->IsFire) && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
+		Map.DirtyIceCells.Clear();
+		if (Map.Crack_Ice(cellptr, NULL)) {
+			Map.Recalc_Ice_Cells();
+		}
+	}
+}
+
+
+// CellSpread.MaxAffect keeps only the nearest hits an object would take from this blast (Ares).
+static void Keep_Nearest_Hits(WarheadTypeClass const * warhead, std::vector<BlastHit> & hits)
+{
+	if (warhead->CellSpreadMaxAffect < 0 || hits.size() <= 1) {
+		return;
+	}
+
+	std::map<ObjectClass *, std::vector<size_t>> by_object;
+	for (size_t index = 0; index < hits.size(); index++) {
+		by_object[hits[index].Object].push_back(index);
+	}
+	std::vector<bool> dropped(hits.size(), false);
+	for (auto const & entry : by_object) {
+		if (entry.second.size() > (size_t)warhead->CellSpreadMaxAffect) {
+			std::vector<int> distances;
+			for (size_t index : entry.second) {
+				distances.push_back(hits[index].Distance);
+			}
+			std::vector<bool> const kept = WarheadRules::Hits_Kept(distances, warhead->CellSpreadMaxAffect);
+			for (size_t slot = 0; slot < kept.size(); slot++) {
+				dropped[entry.second[slot]] = !kept[slot];
+			}
+		}
+	}
+	std::vector<BlastHit> remaining;
+	for (size_t index = 0; index < hits.size(); index++) {
+		if (!dropped[index]) {
+			remaining.push_back(hits[index]);
+		}
+	}
+	hits.swap(remaining);
 }
 
 
@@ -233,12 +602,6 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		~ProjectileScope() { ExplodingProjectile = Saved; }
 	} const scope(projectile);
 
-	Cell								cell;		// Cell number under explosion.
-	ObjectClass *						object;		// Working object pointer.
-	DynamicVectorClass<ObjectClass *>	objects;	// Maximum number of objects that can be damaged.
-	int									distance;	// Distance to unit.
-	int									range;		// Damage effect radius.
-
 	if (Scen->Special.IsInert || warhead == NULL) return(false);
 
 	if (!strength && !warhead->IsWebby && !warhead->IsAllowZeroDamage) return(false);
@@ -247,353 +610,29 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance
 	 * from the blast, and damaged once the list is complete (MapClass::DamageArea, 0x489280).
 	 */
-	range = (int)(warhead->CellSpread * CELL_LEPTON_W);
+	int const range = (int)(warhead->CellSpread * CELL_LEPTON_W);
 	bool const pinpoint = warhead->CellSpread <= 0.5f;
 	bool curtain_hit = false;
-	cell = coord.As_Cell();
+	Cell const cell = coord.As_Cell();
 
 	CellClass * cellptr = &Map[cell];
 
-	struct HitStruct {
-		ObjectClass * Object;
-		int Distance;
-	};
-	std::vector<HitStruct> hits;
+	std::vector<BlastHit> hits;
 
-	/*
-	 * Objects flying over the blast. A pinpoint blast on an object under the Iron Curtain
-	 * spends itself there and spares everything else.
-	 */
-	if (coord.Z - Map.Get_Height_GL(cell) > warhead->DamageAirThreshold) {
-		DynamicVectorClass<FootClass *> flyers;
-		for (int index = 0; index < Aircraft.Count(); index++) {
-			flyers.Add(Aircraft[index]);
-		}
-		for (int index = 0; index < Infantry.Count(); index++) {
-			if (Infantry[index]->Class->IsJumpJet) flyers.Add(Infantry[index]);
-		}
-		for (int index = 0; index < Units.Count(); index++) {
-			if (Units[index]->Class->IsJellyfish || Units[index]->In_Air()) flyers.Add(Units[index]);
-		}
-		for (int index = 0; index < flyers.Count(); index++) {
-			FootClass * flyer = flyers[index];
-			if (flyer->IsActive && flyer->IsDown && flyer->Strength > 0 && flyer->In_Air()) {
-				distance = (coord - flyer->PositionCoord).Gamemd_Length();
-				if (distance <= range) {
-					if (pinpoint && distance < 85 && flyer->Is_Iron_Curtained() && !flyer->IsForceShielded) {
-						curtain_hit = true;
-					}
-					hits.push_back({flyer, distance});
-				}
-			}
-		}
-	}
+	Collect_Flying_Hits(coord, cell, warhead, range, pinpoint, hits, curtain_hit);
 
 	bool isbridge = false;
 	if (cellptr->IsUnderBridge && coord.Z > Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT / 2) {
 		isbridge = true;
 	}
 
-	int const radius = CellSpread::Radius_For(warhead->CellSpread);
-	int const count = Cell_Spread_Count(radius);
-	for (int index = 0; index < count; index++) {
-		Cell const where = cell + Cell_Spread_Offset(index);
-		if (!Map.In_Radar(where)) continue;
-		CellClass * cptr = &Map[where];
-
-		/*
-		 * Ore and walls in reach take their share of the blast.
-		 */
-		if (cptr->Overlay != OVERLAY_NONE) {
-			OverlayTypeClass const * optr = OverlayTypes[cptr->Overlay];
-			if (optr->IsChainReaction && (!optr->IsTiberium || warhead->IsTiberiumDestroyer) && dochainreaction) {
-				cptr->Reduce_Tiberium(strength / 10);
-			}
-			if (optr->IsWall) {
-				if (warhead->IsWallAbsoluteDestroyer) {
-					cptr->Reduce_Wall(-1);
-				} else if (warhead->IsWallDestroyer || (warhead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
-					cptr->Reduce_Wall(strength);
-				}
-			}
-			if (cptr->Overlay == OVERLAY_NONE) {
-				TechnoClass::Remove_Target(cptr);
-			}
-		}
-
-		/*
-		 * A structure is measured from the cell it is found in, so a large one is struck once
-		 * for each of its cells in reach. The firer is spared unless its type is DamageSelf or
-		 * the blast is CrushWarhead's. Harvesters are spared in a scenario that protects them.
-		 */
-		Coord const cell_coord = cptr->Center_Coord();
-		for (object = cptr->Cell_Occupier(isbridge); object != NULL; object = object->Next) {
-			if (object == source && !source->TClass->IsDamageSelf && warhead != Rule->CrushWarhead) continue;
-			if (!object->IsActive) continue;
-			if (object->RTTI == RTTI_UNIT && Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List((UnitTypeClass *)object->Class_Of())) continue;
-			if (spare_infantry_of != NULL && object->RTTI == RTTI_INFANTRY && spare_infantry_of->Is_Ally(((InfantryClass *)object)->House)) continue;
-
-			if (object->RTTI == RTTI_BUILDING) {
-				if (index != 0) {
-					distance = (cell_coord - coord).Gamemd_Length();
-				} else if (coord.Z - cell_coord.Z > 2 * LEVEL_LEPTON_H) {
-					distance = (cell_coord - coord).Gamemd_Length() - 2 * LEVEL_LEPTON_H;
-				} else {
-					distance = 0;
-				}
-			} else {
-				distance = (object->Target_Coord() - coord).Gamemd_Length();
-			}
-
-			if (pinpoint && index == 0 && object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained() && !((TechnoClass *)object)->IsForceShielded && distance < 85) {
-				curtain_hit = true;
-			}
-			hits.push_back({object, distance});
-		}
-
-		if (cptr->Overlay != OVERLAY_NONE && OverlayTypes[cptr->Overlay]->IsVeinholeMonster) {
-			VeinholeMonsterClass * veinhole = VeinholeMonsterClass::Get_Monster_At(where);
-			if (veinhole != NULL) {
-				hits.push_back({veinhole, (veinhole->Target_Coord() - coord).Gamemd_Length()});
-			}
-		}
-	}
-
-	// CellSpread.MaxAffect keeps only the nearest hits an object would take from this blast (Ares).
-	if (warhead->CellSpreadMaxAffect >= 0 && hits.size() > 1) {
-		std::map<ObjectClass *, std::vector<size_t>> by_object;
-		for (size_t index = 0; index < hits.size(); index++) {
-			by_object[hits[index].Object].push_back(index);
-		}
-		std::vector<bool> dropped(hits.size(), false);
-		for (auto const & entry : by_object) {
-			if (entry.second.size() > (size_t)warhead->CellSpreadMaxAffect) {
-				std::vector<int> distances;
-				for (size_t index : entry.second) {
-					distances.push_back(hits[index].Distance);
-				}
-				std::vector<bool> const kept = WarheadRules::Hits_Kept(distances, warhead->CellSpreadMaxAffect);
-				for (size_t slot = 0; slot < kept.size(); slot++) {
-					dropped[entry.second[slot]] = !kept[slot];
-				}
-			}
-		}
-		std::vector<HitStruct> remaining;
-		for (size_t index = 0; index < hits.size(); index++) {
-			if (!dropped[index]) {
-				remaining.push_back(hits[index]);
-			}
-		}
-		hits.swap(remaining);
-	}
-
-	/*
-	 * Deal the damage. An aircraft in the air counts as half as far away.
-	 */
-	for (HitStruct const & hit : hits) {
-		object = hit.Object;
-		object->IsToDamage = false;
-		if (!object->IsActive) continue;
-		if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) continue;
-		if (curtain_hit && !(object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained())) continue;
-
-		distance = hit.Distance;
-		if (object->RTTI == RTTI_AIRCRAFT && object->In_Air()) {
-			distance /= 2;
-		}
-		if (object->Strength > 0 && object->IsDown && !object->IsInLimbo && distance <= range) {
-			int damage = strength;
-			if (warhead != Rule->IonStormWarhead || !object->Is_Foot() || ((FootClass *)object)->Team == NULL || !((FootClass *)object)->Team->Class->IsIonImmune) {
-				if (AutoTest_Active()) {
-					DebugString("AUTOTEST blast %s at %d,%d,%d hits %s at %d,%d,%d in air %d distance %d range %d\n", warhead->Name(), coord.X, coord.Y, coord.Z, object->Class_Of()->Name(), object->Center_Coord().X, object->Center_Coord().Y, object->Center_Coord().Z, (int)object->In_Air(), distance, range);
-				}
-				object->Take_Damage(damage, distance, warhead, source, false, false, sourcehouse);
-			}
-		}
-	}
-
-	double rocking_force = std::min(strength * 0.01, 4.0);
-	if (warhead->IsRocker && rocking_force > 0.3) {
-		for (int x = cell.X - 3; x <= cell.X + 3; x++) {
-			for (int y = cell.Y - 3; y <= cell.Y + 3; y++) {
-				object = isbridge ? Map[Cell(x, y)].Cell_Occupier(true) : Map[Cell(x, y)].Cell_Occupier(false);
-
-				while (object) {
-					TechnoClass * techno = Dynamic_Cast<TechnoClass *>(object);
-					if (techno != NULL) {
-						if (Cell(x, y) == cell && source) {
-							Coord tcoord = techno->PositionCoord;
-
-							Coord scoord = source->PositionCoord;
-							TPoint3D<float> rockdirf((float)(scoord.X - tcoord.X), (float)(scoord.Y - tcoord.Y), (float)(scoord.Z - tcoord.Z));
-							rockdirf = rockdirf.Normalize() * 10;
-
-							tcoord += Coord(rockdirf.X, rockdirf.Y, rockdirf.Z);
-							techno->Rock(tcoord, rocking_force);
-						} else {
-							techno->Rock(coord, rocking_force);
-						}
-					}
-					object = object->Next;
-				}
-			}
-		}
-	}
-
-	cellptr = &Map[cell];
-
-	/*
-	**	If there is a bridge at this location, then it may be destroyed by the
-	**	combat damage.
-	*/
-	bool ion_cannon = warhead == Rule->IonCannonWarhead;
-	if (Scen->Special.IsDestroyBridges && warhead->IsWallDestroyer) {
-
-		IsometricTileType ittype1 = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
-		CellClass * bridge_deck = cellptr->Get_Bridge_Deck_CellClass();
-
-		if (bridge_deck && bridge_deck->Is_Overlay_Bridge() ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 0 || ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 1 ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 2 || ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 3 ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 0 || ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 1 ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 3) {
-			if (!cellptr->IsUnderBridge || coord.Z <= BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height + 1) && coord.Z > BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height - 2)) {
-				if (warhead->IsWallDestroyer && (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength)) {
-					bool bridge_damaged = false;
-					int tries=4;
-					do {
-						bridge_damaged = Map.Damage_Bridge(cell);
-						tries--;
-						if (bridge_damaged) {
-							break;
-						}
-					} while (ion_cannon && tries > 0);
-
-					if (bridge_damaged) {
-						TechnoClass::Remove_Target(cellptr);
-					}
-					Point2D point;
-					TacticalMap->Coord_To_Pixel(coord, point);
-					TacticalMap->Register_Dirty_Area(Rect(point.X - 128, point.Y - 128, 256, 256), false);
-				}
-			}
-		}
-
-		IsometricTileType ittype2 = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-
-		if (bridge_deck && bridge_deck->Is_Overlay_Rail_Bridge() ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 0 || ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 1 ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 2 || ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 3 ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 0 || ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 1 ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 3) {
-			if (!cellptr->IsUnderBridge || coord.Z <= BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height + 1) && coord.Z > BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height - 2)) {
-				if (warhead->IsWallDestroyer && (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength)) {
-					bool bridge_damaged = false;
-					int tries=4;
-					do {
-						bridge_damaged = Map.Damage_Bridge(cell);
-						tries--;
-						if (bridge_damaged) {
-							break;
-						}
-					} while (ion_cannon && tries > 0);
-
-					if (bridge_damaged) {
-						TechnoClass::Remove_Target(cellptr);
-					}
-					Point2D point;
-					TacticalMap->Coord_To_Pixel(coord, point);
-					TacticalMap->Register_Dirty_Area(Rect(point.X - 96, point.Y - 96, 192, 192), false);
-				}
-			}
-		}
-
-		if (cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_26) {
-			if (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength) {
-				// gamemd's wood gate (0x48A214) calls MapClass::Damage_Bridge once per impact (0x48A25A).
-				bool destroyed = Map.Damage_Bridge(cell);
-				if (destroyed) {
-					TechnoClass::Remove_Target(cellptr);
-				}
-			}
-		}
-
-		/*
-		 * A concrete low bridge piece (overlays 205 to 230) takes the same strength roll, once, and
-		 * then its state routine runs (gamemd 0x48A214, FUN_0057CCF0).
-		 */
-		if (cellptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cellptr->Overlay <= 230) {
-			if (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength) {
-				bool const destroyed = Map.Damage_Concrete_Bridge(cell);
-				if (destroyed) {
-					TechnoClass::Remove_Target(cellptr);
-				}
-			}
-		}
-	}
-
-	if (cellptr->Overlay != OVERLAY_NONE && OverlayTypes[cellptr->Overlay]->IsExplosive) {
-		cellptr->Register_For_Redraw();
-		cellptr->Overlay = OVERLAY_NONE;
-		cellptr->Recalc_Attributes();
-		Map.Update_Cell_Zone(cellptr->CellID);
-		Map.Update_Cell_Subzones(cellptr->CellID);
-		TechnoClass::Remove_Target(cellptr);
-
-		new AnimClass(Rule->BarrelExplode, coord);
-		Explosion_Damage(coord, Rule->AmmoCrateDamage, NULL, Rule->C4Warhead, true);
-		for (int i = 0; i < Rule->BarrelDebris.Count(); i++) {
-			if (Percent_Chance(15)) {
-				new VoxelAnimClass(Rule->BarrelDebris[i], coord);
-				break;
-			}
-		}
-		if (Percent_Chance(25)) {
-			ParticleSystemClass * psys = new ParticleSystemClass(Rule->BarrelParticle, coord);
-			psys->Spawn_Held_Particle(coord, coord);
-		}
-
-		static FacingType _part_facings[] = { FACING_N, FACING_E, FACING_S, FACING_W };
-
-		for (int f = 0; f < ARRAY_SIZE(_part_facings); f++) {
-			Coord adjacent = Adjacent_Coord_With_Height(coord, _part_facings[f]);
-			if (Map[adjacent].Overlay != OVERLAY_NONE && OverlayTypes[Map[adjacent].Overlay]->IsExplosive) {
-				new AnimClass(AnimTypes[AnimTypeClass::From_Name("FIRE3")], adjacent, Random_Pick(1, 3) + 3);
-			}
-		}
-	}
-
-	if (strength > warhead->DeformThreshhold) {
-		if (Percent_Chance((strength * 0.01) * warhead->Deform * 100.0) && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
-			Map.Deform_Terrain(coord.As_Cell(), false);
-		}
-	}
-
-	if (cellptr->Is_Tile_Destroyable_Cliff()) {
-		if (Percent_Chance(Rule->CollapseChance)) {
-			Map.Collapse_Cliff(cellptr);
-		}
-	}
-
-	if (warhead->Particle) {
-		ParticleSystemClass * psys;
-		if (warhead->Particle->BehavesLike == PSYS_BEHAVIOR_GAS) {
-			psys = GasSystem;
-		} else {
-			psys = new ParticleSystemClass(warhead->Particle, coord);
-		}
-		ParticleClass * particle = psys->Spawn_Held_Particle(coord, coord);
-		if (particle != NULL) {
-			particle->SourceHouse = sourcehouse;
-		}
-	}
-
-	if ((warhead->IsWallDestroyer || warhead->IsFire) && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
-		Map.DirtyIceCells.Clear();
-		if (Map.Crack_Ice(cellptr, NULL)) {
-			Map.Recalc_Ice_Cells();
-		}
-	}
+	Collect_Cell_Hits(coord, strength, source, warhead, dochainreaction, spare_infantry_of, cell, pinpoint, isbridge, hits, curtain_hit);
+	Keep_Nearest_Hits(warhead, hits);
+	Deal_Blast_Damage(hits, coord, strength, source, warhead, sourcehouse, range, curtain_hit);
+	Rock_Blast_Cells(coord, cell, strength, source, warhead, isbridge);
+	Damage_Blast_Bridges(coord, cell, cellptr, strength, warhead);
+	Explode_Barrel(coord, cellptr);
+	Apply_Blast_Terrain_Effects(coord, cellptr, strength, warhead, sourcehouse);
 	return(curtain_hit);
 }
 
@@ -634,7 +673,7 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 		return(NULL);
 	}
 
-	if (land == LAND_WATER && warhead->IsConventional && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
+	if (land == LAND_WATER && warhead->IsConventional && !Map[coord].IsUnderBridge && coord.Z < Map.Get_Height_GL(coord) + 2 * LEVEL_LEPTON_H) {
 		if (Rule->SplashList.Count()) {
 			int val = std::max(0, std::min(damage, DAMAGE_PER_SPLASH_ANIM * Rule->SplashList.Count() - 1));
 			return(Rule->SplashList[val / DAMAGE_PER_SPLASH_ANIM]);
@@ -667,9 +706,12 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 /// <param name="damage">The strength of the blast, which governs the size of the flash.</param>
 /// <param name="forced">Should the flash occur even if the warhead is not a bright one?</param>
 /// <param name="disabled_channels">The SpotLightClass channel flags the flash leaves out.</param>
+/// <remarks>A flash that leaves out no channel is not made at detail level 0 or while the frame count is
+/// below the detail minimum. A flash that leaves out a channel is made whatever the detail level and frame count.</remarks>
 void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced, int disabled_channels)
 {
-	if (forced || warhead != NULL && warhead->IsBright) {
+	bool const detailed = Options.DetailLevel != 0 && Detail_Min_Frame_Rate() <= LastFramesPerSecond;
+	if ((detailed || (disabled_channels & 0xf) != 0) && (forced || warhead != NULL && warhead->IsBright)) {
 		damage *= 64;
 		int size = damage >> 8;
 		if (size >= 63) {
@@ -680,6 +722,49 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 
 		SpotLightClass * light = new SpotLightClass(coord, size);
 		light->Set_Disabled_Channels(disabled_channels);
+	}
+}
+
+
+/// <summary>
+/// Damages one cell that a lightning bolt struck. The blast and its flash go off first; then debris is thrown
+/// up if the cell's building, techno or height changed, or if the cell was empty ground of a debris land type.
+/// </summary>
+/// <param name="owner">The house credited with what the blast destroys, or NULL for none.</param>
+/// <param name="debris_over_infantry">Whether debris is thrown when the cell held infantry.</param>
+/// <param name="debris">The animations the debris is picked from, and how many pieces fly: a random number from least to most.</param>
+void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry, TypeList<AnimTypeClass const *> const & debris_types, int least, int most)
+{
+	BuildingClass * building = cellptr.Cell_Building();
+	TechnoClass * techno = cellptr.Cell_Techno();
+	bool const infantry = techno != NULL && techno->RTTI == RTTI_INFANTRY;
+	int const level = cellptr.Height;
+	bool thrown = false;
+	if (building == NULL && techno == NULL) {
+		switch (cellptr.Land_Type()) {
+			case LAND_ROAD:
+			case LAND_ROCK:
+			case LAND_WALL:
+			case LAND_WEEDS:
+				thrown = true;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	Combat_Lighting(coord, damage, warhead);
+	Explosion_Damage(coord, damage, NULL, warhead, true, owner);
+
+	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
+		thrown = true;
+	}
+	if ((debris_over_infantry || !infantry) && thrown && debris_types.Count() > 0) {
+		int const count = most > least ? Random_Pick(least, most) : std::max(least, 0);
+		for (int piece = count; piece > 0; piece--) {
+			new AnimClass(debris_types[Random_Pick(0, debris_types.Count() - 1)], coord);
+		}
 	}
 }
 

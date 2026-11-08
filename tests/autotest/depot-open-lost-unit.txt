@@ -1,0 +1,83 @@
+; A healthy Service Depot (GADEPT) starts opening for a damaged Grizzly (MTNK) that is then destroyed while the doors open, so no unit is on the pad when the opening animation (SpecialAnim, slot 10) ends.
+; Expected, from gamemd's BuildingClass::AnimExpired (0x451B40, case slot 10 with UnitRepair): with no radio link the idle animation (slot 18) starts when the opening animation ends. Before the fix nothing started.
+; The mission loop starts the closing animation (SpecialAnimThree, slot 12) when it sees the link gone; the idle animation follows it as well.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/depot-open-lost-unit.txt -Map XMP29U2.MAP -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 100 -ShotDir "E:/Claude ra2 decomp/scratch-agent/building-anim-expired/depot-lost" -Filter "AUTOTEST   banimstate|AUTOTEST     slot|AUTOTEST   kill|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 own GADEPT 60 22
+102 own MTNK 60 28
+104 reveal
+105 view 61 23
+202 damage MTNK 200
+210 enter MTNK 60 22
+300 banimstate GADEPT
+301 command ScreenCapture
+305 banimstate GADEPT
+310 banimstate GADEPT
+315 banimstate GADEPT
+320 banimstate GADEPT
+320 kill MTNK 1
+321 banimstate GADEPT
+321 command ScreenCapture
+324 banimstate GADEPT
+327 banimstate GADEPT
+330 banimstate GADEPT
+333 banimstate GADEPT
+336 banimstate GADEPT
+339 banimstate GADEPT
+341 command ScreenCapture
+342 banimstate GADEPT
+345 banimstate GADEPT
+348 banimstate GADEPT
+351 banimstate GADEPT
+354 banimstate GADEPT
+357 banimstate GADEPT
+360 banimstate GADEPT
+361 command ScreenCapture
+363 banimstate GADEPT
+366 banimstate GADEPT
+369 banimstate GADEPT
+372 banimstate GADEPT
+375 banimstate GADEPT
+378 banimstate GADEPT
+381 banimstate GADEPT
+381 command ScreenCapture
+384 banimstate GADEPT
+387 banimstate GADEPT
+390 banimstate GADEPT
+393 banimstate GADEPT
+396 banimstate GADEPT
+399 banimstate GADEPT
+401 command ScreenCapture
+402 banimstate GADEPT
+405 banimstate GADEPT
+408 banimstate GADEPT
+411 banimstate GADEPT
+414 banimstate GADEPT
+417 banimstate GADEPT
+420 banimstate GADEPT
+421 command ScreenCapture
+423 banimstate GADEPT
+426 banimstate GADEPT
+429 banimstate GADEPT
+432 banimstate GADEPT
+435 banimstate GADEPT
+438 banimstate GADEPT
+441 banimstate GADEPT
+441 command ScreenCapture
+444 banimstate GADEPT
+447 banimstate GADEPT
+450 banimstate GADEPT
+453 banimstate GADEPT
+456 banimstate GADEPT
+459 banimstate GADEPT
+461 command ScreenCapture
+462 banimstate GADEPT
+465 banimstate GADEPT
+468 banimstate GADEPT
+471 banimstate GADEPT
+474 banimstate GADEPT
+477 banimstate GADEPT
+480 banimstate GADEPT
+481 command ScreenCapture
+485 quit

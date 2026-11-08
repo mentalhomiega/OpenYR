@@ -18,4 +18,4 @@ Blue=.8
 
 For each cell, the map's tint is added to the tint of any structure light that reaches the cell. [`LightRedTint`](/keys/lightredtint/) explains how the red, green and blue totals color and brighten the ground.
 
-Units and structures are not tinted by `Red`. During an [ion storm](/systems/ion-storms/#lighting), terrain, units and structures all take the ion tint instead. [`IonRed`](/keys/ionred/) falls back to `Red`, so a map that sets only the ordinary tint keys keeps its terrain color through a storm, and its units and structures take that tint while the storm lasts.
+Units and structures are not tinted by `Red`. During an [ion storm](/systems/ion-storms/#lighting), terrain, units and structures all take the ion tint instead. [`IonRed`](/keys/ionred/) does not fall back to `Red`: a map that sets only the ordinary tint keys gets the storm tint `IonRed=.3`, `IonGreen=.4`, `IonBlue=.75` during a storm.

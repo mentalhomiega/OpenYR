@@ -80,6 +80,7 @@
 
 #include "_bench.h"
 #include "_convert.h"
+#include "_keyboar.h"
 #include "_map.h"
 #include "_mixfile.h"
 #include "_rtti.h"
@@ -110,6 +111,7 @@
 #include "map.h"
 #include "mixfile.h"
 #include "movie.h"
+#include "mpmode.h"
 #include "queue.h"
 #include "rect.h"
 #include "rules.h"
@@ -139,15 +141,8 @@ ShapeSet const * SidebarClass::SidebarMiddleShape = NULL;
 ShapeSet const * SidebarClass::SidebarBottomShape = NULL;
 ShapeSet const * SidebarClass::SidebarAddonShape = NULL;
 
-/***************************************************************************
-**	This points to the main sidebar shapes. These include the upgrade and
-**	repair buttons.
-*/
-//TheaterType SidebarClass::StripClass::LastTheater = THEATER_NONE;
-
 enum ButtonNumberType {
-	BUTTON_RADAR = 100,
-	BUTTON_REPAIR,
+	BUTTON_REPAIR = 101,
 	BUTTON_POWER,
 	BUTTON_SELL,
 	BUTTON_UPGRADE,
@@ -255,6 +250,12 @@ struct CameoSortType {
 };
 
 
+static Point2D Cameo_Slot_Origin(int index, int columns, Point2D const & origin)
+{
+	return Point2D(origin.X + (index % columns) * SidebarClass::StripClass::Column_Step(), origin.Y + (index / columns) * SidebarClass::StripClass::OBJECT_HEIGHT);
+}
+
+
 static CameoOrderType Cameo_Order(SidebarClass::StripClass::BuildType const & entry)
 {
 	CameoOrderType order;
@@ -323,6 +324,94 @@ static CameoOrderType Cameo_Order(SidebarClass::StripClass::BuildType const & en
 
 
 /// <summary>
+/// Whether the left cameo goes before the right one in Yuri's Revenge's sidebar order
+/// (BuildType::SortsBefore, 0x6A8420). Superweapons come first by recharge time; then the
+/// player's own side's types; then ground types, aircraft and ships; then technology level,
+/// cost to the player and name. Two entries that tie on all of these return true both ways.
+/// </summary>
+static bool Classic_Sorts_Before(SidebarClass::StripClass::BuildType const & left, SidebarClass::StripClass::BuildType const & right)
+{
+	if (right.BuildableType == RTTI_NONE) {
+		return(true);
+	}
+
+	bool const left_special = left.BuildableType == RTTI_SPECIAL;
+	bool const right_special = right.BuildableType == RTTI_SPECIAL;
+
+	if (left_special || right_special) {
+		if (!left_special) {
+			return(false);
+		}
+		if (!right_special) {
+			return(true);
+		}
+		if ((unsigned)left.BuildableID >= (unsigned)SuperWeaponTypes.Count() || (unsigned)right.BuildableID >= (unsigned)SuperWeaponTypes.Count()) {
+			return(left.BuildableID <= right.BuildableID);
+		}
+		SuperWeaponTypeClass const * lsuper = SuperWeaponTypes[left.BuildableID];
+		SuperWeaponTypeClass const * rsuper = SuperWeaponTypes[right.BuildableID];
+		if (lsuper->RechargeTime != rsuper->RechargeTime) {
+			return(lsuper->RechargeTime < rsuper->RechargeTime);
+		}
+		return(strcmp(lsuper->Full_Name(), rsuper->Full_Name()) <= 0);
+	}
+
+	TechnoTypeClass const * ltech = Fetch_Techno_Type(left.BuildableType, left.BuildableID);
+	TechnoTypeClass const * rtech = Fetch_Techno_Type(right.BuildableType, right.BuildableID);
+	if (ltech == NULL || rtech == NULL) {
+		return(rtech == NULL);
+	}
+
+	if (PlayerPtr != NULL) {
+		int const side = (int)PlayerPtr->Class->Side;
+		bool const left_own = ltech->AIBasePlanningSide == side;
+		bool const right_own = rtech->AIBasePlanningSide == side;
+		if (left_own != right_own) {
+			return(left_own);
+		}
+	}
+
+	bool const left_mobile = left.BuildableType == RTTI_UNITTYPE || left.BuildableType == RTTI_AIRCRAFTTYPE;
+	bool const right_mobile = right.BuildableType == RTTI_UNITTYPE || right.BuildableType == RTTI_AIRCRAFTTYPE;
+	bool const left_air = left_mobile && ltech->IsConsideredAircraft;
+	bool const left_naval = left_mobile && ltech->IsNaval;
+	bool const right_air = right_mobile && rtech->IsConsideredAircraft;
+	bool const right_naval = right_mobile && rtech->IsNaval;
+	bool const right_ground = !right_air && !right_naval;
+
+	// A type that is both an aircraft and naval takes gamemd's mixed path through these tests.
+	if (!left_air && !left_naval) {
+		if (right_air || right_naval) {
+			return(true);
+		}
+	} else if (!left_air) {
+		if (right_ground || right_air) {
+			return(false);
+		}
+	} else {
+		if (right_ground) {
+			return(false);
+		}
+		if (right_naval) {
+			return(true);
+		}
+	}
+
+	if (ltech->Level != rtech->Level) {
+		return(ltech->Level < rtech->Level);
+	}
+
+	int const lcost = ltech->Cost_Of(PlayerPtr);
+	int const rcost = rtech->Cost_Of(PlayerPtr);
+	if (lcost != rcost) {
+		return(lcost < rcost);
+	}
+
+	return(strcmp(ltech->Full_Name(), rtech->Full_Name()) <= 0);
+}
+
+
+/// <summary>
 /// Default constructor for the sidebar background gadget.
 /// This gadget exists to cover the sidebar so that the mouse reverts to its normal shape
 /// whenever it strays over there. The sidebar gives the gadget its real position and size
@@ -363,13 +452,12 @@ SidebarClass::SidebarClass(void) :
 	CompletedBuilding[0] = NULL;
 	CompletedBuilding[1] = NULL;
 
-	// Every strip covers the same grid; only the active tab's strip is shown.
 	for (int index = 0; index < COLUMNS; index++) {
 		new (&Column[index]) StripClass(InitClass());
-		Column[index].X = GRID_X;
-		Column[index].Y = GRID_Y;
-		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
+
+	// Every strip covers the same grid; only the active tab's strip is shown.
+	Layout_Strips();
 }
 
 
@@ -475,78 +563,41 @@ void SidebarClass::Init_IO(void)
 		int xoff = -480;
 		int yoff = 3;
 
-		Repair.IsSticky = true;
-		Repair.ID = BUTTON_REPAIR;
-		Repair.X = SidebarRect.X;
-		Repair.Y = SidebarRect.Y;
-		Repair.DrawOffsetX = xoff;
-		Repair.DrawOffsetY = yoff;
-		Repair.DrawOnSidebar = true;
-		Repair.ShapeDrawer = SidebarDrawer;
-		Repair.IsPressed = false;
-		Repair.IsToggleType = true;
-		Repair.ReflectButtonState = true;
+		auto setup_button = [&](ShapeButtonClass & button) {
+			button.IsSticky = true;
+			button.DrawOffsetX = xoff;
+			button.DrawOffsetY = yoff;
+			button.DrawOnSidebar = true;
+			button.ShapeDrawer = SidebarDrawer;
+			button.IsPressed = false;
+		};
+		auto setup_toggle = [&](ShapeButtonClass & button, int id, int x) {
+			setup_button(button);
+			button.ID = id;
+			button.X = x;
+			button.Y = SidebarRect.Y;
+			button.IsToggleType = true;
+			button.ReflectButtonState = true;
+		};
 
-		Upgrade.IsSticky = true;
-		Upgrade.ID = BUTTON_UPGRADE;
-		Upgrade.X = Repair.X + BUTTON_SPACING;
-		Upgrade.Y = Repair.Y;
-		Upgrade.DrawOffsetX = xoff;
-		Upgrade.DrawOffsetY = yoff;
-		Upgrade.DrawOnSidebar = true;
-		Upgrade.ShapeDrawer = SidebarDrawer;
-		Upgrade.IsPressed = false;
-		Upgrade.IsToggleType = true;
-		Upgrade.ReflectButtonState = true;
-
-		Power.IsSticky = true;
-		Power.ID = BUTTON_POWER;
-		Power.X = Upgrade.X + BUTTON_SPACING;
-		Power.Y = Upgrade.Y;
-		Power.DrawOffsetX = xoff;
-		Power.DrawOffsetY = yoff;
-		Power.DrawOnSidebar = true;
-		Power.ShapeDrawer = SidebarDrawer;
-		Power.IsPressed = false;
-		Power.IsToggleType = true;
-		Power.ReflectButtonState = true;
-
-		Waypoint.IsSticky = true;
-		Waypoint.ID = BUTTON_WAYPOINT;
-		Waypoint.X = Power.X + BUTTON_SPACING;
-		Waypoint.Y = Power.Y;
-		Waypoint.DrawOffsetX = xoff;
-		Waypoint.DrawOffsetY = yoff;
-		Waypoint.DrawOnSidebar = true;
-		Waypoint.ShapeDrawer = SidebarDrawer;
-		Waypoint.IsPressed = false;
-		Waypoint.IsToggleType = true;
-		Waypoint.ReflectButtonState = true;
+		setup_toggle(Repair, BUTTON_REPAIR, SidebarRect.X);
+		setup_toggle(Upgrade, BUTTON_UPGRADE, Repair.X + BUTTON_SPACING);
+		setup_toggle(Power, BUTTON_POWER, Upgrade.X + BUTTON_SPACING);
+		setup_toggle(Waypoint, BUTTON_WAYPOINT, Power.X + BUTTON_SPACING);
 
 		Waypoint.Enable();
 
 		for (int index = 0; index < COLUMNS; index++) {
 			Column[index].Init_IO(index);
 
+			setup_button(TabButton[index]);
 			TabButton[index].ID = BUTTON_TAB + index;
-			TabButton[index].IsSticky = true;
-			TabButton[index].DrawOffsetX = xoff;
-			TabButton[index].DrawOffsetY = yoff;
-			TabButton[index].DrawOnSidebar = true;
-			TabButton[index].ShapeDrawer = SidebarDrawer;
-			TabButton[index].IsPressed = false;
 		}
 
 		OptionsButton.ID = BUTTON_OPTIONS;
 		DiplomacyButton.ID = BUTTON_DIPLOMACY;
-		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
-			button->IsSticky = true;
-			button->DrawOffsetX = xoff;
-			button->DrawOffsetY = yoff;
-			button->DrawOnSidebar = true;
-			button->ShapeDrawer = SidebarDrawer;
-			button->IsPressed = false;
-		}
+		setup_button(OptionsButton);
+		setup_button(DiplomacyButton);
 
 		Reposition_Sidebar();
 
@@ -556,8 +607,6 @@ void SidebarClass::Init_IO(void)
 		if (IsSidebarActive) {
 			IsSidebarActive = false;
 			Activate(1);
-//			Background.Zap();
-//			Add_A_Button(Background);
 		}
 	}
 }
@@ -579,13 +628,7 @@ void SidebarClass::Init_For_House(void)
 	StripClass::ClockShapes = (ShapeSet const *)MFCD::Retrieve("GCLOCK2.SHP");
 	StripClass::RechargeClockShapes = StripClass::ClockShapes;
 
-	PaletteClass pal;
-
-	memmove(&pal, MFCD::Retrieve("SIDEBAR.PAL"), sizeof(pal));
-
-	for (i = 0; i < PaletteClass::COLOR_COUNT; i++) {
-		pal[i] = RGBClass(pal[i].Get_Red() * 4, pal[i].Get_Green() * 4, pal[i].Get_Blue() * 4);
-	}
+	PaletteClass const pal = Widen_Six_Bit_Palette(MFCD::Retrieve("SIDEBAR.PAL"));
 
 	if (SidebarDrawer != NULL) {
 		delete SidebarDrawer;
@@ -627,6 +670,17 @@ void SidebarClass::Init_For_House(void)
 	TabIcons = false;
 	if (Modern_Interface()) {
 		Use_Hud_Icons();
+	} else {
+		// The interface style can change at the main menu, after an earlier game gave these buttons icons.
+		for (ShapeButtonClass * button : {&Repair, &Upgrade, &Power, &BeaconButton, &OptionsButton}) {
+			button->IsHudIcon = false;
+		}
+		for (int i = 0; i < COLUMNS; i++) {
+			StripClass::UpButton[i].IsHudIcon = false;
+			StripClass::DownButton[i].IsHudIcon = false;
+			TabButton[i].IsHudIcon = false;
+		}
+		OptionsButton.Label.clear();
 	}
 }
 
@@ -701,7 +755,7 @@ void SidebarClass::Clear_For_House(void)
 
 
 /***********************************************************************************************
- * SidebarClass::Reload_Sidebar -- Loads appropriate sidebar shapes depending on house         *
+ * SidebarClass::Reload_Sidebar -- Resets each strip to the sidebar grid                       *
  *                                                                                             *
  * INPUT:  none                                                                                *
  *                                                                                             *
@@ -712,13 +766,19 @@ void SidebarClass::Clear_For_House(void)
  * HISTORY:                                                                                    *
  *   9/18/1996 BWG : Created.                                                                  *
  *=============================================================================================*/
-void SidebarClass::Reload_Sidebar(void)
+void SidebarClass::Layout_Strips(void)
 {
 	for (int index = 0; index < COLUMNS; index++) {
 		Column[index].X = GRID_X;
 		Column[index].Y = GRID_Y;
 		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
+}
+
+
+void SidebarClass::Reload_Sidebar(void)
+{
+	Layout_Strips();
 }
 
 
@@ -845,7 +905,6 @@ bool SidebarClass::Activate_Repair(int control)
 		IsToRedraw = true;
 
 		if (!IsRepairActive) {
-//			Help_Text(TXT_NONE);
 			Set_Default_Mouse(MOUSE_NORMAL, false);
 		}
 	}
@@ -1038,7 +1097,6 @@ bool SidebarClass::Scroll(bool up, int column)
 	// With one strip shown at a time, a command naming a strip moves the shown tab's.
 	if (Column[ActiveTab].Scroll(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
-		//IsToRedraw = true;
 		Flag_To_Redraw();
 		return(true);
 	}
@@ -1076,7 +1134,6 @@ bool SidebarClass::Page(bool up, int column)
 
 	if (Column[ActiveTab].Page(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
-		//IsToRedraw = true;
 		Flag_To_Redraw();
 		return(true);
 	}
@@ -1161,22 +1218,16 @@ void SidebarClass::Draw_It(bool complete)
 		Column[ActiveTab].Draw_It(complete);
 	}
 	Draw_Power_Bar(complete || body_drawn);
-	if (Repair.IsDrawn) {
-		IsToBlitSidebar = true;
-		Repair.IsDrawn = false;
-	}
-	if (Upgrade.IsDrawn) {
-		IsToBlitSidebar = true;
-		Upgrade.IsDrawn = false;
-	}
-	if (Power.IsDrawn) {
-		IsToBlitSidebar = true;
-		Power.IsDrawn = false;
-	}
-	if (Waypoint.IsDrawn) {
-		IsToBlitSidebar = true;
-		Waypoint.IsDrawn = false;
-	}
+	auto const blit_if_drawn = [](auto & button) {
+		if (button.IsDrawn) {
+			IsToBlitSidebar = true;
+			button.IsDrawn = false;
+		}
+	};
+	blit_if_drawn(Repair);
+	blit_if_drawn(Upgrade);
+	blit_if_drawn(Power);
+	blit_if_drawn(Waypoint);
 	if (ToolTips != NULL) {
 		ToolTips->Draw_Current(true);
 	}
@@ -1234,14 +1285,14 @@ void SidebarClass::Draw_Build_Area(void)
 
 /// <summary>
 /// Copies the build panel onto the frame at its place on the right, over the map, for the modern
-/// interface.
+/// interface. The panel's background lets the map show through at Options.SidebarOpacity.
 /// </summary>
 void SidebarClass::Draw_Panels(Surface & surface)
 {
 	if (IsSidebarActive && GameActive && ScenarioActive && SidebarSurface != NULL) {
 		Rect const panel = Hud_Layout().Panel;
 		Rect const source(0, 0, panel.Width, panel.Height);
-		surface.Blit_From(panel, *SidebarSurface, source);
+		Blit_Hud_Panel(surface, panel, *SidebarSurface, source);
 	}
 	BASECLASS::Draw_Panels(surface);
 }
@@ -1269,7 +1320,7 @@ void SidebarClass::Blit_Sidebar(bool complete)
 			if (Map.LastDrawRect == RECT_NONE) {
 				if (IsToRedrawCredits) {
 					VisibleSurface->Blit_From(
-						Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT),
+						Rect(ScreenTacticalRect.Width,0, SIDE_WIDTH, CREDITS_HEIGHT),
 						*SidebarSurface,
 						Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT),
 						false,
@@ -1285,13 +1336,13 @@ void SidebarClass::Blit_Sidebar(bool complete)
 		}
 
 		if (Map.LastDrawRect == RECT_NONE && !complete) {
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
 		} else if (!IsToBlitSidebar) {
-			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + (Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
+			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + ScreenTacticalRect.Width,Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
 		} else {
 			Rect sb_rect = SidebarSurface->Get_Rect();
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
 		}
 	}
 	IsToBlitSidebar = false;
@@ -1338,37 +1389,30 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	// A classic tab with no items is disabled, as gamemd does when its last item goes (SidebarClass::RebuildScrollableStripList, 0x6AA600).
 	if (!Modern_Interface()) {
-		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
-			bool const enabled = Column[index].BuildableCount > 0;
-			if (enabled == TabDisabled[index]) {
-				if (enabled) {
-					TabButton[index].Enable();
-				} else {
-					TabButton[index].Disable();
+		// Applies the wanted enabled state to the buttons when it differs from the state recorded in disabled.
+		auto sync = [this](bool & disabled, bool enabled, std::initializer_list<ShapeButtonClass *> buttons) {
+			if (enabled == disabled) {
+				for (ShapeButtonClass * button : buttons) {
+					if (enabled) {
+						button->Enable();
+					} else {
+						button->Disable();
+					}
+					button->Flag_To_Redraw();
 				}
-				TabDisabled[index] = !enabled;
-				TabButton[index].Flag_To_Redraw();
+				disabled = !enabled;
 				Flag_To_Redraw();
 			}
+		};
+
+		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
+			sync(TabDisabled[index], Column[index].BuildableCount > 0, { &TabButton[index] });
 		}
 
 		// The arrows of a classic strip are enabled only when it holds more cameos than fit, as gamemd's UpdateScrollButtons (0x6A6610) decides.
 		int const visible = Max_Visible();
 		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
-			bool const scrollable = Column[index].BuildableCount > visible;
-			if (scrollable == ArrowsDisabled[index]) {
-				if (scrollable) {
-					StripClass::UpButton[index].Enable();
-					StripClass::DownButton[index].Enable();
-				} else {
-					StripClass::UpButton[index].Disable();
-					StripClass::DownButton[index].Disable();
-				}
-				ArrowsDisabled[index] = !scrollable;
-				StripClass::UpButton[index].Flag_To_Redraw();
-				StripClass::DownButton[index].Flag_To_Redraw();
-				Flag_To_Redraw();
-			}
+			sync(ArrowsDisabled[index], Column[index].BuildableCount > visible, { &StripClass::UpButton[index], &StripClass::DownButton[index] });
 		}
 	}
 
@@ -1435,12 +1479,13 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 			Execute_Command("Options");
 		}
 
-		// gamemd's 0xF2 opens the mission briefing in a campaign (RadarClass::Update, 0x653850). Other
-		// games open diplomacy, which OpenTS does not have yet, so the button does nothing there.
+		// gamemd's 0xF2 opens the mission briefing in a campaign and in a Cooperative match against
+		// other machines (RadarClass::Update, 0x653850). Other games open diplomacy, which OpenTS does
+		// not have yet, so the button does nothing there.
 		if (input == (BUTTON_DIPLOMACY|KN_BUTTON)) {
 			DiplomacyButton.IsPressed = false;
 			input = KN_NONE;
-			if (Session.Type == GAME_NORMAL) {
+			if (Session.Type == GAME_NORMAL || MPMode_Is_Cooperative_Match()) {
 				SpecialDialog = SDLG_BRIEFING;
 			}
 		}
@@ -1773,8 +1818,9 @@ void SidebarClass::StripClass::Init_IO(int id)
 	for (int index = 0; index < Map.Max_Visible(); index++) {
 		SelectClass & g = SelectButton[ID][index];
 		g.ID = BUTTON_SELECT;
-		g.X = SidebarRect.X + Map.Column[ID].X + (index % Slot_Columns()) * Column_Step();
-		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT * (index / Slot_Columns()));
+		Point2D const slot = Cameo_Slot_Origin(index, Slot_Columns(), Point2D(SidebarRect.X + Map.Column[ID].X, SidebarRect.Y + Map.Column[ID].Y));
+		g.X = slot.X;
+		g.Y = slot.Y;
 		g.Width = OBJECT_WIDTH;
 		g.Height = OBJECT_HEIGHT;
 		g.Set_Owner(*this, index);
@@ -1868,8 +1914,21 @@ bool SidebarClass::StripClass::Add(RTTIType type, int id)
 		if (!ScenarioInit && type != RTTI_SPECIAL) {
 			Speak(VOX_NEW_CONSTRUCT);
 		}
-		Buildables[BuildableCount].BuildableType = type;
-		Buildables[BuildableCount].BuildableID = id;
+		BuildType const entry(id, type);
+		int place = BuildableCount;
+
+		// Yuri's Revenge inserts a new cameo before the first one it sorts before (0x6A8710).
+		if (Options.SidebarSorting && !Rule->IsUseCameoSortOrder) {
+			for (place = 0; place < BuildableCount; place++) {
+				if (Classic_Sorts_Before(entry, Buildables[place])) {
+					break;
+				}
+			}
+			if (place < BuildableCount) {
+				memmove(&Buildables[place+1], &Buildables[place], sizeof(Buildables[0]) * (BuildableCount - place));
+			}
+		}
+		Buildables[place] = entry;
 		BuildableCount++;
 		IsToRedraw = true;
 		IsToSort = true;
@@ -1919,7 +1978,9 @@ int SidebarClass::StripClass::Column_Step(void)
 	if (Modern_Interface()) {
 		return(OBJECT_WIDTH);
 	}
-	return(PlayerPtr != NULL && PlayerPtr->Class->Side == SIDE_FIRST ? 63 : 64);
+	// With no player the strip is laid out as the first side's, as in Reposition_Sidebar and Max_Visible.
+	bool const first = PlayerPtr == NULL || PlayerPtr->Class->Side == SIDE_FIRST;
+	return(first ? 63 : 64);
 }
 
 
@@ -2018,29 +2079,24 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	*/
 	// Both arrows page the strip by a screenful, as the classic sidebar's do (SidebarClass::Update, 0x6A7780).
 	// The modern panel's screenful is its row count, so a click moves it by the rows it shows.
-	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
-		UpButton[ID].IsPressed = false;
+	auto click_arrow = [this](ShapeButtonClass & button, bool up) {
+		button.IsPressed = false;
 		if (Modern_Interface()) {
-			if (!Page(true)) {
+			if (!Page(up)) {
 				Sound_Effect(Rule->ScoldSound);
 			}
-		} else if (Page(true)) {
+		} else if (Page(up)) {
 			Sound_Effect(Rule->GUITabSound);
 		} else {
 			Sound_Effect(Rule->ScoldSound);
 		}
+	};
+
+	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
+		click_arrow(UpButton[ID], true);
 	}
 	else if (key == KeyNumType(DownButton[ID].ID|KN_BUTTON)) {
-		DownButton[ID].IsPressed = false;
-		if (Modern_Interface()) {
-			if (!Page(false)) {
-				Sound_Effect(Rule->ScoldSound);
-			}
-		} else if (Page(false)) {
-			Sound_Effect(Rule->GUITabSound);
-		} else {
-			Sound_Effect(Rule->ScoldSound);
-		}
+		click_arrow(DownButton[ID], false);
 	}
 
 	/*
@@ -2150,6 +2206,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 						switch ((RTTIType)pending->RTTI) {
 							case RTTI_UNIT:
 							case RTTI_AIRCRAFT:
+							case RTTI_INFANTRY:
 								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, pending->Class_Of()->Fetch_Heap_ID(), CELL_NONE));
 								Speak(VOX_UNIT_READY);
 								break;
@@ -2157,11 +2214,6 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 							case RTTI_BUILDING:
 								Map.Note_Completed_Building((BuildingClass *)pending);
 								Speak(VOX_CONSTRUCTION);
-								break;
-
-							case RTTI_INFANTRY:
-								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, pending->Class_Of()->Fetch_Heap_ID(), CELL_NONE));
-								Speak(VOX_UNIT_READY);
 								break;
 						}
 					}
@@ -2194,6 +2246,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 char const * SidebarClass::StripClass::Help_Text(int id)
 {
 	static char _buffer[84];
+	static std::string _text;
 
 	int i = id + TopIndex;
 
@@ -2226,7 +2279,6 @@ char const * SidebarClass::StripClass::Help_Text(int id)
 			}
 
 			if (Modern_Interface()) {
-				static std::string _text;
 				_text = choice->Full_Name();
 				_text += "\n$" + std::to_string(choice->Cost_Of(PlayerPtr));
 				if (choice->RTTI == RTTI_BUILDINGTYPE) {
@@ -2334,7 +2386,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 						*/
 						bool isbusy = false;
 						if (obj->RTTI == RTTI_BUILDINGTYPE) {
-							isbusy = (PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, HouseClass::Build_Category(Buildables[index].BuildableType, Buildables[index].BuildableID), HouseClass::Is_Naval_Type(Buildables[index].BuildableType, Buildables[index].BuildableID)) != NULL);
+							isbusy = (PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, Buildables[index].BuildableID) != NULL);
 						}
 
 						if (obj->Who_Can_Build_Me(true, true, true, PlayerPtr) == NULL) {
@@ -2358,7 +2410,6 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 							darken		= false;
 						} else {
 							production  = false;
-						//							darken      = IsBuilding;
 
 							/*
 							**	Darken the imagery if a factory of a matching type is
@@ -2387,20 +2438,8 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					darken = !SuperRules::Can_Afford(PlayerPtr->Available_Money(), SuperWeaponTypes[spc]->Keys.MoneyAmount);
 				}
 
-				if (obj != NULL || spc != SUPER_NONE) {
-					/*
-					**	If this item is flashing then take care of it.
-					**
-					*/
-					// if (Flasher == index && (Fetch_Stage() & 0x01)) {
-					// 	remapper = Map.FadingLight;
-					// }
-
-				} else {
+				if (obj == NULL && spc == SUPER_NONE) {
 					shapefile	= LogoShapes;
-					// if (!darken) {
-					// 	shapenum		= SB_BLANK;
-					// }
 				}
 			} else {
 				shapefile	= LogoShapes;
@@ -2449,7 +2488,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 
 			bool hasqueuecount = false;
 			if (obj != NULL) {
-				FactoryClass * factory = PlayerPtr->Fetch_Factory(obj->RTTI, HouseClass::Build_Category(obj->RTTI, obj->Fetch_Heap_ID()), HouseClass::Is_Naval_Type(obj->RTTI, obj->Fetch_Heap_ID()));
+				FactoryClass * factory = PlayerPtr->Fetch_Factory(obj->RTTI, obj->Fetch_Heap_ID());
 
 				if (factory != NULL) {
 					int total = factory->Total(obj);
@@ -2505,17 +2544,22 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 		LastSlid = Slid;
 
 	} else {
-
-		if (UpButton[ID].IsDrawn) {
-			IsToBlitSidebar = true;
-			UpButton[ID].IsDrawn = false;
-		}
-
-		if (DownButton[ID].IsDrawn) {
-			IsToBlitSidebar = true;
-			DownButton[ID].IsDrawn = false;
-		}
+		auto const blit_if_drawn = [](auto & button) {
+			if (button.IsDrawn) {
+				IsToBlitSidebar = true;
+				button.IsDrawn = false;
+			}
+		};
+		blit_if_drawn(UpButton[ID]);
+		blit_if_drawn(DownButton[ID]);
 	}
+}
+
+
+static int Pending_Count(RTTIType type, int id, TechnoTypeClass const * tech)
+{
+	FactoryClass * fptr = PlayerPtr->Fetch_Factory(type, id);
+	return((fptr != NULL) ? fptr->Total(tech) : 0);
 }
 
 
@@ -2579,8 +2623,7 @@ bool SidebarClass::StripClass::Recalc(void)
 		if (!ok) {
 			// This sweep runs for the local player alone, so the abandon travels as an event.
 			if (Rule->IsRecheckPrerequisites && tech != NULL) {
-				FactoryClass * fptr = PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, HouseClass::Build_Category(Buildables[index].BuildableType, Buildables[index].BuildableID), HouseClass::Is_Naval_Type(Buildables[index].BuildableType, Buildables[index].BuildableID));
-				int pending = (fptr != NULL) ? fptr->Total(tech) : 0;
+				int const pending = Pending_Count(Buildables[index].BuildableType, Buildables[index].BuildableID, tech);
 				if (pending > 0) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT,
 							Buildables[index].BuildableType, Buildables[index].BuildableID, pending));
@@ -2664,9 +2707,16 @@ void SidebarClass::StripClass::Sort(void)
 		sorted[index].Entry = Buildables[index];
 	}
 
-	std::sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
-		return(left.Order < right.Order);
-	});
+	if (Rule->IsUseCameoSortOrder) {
+		std::sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
+			return(left.Order < right.Order);
+		});
+	} else {
+		// Ties keep their order, so a strip that Add already ordered is left as it is.
+		std::stable_sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
+			return(Classic_Sorts_Before(left.Entry, right.Entry) && !Classic_Sorts_Before(right.Entry, left.Entry));
+		});
+	}
 
 	bool moved = false;
 	for (int index = 0; index < BuildableCount; index++) {
@@ -2757,6 +2807,96 @@ void SidebarClass::StripClass::SelectClass::Press_Left(void)
 {
 	KeyNumType key = KN_NONE;
 	Action(LEFTPRESS, key);
+}
+
+
+/// <summary>
+/// Runs the right press the cameo takes from a click, without a mouse event.
+/// </summary>
+void SidebarClass::StripClass::SelectClass::Press_Right(void)
+{
+	KeyNumType key = KN_NONE;
+	Action(RIGHTPRESS, key);
+}
+
+
+/// <summary>
+/// Returns how many PRODUCE events a left click on a unit or infantry cameo sends. Shift held in the modern
+/// interface sends Options.ShiftQueueCount of them, limited to the places left in the factory's queue.
+/// </summary>
+/// <param name="factory">The factory that builds the type, or NULL when none is making anything yet.</param>
+/// <returns>Returns the number of events to send, never less than one.</returns>
+static int Cameo_Produce_Count(FactoryClass const * factory)
+{
+	if (!Modern_Interface() || Options.ShiftQueueCount <= 1 || !Keyboard->Down(KN_LSHIFT)) {
+		return(1);
+	}
+
+	int room = FactoryClass::Capacity();
+	if (factory != NULL) {
+		room = Rule->MaximumQueuedObjects - factory->Queued_Count() + (factory->Get_Object() == NULL ? 1 : 0);
+	}
+	return(std::max(1, std::min(Options.ShiftQueueCount, room)));
+}
+
+
+/// <summary>
+/// Sends the player's PRODUCE event for the type count times.
+/// </summary>
+static void Send_Produce(RTTIType type, int id, int count)
+{
+	for (int queued = 0; queued < count; queued++) {
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type, id));
+	}
+}
+
+
+/// <summary>
+/// Announces that production of the type has started or resumed, then sends the player's PRODUCE event for it
+/// count times.
+/// </summary>
+void Queue_Produce(RTTIType type, int id, int count)
+{
+	Speak(type == RTTI_INFANTRYTYPE ? VOX_TRAINING : VOX_BUILDING);
+	Send_Produce(type, id, count);
+}
+
+
+/// <summary>
+/// What a left click on a cameo whose type is not the one its strip is building does: a structure refuses
+/// while another is under way, a unit or infantry type queues the Shift count (or one) more, and otherwise
+/// production starts with the announcement.
+/// </summary>
+static void Click_Cameo_Produce(RTTIType otype, int oid)
+{
+	FactoryClass const * factory = PlayerPtr->Fetch_Factory(otype, oid);
+	int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;
+	if (factory != NULL && (factory->Is_Building() || factory->Has_Production_Target())) {
+		if (otype == RTTI_BUILDINGTYPE) {
+			Speak(VOX_NO_FACTORY);
+		} else {
+			Send_Produce(otype, oid, count);
+		}
+	} else {
+		Queue_Produce(otype, oid, count);
+	}
+}
+
+
+/// <summary>
+/// Sends the abandon for a cameo's type. Shift held abandons every object of that type, queued or in
+/// production, in one event; without Shift it abandons one.
+/// </summary>
+static void Cameo_Abandon(RTTIType otype, int oid, TechnoTypeClass const * choice)
+{
+	if (Keyboard->Down(KN_LSHIFT)) {
+		int const pending = Pending_Count(otype, oid, choice);
+		if (pending > 1) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT, otype, oid, pending));
+			return;
+		}
+	}
+	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
 }
 
 
@@ -2884,7 +3024,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 
 					if (!factory->Is_Building()) {
 						Speak(VOX_CANCELED);
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
+						Cameo_Abandon(otype, oid, choice);
 					} else {
 						Speak(VOX_SUSPENDED);
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SUSPEND, otype, oid));
@@ -2895,9 +3035,9 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					/*
 					 * Cancel a queued production.
 					 */
-					FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid), HouseClass::Is_Naval_Type(otype, oid));
+					FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, oid);
 					if (fptr != NULL && fptr->Is_Queued(choice)) {
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
+						Cameo_Abandon(otype, oid, choice);
 					}
 				}
 			}
@@ -2949,12 +3089,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						**	The factory must have been in a suspended state. Resume construction
 						**	normally.
 						*/
-						if (otype == RTTI_INFANTRYTYPE) {
-							Speak(VOX_TRAINING);
-						} else {
-							Speak(VOX_BUILDING);
-						}
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
+						Queue_Produce(otype, oid);
 					}
 
 				} else {
@@ -2964,31 +3099,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					**	on the icon that has the attached factory, then say that the factory is busy and
 					**	ignore the click.
 					*/
-					factory = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid), HouseClass::Is_Naval_Type(otype, oid));
-					bool produce = false;
-					if (factory != NULL && (factory->Is_Building() || factory->Has_Production_Target())) {
-						if (otype == RTTI_BUILDINGTYPE) {
-							Speak(VOX_NO_FACTORY);
-						} else {
-							produce = true;
-						}
-
-					} else {
-
-						/*
-						**	If this side strip is already busy with production, then ignore the
-						**	input and announce this fact.
-						*/
-						if (otype == RTTI_INFANTRYTYPE) {
-							Speak(VOX_TRAINING);
-						} else {
-							Speak(VOX_BUILDING);
-						}
-						produce = true;
-					}
-					if (produce) {
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
-					}
+					Click_Cameo_Produce(otype, oid);
 				}
 			}
 		} else {
@@ -3278,22 +3389,16 @@ void SidebarClass::Reposition_Sidebar(void)
 		StripClass::DownButton[col].DrawOffsetX = -SidebarRect.X;
 
 		for (int i = 0; i < Max_Visible(); i++) {
-			StripClass::SelectButton[col][i].Set_Position(
-				SidebarRect.X + Column[col].X + (i % StripClass::Slot_Columns()) * StripClass::Column_Step(),
-				SidebarRect.Y + Column[col].Y + StripClass::OBJECT_HEIGHT * (i / StripClass::Slot_Columns()));
+			Point2D const slot = Cameo_Slot_Origin(i, StripClass::Slot_Columns(), Point2D(SidebarRect.X + Column[col].X, SidebarRect.Y + Column[col].Y));
+			StripClass::SelectButton[col][i].Set_Position(slot.X, slot.Y);
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}
 
 	Add_Tool_Tips();
 
-	int x = 0;
 	int y = RadarButton.Y + RadarButton.Height;
-	if (Options.IsSidebarOnRight) {
-		Background.Set_Position(Sidebar_Screen_X(), y);
-	} else {
-		Background.Set_Position(x, y);
-	}
+	Background.Set_Position(Sidebar_Screen_X(), y);
 	Background.Set_Size(SidebarSurface->Get_Width(), SidebarSurface->Get_Height() - y);
 }
 
@@ -3348,9 +3453,8 @@ void SidebarClass::Reposition_Panel(void)
 		Column[col].Y = layout.Grid.Y;
 		Column[col].ObjectRect = layout.Grid;
 		for (int i = 0; i < Max_Visible(); i++) {
-			StripClass::SelectButton[col][i].Set_Position(
-				origin.X + layout.Grid.X + (i % HUD_GRID_COLUMNS) * StripClass::Column_Step(),
-				origin.Y + layout.Grid.Y + (i / HUD_GRID_COLUMNS) * StripClass::OBJECT_HEIGHT);
+			Point2D const slot = Cameo_Slot_Origin(i, HUD_GRID_COLUMNS, Point2D(origin.X + layout.Grid.X, origin.Y + layout.Grid.Y));
+			StripClass::SelectButton[col][i].Set_Position(slot.X, slot.Y);
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}
@@ -3389,30 +3493,26 @@ void SidebarClass::Add_Tool_Tips(void)
 		tooltip.ID = BUTTON_REPAIR;
 		tooltip.Text = TXT_REPAIR_MODE;
 		tooltip.Region.Set(Repair.X, Repair.Y, Repair.Width, Repair.Height);
-		ToolTips->Remove(tooltip.ID);
-		ToolTips->Add(&tooltip);
+		ToolTips->Replace(&tooltip);
 
 		tooltip.ID = BUTTON_SELL;
 		tooltip.Text = TXT_SELL_MODE;
 		tooltip.Region.Set(Upgrade.X, Upgrade.Y, Upgrade.Width, Upgrade.Height);
-		ToolTips->Remove(tooltip.ID);
-		ToolTips->Add(&tooltip);
+		ToolTips->Replace(&tooltip);
 
 		if (Modern_Interface()) {
 			for (ShapeButtonClass const * button : {&Power, &BeaconButton, &OptionsButton}) {
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
-				ToolTips->Remove(tooltip.ID);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
 			}
 		} else {
 			for (ShapeButtonClass const * button : {&OptionsButton, &DiplomacyButton}) {
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
-				ToolTips->Remove(tooltip.ID);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
 			}
 
 			// Only the shown strip's arrows are on screen, so only they need a region.
@@ -3420,8 +3520,7 @@ void SidebarClass::Add_Tool_Tips(void)
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
-				ToolTips->Remove(tooltip.ID);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
 			}
 		}
 	}
@@ -3712,8 +3811,10 @@ void SidebarClass::Grid_Build(int index)
 /// <returns>Returns with a pointer to the help text, or NULL if the gadget has none.</returns>
 const char * SidebarClass::Help_Text(int id)
 {
+	// The branches below share _text, so the next call overwrites a pointer returned here.
+	static std::string _text;
+
 	if (Modern_Interface()) {
-		static std::string _text;
 		switch (id) {
 			case BUTTON_POWER:
 				_text = Panel_Text("GUI:PowerDown", "Power down");
@@ -3727,25 +3828,23 @@ const char * SidebarClass::Help_Text(int id)
 		}
 	} else {
 		// gamemd's tips for tabs and scroll arrows (0x6AC210) use these CSF labels.
-		static std::string _tip;
 		static char const * const tab_labels[COLUMNS] = {"Tip:Tab1", "Tip:Tab2", "Tip:Tab3", "Tip:Tab4"};
 		static char const * const tab_fallbacks[COLUMNS] = {"Structures Tab", "Armory Tab", "Infantry Tab", "Vehicles Tab"};
 		if (id >= BUTTON_TAB && id < BUTTON_TAB + COLUMNS) {
 			int const index = id - BUTTON_TAB;
-			_tip = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
-			return(_tip.c_str());
+			_text = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
+			return(_text.c_str());
 		}
 		if (id >= StripClass::BUTTON_UP && id < StripClass::BUTTON_UP + COLUMNS) {
-			_tip = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
-			return(_tip.c_str());
+			_text = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
+			return(_text.c_str());
 		}
 		if (id >= StripClass::BUTTON_DOWN && id < StripClass::BUTTON_DOWN + COLUMNS) {
-			_tip = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
-			return(_tip.c_str());
+			_text = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
+			return(_text.c_str());
 		}
 
 		// gamemd's tips for 0xF2 and 0xF3 (0x654320): the briefing in a campaign, else diplomacy.
-		static std::string _text;
 		switch (id) {
 			case BUTTON_OPTIONS:
 				_text = Panel_Text("Tip_OptionsButton", "Options");
@@ -3869,11 +3968,6 @@ void Print_Cameo_Text(char const * string, Point2D const & point, Rect const & c
 				w = font->String_Pixel_Width(buffer);
 
 			} while (len > 0 && w > maxlinelen);
-
-			/*
-			 * Print the rest of the string.
-			 */
-			finish:;
 		}
 
 		Fancy_Text_Print(string, *SidebarSurface, cliprect, drawpoint, Fetch_Scheme_By_Name("LightGrey"), TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_EFNT));

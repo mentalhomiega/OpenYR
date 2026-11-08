@@ -252,11 +252,17 @@ class FootClass : public TechnoClass
 		// Whether the object was sinking last frame, so the sinking sounds play once as it starts.
 		bool WasSinking;
 
+		// The frames a unit holds after a chronosphere warp has set it down (gamemd keeps this at unit+0x284). A landing the warp
+		// had to move to another cell sets it to ChronoDelay (0x719983), and it then stays for every later warp of the unit.
+		int ChronoArrivalHold;
+
 		// The sound from the type's MoveSound list playing while the object moves, and the frames
-		// it keeps playing after the object stops.
+		// it keeps playing after the object stops. MoveSoundVoc is the sound picked for the current
+		// move, or VOC_NONE. None of these is saved, so a loaded object starts with no move sound.
 		AudioHandle MoveSoundHandle;
 		bool IsMoveSoundPlaying;
 		int MoveSoundDelay;
+		VocType MoveSoundVoc;
 
 		/*
 		 * This is the locomotor that actually moves the object, created from the class ID
@@ -360,11 +366,12 @@ class FootClass : public TechnoClass
 		bool IsPiggybackEndPending;
 
 		// The cell, house and radius that SensorsSight coverage was last laid down for. The
-		// radius is not saved; it is rebuilt on load from the type, which is fixed at creation.
+		// radius is not saved; Restore_Sensor_Radii rebuilds it from the type once a load has resolved the pointers.
 		Cell SensorCell;
 		HouseClass * SensorHouse;
 		int SensorRadius;
 		void Update_Sensors(bool lift);
+		static void Restore_Sensor_Radii(void);
 
 		// Called from UnitClass::AI and AircraftClass::AI; see the definition for the gate.
 		void Airborne_Look(void);
@@ -417,6 +424,12 @@ class FootClass : public TechnoClass
 		 * planned order is issued; the flag clears when the queue runs out.
 		 */
 		bool IsPlanRunning;
+
+		/*
+		 * This is true when the unit went idle as it was placed on the map (it just left a transport, say) while
+		 * its plan runs. Its next planned order is issued on its next update, after the placing code has given its own order.
+		 */
+		bool IsPlanAdvanceDeferred;
 
 		/*
 		 * The planned order the unit is carrying out. An aircraft that must rearm takes it back to the
@@ -517,11 +530,12 @@ class FootClass : public TechnoClass
 		virtual bool Plan_Waits_For_Rearm(void) const;
 		virtual void Started_Planned_Leg(void);
 		void Requeue_Interrupted_Planned_Leg(void);
+		bool Planned_Leg_Replaces_Idle(bool result) const;
 
 		// Planning mode: queue an order, start the queue on commit, and issue the next order when idle.
-		bool Can_Take_Planned_Order(void) const;
 		PlannedOrderBlock Planned_Order_Block(void) const;
 		bool Add_Planned_Order(PlannedOrderClass const & order);
+		bool Is_Free_For_Plan(void) const;
 		void Start_Planned_Orders(void);
 		bool Advance_Planned_Order(void);
 		void Clear_Planned_Orders(void);
@@ -546,6 +560,7 @@ class FootClass : public TechnoClass
 		void Draw_Navigation_Queue_Lines(Coord const & from) const;
 		virtual void Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, int brightness, ShapeFlags_Type flags) const override;
 		void Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const;
+		bool Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const;
 		virtual void Draw_Object(ShapeSet const * shapefile, int shapenum, Point2D const & xy, Rect const & rect, Dir256 rotation=DIR_N, int scale=0x0100, int zadjust=0, ZGradientType zgrad=ZGRAD_GROUND, bool=false, int brightness=0, ShapeSet const * zshapefile=0, int zshapenum=0, Point2D zoff=Point2D(0,0), ShapeFlags_Type flags=SHAPE_NORMAL) const;
 
 		/*
@@ -554,6 +569,7 @@ class FootClass : public TechnoClass
 		virtual ActionType What_Action(ObjectClass const *, bool disallow_force = false) const override;
 		virtual ActionType What_Action(Cell const &, bool check_fog = false, bool disallow_force = false) const override;
 		ActionType Transport_Enter_Action(ObjectClass const * object, ActionType action) const;
+		void Board_Transport(TechnoClass * transport);
 		virtual bool Active_Click_With(ActionType action, ObjectClass * object, bool) override;
 		virtual bool Active_Click_With(ActionType action, Cell const & cell, bool) override;
 
@@ -561,6 +577,7 @@ class FootClass : public TechnoClass
 		**	Combat related.
 		*/
 		virtual void Stun(void) override;
+		bool Crash(TechnoClass * source);
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield) override;
 		virtual void Death_Announcement(TechnoClass const * source=0) const override;
@@ -578,6 +595,10 @@ class FootClass : public TechnoClass
 
 		// Sinks a sinking object one frame. Returns true once it is too deep to see, and the caller removes it.
 		bool Advance_Sinking(void);
+
+		// Starts, re-aims and ends the MoveSound loop. The argument says whether the walk counter stepped this frame.
+		void Update_Move_Sound(bool stepped);
+
 		virtual void Sell_Back(int control) override;
 		virtual void Set_Waypoint_Path(PathType path, char index) override;
 		void Execute_Waypoint_Path(WaypointClass * waypoint);

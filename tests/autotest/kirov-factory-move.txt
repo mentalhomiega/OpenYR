@@ -1,0 +1,28 @@
+; A Soviet War Factory (NAWEAP at 60,20) builds a Kirov airship (ZEP), which leaves through the roof. A move order given to it
+; after it has left must take it away from the factory; owner report on Nightly 6: the Kirov stayed at the factory until the factory was sold.
+; The Kirov is ordered at frame 400 (it has left the factory by then), and again at 700 to a second cell.
+; A Kirov that hovers over the door cell keeps its radio link to the factory until the unit is released (UnitClass::Break_Away_From_Contact), and the link holds back every order.
+; Expected: "where ZEP" shows the Kirov at the door cell 64,21 at frame 360 with the factory back on Guard by frame 1100; its nav field then shows 80,45 (frame 450) and the
+; second order 85,30 (frame 800), and the cell column moves away from the door: 64,26 by frame 700 and 71,27 by frame 1100.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/kirov-factory-move.txt -Country 8 -Width 800 -Height 600 -Seconds 200 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+30 command DebugInfiniteMoney
+31 command DebugUnlockAll
+32 command DebugInstantBuild
+35 reveal
+40 own NAPOWR 56 40
+41 own NACNST 50 30
+42 own NATECH 44 38
+43 own NAWEAP 60 20
+60 produce ZEP
+240 where ZEP
+360 where ZEP
+400 move ZEP 80 45
+450 where ZEP
+550 where ZEP
+700 where ZEP
+710 move ZEP 85 30
+800 where ZEP
+1100 where ZEP
+1100 dump
+1110 quit

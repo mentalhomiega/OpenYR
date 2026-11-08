@@ -1,0 +1,50 @@
+﻿; Controls page, Attack move set to Mouse 5 by clicks: Assign is clicked with the mouse, then Ctrl and Shift are held.
+; The capture box must keep the keyboard after Assign, so the chord shows as Ctrl+Shift with the held-keys notice and
+; then as the captured chord. Then Guard, a press command, refuses the chord and its notice says why.
+; Shots: chord-held-after-assign (notice "Ctrl+Shift held"), chord-released-after-assign (capture shows Ctrl+Shift),
+; guard-refused (notice names Guard and says Ctrl+Shift works only for held-key commands).
+; The user folder's KEYBOARDMD.INI is removed first in a manual run, so the scheme starts as Classic. OK saves the file.
+; Run from the workspace root, once per menu style:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/keyboard-chord-after-assign.txt -Menus -MenuStyle Modern -Width 640 -Height 480 -Seconds 90 -Filter "UISCRIPT|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-keyboard
+ui wait 1500
+ui choose Attack move
+ui wait 500
+ui wclick capture
+ui wait 300
+ui xbutton capture 2
+ui wait 500
+ui wclick assign
+ui wait 500
+ui keydown ctrl
+ui wait 200
+ui keydown shift
+ui wait 400
+ui shot chord-held-after-assign
+ui keyup shift
+ui wait 200
+ui keyup ctrl
+ui wait 500
+ui shot chord-released-after-assign
+ui wclick assign
+ui wait 500
+ui choose Guard
+ui wait 500
+ui wclick capture
+ui wait 300
+ui keydown ctrl
+ui wait 200
+ui keydown shift
+ui wait 200
+ui keyup shift
+ui wait 200
+ui keyup ctrl
+ui wait 500
+ui shot guard-refused
+ui press OK
+ui wait 1500
+ui quit

@@ -87,7 +87,13 @@ struct UINetPlayerRow
 	std::string House;
 	std::string Hint;
 	std::string Mark;
+	std::string MarkHint;   // What the mark picture means, in words, such as "Host" or "Ready".
+	std::string Detail;     // Team and start, where the lobby has them.
+	std::string Note;       // A line under the name, such as a different build; empty for none.
+	std::string ColorName;  // The player's color in words, where the lobby shows a color column.
+	std::string Status;     // "Host", "Ready" or "Not ready", where the lobby shows a status column.
 	bool Selected = false;
+	bool Kickable = true;   // False for the host's own row.
 };
 
 
@@ -101,6 +107,19 @@ struct UINetLobbyState
 	std::string Handle;
 	std::string Say;
 
+	/// A room's name and channel, shown above the player list; empty where the lobby has no named room.
+	std::string RoomTitle;
+	std::string RoomChannel;
+	std::string RoomTip;    // The hover tip of the room's title. Shown as markup, so it holds no text that others chose.
+	/// One line about the match's network options, with the longer text for its hover tip; empty for none.
+	std::string NetworkLine;
+	std::string NetworkTip;
+	/// Says in words why Go! or Accept is off, or what happens next; empty for none.
+	std::string StartNote;
+	/// What the leave button says; empty keeps the stock Cancel.
+	std::string LeaveLabel;
+	std::string LeaveTip;
+
 	std::vector<UINetOption> Games;
 	int Game = 0;
 
@@ -113,6 +132,12 @@ struct UINetLobbyState
 	std::string SideTip;
 	std::vector<UINetOption> Colors;
 	int Color = 0;
+	/// Whether the lobby lets each player choose a team and a start; the LAN lobby does not.
+	bool HasTeams = false;
+	std::vector<UINetOption> Teams;
+	int Team = 0;
+	std::vector<UINetOption> Starts;
+	int Start = 0;
 	/// The free color, zero for the stock color at Color, and the picker over the lobby.
 	unsigned int CustomColor = 0;
 	/// What the color button shows: its name, its hover tip with the full name of a free color, and
@@ -153,6 +178,9 @@ struct UINetLobbyState
 
 	bool CanAccept = false;
 	bool CanGo = true;
+	/// Set by the presenter: whether a player the host may remove is picked in the list, and the kick button's tip.
+	bool CanKick = false;
+	std::string KickTip;
 };
 
 
@@ -165,8 +193,9 @@ class UINetLobbyServiceClass
 		virtual void Select_Game(int index) = 0;
 		virtual void Say(char const * text) = 0;
 		virtual void Set_Side(int index) = 0;
-		virtual void Set_Color(int index) = 0;
-		virtual void Set_Custom_Color(int index, unsigned int custom) = 0;
+		virtual void Set_Color(int index, unsigned int custom) = 0;
+		virtual void Set_Team(int) {}
+		virtual void Set_Start(int) {}
 		virtual void Set_Switch(UINetSwitch which, bool on) = 0;
 		virtual void Set_Slider(UINetSlider which, int value) = 0;
 		virtual void Kick(std::vector<std::string> const & names) = 0;
@@ -204,6 +233,11 @@ class UINetLobbyPresenterClass : public UIPresenterClass
 
 std::unique_ptr<UIViewClass> UI_Net_Browser_View(UINetLobbyPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Net_Setup_View(UINetLobbyPresenterClass & presenter);
+
+// Shared by the LAN and CnCNet lobby services; defined in uinetlobbydlg.cpp.
+bool UI_Net_Apply_Switch(UINetSwitch which, bool on);
+bool UI_Net_Apply_Slider(UINetSlider which, int value);
+void UI_Net_Fill_Options(UINetLobbyState & state, int ai_players_max, int credits_min);
 
 UINetLobbyServiceClass & UI_Net_Lobby_Service(void);
 UINetChoice UI_Net_Lobby_Run(void);

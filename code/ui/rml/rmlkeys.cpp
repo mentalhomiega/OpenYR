@@ -9,6 +9,8 @@
 
 #include "ui/rml/rmlkeys.h"
 
+#include "keyboard.h"
+
 #include <windows.h>
 
 
@@ -159,5 +161,5 @@ int UI_Key_Number(Rml::Input::KeyIdentifier key, bool shift, bool ctrl, bool alt
 	if (virtualkey == 0) {
 		return(0);
 	}
-	return(virtualkey | (shift ? UI_KEY_SHIFT : 0) | (ctrl ? UI_KEY_CTRL : 0) | (alt ? UI_KEY_ALT : 0));
+	return(virtualkey | Key_Bits(shift, ctrl, alt));
 }

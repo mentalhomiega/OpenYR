@@ -36,11 +36,15 @@
 #include "win.h"
 #include "wwfile.h"
 
+#include <vector>
+
 /// An ID of -1 or 0 is not valid for Fetch_String.
 #define TXT_NONE	0
 
 int Load_Picture(FileClass &file, Buffer & scratchbuf, Buffer & destbuf, unsigned char * palette, PicturePlaneType format);
 void * Load_Alloc_Data(FileClass & file);
+// Returns false, with bytes empty, when the file is missing, empty, or not read in full.
+bool Read_File_Bytes(FileClass & file, std::vector<unsigned char> & bytes);
 int Load_Uncompress(FileClass & file, Buffer & uncomp_buff, Buffer & dest_buff, void * reserved_data);
 char const * Fetch_String(int id);
 void * Hires_Load(char * name);

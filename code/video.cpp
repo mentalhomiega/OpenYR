@@ -12,6 +12,7 @@
 // window it lands, and hands it to the renderer behind video.h.
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "video.h"
 
@@ -19,6 +20,7 @@
 #include "_ui.h"
 #include "_xmouse.h"
 #include "bgfxbackend.h"
+#include "blit.h"
 #include "colourblind.h"
 #include "dbgprint.h"
 #include "dsurface.h"
@@ -35,10 +37,20 @@
 #include "videodirty.h"
 #include "wwmouse.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <map>
+#include <string>
 #include <utility>
 #include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 
 /*
@@ -64,6 +76,17 @@ static Surface const * _LayerSurface = NULL;
 static Rect _LayerSource;
 static Rect _LayerDest;
 static bool _LayerFresh = false;
+static bool _LayerGpu = false;
+
+// Set when the map layer was dropped and no map draw has called a layer setter since. The frame holds VIDEO_LAYER_KEY
+// where the map was, so presents wait for that draw, for at most VIDEO_MAP_DROP_HOLD_MS after the first drop.
+static bool _AwaitingMapDraw = false;
+static unsigned int _MapDropTime = 0;
+constexpr unsigned int VIDEO_MAP_DROP_HOLD_MS = 100;
+
+// Part of a view position past its whole pixels, in frame pixels, from Video_Set_Map_Subpixel.
+static double _MapSubpixelX = 0.0;
+static double _MapSubpixelY = 0.0;
 
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
@@ -72,6 +95,14 @@ static int _RefreshRate = 60;
 static unsigned int _PresentsThisSecond = 0;
 static unsigned int _PresentsLastSecond = 0;
 static unsigned int _PresentSecondStart = 0;
+
+// Gaps between successful presents, in milliseconds, for the frame-time graph. The ring holds the
+// oldest gap at _FrameTimeNext once it is full, and the next gap overwrites that one.
+static unsigned int _FrameTimeMs[VIDEO_FRAME_TIME_HISTORY];
+static int _FrameTimeNext = 0;
+static int _FrameTimeCount = 0;
+static unsigned int _FrameTimeLast = 0;
+static bool _FrameTimeHasLast = false;
 
 // A window that repaints itself can start a present inside the engine's own; the inner one is
 // skipped. A resize that arrives during a present waits for it to finish.
@@ -158,21 +189,20 @@ static void Update_Scale_Info(void)
 }
 
 
+// The backend names each filter with the value the setting has, so a configured value converts by a cast.
+static_assert(BACKEND_SCALE_NEAREST == VIDEO_SCALE_NEAREST && BACKEND_SCALE_LINEAR == VIDEO_SCALE_LINEAR && BACKEND_SCALE_PIXELART == VIDEO_SCALE_PIXELART);
+
 /// <summary>
-/// Converts the configured filter into the one the renderer names.
+/// Converts the configured filter into the one the renderer names. A value outside the filters
+/// falls back to pixel art.
 /// </summary>
 static BackendScaleMode Backend_Scale_Mode(void)
 {
-	switch (Options.ScaleMode) {
-		case VIDEO_SCALE_LINEAR:
-			return(BACKEND_SCALE_LINEAR);
-
-		case VIDEO_SCALE_NEAREST:
-			return(BACKEND_SCALE_NEAREST);
-
-		default:
-			return(BACKEND_SCALE_PIXELART);
+	int const mode = Options.ScaleMode;
+	if (mode < VIDEO_SCALE_NEAREST || mode > VIDEO_SCALE_PIXELART) {
+		return(BACKEND_SCALE_PIXELART);
 	}
+	return((BackendScaleMode)mode);
 }
 
 
@@ -286,6 +316,9 @@ void Video_Shutdown(void)
 	_PresentSecondStart = 0;
 	_PresentCount = 0;
 	_FrameUploadCount = 0;
+	_FrameTimeNext = 0;
+	_FrameTimeCount = 0;
+	_FrameTimeHasLast = false;
 }
 
 
@@ -457,6 +490,57 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 	_LayerSource = source;
 	_LayerDest = dest;
 	_LayerFresh = (surface != NULL);
+	_LayerGpu = false;
+	_AwaitingMapDraw = false;
+}
+
+
+/// <summary>
+/// Removes the map layer because its surface is about to be freed. The frame still holds VIDEO_LAYER_KEY
+/// where the map was, so Video_Present_If_Dirty holds back presents until the next map draw calls
+/// Video_Set_Map_Layer or Video_Set_Gpu_Map_Layer, or until VIDEO_MAP_DROP_HOLD_MS has passed since the first drop.
+/// </summary>
+void Video_Drop_Map_Layer(void)
+{
+	bool const was_awaiting = _AwaitingMapDraw;
+	bool const had_layer = _LayerSurface != NULL || _LayerGpu;
+	Video_Set_Map_Layer(NULL, Rect(), Rect());
+	if (had_layer) {
+		_MapDropTime = timeGetTime();
+	}
+	_AwaitingMapDraw = was_awaiting || had_layer;
+}
+
+
+/// <summary>
+/// Sets how far past whole pixels the map is drawn, in frame pixels, for the presents that follow.
+/// The presenter moves the picture back by that much, so the map glides between whole pixels.
+/// Zero draws the map as usual. Callers pass values from 0 up to, not including, 1.
+/// </summary>
+void Video_Set_Map_Subpixel(double x, double y)
+{
+	_MapSubpixelX = x;
+	_MapSubpixelY = y;
+}
+
+
+void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity)
+{
+	auto const channel = [](int value) {
+		return((unsigned char)std::clamp(value, 0, 255));
+	};
+	Backend_Set_Layer_Tint(index, channel(red), channel(green), channel(blue), channel((std::clamp(opacity, 0, 100) * 255 + 50) / 100));
+}
+
+
+void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest)
+{
+	_LayerSurface = NULL;
+	_LayerSource = source;
+	_LayerDest = dest;
+	_LayerFresh = false;
+	_LayerGpu = true;
+	_AwaitingMapDraw = false;
 }
 
 
@@ -478,6 +562,58 @@ void Video_Mark_Overlay_Dirty(void)
 }
 
 
+/// <summary>
+/// Adds the time since the previous successful present to the frame-time history.
+/// The first present after a reset adds nothing. A gap includes any time with no present, such as
+/// an idle screen or a minimised window, so that time shows as one long gap.
+/// </summary>
+static void Record_Present_Gap(void)
+{
+	unsigned int const now = timeGetTime();
+	if (_FrameTimeHasLast) {
+		_FrameTimeMs[_FrameTimeNext] = now - _FrameTimeLast;
+		_FrameTimeNext = (_FrameTimeNext + 1) % VIDEO_FRAME_TIME_HISTORY;
+		if (_FrameTimeCount < VIDEO_FRAME_TIME_HISTORY) {
+			_FrameTimeCount++;
+		}
+	}
+	_FrameTimeLast = now;
+	_FrameTimeHasLast = true;
+}
+
+
+// The visible surface rows changed since the last upload, and the surface's change count after the copy
+// that noted them. Known is false when any row may have changed.
+static std::vector<unsigned char> _VisibleRows;
+static bool _VisibleRowsKnown = false;
+static unsigned _VisibleRowsChanges = 0;
+
+
+void Video_Note_Visible_Rows(unsigned char const * rows, int count, unsigned before, unsigned after)
+{
+	if (rows == NULL || before != _VisibleRowsChanges || (int)_VisibleRows.size() != count) {
+		_VisibleRowsKnown = false;
+	} else if (_VisibleRowsKnown) {
+		for (int y = 0; y < count; y++) {
+			_VisibleRows[y] |= rows[y];
+		}
+	}
+	_VisibleRowsChanges = after;
+}
+
+
+// Sets the size and window rectangle of a map layer from its source and its scaled destination.
+static void Layer_Destination(BackendLayer & layer)
+{
+	layer.Width = _LayerSource.Width;
+	layer.Height = _LayerSource.Height;
+	layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
+	layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
+	layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
+	layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+}
+
+
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
@@ -496,48 +632,80 @@ static void Present(void)
 		return;
 	}
 
+	PerfPresentSample present_sample;
+	PerfScope present_scope(PERF_PRESENT_TOTAL);
 	_LastPresentTime = timeGetTime();
 
 	_Presenting = true;
 
 	BackendLayer layer;
 	BackendLayer const * layerptr = NULL;
-	if (_LayerSurface != NULL) {
+	layer.Gpu = false;
+	if (_LayerGpu) {
+		layer.Pixels = NULL;
+		layer.Pitch = 0;
+		Layer_Destination(layer);
+		layer.Gpu = true;
+		layerptr = &layer;
+	} else if (_LayerSurface != NULL) {
 		DSurface const * source = (DSurface const *)_LayerSurface;
 		char const * base = (char const *)source->Get_Buffer();
 		if (base != NULL) {
 			layer.Pixels = _LayerFresh ? base + _LayerSource.Y * source->Stride() + _LayerSource.X * 2 : NULL;
 			layer.Pitch = source->Stride();
-			layer.Width = _LayerSource.Width;
-			layer.Height = _LayerSource.Height;
-			layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
-			layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
-			layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
-			layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+			Layer_Destination(layer);
 			layerptr = &layer;
 		}
 	}
 
 	// Masks are passed only while they are kept; the layer's mask follows the layer picture when it is fresh.
-	BackendEmissive emissive = {NULL, 0, NULL, 0};
+	BackendEmissive emissive = {NULL, 0, 0, 0, NULL, 0, 0, 0, NULL};
 	BackendEmissive const * emissiveptr = NULL;
 	Backend_Set_Emissive_View(Emissive_Debug_View());
-	if (Emissive_Is_Enabled()) {
+	// Bloom keeps the masks on for the map pass alone, so Classic highlights stay classic under HDR.
+	if (Emissive_Is_Enabled() && (Emissive_Debug_View() || Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED)) {
+		// Each mask's extent is the part of its plane readable from the pointer, so the presenter never reads past it.
 		if (EmissivePlane const * frame = Emissive_Plane_For(VisibleSurface)) {
 			emissive.Frame = frame->Pixels;
 			emissive.FramePitch = frame->Pitch;
+			emissive.FrameWidth = frame->Width;
+			emissive.FrameHeight = frame->Height;
+			emissive.FrameLit = frame->Lit;
 			emissiveptr = &emissive;
 		}
 		if (layerptr != NULL && layer.Pixels != NULL) {
 			if (EmissivePlane const * layer_plane = Emissive_Plane_For(_LayerSurface)) {
-				emissive.Layer = layer_plane->Pixels + _LayerSource.Y * layer_plane->Pitch + _LayerSource.X;
-				emissive.LayerPitch = layer_plane->Pitch;
-				emissiveptr = &emissive;
+				if (_LayerSource.X >= 0 && _LayerSource.Y >= 0 && _LayerSource.X < layer_plane->Width && _LayerSource.Y < layer_plane->Height) {
+					emissive.Layer = layer_plane->Pixels + _LayerSource.Y * layer_plane->Pitch + _LayerSource.X;
+					emissive.LayerPitch = layer_plane->Pitch;
+					emissive.LayerWidth = layer_plane->Width - _LayerSource.X;
+					emissive.LayerHeight = layer_plane->Height - _LayerSource.Y;
+					emissiveptr = &emissive;
+				}
 			}
 		}
 	}
 
-	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr, emissiveptr);
+	Video_Log_Present_Digest(surface, layerptr);
+
+	if (pixels != NULL) {
+		// Rows are only known while every change to the surface since the last upload came through a noted copy.
+		int const height = surface->Get_Height();
+		bool const known = _VisibleRowsKnown && surface->Change_Count() == _VisibleRowsChanges && (int)_VisibleRows.size() == height;
+		Backend_Note_Changed_Rows(known ? _VisibleRows.data() : NULL, height);
+		_VisibleRows.assign((size_t)height, 0);
+		_VisibleRowsKnown = true;
+		_VisibleRowsChanges = surface->Change_Count();
+	}
+
+	// The map is drawn at whole pixels, so the picture moves back by the part of the view position past them.
+	Backend_Set_Present_Shift((float)(-_MapSubpixelX * _ScaleInfo.ScaleX), (float)(-_MapSubpixelY * _ScaleInfo.ScaleY));
+
+	bool presented = false;
+	{
+		PerfScope upload_scope(PERF_PRESENT_UPLOAD);
+		presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr, emissiveptr);
+	}
 	if (presented) {
 		if (snapshot.Upload) {
 			_Dirty.Upload_Completed();
@@ -545,7 +713,10 @@ static void Present(void)
 		}
 		UIShell.Render_Overlay();
 	}
-	Backend_End_Frame();
+	{
+		PerfScope gpu_scope(PERF_PRESENT_GPU);
+		Backend_End_Frame();
+	}
 	_Presenting = false;
 
 	if (presented) {
@@ -556,6 +727,7 @@ static void Present(void)
 		}
 		_PresentsThisSecond++;
 		_PresentCount++;
+		Record_Present_Gap();
 	} else {
 		_Dirty.Restore(snapshot);
 		DebugString("Video: present refused, marks kept\n");
@@ -577,7 +749,8 @@ void Video_Present(void)
 
 /// <summary>
 /// Puts the visible surface on the screen if it or the UI overlay has changed and a display
-/// refresh has passed since the last present.
+/// refresh has passed since the last present. It also waits for the next map draw after a map
+/// layer drop, for at most VIDEO_MAP_DROP_HOLD_MS.
 /// A skipped present keeps the changes marked, so the next present shows the newest content.
 /// This never waits: the game loop is not paced by presentation.
 /// </summary>
@@ -589,6 +762,9 @@ void Video_Present_If_Dirty(void)
 
 	unsigned int now = timeGetTime();
 	if ((now - _LastPresentTime) < _PresentInterval) {
+		return;
+	}
+	if (_AwaitingMapDraw && (now - _MapDropTime) < VIDEO_MAP_DROP_HOLD_MS) {
 		return;
 	}
 
@@ -624,6 +800,19 @@ unsigned int Video_Presents_Per_Second(void)
 unsigned int Video_Present_Interval(void)
 {
 	return(_PresentInterval);
+}
+
+
+int Video_Frame_Time_Count(void)
+{
+	return(_FrameTimeCount);
+}
+
+
+unsigned int Video_Frame_Time(int index)
+{
+	int const first = _FrameTimeCount < VIDEO_FRAME_TIME_HISTORY ? 0 : _FrameTimeNext;
+	return(_FrameTimeMs[(first + index) % VIDEO_FRAME_TIME_HISTORY]);
 }
 
 

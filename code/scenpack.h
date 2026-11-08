@@ -9,20 +9,6 @@
 
 #pragma once
 
-#include "overlaylayer.h"
-
-
-/// <summary>
-/// Names the overlay type that one byte of a scenario's OverlayPack holds.
-/// </summary>
-/// <param name="byte">The cell's byte. 255 marks a cell with no overlay.</param>
-/// <param name="type_count">The number of overlay types the rules define.</param>
-/// <returns>The index of the overlay type, or -1 for no overlay or a type the rules do not define.</returns>
-inline int Overlay_Pack_Type(unsigned char byte, int type_count)
-{
-	return(Overlay_Index_From_Byte(byte, type_count));
-}
-
 
 /// <summary>
 /// The largest side of a scenario preview picture that the game builds, in pixels.

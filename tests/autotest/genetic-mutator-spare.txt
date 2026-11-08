@@ -9,7 +9,7 @@
 31 spawn E1 54 44
 32 own E1 50 40
 33 own E1 52 44
-5 rules E:/Claude ra2 decomp/src-agent14/tests/autotest/genetic-mutator-spare.ini
+5 rules genetic-mutator-spare.ini
 40 grant GeneticConverterSpecial
 50 where E1
 60 fire GeneticConverterSpecial 52 40

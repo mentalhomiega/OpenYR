@@ -1,0 +1,41 @@
+; A V3 launcher on the XMP08T2 shore is turned to face a neutral tank (HTNK) eight cells west and strikes it. Its rocket launches
+; at frame 120. Five frames later, while the rocket is still on the pad (PREPARING, then TAKEOFF for about 60 frames), the player
+; orders the V3 north, at right angles to the target. With MissileLaunchHoldsMove=yes (the default, set again at frame 5), the
+; V3 does not move while SpawnManagerClass::CountLaunchingSpawns (gamemd 0x6B7D80) counts the rocket, so it stays at 100,80
+; facing west until the rocket has left its pad. A before run uses a copy of this script with "holdmove 0".
+; The "spawns" lines show the V3's cell, body facing and moving flag, and the spawn cycle's nodes at each step.
+; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/v3-move-while-launching.txt -Map XMP08T2.MAP -Seconds 120
+5 holdmove 1
+10 command CenterBase
+30 reveal
+40 own V3 100 80
+41 face 192 100 80
+42 neutral HTNK 92 80
+50 view 97 79
+60 spawns V3
+100 strike V3 92 80
+118 spawns V3
+120 spawns V3
+122 spawns V3
+125 order V3 100 70
+126 spawns V3
+128 command ScreenCapture
+130 spawns V3
+134 spawns V3
+140 spawns V3
+150 spawns V3
+160 spawns V3
+170 spawns V3
+180 spawns V3
+185 command ScreenCapture
+190 spawns V3
+196 spawns V3
+200 spawns V3
+210 spawns V3
+230 spawns V3
+260 spawns V3
+300 spawns V3
+350 spawns V3
+400 spawns V3
+450 where V3
+500 quit

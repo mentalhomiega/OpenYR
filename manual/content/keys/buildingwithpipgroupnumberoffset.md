@@ -4,7 +4,7 @@ summary: Where a selected structure whose type has pips prints its control group
 see_also: [BuildingGroupNumberOffset, MaxPips]
 when_omitted:
   kind: value
-  value: "-4,-8"
+  value: "-4,-36"
 ---
 
 `BuildingWithPipGroupNumberOffset=` sets where a selected structure whose type has pips prints its control group number. The value is a horizontal and a vertical offset in pixels. [Control group numbers](/formats/ui-ini/#control-group-numbers) covers the point it is measured from and which types count as having pips.

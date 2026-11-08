@@ -1,0 +1,8 @@
+; Yuri citadel walls (GAFWLL, overlay index 243) on Allied 4, which has the DESERT theater. The theater has no GxFWLL
+; file, so the overlay falls back to the generic GGFWLL art, as gamemd does (the overlay art loop at 0x005FE620 sets 'G'
+; in FUN_005F9710 after the theater file is missing). Before the fix every GAFWLL cell was dropped: "loaded 0".
+; Snow maps have their own GAFWLL file and were never affected.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/overlay-art-fallback-walls.txt -Campaign -Map ALL04DMD.MAP -Width 800 -Height 600 -Seconds 60 -Filter "wallcensus|Exception"
+; Expected: "AUTOTEST   wallcensus GAFWLL index 243 raw 276 outside 0 loaded 276" and "AUTOTEST wallcensus ALL04DMD.MAP raw 276 loaded 276 rejected 0".
+10 wallcensus
+20 quit

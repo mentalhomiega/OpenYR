@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "playercolor.h"
+#include "colourblind.h"
 
 #include "visualc.h"
 
@@ -56,10 +57,14 @@ struct Matrix3
 
 /// The normal view, then a protanope and a deuteranope (Machado, Oliveira and Fernandes 2009,
 /// severity 1.0). The matrices act on linear light, after the sRGB curve is removed.
-Matrix3 const VIEWS[] = {
+constexpr Matrix3 VIEWS[] = {
 	{{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}},
-	{{{0.152286, 1.052583, -0.204868}, {0.114503, 0.786281, 0.099216}, {-0.003882, -0.048116, 1.051998}}},
-	{{{0.367322, 0.860646, -0.227968}, {0.280085, 0.672501, 0.047413}, {-0.011820, 0.042940, 0.968881}}},
+	{{{COLORBLIND_PROTANOPIA_SIMULATION_D[0], COLORBLIND_PROTANOPIA_SIMULATION_D[1], COLORBLIND_PROTANOPIA_SIMULATION_D[2]},
+	  {COLORBLIND_PROTANOPIA_SIMULATION_D[3], COLORBLIND_PROTANOPIA_SIMULATION_D[4], COLORBLIND_PROTANOPIA_SIMULATION_D[5]},
+	  {COLORBLIND_PROTANOPIA_SIMULATION_D[6], COLORBLIND_PROTANOPIA_SIMULATION_D[7], COLORBLIND_PROTANOPIA_SIMULATION_D[8]}}},
+	{{{COLORBLIND_DEUTERANOPIA_SIMULATION_D[0], COLORBLIND_DEUTERANOPIA_SIMULATION_D[1], COLORBLIND_DEUTERANOPIA_SIMULATION_D[2]},
+	  {COLORBLIND_DEUTERANOPIA_SIMULATION_D[3], COLORBLIND_DEUTERANOPIA_SIMULATION_D[4], COLORBLIND_DEUTERANOPIA_SIMULATION_D[5]},
+	  {COLORBLIND_DEUTERANOPIA_SIMULATION_D[6], COLORBLIND_DEUTERANOPIA_SIMULATION_D[7], COLORBLIND_DEUTERANOPIA_SIMULATION_D[8]}}},
 };
 
 /// sRGB gun value (0 to 255) to linear light.
@@ -284,7 +289,7 @@ HSVClass Player_Ramp_Entry(HSVClass const & base, int index)
 /// </summary>
 int Player_Color_Preset_Count(void)
 {
-	return((int)(sizeof(PRESETS) / sizeof(PRESETS[0])));
+	return(ARRAY_SIZE(PRESETS));
 }
 
 

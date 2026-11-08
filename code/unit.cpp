@@ -96,6 +96,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "playerdisplay.h"
 #include "unit.h"
@@ -115,6 +116,7 @@
 #include "astar.h"
 #include "bench.h"
 #include "blit.h"
+#include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
 #include "bullet.h"
@@ -128,6 +130,8 @@
 #include "objectkeyrules.h"
 #include "draw.h"
 #include "drive.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "fog.h"
 #include "house.h"
 #include "houstype.h"
@@ -149,12 +153,14 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
+#include "shadowplane.h"
 #include "shapeset.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "tactical.h"
 #include "tag.h"
 #include "tagtype.h"
+#include "jumpjet.h"
 #include "team.h"
 #include "terrtype.h"
 #include "tiberium.h"
@@ -163,6 +169,7 @@
 #include "unittype.h"
 #include "voc.h"
 #include "vox.h"
+#include "_voxel.h"
 #include "warhead.h"
 #include "warheadrules.h"
 #include "weapon.h"
@@ -172,11 +179,54 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 char const * const UnitClass::INI_NAME = "Units";
 
 Rect UnitCompositeDirtyRect(RECT_NONE);
+
+namespace {
+
+// Voxel units per lepton that DrawAsVXL (0x73B470) places the turret and the turretless barrel by: a cell's 362.04
+// lepton diagonal spans 60 pixels (0xB1D008, set at 0x7351D0).
+double const VOXEL_UNITS_PER_LEPTON = 1.0 / (std::sqrt(2.0 * 256.0 * 256.0) / 60.0);
+
+struct VoxelCompositeKey {
+	void const * Type;
+	int Body;
+	int Turret;
+	int Barrel;
+
+	bool operator == (VoxelCompositeKey const &) const = default;
+};
+
+struct VoxelCompositeHash {
+	std::size_t operator () (VoxelCompositeKey const & key) const
+	{
+		std::uint64_t hash = std::uint64_t(reinterpret_cast<std::uintptr_t>(key.Type));
+		for (int const part : {key.Body, key.Turret, key.Barrel}) {
+			hash = hash * 0x9E3779B97F4A7C15ull + unsigned(part);
+		}
+		return(std::size_t(hash ^ (hash >> 32)));
+	}
+};
+
+// Finished turreted vehicle pictures on the scratch surface; the entries live in VoxelStaticBuffer.
+std::unordered_map<VoxelCompositeKey, StaticBufferClass::Entry *, VoxelCompositeHash> VoxelComposites;
+unsigned VoxelCompositesGeneration = 0;
+
+void Sync_Voxel_Composites()
+{
+	if (VoxelCompositesGeneration != ObjectTypeClass::VoxelIndexGeneration) {
+		VoxelComposites.clear();
+		VoxelCompositesGeneration = ObjectTypeClass::VoxelIndexGeneration;
+	}
+}
+
+}
 
 
 int UnitClass::Visceroid_Fire_List[FACING_COUNT] = { 100, 105, 110, 115, 120, 125, 90, 95 };
@@ -503,6 +553,16 @@ void UnitClass::Tunnel_AI(void)
  *=============================================================================================*/
 void UnitClass::AI(void)
 {
+	// A deactivated vehicle throws a spark about once every 30 frames, staggered by position and ID. The first random
+	// draw is the Y offset and the second the X offset, as gamemd's UnitClass::Update (0x7360C0) orders them.
+	if (IsDeactivated && (PositionCoord.X / 10 + Frame + (PositionCoord.Y / 10) * 0x10000 + Fetch_ID()) % 30 == 0) {
+		int const dy = Random_Pick(-100, 100);
+		int const dx = Random_Pick(-100, 100);
+		if (Rule->DefaultSparkSystem != NULL) {
+			new ParticleSystemClass(Rule->DefaultSparkSystem, Coord(PositionCoord.X + dx, PositionCoord.Y + dy, PositionCoord.Z), NULL, NULL, Coord(0, 0, 0));
+		}
+	}
+
 	if (Temporal_AI()) {
 		return;
 	}
@@ -694,12 +754,23 @@ void UnitClass::AI(void)
  *=============================================================================================*/
 void UnitClass::Rotation_AI(void)
 {
+	// The turret weapon of a vehicle with several turrets is the current one (TechnoClass::GetTurretWeapon, 0x70E1A0).
+	WeaponTypeClass const * turret_weapon = NULL;
+	if (Class->IsTurretEquipped) {
+		int const which = Class->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
+		turret_weapon = Get_Class_Weapon_Data(which)->Weapon;
+	}
+
 	// A TurretSpins turret keeps turning from its own facing whatever it targets, so it is not aimed (UnitClass::UpdateRotation, 0x736990).
 	if (TarCom != NULL && !IsRotating && !Class->IsRadarEquipped) {
 		DirType dir = Direction(TarCom);
 
 		if (Class->IsTurretEquipped) {
-			SecondaryFacing.Set_Desired(dir);
+
+			// A turret does not turn toward a target for an OmniFire weapon, or for a vehicle whose turret has no weapon.
+			if (turret_weapon != NULL && !turret_weapon->IsOmniFire) {
+				SecondaryFacing.Set_Desired(dir);
+			}
 		} else {
 
 			/*
@@ -727,14 +798,18 @@ void UnitClass::Rotation_AI(void)
 				**	If no further rotation is necessary, flag that the rotation
 				**	has stopped.
 				*/
-				if (!Class->IsRadarEquipped) {
-					IsRotating = SecondaryFacing.Is_Rotating();
-				}
-			} else {
-				if (TarCom == NULL) {
+				IsRotating = SecondaryFacing.Is_Rotating();
+			} else if (TarCom == NULL) {
+
+				// An idle turret stays where it is for GuardAreaTargetingDelay plus 5 frames after a shot, and while the
+				// vehicle is deployed or bunkered. Then it turns toward where the vehicle is heading, or back to the hull
+				// (UnitClass::UpdateRotation, 0x736990).
+				bool const settled = Frame - LastFireFrame >= Rule->GuardAreaTargetingDelay + 5 && BunkerLinkedItem == NULL;
+				bool const deployed = Class->IsSimpleDeployer && IsSimpleDeployed;
+				if (settled && !deployed) {
 					if (NavCom == NULL) {
 						SecondaryFacing.Set_Desired(PrimaryFacing.Current());
-					} else {
+					} else if (!IsAttackedByLocomotor) {
 						SecondaryFacing.Set_Desired(Direction(NavCom));
 					}
 				}
@@ -1558,9 +1633,9 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 	**	A passenger of an open-topped vehicle is no longer riding in the open.
 	*/
 	if (Class->IsOpenTopped) {
-		for (FootClass * passenger = (FootClass *)Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
+		Cargo.For_Each_Attached([](FootClass * passenger) {
 			passenger->IsInOpenToppedTransport = false;
-		}
+		});
 	}
 
 	// The passengers of a vehicle that carries an Abductor weapon get out whatever the cause of its destruction (Ares).
@@ -1588,7 +1663,7 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 			Remove_Gunner(object);
 		}
 
-		ScenarioInit++;
+		ScenarioInitScope scenario_init;
 
 		/*
 		**	The cell test runs before the passenger takes the vehicle's OnBridge state, as gamemd does.
@@ -1639,8 +1714,6 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 			object->Record_The_Kill(source);
 			object->Delete_Me();
 		}
-
-		ScenarioInit--;
 	}
 }
 
@@ -1824,7 +1897,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 					count--;
 				} ;
 			} else if (HeightAGL <= 10 && IsToExplode && Map[Get_Coord()].Land_Type() == LAND_WATER) {
-				if (Rule->Wake != NULL) new AnimClass(Rule->Wake, PositionCoord);
+				Spawn_Wake(PositionCoord);
 				new AnimClass(Rule->SplashList[Rule->SplashList.Count() - 1], PositionCoord + Coord(0, 0, 5));
 			} else {
 				Explode();
@@ -1859,9 +1932,12 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			Resolve_Crew_And_Crate_On_Death(no_crew, select);
 
 			/*
-			**	Finally, delete the vehicle.
+			**	A Crashable vehicle destroyed in the air falls instead of vanishing. Any other, or one
+			**	that cannot fall, is deleted (UnitClass::ReceiveDamage, 0x737C90).
 			*/
-			Delete_Me();
+			if (!Class->IsCrashable || !Crash(NULL)) {
+				Delete_Me();
+			}
 		}
 
 	} else {
@@ -2045,7 +2121,7 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	bool res = BASECLASS::Enter_Idle_Mode(initial, resume_waypoint);
 
 	// A planned leg that the base routine has just issued is the unit's next mission, so the idle mission below must not replace it.
-	if (res && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission)) {
+	if (Planned_Leg_Replaces_Idle(res)) {
 		return(res);
 	}
 
@@ -2321,7 +2397,11 @@ bool UnitClass::Try_To_Deploy(void)
 					*/
 					building->Revealed(House);
 
-					building->IsReadyToCommence = true;
+					// gamemd sets the flag so that the queued construction starts on the first update. Unlimbo has already
+					// started it, and a flag left set would end the buildup after one frame.
+					if (building->MissionQueue != MISSION_NONE) {
+						building->IsReadyToCommence = true;
+					}
 
 					/*
 					**	When the MCV deploys, always consider production to have started
@@ -2384,6 +2464,89 @@ bool UnitClass::Try_To_Deploy(void)
 }
 
 
+/// <summary>
+/// Breaks the radio contact of a tethered unit that has left the object it was tethered to, and gives it the
+/// orders queued while it was tethered (the tail of gamemd's per-cell routine, 0x739EC0). The unit is released once
+/// it stands on no structure's cell or has reached its destination.
+/// </summary>
+void UnitClass::Break_Away_From_Contact(void)
+{
+	bool const entering = Mission == MISSION_ENTER && (Dynamic_Cast<TechnoClass *>(NavCom) == NULL || Contact_With_Whom() == NavCom);
+	if (!IsTethered || entering || Mission == MISSION_UNLOAD) {
+		return;
+	}
+
+	bool const arrived = NavCom == NULL || (Is_Target_Cell(NavCom) && static_cast<CellClass *>(NavCom)->CellID == PositionCoord.As_Cell());
+
+	/*
+	**	Special hack check to make sure that even though it has moved one
+	**	cell, if it is still on the building (e.g., service depot), have
+	**	it scatter again.
+	*/
+	if (Map[(Coord const &)PositionCoord].Cell_Building() == NULL || arrived) {
+		TechnoClass * contact = Contact_With_Whom();
+		RadioMessageType response = Transmit_Message(RADIO_UNLOADED);
+		if (response == RADIO_RUN_AWAY) {
+			if (NavCom != NULL && NavCom != Get_Cell_Ptr()) {
+
+				/*
+				**	Special case hack to allow automatic transition to loading
+				**	onto a transport (or other situation) if the destination
+				**	so indicates.
+				*/
+				TechnoClass * techno = Dynamic_Cast<TechnoClass *>(NavCom);
+				if (techno != NULL) {
+					Transmit_Message(RADIO_DOCKING, techno);
+				}
+			} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {
+				// Only a weapons factory or a repair bay answers RADIO_RUN_AWAY.
+				Assign_Mission(MISSION_HARVEST);
+			} else {
+				BuildingClass * building = dynamic_cast<BuildingClass *>(contact);
+				if (!House->Is_Human_Player() && building != NULL && building->Class->IsWeaponsFactory) {
+					Cell where = House->Where_To_Go(this);
+					if (where != CELL_NONE) {
+						Assign_Mission(MISSION_MOVE);
+						Assign_Destination(&Map[where]);
+						Commence();
+						ArchiveTarget = &Map[where];
+						Assign_Mission(MISSION_GUARD_AREA);
+					} else {
+						ArchiveTarget = NULL;
+					}
+				} else {
+					AbstractClass * target = ArchiveTarget;
+					if (target != NULL && target != NavCom) {
+						Assign_Destination(target);
+					} else {
+						NavCom = NULL;
+						Scatter(COORD_NONE, true);
+					}
+				}
+			}
+
+		} else if (response != RADIO_NEGATIVE && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
+			if (ArchiveTarget != NULL) {
+				Assign_Mission(MISSION_HARVEST);
+				Assign_Destination(ArchiveTarget);
+				ArchiveTarget = NULL;
+			} else if (NavCom == NULL) {
+
+				/*
+				**	Since there is no place to go, move away to clear
+				**	the pad for another harvester.
+				*/
+				Scatter(COORD_NONE, true);
+			}
+		}
+	}
+
+	if (Map[(Coord const &)PositionCoord].Cell_Building() && NavCom == NULL && NavQueue.Count() == 0 && RouteQueue.Count() == 0) {
+		Scatter(COORD_NONE, true, true);
+	}
+}
+
+
 /***********************************************************************************************
  * UnitClass::Per_Cell_Process -- Performs operations necessary on a per cell basis.           *
  *                                                                                             *
@@ -2417,7 +2580,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		}
 	}
 
-	BStart(BENCH_PCP);
+	BENCH_SCOPE(BENCH_PCP);
 	if (why == PCP_END) {
 
 		// A vehicle with Convert.Water or Convert.Land changes type as it drives onto a cell of the other kind (Ares).
@@ -2439,7 +2602,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 						unit->ThreatPosed = unit->Risk();
 						Map[unit->LastAdjacencyCell].Adjust_Threat(unit->Owner(), unit->ThreatPosed);
 						Delete_Me();
-						BEnd(BENCH_PCP);
 						return;
 					}
 				}
@@ -2455,21 +2617,23 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			BuildingClass * grinder = (BuildingClass *)NavCom;
 			if (grinder->Class->IsGrinding && grinder->House == House && Get_Cell_Ptr()->Cell_Building() == grinder) {
 				grinder->Grind(this);
-				BEnd(BENCH_PCP);
 				return;
 			}
-			if (grinder->Class->IsBunker && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Bunker(this)) {
-				NavCom = NULL;
-				ArchiveTarget = NULL;
-				grinder->Bunker_Up(this);
-				BEnd(BENCH_PCP);
-				return;
+			// A vehicle that stops on a free bunker takes it in as its radio contact; the bunker then drives it in step by step.
+			if (grinder->Class->IsBunker && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Bunker(this) && (!grinder->In_Radio_Contact() || grinder->Contains_Link(this))) {
+				if (Transmit_Message(RADIO_HELLO, grinder) == RADIO_ROGER) {
+					if (Transmit_Message(RADIO_IM_IN, grinder) == RADIO_ROGER) {
+						NavCom = NULL;
+						ArchiveTarget = NULL;
+						return;
+					}
+					Transmit_Message(RADIO_OVER_OUT, grinder);
+				}
 			}
 			if (grinder->Class->IsUnitAbsorb && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Absorb(this)) {
 				NavCom = NULL;
 				ArchiveTarget = NULL;
 				grinder->Absorb(this);
-				BEnd(BENCH_PCP);
 				return;
 			}
 		}
@@ -2489,7 +2653,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 					BASECLASS::Per_Cell_Process(PCP_END);
 					Transmit_Message(RADIO_IM_IN);
 					Locomotion->Power_Off();
-					BEnd(BENCH_PCP);
 					return;
 				}
 			}
@@ -2535,108 +2698,12 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			// RADIO_IM_IN is answered with RADIO_ATTACH even by a full transport, so the
 			// room has to be checked here as well.
 			if (techno->Can_Fit_Passenger(this) && Transmit_Message(RADIO_IM_IN, techno) == RADIO_ATTACH) {
-				Limbo();
-				techno->Cargo.Attach(this);
-				if (techno->TClass->IsGunner && techno->Cargo.How_Many() == 1) {
-					techno->Receive_Gunner(this);
-				}
-				techno->Play_Transport_Sound(true);
-				Hidden();
+				Board_Transport(techno);
 			}
-			BEnd(BENCH_PCP);
 			return;
 		}
 
-		/*
-		**	When breaking away from a transport object or building, possibly
-		**	scatter or otherwise begin normal unit operations.
-		*/
-		if (IsTethered && (Mission != MISSION_ENTER ||
-				(Dynamic_Cast<TechnoClass *>(NavCom) != NULL && Contact_With_Whom() != NavCom)
-				) &&
-				Mission != MISSION_UNLOAD) {
-
-			bool arrived = NavCom == NULL;
-			if (Is_Target_Cell(NavCom)) {
-				CellClass *cptr = static_cast<CellClass *>(NavCom);
-				if (cptr->CellID == PositionCoord.As_Cell()) {
-					arrived = true;
-				}
-			}
-
-			/*
-			**	Special hack check to make sure that even though it has moved one
-			**	cell, if it is still on the building (e.g., service depot), have
-			**	it scatter again.
-			*/
-			if (Map[(Coord const &)PositionCoord].Cell_Building() == NULL || arrived) {
-				TechnoClass * contact = Contact_With_Whom();
-				if (arrived || contact == NULL || contact->RTTI != RTTI_BUILDING || !static_cast<BuildingClass *>(contact)->Class->IsWeaponsFactory || Map[(Coord const &)PositionCoord].Cell_Building() != contact) {
-					RadioMessageType response = Transmit_Message(RADIO_UNLOADED);
-					if (response == RADIO_RUN_AWAY) {
-						if (NavCom != NULL && NavCom != Get_Cell_Ptr()) {
-
-							/*
-							**	Special case hack to allow automatic transition to loading
-							**	onto a transport (or other situation) if the destination
-							**	so indicates.
-							*/
-							TechnoClass * techno = Dynamic_Cast<TechnoClass *>(NavCom);
-							if (techno != NULL) {
-								Transmit_Message(RADIO_DOCKING, techno);
-							}
-						} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {
-							// Only a weapons factory or a repair bay answers RADIO_RUN_AWAY.
-							Assign_Mission(MISSION_HARVEST);
-						} else {
-							BuildingClass * building = dynamic_cast<BuildingClass *>(contact);
-							if (!House->Is_Human_Player() && building != NULL && building->Class->IsWeaponsFactory) {
-								Cell where = House->Where_To_Go(this);
-								if (where != CELL_NONE) {
-									Assign_Mission(MISSION_MOVE);
-									Assign_Destination(&Map[where]);
-									Commence();
-									ArchiveTarget = &Map[where];
-									Assign_Mission(MISSION_GUARD_AREA);
-								} else {
-									ArchiveTarget = NULL;
-								}
-							} else {
-								AbstractClass * target = ArchiveTarget;
-								if (target != NULL && target != NavCom) {
-									Assign_Destination(target);
-								} else {
-									NavCom = NULL;
-									Scatter(COORD_NONE, true);
-								}
-							}
-						}
-
-					} else {
-						if (response != RADIO_NEGATIVE && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
-							if (ArchiveTarget != NULL) {
-								Assign_Mission(MISSION_HARVEST);
-								Assign_Destination(ArchiveTarget);
-								ArchiveTarget = NULL;
-							} else {
-
-								/*
-								**	Since there is no place to go, move away to clear
-								**	the pad for another harvester.
-								*/
-								if (NavCom == NULL) {
-									Scatter(COORD_NONE, true);
-								}
-							}
-						}
-					}
-				}
-			}
-
-			if (Map[(Coord const &)PositionCoord].Cell_Building() && NavCom == NULL && NavQueue.Count() == 0 && RouteQueue.Count() == 0) {
-				Scatter(COORD_NONE, true, true);
-			}
-		}
+		Break_Away_From_Contact();
 
 		/*
 		**	If this is a loaner unit and is is off the edge of the
@@ -2644,7 +2711,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	it is probably carrying an incoming reinforcement and it should not be eliminated.
 		*/
 		if (Edge_Of_World_AI()) {
-			BEnd(BENCH_PCP);
 			return;
 		}
 
@@ -2701,7 +2767,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	Certain units require some setup time after they come to a halt.
 		*/
 		if (NavCom == NULL && Path[0] == FACING_NONE) {
-			if (Class->IsNoFireWhileMoving || !Class->IsMobileFire) {
+			if (!Class->Fires_While_Moving()) {
 				Arm = Rearm_Delay(true)/4;
 			}
 		}
@@ -2724,7 +2790,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 				int damage = Strength;
 				Combat_Lighting(Center_Coord(), damage, Rule->C4Warhead, false);
 				Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-				BEnd(BENCH_PCP);
 				return;
 			}
 		}
@@ -2737,7 +2802,8 @@ void UnitClass::Per_Cell_Process(PCPType why)
 	if ((Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) && cellptr->Overlay != OVERLAY_NONE) {
 		OverlayTypeClass const * optr = OverlayTypes[cellptr->Overlay];
 
-		if (optr->IsCrushable) {
+		// A CrusherAll vehicle crushes any wall, not only a crushable one (UnitClass::PerCellProcess, 0x73AFD4).
+		if (optr->IsCrushable || (optr->IsWall && Class->MZone == MZONE_CRUSHER_ALL)) {
 			Sound_Effect(optr->CrushSound, Center_Coord());
 			cellptr->Reduce_Wall(-1);
 			IsCrushing = false;
@@ -2751,11 +2817,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 	Overrun_Square(PositionCell, false);
 
 	if (!IsActive) {
-		BEnd(BENCH_PCP);
 		return;
 	}
 	BASECLASS::Per_Cell_Process(why);
-	BEnd(BENCH_PCP);
 }
 
 
@@ -2788,6 +2852,23 @@ bool UnitClass::Render(Rect & rect, bool forced, bool extras_only) const
 
 
 /// <summary>
+/// Whether the composite is blitted in two pieces, so that the upper half of a vehicle too tall for a
+/// bridge sorts above the deck.
+/// </summary>
+bool UnitClass::Is_Composite_Fudged(void) const
+{
+	if (!Class->IsTooBigToFitUnderBridge) {
+		return(false);
+	}
+	if (Is_Z_Fudge_Bridge() && Get_Z_Fudge_Column() == 0) {
+		return(true);
+	}
+	RadioClass * radio = Contact_With_Whom();
+	return(NavCom != NULL && radio != NULL && radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory);
+}
+
+
+/// <summary>
 /// Transfers the composed unit image to the destination surface.
 /// This routine is the last step of drawing a turreted vehicle. The image built up on the
 /// scratch surface is blitted out with whatever cloaking or translucency effect the unit's
@@ -2800,23 +2881,10 @@ bool UnitClass::Render(Rect & rect, bool forced, bool extras_only) const
 /// <param name="brightness">The lighting level to blit the unit at.</param>
 void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness) const
 {
-	bool fudge = false;
+	bool const fudge = Is_Composite_Fudged();
 	Point2D pt;
 	pt.Y = (2 * (80 - UnitCompositeDirtyRect.Y) - UnitCompositeDirtyRect.Height) / 2;
 	pt.X = (2 * (80 - UnitCompositeDirtyRect.X) - UnitCompositeDirtyRect.Width) / 2;
-
-	if (Class->IsTooBigToFitUnderBridge) {
-		if (Is_Z_Fudge_Bridge() && Get_Z_Fudge_Column() == 0) {
-			fudge = true;
-		} else {
-			RadioClass * radio = Contact_With_Whom();
-			if (NavCom != NULL) {
-				if (radio != NULL && radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory) {
-					fudge = true;
-				}
-			}
-		}
-	}
 
 	Blitter const * blitter = NULL;
 	int predoffset = 0;
@@ -2853,9 +2921,15 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	case VISUAL_HIDDEN:
 		break;
 
-	default:
-		blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
+	default: {
+		// The composite is opaque in the 8-bit surface, so a warp's half see-through is applied here.
+		ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags());
+		if (Is_Warp_Fading()) {
+			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT50);
+		}
+		blitter = converter->Blitter_From_Flags(flags);
 		break;
+	}
 	}
 
 	int width = UnitCompositeDirtyRect.Width;
@@ -2888,6 +2962,64 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 
 
 /// <summary>
+/// Draws a cached turret composite straight to the destination surface, with the pixels, depth and
+/// emissive values the scratch surface route gives.
+/// A composite is already run-length encoded, so no scratch surface or second copy is needed. A composite
+/// wholly outside the clip draws nothing.
+/// </summary>
+/// <param name="surface">The surface to blit the composite onto.</param>
+/// <param name="drawpoint">The pixel position to center the unit upon.</param>
+/// <param name="cliprect">The clipping rectangle to draw within.</param>
+/// <param name="brightness">The lighting level to blit the unit at.</param>
+/// <param name="entry">The cached composite, captured from the scratch surface with the unit at (80, 80).</param>
+/// <returns>Returns false, with nothing drawn, for a vehicle that is not in the plain visual state, is
+/// sinking, warping or sorted in two pieces, a draw that the clip cuts, or a pass with the shadow plane
+/// on or an emissive draw strength set. Those go through the scratch surface.</returns>
+bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness, StaticBufferClass::Entry const & entry) const
+{
+	if (IsSinking || SinkingYOffset > 0 || Is_Warp_Fading() || Is_Composite_Fudged() || Visual_Character() != VISUAL_NORMAL || Mirage_Shimmer_Flags() != 0) {
+		return(false);
+	}
+	if ((Emissive_Is_Enabled() && Emissive_Draw_Strength != 0) || ShadowPlane_Is_Enabled() || entry.Width == 0 || entry.Height == 0) {
+		return(false);
+	}
+
+	// The scratch route centres the dirty rectangle, which is the entry's rectangle, on the drawpoint.
+	Rect const dirty(Point2D(entry.X + 80, entry.Y + 80), entry.Width, entry.Height);
+	Point2D pt;
+	pt.Y = (2 * (80 - dirty.Y) - dirty.Height) / 2;
+	pt.X = (2 * (80 - dirty.X) - dirty.Width) / 2;
+	Rect const rect(drawpoint.X - dirty.Width / 2 - pt.X, drawpoint.Y - dirty.Height / 2 - pt.Y, dirty.Width, dirty.Height);
+
+	// A composite wholly outside the clip draws nothing in the scratch route either. A clipped one takes
+	// a different depth start there, so it goes that way.
+	Rect const window(0, 0, cliprect.Width, cliprect.Height);
+	Rect const visible = Intersect(rect, window);
+	if (!visible.Is_Valid() || visible.Width <= 0 || visible.Height <= 0) {
+		return(true);
+	}
+	if (!(Intersect(cliprect, surface.Get_Rect()) == cliprect) || !(visible == rect)) {
+		return(false);
+	}
+
+	ConvertClass * converter = Effect_Converter(ColorSchemes[House_Display_Scheme(House)]);
+	RLEBlitter const * blitter = converter->RLEBlitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD));
+	if (blitter == NULL) {
+		return(false);
+	}
+
+	// The scratch route clears the emissive values under the whole rectangle, transparent pixels included.
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Bit_Blit(surface, cliprect.X + rect.X, cliprect.Y + rect.Y, *LogicalSurface, dirty.X, dirty.Y, dirty.Width, dirty.Height);
+	}
+
+	BSurface bsurface(entry.Width, entry.Height, 1, entry.Data);
+	RLE_Blit(surface, cliprect, rect, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, 0, NULL, Point2D());
+	return(true);
+}
+
+
+/// <summary>
 /// Draws this unit from its voxel model.
 /// This routine lays down the vehicle's shadow, its hull, and whatever turret and barrel
 /// it carries. A turreted vehicle is composed on the scratch surface first so that the
@@ -2898,6 +3030,12 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 /// <param name="brightness">The lighting level to draw the unit at.</param>
 void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightness) const
 {
+	// gamemd's UnitClass::DrawAsVXL (0x73B470) halves the body's brightness while the vehicle is deactivated. A
+	// turreted vehicle is shaded once when it is blitted, so the whole vehicle is darkened here.
+	if (IsDeactivated) {
+		brightness /= 2;
+	}
+
 	VoxelDataStruct *voxl;
 	Point2D drawpoint = xdrawpoint;
 	Point2D offset(0, 0);
@@ -2934,8 +3072,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		has_turret = true;
 	}
 
+	// The cache keys come first. A shadow or turret composite found in the cache needs no matrix, so the matrices
+	// are built only when one is missing.
+	LocomotionClass * const locomotor = static_cast<LocomotionClass *>(Locomotion.get());
 	int key = 0;
-	main_matrix = Locomotion->Shadow_Matrix(&key);
+	locomotor->Shadow_Key(&key);
 
 	if (!IsSinking) {
 		Point2D shadow_drawpoint = xdrawpoint;
@@ -2962,7 +3103,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			}
 		}
 
-		Draw_Voxel_Shadow(Class->Voxel, Class->ShadowIndex, key, &Class->ShadowVoxelIndex, xcliprect, shadow_drawpoint, Get_Isometric_View_Matrix() * main_matrix, true);
+		if (!Draw_Cached_Voxel_Shadow(Class->Voxel, key, &Class->ShadowVoxelIndex, xcliprect, shadow_drawpoint)) {
+			int shadow_key = 0;
+			main_matrix = Locomotion->Shadow_Matrix(&shadow_key);
+			Draw_Voxel_Shadow(Class->Voxel, Class->ShadowIndex, key, &Class->ShadowVoxelIndex, xcliprect, shadow_drawpoint, Get_Isometric_View_Matrix() * main_matrix, true);
+		}
 	}
 
 	Surface * old_surface = LogicalSurface;
@@ -2974,13 +3119,12 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		IsCompositingToEightBitSurface = true;
 	}
 
-	if (UseVoxelCache) {
-		key = 0;
-	} else {
-		key = -1;
-	}
+	int const key_seed = UseVoxelCache ? 0 : -1;
+	key = key_seed;
+	locomotor->Draw_Key(&key);
 
-	main_matrix = Locomotion->Draw_Matrix(&key);
+	// The pose the locomotor folded into the key (ramp and facing), which the turret and barrel keys build on.
+	int const pose = key;
 
 	if (key != -1) {
 		key = frame | (key << 5);
@@ -2993,15 +3137,8 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 	UnitCompositeDirtyRect = RECT_NONE;
 
-	if (strcmp(Class->IniName, "APC") == 0 && Map[Get_Coord()].Land_Type() == LAND_WATER && !IsOnBridge && HeightAGL < LEVEL_LEPTON_H) {
-		Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-	} else {
-		if (Class->IsNoSpawnAlt && Class->NoSpawnAltVoxel.VoxLib != NULL && SpawnManager && SpawnManager->Docked_Count() == 0) {
-			Draw_Voxel(Class->NoSpawnAltVoxel, 0, key, &Class->NoSpawnAltVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-		} else {
-			Draw_Voxel(Class->Voxel, frame, key, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-		}
-	}
+	bool const apc_in_water = strcmp(Class->IniName, "APC") == 0 && Map[Get_Coord()].Land_Type() == LAND_WATER && !IsOnBridge && HeightAGL < LEVEL_LEPTON_H;
+	bool const no_spawn_alt = Class->IsNoSpawnAlt && Class->NoSpawnAltVoxel.VoxLib != NULL && SpawnManager && SpawnManager->Docked_Count() == 0;
 
 	/*
 	**	If there is a turret, then it must be rendered as well. This may include
@@ -3021,56 +3158,125 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		}
 	}
 
-	if (Class->IsTurretEquipped && turret->VoxLib != NULL) {
-		// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
-		int turret_frame = frame;
-		if (frame == 0 && turret->MotLib != NULL && turret->MotLib->Get_Frame_Count() > 0) {
-			turret_frame = TurretAnimFrame % turret->MotLib->Get_Frame_Count();
+	/*
+	 * Turret and barrel images are cached as gamemd does (UnitClass::DrawAsVXL, 0x73B470, through
+	 * TechnoClass::Draw_Voxel, 0x706640, with VoxelTurretWeaponCache and VoxelTurretBarrelCache). gamemd
+	 * keys them by the body pose and the turret facing; this key is stricter, adding the hull facing, the
+	 * turret frame or barrel pitch and the weapon slot, so a cached image is the one the matrix would
+	 * render. Only a vehicle that composes on the scratch surface (has_turret) caches, and only when the
+	 * hull pose is itself cacheable. The turret flags carry SHAPE_NOTRANS to leave the flags unchanged.
+	 */
+	int const turret_slot = turret == &Class->AuxVoxel ? 0 : int(turret - Class->ChargerTurrets);
+	auto const part_key = [&](int sub, int sub_limit) -> int {
+		if (!has_turret || key == -1 || pose < 0 || pose >= (1 << 11) || sub < 0 || sub >= sub_limit || turret_slot < 0 || turret_slot >= 8) {
+			return(-1);
 		}
+		return(pose | (int(PrimaryFacing.Current().As_Dir32()) << 11) | (int(SecondaryFacing.Current().As_Dir32()) << 16) | (sub << 21) | (turret_slot << 27));
+	};
+	ShapeFlags_Type const part_flags = has_turret ? ShapeFlags_Type(flags | SHAPE_NOTRANS) : flags;
 
-		main_matrix.Translate_X(Class->TurretOffset / 8);
-		main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
+	bool const turret_drawn = Class->IsTurretEquipped && turret->VoxLib != NULL;
 
-		/*
-		**	A recoiling turret moves "backward" one pixel.
-		*/
-		if (IsInRecoilState) {
-			main_matrix.Translate_X(-2);
+	// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
+	int turret_frame = frame;
+	if (turret_drawn && frame == 0 && turret->MotLib != NULL && turret->MotLib->Get_Frame_Count() > 0) {
+		turret_frame = TurretAnimFrame % turret->MotLib->Get_Frame_Count();
+	}
+
+	int const turret_key = part_key(turret_frame, 64);
+	int const barrel_key = part_key(int(BarrelPitch.Current().As_Dir32()), 32);
+
+	/*
+	 * The finished hull, turret and barrel picture is cached too, keyed by the three part keys, which fix
+	 * every input of the composition. A cached picture is copied whole onto the scratch surface in place
+	 * of the part draws; it holds the same pixels because draws onto the scratch surface read neither the
+	 * depth buffer nor the brightness.
+	 */
+	VoxelCompositeKey const composite_key{Class, key, turret_key, barrel_key};
+	bool const composite_cacheable = turret_drawn && !apc_in_water && !no_spawn_alt && !Class->IsDisableVoxelCache && frame >= 0 && frame < 32 && turret_key != -1 && barrel_key != -1;
+	StaticBufferClass::Entry const * composite = NULL;
+	if (composite_cacheable) {
+		Sync_Voxel_Composites();
+		auto const found = VoxelComposites.find(composite_key);
+		if (found != VoxelComposites.end()) {
+			composite = found->second;
 		}
+	}
 
-		Matrix3D barrel_matrix = main_matrix;
-		Vector3 vec2 = main_matrix.Get_Translation();
-		barrel_matrix.Translate(-vec2);
-
-		Vector3 flh = Vector3(-Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, -Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
-		barrel_matrix.Translate(-flh);
-		barrel_matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
-		barrel_matrix.Translate(flh);
-		barrel_matrix.Translate(vec2);
-
-		bool draw_barrel;
-		if (SecondaryFacing.Current().As_Dir4() <= 0 || SecondaryFacing.Current().As_Dir4() >= 3) {
-			draw_barrel = false;
-			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
-				Draw_Voxel(*barrel, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
-			}
+	bool composite_drawn = false;
+	if (composite != NULL) {
+		Perf_Count(PERF_COUNT_VOXEL_HIT);
+		if (Unit_Blit_Composite(*old_surface, xdrawpoint, xcliprect, Iron_Curtain_Brightness(brightness), *composite)) {
+			composite_drawn = true;
 		} else {
-			draw_barrel = true;
-		}
-
-		Draw_Voxel(*turret, turret_frame, -1, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-
-		if (draw_barrel) {
-			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
-				Draw_Voxel(*barrel, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
-			}
+			Techno_Blit_Voxel(*composite, drawpoint, cliprect, SHAPE_NOTRANS, brightness);
 		}
 	} else {
-		voxl = &Class->AuxVoxel2;
-		if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-			main_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32() - main_matrix.Get_Y_Rotation()));
-			main_matrix.Translate(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
-			Draw_Voxel(Class->AuxVoxel2, frame, -1, &Class->VoxelIndex, cliprect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, SHAPE_NORMAL);
+		// A hull with no turret or barrel to place found in the cache needs no matrix.
+		bool const hull_only = !turret_drawn && !(Class->AuxVoxel2.VoxLib != NULL && Class->AuxVoxel2.MotLib != NULL);
+		VoxelIndexClass * const hull_cache = no_spawn_alt ? &Class->NoSpawnAltVoxelIndex : &Class->VoxelIndex;
+		bool const hull_cached = hull_only && !apc_in_water && key != -1 && !Class->IsDisableVoxelCache && (*hull_cache)[key] != NULL;
+		if (!hull_cached) {
+			int matrix_key = key_seed;
+			main_matrix = Locomotion->Draw_Matrix(&matrix_key);
+		}
+
+		if (hull_cached) {
+			Draw_Voxel(no_spawn_alt ? Class->NoSpawnAltVoxel : Class->Voxel, no_spawn_alt ? 0 : frame, key, hull_cache, rect, drawpoint, Matrix3D(true), brightness, flags);
+		} else if (apc_in_water) {
+			Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		} else if (no_spawn_alt) {
+			Draw_Voxel(Class->NoSpawnAltVoxel, 0, key, &Class->NoSpawnAltVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		} else {
+			Draw_Voxel(Class->Voxel, frame, key, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		}
+
+		if (turret_drawn) {
+			main_matrix.Translate_X(float(Class->TurretOffset * VOXEL_UNITS_PER_LEPTON));
+			main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
+
+			// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
+			// The barrel pitches about the turret origin, not FireFLH, as DrawAsVXL does (0x73BB6E-0x73BBBD).
+			Matrix3D barrel_matrix = main_matrix;
+			Vector3 vec2 = main_matrix.Get_Translation();
+			barrel_matrix.Translate(-vec2);
+			barrel_matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
+			barrel_matrix.Translate(vec2);
+
+			bool draw_barrel;
+			if (SecondaryFacing.Current().As_Dir4() <= 0 || SecondaryFacing.Current().As_Dir4() >= 3) {
+				draw_barrel = false;
+				if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
+					Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
+				}
+			} else {
+				draw_barrel = true;
+			}
+
+			Draw_Voxel(*turret, turret_frame, turret_key, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, part_flags);
+
+			if (draw_barrel) {
+				if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
+					Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
+				}
+			}
+		} else {
+			voxl = &Class->AuxVoxel2;
+			if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
+				main_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32() - main_matrix.Get_Y_Rotation()));
+				main_matrix.Translate(float(Get_Class_Weapon_Data(0)->FireFLH.X * VOXEL_UNITS_PER_LEPTON), 0, float(Get_Class_Weapon_Data(0)->FireFLH.Z * VOXEL_UNITS_PER_LEPTON));
+				Draw_Voxel(Class->AuxVoxel2, frame, -1, &Class->VoxelIndex, cliprect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, SHAPE_NORMAL);
+			}
+		}
+
+		// A picture is kept only while it lies wholly on the scratch surface and the shared buffer is under half full.
+		Rect const dirty = UnitCompositeDirtyRect;
+		if (composite_cacheable && dirty.Is_Valid() && Intersect(dirty, LogicalSurface->Get_Rect()) == dirty && VoxelStaticBuffer.Used() < VoxelStaticBuffer.Capacity() / 2) {
+			Sync_Voxel_Composites();
+			StaticBufferClass::Entry * entry = VoxelStaticBuffer.Add(*LogicalSurface, dirty, short(dirty.X - drawpoint.X), short(dirty.Y - drawpoint.Y));
+			if (entry != NULL) {
+				VoxelComposites[composite_key] = entry;
+			}
 		}
 	}
 
@@ -3079,8 +3285,10 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		if (SinkingYOffset > 0) {
 			rect = Intersect(rect, Rect(0, 0, TacticalRect.Width, SinkingYOffset - TacticalMap->TacPixelY));
 		}
-		Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
-		LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
+		if (!composite_drawn) {
+			Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
+			LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
+		}
 		LogicalSurface = old_surface;
 		IsCompositingToEightBitSurface = false;
 	}
@@ -3217,17 +3425,13 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 			double pri = PrimaryFacing.Current().As_Radian32();
 			mtx.Rotate_Z(sec - pri);
 
-			/*
-			 * A recoiling turret moves "backward".
-			 */
-			if (IsInRecoilState) {
-				mtx.Translate_X(-2);
-			}
-
 			nmtx = mtx;
 
 			Vector3 trans = mtx.Get_Translation();
 			nmtx.Translate(-trans);
+
+			// The turret slides back after its pivot is removed, as gamemd's UnitClass::DrawAsSHP (0x73C5F0) does (0x73C9DE).
+			nmtx.Translate_X(-TurretRecoil.TravelSoFar);
 
 			Vector3 flh = Vector3(Get_Class_Weapon_Data()->FireFLH.X / -8, 0, Get_Class_Weapon_Data()->FireFLH.Z / -8);
 			nmtx.Translate(-flh);
@@ -3242,6 +3446,9 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 				}
 				face.Set(dir256);
 			}
+
+			// The barrel slides back by its recoil travel before it pitches, as gamemd's DrawAsSHP does (0x73CB5A).
+			nmtx.Translate_X(-BarrelRecoil.TravelSoFar);
 
 			DirType facing = face.Current();
 			nmtx.Rotate_Y(-facing.As_Radian32());
@@ -3299,27 +3506,6 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 }
 
 
-/***********************************************************************************************
- * UnitClass::Draw_It -- Draws a unit object.                                                  *
- *                                                                                             *
- *    This routine is the one that actually draws a unit object. It displays the unit          *
- *    according to its current state flags and centered at the location specified.             *
- *                                                                                             *
- * INPUT:   x,y   -- The X and Y coordinate of where to draw the unit.                         *
- *                                                                                             *
- *          window   -- The clipping window to use.                                            *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   06/20/1994 JLB : Created.                                                                 *
- *   06/27/1994 JLB : Takes a window parameter.                                                *
- *   08/15/1994 JLB : Removed infantry support.                                                *
- *   01/07/1995 JLB : Harvester animation support.                                             *
- *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
- *=============================================================================================*/
 /// <summary>
 /// Updates a DisguiseWhenStill vehicle's look (UnitClass::UpdateDisguise, 0x7468C0). Moving
 /// drops the disguise. On seven frames in eight, a soldier of a house that is not an ally
@@ -3390,7 +3576,7 @@ bool UnitClass::Can_Crush(ObjectClass const * object) const
 	*/
 	if (techno->RTTI == RTTI_INFANTRY) {
 		InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
-		if (soldier->Is_Deployed() && !soldier->Class->IsDeployedCrushable) return(false);
+		if (soldier->IsDugInSafe) return(false);
 	}
 	return(true);
 }
@@ -3465,6 +3651,27 @@ int UnitClass::Mirage_Shimmer_Flags(void) const
 }
 
 
+/***********************************************************************************************
+ * UnitClass::Draw_It -- Draws a unit object.                                                  *
+ *                                                                                             *
+ *    This routine is the one that actually draws a unit object. It displays the unit          *
+ *    according to its current state flags and centered at the location specified.             *
+ *                                                                                             *
+ * INPUT:   x,y   -- The X and Y coordinate of where to draw the unit.                         *
+ *                                                                                             *
+ *          window   -- The clipping window to use.                                            *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   06/20/1994 JLB : Created.                                                                 *
+ *   06/27/1994 JLB : Takes a window parameter.                                                *
+ *   08/15/1994 JLB : Removed infantry support.                                                *
+ *   01/07/1995 JLB : Harvester animation support.                                             *
+ *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
+ *=============================================================================================*/
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	// A disguised Mirage is drawn as its terrain while Is_Shown_As_Terrain_To says the viewer sees it so.
@@ -3480,6 +3687,11 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			Point2D drawpoint = point;
 			drawpoint.Y += MirageType->YDrawFudge;
 			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, 0, drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|Mirage_Shimmer_Flags()), NULL, -12, ZGRAD_90DEG, cellptr.TileBrightness);
+			// The terrain's shadow, its frame in the second half of the shape, goes down too and is never
+			// see-through (TechnoClass::DrawObject, 0x705E00, from UnitClass::DrawAsSHP).
+			if (DrawShapeShadows && !Class->IsNoShadow) {
+				Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, shape->Get_Count() / 2, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -4 - TacticalMap->Z_Lepton_To_Pixel(Height));
+			}
 		}
 		return;
 	}
@@ -3523,7 +3735,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		brightness += Rule->ExtraUnitLight;
 
 		// The gather sparkles are not drawn while a temporal warp holds the unit or a warp moves it, as in gamemd.
-		if (Class->IsToHarvest && IsHarvesting && !Locomotion->Is_Moving_Now() && WarpedBy == NULL && !IsBeingWarpedOut && !Is_Chrono_Warping()) {
+		if (Class->IsToHarvest && IsHarvesting && !Locomotion->Is_Moving_Now() && WarpedBy == NULL && !Is_Warp_Fading()) {
 			Point2D pixel;
 			FacingType face = (FacingType)PrimaryFacing.Current().As_Dir8();
 			TacticalMap->Coord_To_Pixel(Move_Coord(Render_Coord(), face, 150), pixel);
@@ -3680,311 +3892,17 @@ bool UnitClass::Harvesting(void)
  *=============================================================================================*/
 int UnitClass::Do_MISSION_UNLOAD(void)
 {
-	enum {
-		INITIAL_CHECK,
-		MANEUVERING,
-		OPENING_DOOR,
-		UNLOADING,
-		CLOSING_DOOR
-	};
-
-	FacingType	dir;
-	Cell		cell;
-	BuildingClass * building;
-
-	if (Class->IsSimpleDeployer) {
-		return(Simple_Deploy_AI());
-	}
-
-	// A Deployer=yes vehicle, such as the Chaos Drone, fires its AreaFire weapon where it stands.
-	if (Class->IsDeployer) {
-		Assign_Destination(NULL);
-		Assign_Target(&Map[Get_Cell()]);
-		Assign_Mission(MISSION_ATTACK);
-		return(1);
+	int delay = 0;
+	if (Do_Special_Unload(delay)) {
+		return(delay);
 	}
 
 	if (Class->Max_Passengers() > 0) {
-		/// derives from RA's UNIT_TRUCK
-		switch (Status) {
-			case INITIAL_CHECK:
-				if (Locomotion->Is_Moving()) {
-					return(10);
-				}
-				dir = Desired_Load_Dir(NULL, cell);
-				if (Cargo.How_Many() && cell != CELL_NONE) {
-					Locomotion->Do_Turn(DirType(dir));
-					Status = MANEUVERING;
-					return(1);
-				} else {
-					Assign_Mission(MISSION_GUARD);
-				}
-				break;
-
-			case MANEUVERING:
-				if (!IsRotating) {
-					Status = UNLOADING;
-					return(1);
-				}
-				break;
-
-			case UNLOADING:
-				if (Cargo.How_Many()) {
-					FootClass * passenger = Cargo.Detach_Object();
-					if (passenger != NULL && Class->IsGunner && Cargo.How_Many() == 0) {
-						Remove_Gunner(passenger);
-					}
-
-					if (passenger != NULL) {
-						Play_Transport_Sound(false);
-						/// The 8 grid wrap is deferred until each facing is tested.
-						FacingType toface = (FacingType)(DirType((DirType(DIR_S)-DirType(DIR_STEP_256)).As_Int()) + PrimaryFacing.Current()).Round_To_8();
-						FacingType nextface = toface;
-						bool placed = false;
-						Cell newcell;
-
-						for (FacingType face = FACING_N; face < FACING_COUNT; face++, nextface++) {
-							FacingType newface = Facing_Add(nextface, FACING_0);
-							newcell = Adjacent_Cell(PositionCell, newface);
-
-							if (passenger->Can_Enter_Cell(&Map[newcell], newface, Get_Cell_Height()) == MOVE_OK) {
-								if (Map[newcell].IsUnderBridge == false) {
-									Coord coord = newcell.As_Coord();
-
-									// Sub-cell spots are for infantry. A vehicle left on one
-									// draws wrong and cannot dock a repair bay.
-									if (passenger->RTTI == RTTI_INFANTRY) {
-										coord = Map.Closest_Free_Spot(coord);
-									}
-
-									ScenarioInit++;
-									placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
-									ScenarioInit--;
-									break;
-								}
-							}
-						}
-
-
-						if (placed) {
-							passenger->Assign_Mission(MISSION_MOVE);
-							passenger->Assign_Destination(&Map[newcell]);
-							if (Team != NULL) {
-								Team->Add(passenger);
-							}
-						} else {
-							/*
-							**	If the attached unit could NOT be deployed, then re-attach
-							**	it and then bail out of this deploy process.
-							*/
-							Cargo.Attach(passenger);
-							passenger->Hidden();
-							Status = CLOSING_DOOR;
-						}
-					}
-				} else {
-					Status = CLOSING_DOOR;
-				}
-				break;
-
-			/*
-			**	Close APC door in preparation for normal operation.
-			*/
-			case CLOSING_DOOR:
-				Assign_Mission(MISSION_GUARD);
-				IsMissionUnloadStandby = true;
-				break;
-		}
-		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+		return(Unload_Passengers());
 	} else if ((Class->IsToHarvest || Class->IsToVeinHarvest) && Class->DeploysInto == NULL) {
-		/// derives from RA's UNIT_HARVESTER
-		if (!In_Radio_Contact()) {
-			Enter_Idle_Mode();
-			IsDumping = false;
-			if (Locomotion->Is_Moving()) {
-				Stop_Driver();
-			}
-			if (Ready_To_Commence()) {
-				Commence();
-			}
-			return(1);
-		}
-
-		if (PrimaryFacing.Current().As_Dir256() != DIR_E) {
-			if (!IsRotating) {
-				Locomotion->Do_Turn(DirType(DIR_E));
-			}
-			return(5);
-		}
-
-		if (!IsDumping) {
-			IsDumping = true;
-			DebugString("Harvester: frame %d %s docks carrying %d\n", Frame, Class->Name(), Storage.Get_Total_Amount());
-			Set_Stage(0);
-			Set_Rate(1);
-
-			if (Class->IsToHarvest) {
-				building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
-				if (building != NULL) {
-					building->Begin_Anim(BANIM_PRE_PRODUCTION, false);
-				}
-			}
-
-			Status = 3;
-		} else {
-			switch (Status) {
-				case 4:
-					if (Class->IsToVeinHarvest) {
-						IsDumping = false;
-						if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-							if (Locomotion->Is_Moving()) {
-								Stop_Driver();
-							}
-							if (Ready_To_Commence()) {
-								Commence();
-							}
-						} else {
-							Assign_Mission(MISSION_HARVEST);
-							if (Ready_To_Commence()) {
-								if (In_Radio_Contact()) {
-									Transmit_Message(RADIO_OVER_OUT);
-								}
-								Commence();
-							}
-						}
-					} else {
-						building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
-						bool active = false;
-						if (building != NULL && building->Class->IsRefinery) {
-							active = building->Anim_Active(BANIM_PRODUCTION);
-						}
-						if (!active) {
-							IsDumping = false;
-							if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-								if (Locomotion->Is_Moving()) {
-									Stop_Driver();
-								}
-								if (Ready_To_Commence()) {
-									Commence();
-								}
-							} else {
-								Assign_Mission(MISSION_HARVEST);
-								if (Ready_To_Commence()) {
-									if (In_Radio_Contact()) {
-										Transmit_Message(RADIO_OVER_OUT);
-									}
-									Commence();
-								}
-							}
-						} else {
-							return(1);
-						}
-					}
-					break;
-
-				case 3:
-					building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
-					if (building == NULL) {
-						// The dock was removed while the unload was under way.
-						if (In_Radio_Contact()) {
-							Transmit_Message(RADIO_OVER_OUT);
-						}
-						IsDumping = false;
-						Assign_Mission(MISSION_HARVEST);
-						return(1);
-					}
-					if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
-						building->Update_Refinery_Smoke_Systems();
-						if (!building->Anim_Active(BANIM_SPECIAL_ONE)) {
-							building->Begin_Anim(BANIM_SPECIAL_ONE, building->HealthRatio <= Rule->ConditionYellow);
-						}
-						bool dumped = false;
-						int slot = Storage.First_Used_Slot();
-						if (slot != -1) {
-							// Each pass hands over everything held of one ore type.
-							int amount = Storage.Decrease_Amount(Storage.Get_Amount(slot), slot);
-							if (amount > 0) {
-								dumped = true;
-								// Ore is paid to the house that owns the dock building, as UnitClass::Mission_Unload
-								// (0x73D630) does; weed goes to the harvester's house.
-								HouseClass * const payee = Class->IsToVeinHarvest ? House : building->House;
-								int const before = payee->Credits;
-								if (Class->IsToVeinHarvest) {
-									payee->Harvested_Weed(amount, slot);
-								} else {
-									payee->Harvested(amount, (TiberiumType)slot);
-									payee->Purified(amount, (TiberiumType)slot);
-								}
-								DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, payee->Credits - before);
-								Set_Stage(0);
-							}
-						}
-						if (!dumped) {
-							DebugString("Harvester: frame %d %s is empty\n", Frame, Class->Name());
-							if (building->Class->IsRefinery) {
-								building->Begin_Anim(BANIM_PRODUCTION, false);
-							}
-							building->End_Anim(BANIM_SPECIAL_ONE);
-							Status = 4;
-						}
-					}
-					if (Status == 3 && NavCom != NULL) {
-						if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-							if (building->Class->IsRefinery) {
-								building->Begin_Anim(BANIM_PRODUCTION, false);
-							}
-							building->End_Anim(BANIM_SPECIAL_ONE);
-							Status = 4;
-						}
-					}
-					return(1);
-
-				default:
-					break;
-			}
-		}
-		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+		return(Unload_Harvester());
 	} else if (Class->DeploysInto != NULL) {
-		/// derives from RA's UNIT_MCV
-		switch (Status) {
-			case 0:
-				Transmit_Message(RADIO_OVER_OUT);
-				Path[0] = FACING_NONE;
-				Status = 1;
-				// fall through
-
-			case 1:
-				if (!Locomotion->Is_Moving()) {
-					Try_To_Deploy();
-					if (IsActive) {
-						if (IsDeploying) {
-							Status = 2;
-						} else {
-							if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL) {
-								Assign_Mission(MISSION_HUNT);
-							} else {
-								Assign_Mission(MISSION_GUARD);
-							}
-						}
-					}
-				} else if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_UNLOAD) {
-					Commence();
-				}
-				break;
-
-			case 2:
-				if (!IsDeploying) {
-					Enter_Idle_Mode();
-					Commence();
-				} else if (!Try_To_Deploy()) {
-					if (NavCom != NULL) {
-						IsDeploying = false;
-					}
-				}
-				break;
-		}
-		//return(1);
-		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+		return(Unload_Into_Structure());
 	} else {
 		if (Class->IsMobileEMP && !Is_Immobilized()) {
 			EMPulse_Blast();
@@ -3996,16 +3914,363 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 }
 
 
-/// <summary>
-/// The straight-line distance between two points in leptons, rounded down. Harvesters compare
-/// it with the limits in HarvesterTooFarDistance and ChronoHarvTooFarDistance.
-/// </summary>
-static int Straight_Line_Leptons(Coord const & from, Coord const & to)
+bool UnitClass::Do_Special_Unload(int & delay)
 {
-	double const dx = double(from.X - to.X);
-	double const dy = double(from.Y - to.Y);
-	double const dz = double(from.Z - to.Z);
-	return(int(Gamemd_Magnitude_3D(dx, dy, dz)));
+	if (Class->IsSimpleDeployer) {
+		delay = Simple_Deploy_AI();
+		return(true);
+	}
+
+	// A DeployFire=yes vehicle without IsSimpleDeployer or passenger seats fires its first weapon at its own cell
+	// and retries after 14 to 16 frames (UnitClass::Mission_Unload, 0x73D630). It never deploys, so it never uses DeployFireWeapon.
+	if (Class->IsDeployFire && Class->Max_Passengers() < 1 && BunkerLinkedItem == NULL) {
+		Assign_Target(&Map[Get_Cell()]);
+		Fire_At(&Map[Get_Cell()], 0);
+		delay = 14 + Random_Pick(0, 2);
+		return(true);
+	}
+
+	// A Deployer=yes vehicle, such as the Chaos Drone, fires its AreaFire weapon where it stands.
+	if (Class->IsDeployer) {
+		Assign_Destination(NULL);
+		Assign_Target(&Map[Get_Cell()]);
+		Assign_Mission(MISSION_ATTACK);
+		delay = 1;
+		return(true);
+	}
+	return(false);
+}
+
+
+bool UnitClass::Unload_Next_Passenger(void)
+{
+	FootClass * passenger = Cargo.Detach_Object();
+	if (passenger != NULL && Class->IsGunner && Cargo.How_Many() == 0) {
+		Remove_Gunner(passenger);
+	}
+
+	if (passenger != NULL) {
+		/// The 8 grid wrap is deferred until each facing is tested.
+		FacingType toface = (FacingType)(DirType((DirType(DIR_S)-DirType(DIR_STEP_256)).As_Int()) + PrimaryFacing.Current()).Round_To_8();
+		FacingType nextface = toface;
+		bool placed = false;
+		Cell newcell;
+
+		for (FacingType face = FACING_N; face < FACING_COUNT; face++, nextface++) {
+			FacingType newface = Facing_Add(nextface, FACING_0);
+			newcell = Adjacent_Cell(PositionCell, newface);
+
+			if (passenger->Can_Enter_Cell(&Map[newcell], newface, Get_Cell_Height()) == MOVE_OK) {
+				if (Map[newcell].IsUnderBridge == false) {
+					Coord coord = newcell.As_Coord();
+
+					// Sub-cell spots are for infantry. A vehicle left on one
+					// draws wrong and cannot dock a repair bay.
+					if (passenger->RTTI == RTTI_INFANTRY) {
+						coord = Map.Closest_Free_Spot(coord);
+					}
+
+					{
+						ScenarioInitScope const scope;
+						placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
+					}
+					break;
+				}
+			}
+		}
+
+
+		if (placed) {
+			// gamemd's UnitClass::Mission_Unload (0x73DC67) plays this only once the passenger is placed.
+			Play_Transport_Sound(false);
+			passenger->Assign_Mission(MISSION_MOVE);
+			passenger->Assign_Destination(&Map[newcell]);
+			if (Team != NULL) {
+				Team->Add(passenger);
+			}
+		} else {
+			/*
+			**	If the attached unit could NOT be deployed, then re-attach
+			**	it and then bail out of this deploy process.
+			*/
+			Cargo.Attach(passenger);
+			passenger->Hidden();
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+int UnitClass::Unload_Passengers(void)
+{
+	enum {
+		INITIAL_CHECK,
+		MANEUVERING,
+		OPENING_DOOR,
+		UNLOADING,
+		CLOSING_DOOR
+	};
+
+	FacingType	dir;
+	Cell		cell;
+
+	/// derives from RA's UNIT_TRUCK
+	switch (Status) {
+		case INITIAL_CHECK:
+			if (Locomotion->Is_Moving()) {
+				return(10);
+			}
+			dir = Desired_Load_Dir(NULL, cell);
+			if (Cargo.How_Many() && cell != CELL_NONE) {
+				Locomotion->Do_Turn(DirType(dir));
+				Status = MANEUVERING;
+				return(1);
+			} else {
+				Assign_Mission(MISSION_GUARD);
+			}
+			break;
+
+		case MANEUVERING:
+			if (!IsRotating) {
+				Status = UNLOADING;
+				return(1);
+			}
+			break;
+
+		case UNLOADING:
+			if (Cargo.How_Many()) {
+				if (!Unload_Next_Passenger()) {
+					Status = CLOSING_DOOR;
+				}
+			} else {
+				Status = CLOSING_DOOR;
+			}
+			break;
+
+		/*
+		**	Close APC door in preparation for normal operation.
+		*/
+		case CLOSING_DOOR:
+			Assign_Mission(MISSION_GUARD);
+			IsMissionUnloadStandby = true;
+			break;
+	}
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+int UnitClass::Unload_Into_Structure(void)
+{
+	/// derives from RA's UNIT_MCV
+	switch (Status) {
+		case 0:
+			Transmit_Message(RADIO_OVER_OUT);
+			Path[0] = FACING_NONE;
+			Status = 1;
+			// fall through
+
+		case 1:
+			if (!Locomotion->Is_Moving()) {
+				Try_To_Deploy();
+				if (IsActive) {
+					if (IsDeploying) {
+						Status = 2;
+					} else {
+						if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL) {
+							Assign_Mission(MISSION_HUNT);
+						} else {
+							Assign_Mission(MISSION_GUARD);
+						}
+					}
+				}
+			} else if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_UNLOAD) {
+				Commence();
+			}
+			break;
+
+		case 2:
+			if (!IsDeploying) {
+				Enter_Idle_Mode();
+				Commence();
+			} else if (!Try_To_Deploy()) {
+				if (NavCom != NULL) {
+					IsDeploying = false;
+				}
+			}
+			break;
+	}
+	//return(1);
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+bool UnitClass::Finish_Harvester_Unload(void)
+{
+	if (Class->IsToVeinHarvest) {
+		IsDumping = false;
+		if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
+			if (Locomotion->Is_Moving()) {
+				Stop_Driver();
+			}
+			if (Ready_To_Commence()) {
+				Commence();
+			}
+		} else {
+			Assign_Mission(MISSION_HARVEST);
+			if (Ready_To_Commence()) {
+				if (In_Radio_Contact()) {
+					Transmit_Message(RADIO_OVER_OUT);
+				}
+				Commence();
+			}
+		}
+	} else {
+		BuildingClass * building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+		bool active = false;
+		if (building != NULL && building->Class->IsRefinery) {
+			active = building->Anim_Active(BANIM_PRODUCTION);
+		}
+		if (!active) {
+			IsDumping = false;
+			if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
+				if (Locomotion->Is_Moving()) {
+					Stop_Driver();
+				}
+				if (Ready_To_Commence()) {
+					Commence();
+				}
+			} else {
+				Assign_Mission(MISSION_HARVEST);
+				if (Ready_To_Commence()) {
+					if (In_Radio_Contact()) {
+						Transmit_Message(RADIO_OVER_OUT);
+					}
+					Commence();
+				}
+			}
+		} else {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+int UnitClass::Dump_Harvester_Load(void)
+{
+	BuildingClass * building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+	if (building == NULL) {
+		// The dock was removed while the unload was under way.
+		if (In_Radio_Contact()) {
+			Transmit_Message(RADIO_OVER_OUT);
+		}
+		IsDumping = false;
+		Assign_Mission(MISSION_HARVEST);
+		return(1);
+	}
+	if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
+		building->Update_Refinery_Smoke_Systems();
+		if (!building->Anim_Active(BANIM_SPECIAL_ONE)) {
+			building->Begin_Anim(BANIM_SPECIAL_ONE, building->HealthRatio <= Rule->ConditionYellow);
+		}
+		bool dumped = false;
+		int slot = Storage.First_Used_Slot();
+		if (slot != -1) {
+			// Each pass hands over everything held of one ore type.
+			int amount = Storage.Decrease_Amount(Storage.Get_Amount(slot), slot);
+			if (amount > 0) {
+				dumped = true;
+				// Ore is paid to the house that owns the dock building, as UnitClass::Mission_Unload
+				// (0x73D630) does; weed goes to the harvester's house.
+				HouseClass * const payee = Class->IsToVeinHarvest ? House : building->House;
+				int const before = payee->Credits;
+				if (Class->IsToVeinHarvest) {
+					payee->Harvested_Weed(amount, slot);
+				} else {
+					payee->Harvested(amount, (TiberiumType)slot);
+					payee->Purified(amount, (TiberiumType)slot);
+				}
+				DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, payee->Credits - before);
+				Set_Stage(0);
+			}
+		}
+		if (!dumped) {
+			DebugString("Harvester: frame %d %s is empty\n", Frame, Class->Name());
+			if (building->Class->IsRefinery) {
+				building->Begin_Anim(BANIM_PRODUCTION, false);
+			}
+			building->End_Anim(BANIM_SPECIAL_ONE);
+			Status = 4;
+		}
+	}
+	if (Status == 3 && NavCom != NULL) {
+		if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
+			if (building->Class->IsRefinery) {
+				building->Begin_Anim(BANIM_PRODUCTION, false);
+			}
+			building->End_Anim(BANIM_SPECIAL_ONE);
+			Status = 4;
+		}
+	}
+	return(1);
+}
+
+
+int UnitClass::Unload_Harvester(void)
+{
+	BuildingClass * building;
+
+	/// derives from RA's UNIT_HARVESTER
+	if (!In_Radio_Contact()) {
+		Enter_Idle_Mode();
+		IsDumping = false;
+		if (Locomotion->Is_Moving()) {
+			Stop_Driver();
+		}
+		if (Ready_To_Commence()) {
+			Commence();
+		}
+		return(1);
+	}
+
+	if (PrimaryFacing.Current().As_Dir256() != DIR_E) {
+		if (!IsRotating) {
+			Locomotion->Do_Turn(DirType(DIR_E));
+		}
+		return(5);
+	}
+
+	if (!IsDumping) {
+		IsDumping = true;
+		DebugString("Harvester: frame %d %s docks carrying %d\n", Frame, Class->Name(), Storage.Get_Total_Amount());
+		Set_Stage(0);
+		Set_Rate(1);
+
+		if (Class->IsToHarvest) {
+			building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+			if (building != NULL) {
+				building->Begin_Anim(BANIM_PRE_PRODUCTION, false);
+			}
+		}
+
+		Status = 3;
+	} else {
+		switch (Status) {
+			case 4:
+				if (Finish_Harvester_Unload()) {
+					return(1);
+				}
+				break;
+
+			case 3:
+				return(Dump_Harvester_Load());
+
+			default:
+				break;
+		}
+	}
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 }
 
 
@@ -4198,9 +4463,11 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				BuildingClass * freebay = Find_Docking_Bay(Class->Dock, false, true);
 
 				// Under ScenarioInit a busy refinery does not refuse, so this sweep sees every bay.
-				ScenarioInit++;
-				BuildingClass * anybay = Find_Docking_Bay(Class->Dock, false, false);
-				ScenarioInit--;
+				BuildingClass * anybay;
+				{
+					ScenarioInitScope const scope;
+					anybay = Find_Docking_Bay(Class->Dock, false, false);
+				}
 
 				/*
 				**	A free refinery is reserved only when it is within reach. Otherwise the harvester drives
@@ -4211,9 +4478,9 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				**	Since the refinery said it was ok to load, establish radio
 				**	contact with the refinery and then await docking orders.
 				*/
-				if (freebay != NULL && Straight_Line_Leptons(Get_Coord(), freebay->Get_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
+				if (freebay != NULL && Get_Coord().Gamemd_Distance_To(freebay->Get_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
 					Status = HEADINGHOME;
-				} else if (anybay != NULL && (Class->IsTeleporter || Straight_Line_Leptons(Get_Coord(), anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
+				} else if (anybay != NULL && (Class->IsTeleporter || Get_Coord().Gamemd_Distance_To(anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
 					Cell cell = Cell(anybay->Get_Coord()) + Cell(anybay->Class->QueueingCell.X, anybay->Class->QueueingCell.Y);
 					Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, -1, MZONE_NORMAL, false, Point2D(1, 1), false, false, false, true);
 					if (nearby != CELL_NONE) {
@@ -4353,22 +4620,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	HousesType inftype = cellptr->InfType;
 	TubeClass *tunnel = cellptr->Get_Tunnel();
 
-	if (Class->MovementRestrictedTo != LAND_NONE) {
-		if (cellptr->Land_Type() == LAND_TUNNEL) {
-			IsometricTileTypeClass * itptr = IsometricTileTypes[cellptr->ITType];
-			if (itptr->Width == 5 && itptr->Height == 3 || itptr->Width == 4 && itptr->Height == 3) {
-				if (cellptr->SubTile != 2) {
-					return(MOVE_NO);
-				}
-			} else if ((itptr->Width == 3 && itptr->Height == 4 || itptr->Width == 3 && itptr->Height == 5) && cellptr->SubTile != 6) {
-				return(MOVE_NO);
-			}
-		}
-		if (cellptr->Land_Type() != Class->MovementRestrictedTo && cellptr->Land_Type() != LAND_TUNNEL) {
-			if (cellptr->Overlay < OVERLAY_RAILWAY_BRIDGE1 || cellptr->Overlay > OVERLAY_RAILWAY_BRIDGE2 || cell_height == cellptr->Height) {
-				return(MOVE_NO);
-			}
-		}
+	if (Restricted_Land_Blocks_Entry(cellptr, cell_height)) {
+		return(MOVE_NO);
 	}
 
 	if (dir == FACING_COUNT) {
@@ -4381,23 +4634,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 		return(MOVE_NO);
 	}
 
-	if (tunnel != NULL) {
-		int dist = abs(dir - tunnel->EnterDir);
-		if (dist > 2 && dist < 6 && dir != FACING_NONE) {
-			return(MOVE_NO);
-		}
-	}
-
-	/*
-	 * Check the tunnel of the cell entered from (the cell in the opposite
-	 * direction) so that the unit can't drive through a tunnel sideways.
-	 */
-	TubeClass *backtunnel = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
-	if (backtunnel != NULL) {
-		int dist = abs(Facing_Sub(dir, FACING_180) - backtunnel->EnterDir);
-		if (dist > FACING_90 && dist < FACING_270 && dir != FACING_NONE) {
-			return(MOVE_NO);
-		}
+	if (Tunnel_Blocks_Entry(cellptr, dir, tunnel)) {
+		return(MOVE_NO);
 	}
 
 	MoveType retval = Can_Reach(cellptr, dir, cell_height, bridge, cellptr2);
@@ -4427,46 +4665,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	}
 
 
-	/*
-	**	Certain vehicles can drive over walls. Check for this case and
-	**	and return the appropriate flag. Other units treat walls as impassable.
-	*/
-	if (cellptr->Overlay != OVERLAY_NONE) {
-		OverlayTypeClass const * optr = OverlayTypes[cellptr->Overlay];
-
-		if (optr->IsCrate && !House->Is_Human_Player() && Session.Type == GAME_NORMAL) {
-			return(MOVE_NO);
-		}
-
-		if (optr->IsWall) {
-
-			/*
-			**	If the blocking wall is crushable (and not owned by this player or one of this players
-			**	allies, then record that it is crushable and let the normal logic take over. The end
-			**	result should cause this unit to consider the cell passable.
-			*/
-			if (optr->IsCrushable && (Class->IsCrusher || Has_Ability(ABILITY_CRUSHER))) {
-				if (House->Is_Ally(cellptr->Owner)) {
-					if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
-				}
-			} else {
-				if (Is_Weapon_Equipped()) {
-					WarheadTypeClass const * whead = PrimaryWeapon->WarheadPtr;
-
-					if (whead->IsWallDestroyer || (whead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
-						if (House->Is_Ally(cellptr->Owner)) {
-							if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
-						} else {
-							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-						}
-					} else {
-						return(MOVE_NO);
-					}
-				} else {
-					return(MOVE_NO);
-				}
-			}
-		}
+	if (Overlay_Blocks_Entry(cellptr, retval)) {
+		return(MOVE_NO);
 	}
 
 	/*
@@ -4490,7 +4690,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	Always allow entry if trying to move on a cell with
 			**	authorization from the occupier.
 			*/
-			if (obj == Contact_With_Whom() && (IsTethered || (obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Class->IsCanUnitRepair))) {
+			if (obj == Contact_With_Whom() && IsTethered) {
 				return(MOVE_OK);
 			}
 			if (obj == NavCom && Mission == MISSION_ENTER && obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Takes_Walk_Ins(this)) {
@@ -4505,197 +4705,20 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			}
 
 			if (obj->RTTI == RTTI_BUILDING) {
-				BuildingClass *bptr = (BuildingClass *)obj;
-
-				if (bptr->Class->IsGate) {
-					if (!bptr->Is_Gate_Open()) {
-						if (bptr->House->Is_Ally(House)) {
-							if (retval < MOVE_CLOSED_GATE) retval = MOVE_CLOSED_GATE;
-						} else {
-							if (!Is_Weapon_Equipped()) {
-								return(MOVE_NO);
-							}
-							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-						}
-					}
+				bool skip = false;
+				std::optional<MoveType> const verdict = Building_Occupant_Verdict(obj, cellptr, dir, retval, skip);
+				if (verdict) {
+					return(*verdict);
+				}
+				if (skip) {
 					obj = obj->Next;
 					continue;
-				}
-
-				// The cells outside the NumberImpassableRows of a service depot or bunker do not stop a vehicle (UnitClass::CanReach, 0x73F0A0).
-				if ((bptr->Class->IsCanUnitRepair || bptr->Class->IsBunker) && !bptr->Blocks_Cell(cellptr)) {
-					obj = obj->Next;
-					continue;
-				}
-
-				/*
-				 * A unit can drive onto the building it is trying to enter (repair
-				 * bay) if that building is in the cell it is entering from.
-				 */
-				if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Map[Adjacent_Cell(cellptr->CellID, Facing_Sub(dir, FACING_180))].Cell_Building() == bptr) {
-					obj = obj->Next;
-					continue;
-				}
-
-				/*
-				 * Various special-purpose buildings do not block movement.
-				 */
-				if (bptr->Class->IsInvisibleInGame || bptr->Class->IsPassable) {
-					obj = obj->Next;
-					continue;
-				}
-				if (bptr->Class->IsLimpetMine) {
-					obj = obj->Next;
-					continue;
-				}
-				if (bptr->Class->IsLaserFence && (bptr->LaserFenceFrame == 12 || bptr->LaserFenceFrame == 8)) {
-					obj = obj->Next;
-					continue;
-				}
-				if (bptr->Class->IsFirestormWall) {
-					if (bptr->House->FirestormDefenseActivated) {
-						return(MOVE_NO);
-					}
-					obj = obj->Next;
-					continue;
-				}
-
-				/*
-				 * The bib of a refinery or weeder is a legal destination for a
-				 * harvester whose house is mutually allied and that is heading for the dock.
-				 */
-				if (bptr->Class->IsBibbed) {
-					if (Map[Adjacent_Cell(cellptr->CellID, FACING_E)].Cell_Building() != bptr) {
-						obj = obj->Next;
-						continue;
-					}
-					if (Class->IsToHarvest && bptr->Class->IsRefinery &&
-						House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
-						Cell bcell = bptr->PositionCell;
-						if (cellptr->CellID == bcell + Cell(2, 1)) {
-							obj = obj->Next;
-							continue;
-						}
-					}
-					if (Class->IsToVeinHarvest && bptr->Class->IsWeeder &&
-						House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
-						Cell bcell = bptr->PositionCell;
-						if (cellptr->CellID == bcell + Cell(2, 1)) {
-							obj = obj->Next;
-							continue;
-						}
-					}
 				}
 			}
 
-			/*
-			**	Special check to allow entry into the sea transport this vehicle
-			**	is trying to enter.
-			*/
-			if (Mission == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
-				return(MOVE_OK);
-			}
-
-			/*
-			**	Guard area should not allow the guarding unit to enter the cell with the
-			**	guarded unit.
-			*/
-			if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj) {
-				return(MOVE_NO);
-			}
-
-			FootClass *foot = dynamic_cast<FootClass *>(obj);
-
-			bool is_moving = foot != NULL &&
-					(foot->NavCom || foot->PrimaryFacing.Is_Rotating() || foot->Locomotion->Is_Moving());
-
-			if (House->Is_Ally(obj)) {
-				if (is_moving) {
-					int face = PrimaryFacing.Current().As_Dir8();
-					DirType d = ((FootClass const *)obj)->PrimaryFacing.Current().Right_180();
-					int techface = d.As_Dir8();
-					DirType direction = ::Direction(PositionCoord, ((ObjectClass *)obj)->PositionCoord);
-					if (face == techface && Distance(((ObjectClass *)obj)->Center_Coord()) <= 2 * CELL_LEPTON - 1 && direction.As_Dir8() == face) {
-						return(MOVE_NO);
-					}
-					if ((foot->IsOccupyingCell && foot->RTTI != RTTI_INFANTRY) || foot->Locomotion->Will_Jump_Tracks()) {
-						if (retval < MOVE_MOVING_BLOCK) retval = MOVE_MOVING_BLOCK;
-					}
-				} else {
-
-					/*
-					 * An allied object that is not moving blocks the cell outright
-					 * if it is a building; otherwise it only temporarily blocks
-					 * the cell.
-					 */
-					if (obj->RTTI == RTTI_BUILDING) return(MOVE_NO);
-
-					if (!Class->IsJellyfish) {
-						if (retval < MOVE_TEMP) retval = MOVE_TEMP;
-					}
-				}
-			} else {
-
-				/*
-				**	Cloaked enemy objects are not considered if this is a Find_Path()
-				**	call.
-				*/
-				TechnoClass * tech = Dynamic_Cast<TechnoClass *>(obj);
-				if (tech == NULL || tech->Cloak != CLOAKED) {
-
-					/*
-					**	If this unit can crush infantry, and there is an enemy infantry in the
-					**	cell, don't consider the cell impassible. This is true even if the unit
-					**	doesn't contain a legitimate weapon.
-					*/
-					bool crusher = Class->IsCrusher || Has_Ability(ABILITY_CRUSHER);
-					if (!crusher || !Can_Crush(obj)) {
-
-						/*
-						 * Any non-allied blockage is considered impassable if the unit
-						 * is not equipped with a weapon (unless it is a train).
-						 */
-						if (PrimaryWeapon == NULL && !Class->IsTrain) return(MOVE_NO);
-
-						/*
-						**	Some kinds of terrain are considered destroyable if the unit is equipped
-						**	with the weapon that can destroy it. Otherwise, the terrain is considered
-						**	impassable.
-						*/
-						RTTIType rtti = obj->RTTI;
-						switch (rtti) {
-							case RTTI_TERRAIN: {
-
-								WeaponTypeClass const * weapon = Class->Get_Weapon(What_Weapon_Should_I_Use(obj))->Weapon;
-								if (weapon != NULL && weapon->WarheadPtr != NULL &&
-									weapon->WarheadPtr->IsWoodDestroyer) {
-
-									if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								} else {
-									return(MOVE_NO);
-								}
-								break;
-							}
-
-							case RTTI_BUILDING: {
-
-								if (((BuildingClass *)obj)->Class->IsBridgeRepairHut) {
-									return(MOVE_NO);
-								}
-								if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								break;
-							}
-
-							default:
-								if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								break;
-						}
-					} else {
-						if (!House->Is_Ally(obj)) crushable = true;
-					}
-				} else {
-					if (retval < MOVE_CLOAK) retval = MOVE_CLOAK;
-				}
+			std::optional<MoveType> const verdict = Occupant_Verdict(obj, retval, crushable);
+			if (verdict) {
+				return(*verdict);
 			}
 		} else {
 
@@ -4775,6 +4798,271 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	**	Return with the most severe reason why this cell would be impassable.
 	*/
 	return(retval);
+}
+
+
+bool UnitClass::Restricted_Land_Blocks_Entry(CellClass const * cellptr, int cell_height) const
+{
+	if (Class->MovementRestrictedTo != LAND_NONE) {
+		if (cellptr->Land_Type() == LAND_TUNNEL) {
+			IsometricTileTypeClass * itptr = IsometricTileTypes[cellptr->ITType];
+			if (itptr->Width == 5 && itptr->Height == 3 || itptr->Width == 4 && itptr->Height == 3) {
+				if (cellptr->SubTile != 2) {
+					return(true);
+				}
+			} else if ((itptr->Width == 3 && itptr->Height == 4 || itptr->Width == 3 && itptr->Height == 5) && cellptr->SubTile != 6) {
+				return(true);
+			}
+		}
+		if (cellptr->Land_Type() != Class->MovementRestrictedTo && cellptr->Land_Type() != LAND_TUNNEL) {
+			if (cellptr->Overlay < OVERLAY_RAILWAY_BRIDGE1 || cellptr->Overlay > OVERLAY_RAILWAY_BRIDGE2 || cell_height == cellptr->Height) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+bool UnitClass::Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const
+{
+	/*
+	**	Certain vehicles can drive over walls. Check for this case and
+	**	and return the appropriate flag. Other units treat walls as impassable.
+	*/
+	if (cellptr->Overlay != OVERLAY_NONE) {
+		OverlayTypeClass const * optr = OverlayTypes[cellptr->Overlay];
+
+		if (optr->IsCrate && !House->Is_Human_Player() && Session.Type == GAME_NORMAL) {
+			return(true);
+		}
+
+		if (optr->IsWall) {
+
+			/*
+			**	If the blocking wall is crushable (and not owned by this player or one of this players
+			**	allies, then record that it is crushable and let the normal logic take over. The end
+			**	result should cause this unit to consider the cell passable.
+			*/
+			// A CrusherAll vehicle takes any wall as a crusher takes a crushable one (UnitClass::CanReach, 0x73F42E).
+			if ((optr->IsCrushable && (Class->IsCrusher || Has_Ability(ABILITY_CRUSHER))) || Class->MZone == MZONE_CRUSHER_ALL) {
+				if (House->Is_Ally(cellptr->Owner)) {
+					if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
+				}
+			} else {
+				if (Is_Weapon_Equipped()) {
+					WarheadTypeClass const * whead = PrimaryWeapon->WarheadPtr;
+
+					if (whead->IsWallDestroyer || (whead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
+						if (House->Is_Ally(cellptr->Owner)) {
+							if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
+						} else {
+							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						}
+					} else {
+						return(true);
+					}
+				} else {
+					return(true);
+				}
+			}
+		}
+	}
+	return(false);
+}
+
+
+std::optional<MoveType> UnitClass::Building_Occupant_Verdict(ObjectClass * obj, CellClass const * cellptr, FacingType dir, MoveType & retval, bool & skip) const
+{
+	BuildingClass * bptr = (BuildingClass *)obj;
+
+	if (bptr->Class->IsGate) {
+		if (!bptr->Is_Gate_Open()) {
+			if (bptr->House->Is_Ally(House)) {
+				if (retval < MOVE_CLOSED_GATE) retval = MOVE_CLOSED_GATE;
+			} else {
+				if (!Is_Weapon_Equipped()) {
+					return(MOVE_NO);
+				}
+				if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+			}
+		}
+		skip = true;
+		return(std::nullopt);
+	}
+
+	// The cells outside the NumberImpassableRows of a service depot or bunker do not stop a vehicle (UnitClass::CanReach, 0x73F0A0).
+	if ((bptr->Class->IsCanUnitRepair || bptr->Class->IsBunker) && !bptr->Blocks_Cell(cellptr)) {
+		skip = true;
+		return(std::nullopt);
+	}
+
+	/*
+	 * A unit entering a repair bay drives over the bay's blocked cells, as the ENTER check
+	 * of UnitClass::CanReach (0x73F0A0) allows. Any other unit stops at them.
+	 */
+	if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Mission == MISSION_ENTER && obj == NavCom) {
+		skip = true;
+		return(std::nullopt);
+	}
+
+	/*
+	 * Various special-purpose buildings do not block movement.
+	 */
+	if (bptr->Class->IsInvisibleInGame || bptr->Class->IsPassable) {
+		skip = true;
+		return(std::nullopt);
+	}
+	if (bptr->Class->IsLimpetMine) {
+		skip = true;
+		return(std::nullopt);
+	}
+	if (std::optional<MoveType> fence = Fence_Wall_Verdict(bptr, skip); fence || skip) {
+		return(fence);
+	}
+
+	/*
+	 * The bib of a refinery or weeder is a legal destination for a
+	 * harvester whose house is mutually allied and that is heading for the dock.
+	 */
+	if (bptr->Class->IsBibbed) {
+		if (Map[Adjacent_Cell(cellptr->CellID, FACING_E)].Cell_Building() != bptr) {
+			skip = true;
+			return(std::nullopt);
+		}
+		if (Class->IsToHarvest && bptr->Class->IsRefinery &&
+			House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
+			Cell bcell = bptr->PositionCell;
+			if (cellptr->CellID == bcell + Cell(2, 1)) {
+				skip = true;
+				return(std::nullopt);
+			}
+		}
+		if (Class->IsToVeinHarvest && bptr->Class->IsWeeder &&
+			House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
+			Cell bcell = bptr->PositionCell;
+			if (cellptr->CellID == bcell + Cell(2, 1)) {
+				skip = true;
+				return(std::nullopt);
+			}
+		}
+	}
+	return(std::nullopt);
+}
+
+
+std::optional<MoveType> UnitClass::Occupant_Verdict(ObjectClass * obj, MoveType & retval, bool & crushable) const
+{
+	/*
+	**	Special check to allow entry into the sea transport this vehicle
+	**	is trying to enter.
+	*/
+	if (Mission == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
+		return(MOVE_OK);
+	}
+
+	/*
+	**	Guard area should not allow the guarding unit to enter the cell with the
+	**	guarded unit.
+	*/
+	if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj) {
+		return(MOVE_NO);
+	}
+
+	FootClass *foot = dynamic_cast<FootClass *>(obj);
+
+	bool is_moving = foot != NULL &&
+			(foot->NavCom || foot->PrimaryFacing.Is_Rotating() || foot->Locomotion->Is_Moving());
+
+	if (House->Is_Ally(obj)) {
+		if (is_moving) {
+			int face = PrimaryFacing.Current().As_Dir8();
+			DirType d = ((FootClass const *)obj)->PrimaryFacing.Current().Right_180();
+			int techface = d.As_Dir8();
+			DirType direction = ::Direction(PositionCoord, ((ObjectClass *)obj)->PositionCoord);
+			if (face == techface && Distance(((ObjectClass *)obj)->Center_Coord()) <= 2 * CELL_LEPTON - 1 && direction.As_Dir8() == face) {
+				return(MOVE_NO);
+			}
+			if ((foot->IsOccupyingCell && foot->RTTI != RTTI_INFANTRY) || foot->Locomotion->Will_Jump_Tracks()) {
+				if (retval < MOVE_MOVING_BLOCK) retval = MOVE_MOVING_BLOCK;
+			}
+		} else {
+
+			/*
+			 * An allied object that is not moving blocks the cell outright
+			 * if it is a building; otherwise it only temporarily blocks
+			 * the cell.
+			 */
+			if (obj->RTTI == RTTI_BUILDING) return(MOVE_NO);
+
+			if (!Class->IsJellyfish) {
+				if (retval < MOVE_TEMP) retval = MOVE_TEMP;
+			}
+		}
+	} else {
+
+		/*
+		**	Cloaked enemy objects are not considered if this is a Find_Path()
+		**	call.
+		*/
+		TechnoClass * tech = Dynamic_Cast<TechnoClass *>(obj);
+		if (tech == NULL || tech->Cloak != CLOAKED) {
+
+			/*
+			**	If this unit can crush infantry, and there is an enemy infantry in the
+			**	cell, don't consider the cell impassible. This is true even if the unit
+			**	doesn't contain a legitimate weapon.
+			*/
+			bool crusher = Class->IsCrusher || Has_Ability(ABILITY_CRUSHER);
+			if (!crusher || !Can_Crush(obj)) {
+
+				/*
+				 * Any non-allied blockage is considered impassable if the unit
+				 * is not equipped with a weapon (unless it is a train).
+				 */
+				if (PrimaryWeapon == NULL && !Class->IsTrain) return(MOVE_NO);
+
+				/*
+				**	Some kinds of terrain are considered destroyable if the unit is equipped
+				**	with the weapon that can destroy it. Otherwise, the terrain is considered
+				**	impassable.
+				*/
+				RTTIType rtti = obj->RTTI;
+				switch (rtti) {
+					case RTTI_TERRAIN: {
+
+						WeaponTypeClass const * weapon = Class->Get_Weapon(What_Weapon_Should_I_Use(obj))->Weapon;
+						if (weapon != NULL && weapon->WarheadPtr != NULL &&
+							weapon->WarheadPtr->IsWoodDestroyer) {
+
+							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						} else {
+							return(MOVE_NO);
+						}
+						break;
+					}
+
+					case RTTI_BUILDING: {
+
+						if (((BuildingClass *)obj)->Class->IsBridgeRepairHut) {
+							return(MOVE_NO);
+						}
+						if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						break;
+					}
+
+					default:
+						if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						break;
+				}
+			} else {
+				if (!House->Is_Ally(obj)) crushable = true;
+			}
+		} else {
+			if (retval < MOVE_CLOAK) retval = MOVE_CLOAK;
+		}
+	}
+	return(std::nullopt);
 }
 
 
@@ -4866,7 +5154,8 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					if (Charge < Class->MaxCharge) {
 						action = ACTION_NO_DEPLOY;
 					}
-				} else if (!Class->IsSimpleDeployer && !Class->IsDeployer) {
+				} else if (!Class->IsSimpleDeployer && !Class->IsDeployer && !Class->IsDeployFire) {
+					// UnitClass::MouseOverObject (0x73FD50) offers the self action to a DeployFire=yes vehicle.
 					action = ACTION_NONE;
 				}
 			}
@@ -5401,7 +5690,8 @@ InfantryTypeClass const * UnitClass::Crew_Type(void) const
  *=============================================================================================*/
 int UnitClass::Do_MISSION_REPAIR(void)
 {
-	BuildingClass * nearest = Find_Docking_Bay(Rule->RepairBay, true);
+	// Only the unit's own depots; gamemd's FootClass::FindCloserDockBuilding (0x4DEE80) walks Owner->Buildings.
+	BuildingClass * nearest = Find_Docking_Bay(Rule->RepairBay, false);
 
 	IsHarvesting = false;
 
@@ -5483,6 +5773,11 @@ DirType UnitClass::Fire_Direction(void) const
  *=============================================================================================*/
 FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 {
+	// A DirectRocker-linked unit cannot fire, as UnitClass::GetFireError (0x740FD0) returns error 5 for it.
+	if (DirectRockerLinkedUnit != NULL) {
+		return(FIRE_ILLEGAL);
+	}
+
 	FireErrorType	fire = BASECLASS::Can_Fire(target, which);
 
 	if (fire == FIRE_OK || fire == FIRE_FACING) {
@@ -5510,7 +5805,7 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 		/*
 		**	If this unit cannot fire while moving, then bail.
 		*/
-		if ((Class->IsNoFireWhileMoving || !Class->IsMobileFire) && NavCom != NULL) {
+		if (!Class->Fires_While_Moving() && NavCom != NULL) {
 			return(FIRE_MOVING);
 		}
 
@@ -5863,6 +6158,15 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	*/
 	if (target == NavCom) return;
 
+	if (Balloon_Hover_Holds_Destination(target)) {
+		return;
+	}
+
+	// A simple deployer takes no new destination while its deploy or pack-up animation runs (gamemd UnitClass::SetDestination, 0x741970).
+	if (target != NULL && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
+		return;
+	}
+
 	/*
 	**	Transport vehicles must tell all passengers that are about to load, that they
 	**	cannot proceed. This is accomplished with a radio message to this effect.
@@ -5891,6 +6195,101 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 	BuildingClass * b = dynamic_cast<BuildingClass *>(target);
 
+	Update_Teleporter_Locomotor(target);
+
+	if (Negotiate_Entry_Contact(target, b)) {
+		return;
+	}
+
+	Retarget_Subterranean_Drive(target, immediate);
+
+	bool needsswap = false;
+
+	if (target != NULL) {
+		bool surface = false;
+
+		/*
+		 * A subterranean unit that is told to move immediately must decide whether
+		 * it can burrow straight to the destination or has to plan a surface route.
+		 */
+		if (Class->IsSubterranean && immediate) {
+			surface = Plan_Subterranean_Route(target, needsswap);
+		}
+
+		/*
+		 * The non-subterranean (and the no-plan subterranean) immediate path clears
+		 * the route queue before surfacing a tunneler that is on its way up.
+		 */
+		if (!surface) {
+			if (immediate) {
+				RouteQueue.Clear();
+				surface = true;
+			}
+		}
+
+		/*
+		 * Surfacing tunneler keeps its current cell at the route front.
+		 */
+		if (surface) {
+			if (Locomotion->Is_Surfacing()) {
+				RouteQueue.Add_Head(target);
+				target = &Map[Get_Coord()];
+			}
+		}
+
+		/*
+		 * If the locomotor is a tunnel locomotor and the unit is on the ground,
+		 * surface the tunneler by swapping the tunnel locomotor for a drive one.
+		 * (Mirrors BuildingClass weapons-factory exit, building.cpp:6236-6251.)
+		 */
+		Swap_Tunnel_For_Drive_Locomotor(target, needsswap);
+	} else {
+		RouteQueue.Clear();
+	}
+
+	if (Dock_At_Repair_Facility(b, target, immediate)) {
+		return;
+	}
+
+	if (Queue_For_Weapons_Factory(target)) {
+		return;
+	}
+
+	Send_Harvester_To_Dock(b, target);
+
+	Power_On_At_Repair_Facility();
+
+	BASECLASS::Assign_Destination(target, immediate);
+}
+
+
+bool UnitClass::Balloon_Hover_Holds_Destination(AbstractClass const * target)
+{
+	// A BalloonHover vehicle with a target keeps its destination and its Attack mission when it is told to stop, unless the
+	// target lies within a quarter turn of its facing (gamemd UnitClass::SetDestination, 0x741970).
+	if (target == NULL && Class->IsBalloonHover && NavCom != NULL && TarCom != NULL) {
+		bool keep = NavCom == TarCom;
+		if (!keep) {
+			CellClass const * navcell = dynamic_cast<CellClass const *>(NavCom);
+			keep = navcell != NULL && navcell->Cell_Occupier() == TarCom;
+		}
+		if (!keep) {
+			int const turn = (short)(Direction(TarCom).Raw - PrimaryFacing.Current().Raw);
+			keep = turn >= 0x4000 || turn <= -0x4000;
+		}
+		if (keep) {
+			if (Get_Mission() != MISSION_ATTACK) {
+				Set_Mission(MISSION_ATTACK);
+			}
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void UnitClass::Update_Teleporter_Locomotor(AbstractClass const * target)
+{
 	/*
 	**	A teleporter drives, carrying its own locomotor, unless it is being sent onto a free dock
 	**	cell of the refinery it is talking to; then it goes back to its own locomotor and enters.
@@ -5924,7 +6323,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+}
 
+
+bool UnitClass::Negotiate_Entry_Contact(AbstractClass *& target, BuildingClass * b)
+{
 	/*
 	**	Handle entry logic here.
 	*/
@@ -5979,7 +6382,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 					} else {
 						if (Transmit_Message(RADIO_HELLO, techno) == RADIO_ROGER) {
 							if (Transmit_Message(RADIO_DOCKING) == RADIO_ROGER) {
-								return;
+								return(true);
 							}
 							Transmit_Message(RADIO_OVER_OUT);
 						}
@@ -5992,9 +6395,12 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	} else {
 		Path[0] = FACING_NONE;
 	}
+	return(false);
+}
 
-	bool useplan = false;
 
+void UnitClass::Retarget_Subterranean_Drive(AbstractClass *& target, bool & immediate)
+{
 	/*
 	 * Subterranean units prepend their navigation target onto the queue and
 	 * re-target the nearest reachable cell when driving rather than burrowing.
@@ -6015,124 +6421,98 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+}
 
-	bool needsswap = false;
 
-	if (target != NULL) {
-		bool surface = false;
+bool UnitClass::Plan_Subterranean_Route(AbstractClass *& target, bool & needsswap)
+{
+	bool useplan = false;
+	bool isbridge = Is_Moving_Onto_Bridge();
 
-		/*
-		 * A subterranean unit that is told to move immediately must decide whether
-		 * it can burrow straight to the destination or has to plan a surface route.
-		 */
-		if (Class->IsSubterranean && immediate) {
-			bool isbridge = Is_Moving_Onto_Bridge();
+	Cell from = Destination_Coord().As_Cell();
+	bool canburrowfrom = Map[from].Can_Burrow_Here();
 
-			Cell from = Destination_Coord().As_Cell();
-			bool canburrowfrom = Map[from].Can_Burrow_Here();
+	Cell to = target->Center_Coord().As_Cell();
+	CellClass * tocell = &Map[to];
+	bool isunderbridgeto = tocell->IsUnderBridge;
+	bool canburrowto = tocell->Can_Burrow_Here();
+	int height = Get_Height_AGL();
 
-			Cell to = target->Center_Coord().As_Cell();
-			CellClass * tocell = &Map[to];
-			bool isunderbridgeto = tocell->IsUnderBridge;
-			bool canburrowto = tocell->Can_Burrow_Here();
-			int height = Get_Height_AGL();
-
-			if (isbridge) {
-				if (isunderbridgeto) {
-					int z1 = Map.Zone_Connection_Index(from, 3, 0);
-					if (z1 == Map.Zone_Connection_Index(to, 3, 0) && z1 != -1) {
-						if (!Map.ZoneConnections[z1].IsPassable) {
-							Cell d1 = Map.Get_Zone_Connection_Destination(from, from);
-							Cell d2 = Map.Get_Zone_Connection_Destination(to, to);
-							if (d1.Gamemd_Distance_To(d2) <= 2) {
-								needsswap = true;
-							}
-						} else {
-							needsswap = true;
-						}
+	if (isbridge) {
+		if (isunderbridgeto) {
+			int z1 = Map.Zone_Connection_Index(from, 3, 0);
+			if (z1 == Map.Zone_Connection_Index(to, 3, 0) && z1 != -1) {
+				if (!Map.ZoneConnections[z1].IsPassable) {
+					Cell d1 = Map.Get_Zone_Connection_Destination(from, from);
+					Cell d2 = Map.Get_Zone_Connection_Destination(to, to);
+					if (d1.Gamemd_Distance_To(d2) <= 2) {
+						needsswap = true;
 					}
-				}
-				if (!needsswap) {
-					useplan = true;
-				}
-			} else if (isunderbridgeto) {
-				useplan = true;
-			}
-
-			if (((!canburrowfrom && height >= 0) || !canburrowto) && !needsswap || useplan) {
-				target = Plan_Route(*target);
-				surface = true;
-			}
-		}
-
-		/*
-		 * The non-subterranean (and the no-plan subterranean) immediate path clears
-		 * the route queue before surfacing a tunneler that is on its way up.
-		 */
-		if (!surface) {
-			if (immediate) {
-				RouteQueue.Clear();
-				surface = true;
-			}
-		}
-
-		/*
-		 * Surfacing tunneler keeps its current cell at the route front.
-		 */
-		if (surface) {
-			if (Locomotion->Is_Surfacing()) {
-				RouteQueue.Add_Head(target);
-				target = &Map[Get_Coord()];
-			}
-		}
-
-		/*
-		 * If the locomotor is a tunnel locomotor and the unit is on the ground,
-		 * surface the tunneler by swapping the tunnel locomotor for a drive one.
-		 * (Mirrors BuildingClass weapons-factory exit, building.cpp:6236-6251.)
-		 */
-		if (target != NULL && !Locomotion->Is_Moving()) {
-			ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
-			if (clsid == ClassID_TunnelLocomotion && Get_Height_AGL() == 0) {
-				Coord tc = target->Center_Coord();
-				int gl = Map.Get_Height_GL(tc);
-				if (tc.Z < gl) tc.Z = gl;
-
-				bool doswap = needsswap;
-				if (!doswap) {
-					if (!Is_Moving_Onto_Bridge()
-						&& !Map[target->Center_Coord()].IsUnderBridge
-						&& Map[Destination_Coord()].Can_Burrow_Here()
-						&& Map[target->Center_Coord()].Can_Burrow_Here()) {
-						Cell to = target->Center_Coord().As_Cell();
-						if (!Is_Route_Broken(Get_Target_Cell(), to)) {
-							doswap = true;
-						}
-					} else {
-						doswap = true;
-					}
-				}
-
-				if (doswap) {
-					IPiggyback * piggy = Piggyback_Of(Locomotion.get());
-					if (piggy != NULL && piggy->Is_Piggybacking()) {
-						Locomotion = piggy->End_Piggyback();
-					}
-					std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_DriveLocomotion);
-					walk->Link_To_Object(this);
-					piggy = Piggyback_Of(walk.get());
-					if (piggy != NULL) {
-						piggy->Begin_Piggyback(Locomotion);
-						Locomotion = std::move(walk);
-						Locomotion->Force_New_Slope(Map[Get_Coord()].Ramp);
-					}
+				} else {
+					needsswap = true;
 				}
 			}
 		}
-	} else {
-		RouteQueue.Clear();
+		if (!needsswap) {
+			useplan = true;
+		}
+	} else if (isunderbridgeto) {
+		useplan = true;
 	}
 
+	if (((!canburrowfrom && height >= 0) || !canburrowto) && !needsswap || useplan) {
+		target = Plan_Route(*target);
+		return(true);
+	}
+	return(false);
+}
+
+
+void UnitClass::Swap_Tunnel_For_Drive_Locomotor(AbstractClass * target, bool needsswap)
+{
+	if (target != NULL && !Locomotion->Is_Moving()) {
+		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+		if (clsid == ClassID_TunnelLocomotion && Get_Height_AGL() == 0) {
+			Coord tc = target->Center_Coord();
+			int gl = Map.Get_Height_GL(tc);
+			if (tc.Z < gl) tc.Z = gl;
+
+			bool doswap = needsswap;
+			if (!doswap) {
+				if (!Is_Moving_Onto_Bridge()
+					&& !Map[target->Center_Coord()].IsUnderBridge
+					&& Map[Destination_Coord()].Can_Burrow_Here()
+					&& Map[target->Center_Coord()].Can_Burrow_Here()) {
+					Cell to = target->Center_Coord().As_Cell();
+					if (!Is_Route_Broken(Get_Target_Cell(), to)) {
+						doswap = true;
+					}
+				} else {
+					doswap = true;
+				}
+			}
+
+			if (doswap) {
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+				if (piggy != NULL && piggy->Is_Piggybacking()) {
+					Locomotion = piggy->End_Piggyback();
+				}
+				std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_DriveLocomotion);
+				walk->Link_To_Object(this);
+				piggy = Piggyback_Of(walk.get());
+				if (piggy != NULL) {
+					piggy->Begin_Piggyback(Locomotion);
+					Locomotion = std::move(walk);
+					Locomotion->Force_New_Slope(Map[Get_Coord()].Ramp);
+				}
+			}
+		}
+	}
+}
+
+
+bool UnitClass::Dock_At_Repair_Facility(BuildingClass * b, AbstractClass *& target, bool immediate)
+{
 	/*
 	**	If the player clicked on a friendly repair facility and the repair
 	**	facility is currently not involved with some other unit (radio or unloading).
@@ -6150,7 +6530,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 				if (Transmit_Message(RADIO_DOCKING) == RADIO_ROGER) {
 					BASECLASS::Assign_Destination(target, immediate);
 					Path[0] = FACING_NONE;
-					return;
+					return(true);
 				}
 
 				/*
@@ -6162,11 +6542,13 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+	return(false);
+}
 
-	/*
-	 * A weapons factory that this unit is exiting wants the unit driven to its
-	 * exit cell before anything else; queue the real destination behind it.
-	 */
+
+bool UnitClass::Queue_For_Weapons_Factory(AbstractClass * target)
+{
+	// In contact with a weapons factory, a destination other than the cell (3,1) from its top-left cell is queued, not assigned.
 	BuildingClass * wf = (BuildingClass *)Contact_With_Whom();
 	if (wf != NULL && wf->Fetch_RTTI() == RTTI_BUILDING && wf->Class->IsWeaponsFactory) {
 		Cell exitcell = wf->Get_Coord().As_Cell() + Cell(3, 1);
@@ -6176,10 +6558,15 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			if (target != NULL) {
 				Queue_Navigation_List(target);
 			}
-			return;
+			return(true);
 		}
 	}
+	return(false);
+}
 
+
+void UnitClass::Send_Harvester_To_Dock(BuildingClass * b, AbstractClass *& target)
+{
 	/*
 	 * Harvesters and weeders automatically enter their dock building when the
 	 * clicked target is that building (and the houses are allied).
@@ -6203,7 +6590,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+}
 
+
+void UnitClass::Power_On_At_Repair_Facility(void)
+{
 	/*
 	 * If the locomotor is unpowered and we are not in an ion storm, power it
 	 * back on when an adjacent friendly repair facility occupies our cell.
@@ -6221,8 +6612,6 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
-
-	BASECLASS::Assign_Destination(target, immediate);
 }
 
 
@@ -6244,6 +6633,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
  *=============================================================================================*/
 AbstractClass * UnitClass::Greatest_Threat(ThreatType threat, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
 	if (House->Is_Human_Player() && Class->IsDeployToFire) {
 		return(NULL);
 	}
@@ -6768,6 +7158,12 @@ bool UnitClass::Ready_To_Commence(void)
 	}
 
 	if (IsDumping) {
+		return(false);
+	}
+
+	// A simple deployer whose deploy or pack-up animation is running takes no new order until it ends (gamemd
+	// UnitClass::ReadyToNextMission, 0x744270, which checks the Deploying and Undeploying flags).
+	if (CurrentMission == MISSION_UNLOAD && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
 		return(false);
 	}
 
@@ -7376,10 +7772,8 @@ bool UnitClass::Considered_Vehicle(void) const
 void UnitClass::EMPulse_Blast(void)
 {
 	if (!Is_Immobilized() && Charge >= Class->MaxCharge) {
-		// TODO: look the weapon up once the rules must declare it, so no match grows the list.
-		// WeaponType index = WeaponTypeClass::From_Name("MobileEMPulseWeapon");
-		// WeaponTypeClass const * weapon = index != WEAPON_NONE ? Weapons[index] : NULL;
-		WeaponTypeClass const * weapon = WeaponTypeClass::Find_Or_Make("MobileEMPulseWeapon");
+		// Looked up, not created: nothing reads a weapon made after the rules load, so its section would be ignored.
+		WeaponTypeClass const * weapon = WeaponTypeClass::Find_Declared("MobileEMPulseWeapon");
 		if (weapon != NULL && weapon->Bullet != NULL && weapon->WarheadPtr != NULL) {
 			CellClass * cptr = &Map[Center_Coord().As_Cell()];
 			BulletClass * bullet = Create_Bullet(weapon->Bullet, cptr, this, weapon->Attack, weapon->WarheadPtr, 1234, weapon->IsBright);
@@ -7391,6 +7785,23 @@ void UnitClass::EMPulse_Blast(void)
 		}
 		Charge = 0;
 	}
+}
+
+
+/// <summary>
+/// Ends a crashing vehicle that has reached the ground (UnitClass notice 0x117C, 0x746100).
+/// A BalloonHover type sets off its death weapon, any other type explodes with its Explosion
+/// and DestroyAnim, and the vehicle is then removed. Nothing under it is crushed.
+/// </summary>
+void UnitClass::Land_Crashed(void)
+{
+	DebugString("Crash: %s lands at %d,%d\n", Class->Name(), Get_Cell().X, Get_Cell().Y);
+	if (Class->IsBalloonHover) {
+		Fire_Death_Weapon();
+	} else {
+		Explode();
+	}
+	Delete_Me();
 }
 
 
@@ -7561,9 +7972,8 @@ int UnitClass::Simple_Deploy_AI(void)
 {
 	switch (Status) {
 		case 0:
-			if (Locomotion->Is_Moving()) {
-				return(5);
-			}
+			// UnitClass::Deploy (0x739AC0) starts the landing of an airborne DeployToLand unit whether or not its locomotor still has a move;
+			// a hovering jumpjet keeps its moving flag, so waiting for it to stop would keep the unit in the air.
 			if (!IsSimpleDeployed && Class->IsDeployToLand && HeightAGL > 0) {
 				IsLandingToDeploy = true;
 				Assign_Target(NULL);
@@ -7572,10 +7982,13 @@ int UnitClass::Simple_Deploy_AI(void)
 				}
 				return(5);
 			}
+			if (Locomotion->Is_Moving()) {
+				return(5);
+			}
 			if (Class->DeployingAnim != NULL) {
 				AnimClass * anim = new AnimClass(Class->DeployingAnim, Center_Coord());
-				// The animation is drawn from unit artwork, so it takes the owner's unit colors.
-				anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
+				// The unit's DeployAnim takes its GetRemapColour drawer, its Palette= or its house colors (UnitClass::Deploy 0x739AC0, Undeploy 0x739CD0).
+				anim->AlternativeDrawer = Remap_Converter();
 				anim->AlternativeBrightness = Map[Get_Cell()].Brightness;
 				if (IsSimpleDeployed) {
 					anim->Play_Backward();
@@ -7612,4 +8025,30 @@ int UnitClass::Simple_Deploy_AI(void)
 			return(1);
 	}
 	return(1);
+}
+
+
+/// <summary>
+/// Finds the cell a DeployToLand unit can land on when the cell it is over cannot take it.
+/// Only the eight cells around the unit are tried: a land cell that is clear and free to occupy.
+/// </summary>
+/// <returns>Cell; The landing cell, or CELL_NONE when no neighbouring cell fits.</returns>
+Cell UnitClass::Deploy_Landing_Cell(void) const
+{
+	Cell const here = Get_Cell();
+	for (FacingType face = FACING_N; face < FACING_COUNT; face++) {
+		Cell const cell = Adjacent_Cell(here, face);
+		CellClass * cellptr = &Map[cell];
+		if (cellptr->Land_Type() == LAND_WATER || cellptr->Land_Type() == LAND_BEACH || cellptr->IsUnderBridge) {
+			continue;
+		}
+		if (Can_Enter_Cell(cellptr) != MOVE_OK) {
+			continue;
+		}
+		if (!cellptr->Is_Spot_Free(CellClass::Spot_Index(cellptr->Center_Coord()), false)) {
+			continue;
+		}
+		return(cell);
+	}
+	return(CELL_NONE);
 }

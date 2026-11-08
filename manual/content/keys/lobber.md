@@ -21,9 +21,9 @@ ROT=0
 
 The flag changes the shot's flight only when the weapon's [`Projectile=`](/keys/projectile/) has [`Arcing=yes`](/keys/arcing/). Any other projectile sets its launch pitch without the arc choice, so it flies the same with or without the flag.
 
-The barrel follows the arc choice whatever the projectile. Barrel elevation always uses the weapon in the object's [first weapon slot](/systems/firing-geometry/#what-each-part-of-a-shot-reads):
+The barrel follows the arc choice whatever the projectile. Barrel elevation uses the weapon in the object's [first weapon slot](/systems/firing-geometry/#what-each-part-of-a-shot-reads):
 
-- A `Lobber=yes` weapon in the first slot raises the barrel to the steep angle, even when its projectile flies flat.
+- A `Lobber=yes` weapon in the first slot raises the barrel to the steep angle, even when its projectile flies flat. A vehicle's barrel does not aim at its target, so this does not apply to a vehicle.
 - A `Lobber=yes` weapon in the second slot still sends an arcing projectile on the high arc, but the barrel is aimed for the first slot's weapon.
 
 When the first-slot weapon's launch speed cannot reach the target at either angle, the barrel falls back to a fixed elevation. When the firing weapon's launch speed cannot reach it, an arcing shot is not fired at all, so it spends no ammunition and starts no reload. [`Speed=`](/keys/speed/#scope-weapontype) covers where the launch speed comes from.

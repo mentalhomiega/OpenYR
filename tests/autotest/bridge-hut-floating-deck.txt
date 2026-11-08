@@ -1,0 +1,22 @@
+; High bridge regression on Allied 2 (ALL02UMD.MAP): the north span is the BRIDGE1 overlay (index 24) on row 150 from
+; x 105 to x 119, between the head tiles at x 103-105 and x 120-122; a second span runs parallel on row 155. The map is
+; revealed and a bridge repair hut's blast (Map.Destroy_Bridge_At, the call the hut's C4 makes) is made beside the north
+; span at 112,152.
+; The blast breaks both end pieces, 105,150 and 119,150. The deck between them is a run bounded by two gaps and has to
+; fall in the same blast, as gamemd's BlowUpBridgeArea (0x576BA0) does through its connection walk (0x576770).
+; Expected: bridgedecks for row 150 reads left 15 before the blast and left 0 after it. The row 155 span is not near
+; the hut and keeps left 15.
+; Before the fix the blast removed only the two end decks: row 150 read left 13 and the deck floated between broken ends.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-hut-floating-deck.txt -Build agent21 -Campaign -Map ALL02UMD.MAP -Width 1280 -Height 720 -Seconds 150 -Filter "AUTOTEST( +bridgedecks| frame [0-9]+: bridgedecks)|Exception"
+25 reveal
+30 view 113 150
+40 bridgedecks 105 119 150
+41 bridgedecks 105 119 155
+60 command ScreenCapture
+70 bridgehut 112 152
+75 bridgedecks 105 119 150
+90 command ScreenCapture
+200 command ScreenCapture
+201 bridgedecks 105 119 150
+202 bridgedecks 105 119 155
+210 quit

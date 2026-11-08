@@ -11,7 +11,9 @@
 
 #include "parasite.h"
 
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 #include "_map.h"
 #include "_rules.h"
@@ -46,6 +48,9 @@ constexpr double Squid_Splash_Reach = 64.0;
 // The radians per facing step that a bite's roll turns by (ParasiteClass::Update, 0x629FD0; TechnoClass::vt_entry_3D8, 0x70B280).
 constexpr double Bite_Turn_Per_Facing = -9.587672516830327e-05;
 
+// The parasites whose grapple holds an animation. A removed animation checks only these, not every techno.
+std::vector<ParasiteClass *> GrappleHolders;
+
 
 /// <summary>
 /// Returns the victim's turn in radians from facing 0x3FFF, the angle the grapple's splashes and wakes rotate by.
@@ -64,6 +69,27 @@ Coord Squid_Offset(Coord const & where, double turn, double side, double ahead)
 	double const cosine = Gamemd_Cosine(turn);
 	double const sine = Gamemd_Sine(turn);
 	return(Coord(where.X + (int)(side * cosine - ahead * sine), where.Y + (int)(side * sine + ahead * cosine), where.Z));
+}
+
+
+/// <summary>
+/// Sets the paralysis timer of a foot to frames. A null techno or one that is not a foot is left alone.
+/// </summary>
+void Set_Paralysis(TechnoClass * techno, int frames)
+{
+	if (techno != nullptr && techno->Is_Foot()) {
+		((FootClass *)techno)->ParalysisTimer = frames;
+	}
+}
+
+
+/// <summary>
+/// Unlimbos the unit at the coordinate with ScenarioInit raised, and returns whether it was placed.
+/// </summary>
+bool Return_To_Map(TechnoClass * unit, Coord const & at, Dir256 facing)
+{
+	ScenarioInitScope const scope;
+	return(unit->Unlimbo(at, facing));
 }
 
 
@@ -93,6 +119,30 @@ ParasiteClass::ParasiteClass(TechnoClass * owner) :
 	GrappleAnimFrame(0),
 	GrappleAnimDelay(0)
 {
+}
+
+
+ParasiteClass::~ParasiteClass(void)
+{
+	if (GrappleAnim != nullptr) {
+		Set_Grapple_Anim(nullptr);
+	}
+}
+
+
+/// <summary>
+/// Sets the grapple animation and keeps the grapple holder list in step with it. A parasite is
+/// on that list exactly while it holds an animation.
+/// </summary>
+void ParasiteClass::Set_Grapple_Anim(AnimClass * anim)
+{
+	GrappleAnim = anim;
+	auto const found = std::find(GrappleHolders.begin(), GrappleHolders.end(), this);
+	if (anim != nullptr && found == GrappleHolders.end()) {
+		GrappleHolders.push_back(this);
+	} else if (anim == nullptr && found != GrappleHolders.end()) {
+		GrappleHolders.erase(found);
+	}
 }
 
 
@@ -126,10 +176,7 @@ void ParasiteClass::Try_Infect(TechnoClass * target)
 	Reset_Grapple();
 	if (!Can_Infect(target)) {
 		Coord const from = Owner->PositionCoord;
-		ScenarioInit++;
-		bool const placed = Owner->Unlimbo(from, Owner->PrimaryFacing.Current().As_Dir256());
-		ScenarioInit--;
-		if (!placed) {
+		if (!Return_To_Map(Owner, from, Owner->PrimaryFacing.Current().As_Dir256())) {
 			Owner->Delete_Me();
 			return;
 		}
@@ -177,16 +224,14 @@ void ParasiteClass::Update(void)
 			new ParticleSystemClass(Rule->DefaultSparkSystem, where);
 		}
 		if (weapon->Anim.Count() > 0) {
-			AnimTypeClass const * anim = weapon->Anim[Shape_Facing_Index(victim->PrimaryFacing.Current(), weapon->Anim.Count())];
+			AnimTypeClass const * anim = weapon->Anim[Eight_Facing_Entry(victim->PrimaryFacing.Current(), weapon->Anim.Count())];
 			if (anim != nullptr) {
 				new AnimClass(anim, where);
 			}
 		}
 	}
 	// Each bite sets the victim's paralysis to the warhead's Paralyzes, zero included (ParasiteClass::Update, 0x629FD0).
-	if (victim->Is_Foot()) {
-		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0;
-	}
+	Set_Paralysis(victim, weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0);
 
 	// The roll draws its side from the synchronized random number generator, after the sparks and anim (ParasiteClass::Update, 0x629FD0).
 	if (!infantry) {
@@ -216,9 +261,7 @@ void ParasiteClass::Update_Squid(void)
 
 	if (cell != nullptr && cell->Land_Type() != LAND_WATER) {
 		Exit_Unit();
-		if (Owner != nullptr && Owner->Is_Foot()) {
-			((FootClass *)Owner)->ParalysisTimer = 0;
-		}
+		Set_Paralysis(Owner, 0);
 		return;
 	}
 
@@ -230,21 +273,15 @@ void ParasiteClass::Update_Squid(void)
 			{
 				AnimType const type = AnimTypeClass::From_Name("SQDG");
 				if (type != ANIM_NONE && AnimTypes[type] != nullptr) {
-					GrappleAnim = new AnimClass(AnimTypes[type], where);
+					Set_Grapple_Anim(new AnimClass(AnimTypes[type], where));
 				}
 			}
-			GrappleState = GrappleStage::Grab;
-			GrappleAnimDelay = 0;
-			GrappleAnimFrame = 0;
-			Update_Grapple();
+			Enter_Grapple_Stage(GrappleStage::Grab);
 			break;
 
 		case GrappleStage::Grab:
 			if (Update_Grapple()) {
-				GrappleState = Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right;
-				GrappleAnimDelay = 0;
-				GrappleAnimFrame = 0;
-				Update_Grapple();
+				Enter_Grapple_Stage(Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right);
 				Create_Wakes(where);
 			}
 			break;
@@ -254,10 +291,7 @@ void ParasiteClass::Update_Squid(void)
 			{
 				double const direction = GrappleState == GrappleStage::Push_Left ? -1.0 : 1.0;
 				if (Update_Grapple()) {
-					GrappleState = GrappleStage::Damage;
-					GrappleAnimDelay = 0;
-					GrappleAnimFrame = 0;
-					Update_Grapple();
+					Enter_Grapple_Stage(GrappleStage::Damage);
 				}
 				victim->AngleRotatedSideways = (float)(Gamemd_Sine(GrappleAnimFrame * direction * Squid_Shake_Step) * Squid_Shake_Limit);
 			}
@@ -292,9 +326,7 @@ void ParasiteClass::Update_Squid(void)
 						victim->DamageWarhead = NULL;
 						victim->Stun();
 						Reset_Grapple();
-						if (Owner != nullptr && Owner->Is_Foot()) {
-							((FootClass *)Owner)->ParalysisTimer = 0;
-						}
+						Set_Paralysis(Owner, 0);
 						return;
 					}
 				}
@@ -305,10 +337,7 @@ void ParasiteClass::Update_Squid(void)
 					Reset_Grapple();
 					break;
 				}
-				GrappleState = Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right;
-				GrappleAnimDelay = 0;
-				GrappleAnimFrame = 0;
-				Update_Grapple();
+				Enter_Grapple_Stage(Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right);
 				Create_Wakes(where);
 			}
 			break;
@@ -316,7 +345,26 @@ void ParasiteClass::Update_Squid(void)
 
 	if (GrappleAnim != nullptr && Owner != nullptr && Victim != nullptr && Victim != GrappleAnim->xObject) {
 		GrappleAnim->Attach_To(Victim);
+
+		// gamemd ParasiteClass::UpdateSquid (0x6297F0) draws the grapple through its owner's GetRemapColour,
+		// and tints it with the victim's cell brightness when the victim is on a cell.
+		GrappleAnim->AlternativeDrawer = Owner->Remap_Converter();
+		if (!Victim->IsInLimbo) {
+			GrappleAnim->AlternativeBrightness = Map[Victim->Center_Coord()].Brightness;
+		}
 	}
+}
+
+
+/// <summary>
+/// Moves the grapple to the stage and restarts its animation, then runs the first tick of that stage.
+/// </summary>
+void ParasiteClass::Enter_Grapple_Stage(GrappleStage stage)
+{
+	GrappleState = stage;
+	GrappleAnimDelay = 0;
+	GrappleAnimFrame = 0;
+	Update_Grapple();
 }
 
 
@@ -363,9 +411,7 @@ void ParasiteClass::Create_Wakes(Coord const & where)
 	for (int i = 0; i < 3; i++) {
 		int const side = Random_Pick(-180, 180);
 		int const ahead = Random_Pick(-64, 64);
-		if (Rule->Wake != nullptr) {
-			new AnimClass(Rule->Wake, Squid_Offset(where, turn, side, ahead));
-		}
+		Spawn_Wake(Squid_Offset(where, turn, side, ahead));
 	}
 }
 
@@ -379,7 +425,7 @@ void ParasiteClass::Reset_Grapple(void)
 	GrappleAnimDelay = 0;
 	GrappleState = GrappleStage::Start;
 	AnimClass * const anim = GrappleAnim;
-	GrappleAnim = nullptr;
+	Set_Grapple_Anim(nullptr);
 	if (anim != nullptr) {
 		anim->Delete_Me();
 	}
@@ -408,12 +454,27 @@ void ParasiteClass::Victim_Hit(int damage, TechnoClass const * source)
 
 /// <summary>
 /// Brings the parasite out of its victim (ParasiteClass::ExitUnit, 0x62A4A0) onto the
-/// victim's cell, or the nearest cell it can stand on. A doomed parasite, or one with no room
-/// to come out, is lost.
+/// victim's cell, or the nearest cell it can stand on, paralyzed for three rearm delays. A
+/// doomed parasite, or one with no room to come out, is lost.
 /// </summary>
 void ParasiteClass::Exit_Unit(void)
 {
 	Release(Frame < SuppressedUntil, true);
+}
+
+
+/// <summary>
+/// Lets the parasite out when its victim dies or leaves the map (ParasiteClass::PointerExpired,
+/// 0x62A260), and ends any grapple it held. Unlike Exit_Unit, the parasite is not paralyzed, so
+/// it takes move orders at once. Does nothing when there is no victim.
+/// </summary>
+void ParasiteClass::Victim_Removed(void)
+{
+	if (Victim == nullptr || Owner == nullptr) {
+		return;
+	}
+	Release(Frame < SuppressedUntil, false);
+	Reset_Grapple();
 }
 
 
@@ -425,9 +486,7 @@ void ParasiteClass::Release(bool doomed, bool from_exit)
 	}
 	victim->ParasiteEatingMe = nullptr;
 	Victim = nullptr;
-	if (victim->Is_Foot()) {
-		((FootClass *)victim)->ParalysisTimer = 0;
-	}
+	Set_Paralysis(victim, 0);
 
 	if (doomed) {
 		Owner->Delete_Me();
@@ -439,20 +498,18 @@ void ParasiteClass::Release(bool doomed, bool from_exit)
 	if (Owner->Is_Foot() && ((FootClass *)Owner)->Can_Enter_Cell(&Map[cell]) != MOVE_OK) {
 		cell = victim->Nearby_Location(Owner);
 	}
-	ScenarioInit++;
-	bool const placed = cell.X != 0 || cell.Y != 0 ? Owner->Unlimbo(Map[cell].Center_Coord(), victim->PrimaryFacing.Current().As_Dir256()) : false;
-	ScenarioInit--;
+	bool const placed = (cell.X != 0 || cell.Y != 0) && Return_To_Map(Owner, Map[cell].Center_Coord(), victim->PrimaryFacing.Current().As_Dir256());
 	if (!placed) {
 		Owner->Delete_Me();
 		return;
 	}
+	// Only an exit through ExitUnit (0x62A4A0) paralyzes the parasite for three rearm delays; PointerExpired (0x62A260) does not.
 	if (from_exit) {
 		Reset_Grapple();
-	}
-	// The parasite itself is paralyzed for three rearm delays after it comes out (ParasiteClass::ExitUnit, 0x62A4A0).
-	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
-	if (weapon != nullptr && Owner->Is_Foot()) {
-		((FootClass *)Owner)->ParalysisTimer = weapon->ROF * 3;
+		WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
+		if (weapon != nullptr) {
+			Set_Paralysis(Owner, weapon->ROF * 3);
+		}
 	}
 	if (IsReselect && Owner->House->Is_Player_Control()) {
 		Owner->Select();
@@ -476,10 +533,10 @@ void ParasiteClass::Detach(AbstractClass const * target)
 		return;
 	}
 	if (target == GrappleAnim) {
-		GrappleAnim = nullptr;
+		Set_Grapple_Anim(nullptr);
 		return;
 	}
-	// A victim leaving the map or dying lets the parasite out where it stood (ParasiteClass::PointerExpired, 0x62A260).
+	// A victim leaving the map or dying lets the parasite out where it stood, without the exit paralysis (ParasiteClass::PointerExpired, 0x62A260).
 	if (target == Victim && Owner != nullptr) {
 		Release(Frame < SuppressedUntil, false);
 	}
@@ -497,4 +554,31 @@ void ParasiteClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GrappleState);
 	stream.Serialize(GrappleAnimFrame);
 	stream.Serialize(GrappleAnimDelay);
+}
+
+
+/// <summary>
+/// Clears each grapple that holds target, which is an animation being removed. The list is
+/// walked from its end, since a parasite that drops its animation leaves the list.
+/// </summary>
+void Detach_Grapple_Holders(AbstractClass const * target)
+{
+	for (std::size_t index = GrappleHolders.size(); index-- > 0; ) {
+		GrappleHolders[index]->Detach(target);
+	}
+}
+
+
+/// <summary>
+/// Replaces the grapple holder list with every parasite whose GrappleAnim is set now.
+/// </summary>
+void Rebuild_Grapple_Holders(void)
+{
+	GrappleHolders.clear();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * const techno = Technos[index];
+		if (techno->ParasiteImUsing && techno->ParasiteImUsing->GrappleAnim != nullptr) {
+			GrappleHolders.push_back(&techno->ParasiteImUsing.value());
+		}
+	}
 }

@@ -16,6 +16,8 @@
 #include "bsurface.h"
 #include "csf.h"
 #include "dsurface.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -28,11 +30,21 @@
 #include "shapeset.h"
 #include "tab.h"
 #include "viewzoom.h"
+#include "video.h"
 #include "draw.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <iterator>
+#include <utility>
+#include <vector>
+
+#if defined(__SSE2__) || defined(_M_IX86) || defined(_M_X64)
+#include <emmintrin.h>
+#define HUD_PANEL_SSE2 1
+#endif
 
 
 bool Modern_Interface(void)
@@ -47,7 +59,7 @@ Rect Tactical_View_Rect(void)
 	if (Modern_Interface()) {
 		return(rect);
 	}
-	rect.X = (Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH;
+	rect.X = 0;
 	rect.Y = SidebarClass::VIEW_TOP;
 	rect.Width -= SidebarClass::SIDE_WIDTH;
 	rect.Height -= SidebarClass::VIEW_TOP + SidebarClass::COMMAND_BAR_HEIGHT;
@@ -60,7 +72,7 @@ int Sidebar_Screen_X(void)
 	if (Modern_Interface()) {
 		return(VisibleRect.Width - HUD_PANEL_WIDTH);
 	}
-	return(Options.IsSidebarOnRight ? ScreenTacticalRect.X + ScreenTacticalRect.Width : 0);
+	return(ScreenTacticalRect.X + ScreenTacticalRect.Width);
 }
 
 
@@ -128,7 +140,9 @@ int Hud_Max_Rows_For_Frame(int frame_height)
 }
 
 
-int Hud_Max_Rows(void)
+// The cameo rows the build panel can show at the current screen height: as many as fit above the
+// scroll arrows, at least HUD_MIN_ROWS and at most the grid's slots allow.
+static int Hud_Max_Rows(void)
 {
 	return(Hud_Max_Rows_For_Frame(VisibleRect.Height));
 }
@@ -163,7 +177,9 @@ HudLayout Hud_Layout_For_Frame(int rows, int frame_width, int frame_height)
 }
 
 
-HudLayout Hud_Layout_For_Rows(int rows)
+// The build panel laid out for the given number of cameo rows, held within Hud_Max_Rows. Everything
+// that follows the row count is computed here, so a change of rows needs no other constants.
+static HudLayout Hud_Layout_For_Rows(int rows)
 {
 	return(Hud_Layout_For_Frame(rows, VisibleRect.Width, VisibleRect.Height));
 }
@@ -222,6 +238,35 @@ HudColors Side_Colors(void)
 	return(_colors[side]);
 }
 
+
+// The panel background and the wells on it. Blit_Hud_Panel finds these colours to make them translucent.
+RGBClass Hud_Fill_Color(void)
+{
+	return(RGBClass(20, 22, 26));
+}
+
+
+RGBClass Hud_Well_Color(void)
+{
+	return(RGBClass(8, 9, 11));
+}
+
+
+int Channel(int pixel, int right, int left)
+{
+	return(((pixel >> right) & (0xFF >> left)) << left);
+}
+
+
+// Is this hicolor pixel the near-black backing that Yuri's Revenge drew its sidebar buttons on?
+bool Is_Backing(int pixel)
+{
+	int const most = 24;
+	return(Channel(pixel, DSurface::RedRight, DSurface::RedLeft) <= most
+		&& Channel(pixel, DSurface::GreenRight, DSurface::GreenLeft) <= most
+		&& Channel(pixel, DSurface::BlueRight, DSurface::BlueLeft) <= most);
+}
+
 }
 
 
@@ -237,7 +282,7 @@ void Draw_Hud_Frame(Surface & surface, Rect const & rect)
 
 void Draw_Hud_Well(Surface & surface, Rect const & rect)
 {
-	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(8, 9, 11)));
+	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(Hud_Well_Color()));
 	surface.Draw_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(48, 52, 60)));
 }
 
@@ -258,25 +303,6 @@ int Hud_Side_Pixel(void)
 int Hud_Flash_Pixel(void)
 {
 	return(DSurface::Build_Hicolor_Pixel(RGBClass(235, 235, 235)));
-}
-
-
-namespace {
-
-int Channel(int pixel, int right, int left)
-{
-	return(((pixel >> right) & (0xFF >> left)) << left);
-}
-
-// Is this hicolor pixel the near-black backing that Yuri's Revenge drew its sidebar buttons on?
-bool Is_Backing(int pixel)
-{
-	int const most = 24;
-	return(Channel(pixel, DSurface::RedRight, DSurface::RedLeft) <= most
-		&& Channel(pixel, DSurface::GreenRight, DSurface::GreenLeft) <= most
-		&& Channel(pixel, DSurface::BlueRight, DSurface::BlueLeft) <= most);
-}
-
 }
 
 
@@ -305,8 +331,10 @@ void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * 
 	};
 
 	Rect const bounds = surface.Get_Rect();
-	unsigned short const * source = static_cast<unsigned short const *>(_scratch->Lock());
-	unsigned short * dest = static_cast<unsigned short *>(surface.Lock());
+	SurfaceLock scratch_lock(*_scratch);
+	SurfaceLock dest_lock(surface);
+	unsigned short const * source = scratch_lock.As<unsigned short const>();
+	unsigned short * dest = dest_lock.As<unsigned short>();
 	if (source != NULL && dest != NULL) {
 		int const sstride = _scratch->Stride() / 2;
 		int const dstride = surface.Stride() / 2;
@@ -333,8 +361,6 @@ void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * 
 			}
 		}
 	}
-	if (source != NULL) _scratch->Unlock();
-	if (dest != NULL) surface.Unlock();
 }
 
 
@@ -434,7 +460,7 @@ ShapeSet const * Hud_Icon(char const * name)
 
 void Draw_Hud_Fill(Surface & surface, Rect const & rect)
 {
-	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(20, 22, 26)));
+	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(Hud_Fill_Color()));
 }
 
 
@@ -449,8 +475,203 @@ void Draw_Hud_Panel(Surface & surface)
 }
 
 
+namespace {
+
+// Mixes a panel colour over a map pixel, the colour taking the opacity percent of the result.
+unsigned short Blend_Over_Map(unsigned short map, RGBClass const & colour, int opacity)
+{
+	RGBClass const under = DSurface::Deconstruct_Hicolor_Pixel(map);
+	auto mix = [opacity](int beneath, int tint) {
+		return((beneath * (100 - opacity) + tint * opacity + 50) / 100);
+	};
+	return(static_cast<unsigned short>(DSurface::Build_Hicolor_Pixel(
+		mix(under.Get_Red(), colour.Get_Red()), mix(under.Get_Green(), colour.Get_Green()), mix(under.Get_Blue(), colour.Get_Blue()))));
+}
+
+
+bool Rect_Holds(Rect const & outer, Rect const & inner)
+{
+	Rect const common = Intersect(outer, inner);
+	return(common.Is_Valid() && common.X == inner.X && common.Y == inner.Y && common.Width == inner.Width && common.Height == inner.Height);
+}
+
+
+// Each 16-bit pixel blended with the panel fill and with a well at one opacity. The panel is drawn every frame, so a
+// lookup replaces the channel mixing for each background pixel.
+struct HudBlendTable {
+	int Opacity = -1;
+	std::vector<unsigned short> Fill;
+	std::vector<unsigned short> Well;
+};
+
+
+HudBlendTable const & Hud_Blend_Table(int opacity)
+{
+	static HudBlendTable table;
+	if (table.Opacity != opacity) {
+		table.Opacity = opacity;
+		table.Fill.resize(65536);
+		table.Well.resize(65536);
+		for (int pixel = 0; pixel < 65536; pixel++) {
+			table.Fill[pixel] = Blend_Over_Map(static_cast<unsigned short>(pixel), Hud_Fill_Color(), opacity);
+			table.Well[pixel] = Blend_Over_Map(static_cast<unsigned short>(pixel), Hud_Well_Color(), opacity);
+		}
+	}
+	return(table);
+}
+
+
+// The colours that mark panel background, and the table that blends them with the map.
+struct HudPanelColours {
+	unsigned short Fill;
+	unsigned short Well;
+	HudBlendTable const * Blend;
+};
+
+
+// A background pixel over the map layer key becomes the layer's tint key and over anything else is blended with it;
+// any other pixel is copied.
+inline unsigned short Panel_Pixel(unsigned short pixel, unsigned short target, HudPanelColours const & colours)
+{
+	bool const is_fill = pixel == colours.Fill;
+	if (!is_fill && pixel != colours.Well) {
+		return(pixel);
+	}
+	if (target == VIDEO_LAYER_KEY) {
+		return(is_fill ? VIDEO_LAYER_TINT_KEYS[0] : VIDEO_LAYER_TINT_KEYS[1]);
+	}
+	return(is_fill ? colours.Blend->Fill[target] : colours.Blend->Well[target]);
+}
+
+
+// Draws count panel pixels from in over out, in a span that crosses no solid area.
+void Panel_Span(unsigned short const * in, unsigned short * out, int count, HudPanelColours const & colours)
+{
+	int x = 0;
+#ifdef HUD_PANEL_SSE2
+	__m128i const fill = _mm_set1_epi16(static_cast<short>(colours.Fill));
+	__m128i const well = _mm_set1_epi16(static_cast<short>(colours.Well));
+	__m128i const key = _mm_set1_epi16(static_cast<short>(VIDEO_LAYER_KEY));
+	__m128i const tint_fill = _mm_set1_epi16(static_cast<short>(VIDEO_LAYER_TINT_KEYS[0]));
+	__m128i const tint_well = _mm_set1_epi16(static_cast<short>(VIDEO_LAYER_TINT_KEYS[1]));
+	for (; x + 8 <= count; x += 8) {
+		__m128i const pixel = _mm_loadu_si128(reinterpret_cast<__m128i const *>(in + x));
+		__m128i const is_fill = _mm_cmpeq_epi16(pixel, fill);
+		__m128i const background = _mm_or_si128(is_fill, _mm_cmpeq_epi16(pixel, well));
+		if (_mm_movemask_epi8(background) == 0) {
+			_mm_storeu_si128(reinterpret_cast<__m128i *>(out + x), pixel);
+			continue;
+		}
+		__m128i const target = _mm_loadu_si128(reinterpret_cast<__m128i const *>(out + x));
+		if (_mm_movemask_epi8(_mm_andnot_si128(_mm_cmpeq_epi16(target, key), background)) == 0) {
+			__m128i const tint = _mm_or_si128(_mm_and_si128(is_fill, tint_fill), _mm_andnot_si128(is_fill, tint_well));
+			_mm_storeu_si128(reinterpret_cast<__m128i *>(out + x), _mm_or_si128(_mm_and_si128(background, tint), _mm_andnot_si128(background, pixel)));
+			continue;
+		}
+		for (int i = x; i < x + 8; i++) {
+			out[i] = Panel_Pixel(in[i], out[i], colours);
+		}
+	}
+#endif
+	for (; x < count; x++) {
+		out[x] = Panel_Pixel(in[x], out[x], colours);
+	}
+}
+
+}
+
+
+/// <summary>
+/// Copies a part of the sidebar surface onto the frame for the modern build panel.
+/// The panel's fill and well pixels are blended over the map beneath them at Options.SidebarOpacity
+/// percent. Where the frame holds the video map layer key instead of the map, they become the layer's tint keys,
+/// which the presenter blends over the map layer. Every other pixel is copied as drawn, including all of the radar
+/// and the buttons.
+/// While emissive masks are on, the emissive values under the panel are updated as Bit_Blit updates them,
+/// so map glow behind the panel does not light it.
+/// </summary>
+/// <param name="surface">The frame the panel is copied onto.</param>
+/// <param name="dest">The place on the frame, which must lie inside it.</param>
+/// <param name="source">The sidebar surface the panel is drawn on.</param>
+/// <param name="source_rect">The part of the sidebar surface to copy, the same size as dest.</param>
+void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source, Rect const & source_rect)
+{
+	int const opacity = std::clamp(Options.SidebarOpacity, 0, 100);
+	bool const fits = dest.Width == source_rect.Width && dest.Height == source_rect.Height
+		&& Rect_Holds(surface.Get_Rect(), dest) && Rect_Holds(source.Get_Rect(), source_rect);
+	if (opacity >= 100 || !fits || surface.Bytes_Per_Pixel() != 2 || source.Bytes_Per_Pixel() != 2) {
+		surface.Blit_From(dest, source, source_rect);
+		return;
+	}
+
+	// Both locks are released before the plain blit below if either one fails.
+	{
+		SurfaceLock out_lock(surface);
+		SurfaceLock in_lock(source);
+		if (out_lock.Is_Valid() && in_lock.Is_Valid()) {
+			unsigned short * out = out_lock.As<unsigned short>();
+			unsigned short const * in = in_lock.As<unsigned short const>();
+			int const out_stride = surface.Stride() / 2;
+			int const in_stride = source.Stride() / 2;
+			RGBClass const fill = Hud_Fill_Color();
+			RGBClass const well = Hud_Well_Color();
+			int const fill_pixel = DSurface::Build_Hicolor_Pixel(fill);
+			int const well_pixel = DSurface::Build_Hicolor_Pixel(well);
+			HudLayout const layout = Hud_Layout();
+			Rect const solid[] = {layout.Radar, layout.Buttons, layout.Options};
+			HudBlendTable const & blend = Hud_Blend_Table(opacity);
+			Video_Set_Layer_Tint(0, fill.Get_Red(), fill.Get_Green(), fill.Get_Blue(), opacity);
+			Video_Set_Layer_Tint(1, well.Get_Red(), well.Get_Green(), well.Get_Blue(), opacity);
+
+			HudPanelColours const colours = {static_cast<unsigned short>(fill_pixel), static_cast<unsigned short>(well_pixel), &blend};
+			for (int y = 0; y < dest.Height; y++) {
+				int const sy = source_rect.Y + y;
+				unsigned short const * const row_in = in + sy * in_stride + source_rect.X;
+				unsigned short * const row_out = out + (dest.Y + y) * out_stride + dest.X;
+
+				// The solid areas that cross this row, as spans of x from the left of the copied part.
+				std::pair<int, int> crossing[std::size(solid)];
+				int crossings = 0;
+				for (Rect const & rect : solid) {
+					if (sy >= rect.Y && sy < rect.Y + rect.Height) {
+						int const left = std::clamp(rect.X - source_rect.X, 0, dest.Width);
+						int const right = std::clamp(rect.X + rect.Width - source_rect.X, 0, dest.Width);
+						if (right > left) {
+							crossing[crossings++] = {left, right};
+						}
+					}
+				}
+				std::sort(crossing, crossing + crossings);
+
+				// Solid pixels are copied as drawn; the spans between them are drawn as panel.
+				int x = 0;
+				for (int index = 0; index < crossings; index++) {
+					int const left = std::max(crossing[index].first, x);
+					if (left > x) {
+						Panel_Span(row_in + x, row_out + x, left - x, colours);
+					}
+					if (crossing[index].second > left) {
+						std::memcpy(row_out + left, row_in + left, static_cast<std::size_t>(crossing[index].second - left) * sizeof(unsigned short));
+						x = crossing[index].second;
+					}
+				}
+				if (x < dest.Width) {
+					Panel_Span(row_in + x, row_out + x, dest.Width - x, colours);
+				}
+			}
+
+			if (Emissive_Is_Enabled()) {
+				Emissive_After_Bit_Blit(surface, dest.X, dest.Y, source, source_rect.X, source_rect.Y, dest.Width, dest.Height);
+			}
+			return;
+		}
+	}
+
+	surface.Blit_From(dest, source, source_rect);
+}
+
+
 std::string Panel_Text(char const * label, char const * fallback)
 {
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
+	return(StringTable.Find_UTF8(label, fallback));
 }

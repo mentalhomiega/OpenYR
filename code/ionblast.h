@@ -12,6 +12,7 @@
 #include "coord.h"
 
 template<class T> class DynamicVectorClass;
+class FootClass;
 
 class IonBlastClass
 {
@@ -44,6 +45,8 @@ class IonBlastClass
 
 		// A wave-only blast shows the shockwave and nothing else (DisableIonBeam).
 		bool IsWaveOnly;
+
+		void Rock_Occupier(FootClass * occupier, Point2D blast_pixel);
 
 	public:
 		/*

@@ -8,11 +8,14 @@
  ******************************************************************************/
 
 #include "modsync.h"
+#include "diskfile.h"
+#include "fnv.h"
+#include "hexdigit.h"
+#include "hexformat.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
-#include <cstdio>
-#include <filesystem>
 #include <fstream>
 #include <iterator>
 
@@ -20,27 +23,7 @@ namespace ModSync
 {
 	namespace {
 
-		constexpr std::uint32_t HASH_BASIS = 2166136261u;
 		constexpr std::size_t MAX_NAME_LENGTH = 40;
-
-
-		std::string Lower(std::string_view text)
-		{
-			std::string lowered(text);
-			std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) {return(static_cast<char>(std::tolower(c)));});
-			return(lowered);
-		}
-
-
-		// The folder's own name, as the mod list shows it.
-		std::string Folder_Name(std::string const & folder)
-		{
-			std::filesystem::path path(folder);
-			if (!path.has_filename()) {
-				path = path.parent_path();
-			}
-			return(path.filename().string());
-		}
 
 
 		// A name that cannot break the text form: no separators, no control characters, a limited length.
@@ -72,13 +55,12 @@ namespace ModSync
 				return(Hash_Bytes(hash, &none, 1));
 			}
 
-			std::ifstream file(path, std::ios::binary);
-			if (!file) {
+			std::string content;
+			if (!Read_Disk_File(path, content)) {
 				unsigned char const missing = 1;
 				return(Hash_Bytes(hash, &missing, 1));
 			}
 
-			std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 			content.erase(std::remove(content.begin(), content.end(), '\r'), content.end());
 
 			unsigned char const present = 2;
@@ -93,13 +75,11 @@ namespace ModSync
 		{
 			std::string text;
 			for (Entry const & entry : signature.Mods) {
-				char hash[16];
-				std::snprintf(hash, sizeof(hash), "=%08x", entry.Hash);
 				if (!text.empty()) {
 					text += ',';
 				}
 				text += entry.Name;
-				text += hash;
+				text += "=" + Hex_Text(entry.Hash, 8, false);
 			}
 			return(text);
 		}
@@ -112,14 +92,8 @@ namespace ModSync
 			}
 			value = 0;
 			for (char c : text) {
-				int digit;
-				if (c >= '0' && c <= '9') {
-					digit = c - '0';
-				} else if (c >= 'a' && c <= 'f') {
-					digit = c - 'a' + 10;
-				} else if (c >= 'A' && c <= 'F') {
-					digit = c - 'A' + 10;
-				} else {
+				int const digit = Hex_Digit_Value(c);
+				if (digit < 0) {
 					return(false);
 				}
 				value = (value << 4) | static_cast<std::uint32_t>(digit);
@@ -128,17 +102,25 @@ namespace ModSync
 		}
 
 
-		// The count and hash that stand for the whole list when it is sent as a digest.
-		void Digest_Of(Signature const & signature, std::uint32_t & count, std::uint32_t & hash)
+		// The count and hash that stand for the whole list when it is sent as a digest. text is
+		// Entries_Text(signature) and is read only when the list is not already a digest.
+		void Digest_Of(Signature const & signature, std::string const & text, std::uint32_t & count, std::uint32_t & hash)
 		{
 			if (signature.IsDigest) {
 				count = signature.DigestCount;
 				hash = signature.DigestHash;
 				return;
 			}
-			std::string const text = Entries_Text(signature);
 			count = static_cast<std::uint32_t>(signature.Mods.size());
-			hash = Hash_Bytes(HASH_BASIS, text.data(), text.size());
+			hash = Hash_Bytes(FNV_BASIS, text.data(), text.size());
+		}
+
+
+		// Returns the first entry named lower_name ignoring case, or nullptr; lower_name must already be lower case.
+		Entry const * Find_Mod(Signature const & signature, std::string const & lower_name)
+		{
+			auto found = std::find_if(signature.Mods.begin(), signature.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == lower_name);});
+			return(found == signature.Mods.end() ? nullptr : &*found);
 		}
 
 
@@ -161,11 +143,7 @@ namespace ModSync
 
 	std::uint32_t Hash_Bytes(std::uint32_t seed, void const * data, std::size_t length)
 	{
-		unsigned char const * bytes = static_cast<unsigned char const *>(data);
-		for (std::size_t index = 0; index < length; index++) {
-			seed = (seed ^ bytes[index]) * 16777619u;
-		}
-		return(seed);
+		return(Fnv_Add_Bytes(seed, data, length));
 	}
 
 
@@ -176,7 +154,7 @@ namespace ModSync
 	/// </summary>
 	std::uint32_t Hash_Mod(ModClass const & mod)
 	{
-		std::uint32_t hash = HASH_BASIS;
+		std::uint32_t hash = FNV_BASIS;
 		hash = Hash_File(hash, mod.Folder + "mod.ini", 'M');
 		hash = Hash_File(hash, mod.RulesFile, 'R');
 		hash = Hash_File(hash, mod.ArtFile, 'A');
@@ -190,7 +168,7 @@ namespace ModSync
 		Signature signature;
 		for (ModClass const & mod : mods) {
 			Entry entry;
-			entry.Name = Clean_Name(Folder_Name(mod.Folder));
+			entry.Name = Clean_Name(Mod_Folder_Own_Name(mod.Folder));
 			entry.Hash = Hash_Mod(mod);
 			signature.Mods.push_back(entry);
 		}
@@ -205,18 +183,14 @@ namespace ModSync
 	{
 		std::uint32_t count;
 		std::uint32_t hash;
+		std::string const text = Entries_Text(signature);
 
-		if (!signature.IsDigest) {
-			std::string text = Entries_Text(signature);
-			if (text.size() < CAPACITY) {
-				return(text);
-			}
+		if (!signature.IsDigest && text.size() < CAPACITY) {
+			return(text);
 		}
 
-		Digest_Of(signature, count, hash);
-		char digest[48];
-		std::snprintf(digest, sizeof(digest), "#%u=%08x", count, hash);
-		return(digest);
+		Digest_Of(signature, text, count, hash);
+		return("#" + std::to_string(count) + "=" + Hex_Text(hash, 8, false));
 	}
 
 
@@ -275,16 +249,15 @@ namespace ModSync
 
 		if (here.IsDigest || there.IsDigest) {
 			std::uint32_t count_here, hash_here, count_there, hash_there;
-			Digest_Of(here, count_here, hash_here);
-			Digest_Of(there, count_there, hash_there);
+			Digest_Of(here, Entries_Text(here), count_here, hash_here);
+			Digest_Of(there, Entries_Text(there), count_there, hash_there);
 			difference.IsOpaque = count_here != count_there || hash_here != hash_there;
 			return(difference);
 		}
 
 		for (Entry const & mine : here.Mods) {
-			std::string const name = Lower(mine.Name);
-			auto theirs = std::find_if(there.Mods.begin(), there.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
-			if (theirs == there.Mods.end()) {
+			Entry const * theirs = Find_Mod(there, Lower(mine.Name));
+			if (theirs == nullptr) {
 				difference.OnlyHere.push_back(mine.Name);
 			} else if (theirs->Hash != mine.Hash) {
 				difference.Changed.push_back(mine.Name);
@@ -292,9 +265,7 @@ namespace ModSync
 		}
 
 		for (Entry const & theirs : there.Mods) {
-			std::string const name = Lower(theirs.Name);
-			auto mine = std::find_if(here.Mods.begin(), here.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
-			if (mine == here.Mods.end()) {
+			if (Find_Mod(here, Lower(theirs.Name)) == nullptr) {
 				difference.OnlyThere.push_back(theirs.Name);
 			}
 		}
@@ -322,11 +293,12 @@ namespace ModSync
 			return("none");
 		}
 
-		std::string text;
+		std::vector<std::string> names;
 		for (Entry const & entry : signature.Mods) {
-			text += text.empty() ? "" : ", ";
-			text += entry.Name;
+			names.push_back(entry.Name);
 		}
+		std::string text;
+		Append_Names(text, names);
 		return(text);
 	}
 

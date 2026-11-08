@@ -24,6 +24,7 @@
 
 class AircraftTypeClass;
 class BuildingTypeClass;
+class CCINIClass;
 class InfantryTypeClass;
 class UnitTypeClass;
 
@@ -205,6 +206,10 @@ class HouseTypeClass : public AbstractTypeClass
 		virtual int Fetch_Heap_ID(void) const override;
 
 		static HousesType From_Name(char const * name);
+		static void Prepare_RA2_Numbering(CCINIClass const & scenario);
+		static bool RA2_Numbering_Loaded(void);
+		static HousesType From_RA2_Number(HousesType number);
+		static bool Set_RA2_Numbering(bool enabled);
 
 		/*
 		 * The countries a lobby offers, in the order it lists them: the countries a player can pick

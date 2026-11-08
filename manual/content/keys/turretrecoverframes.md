@@ -1,6 +1,6 @@
 ---
 key: TurretRecoverFrames
-summary: Game frames a structure's turret takes to return from its full recoil.
+summary: Game frames a turret takes to return from its full recoil, for a structure or SHP-bodied vehicle.
 see_also: ["TurretRecoil", "TurretTravel", "TurretCompressFrames", "TurretHoldFrames"]
 when_omitted:
   kind: value

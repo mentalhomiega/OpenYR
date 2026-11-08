@@ -1,0 +1,18 @@
+; A vehicle ordered at a neutral GAPILL looks for a spot from which its weapon reaches the target (FootClass::ApproachTarget, 0x4D5690). A spot it cannot enter is not dropped:
+; from 0x4D6342 gamemd steps off it, adjacent cell after adjacent cell (each step from the cell the last one reached, so N, then NE+N, and so on), and takes the first cell
+; its weapon reaches from that the vehicle can enter. A Grizzly (105mm) starts at 56 52 and the target pillbox is at 66 52. Its search rings are 4.3 cells from the pillbox, then 3.3.
+; Here the ring is free, so the first spot of the first ring can be entered. Expected: nav 62,52 (approach-adjacent-probe.txt fills the ring).
+; where lines show the position and the destination (nav).
+30 command CenterBase
+300 own MTNK 56 52
+301 neutral GAPILL 66 52
+400 reveal
+410 canfire MTNK 66 52
+420 strike MTNK 66 52
+425 where MTNK
+430 where MTNK
+440 where MTNK
+460 where MTNK
+500 where MTNK
+560 where MTNK
+600 quit

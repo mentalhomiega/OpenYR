@@ -33,7 +33,7 @@ A file with the `.AUD` extension that holds WAV, OGG, FLAC or MP3 data also play
 
 A sound effect starts only when all of these hold:
 
-- the sound effect volume option is above zero, except for the test beep the voice volume control plays outside a game;
+- the sound effect volume option is above zero, or for a unit or building reply the [unit voices option](/keys/unitvoicevolume/) is above zero, except for the test beep the voice volume control plays outside a game;
 - the volume the sound is played at, after any fade with distance, is above zero;
 - the game was not started with the [quiet launch option](/using/command-line/quiet/);
 - its SOUND.INI entry names at least one sample;

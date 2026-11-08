@@ -37,6 +37,9 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "session.h"
+#include "strutil.h"
+#include "_tactica.h"
+#include "tactical.h"
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
@@ -48,6 +51,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <new.h>
 
 
@@ -90,6 +94,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsNominal(false),
 	IsTurretEquipped(false),
 	IsHasTurretTooltips(false),
+	IsTurretRecoil(false),
 	IsCrew(false),
 	IsRepairable(true),
 	IsRemappable(false),
@@ -175,6 +180,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	UndeploysInto(NULL),
 	UnloadingClass(NULL),
 	VoiceSelect(),
+	VoiceSelectEnslaved(),
+	VoiceSelectDeactivated(),
 	VoiceMove(),
 	VoiceSpecialAttack(),
 	VoiceAttack(),
@@ -208,8 +215,15 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ProtectedDriverMinHealth(1.0),
 	IronCurtainModifier(1.0),
 	ForceShieldModifier(1.0),
+	IsGapGenerator(false),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
+	IsDeployFire(false),
+	DeployFireWeapon(1),
+	IsDeployToLand(false),
+	IsDisguiseWhenStill(false),
+	IsSlaved(false),
+	UndeployDelay(-1),
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
@@ -287,8 +301,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CreateSound(VOC_NONE),
 	EnterTransportSound(VOC_NONE),
 	LeaveTransportSound(VOC_NONE),
-	EnterGrinderSound(VOC_NONE),
-	LeaveGrinderSound(VOC_NONE),
 	LeaveBioReactorSound(VOC_NONE),
 	VoiceEnter(VOC_NONE),
 	VoiceDeploy(VOC_NONE),
@@ -384,10 +396,16 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	NaturalParticleLocation(0,0,0),
 	DamageParticleSystems(),
 	DamageSmokeOffset(0,0,0),
+	DamSmkOffScrnRel(false),
+	DestroyParticleSystems(),
+	DestroySmokeOffset(0,0,0),
 	ShadowIndex(0),
 	Capacity(0),
 	TurretNotExportedOnGround(false),
 	IsTypeImmune(false),
+	IsDamageReducesReadiness(false),
+	IsSprayAttack(false),
+	ReadinessReductionMultiplier(0.0f),
 	IsCanBeHidden(true),
 	IsDetectDisguise(false),
 	DetectDisguiseRange(0),
@@ -395,13 +413,14 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTrainable(true),
 	IsDontScore(false),
 	IsNaval(false),
+	IsConsideredAircraft(false),
 	RequiredHouses(-1),
 	ForbiddenHouses(-1),
 	AIBasePlanningSide(-1),
 	IsRequiresStolenAlliedTech(false),
 	IsRequiresStolenSovietTech(false),
 	IsRequiresStolenThirdTech(false),
-	IsDamageSparks(true),
+	IsDamageSparks(false),
 	IsTargetLaser(false),
 	IsImmuneToVeins(false),
 	IsTiberiumHeal(false),
@@ -421,6 +440,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsHunterSeeker(false),
 	IsHunterSeekerIgnored(false),
 	IsCrusher(false),
+	IsPushy(false),
 	IsOmniCrusher(false),
 	IsOmniCrushResistant(false),
 	IsTiltsWhenCrushes(true),
@@ -802,6 +822,20 @@ bool TechnoTypeClass::Is_Two_Shooter(void) const
 
 
 /// <summary>
+/// Tests a country's Ownable bits against this type's RequiredHouses and ForbiddenHouses.
+/// </summary>
+/// <param name="mask">The country bits to test, in the Ownable layout.</param>
+/// <returns>Returns false when RequiredHouses is set and shares no bit with the mask, or when
+/// ForbiddenHouses is set and shares a bit with it. A value of -1 places no limit.</returns>
+bool TechnoTypeClass::Allows_Country_Mask(int mask) const
+{
+	if (RequiredHouses != -1 && (RequiredHouses & mask) == 0) return(false);
+	if (ForbiddenHouses != -1 && (ForbiddenHouses & mask) != 0) return(false);
+	return(true);
+}
+
+
+/// <summary>
 /// Does an EM pulse leave this type alone? An immune object still springs its paralyzed
 /// trigger event.
 /// </summary>
@@ -836,6 +870,59 @@ static inline int _Scale_To_256(int val)
 }
 
 
+// A recoil part keeps at least one frame in each phase, as gamemd's frame setters do (0x717A50, 0x717A80, 0x717AB0).
+static void Keep_Recoil_Frames(int & frames)
+{
+	if (frames < 1) {
+		frames = 1;
+	}
+}
+
+
+// Maps an EMP.Threshold= word to its value, matched without case. Any other text is read as a number.
+static int Emp_Threshold_Named(char const * name)
+{
+	struct ThresholdName {
+		char const * Name;
+		int Threshold;
+	};
+	static ThresholdName const NAMES[] = {
+		{"inair", -1},
+		{"yes", 1},
+		{"true", 1},
+		{"no", 0},
+		{"false", 0},
+	};
+	for (ThresholdName const & entry : NAMES) {
+		if (stricmp(name, entry.Name) == 0) {
+			return(entry.Threshold);
+		}
+	}
+	return(atoi(name));
+}
+
+
+// Maps a VHPScan= name to its scan type, matched without case. A name not listed returns the fallback.
+static int VHPScan_Named(char const * name, int fallback)
+{
+	struct ScanName {
+		char const * Name;
+		VHPScanType Scan;
+	};
+	static ScanName const NAMES[] = {
+		{"none", VHP_SCAN_NONE},
+		{"normal", VHP_SCAN_NORMAL},
+		{"strong", VHP_SCAN_STRONG},
+	};
+	for (ScanName const & entry : NAMES) {
+		if (stricmp(name, entry.Name) == 0) {
+			return(entry.Scan);
+		}
+	}
+	return(fallback);
+}
+
+
 /***********************************************************************************************
  * TechnoTypeClass::Read_INI -- Reads the techno type data from the INI database.              *
  *                                                                                             *
@@ -859,685 +946,31 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 	IsAlternateTheaterArt = ini.Get_Bool(Name(), "AlternateTheaterArt", IsAlternateTheaterArt);
 
 	if (BASECLASS::Read_INI(ini)) {
-
-		// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).
-		IsCanBeHidden = ArtINI.Get_Bool(Name(), "CanBeHidden", IsCanBeHidden);
-		IsTypeImmune = ini.Get_Bool(Name(), "TypeImmune", IsTypeImmune);
-		IsDetectDisguise = ini.Get_Bool(Name(), "DetectDisguise", IsDetectDisguise);
-		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
-		WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
-		IdleRate = ini.Get_Int(Name(), "IdleRate", IdleRate);
-		AirRate = ini.Get_Int(Name(), "AirRate", AirRate);
-		RadarJamRadius = ini.Get_Int(Name(), "RadarJamRadius", RadarJamRadius);
-		if (RadarJamRadius > 0) {
-			RadarJammersExist = true;
-		}
-		IsPipsDrawForAll = ini.Get_Bool(Name(), "PipsDrawForAll", IsPipsDrawForAll);
-		IsMoveToShroud = ini.Get_Bool(Name(), "MoveToShroud", IsMoveToShroud);
-		IsTrain = ini.Get_Bool(Name(), "IsTrain", IsTrain);
-		IsDoubleOwned = ini.Get_Bool(Name(), "DoubleOwned", IsDoubleOwned);
-		ThreatRange = ini.Get_Lepton(Name(), "GuardRange", ThreatRange);
-
-		if (RTTI == RTTI_INFANTRYTYPE) {
-			/// This routine runs before InfantryTypeClass reads its own flags, so IsCyborg is
-			/// still false on the first pass through the rules.
-			if (((InfantryTypeClass *)this)->IsCyborg) {
-				CollateralDamageCoefficient = 0.33f;
-			} else {
-				CollateralDamageCoefficient = 0.66f;
-			}
-		} else {
-			CollateralDamageCoefficient = 1.0;
-		}
-		CollateralDamageCoefficient = ini.Get_Float(Name(), "CollateralDamageCoefficient", CollateralDamageCoefficient);
-
-		IsExploding = ini.Get_Bool(Name(), "Explodes", IsExploding);
-
-		FlightLevel = ini.Get_Int(Name(), "FlightLevel", FlightLevel);
-		IsDropship = ini.Get_Bool(Name(), "IsDropship", IsDropship);
-
-		double pitch_angle = ini.Get_Float(Name(), "PitchAngle", -1);
-		if (pitch_angle != -1) {
-			PitchAngle = DEG_TO_RAD(pitch_angle);
-		}
-		double roll_angle = ini.Get_Float(Name(), "RollAngle", -1);
-		if (roll_angle != -1) {
-			RollAngle = DEG_TO_RAD(roll_angle);
-		}
-
-		PitchSpeed = ini.Get_Float(Name(), "PitchSpeed", PitchSpeed);
-		Locomotor = ini.Get_ClassID(IniName, "Locomotor", Locomotor);
-		CloakingSpeed = ini.Get_Int(Name(), "CloakingSpeed", CloakingSpeed);
-		ThreatAvoidanceCoefficient = ini.Get_Float(Name(), "ThreatAvoidanceCoefficient", ThreatAvoidanceCoefficient);
-		SlowdownDistance = ini.Get_Int(Name(), "SlowdownDistance", SlowdownDistance);
-		DeaccelerationFactor = ini.Get_Float(Name(), "DeaccelerationFactor", DeaccelerationFactor);
-		AccelerationFactor = ini.Get_Float(Name(), "AccelerationFactor", AccelerationFactor);
-		Weight = ini.Get_Float(Name(), "Weight", Weight);
-		PhysicalSize = ini.Get_Float(Name(), "PhysicalSize", PhysicalSize);
-		MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
-		MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
-		PixelSelectionBracketDelta = ini.Get_Int(Name(), "PixelSelectionBracketDelta", PixelSelectionBracketDelta);
-		LeadershipRating = ini.Get_Int(Name(), "LeadershipRating", LeadershipRating);
-		IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);
-		IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
-		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
-		IsBerserkFriendly = ini.Get_Bool(Name(), "BerserkFriendly", IsBerserkFriendly);
-		IsImmuneToPsionicWeapons = ini.Get_Bool(Name(), "ImmuneToPsionicWeapons", IsImmuneToPsionicWeapons);
-		IsImmuneToPoison = ini.Get_Bool(Name(), "ImmuneToPoison", IsImmuneToPoison);
-		IsCanPassiveAquire = ini.Get_Bool(Name(), "CanPassiveAquire", IsCanPassiveAquire);
-		IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
-		IsHoverAttack = ini.Get_Bool(Name(), "HoverAttack", IsHoverAttack);
-		IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
-		IsTiltCrashJumpjet = ini.Get_Bool(Name(), "TiltCrashJumpjet", IsTiltCrashJumpjet);
-		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
-		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
-		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
-		IronCurtainModifier = ini.Get_Float(Name(), "IronCurtain.Modifier", IronCurtainModifier);
-		ForceShieldModifier = ini.Get_Float(Name(), "ForceShield.Modifier", ForceShieldModifier);
-		IsImmuneToAbduction = ini.Get_Bool(Name(), "ImmuneToAbduction", IsImmuneToAbduction);
-		IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
-		ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
-		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
-		SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
-		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
-		DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
-		DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
-		InitialAmmo = ini.Get_Int(Name(), "InitialAmmo", InitialAmmo);
-		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
-		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
-		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
-		IsRejoinTeamIfLimboed = ini.Get_Bool(Name(), "RejoinTeamIfLimboed", IsRejoinTeamIfLimboed);
-		IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
-		IsPermaDisguise = ini.Get_Bool(Name(), "PermaDisguise", IsPermaDisguise);
-		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
-		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
-		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
-		LeptonMindControlOffset = ini.Get_Int(Name(), "LeptonMindControlOffset", LeptonMindControlOffset);
-		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
-		IsChronoshiftAllowed = ini.Get_Bool(Name(), "Chronoshift.Allow", IsChronoshiftAllowed);
-		IsChronoshiftCrushable = ini.Get_Bool(Name(), "Chronoshift.Crushable", IsChronoshiftCrushable);
-		IsBounty = ini.Get_Bool(Name(), "Bounty", IsBounty);
-		if (ini.Is_Present(Name(), "Bounty.Display")) {
-			BountyDisplay = ini.Get_Bool(Name(), "Bounty.Display", false) ? 1 : 0;
-		}
-		// Bounty.Value sets every rank's value, and a rank's own key then overrides it.
-		if (ini.Is_Present(Name(), "Bounty.Value")) {
-			int const value = ini.Get_Int(Name(), "Bounty.Value", 0);
-			BountyValue[0] = BountyValue[1] = BountyValue[2] = value;
-		}
-		BountyValue[0] = ini.Get_Int(Name(), "Bounty.RookieValue", BountyValue[0]);
-		BountyValue[1] = ini.Get_Int(Name(), "Bounty.VeteranValue", BountyValue[1]);
-		BountyValue[2] = ini.Get_Int(Name(), "Bounty.EliteValue", BountyValue[2]);
-
-		// The shorthand keys set every rank, and a rank's own key then overrides it.
-		static char const * const RANKS[3] = {"Rookie", "Veteran", "Elite"};
-		char key[48];
-		char value[64];
-		if (ini.Get_String(Name(), "Insignia", "", value, sizeof(value)) > 0) {
-			InsigniaFile[0] = InsigniaFile[1] = InsigniaFile[2] = value;
-		}
-		if (ini.Is_Present(Name(), "InsigniaFrame")) {
-			InsigniaFrame[0] = InsigniaFrame[1] = InsigniaFrame[2] = ini.Get_Int(Name(), "InsigniaFrame", -1);
-		}
-		if (ini.Get_String(Name(), "InsigniaFrames", "", value, sizeof(value)) > 0) {
-			sscanf(value, "%d,%d,%d", &InsigniaFrame[0], &InsigniaFrame[1], &InsigniaFrame[2]);
-		}
-		for (int rank = 0; rank < 3; rank++) {
-			snprintf(key, sizeof(key), "Insignia.%s", RANKS[rank]);
-			if (ini.Get_String(Name(), key, "", value, sizeof(value)) > 0) {
-				InsigniaFile[rank] = value;
-			}
-			snprintf(key, sizeof(key), "InsigniaFrame.%s", RANKS[rank]);
-			InsigniaFrame[rank] = ini.Get_Int(Name(), key, InsigniaFrame[rank]);
-		}
-		if (ini.Is_Present(Name(), "Insignia.ShowEnemy")) {
-			InsigniaShowEnemy = ini.Get_Bool(Name(), "Insignia.ShowEnemy", true) ? 1 : 0;
-		}
-		Load_Insignia_Shapes();
-
-		IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
-		IsCanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", IsCanBeDriven);
-		BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
-		IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
-		IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
-		PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
-		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
-		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
-		EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
-		AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
-		AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
-		AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
-		AttachEffect.SpeedMultiplier = ini.Get_Float(Name(), "AttachEffect.SpeedMultiplier", AttachEffect.SpeedMultiplier);
-		AttachEffect.ArmorMultiplier = ini.Get_Float(Name(), "AttachEffect.ArmorMultiplier", AttachEffect.ArmorMultiplier);
-		AttachEffect.FirepowerMultiplier = ini.Get_Float(Name(), "AttachEffect.FirepowerMultiplier", AttachEffect.FirepowerMultiplier);
-		AttachEffect.ROFMultiplier = ini.Get_Float(Name(), "AttachEffect.ROFMultiplier", AttachEffect.ROFMultiplier);
-		AttachEffect.IsCloakable = ini.Get_Bool(Name(), "AttachEffect.Cloakable", AttachEffect.IsCloakable);
-		AttachEffect.IsForceDecloak = ini.Get_Bool(Name(), "AttachEffect.ForceDecloak", AttachEffect.IsForceDecloak);
-		AttachEffect.IsDiscardOnEntry = ini.Get_Bool(Name(), "AttachEffect.DiscardOnEntry", AttachEffect.IsDiscardOnEntry);
-		AttachEffect.IsPenetratesIronCurtain = ini.Get_Bool(Name(), "AttachEffect.PenetratesIronCurtain", AttachEffect.IsPenetratesIronCurtain);
-		AttachEffect.Delay = ini.Get_Int(Name(), "AttachEffect.Delay", AttachEffect.Delay);
-		AttachEffect.InitialDelay = ini.Get_Int(Name(), "AttachEffect.InitialDelay", AttachEffect.InitialDelay);
-		IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
-		IsAttackFriendlies = ini.Get_Bool(Name(), "AttackFriendlies", IsAttackFriendlies);
-		IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
-		IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
-		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
-		// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
-		BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
-		if (ini.Get_String(Name(), "Survivor.Side0", "", value, sizeof(value)) > 0) {
-			SurvivorSide[0] = strcmpi(value, "<none>") == 0 ? "" : value;
-		}
-		if (ini.Get_String(Name(), "Survivor.Side1", "", value, sizeof(value)) > 0) {
-			SurvivorSide[1] = strcmpi(value, "<none>") == 0 ? "" : value;
-		}
-		if (ini.Get_String(Name(), "Survivor.Side2", "", value, sizeof(value)) > 0) {
-			SurvivorSide[2] = strcmpi(value, "<none>") == 0 ? "" : value;
-		}
-		if (ini.Get_String(Name(), "Survivor.Side3", "", value, sizeof(value)) > 0) {
-			SurvivorSide[3] = strcmpi(value, "<none>") == 0 ? "" : value;
-		}
-		CrewTechnicianChance = ini.Get_Int(Name(), "Crew.TechnicianChance", CrewTechnicianChance);
-		CrewEngineerChance = ini.Get_Int(Name(), "Crew.EngineerChance", CrewEngineerChance);
-		SurvivorPilots = ini.Get_Int(Name(), "Survivor.Pilots", SurvivorPilots);
-		SurvivorPilotChance[0] = ini.Get_Int(Name(), "Survivor.RookiePilotChance", SurvivorPilotChance[0]);
-		SurvivorPilotChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPilotChance", SurvivorPilotChance[1]);
-		SurvivorPilotChance[2] = ini.Get_Int(Name(), "Survivor.ElitePilotChance", SurvivorPilotChance[2]);
-		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
-		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
-		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
-		ParachuteAnim = TGet_Class(ini, Name(), "Parachute.Anim", ParachuteAnim);
-		if (ini.Is_Present(Name(), "SlamSound")) {
-			SlamSound = ini.Get_VocType(Name(), "SlamSound", VOC_NONE);
-			IsSlamSoundSet = true;
-		}
-		RadialIndicatorRadius = ini.Get_Float(Name(), "RadialIndicatorRadius", RadialIndicatorRadius);
-		WaterImage = TGet_Class(ini, Name(), "WaterImage", WaterImage);
-		IsCloneable = ini.Get_Bool(Name(), "Cloneable", IsCloneable);
-		if (ini.Is_Present(Name(), "FactoryOwners")) {
-			FactoryOwners = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners"));
-		}
-		if (ini.Is_Present(Name(), "FactoryOwners.Forbidden")) {
-			FactoryOwnersForbidden = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners.Forbidden"));
-		}
-		if (ini.Get_String(Name(), "Cursor.Move", "", value, sizeof(value)) > 0) {
-			CursorMove = value;
-		}
-		if (ini.Get_String(Name(), "Cursor.NoMove", "", value, sizeof(value)) > 0) {
-			CursorNoMove = value;
-		}
-		if (ini.Get_String(Name(), "Cursor.Deploy", "", value, sizeof(value)) > 0) {
-			CursorDeploy = value;
-		}
-		if (ini.Get_String(Name(), "Cursor.NoDeploy", "", value, sizeof(value)) > 0) {
-			CursorNoDeploy = value;
-		}
-		if (ini.Get_String(Name(), "Cursor.Enter", "", value, sizeof(value)) > 0) {
-			CursorEnter = value;
-		}
-		if (ini.Get_String(Name(), "Cursor.NoEnter", "", value, sizeof(value)) > 0) {
-			CursorNoEnter = value;
-		}
-		if (ini.Is_Present(Name(), "CloakSound")) {
-			CloakSound = ini.Get_VocType(Name(), "CloakSound", VOC_NONE);
-			IsCloakSoundSet = true;
-		}
-		if (ini.Is_Present(Name(), "DecloakSound")) {
-			DecloakSound = ini.Get_VocType(Name(), "DecloakSound", VOC_NONE);
-			IsDecloakSoundSet = true;
-		}
-		CloakStages = ini.Get_Int(Name(), "Cloakable.Stages", CloakStages);
-		IsCanPassiveAquireGuard = ini.Get_Bool(Name(), "CanPassiveAquire.Guard", IsCanPassiveAquireGuard);
-		IsCanPassiveAquireCloak = ini.Get_Bool(Name(), "CanPassiveAquire.Cloak", IsCanPassiveAquireCloak);
-		IsNoManualFire = ini.Get_Bool(Name(), "NoManualFire", IsNoManualFire);
-		IsGattlingCycle = ini.Get_Bool(Name(), "Gattling.Cycle", IsGattlingCycle);
-		if (ini.Get_String(Name(), "EVA.VeteranPromoted", "", value, sizeof(value)) > 0) {
-			EvaPromoted[0] = value;
-		}
-		if (ini.Get_String(Name(), "EVA.ElitePromoted", "", value, sizeof(value)) > 0) {
-			EvaPromoted[1] = value;
-		}
-		if (ini.Get_String(Name(), "EVA.Lost", "", value, sizeof(value)) > 0) {
-			EvaLost = value;
-			IsEvaLostSet = true;
-		}
-		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
-			GroupAs = value;
-		}
-		if (ini.Is_Present(Name(), "KeepAlive")) {
-			KeepAlive = ini.Get_Bool(Name(), "KeepAlive", false) ? 1 : 0;
-			Rule->IsKeepAliveSet = true;
-		}
-		if (ini.Get_String(Name(), "ReversedAs", "", value, sizeof(value)) > 0) {
-			ReversedAs = value;
-		}
-		if (ini.Get_String(Name(), "EMP.Threshold", "", value, sizeof(value)) > 0) {
-			if (stricmp(value, "inair") == 0) {
-				EMPThreshold = -1;
-			} else if (stricmp(value, "yes") == 0 || stricmp(value, "true") == 0) {
-				EMPThreshold = 1;
-			} else if (stricmp(value, "no") == 0 || stricmp(value, "false") == 0) {
-				EMPThreshold = 0;
-			} else {
-				EMPThreshold = atoi(value);
-			}
-		}
-		if (ini.Get_String(Name(), "VHPScan", "", value, sizeof(value)) > 0) {
-			if (stricmp(value, "none") == 0) {
-				VHPScan = VHP_SCAN_NONE;
-			} else if (stricmp(value, "normal") == 0) {
-				VHPScan = VHP_SCAN_NORMAL;
-			} else if (stricmp(value, "strong") == 0) {
-				VHPScan = VHP_SCAN_STRONG;
-			}
-		}
-		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
-		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
-		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
-		EnterTransportSound = ini.Get_VocType(Name(), "EnterTransportSound", EnterTransportSound);
-		LeaveTransportSound = ini.Get_VocType(Name(), "LeaveTransportSound", LeaveTransportSound);
-		EnterGrinderSound = ini.Get_VocType(Name(), "EnterGrinderSound", EnterGrinderSound);
-		LeaveGrinderSound = ini.Get_VocType(Name(), "LeaveGrinderSound", LeaveGrinderSound);
-		LeaveBioReactorSound = ini.Get_VocType(Name(), "LeaveBioReactorSound", LeaveBioReactorSound);
-		VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
-		VoiceDeploy = ini.Get_VocType(Name(), "VoiceDeploy", VoiceDeploy);
-		VoiceUndeploy = ini.Get_VocType(Name(), "VoiceUndeploy", VoiceUndeploy);
-		TurretRotateSound = ini.Get_VocType(Name(), "TurretRotateSound", TurretRotateSound);
-		IsResourceGatherer = ini.Get_Bool(Name(), "ResourceGatherer", IsResourceGatherer);
-		IsResourceDestination = ini.Get_Bool(Name(), "ResourceDestination", IsResourceDestination);
-		VoiceCapture = ini.Get_VocType(Name(), "VoiceCapture", VoiceCapture);
-		VoiceHarvest = ini.Get_VocType(Name(), "VoiceHarvest", VoiceHarvest);
-		ImpactLandSound = ini.Get_VocType(Name(), "ImpactLandSound", ImpactLandSound);
-		ImpactWaterSound = ini.Get_VocType(Name(), "ImpactWaterSound", ImpactWaterSound);
-		DamageSound = ini.Get_VocType(Name(), "DamageSound", DamageSound);
-		IsNatural = ini.Get_Bool(Name(), "Natural", IsNatural);
-		IsUnnatural = ini.Get_Bool(Name(), "Unnatural", IsUnnatural);
-		IsCloseRange = ini.Get_Bool(Name(), "CloseRange", IsCloseRange);
-		IsUnderwater = ini.Get_Bool(Name(), "Underwater", IsUnderwater);
-		NavalTargeting = ini.Get_Int(Name(), "NavalTargeting", NavalTargeting);
-		LandTargeting = ini.Get_Int(Name(), "LandTargeting", LandTargeting);
-		VoicePrimaryWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryWeaponAttack", VoicePrimaryWeaponAttack);
-		VoicePrimaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryEliteWeaponAttack", VoicePrimaryEliteWeaponAttack);
-		VoiceSecondaryWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryWeaponAttack", VoiceSecondaryWeaponAttack);
-		VoiceSecondaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryEliteWeaponAttack", VoiceSecondaryEliteWeaponAttack);
-		Spawns = TGet_Class(ini, Name(), "Spawns", Spawns);
-		SpawnsNumber = ini.Get_Int(Name(), "SpawnsNumber", SpawnsNumber);
-		SpawnRegenRate = ini.Get_Int(Name(), "SpawnRegenRate", SpawnRegenRate);
-		SpawnReloadRate = ini.Get_Int(Name(), "SpawnReloadRate", SpawnReloadRate);
-		SecondSpawnOffset = ini.Get_Point(Name(), "SecondSpawnOffset", SecondSpawnOffset);
-		IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
-		IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
-		IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
-		Enslaves = TGet_Class(ini, Name(), "Enslaves", Enslaves);
-		SlavesNumber = ini.Get_Int(Name(), "SlavesNumber", SlavesNumber);
-		SlaveRegenRate = ini.Get_Int(Name(), "SlaveRegenRate", SlaveRegenRate);
-		SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
-		IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
-		IsDistributedFire = ini.Get_Bool(Name(), "DistributedFire", IsDistributedFire);
-		IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
-		IsCanRecalcApproachTarget = ini.Get_Bool(Name(), "CanRecalcApproachTarget", IsCanRecalcApproachTarget);
-		IsStupidHunt = ini.Get_Bool(Name(), "StupidHunt", IsStupidHunt);
-		SensorsSight = ini.Get_Int(Name(), "SensorsSight", SensorsSight);
-		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
-		ActivateSound = ini.Get_VocType(Name(), "ActivateSound", ActivateSound);
-		DeactivateSound = ini.Get_VocType(Name(), "DeactivateSound", DeactivateSound);
-		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
-		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
-		VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
-		SinkingSound = ini.Get_VocType(Name(), "SinkingSound", SinkingSound);
-		VoiceSinking = ini.Get_VocType(Name(), "VoiceSinking", VoiceSinking);
-
-		// The first read takes its jumpjet defaults from [JumpjetControls], read before the types.
-		if (!IsJumpjetDataSet) {
-			IsJumpjetDataSet = true;
-			JumpjetTurnRate = Rule->JumpjetTurnRate;
-			JumpjetSpeed = Rule->JumpjetSpeed;
-			JumpjetClimb = Rule->JumpjetClimb;
-			JumpjetHeight = Rule->JumpjetCruiseHeight;
-			JumpjetAccel = Rule->JumpjetAcceleration;
-			JumpjetWobbles = Rule->JumpjetWobblesPerSecond;
-			JumpjetDeviation = Rule->JumpjetWobbleDeviation;
-		}
-		JumpjetTurnRate = ini.Get_Int(Name(), "JumpjetTurnRate", JumpjetTurnRate);
-		JumpjetSpeed = ini.Get_Int(Name(), "JumpjetSpeed", JumpjetSpeed);
-		JumpjetClimb = ini.Get_Float(Name(), "JumpjetClimb", JumpjetClimb);
-		JumpjetCrash = ini.Get_Float(Name(), "JumpjetCrash", JumpjetCrash);
-		JumpjetHeight = ini.Get_Int(Name(), "JumpjetHeight", JumpjetHeight);
-		JumpjetAccel = ini.Get_Float(Name(), "JumpjetAccel", JumpjetAccel);
-		JumpjetWobbles = ini.Get_Float(Name(), "JumpjetWobbles", JumpjetWobbles);
-		JumpjetDeviation = ini.Get_Int(Name(), "JumpjetDeviation", JumpjetDeviation);
-		IsJumpjetNoWobbles = ini.Get_Bool(Name(), "JumpjetNoWobbles", IsJumpjetNoWobbles);
-		IsRevealToAll = ini.Get_Bool(Name(), "RevealToAll", IsRevealToAll);
-		AirstrikeTeam = ini.Get_Int(Name(), "AirstrikeTeam", AirstrikeTeam);
-		EliteAirstrikeTeam = ini.Get_Int(Name(), "EliteAirstrikeTeam", EliteAirstrikeTeam);
-		AirstrikeTeamType = TGet_Class(ini, Name(), "AirstrikeTeamType", AirstrikeTeamType);
-		EliteAirstrikeTeamType = TGet_Class(ini, Name(), "EliteAirstrikeTeamType", EliteAirstrikeTeamType);
-		AirstrikeRechargeTime = ini.Get_Int(Name(), "AirstrikeRechargeTime", AirstrikeRechargeTime);
-		EliteAirstrikeRechargeTime = ini.Get_Int(Name(), "EliteAirstrikeRechargeTime", EliteAirstrikeRechargeTime);
-		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
-		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
-		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
-		DestroyAnim = TGet_TypeList<AnimTypeClass>(ini, IniName, "DestroyAnim", DestroyAnim);
-		TurretCount = ini.Get_Int(Name(), "TurretCount", TurretCount);
-		WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
-		IsClearAllWeapons = ini.Get_Bool(Name(), "ClearAllWeapons", IsClearAllWeapons);
-		IsMobileFire = ini.Get_Bool(Name(), "MobileFire", IsMobileFire);
-		IsPreventAttackMove = ini.Get_Bool(Name(), "PreventAttackMove", IsPreventAttackMove);
-		if (!Has_Multiple_Turrets()) {
-			Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
-			Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
-			EliteWeapons[0].Weapon = TGet_Class(ini, Name(), "ElitePrimary", EliteWeapons[0].Weapon);
-			EliteWeapons[1].Weapon = TGet_Class(ini, Name(), "EliteSecondary", EliteWeapons[1].Weapon);
-		} else {
-			char buf[32];
-			for (int i = 0; i < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); i++) {
-				sprintf(buf, "Weapon%d", i + 1);
-				Weapons[i].Weapon = TGet_Class(ini, Name(), buf, Weapons[i].Weapon);
-				sprintf(buf, "EliteWeapon%d", i + 1);
-				EliteWeapons[i].Weapon = TGet_Class(ini, Name(), buf, EliteWeapons[i].Weapon);
-			}
-		}
-		if (IsClearAllWeapons) {
-			Weapons[0].Weapon = NULL;
-			Weapons[1].Weapon = NULL;
-			EliteWeapons[0].Weapon = NULL;
-			EliteWeapons[1].Weapon = NULL;
-		}
-		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
-		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
-		AirRangeBonus = ini.Get_Lepton(Name(), "AirRangeBonus", AirRangeBonus);
-		RadialFireSegments = ini.Get_Int(Name(), "RadialFireSegments", RadialFireSegments);
-		if (ini.Is_Present(Name(), "OpenTopped.RangeBonus")) {
-			OpenToppedRangeBonus = ini.Get_Int(Name(), "OpenTopped.RangeBonus", 0);
-		}
-		if (ini.Is_Present(Name(), "OpenTopped.DamageMultiplier")) {
-			OpenToppedDamageMultiplier = ini.Get_Float(Name(), "OpenTopped.DamageMultiplier", 1.0);
-		}
-		if (ini.Is_Present(Name(), "OpenTopped.WarpDistance")) {
-			OpenToppedWarpDistance = ini.Get_Int(Name(), "OpenTopped.WarpDistance", 0);
-		}
-		if (ini.Is_Present(Name(), "OpenTransport.RangeBonus")) {
-			OpenTransportRangeBonus = ini.Get_Int(Name(), "OpenTransport.RangeBonus", 0);
-		}
-		if (ini.Is_Present(Name(), "OpenTransport.DamageMultiplier")) {
-			OpenTransportDamageMultiplier = ini.Get_Float(Name(), "OpenTransport.DamageMultiplier", 1.0);
-		}
-		IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
-		OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
-		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
-		IsChargeTurret = ini.Get_Bool(Name(), "IsChargeTurret", IsChargeTurret);
-		WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
-		RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
-		RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
-		if (IsGattling && WeaponStages > 1) {
-			char buf[32];
-			for (int i = 0; i < std::min<int>(WeaponStages, WEAPON_STAGE_COUNT); i++) {
-				sprintf(buf, "Stage%d", i + 1);
-				WeaponStage[i] = ini.Get_Int(Name(), buf, WeaponStage[i]);
-				sprintf(buf, "EliteStage%d", i + 1);
-				EliteStage[i] = ini.Get_Int(Name(), buf, EliteStage[i]);
-			}
-		}
-		VoiceMove = ini.Get_VocType_List(ini, IniName, "VoiceMove", VoiceMove);
-		VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
-		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
-		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
-		VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
-		DieSound = ini.Get_VocType_List(ini, IniName, "DieSound", DieSound);
-		MoveSound = ini.Get_VocType_List(ini, IniName, "MoveSound", MoveSound);
-		VoiceFeedback = ini.Get_VocType_List(ini, IniName, "VoiceFeedback", VoiceFeedback);
-		AuxSound1 = ini.Get_VocType(Name(), "AuxSound1", AuxSound1);
-		AuxSound2 = ini.Get_VocType(Name(), "AuxSound2", AuxSound2);
-		IsCloakStop = ini.Get_Bool(Name(), "CloakStop", IsCloakStop);
-		Capacity = ini.Get_Int(Name(), "Storage", Capacity);
-		BuildLimit = ini.Get_Int(Name(), "BuildLimit", BuildLimit);
-		CameoSortOrder = ini.Get_Int(Name(), "CameoSortOrder", CameoSortOrder);
-		Category = ini.Get_CategoryType(Name(), "Category", Category);
-		Dock = TGet_TypeList<BuildingTypeClass>(ini, Name(), "Dock", Dock);
-		DeploysInto = TGet_Class(ini, Name(), "DeploysInto", DeploysInto);
-		UndeploysInto = TGet_Class(ini, Name(), "UndeploysInto", UndeploysInto);
-		UnloadingClass = TGet_Class(ini, Name(), "UnloadingClass", UnloadingClass);
-		IsLightningRod = ini.Get_Bool(Name(), "LightningRod", IsLightningRod);
-		IsManualReload = ini.Get_Bool(Name(), "ManualReload", IsManualReload);
-		IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
-		IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
-		IsHasTurretTooltips = ini.Get_Bool(Name(), "HasTurretTooltips", IsHasTurretTooltips);
-		Explosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "Explosion", Explosion);
-		ScrapExplosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "ScrapExplosion", ScrapExplosion);
-		NaturalParticleSystem = TGet_Class(ini, Name(), "NaturalParticleSystem", NaturalParticleSystem);
-		RefinerySmokeParticleSystem = TGet_Class(ini, Name(), "RefinerySmokeParticleSystem", RefinerySmokeParticleSystem);
-		RefinerySmokeOffset[0] = ini.Get_Offset(Name(), "RefinerySmokeOffsetOne", RefinerySmokeOffset[0]);
-		RefinerySmokeOffset[1] = ini.Get_Offset(Name(), "RefinerySmokeOffsetTwo", RefinerySmokeOffset[1]);
-		RefinerySmokeOffset[2] = ini.Get_Offset(Name(), "RefinerySmokeOffsetThree", RefinerySmokeOffset[2]);
-		RefinerySmokeOffset[3] = ini.Get_Offset(Name(), "RefinerySmokeOffsetFour", RefinerySmokeOffset[3]);
-		NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
-		DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
-		DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
-		IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
-		IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
-		IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
-		IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
-		PipScale = ini.Get_PipScaleType(Name(), "PipScale", PipScale);
-		if (ini.Is_Present(Name(), "MaxPips")) {
-			MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);
-		}
-		Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
-		if (ini.Is_Present(Name(), "Prerequisite.StolenTechs")) {
-			PrerequisiteStolenTechs.clear();
-			for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.StolenTechs"))) {
-				int const value = atoi(index.c_str());
-				if (value >= 0) {
-					PrerequisiteStolenTechs.push_back(value);
-				}
-			}
-		}
-		PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
-		SightRange = ini.Get_Int(Name(), "Sight", SightRange);
-		DesignatorRange = ini.Get_Int(Name(), "DesignatorRange", DesignatorRange);
-		InhibitorRange = ini.Get_Int(Name(), "InhibitorRange", InhibitorRange);
-		Level = ini.Get_Int(Name(), "TechLevel", Level);
-		int maxspeed = ini.Get_Int(Name(), "Speed", -1);
-		if (maxspeed != -1) {
-			MaxSpeed = MPHType(_Scale_To_256(maxspeed));
-		}
-		Cost = ini.Get_Int(Name(), "Cost", Cost);
-		Soylent = ini.Get_Int(Name(), "Soylent", Soylent);
-		MaxAmmo = ini.Get_Int(Name(), "Ammo", MaxAmmo);
-		ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
-		EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
-		ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
-		PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
-		Reward = Points = ini.Get_Int(Name(), "Points", Points);
-		Risk = ini.Get_Int(Name(), "ThreatPosed", Risk);
-		Ownable = ini.Get_Owners(Name(), "Owner", Ownable);
-		IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
-		IsDontScore = ini.Get_Bool(Name(), "DontScore", IsDontScore);
-		IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
-		RequiredHouses = ini.Get_Owners(Name(), "RequiredHouses", RequiredHouses);
-		ForbiddenHouses = ini.Get_Owners(Name(), "ForbiddenHouses", ForbiddenHouses);
-		AIBasePlanningSide = ini.Get_Int(Name(), "AIBasePlanningSide", AIBasePlanningSide);
-		IsRequiresStolenAlliedTech = ini.Get_Bool(Name(), "RequiresStolenAlliedTech", IsRequiresStolenAlliedTech);
-		IsRequiresStolenSovietTech = ini.Get_Bool(Name(), "RequiresStolenSovietTech", IsRequiresStolenSovietTech);
-		IsRequiresStolenThirdTech = ini.Get_Bool(Name(), "RequiresStolenThirdTech", IsRequiresStolenThirdTech);
-		IsCrew = ini.Get_Bool(Name(), "Crewed", IsCrew);
-		IsRepairable = ini.Get_Bool(Name(), "Repairable", IsRepairable);
-		IsInvisible = ini.Get_Bool(Name(), "Invisible", IsInvisible);
-		IsRadarVisible = ini.Get_Bool(Name(), "RadarVisible", IsRadarVisible);
-		IsSelfHealing = ini.Get_Bool(Name(), "SelfHealing", IsSelfHealing);
-		SelfHealingStep = ini.Get_Int(Name(), "SelfHealingStep", SelfHealingStep);
-		SelfHealingRate = ini.Get_Float(Name(), "SelfHealingRate", SelfHealingRate);
-		SelfHealingRate = ini.Get_Float(Name(), "SelfHealing.Rate", SelfHealingRate);
-		SelfHealingCap = ini.Get_Float(Name(), "SelfHealingCap", SelfHealingCap);
-		IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
-		IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
-		IsNoAutoFire = ini.Get_Bool(Name(), "NoAutoFire", IsNoAutoFire);
-		ROT = ini.Get_Int(Name(), "ROT", ROT);
-		MaxPassengers = ini.Get_Int(Name(), "Passengers", MaxPassengers);
-		Size = ini.Get_Int(Name(), "Size", Size);
-		SizeLimit = ini.Get_Int(Name(), "SizeLimit", SizeLimit);
-		IsVehicleTransport = ini.Get_Bool(Name(), "IsVehicleTransport", IsVehicleTransport);
-		FireAngle = ini.Get_Int(Name(), "FireAngle", FireAngle);
-		DeployTime = ini.Get_Float(Name(), "DeployTime", DeployTime);
-		IsDisableable = ini.Get_Bool(Name(), "Disableable", IsDisableable);
-		IsToProtect = ini.Get_Bool(Name(), "ToProtect", IsToProtect);
-		IsTiberiumHeal = ini.Get_Bool(Name(), "TiberiumHeal", IsTiberiumHeal);
-		IsImmuneToVeins = ini.Get_Bool(Name(), "ImmuneToVeins", IsImmuneToVeins);
-		if (ini.Is_Present(Name(), "ImmuneToEMP")) {
-			IsImmuneToEMP = ini.Get_Bool(Name(), "ImmuneToEMP", false);
-		}
-		IsAllowedToStartInMultiplayer = ini.Get_Bool(Name(), "AllowedToStartInMultiplayer", IsAllowedToStartInMultiplayer);
-		IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
-		IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
-		IsHunterSeekerIgnored = ini.Get_Bool(Name(), "HunterSeeker.Ignore", IsHunterSeekerIgnored);
-		IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
-		IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
-		IsOmniCrusherAggressive = ini.Get_Bool(Name(), "OmniCrusher.Aggressive", IsOmniCrusherAggressive);
-		NoAmmoWeapon = ini.Get_Int(Name(), "NoAmmoWeapon", NoAmmoWeapon);
-		NoAmmoAmount = ini.Get_Int(Name(), "NoAmmoAmount", NoAmmoAmount);
-		IsNoManualEnter = ini.Get_Bool(Name(), "NoManualEnter", IsNoManualEnter);
-		IsNoManualUnload = ini.Get_Bool(Name(), "NoManualUnload", IsNoManualUnload);
-		IsCivilianEnemy = ini.Get_Bool(Name(), "CivilianEnemy", IsCivilianEnemy);
-		IsLowSelectionPriority = ini.Get_Bool(Name(), "LowSelectionPriority", IsLowSelectionPriority);
-		IsPassengersBySize = ini.Get_Bool(Name(), "Passengers.BySize", IsPassengersBySize);
-		if (ini.Is_Present(Name(), "Passengers.Allowed")) {
-			PassengersAllowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Allowed"));
-		}
-		if (ini.Is_Present(Name(), "Passengers.Disallowed")) {
-			PassengersDisallowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Disallowed"));
-		}
-		if (ini.Is_Present(Name(), "InitialPayload.Types")) {
-			InitialPayloadTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Types"));
-		}
-		if (ini.Is_Present(Name(), "InitialPayload.Nums")) {
-			InitialPayloadNums.clear();
-			for (std::string const & count : ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Nums"))) {
-				InitialPayloadNums.push_back(atoi(count.c_str()));
-			}
-		}
-		FallRateParachute = ini.Get_Int(Name(), "FallRate.Parachute", FallRateParachute);
-		FallRateNoParachute = ini.Get_Int(Name(), "FallRate.NoParachute", FallRateNoParachute);
-		FallRateParachuteMax = ini.Get_Int(Name(), "FallRate.ParachuteMax", FallRateParachuteMax);
-		FallRateNoParachuteMax = ini.Get_Int(Name(), "FallRate.NoParachuteMax", FallRateNoParachuteMax);
-		IsExperienceFromPassengers = ini.Get_Bool(Name(), "Experience.FromPassengers", IsExperienceFromPassengers);
-		IsExperiencePromotePassengers = ini.Get_Bool(Name(), "Experience.PromotePassengers", IsExperiencePromotePassengers);
-		ExperiencePassengerModifier = ini.Get_Float(Name(), "Experience.PassengerModifier", ExperiencePassengerModifier);
-		IsExperienceFromAirstrike = ini.Get_Bool(Name(), "Experience.FromAirstrike", IsExperienceFromAirstrike);
-		ExperienceAirstrikeModifier = ini.Get_Float(Name(), "Experience.AirstrikeModifier", ExperienceAirstrikeModifier);
-		ExperienceMindControlSelfModifier = ini.Get_Float(Name(), "Experience.MindControlSelfModifier", ExperienceMindControlSelfModifier);
-		ExperienceMindControlVictimModifier = ini.Get_Float(Name(), "Experience.MindControlVictimModifier", ExperienceMindControlVictimModifier);
-		ExperienceSpawnOwnerModifier = ini.Get_Float(Name(), "Experience.SpawnOwnerModifier", ExperienceSpawnOwnerModifier);
-		ExperienceSpawnModifier = ini.Get_Float(Name(), "Experience.SpawnModifier", ExperienceSpawnModifier);
-		if (ini.Is_Present(Name(), "FakeOf")) {
-			FakeOf = ini.Get_String(Name(), "FakeOf");
-		}
-		if (ini.Is_Present(Name(), "EnemyUIName")) {
-			EnemyUIName = ini.Get_String(Name(), "EnemyUIName");
-			EnemyUINameText.clear();
-		}
-		IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
-		IsAutoCrush = ini.Get_Bool(Name(), "AutoCrush", IsAutoCrush);
-		IsTiltsWhenCrushes = ini.Get_Bool(Name(), "TiltsWhenCrushes", IsTiltsWhenCrushes);
-		IsAccelerates = ini.Get_Bool(Name(), "Accelerates", IsAccelerates);
-		ZFudgeCliff = ini.Get_Int(Name(), "ZFudgeCliff", ZFudgeCliff);
-		ZFudgeColumn = ini.Get_Int(Name(), "ZFudgeColumn", ZFudgeColumn);
-		ZFudgeTunnel = ini.Get_Int(Name(), "ZFudgeTunnel", ZFudgeTunnel);
-		ZFudgeBridge = ini.Get_Int(Name(), "ZFudgeBridge", ZFudgeBridge);
-		VeteranAbilities = ini.Get_Abilities(Name(), "VeteranAbilities", VeteranAbilities);
-		EliteAbilities = ini.Get_Abilities(Name(), "EliteAbilities", EliteAbilities);
-		MyEffectivenessCoefficient = ini.Get_Float(Name(), "MyEffectivenessCoefficient", MyEffectivenessCoefficient == 0 ? Rule->MyEffectivenessCoefficientDefault : MyEffectivenessCoefficient);
-		TargetEffectivenessCoefficient = ini.Get_Float(Name(), "TargetEffectivenessCoefficient", TargetEffectivenessCoefficient == 0 ? Rule->TargetEffectivenessCoefficientDefault : TargetEffectivenessCoefficient);
-		TargetSpecialThreatCoefficient = ini.Get_Float(Name(), "TargetSpecialThreatCoefficient", TargetSpecialThreatCoefficient == 0 ? Rule->TargetSpecialThreatCoefficientDefault : TargetSpecialThreatCoefficient);
-		TargetStrengthCoefficient = ini.Get_Float(Name(), "TargetStrengthCoefficient", TargetStrengthCoefficient == 0 ? Rule->TargetStrengthCoefficientDefault : TargetStrengthCoefficient);
-		TargetDistanceCoefficient = ini.Get_Float(Name(), "TargetDistanceCoefficient", TargetDistanceCoefficient == 0 ? Rule->TargetDistanceCoefficientDefault : TargetDistanceCoefficient);
-		SpecialThreatValue = ini.Get_Float(Name(), "SpecialThreatValue", SpecialThreatValue);
-
-		IsLeader = false;
-		if (Weapons[0].Weapon != NULL && Weapons[0].Weapon->Attack > 0) {
-			IsLeader = true;
-		}
-
-		char filename[512];
-		_makepath(filename, NULL, NULL, Graphic_Name(), ".SHP");
-		ImageData = MFCD::Retrieve(filename);
-
-		FireAngle = ArtINI.Get_Angle(Graphic_Name(), "FireAngle", FireAngle);
-		TurretOffset = ArtINI.Get_Int(Graphic_Name(), "TurretOffset", TurretOffset);
-		Rotation = ArtINI.Get_Int(Graphic_Name(), "RotCount", Rotation);
-		IsRemappable = ArtINI.Get_Bool(Graphic_Name(), "Remapable", IsRemappable);
-		IsRegulated = ArtINI.Get_Bool(Graphic_Name(), "Normalized", IsRegulated);
-		IsVisibleLoad = ArtINI.Get_Bool(Graphic_Name(), "VisibleLoad", IsVisibleLoad);
-		ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
-		IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
-		IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
-		if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
-			PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
-		}
-
-		char pcx[64];
-		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
-		CameoPCX = pcx;
-		ArtINI.Get_String(Graphic_Name(), "AltCameoPCX", "", pcx, sizeof(pcx));
-		AltCameoPCX = pcx;
-
-		TStringID<24> cameo;
-		if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
-			CameoFilename = cameo;
-			_makepath(filename, NULL, NULL, CameoFilename, ".SHP");
-			CameoData = (ShapeSet const *)MFCD::Retrieve(filename);
-		}
-		if (CameoData == NULL) {
-			CameoData = (ShapeSet const *)MFCD::Retrieve("XXICON.SHP");
-		}
-
-		TStringID<24> altcameo;
-		if (ArtINI.Get_String(Graphic_Name(), "AltCameo", "", altcameo) > 0) {
-			_makepath(filename, NULL, NULL, altcameo, ".SHP");
-			AltCameoData = (ShapeSet const *)MFCD::Retrieve(filename);
-		}
-
-		// An elite weapon fires from where its normal counterpart does unless the art says otherwise.
-		if (!Has_Multiple_Turrets()) {
-			Weapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "PrimaryFireFLH", Weapons[0].FireFLH);
-			Weapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "PBarrelLength", Weapons[0].BarrelLength);
-			Weapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "PBarrelThickness", Weapons[0].BarrelThickness);
-			Weapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "SecondaryFireFLH", Weapons[1].FireFLH);
-			Weapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "SBarrelLength", Weapons[1].BarrelLength);
-			Weapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "SBarrelThickness", Weapons[1].BarrelThickness);
-			EliteWeapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "ElitePrimaryFireFLH", Weapons[0].FireFLH);
-			EliteWeapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelLength", Weapons[0].BarrelLength);
-			EliteWeapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelThickness", Weapons[0].BarrelThickness);
-			EliteWeapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "EliteSecondaryFireFLH", Weapons[1].FireFLH);
-			EliteWeapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelLength", Weapons[1].BarrelLength);
-			EliteWeapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelThickness", Weapons[1].BarrelThickness);
-		} else {
-			char buf[32];
-			for (int i = 0; i < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); i++) {
-				sprintf(buf, "Weapon%dFLH", i + 1);
-				Weapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
-				sprintf(buf, "EliteWeapon%dFLH", i + 1);
-				EliteWeapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
-			}
-		}
-
-		// Each passenger seat of an open-topped transport has its own mounting. A seat among the first five with no entry
-		// uses the primary mounting, and one beyond them (Ares) has none.
-		{
-			int const seats = std::max<int>(5, std::min<int>(MaxPassengers, 255));
-			AlternativeFLH.assign((size_t)seats, TPoint3D<int>(0, 0, 0));
-			for (int seat = 0; seat < seats; seat++) {
-				char buf[32];
-				sprintf(buf, "AlternateFLH%d", seat);
-				AlternativeFLH[(size_t)seat] = ArtINI.Get_Point(Graphic_Name(), buf, seat < 5 ? Weapons[0].FireFLH : Point3D(0, 0, 0));
-			}
-		}
-
-		TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
-
-		/*
-		**	Check to see what zone this object should recognize.
-		*/
-		MZone = ini.Get_MZoneType(Name(), "MovementZone", MZone);
-		Speed = ini.Get_SpeedType(Name(), "SpeedType", Speed);
-		IsSubterranean = MZone == MZONE_SUBTERANNEAN;
+		// Keep this order: a type that a key names is created when it is first read, and the art
+		// readers start from values the rules readers set.
+		Read_General_INI(ini);
+		Read_Movement_INI(ini);
+		Read_Abilities_INI(ini);
+		Read_Targeting_INI(ini);
+		Read_Bounty_INI(ini);
+		Read_Insignia_INI(ini);
+		Read_Attach_Effect_INI(ini);
+		Read_Spawns_INI(ini);
+		Read_Jumpjet_INI(ini);
+		Read_Airstrike_INI(ini);
+		Read_Destruction_INI(ini);
+		Read_Weapons_INI(ini);
+		Read_Transport_INI(ini);
+		Read_Gattling_INI(ini);
+		Read_Deploy_INI(ini);
+		Read_Turret_INI(ini);
+		Read_Effects_INI(ini);
+		Read_Ammo_INI(ini);
+		Read_Production_INI(ini);
+		Read_AI_INI(ini);
+		Read_Sounds_INI(ini);
+		Read_Art_INI();
+		Read_Weapon_FLH_INI();
 
 		if (IsVoxel) {
 			Fetch_Voxel_Image();
@@ -1553,6 +986,854 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		return(true);
 	}
 	return(false);
+}
+
+
+void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
+{
+	// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).
+	IsCanBeHidden = ArtINI.Get_Bool(Name(), "CanBeHidden", IsCanBeHidden);
+	IsTypeImmune = ini.Get_Bool(Name(), "TypeImmune", IsTypeImmune);
+	IsDamageReducesReadiness = ini.Get_Bool(Name(), "DamageReducesReadiness", IsDamageReducesReadiness);
+	IsSprayAttack = ini.Get_Bool(Name(), "SprayAttack", IsSprayAttack);
+	ReadinessReductionMultiplier = ini.Get_Float(Name(), "ReadinessReductionMultiplier", ReadinessReductionMultiplier);
+	IsDetectDisguise = ini.Get_Bool(Name(), "DetectDisguise", IsDetectDisguise);
+	DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
+	WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
+	IdleRate = ini.Get_Int(Name(), "IdleRate", IdleRate);
+	AirRate = ini.Get_Int(Name(), "AirRate", AirRate);
+	RadarJamRadius = ini.Get_Int(Name(), "RadarJamRadius", RadarJamRadius);
+	if (RadarJamRadius > 0) {
+		RadarJammersExist = true;
+	}
+
+	if (RTTI == RTTI_INFANTRYTYPE) {
+		/// This routine runs before InfantryTypeClass reads its own flags, so IsCyborg is
+		/// still false on the first pass through the rules.
+		if (((InfantryTypeClass *)this)->IsCyborg) {
+			CollateralDamageCoefficient = 0.33f;
+		} else {
+			CollateralDamageCoefficient = 0.66f;
+		}
+	} else {
+		CollateralDamageCoefficient = 1.0;
+	}
+	CollateralDamageCoefficient = ini.Get_Float(Name(), "CollateralDamageCoefficient", CollateralDamageCoefficient);
+	CloakingSpeed = ini.Get_Int(Name(), "CloakingSpeed", CloakingSpeed);
+	PixelSelectionBracketDelta = ini.Get_Int(Name(), "PixelSelectionBracketDelta", PixelSelectionBracketDelta);
+	IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
+	IsRejoinTeamIfLimboed = ini.Get_Bool(Name(), "RejoinTeamIfLimboed", IsRejoinTeamIfLimboed);
+	IsRejoinTeamIfLimboed = ini.Get_Bool(Name(), "RejoinTeamIfLimboed", IsRejoinTeamIfLimboed);
+	MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
+	LeptonMindControlOffset = ini.Get_Int(Name(), "LeptonMindControlOffset", LeptonMindControlOffset);
+	IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
+	IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
+
+	char value[64];
+	if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
+		GroupAs = value;
+	}
+	if (ini.Is_Present(Name(), "KeepAlive")) {
+		KeepAlive = ini.Get_Bool(Name(), "KeepAlive", false) ? 1 : 0;
+		Rule->IsKeepAliveSet = true;
+	}
+
+	IsResourceGatherer = ini.Get_Bool(Name(), "ResourceGatherer", IsResourceGatherer);
+	IsResourceDestination = ini.Get_Bool(Name(), "ResourceDestination", IsResourceDestination);
+	IsNatural = ini.Get_Bool(Name(), "Natural", IsNatural);
+	IsUnnatural = ini.Get_Bool(Name(), "Unnatural", IsUnnatural);
+	SensorsSight = ini.Get_Int(Name(), "SensorsSight", SensorsSight);
+	IsRevealToAll = ini.Get_Bool(Name(), "RevealToAll", IsRevealToAll);
+	IsCloakStop = ini.Get_Bool(Name(), "CloakStop", IsCloakStop);
+	Capacity = ini.Get_Int(Name(), "Storage", Capacity);
+	IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
+	IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
+	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
+	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
+	IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
+	SightRange = ini.Get_Int(Name(), "Sight", SightRange);
+	DesignatorRange = ini.Get_Int(Name(), "DesignatorRange", DesignatorRange);
+	InhibitorRange = ini.Get_Int(Name(), "InhibitorRange", InhibitorRange);
+	Reward = Points = ini.Get_Int(Name(), "Points", Points);
+	IsDontScore = ini.Get_Bool(Name(), "DontScore", IsDontScore);
+	IsInvisible = ini.Get_Bool(Name(), "Invisible", IsInvisible);
+	IsRadarVisible = ini.Get_Bool(Name(), "RadarVisible", IsRadarVisible);
+	IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
+	IsHunterSeekerIgnored = ini.Get_Bool(Name(), "HunterSeeker.Ignore", IsHunterSeekerIgnored);
+	ZFudgeCliff = ini.Get_Int(Name(), "ZFudgeCliff", ZFudgeCliff);
+	ZFudgeColumn = ini.Get_Int(Name(), "ZFudgeColumn", ZFudgeColumn);
+	ZFudgeTunnel = ini.Get_Int(Name(), "ZFudgeTunnel", ZFudgeTunnel);
+	ZFudgeBridge = ini.Get_Int(Name(), "ZFudgeBridge", ZFudgeBridge);
+}
+
+
+void TechnoTypeClass::Read_Movement_INI(CCINIClass const & ini)
+{
+	IsMoveToShroud = ini.Get_Bool(Name(), "MoveToShroud", IsMoveToShroud);
+	IsTrain = ini.Get_Bool(Name(), "IsTrain", IsTrain);
+	FlightLevel = ini.Get_Int(Name(), "FlightLevel", FlightLevel);
+	IsDropship = ini.Get_Bool(Name(), "IsDropship", IsDropship);
+
+	double pitch_angle = ini.Get_Float(Name(), "PitchAngle", -1);
+	if (pitch_angle != -1) {
+		PitchAngle = DEG_TO_RAD(pitch_angle);
+	}
+	double roll_angle = ini.Get_Float(Name(), "RollAngle", -1);
+	if (roll_angle != -1) {
+		RollAngle = DEG_TO_RAD(roll_angle);
+	}
+
+	PitchSpeed = ini.Get_Float(Name(), "PitchSpeed", PitchSpeed);
+	Locomotor = ini.Get_ClassID(IniName, "Locomotor", Locomotor);
+	ThreatAvoidanceCoefficient = ini.Get_Float(Name(), "ThreatAvoidanceCoefficient", ThreatAvoidanceCoefficient);
+	SlowdownDistance = ini.Get_Int(Name(), "SlowdownDistance", SlowdownDistance);
+	DeaccelerationFactor = ini.Get_Float(Name(), "DeaccelerationFactor", DeaccelerationFactor);
+	AccelerationFactor = ini.Get_Float(Name(), "AccelerationFactor", AccelerationFactor);
+	Weight = ini.Get_Float(Name(), "Weight", Weight);
+	PhysicalSize = ini.Get_Float(Name(), "PhysicalSize", PhysicalSize);
+	IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
+	IsTiltCrashJumpjet = ini.Get_Bool(Name(), "TiltCrashJumpjet", IsTiltCrashJumpjet);
+	IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
+	IsUnderwater = ini.Get_Bool(Name(), "Underwater", IsUnderwater);
+	int maxspeed = ini.Get_Int(Name(), "Speed", -1);
+	if (maxspeed != -1) {
+		MaxSpeed = MPHType(_Scale_To_256(maxspeed));
+	}
+
+	IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
+	IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
+	ROT = ini.Get_Int(Name(), "ROT", ROT);
+	IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
+	IsPushy = ini.Get_Bool(Name(), "Pushy", IsPushy);
+	IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
+	IsOmniCrusherAggressive = ini.Get_Bool(Name(), "OmniCrusher.Aggressive", IsOmniCrusherAggressive);
+	NoAmmoWeapon = ini.Get_Int(Name(), "NoAmmoWeapon", NoAmmoWeapon);
+	NoAmmoAmount = ini.Get_Int(Name(), "NoAmmoAmount", NoAmmoAmount);
+	IsNoManualEnter = ini.Get_Bool(Name(), "NoManualEnter", IsNoManualEnter);
+	IsNoManualUnload = ini.Get_Bool(Name(), "NoManualUnload", IsNoManualUnload);
+	IsCivilianEnemy = ini.Get_Bool(Name(), "CivilianEnemy", IsCivilianEnemy);
+	IsLowSelectionPriority = ini.Get_Bool(Name(), "LowSelectionPriority", IsLowSelectionPriority);
+	IsPassengersBySize = ini.Get_Bool(Name(), "Passengers.BySize", IsPassengersBySize);
+	if (ini.Is_Present(Name(), "Passengers.Allowed")) {
+		PassengersAllowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Allowed"));
+	}
+	if (ini.Is_Present(Name(), "Passengers.Disallowed")) {
+		PassengersDisallowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Disallowed"));
+	}
+	if (ini.Is_Present(Name(), "InitialPayload.Types")) {
+		InitialPayloadTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Types"));
+	}
+	if (ini.Is_Present(Name(), "InitialPayload.Nums")) {
+		InitialPayloadNums.clear();
+		for (std::string const & count : ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Nums"))) {
+			InitialPayloadNums.push_back(atoi(count.c_str()));
+		}
+	}
+	FallRateParachute = ini.Get_Int(Name(), "FallRate.Parachute", FallRateParachute);
+	FallRateNoParachute = ini.Get_Int(Name(), "FallRate.NoParachute", FallRateNoParachute);
+	FallRateParachuteMax = ini.Get_Int(Name(), "FallRate.ParachuteMax", FallRateParachuteMax);
+	FallRateNoParachuteMax = ini.Get_Int(Name(), "FallRate.NoParachuteMax", FallRateNoParachuteMax);
+	IsExperienceFromPassengers = ini.Get_Bool(Name(), "Experience.FromPassengers", IsExperienceFromPassengers);
+	IsExperiencePromotePassengers = ini.Get_Bool(Name(), "Experience.PromotePassengers", IsExperiencePromotePassengers);
+	ExperiencePassengerModifier = ini.Get_Float(Name(), "Experience.PassengerModifier", ExperiencePassengerModifier);
+	IsExperienceFromAirstrike = ini.Get_Bool(Name(), "Experience.FromAirstrike", IsExperienceFromAirstrike);
+	ExperienceAirstrikeModifier = ini.Get_Float(Name(), "Experience.AirstrikeModifier", ExperienceAirstrikeModifier);
+	ExperienceMindControlSelfModifier = ini.Get_Float(Name(), "Experience.MindControlSelfModifier", ExperienceMindControlSelfModifier);
+	ExperienceMindControlVictimModifier = ini.Get_Float(Name(), "Experience.MindControlVictimModifier", ExperienceMindControlVictimModifier);
+	ExperienceSpawnOwnerModifier = ini.Get_Float(Name(), "Experience.SpawnOwnerModifier", ExperienceSpawnOwnerModifier);
+	ExperienceSpawnModifier = ini.Get_Float(Name(), "Experience.SpawnModifier", ExperienceSpawnModifier);
+	if (ini.Is_Present(Name(), "FakeOf")) {
+		FakeOf = ini.Get_String(Name(), "FakeOf");
+	}
+	if (ini.Is_Present(Name(), "EnemyUIName")) {
+		EnemyUIName = ini.Get_String(Name(), "EnemyUIName");
+		EnemyUINameText.clear();
+	}
+	IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
+	IsAutoCrush = ini.Get_Bool(Name(), "AutoCrush", IsAutoCrush);
+	IsTiltsWhenCrushes = ini.Get_Bool(Name(), "TiltsWhenCrushes", IsTiltsWhenCrushes);
+	IsAccelerates = ini.Get_Bool(Name(), "Accelerates", IsAccelerates);
+
+	/*
+	**	Check to see what zone this object should recognize.
+	*/
+	MZone = ini.Get_MZoneType(Name(), "MovementZone", MZone);
+	Speed = ini.Get_SpeedType(Name(), "SpeedType", Speed);
+	IsSubterranean = MZone == MZONE_SUBTERANNEAN;
+}
+
+
+void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
+{
+	IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);
+	IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
+	IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
+	IsBerserkFriendly = ini.Get_Bool(Name(), "BerserkFriendly", IsBerserkFriendly);
+	IsImmuneToPsionicWeapons = ini.Get_Bool(Name(), "ImmuneToPsionicWeapons", IsImmuneToPsionicWeapons);
+	IsImmuneToPoison = ini.Get_Bool(Name(), "ImmuneToPoison", IsImmuneToPoison);
+	IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
+	IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+	IronCurtainModifier = ini.Get_Float(Name(), "IronCurtain.Modifier", IronCurtainModifier);
+	ForceShieldModifier = ini.Get_Float(Name(), "ForceShield.Modifier", ForceShieldModifier);
+	IsImmuneToAbduction = ini.Get_Bool(Name(), "ImmuneToAbduction", IsImmuneToAbduction);
+	IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
+	ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
+	IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
+	GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
+	SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
+	IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
+	DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
+	DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
+	IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
+	SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
+	IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
+	IsPermaDisguise = ini.Get_Bool(Name(), "PermaDisguise", IsPermaDisguise);
+	IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
+	IsChronoshiftAllowed = ini.Get_Bool(Name(), "Chronoshift.Allow", IsChronoshiftAllowed);
+	IsChronoshiftCrushable = ini.Get_Bool(Name(), "Chronoshift.Crushable", IsChronoshiftCrushable);
+	IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
+	IsCanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", IsCanBeDriven);
+	EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
+	IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
+
+	char value[64];
+	if (ini.Get_String(Name(), "ReversedAs", "", value, sizeof(value)) > 0) {
+		ReversedAs = value;
+	}
+	if (ini.Get_String(Name(), "EMP.Threshold", "", value, sizeof(value)) > 0) {
+		EMPThreshold = Emp_Threshold_Named(value);
+	}
+
+	IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
+	IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
+	IsLightningRod = ini.Get_Bool(Name(), "LightningRod", IsLightningRod);
+	IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
+	IsCrew = ini.Get_Bool(Name(), "Crewed", IsCrew);
+	IsRepairable = ini.Get_Bool(Name(), "Repairable", IsRepairable);
+	IsSelfHealing = ini.Get_Bool(Name(), "SelfHealing", IsSelfHealing);
+	SelfHealingStep = ini.Get_Int(Name(), "SelfHealingStep", SelfHealingStep);
+	SelfHealingRate = ini.Get_Float(Name(), "SelfHealingRate", SelfHealingRate);
+	SelfHealingRate = ini.Get_Float(Name(), "SelfHealing.Rate", SelfHealingRate);
+	SelfHealingCap = ini.Get_Float(Name(), "SelfHealingCap", SelfHealingCap);
+	IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
+	IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
+	IsDisableable = ini.Get_Bool(Name(), "Disableable", IsDisableable);
+	IsTiberiumHeal = ini.Get_Bool(Name(), "TiberiumHeal", IsTiberiumHeal);
+	IsImmuneToVeins = ini.Get_Bool(Name(), "ImmuneToVeins", IsImmuneToVeins);
+	if (ini.Is_Present(Name(), "ImmuneToEMP")) {
+		IsImmuneToEMP = ini.Get_Bool(Name(), "ImmuneToEMP", false);
+	}
+
+	VeteranAbilities = ini.Get_Abilities(Name(), "VeteranAbilities", VeteranAbilities);
+	EliteAbilities = ini.Get_Abilities(Name(), "EliteAbilities", EliteAbilities);
+}
+
+
+void TechnoTypeClass::Read_Targeting_INI(CCINIClass const & ini)
+{
+	ThreatRange = ini.Get_Lepton(Name(), "GuardRange", ThreatRange);
+	IsCanPassiveAquire = ini.Get_Bool(Name(), "CanPassiveAquire", IsCanPassiveAquire);
+	IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
+	IsHoverAttack = ini.Get_Bool(Name(), "HoverAttack", IsHoverAttack);
+	IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
+	IsAttackFriendlies = ini.Get_Bool(Name(), "AttackFriendlies", IsAttackFriendlies);
+	IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
+	IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
+
+	char value[64];
+	if (ini.Get_String(Name(), "VHPScan", "", value, sizeof(value)) > 0) {
+		VHPScan = VHPScan_Named(value, VHPScan);
+	}
+
+	IsCloseRange = ini.Get_Bool(Name(), "CloseRange", IsCloseRange);
+	NavalTargeting = ini.Get_Int(Name(), "NavalTargeting", NavalTargeting);
+	LandTargeting = ini.Get_Int(Name(), "LandTargeting", LandTargeting);
+	IsDistributedFire = ini.Get_Bool(Name(), "DistributedFire", IsDistributedFire);
+	IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
+	IsCanRecalcApproachTarget = ini.Get_Bool(Name(), "CanRecalcApproachTarget", IsCanRecalcApproachTarget);
+	IsStupidHunt = ini.Get_Bool(Name(), "StupidHunt", IsStupidHunt);
+	IsStupidHunt = ini.Get_Bool(Name(), "StupidHunt", IsStupidHunt);
+	IsNoAutoFire = ini.Get_Bool(Name(), "NoAutoFire", IsNoAutoFire);
+	IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
+}
+
+
+void TechnoTypeClass::Read_Bounty_INI(CCINIClass const & ini)
+{
+	IsBounty = ini.Get_Bool(Name(), "Bounty", IsBounty);
+	if (ini.Is_Present(Name(), "Bounty.Display")) {
+		BountyDisplay = ini.Get_Bool(Name(), "Bounty.Display", false) ? 1 : 0;
+	}
+	// Bounty.Value sets every rank's value, and a rank's own key then overrides it.
+	if (ini.Is_Present(Name(), "Bounty.Value")) {
+		int const value = ini.Get_Int(Name(), "Bounty.Value", 0);
+		BountyValue[0] = BountyValue[1] = BountyValue[2] = value;
+	}
+	BountyValue[0] = ini.Get_Int(Name(), "Bounty.RookieValue", BountyValue[0]);
+	BountyValue[1] = ini.Get_Int(Name(), "Bounty.VeteranValue", BountyValue[1]);
+	BountyValue[2] = ini.Get_Int(Name(), "Bounty.EliteValue", BountyValue[2]);
+}
+
+
+void TechnoTypeClass::Read_Insignia_INI(CCINIClass const & ini)
+{
+	// The shorthand keys set every rank, and a rank's own key then overrides it.
+	static char const * const RANKS[3] = {"Rookie", "Veteran", "Elite"};
+	char key[48];
+	char value[64];
+	if (ini.Get_String(Name(), "Insignia", "", value, sizeof(value)) > 0) {
+		InsigniaFile[0] = InsigniaFile[1] = InsigniaFile[2] = value;
+	}
+	if (ini.Is_Present(Name(), "InsigniaFrame")) {
+		InsigniaFrame[0] = InsigniaFrame[1] = InsigniaFrame[2] = ini.Get_Int(Name(), "InsigniaFrame", -1);
+	}
+	if (ini.Get_String(Name(), "InsigniaFrames", "", value, sizeof(value)) > 0) {
+		sscanf(value, "%d,%d,%d", &InsigniaFrame[0], &InsigniaFrame[1], &InsigniaFrame[2]);
+	}
+	for (int rank = 0; rank < 3; rank++) {
+		snprintf(key, sizeof(key), "Insignia.%s", RANKS[rank]);
+		if (ini.Get_String(Name(), key, "", value, sizeof(value)) > 0) {
+			InsigniaFile[rank] = value;
+		}
+		snprintf(key, sizeof(key), "InsigniaFrame.%s", RANKS[rank]);
+		InsigniaFrame[rank] = ini.Get_Int(Name(), key, InsigniaFrame[rank]);
+	}
+	if (ini.Is_Present(Name(), "Insignia.ShowEnemy")) {
+		InsigniaShowEnemy = ini.Get_Bool(Name(), "Insignia.ShowEnemy", true) ? 1 : 0;
+	}
+	Load_Insignia_Shapes();
+}
+
+
+void TechnoTypeClass::Read_Attach_Effect_INI(CCINIClass const & ini)
+{
+	AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
+	AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
+	AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
+	AttachEffect.SpeedMultiplier = ini.Get_Float(Name(), "AttachEffect.SpeedMultiplier", AttachEffect.SpeedMultiplier);
+	AttachEffect.ArmorMultiplier = ini.Get_Float(Name(), "AttachEffect.ArmorMultiplier", AttachEffect.ArmorMultiplier);
+	AttachEffect.FirepowerMultiplier = ini.Get_Float(Name(), "AttachEffect.FirepowerMultiplier", AttachEffect.FirepowerMultiplier);
+	AttachEffect.ROFMultiplier = ini.Get_Float(Name(), "AttachEffect.ROFMultiplier", AttachEffect.ROFMultiplier);
+	AttachEffect.IsCloakable = ini.Get_Bool(Name(), "AttachEffect.Cloakable", AttachEffect.IsCloakable);
+	AttachEffect.IsForceDecloak = ini.Get_Bool(Name(), "AttachEffect.ForceDecloak", AttachEffect.IsForceDecloak);
+	AttachEffect.IsDiscardOnEntry = ini.Get_Bool(Name(), "AttachEffect.DiscardOnEntry", AttachEffect.IsDiscardOnEntry);
+	AttachEffect.IsPenetratesIronCurtain = ini.Get_Bool(Name(), "AttachEffect.PenetratesIronCurtain", AttachEffect.IsPenetratesIronCurtain);
+	AttachEffect.Delay = ini.Get_Int(Name(), "AttachEffect.Delay", AttachEffect.Delay);
+	AttachEffect.InitialDelay = ini.Get_Int(Name(), "AttachEffect.InitialDelay", AttachEffect.InitialDelay);
+}
+
+
+void TechnoTypeClass::Read_Spawns_INI(CCINIClass const & ini)
+{
+	IsSlaved = ini.Get_Bool(Name(), "Slaved", IsSlaved);
+	Spawns = TGet_Class(ini, Name(), "Spawns", Spawns);
+	SpawnsNumber = ini.Get_Int(Name(), "SpawnsNumber", SpawnsNumber);
+	SpawnRegenRate = ini.Get_Int(Name(), "SpawnRegenRate", SpawnRegenRate);
+	SpawnReloadRate = ini.Get_Int(Name(), "SpawnReloadRate", SpawnReloadRate);
+	SecondSpawnOffset = ini.Get_Point(Name(), "SecondSpawnOffset", SecondSpawnOffset);
+	IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
+	IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
+	Enslaves = TGet_Class(ini, Name(), "Enslaves", Enslaves);
+	SlavesNumber = ini.Get_Int(Name(), "SlavesNumber", SlavesNumber);
+	SlaveRegenRate = ini.Get_Int(Name(), "SlaveRegenRate", SlaveRegenRate);
+	SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
+	IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
+	PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
+}
+
+
+void TechnoTypeClass::Read_Jumpjet_INI(CCINIClass const & ini)
+{
+	// The first read takes its jumpjet defaults from [JumpjetControls], read before the types.
+	if (!IsJumpjetDataSet) {
+		IsJumpjetDataSet = true;
+		JumpjetTurnRate = Rule->JumpjetTurnRate;
+		JumpjetSpeed = Rule->JumpjetSpeed;
+		JumpjetClimb = Rule->JumpjetClimb;
+		JumpjetHeight = Rule->JumpjetCruiseHeight;
+		JumpjetAccel = Rule->JumpjetAcceleration;
+		JumpjetWobbles = Rule->JumpjetWobblesPerSecond;
+		JumpjetDeviation = Rule->JumpjetWobbleDeviation;
+	}
+	JumpjetTurnRate = ini.Get_Int(Name(), "JumpjetTurnRate", JumpjetTurnRate);
+	JumpjetSpeed = ini.Get_Int(Name(), "JumpjetSpeed", JumpjetSpeed);
+	JumpjetClimb = ini.Get_Float(Name(), "JumpjetClimb", JumpjetClimb);
+	JumpjetCrash = ini.Get_Float(Name(), "JumpjetCrash", JumpjetCrash);
+	JumpjetHeight = ini.Get_Int(Name(), "JumpjetHeight", JumpjetHeight);
+	JumpjetAccel = ini.Get_Float(Name(), "JumpjetAccel", JumpjetAccel);
+	JumpjetWobbles = ini.Get_Float(Name(), "JumpjetWobbles", JumpjetWobbles);
+	JumpjetDeviation = ini.Get_Int(Name(), "JumpjetDeviation", JumpjetDeviation);
+	IsJumpjetNoWobbles = ini.Get_Bool(Name(), "JumpjetNoWobbles", IsJumpjetNoWobbles);
+}
+
+
+void TechnoTypeClass::Read_Airstrike_INI(CCINIClass const & ini)
+{
+	AirstrikeTeam = ini.Get_Int(Name(), "AirstrikeTeam", AirstrikeTeam);
+	EliteAirstrikeTeam = ini.Get_Int(Name(), "EliteAirstrikeTeam", EliteAirstrikeTeam);
+	AirstrikeTeamType = TGet_Class(ini, Name(), "AirstrikeTeamType", AirstrikeTeamType);
+	EliteAirstrikeTeamType = TGet_Class(ini, Name(), "EliteAirstrikeTeamType", EliteAirstrikeTeamType);
+	AirstrikeRechargeTime = ini.Get_Int(Name(), "AirstrikeRechargeTime", AirstrikeRechargeTime);
+	EliteAirstrikeRechargeTime = ini.Get_Int(Name(), "EliteAirstrikeRechargeTime", EliteAirstrikeRechargeTime);
+}
+
+
+void TechnoTypeClass::Read_Destruction_INI(CCINIClass const & ini)
+{
+	IsExploding = ini.Get_Bool(Name(), "Explodes", IsExploding);
+	MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
+	MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
+	if (MinDebris < 0) {
+		MinDebris = 0;
+	}
+	if (MaxDebris < MinDebris) {
+		MaxDebris = MinDebris;
+	}
+
+	IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
+	IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
+	DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
+	DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
+	DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
+	DestroyAnim = TGet_TypeList<AnimTypeClass>(ini, IniName, "DestroyAnim", DestroyAnim);
+}
+
+
+void TechnoTypeClass::Read_Weapons_INI(CCINIClass const & ini)
+{
+	BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
+	TurretCount = ini.Get_Int(Name(), "TurretCount", TurretCount);
+	WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
+	IsClearAllWeapons = ini.Get_Bool(Name(), "ClearAllWeapons", IsClearAllWeapons);
+	IsMobileFire = ini.Get_Bool(Name(), "MobileFire", IsMobileFire);
+	IsPreventAttackMove = ini.Get_Bool(Name(), "PreventAttackMove", IsPreventAttackMove);
+	IsPreventAttackMove = ini.Get_Bool(Name(), "PreventAttackMove", IsPreventAttackMove);
+	if (!Has_Multiple_Turrets()) {
+		Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
+		Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
+		EliteWeapons[0].Weapon = TGet_Class(ini, Name(), "ElitePrimary", EliteWeapons[0].Weapon);
+		EliteWeapons[1].Weapon = TGet_Class(ini, Name(), "EliteSecondary", EliteWeapons[1].Weapon);
+	} else {
+		char buf[32];
+		for (int i = 0; i < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); i++) {
+			sprintf(buf, "Weapon%d", i + 1);
+			Weapons[i].Weapon = TGet_Class(ini, Name(), buf, Weapons[i].Weapon);
+			sprintf(buf, "EliteWeapon%d", i + 1);
+			EliteWeapons[i].Weapon = TGet_Class(ini, Name(), buf, EliteWeapons[i].Weapon);
+		}
+	}
+	if (IsClearAllWeapons) {
+		Weapons[0].Weapon = NULL;
+		Weapons[1].Weapon = NULL;
+		EliteWeapons[0].Weapon = NULL;
+		EliteWeapons[1].Weapon = NULL;
+	}
+
+	AirRangeBonus = ini.Get_Lepton(Name(), "AirRangeBonus", AirRangeBonus);
+	RadialFireSegments = ini.Get_Int(Name(), "RadialFireSegments", RadialFireSegments);
+	FireAngle = ini.Get_Int(Name(), "FireAngle", FireAngle);
+	IsLeader = false;
+	if (Weapons[0].Weapon != NULL && Weapons[0].Weapon->Attack > 0) {
+		IsLeader = true;
+	}
+}
+
+
+void TechnoTypeClass::Read_Transport_INI(CCINIClass const & ini)
+{
+	IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
+	IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
+
+	if (ini.Is_Present(Name(), "OpenTopped.RangeBonus")) {
+		OpenToppedRangeBonus = ini.Get_Int(Name(), "OpenTopped.RangeBonus", 0);
+	}
+	if (ini.Is_Present(Name(), "OpenTopped.DamageMultiplier")) {
+		OpenToppedDamageMultiplier = ini.Get_Float(Name(), "OpenTopped.DamageMultiplier", 1.0);
+	}
+	if (ini.Is_Present(Name(), "OpenTopped.WarpDistance")) {
+		OpenToppedWarpDistance = ini.Get_Int(Name(), "OpenTopped.WarpDistance", 0);
+	}
+	if (ini.Is_Present(Name(), "OpenTransport.RangeBonus")) {
+		OpenTransportRangeBonus = ini.Get_Int(Name(), "OpenTransport.RangeBonus", 0);
+	}
+	if (ini.Is_Present(Name(), "OpenTransport.DamageMultiplier")) {
+		OpenTransportDamageMultiplier = ini.Get_Float(Name(), "OpenTransport.DamageMultiplier", 1.0);
+	}
+	IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
+	OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
+	MaxPassengers = ini.Get_Int(Name(), "Passengers", MaxPassengers);
+	Size = ini.Get_Int(Name(), "Size", Size);
+	SizeLimit = ini.Get_Int(Name(), "SizeLimit", SizeLimit);
+	IsVehicleTransport = ini.Get_Bool(Name(), "IsVehicleTransport", IsVehicleTransport);
+}
+
+
+void TechnoTypeClass::Read_Gattling_INI(CCINIClass const & ini)
+{
+	IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
+	IsChargeTurret = ini.Get_Bool(Name(), "IsChargeTurret", IsChargeTurret);
+	WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
+	RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
+	RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
+	if (IsGattling && WeaponStages > 1) {
+		char buf[32];
+		for (int i = 0; i < std::min<int>(WeaponStages, WEAPON_STAGE_COUNT); i++) {
+			sprintf(buf, "Stage%d", i + 1);
+			WeaponStage[i] = ini.Get_Int(Name(), buf, WeaponStage[i]);
+			sprintf(buf, "EliteStage%d", i + 1);
+			EliteStage[i] = ini.Get_Int(Name(), buf, EliteStage[i]);
+		}
+	}
+}
+
+
+void TechnoTypeClass::Read_Deploy_INI(CCINIClass const & ini)
+{
+	IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
+	DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
+	IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
+	UndeployDelay = ini.Get_Int(Name(), "UndeployDelay", UndeployDelay);
+	Dock = TGet_TypeList<BuildingTypeClass>(ini, Name(), "Dock", Dock);
+	DeploysInto = TGet_Class(ini, Name(), "DeploysInto", DeploysInto);
+	UndeploysInto = TGet_Class(ini, Name(), "UndeploysInto", UndeploysInto);
+	UnloadingClass = TGet_Class(ini, Name(), "UnloadingClass", UnloadingClass);
+	DeployTime = ini.Get_Float(Name(), "DeployTime", DeployTime);
+}
+
+
+void TechnoTypeClass::Read_Turret_INI(CCINIClass const & ini)
+{
+	IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
+	IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
+	IsHasTurretTooltips = ini.Get_Bool(Name(), "HasTurretTooltips", IsHasTurretTooltips);
+	// Accepted from Yuri's Revenge rules, but nothing uses it.
+	ini.Get_Bool(Name(), "HasTurretTooltips", false);
+	IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
+	TurretRecoilControl.Travel = ini.Get_Int(Name(), "TurretTravel", TurretRecoilControl.Travel);
+	TurretRecoilControl.CompressFrames = ini.Get_Int(Name(), "TurretCompressFrames", TurretRecoilControl.CompressFrames);
+	Keep_Recoil_Frames(TurretRecoilControl.CompressFrames);
+	TurretRecoilControl.HoldFrames = ini.Get_Int(Name(), "TurretHoldFrames", TurretRecoilControl.HoldFrames);
+	Keep_Recoil_Frames(TurretRecoilControl.HoldFrames);
+	TurretRecoilControl.RecoverFrames = ini.Get_Int(Name(), "TurretRecoverFrames", TurretRecoilControl.RecoverFrames);
+	Keep_Recoil_Frames(TurretRecoilControl.RecoverFrames);
+
+	// gamemd copies the turret values into the barrel before it reads the barrel keys (TechnoTypeClass::LoadFromINI, 0x712170),
+	// so a barrel key that is absent keeps the turret's value rather than the constructor default.
+	BarrelRecoilControl = TurretRecoilControl;
+	BarrelRecoilControl.Travel = ini.Get_Int(Name(), "BarrelTravel", BarrelRecoilControl.Travel);
+	BarrelRecoilControl.CompressFrames = ini.Get_Int(Name(), "BarrelCompressFrames", BarrelRecoilControl.CompressFrames);
+	Keep_Recoil_Frames(BarrelRecoilControl.CompressFrames);
+	BarrelRecoilControl.HoldFrames = ini.Get_Int(Name(), "BarrelHoldFrames", BarrelRecoilControl.HoldFrames);
+	Keep_Recoil_Frames(BarrelRecoilControl.HoldFrames);
+	BarrelRecoilControl.RecoverFrames = ini.Get_Int(Name(), "BarrelRecoverFrames", BarrelRecoilControl.RecoverFrames);
+	Keep_Recoil_Frames(BarrelRecoilControl.RecoverFrames);
+}
+
+
+void TechnoTypeClass::Read_Effects_INI(CCINIClass const & ini)
+{
+	Explosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "Explosion", Explosion);
+	ScrapExplosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "ScrapExplosion", ScrapExplosion);
+	NaturalParticleSystem = TGet_Class(ini, Name(), "NaturalParticleSystem", NaturalParticleSystem);
+	RefinerySmokeParticleSystem = TGet_Class(ini, Name(), "RefinerySmokeParticleSystem", RefinerySmokeParticleSystem);
+	RefinerySmokeOffset[0] = ini.Get_Offset(Name(), "RefinerySmokeOffsetOne", RefinerySmokeOffset[0]);
+	RefinerySmokeOffset[1] = ini.Get_Offset(Name(), "RefinerySmokeOffsetTwo", RefinerySmokeOffset[1]);
+	RefinerySmokeOffset[2] = ini.Get_Offset(Name(), "RefinerySmokeOffsetThree", RefinerySmokeOffset[2]);
+	RefinerySmokeOffset[3] = ini.Get_Offset(Name(), "RefinerySmokeOffsetFour", RefinerySmokeOffset[3]);
+	RefinerySmokeParticleSystem = TGet_Class(ini, Name(), "RefinerySmokeParticleSystem", RefinerySmokeParticleSystem);
+	RefinerySmokeOffset[0] = ini.Get_Offset(Name(), "RefinerySmokeOffsetOne", RefinerySmokeOffset[0]);
+	RefinerySmokeOffset[1] = ini.Get_Offset(Name(), "RefinerySmokeOffsetTwo", RefinerySmokeOffset[1]);
+	RefinerySmokeOffset[2] = ini.Get_Offset(Name(), "RefinerySmokeOffsetThree", RefinerySmokeOffset[2]);
+	RefinerySmokeOffset[3] = ini.Get_Offset(Name(), "RefinerySmokeOffsetFour", RefinerySmokeOffset[3]);
+	NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
+	DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
+	DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
+	DamSmkOffScrnRel = ini.Get_Bool(Name(), "DamSmkOffScrnRel", DamSmkOffScrnRel);
+	DestroyParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DestroyParticleSystems", DestroyParticleSystems);
+	DestroySmokeOffset = ini.Get_Offset(Name(), "DestroySmokeOffset", DestroySmokeOffset);
+}
+
+
+void TechnoTypeClass::Read_Ammo_INI(CCINIClass const & ini)
+{
+	IsPipsDrawForAll = ini.Get_Bool(Name(), "PipsDrawForAll", IsPipsDrawForAll);
+	InitialAmmo = ini.Get_Int(Name(), "InitialAmmo", InitialAmmo);
+	IsManualReload = ini.Get_Bool(Name(), "ManualReload", IsManualReload);
+	PipScale = ini.Get_PipScaleType(Name(), "PipScale", PipScale);
+	if (ini.Is_Present(Name(), "MaxPips")) {
+		MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);
+	}
+
+	MaxAmmo = ini.Get_Int(Name(), "Ammo", MaxAmmo);
+	ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
+	EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
+	ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
+	PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
+	ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
+	EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
+	ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
+	PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
+}
+
+
+void TechnoTypeClass::Read_Production_INI(CCINIClass const & ini)
+{
+	IsDoubleOwned = ini.Get_Bool(Name(), "DoubleOwned", IsDoubleOwned);
+	BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
+
+	// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
+	BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
+	if (ini.Get_String(Name(), "Survivor.Side0", "", value, sizeof(value)) > 0) {
+		SurvivorSide[0] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	if (ini.Get_String(Name(), "Survivor.Side1", "", value, sizeof(value)) > 0) {
+		SurvivorSide[1] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	if (ini.Get_String(Name(), "Survivor.Side2", "", value, sizeof(value)) > 0) {
+		SurvivorSide[2] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	if (ini.Get_String(Name(), "Survivor.Side3", "", value, sizeof(value)) > 0) {
+		SurvivorSide[3] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	CrewTechnicianChance = ini.Get_Int(Name(), "Crew.TechnicianChance", CrewTechnicianChance);
+	CrewEngineerChance = ini.Get_Int(Name(), "Crew.EngineerChance", CrewEngineerChance);
+	SurvivorPilots = ini.Get_Int(Name(), "Survivor.Pilots", SurvivorPilots);
+	SurvivorPilotChance[0] = ini.Get_Int(Name(), "Survivor.RookiePilotChance", SurvivorPilotChance[0]);
+	SurvivorPilotChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPilotChance", SurvivorPilotChance[1]);
+	SurvivorPilotChance[2] = ini.Get_Int(Name(), "Survivor.ElitePilotChance", SurvivorPilotChance[2]);
+	SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
+	SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
+	SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+	ParachuteAnim = TGet_Class(ini, Name(), "Parachute.Anim", ParachuteAnim);
+	if (ini.Is_Present(Name(), "SlamSound")) {
+		SlamSound = ini.Get_VocType(Name(), "SlamSound", VOC_NONE);
+		IsSlamSoundSet = true;
+	}
+	RadialIndicatorRadius = ini.Get_Float(Name(), "RadialIndicatorRadius", RadialIndicatorRadius);
+	WaterImage = TGet_Class(ini, Name(), "WaterImage", WaterImage);
+	IsCloneable = ini.Get_Bool(Name(), "Cloneable", IsCloneable);
+	if (ini.Is_Present(Name(), "FactoryOwners")) {
+		FactoryOwners = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners"));
+	}
+	if (ini.Is_Present(Name(), "FactoryOwners.Forbidden")) {
+		FactoryOwnersForbidden = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners.Forbidden"));
+	}
+	if (ini.Get_String(Name(), "Cursor.Move", "", value, sizeof(value)) > 0) {
+		CursorMove = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.NoMove", "", value, sizeof(value)) > 0) {
+		CursorNoMove = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.Deploy", "", value, sizeof(value)) > 0) {
+		CursorDeploy = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.NoDeploy", "", value, sizeof(value)) > 0) {
+		CursorNoDeploy = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.Enter", "", value, sizeof(value)) > 0) {
+		CursorEnter = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.NoEnter", "", value, sizeof(value)) > 0) {
+		CursorNoEnter = value;
+	}
+	if (ini.Is_Present(Name(), "CloakSound")) {
+		CloakSound = ini.Get_VocType(Name(), "CloakSound", VOC_NONE);
+		IsCloakSoundSet = true;
+	}
+	if (ini.Is_Present(Name(), "DecloakSound")) {
+		DecloakSound = ini.Get_VocType(Name(), "DecloakSound", VOC_NONE);
+		IsDecloakSoundSet = true;
+	}
+	CloakStages = ini.Get_Int(Name(), "Cloakable.Stages", CloakStages);
+	IsCanPassiveAquireGuard = ini.Get_Bool(Name(), "CanPassiveAquire.Guard", IsCanPassiveAquireGuard);
+	IsCanPassiveAquireCloak = ini.Get_Bool(Name(), "CanPassiveAquire.Cloak", IsCanPassiveAquireCloak);
+	IsNoManualFire = ini.Get_Bool(Name(), "NoManualFire", IsNoManualFire);
+	IsGattlingCycle = ini.Get_Bool(Name(), "Gattling.Cycle", IsGattlingCycle);
+	if (ini.Get_String(Name(), "EVA.VeteranPromoted", "", value, sizeof(value)) > 0) {
+		EvaPromoted[0] = value;
+	}
+	if (ini.Get_String(Name(), "EVA.ElitePromoted", "", value, sizeof(value)) > 0) {
+		EvaPromoted[1] = value;
+	}
+	if (ini.Get_String(Name(), "EVA.Lost", "", value, sizeof(value)) > 0) {
+		EvaLost = value;
+		IsEvaLostSet = true;
+	}
+	BuildLimit = ini.Get_Int(Name(), "BuildLimit", BuildLimit);
+	CameoSortOrder = ini.Get_Int(Name(), "CameoSortOrder", CameoSortOrder);
+	Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
+	if (ini.Is_Present(Name(), "Prerequisite.StolenTechs")) {
+		PrerequisiteStolenTechs.clear();
+		for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.StolenTechs"))) {
+			int const value = atoi(index.c_str());
+			if (value >= 0) {
+				PrerequisiteStolenTechs.push_back(value);
+			}
+		}
+	}
+	PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
+	Level = ini.Get_Int(Name(), "TechLevel", Level);
+	Cost = ini.Get_Int(Name(), "Cost", Cost);
+	Soylent = ini.Get_Int(Name(), "Soylent", Soylent);
+	Ownable = ini.Get_Owners(Name(), "Owner", Ownable);
+	RequiredHouses = ini.Get_Owners(Name(), "RequiredHouses", RequiredHouses);
+	ForbiddenHouses = ini.Get_Owners(Name(), "ForbiddenHouses", ForbiddenHouses);
+	AIBasePlanningSide = ini.Get_Int(Name(), "AIBasePlanningSide", AIBasePlanningSide);
+	IsRequiresStolenAlliedTech = ini.Get_Bool(Name(), "RequiresStolenAlliedTech", IsRequiresStolenAlliedTech);
+	IsRequiresStolenSovietTech = ini.Get_Bool(Name(), "RequiresStolenSovietTech", IsRequiresStolenSovietTech);
+	IsRequiresStolenThirdTech = ini.Get_Bool(Name(), "RequiresStolenThirdTech", IsRequiresStolenThirdTech);
+	IsAllowedToStartInMultiplayer = ini.Get_Bool(Name(), "AllowedToStartInMultiplayer", IsAllowedToStartInMultiplayer);
+}
+
+
+void TechnoTypeClass::Read_AI_INI(CCINIClass const & ini)
+{
+	LeadershipRating = ini.Get_Int(Name(), "LeadershipRating", LeadershipRating);
+	Category = ini.Get_CategoryType(Name(), "Category", Category);
+	Risk = ini.Get_Int(Name(), "ThreatPosed", Risk);
+	IsToProtect = ini.Get_Bool(Name(), "ToProtect", IsToProtect);
+	MyEffectivenessCoefficient = ini.Get_Float(Name(), "MyEffectivenessCoefficient", MyEffectivenessCoefficient == 0 ? Rule->MyEffectivenessCoefficientDefault : MyEffectivenessCoefficient);
+	TargetEffectivenessCoefficient = ini.Get_Float(Name(), "TargetEffectivenessCoefficient", TargetEffectivenessCoefficient == 0 ? Rule->TargetEffectivenessCoefficientDefault : TargetEffectivenessCoefficient);
+	TargetSpecialThreatCoefficient = ini.Get_Float(Name(), "TargetSpecialThreatCoefficient", TargetSpecialThreatCoefficient == 0 ? Rule->TargetSpecialThreatCoefficientDefault : TargetSpecialThreatCoefficient);
+	TargetStrengthCoefficient = ini.Get_Float(Name(), "TargetStrengthCoefficient", TargetStrengthCoefficient == 0 ? Rule->TargetStrengthCoefficientDefault : TargetStrengthCoefficient);
+	TargetDistanceCoefficient = ini.Get_Float(Name(), "TargetDistanceCoefficient", TargetDistanceCoefficient == 0 ? Rule->TargetDistanceCoefficientDefault : TargetDistanceCoefficient);
+	SpecialThreatValue = ini.Get_Float(Name(), "SpecialThreatValue", SpecialThreatValue);
+}
+
+
+void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
+{
+	MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
+	PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
+	PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+	ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
+	ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
+	CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
+	EnterTransportSound = ini.Get_VocType(Name(), "EnterTransportSound", EnterTransportSound);
+	LeaveTransportSound = ini.Get_VocType(Name(), "LeaveTransportSound", LeaveTransportSound);
+	// Accepted from Yuri's Revenge rules, but nothing plays them: a grinder plays the rules' EnterGrinderSound.
+	ini.Get_VocType(Name(), "EnterGrinderSound", VOC_NONE);
+	ini.Get_VocType(Name(), "LeaveGrinderSound", VOC_NONE);
+	LeaveBioReactorSound = ini.Get_VocType(Name(), "LeaveBioReactorSound", LeaveBioReactorSound);
+	VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
+	VoiceDeploy = ini.Get_VocType(Name(), "VoiceDeploy", VoiceDeploy);
+	VoiceUndeploy = ini.Get_VocType(Name(), "VoiceUndeploy", VoiceUndeploy);
+	TurretRotateSound = ini.Get_VocType(Name(), "TurretRotateSound", TurretRotateSound);
+	VoiceCapture = ini.Get_VocType(Name(), "VoiceCapture", VoiceCapture);
+	VoiceHarvest = ini.Get_VocType(Name(), "VoiceHarvest", VoiceHarvest);
+	ImpactLandSound = ini.Get_VocType(Name(), "ImpactLandSound", ImpactLandSound);
+	ImpactWaterSound = ini.Get_VocType(Name(), "ImpactWaterSound", ImpactWaterSound);
+	DamageSound = ini.Get_VocType(Name(), "DamageSound", DamageSound);
+	VoicePrimaryWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryWeaponAttack", VoicePrimaryWeaponAttack);
+	VoicePrimaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryEliteWeaponAttack", VoicePrimaryEliteWeaponAttack);
+	VoiceSecondaryWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryWeaponAttack", VoiceSecondaryWeaponAttack);
+	VoiceSecondaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryEliteWeaponAttack", VoiceSecondaryEliteWeaponAttack);
+	ActivateSound = ini.Get_VocType(Name(), "ActivateSound", ActivateSound);
+	DeactivateSound = ini.Get_VocType(Name(), "DeactivateSound", DeactivateSound);
+	CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
+	VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
+	SinkingSound = ini.Get_VocType(Name(), "SinkingSound", SinkingSound);
+	VoiceSinking = ini.Get_VocType(Name(), "VoiceSinking", VoiceSinking);
+	VoiceMove = ini.Get_VocType_List(ini, IniName, "VoiceMove", VoiceMove);
+	VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
+	VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
+	VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
+	VoiceSelectEnslaved = ini.Get_VocType_List(ini, IniName, "VoiceSelectEnslaved", VoiceSelectEnslaved);
+	VoiceSelectDeactivated = ini.Get_VocType_List(ini, IniName, "VoiceSelectDeactivated", VoiceSelectDeactivated);
+	VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
+	VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
+	DieSound = ini.Get_VocType_List(ini, IniName, "DieSound", DieSound);
+	MoveSound = ini.Get_VocType_List(ini, IniName, "MoveSound", MoveSound);
+	VoiceFeedback = ini.Get_VocType_List(ini, IniName, "VoiceFeedback", VoiceFeedback);
+	AuxSound1 = ini.Get_VocType(Name(), "AuxSound1", AuxSound1);
+	AuxSound2 = ini.Get_VocType(Name(), "AuxSound2", AuxSound2);
+}
+
+
+void TechnoTypeClass::Read_Art_INI(void)
+{
+	char filename[512];
+	_makepath(filename, NULL, NULL, Graphic_Name(), ".SHP");
+	ImageData = MFCD::Retrieve(filename);
+
+	FireAngle = ArtINI.Get_Angle(Graphic_Name(), "FireAngle", FireAngle);
+	TurretOffset = ArtINI.Get_Int(Graphic_Name(), "TurretOffset", TurretOffset);
+	Rotation = ArtINI.Get_Int(Graphic_Name(), "RotCount", Rotation);
+	IsRemappable = ArtINI.Get_Bool(Graphic_Name(), "Remapable", IsRemappable);
+	IsRegulated = ArtINI.Get_Bool(Graphic_Name(), "Normalized", IsRegulated);
+	IsVisibleLoad = ArtINI.Get_Bool(Graphic_Name(), "VisibleLoad", IsVisibleLoad);
+	ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
+	IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
+	IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
+	if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
+		PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
+	}
+	IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
+	IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
+
+	char pcx[64];
+	ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
+	CameoPCX = pcx;
+	ArtINI.Get_String(Graphic_Name(), "AltCameoPCX", "", pcx, sizeof(pcx));
+	AltCameoPCX = pcx;
+
+	// gamemd TechnoTypeClass::LoadFromINI (0x712170) reads Palette= into PaletteFile, a 0x20-byte buffer.
+	char palette[32];
+	ArtINI.Get_String(Graphic_Name(), "Palette", "", palette, sizeof(palette));
+	PaletteFile = palette;
+
+	TStringID<24> cameo;
+	if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
+		CameoFilename = cameo;
+		_makepath(filename, NULL, NULL, CameoFilename, ".SHP");
+		CameoData = (ShapeSet const *)MFCD::Retrieve(filename);
+	}
+	if (CameoData == NULL) {
+		CameoData = (ShapeSet const *)MFCD::Retrieve("XXICON.SHP");
+	}
+
+	TStringID<24> altcameo;
+	if (ArtINI.Get_String(Graphic_Name(), "AltCameo", "", altcameo) > 0) {
+		_makepath(filename, NULL, NULL, altcameo, ".SHP");
+		AltCameoData = (ShapeSet const *)MFCD::Retrieve(filename);
+	}
+
+	TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
+}
+
+
+void TechnoTypeClass::Read_Weapon_FLH_INI(void)
+{
+	// An elite weapon fires from where its normal counterpart does unless the art says otherwise.
+	if (!Has_Multiple_Turrets()) {
+		Weapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "PrimaryFireFLH", Weapons[0].FireFLH);
+		Weapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "PBarrelLength", Weapons[0].BarrelLength);
+		Weapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "PBarrelThickness", Weapons[0].BarrelThickness);
+		Weapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "SecondaryFireFLH", Weapons[1].FireFLH);
+		Weapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "SBarrelLength", Weapons[1].BarrelLength);
+		Weapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "SBarrelThickness", Weapons[1].BarrelThickness);
+		EliteWeapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "ElitePrimaryFireFLH", Weapons[0].FireFLH);
+		EliteWeapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelLength", Weapons[0].BarrelLength);
+		EliteWeapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelThickness", Weapons[0].BarrelThickness);
+		EliteWeapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "EliteSecondaryFireFLH", Weapons[1].FireFLH);
+		EliteWeapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelLength", Weapons[1].BarrelLength);
+		EliteWeapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelThickness", Weapons[1].BarrelThickness);
+	} else {
+		char buf[32];
+		for (int i = 0; i < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); i++) {
+			sprintf(buf, "Weapon%dFLH", i + 1);
+			Weapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
+			sprintf(buf, "EliteWeapon%dFLH", i + 1);
+			EliteWeapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
+		}
+	}
+
+	// Each passenger seat of an open-topped transport has its own mounting. A seat with no entry uses the primary mounting.
+	for (int seat = 0; seat < 5; seat++) {
+		char buf[32];
+		sprintf(buf, "AlternateFLH%d", seat);
+		AlternativeFLH[seat] = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[0].FireFLH);
+	}
 }
 
 
@@ -1620,13 +1901,14 @@ int TechnoTypeClass::Max_Pips(void) const
 			return(MaxPips.value_or(10));
 
 		case PIPSCALE_AMMO:
-			return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(5)));
+			// TechnoTypeClass::GetPipMax (0x716290) answers the type's Ammo, so a row holds a pip for every shot.
+			return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(MaxAmmo)));
 
 		case PIPSCALE_TIBERIUM:
-			return(MaxPips.value_or(5));
+			return(MaxPips.value_or(Fetch_RTTI() == RTTI_INFANTRYTYPE ? 3 : 5));
 
 		case PIPSCALE_PASSENGERS:
-			return(std::min(MaxPassengers, MaxPips.value_or(5)));
+			return(std::min(MaxPassengers, MaxPips.value_or(MaxPassengers)));
 
 		case PIPSCALE_CHARGE:
 			return(MaxPips.value_or(8));
@@ -1656,8 +1938,6 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 {
 //	//assert(IsActive);
 
-	bool is_within_ground_firing_angle;
-
 	// A weapon with Range=-2 reaches anything (TechnoClass::InRange, 0x6F7220).
 	if (target != NULL && weapon != NULL && weapon->Range == -2 * CELL_LEPTON_W) {
 		return(true);
@@ -1686,8 +1966,6 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 			if (!Is_Projectile_Trajectory_Valid(weapon->MaxSpeed, dist, height, gravity) || (Map[tcoord].IsUnderBridge && tcoord.Z - coord.Z >= 3 * LEVEL_LEPTON_H)) {
 				return(false);
 			}
-			Coord dist2d = Coord(coord.X - tcoord.X, coord.Y - tcoord.Y, 0);
-			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Gamemd_Length();
 		} else {
 
 			BuildingClass const * building = target->As_BuildingClass();
@@ -1712,30 +1990,10 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 					return(false);
 				}
 			}
-
-			/*
-			 * A ground weapon cannot hit a target that is too high above it -- the
-			 * target must be no higher than the horizontal distance to it.
-			 */
-			Coord coord1 = coord;
-			Coord coord2 = tcoord;
-			if (!weapon->Bullet->IsAntiAircraft) {
-				Point2D dist2d = Point2D(coord1 - coord2);
-				if (tcoord.Z - coord.Z >= dist2d.Gamemd_Length()) {
-					return(false);
-				}
-			}
-
-			Point2D dist2d = Point2D(coord1 - coord2);
-			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Gamemd_Length();
 		}
 
-		if (!is_within_ground_firing_angle) {
-			int hoffset = Map[coord].IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0;
-			if (coord.Z <= hoffset + Map.Get_Height_GL(coord)) {
-				return(false);
-			}
-		}
+		// gamemd tests no firing angle after the range (TechnoClass::InRange, 0x6F7220), so a Kirov directly over
+		// its target, or a unit on a cliff firing straight down, still has the target in range.
 		return(true);
 	}
 
@@ -1802,10 +2060,7 @@ char const * TechnoTypeClass::Enemy_Full_Name(void) const
 std::string TechnoTypeClass::Select_Group(void) const
 {
 	std::string group = GroupAs.empty() ? std::string(Name()) : GroupAs;
-	for (char & letter : group) {
-		letter = (char)toupper((unsigned char)letter);
-	}
-	return(group);
+	return(Upper(group));
 }
 
 
@@ -1880,6 +2135,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UndeploysInto);
 	stream.Serialize(UnloadingClass);
 	stream.Serialize(VoiceSelect);
+	stream.Serialize(VoiceSelectEnslaved);
+	stream.Serialize(VoiceSelectDeactivated);
 	stream.Serialize(VoiceMove);
 	stream.Serialize(VoiceSpecialAttack);
 	stream.Serialize(VoiceAttack);
@@ -1915,8 +2172,15 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProtectedDriverMinHealth);
 	stream.Serialize(IronCurtainModifier);
 	stream.Serialize(ForceShieldModifier);
+	stream.Serialize(IsGapGenerator);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
+	stream.Serialize(IsDeployFire);
+	stream.Serialize(DeployFireWeapon);
+	stream.Serialize(IsDeployToLand);
+	stream.Serialize(IsDisguiseWhenStill);
+	stream.Serialize(IsSlaved);
+	stream.Serialize(UndeployDelay);
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);
@@ -2029,8 +2293,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CreateSound);
 	stream.Serialize(EnterTransportSound);
 	stream.Serialize(LeaveTransportSound);
-	stream.Serialize(EnterGrinderSound);
-	stream.Serialize(LeaveGrinderSound);
 	stream.Serialize(LeaveBioReactorSound);
 	stream.Serialize(VoiceEnter);
 	stream.Serialize(VoiceDeploy);
@@ -2160,6 +2422,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(NaturalParticleLocation);
 	stream.Serialize(DamageParticleSystems);
 	stream.Serialize(DamageSmokeOffset);
+	stream.Serialize(DamSmkOffScrnRel);
+	stream.Serialize(DestroyParticleSystems);
+	stream.Serialize(DestroySmokeOffset);
 	stream.Serialize(ShadowIndex);
 	stream.Serialize(Capacity);
 	stream.Serialize(TurretNotExportedOnGround);
@@ -2167,6 +2432,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EliteWeapons);
 	stream.Serialize(AlternativeFLH);
 	stream.Serialize(IsTypeImmune);
+	stream.Serialize(IsDamageReducesReadiness);
+	stream.Serialize(IsSprayAttack);
+	stream.Serialize(ReadinessReductionMultiplier);
 	stream.Serialize(IsCanBeHidden);
 	stream.Serialize(IsDetectDisguise);
 	stream.Serialize(DetectDisguiseRange);
@@ -2174,6 +2442,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTrainable);
 	stream.Serialize(IsDontScore);
 	stream.Serialize(IsNaval);
+	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(RequiredHouses);
 	stream.Serialize(ForbiddenHouses);
 	stream.Serialize(AIBasePlanningSide);
@@ -2199,6 +2468,15 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNominal);
 	stream.Serialize(IsTurretEquipped);
 	stream.Serialize(IsHasTurretTooltips);
+	stream.Serialize(IsTurretRecoil);
+	stream.Serialize(TurretRecoilControl.Travel);
+	stream.Serialize(TurretRecoilControl.CompressFrames);
+	stream.Serialize(TurretRecoilControl.HoldFrames);
+	stream.Serialize(TurretRecoilControl.RecoverFrames);
+	stream.Serialize(BarrelRecoilControl.Travel);
+	stream.Serialize(BarrelRecoilControl.CompressFrames);
+	stream.Serialize(BarrelRecoilControl.HoldFrames);
+	stream.Serialize(BarrelRecoilControl.RecoverFrames);
 	stream.Serialize(IsRepairable);
 	stream.Serialize(IsCrew);
 	stream.Serialize(IsRemappable);
@@ -2222,6 +2500,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHunterSeeker);
 	stream.Serialize(IsHunterSeekerIgnored);
 	stream.Serialize(IsCrusher);
+	stream.Serialize(IsPushy);
 	stream.Serialize(IsOmniCrusher);
 	stream.Serialize(IsOmniCrushResistant);
 	stream.Serialize(IsTiltsWhenCrushes);
@@ -2287,6 +2566,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Is_Immune_To_EMP());
 	crc(IsTiberiumHeal);
 	crc(IsTargetLaser);
+	crc(IsPushy);
 	crc(RollAngle);
 	crc(PitchAngle);
 	crc(PitchSpeed);
@@ -2298,12 +2578,15 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(PipScale);
 	crc(Max_Pips());
 	crc(VoiceSelect.Count());
+	crc(VoiceSelectEnslaved.Count());
+	crc(VoiceSelectDeactivated.Count());
 	crc(VoiceMove.Count());
 	crc(VoiceSpecialAttack.Count());
 	crc(VoiceAttack.Count());
 	crc(VoiceDie.Count());
 	crc(VoiceFeedback.Count());
 	crc(DamageParticleSystems.Count());
+	crc(DestroyParticleSystems.Count());
 	crc(MZone);
 	crc(ThreatRange);
 	crc(MaxDebris);
@@ -2324,6 +2607,9 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(MaxAmmo);
 	crc(ReloadDelay);
 	crc(EmptyReloadDelay);
+	crc(IsDamageReducesReadiness);
+	crc(IsSprayAttack);
+	crc(ReadinessReductionMultiplier);
 	crc(ReloadIncrement);
 	crc(PipWrap);
 	crc((int)Ownable);
@@ -2349,10 +2635,21 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsNominal);
 	crc(IsTurretEquipped);
 	crc(IsHasTurretTooltips);
+	crc(IsTurretRecoil);
+	crc(TurretRecoilControl.Travel);
+	crc(TurretRecoilControl.CompressFrames);
+	crc(TurretRecoilControl.HoldFrames);
+	crc(TurretRecoilControl.RecoverFrames);
+	crc(BarrelRecoilControl.Travel);
+	crc(BarrelRecoilControl.CompressFrames);
+	crc(BarrelRecoilControl.HoldFrames);
+	crc(BarrelRecoilControl.RecoverFrames);
 	crc(IsRepairable);
 	crc(IsCrew);
 	crc(IsRemappable);
 	crc(IsCloakable);
+	crc(IsGapGenerator);
+	crc(GapRadiusInCells);
 	crc(IsNoShadow);
 	crc(IsDisableVoxelCache);
 	crc(IsDisableShadowCache);
@@ -2395,6 +2692,26 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 
 
 /// <summary>
+/// Fetches the offset that this type's damage smoke and spark particle systems are placed at, from the object's anchor.
+/// Without DamSmkOffScrnRel the offset is DamageSmokeOffset as written. With it, X and Y are projected through the
+/// tactical view's coordinate-to-pixel matrix and truncated to whole pixels, then used as lepton values, and Z lifts the
+/// particle on the screen. With no tactical map to project through, the offset is returned as written.
+/// </summary>
+/// <returns>Returns with the offset in leptons.</returns>
+Coord TechnoTypeClass::Particle_System_Offset(void) const
+{
+	if (!DamSmkOffScrnRel || TacticalMap == NULL) {
+		return(Coord(DamageSmokeOffset.X, DamageSmokeOffset.Y, DamageSmokeOffset.Z));
+	}
+
+	Vector3 const pixel = TacticalMap->CoordToPixelMatrix * Vector3((float)DamageSmokeOffset.X, (float)DamageSmokeOffset.Y, 0.0f);
+	int const z = DamageSmokeOffset.Z;
+	int const lift = (int)std::sqrt(2.0 * (10.0 * z) * (10.0 * z));
+	return(Coord((int)pixel.X - 10 * z, (int)pixel.Y - 10 * z, z >= 0 ? -lift : lift));
+}
+
+
+/// <summary>
 /// Fetches the weapon data for one of this object type's weapon slots.
 /// </summary>
 /// <param name="which">The weapon slot desired, below WEAPON_SLOT_COUNT.</param>
@@ -2433,4 +2750,19 @@ int TechnoTypeClass::Flight_Level(void) const
 		return(Rule->FlightLevel);
 	}
 	return(FlightLevel);
+}
+
+
+/// <summary>
+/// Finds the object type whose INI name matches, ignoring case.
+/// </summary>
+/// <returns>TechnoTypeClass *; The first techno type with that name, or NULL when none has it.</returns>
+TechnoTypeClass * TechnoTypeClass::From_Name(char const * name)
+{
+	for (int index = 0; index < TechnoTypes.Count(); index++) {
+		if (stricmp(TechnoTypes[index]->Name(), name) == 0) {
+			return(TechnoTypes[index]);
+		}
+	}
+	return(NULL);
 }

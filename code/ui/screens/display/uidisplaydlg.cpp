@@ -22,7 +22,6 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uisettingpreview.h"
 #include "ui/uiview.h"
 #include "sdl/sdlwindow.h"
@@ -83,6 +82,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.SidebarRows = rows;
 			Hud_Rows_Preview(0);
 			Modern_Panel_Rows_Changed();
+		}
+
+		virtual void Set_Sidebar_Opacity(int percent) override
+		{
+			Options.SidebarOpacity = percent;
 		}
 
 		virtual void Set_Bitmap_System_Font(bool on) override
@@ -148,6 +152,23 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		{
 			Options.IntegerScaling = on;
 			Video_Refresh_Scaling();
+		}
+
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override
+		{
+			Options.GpuRender = render;
+			Options.SoftShadows = softshadows;
+			Options.Shockwaves = shockwaves;
+			Options.Bloom = bloom;
+			Options.WaterRipples = water;
+			Options.CloudShadows = clouds;
+			// Ticking the switch keeps a Rain or Snow chosen in RA2MD.INI.
+			if (!weather) {
+				Options.Weather = WEATHER_NONE;
+			} else if (Options.Weather == WEATHER_NONE) {
+				Options.Weather = WEATHER_MAP;
+			}
+			Apply_HDR_Highlights();
 		}
 
 		virtual void Set_Filter(int mode) override
@@ -223,6 +244,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.ScreenShake = on;
 		}
 
+		virtual void Set_Scripted_Camera_Zoom(bool on) override
+		{
+			Options.ScriptedCameraZoom = on;
+		}
+
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override
 		{
 			Options.Brightness = brightness;
@@ -251,29 +277,6 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		}
 };
 
-
-// Adds the choices to the list and returns the index of the one with the current value, adding
-// the current value under its own label when the list does not have it.
-int Fill_Choices(std::vector<UIDisplayChoice> & list, std::initializer_list<UIDisplayChoice> choices, int current, char const * format)
-{
-	int picked = -1;
-	for (UIDisplayChoice const & choice : choices) {
-		if (choice.Value == current) {
-			picked = (int)list.size();
-		}
-		list.push_back(choice);
-	}
-	if (picked < 0) {
-		UIDisplayChoice choice;
-		choice.Value = current;
-		char buffer[32];
-		std::snprintf(buffer, sizeof(buffer), format, current);
-		choice.Label = buffer;
-		picked = (int)list.size();
-		list.push_back(choice);
-	}
-	return(picked);
-}
 
 UIDisplayEngineServiceClass _Service;
 
@@ -399,25 +402,8 @@ UIDisplayServiceClass & UI_Display_Service(void)
 }
 
 
-void UI_Display_State(UIDisplayState & state)
+static void Fill_Window_Sizes(UIDisplayState & state)
 {
-	state = UIDisplayState();
-	state.StretchMovies = Options.StretchMovies;
-	state.SystemCursor = Options.SystemCursor;
-	state.ClassicMenus = Options.IsClassicMenus;
-	state.ModernInterface = Options.IsModernInterfaceChosen;
-	state.BitmapSystemFont = Options.BitmapSystemFont;
-	state.ShowFPS = Options.ShowFPS;
-	state.FrameLimit = Fill_Choices(state.FrameLimits, {
-		{-1, "Display refresh"},
-		{30, "30"},
-		{60, "60"},
-		{120, "120"},
-		{144, "144"},
-		{240, "240"},
-		{0, "Unlimited"}
-	}, (Options.FrameRateLimit < 0) ? -1 : Options.FrameRateLimit, "%d");
-
 	// Match resolution follows ScreenWidth and ScreenHeight. The fixed sizes above the desktop are left out.
 	UIDisplayMode match;
 	match.Width = -1;
@@ -458,6 +444,64 @@ void UI_Display_State(UIDisplayState & state)
 		state.WindowSize = (int)state.WindowSizes.size();
 		state.WindowSizes.push_back(mode);
 	}
+}
+
+
+static void Fill_Interface_Scales(UIDisplayState & state)
+{
+	// Automatic, the usual steps, and whatever else the settings file has asked for.
+	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
+	float const current = (Options.InterfaceScale > 0.0f) ? Options.InterfaceScale : 0.0f;
+	state.Scale = -1;
+	for (float step : steps) {
+		if (step == current) {
+			state.Scale = (int)state.Scales.size();
+		}
+		UIDisplayScale scale;
+		scale.Value = step;
+		if (step > 0.0f) {
+			char buffer[32];
+			std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(step * 100.0f));
+			scale.Label = buffer;
+		} else {
+			scale.Label = "Auto";
+		}
+		state.Scales.push_back(scale);
+	}
+	if (state.Scale < 0) {
+		UIDisplayScale scale;
+		scale.Value = current;
+		char buffer[32];
+		std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(current * 100.0f));
+		scale.Label = buffer;
+		state.Scale = (int)state.Scales.size();
+		state.Scales.push_back(scale);
+	}
+}
+
+
+void UI_Display_State(UIDisplayState & state)
+{
+	state = UIDisplayState();
+	state.StretchMovies = Options.StretchMovies;
+	state.SystemCursor = Options.SystemCursor;
+	state.ClassicMenus = Options.IsClassicMenus;
+	state.ModernInterface = Options.IsModernInterfaceChosen;
+	state.ModernInterfaceRunning = Options.ModernInterface;
+	state.InGame = GameActive;
+	state.BitmapSystemFont = Options.BitmapSystemFont;
+	state.ShowFPS = Options.ShowFPS;
+	state.FrameLimit = Fill_Choices(state.FrameLimits, {
+		{-1, "Display refresh"},
+		{30, "30"},
+		{60, "60"},
+		{120, "120"},
+		{144, "144"},
+		{240, "240"},
+		{0, "Unlimited"}
+	}, (Options.FrameRateLimit < 0) ? -1 : Options.FrameRateLimit, "%d");
+
+	Fill_Window_Sizes(state);
 	state.PlayerColors = Fill_Choices(state.PlayerColorChoices, {
 		{PLAYER_VIEW_DEFAULT, "Default"},
 		{PLAYER_VIEW_COLORBLIND_SAFE, "Color-blind safe"},
@@ -466,6 +510,13 @@ void UI_Display_State(UIDisplayState & state)
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
+	state.GpuRender = Options.GpuRender;
+	state.SoftShadows = Options.SoftShadows;
+	state.Shockwaves = Options.Shockwaves;
+	state.Bloom = Options.Bloom;
+	state.WaterRipples = Options.WaterRipples;
+	state.CloudShadows = Options.CloudShadows;
+	state.Weather = Options.Weather != WEATHER_NONE;
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 	state.HDRActive = Video_HDR_Active();
 	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {
@@ -510,7 +561,7 @@ void UI_Display_State(UIDisplayState & state)
 		{BACKEND_RENDERER_AUTO, "Auto"},
 		{BACKEND_RENDERER_D3D11, "Direct3D 11"},
 		{BACKEND_RENDERER_D3D12, "Direct3D 12"},
-		{BACKEND_RENDERER_VULKAN, "Vulkan"},
+		{BACKEND_RENDERER_VULKAN, "Vulkan (experimental)"},
 		{BACKEND_RENDERER_OPENGL, "OpenGL"}
 	}, Options.Renderer, "%d");
 
@@ -526,6 +577,8 @@ void UI_Display_State(UIDisplayState & state)
 	state.DefaultPaperWhite = HDR_Resolve_Paper_White(0, HDR_Current_Display().SDRWhiteKnown, HDR_Current_Display().SDRWhiteNits);
 	state.DefaultPeakBrightness = HDR_Resolve_Peak(0, HDR_Current_Display().PeakNits, state.DefaultPaperWhite);
 	state.ScreenShake = Options.ScreenShake;
+	state.ScriptedCameraZoom = Options.ScriptedCameraZoom;
+	state.SidebarOpacity = Options.SidebarOpacity;
 
 	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
 	// the frame allows when the saved count is more.
@@ -535,45 +588,9 @@ void UI_Display_State(UIDisplayState & state)
 	int frame_height = 0;
 	_Service.Frame_Size(Options.ScreenWidth, Options.ScreenHeight, Options.InterfaceScale, frame_width, frame_height);
 	// The fewest rows when the saved count is below every choice.
-	state.RowCount = 0;
-	for (int value : _Service.Sidebar_Row_Counts(frame_height)) {
-		UIDisplayChoice choice;
-		choice.Value = value;
-		choice.Label = std::to_string(value);
-		if (value <= Options.SidebarRows) {
-			state.RowCount = (int)state.RowCounts.size();
-		}
-		state.RowCounts.push_back(choice);
-	}
+	state.RowCount = std::max(0, Fill_Count_Choices(state.RowCounts, _Service.Sidebar_Row_Counts(frame_height), Options.SidebarRows));
 
-	// Automatic, the usual steps, and whatever else the settings file has asked for.
-	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
-	float const current = (Options.InterfaceScale > 0.0f) ? Options.InterfaceScale : 0.0f;
-	state.Scale = -1;
-	for (float step : steps) {
-		if (step == current) {
-			state.Scale = (int)state.Scales.size();
-		}
-		UIDisplayScale scale;
-		scale.Value = step;
-		if (step > 0.0f) {
-			char buffer[32];
-			std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(step * 100.0f));
-			scale.Label = buffer;
-		} else {
-			scale.Label = "Auto";
-		}
-		state.Scales.push_back(scale);
-	}
-	if (state.Scale < 0) {
-		UIDisplayScale scale;
-		scale.Value = current;
-		char buffer[32];
-		std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(current * 100.0f));
-		scale.Label = buffer;
-		state.Scale = (int)state.Scales.size();
-		state.Scales.push_back(scale);
-	}
+	Fill_Interface_Scales(state);
 
 	int * modes = EnumDisplayModes(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 	if (modes == NULL) {
@@ -608,11 +625,8 @@ std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void)
 }
 
 
-std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+std::optional<UIDisplayMode> UI_Display_Mode_To_Try(UIDisplayPresenterClass const & presenter)
 {
-	if (presenter.Result != UI_RESULT_ACCEPTED) {
-		presenter.Restore_Preview();
-	}
 	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
 		UIDisplayMode current;
 		current.Width = Options.ScreenWidth;
@@ -620,6 +634,16 @@ std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presen
 		return(current);
 	}
 	return(presenter.Picked);
+}
+
+
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+{
+	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		presenter.Restore_Preview();
+		UI_Setting_Preview_Revert();
+	}
+	return(UI_Display_Mode_To_Try(presenter));
 }
 
 
@@ -631,26 +655,12 @@ std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
 	Register_Setting_Previews();
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-	UI_Settings_Join(presenter, page);
 	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
 		return(std::nullopt);
 	}
-	UI_Settings_Leave(presenter);
-	if (presenter.Result != UI_RESULT_ACCEPTED) {
-		presenter.Restore_Preview();
-		UI_Setting_Preview_Revert();
-	}
-
-	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
-		UIDisplayMode current;
-		current.Width = Options.ScreenWidth;
-		current.Height = Options.ScreenHeight;
-		return(current);
-	}
-
-	return(presenter.Picked);
+	return(UI_Display_Settled(presenter));
 }
 
 

@@ -12,6 +12,7 @@
 #include "ui/rml/rmltexture.h"
 
 #include "ccfile.h"
+#include "data.h"
 #include "dbgprint.h"
 #include "rawfile.h"
 #include "ui/rml/rmlimage.h"
@@ -40,26 +41,8 @@ static bool Has_Extension(char const * name, char const * extension)
 
 static bool Read_Whole_File(char const * name, std::vector<unsigned char> & bytes)
 {
-	bytes.clear();
-
 	CCFileClass file(name);
-	if (!file.Is_Available()) {
-		return(false);
-	}
-
-	int size = file.Size();
-	if (size <= 0) {
-		return(false);
-	}
-
-	bytes.resize((size_t)size);
-	if (!file.Open(FileClass::READ) || file.Read(bytes.data(), size) != size) {
-		bytes.clear();
-		return(false);
-	}
-	file.Close();
-
-	return(true);
+	return(Read_File_Bytes(file, bytes));
 }
 
 
@@ -72,23 +55,7 @@ bool UI_Read_File(char const * path, std::vector<unsigned char> & bytes)
 	}
 
 	RawFileClass file(path);
-	if (!file.Is_Available()) {
-		return(false);
-	}
-
-	int size = file.Size();
-	if (size <= 0) {
-		return(false);
-	}
-
-	bytes.resize((size_t)size);
-	if (!file.Open(FileClass::READ) || file.Read(bytes.data(), size) != size) {
-		bytes.clear();
-		return(false);
-	}
-	file.Close();
-
-	return(true);
+	return(Read_File_Bytes(file, bytes));
 }
 
 
@@ -133,6 +100,15 @@ bool Is_Logo_Background(unsigned char const * pixel)
 	return((b > r + 25 && g > r + 10) || (g > r + 25 && g > b));
 }
 
+// Dim green-grey haze lies beside the right wing tip, the TM and the right end of the lower bar.
+bool Is_Logo_Haze(unsigned char const * pixel)
+{
+	int const r = pixel[0];
+	int const g = pixel[1];
+	int const b = pixel[2];
+	return(std::max(r, std::max(g, b)) < 112 && g > r + 8 && g >= b);
+}
+
 
 void Spread_Mask(std::vector<unsigned char> & mask, int radius, bool grow)
 {
@@ -154,29 +130,20 @@ void Spread_Mask(std::vector<unsigned char> & mask, int radius, bool grow)
 }
 
 
-/// <summary>
-/// Cuts the game logo out of the installed title picture, with the painted background made
-/// transparent. It stands in for a drawn logo, so nothing from the picture is shipped.
-/// </summary>
-UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, int & height, bool premultiply)
+// An image name that ends with this selects the title logo. It is matched against the end of the name, not a file extension.
+constexpr char const * TITLE_LOGO_SUFFIX = "titlelogo";
+
+
+// The pixel at (x, y) of the logo, as four bytes of RGBA in the title picture.
+unsigned char const * Logo_Pixel(std::vector<unsigned char> const & art, int x, int y)
 {
-	std::vector<unsigned char> art;
-	int art_width = 0;
-	int art_height = 0;
-	UIImageResult const result = UI_Load_Image("GLSLMD.SHP@GLSMD.PAL", art, art_width, art_height, false);
-	if (result != UI_IMAGE_LOADED) {
-		return(result);
-	}
-	// A replaced title picture has no logo at the stock place.
-	if (art_width != LOGO_ART_WIDTH || art_height != LOGO_ART_HEIGHT) {
-		return(UI_IMAGE_MISSING);
-	}
+	return(&art[((size_t)(LOGO_Y + y) * LOGO_ART_WIDTH + (LOGO_X + x)) * 4]);
+}
 
-	auto pixel = [&art](int x, int y) {
-		return(&art[((size_t)(LOGO_Y + y) * LOGO_ART_WIDTH + (LOGO_X + x)) * 4]);
-	};
 
-	// The background is what the crop's edge reaches through background pixels.
+// The background is what the crop's edge reaches through background pixels.
+std::vector<unsigned char> Logo_Background(std::vector<unsigned char> const & art)
+{
 	std::vector<unsigned char> background((size_t)LOGO_WIDTH * LOGO_HEIGHT, 0);
 	std::vector<std::pair<int, int>> stack;
 	for (int x = 0; x < LOGO_WIDTH; x++) {
@@ -194,7 +161,7 @@ UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, in
 			continue;
 		}
 		unsigned char & seen = background[(size_t)y * LOGO_WIDTH + x];
-		if (seen != 0 || !Is_Logo_Background(pixel(x, y))) {
+		if (seen != 0 || !Is_Logo_Background(Logo_Pixel(art, x, y))) {
 			continue;
 		}
 		seen = 1;
@@ -203,9 +170,14 @@ UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, in
 		stack.emplace_back(x, y + 1);
 		stack.emplace_back(x, y - 1);
 	}
+	return(background);
+}
 
-	// The rest splits into pieces. Specks, lightning at the sides, and the soldiers' heads under
-	// the wings (pieces that start in the lowest rows) are dropped.
+
+// The rest splits into pieces. Specks, lightning at the sides, and the soldiers' heads under
+// the wings (pieces that start in the lowest rows) are dropped.
+std::vector<unsigned char> Logo_Mask(std::vector<unsigned char> const & art, std::vector<unsigned char> const & background)
+{
 	std::vector<unsigned char> mask((size_t)LOGO_WIDTH * LOGO_HEIGHT, 0);
 	std::vector<int> label((size_t)LOGO_WIDTH * LOGO_HEIGHT, 0);
 	int pieces = 0;
@@ -247,16 +219,23 @@ UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, in
 			}
 			if (piece.size() >= 10 && top < 80 && left > 1 && right < LOGO_WIDTH - 2) {
 				for (size_t const kept : piece) {
-					// Haze joins the right wing below its tip.
-					if (kept % LOGO_WIDTH < 364 || kept / LOGO_WIDTH < 56) {
+					int const kx = (int)(kept % LOGO_WIDTH);
+					int const ky = (int)(kept / LOGO_WIDTH);
+					// Haze and lightning join the logo's right end; the final E's outline ends at column 371.
+					if ((kx < 373 || ky < 56) && (kx < 340 || !Is_Logo_Haze(Logo_Pixel(art, kx, ky)))) {
 						mask[kept] = 255;
 					}
 				}
 			}
 		}
 	}
+	return(mask);
+}
 
-	// Close small holes, take in the dark outline, then soften the edge.
+
+// Returns the alpha of each logo pixel: the mask with its holes closed, its dark outline taken in and its edge softened.
+std::vector<unsigned char> Soften_Logo_Mask(std::vector<unsigned char> mask)
+{
 	Spread_Mask(mask, 2, true);
 	Spread_Mask(mask, 2, false);
 	Spread_Mask(mask, 1, true);
@@ -277,19 +256,48 @@ UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, in
 			soft[(size_t)y * LOGO_WIDTH + x] = (unsigned char)(sum / weight);
 		}
 	}
+	return(soft);
+}
 
+
+void Write_Logo_RGBA(std::vector<unsigned char> const & art, std::vector<unsigned char> const & alpha, bool premultiply, std::vector<unsigned char> & rgba)
+{
 	rgba.resize((size_t)LOGO_WIDTH * LOGO_HEIGHT * 4);
 	for (int y = 0; y < LOGO_HEIGHT; y++) {
 		for (int x = 0; x < LOGO_WIDTH; x++) {
-			unsigned char const * from = pixel(x, y);
+			unsigned char const * from = Logo_Pixel(art, x, y);
 			unsigned char * to = &rgba[((size_t)y * LOGO_WIDTH + x) * 4];
-			unsigned int const alpha = soft[(size_t)y * LOGO_WIDTH + x];
+			unsigned int const coverage = alpha[(size_t)y * LOGO_WIDTH + x];
 			for (int channel = 0; channel < 3; channel++) {
-				to[channel] = premultiply ? (unsigned char)(from[channel] * alpha / 255) : from[channel];
+				to[channel] = premultiply ? (unsigned char)(from[channel] * coverage / 255) : from[channel];
 			}
-			to[3] = (unsigned char)alpha;
+			to[3] = (unsigned char)coverage;
 		}
 	}
+}
+
+
+/// <summary>
+/// Cuts the game logo out of the installed title picture, with the painted background made
+/// transparent. It stands in for a drawn logo, so nothing from the picture is shipped.
+/// </summary>
+UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, int & height, bool premultiply)
+{
+	std::vector<unsigned char> art;
+	int art_width = 0;
+	int art_height = 0;
+	UIImageResult const result = UI_Load_Image("GLSLMD.SHP@GLSMD.PAL", art, art_width, art_height, false);
+	if (result != UI_IMAGE_LOADED) {
+		return(result);
+	}
+	// A replaced title picture has no logo at the stock place.
+	if (art_width != LOGO_ART_WIDTH || art_height != LOGO_ART_HEIGHT) {
+		return(UI_IMAGE_MISSING);
+	}
+
+	std::vector<unsigned char> const background = Logo_Background(art);
+	std::vector<unsigned char> const alpha = Soften_Logo_Mask(Logo_Mask(art, background));
+	Write_Logo_RGBA(art, alpha, premultiply, rgba);
 
 	width = LOGO_WIDTH;
 	height = LOGO_HEIGHT;
@@ -309,7 +317,7 @@ UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba
 		return(UI_IMAGE_MISSING);
 	}
 
-	if (Has_Extension(name, "titlelogo")) {
+	if (Has_Extension(name, TITLE_LOGO_SUFFIX)) {
 		return(Make_Title_Logo(rgba, width, height, premultiply));
 	}
 

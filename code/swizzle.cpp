@@ -11,8 +11,10 @@
 
 #include "swizzle.h"
 
+#include "cell.h"
 #include "conquer.h"
 #include "dbgprint.h"
+#include "map.h"
 #include "msgbox.h"
 
 #include <algorithm>
@@ -94,6 +96,12 @@ SwizzleIDType SwizzleManagerClass::ID_Of(void const * pointer)
 		return(0);
 	}
 
+	// A unit standing off the map keeps the scratch cell as a destination or rally target, so a
+	// save can hold pointers to it; the load hands every one of them the scratch cell again.
+	if (pointer == static_cast<AbstractClass const *>(&BlubCell)) {
+		return(SCRATCH_CELL_ID);
+	}
+
 	auto found = IDTable.find(pointer);
 	if (found != IDTable.end()) {
 		return(found->second);
@@ -124,6 +132,11 @@ void SwizzleManagerClass::Swizzle(void ** pointer, SwizzleIDType id, char const 
 
 	if (id == 0) {
 		*pointer = nullptr;
+		return;
+	}
+
+	if (id == SCRATCH_CELL_ID) {
+		*pointer = static_cast<AbstractClass *>(&BlubCell);
 		return;
 	}
 

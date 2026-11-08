@@ -78,6 +78,12 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsVeryHigh;
 
 		/*
+		 * If this homing projectile flies level, then this flag will be true. While it has a target,
+		 * it skips the climb over terrain and the pitch turns, so its pitch does not change.
+		 */
+		bool IsLevel;
+
+		/*
 		**	Does this bullet need a shadow drawn under it?  Shadowed bullets
 		**	use the Height value to offset their Y position.
 		*/
@@ -176,9 +182,6 @@ class BulletTypeClass : public ObjectTypeClass
 		// once at every cell within this many cells (in leptons here) of the burst, in place of the splitting. -1 when not set.
 		int AirburstSpread;
 
-		// Does this projectile burst by AirburstSpread rather than by Splits?
-		bool IsAirburstSpread;
-
 		// AroundTarget (Ares): do the bomblets of a splitting or spreading projectile look for targets around its original target
 		// rather than around the point it burst at? -1 follows Splits.
 		int AroundTarget;
@@ -188,8 +191,11 @@ class BulletTypeClass : public ObjectTypeClass
 		int BallisticScatterMin;
 		int BallisticScatterMax;
 
-		// Does this projectile detonate once, whatever its Cluster, and release bomblets after the blast?
-		bool Detonates_Once(void) const {return(IsSplits || IsAirburstSpread);}
+		// An Airburst projectile detonates once whatever its Cluster is, and then fires its AirburstWeapon after the blast.
+		bool Detonates_Once(void) const {return(IsSplits || IsAirburst);}
+
+		// An Airburst projectile that does not split fires its AirburstWeapon at the nine cells around the burst.
+		bool Bursts_Over_Cells(void) const {return(IsAirburst && !IsSplits);}
 
 		/*
 		 * If this bullet may only be fired upon vehicles, then this flag will be true. It

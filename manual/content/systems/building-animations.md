@@ -133,7 +133,7 @@ The table lists each slot, the key that names its animation, and when the slot i
 | Slot | Named by | Filled when |
 | --- | --- | --- |
 | Upgrade one, two, three | `PowerUp1Anim=`, `PowerUp2Anim=`, `PowerUp3Anim=`, each with a `PowerUp<n>DamagedAnim=`, `PowerUp<n>LocXX=`, `PowerUp<n>LocYY=`, `PowerUp<n>LocZZ=` and `PowerUp<n>YSort=` beside it | The first, second or third [`Upgrades=`](/keys/upgrades/) plug is installed. Removing that plug empties the slot |
-| Active one to four | [`ActiveAnim=`](/keys/activeanim/), [`ActiveAnimTwo=`](/keys/activeanimtwo/), [`ActiveAnimThree=`](/keys/activeanimthree/), [`ActiveAnimFour=`](/keys/activeanimfour/) | The structure comes online, either when construction finishes or when the scenario places it. A repair step, or a plug installed on a damaged structure, refills any active slot that is empty. A repair step skips active slot two while a `TurretAnimIsExclusive=yes` turret is charging or charged |
+| Active one to four | [`ActiveAnim=`](/keys/activeanim/), [`ActiveAnimTwo=`](/keys/activeanimtwo/), [`ActiveAnimThree=`](/keys/activeanimthree/), [`ActiveAnimFour=`](/keys/activeanimfour/) | The structure comes online, either when construction finishes or when the scenario places it. A plug installed on a damaged structure refills any active slot that is empty |
 | Pre-production | [`PreProductionAnim=`](/keys/preproductionanim/) | A construction yard begins a structure, or a harvester begins unloading into the structure |
 | Production | [`ProductionAnim=`](/keys/productionanim/) | A construction yard finishes a structure, a factory releases what it built, or a refinery finishes unloading a harvester |
 | Turret | [`TurretAnim=`](/keys/turretanim/) | A turret-equipped or [`ChargeAnim=yes`](/keys/chargeanim/) structure comes online, or the structure begins charging its weapon. With [`TurretAnimIsExclusive=yes`](/keys/turretanimisexclusive/), only charging fills it. A [`TurretAnimIsVoxel=yes`](/keys/turretanimisvoxel/) structure skips the fill when it comes online |
@@ -178,7 +178,7 @@ Two cases do not use the slot's names:
 - The structure that [`WallTower`](/keys/walltower/) names cycles through lettered turret variants, named after its Image ID with `_B`, `_C` or `_D` appended. They use the turret slot's offset and biases.
 - A [`FirestormWall=yes`](/keys/firestormwall/) section fills its first two special slots with fixed animations. [A firestorm wall section](/keys/specialanim/#a-firestorm-wall-section) covers them.
 
-A slot empties when its animation plays to its end or when an event stops it. A looping animation therefore holds its slot until something stops it, while a finite one frees the slot when it ends. All twenty-one slots empty when the structure begins to be sold or undeployed, and when it is removed from the game.
+A slot empties when its animation plays to its end or when an event stops it. A looping animation therefore holds its slot until something stops it, while a finite one frees the slot when it ends. A structure that begins to be sold or undeployed hides all its animations from then on, and they stop when it is removed from the game.
 
 Attached animations follow the structure. When the structure is placed on a new cell, each animation moves to its slot's offset from the new position.
 
@@ -298,6 +298,8 @@ Damaged artwork is a second block of frames after the healthy ones, shown at or 
 - In the idle sequence, it is the frame directly after the healthy one.
 - In the active and auxiliary sequences, it is offset by the end of whichever of the four declared sequences ends last (its first frame plus its frame count).
 - The construction sequence has no damaged frames. Gates, laser fence sections and firestorm wall sections choose their frames differently.
+
+The body draws from the first half of the artwork. When the stage reaches the second half, which holds the shadow frames, the body draws the first idle frame instead, plus one when health is at or below `ConditionYellow`, unless that frame is itself a shadow frame. [`BodyFrameFromIdle=`](/keys/bodyframefromidle/) sets this; `no` draws the shadow frame. Gates, laser fence sections, firestorm wall sections, garrisoned structures and construction frames are not replaced.
 
 [`ExtraDamageStage`](/keys/extradamagestage/) is read but has no effect.
 

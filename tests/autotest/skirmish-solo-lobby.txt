@@ -1,0 +1,17 @@
+; A skirmish with nobody to play against, started from the lobby. The -Settings text opens the lobby with row 2
+; set to Open, so the person plays alone. The lobby starts the game, which must run to frame 3000 without a game
+; over: the log has no "AUTOTEST game over" line, and the run ends with the quit at frame 3010.
+; Run from the workspace root, in PowerShell:
+;   $s = "[Skirmish]`r`nSlot2=0,-1,1,0,0,0"
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent21 -Script src-agent21/tests/autotest/skirmish-solo-lobby.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 240 -Settings $s -Filter "AUTOTEST lobby|game over|Exception|solo"
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui click ok
+ui wait 1000
+10 log solo-game-started
+3000 log solo-3000
+3010 quit

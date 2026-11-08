@@ -42,6 +42,12 @@ class DeploymentConfigClass
 		std::string ArtExpansionFile = "";
 		// Red Alert 2's art file, whose movie list the missions of its campaigns index.
 		std::string RA2ArtFile = "ART.INI";
+		// Red Alert 2's rules file, whose [Countries] order numbers the houses its missions name.
+		std::string RA2RulesFile = "RULES.INI";
+		// Red Alert 2's announcer file, whose lines its missions speak.
+		std::string RA2EvaFile = "EVA.INI";
+		// Red Alert 2's sample archive, whose announcer lines its missions speak and Yuri's Revenge's sample archive lacks.
+		std::string RA2AudioFile = "AUDIO.MIX";
 		std::string AIFile = "AIMD.INI";
 		std::string AIExpansionFile = "";
 		std::string SoundFile = "SOUNDMD.INI";
@@ -83,9 +89,6 @@ class DeploymentConfigClass
 		// because they are read before the rules that declare it.
 		std::string SchemePaletteFile = "UNITSNO.PAL";
 		std::string GamePaletteFile = "TEMPERAT.PAL";
-
-		// The file the settings were read from; empty when none was found.
-		std::string FileName = "";
 
 		void Read_INI(INIClass const & ini);
 

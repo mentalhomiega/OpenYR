@@ -1,4 +1,5 @@
 ; The hang watchdog check for a game frame. The main thread stops pumping messages for 8 seconds at
+; Regress: expects-report (the watchdog writes a hang report on purpose)
 ; frame 300. With the default [Debug] HangSeconds=5 the watchdog reports it after 5 seconds, with the
 ; call stack naming Hang_Watchdog_Test_Stall, and it reports the thread again once it resumes.
 ; Run from the workspace root, with the build's own copy of the game:

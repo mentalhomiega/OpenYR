@@ -30,6 +30,7 @@
 #include "hud.h"
 #include "houstype.h"
 #include "logic.h"
+#include "mainloop.h"
 #include "mapgen.h"
 #include "netshare.h"
 #include "nettiming.h"
@@ -63,9 +64,9 @@ struct SessionPart
 {
 	GameType Type = GAME_NORMAL;
 	GameOptionsType Options = {};
+	int GameSpeed = 0;
 	std::vector<NodeNameType *> Players;
 	std::vector<NodeNameType *> Computers;
-	bool AIOnly = false;
 	HousesType PlayerHouse = HOUSE_NONE;
 	bool ScenarioActive = false;
 	bool TacticalActive = false;
@@ -80,13 +81,21 @@ bool Running = false;
 bool Loading = false;
 int ScopeDepth = 0;
 bool InService = false;
+// Set while a match runs in another process, so the battle runs no frames and draws nothing.
+bool Paused = false;
 
 unsigned int LastLogic = 0;
 std::uint64_t LastPresent = ~std::uint64_t(0);
 unsigned int Started = 0;
 
+// Logic frames the battle has run since the game started, for the lobby's log of a match.
+std::uint64_t Battle_Frames = 0;
+
 double CameraX = 0.0;
 double CameraY = 0.0;
+// The map edge each axis is held at: -1 the low edge, 1 the high edge, 0 none.
+int EdgeX = 0;
+int EdgeY = 0;
 unsigned int LastCamera = 0;
 Coord Focus = COORD_NONE;
 unsigned int FocusUntil = 0;
@@ -98,6 +107,9 @@ unsigned int const BATTLE_LIFETIME_MS = 25 * 60 * 1000;
 
 // The camera pans this many map pixels a second, about a screen width in a minute.
 double const CAMERA_SPEED = 30.0;
+
+// The battle runs at game speed 3, 30 frames a second, whatever the player's GameSpeed option is; that option still applies to their games.
+int const MENU_BATTLE_GAME_SPEED = 3;
 
 
 void Move_List(DynamicVectorClass<NodeNameType *> & from, std::vector<NodeNameType *> & to)
@@ -123,9 +135,9 @@ void Take(SessionPart & part)
 {
 	part.Type = Session.Type;
 	part.Options = Session.Options;
+	part.GameSpeed = Options.GameSpeed;
 	Move_List(Session.Players, part.Players);
 	Move_List(Session.Computers, part.Computers);
-	part.AIOnly = Session.AIOnly;
 	part.PlayerHouse = Session.PlayerHouse;
 	part.ScenarioActive = ScenarioActive;
 	part.TacticalActive = TacticalActive;
@@ -140,9 +152,9 @@ void Give(SessionPart const & part)
 {
 	Session.Type = part.Type;
 	Session.Options = part.Options;
+	Options.GameSpeed = part.GameSpeed;
 	Fill_List(Session.Players, part.Players);
 	Fill_List(Session.Computers, part.Computers);
-	Session.AIOnly = part.AIOnly;
 	Session.PlayerHouse = part.PlayerHouse;
 	ScenarioActive = part.ScenarioActive;
 	TacticalActive = part.TacticalActive;
@@ -270,12 +282,7 @@ NodeNameType * New_Node(char const * name, int house, int color)
 	std::snprintf(node->Name, sizeof(node->Name), "%s", name);
 	node->Player.House = house;
 	node->Player.Color = color;
-	node->Player.CustomColor = 0;
 	node->Player.ProcessTime = -1;
-	node->Player.SpawnChoice = -1;
-	node->Player.Handicap = -1;
-	node->Player.AlliesMask = 0;
-	node->Player.IsObserver = false;
 	return(node);
 }
 
@@ -325,6 +332,8 @@ bool Prepare_Battle(char * file, int file_size)
 
 	Battle.Type = GAME_SKIRMISH;
 	Battle.Options = Session.Options;
+	Battle.Options.GameSpeed = MENU_BATTLE_GAME_SPEED;
+	Battle.GameSpeed = MENU_BATTLE_GAME_SPEED;
 	Battle.Options.ScenarioIndex = index;
 	std::snprintf(Battle.Options.ScenarioDescription, sizeof(Battle.Options.ScenarioDescription), "%s", Session.Scenarios[index]->Description());
 	Battle.Options.Bases = true;
@@ -346,7 +355,6 @@ bool Prepare_Battle(char * file, int file_size)
 	Battle.Options.BuildOffAlly = false;
 	Battle.Options.AutoDeployMCV = true;
 	Battle.Options.SWAllowed = ConfigINI.Get_Bool("MenuBattle", "SuperWeapons", false);
-	Battle.AIOnly = true;
 	Battle.PlayerHouse = (HousesType)observer_house;
 	Battle.ScenarioActive = false;
 	Battle.TacticalActive = false;
@@ -383,18 +391,12 @@ void Logic_Frame(void)
 {
 	DisplayClass::Layer[LAYER_GROUND].Sort();
 
-	if (Options.Render_Frame_Rate() > 0) {
-		for (int index = 0; index < Feet.Count(); index++) {
-			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
-		}
-		for (int index = 0; index < Bullets.Count(); index++) {
-			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
-		}
-	}
+	Remember_Render_Coords();
 
 	Logic.AI();
 	Queue_AI();
 	Frame++;
+	Battle_Frames++;
 	Process_Deferred_Deletion();
 }
 
@@ -434,6 +436,7 @@ void Move_Camera(unsigned int now)
 	if (LastCamera == 0) {
 		CameraX = at.X;
 		CameraY = at.Y;
+		EdgeX = EdgeY = 0;
 		LastCamera = now;
 	}
 
@@ -447,36 +450,40 @@ void Move_Camera(unsigned int now)
 		}
 		FocusUntil = now + 12000 + Dice() % 8000;
 	}
-	if (Focus == COORD_NONE) {
-		return;
+	if (Focus != COORD_NONE) {
+		// The focus is put in the middle of the view; the view's own origin is its top left corner.
+		Rect const shown = Shown_Map_Rect();
+		Point2D const focus = TacticalMap->Coord_To_Pixel_Absolute(Focus);
+		double const goal_x = focus.X - shown.Width / 2.0;
+		double const goal_y = focus.Y - shown.Height / 2.0;
+		double const dx = goal_x - CameraX;
+		double const dy = goal_y - CameraY;
+		double const distance = std::sqrt(dx * dx + dy * dy);
+		if (distance < 1.0) {
+			// A settled camera rests on whole pixels, so the map is drawn without a shift.
+			CameraX = std::round(CameraX);
+			CameraY = std::round(CameraY);
+		} else {
+			// Eases in over the last few hundred pixels so the view settles instead of stopping dead.
+			double const speed = CAMERA_SPEED * std::clamp(distance / 200.0, 0.15, 1.0);
+			double const step = std::min(distance, speed * seconds);
+			CameraX += dx / distance * step;
+			CameraY += dy / distance * step;
+		}
 	}
 
-	// The focus is put in the middle of the view; the view's own origin is its top left corner.
-	Rect const shown = Shown_Map_Rect();
-	Point2D const focus = TacticalMap->Coord_To_Pixel_Absolute(Focus);
-	double const goal_x = focus.X - shown.Width / 2.0;
-	double const goal_y = focus.Y - shown.Height / 2.0;
-	double const dx = goal_x - CameraX;
-	double const dy = goal_y - CameraY;
-	double const distance = std::sqrt(dx * dx + dy * dy);
-	if (distance < 1.0) {
-		return;
-	}
-
-	// Eases in over the last few hundred pixels so the view settles instead of stopping dead.
-	double const speed = CAMERA_SPEED * std::clamp(distance / 200.0, 0.15, 1.0);
-	double const step = std::min(distance, speed * seconds);
-	CameraX += dx / distance * step;
-	CameraY += dy / distance * step;
-
-	Point2D const want((int)std::lround(CameraX), (int)std::lround(CameraY));
+	// The view is drawn at whole pixels. The camera past them is handed to the presenter by Shellmap_Service.
+	Point2D const want((int)std::floor(CameraX), (int)std::floor(CameraY));
 	if (want.X != at.X || want.Y != at.Y) {
 		TacticalMap->Set_Tactical_Position(want);
-		Point2D const kept = TacticalMap->Get_Tactical_Position();
-		// A clamp at the map edge holds the view there rather than letting the camera drift off.
-		if (kept.X != want.X) CameraX = kept.X;
-		if (kept.Y != want.Y) CameraY = kept.Y;
+		Point2D const set = TacticalMap->Get_Tactical_Position();
+		EdgeX = (set.X > want.X) ? -1 : ((set.X < want.X) ? 1 : 0);
+		EdgeY = (set.Y > want.Y) ? -1 : ((set.Y < want.Y) ? 1 : 0);
 	}
+	Point2D const kept = TacticalMap->Get_Tactical_Position();
+	// A clamp at the map edge holds the view there; the camera does not move on past that edge.
+	if ((EdgeX < 0 && CameraX < kept.X) || (EdgeX > 0 && CameraX > kept.X)) CameraX = kept.X;
+	if ((EdgeY < 0 && CameraY < kept.Y) || (EdgeY > 0 && CameraY > kept.Y)) CameraY = kept.Y;
 }
 
 
@@ -492,7 +499,8 @@ bool Load_Battle(void)
 	CampaignType const campaign = Scen->Campaign;
 	int const scenario = Scen->Scenario;
 
-	DebugString("Menu battle: %s with %d computer players\n", file, (int)Battle.Computers.size());
+	DebugString("Menu battle: %s with %d computer players at game speed %d, %u frames a second\n", file, (int)Battle.Computers.size(),
+		MENU_BATTLE_GAME_SPEED, NetTiming::Solo_Game_Speed_Frame_Rate(MENU_BATTLE_GAME_SPEED));
 
 	bool loaded = false;
 	Running = true;
@@ -567,12 +575,6 @@ bool Shellmap_In_Scope(void)
 }
 
 
-bool Shellmap_Silent(void)
-{
-	return(Running);
-}
-
-
 void Shellmap_Start(void)
 {
 	if (Running || !Shellmap_Enabled()) {
@@ -593,6 +595,7 @@ void Shellmap_Stop(void)
 
 	DebugString("Menu battle: stopped\n");
 	Running = false;
+	Video_Set_Map_Subpixel(0.0, 0.0);
 	Free_Players(Battle);
 	Battle.PlayerPtr = nullptr;
 	PlayerWins = PlayerLoses = PlayerRestarts = PlayerAborts = false;
@@ -601,7 +604,7 @@ void Shellmap_Stop(void)
 
 void Shellmap_Service(void)
 {
-	if (!Running || Loading || InService) {
+	if (!Running || Loading || InService || Paused) {
 		return;
 	}
 
@@ -611,7 +614,7 @@ void Shellmap_Service(void)
 		BattleScope scope;
 
 		unsigned int const now = timeGetTime();
-		int const rate = std::max(1, (int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
+		int const rate = std::max(1, (int)NetTiming::Solo_Game_Speed_Frame_Rate(MENU_BATTLE_GAME_SPEED));
 		unsigned int const step = std::max(1, 1000 / rate);
 		if (LastLogic == 0) {
 			LastLogic = now;
@@ -635,6 +638,9 @@ void Shellmap_Service(void)
 			RenderBlend = Options.Render_Frame_Rate() > 0 ? std::clamp((double)(now - LastLogic) / step, 0.0, 1.0) : 1.0;
 			TacticalMap->AI();
 			Update_Fogged_Objects();
+			// The presenter shifts the map by the camera's part past the whole pixel the view is drawn at.
+			Point2D const drawn = TacticalMap->Get_Tactical_Position();
+			Video_Set_Map_Subpixel(CameraX - drawn.X, CameraY - drawn.Y);
 			Map.Render();
 			RenderBlend = 1.0;
 		}
@@ -647,4 +653,24 @@ void Shellmap_Service(void)
 		Shellmap_Stop();
 		Shellmap_Start();
 	}
+}
+
+
+std::uint64_t Shellmap_Frame_Count(void)
+{
+	return(Battle_Frames);
+}
+
+
+void Shellmap_Pause(void)
+{
+	Paused = true;
+}
+
+
+// The time the pause covered is not played back; the battle carries on from its current state.
+void Shellmap_Resume(void)
+{
+	Paused = false;
+	LastLogic = 0;
 }

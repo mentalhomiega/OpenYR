@@ -1,0 +1,21 @@
+; An uncaptured neutral Tech Outpost (CAOUTP, NeedsEngineer, no engineer yet) does not fire at a player's vehicle.
+; A Grizzly (MTNK) is parked on Guard at 63,41, beside the outpost's dock at 62,41. Before the fix the outpost fired at it
+; at about frame 505. Expected now: no blast HE hits the MTNK, and the MTNK keeps its strength. The outpost still takes
+; the MTNK as its target and drops it again, because its weapon reports FIRE_CANT (BuildingClass::GetFireError,
+; 0x447F10, returns 6 when the building is not powered). Sampled every 3 frames, the target flips between 63,41 and none.
+; Run: scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/neutral-outpost-no-fire.txt -Seconds 120 -Filter "blast HE|where MTNK of|AUTOTEST grantunit|AUTOTEST neutral|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+300 neutral CAOUTP 60 40
+302 grantunit MTNK 63 41
+304 reveal
+305 view 65 44
+340 where MTNK
+400 where MTNK
+460 where MTNK
+520 where MTNK
+580 where MTNK
+640 where MTNK
+700 where MTNK
+760 where MTNK
+800 quit

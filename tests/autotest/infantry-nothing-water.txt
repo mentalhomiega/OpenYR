@@ -1,0 +1,14 @@
+; A soldier with no sequence yet (Doing is Nothing) is drawn with its Ready sequence on land and its Tread sequence over a water cell that is not under a bridge
+; (InfantryClass::DrawShape, 0x518D80). An E1 is put on land (78,45) and another on open water (82,45) of Lostlake, and infstate logs both in the frame they are made, before
+; their first sequence starts, and again later. 'doing' is the engine's DoType number: -1 Nothing, 0 Ready, 16 Tread.
+; Expected: each soldier's first line has doing -1. The land soldier's shape is 7, E1's Ready frame; the water soldier's is 0, the first frame of Tread, which E1 has no frames for. Before the fix both were 7. One frame later both are on Ready (doing 0).
+; Run: scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/infantry-nothing-water.txt -Map Lostlake.mmx -Country 8 -Seconds 60 -Filter "AUTOTEST   infstate|AUTOTEST   terrain|Exception"
+30 terrain 78 45
+30 terrain 82 45
+31 own E1 78 45
+31 own E1 82 45
+31 infstate E1
+32 infstate E1
+35 infstate E1
+60 infstate E1
+70 quit

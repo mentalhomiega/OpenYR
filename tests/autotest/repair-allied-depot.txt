@@ -1,0 +1,40 @@
+; An allied Service Depot (GADEPT, UnitRepair=yes) at 60,22 belongs to an ally of the player, 6 cells north of a Grizzly (MTNK) at 60,28.
+; The player's own Service Depot at 60,44 is 16 cells south. repairmission puts the Grizzly on the repair mission, and its
+; search (UnitClass::Do_MISSION_REPAIR) picks the depot it radios. gamemd's FootClass::FindCloserDockBuilding (0x4DEE80) walks only
+; the unit's owner's buildings, so the Grizzly must pick the own depot.
+; The radio field of each where line is Contact_With_Whom() != NULL, so the depot with radio 1 is the one chosen.
+; Expected: before the fix the allied depot at 60,22 has radio 1 and the own depot has radio 0; after the fix the own depot has radio 1.
+; The Grizzly's mission becomes Enter in both cases and it stays at 60,28, because the depot stays on Guard; movement is not checked here.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/repair-allied-depot.txt -Map XMP29U2.MAP -Seconds 150 -Filter "AUTOTEST|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+300 alliance 1
+305 ally GADEPT 60 22
+307 own MTNK 60 28
+308 own GADEPT 60 44
+309 reveal
+310 view 60 34
+315 damage MTNK 200
+320 where GADEPT
+321 where MTNK
+330 command ScreenCapture
+340 repairmission MTNK
+341 where MTNK
+345 where GADEPT
+360 where MTNK
+380 where MTNK
+400 where MTNK
+400 where GADEPT
+420 where MTNK
+440 where MTNK
+460 where MTNK
+480 where MTNK
+480 where GADEPT
+481 command ScreenCapture
+500 where GADEPT
+520 where MTNK
+560 where MTNK
+600 where MTNK
+640 where MTNK
+680 where MTNK
+720 quit

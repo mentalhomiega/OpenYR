@@ -156,11 +156,12 @@ target_include_directories(OpenTS PRIVATE
 # The generated build stamp has to exist before anything compiles.
 add_dependencies(OpenTS OpenTSBuildStamp)
 
-# bgfx's include paths and settings apply only to the two files that include it: the frame
-# renderer and the UI overlay renderer.
+# bgfx's include paths and settings apply only to the files that include it: the frame
+# renderer, the GPU map renderer and the UI overlay renderer.
 set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
 set(OPENTS_BGFX_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/gpumap.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp"
 )
 set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
@@ -181,8 +182,8 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp" APPEND PR
     INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
 )
 
-# writepng.cpp and truecolour.cpp take miniz from bimg, which the link already carries.
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/truecolour.cpp" APPEND PROPERTY
+# writepng.cpp, truecolour.cpp and report/reportupload.cpp take miniz from bimg, which the link already carries.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/truecolour.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/report/reportupload.cpp" APPEND PROPERTY
     INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/tinyexr/deps"
 )
 
@@ -241,10 +242,16 @@ target_link_libraries(OpenTS PRIVATE
     psapi
     version
     winmm
+    winhttp
     ws2_32
     kernel32 user32 gdi32 winspool comdlg32 advapi32 shell32
     odbc32 odbccp32
 )
+
+# The title menus offer beta updates with the launcher's feed code.
+if(WIN32)
+    target_link_libraries(OpenTS PRIVATE OpenYRLauncherCore)
+endif()
 
 # HDR detection reads the display's DXGI output and its HDR state.
 if(WIN32)

@@ -184,7 +184,8 @@ class CellClass : public AbstractClass
 		 * occupation marks let base placement logic tell whose structures already stand here.
 		 */
 		HouseArray<std::uint16_t> CloakCount;
-		HouseArray<std::uint16_t> SensorCount;
+		// Signed: an array's removal may take a count below zero (BuildingClass::SensorArrayDeactivate, 0x4556D0).
+		HouseArray<std::int16_t> SensorCount;
 
 		// The number of disguise detectors of each house covering this cell.
 		HouseArray<std::uint16_t> DisguiseSensorCount;
@@ -576,7 +577,7 @@ class CellClass : public AbstractClass
 		bool Is_Clear_To_Build(SpeedType loco = SPEED_TRACK, BuildingTypeClass * what = NULL, HouseClass * who = NULL) const;
 		bool Is_Clear_To_Move(SpeedType loco, bool ignoreinfantry, bool ignorevehicles, int zone=-1, MZoneType check=MZONE_NORMAL, int cell_height=-1, bool checkbridge=true) const;
 		bool Is_Spot_Free(int spot_index, bool bridge=false) const;
-		void Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const;
+		RGBClass Cell_Color(void) const;
 		int Preview_Cell_Color(unsigned char & unknown, bool terrainonly) const;
 		int Clear_Icon(IsometricTileType type, int seq_length) const;
 		static int Spot_Index(Coord const & coord);

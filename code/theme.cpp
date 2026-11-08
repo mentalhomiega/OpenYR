@@ -54,6 +54,7 @@
 #include "ccrand.h"
 #include "audio/audioengine.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -61,6 +62,9 @@
 #include "vector.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <string>
 
 
 /// <summary>
@@ -106,6 +110,7 @@ void ThemeClass::Free_Themes(void)
 		delete Themes[0];
 		Themes.Delete_Index(0);
 	}
+	CustomCount = 0;
 }
 
 
@@ -131,12 +136,74 @@ void ThemeClass::Scan(void)
 	if (ScoresPresent && AudioEngine.Is_Available() && !Debug_Quiet) {
 		for (ThemeType theme = THEME_FIRST; theme < Themes.Count(); theme++) {
 			ThemeControl & control = *Themes[theme];
+			if (control.Custom) {
+				continue;
+			}
 			char const * base = (control.Sound[0] != '\0') ? control.Sound : control.Name;
 			control.StartFailed = false;
 			control.Available = AudioEngineClass::Find_Named_File(base, control.File, sizeof(control.File));
 			control.Measured = -1.0f;
 		}
+		Scan_Custom();
 	}
+}
+
+
+/// <summary>
+/// Replaces the player's own tracks on the list with those now in the Music folder.
+/// Each supported file that the audio engine can open is added after the stock scores,
+/// titled with its file name. A file that cannot be decoded is logged and left out.
+/// </summary>
+void ThemeClass::Scan_Custom(void)
+{
+	while (Themes.Count() > 0 && Themes[Themes.Count() - 1]->Custom) {
+		delete Themes[Themes.Count() - 1];
+		Themes.Delete_Index(Themes.Count() - 1);
+	}
+	CustomCount = 0;
+
+	std::string const folder = Music_Folder();
+	std::vector<std::string> const names = Custom_Music_Scan_Folder(folder);
+	for (CustomTrackType const & track : Custom_Music_List(names)) {
+		if (CustomCount >= MAX_CUSTOM_TRACKS) {
+			DebugString("Music: more than %d tracks in %s; the rest are ignored.\n", MAX_CUSTOM_TRACKS, folder.c_str());
+			break;
+		}
+		std::string const path = folder + track.File;
+		if (path.size() >= sizeof(ThemeControl::File) || !AudioEngineClass::Can_Decode(path.c_str())) {
+			DebugString("Music: skipping %s; it cannot be opened as audio.\n", path.c_str());
+			continue;
+		}
+
+		ThemeControl * control = new ThemeControl;
+		control->Custom = true;
+		control->Available = true;
+		std::string const name = "music:" + track.File;
+		std::snprintf(control->Name, sizeof(control->Name), "%s", name.c_str());
+		std::snprintf(control->File, sizeof(control->File), "%s", path.c_str());
+
+		// A title cut short does not end partway through a multi-byte character.
+		size_t length = std::min(track.Title.size(), sizeof(control->Fullname) - 1);
+		while (length > 0 && length < track.Title.size() && (track.Title[length] & 0xC0) == 0x80) {
+			length--;
+		}
+		std::memcpy(control->Fullname, track.Title.data(), length);
+		control->Fullname[length] = '\0';
+
+		Themes.Add(control);
+		CustomCount++;
+		DebugString("Music: custom track %s\n", path.c_str());
+	}
+	DebugString("Music: %d custom tracks in %s\n", CustomCount, folder.c_str());
+}
+
+
+/// <summary>
+/// Does the custom music setting let this score onto the playlist?
+/// </summary>
+bool ThemeClass::Mode_Allows(ThemeType theme) const
+{
+	return(Custom_Music_Mode_Allows(CustomMode, Themes[theme]->Custom, CustomCount > 0));
 }
 
 
@@ -293,7 +360,7 @@ void ThemeClass::AI(void)
 /// allowed.</returns>
 ThemeType ThemeClass::Next_Song(ThemeType theme) const
 {
-	if ((unsigned)theme < (unsigned)Themes.Count() && Themes[theme]->Available && !Themes[theme]->StartFailed && Loops(theme)) {
+	if ((unsigned)theme < (unsigned)Themes.Count() && Themes[theme]->Available && !Themes[theme]->StartFailed && Loops(theme) && Mode_Allows(theme)) {
 		return(theme);
 	}
 
@@ -433,6 +500,11 @@ bool ThemeClass::Start(ThemeType theme, bool fadein)
 		if (!control.StartFailed) {
 			DebugString("Theme::PlaySong(%d) - Unavailable\n", theme);
 			control.StartFailed = true;
+			if (control.Custom) {
+				DebugString("Music: dropping %s from the playlist; it would not play.\n", control.File);
+				control.Available = false;
+				CustomCount--;
+			}
 		}
 		Score = THEME_NONE;
 		Pending = THEME_NONE;
@@ -758,6 +830,8 @@ bool ThemeClass::Is_Allowed(ThemeType index) const
 	*/
 	if (!Themes[index]->Available) return(false);
 
+	if (!Mode_Allows(index)) return(false);
+
 	/*
 	**	Only normal themes (playable during battle) are considered allowed.
 	*/
@@ -815,7 +889,7 @@ ThemeType ThemeClass::From_Name(char const * name) const
 		*/
 		ThemeType theme;
 		for (theme = THEME_FIRST; theme < Themes.Count(); theme = ThemeType(theme + 1)) {
-			if (stricmp(Themes[theme]->Name, name) == 0) {
+			if (!Themes[theme]->Custom && stricmp(Themes[theme]->Name, name) == 0) {
 				return(theme);
 			}
 		}
@@ -826,7 +900,7 @@ ThemeType ThemeClass::From_Name(char const * name) const
 		**	yield a match, but is not guaranteed to be unique.
 		*/
 		for (theme = THEME_FIRST; theme < Themes.Count(); theme = ThemeType(theme + 1)) {
-			if (strstr(Themes[theme]->Fullname, name) != NULL) {
+			if (!Themes[theme]->Custom && strstr(Themes[theme]->Fullname, name) != NULL) {
 				return(theme);
 			}
 		}

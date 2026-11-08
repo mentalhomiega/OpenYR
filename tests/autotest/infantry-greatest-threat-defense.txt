@@ -1,0 +1,17 @@
+; A player's armed soldier takes a defensive structure as a target for itself. gamemd's InfantryClass::GreatestThreat (0x51E140) does not strip
+; buildings from a human's soldier; the scan leaves out a structure that has no weapon, and a Pillbox (GAPILL) has one. Only GAPILL stands as a target here,
+; the player's soldiers at 54,38 and 54,40 are asked about the computer's at 60,40, and the computer's soldiers at 54,50 and 54,51 about the player's at 60,52.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-greatest-threat-defense.txt -Seconds 60 -Filter "AUTOTEST   threat|Exception"
+; Expected: the player's E1 and the computer's E1 pick the pillbox; the unarmed CIV1 of either side picks nothing.
+30 enemy GAPILL 60 40
+31 own GAPILL 60 52
+32 own E1 54 38
+33 own CIV1 54 40
+34 enemy E1 54 50
+35 enemy CIV1 54 51
+60 threat E1
+60 threat CIV1
+60 threat E1 computer
+60 threat CIV1 computer
+80 quit

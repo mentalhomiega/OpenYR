@@ -17,8 +17,6 @@ related:
 
 The skirmish setup screen lists one row for each start position the chosen map has, up to eight. A map with fewer than two start positions still shows two rows. Choosing another map with the Multiplay Map button changes the number of rows.
 
-The map list holds the maps that the packet files list, the maps in map packs, the loose `.YRM` and `.MPR` files, and each loose `.MAP` file whose `[Basic]` section sets [`MultiplayerOnly=yes`](/keys/multiplayeronly/), under its `Name=`. A packet entry whose `Description=` is a string table label that no string resolves, such as a placeholder a mod adds to keep its packet from being empty, is left out. The country list holds the countries that set [`Multiplay=yes`](/keys/multiplay/), in the order of their [`ListIndex`](/keys/listindex/).
-
 The first row is the person at the keyboard: the name field, a country, a color, a start position and a team. Every other row starts with one of five choices:
 
 | Choice | Effect |
@@ -29,17 +27,28 @@ The first row is the person at the keyboard: the name field, a country, a color,
 | Medium AI | A computer player at the middle difficulty. |
 | Hard AI | A computer player at the hardest difficulty. |
 
-A row that holds nobody has its country, color, start and team boxes disabled. The game starts only with at least one computer player and with at least two players who are not all on one team; otherwise the screen says which is missing and stays open.
+A row that holds nobody has its country, color, start and team boxes disabled. A game with no computer player starts with the person alone, whatever the person's team. A game with computer players starts only when its players are not all on one team; otherwise the screen says so and stays open. A map with fewer start positions than the game needs shows a message and keeps the screen open.
 
 ## Country, color and start
 
-- The country box offers Random and the countries whose [`Multiplay=`](/keys/multiplay/) entry is on. A computer player given Random draws its country as it does in a game started from a launch file; the person's Random is settled when the game starts. A country that sets [`MenuText.Status=`](/keys/menutext.status/) shows that text in a tip while the pointer rests on the box.
-- The color box offers the eight lobby colors listed under [`Color`](/keys/color/), or the colors that the UI file's [`[Colors]` section](/formats/ui-ini/#lobby-colors) lists, up to sixteen. Colors never repeat: choosing one that another row holds hands that row the color this row had.
+- The country box offers Random and the countries whose [`Multiplay=`](/keys/multiplay/) entry is on. A computer player given Random draws its country as it does in a game started from a launch file; the person's Random is settled when the game starts.
+- The color box offers the eight lobby colors listed under [`Color`](/keys/color/). Colors never repeat: choosing one that another row holds hands that row the color this row had.
+- The color button opens the free color picker, which also sets a color that is not one of the eight. See [Free colors](#free-colors).
 - The start box offers Random and the numbers of the map's start positions, as the map editor numbers its waypoints from 1. A numbered start is held by one row at a time, and choosing a start another playing row holds swaps the two. Rows set to Random draw from the positions nobody named.
+
+## Free colors
+
+The picker in the modern menus holds a square for hue and saturation, a slider for brightness, and 22 presets: the eight lobby colors, then 14 more, seven of which are chosen to stay apart for people with red-green color blindness. It shows the chosen color as red, green and blue values with the hex code, as hue, saturation and brightness, and by the name of the closest of the eight lobby colors. A strip of sixteen steps shows the shades that the player's units and buildings are drawn from, lightest first.
+
+A color with a brightness below 96 is raised to 96. The picker refuses a color that looks too much like another row's color to someone with normal, red-blind or green-blind vision, and says so. Two lobby colors are never compared, since the lobby already keeps them apart. A row with a free color keeps its lobby color as its seat, and the free color decides only how the row is drawn: the game plays the same with any color. The color goes to the other machines of a network game with the rest of the player's choices. A game started from a launch file gives a seat a free color with [`ColorRGB=`](/formats/spawn-ini/).
 
 ## Teams
 
 A team box offers None and teams 1 to 4. Players on the same team start the game allied with each other, in both directions. A player on no team is allied with nobody.
+
+## A game with no computer player
+
+With every row after the first set to Open or Closed, the person plays alone. No opponent existing does not end the game. It ends when the person's house is defeated, when the person quits, or when a trigger on the map ends it. In such a game the person's team has no effect.
 
 ## Difficulty
 
@@ -50,7 +59,7 @@ Each computer player plays at the difficulty its row names. Hard AI gives the ho
 Leaving the screen, whether to play or to cancel, writes the setup to `[Skirmish]` in `RA2MD.INI`:
 
 - `Map` holds the file name of the chosen map.
-- `Slot1` to `Slot8` hold the rows. Each value holds five numbers separated by commas: the choice for the seat (0 Open, 1 Closed, 2 Easy AI, 3 Medium AI, 4 Hard AI), the country's number in the rules' list or `-1` for Random, the color position, the start number or `0` for Random, and the team.
+- `Slot1` to `Slot8` hold the rows. Each value holds six numbers separated by commas: the choice for the seat (0 Open, 1 Closed, 2 Easy AI, 3 Medium AI, 4 Hard AI), the country's number in the rules' list or `-1` for Random, the color position, the start number or `0` for Random, the team, and the free color, which is `0` for the lobby color.
 - `Units`, `Credits`, `Tech` and `Speed` hold the unit count, the credits, the tech level and the game speed. `Bases`, `Crates`, `Fog`, `Bridges`, `Redeploy`, `ShortGame`, `Engineer`, `SuperWeapons` and `BuildOffAlly` hold the switches as `0` or `1`.
 
 The screen reads these keys each time it opens. The setup therefore comes back after a game started from the screen ends, after a cancel, and after the game is closed and started again. A switch or number the file lacks leaves that setting at the rules' value.

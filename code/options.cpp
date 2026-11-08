@@ -59,6 +59,7 @@
 #include "always.h"
 
 #include "options.h"
+#include "perfstat.h"
 
 #include "_command.h"
 #include "_deploymentconfig.h"
@@ -73,12 +74,14 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "hud.h"
+#include "infatype.h"
 #include "init.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
 #include "language/language.h"
 #include "mouse.h"
 #include "msgbox.h"
+#include "nametable.h"
 #include "numparse.h"
 #include "playerdisplay.h"
 #include "rules.h"
@@ -101,9 +104,14 @@
 #include "colourblind.h"
 #include "emissive.h"
 #include "goptions.h"
+#include "netsemantic.h"
+#include "replay.h"
 
 
-char const * const OptionsClass::HotkeyName = "WinHotkeys";
+static char const * On_Off(bool value)
+{
+	return(value ? "ON" : "OFF");
+}
 
 
 /// <summary>
@@ -195,20 +203,26 @@ OptionsClass::OptionsClass(void) :
 	SoundVolume(.7f),
 	VoiceVolume(1.0f),
 	ScoreVolume(.5f),
+	UnitVoiceVolume(.7f),
+	MovieVolume(.7f),
 	BitmapSystemFont(false),
 	AutoScroll(true),
+	ScriptedCameraZoom(true),
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
-	IsSidebarOnRight(true),
+	CustomMusic(CUSTOM_MUSIC_BOTH),
 	ModernInterface(true),
 	IsModernInterfaceChosen(true),
 	SidebarRows(HUD_DEFAULT_ROWS),
+	SidebarOpacity(HUD_DEFAULT_OPACITY),
+	ShiftQueueCount(5),
 	DebugMode(false),
 	PlayerColorView(0),
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
 	ShowHidden(false),
+	ShowDefenceRange(true),
 	ScreenShake(true),
 	IsClassicMenus(false),
 	MenuTheme(MENU_THEME_RANDOM),
@@ -231,8 +245,21 @@ OptionsClass::OptionsClass(void) :
 	ScaleMode(VIDEO_SCALE_PIXELART),
 	IntegerScaling(false),
 	ShowFPS(false),
+	ShowFrameGraph(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
+	GpuRender(true),
+	SoftShadows(false),
+	SoftShadowRadius(3),
+	Shockwaves(false),
+	Bloom(false),
+	BloomStrength(100),
+	WaterRipples(false),
+	WaterRippleStrength(100),
+	CloudShadows(false),
+	CloudShadowStrength(100),
+	Weather(WEATHER_NONE),
+	WeatherStrength(100),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -303,7 +330,7 @@ void OptionsClass::Set_Shuffle(bool on)
 {
 	IsScoreShuffle = on;
 	Theme.Set_Shuffle(on);
-	DebugString("ScoreShuffle is %s\n", IsScoreShuffle == true ? "ON" : "OFF");
+	DebugString("ScoreShuffle is %s\n", On_Off(IsScoreShuffle));
 }
 
 
@@ -326,7 +353,18 @@ void OptionsClass::Set_Repeat(bool on)
 {
 	IsScoreRepeat = on;
 	Theme.Set_Repeat(on);
-	DebugString("ScoreRepeat is %s\n", IsScoreRepeat == true ? "ON" : "OFF");
+	DebugString("ScoreRepeat is %s\n", On_Off(IsScoreRepeat));
+}
+
+
+/// <summary>
+/// Chooses whether the playlist offers the stock scores, the tracks in the Music folder, or both.
+/// </summary>
+void OptionsClass::Set_Custom_Music(CustomMusicModeType mode)
+{
+	CustomMusic = mode;
+	Theme.Set_Custom_Mode(mode);
+	DebugString("CustomMusic is %s\n", Custom_Music_Mode_Name(mode));
 }
 
 
@@ -380,7 +418,6 @@ void OptionsClass::Set_Sound_Volume(float volume, bool feedback)
 {
 	SoundVolume = std::min(volume, 1.0f);
 	AudioEngine.Set_Group_Gain(AUDIO_GROUP_SFX, SoundVolume);
-	AudioEngine.Set_Group_Gain(AUDIO_GROUP_MOVIE, SoundVolume);
 	if (feedback) {
 		Sound_Effect(Rule->GenericBeep);
 	}
@@ -414,6 +451,86 @@ void OptionsClass::Set_Voice_Volume(float volume, bool feedback)
 
 
 /// <summary>
+/// Sets the volume of unit and building voice responses, such as selection replies and death
+/// cries. Those lines play at this level instead of the sound effects level.
+/// </summary>
+/// <param name="volume">The new volume, zero to one.</param>
+/// <param name="feedback">Should a sample unit reply play at the new level? The sample is the
+/// first selection reply of the GI, and nothing plays when the rules have no such reply.</param>
+void OptionsClass::Set_Unit_Voice_Volume(float volume, bool feedback)
+{
+	UnitVoiceVolume = std::min(volume, 1.0f);
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_UNIT_VOICE, UnitVoiceVolume);
+	if (feedback) {
+		InfantryType const gi = InfantryTypeClass::From_Name("E1");
+		if (gi != INFANTRY_NONE && InfantryTypes[gi] != nullptr && InfantryTypes[gi]->VoiceSelect.Count() > 0) {
+			Unit_Voice_Effect((VocType)InfantryTypes[gi]->VoiceSelect[0]);
+		}
+	}
+	DebugString("UnitVoiceVolume = %f\n", UnitVoiceVolume);
+}
+
+
+/// <summary>
+/// Sets the volume of movies, including the briefings, intros and the movies the radar plays.
+/// A movie that is playing takes the new level at once, except a Bink movie, which keeps the
+/// level it opened with.
+/// </summary>
+/// <param name="volume">The new volume, zero to one.</param>
+/// <param name="feedback">Should a beep play at the new level?</param>
+void OptionsClass::Set_Movie_Volume(float volume, bool feedback)
+{
+	MovieVolume = std::min(volume, 1.0f);
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_MOVIE, MovieVolume);
+	if (feedback) {
+		Sound_Effect(Rule->GenericBeep, 1.0f, SOUND_PAN_CENTER, nullptr, AUDIO_GROUP_MOVIE);
+	}
+	DebugString("MovieVolume = %f\n", MovieVolume);
+}
+
+
+static NameEntry const Scale_Mode_Names[] = {
+	{ "Nearest", VIDEO_SCALE_NEAREST },
+	{ "Linear", VIDEO_SCALE_LINEAR },
+	{ "PixelArt", VIDEO_SCALE_PIXELART },
+};
+
+static NameEntry const HDR_Output_Names[] = {
+	{ "Off", VIDEO_HDR_OFF },
+	{ "On", VIDEO_HDR_ON },
+};
+
+static NameEntry const ColorBlind_Mode_Names[] = {
+	{ "Protanopia", COLORBLIND_PROTANOPIA },
+	{ "Deuteranopia", COLORBLIND_DEUTERANOPIA },
+	{ "Tritanopia", COLORBLIND_TRITANOPIA },
+};
+
+static NameEntry const Weather_Names[] = {
+	{ "None", WEATHER_NONE },
+	{ "Map", WEATHER_MAP },
+	{ "Rain", WEATHER_RAIN },
+	{ "Snow", WEATHER_SNOW },
+};
+
+static NameEntry const Menu_Theme_Names[] = {
+	{ "Allied", MENU_THEME_ALLIED },
+	{ "Soviet", MENU_THEME_SOVIET },
+	{ "Yuri", MENU_THEME_YURI },
+};
+
+static NameEntry const Player_Color_View_Names[] = {
+	{ "ColorBlindSafe", PLAYER_VIEW_COLORBLIND_SAFE },
+	{ "Relationship", PLAYER_VIEW_RELATIONSHIP },
+};
+
+static NameEntry const HDR_Highlights_Names[] = {
+	{ "Classic", HDR_HIGHLIGHTS_CLASSIC },
+	{ "Enhanced", HDR_HIGHLIGHTS_ENHANCED },
+};
+
+
+/// <summary>
 /// Turns the name of a frame filter into the filter itself.
 /// </summary>
 /// <param name="name">The name as it appears in the settings file.</param>
@@ -421,46 +538,25 @@ void OptionsClass::Set_Voice_Volume(float volume, bool feedback)
 /// <returns>int; One of the VideoScaleMode values.</returns>
 static int Scale_Mode_From_Name(char const * name, int fallback)
 {
-	if (stricmp(name, "Nearest") == 0) return(VIDEO_SCALE_NEAREST);
-	if (stricmp(name, "Linear") == 0) return(VIDEO_SCALE_LINEAR);
-	if (stricmp(name, "PixelArt") == 0) return(VIDEO_SCALE_PIXELART);
-
-	return(fallback);
+	return(Enum_From_Name(Scale_Mode_Names, name, fallback));
 }
 
 
 static int HDR_Output_From_Name(char const * name)
 {
-	if (stricmp(name, "Off") == 0) return(VIDEO_HDR_OFF);
-	if (stricmp(name, "On") == 0) return(VIDEO_HDR_ON);
-	return(VIDEO_HDR_AUTOMATIC);
+	return(Enum_From_Name(HDR_Output_Names, name, VIDEO_HDR_AUTOMATIC));
 }
 
 
 static int ColorBlind_Mode_From_Name(char const * name)
 {
-	if (stricmp(name, "Protanopia") == 0) return(COLORBLIND_PROTANOPIA);
-	if (stricmp(name, "Deuteranopia") == 0) return(COLORBLIND_DEUTERANOPIA);
-	if (stricmp(name, "Tritanopia") == 0) return(COLORBLIND_TRITANOPIA);
-	return(COLORBLIND_OFF);
+	return(Enum_From_Name(ColorBlind_Mode_Names, name, COLORBLIND_OFF));
 }
 
 
 static char const * ColorBlind_Mode_Name(int mode)
 {
-	switch (mode) {
-		case COLORBLIND_PROTANOPIA:
-			return("Protanopia");
-
-		case COLORBLIND_DEUTERANOPIA:
-			return("Deuteranopia");
-
-		case COLORBLIND_TRITANOPIA:
-			return("Tritanopia");
-
-		default:
-			return("Off");
-	}
+	return(Enum_Name(ColorBlind_Mode_Names, mode, "Off"));
 }
 
 
@@ -480,16 +576,7 @@ static float Gamma_From_Text(char const * text)
 
 static char const * HDR_Output_Name(int mode)
 {
-	switch (mode) {
-		case VIDEO_HDR_OFF:
-			return("Off");
-
-		case VIDEO_HDR_ON:
-			return("On");
-
-		default:
-			return("Automatic");
-	}
+	return(Enum_Name(HDR_Output_Names, mode, "Automatic"));
 }
 
 
@@ -523,16 +610,19 @@ static void Save_HDR_Nits(char const * key, int nits)
 /// <returns>The name the settings file uses for that filter.</returns>
 static char const * Scale_Mode_Name(int mode)
 {
-	switch (mode) {
-		case VIDEO_SCALE_NEAREST:
-			return("Nearest");
+	return(Enum_Name(Scale_Mode_Names, mode, "PixelArt"));
+}
 
-		case VIDEO_SCALE_LINEAR:
-			return("Linear");
 
-		default:
-			return("PixelArt");
-	}
+/// <summary>
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, for GPU bloom, and for
+/// the debug view.
+/// The masks follow the renderer, so this is called again once the renderer has started.
+/// </summary>
+void Apply_HDR_Highlights(void)
+{
+	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View() || (Options.GpuRender && Options.Bloom));
 }
 
 
@@ -553,17 +643,6 @@ static char const * Scale_Mode_Name(int mode)
  *   07/03/1996 JLB : Reworked to use new INI handler.                                         *
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
-/// <summary>
-/// Turns the emissive masks on for Enhanced highlights while HDR output is on, and for the debug view.
-/// The masks follow the renderer, so this is called again once the renderer has started.
-/// </summary>
-void Apply_HDR_Highlights(void)
-{
-	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
-	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
-}
-
-
 void OptionsClass::Load_Settings(void)
 {
 	DebugString("--------- Loading %s settings ---------------\n", DeploymentConfig.SettingsFile.c_str());
@@ -571,7 +650,9 @@ void OptionsClass::Load_Settings(void)
 	/*
 	**	Read in the Options values
 	*/
+	// gamemd keeps any number here; -1 crashes it, so the value is held to the speeds its tables cover, 0 to 7.
 	GameSpeed = ConfigINI.Get_Int("Options", "GameSpeed", GameSpeed);
+	GameSpeed = NetSemantic::Clamp_Game_Speed(GameSpeed);
 	DebugString("GameSpeed = %d\n", GameSpeed);
 
 	Difficulty = ConfigINI.Get_Int("Options", "Difficulty", Difficulty);
@@ -590,66 +671,78 @@ void OptionsClass::Load_Settings(void)
 	DebugString("ScrollRate = %d\n", ScrollRate);
 
 	AutoScroll = ConfigINI.Get_Bool("Options", "AutoScroll", AutoScroll);
-	DebugString("AutoScroll is %s\n", AutoScroll == true ? "ON" : "OFF");
+	DebugString("AutoScroll is %s\n", On_Off(AutoScroll));
+
+	ScriptedCameraZoom = ConfigINI.Get_Bool("Options", "ScriptedCameraZoom", ScriptedCameraZoom);
+	DebugString("ScriptedCameraZoom is %s\n", On_Off(ScriptedCameraZoom));
 
 
 	BitmapSystemFont = ConfigINI.Get_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
-	DebugString("BitmapSystemFont is %s\n", BitmapSystemFont == true ? "ON" : "OFF");
+	DebugString("BitmapSystemFont is %s\n", On_Off(BitmapSystemFont));
 
 	DetailLevel = ConfigINI.Get_Int("Options", "DetailLevel", DetailLevel);
 	DetailLevel = std::min(DetailLevel, 2);
 	DetailLevel = std::max(DetailLevel, 0);
 	DebugString("DetailLevel = %d\n", DetailLevel);
 
-	IsSidebarOnRight = true;
-	DebugString("SideBar on %s\n", IsSidebarOnRight == true ? "RIGHT" : "LEFT");
-
 	SidebarCameoText = ConfigINI.Get_Bool("Options", "SidebarCameoText", SidebarCameoText);
-	DebugString("Sidebar Text is %s\n", SidebarCameoText == true ? "ON" : "OFF");
+	DebugString("Sidebar Text is %s\n", On_Off(SidebarCameoText));
 
 	SidebarSorting = ConfigINI.Get_Bool("Options", "SidebarSorting", SidebarSorting);
-	DebugString("Sidebar Sorting is %s\n", SidebarSorting == true ? "ON" : "OFF");
+	DebugString("Sidebar Sorting is %s\n", On_Off(SidebarSorting));
 
 	ActionLines = ConfigINI.Get_Bool("Options", "UnitActionLines", ActionLines);
-	DebugString("ActionLines are %s\n", ActionLines == true ? "ON" : "OFF");
+	DebugString("ActionLines are %s\n", On_Off(ActionLines));
 
 	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
 	ScreenShake = ConfigINI.Get_Bool("Options", "ScreenShake", ScreenShake);
-	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
+	DebugString("ShowHidden is %s\n", On_Off(ShowHidden));
 
 	Load_Menu_Style();
 
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
-	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
+	DebugString("ToolTips are %s\n", On_Off(ToolTips));
 
 	DebugMode = ConfigINI.Get_Bool("Options", "DebugMode", DebugMode);
-	DebugString("DebugMode is %s\n", DebugMode == true ? "ON" : "OFF");
+	DebugString("DebugMode is %s\n", On_Off(DebugMode));
 
 	char playercolors[32];
 	ConfigINI.Get_String("Options", "PlayerColors", "Default", playercolors, sizeof(playercolors));
-	PlayerColorView = (stricmp(playercolors, "ColorBlindSafe") == 0) ? PLAYER_VIEW_COLORBLIND_SAFE
-		: (stricmp(playercolors, "Relationship") == 0) ? PLAYER_VIEW_RELATIONSHIP : PLAYER_VIEW_DEFAULT;
+	PlayerColorView = Enum_From_Name(Player_Color_View_Names, playercolors, PLAYER_VIEW_DEFAULT);
 
 	// Turns on the per-frame check value log, as -SYNCLOG does; a false or absent value leaves the switch as it was.
 	if (ConfigINI.Get_Bool("Options", "SyncLog", false)) {
 		Debug_SyncLog = true;
 	}
-	DebugString("SyncLog is %s\n", Debug_SyncLog == true ? "ON" : "OFF");
+	DebugString("SyncLog is %s\n", On_Off(Debug_SyncLog));
+
+	// Turns on the once-a-second Perf lines, as the perflog autotest step does.
+	if (ConfigINI.Get_Bool("Options", "PerfLog", false)) {
+		Perf_Set_Enabled(true);
+	}
+	DebugString("PerfLog is %s\n", On_Off(Perf_Enabled));
+
+	// Records each skirmish started from a launch file to the Replays folder.
+	if (ConfigINI.Get_Bool("Options", "RecordReplays", false)) {
+		Replay_Set_Recording(true);
+	}
+	DebugString("RecordReplays is %s\n", On_Off(Replay_Is_Recording_Enabled()));
 
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
-	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
+	DebugString("AltToRally is %s\n", On_Off(AltToRally));
 
 	AircraftBodyPick = ConfigINI.Get_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
-	DebugString("AircraftBodyPick is %s\n", AircraftBodyPick == true ? "ON" : "OFF");
+	DebugString("AircraftBodyPick is %s\n", On_Off(AircraftBodyPick));
 	PrioritySelectionFiltering = ConfigINI.Get_Bool("Options", "PrioritySelectionFiltering", PrioritySelectionFiltering);
 
 	SimulateWhileUnfocused = ConfigINI.Get_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
-	DebugString("SimulateWhileUnfocused is %s\n", SimulateWhileUnfocused == true ? "ON" : "OFF");
+	DebugString("SimulateWhileUnfocused is %s\n", On_Off(SimulateWhileUnfocused));
 
 	TextBackgroundColor = ConfigINI.Get_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	DebugString("TextBackgroundColor = %d\n", TextBackgroundColor);
 
 	AutoSaveInterval = ConfigINI.Get_Int("Options", "AutoSaveInterval", AutoSaveInterval);
+	ShiftQueueCount = std::max(1, ConfigINI.Get_Int("Options", "ShiftQueueCount", ShiftQueueCount));
 	DebugString("AutoSaveInterval = %d\n", AutoSaveInterval);
 
 	ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", ScreenWidth);
@@ -657,16 +750,31 @@ void OptionsClass::Load_Settings(void)
 	DebugString("Resolution = %d X %d\n", ScreenWidth, ScreenHeight);
 
 	StretchMovies = ConfigINI.Get_Bool("Video", "StretchMovies", StretchMovies);
-	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
+	DebugString("StretchMovies is %s\n", On_Off(StretchMovies));
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
 	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
+	ShowFrameGraph = ConfigINI.Get_Bool("Video", "ShowFrameGraph", ShowFrameGraph);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
+	GpuRender = ConfigINI.Get_Bool("Video", "GpuRender", GpuRender);
+	SoftShadows = ConfigINI.Get_Bool("Video", "SoftShadows", SoftShadows);
+	SoftShadowRadius = std::clamp(ConfigINI.Get_Int("Video", "SoftShadowRadius", SoftShadowRadius), 1, 16);
+	Shockwaves = ConfigINI.Get_Bool("Video", "Shockwaves", Shockwaves);
+	Bloom = ConfigINI.Get_Bool("Video", "Bloom", Bloom);
+	BloomStrength = std::clamp(ConfigINI.Get_Int("Video", "BloomStrength", BloomStrength), 1, 400);
+	WaterRipples = ConfigINI.Get_Bool("Video", "WaterRipples", WaterRipples);
+	WaterRippleStrength = std::clamp(ConfigINI.Get_Int("Video", "WaterRippleStrength", WaterRippleStrength), 1, 400);
+	CloudShadows = ConfigINI.Get_Bool("Video", "CloudShadows", CloudShadows);
+	CloudShadowStrength = std::clamp(ConfigINI.Get_Int("Video", "CloudShadowStrength", CloudShadowStrength), 1, 400);
+	char weathername[16];
+	ConfigINI.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
+	Weather = Enum_From_Name(Weather_Names, weathername, WEATHER_NONE);
+	WeatherStrength = std::clamp(ConfigINI.Get_Int("Video", "WeatherStrength", WeatherStrength), 1, 400);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
-	HDRHighlights = stricmp(highlightsname, "Classic") == 0 ? HDR_HIGHLIGHTS_CLASSIC : HDR_HIGHLIGHTS_ENHANCED;
+	HDRHighlights = Enum_From_Name(HDR_Highlights_Names, highlightsname, HDR_HIGHLIGHTS_ENHANCED);
 	Emissive_Set_Debug_View(ConfigINI.Get_Bool("Video", "EmissiveDebugView", false));
 	Apply_HDR_Highlights();
 
@@ -687,17 +795,28 @@ void OptionsClass::Load_Settings(void)
 	char scalename[32];
 	ConfigINI.Get_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode), scalename, sizeof(scalename));
 	ScaleMode = Scale_Mode_From_Name(scalename, ScaleMode);
-	DebugString("ScaleMode is %d, IntegerScaling is %s\n", ScaleMode, IntegerScaling == true ? "ON" : "OFF");
+	DebugString("ScaleMode is %d, IntegerScaling is %s\n", ScaleMode, On_Off(IntegerScaling));
 
 	CursorScale = ConfigINI.Get_Int("Video", "CursorScale", CursorScale);
 	SystemCursor = ConfigINI.Get_Bool("Video", "SystemCursor", SystemCursor);
 
 	Set_Sound_Volume(ConfigINI.Get_Float("Audio", "SoundVolume", SoundVolume), false);
+	// A settings file from before these two sliders existed keeps the sound effects level for both.
+	Set_Unit_Voice_Volume(ConfigINI.Get_Float("Audio", "UnitVoiceVolume", SoundVolume), false);
+	Set_Movie_Volume(ConfigINI.Get_Float("Audio", "MovieVolume", SoundVolume), false);
 	Set_Voice_Volume(ConfigINI.Get_Float("Audio", "VoiceVolume", VoiceVolume), false);
 	Set_Score_Volume(ConfigINI.Get_Float("Audio", "ScoreVolume", ScoreVolume), false);
 
 	Set_Repeat(ConfigINI.Get_Bool("Audio", "IsScoreRepeat", IsScoreRepeat));
 	Set_Shuffle(ConfigINI.Get_Bool("Audio", "IsScoreShuffle", IsScoreShuffle));
+
+	CustomMusicModeType custom = CUSTOM_MUSIC_BOTH;
+	std::string const customname = ConfigINI.Get_String("Audio", "CustomMusic", Custom_Music_Mode_Name(custom));
+	if (!Custom_Music_Mode_From_Name(customname.c_str(), custom)) {
+		DebugString("CustomMusic=%s is not Both, Stock or Custom; using Both.\n", customname.c_str());
+		custom = CUSTOM_MUSIC_BOTH;
+	}
+	Set_Custom_Music(custom);
 
 	SoundLatency = ConfigINI.Get_Int("Audio", "SoundLatency", SoundLatency);
 	DebugString("Emulated sound card latency default = %d\n", SoundLatency);
@@ -723,10 +842,7 @@ void OptionsClass::Load_Menu_Style(void)
 
 	char theme[16];
 	ConfigINI.Get_String("Options", "MenuTheme", "Random", theme, sizeof(theme));
-	MenuTheme = (stricmp(theme, "Allied") == 0) ? MENU_THEME_ALLIED
-		: (stricmp(theme, "Soviet") == 0) ? MENU_THEME_SOVIET
-		: (stricmp(theme, "Yuri") == 0) ? MENU_THEME_YURI
-		: MENU_THEME_RANDOM;
+	MenuTheme = (MenuThemeType)Enum_From_Name(Menu_Theme_Names, theme, MENU_THEME_RANDOM);
 	MenuBattle = ConfigINI.Get_Bool("Options", "MenuBattle", MenuBattle);
 }
 
@@ -742,7 +858,11 @@ void OptionsClass::Load_Interface_Style(void)
 	ModernInterface = (stricmp(style, "Modern") == 0);
 	IsModernInterfaceChosen = ModernInterface;
 	SidebarRows = ConfigINI.Get_Int("Options", "SidebarRows", HUD_DEFAULT_ROWS);
+	SidebarOpacity = std::clamp(ConfigINI.Get_Int("Options", "SidebarOpacity", HUD_DEFAULT_OPACITY), 0, 100);
 	DebugString("Interface style is %s\n", ModernInterface ? "Modern" : "Classic");
+
+	// The defence range ring defaults to the interface style: on for Modern, off for Classic.
+	ShowDefenceRange = ConfigINI.Get_Bool("Options", "ShowDefenceRange", ModernInterface);
 }
 
 
@@ -813,27 +933,29 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Options", "ScrollMethod", ScrollMethod);
 	ConfigINI.Put_Int("Options", "ScrollRate", ScrollRate);
 	ConfigINI.Put_Bool("Options", "AutoScroll", AutoScroll);
+	ConfigINI.Put_Bool("Options", "ScriptedCameraZoom", ScriptedCameraZoom);
 	ConfigINI.Put_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	ConfigINI.Put_Int("Options", "DetailLevel", DetailLevel);
 	ConfigINI.Put_Bool("Options", "SidebarCameoText", SidebarCameoText);
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
+	ConfigINI.Put_Bool("Options", "ShowDefenceRange", ShowDefenceRange);
 	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
-	ConfigINI.Put_String("Options", "MenuTheme", MenuTheme == MENU_THEME_ALLIED ? "Allied"
-		: MenuTheme == MENU_THEME_SOVIET ? "Soviet" : MenuTheme == MENU_THEME_YURI ? "Yuri" : "Random");
+	ConfigINI.Put_String("Options", "MenuTheme", Enum_Name(Menu_Theme_Names, MenuTheme, "Random"));
 	ConfigINI.Put_Bool("Options", "MenuBattle", MenuBattle);
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
+	ConfigINI.Put_Int("Options", "SidebarOpacity", SidebarOpacity);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
-	ConfigINI.Put_String("Options", "PlayerColors", PlayerColorView == PLAYER_VIEW_COLORBLIND_SAFE ? "ColorBlindSafe"
-		: PlayerColorView == PLAYER_VIEW_RELATIONSHIP ? "Relationship" : "Default");
+	ConfigINI.Put_String("Options", "PlayerColors", Enum_Name(Player_Color_View_Names, PlayerColorView, "Default"));
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	ConfigINI.Put_Bool("Options", "PrioritySelectionFiltering", PrioritySelectionFiltering);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
+	ConfigINI.Put_Bool("Options", "RecordReplays", Replay_Is_Recording_Enabled());
 	ConfigINI.Put_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	ConfigINI.Put_Int("Options", "AutoSaveInterval", AutoSaveInterval);
 	ConfigINI.Put_Int("Video", "ScreenWidth", ScreenWidth);
@@ -845,10 +967,23 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode));
 	ConfigINI.Put_Bool("Video", "IntegerScaling", IntegerScaling);
 	ConfigINI.Put_Bool("Video", "ShowFPS", ShowFPS);
+	ConfigINI.Put_Bool("Video", "ShowFrameGraph", ShowFrameGraph);
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
-	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
+	ConfigINI.Put_Bool("Video", "GpuRender", GpuRender);
+	ConfigINI.Put_Bool("Video", "SoftShadows", SoftShadows);
+	ConfigINI.Put_Int("Video", "SoftShadowRadius", SoftShadowRadius);
+	ConfigINI.Put_Bool("Video", "Shockwaves", Shockwaves);
+	ConfigINI.Put_Bool("Video", "Bloom", Bloom);
+	ConfigINI.Put_Int("Video", "BloomStrength", BloomStrength);
+	ConfigINI.Put_Bool("Video", "WaterRipples", WaterRipples);
+	ConfigINI.Put_Int("Video", "WaterRippleStrength", WaterRippleStrength);
+	ConfigINI.Put_Bool("Video", "CloudShadows", CloudShadows);
+	ConfigINI.Put_Int("Video", "CloudShadowStrength", CloudShadowStrength);
+	ConfigINI.Put_String("Video", "Weather", Enum_Name(Weather_Names, std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
+	ConfigINI.Put_Int("Video", "WeatherStrength", WeatherStrength);
+	ConfigINI.Put_String("Video", "HDRHighlights", Enum_Name(HDR_Highlights_Names, HDRHighlights, "Enhanced"));
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));
 	Save_HDR_Nits("HDRPaperWhite", HDRPaperWhite);
@@ -871,8 +1006,11 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Float("Audio", "SoundVolume", SoundVolume);
 	ConfigINI.Put_Float("Audio", "VoiceVolume", VoiceVolume);
 	ConfigINI.Put_Float("Audio", "ScoreVolume", ScoreVolume);
+	ConfigINI.Put_Float("Audio", "UnitVoiceVolume", UnitVoiceVolume);
+	ConfigINI.Put_Float("Audio", "MovieVolume", MovieVolume);
 	ConfigINI.Put_Bool("Audio", "IsScoreRepeat", IsScoreRepeat);
 	ConfigINI.Put_Bool("Audio", "IsScoreShuffle", IsScoreShuffle);
+	ConfigINI.Put_String("Audio", "CustomMusic", Custom_Music_Mode_Name(CustomMusic));
 	ConfigINI.Put_Int("Audio", "SoundLatency", SoundLatency);
 	Save_Seen_Movies();
 
@@ -901,10 +1039,13 @@ void OptionsClass::Save_Settings (void)
 void OptionsClass::Set(void)
 {
 	Set_Sound_Volume(SoundVolume, false);
+	Set_Unit_Voice_Volume(UnitVoiceVolume, false);
+	Set_Movie_Volume(MovieVolume, false);
 	Set_Voice_Volume(VoiceVolume, false);
 	Set_Score_Volume(ScoreVolume, false);
 	Set_Repeat(IsScoreRepeat);
 	Set_Shuffle(IsScoreShuffle);
+	Set_Custom_Music(CustomMusic);
 	Map.Toggle_Cameo_Text(SidebarCameoText);
 	TechnoClass::Set_Action_Lines(ActionLines);
 }

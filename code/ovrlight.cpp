@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "ovrlight.h"
+#include "gpudraw.h"
 
 #include "_map.h"
 #include "_rect.h"
@@ -19,6 +20,7 @@
 #include "bsurface.h"
 #include "dsurface.h"
 #include "globals.h"
+#include "logic.h"
 #include "rules.h"
 #include "scenario.h"
 #include "surface.h"
@@ -187,7 +189,8 @@ void SpotLightClass::Clear_All(void)
 /// Draws this spot light onto the tactical map.
 /// This routine brightens the pixels already on the logical surface through a circular
 /// ramp, so the light reads as a glow over whatever has been rendered beneath it. Nothing
-/// is drawn if the light lies off screen or under fog of war.
+/// is drawn if the light lies off screen or under fog of war. A light with no disabled color channel
+/// is also skipped while the frame count is below the detail minimum.
 /// </summary>
 void SpotLightClass::Draw_It(void)
 {
@@ -205,6 +208,10 @@ void SpotLightClass::Draw_It(void)
 		64, 65, 66, 67, 68, 69, 70, 71,
 		72, 73,
 	};
+
+	if ((DisableFlags & (DISABLE_RED | DISABLE_GREEN | DISABLE_BLUE)) == 0 && LastFramesPerSecond < Detail_Min_Frame_Rate()) {
+		return;
+	}
 
 	Point2D drawpoint;
 	if (TacticalMap->Coord_To_Pixel(Position, drawpoint)) {
@@ -224,6 +231,9 @@ void SpotLightClass::Draw_It(void)
 			Rect scliprect(0, 0, 255, 127);
 			void * dbuffer;
 			void * sbuffer;
+			if (GpuDraw_Brighten(*dsurf, dcliprect, drect, *ssurf, DisableFlags)) {
+				return;
+			}
 			if (XSurface::Prep_For_Blit(*dsurf, dcliprect, drect, *ssurf, scliprect, srect, overlapped, dbuffer, sbuffer)) {
 
 				unsigned short *dptr = (unsigned short *)dbuffer;

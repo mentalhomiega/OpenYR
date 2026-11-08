@@ -74,11 +74,15 @@ class WeaponTypeClass : public AbstractTypeClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 
 		static WeaponTypeClass *Find_Or_Make(const char * name);
+		// Unlike Find_Or_Make, returns NULL for a name no rules file declared, and never creates a weapon.
+		static WeaponTypeClass *Find_Declared(const char * name);
 
 		char const * Name(void) const {return(IniName);}
 		bool Read_INI(CCINIClass const & ini);
+		void Ensure_Defaults(void);
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
+		bool Anim_Picks_By_Facing(void) const;
 		bool Applies_Damage(void) const {return(ApplyDamage < 0 ? !IsSonic && !UseFireParticles : ApplyDamage != 0);}
 
 		void Init_Max_Speed(void);
@@ -145,13 +149,6 @@ class WeaponTypeClass : public AbstractTypeClass
 		LEPTON ProjectileRange;
 
 		/*
-		 * These are the delays, in game frames, between the successive shots of a burst. The
-		 * entry used is chosen by which shot of the burst has just been fired, and an entry
-		 * of -1 leaves that gap to a short random delay instead.
-		 */
-		int BurstDelay[4];
-
-		/*
 		 * This is the closest a target may be before this weapon refuses to fire upon it,
 		 * expressed in leptons. If zero, then the weapon has no minimum range.
 		 */
@@ -166,6 +163,12 @@ class WeaponTypeClass : public AbstractTypeClass
 		**	This is the animation to display at the firing coordinate.
 		*/
 		TypeList<AnimTypeClass const *> Anim;
+
+		/*
+		 * When set, a list of 16, 32 or 64 Anim entries also picks its entry by the direction of the
+		 * shot, as an eight-entry list does. Yuri's Revenge picks by direction only for eight entries.
+		 */
+		bool IsExtendedAnimFacings;
 
 		/*
 		 * This points to the particle system type this weapon spawns when it fires. The

@@ -39,6 +39,7 @@
 #include "inline.h"
 #include "isotype.h"
 #include "language/language.h"
+#include "lightingini.h"
 #include "netshare.h"
 #include "nodes.h"
 #include "overtype.h"
@@ -2127,6 +2128,33 @@ unsigned MapRegionClass::Build_Neighbor_Region_Mask(Cell const & cell, bool & va
 }
 
 
+// Sets one cell of a ramp's diagonal jog: `row` (0 to 4) picks its height step across the slope and
+// `ramp` is the ramp number it takes.
+void MapRegionClass::Set_Ramp_Jog_Cell(Cell const & cell, int row, int ramp)
+{
+	static int _heights[] = {3, 2, 1, 0, 0};
+
+	CellClass * cellptr = &Map[cell];
+	cellptr->Height = CellHeight + (unsigned char)_heights[row] - 4;
+	cellptr->Ramp = (unsigned char)ramp;
+	cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + (unsigned char)ramp - 1);
+	cellptr->SubTile = 0;
+}
+
+
+// Sets one cell of a ramp's straight stretch, `index` cells (0 to 3) down from the high edge, to the
+// ramp number `ramp` and into the region `region_id`.
+void MapRegionClass::Set_Ramp_Straight_Cell(Cell const & cell, int index, int ramp, int region_id)
+{
+	CellData::Set_Region(cell, region_id);
+	CellClass * cellptr = &Map[cell];
+	cellptr->Height = CellHeight - index - 1;
+	cellptr->Ramp = ramp;
+	cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + ramp - 1);
+	cellptr->SubTile = 0;
+}
+
+
 /// <summary>
 /// Carves a south-facing transition ramp between two cells.
 /// This routine cuts one of the four straight ramps the region connector uses to join
@@ -2203,7 +2231,6 @@ bool MapRegionClass::Build_South_Ramp(Cell const & cell1, Cell const & cell2, in
 		if (abs_dy > 0) {
 			int backward = 0;
 			do {
-				static int _heights[] = {3, 2, 1, 0, 0};
 				static int _ramps[] = {11, 15, 15, 15, 7, 12, 16, 16, 16, 8};
 
 				for (int row = 0; row < 5; row++) {
@@ -2212,15 +2239,7 @@ bool MapRegionClass::Build_South_Ramp(Cell const & cell1, Cell const & cell2, in
 					Cell pos = Cell(cell1.X + 3, cell1.Y) + Cell(forward, row) + bias;
 					cell = Cell(pos.X, pos.Y + add_y);
 
-					CellClass * cellptr = &Map[cell];
-
-					unsigned char height = (unsigned char)_heights[row];
-					cellptr->Height = CellHeight + height - 4;
-
-					unsigned char ramp = (unsigned char)_ramps[5 * down + row];
-					cellptr->Ramp = ramp;
-					cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + ramp - 1);
-					cellptr->SubTile = 0;
+					Set_Ramp_Jog_Cell(cell, row, _ramps[5 * down + row]);
 				}
 
 				forward++;
@@ -2235,12 +2254,7 @@ bool MapRegionClass::Build_South_Ramp(Cell const & cell1, Cell const & cell2, in
 	for (int x = 0; x < cell2.X - cell1.X - abs_dy - 5; x++) {
 		for (int i = 0; i < 4; i++) {
 			cell = Cell(cell1.X + 3, cell1.Y) + Cell(x, i) + tail;
-			CellData::Set_Region(cell, region_id);
-			CellClass * cellptr = &Map[cell];
-			cellptr->Height = CellHeight - i - 1;
-			cellptr->Ramp = 4;
-			cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + 3);
-			cellptr->SubTile = 0;
+			Set_Ramp_Straight_Cell(cell, i, 4, region_id);
 		}
 	}
 
@@ -2329,7 +2343,6 @@ bool MapRegionClass::Build_East_Ramp(Cell const & cell1, Cell const & cell2, int
 		if (abs_dx > 0) {
 			int backward = 0;
 			do {
-				static int _heights[] = {3, 2, 1, 0, 0};
 				static int _ramps[] = {10, 14, 14, 14, 6, 11, 15, 15, 15, 7};
 
 				for (int row = 0; row < 5; row++) {
@@ -2338,15 +2351,7 @@ bool MapRegionClass::Build_East_Ramp(Cell const & cell1, Cell const & cell2, int
 					Cell pos = Cell(cell1.X, cell1.Y - 3) + Cell(row, -forward) + bias;
 					cell = Cell(pos.X + add_x, pos.Y);
 
-					CellClass * cellptr = &Map[cell];
-
-					unsigned char height = (unsigned char)_heights[row];
-					cellptr->Height = CellHeight + height - 4;
-
-					unsigned char ramp = (unsigned char)_ramps[5 * right + row];
-					cellptr->Ramp = ramp;
-					cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + ramp - 1);
-					cellptr->SubTile = 0;
+					Set_Ramp_Jog_Cell(cell, row, _ramps[5 * right + row]);
 				}
 
 				forward++;
@@ -2361,12 +2366,7 @@ bool MapRegionClass::Build_East_Ramp(Cell const & cell1, Cell const & cell2, int
 	for (int y = 0; y < cell1.Y - cell2.Y - abs_dx - 5; y++) {
 		for (int i = 0; i < 4; i++) {
 			cell = Cell(cell1.X, cell1.Y - 3) + Cell(i, -y) + tail;
-			CellData::Set_Region(cell, region_id);
-			CellClass * cellptr = &Map[cell];
-			cellptr->Height = CellHeight - i - 1;
-			cellptr->Ramp = 3;
-			cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + 2);
-			cellptr->SubTile = 0;
+			Set_Ramp_Straight_Cell(cell, i, 3, region_id);
 		}
 	}
 
@@ -2450,7 +2450,6 @@ bool MapRegionClass::Build_North_Ramp(Cell const & cell1, Cell const & cell2, in
 		if (abs_dy > 0) {
 			int backward = 0;
 			do {
-				static int _heights[] = {3, 2, 1, 0, 0};
 				static int _ramps[] = {10, 14, 14, 14, 6, 9, 13, 13, 13, 5};
 
 				for (int row = 0; row < 5; row++) {
@@ -2459,15 +2458,7 @@ bool MapRegionClass::Build_North_Ramp(Cell const & cell1, Cell const & cell2, in
 					Cell pos = Cell(cell2.X + 3, cell2.Y) + Cell(forward, -row) + bias;
 					cell = Cell(pos.X, pos.Y + add_y);
 
-					CellClass * cellptr = &Map[cell];
-
-					unsigned char height = (unsigned char)_heights[row];
-					cellptr->Height = CellHeight + height - 4;
-
-					unsigned char ramp = (unsigned char)_ramps[5 * down + row];
-					cellptr->Ramp = ramp;
-					cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + ramp - 1);
-					cellptr->SubTile = 0;
+					Set_Ramp_Jog_Cell(cell, row, _ramps[5 * down + row]);
 				}
 
 				forward++;
@@ -2482,12 +2473,7 @@ bool MapRegionClass::Build_North_Ramp(Cell const & cell1, Cell const & cell2, in
 	for (int x = 0; x < cell1.X - cell2.X - abs_dy - 5; x++) {
 		for (int i = 0; i < 4; i++) {
 			cell = Cell(cell2.X + 3, cell2.Y) + Cell(x, -i) + tail;
-			CellData::Set_Region(cell, region_id);
-			CellClass * cellptr = &Map[cell];
-			cellptr->Height = CellHeight - i - 1;
-			cellptr->Ramp = 2;
-			cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + 1);
-			cellptr->SubTile = 0;
+			Set_Ramp_Straight_Cell(cell, i, 2, region_id);
 		}
 	}
 
@@ -2579,7 +2565,6 @@ bool MapRegionClass::Build_West_Ramp(Cell const & cell1, Cell const & cell2, int
 		if (abs_dx > 0) {
 			int backward = 0;
 			do {
-				static int _heights[] = {3, 2, 1, 0, 0};
 				static int _ramps[] = {9, 13, 13, 13, 5, 12, 16, 16, 16, 8};
 
 				for (int row = 0; row < 5; row++) {
@@ -2588,15 +2573,7 @@ bool MapRegionClass::Build_West_Ramp(Cell const & cell1, Cell const & cell2, int
 					Cell pos = Cell(cell1.X, cell1.Y + 3) + Cell(-row, forward) + bias;
 					cell = Cell(pos.X + add_x, pos.Y);
 
-					CellClass * cellptr = &Map[cell];
-
-					unsigned char height = (unsigned char)_heights[row];
-					cellptr->Height = CellHeight + height - 4;
-
-					unsigned char ramp = (unsigned char)_ramps[5 * right + row];
-					cellptr->Ramp = ramp;
-					cellptr->ITType = (IsometricTileType)(IsometricTileTypeClass::RampStart + ramp - 1);
-					cellptr->SubTile = 0;
+					Set_Ramp_Jog_Cell(cell, row, _ramps[5 * right + row]);
 				}
 
 				forward++;
@@ -2611,12 +2588,7 @@ bool MapRegionClass::Build_West_Ramp(Cell const & cell1, Cell const & cell2, int
 	for (int y = 0; y < cell2.Y - cell1.Y - abs_dx - 5; y++) {
 		for (int i = 0; i < 4; i++) {
 			cell = Cell(cell1.X, cell1.Y + 3) + Cell(-i, y) + tail;
-			CellData::Set_Region(cell, region_id);
-			CellClass * cellptr = &Map[cell];
-			cellptr->Height = CellHeight - i - 1;
-			cellptr->Ramp = 1;
-			cellptr->ITType = IsometricTileTypeClass::RampStart;
-			cellptr->SubTile = 0;
+			Set_Ramp_Straight_Cell(cell, i, 1, region_id);
 		}
 	}
 
@@ -3243,7 +3215,8 @@ MapGeneratorClass::MapGeneratorClass(void) :
 	LocalHeight(0),
 	SeededWaterAmount(0),
 	PlaceWaterfall(0),
-	CellHeight(4)
+	CellHeight(4),
+	TreesLeft(0)
 {
 	//nothing
 }
@@ -3475,6 +3448,17 @@ void Do_Random_Map(bool (*callback)())
 }
 
 
+RMGSettingsClass Load_RMG_Settings(void)
+{
+	CCFileClass file("RMGMD.INI");
+	CCINIClass ini;
+	ini.Load(file, false);
+	RMGSettingsClass settings;
+	settings.Read_INI(ini);
+	return(settings);
+}
+
+
 /// <summary>
 /// Rolls a fresh set of map generation settings.
 /// This routine is what the dialog's randomize button calls, handing the player a whole new
@@ -3519,7 +3503,8 @@ void MapSeedClass::Randomize(void)
 		WaterAmount = Sim_Random_Pick(0U, 100U);
 		Tiberium = Sim_Random_Pick(0U, 100U);
 		TiberiumLayout = Sim_Random_Pick(0U, 100U);
-		Vegetation = Sim_Random_Pick(0U, 100U);
+		RMGSettingsClass const settings = Load_RMG_Settings();
+		Vegetation = Sim_Random_Pick(settings.Vegetation_Minimum(), settings.Vegetation_Maximum());
 		Cities = Sim_Random_Pick(0U, 100U);
 		Accessibility = Sim_Random_Pick(0U, 100U);
 		Cliffs = Sim_Random_Pick(0U, 100U);
@@ -4403,6 +4388,8 @@ ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, CCINIClass 
 
 	DebugString("RMG: Creating LATs, rocks etc\n");
 
+	TreesLeft = Settings.Tree_Limit(SeedData.Width, SeedData.Vegetation);
+
 	if (SeedData.Biome == BIOME_DESERT || SeedData.Biome == BIOME_TEMPERATE || SeedData.Biome == BIOME_MUTATED) {
 		Seed_Vegetation();
 		Generate_Vegetation();
@@ -4533,14 +4520,7 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		"Clear"
 	};
 
-	double _tod_values[TIME_OF_DAY_COUNT] = {
-		0.75,
-		1.0,
-		0.75,
-		0.5
-	};
-
-	double tod = _tod_values[SeedData.Time];
+	Settings = Load_RMG_Settings();
 
 	// The generator lays out only the two theaters Tiberian Sun shipped, so it names them
 	// rather than numbering them.
@@ -4554,7 +4534,9 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		return(theater);
 	};
 
-	double scale = TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic ? 0.75 : 1.0;
+	static_assert(RMGSettingsClass::TIME_COUNT == TIME_OF_DAY_COUNT, "one lighting setting per time of day");
+	RMGSettingsClass::LightingType const lighting = Settings.Lighting(TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic, SeedData.Time);
+	double const ambient = LightingIni::Percent_Fraction(lighting.Ambient);
 
 	/*
 	 * Interpolate the local map dimensions between the minimum and maximum size
@@ -4587,12 +4569,20 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	ini.Put_String("Map", "Fill", _fills[biome]);
 	ini.Put_String(HouseTypes[HOUSE_GOOD]->IniName, "TechLevel", "0");
 	ini.Put_String("Basic", "Player", HouseTypes[HOUSE_GOOD]->IniName);
-	ini.Put_Float("Lighting", "Ambient", tod * scale);
+	ini.Put_Float("Lighting", "Ambient", ambient);
 	ini.Put_Float("Lighting", "Red", 1.0);
 	ini.Put_Float("Lighting", "Green", 1.0);
 	ini.Put_Float("Lighting", "Blue", 1.0);
 	ini.Put_Float("Lighting", "Ground", 0.0);
-	ini.Put_Float("Lighting", "Level", 0.01);
+	ini.Put_Float("Lighting", "Level", LightingIni::Generated_Level(lighting.Level));
+
+	// gamemd's generator writes the storm lighting as well (0x599951 to 0x5999DC): the ambient level, then a dark blue tint.
+	ini.Put_Float("Lighting", "IonAmbient", ambient);
+	ini.Put_Float("Lighting", "IonRed", LightingIni::Percent_Fraction(LightingIni::ION_RED));
+	ini.Put_Float("Lighting", "IonGreen", LightingIni::Percent_Fraction(LightingIni::ION_GREEN));
+	ini.Put_Float("Lighting", "IonBlue", LightingIni::Percent_Fraction(LightingIni::ION_BLUE));
+	ini.Put_Float("Lighting", "IonGround", LightingIni::Thousandths_Fraction(LightingIni::ION_GROUND));
+	ini.Put_Float("Lighting", "IonLevel", LightingIni::Thousandths_Fraction(LightingIni::ION_LEVEL));
 
 	if (!Scen->IsReadingScenario) {
 		Progress.Set_Progress_Percent(0, 1);
@@ -4840,8 +4830,13 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	Map.Init_Radar();
 	Map.Compute_Radar_Image();
 
-	Scen->AmbientLight = tod * 100.0;
-	Scen->LevelLight = 1;
+	// Both paths reach this, so the map plays with the settings themselves, as gamemd stores them from
+	// 0x59A529; the Level=0 and the plain tints written above do not survive.
+	Scen->AmbientLight = lighting.Ambient;
+	Scen->RedTint = lighting.Red;
+	Scen->GreenTint = lighting.Green;
+	Scen->BlueTint = lighting.Blue;
+	Scen->LevelLight = lighting.Level;
 
 	if (SeedData.UseTransitions) {
 		CCINIClass ini;
@@ -4874,12 +4869,13 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		ini.Load(file, false);
 		Rule->General(ini);
 		char const * const LIGHTING = "Lighting";
-		Scen->IonAmbientLight= (int) (100.0 * ini.Get_Float(LIGHTING, "IonAmbient", Scen->AmbientLight / 100.0));
-		Scen->IonRedTint     = (int) (100.0 * ini.Get_Float(LIGHTING, "IonRed",  Scen->RedTint / 100.0));
-		Scen->IonGreenTint   = (int) (100.0 * ini.Get_Float(LIGHTING, "IonGreen",Scen->GreenTint / 100.0));
-		Scen->IonBlueTint    = (int) (100.0 * ini.Get_Float(LIGHTING, "IonBlue", Scen->BlueTint / 100.0));
-		Scen->IonGroundLight = (int) (NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonGround", Scen->GroundLight / NORMAL_LIGHT));
-		Scen->IonLevelLight  = (int) (NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonLevel", Scen->LevelLight / NORMAL_LIGHT));
+		// An omitted key keeps the storm lighting the generated map already read, as ScenarioClass::Read_INI does.
+		Scen->IonAmbientLight = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonAmbient", LightingIni::Percent_Fraction(Scen->IonAmbientLight)));
+		Scen->IonRedTint      = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonRed", LightingIni::Percent_Fraction(Scen->IonRedTint)));
+		Scen->IonGreenTint    = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonGreen", LightingIni::Percent_Fraction(Scen->IonGreenTint)));
+		Scen->IonBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonBlue", LightingIni::Percent_Fraction(Scen->IonBlueTint)));
+		Scen->IonGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonGround", LightingIni::Thousandths_Fraction(Scen->IonGroundLight)));
+		Scen->IonLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonLevel", LightingIni::Thousandths_Fraction(Scen->IonLevelLight)));
 		TriggerTypeClass::Read_All(ini);
 		TagTypeClass::Read_All(ini);
 	}
@@ -7142,7 +7138,7 @@ bool MapGeneratorClass::Init_Start_Points(void)
 /// </summary>
 void MapGeneratorClass::Create_Tiberium(void)
 {
-	int tiberium_count = SeedData.NumPlayers * (30 * SeedData.Tiberium + 2500) / TiberiumLayoutCells->Count();
+	int tiberium_count = SeedData.NumPlayers * Settings.Tiberium_Amount(SeedData.Tiberium) / TiberiumLayoutCells->Count();
 	int tib_index = 0;
 	int layout_index = 0;
 
@@ -7925,7 +7921,10 @@ void MapGeneratorClass::Place_Forest(CellClass const * cellptr, int count, doubl
 				char tree_name[20];
 				int tree_index = Pick_Random_UInt(min_tree, max_tree);
 				sprintf(tree_name, "TREE%d%d", tree_index / 10, tree_index % 10);
-				new TerrainClass(TerrainTypes[TerrainTypeClass::From_Name(tree_name)], cptr->Fetch_CellID());
+				if (TreesLeft > 0) {
+					new TerrainClass(TerrainTypes[TerrainTypeClass::From_Name(tree_name)], cptr->Fetch_CellID());
+					TreesLeft--;
+				}
 			}
 		}
 
@@ -8815,6 +8814,66 @@ void MapGeneratorClass::Generate_Urban_Buildings(const DynamicVectorClass<Cell> 
 }
 
 
+// Places a random number of neutral civilians or vehicles named in `names`, up to the biome's figure in
+// `max_counts` for `biome`, on free cells that `pick_cell` returns, each with that biome's chance of being damaged.
+// The first three `names` must be infantry types and the rest vehicle types. The order of the random
+// draws must not change: it fixes the generated map.
+template <size_t NameCount, typename PickCell>
+static void Place_Neutral_Units(char const * const (&names)[NameCount], int const (&max_counts)[BIOME_COUNT], int biome, PickCell pick_cell)
+{
+	HouseClass * neutral = House_From_HousesType(HouseTypeClass::From_Name("Neutral"));
+	int count = Pick_Random_UInt(1, max_counts[biome]);
+
+	int tries = 0;
+	int placed = 0;
+
+	while (placed < count && tries < 2 * count) {
+		int name_index = Pick_Random_UInt(0, NameCount - 1);
+		FootClass * foot = NULL;
+		if (name_index <= 2) {
+			foot = new InfantryClass(InfantryTypes[InfantryTypeClass::From_Name(names[name_index])], neutral);
+		} else {
+			foot = new UnitClass(UnitTypes[UnitTypeClass::From_Name(names[name_index])], neutral);
+		}
+
+		int tries_here = 0;
+		bool was_placed = false;
+		while (!was_placed) {
+			if (tries_here >= 60) {
+				break;
+			}
+			Cell unit_cell = pick_cell();
+			if (Map.In_Local_Radar(unit_cell) && Map[unit_cell].Cell_Occupier() == NULL) {
+				if (foot->Unlimbo(Coord(unit_cell), (Dir256)(Pick_Random_UInt(FACING_FIRST, FACING_COUNT - 1) * DIR_STEP_8))) {
+
+					double condition_red_chance = ConditionRedChances[biome];
+					double condition_yellow_chance = ConditionYellowChances[biome];
+
+					double health_ratio = 1.0;
+					if (Random_Fraction() < condition_red_chance) {
+						health_ratio = Rule->ConditionRed;
+					} else if (Random_Fraction() < condition_yellow_chance) {
+						health_ratio = Rule->ConditionYellow;
+					}
+					foot->Strength = foot->TClass->MaxStrength * health_ratio;
+
+					foot->Mark(MARK_CHANGE);
+					was_placed = true;
+					placed++;
+				}
+			}
+			tries_here++;
+		}
+
+		if (!was_placed) {
+			delete foot;
+		}
+
+		tries++;
+	}
+}
+
+
 /// <summary>
 /// Scatters civilian traffic through an urban area.
 /// This routine populates a finished town with a handful of neutral pedestrians and vehicles.
@@ -8842,65 +8901,9 @@ void MapGeneratorClass::Generate_Urban_Units(const DynamicVectorClass<Cell> & ce
 		2  /// Mutated
 	};
 
-	HouseClass * neutral = House_From_HousesType(HouseTypeClass::From_Name("Neutral"));
-	int count = Pick_Random_UInt(1, _max_counts[SeedData.Biome]);
-
-	int tries = 0;
-	int placed = 0;
-
-	if (count > 0) {
-		while (true) {
-			if (tries >= 2 * count) {
-				break;
-			}
-
-			int unit_index = Pick_Random_UInt(0, ARRAY_SIZE(_names) - 1);
-			FootClass * foot = NULL;
-			if (unit_index <= 2) {
-				foot = new InfantryClass(InfantryTypes[InfantryTypeClass::From_Name(_names[unit_index])], neutral);
-			} else {
-				foot = new UnitClass(UnitTypes[UnitTypeClass::From_Name(_names[unit_index])], neutral);
-			}
-
-			int tries_here = 0;
-			bool was_placed = false;
-			while (!was_placed) {
-				if (tries_here >= 60) {
-					break;
-				}
-				Cell unit_cell = cells[Pick_Random_UInt(0, cells.Count() - 1)];
-				if (Map.In_Local_Radar(unit_cell) && Map[unit_cell].Cell_Occupier() == NULL) {
-					if (foot->Unlimbo(Coord(unit_cell), (Dir256)(Pick_Random_UInt(FACING_FIRST, FACING_COUNT - 1) * DIR_STEP_8))) {
-
-						double condition_red_chance = ConditionRedChances[SeedData.Biome];
-						double condition_yellow_chance = ConditionYellowChances[SeedData.Biome];
-
-						double health_ratio = 1.0;
-						if (Random_Fraction() < condition_red_chance) {
-							health_ratio = Rule->ConditionRed;
-						} else if (Random_Fraction() < condition_yellow_chance) {
-							health_ratio = Rule->ConditionYellow;
-						}
-						foot->Strength = foot->TClass->MaxStrength * health_ratio;
-
-						foot->Mark(MARK_CHANGE);
-						was_placed = true;
-						placed++;
-					}
-				}
-				tries_here++;
-			}
-
-			if (!was_placed) {
-				delete foot;
-			}
-
-			tries++;
-			if (placed >= count) {
-				break;
-			}
-		}
-	}
+	Place_Neutral_Units(_names, _max_counts, SeedData.Biome, [&cells]() {
+		return cells[Pick_Random_UInt(0, cells.Count() - 1)];
+	});
 }
 
 
@@ -9632,60 +9635,9 @@ void MapGeneratorClass::Generate_Rural_Units(const Cell & cell)
 		1  /// Mutated
 	};
 
-	HouseClass * neutral = House_From_HousesType(HouseTypeClass::From_Name("Neutral"));
-	int count = Pick_Random_UInt(1, _max_counts[SeedData.Biome]);
-
-	int tries = 0;
-	int placed = 0;
-
-	while (placed < count) {
-		if (tries >= 2 * count) {
-			break;
-		}
-
-		int name_index = Pick_Random_UInt(0, ARRAY_SIZE(_names) - 1);
-		FootClass * foot = NULL;
-		if (name_index <= 2) {
-			foot = new InfantryClass(InfantryTypes[InfantryTypeClass::From_Name(_names[name_index])], neutral);
-		} else {
-			foot = new UnitClass(UnitTypes[UnitTypeClass::From_Name(_names[name_index])], neutral);
-		}
-
-		int tries_here = 0;
-		bool was_placed = false;
-		while (!was_placed) {
-			if (tries_here >= 60) {
-				break;
-			}
-			Cell unit_cell = cell + Cell(Pick_Random_UInt(0, 16) - 8, Pick_Random_UInt(0, 16) - 8);
-			if (Map.In_Local_Radar(unit_cell) && Map[unit_cell].Cell_Occupier() == NULL) {
-				if (foot->Unlimbo(Coord(unit_cell), (Dir256)(Pick_Random_UInt(FACING_FIRST, FACING_COUNT - 1) * DIR_STEP_8))) {
-
-					double condition_red_chance = ConditionRedChances[SeedData.Biome];
-					double condition_yellow_chance = ConditionYellowChances[SeedData.Biome];
-
-					double health_ratio = 1.0;
-					if (Random_Fraction() < condition_red_chance) {
-						health_ratio = Rule->ConditionRed;
-					} else if (Random_Fraction() < condition_yellow_chance) {
-						health_ratio = Rule->ConditionYellow;
-					}
-					foot->Strength = foot->TClass->MaxStrength * health_ratio;
-
-					foot->Mark(MARK_CHANGE);
-					was_placed = true;
-					placed++;
-				}
-			}
-			tries_here++;
-		}
-
-		if (!was_placed) {
-			delete foot;
-		}
-
-		tries++;
-	}
+	Place_Neutral_Units(_names, _max_counts, SeedData.Biome, [&cell]() {
+		return cell + Cell(Pick_Random_UInt(0, 16) - 8, Pick_Random_UInt(0, 16) - 8);
+	});
 }
 
 

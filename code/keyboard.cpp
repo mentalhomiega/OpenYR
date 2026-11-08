@@ -63,9 +63,6 @@
 #include <cmath>
 
 
-#define	ARRAY_SIZE(x)		int(sizeof(x)/sizeof(x[0]))
-
-
 /// <summary>
 /// Halts the game for a waiting programmer.
 /// This routine is what the Scroll Lock key calls. It does nothing on its own -- the
@@ -248,15 +245,7 @@ bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release, int m
 	**	incompatible with the dos version.
 	*/
 	if (!Is_Mouse_Key(vk_key)) {
-		if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
-			vk_key |= WWKEY_SHIFT_BIT;
-		}
-		if ((modifiers & WINDOW_MOD_CTRL) != 0) {
-			vk_key |= WWKEY_CTRL_BIT;
-		}
-		if ((modifiers & WINDOW_MOD_ALT) != 0) {
-			vk_key |= WWKEY_ALT_BIT;
-		}
+		vk_key |= Key_Bits_From_Window(modifiers);
 	}
 
 	if (release) {
@@ -378,7 +367,19 @@ int WWKeyboardClass::To_ASCII(unsigned short key)
  *=============================================================================================*/
 bool WWKeyboardClass::Down(unsigned short key)
 {
-	return(Main_Window_Key_Down(key & 0xFF));
+	// A key with modifier bits is held only while those modifiers are down. Modifier bits alone are held when all of them are.
+	bool const shift = (key & WWKEY_SHIFT_BIT) != 0;
+	bool const ctrl = (key & WWKEY_CTRL_BIT) != 0;
+	bool const alt = (key & WWKEY_ALT_BIT) != 0;
+	if ((shift && !Main_Window_Key_Down(VK_SHIFT)) || (ctrl && !Main_Window_Key_Down(VK_CONTROL)) || (alt && !Main_Window_Key_Down(VK_MENU))) {
+		return(false);
+	}
+
+	int const virtualkey = key & 0xFF;
+	if (virtualkey == 0) {
+		return(shift || ctrl || alt);
+	}
+	return(Main_Window_Key_Down(virtualkey));
 }
 
 

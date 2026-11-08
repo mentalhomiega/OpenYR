@@ -6,14 +6,6 @@ keys:
   - AA
   - Acceleration
   - Airburst
-  - PreImpactAnim
-  - AirburstSpread
-  - AroundTarget
-  - BallisticScatter.Max
-  - BallisticScatter.Min
-  - SubjectToBuildings
-  - SolidHeight
-  - AlliedSolidTransparency
   - AirburstWeapon
   - AnimHigh
   - AnimLow
@@ -240,7 +232,6 @@ This table gathers every way a flight ends, in the order a turn tests them. The 
 | It stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through | Both | Nowhere. The wall consumes it without a blast |
 | A [`High=yes`](/keys/high/#scope-overlaytype) overlay stands in its cell, the projectile is less than 100 leptons above the ground, and it is not [`High=yes`](/keys/high/#scope-bullettype) itself | Both | Where it stands |
 | It is below ground level | Both | Where it stands |
-| It is [`SubjectToBuildings=yes`](/keys/subjecttobuildings/) and its cell holds a building that is solid at its height | Both | Where it stands |
 | It is [`AA=yes`](/keys/aa/) and within 128 leptons of the aircraft, or the airborne jumpjet infantry, it is chasing | Both | Where it stands |
 | Its fuse tripped | Steered or `Ranged=yes`, but never a `Dropping=yes` projectile | Where it stands. A trip within 64 leptons of the fuse point moves it onto the target, as described below |
 
@@ -255,8 +246,6 @@ The blast does not always go off where the projectile stood. Up to three moves p
 3. Unless the warhead is [`EMEffect=yes`](/keys/emeffect/), or the projectile is [`Airburst=yes`](/keys/airburst/), [`Splits=yes`](/keys/splits/) or [`Inaccurate=yes`](/keys/inaccurate/), the blast moves onto a nearby target. An airborne target within 128 leptons of the projectile pulls the blast onto the point weapons aim at on it. Any other target within 42 leptons pulls the blast onto its position, and a structure's distance is measured to its edge.
 
 Between the second move and the third, a projectile that is not steered, not [`Arcing=yes`](/keys/arcing/), and not [`Airburst=yes`](/keys/airburst/) or [`Inaccurate=yes`](/keys/inaccurate/) blasts at its fuse point, the target's position at launch. A test that forces the blast where the projectile stands, such as the cliff, wall, below-ground or anti-aircraft test, keeps it there. [`Splits=yes`](/keys/splits/) projectiles and [`EMEffect=yes`](/keys/emeffect/) warheads do not use the fuse point.
-
-A warhead with [`PreImpactAnim`](/keys/preimpactanim/) delays the blast: the projectile stands where it went off and plays that animation first, and the blast goes off where it stood when the animation ends.
 
 The warhead decides what the blast does. [`AnimList`](/keys/animlist/) chooses the explosion by damage, [`SplashList`](/keys/splashlist/) replaces it over water, and [`Spread`](/keys/spread/#scope-warheadtype) sets how the damage thins with distance. An [`EMEffect=yes`](/keys/emeffect/) warhead spends the damage as [a pulse](/systems/emp-pulse/) instead.
 
@@ -273,7 +262,7 @@ A splitting projectile detonates once and then releases `Cluster` bomblets of it
 3. Each bomblet keeps the carrier's target at the [`RetargetAccuracy`](/keys/retargetaccuracy/) chance, and otherwise draws from the list.
 4. The bomblets are created at the carrier's position, pointing straight down. That position ignores the 32-lepton move onto the target.
 
-[`AroundTarget=no`](/keys/aroundtarget/) moves step 2 to the carrier's own cell. An `Airburst=yes` projectile that does not write `Splits=yes` does not split: it detonates once and then fires its `AirburstWeapon` once at each of the nine cells around the burst, or at every cell within [`AirburstSpread`](/keys/airburstspread/), in place of steps 2 and 3.
+An `Airburst=yes` projectile that does not split detonates once and then fires its `AirburstWeapon` once at each of the nine cells around the burst, with the weapon's `Damage` as written.
 
 ## Where a projectile's artwork is read from
 

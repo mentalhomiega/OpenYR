@@ -69,6 +69,12 @@ class SwizzleManagerClass
 	public:
 		SwizzleManagerClass(void);
 
+		/*
+		 * The identity every pointer to the map's scratch cell is saved under. That cell stands in
+		 * for any location off the map, is never saved as a record, and so cannot announce itself.
+		 */
+		static constexpr SwizzleIDType SCRATCH_CELL_ID = 0xFFFFFFFF;
+
 		void Begin_Save(void);
 		SwizzleIDType ID_Of(void const * pointer);
 

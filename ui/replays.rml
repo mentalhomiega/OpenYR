@@ -1,0 +1,29 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Replays</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="replays.rcss"/>
+</head>
+<body class="dlg dlg-replays" template="dialog" data-model="replays">
+	<p id="title">{{title}}</p>
+	<div id="heads"><span class="map">Map</span><span class="players">Players</span><span class="date">Recorded</span><span class="length">Length</span><span class="result">Result</span></div>
+	<div id="replays" class="list"><div class="rows">
+		<div class="item" data-for="row : rows" data-class-selected="it_index == selected" data-class-refused="row.fault != ''" data-event-click="queue('select', it_index)" data-event-dblclick="queue('open')"><span class="map">{{row.map}}</span><span class="players">{{row.players}}</span><span class="date">{{row.date}}</span><span class="length">{{row.length}}</span><span class="result">{{row.result}}</span></div>
+	</div></div>
+	<p id="status">{{status}}</p>
+	<div id="buttons">
+		<button id="play" class="big primary" data-class-disabled="selected &lt; 0" data-event-click="queue('play')">{{playcaption}}</button>
+		<button id="delete" class="big" data-class-disabled="selected &lt; 0" data-event-click="queue('delete')">{{deletecaption}}</button>
+		<button id="back" class="big" data-event-click="queue('cancel')">{{backcaption}}</button>
+	</div>
+</body>
+</rml>

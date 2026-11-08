@@ -11,6 +11,7 @@
 
 #include "scorestage.h"
 
+#include "_font.h"
 #include "_mixfile.h"
 #include "_palette.h"
 #include "_pk.h"
@@ -22,11 +23,11 @@
 #include "dbgprint.h"
 #include "draw.h"
 #include "dsurface.h"
+#include "font.h"
 #include "globals.h"
 #include "house.h"
 #include "houstype.h"
 #include "mixfile.h"
-#include "msfont.h"
 #include "palette.h"
 #include "pcx.h"
 #include "shapeset.h"
@@ -36,6 +37,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <vector>
 
 
 namespace {
@@ -80,8 +82,14 @@ ScoreStageClass::ScoreStageClass(void) :
 	StageSurface(NULL),
 	BaseSurface(NULL),
 	Font(NULL),
+	TextConverter(NULL),
 	Drawer(NULL),
-	Mounted(false)
+	Mounted(false),
+	StageWidth(STAGE_WIDTH),
+	StageHeight(STAGE_HEIGHT),
+	KeyedShape(NULL),
+	KeyedWidth(0),
+	KeyedHeight(0)
 {
 }
 
@@ -95,32 +103,38 @@ ScoreStageClass::~ScoreStageClass(void)
 /// <summary>
 /// Creates the stage and its font, sizes the fit to the screen and mounts the neutral archives.
 /// </summary>
+/// <param name="fill_screen">When true the stage is the size of the screen at 1 to 1, rather than 800 by 600 fitted to it.</param>
 /// <returns>bool; Was the stage created? Nothing is left allocated when it was not.</returns>
-bool ScoreStageClass::Open(void)
+bool ScoreStageClass::Open(bool fill_screen)
 {
 	Close();
 
-	StageSurface = new DSurface(STAGE_WIDTH, STAGE_HEIGHT);
-	BaseSurface = new DSurface(STAGE_WIDTH, STAGE_HEIGHT);
-	if (StageSurface == NULL || BaseSurface == NULL) {
-		DebugString("ScoreStage: Failed to create surface!\n");
-		Close();
-		return(false);
-	}
-
 	int const screen_width = HiddenSurface->Get_Width();
 	int const screen_height = HiddenSurface->Get_Height();
-	Scale = std::min(screen_width / (double)STAGE_WIDTH, screen_height / (double)STAGE_HEIGHT);
-	int const fit_width = (int)(STAGE_WIDTH * Scale + 0.5);
-	int const fit_height = (int)(STAGE_HEIGHT * Scale + 0.5);
-	FitOrigin = Point2D((screen_width - fit_width) / 2, (screen_height - fit_height) / 2);
+	StageWidth = fill_screen ? screen_width : STAGE_WIDTH;
+	StageHeight = fill_screen ? screen_height : STAGE_HEIGHT;
 
-	Font = new MSFont(false);
+	StageSurface = new DSurface(StageWidth, StageHeight);
+	BaseSurface = new DSurface(StageWidth, StageHeight);
+
+	if (fill_screen) {
+		Scale = 1.0;
+		FitOrigin = Point2D(0, 0);
+	} else {
+		Scale = std::min(screen_width / (double)STAGE_WIDTH, screen_height / (double)STAGE_HEIGHT);
+		int const fit_width = (int)(STAGE_WIDTH * Scale + 0.5);
+		int const fit_height = (int)(STAGE_HEIGHT * Scale + 0.5);
+		FitOrigin = Point2D((screen_width - fit_width) / 2, (screen_height - fit_height) / 2);
+	}
+
+	Font = Font6Ptr;
 	if (Font == NULL) {
 		DebugString("ScoreStage: Unable to create font!\n");
 		Close();
 		return(false);
 	}
+	// Yellow is the primary text color of gamemd's dialogs, 0x00FFFF for every side (0xac18a4, set at 0x600588 and 0x60fa3f).
+	Set_Text_Color(255, 255, 0);
 
 	if (MountCount++ == 0) {
 		Mount_Neutral_Archives();
@@ -136,22 +150,17 @@ bool ScoreStageClass::Open(void)
 /// </summary>
 void ScoreStageClass::Close(void)
 {
-	if (Drawer != NULL) {
-		delete Drawer;
-		Drawer = NULL;
-	}
-	if (Font != NULL) {
-		delete Font;
-		Font = NULL;
-	}
-	if (BaseSurface != NULL) {
-		delete BaseSurface;
-		BaseSurface = NULL;
-	}
-	if (StageSurface != NULL) {
-		delete StageSurface;
-		StageSurface = NULL;
-	}
+	delete Drawer;
+	Drawer = NULL;
+	delete TextConverter;
+	TextConverter = NULL;
+	Font = NULL;
+	KeyedShape = NULL;
+	KeyedFrames.clear();
+	delete BaseSurface;
+	BaseSurface = NULL;
+	delete StageSurface;
+	StageSurface = NULL;
 	if (Mounted) {
 		Mounted = false;
 		if (--MountCount == 0) {
@@ -213,41 +222,182 @@ void ScoreStageClass::Present(Rect const & area)
 /// </summary>
 void ScoreStageClass::Clear_Screen(void)
 {
-	Rect const frame = HiddenSurface->Get_Rect();
 	HiddenSurface->Fill(TBLACK);
+	Show_Screen();
+}
+
+
+/// <summary>
+/// Shows the whole hidden screen surface, as it was last filled.
+/// </summary>
+void ScoreStageClass::Show_Screen(void)
+{
+	Rect const frame = HiddenSurface->Get_Rect();
 	VisibleSurface->Blit_From(frame, *HiddenSurface, frame);
 	Video_Mark_Dirty();
 	Video_Present_Now();
 }
 
 
+/// <summary>
+/// Fills a surface with an area of the stage, averaged on a coarse grid, blurred and dimmed. The area
+/// is read from the stage's current pixels, so it must be drawn before anything that should not be blurred.
+/// </summary>
+/// <param name="target">The 16 bit surface to fill. It may be any size; the stage is not changed.</param>
+/// <param name="source">The stage area to take the art from, stretched over the whole target.</param>
+void ScoreStageClass::Fill_Backdrop(Surface & target, Rect const & source)
+{
+	constexpr int COLUMNS = 32;
+	constexpr int ROWS = 24;
+	constexpr int SAMPLES = 4;
+	constexpr double DIM = 0.45;
+
+	if (StageSurface == NULL || target.Bytes_Per_Pixel() != 2) {
+		return;
+	}
+
+	double grid[ROWS][COLUMNS][3];
+	for (int row = 0; row < ROWS; row++) {
+		for (int col = 0; col < COLUMNS; col++) {
+			double sum[3] = { 0.0, 0.0, 0.0 };
+			for (int sy = 0; sy < SAMPLES; sy++) {
+				for (int sx = 0; sx < SAMPLES; sx++) {
+					int const x = source.X + (int)((col + (sx + 0.5) / SAMPLES) * source.Width / COLUMNS);
+					int const y = source.Y + (int)((row + (sy + 0.5) / SAMPLES) * source.Height / ROWS);
+					RGBClass const rgb = DSurface::Deconstruct_Hicolor_Pixel((unsigned short)StageSurface->Get_Pixel(Point2D(x, y)));
+					sum[0] += rgb.Get_Red();
+					sum[1] += rgb.Get_Green();
+					sum[2] += rgb.Get_Blue();
+				}
+			}
+			for (int k = 0; k < 3; k++) {
+				grid[row][col][k] = sum[k] / (SAMPLES * SAMPLES);
+			}
+		}
+	}
+
+	// Two passes of a 3 by 3 box blur, with the edge cells repeated outward.
+	for (int pass = 0; pass < 2; pass++) {
+		double blurred[ROWS][COLUMNS][3];
+		for (int row = 0; row < ROWS; row++) {
+			for (int col = 0; col < COLUMNS; col++) {
+				double sum[3] = { 0.0, 0.0, 0.0 };
+				for (int dy = -1; dy <= 1; dy++) {
+					for (int dx = -1; dx <= 1; dx++) {
+						int const r = std::clamp(row + dy, 0, ROWS - 1);
+						int const c = std::clamp(col + dx, 0, COLUMNS - 1);
+						for (int k = 0; k < 3; k++) {
+							sum[k] += grid[r][c][k];
+						}
+					}
+				}
+				for (int k = 0; k < 3; k++) {
+					blurred[row][col][k] = sum[k] / 9.0;
+				}
+			}
+		}
+		for (int row = 0; row < ROWS; row++) {
+			for (int col = 0; col < COLUMNS; col++) {
+				for (int k = 0; k < 3; k++) {
+					grid[row][col][k] = blurred[row][col][k];
+				}
+			}
+		}
+	}
+
+	int const width = target.Get_Width();
+	int const height = target.Get_Height();
+	for (int y = 0; y < height; y++) {
+		SurfaceLock line_lock(target, Point2D(0, y));
+		unsigned short * line = line_lock.As<unsigned short>();
+		if (line == NULL) {
+			break;
+		}
+		double const gy = std::clamp((y + 0.5) * ROWS / height - 0.5, 0.0, ROWS - 1.0);
+		int const r0 = (int)gy;
+		int const r1 = std::min(r0 + 1, ROWS - 1);
+		double const ty = gy - r0;
+		for (int x = 0; x < width; x++) {
+			double const gx = std::clamp((x + 0.5) * COLUMNS / width - 0.5, 0.0, COLUMNS - 1.0);
+			int const c0 = (int)gx;
+			int const c1 = std::min(c0 + 1, COLUMNS - 1);
+			double const tx = gx - c0;
+			int channel[3];
+			for (int k = 0; k < 3; k++) {
+				double const top = grid[r0][c0][k] * (1.0 - tx) + grid[r0][c1][k] * tx;
+				double const bottom = grid[r1][c0][k] * (1.0 - tx) + grid[r1][c1][k] * tx;
+				channel[k] = (int)((top * (1.0 - ty) + bottom * ty) * DIM + 0.5);
+			}
+			line[x] = (unsigned short)DSurface::Build_Hicolor_Pixel(channel[0], channel[1], channel[2]);
+		}
+	}
+}
+
+
+int ScoreStageClass::Width(void) const
+{
+	return(StageWidth);
+}
+
+
+int ScoreStageClass::Height(void) const
+{
+	return(StageHeight);
+}
+
+
+namespace {
+
+/*
+ * The remap for BitFontClass::Print. Index 1 is the glyph color. Index 0 (no background fill) and index 2
+ * (no shadow) are left empty, so a glyph's set bits are the only pixels drawn, as gamemd's BitFont does.
+ */
+unsigned char const TEXT_REMAP[16] = { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+}
+
+
 void ScoreStageClass::Print_Left(char const * text, int x, int y)
 {
-	Font->Draw_String(StageSurface, text, x, y, 2);
+	Font->Print(text, *StageSurface, Rect(0, 0, StageWidth, StageHeight), Point2D(x, y), *TextConverter, TEXT_REMAP);
 }
 
 
 void ScoreStageClass::Print_Right(char const * text, int right, int y)
 {
-	Font->Draw_String(StageSurface, text, right - Font->Get_String_Width(text), y, 2);
+	Print_Left(text, right - Text_Width(text), y);
 }
 
 
 void ScoreStageClass::Print_Centre(char const * text, int left, int width, int y)
 {
-	Font->Draw_String(StageSurface, text, left + (width - Font->Get_String_Width(text)) / 2, y, 2);
+	Print_Left(text, left + (width - Text_Width(text)) / 2, y);
 }
 
 
 int ScoreStageClass::Text_Width(char const * text) const
 {
-	return(Font->Get_String_Width(text));
+	return(Font->String_Pixel_Width(text));
 }
 
 
 int ScoreStageClass::Text_Height(void) const
 {
-	return(Font->Get_Font_Height());
+	return(Font->Get_Height());
+}
+
+
+// Reads a six-bit palette file into CCPalette. Returns false, and leaves CCPalette unchanged, when the file is missing.
+static bool Read_Six_Bit_Palette(char const * name)
+{
+	CCFileClass file(name);
+	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
+	file.Close();
+	if (palette == NULL) return(false);
+
+	CCPalette = Widen_Six_Bit_Palette(*palette);
+	delete palette;
+	return(true);
 }
 
 
@@ -258,23 +408,211 @@ int ScoreStageClass::Text_Height(void) const
 /// <param name="name">The palette's file name.</param>
 void ScoreStageClass::Load_Palette(char const * name)
 {
-	CCFileClass file(name);
-	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
-	file.Close();
-	if (palette == NULL) return;
-
-	for (int i = 0; i < 256; i++) {
-		CCPalette[i] = RGBClass(
-			((unsigned char *)*palette)[i*3] << 2,
-			((unsigned char *)*palette)[i*3+1] << 2,
-			((unsigned char *)*palette)[i*3+2] << 2);
-	}
-	delete palette;
+	if (!Read_Six_Bit_Palette(name)) return;
 
 	if (Drawer != NULL) {
 		delete Drawer;
 	}
+	// Cached frames were drawn through the previous palette's drawer.
+	KeyedShape = NULL;
+	KeyedFrames.clear();
 	Drawer = new ConvertClass(CCPalette, CCPalette, *StageSurface);
+}
+
+
+/// <summary>
+/// Makes a drawer that converts shapes through a palette stored in 6 bit values, without changing the
+/// stage's own drawer.
+/// </summary>
+/// <param name="name">The palette's file name.</param>
+/// <returns>Returns with the drawer, or NULL when the palette is missing. Free it with Free_Drawer.</returns>
+/// <remarks>The global CCPalette is overwritten with the palette.</remarks>
+ConvertClass * ScoreStageClass::Load_Drawer(char const * name) const
+{
+	if (!Read_Six_Bit_Palette(name)) return(NULL);
+
+	return(new ConvertClass(CCPalette, CCPalette, *StageSurface));
+}
+
+
+void ScoreStageClass::Free_Drawer(ConvertClass * drawer)
+{
+	delete drawer;
+}
+
+
+/// <summary>
+/// Sets the color that the text printed after this call is drawn in. Open starts the stage in yellow, the
+/// color of gamemd's dialog text.
+/// </summary>
+/// <param name="red">The red of the color, 0 to 255.</param>
+/// <param name="green">The green of the color, 0 to 255.</param>
+/// <param name="blue">The blue of the color, 0 to 255.</param>
+void ScoreStageClass::Set_Text_Color(int red, int green, int blue)
+{
+	PaletteClass palette(RGBClass(0, 0, 0));
+	palette[1] = RGBClass(red, green, blue);
+	ConvertClass * converter = new ConvertClass(palette, palette, *VisibleSurface);
+	delete TextConverter;
+	TextConverter = converter;
+}
+
+
+/// <summary>
+/// Draws one frame of a shape set at its own size, with the shape's own offsets, through a drawer.
+/// </summary>
+/// <param name="x">The stage x of the shape set's top left corner.</param>
+/// <param name="y">The stage y of the shape set's top left corner.</param>
+/// <param name="drawer">The drawer that holds the palette the shape set is stored in.</param>
+void ScoreStageClass::Draw_Shape_At(ShapeSet const * shapes, int frame, int x, int y, ConvertClass * drawer)
+{
+	if (shapes == NULL || drawer == NULL) {
+		return;
+	}
+	Draw_Shape(*StageSurface, *drawer, shapes, frame, Point2D(x, y), StageSurface->Get_Rect(), SHAPE_WIN_REL);
+}
+
+
+namespace {
+
+// Returns one frame as premultiplied RGBA, four floats a pixel, with the dark blue surround keyed out.
+std::vector<float> Key_Frame(ShapeSet const * shapes, int frame, ConvertClass & drawer, int width, int height)
+{
+	DSurface picture(width, height);
+	picture.Fill(0);
+	Draw_Shape(picture, drawer, shapes, frame, Point2D(0, 0), picture.Get_Rect(), SHAPE_WIN_REL);
+
+	// Which pixels are the plate rather than its dark blue surround, then that spread over a few pixels so
+	// that dark detail inside the plate stays solid and the plate's edge is soft.
+	constexpr int REACH = 5;
+	std::vector<float> colors((size_t)width * height * 3);
+	std::vector<float> present((size_t)width * height);
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			RGBClass const rgb = DSurface::Deconstruct_Hicolor_Pixel((unsigned short)picture.Get_Pixel(Point2D(x, y)));
+			float const r = rgb.Get_Red();
+			float const g = rgb.Get_Green();
+			float const b = rgb.Get_Blue();
+			float const brightest = std::max(r, std::max(g, b));
+			size_t const at = (size_t)y * width + x;
+			colors[at * 3] = r;
+			colors[at * 3 + 1] = g;
+			colors[at * 3 + 2] = b;
+			present[at] = (brightest >= 60.0f && !(b > r * 1.3f && brightest < 110.0f)) ? 1.0f : 0.0f;
+		}
+	}
+	std::vector<float> spread((size_t)width * height);
+	std::vector<float> across((size_t)width * height);
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float sum = 0.0f;
+			for (int k = -REACH; k <= REACH; k++) {
+				sum += present[(size_t)y * width + std::clamp(x + k, 0, width - 1)];
+			}
+			across[(size_t)y * width + x] = sum / (2 * REACH + 1);
+		}
+	}
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float sum = 0.0f;
+			for (int k = -REACH; k <= REACH; k++) {
+				sum += across[(size_t)std::clamp(y + k, 0, height - 1) * width + x];
+			}
+			spread[(size_t)y * width + x] = sum / (2 * REACH + 1);
+		}
+	}
+
+	// Premultiplied colors with alpha, 4 floats a source pixel.
+	std::vector<float> source((size_t)width * height * 4);
+	constexpr float FADE = 16.0f;
+	for (size_t at = 0; at < (size_t)width * height; at++) {
+		int const x = (int)(at % width);
+		int const y = (int)(at / width);
+		float const edge = (float)std::min(std::min(x, width - 1 - x), std::min(y, height - 1 - y));
+		float const alpha = std::clamp((spread[at] - 0.15f) / 0.35f, 0.0f, 1.0f) * std::clamp(edge / FADE, 0.0f, 1.0f);
+		source[at * 4] = colors[at * 3] * alpha;
+		source[at * 4 + 1] = colors[at * 3 + 1] * alpha;
+		source[at * 4 + 2] = colors[at * 3 + 2] * alpha;
+		source[at * 4 + 3] = alpha;
+	}
+	return(source);
+}
+
+}
+
+
+/// <summary>
+/// Draws one frame of a shape set into a box on the stage, stretched to fill it, with its dark blue
+/// background left out so that it blends into what is already on the stage. The background is the dark blue
+/// pixels that have no bright pixel within a few pixels of them, and the frame's own edge fades out.
+/// </summary>
+/// <param name="box">The stage area the frame fills.</param>
+/// <remarks>The frame is drawn through the drawer Load_Palette made. Each frame is keyed on first use and kept until the stage closes, the palette changes, or another shape is drawn.</remarks>
+void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect const & box)
+{
+	if (shapes == NULL || Drawer == NULL || box.Width <= 0 || box.Height <= 0) {
+		return;
+	}
+
+	int const width = shapes->Get_Width();
+	int const height = shapes->Get_Height();
+	int const count = shapes->Get_Count();
+	if (width <= 0 || height <= 0 || frame < 0 || frame >= count) {
+		return;
+	}
+
+	// Frames are cached by the shape's address; Close or Load_Palette must run before a new shape can reuse a freed address.
+	if (KeyedShape != shapes || KeyedWidth != width || KeyedHeight != height || KeyedFrames.size() != (size_t)count) {
+		KeyedShape = shapes;
+		KeyedWidth = width;
+		KeyedHeight = height;
+		KeyedFrames.assign((size_t)count, std::vector<float>());
+	}
+	std::vector<float> & source = KeyedFrames[(size_t)frame];
+	if (source.empty()) {
+		source = Key_Frame(shapes, frame, *Drawer, width, height);
+	}
+
+	for (int dy = 0; dy < box.Height; dy++) {
+		int const row = box.Y + dy;
+		if (row < 0 || row >= StageHeight) {
+			continue;
+		}
+		SurfaceLock line_lock(*StageSurface, Point2D(0, row));
+		unsigned short * line = line_lock.As<unsigned short>();
+		if (line == NULL) {
+			break;
+		}
+		double const fy = std::clamp((dy + 0.5) * height / box.Height - 0.5, 0.0, height - 1.0);
+		int const y0 = (int)fy;
+		int const y1 = std::min(y0 + 1, height - 1);
+		double const ty = fy - y0;
+		for (int dx = 0; dx < box.Width; dx++) {
+			int const column = box.X + dx;
+			if (column < 0 || column >= StageWidth) {
+				continue;
+			}
+			double const fx = std::clamp((dx + 0.5) * width / box.Width - 0.5, 0.0, width - 1.0);
+			int const x0 = (int)fx;
+			int const x1 = std::min(x0 + 1, width - 1);
+			double const tx = fx - x0;
+			double sample[4];
+			for (int k = 0; k < 4; k++) {
+				double const top = source[((size_t)y0 * width + x0) * 4 + k] * (1.0 - tx) + source[((size_t)y0 * width + x1) * 4 + k] * tx;
+				double const bottom = source[((size_t)y1 * width + x0) * 4 + k] * (1.0 - tx) + source[((size_t)y1 * width + x1) * 4 + k] * tx;
+				sample[k] = top * (1.0 - ty) + bottom * ty;
+			}
+			if (sample[3] <= 0.0) {
+				continue;
+			}
+			RGBClass const behind = DSurface::Deconstruct_Hicolor_Pixel(line[column]);
+			double const keep = 1.0 - sample[3];
+			int const red = std::clamp((int)(behind.Get_Red() * keep + sample[0] + 0.5), 0, 255);
+			int const green = std::clamp((int)(behind.Get_Green() * keep + sample[1] + 0.5), 0, 255);
+			int const blue = std::clamp((int)(behind.Get_Blue() * keep + sample[2] + 0.5), 0, 255);
+			line[column] = (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue);
+		}
+	}
 }
 
 
@@ -396,6 +734,16 @@ int ScoreStageClass::Dialog_Y(int units)
 Rect ScoreStageClass::Dialog_Rect(int x, int y, int width, int height)
 {
 	return(Rect(Dialog_X(x), Dialog_Y(y), Dialog_X(x + width) - Dialog_X(x), Dialog_Y(y + height) - Dialog_Y(y)));
+}
+
+
+/// <summary>
+/// Tests whether a screen point is inside an area of the stage as the stage is drawn on the screen.
+/// </summary>
+bool ScoreStageClass::Contains_Screen_Point(Rect const & area, int x, int y) const
+{
+	Rect const screen = Stage_To_Screen(area);
+	return(x >= screen.X && x < screen.X + screen.Width && y >= screen.Y && y < screen.Y + screen.Height);
 }
 
 

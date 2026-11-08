@@ -1,0 +1,71 @@
+; Allied building life cycle on XMP29U2. A GAWEAP is built, placed and plays its build-up (25 stages at 2 frames each, so
+; gamemd's BuildingTypeClass::LoadBuildup rate of BuildupTime * 900 / stages, cut to a whole number), is hurt to yellow
+; (shape 1, the damaged body, once health is at or below ConditionYellow) and to red, is sold while red, and a GAPILE is
+; destroyed. Expected, from gamemd (BuildingClass::DrawIt 0x43D290, GetCurrentFrame 0x43EF90, Mission_Selling 0x449C30,
+; Destory 0x4415F0): the stage rises 0 to 24 while bstate is 0 and the structure then goes to bstate 1; a sale shows the
+; same stages backwards (shape 24 down to 0, mission 19) with the undamaged build-up frames even at red health, and
+; ends the damage fires when it begins; the destroyed structure plays BuildingGenericDie once and its explosions follow.
+; The sounds lines log every sound played in the placement, sale and destruction windows. Screenshots every 3 frames show the art.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/building-states-allied.txt -Settings "[Options]<newline>DebugMode=yes" -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir scratch-agent/building-states-anims/allied -Filter "AUTOTEST|Exception|Sound:"
+20 own GACNST 50 30
+30 command CenterBase
+31 view 52 31
+40 command DebugInfiniteMoney
+41 command DebugUnlockAll
+42 command DebugInstantBuild
+43 reveal
+44 own GAPILE 58 31
+45 own GAPOWR 46 33
+46 own GAPOWR 46 36
+100 produce GAWEAP
+140 factories
+145 sounds 1
+150 place GAWEAP
+151 record 3
+152 banimstate GAWEAP
+153 dump
+160 banimstate GAWEAP
+170 banimstate GAWEAP
+180 banimstate GAWEAP
+190 banimstate GAWEAP
+200 banimstate GAWEAP
+205 sounds 0
+225 record 0
+230 bshape GAWEAP
+232 command ScreenCapture
+240 hurt GAWEAP 52
+241 damage GAWEAP 40
+242 bshape GAWEAP
+244 command ScreenCapture
+250 hurt GAWEAP 27
+251 damage GAWEAP 40
+252 bshape GAWEAP
+254 command ScreenCapture
+280 banimstate GAWEAP
+282 command ScreenCapture
+310 command ScreenCapture
+322 command ScreenCapture
+329 sounds 1
+330 sell 50 27
+331 record 3
+332 bshape GAWEAP
+345 bshape GAWEAP
+360 bshape GAWEAP
+400 record 0
+400 sounds 0
+405 view 60 34
+410 hurt GAPILE 52
+411 damage GAPILE 40
+412 command ScreenCapture
+416 hurt GAPILE 27
+417 damage GAPILE 40
+430 command ScreenCapture
+450 command ScreenCapture
+459 sounds 1
+460 kill GAPILE 1
+461 record 2
+480 bshape GAPILE
+540 record 0
+540 sounds 0
+545 command ScreenCapture
+560 quit

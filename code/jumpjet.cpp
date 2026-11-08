@@ -19,6 +19,8 @@
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
+#include "infantry.h"
+#include "infatype.h"
 #include "inline.h"
 #include "ion.h"
 #include "mouse.h"
@@ -46,6 +48,7 @@ JumpjetLocomotionClass::JumpjetLocomotionClass(void) :
 	Facing(Rule->JumpjetTurnRate),
 	CurrentSpeed(0.0),
 	TargetSpeed(0.0),
+	CrashSpeed(0.0),
 	FlightLevel(0),
 	CurrentWobble(0.0),
 	IsLanding(false)
@@ -60,6 +63,21 @@ JumpjetLocomotionClass::JumpjetLocomotionClass(void) :
 JumpjetLocomotionClass::~JumpjetLocomotionClass(void)
 {
 
+}
+
+
+/// <summary>
+/// Attaches the jumpjet locomotor to the object it drives and restarts its facing tracker at
+/// DIR_E, at the rate of turn the unit's type gives. The tracker starts East rather than north,
+/// as gamemd links a jumpjet (JumpjetLocomotionClass::Link_To_Object, 0x54AD30).
+/// </summary>
+/// <param name="pointer">Pointer to the foot class object this locomotor will carry about.</param>
+void JumpjetLocomotionClass::Link_To_Object(void *pointer)
+{
+	BASECLASS::Link_To_Object(pointer);
+	FacingClass face(LinkedTo->TClass->JumpjetTurnRate);
+	face.Set(DIR_E);
+	Facing = face;
 }
 
 
@@ -101,20 +119,27 @@ bool JumpjetLocomotionClass::Process(void)
 	Facing.Set_ROT(LinkedTo->TClass->JumpjetTurnRate);
 	LayerType layer = In_Which_Layer();
 
-	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING)) {
+	if (Is_Moving() || Is_Moving_Now() || (LinkedTo->IsAttackedByLocomotor && CurrentState != HOVERING)) {
 		Movement_AI();
 		if (!LinkedTo->IsActive) {
 			return(false);
 		}
 
+		// A jumpjet in the air when an ion storm is up crashes, whatever its type (FootClass::Crash, called at 0x54AF28).
+		// gamemd's test for an ion storm (0x53A130) always answers no, and nothing here raises a storm, so this is not reached.
 		if (IonStormClass::Is_Ion_Storm_Active()) {
-			if (CurrentState != GROUNDED) {
-				int damage = LinkedTo->Strength;
-				ResultType result = LinkedTo->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-				if (result == RESULT_DESTROYED || result == RESULT_ALREADY_DESTROYED || !LinkedTo->IsActive || LinkedTo->IsInLimbo) {
+			if (CurrentState != GROUNDED && CurrentState != CRASHING) {
+				LinkedTo->Crash(NULL);
+				if (!LinkedTo->IsActive || LinkedTo->IsInLimbo) {
 					return(false);
 				}
 			}
+		}
+
+		// A vehicle that crashed in the air starts to fall now, keeping its speed and heading. A held vehicle
+		// that was let go is already falling (JumpjetLocomotionClass, 0x54AF33).
+		if (LinkedTo->IsCrashing && CurrentState != CRASHING && !LinkedTo->IsAttackedByLocomotor && LinkedTo->HeightAGL > 0) {
+			Begin_Crash();
 		}
 
 		switch (CurrentState) {
@@ -138,8 +163,8 @@ bool JumpjetLocomotionClass::Process(void)
 				Process_Descent();
 				break;
 
-			case UNKNOWN:
-				Process_Unknown();
+			case CRASHING:
+				Process_Crashing();
 				break;
 		}
 
@@ -185,15 +210,14 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 		return;
 	}
 
-	if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
-		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-		IsLanding = false;
+	if (CurrentState != GROUNDED) {
+		Drop_Landing_Claim();
 	}
 
 	HeadToCoord = to;
 
 	// A BalloonHover unit never lands, so it goes to the destination itself, over a structure if need be.
-	if (to != COORD_NONE && Stays_Aloft() && Map.In_Radar(to.As_Cell())) {
+	if (to != COORD_NONE && LinkedTo->TClass->IsBalloonHover && Map.In_Radar(to.As_Cell())) {
 		HeadToCoord = Map[to.As_Cell()].Center_Coord();
 		LinkedTo->NavCom = &Map[HeadToCoord];
 		IsMoving = true;
@@ -205,7 +229,12 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 	}
 
 	if (to != COORD_NONE) {
-		Cell cell = Map.Nearby_Location(to.As_Cell(), LinkedTo->TClass->Speed, -1, MZONE_FLYER, Map[to].IsUnderBridge);
+		// gamemd searches for the spot with SpeedType Hover and the Fly movement zone whatever the unit's own speed type is (JumpjetLocomotionClass::Move_To, 0x54B2C7 and 0x54B36A).
+		// A held vehicle, and an aircraft that a locomotor warhead carries, take that search so that their spot can be over water or beside a structure.
+		// The hold flag is set only after the carrier's first destination is assigned, so the holder link is read as well.
+		bool const held = LinkedTo->IsAttackedByLocomotor || LinkedTo->LocomotorSource != NULL || LinkedTo->RTTI == RTTI_AIRCRAFT;
+		SpeedType const speed = held ? SPEED_HOVER : LinkedTo->TClass->Speed;
+		Cell cell = Map.Nearby_Location(to.As_Cell(), speed, -1, MZONE_FLYER, Map[to].IsUnderBridge);
 		Coord free = Closest_Free_Spot(cell);
 		if (free != COORD_NONE) {
 			HeadToCoord = free;
@@ -237,10 +266,7 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 
 	// A unit a locomotor warhead holds stops where it is.
 	if (IsMoving && LinkedTo->IsAttackedByLocomotor && CurrentState != GROUNDED) {
-		if (HeadToCoord != COORD_NONE && IsLanding) {
-			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-			IsLanding = false;
-		}
+		Drop_Landing_Claim();
 		CurrentSpeed = 0;
 		TargetSpeed = 0;
 		HeadToCoord = COORD_NONE;
@@ -249,12 +275,11 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 		return;
 	}
 	if (IsMoving) {
-		if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
-			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-			IsLanding = false;
+		if (CurrentState != GROUNDED) {
+			Drop_Landing_Claim();
 		}
 		Cell cell = LinkedTo->PositionCoord.As_Cell();
-		Cell nearby = Map.Nearby_Location(cell, SPEED_TRACK);
+		Cell nearby = Map.Nearby_Location(cell, LinkedTo->TClass->Speed, -1, LinkedTo->TClass->MZone);
 		if (nearby != CELL_NONE) {
 			Coord nearby_coord = nearby.As_Coord();
 			nearby_coord.Z = Map.Get_Height_GL(nearby_coord);
@@ -263,9 +288,20 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 			}
 			Move_To(nearby_coord);
 		} else {
-			LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
+			// The kill runs the dying unit's Stun, which stops its driver and so comes back here; the move is dropped first so that call does nothing.
+			IsMoving = false;
 			HeadToCoord = COORD_NONE;
+			LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
 		}
+	}
+}
+
+
+void JumpjetLocomotionClass::Drop_Landing_Claim(void)
+{
+	if (HeadToCoord != COORD_NONE && IsLanding) {
+		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+		IsLanding = false;
 	}
 }
 
@@ -281,18 +317,43 @@ void JumpjetLocomotionClass::Begin_Fall(void)
 		return;
 	}
 
-	if (HeadToCoord != COORD_NONE && IsLanding) {
-		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-		IsLanding = false;
-	}
+	Drop_Landing_Claim();
 
-	Coord const here = LinkedTo->PositionCoord;
-	HeadToCoord = Coord(here.X, here.Y, Map.Get_Height_GL(here));
 	CurrentSpeed = 0;
 	TargetSpeed = 0;
-	FlightLevel = 0;
-	IsMoving = true;
-	CurrentState = DESCENDING;
+	CrashSpeed = LinkedTo->TClass->JumpjetCrash;
+
+	// A held vehicle first drifts to the centre of its cell, then falls (JumpjetLocomotionClass, 0x54AF33).
+	Coord const here = LinkedTo->PositionCoord;
+	Coord const centre = Map[here].Center_Coord();
+	if (LinkedTo->IsAttackedByLocomotor && Point2D(centre) != Point2D(here)) {
+		HeadToCoord = Coord(centre.X, centre.Y, here.Z);
+		IsMoving = true;
+		CurrentState = CRUISING;
+	} else {
+		HeadToCoord = COORD_NONE;
+		IsMoving = false;
+		CurrentState = CRASHING;
+	}
+}
+
+
+/// <summary>
+/// Starts the fall of a vehicle that crashed in the air without being held. Unlike a held
+/// vehicle, it keeps flying at its present speed along its heading while it falls and spins
+/// (JumpjetLocomotionClass, 0x54AF33).
+/// </summary>
+void JumpjetLocomotionClass::Begin_Crash(void)
+{
+	Drop_Landing_Claim();
+	CrashSpeed = LinkedTo->TClass->JumpjetCrash;
+	FlightLevel = -5;
+	CurrentState = CRASHING;
+
+	// A soldier starts its air death sequence as it begins to fall (0x54B028).
+	if (LinkedTo->RTTI == RTTI_INFANTRY) {
+		static_cast<InfantryClass *>(LinkedTo)->Do_Action(DO_AIR_DEATH_START, false);
+	}
 }
 
 
@@ -317,6 +378,17 @@ double JumpjetLocomotionClass::Target_Speed(void) const
 
 
 /// <summary>
+/// Reports the direction the locomotor is tracking. Movement copies it into the unit's primary
+/// facing, except while a locomotor warhead holds the unit.
+/// </summary>
+/// <returns>DirType; The current facing of the locomotor's tracker.</returns>
+DirType JumpjetLocomotionClass::Facing_Current(void) const
+{
+	return(Facing.Current());
+}
+
+
+/// <summary>
 /// Names the flight state the jumpjet is in.
 /// </summary>
 /// <returns>char const *; The name of the ProcessStateType value.</returns>
@@ -333,8 +405,10 @@ char const * JumpjetLocomotionClass::State_Name(void) const
 			return("CRUISING");
 		case DESCENDING:
 			return("DESCENDING");
-		case UNKNOWN:
-			return("UNKNOWN");
+		case CRASHING:
+			return("CRASHING");
+		case CRASHED:
+			return("CRASHED");
 	}
 	return("INVALID");
 }
@@ -375,16 +449,9 @@ void JumpjetLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FlightLevel);
 	stream.Serialize(CurrentWobble);
 	stream.Serialize(IsLanding);
+	stream.Serialize(CrashSpeed);
 
-	bool haspiggy = (Piggybacker != NULL);
-	stream.Serialize(haspiggy);
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybacker.get());
-		} else {
-			Piggybacker = Load_Locomotor(stream);
-		}
-	}
+	Piggybacker.Serialize(stream);
 }
 
 
@@ -426,11 +493,7 @@ static double Slowed_Speed(int speed, int divisor)
 
 bool JumpjetLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybacker != nullptr) {
-		return(false);
-	}
-	Piggybacker = std::move(carried);
-	return(true);
+	return(Piggybacker.Begin(carried));
 }
 
 
@@ -440,13 +503,13 @@ bool JumpjetLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carr
 /// </summary>
 std::unique_ptr<ILocomotion> JumpjetLocomotionClass::End_Piggyback(void)
 {
-	if (Piggybacker != nullptr) {
+	if (Piggybacker.Has_Locomotor()) {
 		LinkedTo->IsAttackedByLocomotor = false;
 		LinkedTo->IsLetGoByLocomotor = false;
 		LinkedTo->LetGoBy = NULL;
 		LinkedTo->LetGoByHouse = NULL;
 	}
-	return(std::move(Piggybacker));
+	return(Piggybacker.End());
 }
 
 
@@ -457,7 +520,7 @@ std::unique_ptr<ILocomotion> JumpjetLocomotionClass::End_Piggyback(void)
 /// </summary>
 bool JumpjetLocomotionClass::Is_Ok_To_End(void)
 {
-	return(Piggybacker != nullptr && (!LinkedTo->IsAttackedByLocomotor || LinkedTo->IsLetGoByLocomotor));
+	return(Piggybacker.Has_Locomotor() && (!LinkedTo->IsAttackedByLocomotor || LinkedTo->IsLetGoByLocomotor));
 }
 
 
@@ -494,8 +557,9 @@ LayerType JumpjetLocomotionClass::In_Which_Layer(void)
 /// </summary>
 void JumpjetLocomotionClass::Process_Grounded(void)
 {
-	// A BalloonHover unit takes off even with nowhere to go (JumpjetLocomotionClass, 0x54D0F0).
-	if (Is_Moving() || Stays_Aloft()) {
+	// A unit takes off only with a destination or a locomotor warhead's lift; a BalloonHover unit placed without orders stays on the ground
+	// (JumpjetLocomotionClass, 0x54B980).
+	if (Is_Moving() || LinkedTo->IsAttackedByLocomotor) {
 		LinkedTo->Set_Speed(1.0);
 		Facing.Set(LinkedTo->PrimaryFacing.Current());
 		CurrentSpeed = 0;
@@ -543,8 +607,12 @@ void JumpjetLocomotionClass::Process_Hover(void)
 		Coord headto = HeadToCoord;
 		Coord position = LinkedTo->PositionCoord;
 		if (Point2D(headto) == Point2D(position)) {
-			// A BalloonHover unit ends its move on arrival even while it has a target, so it is
-			// no longer moving and can fire from where it hovers.
+			if (Let_Go_At_Arrival()) {
+				return;
+			}
+			if (Relocate_If_Claimed(headto.As_Cell())) {
+				return;
+			}
 			if (Stays_Aloft()) {
 				Arrive_Aloft();
 			} else if (LinkedTo->TarCom == NULL) {
@@ -564,14 +632,101 @@ void JumpjetLocomotionClass::Process_Hover(void)
 
 
 /// <summary>
-/// Ends a BalloonHover unit's move at its destination while it stays in the air.
+/// Lets go of the vehicle this jumpjet carries once the jumpjet reaches its destination. The holder
+/// releases the vehicle, which then falls from there, and the vehicle drops to no flight level.
+/// </summary>
+/// <returns>bool; Was a held vehicle let go?</returns>
+bool JumpjetLocomotionClass::Let_Go_At_Arrival(void)
+{
+	TechnoClass * holder = LinkedTo->LocomotorSource;
+	if (!LinkedTo->IsAttackedByLocomotor || holder == NULL) {
+		return(false);
+	}
+	FlightLevel = 0;
+	holder->Release_Locomotor(true);
+	return(true);
+}
+
+
+/// <summary>
+/// Tells whether another jumpjet holds the cell. A jumpjet holds the cell it is over once it is grounded
+/// or hovering with no move in hand. gamemd keeps a per-cell claim (CellClass::TryAssignJumpjet, 0x487D70)
+/// that a jumpjet leaves in place when it flies off; this test follows the jumpjets' states instead.
+/// </summary>
+/// <param name="cell">The cell to test.</param>
+/// <returns>bool; Is the cell held by a jumpjet other than this one?</returns>
+bool JumpjetLocomotionClass::Cell_Claimed_By_Other(Cell const & cell) const
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno == NULL || !techno->Is_Foot()) {
+			continue;
+		}
+
+		FootClass const * foot = static_cast<FootClass const *>(techno);
+		if (foot == LinkedTo || !foot->IsActive || foot->IsInLimbo || foot->Locomotion == NULL) {
+			continue;
+		}
+
+		JumpjetLocomotionClass const * jumpjet = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+		if (jumpjet == NULL || (jumpjet->CurrentState != GROUNDED && jumpjet->CurrentState != HOVERING)) {
+			continue;
+		}
+
+		// A hovering unit that has reached its destination still counts as moving, so only one with somewhere else to go is passed over.
+		if (jumpjet->IsMoving && Point2D(jumpjet->HeadToCoord) != Point2D(foot->PositionCoord)) {
+			continue;
+		}
+
+		if (foot->Get_Cell() == cell) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Sends the jumpjet to a random neighbouring cell when the cell it has reached is held by another
+/// jumpjet, as gamemd does on arrival (JumpjetLocomotionClass, 0x54BA30 and 0x54BFF0). The neighbour
+/// is picked with the synchronised random number generator, so every machine picks the same one.
+/// A neighbour off the map does not take the unit, which settles on the held cell instead.
+/// </summary>
+/// <param name="cell">The cell the jumpjet has arrived at.</param>
+/// <returns>bool; Was the jumpjet sent on to another cell?</returns>
+bool JumpjetLocomotionClass::Relocate_If_Claimed(Cell const & cell)
+{
+	if (!Cell_Claimed_By_Other(cell)) {
+		return(false);
+	}
+
+	Cell const neighbour = Adjacent_Cell(cell, (FacingType)Random_Pick(0, 7));
+	if (!Map.Is_Valid(neighbour)) {
+		return(false);
+	}
+
+	Move_To(Map[neighbour].Center_Coord());
+	return(true);
+}
+
+
+/// <summary>
+/// Settles a unit that stays in the air at its destination. The unit keeps its moving flag and goes on
+/// hovering, so its Move mission continues and it takes no target of its own. Then it is given the next
+/// waypoint of its path, if it has one. A hovering unit never goes idle, so Enter_Idle_Mode does not do this.
+/// A vehicle still linked to the weapons factory it left is released from it.
 /// </summary>
 void JumpjetLocomotionClass::Arrive_Aloft(void)
 {
-	HeadToCoord = COORD_NONE;
-	IsMoving = false;
 	LinkedTo->Assign_Destination(NULL);
-	LinkedTo->Per_Cell_Process(PCP_END);
+	// A vehicle that flew out of a weapons factory is released from it on reaching the door cell.
+	if (LinkedTo->RTTI == RTTI_UNIT && LinkedTo->IsTethered) {
+		static_cast<UnitClass *>(LinkedTo)->Break_Away_From_Contact();
+		if (!LinkedTo->IsActive) {
+			return;
+		}
+	}
+	LinkedTo->Advance_Waypoint_Path();
 }
 
 
@@ -597,6 +752,21 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 		LinkedTo->IsDown = false;
 		LinkedTo->Set_Coord(position);
 		LinkedTo->IsDown = down;
+		// A vehicle let go in the air falls once it reaches the spot it was flying to.
+		if (LinkedTo->IsCrashing) {
+			IsMoving = false;
+			HeadToCoord = COORD_NONE;
+			CurrentState = CRASHING;
+			return;
+		}
+		// A held vehicle is let go on reaching the spot next to its holder, and falls from there (JumpjetLocomotionClass, 0x54C1A9).
+		if (Let_Go_At_Arrival()) {
+			return;
+		}
+		// A jump jet that arrives on a cell another jump jet holds moves on (JumpjetLocomotionClass, 0x54BA30).
+		if (Relocate_If_Claimed(position.As_Cell())) {
+			return;
+		}
 		// A BalloonHover unit stays in the air at its destination (JumpjetLocomotionClass, 0x54BD30).
 		if (LinkedTo->TarCom == NULL && !Stays_Aloft() && !Hovers_At_Stop()) {
 			FlightLevel = 0;
@@ -669,11 +839,13 @@ void JumpjetLocomotionClass::Process_Descent(void)
 	int spot = CellClass::Spot_Index(HeadToCoord);
 	bool stop = true;
 
-	// A falling vehicle lands on whatever is under it, so the landing spot is not checked (JumpjetLocomotionClass, 0x54C550).
-	bool const crashing = LinkedTo->IsCrashing;
+	// A DeployToLand unit does not come down on water or beach; its landing is retargeted below.
+	bool const deploy_landing = LinkedTo->RTTI == RTTI_UNIT && static_cast<UnitClass *>(LinkedTo)->IsLandingToDeploy;
+	bool const wet = Map[HeadToCoord].Land_Type() == LAND_WATER || Map[HeadToCoord].Land_Type() == LAND_BEACH;
 
-	if (crashing || ((cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
-		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding)))) {
+	if (!(deploy_landing && wet && !IsLanding) &&
+		(cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
+		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding))) {
 
 		if (!IsLanding) {
 			IsLanding = true;
@@ -687,6 +859,11 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			if (Map[LinkedTo->Get_Coord()].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
 				height -= BRIDGE_LEPTON_HEIGHT;
 			}
+		}
+
+		// A jump jet about to touch down on a cell another jump jet holds climbs away instead (JumpjetLocomotionClass, 0x54BA30).
+		if (height == 0 && Relocate_If_Claimed(HeadToCoord.As_Cell())) {
+			return;
 		}
 
 		if (height == 0) {
@@ -706,17 +883,6 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			LinkedTo->Assign_Destination(NULL);
 			LinkedTo->Per_Cell_Process(PCP_END);
 
-			// A vehicle let go in the air crushes what is under it, may then take its drop damage, and is
-			// let go for good so that it can hand back its own locomotor (JumpjetLocomotionClass, 0x54C9FE).
-			if (crashing) {
-				LinkedTo->Crush_On_Landing();
-				LinkedTo->IsCrashing = false;
-				LinkedTo->IsLetGoByLocomotor = true;
-				if (LinkedTo->IsActive && !LinkedTo->IsInLimbo) {
-					LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
-				}
-			}
-
 			if (LinkedTo != NULL && LinkedTo->IsActive && !LinkedTo->IsInLimbo && !LinkedTo->IsFalling) {
 				LinkedTo->Look();
 				CurrentState = GROUNDED;
@@ -729,17 +895,135 @@ void JumpjetLocomotionClass::Process_Descent(void)
 		stop = false;
 	}
 
+	// A deploying unit whose landing is blocked or on water tries only the cells around it, and cancels the deploy when none fits.
+	if (stop && deploy_landing) {
+		UnitClass * unit = static_cast<UnitClass *>(LinkedTo);
+		Cell const landing = unit->Deploy_Landing_Cell();
+		if (landing != CELL_NONE) {
+			Move_To(Map[landing].Center_Coord());
+		} else {
+			if (IsLanding) {
+				LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+				IsLanding = false;
+			}
+			unit->IsLandingToDeploy = false;
+			unit->Assign_Mission(MISSION_GUARD);
+			unit->Assign_Destination(NULL);
+			HeadToCoord = COORD_NONE;
+			IsMoving = false;
+			CurrentSpeed = 0;
+			TargetSpeed = 0;
+			CurrentState = HOVERING;
+		}
+		return;
+	}
+
 	if (stop) Stop_Moving();
 }
 
 
 /// <summary>
-/// Handles the unknown flight state.
-/// The state has a slot in the machine but asks for no processing of its own.
+/// Handles the crashing flight state.
+/// A vehicle let go in the air drops straight down, by its crash speed each frame; a held vehicle's
+/// crash speed grows by one lepton a frame. On touching down it crushes what is under it and becomes
+/// an ordinary grounded object.
 /// </summary>
-void JumpjetLocomotionClass::Process_Unknown(void)
+void JumpjetLocomotionClass::Process_Crashing(void)
 {
+	// The fall is truncated to whole leptons (JumpjetLocomotionClass, 0x54CAD2).
+	int const top = LinkedTo->PositionCoord.Z;
+	Coord fallen = LinkedTo->PositionCoord;
+	fallen.Z = static_cast<int>(fallen.Z - CrashSpeed);
+	if (LinkedTo->IsAttackedByLocomotor) {
+		CrashSpeed += 1.0;
+	} else {
+		// A vehicle that crashed on its own keeps turning on the spot, 45 units of a 256 circle each frame (0x54CB35).
+		Facing.Set_Desired(Facing.Current() + DirType(0x2d00));
+	}
+	LinkedTo->Set_Coord(fallen);
 
+	// A fall that passes down through the height of a bridge deck ends on the deck, and any other fall
+	// ends on the ground (JumpjetLocomotionClass, 0x54CA90).
+	bool on_deck = false;
+	if (Map[LinkedTo->Get_Coord()].IsUnderBridge) {
+		int const deck = Map.Get_Height_GL(LinkedTo->PositionCoord) + BRIDGE_LEPTON_HEIGHT;
+		on_deck = top >= deck && deck > LinkedTo->PositionCoord.Z;
+	}
+	if (!on_deck && LinkedTo->HeightAGL > 0) {
+		return;
+	}
+
+	Coord landed = LinkedTo->PositionCoord;
+	landed.Z = Map.Get_Height_GL(landed) + (on_deck ? BRIDGE_LEPTON_HEIGHT : 0);
+
+	// A vehicle that crashed on its own, rather than being let go by a locomotor warhead, ends where it lands:
+	// it explodes and is removed, and crushes nothing (JumpjetLocomotionClass, 0x54D019, and notice 0x117C).
+	// A soldier plays its last air death sequence there, and stays on the ground until the sequence ends.
+	if (!LinkedTo->IsAttackedByLocomotor && LinkedTo->LetGoBy == NULL && LinkedTo->LetGoByHouse == NULL) {
+		if (LinkedTo->RTTI == RTTI_UNIT) {
+			LinkedTo->Set_Coord(landed);
+			IsLanding = false;
+			static_cast<UnitClass *>(LinkedTo)->Land_Crashed();
+			return;
+		}
+		if (LinkedTo->RTTI == RTTI_INFANTRY) {
+			LinkedTo->Set_Coord(landed);
+			IsLanding = false;
+			CurrentSpeed = 0;
+			TargetSpeed = 0;
+			FlightLevel = 0;
+			HeadToCoord = COORD_NONE;
+			IsMoving = false;
+			CurrentState = CRASHED;
+			static_cast<InfantryClass *>(LinkedTo)->Land_Crashed();
+			return;
+		}
+	}
+	LinkedTo->Set_Speed(0.0);
+	LinkedTo->Mark(MARK_UP);
+	LinkedTo->IsOnBridge = on_deck;
+	LinkedTo->Set_Coord(landed);
+	HeadToCoord = COORD_NONE;
+	IsMoving = false;
+	FlightLevel = 0;
+
+	// The vehicle is off its cell while the landing is checked, so it does not block itself.
+	bool blocked = LinkedTo->Crush_On_Landing();
+	bool sinks = false;
+	if (!blocked && LinkedTo->Can_Enter_Cell(&Map[landed]) != MOVE_OK) {
+		bool const land_unit_on_water = LinkedTo->RTTI == RTTI_UNIT && !static_cast<UnitClass *>(LinkedTo)->Class->IsNaval
+			&& Map[landed].Land_Type() == LAND_WATER && !Map[landed].IsUnderBridge;
+		if (land_unit_on_water) {
+			sinks = true;
+		} else {
+			blocked = true;
+		}
+	}
+	LinkedTo->Mark(MARK_DOWN);
+	if (blocked) {
+		LinkedTo->Explode_On_Landing();
+		return;
+	}
+
+	if (sinks) {
+		UnitClass * unit = static_cast<UnitClass *>(LinkedTo);
+		unit->IsSinking = true;
+		// The kill is recorded here, so the completed sinking must not record it again (IsSinkingWreck).
+		unit->IsSinkingWreck = true;
+		LinkedTo->Credit_Let_Go_Kill(unit, false);
+		unit->Stun();
+	}
+
+	LinkedTo->Assign_Destination(NULL);
+	LinkedTo->Per_Cell_Process(PCP_END);
+	LinkedTo->IsCrashing = false;
+	LinkedTo->IsLetGoByLocomotor = true;
+
+	if (LinkedTo != NULL && LinkedTo->IsActive && !LinkedTo->IsInLimbo && !LinkedTo->IsFalling) {
+		LinkedTo->Look();
+		CurrentState = GROUNDED;
+		IsLanding = false;
+	}
 }
 
 
@@ -812,8 +1096,9 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		height_diff = height - ground_height;
 	}
 
+	// A crashing vehicle's height is set by Process_Crashing, not by the flight level.
 	bool moved = false;
-	if (height_diff < desired_height) {
+	if (CurrentState != CRASHING && CurrentState != CRASHED && height_diff < desired_height) {
 		int height_agl = LinkedTo->HeightAGL;
 		if ((Map[LinkedTo->Get_Coord()].IsUnderBridge) && !LinkedTo->IsOnBridge) {
 			if (LinkedTo->PositionCoord.Z >= Map.Get_Height_GL(LinkedTo->PositionCoord) + BRIDGE_LEPTON_HEIGHT) {
@@ -832,7 +1117,7 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		}
 		moved = true;
 	}
-	if (height_diff > desired_height) {
+	if (CurrentState != CRASHING && CurrentState != CRASHED && height_diff > desired_height) {
 		// A descent moves one JumpjetClimb step, or the rest of the way when less than a step is left.
 		if (desired_height <= height_diff - LinkedTo->TClass->JumpjetClimb) {
 			height = static_cast<int>(height - LinkedTo->TClass->JumpjetClimb);
@@ -896,7 +1181,16 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		building->Crossing_Firestorm(LinkedTo, true);
 	}
 
-	LinkedTo->PrimaryFacing.Set(Facing.Current());
+	// A held vehicle keeps its body facing while its locomotor heads for the holder (JumpjetLocomotionClass, 0x54D610).
+	// A hovering JumpJetTurn soldier turns toward its target instead of toward its heading.
+	if (!LinkedTo->IsAttackedByLocomotor) {
+		InfantryClass const * soldier = (LinkedTo->RTTI == RTTI_INFANTRY) ? static_cast<InfantryClass const *>(LinkedTo) : NULL;
+		if (soldier != NULL && soldier->Class->IsJumpJetTurn && CurrentState == HOVERING && LinkedTo->TarCom != NULL) {
+			LinkedTo->PrimaryFacing.Set(LinkedTo->Direction(LinkedTo->TarCom));
+		} else {
+			LinkedTo->PrimaryFacing.Set(Facing.Current());
+		}
+	}
 
 	if (need_to_mark) {
 		LinkedTo->Mark(MARK_DOWN);

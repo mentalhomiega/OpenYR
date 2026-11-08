@@ -1,0 +1,55 @@
+; A factory's production cameo (BuildingClass::Draw_Overlays) is shown only to a house whose country has spied on the
+; factory, as gamemd's BuildingClass::DrawInfoTipAndSpiedSelection (0x43E7B0) tests DisplayProductionTo against
+; CurrentPlayer's country bit alone. An observer or a defeated player with the whole map does not see it unless its
+; country spied on that factory. Two Yuri barracks of the first computer house (Africans) build a Yuri Clone: one is
+; spied on before the defeat, the other is not. The unspied one is placed in the local radar after the reveal, so the
+; player discovers it and can select it (TechnoClass::Select refuses an undiscovered or unlocked building). The defeat
+; ends the skirmish about 90 frames later (game over), so the observer shots come before that.
+; Run on XMP29U2.MAP as the Americans with the cheats that -Settings turns on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/observer-factory-cameo.txt -Settings "[Options]`r`nDebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
+; The window shots are TGA files in the user folder's Screenshots folder.
+; Expected, with gamemd's rule:
+;   obs-a1 (alive, spied barracks selected): the Yuri Clone's cameo, centred on the barracks.
+;   obs-a2 (alive, unspied barracks selected): no cameo.
+;   obs-b1 (defeated, observer, spied barracks selected): the cameo, as in obs-a1.
+;   obs-b2 (defeated, observer, unspied barracks selected): no cameo.
+; The observer lines show obiwan 1 and the selected count after each click; a count of 0 after a click means the click
+; selected nothing, so that shot proves nothing.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy YABRCK 50 26
+36 reveal
+37 view 52 28
+38 own E1 46 28
+45 enemy YABRCK 54 30
+600 own SPY 52 26
+605 spy SPY 50 26
+900 produceai YURI 50 26
+901 produceai YURI 54 30
+910 cellpixel 50 26
+911 cellpixel 54 30
+915 windowclick 512 180
+925 windowshot obs-a1-alive-spied-selected
+935 windowclick 512 300
+936 observer
+941 radarall YABRCK
+942 lockscan
+945 windowshot obs-a2-alive-unspied-selected
+950 factories
+1000 defeat player
+1005 observer
+1010 windowclick 512 180
+1015 observer
+1020 windowshot obs-b1-observer-spied-selected
+1030 windowclick 512 300
+1035 observer
+1036 radarall YABRCK
+1040 windowshot obs-b2-observer-unspied-selected
+1045 factories
+1050 quit

@@ -87,6 +87,35 @@ void Test_Ramp_Matches_Reference(void)
 	Check(mismatches == 0, "every ramp step matches the reference formula");
 }
 
+/// The ramp from the literal constants of gamemd's scheme builder (0068c500): the cosine angle
+/// starts at 0.19634954 for step 0 and at 0.34906585 + 0.08144870 * i after, the sine angle at
+/// 0.87266463 + 0.04654211 * i, and both products are truncated toward zero.
+void Test_Ramp_Matches_Gamemd_Constants(void)
+{
+	int mismatches = 0;
+	for (int hue = 0; hue < 256; hue += 5) {
+		for (int saturation = 0; saturation < 256; saturation += 3) {
+			for (int value = 0; value < 256; value += 3) {
+				HSVClass const base((unsigned char)hue, (unsigned char)saturation, (unsigned char)value);
+				for (int step = 0; step < 16; step++) {
+					double cosine_angle = (double)step * 0.08144869842640204 + 0.3490658503988659;
+					double const sine_angle = (double)step * 0.046542113386515455 + 0.8726646259971648;
+					if (step == 0) {
+						cosine_angle = 0.19634954084936207;
+					}
+					int const want_saturation = (int)(std::sin(sine_angle) * saturation);
+					int const want_value = (int)(std::cos(cosine_angle) * value);
+					HSVClass const got = Player_Ramp_Entry(base, step);
+					if (got.Get_Hue() != hue || got.Get_Saturation() != want_saturation || got.Get_Value() != want_value) {
+						mismatches++;
+					}
+				}
+			}
+		}
+	}
+	Check(mismatches == 0, "every ramp step matches the constants gamemd builds a color scheme from");
+}
+
 void Test_Ramp_Is_Sensible(void)
 {
 	// A bright base gives lighter steps with a lower saturation and a darker last step.
@@ -132,6 +161,40 @@ void Test_Distance(void)
 	// confuses measures small even when it is clearly different to normal vision.
 	RGBClass const green(0, 160, 0);
 	Check(Player_Color_Too_Close(red, green), "red and green are too close for a color-blind viewer");
+}
+
+void Test_Clash_Pins(void)
+{
+	// Player_Color_Distance feeds Net2_Color_Clashes through Player_Color_Too_Close, so a lobby
+	// colour decision depends on its last digits. These pairs pin the distance to the bit, the
+	// pair at (200,60,40) and (235,86,40) lying just above PLAYER_COLOR_MIN_DISTANCE and its
+	// neighbours on both sides. The bits were recorded before the colour-blind matrices were shared.
+	struct Pin
+	{
+		RGBClass First;
+		RGBClass Second;
+		unsigned long long Bits;
+		bool Close;
+	};
+	Pin const pins[] = {
+		{RGBClass(200, 60, 40), RGBClass(235, 86, 40), 0x402e0019a676233bULL, false},
+		{RGBClass(200, 60, 40), RGBClass(234, 86, 40), 0x402d64f67a16e1bfULL, true},
+		{RGBClass(200, 60, 40), RGBClass(235, 85, 40), 0x402db145dcc1ad49ULL, true},
+		{RGBClass(200, 60, 40), RGBClass(236, 86, 40), 0x402e9b3fcb287707ULL, false},
+		{RGBClass(200, 60, 40), RGBClass(235, 87, 40), 0x402e4fd1dc86c89bULL, false},
+		{RGBClass(255, 0, 0), RGBClass(0, 160, 0), 0x4028364e5ebbcda7ULL, true},
+		{RGBClass(0, 0, 0), RGBClass(255, 255, 255), 0x4058ffff9c3c1c1aULL, false},
+		{RGBClass(0x00, 0x72, 0xB2), RGBClass(0x56, 0xB4, 0xE9), 0x4038cee2e7877b0bULL, false},
+		{RGBClass(0xD5, 0x5E, 0x00), RGBClass(0xE6, 0x9F, 0x00), 0x40325917ad48c81bULL, false},
+		{RGBClass(255, 223, 94), RGBClass(250, 4, 4), 0x403ff3b4802e613eULL, false},
+	};
+	for (Pin const & pin : pins) {
+		double const distance = Player_Color_Distance(pin.First, pin.Second);
+		unsigned long long bits = 0;
+		std::memcpy(&bits, &distance, sizeof(bits));
+		Check(bits == pin.Bits, "a pinned distance is bit-identical");
+		Check(Player_Color_Too_Close(pin.First, pin.Second) == pin.Close, "a pinned pair keeps its clash decision");
+	}
 }
 
 void Test_Text_Round_Trip(void)
@@ -199,9 +262,11 @@ void Test_Presets(void)
 int main(void)
 {
 	Test_Ramp_Matches_Reference();
+	Test_Ramp_Matches_Gamemd_Constants();
 	Test_Ramp_Is_Sensible();
 	Test_Packing();
 	Test_Distance();
+	Test_Clash_Pins();
 	Test_Text_Round_Trip();
 	Test_Presets();
 

@@ -169,6 +169,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		*/
 		Coord ExitCoordinate;
 
+		// Set once an INI gives ExitCoord, so a later INI that omits the key keeps the value. Not saved; Post_Load infers it for a loaded type.
+		bool IsExitCoordSet;
+
+		// The offset from the structure's center that beams and bolts aimed at it end on (the rules' TargetCoordOffset).
+		Coord TargetCoordOffset;
+
 		/*
 		**	When determine which cell to head toward when exiting a building, use the
 		**	list elaborated by this variable. There are directions of exit that are
@@ -337,6 +343,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		ShapeSet const * DeployingAnim;
 
 		/*
+		 * This is the shape data drawn in place of the building's normal artwork while a unit that
+		 * jumps or hovers leaves through the roof. It takes the place of DeployingAnim for that exit.
+		 */
+		ShapeSet const * RoofDeployingAnim;
+
+		/*
 		 * This is the shape data drawn over a factory's doorway while it unloads, so that
 		 * whatever is passing through appears to be moving through the door.
 		 */
@@ -347,6 +359,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * leaves through the roof. It takes the place of UnderDoorAnim for that exit.
 		 */
 		ShapeSet const * UnderRoofDoorAnim;
+
+		/*
+		 * This is the shape data a LeaveRubble structure leaves behind in place of frame 3 of its
+		 * own image. Its first frame is the rubble, and it casts no shadow.
+		 */
+		ShapeSet const * RubbleShape;
 
 		/*
 		 * This is the shape data for a factory's door, animated open and shut as the building
@@ -754,9 +772,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsSensorArray;
 
-		// While a GapGenerator=yes structure has power, it shrouds the map around it for players who are not its owner's allies.
-		bool IsGapGenerator;
-
 		// A Bunker=yes structure holds one of its owner's Bunkerable vehicles, which fights from inside it.
 		bool IsBunker;
 
@@ -772,6 +787,15 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// Played as the structure starts to build up.
 		VocType BuildupSound;
+
+		// Played as the structure is sold or packs up into its vehicle.
+		VocType PackupSound;
+
+		// The announcer line the capturing player hears when an engineer takes this NeedsEngineer structure, or -1 for none.
+		int CaptureEvaEvent;
+
+		// A HasRadialIndicator structure with this set shows a blinking ring and a growing ring in place of the steady one.
+		bool IsConcentricRadialIndicator;
 
 		// Played where a unit this structure produces appears, after the unit's own CreateSound.
 		VocType CreateUnitSound;
@@ -848,9 +872,8 @@ class BuildingTypeClass : public TechnoTypeClass
 		// The frames each smoke system a harvester's payout starts at a refinery lives for.
 		int RefinerySmokeFrames;
 
-		// The EVA events announced to the player who captures a NeedsEngineer structure of this type and to the one who loses it, as event names; empty for none (CaptureEvaEvent, Ares LostEvaEvent).
-		std::string CaptureEvaEvent;
-		std::string LostEvaEvent;
+		// The announcer line the player who loses a NeedsEngineer structure of this type hears, or -1 for the stock line (Ares LostEvaEvent).
+		int LostEvaEvent;
 
 		// The string table labels shown to the player who captures and to the one who loses such a structure (Ares Message.Capture, Message.Lost).
 		std::string MessageCapture;
@@ -1046,29 +1069,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsTurretAnimExclusive;
 
-		/*
-		 * How one part of a building's voxel turret recoils when the building fires: the distance it
-		 * slides back in leptons, and the frames it spends compressing, holding and recovering. A
-		 * part with no travel does not move.
-		 */
-		struct RecoilControlType {
-			RecoilControlType(void) : Travel(2), CompressFrames(1), HoldFrames(1), RecoverFrames(1) {}
-
-			int Travel;
-			int CompressFrames;
-			int HoldFrames;
-			int RecoverFrames;
-		};
-
-		/*
-		 * If this building's turret recoils when it fires, then this flag will be true. Only then
-		 * do its turret body and barrel slide back, by the travel of each part.
-		 */
-		bool IsTurretRecoil;
-
-		RecoilControlType TurretRecoilControl;
-		RecoilControlType BarrelRecoilControl;
-
 		/// Unused
 		bool UnusedBTypeBool1;
 
@@ -1262,6 +1262,8 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool Can_Plant_C4(void) const {return(IsCanC4 && !IsInvisibleInGame);}
 		// gamemd's IsStrange for a structure: it undeploys into a vehicle and covers one cell (BuildingTypeClass::IsVehicle, 0x465D40).
 		bool Is_Single_Cell_Vehicle(void) const {return(UndeploysInto != NULL && Width() == 1 && Height(false) == 1);}
+		bool Is_Absorber(void) const {return(IsInfantryAbsorb || IsUnitAbsorb);}
+		bool Is_Walk_In_Facility(void) const {return(IsGrinding || Is_Absorber());}
 		virtual int Raw_Cost(void) const override;
 
 		Cell const * Exit_List(void) const;
@@ -1328,6 +1330,7 @@ class BuildingTypeClass : public TechnoTypeClass
 		static Cell const ExitLists[BSIZE_COUNT][30];
 
 		void Init_Anim(BStateType state, int start, int count, int rate) const;
+		Coord Default_Exit_Coord(void) const;
 };
 
 inline BuildingTypeClass * AbstractClass::As_BuildingTypeClass(void) { return(dynamic_cast<BuildingTypeClass *>(this)); }

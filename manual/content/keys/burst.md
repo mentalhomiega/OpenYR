@@ -1,7 +1,7 @@
 ---
 key: Burst
 summary: How many shots the weapon fires in quick succession before it waits out its full reload.
-see_also: ["ROF", "BurstDelay0", "PrimaryFireFLH", "VoxelBarrelOffsetToBarrelEnd", "FiringSyncFrame1"]
+see_also: ["ROF", "BurstDelay0", "PrimaryFireFLH", "VoxelBarrelOffsetToBarrelEnd", "FiringSyncFrame0"]
 when_omitted:
   kind: value
   value: "1"
@@ -13,10 +13,9 @@ A burst is a run of shots with short gaps between them. After the last shot of t
 [MyTwinCannon] ; example WeaponType
 Burst=2
 ROF=60        ; the wait after the second shot, not after each one
-BurstDelay0=4 ; frames between the first shot and the second
 ```
 
-The gap after each shot but the last comes from the weapon's [`BurstDelay0`](/keys/burstdelay0/) to [`BurstDelay3`](/keys/burstdelay3/), chosen by the shot just fired: `BurstDelay0` after the first shot, `BurstDelay1` after the second, and so on. An entry left at `-1` gives a random three to five frames. So does every gap after the fifth or a later shot, because no entry covers it.
+The gap after each shot but the last is a random three to five frames. A vehicle can set it with [`BurstDelay0`](/keys/burstdelay0/) to [`BurstDelay3`](/keys/burstdelay3/) in its own section, chosen by the shot just fired: `BurstDelay0` after the first shot, `BurstDelay1` after the second, and so on. An entry left at `-1` keeps the random gap, and so does every gap after the fifth or a later shot, because no entry covers it.
 
 Two cases never use the short gap:
 

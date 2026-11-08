@@ -20,6 +20,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "queue.h"
+#include "replay.h"
 #include "savemgr.h"
 #include "session.h"
 #include "spawner.h"
@@ -27,7 +28,6 @@
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uiview.h"
 
 #include <string>
@@ -103,6 +103,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.ShowHidden = on;
 		}
 
+		virtual void Set_Show_Defence_Range(bool on) override
+		{
+			Options.ShowDefenceRange = on;
+		}
+
 		virtual void Set_Difficulty(int difficulty) override
 		{
 			Options.Difficulty = difficulty;
@@ -131,6 +136,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Debug_Mode(bool on) override
 		{
 			Debug_Mode_Set(on);
+		}
+
+		virtual void Set_Record_Replays(bool on) override
+		{
+			Replay_Set_Recording(on);
 		}
 
 		virtual void Set_Autosave_Interval(int frames) override
@@ -186,6 +196,8 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.Coasting = (Options.ScrollMethod == 0);
 	state.EdgeScroll = Options.AutoScroll;
 	state.ShowHidden = Options.ShowHidden;
+	state.ShowDefenceRange = Options.ShowDefenceRange;
+	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.InGame = GameActive;
 	// A watching house has no speed to set; gamemd hides the speed slider from its observer.
 	state.HasSpeed = !(GameActive && (Session.Type == GAME_INTERNET || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
@@ -195,33 +207,22 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	Fetch_Names(state.SpeedNames, GameSpeedNames, OptionsClass::MAX_SPEED_SETTING);
 	Fetch_Names(state.ScrollNames, GameScrollSpeedNames, OptionsClass::MAX_SCROLL_SETTING);
 	Fetch_Names(state.DetailNames, GameDetailLevelNames, OptionsClass::MAX_DETAIL_SETTING);
-	Fetch_Names(state.DifficultyNames, GameDifficultyNames, OptionsClass::MAX_DIFFICULTY_SETTING);
+	state.DifficultyNames = UI_Difficulty_Names();
 
 	state.AltToRally = Options.AltToRally;
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
 	state.AircraftBodyPick = Options.AircraftBodyPick;
 	state.SidebarSorting = Options.SidebarSorting;
 	state.DebugMode = Options.DebugMode;
+	state.RecordReplays = Replay_Is_Recording_Enabled();
 
-	static int const intervals[] = {0, 5400, 10800, 21600};
 	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;
-	state.Autosave = -1;
-	for (int frames : intervals) {
-		if (frames == current) {
-			state.Autosave = (int)state.Autosaves.size();
-		}
-		UIGameControlsChoice choice;
-		choice.Value = frames;
-		choice.Label = (frames > 0) ? std::to_string(frames) + " frames" : std::string("Off");
-		state.Autosaves.push_back(choice);
-	}
-	if (state.Autosave < 0) {
-		UIGameControlsChoice choice;
-		choice.Value = current;
-		choice.Label = std::to_string(current) + " frames";
-		state.Autosave = (int)state.Autosaves.size();
-		state.Autosaves.push_back(choice);
-	}
+	state.Autosave = Fill_Choices(state.Autosaves, {
+		{0, "Off"},
+		{5400, "5400 frames"},
+		{10800, "10800 frames"},
+		{21600, "21600 frames"},
+	}, current, "%d frames");
 }
 
 
@@ -239,23 +240,14 @@ std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(boo
 
 void UI_Game_Controls_Dialog(void)
 {
-	UIGameControlsState state;
-	UI_Game_Controls_State(state);
-
-	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_GAME);
-	if (presenter.Settings_Tab() != UI_TAB_NONE) {
-		presenter.State.LeaveLabel = UI_Settings_Back_Label();
-		presenter.State.Extras = true;
-	}
-	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+	std::unique_ptr<UIGameControlsPresenterClass> presenter = UI_Game_Controls_New_Presenter(false);
+	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
 
-	if (presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND) {
+	if (presenter->Next == UIGameControlsPresenterClass::NEXT_SOUND) {
 		SpecialDialog = SDLG_SOUND;
-	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
+	} else if (presenter->Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
 		SpecialDialog = SDLG_KEYBOARD;
 	}
 }

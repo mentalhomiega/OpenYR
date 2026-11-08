@@ -177,18 +177,18 @@ bool VocClass::Fill_In(CCINIClass const &ini)
 
 
 /// <summary>
-/// Plays this sound effect at the volume and pan specified.
-/// The volume requested is scaled by the player's sound effect option setting, so the
-/// sound falls silent when the effects are turned off.
+/// Plays this sound effect at the volume and pan specified, in the group's mix.
+/// The group's option slider scales the sound, so it falls silent when that slider is at zero.
 /// </summary>
 /// <param name="vol">The volume to play at, where 1.0 is this sound's own full volume.</param>
 /// <param name="pan">The pan, from -100 at the left to 100 at the right.</param>
 /// <param name="no_attack">Skips the attack samples, for a loop coming back into range.</param>
+/// <param name="group">The mix to play in, which sets the option slider that applies.</param>
 /// <returns>The handle of the playing sound, or a null handle if none was played.</returns>
-AudioHandle VocClass::Play(float vol, int pan, bool no_attack)
+AudioHandle VocClass::Play(float vol, int pan, bool no_attack, AudioGroupType group)
 {
-	if (Options.SoundVolume > 0.0 && vol > 0.0 && Can_Play() && AudioEngine.Is_Available()) {
-		return(AudioEngine.Play_Event(Type, AUDIO_GROUP_SFX, Effect_Level(vol), Pan_Level(pan), no_attack));
+	if (AudioEngine.Group_Gain(group) > 0.0f && vol > 0.0 && Can_Play() && AudioEngine.Is_Available()) {
+		return(AudioEngine.Play_Event(Type, group, Effect_Level(vol), Pan_Level(pan), no_attack));
 	}
 	return(AudioHandle());
 }
@@ -213,7 +213,28 @@ AudioHandle VocClass::Play_Voice(float vol)
 bool LogSoundEffects = false;
 
 
-AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handle)
+// Plays the sound without a log line. The caller has checked voc and the shellmap scope.
+static AudioHandle Play_Effect(VocType voc, float volume, int pan, AudioHandle * handle, AudioGroupType group)
+{
+	VocClass & sound = *Vocs[voc];
+
+	if (handle != nullptr && handle->Is_Valid()) {
+		if (handle->Type() == &sound.Type_Data()) {
+			handle->Retarget(Effect_Level(volume), Pan_Level(pan));
+			return(*handle);
+		}
+		handle->Stop();
+	}
+
+	AudioHandle played = sound.Play(volume, pan, false, group);
+	if (handle != nullptr) {
+		*handle = played;
+	}
+	return(played);
+}
+
+
+AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handle, AudioGroupType group)
 {
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
 		return(AudioHandle());
@@ -225,21 +246,23 @@ AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handl
 	if (LogSoundEffects) {
 		DebugString("Sound: %s\n", Voc_Name(voc));
 	}
-	VocClass & sound = *Vocs[voc];
+	return(Play_Effect(voc, volume, pan, handle, group));
+}
 
-	if (handle != nullptr && handle->Is_Valid()) {
-		if (handle->Type() == &sound.Type_Data()) {
-			handle->Retarget(Effect_Level(volume), Pan_Level(pan));
-			return(*handle);
-		}
-		handle->Stop();
-	}
 
-	AudioHandle played = sound.Play(volume, pan);
-	if (handle != nullptr) {
-		*handle = played;
+// At zero the reply is not started, so the sound log shows nothing for it.
+static bool Unit_Voice_Audible(void)
+{
+	return(AudioEngine.Group_Gain(AUDIO_GROUP_UNIT_VOICE) > 0.0f);
+}
+
+
+AudioHandle Unit_Voice_Effect(VocType voc)
+{
+	if (!Unit_Voice_Audible()) {
+		return(AudioHandle());
 	}
-	return(played);
+	return(Sound_Effect(voc, 1.0f, SOUND_PAN_CENTER, nullptr, AUDIO_GROUP_UNIT_VOICE));
 }
 
 
@@ -308,7 +331,21 @@ float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & 
 }
 
 
-AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle)
+// Returns true when volume is zero, after stopping and clearing a valid handle.
+static bool Stop_If_Silent(float volume, AudioHandle * handle)
+{
+	if (volume <= 0.0f) {
+		if (handle != nullptr && handle->Is_Valid()) {
+			handle->Stop();
+			handle->Clear();
+		}
+		return(true);
+	}
+	return(false);
+}
+
+
+AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle, AudioGroupType group)
 {
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
 		return(AudioHandle());
@@ -320,20 +357,26 @@ AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle)
 
 	int pan;
 	float volume = Calculate_Volume_And_Pan(coord, sound.Type_Data(), pan);
-	if (volume <= 0.0f) {
-		if (handle != nullptr && handle->Is_Valid()) {
-			handle->Stop();
-			handle->Clear();
-		}
+	if (Stop_If_Silent(volume, handle)) {
 		return(AudioHandle());
 	}
 
-	bool const logging = LogSoundEffects;
-	LogSoundEffects = false;
-	AudioHandle played = Sound_Effect(voc, volume, pan, handle);
-	LogSoundEffects = logging;
+	// Same shellmap silence as the logging overload, without its second log line.
+	AudioHandle played;
+	if (!Shellmap_In_Scope()) {
+		played = Play_Effect(voc, volume, pan, handle, group);
+	}
 	Track_Positional(played, coord, volume, pan);
 	return(played);
+}
+
+
+AudioHandle Unit_Voice_Effect(VocType voc, Coord const & coord)
+{
+	if (!Unit_Voice_Audible()) {
+		return(AudioHandle());
+	}
+	return(Sound_Effect(voc, coord, nullptr, AUDIO_GROUP_UNIT_VOICE));
 }
 
 
@@ -345,11 +388,7 @@ AudioHandle Sound_Effect_Fixed(VocType voc, Coord const & coord, AudioHandle * h
 	}
 	int pan;
 	float volume = Calculate_Volume_And_Pan(coord, Vocs[voc]->Type_Data(), pan);
-	if (volume <= 0.0f) {
-		if (handle != nullptr && handle->Is_Valid()) {
-			handle->Stop();
-			handle->Clear();
-		}
+	if (Stop_If_Silent(volume, handle)) {
 		return(AudioHandle());
 	}
 	return(Sound_Effect(voc, volume, pan, handle));
@@ -359,6 +398,15 @@ AudioHandle Sound_Effect_Fixed(VocType voc, Coord const & coord, AudioHandle * h
 bool Voc_Never_Ends(VocType voc)
 {
 	return(voc != VOC_NONE && voc < Vocs.Count() && Vocs[voc]->Type_Data().Never_Ends());
+}
+
+
+void Follow_Sound(VocType voc, Coord const & coord, AudioHandle * handle)
+{
+	if (LogSoundEffects) {
+		DebugString("Sound follows: %s at %d,%d\n", Voc_Name(voc), coord.As_Cell().X, coord.As_Cell().Y);
+	}
+	Play_If_In_Range(voc, coord, handle, !Voc_Never_Ends(voc));
 }
 
 
@@ -390,6 +438,16 @@ AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * han
 	}
 	*handle = sound.Play(volume, pan, !start);
 	return(*handle);
+}
+
+
+AudioHandle Start_Placed_Sound(VocType voc, Coord const & coord, AudioHandle * handle)
+{
+	if (handle != nullptr && voc != VOC_NONE && voc < Vocs.Count() && handle->Is_Valid() && handle->Type() != &Vocs[voc]->Type_Data()) {
+		handle->Stop();
+		handle->Clear();
+	}
+	return(Play_If_In_Range(voc, coord, handle, true));
 }
 
 
@@ -529,6 +587,7 @@ void Stop_All_Sound_Effects(void)
 	AmbientSounds.Clear();
 	if (AudioEngine.Is_Available()) {
 		AudioEngine.Events().Stop_Group(AUDIO_GROUP_SFX, 0);
+		AudioEngine.Events().Stop_Group(AUDIO_GROUP_UNIT_VOICE, 0);
 	}
 }
 

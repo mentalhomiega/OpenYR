@@ -298,7 +298,7 @@ The radar's background is a picture of every cell in the playable area. Each cel
 4. the color of the Tiberium growing there;
 5. otherwise, the tile's low color, scaled by the theater's [`LowRadarBrightness`](/keys/lowradarbrightness/) and halved. Both halves of the cell take that color, whatever its height. A cell with no tile record draws gray.
 
-Objects appear as blips over that picture, in the owning house's color. Disguised infantry use the local player's color instead.
+Objects appear as blips over that picture, in the owning house's color. Disguised infantry use the local player's color instead. In a cell under the local player's shroud, only an object whose house the local player controls draws a blip; the other objects there leave the pixel black.
 
 Where several objects share one radar pixel, only one blip is drawn, and the local player's objects take priority. An object in [limbo](/glossary/#limbo) has no blip. A structure's pixels that fall outside the radar are not drawn; a vehicle, infantryman or aircraft there is drawn on the nearest edge pixel instead. Which other objects appear at all is decided by the radar test in [cloaking and detection](/systems/cloaking/#on-the-radar).
 

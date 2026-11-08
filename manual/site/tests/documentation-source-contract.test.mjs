@@ -167,9 +167,10 @@ test('Drop pod superweapon placement draws on one shared 3-per-passenger attempt
 		source('code/super.cpp'),
 		'void SuperClass::Drop_Pods(Cell const & cell) const',
 	);
-	assert.match(dropPods, /keys\.DropPodMinimum >= 0 \? keys\.DropPodMinimum : Rule->DropPodInfantryMinimum;/);
-	assert.match(dropPods, /: Rule->DropPodInfantryMaximum;/);
-	assert.match(dropPods, /int count = Random_Pick\(minimum, maximum\);/);
+	assert.match(
+		dropPods,
+		/int count = Random_Pick\(Rule->DropPodInfantryMinimum, Rule->DropPodInfantryMaximum\);/,
+	);
 	assert.match(dropPods, /int attempts = 3 \* count;/);
 	assert.match(dropPods, /while \(toplace && attempts--\)/);
 });
@@ -469,7 +470,7 @@ test('The campaign handicap pair lives on the session, and the mission reader ne
 		functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'),
 		[
 			'Session.CampaignDifficulty = (DiffType)Options.Difficulty;',
-			'Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);',
+			'Session.CampaignCDifficulty = (DiffType)Opposite_Difficulty(Options.Difficulty);',
 		],
 		'the menu derives the pair the mission reader used to compute, ahead of the start',
 	);
@@ -497,9 +498,9 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 	assertOrdered(functionBody(source('code/spawner.cpp'), 'static bool Spawner_Resume(bool & gameloaded)'), [
 		'SpawnConfig.SaveGameName.empty()',
 		'Get_Savefile_Info(SpawnConfig.SaveGameName.c_str(), &info)',
-		'info.Get_Internal_Version() != ExpectedGameVersion',
+		'!info.Is_Expected_Version(ExpectedGameVersion)',
 		'type == GAME_IPX',
-		'SpawnConfig.Is_Playable(HouseTypes.Count(), Lobby_Color_Count(), fault)',
+		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
 		'Spawner_Seat_Humans();',
 		'Spawner_Wire_Network()',
 		'Session.LoadGame = true;',
@@ -602,7 +603,7 @@ test('An out-of-sync frame is reported before the players are asked to decide', 
 		'Report_Out_Of_Sync(mismatches, mismatch_count, CRC, ARRAY_SIZE(CRC));',
 		'Multiplayer_Load_Is_Pending()',
 		'DesyncDialog.Run()',
-		'Destroy_Connection(id, -1);',
+		'Destroy_Connection_And_Frame_Sync(id, -1);',
 		'Sign_Off_Match();',
 	], 'the report describes the frame before any decision changes the session');
 });
@@ -655,7 +656,7 @@ test('A match against other machines is assembled whole and wired to its network
 	const spawner = source('code/spawner.cpp');
 
 	assertOrdered(functionBody(spawner, 'bool Spawner_Prepare(bool & gameloaded)'), [
-		'SpawnConfig.Is_Playable(HouseTypes.Count(), Lobby_Color_Count(), fault)',
+		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
 		'Spawner_Setup_Session();',
 		'SpawnConfig.Session_Identity_CRC()',
 		'Session.Type == GAME_INTERNET && !Spawner_Wire_Network()',
@@ -733,9 +734,13 @@ test('The scenario file is kept from its first read and carried in the save', ()
 
 	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
 		'Scen->SourceFile.Clear();',
+		'Read_Mission_Files();',
+	], 'a generated map holds no file, and the mission files are read after it');
+
+	assertOrdered(functionBody(scenario, 'static void Read_Mission_Files(void)'), [
 		'Scen->SourceFile.Matches(buffer)',
 		'Load_Held_Scenario_File(mini, buffer, false);',
-	], 'a generated map holds no file, and the sidecar comes from the holder when it is the same file');
+	], 'the sidecar comes from the holder when it is the same file');
 
 	assert.match(
 		functionBody(scenario, 'void ScenarioClass::Serialize(SaveStreamClass & stream)'),
@@ -787,7 +792,7 @@ test('A map file may ask to be generated, and is built from the match seed', () 
 	], 'the generator writes its own entries over the requesting file before the scenario is read from it, and a file that fails to read stops the build');
 
 	const lighting = [...initMap.slice(0, initMap.indexOf('Read_Scenario_INI(ini, true)')).matchAll(/ini\.Put_Float\("Lighting", "(\w+)"/g)].map((match) => match[1]);
-	assert.deepEqual(lighting, ['Ambient', 'Red', 'Green', 'Blue', 'Ground', 'Level'], 'the key page names every [Lighting] entry the generator writes');
+	assert.deepEqual(lighting, ['Ambient', 'Red', 'Green', 'Blue', 'Ground', 'Level', 'IonAmbient', 'IonRed', 'IonGreen', 'IonBlue', 'IonGround', 'IonLevel'], 'the key page names every [Lighting] entry the generator writes');
 	const readScenario = functionBody(source('code/scenario.cpp'), 'bool ScenarioClass::Read_INI(CCINIClass const & ini)');
 	for (const key of lighting) {
 		assert.ok(readScenario.includes(`ini.Get_Float(LIGHTING, "${key}"`), `the scenario reads the [Lighting] ${key} the generator writes`);
@@ -878,8 +883,10 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 6, 'the Owner tests of the availability test, the buildable scan, the harvester scan (Country_Unit) and the three defense scans ask the seam');
-	assert.match(house, /required & Own_Mask\(\)/, 'RequiredHouses and ForbiddenHouses test the house\'s own country');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 2, 'the harvester scan (Country_Unit) and the shared defense scan (Collect_Anti_Defenses) ask the seam');
+	assert.match(header, /inline bool HouseClass::Is_Acted_Candidate\(T const \* type\) const\r?\n\{\r?\n\tint mask = Acted_Mask\(\);/, 'the availability test and the buildable scan ask the seam through Is_Acted_Candidate');
+	assert.match(house, /Is_Acted_Candidate\(builtype\)/, 'the availability test uses the shared candidate test');
+	assert.match(house, /Allows_Country_Mask\(Own_Mask\(\)\)/, 'RequiredHouses and ForbiddenHouses test the house\'s own country');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 
@@ -946,7 +953,7 @@ test('An AI trigger names its side by its position', () => {
 });
 
 test('The hunter-seeker comes from the acted side', () => {
-	const superweapon = source('code/super.cpp') + source('code/suprfire.cpp');
+	const superweapon = source('code/super.cpp');
 
 	assert.match(superweapon, /side->HunterSeeker/, 'the acted side names the drone');
 	assert.doesNotMatch(superweapon, /GDIHunterSeeker|NodHunterSeeker/, 'the legacy pair is not consulted');
@@ -969,22 +976,26 @@ test('A computer player draws a country from the lobby roster', () => {
 test('A lobby side entry carries its country', () => {
 	const lobby = source('code/ui/screens/netlobby/uinetlobbydlg.cpp');
 
-	assertOrdered(functionBody(source('code/houstype.cpp'), 'std::vector<int> HouseTypeClass::Lobby_Countries(void)'), [
-		'HouseTypes[index]->IsMultiplay',
-		'list.push_back(index);',
-	], 'the lobby lists the countries open to multiplayer');
-	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)'), [
-		'HouseTypeClass::Lobby_Countries()',
-		'option.Value = index;',
-		'if (index == Session.House) {',
+	assert.match(
+		functionBody(lobby, 'void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)'),
+		/UI_Fill_Multiplay_Sides\(state\.Sides, Session\.House, &state\.Side\);/,
+		'the side list is filled from the countries and positioned by the one the player holds');
+	assertOrdered(functionBody(source('code/ui/uienginehost.h'), 'void UI_Fill_Multiplay_Sides('), [
+		'UI_Multiplay_House_At(position)',
+		'option.Value = house;',
+		'house == current',
 	], 'each entry carries its country and the list is positioned by the country it holds');
+	assertOrdered(functionBody(source('code/ui/uienginehost.cpp'), 'int UI_Multiplay_House_At(int position)'), [
+		'HouseTypes[house]->IsMultiplay',
+		'return(house);',
+	], 'only countries a player can pick are listed');
 	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Set_Side(int index)'), [
 		'Net2Country_At(index)',
 		'Session.House = country;',
 	], 'the selection is read back through its country');
 	assertOrdered(functionBody(source('code/netdlg2.cpp'), 'int Net2Country_At(int index)'), [
-		'HouseTypeClass::Lobby_Countries()',
-		'return(list[index]);',
+		'HouseTypes[country]->IsMultiplay',
+		'return(country);',
 	], 'a row names the country standing at it');
 	const skirmish = source('code/ui/screens/skirmish/uiskirmishdlg.cpp');
 
@@ -995,7 +1006,7 @@ test('A lobby side entry carries its country', () => {
 	);
 	assert.match(
 		functionBody(skirmish, 'static void Remember_Preferences(UISkirmishState const & state)'),
-		/Session\.House = side;/,
+		/Session\.Set_Local_Look\(side >= 0 \? side : Session\.House,/,
 		'the first row remembers the country its entry carries',
 	);
 });
@@ -1135,9 +1146,6 @@ test('The deployment names the files the game reads', () => {
 	const config = functionBody(
 		source('code/deploymentconfig.cpp'),
 		'void DeploymentConfigClass::Read_INI(INIClass const & ini)',
-	) + functionBody(
-		source('code/deploymentconfig.cpp'),
-		'void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)',
 	);
 
 	for (const [key, member] of [
@@ -1245,10 +1253,10 @@ test('The sidebar sweep re-checks buildability behind its rules key', () => {
 });
 
 test('A harvester let out of a factory goes to work', () => {
-	const percell = functionBody(source('code/unit.cpp'), 'void UnitClass::Per_Cell_Process(PCPType why)');
+	const release = functionBody(source('code/unit.cpp'), 'void UnitClass::Break_Away_From_Contact(void)');
 
 	assertOrdered(
-		percell,
+		release,
 		['} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {', 'Assign_Mission(MISSION_HARVEST);'],
 		'the capability alone decides it, so an armed harvester is let out to work too',
 	);
@@ -1296,7 +1304,7 @@ test('A harvester reserves a free refinery only within reach and otherwise waits
 
 	assertOrdered(
 		harvest,
-		['Find_Docking_Bay(Class->Dock, false, true);', 'ScenarioInit++;', 'Find_Docking_Bay(Class->Dock, false, false);', 'ScenarioInit--;'],
+		['Find_Docking_Bay(Class->Dock, false, true);', 'ScenarioInitScope const scope;', 'Find_Docking_Bay(Class->Dock, false, false);'],
 		'the dock list is searched once for a free bay and once for any bay',
 	);
 
@@ -1308,7 +1316,7 @@ test('A harvester reserves a free refinery only within reach and otherwise waits
 
 	assert.match(
 		harvest,
-		/Straight_Line_Leptons\(Get_Coord\(\), anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
+		/Get_Coord\(\)\.Gamemd_Distance_To\(anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
 		'a harvester out of reach drives only when the nearest bay is over three cells away',
 	);
 });
@@ -1405,7 +1413,7 @@ test('A rally point is set with the plain click', () => {
 });
 
 test('An EM pulse can be refused by type', () => {
-	const read = functionBody(source('code/techtype.cpp'), 'bool TechnoTypeClass::Read_INI(CCINIClass const & ini)');
+	const read = functionBody(source('code/techtype.cpp'), 'void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)');
 
 	assertOrdered(
 		read,
@@ -1454,7 +1462,7 @@ test('A type can set how many pips its row has', () => {
 	const techtype = source('code/techtype.cpp');
 
 	assertOrdered(
-		functionBody(techtype, 'bool TechnoTypeClass::Read_INI(CCINIClass const & ini)'),
+		functionBody(techtype, 'void TechnoTypeClass::Read_Ammo_INI(CCINIClass const & ini)'),
 		['if (ini.Is_Present(Name(), "MaxPips")) {', 'MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);'],
 		'an absent entry leaves the length an earlier layer gave',
 	);
@@ -1463,9 +1471,9 @@ test('A type can set how many pips its row has', () => {
 		functionBody(techtype, 'int TechnoTypeClass::Max_Pips(void) const'),
 		[
 			'return(MaxPips.value_or(10));',
-			'return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(5)));',
-			'return(MaxPips.value_or(5));',
-			'return(std::min(MaxPassengers, MaxPips.value_or(5)));',
+			'return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(MaxAmmo)));',
+			'return(MaxPips.value_or(Fetch_RTTI() == RTTI_INFANTRYTYPE ? 3 : 5));',
+			'return(std::min(MaxPassengers, MaxPips.value_or(MaxPassengers)));',
 			'return(MaxPips.value_or(8));',
 		],
 		'every pip scale keeps its own length as the default',
@@ -1550,8 +1558,8 @@ test('A game played alone is paced by its own speed table', () => {
 	);
 	assert.match(
 		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
-		/FrameTimer = pacer\.Next_Wait\(Target_Frame_Rate\(\)\);/,
-		'and each frame waits whatever keeps the average on that rate',
+		/FineDeadline = deadline\.Arm\(Monotonic_Nanoseconds\(\), Target_Frame_Period\(\)\);/,
+		'and each frame ends on a deadline that keeps the average on that rate',
 	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'),
@@ -1577,18 +1585,17 @@ test('A game played alone is paced by its own speed table', () => {
 	assertOrdered(functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'), [
 		'static CDTimerClass<MillisecondSystemTimerClass> fps_timer;',
 		'LastFramesPerSecond = FramesThisSecond;',
-		'fps_timer = 1000;',
-	], 'frames are counted over a second of the millisecond clock, not sixty ticks of the old one');
+		'fps_timer = 960;',
+	], 'frames are counted over 960 ms of the millisecond clock, the length of the sixty-unit window in gamemd');
 });
 
 test('An insignificant unit dies without announcing it', () => {
-	assertOrdered(
-		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const'),
-		[
-			'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {',
-			'if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {',
-			'Speak(VOX_UNIT_LOST);',
-		],
+	assert.equal(
+		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const')
+			.replace(/\/\/[^\n]*/g, '')
+			.replace(/[\s]+/g, ' ')
+			.trim(),
+		'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) { Speak(VOX_UNIT_LOST); } }',
 		'the event and the voice are refused together',
 	);
 
@@ -1616,7 +1623,7 @@ test('A Tiberium overlay is chosen inside the type that owns it', () => {
 	);
 
 	assert.match(
-		functionBody(cell, 'void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const'),
+		functionBody(cell, 'RGBClass CellClass::Cell_Color(void) const'),
 		/Tiberium_Overlay_Here\(\*this, \*tiberium\)/,
 		'and the radar picks its color by the same rule',
 	);

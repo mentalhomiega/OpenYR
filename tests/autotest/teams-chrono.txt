@@ -10,7 +10,7 @@
 301 spawn MTNK 53 92
 305 grantai ChronoSphereSpecial
 306 grantai ChronoWarpSpecial
-310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-chrono.ini
+310 teamini teams-chrono.ini
 320 team TSTCHRT
 330 where MTNK
 400 where MTNK

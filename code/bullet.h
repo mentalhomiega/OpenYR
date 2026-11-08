@@ -33,6 +33,7 @@
 #pragma once
 
 #include "facing.h"
+#include "fly.h"
 #include "fuse.h"
 #include "object.h"
 #include "velocity.h"
@@ -92,6 +93,7 @@ class BulletClass : public ObjectClass
 
 		void Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright);
 		bool Is_Forced_To_Explode(Coord & coord) const;
+		bool Target_Is_Airborne(void) const;
 		void Bullet_Explodes(bool forced);
 		virtual int Shape_Number(void) const;
 		virtual LayerType In_Which_Layer(void) const override;
@@ -108,6 +110,11 @@ class BulletClass : public ObjectClass
 		void Detonate(Coord const & coord);
 		void Shrapnel(void);
 		void Nuke_Maker(void);
+		void Direct_Rock(void);
+		bool Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * warhead, bool direct_rocks);
+		void Web(Coord const & coord);
+		void Airburst(void);
+		void Split(void);
 		bool Start_Nuke_Blast(void);
 		bool Start_Pre_Impact_Anim(void);
 
@@ -133,6 +140,13 @@ class BulletClass : public ObjectClass
 	private:
 		// Every projectile of a Scalable=yes type that a vehicle has fired and that is still in flight.
 		static DynamicVectorClass<BulletClass *> ScalableBullets;
+
+		// The steps of AI(): one flight model each, then the outcome of the move.
+		void Fly_Vertical(Coord & coord, bool & forced, ImpactType & impact);
+		void Fly_Homing(Coord & coord, bool & forced, ImpactType & impact);
+		void Fly_Ballistic(Coord & coord, bool & forced, bool & collided, ImpactType & impact);
+		void Vanish_If_Off_Map(Coord & coord, bool & forced, ImpactType & impact) const;
+		void Resolve_Impact(Coord & coord, bool forced, bool collided, ImpactType impact);
 
 	public:
 
@@ -234,9 +248,6 @@ class BulletClass : public ObjectClass
 		 * reaches zero it is reloaded from the animation rate of the projectile type.
 		 */
 		unsigned char AnimRate;
-
-	public:
-		friend BulletClass *Create_Bullet(BulletTypeClass const *type, TechnoClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright);
 };
 
 

@@ -63,34 +63,6 @@ class FoggedObjectClass;
 */
 class InfantryClass;
 
-/*
- * The recoil of one part of a building's voxel turret, the turret body or the barrel. The
- * part slides back while it compresses, stays back while it holds, and returns while it
- * recovers. The state is not saved, so a save taken mid-recoil loads with the part at rest.
- */
-struct BuildingRecoilState {
-	enum Phase {
-		PHASE_IDLE,
-		PHASE_COMPRESSING,
-		PHASE_HOLDING,
-		PHASE_RECOVERING
-	};
-
-	BuildingRecoilState(void) : CurrentPhase(PHASE_IDLE), FramesLeft(0), TravelPerFrame(0.0f), TravelSoFar(0.0f) {}
-
-	void Fire(BuildingTypeClass::RecoilControlType const & control);
-	void Update(BuildingTypeClass::RecoilControlType const & control);
-
-	Phase CurrentPhase;
-	int FramesLeft;
-	float TravelPerFrame;
-
-	/*
-	 * How far the part is back from its rest position, in leptons along its own axis.
-	 */
-	float TravelSoFar;
-};
-
 class BuildingClass : public TechnoClass
 {
 		typedef TechnoClass BASECLASS;
@@ -155,6 +127,12 @@ class BuildingClass : public TechnoClass
 		CDTimerClass<FrameTimerClass> PlacementDelay;
 
 		/*
+		**	The frame (plus one) at which this structure began waiting for allied soldiers to leave the
+		**	cell it undeploys onto, or zero when it is not waiting.
+		*/
+		int UndeployWaitStart;
+
+		/*
 		 * These are the animations this building currently has running, one slot per BAnimType.
 		 */
 		AnimClass * Anims[BANIM_COUNT];
@@ -184,12 +162,6 @@ class BuildingClass : public TechnoClass
 		 * between them. If -1, then no turret is up at all.
 		 */
 		int TurretIndex;
-
-		/*
-		 * The recoil of the turret body and of the barrel, started when the building fires.
-		 */
-		BuildingRecoilState TurretRecoil;
-		BuildingRecoilState BarrelRecoil;
 
 		/*
 		 * If this building carries a spotlight, then this points to the light that sweeps the
@@ -318,6 +290,22 @@ class BuildingClass : public TechnoClass
 		Coord PrismTargetCoord;
 		int SupportingPrisms;
 
+		/*
+		 * The steps by which a Bunker=yes structure takes a vehicle in, in the order they run, as
+		 * gamemd's TankBunkerState (BuildingClass::UpdateBunker, 0x458E50) keeps them. Idle waits for the
+		 * vehicle to stop on the structure, and Bunkered holds it.
+		 */
+		enum BunkerStateType {
+			BUNKER_IDLE,
+			BUNKER_CHECK_OCCUPANTS,
+			BUNKER_ROTATE_TO_TRACK,
+			BUNKER_MOVE_ON_TRACK,
+			BUNKER_ROTATE_IN_BUNKER,
+			BUNKER_RAISE_WALLS,
+			BUNKER_BUNKERED
+		};
+		BunkerStateType BunkerState;
+
 		// Is this Overpowerable structure charged by enough soldiers to work on its own and fire its second weapon?
 		bool IsOverpowered;
 
@@ -422,6 +410,8 @@ class BuildingClass : public TechnoClass
 
 		void Create_Gap(void);
 		void Destroy_Gap(void);
+		void Toggle_Gap_Charge(void);
+		void Set_Gap_Charge(bool charged);
 
 		/*
 		 * These mark the cells of the cloaking grid around a cloak generator that its own field
@@ -472,6 +462,11 @@ class BuildingClass : public TechnoClass
 		int ProduceCashRemaining;			// Budget left to move; zero is spent and negative is unlimited.
 		bool IsProduceCashStartupPaid;
 
+		// Whether the animations were last drawn with the Force Shield tint. Not saved; a load clears it and the next AI sets it again.
+		bool IsShieldTinted;
+
+		// Whether the structure was under the Iron Curtain at its last AI. Not saved; the AI sets it again.
+		bool IsCurtainDrawn;
 		// ProduceCashDisplay text state: cash paid since the last text and the frame that text was shown. Display only, so not saved.
 		int ProduceCashShownPending;
 		int ProduceCashShownFrame;
@@ -535,8 +530,8 @@ class BuildingClass : public TechnoClass
 		virtual bool Is_Radar_Visible(DetectedType & detected) const override;
 		int Set_Turret_Frame(void);
 		void Set_Turret_Index(int index);
-		void Start_Turret_Recoil(void);
 		int Shape_Number(void) const;
+		int Body_Frame(int frames) const;
 		int Power_Output(void) const;
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
@@ -563,7 +558,7 @@ class BuildingClass : public TechnoClass
 		virtual int Sort_Y(void) const override;
 		virtual Coord Exit_Coord(void) const override;
 
-		Coord Voxel_Fire_Coord(int which, bool just_fired) const;
+		Coord Voxel_Fire_Coord(int which) const;
 
 		/*
 		**	Object entry and exit from the game system.
@@ -593,9 +588,14 @@ class BuildingClass : public TechnoClass
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual Rect Get_Render_Rect(void) override;
 		virtual void Draw_Radial_Indicator(void) const override;
+		// Draws the weapon range ring of a selected defence when the Show defence range option is on.
+		void Draw_Defence_Range(void) const;
+		virtual void Draw_Wrench_Icon(Rect const & cliprect) const override;
 		void Draw_Overlays(Point2D const & point, Rect const & cliprect) const;
 		void Begin_Mode(BStateType bstate);
 		virtual void Draw_Extras(Point2D &point, Rect &rect);
+		void Draw_Voxel_Turret_And_Barrel(Point2D const & xy, Rect & rect, Cell cell);
+		void Draw_Voxel_Barrel_With_Anim(Point2D const & xy, Rect & rect, Cell cell);
 		virtual DirType Aim_Direction(AbstractClass * target) const;
 		void Make_Fogged(DynamicVectorClass<FoggedObjectClass *> * fogged_objects = NULL, CellClass * cellptr = NULL, bool fade = false);
 		void Charge_Turret(void);
@@ -637,8 +637,14 @@ class BuildingClass : public TechnoClass
 		void Charging_AI(void);
 		void Rotation_AI(void) {}
 		void Factory_AI(void);
+		bool Start_Production_Of(TechnoTypeClass const & type);
 		void Repair_AI(void);
 		void Produce_Cash_AI(void);
+		void Update_Service_State(void);
+		void Update_Damage_Fires(void);
+		void Update_Gap_State(void);
+		void Update_Gattling_Spin(void);
+		bool Trigger_C4_Timeout(void);
 		void Show_Produced_Cash(int amount);
 		TechnoTypeClass const * Secret_Item(void) const;
 		void Animation_AI(void);
@@ -655,6 +661,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Toggle_Primary(void);
 		virtual bool Set_Owning_House(HouseClass * newowner, bool announce) override;
 		void Claim_Vacant_Primary(void);
+		bool Is_Same_Factory_Kind(BuildingClass const & other) const;
 		virtual unsigned entry_380(void); /// Returns 0. A reserved vtable slot that nothing implements.
 		void Turn_On(void);
 		void Turn_Off(void);
@@ -673,9 +680,10 @@ class BuildingClass : public TechnoClass
 		void Absorb(FootClass * object);
 		bool Release_Passenger(void);
 		bool Takes_Walk_Ins(FootClass const * object) const;
+		bool Holds_Absorbed(void) const {return(Class->Is_Absorber() && Cargo.How_Many() > 0);}
 		bool Can_Bunker(FootClass const * object) const;
 		bool Blocks_Cell(CellClass const * cell) const;
-		void Bunker_Up(FootClass * object);
+		void Update_Bunker(void);
 		void Bunker_Down(void);
 		void Bunker_Walls_Down_Anims(void);
 		void Garrison_AI(void);
@@ -688,6 +696,7 @@ class BuildingClass : public TechnoClass
 		int Flush_For_Placement(TechnoClass * techno, Cell const & cell);
 		void Enable_Cloak_Generator(void);
 		void Disable_Cloak_Generator(void);
+		void Collapse_Cloak_Field(void);
 		bool Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover);
 		void Disable_Sensor_Array(void);
 		void Enable_Sensor_Array(void);
@@ -704,6 +713,8 @@ class BuildingClass : public TechnoClass
 		virtual int Do_MISSION_MISSILE(void) override;
 		virtual int Do_MISSION_OPEN(void) override;
 		bool Can_Be_Undeployed(void);
+		virtual VocType Deploy_Voice(void) const override;
+		bool Undeploy_Cell_Ready(Cell const & cell);
 		virtual int Apparent_Brightness(int brightness = 1000) const override;
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		void Assign_Rally_Point(Cell const & cell);
@@ -738,9 +749,12 @@ class BuildingClass : public TechnoClass
 		void Create_Anim(char const * name, BAnimType anim, bool damaged, int delay);
 		void Detach_Anim(AnimClass * anim);
 		void End_Anim(BAnimType anim);
+		void Return_Bay_Anims_To_Idle(void);
 		void Set_Anim_Damage_State(bool damaged);
 		void Set_Anim_Drawer(ConvertClass * drawer, int brightness);
 		void Update_Anim_Appearance(void);
+		ConvertClass * Tinted_Converter(ConvertClass * converter) const;
+		ConvertClass * Anim_Converter(void) const;
 		void Update_Temporal_Anims(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
@@ -762,12 +776,46 @@ class BuildingClass : public TechnoClass
 		void Write_INI(CCINIClass & ini);
 
 	private:
+		void Destroy_Docked_Objects(void);
+		void Start_Destroy_Anim(void);
+		void Start_Destroy_Smoke(void);
 		void Drop_Debris(AbstractClass * source = NULL);
 		AircraftClass * Place_Free_Aircraft(AircraftTypeClass const * type);
 		void Dock_Free_Aircraft(AircraftClass * air);
 		void Place_Free_Unit(void);
 		void Produce_Cash_Startup(void);
 		int Exit_Naval_Object(TechnoClass * base);
+		int Exit_Aircraft(TechnoClass * base);
+		RadioMessageType Receive_Docking(RadioClass * from, intptr_t & param);
+		int Exit_Foot(TechnoClass * base);
+		int Exit_Weapons_Factory(TechnoClass * base);
+		int Exit_Vehicle_Door(TechnoClass * base);
+		int Exit_Infantry(TechnoClass * base);
+		int Exit_Refinery(TechnoClass * base);
+		int Exit_Structure(TechnoClass * base);
+		void Send_Computer_Unit_To_Guard(TechnoClass * base);
+		Coord Door_Coord(Cell const & exitcell) const;
+		bool Is_Damaged_Art(void) const;
+		std::vector<InfantryClass *> Take_Occupants(void);
+		bool Place_Beside_Structure(FootClass * who, SpeedType speed, bool keep_unplaced);
+		struct CapturedDocker {
+			TechnoClass * object;
+			bool tethered;
+		};
+		void Grant_Cloak_And_Clear_Spy_Bits(HouseClass * newowner);
+		void Announce_Owner_Change(HouseClass * newowner, bool announce);
+		std::vector<CapturedDocker> Hand_Over_Occupants(HouseClass * newowner);
+		void Abandon_Computer_Production(void);
+		void Leave_Yard_And_Lab_Lists(HouseClass * oldowner);
+		void Disable_Cloak_Sensor_And_Gap(void);
+		void Change_Techno_Owner(HouseClass * newowner, bool announce, bool capture);
+		void Enable_Cloak_And_Sensor(void);
+		void Update_Capture_Records(HouseClass * oldowner);
+		void Cancel_Placement_If_Yard_Lost(HouseClass * oldowner);
+		void Take_Over_Production(HouseClass * oldowner, bool capture);
+		void Join_Yard_And_Lab_Lists(HouseClass * newowner);
+		void Refresh_Factory_Lists(HouseClass * oldowner, HouseClass * newowner);
+		void Welcome_Captured_Dockers(std::vector<CapturedDocker> const & dockers);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.
@@ -777,6 +825,8 @@ class BuildingClass : public TechnoClass
 
 void Adjust_House_Power(HouseClass * house);
 BuildingClass * Find_Unit_Repair_Facility(HouseClass * house, TechnoClass * obj);
+BuildingClass const * Linked_Building_Underfoot(TechnoClass const * unit);
+void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 
 inline BuildingClass * AbstractClass::As_BuildingClass(void)
@@ -789,3 +839,10 @@ inline BuildingClass const * AbstractClass::As_BuildingClass(void) const
 {
 	return(dynamic_cast<BuildingClass const *>(this));
 }
+
+
+// Verdict of a laser fence post or firestorm wall on a mover entering its cell: MOVE_NO for an active
+// firestorm wall, otherwise nothing, with `skip` set when the building does not block. Shared by
+// UnitClass and InfantryClass.
+std::optional<MoveType> Fence_Wall_Verdict(BuildingClass const * building, bool & skip);
+

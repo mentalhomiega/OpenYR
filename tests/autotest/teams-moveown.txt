@@ -5,7 +5,7 @@
 1 teamtrace 1
 300 spawn MTNK 70 60
 301 spawn MTNK 71 60
-310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-moveown.ini
+310 teamini teams-moveown.ini
 320 team TSTMOVET
 330 where MTNK
 600 where MTNK

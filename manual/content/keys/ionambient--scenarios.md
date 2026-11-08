@@ -4,8 +4,8 @@ scope: scenarios
 label: Scenario lighting
 see_also: [Ambient, AmbientChangeRate, "system:ion-storms"]
 when_omitted:
-  kind: context-dependent
-  note: The value this scenario's Ambient key sets, read before it in the same section. With neither key present that is 1, full daylight.
+  kind: value
+  value: ".87"
 ---
 
 ```ini title="map file"

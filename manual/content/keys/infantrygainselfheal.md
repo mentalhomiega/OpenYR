@@ -15,3 +15,5 @@ InfantryGainSelfHeal=1
 ```
 
 A value of `0` or below adds nothing.
+
+A selected infantryman or organic vehicle shows a red cross beside its health bar while its owner has such a structure, blinking while it is hurt.

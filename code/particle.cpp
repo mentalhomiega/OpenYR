@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "particle.h"
 
@@ -30,6 +31,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "inline.h"
+#include "logic.h"
 #include "mouse.h"
 #include "partsys.h"
 #include "psystype.h"
@@ -48,6 +50,7 @@
 #include "zbuffer.h"
 
 #include "draw.hh"
+#include "gpudraw.h"
 
 #include <algorithm>
 
@@ -125,8 +128,8 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	if (Class->IsNormalized) {
 		Point2D delta(origin.X - target.X, origin.Y - target.Y);
 
-		float abs_vx = abs(MovementDirection.X * Speed);
-		float abs_vy = abs(MovementDirection.Y * Speed);
+		float abs_vx = abs((int)(MovementDirection.X * Speed));
+		float abs_vy = abs((int)(MovementDirection.Y * Speed));
 
 		float min_time = 9999.0f;
 
@@ -225,6 +228,54 @@ inline Vector3 Slope_Vector(Vector3 & vector, Coord const & coord, double length
 }
 
 
+// What a falling particle met when it was moved one step.
+struct ParticleStep {
+	Coord NewCoord;
+	int GroundHeight;
+	int BridgeHeight;
+	BridgeDeckCrossing Crossing;
+	bool Blocked;	// inside a wall or building on its cell; never set while crossing a bridge deck
+};
+
+/// <summary>
+/// Moves a particle one step and reports what the new position met.
+/// Used by particles that fall under gravity and glance off whatever they meet.
+/// </summary>
+/// <param name="position">Advanced by velocity.</param>
+/// <param name="velocity">Movement applied this step.</param>
+static ParticleStep Step_Particle_Over_Terrain(Vector3 & position, Vector3 const & velocity)
+{
+	Coord old_coord(position.X, position.Y, position.Z);
+	position += velocity;
+
+	ParticleStep step;
+	step.NewCoord = Coord(position.X, position.Y, position.Z);
+	step.GroundHeight = Map.Get_Height_GL(step.NewCoord);
+	step.BridgeHeight = step.GroundHeight + BRIDGE_LEPTON_HEIGHT;
+	step.Crossing = Map.Cross_Bridge_Deck(old_coord, step.NewCoord, step.BridgeHeight);
+
+	step.Blocked = false;
+	if (step.Crossing == DECK_CROSSING_NONE) {
+		CellClass * cellptr = &Map[step.NewCoord];
+		if (position.Z >= (double)step.GroundHeight && position.Z - 150.0f < (double)step.GroundHeight) {
+			BuildingClass * building = cellptr->Cell_Building();
+			if (building || cellptr->Has_Wall_Or_Gate()) {
+				step.Blocked = true;
+				if (building) {
+					if (building->Class->IsLaserFence && building->LaserFenceFrame >= 8) {
+						step.Blocked = false;
+					}
+					if (building->Considered_Vehicle()) {
+						step.Blocked = false;
+					}
+				}
+			}
+		}
+	}
+	return(step);
+}
+
+
 /// <summary>
 /// Handles the per frame logic for a gas particle.
 /// The cloud wanders sideways and sinks under gravity, glancing off the terrain and
@@ -246,15 +297,15 @@ void ParticleClass::Gas_Behavior_AI(void)
 				dy = (int)abs(Scen->RandomNumber()) % 3 - 1;
 			}
 			GasDrift += Point2D(dx, dy);
-			if (GasDrift.X < -5) {
-				GasDrift.X = -5;
-			} else if (GasDrift.X > 5) {
-				GasDrift.X = 5;
+			if (GasDrift.X < -2) {
+				GasDrift.X = -2;
+			} else if (GasDrift.X > 2) {
+				GasDrift.X = 2;
 			}
-			if (GasDrift.Y < -5) {
-				GasDrift.Y = -5;
-			} else if (GasDrift.Y > 5) {
-				GasDrift.Y = 5;
+			if (GasDrift.Y < -2) {
+				GasDrift.Y = -2;
+			} else if (GasDrift.Y > 2) {
+				GasDrift.Y = 2;
 			}
 		}
 
@@ -263,47 +314,12 @@ void ParticleClass::Gas_Behavior_AI(void)
 		velocity = Vector3(0, 0, -2);
 		velocity.Z -= Rule->Gravity;
 
-		Coord old_coord(position.X, position.Y, position.Z);
-		position += velocity;
-		Coord coord2(position.X, position.Y, position.Z);
-
-		int height_gl = Map.Get_Height_GL(coord2);
-		int height_bridge = height_gl + BRIDGE_LEPTON_HEIGHT;
-
-		CellClass * cellptr = &Map[coord2];
-		bool start_under_bridge = false;
-		bool end_under_bridge = false;
-		if (cellptr->IsUnderBridge || Map[old_coord].IsUnderBridge) {
-			if (coord2.Z >= height_bridge) {
-				if (old_coord.Z < height_bridge) {
-					end_under_bridge = true;
-				}
-			} else {
-				if (old_coord.Z >= height_bridge) {
-					start_under_bridge = true;
-				}
-			}
-		}
-
-		bool blocked = false;
-		if (!start_under_bridge && !end_under_bridge) {
-			if (position.Z >= (double)height_gl && position.Z - 150.0f < (double)height_gl) {
-				BuildingClass * building = cellptr->Cell_Building();
-				if (building || cellptr->Has_Wall_Or_Gate()) {
-					blocked = true;
-					if (building) {
-						if (building->Class->IsLaserFence && building->LaserFenceFrame >= 8) {
-							blocked = false;
-						}
-						if (building->Considered_Vehicle()) {
-							blocked = false;
-						}
-					}
-				} else {
-					blocked = false;
-				}
-			}
-		}
+		ParticleStep step = Step_Particle_Over_Terrain(position, velocity);
+		Coord coord2 = step.NewCoord;
+		int height_gl = step.GroundHeight;
+		bool start_under_bridge = (step.Crossing == DECK_CROSSING_FELL_ONTO);
+		bool end_under_bridge = (step.Crossing == DECK_CROSSING_ROSE_INTO);
+		bool blocked = step.Blocked;
 
 		if (height_gl > position.Z || start_under_bridge || end_under_bridge || blocked) {
 			Slope_Vector(velocity, coord2, 1);
@@ -436,47 +452,13 @@ void ParticleClass::Spark_Behavior_AI(void)
 	Vector3 position(coord.X, coord.Y, coord.Z);
 	velocity.Z -= Rule->Gravity;
 
-	Coord old_coord(position.X, position.Y, position.Z);
-	position += velocity;
-	Coord coord2(position.X, position.Y, position.Z);
-
-	int height_gl = Map.Get_Height_GL(coord2);
-	int height_bridge = height_gl + BRIDGE_LEPTON_HEIGHT;
-
-	CellClass * cellptr = &Map[coord2];
-	bool start_under_bridge = false;
-	bool end_under_bridge = false;
-	if (cellptr->IsUnderBridge || Map[old_coord].IsUnderBridge) {
-		if (coord2.Z >= height_bridge) {
-			if (old_coord.Z < height_bridge) {
-				end_under_bridge = true;
-			}
-		} else {
-			if (old_coord.Z >= height_bridge) {
-				start_under_bridge = true;
-			}
-		}
-	}
-
-	bool blocked = false;
-	if (!start_under_bridge && !end_under_bridge) {
-		if (position.Z >= (double)height_gl && position.Z - 150.0f < (double)height_gl) {
-			BuildingClass * building = cellptr->Cell_Building();
-			if (building || cellptr->Has_Wall_Or_Gate()) {
-				blocked = true;
-				if (building) {
-					if (building->Class->IsLaserFence && building->LaserFenceFrame >= 8) {
-						blocked = false;
-					}
-					if (building->Considered_Vehicle()) {
-						blocked = false;
-					}
-				}
-			} else {
-				blocked = false;
-			}
-		}
-	}
+	ParticleStep step = Step_Particle_Over_Terrain(position, velocity);
+	Coord coord2 = step.NewCoord;
+	int height_gl = step.GroundHeight;
+	int height_bridge = step.BridgeHeight;
+	bool start_under_bridge = (step.Crossing == DECK_CROSSING_FELL_ONTO);
+	bool end_under_bridge = (step.Crossing == DECK_CROSSING_ROSE_INTO);
+	bool blocked = step.Blocked;
 
 	bool sloped = true;
 	if (position.Z >= (float)height_gl && !start_under_bridge && !end_under_bridge && !blocked) {
@@ -643,13 +625,17 @@ void ParticleClass::Behavior_AI(void)
 /// railgun traces have no artwork -- they are plotted as a single lit pixel whose
 /// color is blended along the particle's color list and tested against the alpha
 /// and depth buffers. Particles hidden by the fog of war are skipped, and the low
-/// detail setting drops smoke and sparks entirely.
+/// detail setting drops smoke and sparks entirely. A particle that deals no damage is also
+/// skipped while the frame count is below the detail minimum.
 /// </summary>
 /// <param name="point">The screen position to draw the particle at.</param>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	if (Options.DetailLevel != 0 || Class->BehavesLike != BEHAVIOR_SMOKE && Class->BehavesLike != BEHAVIOR_SPARK) {
+	PerfScope particle_scope(PERF_DRAW_PARTICLES);
+	Perf_Count(PERF_COUNT_PARTICLES);
+	unsigned const min_frame_rate = Detail_Min_Frame_Rate();
+	if ((Class->Damage != 0 || LastFramesPerSecond >= min_frame_rate) && (Options.DetailLevel != 0 || Class->BehavesLike != BEHAVIOR_SMOKE && Class->BehavesLike != BEHAVIOR_SPARK)) {
 		if (Debug_Map || MainWindow == 0 || !Scen->Special.IsFogOfWar || !Map.Is_Fogged((Coord const &)PositionCoord)) {
 
 			if (Class->BehavesLike != BEHAVIOR_SPARK && Class->BehavesLike != BEHAVIOR_RAILGUN) {
@@ -698,7 +684,10 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 								green = (int)(green * alpha) >> 7;
 								blue = (int)(blue * alpha) >> 7;
 							}
-							LogicalSurface->Put_Pixel(pixel, (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue));
+							unsigned short const colour = (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue);
+							if (!GpuDraw_Pixel(*LogicalSurface, pixel, colour)) {
+								LogicalSurface->Put_Pixel(pixel, colour);
+							}
 						}
 					}
 				}
@@ -711,11 +700,11 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 
 
 /// <summary>
-/// Handles drifting a smoke particle for this game frame.
-/// The prevailing wind carries the smoke sideways while it settles toward the
+/// Handles drifting a gas particle for this game frame.
+/// The prevailing wind carries the gas sideways while it settles toward the
 /// ground, and it is never allowed to sink into the terrain.
 /// </summary>
-void ParticleClass::Smoke_Motion_AI(void)
+void ParticleClass::Gas_Motion_AI(void)
 {
 	Coord coord = Get_Coord();
 
@@ -746,12 +735,12 @@ void ParticleClass::Smoke_Motion_AI(void)
 
 
 /// <summary>
-/// Handles drifting a gas particle for this game frame.
-/// The cloud rises at its own speed while the prevailing wind and its accumulated
-/// drift push it sideways. A cloud that would rise up through a bridge deck is
+/// Handles drifting a smoke particle for this game frame.
+/// The puff rises at its own speed while the prevailing wind and its accumulated
+/// drift push it sideways. A puff that would rise up through a bridge deck is
 /// flagged for death instead of passing through it.
 /// </summary>
-void ParticleClass::Gas_Motion_AI(void)
+void ParticleClass::Smoke_Motion_AI(void)
 {
 	static const double _level_scale = 2.5;
 
@@ -817,16 +806,14 @@ void ParticleClass::Motion_AI(void)
 {
 	switch (Class->BehavesLike)
 	{
-		case PSYS_BEHAVIOR_GAS:
+		case BEHAVIOR_GAS:
+		case BEHAVIOR_WEAKGAS:
 			Gas_Motion_AI();
 			break;
-		case PSYS_BEHAVIOR_SMOKE:
+		case BEHAVIOR_SMOKE:
 			Smoke_Motion_AI();
 			break;
-		case PSYS_BEHAVIOR_WEAKGAS:
-			Smoke_Motion_AI();
-			break;
-		case PSYS_BEHAVIOR_FIRE:
+		case BEHAVIOR_FIRE:
 			Fire_Motion_AI();
 			break;
 		default:

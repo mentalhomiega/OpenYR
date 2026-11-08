@@ -88,6 +88,7 @@ class AnimClass : public ObjectClass, public StageClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual bool Limbo(void) override;
 		virtual void Delete_Me(void) override;
+		void Delete_Me_Silently(void);
 		virtual int Get_Height(void) const override;
 
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
@@ -183,6 +184,15 @@ class AnimClass : public ObjectClass, public StageClass
 		 * true. The building hides it when fogged, so the tactical map leaves it alone.
 		 */
 		bool IsBuildingAnim;
+
+		/*
+		**	This is set for the moment an animation that has played to its end is removed (gamemd's
+		**	AnimClass TimeToDie, set by AnimClass::Update 0x423AC0 before its UnInit). A building that
+		**	loses one of its slot animations restarts the follow-on animation only for one that ended
+		**	this way, as BuildingClass::AnimExpired (0x451B40) does. The removal runs at once, so the
+		**	flag is neither saved nor part of the checksum.
+		*/
+		bool TimeToDie;
 
 		// The animation plays its frames from last to first, as a Reverse=yes type does or as Play_Backward asks.
 		bool IsReversed;
@@ -330,7 +340,12 @@ class AnimClass : public ObjectClass, public StageClass
 		 * It is not saved, so a loaded animation holds a null handle.
 		 */
 		AudioHandle StartSoundHandle;
+
+		// The sound type Start played, or VOC_NONE when it played none. Each update re-aims that sound. Not saved.
+		VocType StartSoundVoc;
 };
 
 void Shorten_Attached_Anims(ObjectClass * obj);
 AnimType Anim_From_Name(char const * name);
+AnimClass * Spawn_Named_Anim(char const * name, Coord const & coord, int timedelay = 0, int zadjust = 0, ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER));
+void Spawn_Wake(Coord const & where);

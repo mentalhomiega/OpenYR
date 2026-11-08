@@ -171,6 +171,19 @@ ColorScheme::ColorScheme(const char *name, HSVClass &hsv, const PaletteClass & b
 }
 
 
+static void Free_Converters(ColorScheme & scheme)
+{
+	for (ColorScheme::TintedConverterEntry & entry : scheme.TintedConverters) {
+		delete entry.Converter;
+		delete entry.Palette;
+	}
+	scheme.TintedConverters.clear();
+
+	delete scheme.Converter;
+	scheme.Converter = NULL;
+}
+
+
 /// <summary>
 /// Rebuilds the scheme's light converter with a new tint.
 /// Use this routine when the ambient lighting changes; any converter built earlier is thrown
@@ -184,16 +197,7 @@ ColorScheme::ColorScheme(const char *name, HSVClass &hsv, const PaletteClass & b
 void ColorScheme::Build_Light_Converters(const PaletteClass & base, const PaletteClass & screenpalette, int r, int g, int b)
 {
 	ScreenPalette = screenpalette;
-	for (TintedConverterEntry & entry : TintedConverters) {
-		delete entry.Converter;
-		delete entry.Palette;
-	}
-	TintedConverters.clear();
-
-	if (Converter != NULL) {
-		delete Converter;
-		Converter = NULL;
-	}
+	Free_Converters(*this);
 
 	Converter = (LightConvertClass *)Build_Light_Converter(HSV, base, screenpalette, &Palette, *VisibleSurface, IntensityLevels, r, g, b, _indexes);
 }
@@ -232,9 +236,7 @@ ConvertClass * ColorScheme::Designated_Converter(int red, int green, int blue)
 	Converter->Get_Tint(tint_red, tint_green, tint_blue);
 	LightConvertClass * converter = new LightConvertClass(*tinted, ScreenPalette, *VisibleSurface, tint_red, tint_green, tint_blue, false, _indexes, IntensityLevels);
 	TintedConverters.push_back(TintedConverterEntry{red, green, blue, tinted, converter});
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike tint built %d,%d,%d\n", red, green, blue);
-	}
+	AUTOTEST_LOG("airstrike tint built %d,%d,%d\n", red, green, blue);
 	return converter;
 }
 
@@ -251,16 +253,7 @@ ColorScheme::~ColorScheme(void)
 	}
 	Name = NULL;
 
-	for (TintedConverterEntry & entry : TintedConverters) {
-		delete entry.Converter;
-		delete entry.Palette;
-	}
-	TintedConverters.clear();
-
-	if (Converter != NULL) {
-		delete Converter;
-	}
-	Converter = NULL;
+	Free_Converters(*this);
 
 	ColorSchemes.Delete(this);
 }

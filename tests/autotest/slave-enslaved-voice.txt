@@ -1,0 +1,25 @@
+; A slave answers a select with its VoiceSelectEnslaved line while its Slave Miner owns it, and with VoiceSelect once it is freed.
+; gamemd's TechnoClass::VoiceSelect (0x708EB0) picks the enslaved list while SlaveOwner != NULL, and the freed list otherwise.
+; The mod slave-voice-rules gives SLAV a distinct enslaved line (ChronoLegionSelect) and freed line (TyphoonSubSelect).
+; The first click is on an owned slave, which should log "Voice: ChronoLegionSelect". The player's tank then destroys
+; the refinery, which frees the slaves to the player (SlaveManagerClass::Killed, 0x6B0AE0); the second click, on a freed
+; slave, should log "Voice: TyphoonSubSelect". "where" shows slaveof - for each freed slave.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/slave-enslaved-voice.txt -Mods src-agent15/tests/autotest/slave-voice-rules -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST|Voice:|Slave: |Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 own SMIN 62 38
+41 own HTNK 58 40
+600 waitowns Americans YAREFN 1 2000
+610 where SLAV
+615 pickable SLAV
+620 windowclick 475 330
+625 selected
+630 hit YAREFN:HE@HTNK 5000
+640 where SLAV
+641 select HTNK
+645 pickable SLAV
+650 windowclick 475 330
+655 selected
+700 quit

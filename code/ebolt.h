@@ -14,6 +14,7 @@
 
 template<class T> class DynamicVectorClass;
 class TechnoClass;
+class WeaponTypeClass;
 
 /*
  * An electric bolt, as Yuri's Revenge draws for an IsElectricBolt=yes weapon: three jagged
@@ -29,10 +30,17 @@ class EBoltClass
 		void Fire(Coord const & start, Coord const & end, int zadjust);
 		void Set_Owner(TechnoClass * owner, int weapon);
 
+		/*
+		 * Fires a bolt for the weapon from start to end and returns it. The bolt takes the weapon's
+		 * alternate color and emissive strength. It has no owner until the caller sets one.
+		 */
+		static EBoltClass * Fire_For_Weapon(WeaponTypeClass const * weapon, Coord const & start, Coord const & end, int zadjust);
+
 		static void Update_All(void);
 		static void Draw_All(void);
 		static void All_Clear(void);
 		static void Detach(TechnoClass const * owner);
+		unsigned char Emissive_Strength(void) const { return(EmissiveStrength); }
 
 	private:
 		void Draw_It(void) const;

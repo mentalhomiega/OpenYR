@@ -18,7 +18,6 @@
 #include "ui/screens/sound/uisound.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uiview.h"
 
 #include <cstdio>
@@ -45,6 +44,16 @@ class UISoundEngineServiceClass : public UISoundServiceClass
 			Options.Set_Voice_Volume(volume, feedback);
 		}
 
+		virtual void Set_Unit_Voice_Volume(float volume, bool feedback) override
+		{
+			Options.Set_Unit_Voice_Volume(volume, feedback);
+		}
+
+		virtual void Set_Movie_Volume(float volume, bool feedback) override
+		{
+			Options.Set_Movie_Volume(volume, feedback);
+		}
+
 		virtual void Set_Shuffle(bool on) override
 		{
 			Options.Set_Shuffle(on);
@@ -53,6 +62,34 @@ class UISoundEngineServiceClass : public UISoundServiceClass
 		virtual void Set_Repeat(bool on) override
 		{
 			Options.Set_Repeat(on);
+		}
+
+		virtual void Set_Custom_Music(int mode) override
+		{
+			Options.Set_Custom_Music((CustomMusicModeType)mode);
+		}
+
+		virtual std::vector<UISoundTrack> Tracks(void) override
+		{
+			std::vector<UISoundTrack> tracks;
+			int visible = 1;
+			for (ThemeType index = THEME_FIRST; index < Theme.Max_Themes(); index++) {
+				if (!Theme.Is_Allowed(index)) {
+					continue;
+				}
+
+				int length = Theme.Track_Length(index);
+				char const * fullname = Theme.Full_Name(index);
+				char buffer[100];
+				std::snprintf(buffer, sizeof(buffer), "%02d - %s [%d:%02d]", visible, (fullname != NULL) ? fullname : "", length / 60, length % 60);
+				visible++;
+
+				UISoundTrack track;
+				track.Label = buffer;
+				track.Theme = index;
+				tracks.push_back(track);
+			}
+			return(tracks);
 		}
 
 		virtual void Play(int theme) override
@@ -85,8 +122,12 @@ void UI_Sound_State(UISoundState & state)
 	state.Score = UISoundPresenterClass::Level_Of(Options.ScoreVolume);
 	state.Sound = UISoundPresenterClass::Level_Of(Options.SoundVolume);
 	state.Voice = UISoundPresenterClass::Level_Of(Options.VoiceVolume);
+	state.Unit = UISoundPresenterClass::Level_Of(Options.UnitVoiceVolume);
+	state.Movie = UISoundPresenterClass::Level_Of(Options.MovieVolume);
 	state.Shuffle = Options.IsScoreShuffle;
 	state.Repeat = Options.IsScoreRepeat;
+	state.CustomMusic = (int)Options.CustomMusic;
+	state.CustomMusics = { { "Stock and custom tracks" }, { "Stock tracks only" }, { "Custom tracks only" } };
 	state.Enabled = AudioEngine.Is_Available();
 	state.InGame = GameActive;
 
@@ -94,25 +135,11 @@ void UI_Sound_State(UISoundState & state)
 		return;
 	}
 
-	int visible = 1;
-	for (ThemeType index = THEME_FIRST; index < Theme.Max_Themes(); index++) {
-		if (!Theme.Is_Allowed(index)) {
-			continue;
+	state.Tracks = _Service.Tracks();
+	for (int index = 0; index < (int)state.Tracks.size(); index++) {
+		if (Theme.What_Is_Playing() == state.Tracks[index].Theme) {
+			state.Selected = index;
 		}
-
-		int length = Theme.Track_Length(index);
-		char const * fullname = Theme.Full_Name(index);
-		char buffer[100];
-		std::snprintf(buffer, sizeof(buffer), "%02d - %s [%d:%02d]", visible, (fullname != NULL) ? fullname : "", length / 60, length % 60);
-		visible++;
-
-		UISoundTrack track;
-		track.Label = buffer;
-		track.Theme = index;
-		if (Theme.What_Is_Playing() == index) {
-			state.Selected = (int)state.Tracks.size();
-		}
-		state.Tracks.push_back(track);
 	}
 
 	if (state.Selected < 0 && !state.Tracks.empty()) {
@@ -131,13 +158,8 @@ std::unique_ptr<UISoundPresenterClass> UI_Sound_New_Presenter(void)
 
 void UI_Sound_Dialog(void)
 {
-	UISoundState state;
-	UI_Sound_State(state);
-
-	UISoundPresenterClass presenter(UI_Sound_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_AUDIO);
-	std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+	std::unique_ptr<UISoundPresenterClass> presenter = UI_Sound_New_Presenter();
+	std::unique_ptr<UIViewClass> view = UI_Sound_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
 }

@@ -1,0 +1,92 @@
+; Waypoint paths (waypoint mode, then a move click on the first waypoint) for hovering jump jets and a ground unit.
+; Each unit type gets its own three-waypoint path, one after another, so the paths do not share a selection:
+;   JUMPJET (Rocketeer, BalloonHover) at 70,65 then 76,65 then 76,72 (frames 70 to 100)
+;   SCHP (Siege Chopper, BalloonHover in the air) at 70,55 then 76,55 then 76,62 (frames 200 to 230)
+;   ZEP (Kirov, BalloonHover) at 70,45 then 76,45 then 76,52 (frames 330 to 360)
+;   HTNK (Rhino, ground) at 70,80 then 76,80 then 76,86 (frames 460 to 490)
+; A unit that hovers at a waypoint does not go idle, so the path is advanced at the hover arrival (Arrive_Aloft), as
+; gamemd's AircraftClass::Mission_Move (0x4166C0) advances an aircraft's planning path near its destination. Before the fix,
+; each jump jet stopped at its first waypoint (76,72, 76,62 and 76,52 were not reached).
+; Expected: by frame 1800 (where lines) JUMPJET, SCHP and ZEP are on mission Move at 76,72 / 76,62 / 76,52, and HTNK is on Guard at 75,87.
+; wpstate writes nothing for these units (it reports aircraft only), so the where lines are the evidence.
+; The Kirov is slow, so its last leg ends after frame 1000.
+; Run: scripts/run_autotest.ps1 -Build agent25 -Script src-agent25/tests/autotest/jumpjet-waypoint-path.txt -Country 8 -Seconds 150 -Filter "AUTOTEST   where|AUTOTEST   wpstate|AUTOTEST   rocket|AUTOTEST   wpsend|Exception"
+30 command CenterBase
+35 killhouse Neutral
+40 reveal
+50 grantunit JUMPJET 60 65
+52 grantunit SCHP 60 55
+54 grantunit ZEP 60 45
+56 grantunit HTNK 60 80
+60 view 66 62
+70 select JUMPJET
+71 selected
+72 command WaypointMode
+73 waypoint x 70 65
+74 waypoint x 76 65
+75 waypoint x 76 72
+76 command WaypointMode
+77 select JUMPJET
+78 selected
+80 wpsend move 70 65
+100 wpstate JUMPJET
+150 where JUMPJET
+150 wpstate JUMPJET
+200 select SCHP
+201 selected
+202 command WaypointMode
+203 waypoint x 70 55
+204 waypoint x 76 55
+205 waypoint x 76 62
+206 command WaypointMode
+207 select SCHP
+208 selected
+210 wpsend move 70 55
+230 wpstate SCHP
+330 select ZEP
+331 selected
+332 command WaypointMode
+333 waypoint x 70 45
+334 waypoint x 76 45
+335 waypoint x 76 52
+336 command WaypointMode
+337 select ZEP
+338 selected
+340 wpsend move 70 45
+360 wpstate ZEP
+460 select HTNK
+461 selected
+462 command WaypointMode
+463 waypoint x 70 80
+464 waypoint x 76 80
+465 waypoint x 76 86
+466 command WaypointMode
+467 select HTNK
+468 selected
+470 wpsend move 70 80
+490 wpstate HTNK
+600 where JUMPJET
+600 where SCHP
+600 where ZEP
+600 where HTNK
+600 wpstate JUMPJET
+600 wpstate SCHP
+600 wpstate ZEP
+600 wpstate HTNK
+600 rocket JUMPJET
+1000 where JUMPJET
+1000 where SCHP
+1000 where ZEP
+1000 where HTNK
+1000 wpstate JUMPJET
+1000 wpstate SCHP
+1000 wpstate ZEP
+1000 wpstate HTNK
+1000 rocket JUMPJET
+1500 where ZEP
+1500 wpstate ZEP
+1800 where JUMPJET
+1800 where SCHP
+1800 where ZEP
+1800 wpstate ZEP
+1800 quit

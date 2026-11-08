@@ -144,6 +144,19 @@
 	margin-top: 0;
 }
 
+/* A message that spans both columns, set off by a bar down its left edge. */
+.page-settings .notice
+{
+	display: block;
+	box-sizing: border-box;
+	width: 97%;
+	margin: 0 3% 10dp 0;
+	padding: 6dp 10dp;
+	border-left: 4dp #c8b8ff;
+	background-color: #ffffff14;
+	line-height: 20dp;
+}
+
 /* One setting: its label sits on the first line and its control below it. */
 .page-settings .setting
 {

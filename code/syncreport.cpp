@@ -58,6 +58,7 @@
 #include "psystype.h"
 #include "ptype.h"
 #include "queue.h"
+#include "report/reportsend.h"
 #include "saveload.h"
 #include "scenario.h"
 #include "scheme.h"
@@ -91,15 +92,74 @@
 #include "weapon.h"
 
 #include <cstdio>
+#include <cstring>
 #include <float.h>
+#include <intrin.h>
+#include <string>
+#include <xmmintrin.h>
+
+#include "modsync.h"
+#include "mods.h"
 
 
 namespace {
 	int LastReportFrame = -1;
 	int ReportsThisSession = 0;
 	bool OutOfSyncPlayer[MAX_PLAYERS] = {};
+	// The last 256 frames' checksum parts; the report lists them beside the checksum ring.
+	SyncFrameDetail FrameDetails[256];
 	constexpr int SYNC_REPORT_MAX_AGE_DAYS = 30;
 	constexpr int SYNC_REPORT_SESSION_CAP = 3;
+}
+
+
+/// <summary>The processor's name and the instruction sets the math library may choose between, from CPUID.</summary>
+static std::string Cpu_Description(void)
+{
+	int regs[4] = {0, 0, 0, 0};
+	char brand[49] = {};
+	__cpuid(regs, static_cast<int>(0x80000000));
+	if (static_cast<unsigned int>(regs[0]) >= 0x80000004u) {
+		for (int part = 0; part < 3; part++) {
+			__cpuid(regs, static_cast<int>(0x80000002u + part));
+			memcpy(brand + part * 16, regs, 16);
+		}
+	}
+	__cpuid(regs, 1);
+	unsigned int const signature = static_cast<unsigned int>(regs[0]);
+	bool const sse2 = (regs[3] & (1 << 26)) != 0;
+	bool const fma = (regs[2] & (1 << 12)) != 0;
+	bool const avx = (regs[2] & (1 << 28)) != 0;
+	bool avx2 = false;
+	__cpuid(regs, 0);
+	if (regs[0] >= 7) {
+		__cpuidex(regs, 7, 0);
+		avx2 = (regs[1] & (1 << 5)) != 0;
+	}
+	std::string text = brand;
+	char tail[96];
+	snprintf(tail, sizeof(tail), " (signature %08x, SSE2 %d, FMA %d, AVX %d, AVX2 %d)", signature, (int)sse2, (int)fma, (int)avx, (int)avx2);
+	text += tail;
+	return(text);
+}
+
+
+/// <summary>The mods this machine runs, as a join request would carry them, or "none".</summary>
+static std::string Mods_Description(void)
+{
+	ModSync::Signature const signature = ModSync::Describe_Active();
+	std::string const names = ModSync::List_Names(signature);
+	if (names.empty()) {
+		return("none");
+	}
+	return(names + " [" + ModSync::Encode(signature) + "]");
+}
+
+
+/// <summary>Keeps the parts of one frame's checksum for the report.</summary>
+void Sync_Record_Frame_Detail(int frame, SyncFrameDetail const & detail)
+{
+	FrameDetails[frame & 255] = detail;
 }
 
 
@@ -157,6 +217,69 @@ bool Report_Out_Of_Sync(EventClass const * events, int count, unsigned const * c
 }
 
 
+// Writes a TarCom or NavCom target as "Type(index)": the heap ID of a techno, the packed cell
+// coordinates of a cell, or "None(0)" for no target. The text is cut to fit `size`; 32 bytes holds any name.
+static void Format_Command_Target(AbstractClass * target, char * text, size_t size)
+{
+	int index = 0;
+	char const * name = "None";
+	if (target != NULL) {
+		if (target->Is_Techno()) {
+			index = target->Fetch_Heap_ID();
+		} else if (target->RTTI == RTTI_CELL) {
+			CellClass * cptr = (CellClass *)target;
+			index = cptr->CellID.X | cptr->CellID.Y << 16;
+		}
+		name = Name_From_RTTI(target->RTTI);
+	}
+	snprintf(text, size, "%s(%d)", name, index);
+}
+
+
+// Writes "heap id(name)" for a techno's type, as the object lines show it.
+template<class Techno>
+static void Format_Type_Text(Techno * techno, char (& text)[32])
+{
+	snprintf(text, sizeof(text), "%d(%s)", techno->Class->HeapID, techno->Class->Name());
+}
+
+
+// Writes one section per house for a list of technos: a header, a line for each of the house's
+// technos from `print_entry(techno, crc)`, which also adds the techno to the section checksum, and
+// the checksum to the monochrome screen.
+template<class Techno, class List, class PrintEntry>
+static void Print_Techno_Sections(FILE * fp, char const * kind, List & list, PrintEntry print_entry)
+{
+	for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
+		HouseClass * housep = Houses[house];
+		unsigned int crc = 0;
+		fprintf(fp, "\n-------------------- %s %s -------------------\n", housep->Class->Name(), kind);
+		for (int i = 0; i < list.Count(); i++) {
+			Techno * techno = (Techno *)list[i];
+			if (techno->House == housep) {
+				print_entry(techno, crc);
+			}
+		}
+		Mono_Printf("%s %s:%x\n", housep->Class->Name(), kind, crc);
+	}
+}
+
+
+// The line for a building or an aircraft: position, facing, mission, type and encoded target.
+template<class Techno>
+static void Print_Static_Entry(FILE * fp, Techno * techno, unsigned int & crc)
+{
+	Coord coord = techno->PositionCoord;
+	Add_CRC (&crc, (int)coord.As_Int() + (int)techno->PrimaryFacing.Current().As_Dir256());
+	char type_text[32];
+	Format_Type_Text(techno, type_text);
+
+	fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%x\n",
+		coord.X,coord.Y,coord.Z,(int)techno->PrimaryFacing.Current().As_Dir256(),techno->Get_Mission(),
+		type_text, TargetClass(techno).Encode());
+}
+
+
 /**************************************************************************
  * Print_CRCs -- Prints a data file for finding Sync Bugs                 *
  *                                                                        *
@@ -183,10 +306,6 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	static char _NO_NAME [] = "None";
 
 	int i,j;
-	InfantryClass *infp;
-	UnitClass *unitp;
-	BuildingClass *bldgp;
-	AircraftClass *airp;
 	ObjectClass *objp;
 	FILE *fp;
 	HouseClass *housep;
@@ -235,12 +354,15 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "Seed: %08x\n", Seed);
 	fprintf(fp, "Session type: %d\n", Session.Type);
 	fprintf(fp, "FPU control word: %x\n", _controlfp(0, 0));
+	fprintf(fp, "MXCSR: %08x\n", static_cast<unsigned int>(_mm_getcsr()));
 
 	int cpu_type = PROC_PENTIUM_PRO;
 	char vendor[32];
 	vendor[0] = '\0';
 	Get_CPU_Type(cpu_type, vendor, sizeof(vendor) - 1);
 	fprintf(fp, "CPU vendor: %s\r\n", vendor);
+	fprintf(fp, "CPU: %s\n", Cpu_Description().c_str());
+	fprintf(fp, "Mods: %s\n", Mods_Description().c_str());
 
 	fprintf(fp, "Frames: %d\n", Frame);
 
@@ -249,6 +371,9 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "Latency setting: %d\n", Session.LatencyFudge);
 	fprintf(fp, "Game speed setting: %d\n", Options.GameSpeed);
 	fprintf(fp, "FrameSendRate: %d\n", Session.FrameSendRate);
+	fprintf(fp, "MaxAhead now: %d\n", Session.MaxAhead);
+	fprintf(fp, "Timing policy: %s\n", Session.NetworkTimingAdaptive ? "Adaptive" : "Gamemd");
+	fprintf(fp, "Timing master house: %d (announced %d)\n", Session.Master_Player_ID(), Session.MasterPlayerID);
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
 		MPStatsType *stat = &Session.ConnectionStats[i];
@@ -270,7 +395,10 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		int const filled = (Frame + 1 < (int)ring_size) ? (Frame + 1) : (int)ring_size;
 		for (i = 0; i < filled; i++) {
 			int const frame = Frame - i;
-			fprintf(fp, "Frame %d slot %3d %08x\n", frame, frame & mask, crc_ring[frame & mask]);
+			SyncFrameDetail const & detail = FrameDetails[frame & mask];
+			fprintf(fp, "Frame %d slot %3d %08x  parts inf=%08x unit=%08x bld=%08x map=%08x logic=%08x rng=%08x  counts inf=%u unit=%u bld=%u logic=%u\n",
+				frame, frame & mask, crc_ring[frame & mask], detail.Prefix[0], detail.Prefix[1], detail.Prefix[2], detail.Prefix[3],
+				detail.Prefix[4], detail.Prefix[5], detail.Count[0], detail.Count[1], detail.Count[2], detail.Count[3]);
 		}
 	}
 
@@ -292,165 +420,47 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		Mono_Printf("House %s:%x\n",housep->Class->Name(),GameCRC);
 	}
 
-	//
-	// Infantry
-	//
-	for (house = HOUSE_FIRST; house < Houses.Count(); house++) {
-		housep = Houses[house];
-		GameCRC = 0;
-		fprintf(fp,"\n-------------------- %s Infantry -------------------\n",
-			housep->Class->Name());
-		for (i = 0; i < Infantry.Count(); i++) {
-			infp = (InfantryClass *)Infantry[i];
-			if (infp->House==housep) {
-				Coord coord = infp->PositionCoord;
-				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
+	Print_Techno_Sections<InfantryClass>(fp, "Infantry", Infantry, [fp](InfantryClass * infp, unsigned int & crc) {
+		Coord coord = infp->PositionCoord;
+		Add_CRC (&crc, (int)coord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
 
-				int tarcom_index = 0;
-				const char *tarcom_name = _NO_NAME;
-				AbstractClass *tarcom = infp->TarCom;
-				if (tarcom != NULL) {
-					if (tarcom->Is_Techno()) {
-						tarcom_index = tarcom->Fetch_Heap_ID();
-					} else if (tarcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)tarcom;
-						tarcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					tarcom_name = Name_From_RTTI(tarcom->RTTI);
-				}
+		char type_text[32];
+		char tarcom_text[32];
+		char navcom_text[32];
+		Format_Type_Text(infp, type_text);
+		Format_Command_Target(infp->TarCom, tarcom_text, sizeof(tarcom_text));
+		Format_Command_Target(infp->NavCom, navcom_text, sizeof(navcom_text));
 
-				int navcom_index = 0;
-				const char *navcom_name = _NO_NAME;
-				AbstractClass *navcom = infp->NavCom;
-				if (navcom != NULL) {
-					if (navcom->Is_Techno()) {
-						navcom_index = navcom->Fetch_Heap_ID();
-					} else if (navcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)navcom;
-						navcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					navcom_name = Name_From_RTTI(navcom->RTTI);
-				}
+		fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%-16s Speed:%4d  NavCom:%s\n",
+			coord.X,coord.Y,coord.Z,(int)infp->PrimaryFacing.Current().As_Dir256(),infp->Get_Mission(),
+			type_text, tarcom_text, int(infp->Speed * (static_cast<double>(MPH_LIGHT_SPEED) + 1.0)), navcom_text);
+	});
 
-				char type_text[32];
-				char tarcom_text[32];
-				char navcom_text[32];
-				snprintf(type_text, sizeof(type_text), "%d(%s)", infp->Class->HeapID, infp->Class->Name());
-				snprintf(tarcom_text, sizeof(tarcom_text), "%s(%d)", tarcom_name, tarcom_index);
-				snprintf(navcom_text, sizeof(navcom_text), "%s(%d)", navcom_name, navcom_index);
+	Print_Techno_Sections<UnitClass>(fp, "Units", Units, [fp](UnitClass * unitp, unsigned int & crc) {
+		Coord coord = unitp->PositionCoord;
+		Add_CRC (&crc, (int)coord.As_Int() + (int)unitp->PrimaryFacing.Current().As_Dir256() +
+			(int)unitp->SecondaryFacing.Current().As_Dir256());
 
-				fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%-16s Speed:%4d  NavCom:%s\n",
-					coord.X,coord.Y,coord.Z,(int)infp->PrimaryFacing.Current().As_Dir256(),infp->Get_Mission(),
-					type_text, tarcom_text, int(infp->Speed * (MPH_LIGHT_SPEED + 1.0)), navcom_text);
-			}
-		}
-		Mono_Printf("%s Infantry:%x\n",housep->Class->Name(),GameCRC);
-	}
+		char type_text[32];
+		char tarcom_text[32];
+		char navcom_text[32];
+		Format_Type_Text(unitp, type_text);
+		Format_Command_Target(unitp->TarCom, tarcom_text, sizeof(tarcom_text));
+		Format_Command_Target(unitp->NavCom, navcom_text, sizeof(navcom_text));
 
-	//
-	// Units
-	//
-	for (house = HOUSE_FIRST; house < Houses.Count(); house++) {
-		housep = Houses[house];
-		GameCRC = 0;
-		fprintf(fp,"\n-------------------- %s Units -------------------\n",
-			housep->Class->Name());
-		for (i = 0; i < Units.Count(); i++) {
-			unitp = (UnitClass *)Units[i];
-			if (unitp->House==housep) {
-				Coord coord = unitp->PositionCoord;
-				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)unitp->PrimaryFacing.Current().As_Dir256() +
-					(int)unitp->SecondaryFacing.Current().As_Dir256());
+		fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Facing2:%3d  Mission:%2d  Type:%-14s Tgt:%-16s NavCom:%-16s TrkNum:%3d TrkInd:%3d SpdAc:%d\n",
+			coord.X,coord.Y,coord.Z,(int)unitp->PrimaryFacing.Current().As_Dir256(),(int)unitp->SecondaryFacing.Current().As_Dir256(),unitp->Get_Mission(),
+			type_text, tarcom_text, navcom_text,
+			unitp->Locomotion->Get_Track_Number(), unitp->Locomotion->Get_Track_Index(), unitp->Locomotion->Get_Speed_Accum());
+	});
 
-				int tarcom_index = 0;
-				const char *tarcom_name = _NO_NAME;
-				AbstractClass *tarcom = unitp->TarCom;
-				if (tarcom != NULL) {
-					if (tarcom->Is_Techno()) {
-						tarcom_index = tarcom->Fetch_Heap_ID();
-					} else if (tarcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)tarcom;
-						tarcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					tarcom_name = Name_From_RTTI(tarcom->RTTI);
-				}
+	Print_Techno_Sections<BuildingClass>(fp, "Buildings", Buildings, [fp](BuildingClass * bldgp, unsigned int & crc) {
+		Print_Static_Entry(fp, bldgp, crc);
+	});
 
-				int navcom_index = 0;
-				const char *navcom_name = _NO_NAME;
-				AbstractClass *navcom = unitp->NavCom;
-				if (navcom != NULL) {
-					if (navcom->Is_Techno()) {
-						navcom_index = navcom->Fetch_Heap_ID();
-					} else if (navcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)navcom;
-						navcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					navcom_name = Name_From_RTTI(navcom->RTTI);
-				}
-				char type_text[32];
-				char tarcom_text[32];
-				char navcom_text[32];
-				snprintf(type_text, sizeof(type_text), "%d(%s)", unitp->Class->HeapID, unitp->Class->Name());
-				snprintf(tarcom_text, sizeof(tarcom_text), "%s(%d)", tarcom_name, tarcom_index);
-				snprintf(navcom_text, sizeof(navcom_text), "%s(%d)", navcom_name, navcom_index);
-
-				fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Facing2:%3d  Mission:%2d  Type:%-14s Tgt:%-16s NavCom:%-16s TrkNum:%3d TrkInd:%3d SpdAc:%d\n",
-					coord.X,coord.Y,coord.Z,(int)unitp->PrimaryFacing.Current().As_Dir256(),(int)unitp->SecondaryFacing.Current().As_Dir256(),unitp->Get_Mission(),
-					type_text, tarcom_text, navcom_text,
-					unitp->Locomotion->Get_Track_Number(), unitp->Locomotion->Get_Track_Index(), unitp->Locomotion->Get_Speed_Accum());
-			}
-		}
-		Mono_Printf("%s Units:%x\n",housep->Class->Name(),GameCRC);
-	}
-
-	//
-	// Buildings
-	//
-	for (house = HOUSE_FIRST; house < Houses.Count(); house++) {
-		housep = Houses[house];
-		GameCRC = 0;
-		fprintf(fp,"\n-------------------- %s Buildings -------------------\n",
-			housep->Class->Name());
-		for (i = 0; i < Buildings.Count(); i++) {
-			bldgp = (BuildingClass *)Buildings[i];
-			if (bldgp->House==housep) {
-				Coord coord = bldgp->PositionCoord;
-				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)bldgp->PrimaryFacing.Current().As_Dir256());
-				char type_text[32];
-				snprintf(type_text, sizeof(type_text), "%d(%s)", bldgp->Class->HeapID, bldgp->Class->Name());
-
-				fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%x\n",
-					coord.X,coord.Y,coord.Z,(int)bldgp->PrimaryFacing.Current().As_Dir256(),bldgp->Get_Mission(),
-					type_text, TargetClass(bldgp).Encode());
-			}
-		}
-		Mono_Printf("%s Buildings:%x\n",housep->Class->Name(),GameCRC);
-	}
-
-
-	//
-	// Aircraft
-	//
-	for (house = HOUSE_FIRST; house < Houses.Count(); house++) {
-		housep = Houses[house];
-		GameCRC = 0;
-		fprintf(fp,"\n-------------------- %s Aircraft -------------------\n",
-			housep->Class->Name());
-		for (i = 0; i < Aircraft.Count(); i++) {
-			airp = (AircraftClass *)Aircraft[i];
-			if (airp->House==housep) {
-				Coord coord = airp->PositionCoord;
-				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)airp->PrimaryFacing.Current().As_Dir256());
-				char type_text[32];
-				snprintf(type_text, sizeof(type_text), "%d(%s)", airp->Class->HeapID, airp->Class->Name());
-
-				fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%x\n",
-					coord.X,coord.Y,coord.Z,(int)airp->PrimaryFacing.Current().As_Dir256(),airp->Get_Mission(),
-					type_text, TargetClass(airp).Encode());
-			}
-		}
-		Mono_Printf("%s Aircraft:%x\n",housep->Class->Name(),GameCRC);
-	}
+	Print_Techno_Sections<AircraftClass>(fp, "Aircraft", Aircraft, [fp](AircraftClass * airp, unsigned int & crc) {
+		Print_Static_Entry(fp, airp, crc);
+	});
 
 	#if 0
 	//
@@ -602,5 +612,8 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	Print_Heap_CRCs(fp);
 
 	fclose(fp);
+
+	// Offered to the developers once the match is over, if ReportURL is set.
+	Report_Note_Desync(filename);
 
 }

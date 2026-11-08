@@ -1,0 +1,1261 @@
+; Scrolling benchmark: the view circles the middle of the map, a cell every 4 game frames.
+; The large battle of bench-large-battle.txt on XMP08T2 with the map revealed and the view over its middle, stopping at frame 3600 (60 s at game speed 1).
+; Run: scripts/perf_bench.ps1 -Build agent14 -Script src-agent14/tests/autotest/bench-large-battle-scrolling.txt
+0 perflog 1
+1 view 64 64
+3 log BENCH_START
+4 reveal
+10 grantunit MTNK 6 90
+10 grantunit HTNK 8 90
+10 grantunit MTNK 10 90
+10 grantunit HTNK 12 90
+10 grantunit MTNK 14 90
+10 grantunit HTNK 16 90
+10 grantunit MTNK 18 90
+10 grantunit HTNK 20 90
+10 grantunit MTNK 22 90
+10 grantunit HTNK 24 90
+10 grantunit E1 6 92
+10 grantunit E2 8 92
+10 grantunit E1 10 92
+10 grantunit E2 12 92
+10 grantunit E1 14 92
+10 grantunit E2 16 92
+10 grantunit E1 18 92
+10 grantunit E2 20 92
+10 grantunit E1 22 92
+10 grantunit E2 24 92
+10 grantunit MTNK 6 94
+10 grantunit HTNK 8 94
+10 grantunit MTNK 10 94
+10 grantunit HTNK 12 94
+10 grantunit MTNK 14 94
+10 grantunit HTNK 16 94
+10 grantunit MTNK 18 94
+10 grantunit HTNK 20 94
+10 grantunit MTNK 22 94
+10 grantunit HTNK 24 94
+10 grantunit E1 6 96
+10 grantunit E2 8 96
+10 grantunit E1 10 96
+10 grantunit E2 12 96
+10 grantunit E1 14 96
+10 grantunit E2 16 96
+10 grantunit E1 18 96
+10 grantunit E2 20 96
+10 grantunit E1 22 96
+10 grantunit E2 24 96
+10 grantunit MTNK 6 98
+10 grantunit HTNK 8 98
+10 grantunit MTNK 10 98
+10 grantunit HTNK 12 98
+10 grantunit MTNK 14 98
+10 grantunit HTNK 16 98
+10 grantunit MTNK 18 98
+10 grantunit HTNK 20 98
+10 grantunit MTNK 22 98
+10 grantunit HTNK 24 98
+10 grantunit E1 6 100
+10 grantunit E2 8 100
+10 grantunit E1 10 100
+10 grantunit E2 12 100
+10 grantunit E1 14 100
+10 grantunit E2 16 100
+10 grantunit E1 18 100
+10 grantunit E2 20 100
+10 grantunit E1 22 100
+10 grantunit E2 24 100
+10 grantunit MTNK 6 102
+10 grantunit HTNK 8 102
+10 grantunit MTNK 10 102
+10 grantunit HTNK 12 102
+10 grantunit MTNK 14 102
+10 grantunit HTNK 16 102
+10 grantunit MTNK 18 102
+10 grantunit HTNK 20 102
+10 grantunit MTNK 22 102
+10 grantunit HTNK 24 102
+10 grantunit E1 6 104
+10 grantunit E2 8 104
+10 grantunit E1 10 104
+10 grantunit E2 12 104
+10 grantunit E1 14 104
+10 grantunit E2 16 104
+10 grantunit E1 18 104
+10 grantunit E2 20 104
+10 grantunit E1 22 104
+10 grantunit E2 24 104
+10 grantunit HIND 6 88
+10 grantunit ZEP 10 88
+10 houseunit MTNK@#1 6 8
+10 houseunit HTNK@#1 8 8
+10 houseunit MTNK@#1 10 8
+10 houseunit HTNK@#1 12 8
+10 houseunit MTNK@#1 14 8
+10 houseunit HTNK@#1 16 8
+10 houseunit MTNK@#1 18 8
+10 houseunit HTNK@#1 20 8
+10 houseunit MTNK@#1 22 8
+10 houseunit HTNK@#1 24 8
+10 houseunit E1@#1 6 10
+10 houseunit E2@#1 8 10
+10 houseunit E1@#1 10 10
+10 houseunit E2@#1 12 10
+10 houseunit E1@#1 14 10
+10 houseunit E2@#1 16 10
+10 houseunit E1@#1 18 10
+10 houseunit E2@#1 20 10
+10 houseunit E1@#1 22 10
+10 houseunit E2@#1 24 10
+10 houseunit MTNK@#1 6 12
+10 houseunit HTNK@#1 8 12
+10 houseunit MTNK@#1 10 12
+10 houseunit HTNK@#1 12 12
+10 houseunit MTNK@#1 14 12
+10 houseunit HTNK@#1 16 12
+10 houseunit MTNK@#1 18 12
+10 houseunit HTNK@#1 20 12
+10 houseunit MTNK@#1 22 12
+10 houseunit HTNK@#1 24 12
+10 houseunit E1@#1 6 14
+10 houseunit E2@#1 8 14
+10 houseunit E1@#1 10 14
+10 houseunit E2@#1 12 14
+10 houseunit E1@#1 14 14
+10 houseunit E2@#1 16 14
+10 houseunit E1@#1 18 14
+10 houseunit E2@#1 20 14
+10 houseunit E1@#1 22 14
+10 houseunit E2@#1 24 14
+10 houseunit MTNK@#1 6 16
+10 houseunit HTNK@#1 8 16
+10 houseunit MTNK@#1 10 16
+10 houseunit HTNK@#1 12 16
+10 houseunit MTNK@#1 14 16
+10 houseunit HTNK@#1 16 16
+10 houseunit MTNK@#1 18 16
+10 houseunit HTNK@#1 20 16
+10 houseunit MTNK@#1 22 16
+10 houseunit HTNK@#1 24 16
+10 houseunit E1@#1 6 18
+10 houseunit E2@#1 8 18
+10 houseunit E1@#1 10 18
+10 houseunit E2@#1 12 18
+10 houseunit E1@#1 14 18
+10 houseunit E2@#1 16 18
+10 houseunit E1@#1 18 18
+10 houseunit E2@#1 20 18
+10 houseunit E1@#1 22 18
+10 houseunit E2@#1 24 18
+10 houseunit MTNK@#1 6 20
+10 houseunit HTNK@#1 8 20
+10 houseunit MTNK@#1 10 20
+10 houseunit HTNK@#1 12 20
+10 houseunit MTNK@#1 14 20
+10 houseunit HTNK@#1 16 20
+10 houseunit MTNK@#1 18 20
+10 houseunit HTNK@#1 20 20
+10 houseunit MTNK@#1 22 20
+10 houseunit HTNK@#1 24 20
+10 houseunit E1@#1 6 22
+10 houseunit E2@#1 8 22
+10 houseunit E1@#1 10 22
+10 houseunit E2@#1 12 22
+10 houseunit E1@#1 14 22
+10 houseunit E2@#1 16 22
+10 houseunit E1@#1 18 22
+10 houseunit E2@#1 20 22
+10 houseunit E1@#1 22 22
+10 houseunit E2@#1 24 22
+10 houseunit HIND@#1 6 6
+10 houseunit ZEP@#1 10 6
+10 houseunit MTNK@#2 100 60
+10 houseunit HTNK@#2 102 60
+10 houseunit MTNK@#2 104 60
+10 houseunit HTNK@#2 106 60
+10 houseunit MTNK@#2 108 60
+10 houseunit HTNK@#2 110 60
+10 houseunit MTNK@#2 112 60
+10 houseunit HTNK@#2 114 60
+10 houseunit MTNK@#2 116 60
+10 houseunit HTNK@#2 118 60
+10 houseunit E1@#2 100 62
+10 houseunit E2@#2 102 62
+10 houseunit E1@#2 104 62
+10 houseunit E2@#2 106 62
+10 houseunit E1@#2 108 62
+10 houseunit E2@#2 110 62
+10 houseunit E1@#2 112 62
+10 houseunit E2@#2 114 62
+10 houseunit E1@#2 116 62
+10 houseunit E2@#2 118 62
+10 houseunit MTNK@#2 100 64
+10 houseunit HTNK@#2 102 64
+10 houseunit MTNK@#2 104 64
+10 houseunit HTNK@#2 106 64
+10 houseunit MTNK@#2 108 64
+10 houseunit HTNK@#2 110 64
+10 houseunit MTNK@#2 112 64
+10 houseunit HTNK@#2 114 64
+10 houseunit MTNK@#2 116 64
+10 houseunit HTNK@#2 118 64
+10 houseunit E1@#2 100 66
+10 houseunit E2@#2 102 66
+10 houseunit E1@#2 104 66
+10 houseunit E2@#2 106 66
+10 houseunit E1@#2 108 66
+10 houseunit E2@#2 110 66
+10 houseunit E1@#2 112 66
+10 houseunit E2@#2 114 66
+10 houseunit E1@#2 116 66
+10 houseunit E2@#2 118 66
+10 houseunit MTNK@#2 100 68
+10 houseunit HTNK@#2 102 68
+10 houseunit MTNK@#2 104 68
+10 houseunit HTNK@#2 106 68
+10 houseunit MTNK@#2 108 68
+10 houseunit HTNK@#2 110 68
+10 houseunit MTNK@#2 112 68
+10 houseunit HTNK@#2 114 68
+10 houseunit MTNK@#2 116 68
+10 houseunit HTNK@#2 118 68
+10 houseunit E1@#2 100 70
+10 houseunit E2@#2 102 70
+10 houseunit E1@#2 104 70
+10 houseunit E2@#2 106 70
+10 houseunit E1@#2 108 70
+10 houseunit E2@#2 110 70
+10 houseunit E1@#2 112 70
+10 houseunit E2@#2 114 70
+10 houseunit E1@#2 116 70
+10 houseunit E2@#2 118 70
+10 houseunit MTNK@#2 100 72
+10 houseunit HTNK@#2 102 72
+10 houseunit MTNK@#2 104 72
+10 houseunit HTNK@#2 106 72
+10 houseunit MTNK@#2 108 72
+10 houseunit HTNK@#2 110 72
+10 houseunit MTNK@#2 112 72
+10 houseunit HTNK@#2 114 72
+10 houseunit MTNK@#2 116 72
+10 houseunit HTNK@#2 118 72
+10 houseunit E1@#2 100 74
+10 houseunit E2@#2 102 74
+10 houseunit E1@#2 104 74
+10 houseunit E2@#2 106 74
+10 houseunit E1@#2 108 74
+10 houseunit E2@#2 110 74
+10 houseunit E1@#2 112 74
+10 houseunit E2@#2 114 74
+10 houseunit E1@#2 116 74
+10 houseunit E2@#2 118 74
+10 houseunit HIND@#2 100 58
+10 houseunit ZEP@#2 104 58
+10 houseunit MTNK@#3 100 8
+10 houseunit HTNK@#3 102 8
+10 houseunit MTNK@#3 104 8
+10 houseunit HTNK@#3 106 8
+10 houseunit MTNK@#3 108 8
+10 houseunit HTNK@#3 110 8
+10 houseunit MTNK@#3 112 8
+10 houseunit HTNK@#3 114 8
+10 houseunit MTNK@#3 116 8
+10 houseunit HTNK@#3 118 8
+10 houseunit E1@#3 100 10
+10 houseunit E2@#3 102 10
+10 houseunit E1@#3 104 10
+10 houseunit E2@#3 106 10
+10 houseunit E1@#3 108 10
+10 houseunit E2@#3 110 10
+10 houseunit E1@#3 112 10
+10 houseunit E2@#3 114 10
+10 houseunit E1@#3 116 10
+10 houseunit E2@#3 118 10
+10 houseunit MTNK@#3 100 12
+10 houseunit HTNK@#3 102 12
+10 houseunit MTNK@#3 104 12
+10 houseunit HTNK@#3 106 12
+10 houseunit MTNK@#3 108 12
+10 houseunit HTNK@#3 110 12
+10 houseunit MTNK@#3 112 12
+10 houseunit HTNK@#3 114 12
+10 houseunit MTNK@#3 116 12
+10 houseunit HTNK@#3 118 12
+10 houseunit E1@#3 100 14
+10 houseunit E2@#3 102 14
+10 houseunit E1@#3 104 14
+10 houseunit E2@#3 106 14
+10 houseunit E1@#3 108 14
+10 houseunit E2@#3 110 14
+10 houseunit E1@#3 112 14
+10 houseunit E2@#3 114 14
+10 houseunit E1@#3 116 14
+10 houseunit E2@#3 118 14
+10 houseunit MTNK@#3 100 16
+10 houseunit HTNK@#3 102 16
+10 houseunit MTNK@#3 104 16
+10 houseunit HTNK@#3 106 16
+10 houseunit MTNK@#3 108 16
+10 houseunit HTNK@#3 110 16
+10 houseunit MTNK@#3 112 16
+10 houseunit HTNK@#3 114 16
+10 houseunit MTNK@#3 116 16
+10 houseunit HTNK@#3 118 16
+10 houseunit E1@#3 100 18
+10 houseunit E2@#3 102 18
+10 houseunit E1@#3 104 18
+10 houseunit E2@#3 106 18
+10 houseunit E1@#3 108 18
+10 houseunit E2@#3 110 18
+10 houseunit E1@#3 112 18
+10 houseunit E2@#3 114 18
+10 houseunit E1@#3 116 18
+10 houseunit E2@#3 118 18
+10 houseunit MTNK@#3 100 20
+10 houseunit HTNK@#3 102 20
+10 houseunit MTNK@#3 104 20
+10 houseunit HTNK@#3 106 20
+10 houseunit MTNK@#3 108 20
+10 houseunit HTNK@#3 110 20
+10 houseunit MTNK@#3 112 20
+10 houseunit HTNK@#3 114 20
+10 houseunit MTNK@#3 116 20
+10 houseunit HTNK@#3 118 20
+10 houseunit E1@#3 100 22
+10 houseunit E2@#3 102 22
+10 houseunit E1@#3 104 22
+10 houseunit E2@#3 106 22
+10 houseunit E1@#3 108 22
+10 houseunit E2@#3 110 22
+10 houseunit E1@#3 112 22
+10 houseunit E2@#3 114 22
+10 houseunit E1@#3 116 22
+10 houseunit E2@#3 118 22
+10 houseunit HIND@#3 100 6
+10 houseunit ZEP@#3 104 6
+10 grantunit DEST 48 56
+10 grantunit DEST 56 56
+10 grantunit DEST 64 56
+10 houseunit DEST@#2 72 64
+10 houseunit DEST@#2 80 64
+10 houseunit DEST@#3 40 48
+10 houseunit DEST@#3 48 48
+10 houseunit DEST@#1 56 64
+100 view 76 64
+104 view 76 64
+108 view 76 65
+112 view 76 65
+116 view 76 65
+120 view 76 65
+124 view 76 66
+128 view 76 66
+132 view 76 66
+136 view 76 66
+140 view 76 67
+144 view 75 67
+148 view 75 67
+152 view 75 67
+156 view 75 68
+160 view 75 68
+164 view 75 68
+168 view 75 68
+172 view 74 69
+176 view 74 69
+180 view 74 69
+184 view 74 69
+188 view 74 70
+192 view 74 70
+196 view 73 70
+200 view 73 70
+204 view 73 70
+208 view 73 71
+212 view 72 71
+216 view 72 71
+220 view 72 71
+224 view 72 71
+228 view 71 72
+232 view 71 72
+236 view 71 72
+240 view 70 72
+244 view 70 72
+248 view 70 72
+252 view 70 72
+256 view 69 73
+260 view 69 73
+264 view 69 73
+268 view 68 73
+272 view 68 73
+276 view 68 73
+280 view 67 73
+284 view 67 73
+288 view 67 73
+292 view 66 73
+296 view 66 73
+300 view 66 74
+304 view 65 74
+308 view 65 74
+312 view 65 74
+316 view 64 74
+320 view 64 74
+324 view 64 74
+328 view 63 74
+332 view 63 74
+336 view 63 74
+340 view 62 74
+344 view 62 73
+348 view 62 73
+352 view 61 73
+356 view 61 73
+360 view 61 73
+364 view 60 73
+368 view 60 73
+372 view 60 73
+376 view 59 73
+380 view 59 73
+384 view 59 73
+388 view 58 72
+392 view 58 72
+396 view 58 72
+400 view 58 72
+404 view 57 72
+408 view 57 72
+412 view 57 72
+416 view 56 71
+420 view 56 71
+424 view 56 71
+428 view 56 71
+432 view 55 71
+436 view 55 70
+440 view 55 70
+444 view 55 70
+448 view 54 70
+452 view 54 70
+456 view 54 69
+460 view 54 69
+464 view 54 69
+468 view 54 69
+472 view 53 68
+476 view 53 68
+480 view 53 68
+484 view 53 68
+488 view 53 67
+492 view 53 67
+496 view 53 67
+500 view 52 67
+504 view 52 66
+508 view 52 66
+512 view 52 66
+516 view 52 66
+520 view 52 65
+524 view 52 65
+528 view 52 65
+532 view 52 65
+536 view 52 64
+540 view 52 64
+544 view 52 64
+548 view 52 63
+552 view 52 63
+556 view 52 63
+560 view 52 63
+564 view 52 62
+568 view 52 62
+572 view 52 62
+576 view 52 62
+580 view 52 61
+584 view 53 61
+588 view 53 61
+592 view 53 61
+596 view 53 60
+600 hunt MTNK
+600 hunt HTNK
+600 hunt E1
+600 hunt E2
+600 hunt HIND
+600 hunt ZEP
+600 hunt DEST
+600 move MTNK 104 86
+600 move HTNK 104 86
+600 move E1 104 86
+600 move E2 104 86
+600 move HIND 104 86
+600 move ZEP 104 86
+600 view 53 60
+604 view 53 60
+608 view 53 60
+612 view 54 59
+616 view 54 59
+620 view 54 59
+624 view 54 59
+628 view 54 58
+632 view 54 58
+636 view 55 58
+640 view 55 58
+644 view 55 58
+648 view 55 57
+652 view 56 57
+656 view 56 57
+660 view 56 57
+664 view 56 57
+668 view 57 56
+672 view 57 56
+676 view 57 56
+680 view 58 56
+684 view 58 56
+688 view 58 56
+692 view 58 56
+696 view 59 55
+700 view 59 55
+704 view 59 55
+708 view 60 55
+712 view 60 55
+716 view 60 55
+720 view 61 55
+724 view 61 55
+728 view 61 55
+732 view 62 55
+736 view 62 55
+740 view 62 54
+744 view 63 54
+748 view 63 54
+752 view 63 54
+756 view 64 54
+760 view 64 54
+764 view 64 54
+768 view 65 54
+772 view 65 54
+776 view 65 54
+780 view 66 54
+784 view 66 55
+788 view 66 55
+792 view 67 55
+796 view 67 55
+800 view 67 55
+804 view 68 55
+808 view 68 55
+812 view 68 55
+816 view 69 55
+820 view 69 55
+824 view 69 55
+828 view 70 56
+832 view 70 56
+836 view 70 56
+840 view 70 56
+844 view 71 56
+848 view 71 56
+852 view 71 56
+856 view 72 57
+860 view 72 57
+864 view 72 57
+868 view 72 57
+872 view 73 57
+876 view 73 58
+880 view 73 58
+884 view 73 58
+888 view 74 58
+892 view 74 58
+896 view 74 59
+900 view 74 59
+904 view 74 59
+908 view 74 59
+912 view 75 60
+916 view 75 60
+920 view 75 60
+924 view 75 60
+928 view 75 61
+932 view 75 61
+936 view 75 61
+940 view 76 61
+944 view 76 62
+948 view 76 62
+952 view 76 62
+956 view 76 62
+960 view 76 63
+964 view 76 63
+968 view 76 63
+972 view 76 63
+976 view 76 64
+980 view 76 64
+984 view 76 64
+988 view 76 65
+992 view 76 65
+996 view 76 65
+1000 view 76 65
+1004 view 76 66
+1008 view 76 66
+1012 view 76 66
+1016 view 76 66
+1020 view 76 67
+1024 view 75 67
+1028 view 75 67
+1032 view 75 67
+1036 view 75 68
+1040 view 75 68
+1044 view 75 68
+1048 view 75 68
+1052 view 74 69
+1056 view 74 69
+1060 view 74 69
+1064 view 74 69
+1068 view 74 70
+1072 view 74 70
+1076 view 73 70
+1080 view 73 70
+1084 view 73 70
+1088 view 73 71
+1092 view 72 71
+1096 view 72 71
+1100 view 72 71
+1104 view 72 71
+1108 view 71 72
+1112 view 71 72
+1116 view 71 72
+1120 view 70 72
+1124 view 70 72
+1128 view 70 72
+1132 view 70 72
+1136 view 69 73
+1140 view 69 73
+1144 view 69 73
+1148 view 68 73
+1152 view 68 73
+1156 view 68 73
+1160 view 67 73
+1164 view 67 73
+1168 view 67 73
+1172 view 66 73
+1176 view 66 73
+1180 view 66 74
+1184 view 65 74
+1188 view 65 74
+1192 view 65 74
+1196 view 64 74
+1200 log BENCH_FOCUS 1200
+1200 strikeobj HTNK 110 66 40 land
+1200 strikeobj E2 110 16 40 land
+1200 view 64 74
+1204 view 64 74
+1208 view 63 74
+1212 view 63 74
+1216 view 63 74
+1220 view 62 74
+1224 view 62 73
+1228 view 62 73
+1232 view 61 73
+1236 view 61 73
+1240 view 61 73
+1244 view 60 73
+1248 view 60 73
+1252 view 60 73
+1256 view 59 73
+1260 view 59 73
+1264 view 59 73
+1268 view 58 72
+1272 view 58 72
+1276 view 58 72
+1280 view 58 72
+1284 view 57 72
+1288 view 57 72
+1292 view 57 72
+1296 view 56 71
+1300 view 56 71
+1304 view 56 71
+1308 view 56 71
+1312 view 55 71
+1316 view 55 70
+1320 view 55 70
+1324 view 55 70
+1328 view 54 70
+1332 view 54 70
+1336 view 54 69
+1340 view 54 69
+1344 view 54 69
+1348 view 54 69
+1352 view 53 68
+1356 view 53 68
+1360 view 53 68
+1364 view 53 68
+1368 view 53 67
+1372 view 53 67
+1376 view 53 67
+1380 view 52 67
+1384 view 52 66
+1388 view 52 66
+1392 view 52 66
+1396 view 52 66
+1400 view 52 65
+1404 view 52 65
+1408 view 52 65
+1412 view 52 65
+1416 view 52 64
+1420 view 52 64
+1424 view 52 64
+1428 view 52 63
+1432 view 52 63
+1436 view 52 63
+1440 view 52 63
+1444 view 52 62
+1448 view 52 62
+1452 view 52 62
+1456 view 52 62
+1460 view 52 61
+1464 view 53 61
+1468 view 53 61
+1472 view 53 61
+1476 view 53 60
+1480 view 53 60
+1484 view 53 60
+1488 view 53 60
+1492 view 54 59
+1496 view 54 59
+1500 view 54 59
+1504 view 54 59
+1508 view 54 58
+1512 view 54 58
+1516 view 55 58
+1520 view 55 58
+1524 view 55 58
+1528 view 55 57
+1532 view 56 57
+1536 view 56 57
+1540 view 56 57
+1544 view 56 57
+1548 view 57 56
+1552 view 57 56
+1556 view 57 56
+1560 view 58 56
+1564 view 58 56
+1568 view 58 56
+1572 view 58 56
+1576 view 59 55
+1580 view 59 55
+1584 view 59 55
+1588 view 60 55
+1592 view 60 55
+1596 view 60 55
+1600 view 61 55
+1604 view 61 55
+1608 view 61 55
+1612 view 62 55
+1616 view 62 55
+1620 view 62 54
+1624 view 63 54
+1628 view 63 54
+1632 view 63 54
+1636 view 64 54
+1640 view 64 54
+1644 view 64 54
+1648 view 65 54
+1652 view 65 54
+1656 view 65 54
+1660 view 66 54
+1664 view 66 55
+1668 view 66 55
+1672 view 67 55
+1676 view 67 55
+1680 view 67 55
+1684 view 68 55
+1688 view 68 55
+1692 view 68 55
+1696 view 69 55
+1700 view 69 55
+1704 view 69 55
+1708 view 70 56
+1712 view 70 56
+1716 view 70 56
+1720 view 70 56
+1724 view 71 56
+1728 view 71 56
+1732 view 71 56
+1736 view 72 57
+1740 view 72 57
+1744 view 72 57
+1748 view 72 57
+1752 view 73 57
+1756 view 73 58
+1760 view 73 58
+1764 view 73 58
+1768 view 74 58
+1772 view 74 58
+1776 view 74 59
+1780 view 74 59
+1784 view 74 59
+1788 view 74 59
+1792 view 75 60
+1796 view 75 60
+1800 hunt MTNK
+1800 hunt HTNK
+1800 hunt E1
+1800 hunt E2
+1800 hunt HIND
+1800 hunt ZEP
+1800 hunt DEST
+1800 move MTNK 56 30
+1800 move HTNK 56 30
+1800 move E1 56 30
+1800 move E2 56 30
+1800 move HIND 56 30
+1800 move ZEP 56 30
+1800 view 75 60
+1804 view 75 60
+1808 view 75 61
+1812 view 75 61
+1816 view 75 61
+1820 view 76 61
+1824 view 76 62
+1828 view 76 62
+1832 view 76 62
+1836 view 76 62
+1840 view 76 63
+1844 view 76 63
+1848 view 76 63
+1852 view 76 63
+1856 view 76 64
+1860 view 76 64
+1864 view 76 64
+1868 view 76 65
+1872 view 76 65
+1876 view 76 65
+1880 view 76 65
+1884 view 76 66
+1888 view 76 66
+1892 view 76 66
+1896 view 76 66
+1900 view 76 67
+1904 view 75 67
+1908 view 75 67
+1912 view 75 67
+1916 view 75 68
+1920 view 75 68
+1924 view 75 68
+1928 view 75 68
+1932 view 74 69
+1936 view 74 69
+1940 view 74 69
+1944 view 74 69
+1948 view 74 70
+1952 view 74 70
+1956 view 73 70
+1960 view 73 70
+1964 view 73 70
+1968 view 73 71
+1972 view 72 71
+1976 view 72 71
+1980 view 72 71
+1984 view 72 71
+1988 view 71 72
+1992 view 71 72
+1996 view 71 72
+2000 view 70 72
+2004 view 70 72
+2008 view 70 72
+2012 view 70 72
+2016 view 69 73
+2020 view 69 73
+2024 view 69 73
+2028 view 68 73
+2032 view 68 73
+2036 view 68 73
+2040 view 67 73
+2044 view 67 73
+2048 view 67 73
+2052 view 66 73
+2056 view 66 73
+2060 view 66 74
+2064 view 65 74
+2068 view 65 74
+2072 view 65 74
+2076 view 64 74
+2080 view 64 74
+2084 view 64 74
+2088 view 63 74
+2092 view 63 74
+2096 view 63 74
+2100 view 62 74
+2104 view 62 73
+2108 view 62 73
+2112 view 61 73
+2116 view 61 73
+2120 view 61 73
+2124 view 60 73
+2128 view 60 73
+2132 view 60 73
+2136 view 59 73
+2140 view 59 73
+2144 view 59 73
+2148 view 58 72
+2152 view 58 72
+2156 view 58 72
+2160 view 58 72
+2164 view 57 72
+2168 view 57 72
+2172 view 57 72
+2176 view 56 71
+2180 view 56 71
+2184 view 56 71
+2188 view 56 71
+2192 view 55 71
+2196 view 55 70
+2200 view 55 70
+2204 view 55 70
+2208 view 54 70
+2212 view 54 70
+2216 view 54 69
+2220 view 54 69
+2224 view 54 69
+2228 view 54 69
+2232 view 53 68
+2236 view 53 68
+2240 view 53 68
+2244 view 53 68
+2248 view 53 67
+2252 view 53 67
+2256 view 53 67
+2260 view 52 67
+2264 view 52 66
+2268 view 52 66
+2272 view 52 66
+2276 view 52 66
+2280 view 52 65
+2284 view 52 65
+2288 view 52 65
+2292 view 52 65
+2296 view 52 64
+2300 view 52 64
+2304 view 52 64
+2308 view 52 63
+2312 view 52 63
+2316 view 52 63
+2320 view 52 63
+2324 view 52 62
+2328 view 52 62
+2332 view 52 62
+2336 view 52 62
+2340 view 52 61
+2344 view 53 61
+2348 view 53 61
+2352 view 53 61
+2356 view 53 60
+2360 view 53 60
+2364 view 53 60
+2368 view 53 60
+2372 view 54 59
+2376 view 54 59
+2380 view 54 59
+2384 view 54 59
+2388 view 54 58
+2392 view 54 58
+2396 view 55 58
+2400 log BENCH_FOCUS 2400
+2400 strikeobj HTNK 110 66 40 land
+2400 strikeobj E2 110 16 40 land
+2400 view 55 58
+2404 view 55 58
+2408 view 55 57
+2412 view 56 57
+2416 view 56 57
+2420 view 56 57
+2424 view 56 57
+2428 view 57 56
+2432 view 57 56
+2436 view 57 56
+2440 view 58 56
+2444 view 58 56
+2448 view 58 56
+2452 view 58 56
+2456 view 59 55
+2460 view 59 55
+2464 view 59 55
+2468 view 60 55
+2472 view 60 55
+2476 view 60 55
+2480 view 61 55
+2484 view 61 55
+2488 view 61 55
+2492 view 62 55
+2496 view 62 55
+2500 view 62 54
+2504 view 63 54
+2508 view 63 54
+2512 view 63 54
+2516 view 64 54
+2520 view 64 54
+2524 view 64 54
+2528 view 65 54
+2532 view 65 54
+2536 view 65 54
+2540 view 66 54
+2544 view 66 55
+2548 view 66 55
+2552 view 67 55
+2556 view 67 55
+2560 view 67 55
+2564 view 68 55
+2568 view 68 55
+2572 view 68 55
+2576 view 69 55
+2580 view 69 55
+2584 view 69 55
+2588 view 70 56
+2592 view 70 56
+2596 view 70 56
+2600 view 70 56
+2604 view 71 56
+2608 view 71 56
+2612 view 71 56
+2616 view 72 57
+2620 view 72 57
+2624 view 72 57
+2628 view 72 57
+2632 view 73 57
+2636 view 73 58
+2640 view 73 58
+2644 view 73 58
+2648 view 74 58
+2652 view 74 58
+2656 view 74 59
+2660 view 74 59
+2664 view 74 59
+2668 view 74 59
+2672 view 75 60
+2676 view 75 60
+2680 view 75 60
+2684 view 75 60
+2688 view 75 61
+2692 view 75 61
+2696 view 75 61
+2700 view 76 61
+2704 view 76 62
+2708 view 76 62
+2712 view 76 62
+2716 view 76 62
+2720 view 76 63
+2724 view 76 63
+2728 view 76 63
+2732 view 76 63
+2736 view 76 64
+2740 view 76 64
+2744 view 76 64
+2748 view 76 65
+2752 view 76 65
+2756 view 76 65
+2760 view 76 65
+2764 view 76 66
+2768 view 76 66
+2772 view 76 66
+2776 view 76 66
+2780 view 76 67
+2784 view 75 67
+2788 view 75 67
+2792 view 75 67
+2796 view 75 68
+2800 view 75 68
+2804 view 75 68
+2808 view 75 68
+2812 view 74 69
+2816 view 74 69
+2820 view 74 69
+2824 view 74 69
+2828 view 74 70
+2832 view 74 70
+2836 view 73 70
+2840 view 73 70
+2844 view 73 70
+2848 view 73 71
+2852 view 72 71
+2856 view 72 71
+2860 view 72 71
+2864 view 72 71
+2868 view 71 72
+2872 view 71 72
+2876 view 71 72
+2880 view 70 72
+2884 view 70 72
+2888 view 70 72
+2892 view 70 72
+2896 view 69 73
+2900 view 69 73
+2904 view 69 73
+2908 view 68 73
+2912 view 68 73
+2916 view 68 73
+2920 view 67 73
+2924 view 67 73
+2928 view 67 73
+2932 view 66 73
+2936 view 66 73
+2940 view 66 74
+2944 view 65 74
+2948 view 65 74
+2952 view 65 74
+2956 view 64 74
+2960 view 64 74
+2964 view 64 74
+2968 view 63 74
+2972 view 63 74
+2976 view 63 74
+2980 view 62 74
+2984 view 62 73
+2988 view 62 73
+2992 view 61 73
+2996 view 61 73
+3000 hunt MTNK
+3000 hunt HTNK
+3000 hunt E1
+3000 hunt E2
+3000 hunt HIND
+3000 hunt ZEP
+3000 hunt DEST
+3000 view 61 73
+3004 view 60 73
+3008 view 60 73
+3012 view 60 73
+3016 view 59 73
+3020 view 59 73
+3024 view 59 73
+3028 view 58 72
+3032 view 58 72
+3036 view 58 72
+3040 view 58 72
+3044 view 57 72
+3048 view 57 72
+3052 view 57 72
+3056 view 56 71
+3060 view 56 71
+3064 view 56 71
+3068 view 56 71
+3072 view 55 71
+3076 view 55 70
+3080 view 55 70
+3084 view 55 70
+3088 view 54 70
+3092 view 54 70
+3096 view 54 69
+3100 view 54 69
+3104 view 54 69
+3108 view 54 69
+3112 view 53 68
+3116 view 53 68
+3120 view 53 68
+3124 view 53 68
+3128 view 53 67
+3132 view 53 67
+3136 view 53 67
+3140 view 52 67
+3144 view 52 66
+3148 view 52 66
+3152 view 52 66
+3156 view 52 66
+3160 view 52 65
+3164 view 52 65
+3168 view 52 65
+3172 view 52 65
+3176 view 52 64
+3180 view 52 64
+3184 view 52 64
+3188 view 52 63
+3192 view 52 63
+3196 view 52 63
+3200 view 52 63
+3204 view 52 62
+3208 view 52 62
+3212 view 52 62
+3216 view 52 62
+3220 view 52 61
+3224 view 53 61
+3228 view 53 61
+3232 view 53 61
+3236 view 53 60
+3240 view 53 60
+3244 view 53 60
+3248 view 53 60
+3252 view 54 59
+3256 view 54 59
+3260 view 54 59
+3264 view 54 59
+3268 view 54 58
+3272 view 54 58
+3276 view 55 58
+3280 view 55 58
+3284 view 55 58
+3288 view 55 57
+3292 view 56 57
+3296 view 56 57
+3300 view 56 57
+3304 view 56 57
+3308 view 57 56
+3312 view 57 56
+3316 view 57 56
+3320 view 58 56
+3324 view 58 56
+3328 view 58 56
+3332 view 58 56
+3336 view 59 55
+3340 view 59 55
+3344 view 59 55
+3348 view 60 55
+3352 view 60 55
+3356 view 60 55
+3360 view 61 55
+3364 view 61 55
+3368 view 61 55
+3372 view 62 55
+3376 view 62 55
+3380 view 62 54
+3384 view 63 54
+3388 view 63 54
+3392 view 63 54
+3396 view 64 54
+3400 view 64 54
+3404 view 64 54
+3408 view 65 54
+3412 view 65 54
+3416 view 65 54
+3420 view 66 54
+3424 view 66 55
+3428 view 66 55
+3432 view 67 55
+3436 view 67 55
+3440 view 67 55
+3444 view 68 55
+3448 view 68 55
+3452 view 68 55
+3456 view 69 55
+3460 view 69 55
+3464 view 69 55
+3468 view 70 56
+3472 view 70 56
+3476 view 70 56
+3480 view 70 56
+3484 view 71 56
+3488 view 71 56
+3492 view 71 56
+3496 view 72 57
+3500 view 72 57
+3504 view 72 57
+3508 view 72 57
+3512 view 73 57
+3516 view 73 58
+3520 view 73 58
+3524 view 73 58
+3528 view 74 58
+3532 view 74 58
+3536 view 74 59
+3540 view 74 59
+3544 view 74 59
+3548 view 74 59
+3552 view 75 60
+3556 view 75 60
+3560 view 75 60
+3564 view 75 60
+3568 view 75 61
+3572 view 75 61
+3576 view 75 61
+3580 view 76 61
+3584 view 76 62
+3588 view 76 62
+3592 view 76 62
+3596 view 76 62
+3600 log BENCH_END
+3600 quit
+4800 log BENCH_FOCUS 4800
+6000 log BENCH_FOCUS 6000

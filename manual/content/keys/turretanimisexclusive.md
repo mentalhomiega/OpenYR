@@ -10,7 +10,7 @@ when_omitted:
 A building normally runs its turret animation and its [`ActiveAnimTwo`](/keys/activeanimtwo/) at the same time. With `TurretAnimIsExclusive=yes`, it never runs both:
 
 - While its weapon is charging or holds a charge, the building shows its turret animation and stops `ActiveAnimTwo`.
-- At every other time it shows `ActiveAnimTwo` and no turret animation. This includes a building that has just been built, is being repaired or has just lost its target.
+- At every other time it shows `ActiveAnimTwo` and no turret animation. This includes a building that has just been built or has just lost its target.
 
 `ActiveAnimTwo` starts again as soon as the charge is spent.
 

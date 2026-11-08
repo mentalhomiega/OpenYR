@@ -17,7 +17,7 @@ An object fires its second weapon only where a rule picks it: for example agains
 
 An elite object keeps this weapon: only the first slot switches to [`Elite`](/keys/elite/). A structure fitted with an upgrade that has a second weapon of its own uses the upgrade's weapon in this slot instead.
 
-A laser or sonic weapon in this slot takes some of its settings from the weapon in the first slot, as [`IsLaser`](/keys/islaser/) and [`IsSonic`](/keys/issonic/) describe.
+A sonic weapon in this slot takes some of its settings from the weapon in the first slot, as [`IsSonic`](/keys/issonic/) describes.
 
 Writing `none` or `<none>` empties the slot. An ID with no section of its own registers a WeaponType with only its defaults.
 

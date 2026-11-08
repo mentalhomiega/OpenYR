@@ -267,6 +267,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * alternatives will not repeat itself.
 		 */
 		TypeList<int> VoiceSelect;
+		// Played instead of VoiceSelect while the object is a slave of a Slave Miner (TechnoClass::VoiceSelect, 0x708EB0).
+		TypeList<int> VoiceSelectEnslaved;
+		// Played instead of VoiceSelect while the object is shut down (TechnoClass::VoiceSelect, 0x708EB0).
+		TypeList<int> VoiceSelectDeactivated;
 		TypeList<int> VoiceMove;
 		TypeList<int> VoiceAttack;
 		TypeList<int> VoiceDie;
@@ -382,12 +386,32 @@ class TechnoTypeClass : public ObjectTypeClass
 		// ForceShield.Modifier (Ares): the multiplier on the length of a Force Shield put on an object of this type. At 0 or
 		// less the object cannot be shielded.
 		double ForceShieldModifier;
+		// Is this a gap generator? (Rules key GapGenerator.) Every type reads it; only a building shrouds the map.
+		bool IsGapGenerator;
 
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 
 		// A gap generator charged by its owner covers this many cells instead; 0 leaves it uncharged-only (TechnoTypeClass::SuperGapRadiusInCells).
 		int SuperGapRadiusInCells;
+
+		// Does this object fire DeployFireWeapon while deployed? (Rules key DeployFire.)
+		bool IsDeployFire;
+
+		// The weapon slot an object with DeployFire fires while deployed. (Rules key DeployFireWeapon.)
+		int DeployFireWeapon;
+
+		// Does this object land before it deploys? (Rules key DeployToLand.) A flying object of any type also steps its walk counter every frame (FootClass::Update, 0x4DA530).
+		bool IsDeployToLand;
+
+		// Does this object hide as terrain while it stands still? (Rules key DisguiseWhenStill.) Only a vehicle does.
+		bool IsDisguiseWhenStill;
+
+		// Is this a slave? (Rules key Slaved.) Only an infantryman with a SlaveOwner uses it.
+		bool IsSlaved;
+
+		// Frames a deployed object stays deployed before it packs up, or a negative value to leave it to orders. (Rules key UndeployDelay.) Only soldiers use it.
+		int UndeployDelay;
 
 		// How near an Ivan bomb must be for this object to show it to its owner, in cells.
 		int BombSight;
@@ -607,9 +631,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType EnterTransportSound;
 		VocType LeaveTransportSound;
 
-		// Read from the object's section, but nothing plays them: a grinder plays the rules' EnterGrinderSound, and a bio reactor the rules' LeaveBioReactorSound.
-		VocType EnterGrinderSound;
-		VocType LeaveGrinderSound;
+		// Read from the object's section, but nothing plays it: a bio reactor plays the rules' LeaveBioReactorSound.
 		VocType LeaveBioReactorSound;
 
 		// What a unit of this type says when the player orders it into something, to capture something, or to harvest.
@@ -928,6 +950,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A PCX picture drawn as the sidebar cameo instead of the cameo shape (Ares CameoPCX in the art).
 		std::string CameoPCX;
+
+		// The palette name from Palette= in the art, without its theater suffix and extension. Empty when unset.
+		std::string PaletteFile;
 		const void * CameoData;
 
 		// The cameo drawn for a trainable type once the local player has spied on the barracks or war factory (AltCameo in the art).
@@ -1005,6 +1030,21 @@ class TechnoTypeClass : public ObjectTypeClass
 		TPoint3D<int> DamageSmokeOffset;
 
 		/*
+		 * When this is true, DamageSmokeOffset is measured on the screen rather than in the world:
+		 * its X and Y go through the isometric view and its Z lifts the particle up the screen.
+		 * Particle_System_Offset applies it. It is false by default.
+		 */
+		bool DamSmkOffScrnRel;
+
+		/*
+		 * These are the smoke systems a structure of this type starts when it is destroyed, and the
+		 * offset from its location that the system starts at. A smoke behaving system is picked
+		 * from the list at random.
+		 */
+		TypeList<ParticleSystemTypeClass const *> DestroyParticleSystems;
+		TPoint3D<int> DestroySmokeOffset;
+
+		/*
 		 * This is the voxel layer that this object's shadow is cast from. A model whose
 		 * silhouette is dominated by one part can throw a shadow shaped like that part instead
 		 * of like the whole body.
@@ -1043,6 +1083,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsTypeImmune;
 
+		/*
+		 * If damage costs this object ammunition, then this flag will be true. Each hit removes
+		 * the share of the full load given by its share of full strength, times the multiplier.
+		 */
+		bool IsDamageReducesReadiness;
+
+		// If this object sprays each burst around itself instead of firing at its target, then this flag will be true.
+		bool IsSprayAttack;
+		float ReadinessReductionMultiplier;
+
 		// If an object of this type can show that it is hidden behind a building, then this flag will be true.
 		bool IsCanBeHidden;
 
@@ -1078,6 +1128,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsNaval;
 
+		// Places a vehicle or aircraft cameo with the aircraft, after the ground vehicles, in the classic sidebar order.
+		bool IsConsideredAircraft;
+
 		/*
 		 * The countries that may build this type, and those that may not, as Ownable bits. -1
 		 * places no limit.
@@ -1101,7 +1154,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		/*
 		 * If this object throws sparks once it has been hurt, then this flag will be true. The
 		 * spark system is picked from the DamageParticleSystems list and appears once the
-		 * object drops below the condition yellow health level.
+		 * object drops below the condition yellow health level. Only Cyborg infantry set it, as
+		 * in gamemd (TechnoTypeClass::DamageSparks).
 		 */
 		bool IsDamageSparks;
 
@@ -1221,6 +1275,29 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsHasTurretTooltips;
 
 		/*
+		 * How one part of a turret recoils when the object fires: the distance it slides back in
+		 * leptons, and the frames it spends compressing, holding and recovering. A part with no
+		 * travel does not move.
+		 */
+		struct RecoilControlType {
+			RecoilControlType(void) : Travel(2), CompressFrames(1), HoldFrames(1), RecoverFrames(1) {}
+
+			int Travel;
+			int CompressFrames;
+			int HoldFrames;
+			int RecoverFrames;
+		};
+
+		/*
+		 * If this type's turret recoils when it fires, then this flag will be true. Only then do
+		 * its turret body and barrel slide back, by the travel of each part.
+		 */
+		bool IsTurretRecoil;
+
+		RecoilControlType TurretRecoilControl;
+		RecoilControlType BarrelRecoilControl;
+
+		/*
 		**	Certain objects can be repaired. For buildings, they repair "in place". For units,
 		**	they must travel to a repair center to be repaired. If this flag is true, then
 		**	allow the player or computer AI to repair the object.
@@ -1336,6 +1413,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsCrusher;
 
+		// A Pushy unit still takes click orders and moves while a DirectRocker link holds it (TechnoTypeClass::LoadFromINI, 0x712170).
+		bool IsPushy;
+
 		// An OmniCrusher flattens any non-building object it is not allied with, whatever that object's Crushable flag, unless the object is OmniCrushResistant.
 		bool IsOmniCrusher;
 		bool IsOmniCrushResistant;
@@ -1389,6 +1469,7 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		virtual void Compute_CRC(CRCEngine & crc) const override;
 		bool Is_Two_Shooter(void) const;
+		bool Allows_Country_Mask(int mask) const;
 		virtual bool Is_Immune_To_EMP(void) const;
 		virtual bool Legal_Placement(Cell const & pos, HouseClass * house) const;
 		virtual int Raw_Cost(void) const;
@@ -1413,6 +1494,7 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		WeaponDataStruct const * Get_Weapon(int which) const;
 		WeaponDataStruct const * Get_Elite_Weapon(int which) const;
+		Coord Particle_System_Offset(void) const;
 		bool Has_Multiple_Turrets(void) const { return(TurretCount > 0); }
 
 		// A weapon position outside the list is ignored.
@@ -1478,4 +1560,31 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	This is a pointer to the wake shape (as needed by the gunboat).
 		*/
 		static void const * WakeShapes;
+
+		static TechnoTypeClass * From_Name(char const * name);
+
+	private:
+		void Read_General_INI(CCINIClass const & ini);
+		void Read_Movement_INI(CCINIClass const & ini);
+		void Read_Abilities_INI(CCINIClass const & ini);
+		void Read_Targeting_INI(CCINIClass const & ini);
+		void Read_Bounty_INI(CCINIClass const & ini);
+		void Read_Insignia_INI(CCINIClass const & ini);
+		void Read_Attach_Effect_INI(CCINIClass const & ini);
+		void Read_Spawns_INI(CCINIClass const & ini);
+		void Read_Jumpjet_INI(CCINIClass const & ini);
+		void Read_Airstrike_INI(CCINIClass const & ini);
+		void Read_Destruction_INI(CCINIClass const & ini);
+		void Read_Weapons_INI(CCINIClass const & ini);
+		void Read_Transport_INI(CCINIClass const & ini);
+		void Read_Gattling_INI(CCINIClass const & ini);
+		void Read_Deploy_INI(CCINIClass const & ini);
+		void Read_Turret_INI(CCINIClass const & ini);
+		void Read_Effects_INI(CCINIClass const & ini);
+		void Read_Ammo_INI(CCINIClass const & ini);
+		void Read_Production_INI(CCINIClass const & ini);
+		void Read_AI_INI(CCINIClass const & ini);
+		void Read_Sounds_INI(CCINIClass const & ini);
+		void Read_Art_INI(void);
+		void Read_Weapon_FLH_INI(void);
 };

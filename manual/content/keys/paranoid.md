@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-The computer houses band together against the human players only when [`AlliesAllowed=yes`](/keys/alliesallowed/) is set in `[MultiplayerDialogSettings]` and no computer player started the game with allies. The stock rules set `AlliesAllowed=no`, so in a stock game they never band together. When they do, every computer house still in the game allies with every other computer house still in the game, and declares war on every surviving human house. Each alliance this breaks is broken on both sides. Each declaration also adds to the computer house's anger at that human house, which steers the computer's choice of enemy.
+The computer houses band together against the human players only when [`AlliesAllowed=yes`](/keys/alliesallowed/) is set in `[MultiplayerDialogSettings]` or the game is a Cooperative match, and no computer player started the game with allies. The stock rules set `AlliesAllowed=no`, so in a stock game that is not Cooperative they never band together. When they do, every computer house still in the game allies with every other computer house still in the game, and declares war on every surviving human house. Each alliance this breaks is broken on both sides. Each declaration also adds to the computer house's anger at that human house, which steers the computer's choice of enemy.
 
 Outside a campaign, a [`MultiplayPassive=yes`](/keys/multiplaypassive/) house such as Neutral takes no part in the war declarations. An alliance is also refused when it would leave the computer house with no enemy left in the game.
 

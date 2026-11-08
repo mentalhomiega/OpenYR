@@ -857,10 +857,17 @@ class RecordingSoundServiceClass : public UISoundServiceClass
 		virtual void Set_Score_Volume(float volume, bool feedback) override { Record("score", volume, feedback); }
 		virtual void Set_Sound_Volume(float volume, bool feedback) override { Record("sound", volume, feedback); }
 		virtual void Set_Voice_Volume(float volume, bool feedback) override { Record("voice", volume, feedback); }
+		virtual void Set_Unit_Voice_Volume(float volume, bool feedback) override { Record("unit", volume, feedback); }
+		virtual void Set_Movie_Volume(float volume, bool feedback) override { Record("movie", volume, feedback); }
 		virtual void Set_Shuffle(bool on) override { Calls.push_back(on ? "shuffle on" : "shuffle off"); }
 		virtual void Set_Repeat(bool on) override { Calls.push_back(on ? "repeat on" : "repeat off"); }
+		virtual void Set_Custom_Music(int mode) override { Calls.push_back("custom music " + std::to_string(mode)); }
+		virtual std::vector<UISoundTrack> Tracks(void) override { return(ListedTracks); }
 		virtual void Play(int theme) override { Calls.push_back("play " + std::to_string(theme)); }
 		virtual void Stop(void) override { Calls.push_back("stop"); }
+
+		// What the music list offers after the playlist source changes.
+		std::vector<UISoundTrack> ListedTracks;
 
 		std::string Joined(void) const
 		{
@@ -922,6 +929,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Sidebar_Rows(int rows) override { Calls.push_back("sidebar rows " + std::to_string(rows)); }
+		virtual void Set_Sidebar_Opacity(int percent) override { Calls.push_back("sidebar opacity " + std::to_string(percent)); }
 		virtual void Set_Bitmap_System_Font(bool on) override { Calls.push_back(on ? "bitmap font on" : "bitmap font off"); }
 		virtual void Set_Show_FPS(bool on) override { Calls.push_back(on ? "fps on" : "fps off"); }
 		virtual void Set_Frame_Limit(int limit) override { Calls.push_back("frame limit " + std::to_string(limit)); }
@@ -930,6 +938,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
 		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override { Calls.push_back(std::string("gpu effects ") + (render ? "1" : "0") + (softshadows ? "1" : "0") + (shockwaves ? "1" : "0") + (bloom ? "1" : "0") + (water ? "1" : "0") + (clouds ? "1" : "0") + (weather ? "1" : "0")); }
 		virtual void Set_Filter(int mode) override { Calls.push_back("filter " + std::to_string(mode)); }
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
@@ -944,6 +953,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override { Calls.push_back("brightness gamma " + std::to_string(brightness) + " " + std::to_string(gamma)); }
 		virtual void Set_Player_Colors(int view) override { Calls.push_back("player colors " + std::to_string(view)); }
 		virtual void Set_Screen_Shake(bool on) override { Calls.push_back(on ? "shake on" : "shake off"); }
+		virtual void Set_Scripted_Camera_Zoom(bool on) override { Calls.push_back(on ? "scripted zoom on" : "scripted zoom off"); }
 		virtual void Preview_Colour(int mode, int strength, int brightness, int gamma) override
 		{
 			Calls.push_back("preview " + std::to_string(mode) + " " + std::to_string(strength) + " " + std::to_string(brightness) + " " + std::to_string(gamma));
@@ -1031,6 +1041,21 @@ void Test_Display_Presenter(void)
 		std::size_t const first = joined.find("colour blind 2 40");
 		Check(first != std::string::npos && joined.find("colour blind", first + 1) == std::string::npos, "accepting the colour-blind mode and strength applies them once");
 		Check(joined.find("brightness gamma 120 80;") != std::string::npos, "accepting the brightness and gamma applies them");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.SidebarOpacity = 80;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "sidebaropacity", 60);
+		Check(presenter.State.SidebarOpacity == 60 && service.Calls.empty(), "the sidebar opacity is held until the player accepts");
+		Drive(presenter, "ok");
+		int opacity_calls = 0;
+		for (std::string const & call : service.Calls) {
+			opacity_calls += (call == "sidebar opacity 60") ? 1 : 0;
+		}
+		Check(opacity_calls == 1, "accepting a new sidebar opacity applies it once");
 	}
 
 	{
@@ -1397,6 +1422,90 @@ void Test_Keyboard_Presenter(void)
 }
 
 
+// The fixture with Attack move added and bound to Mouse 5, a key the Classic scheme does not give it.
+UIKeyboardState Attack_Move_Fixture(void)
+{
+	UIKeyboardState state = Keyboard_Fixture();
+	state.Commands.push_back({ "AttackMove", "Attack move", "Arms an attack-move order", (int)HOTKEY_CATEGORY_COMMANDS });
+	state.Bindings.push_back({ "AttackMove", 6, 0, HOTKEY_PRESS });
+	return(state);
+}
+
+
+void Drive_Refusal(UIPresenterClass & presenter, int reason, char const * name)
+{
+	UIIntent intent;
+	intent.Name = "refuse";
+	intent.Value = reason;
+	intent.Text = name;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Test_Keyboard_Refusals(void)
+{
+	RecordingKeyboardServiceClass service;
+	UIKeyboardPresenterClass presenter(service, Attack_Move_Fixture());
+	Drive(presenter, "pick", 4 * HOTKEY_SLOT_COUNT);
+
+	// Holding Ctrl and Shift says what releasing them binds; released with no key, they are captured alone.
+	Drive(presenter, "chord", 0x300);
+	Check(presenter.State.Notice == "K768 held. Release the keys to bind them alone, or press a key with them.", "holding Ctrl and Shift says what releasing them binds");
+	Drive(presenter, "capture", 0x300);
+	Check(presenter.State.CapturedName == "K768" && presenter.State.Notice.empty() && Key_Of_Name(presenter.State.Bindings, "AttackMove") == 6, "a modifier-only capture on attack move is kept and binds nothing yet");
+	Drive(presenter, "capture", 0x300 | 88);
+	Check(presenter.State.CapturedName == "K856", "a key pressed with Ctrl and Shift is captured with both");
+
+	// A command that needs a key press refuses a modifier-only capture, and keeps no capture.
+	Drive(presenter, "pick", 1 * HOTKEY_SLOT_COUNT);
+	Drive(presenter, "capture", 0x300);
+	Check(presenter.State.Captured == 0 && presenter.State.CapturedName.empty() && presenter.State.Notice == "Toggle repair needs a key press. K768 alone works only for held-key commands, such as Attack move.", "a command that needs a press refuses Ctrl and Shift alone");
+	Drive(presenter, "capture", 0x300 | 88);
+	Check(presenter.State.CapturedName == "K856" && presenter.State.Notice.empty(), "a command that needs a press takes a key pressed with modifiers");
+
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MOUSE, "");
+	Check(presenter.State.Notice == "The left and right mouse buttons cannot be bound here. Use the middle button, a side button or the wheel.", "a left or right click says the buttons cannot be bound");
+
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_UNMAPPED, "");
+	Check(presenter.State.Notice == "That key cannot be bound.", "a key the screen cannot name says so");
+
+	Drive(presenter, "capture", 65);
+	Check(presenter.State.Notice.empty() && presenter.State.CapturedName == "K65", "a key that can be bound clears the notice");
+}
+
+
+void Test_Keyboard_Reset_Notice(void)
+{
+	RecordingKeyboardServiceClass service;
+
+	// The scheme gives Attack move no key, so the reset unbinds the Mouse 5 binding and says so.
+	UIKeyboardPresenterClass classic(service, Attack_Move_Fixture());
+	service.DefaultTable = { { "TypeSelect", 84 }, { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(classic, "resetall");
+	Check(Hotkey_Find(classic.State.Bindings, "AttackMove", 0) < 0 && classic.State.Notice == "Attack move has no default key in the Classic scheme, so it is now unbound.", "a reset with no default for a bound command unbinds it and names it");
+
+	// The scheme gives the key back, so the reset restores it without a notice.
+	UIKeyboardPresenterClass modern(service, Attack_Move_Fixture());
+	service.DefaultTable = { { "AttackMove", 65 }, { "TypeSelect", 84 }, { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(modern, "resetall");
+	Check(Key_Of_Name(modern.State.Bindings, "AttackMove") == 65 && modern.State.Notice.empty(), "a reset restores the scheme's key with no notice");
+
+	// A category reset names only the commands of its category.
+	UIKeyboardPresenterClass category(service, Attack_Move_Fixture());
+	Drive(category, "category", HOTKEY_CATEGORY_COMMANDS + 1);
+	service.DefaultTable = { { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(category, "resetcategory");
+	Check(category.State.Notice == "Attack move has no default key in the Classic scheme, so it is now unbound." && Key_Of_Name(category.State.Bindings, "TypeSelect") == 84, "a category reset names the unbound commands of its category and keeps the others");
+
+	// A scheme change names the bound commands that the new scheme leaves unbound.
+	UIKeyboardPresenterClass switched(service, Attack_Move_Fixture());
+	service.DefaultTable = { { "TypeSelect", 84 }, { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(switched, "scheme", 1);
+	Check(switched.State.Scheme == 1 && switched.State.Notice == "Attack move has no default key in the Modern scheme, so it is now unbound.", "a scheme change names the commands it unbinds");
+}
+
+
 class RecordingModsServiceClass : public UIModsServiceClass
 {
 	public:
@@ -1576,6 +1685,8 @@ void Test_Sound_Presenter(void)
 	state.Score = 7;
 	state.Sound = 5;
 	state.Voice = 10;
+	state.Unit = 4;
+	state.Movie = 7;
 	state.Enabled = true;
 	state.InGame = true;
 	state.Tracks.push_back({ "01 - First [3:00]", 5 });
@@ -1588,6 +1699,8 @@ void Test_Sound_Presenter(void)
 	Drive(presenter, "score", 7);
 	Drive(presenter, "sound", 5);
 	Drive(presenter, "voice", 10);
+	Drive(presenter, "unit", 4);
+	Drive(presenter, "movie", 7);
 	Check(service.Calls.empty(), "a slider reporting the level it already holds previews nothing");
 
 	Drive(presenter, "score", 4);
@@ -1598,6 +1711,14 @@ void Test_Sound_Presenter(void)
 	service.Calls.clear();
 	Drive(presenter, "voice", 14);
 	Check(presenter.State.Voice == 10 && service.Joined() == "voice 1.0 feedback", "a slider level is clamped to the top step");
+	service.Calls.clear();
+
+	Drive(presenter, "unit", 3);
+	Check(presenter.State.Unit == 3 && service.Joined() == "unit 0.3 feedback", "a unit voice slider move previews the new volume at once");
+	service.Calls.clear();
+
+	Drive(presenter, "movie", 0);
+	Check(presenter.State.Movie == 0 && service.Joined() == "movie 0.0 feedback", "a movie slider can go silent");
 	service.Calls.clear();
 
 	Drive(presenter, "shuffle", 1);
@@ -1629,8 +1750,19 @@ void Test_Sound_Presenter(void)
 	Check(service.Joined() == "stop", "stop fades the music out");
 	service.Calls.clear();
 
+	service.ListedTracks.push_back({ "01 - Custom [1:00]", 30 });
+	Drive(presenter, "custommusic", 2);
+	Check(presenter.State.CustomMusic == 2 && service.Joined() == "custom music 2", "choosing custom music only changes the playlist source");
+	Check(presenter.State.Tracks.size() == 1 && presenter.State.Tracks[0].Theme == 30 && presenter.State.Selected == 0, "the music list is read again after the source changes");
+	service.Calls.clear();
+
+	Drive(presenter, "custommusic", 2);
+	Drive(presenter, "custommusic", 3);
+	Drive(presenter, "custommusic", -1);
+	Check(presenter.State.CustomMusic == 2 && service.Calls.empty(), "an unchanged or unknown playlist source does nothing");
+
 	Drive(presenter, "ok");
-	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0", "OK re-applies the levels without feedback and closes");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0; unit 0.3; movie 0.0", "OK re-applies the levels without feedback and closes");
 }
 
 
@@ -1647,10 +1779,12 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Tool_Tips(bool on) override { Calls.push_back(on ? "tooltips on" : "tooltips off"); }
 		virtual void Set_Scroll_Coasting(bool on) override { Calls.push_back(on ? "coasting on" : "coasting off"); }
 		virtual void Set_Show_Hidden(bool on) override { Calls.push_back(on ? "hidden on" : "hidden off"); }
+		virtual void Set_Show_Defence_Range(bool on) override { Calls.push_back(on ? "defencerange on" : "defencerange off"); }
 		virtual void Set_Edge_Scroll(bool on) override { Calls.push_back(on ? "edge on" : "edge off"); }
 		virtual void Set_Difficulty(int difficulty) override { Calls.push_back("difficulty " + std::to_string(difficulty)); }
 		virtual void Set_Alt_To_Rally(bool on) override { Calls.push_back(on ? "rally on" : "rally off"); }
 		virtual void Set_Simulate_Unfocused(bool on) override { Calls.push_back(on ? "background on" : "background off"); }
+		virtual void Set_Record_Replays(bool on) override { Calls.push_back(on ? "replays on" : "replays off"); }
 		virtual void Set_Aircraft_Body_Pick(bool on) override { Calls.push_back(on ? "airpick on" : "airpick off"); }
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
@@ -1707,7 +1841,7 @@ void Test_Game_Controls_Presenter(void)
 
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "OK accepts the game controls");
-		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; hidden off; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
+		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; hidden off; defencerange off; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
 	}
 
 	{
@@ -1724,7 +1858,7 @@ void Test_Game_Controls_Presenter(void)
 		presenter.State.SoundEnabled = true;
 		Drive(presenter, "sound");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts and names the sound options next");
-		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; save", "an Internet game applies no game speed and no difficulty");
+		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save", "an Internet game applies no game speed and no difficulty");
 	}
 
 	{
@@ -1750,7 +1884,7 @@ void Test_Game_Controls_Presenter(void)
 		Drive(presenter, "sorting", 1);
 		Drive(presenter, "autosave", 0);
 		Drive(presenter, "ok");
-		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; rally on; background on; sorting on; autosave 0; save",
+		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; rally on; background on; sorting on; autosave 0; save",
 			"accepting applies the changed rally, background, sorting and autosave settings");
 	}
 
@@ -1775,7 +1909,7 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "autosave", 7);
 		Drive(presenter, "ok");
-		Check(presenter.State.Autosave == 1 && service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; save",
+		Check(presenter.State.Autosave == 1 && service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save",
 			"unchanged extra settings are not applied and an unknown autosave choice keeps the starting one");
 	}
 }
@@ -2487,6 +2621,7 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		state.Tracks.push_back({ "02 - Second [2:30]", 6 });
 		state.Tracks.push_back({ "03 - Third [4:05]", 9 });
 		state.Selected = 1;
+		state.CustomMusics = { { "Stock and custom tracks" }, { "Stock tracks only" }, { "Custom tracks only" } };
 
 		UISoundPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
@@ -2509,7 +2644,11 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 				sliders++;
 			}
 		}
-		Check(sliders == 3, "the sound screen has three sliders");
+		Check(sliders == 5, "the sound screen has five sliders");
+
+		Rml::ElementList selects;
+		document->GetElementsByTagName(selects, "select");
+		Check(selects.size() == 1 && selects[0]->GetId() == "custommusic", "the sound screen has the custom music choice");
 
 		Rml::Element * score = document->GetElementById("score");
 		Check(score != nullptr && score->GetAttribute<int>("value", -1) == 7, "the music slider starts at the music level");
@@ -2684,7 +2823,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 			Click(context, sound);
 			presenter.Drain();
 			Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts the screen and names the sound options next");
-			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; save", "the Sound button applies the edited settings in order and saves");
+			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; save", "the Sound button applies the edited settings in order and saves");
 		}
 
 		view->Release();
@@ -2790,7 +2929,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; hidden off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
 
 		view->Release();
 		context.Update();
@@ -2836,7 +2975,7 @@ void Register_Test_Sidebar_Rows_Mock(void)
 void Test_Sidebar_Rows_Presenter(void)
 {
 	Register_Test_Sidebar_Rows_Mock();
-	std::vector<UIDisplayChoice> const few = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
+	std::vector<UIChoice> const few = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
 
 	{
 		RecordingDisplayServiceClass service;
@@ -2928,6 +3067,7 @@ static UIDisplayState Graphics_Fixture(void)
 	UIDisplayState state = Display_Fixture();
 	state.Page = UI_TAB_GRAPHICS;
 	state.ModernInterface = true;
+	state.ModernInterfaceRunning = true;
 	state.HDRActive = true;
 	state.RowCounts = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
 	state.RowCount = 2;
@@ -3111,6 +3251,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		RecordingDisplayServiceClass service;
 		UIDisplayState state = Display_Fixture();
 		state.Page = UI_TAB_GRAPHICS;
+		state.InGame = true;
 		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
@@ -3133,6 +3274,8 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(presenter.State.ModernInterface && rows != nullptr && !rows->HasAttribute("disabled") && row != nullptr && !row->IsClassSet("disabled") && preview != nullptr && !preview->IsClassSet("disabled"), "ticking the modern interface enables the drop-down and its mock live");
+		Rml::Element * notice = document->GetElementById("restart-notice");
+		Check(notice != nullptr && notice->IsVisible(), "a restart notice shows while the chosen interface differs from the running one");
 
 		if (modern != nullptr) {
 			Click(context, modern);
@@ -3141,6 +3284,64 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(!presenter.State.ModernInterface && rows != nullptr && rows->HasAttribute("disabled") && preview != nullptr && preview->IsClassSet("disabled"), "unticking the modern interface greys them again");
+		Check(notice != nullptr && !notice->IsVisible(), "the restart notice goes once the choice matches the running interface");
+
+		presenter.State.InGame = false;
+		if (modern != nullptr) {
+			Click(context, modern);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(presenter.State.ModernInterface && notice != nullptr && !notice->IsVisible(), "the main menu switches the interface at once, so it shows no notice");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Graphics_Fixture();
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the graphics view prepares for the GPU drawing switches");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * gpu = document->GetElementById("gpu-render");
+		Rml::Element * soft = document->GetElementById("soft-shadows");
+		Rml::Element * waves = document->GetElementById("shockwaves");
+		Rml::Element * glow = document->GetElementById("bloom");
+		Rml::Element * water = document->GetElementById("water-ripples");
+		Rml::Element * clouds = document->GetElementById("cloud-shadows");
+		Rml::Element * weather = document->GetElementById("weather");
+		auto sync = [&](Rml::Element * element) {
+			if (element != nullptr) {
+				Click(context, element);
+				presenter.Drain();
+				view->Sync();
+				context.Update();
+			}
+		};
+		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled") && glow != nullptr && glow->HasAttribute("disabled") && water != nullptr && water->HasAttribute("disabled") && clouds != nullptr && clouds->HasAttribute("disabled") && weather != nullptr && weather->HasAttribute("disabled"), "every GPU effect switch is greyed while GPU drawing is off");
+
+		sync(soft);
+		Check(!presenter.State.SoftShadows, "a greyed soft shadows switch does not turn on");
+
+		sync(gpu);
+		Check(presenter.State.GpuRender && soft != nullptr && !soft->HasAttribute("disabled") && waves != nullptr && !waves->HasAttribute("disabled"), "ticking GPU drawing enables its effect switches live");
+
+		sync(waves);
+		sync(glow);
+		sync(water);
+		sync(clouds);
+		sync(weather);
+		Drive(presenter, "ok");
+		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 1011111") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
@@ -3243,8 +3444,10 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Check(presenter.State.ColorBlindMode == 0 && presenter.State.ColorBlindStrength == 100 && presenter.State.ScreenShake && service.Calls.back() == "preview 0 100 100 100", "Reset to defaults puts the accessibility settings back and shows them");
 
 		Send_Intent(presenter, "screenshake", 0);
+		Send_Intent(presenter, "scriptedzoom", 0);
 		Send_Intent(presenter, "ok");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && std::find(service.Calls.begin(), service.Calls.end(), std::string("shake off")) != service.Calls.end(), "OK saves the screen shake switch");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && std::find(service.Calls.begin(), service.Calls.end(), std::string("shake off")) != service.Calls.end()
+			&& std::find(service.Calls.begin(), service.Calls.end(), std::string("scripted zoom off")) != service.Calls.end(), "OK saves the screen shake and scripted zoom switches");
 
 		view->Release();
 		context.Update();
@@ -3562,9 +3765,11 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 	}
 
 	{
-		// The Graphics page: picture, interface, HDR, picture level and renderer, then the footer.
+		// The Graphics page: picture, interface, GPU drawing, HDR, picture level and renderer, then the footer.
 		RecordingDisplayServiceClass service;
-		UIDisplayPresenterClass presenter(service, Graphics_Fixture());
+		UIDisplayState state = Graphics_Fixture();
+		state.GpuRender = true;
+		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 		Check(Rml(*view).Prepare(context), "the graphics view prepares for the tab order");
@@ -3579,8 +3784,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		};
 
 		char const * const order[] = {
-			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "classic-menus",
-			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
@@ -3616,7 +3821,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		};
 
 		char const * const order[] = {
-			"colorblind", "colorblind-strength", "player-colors", "shake", "footer-reset", "footer-cancel", "footer-ok"
+			"colorblind", "colorblind-strength", "player-colors", "shake", "scripted-zoom", "footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
 		for (char const * id : order) {
@@ -4045,15 +4250,15 @@ void Test_Settings_Tabs_Presenter(void)
 		RecordingGameControlsServiceClass service;
 		UIGameControlsState state;
 		UIGameControlsPresenterClass presenter(service, state);
-		presenter.Set_Settings_Tab(UI_TAB_GAME, all);
+		presenter.Offer_Tabs(all);
 		Drive(presenter, "edge", 1);
-		Drive(presenter, "tab", UI_TAB_GAME);
-		Check(!presenter.Result.has_value(), "choosing the tab already on show does nothing");
 		Drive(presenter, "tab", UI_TAB_COUNT);
 		Drive(presenter, "tab", -1);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab that does not exist is ignored");
 		Drive(presenter, "tab", UI_TAB_AUDIO);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "another tab names itself and leaves the page open");
+		Drive(presenter, "tab", UI_TAB_GAME);
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_GAME, "the tab on show is named like any other; the host leaves it open");
 		Check(service.Calls.empty(), "a tab request applies nothing; the edits wait for OK or Cancel");
 	}
 
@@ -4061,7 +4266,7 @@ void Test_Settings_Tabs_Presenter(void)
 		RecordingGameControlsServiceClass service;
 		UIGameControlsState state;
 		UIGameControlsPresenterClass presenter(service, state);
-		presenter.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_KEYBOARD));
+		presenter.Offer_Tabs((1u << UI_TAB_GAME) | (1u << UI_TAB_KEYBOARD));
 		Drive(presenter, "tab", UI_TAB_MODS);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab the bar does not offer is ignored");
 	}
@@ -4070,7 +4275,7 @@ void Test_Settings_Tabs_Presenter(void)
 		RecordingModsServiceClass service;
 		service.Writable = false;
 		UIModsPresenterClass presenter(service, Mods_Fixture());
-		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
+		presenter.Offer_Tabs(all);
 		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
 		Drive(presenter, "tab", UI_TAB_GAME);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_GAME, "a page that cannot save still hands its edits to the next tab");
@@ -4079,7 +4284,7 @@ void Test_Settings_Tabs_Presenter(void)
 	{
 		RecordingModsServiceClass service;
 		UIModsPresenterClass presenter(service, Mods_Fixture());
-		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
+		presenter.Offer_Tabs(all);
 		Drive(presenter, "cancel");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Tab_Request == UI_TAB_NONE, "Back leaves the Settings and asks for no tab");
 	}
@@ -4125,9 +4330,11 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	int const problems = system.Problems;
 
 	RecordingGameControlsServiceClass service;
+	unsigned const settings_tabs = (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD);
 	UIGameControlsPresenterClass presenter(service, Game_Controls_Fixture());
-	presenter.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD));
+	presenter.Offer_Tabs(settings_tabs);
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+	view->Set_Tab(UI_TAB_GAME, settings_tabs);
 
 	Check(Rml(*view).Prepare(context), "a Settings page prepares");
 	view->Show(true);
@@ -4144,8 +4351,9 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	context.Update();
 
 	UIGameControlsPresenterClass back(service, Game_Controls_Fixture());
-	back.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD));
+	back.Offer_Tabs(settings_tabs);
 	std::unique_ptr<UIViewClass> second = UI_Game_Controls_View(back);
+	second->Set_Tab(UI_TAB_GAME, settings_tabs);
 	Check(Rml(*second).Prepare(context), "a second Settings page prepares");
 	second->Show(true);
 	context.Update();
@@ -4186,6 +4394,8 @@ UIClassicOptionsPresenterClass Classic_Options_Presenter(RecordingClassicOptions
 	sound.Score = 4;
 	sound.Sound = 5;
 	sound.Voice = 6;
+	sound.Unit = 5;
+	sound.Movie = 9;
 	sound.Enabled = true;
 	return(UIClassicOptionsPresenterClass(parts.Game, Game_Controls_Fixture(), parts.Sound, sound, parts.Display, Display_Fixture()));
 }
@@ -4223,7 +4433,7 @@ void Test_Classic_Options_Presenter(void)
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Next == UIClassicOptionsPresenterClass::NEXT_NONE, "OK accepts and goes nowhere else");
 		Check(parts.Game.Joined().find("detail 0") != std::string::npos && parts.Game.Joined().find("tooltips off") != std::string::npos && parts.Game.Joined().find("scroll 3") != std::string::npos && parts.Game.Calls.back() == "save", "OK applies and saves the game settings");
-		Check(parts.Sound.Joined() == "score 0.7; sound 0.5; voice 0.6", "OK sets the volumes without feedback");
+		Check(parts.Sound.Joined() == "score 0.7; sound 0.5; voice 0.6; unit 0.5; movie 0.9", "OK sets the volumes without feedback");
 		Check(parts.Display.Calls.back() == "scale 20" && presenter.Display.Picked.has_value() && presenter.Display.Picked->Width == 1920, "OK applies the scale and picks the mode");
 	}
 
@@ -4237,12 +4447,14 @@ void Test_Classic_Options_Presenter(void)
 		Drive(presenter, "select", 0);
 		Drive(presenter, "music", 9);
 		Drive(presenter, "sfx", 1);
+		Drive(presenter, "unit", 2);
+		Drive(presenter, "movie", 1);
 		parts.Sound.Calls.clear();
 
 		Drive(presenter, "cancel");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Cancel closes the page");
 		Check(parts.Game.Calls.empty() && parts.Display.Calls.empty() && !presenter.Display.Picked.has_value(), "Cancel applies no game or display setting");
-		Check(parts.Sound.Joined() == "score 0.4; sound 0.5", "Cancel puts the moved volumes back without feedback");
+		Check(parts.Sound.Joined() == "score 0.4; sound 0.5; unit 0.5; movie 0.9", "Cancel puts the moved volumes back without feedback");
 	}
 
 	{
@@ -4279,7 +4491,7 @@ void Test_Classic_Options_Screen(Rml::Context & context, CountingSystemInterface
 	Check(system.Problems == problems, "the classic options page raises no RmlUi warning or error");
 
 	Rml::ElementDocument * document = Rml(*view).Document();
-	char const * const ids[] = { "detail", "difficulty", "scroll", "music", "sfx", "voice", "tooltips", "lines", "hidden", "modes", "keyboard", "mods", "ok", "cancel", "scale" };
+	char const * const ids[] = { "detail", "difficulty", "scroll", "music", "sfx", "voice", "unit", "movie", "tooltips", "lines", "hidden", "defencerange", "modes", "keyboard", "mods", "ok", "cancel", "scale" };
 	for (char const * id : ids) {
 		Check(document != nullptr && document->GetElementById(id) != nullptr, (std::string("the classic options page has ") + id).c_str());
 	}
@@ -4621,10 +4833,10 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	Rml::ElementDocument * document = Rml(*view).Document();
 	Rml::Element * dialog = document->GetElementById("reveal");
-	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(540.0f, 326.0f), "the map dialog is the size its template comes to");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(620.0f, 412.0f), "the map dialog is the size its template comes to");
 
 	Rml::Element * maps = document->GetElementById("maps");
-	Check(maps != nullptr && maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(263.0f, 232.0f), "the mission list is its template's rect, frame and all");
+	Check(maps != nullptr && maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(330.0f, 232.0f), "the mission list is its template's rect, frame and all");
 
 	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the map dialog holds a surface for the preview");
 
@@ -4642,6 +4854,118 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	view->Release();
 	context.Update();
+}
+
+
+void Test_Scenario_Duplicates(void)
+{
+	struct Map { char const * Label; char const * File; };
+	static Map const maps[] = {
+		{"The Alamo (2)", "XMP29U2.MAP"},
+		{"Dustbowl (2)", "XDustbowl.MAP"},
+		{"The Alamo (2)", "XMP29MW.MAP"},
+		{"Dustbowl (2)", "xdustbowl.map"},
+		{"Ice Age", "ICE.MAP"},
+	};
+
+	RecordingScenarioServiceClass service;
+	UIScenarioState state;
+	for (Map const & map : maps) {
+		UIScenarioEntry entry;
+		entry.Label = map.Label;
+		entry.File = map.File;
+		entry.Players = 2;
+		state.Entries.push_back(entry);
+	}
+	state.Selected = 3;
+
+	UIScenarioPresenterClass presenter(service, std::move(state));
+	std::string text;
+	for (UIScenarioRow const & row : presenter.State.Rows) {
+		text += row.Label + "|";
+	}
+	Check(text == "Dustbowl (2)|Ice Age|The Alamo (2) (XMP29MW)|The Alamo (2) (XMP29U2)|", "a file listed twice shows once, and two files with one name show their file names");
+	Check(presenter.State.Selected == 1, "a highlight on the second listing of a file moves to its first");
+	Check(presenter.State.Summary == "4 maps", "the summary counts files, not listings");
+}
+
+
+void Test_Scenario_List(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	struct Map { char const * Label; char const * File; int Players; };
+	static Map const maps[] = {
+		{"Zebra Crossing", "XMP05.MAP", 4},
+		{"Map 10", "XMP10.MAP", 2},
+		{"alpha", "BETA.MAP", 8},
+		{"Map 2", "XMP02.MAP", 2},
+		{"Ghost Town", "UNKNOWN.MAP", 0},
+		{"Dune Patrol (4)", "DUNE.MAP", 4},
+	};
+
+	RecordingScenarioServiceClass service;
+	UIScenarioState state;
+	for (Map const & map : maps) {
+		UIScenarioEntry entry;
+		entry.Label = map.Label;
+		entry.File = map.File;
+		entry.Players = map.Players;
+		state.Entries.push_back(entry);
+	}
+	state.Selected = 3;
+
+	UIScenarioPresenterClass presenter(service, std::move(state));
+	auto labels = [&]() {
+		std::string text;
+		for (UIScenarioRow const & row : presenter.State.Rows) {
+			text += row.Label + "|";
+		}
+		return(text);
+	};
+
+	Check(labels() == "alpha|Dune Patrol (4)|Ghost Town|Map 2|Map 10|Zebra Crossing|", "the list starts in name order, ignoring case, with numbers by value");
+	Check(presenter.State.Selected == 3 && service.Asked == 0, "the map that was highlighted stays highlighted when the list opens");
+	Check(presenter.State.Summary == "6 maps", "the summary counts every map when nothing is filtered");
+	Check(presenter.State.Counts.size() == 4 && presenter.State.Counts[0].Value == 0 && presenter.State.Counts[1].Value == 2
+		&& presenter.State.Counts[3].Value == 8, "the player count choices are Any number and each count a map has");
+
+	Drive(presenter, "order", UI_SCENARIO_ORDER_PLAYERS);
+	Check(labels() == "Map 2|Map 10|Dune Patrol (4)|Zebra Crossing|alpha|Ghost Town|", "ordered by players, maps with fewer starts come first and an unknown count last");
+
+	Drive(presenter, "order", UI_SCENARIO_ORDER_NAME);
+	Drive(presenter, "players", 4);
+	Check(labels() == "Dune Patrol (4)|Zebra Crossing|", "the player count filter keeps maps with exactly that many starts");
+	Check(presenter.State.Selected == 5 && service.Row == 5, "a highlighted map the filter hides gives way to the first row, with its picture");
+	Check(presenter.State.Summary == "Showing 2 of 6 maps", "the summary says how many maps show");
+	Drive(presenter, "players", 0);
+
+	Drive(presenter, "search", 0, "ZEBRA");
+	Check(labels() == "Zebra Crossing|", "the search ignores case");
+	Drive(presenter, "search", 0, "xmp10");
+	Check(labels() == "Map 10|", "the search also matches the file name");
+	Drive(presenter, "search", 0, "map 2");
+	Check(labels() == "Map 2|", "every word of the search must match");
+	Drive(presenter, "search", 0, "nothing here");
+	Check(presenter.State.Rows.empty(), "a search with no match leaves an empty list");
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value(), "and OK does nothing then");
+	Drive(presenter, "search", 0, "");
+
+	Drive(presenter, "select", 0);
+	Drive(presenter, "step", 1);
+	Check(presenter.State.Selected == 0, "stepping down from the last row stays on it");
+	Drive(presenter, "step", -2);
+	Check(presenter.State.Selected == 3, "stepping up goes by rows of the list as shown");
+	Drive(presenter, "step", -100);
+	Check(presenter.State.Selected == 2, "a long step stops at the first row");
+
+	Drive(presenter, "search", 0, "dune");
+	Drive(presenter, "ok");
+	Check(presenter.Choice == UI_SCENARIO_ACCEPT && presenter.State.Selected == 5, "OK takes the highlighted map of the filtered list");
+
+	(void)context;
+	Check(system.Problems == problems, "the map list raises no RmlUi warning or error");
 }
 
 
@@ -4676,8 +5000,7 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 		virtual void Select_Game(int index) override { Games++; LastGame = index; }
 		virtual void Say(char const * text) override { Said.push_back(text); }
 		virtual void Set_Side(int) override {}
-		virtual void Set_Color(int) override {}
-		virtual void Set_Custom_Color(int, unsigned int) override {}
+		virtual void Set_Color(int, unsigned int) override {}
 		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
 		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
 		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
@@ -5051,8 +5374,9 @@ void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass 
 
 	Drive(presenter, "kick");
 	Check(service.Kicked.empty(), "the kick button does nothing while nobody is picked");
+	Check(!presenter.State.CanKick && !presenter.State.KickTip.empty(), "and it is off, with a tip that says to pick a player first");
 	Drive(presenter, "pick", 1);
-	Check(presenter.State.Players[1].Selected, "a picked row is marked");
+	Check(presenter.State.Players[1].Selected && presenter.State.CanKick, "a picked row is marked and turns the kick button on");
 	Drive(presenter, "kick");
 	Check(service.Kicked.size() == 1 && service.Kicked[0] == "Guest", "the kick button reports who was picked");
 	Check(!presenter.State.Players[1].Selected, "and lets them go again");
@@ -5365,6 +5689,34 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Rml::Element * shown = document->GetElementById("swatch1");
 	Check(shown != nullptr && shown->GetInnerRML().find("Color " + std::to_string(first)) != std::string::npos, "the color button of the row that gave up a color shows its new name");
 
+	// A setting the code changes shows on its check box at the next Sync, as the other settings do.
+	{
+		auto checked = [&](char const * label) {
+			Rml::ElementList labels;
+			document->GetElementsByClassName(labels, "check");
+			for (Rml::Element * check : labels) {
+				if (check->GetInnerRML().find(label) != std::string::npos) {
+					Rml::ElementList inputs;
+					check->GetElementsByTagName(inputs, "input");
+					return(!inputs.empty() && inputs[0]->HasAttribute("checked"));
+				}
+			}
+			return(false);
+		};
+		bool const superweapons = presenter.State.SuperWeapons;
+		bool const buildoffally = presenter.State.BuildOffAlly;
+		presenter.State.SuperWeapons = !superweapons;
+		presenter.State.BuildOffAlly = !buildoffally;
+		view->Sync();
+		context.Update();
+		Check(checked("Superweapons") == !superweapons, "the Superweapons check box follows a change made in code");
+		Check(checked("Build Off Ally") == !buildoffally, "the Build Off Ally check box follows a change made in code");
+		presenter.State.SuperWeapons = superweapons;
+		presenter.State.BuildOffAlly = buildoffally;
+		view->Sync();
+		context.Update();
+	}
+
 	// Numbered starts are the same, and Random may repeat.
 	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_EASY);
 	Choose_Slot(presenter, "slotstart", 0, 3);
@@ -5407,10 +5759,7 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(presenter.State.MapName == "Picked map" && presenter.State.Rows == 2, "the setup takes the map that came back and shows the rows it holds");
 	Check(presenter.State.Slots[1].Start <= 2 && !presenter.State.Slots[2].Active, "a start the new map lacks becomes Random and rows past the new count do not play");
 
-	// Starting needs an opponent who is not an ally of everyone.
-	Choose_Slot(presenter, "slotkind", 1, UI_SKIRMISH_SLOT_OPEN);
-	Drive(presenter, "ok");
-	Check(!presenter.Result.has_value() && !presenter.State.Notice.empty() && service.Asked == 0, "a game against nobody does not start, and says why");
+	// A game with computer players needs one who is not an ally of everyone.
 	Choose_Slot(presenter, "slotkind", 1, UI_SKIRMISH_SLOT_MEDIUM);
 	Choose_Slot(presenter, "slotteam", 0, 1);
 	Choose_Slot(presenter, "slotteam", 1, 1);
@@ -5442,6 +5791,53 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(system.Problems == problems, "changing the player list raises no RmlUi warning or error");
 
 	view->Release();
+	context.Update();
+}
+
+
+// With no computer player the person plays alone: the setup starts whatever the team boxes say, and
+// the service's map check still holds the setup open.
+void Test_Skirmish_Solo(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISkirmishState state;
+	state.Handle = "Player";
+	Fill_Skirmish_Lists(state);
+	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
+	state.Slots[1].Kind = UI_SKIRMISH_SLOT_OPEN;
+	state.Slots[2].Kind = UI_SKIRMISH_SLOT_CLOSED;
+
+	RecordingSkirmishServiceClass service;
+	UISkirmishPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the solo skirmish view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(presenter.State.Computer_Count() == 0 && presenter.State.Is_Active(0) && !presenter.State.Is_Active(1), "a setup with no computer player plays only the person");
+
+	Choose_Slot(presenter, "slotteam", 0, 2);
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_START && service.Asked == 1, "the person alone starts a game, whatever team they are on");
+	Check(presenter.State.Notice.empty(), "and a game against nobody leaves no notice");
+
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the solo setup raises no RmlUi warning or error");
+	view->Release();
+	context.Update();
+
+	RecordingSkirmishServiceClass refusing;
+	refusing.Startable = false;
+	UISkirmishPresenterClass refused(refusing, state);
+	std::unique_ptr<UIViewClass> refused_view = UI_Skirmish_View(refused);
+	Drive(refused, "ok");
+	Check(!refused.Result.has_value() && refusing.Asked == 1, "a map too small for the person alone leaves the setup open");
+	refused_view->Release();
 	context.Update();
 }
 
@@ -6328,9 +6724,12 @@ void Test_Documents(void)
 		Test_Raster_Font();
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
+		Test_Skirmish_Solo(*context, system);
 		Test_Skirmish_Layouts(*context, system);
 		Test_Colour_Picker(*context, system);
 		Test_Scenario_Screen(*context, system);
+		Test_Scenario_List(*context, system);
+		Test_Scenario_Duplicates();
 		Test_Net_Browser_Screen(*context, system);
 		Test_Net_Setup_Screen(*context, system);
 		Test_Version_Screen(*context, system);
@@ -7360,7 +7759,7 @@ void Test_Shell(void)
 
 		Check(found && dragged && presenter.State.Speed == 0 && named == "Fastest", "the speed slider runs backwards, so dragging it to the far end takes the fastest setting");
 		Check(!presenter.State.CameoText && quiet, "a switch and a slider change the screen without reaching the engine");
-		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
+		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "and asks for the screen its button names");
 	}
 
@@ -7647,19 +8046,15 @@ void Test_Settings_Host(void)
 	UISettingsPageClass page;
 	page.Tab = UI_TAB_GAME;
 	page.View = &game_view;
-	page.Presenter = &game;
 	pages.push_back(page);
 	page.Tab = UI_TAB_DISPLAY;
 	page.View = &display_view;
-	page.Presenter = &display;
 	pages.push_back(page);
 	page.Tab = UI_TAB_GRAPHICS;
 	page.View = &graphics_view;
-	page.Presenter = &display;
 	pages.push_back(page);
 	page.Tab = UI_TAB_AUDIO;
 	page.View = &audio_view;
-	page.Presenter = &audio;
 	pages.push_back(page);
 
 	unsigned const offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_GRAPHICS) | (1u << UI_TAB_AUDIO);
@@ -7709,6 +8104,8 @@ int main(void)
 	Test_Game_Controls_Presenter();
 	Test_Keys();
 	Test_Keyboard_Presenter();
+	Test_Keyboard_Refusals();
+	Test_Keyboard_Reset_Notice();
 	Test_Mods_Presenter();
 	Test_Settings_Tabs_Presenter();
 	Test_Settings_Host();

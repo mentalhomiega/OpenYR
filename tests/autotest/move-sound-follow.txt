@@ -1,0 +1,24 @@
+; A Rhino tank (HTNK) the player owns stands at 58,40 and is ordered to 66,40. The move-sound-follow rules give it
+; OilDerrickLoop, an endless loop, as its MoveSound. gamemd's FootClass::Update (0x4DA530) starts the loop when the
+; object moves and re-aims it at the object's place on every update through AudioController::PlayEvent (0x750D40).
+; The loop ends three updates after the object stops. The runner mutes sound effects, so the observable is the
+; LogSoundEffects line "Sound follows: OilDerrickLoop" (one per update, at the tank's cell) and the movesounds probe.
+; Before this change the loop was logged once as "Sound: OilDerrickLoop at 58,40" and never re-aimed.
+; Expected: no loop before the order. After the order, "Sound follows: OilDerrickLoop" lines appear every update at the
+; cell the tank is in, and the cell advances from 58,40 to 66,40. The probe at frame 150 reports playing 0 with
+; no more lines after it. Lines for the map's starting MCV (MCVMoveStart) are unrelated and are filtered out by the run.
+1 sounds 1
+10 command CenterBase
+20 reveal
+25 view 62 40
+30 grantunit HTNK 58 40
+40 movesounds HTNK
+50 move HTNK 66 40
+52 movesounds HTNK
+60 movesounds HTNK
+70 movesounds HTNK
+90 movesounds HTNK
+120 movesounds HTNK
+150 movesounds HTNK
+200 movesounds HTNK
+240 quit

@@ -29,7 +29,20 @@ namespace NetSemantic
 	/// <summary>Checks a game-speed selector before table lookup.</summary>
 	bool Game_Speed_Is_Valid(int game_speed) noexcept
 	{
-		return(game_speed >= 0 && game_speed <= 6);
+		return(game_speed >= 0 && game_speed < SPEED_SETTING_COUNT);
+	}
+
+
+	/// <summary>
+	/// Holds a game speed read from the settings file to the range the speed tables cover, 0 to
+	/// SPEED_SETTING_COUNT. gamemd stores the value unchecked (0x5FA650). Its Normalize_Delay
+	/// (0x5FB2E0) has a column for every speed up to SPEED_SETTING_COUNT, so that last speed works
+	/// and runs solo play with no frame limit, but it divides by zero at -1 and indexes past the
+	/// table outside that range.
+	/// </summary>
+	int Clamp_Game_Speed(int game_speed) noexcept
+	{
+		return(game_speed < 0 ? 0 : (game_speed > SPEED_SETTING_COUNT ? SPEED_SETTING_COUNT : game_speed));
 	}
 
 
@@ -78,7 +91,7 @@ namespace NetSemantic
 			return(true);
 		}
 		return(frame_send_rate >= 1 && frame_send_rate <= 10 && delay >= 2 * frame_send_rate
-			&& delay <= 250 && delay % frame_send_rate == 0);
+			&& delay <= LEGACY_MAX_AHEAD_LIMIT && delay % frame_send_rate == 0);
 	}
 
 
@@ -90,6 +103,6 @@ namespace NetSemantic
 		}
 
 		unsigned int const minimum_max_ahead = frame_send_rate == 1 ? 4 : 3 * frame_send_rate;
-		return(max_ahead >= minimum_max_ahead && max_ahead <= 250 && max_ahead % frame_send_rate == 0);
+		return(max_ahead >= minimum_max_ahead && max_ahead <= LEGACY_MAX_AHEAD_LIMIT && max_ahead % frame_send_rate == 0);
 	}
 }

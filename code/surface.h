@@ -79,6 +79,7 @@ class Surface
 		virtual bool Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth = false, bool shade_by_alpha = true, int fade = 256) = 0;
 		virtual bool Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, int glow_strength, int start_depth, int end_depth, bool write_depth = false) = 0;
 		virtual bool Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass & color, int start_depth, int end_depth, bool write_depth, bool blend_red, bool blend_green, bool blend_blue, float intensity) = 0;
+		virtual bool Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass const & color, float intensity, int start_depth, int end_depth) = 0;
 
 		virtual bool Plot_Line(Rect const &area, Point2D &start, Point2D &end, void(*drawer_callback)(Point2D const &)) = 0;
 
@@ -125,4 +126,29 @@ class Surface
 		*/
 		int Width;
 		int Height;
+};
+
+
+/// <summary>
+/// Locks a surface for the lifetime of the object. The surface is unlocked on
+/// exit only when Lock returned a pixel pointer, so a failed lock leaves the
+/// lock count unchanged.
+/// </summary>
+class SurfaceLock
+{
+	public:
+		explicit SurfaceLock(Surface const & surface) : Locked(surface), Pixels(surface.Lock()) {}
+		SurfaceLock(Surface const & surface, Point2D point) : Locked(surface), Pixels(surface.Lock(point)) {}
+		~SurfaceLock() {if (Pixels != NULL) Locked.Unlock();}
+		SurfaceLock(SurfaceLock const &) = delete;
+		SurfaceLock & operator = (SurfaceLock const &) = delete;
+
+		/// The pixel pointer from Lock, or NULL if the surface could not be locked.
+		template<typename T>
+		T * As(void) const {return(static_cast<T *>(Pixels));}
+		bool Is_Valid(void) const {return(Pixels != NULL);}
+
+	private:
+		Surface const & Locked;
+		void * Pixels;
 };

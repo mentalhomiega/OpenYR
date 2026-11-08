@@ -33,6 +33,7 @@
 #pragma once
 
 #include "abstract.h"
+#include "dialog.hh"
 #include "ftimer.h"
 #include "super.hh"
 #include "timer.h"
@@ -69,6 +70,7 @@ class SuperClass : public AbstractClass
 		bool Enable(bool onetime = false, bool player=false, bool quiet=false);
 		void Forced_Charge(bool player=false);
 		void Place(Cell const & cell, bool player);
+		void Finish_Placement(bool player);
 		void Drop_Pods(Cell const & cell) const;
 		void Iron_Curtain(Cell const & cell) const;
 		void Genetic_Mutator(Cell const & cell) const;
@@ -214,3 +216,6 @@ class SuperClass : public AbstractClass
 			ANIMATION_STAGES=54
 		};
 };
+
+// Shows a string table message to the local player for ten seconds.
+void Show_Super_Message(char const * label, TextPrintType style);

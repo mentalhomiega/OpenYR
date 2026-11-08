@@ -80,6 +80,17 @@ NetTiming::Milliseconds Legacy_Connection_Timeout(unsigned int ticks)
 	return(std::clamp(Ticks_To_Milliseconds(ticks), NetTiming::MINIMUM_CONNECTION_TIMEOUT, NetTiming::MAXIMUM_CONNECTION_TIMEOUT));
 }
 
+// A queued packet goes through the same admission as one just received, whichever queue holds it.
+template<class Entry>
+NetAdmission::ConnectionResult Admit_Entry(Entry const & entry, int max_packet_len)
+{
+	std::span<std::byte const> bytes;
+	if (entry.Buffer != NULL && entry.BufLen > 0) {
+		bytes = {reinterpret_cast<std::byte const *>(entry.Buffer), static_cast<std::size_t>(entry.BufLen)};
+	}
+	return(NetAdmission::Admit_Connection_Packet(bytes, sizeof(CommHeaderType), static_cast<std::size_t>(max_packet_len)));
+}
+
 }
 
 
@@ -360,13 +371,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 			If ptr is valid, get ptr to its data
 			..................................................................*/
 			if (send_entry != NULL) {
-				std::span<std::byte const> entry_bytes;
-				if (send_entry->Buffer != NULL && send_entry->BufLen > 0) {
-					entry_bytes = {reinterpret_cast<std::byte const *>(send_entry->Buffer),
-						static_cast<std::size_t>(send_entry->BufLen)};
-				}
-				NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(
-					entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+				NetAdmission::ConnectionResult const entry = Admit_Entry(*send_entry, MaxPacketLen);
 
 				/*...............................................................
 				If ACK is for this entry, mark it
@@ -439,13 +444,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 				rec_entry = Queue->Get_Receive(i);
 
 				if (rec_entry) {
-					std::span<std::byte const> entry_bytes;
-					if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
-						entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer),
-							static_cast<std::size_t>(rec_entry->BufLen)};
-					}
-					NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(
-						entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+					NetAdmission::ConnectionResult const entry = Admit_Entry(*rec_entry, MaxPacketLen);
 
 					/*...........................................................
 					Packet is found; it's a resend
@@ -502,14 +501,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 						rec_entry = Queue->Get_Receive(i);
 
 						if (rec_entry) {
-							std::span<std::byte const> entry_bytes;
-							if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
-								entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer),
-									static_cast<std::size_t>(rec_entry->BufLen)};
-							}
-							NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(
-								entry_bytes, sizeof(CommHeaderType),
-								static_cast<std::size_t>(MaxPacketLen));
+							NetAdmission::ConnectionResult const entry = Admit_Entry(*rec_entry, MaxPacketLen);
 
 							/*......................................................
 							Entry is found
@@ -572,6 +564,19 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 		return(0);
 	}
 
+	// Copies an admitted payload out; a payload that does not fit the caller's buffer is dropped.
+	auto const Deliver_Payload = [&](NetAdmission::ConnectionResult const & admission) {
+		NetAdmission::Error const destination = NetAdmission::Validate_Destination(
+			admission.Payload, static_cast<std::size_t>(capacity));
+		if (destination != NetAdmission::Error::NONE) {
+			Record_Admission_Drop(destination, admission.Code);
+			return(false);
+		}
+		memcpy(buf, admission.Payload.data(), admission.Payload.size());
+		(*buflen) = static_cast<int>(admission.Payload.size());
+		return(true);
+	};
+
 	/*------------------------------------------------------------------------
 	Ensure that we read the packets in order.  LastReadID is the ID of the
 	last PACKET_DATA_ACK packet we read.
@@ -584,13 +589,7 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 		Only read this entry if it hasn't been yet
 		.....................................................................*/
 		if (rec_entry && rec_entry->IsRead==0) {
-			std::span<std::byte const> entry_bytes;
-			if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
-				entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer),
-					static_cast<std::size_t>(rec_entry->BufLen)};
-			}
-			NetAdmission::ConnectionResult const admission = NetAdmission::Admit_Connection_Packet(
-				entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+			NetAdmission::ConnectionResult const admission = Admit_Entry(*rec_entry, MaxPacketLen);
 			if (!admission.Succeeded()) {
 				rec_entry->IsRead = 1;
 				Record_Admission_Drop(admission.ErrorCode, admission.Code);
@@ -612,15 +611,10 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 				LastReadID = admission.PacketID;
 				rec_entry->IsRead = 1;
 
-				NetAdmission::Error const destination = NetAdmission::Validate_Destination(
-					admission.Payload, static_cast<std::size_t>(capacity));
-				if (destination != NetAdmission::Error::NONE) {
-					Record_Admission_Drop(destination, admission.Code);
-					continue;
+				if (Deliver_Payload(admission)) {
+					return(1);
 				}
-				memcpy(buf, admission.Payload.data(), admission.Payload.size());
-				(*buflen) = static_cast<int>(admission.Payload.size());
-				return(1);
+				continue;
 			}
 			/*..................................................................
 			If this is a DATA_NOACK packet, who cares what the ID is?
@@ -628,15 +622,10 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 			else if (admission.Code == PACKET_DATA_NOACK) {
 				rec_entry->IsRead = 1;
 
-				NetAdmission::Error const destination = NetAdmission::Validate_Destination(
-					admission.Payload, static_cast<std::size_t>(capacity));
-				if (destination != NetAdmission::Error::NONE) {
-					Record_Admission_Drop(destination, admission.Code);
-					continue;
+				if (Deliver_Payload(admission)) {
+					return(1);
 				}
-				memcpy(buf, admission.Payload.data(), admission.Payload.size());
-				(*buflen) = static_cast<int>(admission.Payload.size());
-				return(1);
+				continue;
 			}
 		}
 	}

@@ -15,8 +15,8 @@
 #include "campaignname.hh"
 #include "csf.h"
 #include "data.h"
-#include "gamedlg.h"
 #include "globals.h"
+#include "goptions.h"
 #include "init.h"
 #include "options.h"
 #include "surface.h"
@@ -37,23 +37,18 @@ void UI_Campaign_State(UICampaignState & state)
 	for (int index = 0; index < Campaigns.Count(); index++) {
 		CampaignClass * campaign = Campaigns[index];
 		// A battle file's headers and movie sequences name no map, so they cannot start a mission and are left out.
-		if (campaign == NULL || campaign->DebugOnly || !Campaign_Available(campaign) || !Campaign_Is_Mission_File(campaign->ScenarioName)) {
+		if (campaign == NULL || campaign->DebugOnly || !Campaign_Is_Offered(campaign)) {
 			continue;
 		}
 
 		// Yuri's Revenge names a campaign by a string table label; a value no label matches is shown as written.
 		UICampaignEntry entry;
-		entry.Description = StringTable.Find_UTF8(campaign->Description);
-		if (entry.Description.empty()) {
-			entry.Description = campaign->Description;
-		}
+		entry.Description = StringTable.Find_UTF8(campaign->Description, campaign->Description);
 		entry.Campaign = index;
 		state.Entries.push_back(entry);
 	}
 
-	for (int index = 0; index < OptionsClass::MAX_DIFFICULTY_SETTING; index++) {
-		state.DifficultyNames.push_back(Fetch_String(GameDifficultyNames[index]));
-	}
+	state.DifficultyNames = UI_Difficulty_Names();
 
 	state.Difficulty = Options.Difficulty;
 

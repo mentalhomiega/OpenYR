@@ -10,6 +10,7 @@
 #pragma once
 
 #include "loaddlg.h"
+#include "rmgsettings.h"
 
 #include "isotype.hh"
 
@@ -228,6 +229,8 @@ public:
 		bool Is_Ramp_Area_Clear(Rect & rect, int region_id);
 		void Flatten_Area(Rect const & rect, int region_id);
 		void Flatten_Area(Rect const & rect);
+		void Set_Ramp_Jog_Cell(Cell const & cell, int row, int ramp);
+		void Set_Ramp_Straight_Cell(Cell const & cell, int index, int ramp, int region_id);
 
 	public:
 		/*
@@ -630,6 +633,11 @@ class MapGeneratorClass
 		MapPreviewClass * MapPreview;
 
 		/*
+		 * These are the RMGMD.INI settings, read again each time a map is laid out.
+		 */
+		RMGSettingsClass Settings;
+
+		/*
 		 * These are the dimensions of the playable part of the map in cells, chosen from the
 		 * seed's size settings and player count. The generator sizes its working arrays and
 		 * its region limits from them.
@@ -661,6 +669,12 @@ class MapGeneratorClass
 		 * rolled once per map, so a map either has them or it does not.
 		 */
 		bool PlaceWaterfall;
+
+		/*
+		 * This is how many more trees the woods of the map being made may plant. MaxTrees in
+		 * RMGMD.INI sets it before the vegetation pass, from the map's width and vegetation.
+		 */
+		int TreesLeft;
 };
 
 extern MapGeneratorClass RandomMapGen;
@@ -677,6 +691,8 @@ inline bool My_In_Radar(Cell const &cell)
 }
 
 void Do_Random_Map(bool (*callback)());
+// The settings of the RMGMD.INI the game finds, or the defaults when it finds none.
+RMGSettingsClass Load_RMG_Settings(void);
 int Do_Random_Map_Dialog(bool (*callback)());
 
 extern MapRegionClass::CellData *RMGCellData;

@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 #include "always.h"
-
-#include <cctype>
+#include "hexdigit.h"
 
 
 /// <summary>
@@ -23,20 +22,12 @@ int ahtoi(const char * str)
 {
 	int integer = 0;
 	while (str) {
-		if (!isxdigit((unsigned char)*str)) {
+		int const digit = Hex_Digit_Value(*str);
+		if (digit < 0) {
 			break;
 		}
-		char ch = *str;
-
-		integer *= 16; /// desired base is 16
+		integer = integer * 16 + digit;
 		str++;
-
-		/// is digit?
-		if (ch >= '0' && ch <= '9') {
-			integer += ch - '0';
-		} else {
-			integer += toupper((unsigned char)ch) - ('A' - 10);
-		}
 	}
 	return(integer);
 }

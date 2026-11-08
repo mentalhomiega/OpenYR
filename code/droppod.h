@@ -47,7 +47,7 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker.Has_Locomotor());}
 
 	private:
 		enum DropPodDirType {
@@ -76,5 +76,5 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		 * handed back the moment the pod touches ground, so that the object resumes moving
 		 * the way its type normally does.
 		 */
-		std::unique_ptr<ILocomotion> Piggybacker;
+		PiggybackSlot Piggybacker;
 };

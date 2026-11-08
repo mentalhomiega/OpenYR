@@ -56,8 +56,7 @@ void KamikazeClass::Add(AircraftClass * aircraft, AbstractClass * target)
 	NodeType node;
 	node.Aircraft = aircraft;
 	if (target != NULL) {
-		ObjectClass * object = target->As_ObjectClass();
-		Coord const coord = object != NULL ? object->Target_Coord() : target->As_Coord();
+		Coord const coord = Aim_Coord(*target);
 		node.TargetCell = &Map[coord.As_Cell()];
 	} else {
 		node.TargetCell = Facing_Neighbour(aircraft);
@@ -96,7 +95,7 @@ void KamikazeClass::Update(void)
 
 	for (NodeType const & node : Nodes) {
 		AircraftClass * aircraft = node.Aircraft;
-		CellClass * cell = node.TargetCell != NULL ? node.TargetCell : Facing_Neighbour(aircraft);
+		CellClass * cell = node.TargetCell;
 		aircraft->Ammo = 1;
 		aircraft->Assign_Target(cell);
 		aircraft->Assign_Mission(MISSION_ATTACK);

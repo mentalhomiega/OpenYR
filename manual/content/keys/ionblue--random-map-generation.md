@@ -4,8 +4,9 @@ scope: random-map-generation
 label: Random map generation
 see_also: [UseIonStorms, "system:ion-storms"]
 when_omitted:
-  kind: context-dependent
-  note: 1, the generated map's `Blue` value, which leaves the blue channel unchanged.
+  kind: value
+  value: ".75"
+  note: The storm tint every generated map is given.
 ---
 
 Random map generation reads this entry from the `[Lighting]` section of `ION.INI`, and only when the [`UseIonStorms`](/keys/useionstorms/) option is on for the map being built. The file sets the storm lighting for every generated map. A loose `ION.INI` in the game directory takes precedence over one in an archive, as with any [game file](/formats/mix/).

@@ -37,6 +37,20 @@
 
 namespace {
 
+// Calls visit(x, y) for each offset on the square ring at the given distance, row by row.
+template<typename Visit>
+void For_Each_Ring_Offset(int ring, Visit visit)
+{
+	for (int y = -ring; y <= ring; y++) {
+		for (int x = -ring; x <= ring; x++) {
+			if (std::abs(x) != ring && std::abs(y) != ring) {
+				continue;
+			}
+			visit(x, y);
+		}
+	}
+}
+
 // The house that takes freed slaves when nothing killed their miner: the first house whose side is
 // Civilian, as gamemd's SlaveManagerClass::Killed picks it (0x6B0AE0).
 HouseClass * Neutral_House(void)
@@ -55,14 +69,13 @@ HouseClass * Neutral_House(void)
 
 bool SlaveManagerClass::NodeType::Is_Timer_Expired(void) const
 {
-	return(Frame - TimerStart >= TimerLength);
+	return(Timer.Is_Expired());
 }
 
 
 void SlaveManagerClass::NodeType::Start_Timer(int frames)
 {
-	TimerStart = Frame;
-	TimerLength = frames;
+	Timer.Begin(frames);
 }
 
 
@@ -70,9 +83,8 @@ void SlaveManagerClass::NodeType::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Slave);
 	stream.Serialize(Status);
-	stream.Serialize(TimerStart);
-	stream.Serialize(TimerLength);
-	stream.Serialize(OreCell);
+	stream.Serialize(Timer.Start);
+	stream.Serialize(Timer.Length);
 }
 
 
@@ -134,6 +146,13 @@ Cell SlaveManagerClass::Dock_Cell(void) const
 		return(building->PositionCell + Cell(building->Class->Width() - 1, building->Class->Height() / 2));
 	}
 	return(Owner->Get_Cell());
+}
+
+
+void SlaveManagerClass::Go_Idle(void)
+{
+	MinerStatus = MINER_IDLE;
+	MinerTimer = Frame;
 }
 
 
@@ -200,117 +219,35 @@ void SlaveManagerClass::AI(void)
 	bool const working = Owner->RTTI == RTTI_BUILDING;
 
 	for (NodeType & node : Nodes) {
-		InfantryClass * slave = node.Slave;
-		if (slave == NULL && node.Status != NODE_DEAD) {
+		if (node.Slave == NULL && node.Status != NODE_DEAD) {
 			node.Status = NODE_DEAD;
 			node.Start_Timer(RegenRate);
 		}
 
 		switch (node.Status) {
 			case NODE_READY:
-				if (working) {
-					Cell const dock = Dock_Cell();
-					Cell const cell = Map.Nearby_Location(dock, SPEED_FOOT);
-					if (cell != CELL_NONE && slave->Unlimbo(Map[cell].Center_Coord(), DIR_E)) {
-						node.Status = NODE_SCANNING;
-					}
-				}
+				Node_Ready(node, working);
 				break;
 
-			case NODE_SCANNING: {
-				if (!working) {
-					Send_Home(node);
-					break;
-				}
-				Cell const ore = slave->Storage.Get_Total_Amount() >= slave->Class->Capacity ? CELL_NONE : slave->Search_For_Tiberium(Rule->SlaveMinerSlaveScan / CELL_LEPTON_W);
-				if (ore == CELL_NONE) {
-					Send_Home(node);
-				} else {
-					node.OreCell = ore;
-					node.Status = NODE_MOVING;
-					slave->Assign_Destination(&Map[ore]);
-					slave->Assign_Mission(MISSION_MOVE);
-				}
+			case NODE_SCANNING:
+				Node_Scanning(node, working);
 				break;
-			}
 
 			case NODE_MOVING:
-				if (!working) {
-					Send_Home(node);
-				} else if (Map[slave->Get_Cell()].Land_Type() == LAND_TIBERIUM) {
-					// Ore underfoot starts the shoveling even while a move order is pending, as in SlaveManagerClass::Update.
-					slave->Assign_Destination(NULL);
-					node.Status = NODE_HARVESTING;
-					// The first shovelful comes at once and each later one HarvestRate frames after (InfantryClass::Mission_Harvest).
-					node.Start_Timer(0);
-					slave->Assign_Mission(MISSION_GUARD);
-				} else if (slave->NavCom == NULL) {
-					node.Status = NODE_SCANNING;
-				}
+				Node_Moving(node, working);
 				break;
 
-			case NODE_HARVESTING: {
-				if (!working) {
-					Send_Home(node);
-					break;
-				}
-				if (!node.Is_Timer_Expired()) {
-					slave->Do_Action(DO_SHOVEL);
-					break;
-				}
-				CellClass & cell = Map[slave->Get_Cell()];
-				bool gathered = false;
-				if (cell.Land_Type() == LAND_TIBERIUM && slave->Storage.Get_Total_Amount() < slave->Class->Capacity) {
-					TiberiumType const tib = cell.Tiberium_Type_Here();
-					if (cell.Reduce_Tiberium(1) > 0) {
-						slave->Storage.Increase_Amount(1, tib);
-						gathered = true;
-					}
-				}
-				if (slave->Storage.Get_Total_Amount() >= slave->Class->Capacity) {
-					Send_Home(node);
-				} else if (!gathered) {
-					// A slave whose cell runs dry looks for more ore before it goes home.
-					node.Status = NODE_SCANNING;
-				} else {
-					node.Start_Timer(slave->Class->HarvestRate);
-				}
+			case NODE_HARVESTING:
+				Node_Harvesting(node, working);
 				break;
-			}
 
-			case NODE_RETURNING: {
-				Cell const dock = Dock_Cell();
-				Cell const here = slave->Get_Cell();
-				int const distance = std::max(std::abs(here.X - dock.X), std::abs(here.Y - dock.Y));
-				// A slave that stops within two cells of a dock crowded by its mates has come as close as it can.
-				if (distance <= 1 || (slave->NavCom == NULL && distance <= 2 && Frame - node.TimerStart >= 30)) {
-					Unload(node);
-					// Limbo detaches the slave from this manager as if it had died, so keep it.
-					slave->Limbo();
-					node.Slave = slave;
-					node.Status = NODE_RELOADING;
-					node.Start_Timer(ReloadRate);
-				} else {
-					// A slave heading for a spot that is no longer by its miner is sent to the miner again (SlaveManagerClass::Update, 0x6AF6C0).
-					bool strayed = false;
-					if (slave->NavCom != NULL) {
-						Cell const there = slave->NavCom->Center_Coord().As_Cell();
-						Cell const home = Home_Cell();
-						int const dx = there.X - home.X;
-						int const dy = there.Y - home.Y;
-						strayed = Rule->ApproachTargetResetMultiplier < Gamemd_Length_2D(dx, dy);
-					}
-					if (slave->NavCom == NULL || strayed) {
-						slave->Assign_Destination(&Map[Home_Cell()]);
-						slave->Assign_Mission(MISSION_MOVE);
-					}
-				}
+			case NODE_RETURNING:
+				Node_Returning(node);
 				break;
-			}
 
 			case NODE_RELOADING:
 				if (node.Is_Timer_Expired()) {
-					slave->Strength = slave->Class->MaxStrength;
+					node.Slave->Strength = node.Slave->Class->MaxStrength;
 					node.Status = NODE_READY;
 				}
 				break;
@@ -330,35 +267,144 @@ void SlaveManagerClass::AI(void)
 }
 
 
+void SlaveManagerClass::Node_Ready(NodeType & node, bool working)
+{
+	if (!working) {
+		return;
+	}
+	InfantryClass * slave = node.Slave;
+	Cell const dock = Dock_Cell();
+	Cell const cell = Map.Nearby_Location(dock, SPEED_FOOT);
+	if (cell != CELL_NONE && slave->Unlimbo(Map[cell].Center_Coord(), DIR_E)) {
+		node.Status = NODE_SCANNING;
+	}
+}
+
+
+void SlaveManagerClass::Node_Scanning(NodeType & node, bool working)
+{
+	if (!working) {
+		Send_Home(node);
+		return;
+	}
+	InfantryClass * slave = node.Slave;
+	Cell const ore = slave->Storage.Get_Total_Amount() >= slave->Class->Capacity ? CELL_NONE : slave->Search_For_Tiberium(Rule->SlaveMinerSlaveScan / CELL_LEPTON_W);
+	if (ore == CELL_NONE) {
+		Send_Home(node);
+	} else {
+		node.Status = NODE_MOVING;
+		slave->Assign_Destination(&Map[ore]);
+		slave->Assign_Mission(MISSION_MOVE);
+	}
+}
+
+
+void SlaveManagerClass::Node_Moving(NodeType & node, bool working)
+{
+	InfantryClass * slave = node.Slave;
+	if (!working) {
+		Send_Home(node);
+	} else if (Map[slave->Get_Cell()].Land_Type() == LAND_TIBERIUM) {
+		// Ore underfoot starts the shoveling even while a move order is pending, as in SlaveManagerClass::Update.
+		slave->Assign_Destination(NULL);
+		node.Status = NODE_HARVESTING;
+		// The first shovelful comes at once and each later one HarvestRate frames after (InfantryClass::Mission_Harvest).
+		node.Start_Timer(0);
+		slave->Assign_Mission(MISSION_GUARD);
+	} else if (slave->NavCom == NULL) {
+		node.Status = NODE_SCANNING;
+	}
+}
+
+
+void SlaveManagerClass::Node_Harvesting(NodeType & node, bool working)
+{
+	InfantryClass * slave = node.Slave;
+	if (!working) {
+		Send_Home(node);
+		return;
+	}
+	if (!node.Is_Timer_Expired()) {
+		slave->Do_Action(DO_SHOVEL);
+		return;
+	}
+	CellClass & cell = Map[slave->Get_Cell()];
+	bool gathered = false;
+	if (cell.Land_Type() == LAND_TIBERIUM && slave->Storage.Get_Total_Amount() < slave->Class->Capacity) {
+		TiberiumType const tib = cell.Tiberium_Type_Here();
+		if (cell.Reduce_Tiberium(1) > 0) {
+			slave->Storage.Increase_Amount(1, tib);
+			gathered = true;
+		}
+	}
+	if (slave->Storage.Get_Total_Amount() >= slave->Class->Capacity) {
+		Send_Home(node);
+	} else if (!gathered) {
+		// A slave whose cell runs dry looks for more ore before it goes home.
+		node.Status = NODE_SCANNING;
+	} else {
+		node.Start_Timer(slave->Class->HarvestRate);
+	}
+}
+
+
+void SlaveManagerClass::Node_Returning(NodeType & node)
+{
+	InfantryClass * slave = node.Slave;
+	Cell const dock = Dock_Cell();
+	Cell const here = slave->Get_Cell();
+	int const distance = std::max(std::abs(here.X - dock.X), std::abs(here.Y - dock.Y));
+	// A slave that stops within two cells of a dock crowded by its mates has come as close as it can.
+	if (distance <= 1 || (slave->NavCom == NULL && distance <= 2 && Frame - node.Timer.Start >= 30)) {
+		Unload(node);
+		// Limbo detaches the slave from this manager as if it had died, so keep it.
+		slave->Limbo();
+		node.Slave = slave;
+		node.Status = NODE_RELOADING;
+		node.Start_Timer(ReloadRate);
+		return;
+	}
+
+	// A slave heading for a spot that is no longer by its miner is sent to the miner again (SlaveManagerClass::Update, 0x6AF6C0).
+	bool strayed = false;
+	if (slave->NavCom != NULL) {
+		Cell const there = slave->NavCom->Center_Coord().As_Cell();
+		Cell const home = Home_Cell();
+		int const dx = there.X - home.X;
+		int const dy = there.Y - home.Y;
+		strayed = Rule->ApproachTargetResetMultiplier < Gamemd_Length_2D(dx, dy);
+	}
+	if (slave->NavCom == NULL || strayed) {
+		slave->Assign_Destination(&Map[Home_Cell()]);
+		slave->Assign_Mission(MISSION_MOVE);
+	}
+}
+
+
 /// <summary>
 /// The richest ore cell within radius cells of the miner, searching outward ring by ring and
 /// stopping at the first ring that has any; CELL_NONE when there is none.
 /// </summary>
 Cell SlaveManagerClass::Find_Ore(int radius) const
 {
-	Cell const center = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
+	Cell const center = Dock_Cell();
 	if (Map[center].Land_Type() == LAND_TIBERIUM) {
 		return(center);
 	}
 	Cell best = CELL_NONE;
 	int bestvalue = -1;
 	for (int ring = 1; ring < radius && best == CELL_NONE; ring++) {
-		for (int y = -ring; y <= ring; y++) {
-			for (int x = -ring; x <= ring; x++) {
-				if (std::abs(x) != ring && std::abs(y) != ring) {
-					continue;
-				}
-				Cell const cell = center + Cell(x, y);
-				if (!Map.In_Radar(cell) || Map[cell].Land_Type() != LAND_TIBERIUM) {
-					continue;
-				}
-				int const value = Map[cell].Tiberium_Value();
-				if (value > bestvalue) {
-					bestvalue = value;
-					best = cell;
-				}
+		For_Each_Ring_Offset(ring, [&](int x, int y) {
+			Cell const cell = center + Cell(x, y);
+			if (!Map.In_Radar(cell) || Map[cell].Land_Type() != LAND_TIBERIUM) {
+				return;
 			}
-		}
+			int const value = Map[cell].Tiberium_Value();
+			if (value > bestvalue) {
+				bestvalue = value;
+				best = cell;
+			}
+		});
 	}
 	return(best);
 }
@@ -398,7 +444,7 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 	if (type == NULL) {
 		return(CELL_NONE);
 	}
-	Cell const from = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
+	Cell const from = Dock_Cell();
 	int const zone = Map.Get_Cell_Zone(from, MZONE_NORMAL);
 	Cell corner = Map.Nearby_Location(ore, SPEED_TRACK, zone, MZONE_NORMAL, false, Point2D(type->Width(), type->Height()), true);
 	if (corner == CELL_NONE || type->Is_Mobile_Deployer()) {
@@ -410,23 +456,18 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 		Cell best = CELL_NONE;
 		int bestdistance = INT_MAX;
 		for (int ring = 0; ring < 16 && best == CELL_NONE; ring++) {
-			for (int y = -ring; y <= ring; y++) {
-				for (int x = -ring; x <= ring; x++) {
-					if (std::abs(x) != ring && std::abs(y) != ring) {
-						continue;
-					}
-					Cell const candidate = ore + Cell(x, y);
-					if (!Map.In_Radar(candidate) || !Map.In_Radar(candidate + Cell(1, 1)) || x * x + y * y >= bestdistance) {
-						continue;
-					}
-					if (Foundation_Is_Flat(type, candidate)
-						&& Map.Is_Clear_To_Move(candidate, type->Width(), type->Height(), SPEED_TRACK, zone, MZONE_NORMAL, -1, false, true)
-						&& Map.Is_Clear_To_Move(candidate + Cell(1, 1), 1, 1, SPEED_TRACK, zone, MZONE_NORMAL, -1, false, false)) {
-						best = candidate;
-						bestdistance = x * x + y * y;
-					}
+			For_Each_Ring_Offset(ring, [&](int x, int y) {
+				Cell const candidate = ore + Cell(x, y);
+				if (!Map.In_Radar(candidate) || !Map.In_Radar(candidate + Cell(1, 1)) || x * x + y * y >= bestdistance) {
+					return;
 				}
-			}
+				if (Foundation_Is_Flat(type, candidate)
+					&& Map.Is_Clear_To_Move(candidate, type->Width(), type->Height(), SPEED_TRACK, zone, MZONE_NORMAL, -1, false, true)
+					&& Map.Is_Clear_To_Move(candidate + Cell(1, 1), 1, 1, SPEED_TRACK, zone, MZONE_NORMAL, -1, false, false)) {
+					best = candidate;
+					bestdistance = x * x + y * y;
+				}
+			});
 		}
 		if (best != CELL_NONE) {
 			corner = best;
@@ -474,128 +515,165 @@ void SlaveManagerClass::Miner_AI(void)
 	if (Owner == NULL) {
 		return;
 	}
-	bool const mobile = Owner->RTTI == RTTI_UNIT;
-	bool const deployed = Owner->RTTI == RTTI_BUILDING;
 
 	switch (MinerStatus) {
 		case MINER_IDLE:
-			if (deployed && Owner->Get_Mission() != MISSION_DECONSTRUCTION && Owner->Get_Mission() != MISSION_CONSTRUCTION) {
+			if (Owner->RTTI == RTTI_BUILDING && Owner->Get_Mission() != MISSION_DECONSTRUCTION && Owner->Get_Mission() != MISSION_CONSTRUCTION) {
 				MinerStatus = MINER_WORKING;
 			}
 			break;
 
-		case MINER_SEEKING: {
-			if (!mobile) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
-				break;
-			}
-			UnitClass * unit = (UnitClass *)Owner;
-			if (unit->NavCom != NULL) {
-				MinerStatus = MINER_MOVING;
-				break;
-			}
-			Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
-			Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
-			if (spot == CELL_NONE) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
-				DebugString("Slave: %s (%s) finds no ore to deploy at\n", unit->Class->Name(), unit->House->Class->Name());
-				break;
-			}
-			// The guard point left by an earlier stop would pull the miner back as soon as it arrives.
-			unit->ArchiveTarget = NULL;
-			unit->Assign_Destination(&Map[spot]);
-			unit->Assign_Mission(MISSION_MOVE);
-			MinerStatus = MINER_MOVING;
-			DebugString("Slave: %s (%s) at %d,%d heads for %d,%d to deploy\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, spot.X, spot.Y);
+		case MINER_SEEKING:
+			Miner_Seeking();
 			break;
-		}
 
 		case MINER_MOVING:
-		case MINER_WAITING: {
-			if (!mobile) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
-				break;
-			}
-			UnitClass * unit = (UnitClass *)Owner;
-			if (unit->NavCom != NULL || unit->Locomotion->Is_Moving()) {
-				break;
-			}
-			if (MinerStatus == MINER_WAITING && Frame - MinerTimer < 30) {
-				break;
-			}
-			BuildingTypeClass const * type = unit->Class->DeploysInto;
-			unit->Mark(MARK_UP);
-			unit->Locomotion->Mark_All_Occupation_Bits(MARK_UP);
-			Cell const place = type->Is_Mobile_Deployer() ? unit->Get_Cell() : Adjacent_Cell(unit->Get_Cell(), FACING_NW);
-			bool const legal = type->Legal_Placement(place);
-			// A computer player's miner clears friendly units off the foundation, as a failed deploy does in the original.
-			if (!legal && !unit->House->Is_Human_Player()) {
-				type->Flush_For_Placement(place, unit->House);
-			}
-			unit->Locomotion->Mark_All_Occupation_Bits(MARK_DOWN);
-			unit->Mark(MARK_DOWN);
-			bool const moving = MinerStatus == MINER_MOVING;
-			if (legal) {
-				// Deploys at once with no order, as gamemd's miner does (0x6AFD60, state 2): a queued order can be replaced by a team's Guard order before it starts.
-				MinerStatus = MINER_DEPLOYING;
-				// A deploy that completes at once moves this manager into the new structure, so nothing after this call may use it.
-				if (unit->Try_To_Deploy()) {
-					return;
-				}
-			}
-			if (moving) {
-				MinerStatus = MINER_WAITING;
-				MinerTimer = Frame;
-			} else {
-				MinerStatus = MINER_SEEKING;
-			}
+		case MINER_WAITING:
+			Miner_Moving();
 			break;
-		}
 
 		case MINER_DEPLOYING:
-			if (deployed) {
-				MinerStatus = MINER_WORKING;
-				DebugString("Slave: %s (%s) deploys at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), Owner->Get_Cell().X, Owner->Get_Cell().Y);
-			} else if (mobile && !((UnitClass *)Owner)->IsDeploying && Owner->Get_Mission() != MISSION_UNLOAD) {
-				MinerStatus = MINER_WAITING;
-				MinerTimer = Frame;
-			}
+			Miner_Deploying();
 			break;
 
-		case MINER_WORKING: {
-			if (mobile) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
-				break;
-			}
-			if (Find_Ore(Rule->SlaveMinerShortScan / CELL_LEPTON_W) != CELL_NONE) {
-				break;
-			}
-			Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
-			Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
-			if (spot == CELL_NONE) {
-				break;
-			}
-			Cell const here = Dock_Cell();
-			int const distance = std::max(std::abs(spot.X - here.X), std::abs(spot.Y - here.Y));
-			if (distance <= Rule->SlaveMinerScanCorrection / CELL_LEPTON_W) {
-				break;
-			}
-			Owner->ArchiveTarget = &Map[spot];
-			Owner->Assign_Mission(MISSION_DECONSTRUCTION);
-			MinerStatus = MINER_PACKING;
-			DebugString("Slave: %s (%s) packs up for ore at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), spot.X, spot.Y);
+		case MINER_WORKING:
+			Miner_Working();
 			break;
-		}
 
 		case MINER_PACKING:
-			if (mobile) {
+			if (Owner->RTTI == RTTI_UNIT) {
 				MinerStatus = MINER_MOVING;
 			}
 			break;
+	}
+}
+
+
+void SlaveManagerClass::Miner_Seeking(void)
+{
+	bool const mobile = Owner->RTTI == RTTI_UNIT;
+	if (!mobile) {
+		Go_Idle();
+		return;
+	}
+	UnitClass * unit = (UnitClass *)Owner;
+	if (unit->NavCom != NULL) {
+		MinerStatus = MINER_MOVING;
+		return;
+	}
+	Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
+	Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
+	if (spot == CELL_NONE) {
+		Go_Idle();
+		DebugString("Slave: %s (%s) finds no ore to deploy at\n", unit->Class->Name(), unit->House->Class->Name());
+		return;
+	}
+	// The guard point left by an earlier stop would pull the miner back as soon as it arrives.
+	unit->ArchiveTarget = NULL;
+	unit->Assign_Destination(&Map[spot]);
+	unit->Assign_Mission(MISSION_MOVE);
+	MinerStatus = MINER_MOVING;
+	DebugString("Slave: %s (%s) at %d,%d heads for %d,%d to deploy\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, spot.X, spot.Y);
+}
+
+
+void SlaveManagerClass::Miner_Moving(void)
+{
+	bool const mobile = Owner->RTTI == RTTI_UNIT;
+	if (!mobile) {
+		Go_Idle();
+		return;
+	}
+	UnitClass * unit = (UnitClass *)Owner;
+	if (unit->NavCom != NULL || unit->Locomotion->Is_Moving()) {
+		return;
+	}
+	if (MinerStatus == MINER_WAITING && Frame - MinerTimer < 30) {
+		return;
+	}
+	BuildingTypeClass const * type = unit->Class->DeploysInto;
+	unit->Mark(MARK_UP);
+	unit->Locomotion->Mark_All_Occupation_Bits(MARK_UP);
+	Cell const place = type->Is_Mobile_Deployer() ? unit->Get_Cell() : Adjacent_Cell(unit->Get_Cell(), FACING_NW);
+	bool const legal = type->Legal_Placement(place);
+	// A computer player's miner clears friendly units off the foundation, as a failed deploy does in the original.
+	if (!legal && !unit->House->Is_Human_Player()) {
+		type->Flush_For_Placement(place, unit->House);
+	}
+	unit->Locomotion->Mark_All_Occupation_Bits(MARK_DOWN);
+	unit->Mark(MARK_DOWN);
+	bool const moving = MinerStatus == MINER_MOVING;
+	if (legal) {
+		// Deploys at once with no order, as gamemd's miner does (0x6AFD60, state 2): a queued order can be replaced by a team's Guard order before it starts.
+		MinerStatus = MINER_DEPLOYING;
+		// A deploy that completes at once moves this manager into the new structure, so nothing after this call may use it.
+		if (unit->Try_To_Deploy()) {
+			return;
+		}
+	}
+	if (moving) {
+		MinerStatus = MINER_WAITING;
+		MinerTimer = Frame;
+	} else {
+		MinerStatus = MINER_SEEKING;
+	}
+}
+
+
+void SlaveManagerClass::Miner_Deploying(void)
+{
+	bool const deployed = Owner->RTTI == RTTI_BUILDING;
+	bool const mobile = Owner->RTTI == RTTI_UNIT;
+	if (deployed) {
+		MinerStatus = MINER_WORKING;
+		DebugString("Slave: %s (%s) deploys at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), Owner->Get_Cell().X, Owner->Get_Cell().Y);
+	} else if (mobile && !((UnitClass *)Owner)->IsDeploying && Owner->Get_Mission() != MISSION_UNLOAD) {
+		MinerStatus = MINER_WAITING;
+		MinerTimer = Frame;
+	}
+}
+
+
+void SlaveManagerClass::Miner_Working(void)
+{
+	bool const mobile = Owner->RTTI == RTTI_UNIT;
+	if (mobile) {
+		Go_Idle();
+		return;
+	}
+	if (Find_Ore(Rule->SlaveMinerShortScan / CELL_LEPTON_W) != CELL_NONE) {
+		return;
+	}
+	Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
+	Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
+	if (spot == CELL_NONE) {
+		return;
+	}
+	Cell const here = Dock_Cell();
+	int const distance = std::max(std::abs(spot.X - here.X), std::abs(spot.Y - here.Y));
+	if (distance <= Rule->SlaveMinerScanCorrection / CELL_LEPTON_W) {
+		return;
+	}
+	Owner->ArchiveTarget = &Map[spot];
+	Owner->Assign_Mission(MISSION_DECONSTRUCTION);
+	MinerStatus = MINER_PACKING;
+	DebugString("Slave: %s (%s) packs up for ore at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), spot.X, spot.Y);
+}
+
+
+/// <summary>
+/// Sends each slave still in the field to guard where it stands, last node first (SlaveManagerClass::AllGuard,
+/// 0x6B0C80). This port has no Ready or Working state for the miner, so only the slaves change.
+/// </summary>
+void SlaveManagerClass::All_Guard(void)
+{
+	for (int index = (int)Nodes.size() - 1; index >= 0; index--) {
+		NodeType & node = Nodes[index];
+		if (node.Status != NODE_DEAD && node.Slave != NULL) {
+			node.Slave->Assign_Destination(NULL);
+			node.Slave->Assign_Target(NULL);
+			node.Slave->Assign_Mission(MISSION_GUARD);
+		}
 	}
 }
 
@@ -678,6 +756,32 @@ void SlaveManagerClass::Detach(AbstractClass const * target)
 			node.Start_Timer(RegenRate);
 		}
 	}
+}
+
+
+/// <summary>
+/// Tells whether a slave of this manager may stand in a cell of its deployed miner's dock
+/// (SlaveManagerClass 0x6B0880): the dock cell itself, or the cell above it while the miner
+/// occupies that cell too. A miner on wheels has no such cells.
+/// </summary>
+bool SlaveManagerClass::Is_Dock_Cell_For(InfantryClass const * slave, CellClass const * cell) const
+{
+	Cell const dock = Dock_Cell();
+	Cell above = CELL_NONE;
+	if (Owner->RTTI == RTTI_BUILDING && Map[dock + Cell(0, -1)].Cell_Building() == Owner) {
+		above = dock + Cell(0, -1);
+	}
+
+	if (cell != &Map[dock] && (above == CELL_NONE || cell != &Map[above])) {
+		return(false);
+	}
+
+	for (NodeType const & node : Nodes) {
+		if (node.Slave == slave) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 

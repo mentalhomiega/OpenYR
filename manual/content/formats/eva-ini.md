@@ -20,6 +20,8 @@ filenames:
 
 `[DialogList]` names the announcer's lines, and each name is the section that describes that line. The game reads the file once at startup; [OPENTS.INI](/formats/opents-ini/#the-files-it-reads) can change its name. Without the file, the game speaks Tiberian Sun's `.AUD` speech files instead, as [EVA speech](/systems/eva-speech/) describes.
 
+The game then reads the file `RA2Eva=` names, Red Alert 2's `EVA.INI` by default, and adds each line whose name the first file does not list. The added lines follow the first file's, so the numbers a mission gives its lines do not change, and a name both files list plays the first file's line.
+
 ```ini title="EVAMD.INI"
 [DialogList]
 1=EVA_NuclearMissileReady

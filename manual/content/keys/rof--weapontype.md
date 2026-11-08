@@ -28,7 +28,7 @@ Three cases use a different delay. The first case that applies decides it:
 
 1. A structure that had more than one round of [`Ammo`](/keys/ammo/) when it fired waits a single frame. `ROF` therefore sets only the pause after its last round.
 2. A beam or particle weapon waits exactly `ROF`, with none of the adjustments above. This covers every [`IsSonic=yes`](/keys/issonic/) weapon. It also covers every [`UseFireParticles=yes`](/keys/usefireparticles/), [`UseSparkParticles=yes`](/keys/usesparkparticles/) or [`IsRailgun=yes`](/keys/israilgun/) weapon. Such a weapon also cannot fire again until its effect has ended, as [Firing geometry](/systems/firing-geometry/#effects-that-hold-the-weapon-shut) describes.
-3. A shot that does not end a [`Burst`](/keys/burst/) waits the gap its [`BurstDelay0`](/keys/burstdelay0/) to [`BurstDelay3`](/keys/burstdelay3/) entry gives. The shot that ends the burst uses the adjusted `ROF`.
+3. A shot that does not end a [`Burst`](/keys/burst/) waits a random three to five frames, or the gap the firing vehicle's [`BurstDelay0`](/keys/burstdelay0/) to [`BurstDelay3`](/keys/burstdelay3/) entry gives. The shot that ends the burst uses the adjusted `ROF`.
 
 During a [strafing run](/keys/curleyshuffle/), an aircraft also waits its first weapon's `ROF`, unadjusted, after each shot but the last. This sets the spacing between the shots of the run.
 

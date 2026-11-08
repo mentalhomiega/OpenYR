@@ -1,0 +1,49 @@
+; A destroyed soldier with Crashable=yes (the Rocketeer, JUMPJET) does not vanish in the air. gamemd (InfantryClass::Destroy 0x517FA0)
+; sets off InfantryExplode where he dies, then calls FootClass::Crash 0x4DEBB0. He is not rocked. The jumpjet locomotor (0x54B021) starts
+; the AirDeathStart sequence as the fall begins and turns him 45/256 of a circle a frame while he drops by JumpjetCrash leptons a frame;
+; AirDeathStart hands over to AirDeathFalling (FUN_00520AE0), and on touching down (notice 0x117C, 0x522A60) he plays AirDeathFinish and
+; is removed when it ends. One killed on the ground dies as before.
+; Frame 90 sends a Rocketeer north and frame 118 destroys him in cruise. A second one is destroyed on the ground at frame 301 and a
+; third just after take-off at frame 507.
+; The lift line ends in the sequence number: 35 AirDeathStart, 36 AirDeathFalling, 37 AirDeathFinish (the Fly sequence is 17).
+; With -Mods src-agent27/tests/autotest/crashable-infantry-slow the fall takes 4 leptons a frame, long enough for AirDeathStart to hand over to AirDeathFalling.
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/crashable-infantry.txt -Map XMP08T2.MAP -Seconds 240 -Filter "AUTOTEST   lift|AUTOTEST   rock|Crash:|Exception"
+20 reveal
+30 view 88 62
+31 grantunit JUMPJET 86 66
+90 move JUMPJET 86 50
+110 lift JUMPJET
+118 lift JUMPJET
+118 kill JUMPJET 1
+119 lift JUMPJET
+120 lift JUMPJET
+121 record 3
+121 lift JUMPJET
+122 lift JUMPJET
+124 lift JUMPJET
+126 lift JUMPJET
+128 lift JUMPJET
+130 lift JUMPJET
+134 lift JUMPJET
+138 lift JUMPJET
+142 lift JUMPJET
+146 lift JUMPJET
+150 lift JUMPJET
+160 lift JUMPJET
+175 record 0
+180 lift JUMPJET
+300 grantunit JUMPJET 92 66
+301 lift JUMPJET
+301 kill JUMPJET 1
+302 lift JUMPJET
+340 lift JUMPJET
+500 grantunit JUMPJET 96 66
+502 move JUMPJET 96 50
+506 lift JUMPJET
+507 kill JUMPJET 1
+508 lift JUMPJET
+510 lift JUMPJET
+514 lift JUMPJET
+520 lift JUMPJET
+540 lift JUMPJET
+600 quit

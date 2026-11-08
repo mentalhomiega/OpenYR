@@ -214,6 +214,9 @@ LargeVisceroid:
   "UnitTypeClass::IsLargeVisceroid": {verdict: distinct}
   "RulesClass::LargeVisceroid": {verdict: distinct}
 
+Level:
+  "BulletTypeClass::IsLevel": {verdict: distinct}
+
 MaxXYVel:
   "AnimTypeClass::MaxXYVel": {verdict: distinct}
   "VoxelAnimTypeClass::MaxXYVel": {verdict: distinct}
@@ -370,10 +373,6 @@ Translucency:
 Translucent:
   "AnimTypeClass::IsTranslucent": {verdict: distinct}
   "VoxelAnimTypeClass::IsTranslucent": {verdict: distinct}
-
-TurretRecoil:
-  "BuildingTypeClass::IsTurretRecoil": {verdict: distinct}
-  "UnitTypeClass::IsTurretRecoil": {verdict: distinct}
 
 TurboBoost:
   "WeaponTypeClass::IsTurboBoosted": {verdict: distinct}

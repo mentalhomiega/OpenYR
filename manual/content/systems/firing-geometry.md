@@ -15,8 +15,7 @@ keys:
   - Charges
   - ElitePrimary
   - EliteSecondary
-  - FiringSyncFrame1
-  - IsBigLaser
+  - FiringSyncFrame0
   - IsLaser
   - IsRailgun
   - IsSonic
@@ -94,7 +93,7 @@ One shot runs the steps below in order. A step that ends the shot skips every la
 1. The firing slot must hold a weapon. An empty slot fires nothing.
 2. If the weapon's warhead has a [`LimpetFactor`](/keys/limpetfactor/) above `0` and the target is a vehicle, infantry, aircraft or structure, no projectile is fired. If the firer's house has not yet marked that target, the target is marked, the weapon's [`Report`](/keys/report/) sound plays, and the firer is taken off the map. If that house has already marked the target, the shot ends and the firer stays.
 3. The shot ends if this weapon's effect from an earlier shot is still alive. [Effects that hold the weapon shut](#effects-that-hold-the-weapon-shut) lists these effects.
-4. The barrel starts turning to the elevation chosen for this target.
+4. The barrel starts turning to the elevation chosen for this target. A vehicle's barrel does not turn for its target; see the next section.
 5. The projectile's damage is set. An [`IsSonic=yes`](/keys/issonic/) or [`UseFireParticles=yes`](/keys/usefireparticles/) weapon gives its projectile no damage. For any other weapon, a positive [`Damage`](/keys/damage/#scope-weapontype) is multiplied by the house's firepower bias and the object's firepower bias, and raised further by the veteran firepower ability. A zero or negative `Damage` is used unchanged.
 6. The projectile is created and [launched from the mounting](/systems/projectile-flight/#what-the-shot-leaves-with). A laser, railgun or sonic weapon also creates its projectile here. The shot ends if the projectile cannot be created, if no ballistic arc reaches the target, or if the projectile cannot be placed at the mounting.
 7. A turreted object recoils if its type sets [`TurretRecoil=yes`](/keys/turretrecoil/).
@@ -108,7 +107,7 @@ One shot runs the steps below in order. A step that ends the shot skips every la
 15. A round of ammunition is spent.
 16. If the target is an object a human player owns, the firer reveals the area within two cells of itself to that player when it stands in that player's shroud or fog, or when it belongs to another house and that player has not yet discovered it. That player's own aircraft are exempt from the shroud and fog test. A shot at the ground reveals nothing. In a campaign, any player-controlled house counts as a human player here, and the tests use the player's own shroud, fog and discoveries.
 
-The `Anim` list is indexed by the direction the object is firing. A list of 8, 16, 32 or 64 entries uses the entry for that direction, rounded to the list's number of directions. The first entry is for north-west, and the list continues clockwise, so on an eight-entry list the second entry is north and the third north-east. A list of any other length always uses its first entry.
+The `Anim` list is indexed by the direction the object is firing only when it has eight entries. The entry is the one for that direction, rounded to eight directions. A list of 16, 32 or 64 entries also uses the entry for the direction when [`ExtendedAnimFacings=yes`](/keys/extendedanimfacings/) is set on the weapon. Otherwise, and for a list of any other length, the first entry is used on every shot. The first entry is for north-west, and the list continues clockwise, so on an eight-entry list the second entry is north and the third north-east.
 
 Step 10 sets the reload delay after step 9 has started the weapon's effects. This lets the delay depend on whether an effect is alive; [The reload delay](#the-reload-delay) gives the result.
 
@@ -139,9 +138,10 @@ A structure can replace the mounting. The engine tests these cases in order and 
 
 The barrel's elevation is chosen from the first slot, whichever slot fires:
 
+- A vehicle's barrel stays at its [`FireAngle`](/keys/fireangle/) elevation and does not aim at its target.
 - A structure whose first-slot weapon has `IsLaser=yes` points its barrel straight at the aim point.
 - An [`EMPulseCannon=yes`](/keys/empulsecannon/) structure solves a ballistic arc. If no arc reaches the target, it tries again with a launch speed a quarter higher.
-- Every other object solves a ballistic arc for its first-slot weapon. The barrel takes the high arc when that weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. `Lobber` on the second slot does not raise the barrel. The projectile itself still follows its own weapon's `Lobber`.
+- Every other object, aircraft and infantry included, solves a ballistic arc for its first-slot weapon. The barrel takes the high arc when that weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. `Lobber` on the second slot does not raise the barrel. The projectile itself still follows its own weapon's `Lobber`.
 
 ### How a burst alternates sides
 
@@ -164,7 +164,7 @@ A weapon is affected only if its `Burst` is above `1` and its lateral offset is 
 
 ## What each part of a shot reads
 
-Several parts of a shot take their settings from the first slot, not from the slot that fired. This matters when a beam or wave weapon is in the second slot, or when the two slots have different offsets.
+Several parts of a shot take their settings from the first slot, not from the slot that fired. This matters when a wave weapon is in the second slot, or when the two slots have different offsets.
 
 | Part of the shot | Appears at | Settings from |
 | --- | --- | --- |
@@ -176,7 +176,7 @@ Several parts of a shot take their settings from the first slot, not from the sl
 | The railgun beam, its [`AmbientDamage`](/keys/ambientdamage/), warhead and [`AttachedParticleSystem`](/keys/attachedparticlesystem/) | The mounting | The firing slot |
 | The radiation beam | The mounting | The firing slot |
 | The sonic wave's `AmbientDamage` and warhead | The firing slot's mounting when created, then the first slot's mounting | The first slot |
-| The laser beam's [`LaserInnerColor`](/keys/laserinnercolor/), [`LaserOuterColor`](/keys/laseroutercolor/), [`LaserOuterSpread`](/keys/laserouterspread/), [`LaserDuration`](/keys/laserduration/) and [`IsBigLaser`](/keys/isbiglaser/) | The firing slot's mounting | The first slot |
+| The laser beam's colors, spread and duration | The firing slot's mounting | The firing slot |
 | The barrel elevation, including the high arc from `Lobber` | Not placed | The first slot |
 | The reload delay | Not placed | The firing slot |
 
@@ -203,7 +203,7 @@ The object checks these effects in three places, with a different result each ti
 
 Each check asks only whether the hold is occupied, not what occupies it. This matters only for the spark hold, which a damaged object's sparks share with a spark weapon's spray. [Particle systems](/systems/particle-systems/#the-five-holds-an-object-keeps) covers the result.
 
-Vehicles have one more gate, unrelated to effects. [`FiringSyncFrame1`](/keys/firingsyncframe1/) times the first round of each burst to the firing animation, and [`FiringSyncFrame2`](/keys/firingsyncframe2/) times the second round. A weapon without a burst uses `FiringSyncFrame1` for every round. While the firing animation is playing, the round is treated as still reloading until the animation reaches the named frame. It then fires even if the reload delay has not run out. Only first-slot shots are timed this way.
+Vehicles have one more gate, unrelated to effects. [`FiringSyncFrame0`](/keys/firingsyncframe0/) times the first round of each burst to the firing animation, and [`FiringSyncFrame1`](/keys/firingsyncframe1/) times the second round. A weapon without a burst uses `FiringSyncFrame0` for every round. While the firing animation is playing, the round is treated as still reloading until the animation reaches the named frame. It then fires even if the reload delay has not run out. Only first-slot shots are timed this way.
 
 A vehicle also has to point at its target before it fires: its turret, or its body if it has no turret, must face nearly toward the target, and a homing projectile allows a wider angle. A vehicle that is off turns toward the target first. An [`OmniFire=yes`](/keys/omnifire/) weapon skips this test, so the vehicle fires in any direction without turning. Visceroids and jellyfish never need to turn.
 
@@ -215,7 +215,7 @@ The delay before the next shot comes from the first row that applies:
 | --- | --- |
 | A structure that had more than one round of [`Ammo`](/keys/ammo/) when it fired | 1 |
 | The weapon is [`IsSonic=yes`](/keys/issonic/), whether or not a wave is alive, or is a fire, spark or railgun weapon whose particle hold is occupied | Exactly [`ROF`](/keys/rof/) |
-| The burst has rounds left | [`BurstDelay0`](/keys/burstdelay0/) after the first round, up to [`BurstDelay3`](/keys/burstdelay3/) after the fourth. A random 3 to 5 when that entry is `-1`, or after the fifth or a later round |
+| The burst has rounds left | A random 3 to 5. A vehicle uses its own [`BurstDelay0`](/keys/burstdelay0/) after the first round, up to [`BurstDelay3`](/keys/burstdelay3/) after the fourth, when that entry is not `-1` |
 | Any other shot | `ROF` multiplied by the house's rate-of-fire bias, plus a random 0 to 2, then shortened by the veteran rate-of-fire ability |
 
 The third row sets the pace of the effect weapons. It skips the house bias, the burst delays and the random extra frames, and the effect blocks firing until it ends. The next shot therefore waits until both `ROF` has passed and the effect has ended. A structure with more than one round left matches the first row instead, so only the effect's lifetime paces it.

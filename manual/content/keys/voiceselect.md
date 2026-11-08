@@ -14,7 +14,9 @@ VoiceSelect=MYTANK_Sel1,MYTANK_Sel2 ; sound IDs registered in SOUND.INI
 
 When the player selects an object of this type, it speaks one entry picked at random from the list. The response is a sound without a place, so it does not fade or pan with the object's position on screen; see [Placed sounds](/systems/sound-effects/#placed-sounds). Only objects of a house the player controls speak.
 
-Selecting several objects at once with a band box or a group key produces one response, from the first object selected. Four commands are the exception. A press of [`TypeSelect`](/commands/typeselect/), [`SelectType`](/commands/selecttype/), [`VeterancyFilter`](/commands/veterancyfilter/) or [`HealthFilter`](/commands/healthfilter/), or of a filter's add-lower form, can play one response for each object it adds to the selection. A filter press that only narrows the selection plays one response for each object it keeps.
+Selecting several objects at once with a band box, a group key or a command that picks many objects produces one response, from the first object selected. The [`TypeSelect`](/commands/typeselect/) and [`SelectType`](/commands/selecttype/) commands select quietly and produce none. A press of [`VeterancyFilter`](/commands/veterancyfilter/) or [`HealthFilter`](/commands/healthfilter/), or of a filter's add-lower form, produces one response, from the first object it keeps or adds.
+
+An object says one response at a time. A response chosen while the object is still speaking waits until it has finished, replaces any other response that is waiting, and is dropped if it is the sound already playing. Different objects speak at the same time.
 
 ## Writing the list
 

@@ -1,0 +1,8 @@
+; The rmg-temperate map built with an RMGMD.INI (rmg-few-trees) that gives only MaxTrees=20.
+; Expected: the woods stop at the limit of 12 trees (width 1 and vegetation 80 allow 0.8 x 0.8 x 20, rounded down) with
+; none left to plant; the omitted tiberium range keeps 2500 to 5500, so the ore matches rmg-legacy, and the omitted
+; lighting lists keep the stock night values of rmg-temperate.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/rmg-few-trees.txt -Mods src-agent26/tests/autotest/rmg-maps,src-agent26/tests/autotest/rmg-few-trees -Map RMGTEMP.MAP -Seconds 150
+2 randommap
+2 census ore
+3 quit

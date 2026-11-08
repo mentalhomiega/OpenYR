@@ -11,6 +11,7 @@
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
 #include "ui/uiinput.h"
+#include "tilediff.h"
 #include "ui/uireveal.h"
 #include "videodirty.h"
 
@@ -518,6 +519,114 @@ void Test_Dirty_State(void)
 	Check(!dirty.Is_Dirty() && !reset.Game && !reset.Overlay && reset.Upload, "a reset forgets the marks and the upload");
 }
 
+
+void Test_Tile_Diff(void)
+{
+	int const widths[] = {100, 64, 33};
+	int const heights[] = {70, 48, 17};
+	unsigned int seed = 12345;
+	auto next = [&seed]() { seed = seed * 1664525u + 1013904223u; return(seed >> 8); };
+
+	bool unchanged_empty = true;
+	bool texture_matches = true;
+	bool small_edit_small = true;
+	bool whole_on_reset = true;
+	bool all_rects_inside = true;
+	for (int size = 0; size < 3; size++) {
+		int const width = widths[size];
+		int const height = heights[size];
+		int const bpp = size + 1;
+		int const pitch = width * bpp + 24;
+		std::vector<std::uint8_t> picture((size_t)pitch * height, 0);
+		std::vector<std::uint8_t> texture((size_t)width * bpp * height, 0);
+		TileDiffClass diff;
+		TileGridClass grid;
+		std::vector<TileRect> rects;
+		diff.Reset(width, height, bpp);
+
+		for (int step = 0; step < 40; step++) {
+			if (step == 0) {
+				for (std::uint8_t & byte : picture) {
+					byte = (std::uint8_t)next();
+				}
+			} else if (step % 10 == 5) {
+				// no change
+			} else if (step % 10 == 9) {
+				diff.Invalidate();
+			} else {
+				int const edits = 1 + (int)(next() % 4);
+				for (int e = 0; e < edits; e++) {
+					int const x = (int)(next() % width);
+					int const y = (int)(next() % height);
+					picture[(size_t)y * pitch + (size_t)x * bpp + next() % bpp] ^= (std::uint8_t)(1 + next() % 255);
+				}
+			}
+
+			grid.Resize(width, height);
+			diff.Compare(picture.data(), pitch, grid);
+			grid.Rects(rects);
+			if (step % 10 == 5 && !rects.empty()) {
+				unchanged_empty = false;
+			}
+			if (step % 10 == 9 && (rects.size() != 1 || rects[0].Width != width || rects[0].Height != height)) {
+				whole_on_reset = false;
+			}
+			if (step % 10 != 0 && step % 10 != 9 && step % 10 != 5 && size == 0) {
+				int pixels = 0;
+				for (TileRect const & rect : rects) {
+					pixels += rect.Width * rect.Height;
+				}
+				if (pixels > width * height / 2 + 1 && !(rects.size() == 1 && rects[0].Width == width)) {
+					small_edit_small = false;
+				}
+			}
+			for (TileRect const & rect : rects) {
+				if (rect.X < 0 || rect.Y < 0 || rect.Width <= 0 || rect.Height <= 0 || rect.X + rect.Width > width || rect.Y + rect.Height > height) {
+					all_rects_inside = false;
+					continue;
+				}
+				for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
+					std::memcpy(&texture[((size_t)y * width + rect.X) * bpp], &picture[(size_t)y * pitch + (size_t)rect.X * bpp], (size_t)rect.Width * bpp);
+				}
+			}
+			for (int y = 0; y < height; y++) {
+				if (std::memcmp(&texture[(size_t)y * width * bpp], &picture[(size_t)y * pitch], (size_t)width * bpp) != 0) {
+					texture_matches = false;
+				}
+			}
+			if (diff.Copy() == nullptr) {
+				texture_matches = false;
+			} else {
+				for (int y = 0; y < height; y++) {
+					if (std::memcmp(diff.Copy() + (size_t)y * width * bpp, &picture[(size_t)y * pitch], (size_t)width * bpp) != 0) {
+						texture_matches = false;
+					}
+				}
+			}
+		}
+	}
+	Check(texture_matches, "a texture updated only with the reported rectangles always equals the picture");
+	Check(unchanged_empty, "an unchanged picture reports no rectangles");
+	Check(whole_on_reset, "a texture of unknown content gets the whole picture");
+	Check(all_rects_inside, "every rectangle lies inside the picture");
+	Check(small_edit_small, "a few edited pixels do not send more than half the picture");
+
+	TileGridClass grid;
+	grid.Resize(320, 160);
+	grid.Mark(1, 0);
+	grid.Mark(3, 0);
+	grid.Mark(1, 1);
+	grid.Mark(3, 1);
+	std::vector<TileRect> rects;
+	grid.Rects(rects);
+	Check(rects.size() == 1 && rects[0].X == 32 && rects[0].Y == 0 && rects[0].Width == 96 && rects[0].Height == 32, "tiles one apart share a rectangle, and bands stack");
+	grid.Clear();
+	grid.Mark(0, 0);
+	grid.Mark(5, 0);
+	grid.Rects(rects);
+	Check(rects.size() == 2, "tiles further apart get separate rectangles");
+}
+
 }
 
 
@@ -533,6 +642,7 @@ int main(void)
 	Test_Reveal();
 	Test_Magnify();
 	Test_Dirty_State();
+	Test_Tile_Diff();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

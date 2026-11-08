@@ -15,7 +15,7 @@ The positions are `0` morning, `1` afternoon, `2` dusk and `3` night. [Map seed 
 Time=3
 ```
 
-The hour sets the map's ambient light: three quarters at morning and at dusk, full at afternoon, and half at night. A tundra or taiga map starts at three quarters of that level. When an ion storm ends on such a map, the light rises to the hour's unreduced level, so the map ends brighter than it began, as [Map generation](/systems/map-generation/#sizing-and-the-blank-map) explains.
+The hour picks the map's ambient light, tints and height level light from the lists in [RMGMD.INI](/formats/rmgmd-ini/). With the stock file, [`TemperateAmbientLight`](/keys/temperateambientlight/) lights a temperate map at three quarters of full daylight at morning and dusk, full at afternoon and 35 hundredths at night. A tundra or taiga map takes [`SnowAmbientLight`](/keys/snowambientlight/) instead, which differs only at night, at 55 hundredths.
 
 The hour also sets how many `GALITE` floodlights ring each player's start point: none in the morning or the afternoon, two at dusk and four at night. [Map generation](/systems/map-generation/#floodlights) covers where a ring can be placed.
 

@@ -9,6 +9,8 @@ when_omitted:
 
 A jumpjet of this type that is within `JumpjetCrash` leptons below a bridge deck stands on the deck, and the deck becomes its ground. A jumpjet that is lower than that stays under the bridge, and the terrain under the bridge is its ground.
 
+A jumpjet with [`Crashable=yes`](/keys/crashable/) that is destroyed in the air falls this many leptons each frame.
+
 ```ini title="rulesmd.ini"
 [JUMPJET] ; Rocketeer
 JumpjetCrash=25

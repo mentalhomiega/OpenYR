@@ -7,6 +7,7 @@ keys:
   - Cameo
   - CameoPCX
   - CameoSortOrder
+  - ConsideredAircraft
   - CreditTicks
   - LargeSidebarStrips
   - MaximumQueuedObjects
@@ -15,6 +16,7 @@ keys:
   - SidebarCameoText
   - SidebarSorting
   - SortCameoAsBaseDefense
+  - UseCameoSortOrder
 related:
   - type: system
     id: production
@@ -58,7 +60,18 @@ Each type goes to one tab:
 
 ### The order of the strips
 
-By default each strip is kept in a fixed order that depends only on the rules, so the same rules give the same strip whatever order the cameos were added in. Entries are compared on each of the following in turn, and the first difference decides. No two entries can tie on all four.
+Each new cameo is inserted before the first cameo on its strip that it sorts ahead of, so a strip stays in the same order whatever order its cameos were added in. Two cameos are compared on each of the following in turn, and the first difference decides:
+
+1. **Superweapons** come before everything else. Among superweapons, the shorter [`RechargeTime=`](/keys/rechargetime/) comes first.
+2. **The player's side.** A type whose [`AIBasePlanningSide=`](/keys/aibaseplanningside/) is the player's side comes before one whose value is not.
+3. **Ground, air, water**, on the vehicle strip: ground vehicles, then types with [`ConsideredAircraft=yes`](/keys/consideredaircraft/), then [`Naval=yes`](/keys/naval/) types. Every AircraftType counts as an aircraft unless it sets `ConsideredAircraft=no`.
+4. **[`TechLevel=`](/keys/techlevel/#scope-aircrafttype)**, lowest first.
+5. **Cost** to the player, after the country's cost modifiers, lowest first.
+6. **Name**, the name the player sees, in character-code order.
+
+When two cameos tie on all six, the one added later goes first.
+
+[`UseCameoSortOrder=yes`](/keys/usecameosortorder/) replaces this order with one set by the rules alone. Entries are then compared on each of the following in turn, and no two entries can tie on all four:
 
 1. **Kind.** Superweapons, then infantry, then aircraft, then vehicles, then structures. Only the second and fourth strips hold more than one kind.
 2. **[`CameoSortOrder=`](/keys/cameosortorder/)**, lowest first.
@@ -76,9 +89,9 @@ CameoSortOrder=10           ; where this type's cameo sits among the structures
 SortCameoAsBaseDefense=yes  ; group it with the base defenses
 ```
 
-[`SidebarSorting=no`](/keys/sidebarsorting/) turns this order off. Each new cameo then goes to the end of its strip, and types offered together by one structure keep their declaration order.
+[`SidebarSorting=no`](/keys/sidebarsorting/) turns ordering off. Each new cameo then goes to the end of its strip, and types offered together by one structure keep their declaration order.
 
-A strip is sorted again whenever a cameo is added to it, and after a saved game is loaded, because the rules or the sorting setting may have changed since the save. If the strip has been scrolled, the cameo on its top row stays on the top row. Sorting does not affect production in progress.
+A strip is sorted again after a saved game is loaded, because the rules or the sorting setting may have changed since the save; cameos that tie keep their saved order. With `UseCameoSortOrder=yes`, a strip is also sorted again whenever a cameo is added to it. If the strip has been scrolled, the cameo on its top row stays on the top row. Sorting does not affect production in progress.
 
 Adding a cameo plays the new-construction-options announcement. Superweapon cameos are added without it, and so is every cameo added while a scenario is still being set up.
 
@@ -163,6 +176,8 @@ Queuing plays no announcement, so a second click on a cameo that is already buil
 
 A right click never starts anything. Where it cancels, it removes a queued copy before touching the object in production, so one right click undoes one extra left click.
 
+With Shift held in the modern interface, a left click on a unit or infantry cameo queues [`ShiftQueueCount`](/keys/shiftqueuecount/) units at once, five by default, fewer when the factory's queue has fewer places left. A right click with Shift cancels every copy of that type the factory holds, queued and in production, in one step. When the object in production is building, the first Shift right click suspends it, as a plain right click does, and the next one cancels the copies.
+
 A right click on any cameo whose type is in production also leaves placement mode, even when the structure being placed belongs to another cameo.
 
 Structures are never queued, so the queuing rows do not apply to them. While the house has a structure order outstanding in the same slot (building, on hold, or finished and waiting to be placed), a left click on any *other* cameo of that slot is refused. A defense has its own slot, so a structure order and a defense order do not refuse each other. The engine announces that there is no factory and sends no order.
@@ -228,7 +243,7 @@ With something selected, a left click in the radar picture can act as a click on
 
 ### The diplomacy and options buttons
 
-The two buttons above the radar pane are diplomacy on the left and options on the right. Options opens the same menu as [Options](/commands/options/). In a campaign, diplomacy opens the mission briefing text. In skirmish and multiplayer it does nothing yet, because OpenTS has no diplomacy screen.
+The two buttons above the radar pane are diplomacy on the left and options on the right. Options opens the same menu as [Options](/commands/options/). In a campaign, and in a Cooperative game against other machines, diplomacy opens the mission briefing text. In skirmish and every other multiplayer game it does nothing yet, because OpenTS has no diplomacy screen.
 
 ### The mode buttons
 

@@ -125,6 +125,22 @@ class EventClass
 		// The payload of these events follows them in a packet, with its length in Data.Variable.Size.
 		static bool Has_Variable_Payload(unsigned char type) { return type == ADDPLAYER || type == BEACON_TEXT; }
 
+		// The Data bytes that a replay copies, and a sync record copies for a fixed-size type: EventLength, at most
+		// sizeof(Data), and 0 for a type past LAST_EVENT. A variable payload's text is not counted.
+		static std::size_t Fixed_Length(unsigned char type)
+		{
+			if (type >= LAST_EVENT) {
+				return(0);
+			}
+			return(EventLength[type] < sizeof(Data) ? EventLength[type] : sizeof(Data));
+		}
+
+		// Writes the bytes a sync record keeps for this event into out and returns their count, at most capacity.
+		// Types with fixed data keep their first Fixed_Length bytes. ADDPLAYER and BEACON_TEXT keep their payload size
+		// then the FNV-1a hash of the payload (4 bytes each, little endian), because Data.Variable.Pointer differs
+		// between peers.
+		std::size_t Sync_Record_Bytes(unsigned char * out, std::size_t capacity) const;
+
 		static constexpr std::uint16_t NETWORK_RTT_UNAVAILABLE = UINT16_MAX;
 
 		unsigned char Type;		// Type of queue command object.
@@ -304,39 +320,3 @@ class EventClass
 		static char const * EventNames[LAST_EVENT];
 };
 #pragma pack(pop)
-
-// The string table labels of the planning-mode messages that gamemd shows from PlanMgr.cpp.
-inline constexpr char const * PLANNING_MSG_NODE_MAXIMUM = "MSG:NodeMaximum";
-inline constexpr char const * PLANNING_MSG_PLANNER_MAXIMUM = "MSG:PlannerMaximum";
-inline constexpr char const * PLANNING_MSG_POST_TERMINATING = "MSG:PostTerminatingCommand";
-inline constexpr char const * PLANNING_MSG_POST_CONTINUAL = "MSG:PostContinualCommand";
-inline constexpr char const * PLANNING_MSG_INTRO_KEY = "MSG:PlanningModeIntro1Key";
-inline constexpr char const * PLANNING_MSG_INTRO_EXIT = "MSG:PlanningModeIntro3";
-inline constexpr char const * PLANNING_MSG_NO_STOP = "MSG:PlanningModeNoStop";
-inline constexpr char const * PLANNING_MSG_NO_SCATTER = "MSG:PlanningModeNoScatter";
-inline constexpr char const * PLANNING_MSG_NO_DEPLOY = "MSG:PlanningModeNoDeploy";
-inline constexpr char const * PLANNING_MSG_NO_GUARD_AREA = "MSG:PlanningModeNoGuardArea";
-inline constexpr char const * PLANNING_MSG_NO_AIRCRAFT = "MSG:PlanningModeNoAircraft";
-inline constexpr char const * PLANNING_MSG_NO_BUILDINGS = "MSG:PlanningModeNoBuildings";
-inline constexpr char const * PLANNING_MSG_NO_UNKNOWNS = "MSG:PlanningModeNoUnknowns";
-
-// Shows a planning-mode message for the local player, from its string table label, for gamemd's 0x1e0 ticks (event.cpp).
-void Planning_Message(char const * label);
-
-// Refuses a planning action: shows the message and plays the scold sound, at most once a frame, as gamemd's DAT_00ac4c08 guard (event.cpp).
-void Planning_Refusal(char const * label);
-
-// Sets the message that the end of the frame shows for the local player. A later call in the frame replaces an earlier one (event.cpp).
-void Planning_Frame_Cue(char const * label);
-
-// Shows the frame's pending message, if any, through Planning_Refusal. Called once the frame's events have run (event.cpp).
-void Planning_Flush_Frame_Cue(void);
-
-// The label of the message for a selected object that cannot take a plan, or NULL when it can: aircraft, buildings and other kinds (event.cpp).
-char const * Planning_Unplannable_Label(ObjectClass const * object);
-
-// The label of the refusal for the first selected object that cannot take a plan, or NULL when every selected object can (event.cpp).
-char const * Planning_Selection_Label(void);
-
-// Tells whether the selected units without plans would take the house past PLANNED_UNIT_LIMIT (gamemd's CanCreatePlanningNode, 0x639130).
-bool Planning_Selection_Over_House_Limit(void);

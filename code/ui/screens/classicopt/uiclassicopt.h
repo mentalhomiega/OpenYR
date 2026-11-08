@@ -43,9 +43,12 @@ struct UIClassicOptionsLabels
 	std::string Music;
 	std::string Sound;
 	std::string Voice;
+	std::string Unit;
+	std::string Movie;
 	std::string Tooltips;
 	std::string TargetLines;
 	std::string ShowHidden;
+	std::string ShowDefenceRange;
 	std::string Keyboard;
 	std::string Mods;
 	std::string More;
@@ -87,11 +90,6 @@ class UIClassicOptionsPresenterClass : public UIPresenterClass
 
 	private:
 		void Apply(void);
-
-		UISoundServiceClass & SoundService;
-		int StartScore;
-		int StartSound;
-		int StartVoice;
 };
 
 

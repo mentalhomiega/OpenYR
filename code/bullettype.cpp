@@ -85,6 +85,7 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsSubjectToTrenches(true),
 	IsSubjectToBuildings(false),
 	IsVeryHigh(false),
+	IsLevel(false),
 	IsShadow(true),
 	IsArcing(false),
 	IsDropping(false),
@@ -101,7 +102,6 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsAnimPalette(false),
 	IsSplits(false),
 	AirburstSpread(-1),
-	IsAirburstSpread(false),
 	AroundTarget(-1),
 	BallisticScatterMin(-1),
 	BallisticScatterMax(-1),
@@ -193,6 +193,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsSubjectToTrenches = ini.Get_Bool(Name(), "SubjectToTrenches", IsSubjectToTrenches);
 		IsSubjectToBuildings = ini.Get_Bool(Name(), "SubjectToBuildings", IsSubjectToBuildings);
 		IsVeryHigh = ini.Get_Bool(Name(), "VeryHigh", IsVeryHigh);
+		IsLevel = ini.Get_Bool(Name(), "Level", IsLevel);
 		IsShadow = ini.Get_Bool(Name(), "Shadow", IsShadow);
 		IsDropping = ini.Get_Bool(Name(), "Dropping", IsDropping);
 		IsInvisible = ini.Get_Bool(Name(), "Inviso", IsInvisible);
@@ -211,8 +212,6 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		{
 			double const spread = ini.Get_Float(Name(), "AirburstSpread", AirburstSpread >= 0 ? (double)AirburstSpread / CELL_LEPTON_W : -1.0);
 			AirburstSpread = spread >= 0.0 ? (int)(spread * CELL_LEPTON_W) : -1;
-			// An Airburst projectile bursts over the cells around it unless Splits=yes makes it split.
-			IsAirburstSpread = IsAirburst && !IsSplits;
 			if (ini.Is_Present(Name(), "AroundTarget")) {
 				AroundTarget = ini.Get_Bool(Name(), "AroundTarget", false) ? 1 : 0;
 			}
@@ -332,6 +331,7 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsShadow);
 	crc(IsArcing);
 	crc(IsDropping);
+	crc(IsLevel);
 	crc(IsInvisible);
 	crc(IsProximityArmed);
 	crc(IsFueled);
@@ -348,7 +348,6 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ROT);
 	crc(Arming);
 	crc(IsSplits);
-	crc(IsAirburstSpread);
 	crc(AirburstSpread);
 	crc(AroundTarget);
 	crc(BallisticScatterMin);
@@ -393,6 +392,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsShadow);
 	stream.Serialize(IsArcing);
 	stream.Serialize(IsDropping);
+	stream.Serialize(IsLevel);
 	stream.Serialize(IsInvisible);
 	stream.Serialize(IsProximityArmed);
 	stream.Serialize(IsFueled);
@@ -429,7 +429,6 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AnimRate);
 	stream.Serialize(Tumble);
 	stream.Serialize(AirburstSpread);
-	stream.Serialize(IsAirburstSpread);
 	stream.Serialize(AroundTarget);
 	stream.Serialize(BallisticScatterMin);
 	stream.Serialize(BallisticScatterMax);

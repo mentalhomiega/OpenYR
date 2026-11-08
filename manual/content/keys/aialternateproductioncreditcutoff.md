@@ -23,7 +23,7 @@ Below the figure, each delivery decides the next group:
 A house limited to one group still orders from the other in these cases:
 
 - A house ordering structures also orders vehicles, infantry and aircraft when it has chosen no structure, or when no factory it owns can build the structure it chose. [Choosing what to build next](/systems/ai-base-building/#choosing-what-to-build-next) covers that choice.
-- A house ordering vehicles, infantry and aircraft skips infantry and aircraft while the vehicle it has on order is one of the [`HarvesterUnit`](/keys/harvesterunit/) types. It also orders structures when it has nothing on order, or when no factory it owns can build something it has on order.
+- A house ordering vehicles, infantry and aircraft skips infantry and aircraft while the vehicle it has on order is the first [`HarvesterUnit`](/keys/harvesterunit/) type its country may own. A country that may own none, such as Yuri's, never skips them; its slave miner is not a `HarvesterUnit` type. It also orders structures when it has nothing on order, or when no factory it owns can build something it has on order.
 
 :::note[Campaign games never alternate]
 In a campaign, a computer house orders every class at the same time whatever its money, so the figure has no effect.

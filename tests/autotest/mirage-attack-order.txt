@@ -1,0 +1,21 @@
+; A player Mirage Tank (MGTK at 58,40, CanApproachTarget=no) and Grizzly (MTNK at 58,44) are ordered by click to attack
+; computer Rhinos (HTNK at 72,40 and 72,44), well outside their weapon range.
+; Expected: an attack order still chases (FootClass::ApproachTarget, 0x4D5690), so at frame 420 both have mission Attack
+; with their Rhino as target, a nav cell toward it, and have left their start cells (64,40 and 64,44 in the run that wrote
+; this header). Before the fix the Mirage dropped the target (target -1,-1) and stayed at 58,40 while the Grizzly attacked.
+; Run: scripts/run_autotest.ps1 -Build agent25 -Script src-agent25/tests/autotest/mirage-attack-order.txt -Seconds 90 -Filter AUTOTEST
+30 command CenterBase
+300 own MGTK 58 40
+301 own MTNK 58 44
+302 enemy HTNK 72 40
+303 enemy HTNK 72 44
+340 where MGTK
+341 where MTNK
+360 clickon MGTK 72 40
+361 clickon MTNK 72 44
+420 where MGTK
+421 where MTNK
+600 where MGTK
+601 where MTNK
+900 where HTNK
+1000 quit

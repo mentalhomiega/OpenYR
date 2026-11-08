@@ -59,6 +59,7 @@
 #include "xstraw.h"
 
 #include <climits>
+#include <cstring>
 
 
 //template<class T> int Compare(T const *obj1, T const *obj2) {
@@ -377,16 +378,8 @@ void const * MixFileClass::Resident_Member(int position, int size)
 		return(NULL);
 	}
 
-	CCFileClass file(Filename);
-	if (!file.Open(FileClass::READ)) {
-		return(NULL);
-	}
-	file.Bias(0);
-	file.Bias(DataStart);
-
 	std::unique_ptr<char[]> data(new char[size]);
-	file.Seek(position - DataStart, SEEK_SET);
-	if (file.Read(data.get(), size) != size) {
+	if (!Read_Range(position - DataStart, data.get(), size)) {
 		return(NULL);
 	}
 
@@ -701,4 +694,96 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	*/
 	assert(1);//BG
 	return(false);
+}
+
+
+// Returns the header entry for the name in any case, or NULL when this archive does not hold it.
+MixFileClass::SubBlock const * MixFileClass::Find_Block(char const * filename) const
+{
+	char filename_upper[_MAX_PATH];
+	strcpy(filename_upper, filename);
+	strupr(filename_upper);
+
+	SubBlock key;
+	key.CRC = (CRCEngine()(filename_upper, strlen(filename_upper)));
+	return(Binary_Search<SubBlock>(HeaderBuffer, Count, key));
+}
+
+
+// Reads count bytes at offset, which counts from DataStart. Returns false when the file cannot be opened or the read is short.
+bool MixFileClass::Read_Range(int offset, void * bytes, int count) const
+{
+	CCFileClass file(Filename);
+	if (!file.Open(FileClass::READ)) {
+		return(false);
+	}
+	file.Bias(0);
+	file.Bias(DataStart);
+	file.Seek(offset, SEEK_SET);
+	return(file.Read(bytes, count) == count);
+}
+
+
+/// <summary>
+/// Reads the named member of this archive, or part of it, even when an archive attached before this one holds a member of the
+/// same name.
+/// </summary>
+/// <param name="filename">The member's name, in any case.</param>
+/// <param name="bytes">Receives the bytes read.</param>
+/// <param name="start">The first byte of the member to read.</param>
+/// <param name="count">How many bytes to read, or -1 for the rest of the member.</param>
+/// <returns>bool; Was the whole range read?</returns>
+bool MixFileClass::Read_Member(char const * filename, std::vector<unsigned char> & bytes, int start, int count) const
+{
+	bytes.clear();
+	if (filename == NULL || HeaderBuffer == NULL || strlen(filename) >= _MAX_PATH || start < 0) {
+		return(false);
+	}
+
+	SubBlock const * block = Find_Block(filename);
+	if (block == NULL || start > block->Size) {
+		return(false);
+	}
+	int const available = block->Size - start;
+	if (count < 0) {
+		count = available;
+	} else if (count > available) {
+		return(false);
+	}
+	if (count == 0) {
+		return(true);
+	}
+
+	bytes.resize((size_t)count);
+	if (Data != NULL) {
+		std::memcpy(bytes.data(), (char const *)Data + block->Offset + start, (size_t)count);
+		return(true);
+	}
+
+	if (!Read_Range(block->Offset + start, bytes.data(), count)) {
+		bytes.clear();
+		return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>Reports whether this archive holds the named member, and its size in bytes.</summary>
+/// <param name="filename">The member's name, in any case.</param>
+/// <param name="size">Receives the member's size when it is found; may be NULL.</param>
+/// <returns>bool; Is the member in this archive?</returns>
+bool MixFileClass::Member_Size(char const * filename, int * size) const
+{
+	if (filename == NULL || HeaderBuffer == NULL || strlen(filename) >= _MAX_PATH) {
+		return(false);
+	}
+
+	SubBlock const * block = Find_Block(filename);
+	if (block == NULL) {
+		return(false);
+	}
+	if (size != NULL) {
+		*size = block->Size;
+	}
+	return(true);
 }

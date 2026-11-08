@@ -55,11 +55,11 @@ The bomb goes off [`IvanTimedDelay`](/keys/ivantimeddelay/) frames after it is p
 
 ## Going off
 
-The bomb does [`IvanDamage`](/keys/ivandamage/) through [`IvanWarhead`](/keys/ivanwarhead/) where the object stands, with the warhead's explosion, credited to the soldier that planted it. A bomb whose object is off the map when the time comes, such as inside a transport, waits and goes off as soon as the object is back on the map. A bomb whose object is destroyed or removed first goes with it.
+The bomb does [`IvanDamage`](/keys/ivandamage/) through [`IvanWarhead`](/keys/ivanwarhead/) where the object stands, with the warhead's explosion, credited to the soldier that planted it. A bomb whose object is off the map when the time comes, such as inside a transport, waits and goes off as soon as the object is back on the map. A bomb on an object that is destroyed first goes off as the object dies, with the same damage and credit. A bomb on an object that leaves the game some other way goes with it.
 
 ## Ordering a bomb
 
-When the player points an [`Ivan=yes`](/keys/ivan/) soldier at something it would attack, the cursor shows the bomb if the target's type is [`Bombable=yes`](/keys/bombable/) and the target carries no bomb yet. Otherwise it shows the no-move cursor, and clicking gives no order. The key only limits the player's orders: a soldier that picks a target on its own still plants a bomb on an object whose type sets `Bombable=no`.
+When the player points an [`Ivan=yes`](/keys/ivan/) soldier at something it would attack, the cursor shows the bomb if the target's type is [`Bombable=yes`](/keys/bombable/) and the target carries no bomb yet. Otherwise it shows the no-move cursor, and clicking gives no order. A friendly transport is not a bomb target: over one with room the soldier shows the enter cursor and a click boards it, and over a full transport it shows the no-enter cursor. The key only limits the player's orders: a soldier that picks a target on its own still plants a bomb on an object whose type sets `Bombable=no`.
 
 ## Seeing and disarming bombs
 

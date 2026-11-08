@@ -31,6 +31,7 @@
 #include "session.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/uiclamp.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
@@ -85,11 +86,6 @@ struct SkirmishMemory
 
 static SkirmishMemory Memory;
 
-static int const UI_SKIRMISH_COLORS[] = {
-	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
-};
-
-
 static void Refresh_Preview(void)
 {
 	int index = Session.Options.ScenarioIndex;
@@ -100,12 +96,7 @@ static void Refresh_Preview(void)
 		return;
 	}
 
-	delete MultiplayerMapPreview;
-	MultiplayerMapPreview = new MapPreviewClass;
-	MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-	if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-		Update_Network_Dialog_Preview();
-	}
+	Show_Random_Map_Preview();
 }
 
 
@@ -118,8 +109,63 @@ static int Slot_Start(UISkirmishState const & state, UISkirmishSlot const & slot
 
 static int Slot_Side(UISkirmishState const & state, UISkirmishSlot const & slot)
 {
-	return(slot.Side >= 0 && slot.Side < (int)state.Sides.size() ? state.Sides[slot.Side].Value : -1);
+	return(Index_In_Range(slot.Side, state.Sides.size()) ? state.Sides[slot.Side].Value : -1);
 }
+
+
+// One remembered option: the settings key it is saved under, the memory field that holds it, how the lobby
+// state yields its value, and how a saved value that is not -1 is applied to the state.
+struct SkirmishOption
+{
+	char const * Key;
+	int SkirmishMemory::* Saved;
+	int (*Read)(UISkirmishState const & state);
+	void (*Restore)(UISkirmishState & state, int saved);
+};
+
+
+// The options in the order the settings file writes them. An On/Off option is saved as 0 or 1.
+static SkirmishOption const SKIRMISH_OPTIONS[] = {
+	{ "Units", &SkirmishMemory::Units,
+		[](UISkirmishState const & state) { return state.UnitCount; },
+		[](UISkirmishState & state, int saved) { state.UnitCount = std::clamp(saved, state.UnitCountMin, state.UnitCountMax); } },
+	{ "Credits", &SkirmishMemory::Credits,
+		[](UISkirmishState const & state) { return state.Credits; },
+		[](UISkirmishState & state, int saved) { state.Credits = std::clamp(saved, state.CreditsMin, state.CreditsMax); } },
+	{ "Tech", &SkirmishMemory::TechLevel,
+		[](UISkirmishState const & state) { return state.TechLevel; },
+		[](UISkirmishState & state, int saved) { state.TechLevel = std::clamp(saved, 1, state.TechLevelMax); } },
+	{ "Speed", &SkirmishMemory::GameSpeed,
+		[](UISkirmishState const & state) { return state.GameSpeed; },
+		[](UISkirmishState & state, int saved) { state.GameSpeed = std::clamp(saved, 0, 6); } },
+	{ "Bases", &SkirmishMemory::Bases,
+		[](UISkirmishState const & state) { return state.Bases ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Bases = saved != 0; } },
+	{ "Crates", &SkirmishMemory::Crates,
+		[](UISkirmishState const & state) { return state.Crates ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Crates = saved != 0; } },
+	{ "Fog", &SkirmishMemory::Fog,
+		[](UISkirmishState const & state) { return state.Fog ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Fog = saved != 0; } },
+	{ "Bridges", &SkirmishMemory::Bridges,
+		[](UISkirmishState const & state) { return state.Bridges ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Bridges = saved != 0; } },
+	{ "Redeploy", &SkirmishMemory::Redeploy,
+		[](UISkirmishState const & state) { return state.Redeploy ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Redeploy = saved != 0; } },
+	{ "ShortGame", &SkirmishMemory::ShortGame,
+		[](UISkirmishState const & state) { return state.ShortGame ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.ShortGame = saved != 0; } },
+	{ "Engineer", &SkirmishMemory::MultiEngineer,
+		[](UISkirmishState const & state) { return state.MultiEngineer ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.MultiEngineer = saved != 0; } },
+	{ "SuperWeapons", &SkirmishMemory::SuperWeapons,
+		[](UISkirmishState const & state) { return state.SuperWeapons ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.SuperWeapons = saved != 0; } },
+	{ "BuildOffAlly", &SkirmishMemory::BuildOffAlly,
+		[](UISkirmishState const & state) { return state.BuildOffAlly ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.BuildOffAlly = saved != 0; } },
+};
 
 
 /// <summary>
@@ -140,19 +186,9 @@ static void Load_Memory(void)
 		Memory.Slots[row] = ConfigINI.Get_String(SKIRMISH_SECTION, key, "");
 	}
 
-	Memory.Units = ConfigINI.Get_Int(SKIRMISH_SECTION, "Units", -1);
-	Memory.Credits = ConfigINI.Get_Int(SKIRMISH_SECTION, "Credits", -1);
-	Memory.TechLevel = ConfigINI.Get_Int(SKIRMISH_SECTION, "Tech", -1);
-	Memory.GameSpeed = ConfigINI.Get_Int(SKIRMISH_SECTION, "Speed", -1);
-	Memory.Bases = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bases", -1);
-	Memory.Crates = ConfigINI.Get_Int(SKIRMISH_SECTION, "Crates", -1);
-	Memory.Fog = ConfigINI.Get_Int(SKIRMISH_SECTION, "Fog", -1);
-	Memory.Bridges = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bridges", -1);
-	Memory.Redeploy = ConfigINI.Get_Int(SKIRMISH_SECTION, "Redeploy", -1);
-	Memory.ShortGame = ConfigINI.Get_Int(SKIRMISH_SECTION, "ShortGame", -1);
-	Memory.MultiEngineer = ConfigINI.Get_Int(SKIRMISH_SECTION, "Engineer", -1);
-	Memory.SuperWeapons = ConfigINI.Get_Int(SKIRMISH_SECTION, "SuperWeapons", -1);
-	Memory.BuildOffAlly = ConfigINI.Get_Int(SKIRMISH_SECTION, "BuildOffAlly", -1);
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		Memory.*option.Saved = ConfigINI.Get_Int(SKIRMISH_SECTION, option.Key, -1);
+	}
 }
 
 
@@ -166,31 +202,14 @@ static void Remember_Preferences(UISkirmishState const & state)
 
 	if (!state.Slots.empty()) {
 		int const side = Slot_Side(state, state.Slots[0]);
-		if (side >= 0) {
-			Session.House = side;
-		}
-
-		Session.ColorIdx = state.Slots[0].Color;
-		Session.CustomColor = state.Slots[0].Custom;
-		Session.PrefColor = state.Slots[0].Color;
-		Session.PrefCustomColor = state.Slots[0].Custom;
+		Session.Set_Local_Look(side >= 0 ? side : Session.House, state.Slots[0].Color, state.Slots[0].Custom);
 	}
 
 	Memory.Loaded = true;
 	Memory.Map = Session.ScenarioFileName;
-	Memory.Units = state.UnitCount;
-	Memory.Credits = state.Credits;
-	Memory.TechLevel = state.TechLevel;
-	Memory.GameSpeed = state.GameSpeed;
-	Memory.Bases = state.Bases ? 1 : 0;
-	Memory.Crates = state.Crates ? 1 : 0;
-	Memory.Fog = state.Fog ? 1 : 0;
-	Memory.Bridges = state.Bridges ? 1 : 0;
-	Memory.Redeploy = state.Redeploy ? 1 : 0;
-	Memory.ShortGame = state.ShortGame ? 1 : 0;
-	Memory.MultiEngineer = state.MultiEngineer ? 1 : 0;
-	Memory.SuperWeapons = state.SuperWeapons ? 1 : 0;
-	Memory.BuildOffAlly = state.BuildOffAlly ? 1 : 0;
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		Memory.*option.Saved = option.Read(state);
+	}
 
 	// Written to the settings file by the Session.Write_MultiPlayer_Settings call that follows.
 	ConfigINI.Put_String(SKIRMISH_SECTION, "Map", Memory.Map.c_str());
@@ -200,19 +219,9 @@ static void Remember_Preferences(UISkirmishState const & state)
 		Memory.Slots[row] = UI_Skirmish_Slot_Text(state, row);
 		ConfigINI.Put_String(SKIRMISH_SECTION, key, Memory.Slots[row].c_str());
 	}
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Units", Memory.Units);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Credits", Memory.Credits);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Tech", Memory.TechLevel);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Speed", Memory.GameSpeed);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bases", Memory.Bases);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Crates", Memory.Crates);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Fog", Memory.Fog);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bridges", Memory.Bridges);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Redeploy", Memory.Redeploy);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "ShortGame", Memory.ShortGame);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Engineer", Memory.MultiEngineer);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "SuperWeapons", Memory.SuperWeapons);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "BuildOffAlly", Memory.BuildOffAlly);
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		ConfigINI.Put_Int(SKIRMISH_SECTION, option.Key, Memory.*option.Saved);
+	}
 }
 
 
@@ -320,7 +329,7 @@ static void Commit(UISkirmishState const & state)
 	Session.Options.UnitCount = state.UnitCount;
 	BuildLevel = state.TechLevel;
 	Session.Options.Credits = state.Credits;
-	Session.Options.GameSpeed = 6 - state.GameSpeed;
+	Session.Options.GameSpeed = OptionsClass::Speed_From_Slider(state.GameSpeed);
 	Options.GameSpeed = Session.Options.GameSpeed;
 
 	Seat_Players(state);
@@ -406,11 +415,10 @@ class UISkirmishEngineServiceClass : public UISkirmishServiceClass
 }
 
 
-void UI_Skirmish_State(UISkirmishState & state)
+static void Fill_Choice_Tables(UISkirmishState & state)
 {
-	state.Handle = Session.Handle;
-
-	static char const * const kinds[UI_SKIRMISH_SLOT_KINDS] = {"Open", "Closed", "Easy AI", "Medium AI", "Hard AI"};
+	static char const * const kinds[UI_SKIRMISH_SLOT_KINDS] = {
+		"Open", "Closed", Computer_Difficulty_Name(DIFF_EASY), Computer_Difficulty_Name(DIFF_NORMAL), Computer_Difficulty_Name(DIFF_HARD)};
 	state.Kinds.clear();
 	for (int kind = 0; kind < UI_SKIRMISH_SLOT_KINDS; kind++) {
 		UISkirmishOption option;
@@ -432,32 +440,15 @@ void UI_Skirmish_State(UISkirmishState & state)
 	random.Label = "Random";
 	random.Value = -1;
 	state.Sides.push_back(random);
-	for (int index : HouseTypeClass::Lobby_Countries()) {
-		HouseTypeClass * house = HouseTypes[index];
+	UI_Fill_Multiplay_Sides(state.Sides, -1);
 
-		UISkirmishOption option;
-		option.Label = house->Full_Name();
-		option.Value = index;
-		if (!house->StatusText.empty()) {
-			option.Tip = Fetch_String_UTF8(house->StatusText.c_str());
-		}
-		state.Sides.push_back(option);
-	}
-
-	int const palette = (int)(sizeof(UI_SKIRMISH_COLORS) / sizeof(UI_SKIRMISH_COLORS[0]));
 	UI_Color_Pick_Build_Presets(state.Picker);
-	state.Colors.clear();
-	for (int index = 0; index < Lobby_Color_Count(); index++) {
-		UISkirmishOption option;
-		option.Label = Lobby_Color_Name(index);
-		if (option.Label.empty() && index < palette) {
-			option.Label = Fetch_String(UI_SKIRMISH_COLORS[index]);
-		}
-		option.Value = index;
-		option.Color = UI_Color_Text(Lobby_Color_Ref(index));
-		state.Colors.push_back(option);
-	}
+	UI_Fill_Stock_Colors(state.Colors, UI_Stock_Color_Count());
+}
 
+
+static void Fill_Rule_Options(UISkirmishState & state)
+{
 	state.UnitCountMin = SessionClass::CountMin[1];
 	state.UnitCountMax = SessionClass::CountMax[1];
 	state.UnitCount = Session.Options.UnitCount;
@@ -472,7 +463,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 	// Until a match starts from this screen, these options take the values of [MultiplayerDialogSettings].
 	bool const rules_defaults = !Options_Started;
-	state.GameSpeed = 6 - (rules_defaults ? Rule->MPGameSpeed : Session.Options.GameSpeed);
+	state.GameSpeed = OptionsClass::Slider_From_Speed(rules_defaults ? Rule->MPGameSpeed : Session.Options.GameSpeed);
 
 	state.Bases = Session.Options.Bases;
 	state.Crates = Session.Options.Goodies;
@@ -483,48 +474,19 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.MultiEngineer = rules_defaults ? Rule->IsMPMultiEngineer : Session.Options.CrapEngineers;
 	state.SuperWeapons = rules_defaults ? Rule->IsMPSuperWeapons : Session.Options.SWAllowed;
 	state.BuildOffAlly = rules_defaults ? Rule->IsMPBuildOffAlly : Session.Options.BuildOffAlly;
+}
 
+
+static void Restore_Remembered_Options(UISkirmishState & state)
+{
 	// The remembered setup comes back as it was left. Its options replace the rules' values, and its
 	// map is used only while the map's file is on hand; the first map that is on hand takes its place.
 	Load_Memory();
-	if (Memory.Units >= 0) {
-		state.UnitCount = std::clamp(Memory.Units, state.UnitCountMin, state.UnitCountMax);
-	}
-	if (Memory.Credits >= 0) {
-		state.Credits = std::clamp(Memory.Credits, state.CreditsMin, state.CreditsMax);
-	}
-	if (Memory.TechLevel >= 0) {
-		state.TechLevel = std::clamp(Memory.TechLevel, 1, state.TechLevelMax);
-	}
-	if (Memory.GameSpeed >= 0) {
-		state.GameSpeed = std::clamp(Memory.GameSpeed, 0, 6);
-	}
-	if (Memory.Bases >= 0) {
-		state.Bases = Memory.Bases != 0;
-	}
-	if (Memory.Crates >= 0) {
-		state.Crates = Memory.Crates != 0;
-	}
-	if (Memory.Fog >= 0) {
-		state.Fog = Memory.Fog != 0;
-	}
-	if (Memory.Bridges >= 0) {
-		state.Bridges = Memory.Bridges != 0;
-	}
-	if (Memory.Redeploy >= 0) {
-		state.Redeploy = Memory.Redeploy != 0;
-	}
-	if (Memory.ShortGame >= 0) {
-		state.ShortGame = Memory.ShortGame != 0;
-	}
-	if (Memory.MultiEngineer >= 0) {
-		state.MultiEngineer = Memory.MultiEngineer != 0;
-	}
-	if (Memory.SuperWeapons >= 0) {
-		state.SuperWeapons = Memory.SuperWeapons != 0;
-	}
-	if (Memory.BuildOffAlly >= 0) {
-		state.BuildOffAlly = Memory.BuildOffAlly != 0;
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		int const saved = Memory.*option.Saved;
+		if (saved >= 0) {
+			option.Restore(state, saved);
+		}
 	}
 
 	// Only the session takes the map here. The loaded scenario is named when the game starts.
@@ -536,7 +498,11 @@ void UI_Skirmish_State(UISkirmishState & state)
 	Select_Scenario_Session(index);
 	state.MapName = Session.Options.ScenarioDescription;
 	Fill_Starts(state);
+}
 
+
+static void Fill_Slots(UISkirmishState & state)
+{
 	// The last setup comes back from the remembered copy; a first run has one opponent.
 	state.Slots.assign(UI_SKIRMISH_MAX_SLOTS, UISkirmishSlot());
 	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
@@ -559,9 +525,20 @@ void UI_Skirmish_State(UISkirmishState & state)
 			}
 		}
 	}
-	state.Slots[0].Color = (Session.PrefColor >= 0 && Session.PrefColor < (int)state.Colors.size()) ? Session.PrefColor : 0;
+	state.Slots[0].Color = Index_In_Range(Session.PrefColor, state.Colors.size()) ? Session.PrefColor : 0;
 	state.Slots[0].Custom = Player_Color_Is_Custom(Session.PrefCustomColor) ? Session.PrefCustomColor : 0;
 	state.Slots[0].Kind = UI_SKIRMISH_SLOT_OPEN;
+}
+
+
+void UI_Skirmish_State(UISkirmishState & state)
+{
+	state.Handle = Session.Handle;
+
+	Fill_Choice_Tables(state);
+	Fill_Rule_Options(state);
+	Restore_Remembered_Options(state);
+	Fill_Slots(state);
 
 	Clear_Vector(&Session.Players);
 	Clear_Vector(&Session.Computers);

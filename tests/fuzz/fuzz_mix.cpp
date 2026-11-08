@@ -19,6 +19,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -156,10 +158,27 @@ std::vector<std::string> Dictionary(void)
 }
 
 
+// A name in the temp directory that only this process uses, so concurrent runs do not share an input file.
+std::string Unique_Input_Path(void)
+{
+	std::random_device seed;
+	std::filesystem::path path = std::filesystem::temp_directory_path() / ("fuzz_mix_input_" + std::to_string(seed()) + ".mix");
+	return(path.string());
+}
+
+
+// Deletes the file at Path when Run leaves, including when a check throws.
+struct Remove_On_Exit
+{
+	std::string Path;
+	~Remove_On_Exit(void) {std::remove(Path.c_str());}
+};
+
+
 void Run(Bytes const & input)
 {
-	// Only the harness reads or writes this file, and the next input replaces it.
-	static std::string const path = "fuzz_mix_input.mix";
+	static std::string const path = Unique_Input_Path();
+	Remove_On_Exit const remover{path};
 	std::FILE * file = std::fopen(path.c_str(), "wb");
 	Require(file != nullptr, "the harness could not write its input file");
 	if (!input.empty()) {
@@ -215,8 +234,6 @@ void Run(Bytes const & input)
 			mix.Free();
 		}
 	}
-
-	std::remove(path.c_str());
 }
 
 }

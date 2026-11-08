@@ -13,6 +13,7 @@
 
 #include "cdfile.h"
 #include "dbgprint.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cstring>
@@ -33,17 +34,9 @@ static char const * const SavedGamesFolder = "Saved Games";
 
 static char const * const ScreenshotsFolder = "Screenshots";
 
+static char const * const ReplaysFolder = "Replays";
 
-static std::string Trim_Path(std::string const & path)
-{
-	std::string::size_type first = path.find_first_not_of(" \t");
-	if (first == std::string::npos) {
-		return(std::string());
-	}
-
-	std::string::size_type last = path.find_last_not_of(" \t");
-	return(path.substr(first, last - first + 1));
-}
+static char const * const MusicFolder = "Music";
 
 
 /// <summary>
@@ -52,7 +45,7 @@ static std::string Trim_Path(std::string const & path)
 /// </summary>
 /// <param name="path">The directory to terminate.</param>
 /// <returns>The directory, ending in a separator.</returns>
-static std::string Terminate_Path(std::string const & path)
+std::string Terminate_Path(std::string const & path)
 {
 	if (path.empty()) {
 		return(path);
@@ -70,9 +63,23 @@ static std::string Terminate_Path(std::string const & path)
 }
 
 
+std::string Executable_Path(bool * truncated)
+{
+	char path[MAX_PATH];
+	DWORD const length = GetModuleFileNameA(NULL, path, sizeof(path));
+	if (truncated != nullptr) {
+		*truncated = length >= MAX_PATH;
+	}
+	if (length == 0) {
+		return(std::string());
+	}
+	return(std::string(path));
+}
+
+
 static bool Is_Same_Path(std::string const & left, std::string const & right)
 {
-	return(_stricmp(left.c_str(), right.c_str()) == 0);
+	return(Equals_No_Case(left.c_str(), right.c_str()));
 }
 
 
@@ -138,13 +145,13 @@ static bool Is_Directory(std::string const & path)
 
 void Set_Data_Directory(char const * path)
 {
-	DataDirectory = Terminate_Path(Trim_Path(path != NULL ? path : ""));
+	DataDirectory = Terminate_Path(Trimmed(path != NULL ? path : "", TRIM_SPACE_TAB));
 }
 
 
 void Set_User_Directory(char const * path)
 {
-	UserDirectory = Terminate_Path(Trim_Path(path != NULL ? path : ""));
+	UserDirectory = Terminate_Path(Trimmed(path != NULL ? path : "", TRIM_SPACE_TAB));
 
 	// The file layer places and finds the player's own files; this is the only thing that
 	// tells it where they go.
@@ -168,20 +175,12 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 		return(folders);
 	}
 
-	std::string const text = list;
-	std::string::size_type start = 0;
-
-	while (start <= text.length()) {
-		std::string::size_type end = text.find(',', start);
-		if (end == std::string::npos) {
-			end = text.length();
-		}
-
+	for (std::string const & part : Split_List(list, ',', TRIM_SPACE_TAB, false)) {
 		/*
 		 * Comparing the folders only once they are in the form they will be searched in
 		 * keeps the same folder written two ways from being searched twice.
 		 */
-		std::string const folder = Terminate_Path(Trim_Path(text.substr(start, end - start)));
+		std::string const folder = Terminate_Path(part);
 
 		/*
 		 * The game's own directory is examined before any of these, so naming it adds
@@ -189,10 +188,6 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 		 * with nothing after the equals sign being one an INI file cannot carry.
 		 */
 		if (folder == ".\\" || folder == "./") {
-			if (end == text.length()) {
-				break;
-			}
-			start = end + 1;
 			continue;
 		}
 
@@ -209,11 +204,6 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 				folders.push_back(folder);
 			}
 		}
-
-		if (end == text.length()) {
-			break;
-		}
-		start = end + 1;
 	}
 
 	return(folders);
@@ -305,6 +295,29 @@ std::string Saved_Game_Name(char const * filename)
 std::string Screenshot_Name(char const * filename)
 {
 	return(Own_Folder_Name(ScreenshotsFolder, filename));
+}
+
+
+/// <summary>
+/// Names a replay inside the Replays folder, making the folder on every call.
+/// </summary>
+std::string Replay_Name(char const * filename)
+{
+	return(Own_Folder_Name(ReplaysFolder, filename));
+}
+
+
+/// <summary>
+/// Names the folder the player's own music goes in, ending in a separator, making it on
+/// every call so the player can find it before the first track is dropped in.
+/// </summary>
+std::string Music_Folder(void)
+{
+	std::string const path = UserDirectory + MusicFolder;
+
+	CreateDirectory(path.c_str(), NULL);
+
+	return(path + (char)std::filesystem::path::preferred_separator);
 }
 
 

@@ -16,6 +16,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
+#include <string_view>
 
 
 namespace NetTiming
@@ -157,16 +159,58 @@ namespace NetTiming
 	unsigned int Game_Speed_Frame_Rate(int game_speed);
 	unsigned int Solo_Game_Speed_Frame_Rate(int game_speed);
 
-	class FramePacer
+	// How long game frames last: Frames frames take Nanoseconds, so a rate that does not divide a second evenly
+	// (60 per second) is exact. Zero nanoseconds means no limit.
+	struct FramePeriod
+	{
+		std::int64_t Nanoseconds = 0;
+		unsigned int Frames = 1;
+
+		bool operator==(FramePeriod const &) const = default;
+	};
+
+	FramePeriod Frame_Period_For_Rate(unsigned int rate);
+	// The solo period for a game speed. It follows Solo_Game_Speed_Frame_Rate, so the speed table is kept there.
+	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed);
+
+	// Frame deadlines on a nanosecond clock. Each deadline is the previous one plus the period, with the
+	// fraction carried, so frames do not drift. A frame that starts more than one period late restarts from now.
+	class FrameDeadline
 	{
 		public:
-			Milliseconds Next_Wait(unsigned int rate);
+			// Starts the frame that begins at now and returns when it ends. A zero period ends it at once.
+			std::int64_t Arm(std::int64_t now, FramePeriod period);
 
 		private:
-			unsigned int Rate = 0;
-			// The part of a millisecond each frame is owed, counted in 1/Rate of a millisecond.
+			FramePeriod Period;
+			std::int64_t Deadline = 0;
+			// The part of a nanosecond each frame is owed, counted in 1/Period.Frames of a nanosecond.
 			unsigned int Leftover = 0;
 	};
+
+	// Min, mean, max and standard deviation of the frame intervals seen since the last Take.
+	class IntervalStats
+	{
+		public:
+			struct Summary
+			{
+				unsigned int Count = 0;
+				double Min = 0.0;
+				double Mean = 0.0;
+				double Max = 0.0;
+				double Deviation = 0.0;
+			};
+
+			void Add(double milliseconds);
+			// Returns the summary and starts a new one.
+			Summary Take(void);
+
+		private:
+			Summary Current;
+			double Sum = 0.0;
+			double SumOfSquares = 0.0;
+	};
+
 	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps);
 
 	// gamemd's online timing, which the default policy follows. Response times are in ticks of
@@ -184,8 +228,87 @@ namespace NetTiming
 	// Look-ahead for a response time in ticks; the current look-ahead is the rise limit.
 	unsigned int Gamemd_Max_Ahead(unsigned int response_ticks, unsigned int frame_rate, unsigned int frame_send_rate,
 		unsigned int current_max_ahead, unsigned int latency_stage = GAMEMD_LATENCY_STAGE);
-	// The settings a master sends for the worst round trip at the desired frame rate.
-	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead);
+	// What a host asked for with the lobby's send period and look-ahead commands (or a launch file's
+	// FrameSendRate and MaxAhead keys). Zero leaves that value to the timing policy. The host's choice
+	// holds for the whole match: it sets the start values and every later evaluation keeps to it.
+	struct HostTimingChoice {
+		unsigned int FrameSendRate = 0;
+		unsigned int MaxAhead = 0;
+
+		bool Is_Set(void) const {return(FrameSendRate != 0 || MaxAhead != 0);}
+		bool operator==(HostTimingChoice const &) const = default;
+	};
+
+	// The send periods the CnCNet client writes when its host never chose one: 2 is the client's forced option and 7 is
+	// the default its host commands show. A launch file with one of these and no MaxAhead is read as no choice, so a
+	// stock client's games keep gamemd's timing. A launch file that sets HostTiming=yes is taken literally.
+	constexpr bool Is_CnCNet_Default_Frame_Send_Rate(unsigned int frame_send_rate)
+	{
+		return(frame_send_rate == 2 || frame_send_rate == 7);
+	}
+
+	// A chosen send period is 1 to 10 frames. A chosen look-ahead is 0 (left to the policy) or 4 to 250 frames.
+	constexpr bool Host_Frame_Send_Rate_Is_Valid(unsigned int frame_send_rate)
+	{
+		return(frame_send_rate >= MINIMUM_TIMING_RUNG && frame_send_rate <= MAXIMUM_TIMING_RUNG);
+	}
+	constexpr bool Host_Max_Ahead_Is_Valid(unsigned int max_ahead)
+	{
+		return(max_ahead == 0 || (max_ahead >= 4 && max_ahead <= MAXIMUM_MAX_AHEAD));
+	}
+	// The look-ahead a send period can carry: a whole number of send periods, at least the smallest the game accepts
+	// and at most 250.
+	unsigned int Host_Max_Ahead_For(unsigned int max_ahead, unsigned int frame_send_rate);
+	// Puts the host's choice over settings a policy produced. Returns settings when nothing is chosen.
+	TimingSettings Apply_Host_Choice(TimingSettings settings, HostTimingChoice choice);
+	// The choice a launch file or lobby gives for the two timing keys. A value that is zero, negative or invalid
+	// leaves its field at zero.
+	constexpr HostTimingChoice Host_Timing_Choice_From(int frame_send_rate, int max_ahead)
+	{
+		HostTimingChoice choice;
+		if (frame_send_rate > 0 && Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
+			choice.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
+		}
+		if (max_ahead > 0 && Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
+			choice.MaxAhead = static_cast<unsigned int>(max_ahead);
+		}
+		return(choice);
+	}
+	// Everything a host chooses about the network of a match: the timing above and the protocol. Protocol 2 sends
+	// orders in batches every send period and lets the master adjust the timing; protocol 0 sends every frame and
+	// keeps the look-ahead it starts with. 2 is the default.
+	struct HostNetworkOptions {
+		HostTimingChoice Timing;
+		int Protocol = 2;
+
+		bool Is_Default(void) const {return(!Timing.Is_Set() && Protocol == 2);}
+		bool operator==(HostNetworkOptions const &) const = default;
+	};
+
+	constexpr bool Host_Protocol_Is_Valid(int protocol)
+	{
+		return(protocol == 0 || protocol == 2);
+	}
+
+	struct HostCommandResult {
+		bool Recognised = false;    // The line was one of the host's network commands.
+		bool Changed = false;       // A value changed.
+		std::string Message;        // What to tell the host, in plain words.
+	};
+
+	// Runs a host's lobby chat line such as "/framesendrate 6", "/maxahead 40" or "/protocolversion 0" on the options.
+	// A command with no value shows the current one. "auto" (or 0) leaves a timing value to the policy.
+	HostCommandResult Apply_Host_Command(std::string_view line, HostNetworkOptions & options);
+	// One line that tells a player the options, as "send period 6 frames, look-ahead automatic, protocol 2".
+	std::string Describe_Host_Options(HostNetworkOptions const & options);
+	// The options in one word for a packet, 0 when they are the default. Unpack returns nothing for a word that
+	// holds a value out of range.
+	std::uint32_t Pack_Host_Options(HostNetworkOptions const & options);
+	std::optional<HostNetworkOptions> Unpack_Host_Options(std::uint32_t packed);
+	// The settings a master sends for the worst round trip at the desired frame rate, with the host's choice kept.
+	// An unset choice gives gamemd's own settings.
+	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead,
+		HostTimingChoice choice = {});
 	// Whole milliseconds a frame is armed for. gamemd truncates 1000 / rate and does not spread the remainder.
 	Milliseconds Gamemd_Frame_Wait(unsigned int rate);
 	// Extra milliseconds a frame waits for a peer that lags by lag_frames, at look-ahead 31 and up.

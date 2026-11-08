@@ -644,12 +644,13 @@ static struct
 {
 	char const * Name;
 	PipScaleType Index;
-} _pipscales[5] = {
+} _pipscales[6] = {
 	{ "Ammo", PIPSCALE_AMMO },
 	{ "Tiberium", PIPSCALE_TIBERIUM },
 	{ "Passengers", PIPSCALE_PASSENGERS },
 	{ "Power", PIPSCALE_POWER },
-	{ "Charge", PIPSCALE_CHARGE }
+	{ "Charge", PIPSCALE_CHARGE },
+	{ "MindControl", PIPSCALE_MINDCONTROL }
 };
 
 
@@ -1879,11 +1880,9 @@ TypeList<TechnoTypeClass *> CCINIClass::Get_TechnoType_List(const char * section
 		TypeList<TechnoTypeClass *> list;
 		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
-			for (int index = 0; index < TechnoTypes.Count(); index++) {
-				if (!strcmpi(token, TechnoTypes[index]->Name())) {
-					list.Add(TechnoTypes[index]);
-					break;
-				}
+			TechnoTypeClass * type = TechnoTypeClass::From_Name(token);
+			if (type != NULL) {
+				list.Add(type);
 			}
 			token = strtok(NULL, ",");
 		}

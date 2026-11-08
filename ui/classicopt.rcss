@@ -100,6 +100,7 @@ label.check
 #switch-tooltips { left: 140dp; top: 306dp; }
 #switch-lines { left: 140dp; top: 330dp; }
 #switch-hidden { left: 140dp; top: 354dp; }
+#switch-defencerange { left: 140dp; top: 378dp; width: 230dp; }
 
 #scroll-label { left: 357dp; top: 306dp; }
 #scroll-name { left: 447dp; top: 306dp; }
@@ -111,6 +112,10 @@ label.check
 #sfx { left: 269dp; top: 470dp; width: 126dp; }
 #voice-label { left: 416dp; top: 445dp; }
 #voice { left: 416dp; top: 470dp; width: 126dp; }
+#unit-label { left: 123dp; top: 500dp; }
+#unit { left: 123dp; top: 525dp; width: 126dp; }
+#movie-label { left: 269dp; top: 500dp; }
+#movie { left: 269dp; top: 525dp; width: 126dp; }
 
 /* The right-hand column: the menu's name, then the buttons at the main menu's places. */
 #title

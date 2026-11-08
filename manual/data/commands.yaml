@@ -2154,6 +2154,37 @@ registered_commands:
     source: code/init.cpp
     class: QuickLoadCommandClass
     guard: null
+- id: ReplayPause
+  route_id: replaypause
+  kind: registered
+  title: Pause replay
+  description: Pauses and resumes a replay. It does nothing in any other game.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: ReplayPauseCommandClass
+    guard: null
+- id: ReplayFast
+  route_id: replayfast
+  kind: registered
+  title: Fast replay
+  description: Plays a replay without the frame limit of the game speed, and back at the game speed on
+    the next press. It does nothing in any other game.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: ReplayFastCommandClass
+    guard: null
 - id: ChatToAll
   route_id: chattoall
   kind: registered
@@ -2738,6 +2769,34 @@ fixed_controls:
   _provenance:
     source: code/display.cpp
     guard: null
+- id: fixed:shift-queue
+  route_id: fixed-shift-queue
+  kind: fixed
+  title: Queue several units
+  description: Queues ShiftQueueCount units of the clicked sidebar cameo at once in the modern interface.
+    Buildings still queue one.
+  audience: player
+  availability: *id001
+  bindings:
+  - Shift
+  context: Left-clicking a unit cameo on the sidebar
+  _provenance:
+    source: code/sidebar.cpp
+    guard: null
+- id: fixed:shift-abandon
+  route_id: fixed-shift-abandon
+  kind: fixed
+  title: Cancel all of a type
+  description: Cancels every queued and in-production unit of the clicked cameo's type, as Yuri's Revenge's
+    AbandonAll does. An active factory is put on hold first.
+  audience: player
+  availability: *id001
+  bindings:
+  - Shift
+  context: Right-clicking a cameo on the sidebar
+  _provenance:
+    source: code/sidebar.cpp
+    guard: null
 - id: fixed:dropship-accept
   route_id: fixed-dropship-accept
   kind: fixed
@@ -2770,13 +2829,11 @@ fixed_controls:
   route_id: fixed-campaign-results-continue
   kind: fixed
   title: Dismiss campaign results
-  description: Closes the campaign results screen after its prompt appears.
+  description: Closes the campaign results screen with a click on its Continue button.
   audience: player
   availability: *id001
   bindings:
   - Left mouse button
-  - Escape
-  - Space
   context: Campaign results screen after a won mission
   _provenance:
     source: code/score.cpp
@@ -2958,6 +3015,30 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:autotest-uncapped
+  route_id: autotest-uncapped
+  kind: launch
+  title: Unattended test run without the frame limit
+  description: Removes the frame limit from a skirmish or campaign game that runs a test script, so it
+    plays as fast as the machine allows. docs/AUTOTEST.md lists what differs from a run at normal speed.
+  audience: developer
+  availability: *id001
+  syntax: -AUTOTEST-UNCAPPED
+  _provenance:
+    source: code/init.cpp
+    guard: null
+- id: launch:autotest-stop-after-steps
+  route_id: autotest-stop-after-steps
+  kind: launch
+  title: Unattended test run that ends after its last step
+  description: Ends a test run on the first game frame after the script's last step, once no menu step
+    is left, and logs AUTOTEST steps done.
+  audience: developer
+  availability: *id001
+  syntax: -AUTOTEST-STOP-AFTER-STEPS
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:spawn
   route_id: spawn
   kind: launch
@@ -2966,6 +3047,19 @@ launch_options:
   audience: player
   availability: *id001
   syntax: -SPAWN
+  _provenance:
+    source: code/init.cpp
+    guard: null
+- id: launch:replay
+  route_id: replay
+  kind: launch
+  title: Replay playback
+  description: Plays back a recorded skirmish in place of the launch file. The file is looked for in the
+    Replays folder when the path names no folder. The game ignores the player's orders and compares its
+    state with the hashes the recording holds.
+  audience: player
+  availability: *id001
+  syntax: -REPLAY=<file>
   _provenance:
     source: code/init.cpp
     guard: null

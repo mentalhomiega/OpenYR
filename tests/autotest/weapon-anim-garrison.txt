@@ -1,0 +1,23 @@
+; Muzzle flash of a garrisoned Battle Bunker (NABNKR, MuzzleFlash points per occupant) whose three soldiers shoot enemy soldiers.
+; Expected, from gamemd's TechnoClass::Fire (0x6FDD50) and BuildingClass::GetFLH (0x453840): each shot comes from the MuzzleFlash point of the firing occupant, and the
+; flash is the weapon's OccupantAnim (none when it has none; the weapon's own Anim is not shown); it is drawn at ZAdjust -200. The FiringOccupantIndex moves on one
+; occupant per shot. The AUTOTEST muzzle lines give the anim and its start point; the screenshots (every 2 frames) show the flashes.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/weapon-anim-garrison.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir "E:/Claude ra2 decomp/scratch-agent/weapon-effect-anims/garrison" -Filter "AUTOTEST muzzle|Exception"
+30 command CenterBase
+35 reveal
+40 own NABNKR 56 44
+50 own E1 52 40
+51 own E1 52 41
+52 own E1 52 42
+60 occupy E1 56 44
+61 occupy E1 56 44
+62 occupy E1 56 44
+70 view 56 44
+71 zoom 2
+72 follow NABNKR
+90 enemy E1 61 44
+91 enemy E1 61 45
+92 enemy E1 62 44
+100 record 2
+300 record 0
+301 quit

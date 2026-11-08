@@ -25,6 +25,7 @@
 #include "shellmap.h"
 #include "side.h"
 #include "stimer.h"
+#include "strutil.h"
 #include "timer.h"
 #include "voxqueue.h"
 
@@ -741,6 +742,9 @@ VoiceEvaType const VoiceEva[] = {
 };
 
 
+} // namespace
+
+
 int Eva_Line(char const * name)
 {
 	if (name == NULL) {
@@ -753,6 +757,9 @@ int Eva_Line(char const * name)
 	}
 	return(-1);
 }
+
+
+namespace {
 
 
 bool Is_Critical_Line(VoxType voice)
@@ -862,7 +869,7 @@ void Speak_Eva_Index(int line, bool now)
 			return;
 		}
 		EvaLineType const & entry = EvaLines[line];
-		if (!SpeechEnabled && _strnicmp(entry.Name.c_str(), "EVA_", 4) == 0) {
+		if (!SpeechEnabled && Starts_With_No_Case(entry.Name, "EVA_")) {
 			return;
 		}
 		control = entry.Priority == PRIORITY_CRITICAL ? VOXC_CRITICAL : entry.Control;
@@ -1024,23 +1031,52 @@ void Set_Speech_State(bool state)
 }
 
 
-/// <summary>
-/// Reads the announcer's lines from the file the deployment names, EVAMD.INI by default, as
-/// Yuri's Revenge does at startup. Each name in [DialogList] is a section that names the
-/// line's sample for the Allied, Russian and Yuri voices and may set its Type, Priority and
-/// Volume. Without the file the Tiberian Sun speech files are spoken instead.
-/// </summary>
-void Load_Eva(void)
+// Adds the lines of one announcer file to the list. With only_new, a line whose name the list already holds is left
+// out, so a name keeps the line it had and the numbers a mission gives lines stay the same.
+// Maps a DialogList Type name to its control, matched without case. A name not listed is STANDARD.
+static VoxControlType Eva_Control_Named(std::string const & name)
 {
-	EvaLines.clear();
-	std::fill(VoiceLines, VoiceLines + VOX_COUNT, -1);
-
-	CCINIClass ini;
-	CCFileClass file(DeploymentConfig.EvaFile.c_str());
-	if (!file.Is_Available() || !ini.Load(file, false)) {
-		return;
+	struct ControlName {
+		char const * Name;
+		VoxControlType Control;
+	};
+	static ControlName const NAMES[] = {
+		{"QUEUE", VOXC_QUEUE},
+		{"INTERRUPT", VOXC_INTERRUPT},
+		{"QUEUED_INTERRUPT", VOXC_QUEUED_INTERRUPT},
+	};
+	for (ControlName const & entry : NAMES) {
+		if (_stricmp(name.c_str(), entry.Name) == 0) {
+			return(entry.Control);
+		}
 	}
+	return(VOXC_STANDARD);
+}
 
+
+// Maps a DialogList Priority name to its priority, matched without case. A name not listed is NORMAL.
+static int Eva_Priority_Named(std::string const & name)
+{
+	struct PriorityName {
+		char const * Name;
+		int Priority;
+	};
+	static PriorityName const NAMES[] = {
+		{"LOW", PRIORITY_LOW},
+		{"IMPORTANT", PRIORITY_IMPORTANT},
+		{"CRITICAL", PRIORITY_CRITICAL},
+	};
+	for (PriorityName const & entry : NAMES) {
+		if (_stricmp(name.c_str(), entry.Name) == 0) {
+			return(entry.Priority);
+		}
+	}
+	return(PRIORITY_NORMAL);
+}
+
+
+static void Append_Eva_Lines(CCINIClass const & ini, bool only_new)
+{
 	static char const * const LIST = "DialogList";
 	EvaTypes = {"Allied", "Russian", "Yuri"};
 	int const typecount = ini.Entry_Count("EVATypes");
@@ -1054,6 +1090,9 @@ void Load_Eva(void)
 	for (int index = 0; index < count; index++) {
 		EvaLineType line;
 		line.Name = ini.Get_String(LIST, ini.Get_Entry(LIST, index));
+		if (only_new && Eva_Line(line.Name.c_str()) >= 0) {
+			continue;
+		}
 		char const * section = line.Name.c_str();
 		for (std::string const & type : EvaTypes) {
 			// The game keeps eight characters of a sample's name.
@@ -1061,19 +1100,40 @@ void Load_Eva(void)
 		}
 
 		std::string const type = ini.Get_String(section, "Type");
-		line.Control = VOXC_STANDARD;
-		if (_stricmp(type.c_str(), "QUEUE") == 0) line.Control = VOXC_QUEUE;
-		if (_stricmp(type.c_str(), "INTERRUPT") == 0) line.Control = VOXC_INTERRUPT;
-		if (_stricmp(type.c_str(), "QUEUED_INTERRUPT") == 0) line.Control = VOXC_QUEUED_INTERRUPT;
+		line.Control = Eva_Control_Named(type);
 
 		std::string const priority = ini.Get_String(section, "Priority");
-		line.Priority = PRIORITY_NORMAL;
-		if (_stricmp(priority.c_str(), "LOW") == 0) line.Priority = PRIORITY_LOW;
-		if (_stricmp(priority.c_str(), "IMPORTANT") == 0) line.Priority = PRIORITY_IMPORTANT;
-		if (_stricmp(priority.c_str(), "CRITICAL") == 0) line.Priority = PRIORITY_CRITICAL;
+		line.Priority = Eva_Priority_Named(priority);
 
 		line.Volume = (float)ini.Get_Float(section, "Volume", 1.0);
 		EvaLines.push_back(line);
+	}
+}
+
+
+/// <summary>
+/// Reads the announcer's lines from the file the deployment names, EVAMD.INI by default, as
+/// Yuri's Revenge does at startup, and then adds the lines of the file RA2Eva= names that the first lacks, which
+/// the Red Alert 2 missions speak. Each name in [DialogList] is a section that names the
+/// line's sample for the Allied, Russian and Yuri voices and may set its Type, Priority and
+/// Volume. Without the file the Tiberian Sun speech files are spoken instead.
+/// </summary>
+void Load_Eva(void)
+{
+	EvaLines.clear();
+	std::fill(VoiceLines, VoiceLines + VOX_COUNT, -1);
+
+	CCINIClass ini;
+	CCFileClass file(DeploymentConfig.EvaFile.c_str());
+	if (!file.Is_Available() || !ini.Load(file, false)) {
+		return;
+	}
+	Append_Eva_Lines(ini, false);
+
+	CCINIClass ra2;
+	CCFileClass ra2_file(DeploymentConfig.RA2EvaFile.c_str());
+	if (ra2_file.Is_Available() && ra2.Load(ra2_file, false)) {
+		Append_Eva_Lines(ra2, true);
 	}
 
 	for (VoiceEvaType const & entry : VoiceEva) {

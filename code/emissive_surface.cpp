@@ -21,6 +21,7 @@
 #include "point.h"
 #include "rect.h"
 #include "rlerle.h"
+#include "shadowplane.h"
 #include "surface.h"
 #include "zbuffer.h"
 
@@ -29,10 +30,10 @@
 /// Binds planes to the surfaces the presenter reads and releases any other plane. Surfaces
 /// that are NULL are skipped.
 /// </summary>
-void Emissive_Sync(Surface const * composite, Surface const * map_composite, Surface const * visible)
+void Emissive_Sync(Surface const * composite, Surface const * tile, Surface const * map_composite, Surface const * map_tile, Surface const * visible)
 {
-	Surface const * surfaces[3] = {composite, map_composite, visible};
-	void const * keep[3] = {NULL, NULL, NULL};
+	Surface const * surfaces[5] = {composite, tile, map_composite, map_tile, visible};
+	void const * keep[5] = {NULL, NULL, NULL, NULL, NULL};
 	int count = 0;
 
 	if (Emissive_Is_Enabled()) {
@@ -81,12 +82,33 @@ void Emissive_After_Fill(Surface & dest, Rect const & rect)
 }
 
 
+void Planes_After_Fill(Surface & dest, Rect const & rect)
+{
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Fill(dest, rect);
+	}
+	ShadowPlane_After_Fill(dest, rect);
+}
+
+
+void Planes_After_Bit_Blit(Surface & dest, int destx, int desty, Surface const & source, int sourcex, int sourcey, int width, int height)
+{
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Bit_Blit(dest, destx, desty, source, sourcex, sourcey, width, height);
+	}
+	if (ShadowPlane_Is_Enabled()) {
+		ShadowPlane_After_Bit_Blit(dest, destx, desty, source, sourcex, sourcey, width, height);
+	}
+}
+
+
 /// <summary>
 /// Writes the draw strength to the pixels of one RLE row that the blitter draws. The row starts
 /// at mask and the source is the RLE data after the row's length word. zbuf and zshape follow
-/// the blitter's depth test and are NULL when the surface has no depth buffer.
+/// the blitter's depth test and are NULL when the surface has no depth buffer. A drawn pixel keeps
+/// the bits of keep that it already had.
 /// </summary>
-void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin)
+void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin, bool writedepth, unsigned char keep)
 {
 	unsigned char const * sptr = (unsigned char const *)source;
 
@@ -124,7 +146,10 @@ void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int
 			drawn = (zmin - offset) < (int)*zbuf;
 		}
 		if (drawn) {
-			*mask = strength;
+			*mask = (unsigned char)(strength | (*mask & keep));
+			if (writedepth && zbuf != NULL) {
+				*zbuf = (unsigned short)(zmin - (zshape != NULL ? *zshape : 0));
+			}
 		}
 
 		length--;

@@ -1,0 +1,18 @@
+; An engineer that is sent to a neutral tech building with the capture order walks to it and takes it, and is used up doing so.
+; The Red Alert 2 Soviet 3 win script depends on this: its engineers capture the Allied Battle Lab (GATECH).
+; Two engineers are ordered to the same neutral derrick, and the order is given again while they are under way, as a
+; script that repeats its order does. Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Script src-agent27/tests/autotest/engineer-capture-tech-building.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST capture|Exception"
+; Expected: the CAOILD at 66,40 is the Neutral house's at frame 105 and the player's (Americans) at frame 600. One engineer is
+; used up; the other, whose order reached a building already the player's, stands beside it at frame 601.
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 neutral CAOILD 66 40
+101 own ENGINEER 56 44
+102 own ENGINEER 56 46
+105 where CAOILD
+110 capture ENGINEER 66 40
+200 capture ENGINEER 66 40
+600 where CAOILD
+601 where ENGINEER
+650 quit

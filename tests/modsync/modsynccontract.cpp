@@ -122,6 +122,23 @@ int main(void)
 	}
 
 	/*
+	 * The text other players receive keeps its form: each hash is eight lowercase hex digits, and a
+	 * digest's count is decimal.
+	 */
+	{
+		ModSync::Signature wire;
+		wire.Mods.push_back({"Alpha", 0x0000ABCDu});
+		wire.Mods.push_back({"Beta", 0xFFFFFFFFu});
+		Check_Text(ModSync::Encode(wire), "Alpha=0000abcd,Beta=ffffffff", "each hash is written as eight lowercase hex digits");
+
+		ModSync::Signature digest;
+		digest.IsDigest = true;
+		digest.DigestCount = 12;
+		digest.DigestHash = 0x00000001u;
+		Check_Text(ModSync::Encode(digest), "#12=00000001", "a digest is its count in decimal and its hash in eight hex digits");
+	}
+
+	/*
 	 * The hash follows the contents of mod.ini and of the overlays it names, and nothing else.
 	 */
 	{

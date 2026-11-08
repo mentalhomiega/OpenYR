@@ -1,0 +1,63 @@
+; Controls page with a modifier-only and a multi-key binding. Attack move takes Ctrl with Shift: both keys go down, and
+; releasing them with no other key captures the chord alone, and the notice shows it while the keys are held. Assign
+; keeps the trigger the dropdown shows, which is Press here because the row held a press. Guard refuses the chord, since a
+; press command cannot use it, then takes Alt+Ctrl+X (the game writes the modifiers as Alt, Ctrl, Shift).
+; The control scheme and the starting Attack move key come from the user folder's KEYBOARDMD.INI.
+; Shots: chord-held, chord-released, chord-assigned (Attack move's row), chord-refused (the notice on Guard),
+; combo-assigned (Guard's row). OK then saves the file to the user folder's KEYBOARDMD.INI.
+; Run once per menu style; the Classic style needs the 800x600 window, where the page fits:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/keybind-chords-menu.txt -Menus -MenuStyle Modern -Width 640 -Height 480 -Seconds 170 -ShotDir "E:\Claude ra2 decomp\scratch-agent\keybind-chords\modern" -Filter "UISCRIPT|Exception"
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/keybind-chords-menu.txt -Menus -MenuStyle Classic -Width 800 -Height 600 -Seconds 170 -ShotDir "E:\Claude ra2 decomp\scratch-agent\keybind-chords\classic" -Filter "UISCRIPT|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui press Keyboard
+ui wait 1500
+ui choose Attack move
+ui wait 500
+ui wclick capture
+ui wait 300
+ui keydown ctrl
+ui wait 200
+ui keydown shift
+ui wait 400
+ui shot chord-held
+ui keyup shift
+ui wait 200
+ui keyup ctrl
+ui wait 500
+ui shot chord-released
+ui press Assign
+ui wait 500
+ui shot chord-assigned
+ui choose Guard
+ui wait 500
+ui wclick capture
+ui wait 300
+ui keydown ctrl
+ui wait 200
+ui keydown shift
+ui wait 200
+ui keyup shift
+ui wait 200
+ui keyup ctrl
+ui wait 500
+ui shot chord-refused
+ui keydown ctrl
+ui wait 200
+ui keydown alt
+ui wait 200
+ui key ctrl+alt+x
+ui wait 300
+ui keyup alt
+ui wait 200
+ui keyup ctrl
+ui wait 500
+ui press Assign
+ui wait 500
+ui shot combo-assigned
+ui wait 4000
+ui press OK
+ui wait 2000
+ui quit

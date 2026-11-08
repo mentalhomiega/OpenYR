@@ -1,0 +1,99 @@
+; A V3 launcher (V3) and a Dreadnought (DRED) on the XMP08T2 map each fire a missile at a target. The "rocket" lines
+; log each missile's coordinate, height above ground and destination on every frame from frame 60 to 140.
+; The V3 at 100,80 strikes a neutral tank (HTNK) at 92,80 at frame 100; its V3ROCKET launches at frame 120.
+; The DRED at 66,62 strikes a pillbox (GAPILL) at 66,80 at frame 60; its DMISL missiles launch at about frame 73.
+; A launched missile starts at the firing point with Z + 10 (SpawnManagerClass::Update, 0x6B7230). Its destination must be
+; the target's cell: the rocket locomotor keeps the first destination it is given, so a missile that takes the flying
+; idle branch on unlimbo would fly to another cell.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/missile-spawn-height.txt -Map XMP08T2.MAP -Seconds 150 -Filter "AUTOTEST   rocket|AUTOTEST strike|Exception"
+10 command CenterBase
+30 reveal
+40 own V3 100 80
+41 face 192 100 80
+42 neutral HTNK 92 80
+43 own DRED 66 62
+50 spawn GAPILL 66 80
+60 strike DRED 66 80
+60 rocket DMISL
+61 rocket DMISL
+62 rocket DMISL
+63 rocket DMISL
+64 rocket DMISL
+65 rocket DMISL
+66 rocket DMISL
+67 rocket DMISL
+68 rocket DMISL
+69 rocket DMISL
+70 rocket DMISL
+71 rocket DMISL
+72 rocket DMISL
+73 rocket DMISL
+74 rocket DMISL
+75 rocket DMISL
+76 rocket DMISL
+77 rocket DMISL
+78 rocket DMISL
+79 rocket DMISL
+80 rocket DMISL
+81 rocket DMISL
+82 rocket DMISL
+83 rocket DMISL
+84 rocket DMISL
+85 rocket DMISL
+86 rocket DMISL
+87 rocket DMISL
+88 rocket DMISL
+89 rocket DMISL
+90 rocket DMISL
+91 rocket DMISL
+92 rocket DMISL
+93 rocket DMISL
+94 rocket DMISL
+95 rocket DMISL
+96 rocket DMISL
+97 rocket DMISL
+98 rocket DMISL
+99 rocket DMISL
+100 strike V3 92 80
+100 rocket V3ROCKET
+101 rocket V3ROCKET
+102 rocket V3ROCKET
+103 rocket V3ROCKET
+104 rocket V3ROCKET
+105 rocket V3ROCKET
+106 rocket V3ROCKET
+107 rocket V3ROCKET
+108 rocket V3ROCKET
+109 rocket V3ROCKET
+110 rocket V3ROCKET
+111 rocket V3ROCKET
+112 rocket V3ROCKET
+113 rocket V3ROCKET
+114 rocket V3ROCKET
+115 rocket V3ROCKET
+116 rocket V3ROCKET
+117 rocket V3ROCKET
+118 rocket V3ROCKET
+119 rocket V3ROCKET
+120 rocket V3ROCKET
+121 rocket V3ROCKET
+122 rocket V3ROCKET
+123 rocket V3ROCKET
+124 rocket V3ROCKET
+125 rocket V3ROCKET
+126 rocket V3ROCKET
+127 rocket V3ROCKET
+128 rocket V3ROCKET
+129 rocket V3ROCKET
+130 rocket V3ROCKET
+131 rocket V3ROCKET
+132 rocket V3ROCKET
+133 rocket V3ROCKET
+134 rocket V3ROCKET
+135 rocket V3ROCKET
+136 rocket V3ROCKET
+137 rocket V3ROCKET
+138 rocket V3ROCKET
+139 rocket V3ROCKET
+140 rocket V3ROCKET
+141 quit

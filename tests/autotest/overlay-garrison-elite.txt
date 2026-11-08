@@ -1,0 +1,15 @@
+; A garrisoned civilian building under the pointer and a selected elite engineer.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-garrison-elite.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120
+; Expected in the shot: one blue soldier pip at the building's near corner; stacked chevrons to the right of the engineer.
+30 command CenterBase
+35 reveal
+40 neutral CASANF01 60 40
+41 own E1 57 40
+42 own ENGINEER 64 42
+60 view 62 42
+70 occupy E1 60 40
+80 rank ENGINEER 2
+90 select ENGINEER
+100 hoverat 60 40
+160 windowshot a5-garrison
+170 quit

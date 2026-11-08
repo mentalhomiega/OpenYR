@@ -9,7 +9,9 @@ sidebar stays available as an option, as the classic menus do.
 At 1920x1080:
 
 - **The map fills the whole screen.** There is no sidebar column and no strip kept for the command
-  bar; panels draw over the map, and the map scrolls under them.
+  bar; panels draw over the map, and the map scrolls under them. The view stops at the map's
+  edges, so the panel covers the map's top-right corner when we scroll fully right. We chose this
+  over letting the view pass the edge, which showed a black strip below the panel.
 - **The build panel** sits in the top-right corner, 250 pixels wide, framed in the side's colour
   (blue for the Allies, red for the Soviets, purple for Yuri). From the top:
   - a row of buttons: place beacon, sell, power down and repair, then the options button. Place
@@ -75,7 +77,8 @@ the same arrangement whether or not the map is zoomed:
 
 `[Options] InterfaceStyle=Modern|Classic` in the user settings, defaulting to Modern in the modern
 build once it is complete, and to Classic until then. The options screen gets a matching choice.
-Changing it takes effect at the next game start.
+A change from the main menu applies when the settings close; one made in a game applies on the
+way back to the main menu.
 
 ## Steps
 

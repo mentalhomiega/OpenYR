@@ -1,0 +1,39 @@
+; Anything is Possible (Possible.yrm, NEWURBAN) played for about ten game minutes as a Soviet player: a deployed MCV, power,
+; refinery, barracks and war factory, then the Soviet Radar Tower and more structures beside it, while the map's day and night
+; loop runs. The map is a game file and is not in the repository: copy it to build\<runner>-autotest-user\Possible.yrm first.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/possible-long-soviet.txt -Map Possible.yrm -Country 8 -Width 1912 -Height 1000 -RenderFrameRate 30 -Seconds 600 -Filter "AUTOTEST +(place|building NARADR|frame 9001)|Exception"
+; Expected: no Exception line, and the run ends at frame 9001 with a NARADR among the "building" lines of the last dump.
+30 command CenterBase
+40 select SMCV
+45 command DeployObject
+200 own NAREFN 100 40
+210 own NAPOWR 96 40
+211 own NAPOWR 96 43
+300 produce NAHAND
+600 place NAHAND
+750 place NAHAND
+900 place NAHAND
+1200 produce NAWEAP
+1500 place NAWEAP
+1650 place NAWEAP
+1800 place NAWEAP
+2100 produce NARADR
+2400 place NARADR
+2550 place NARADR
+2700 place NARADR
+3000 produce NAPOWR
+3300 place NAPOWR
+3450 place NAPOWR
+3600 place NAPOWR
+3900 produce NARADR
+4200 place NARADR
+4350 place NARADR
+4500 place NARADR
+4800 produce NAHAND
+5100 place NAHAND
+5250 place NAHAND
+5400 place NAHAND
+6000 produce HTNK
+7000 dump
+9000 dump
+9001 quit

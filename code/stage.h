@@ -76,6 +76,7 @@ class StageClass {
 		int Fetch_Stage(void) const {return(Stage);};
 		int Fetch_Rate(void) const {return(Rate);};
 		int Fetch_Step(void) const {return(Step);};
+		int Fetch_Time_Left(void) const {return(Timer);};
 		void Set_Stage(int stage) {Stage = stage;};
 		void Set_Rate(int rate) {Timer = rate; Rate = rate;};
 		void Set_Step(int step) {Step = step;};

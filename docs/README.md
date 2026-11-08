@@ -7,6 +7,8 @@ The developer guides are split by subject:
 - [The launcher and beta updates](LAUNCHER.md) — `OpenYR.exe`, its update
   check, the `OPENTS.INI` keys and switches it reads, and the release assets.
 - [Style](STYLE.md) — source formatting, naming, C++ use, and comments.
+- [Shared helpers](HELPERS.md) — the utilities new code should reuse, grouped
+  by job, with the traps each one has.
 - [History](HISTORY.md) — source lineage and reconstruction history.
 - [Rationale](RATIONALE.md) — reconstruction tools, recovered structure, and
   non-obvious implementation choices.
@@ -17,6 +19,8 @@ The developer guides are split by subject:
   not, grouped by file, with its default, effect and manual page.
 - [INI checker](INICHECK.md) — reports rules keys the engine does not read
   and values it cannot read.
+- [Map lister](MAPINFO.md) — lists a map's triggers, tags, teams, scripts and
+  starting objects by name, with `--find` and `--json`.
 - [True-colour sprites](TRUECOLOUR.md) — PNG sheets drawn in place of SHP
   frames, with an optional house-colour mask.
 - [HDR output](HDR.md) — the HDR10 back buffer, the composite pass that keeps
@@ -27,6 +31,8 @@ The developer guides are split by subject:
 - [Network timing](NETCODE.md) — how a network game schedules orders, how the
   timing policy picks its values, how it compares with gamemd, and measured
   order delays.
+- [Replays](REPLAYS.md) — recording a skirmish, the replay file, playback and
+  the state hashes that prove a replay reached the same result.
 - [Multiplayer game modes](MULTIPLAYER_MODES.md) — the modes gamemd defines
   in `MPModesMD.ini`, the virtual slots of its mode class, and what the port
   applies from them.

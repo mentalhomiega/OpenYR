@@ -43,6 +43,7 @@ class TemporalClass
 
 	private:
 		int Warp_Per_Step(int helpers);
+		int Own_Warp_Rate(void);
 		void Clear(void);
 		static TemporalClass * Of(TechnoClass * owner);
 };

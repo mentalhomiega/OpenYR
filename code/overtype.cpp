@@ -303,12 +303,12 @@ void OverlayTypeClass::Init(TheaterType theater)
 		if (!overlay.DemandLoad) {
 			if (overlay.IsTheater) {
 				_makepath(fullname, NULL, NULL, overlay.GraphicName, TheaterClass::As_Reference(theater).Suffix);
-				overlay.ImageData = MFCD::Retrieve(fullname);
+				overlay.ImageData = Retrieve_Theater_Art(fullname);
 
 			} else if (overlay.IsNewTheater) {
 				_makepath(fullname, NULL, NULL, overlay.GraphicName, ".SHP");
 				overlay.Theater_Naming_Convention(fullname, theater);
-				overlay.ImageData = MFCD::Retrieve(fullname);
+				overlay.ImageData = Retrieve_Theater_Art(fullname);
 			}
 		} else {
 			if (overlay.IsTheater || overlay.IsNewTheater) {

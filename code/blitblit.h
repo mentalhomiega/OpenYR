@@ -292,6 +292,13 @@ class BlitTransXlat : public Blitter {
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, false, (unsigned short const *)TranslateTable, NULL, (unsigned short)0};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 };
@@ -332,6 +339,13 @@ class BlitTransXlatAlpha : public Blitter {
 		**	version arrises.
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, false, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)0};
+			return(true);
+		}
 
 	private:
 		T const * TranslateTable;
@@ -378,6 +392,13 @@ class BlitTransXlatAlphaZRead : public Blitter {
 		**	version arrises.
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)0};
+			return(true);
+		}
 
 	private:
 		T const * TranslateTable;
@@ -955,6 +976,13 @@ class BlitTransDarkenZRead : public Blitter {
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::DARKEN, true, (unsigned short const *)NULL, NULL, (unsigned short)Mask};
+			return(true);
+		}
+
 	private:
 		T Mask;
 };
@@ -1179,6 +1207,13 @@ class BlitTransLucent50AlphaZRead : public Blitter {
 		**	version arrises.
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT50, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
+		}
 
 	private:
 		T const * TranslateTable;
@@ -1600,6 +1635,13 @@ class BlitTransLucent25AlphaZRead : public Blitter {
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT25, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 		AlphaLightingRemapClass *AlphaLightingRemap;
@@ -1946,6 +1988,13 @@ class BlitTransLucent75AlphaZRead : public Blitter {
 		**	version arrises.
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT75, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
+		}
 
 	private:
 		T const * TranslateTable;

@@ -48,6 +48,13 @@ must share this contract; otherwise a site can be extracted but never
 inventoried. `tools/extraction_history.py` also uses the contract, so changing
 either scanner affects how catalog deltas are classified.
 
+The extractor scans only the body of each `Class::Read_INI`. To move key reads
+into private helpers that a reader calls, list the helpers under the reader in
+`READ_INI_HELPERS` in `tools/extract_engine.py`; their reads are then extracted
+as the reader's, at the place of each call. A helper missing from the list
+fails the inventory, and a listed helper that `Read_INI` does not call exactly
+once fails extraction.
+
 Generated provenance records stable identities, not source positions. A scope
 cites the read's file and the class and member it fills; a command cites its
 registering class. Line numbers are extraction diagnostics and are never

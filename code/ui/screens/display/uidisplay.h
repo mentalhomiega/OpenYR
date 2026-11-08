@@ -35,14 +35,6 @@ struct UIDisplayScale
 };
 
 
-// One entry of a list of settings values, such as a frame rate or a filter.
-struct UIDisplayChoice
-{
-	int Value = 0;
-	std::string Label;
-};
-
-
 class UIDisplayServiceClass
 {
 	public:
@@ -52,6 +44,7 @@ class UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) = 0;
 		virtual void Set_Modern_Interface(bool on) = 0;
 		virtual void Set_Sidebar_Rows(int rows) = 0;
+		virtual void Set_Sidebar_Opacity(int percent) = 0;
 		virtual void Set_Bitmap_System_Font(bool on) = 0;
 		virtual void Set_Show_FPS(bool on) = 0;
 		virtual void Set_Frame_Limit(int limit) = 0;
@@ -60,6 +53,7 @@ class UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) = 0;
 		virtual void Set_VSync(bool on) = 0;
 		virtual void Set_Integer_Scaling(bool on) = 0;
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) = 0;
 		virtual void Set_Filter(int mode) = 0;
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
@@ -74,6 +68,7 @@ class UIDisplayServiceClass
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) = 0;
 		virtual void Set_Player_Colors(int view) = 0;
 		virtual void Set_Screen_Shake(bool on) = 0;
+		virtual void Set_Scripted_Camera_Zoom(bool on) = 0;
 
 		// Shows the colour adjustment on the frame now, without saving it. Cancel puts the saved values back
 		// through the same call.
@@ -98,34 +93,44 @@ struct UIDisplayState
 	bool SystemCursor = false;
 	bool ClassicMenus = false;
 	bool ModernInterface = false;
+	// The interface running now. In a game a choice that differs waits for the main menu; the menus switch at once.
+	bool ModernInterfaceRunning = false;
+	bool InGame = false;
 	bool BitmapSystemFont = false;
 	bool ShowFPS = false;
-	std::vector<UIDisplayChoice> FrameLimits;
+	std::vector<UIChoice> FrameLimits;
 	int FrameLimit = 0;
 	// The window sizes offered; the first is Match resolution, which leaves both dimensions at -1.
 	std::vector<UIDisplayMode> WindowSizes;
 	int WindowSize = 0;
 	// The player color view, as Options.PlayerColorView numbers it, and the choices the drop-down lists.
 	int PlayerColors = 0;
-	std::vector<UIDisplayChoice> PlayerColorChoices;
+	std::vector<UIChoice> PlayerColorChoices;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
 	bool Fullscreen = false;
 	bool VSync = false;
 	bool IntegerScaling = false;
-	std::vector<UIDisplayChoice> Filters;
+	bool GpuRender = false;
+	bool SoftShadows = false;
+	bool Shockwaves = false;
+	bool Bloom = false;
+	bool WaterRipples = false;
+	bool CloudShadows = false;
+	bool Weather = false;
+	std::vector<UIChoice> Filters;
 	int Filter = 0;
-	std::vector<UIDisplayChoice> FrameRates;
+	std::vector<UIChoice> FrameRates;
 	int FrameRate = 0;
-	std::vector<UIDisplayChoice> CursorScales;
+	std::vector<UIChoice> CursorScales;
 	int CursorScale = 0;
-	std::vector<UIDisplayChoice> MenuThemes;
+	std::vector<UIChoice> MenuThemes;
 	int MenuTheme = 0;
 	// The battle drawn behind the modern menus, from the MenuBattle setting.
 	bool MenuBattle = true;
-	std::vector<UIDisplayChoice> Renderers;
+	std::vector<UIChoice> Renderers;
 	int Renderer = 0;
-	std::vector<UIDisplayChoice> HDROutputs;
+	std::vector<UIChoice> HDROutputs;
 	int HDROutput = 0;
 	// The paper white and peak brightness on the sliders, in nits.
 	int PaperWhite = 0;
@@ -138,21 +143,25 @@ struct UIDisplayState
 	// Whether the emissive highlights are on, as 0 or 1.
 	int Highlights = 0;
 	// The colour-blind mode, as an index into ColorBlindModes, and how strongly it applies, in percent.
-	std::vector<UIDisplayChoice> ColorBlindModes;
+	std::vector<UIChoice> ColorBlindModes;
 	int ColorBlindMode = 0;
 	int ColorBlindStrength = 100;
 	// The brightness in percent, and the gamma in hundredths, with the gamma text the page shows.
 	int Brightness = 100;
 	int Gamma = 100;
 	std::string GammaLabel;
-	std::vector<UIDisplayChoice> RowCounts;
+	std::vector<UIChoice> RowCounts;
 	int RowCount = 0;
+	// How solid the modern build panel's background is, in percent, from the SidebarOpacity setting.
+	int SidebarOpacity = 0;
 	// The screen the page starts on, used for the preview when no resolution is picked.
 	int ScreenWidth = 0;
 	int ScreenHeight = 0;
 	UISettingPreviewScreen Preview;
 	// Whether the screen-shake effect is on.
 	bool ScreenShake = true;
+	// Whether scripted scenes zoom the map view to one height, whatever zoom the player picked.
+	bool ScriptedCameraZoom = true;
 	// The automatic paper white and peak brightness, which Reset to defaults puts back, in nits.
 	int DefaultPaperWhite = 0;
 	int DefaultPeakBrightness = 0;
@@ -180,6 +189,12 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		void Reset_Page(void);
 		// Shows the colour values now on the frame, on the graphics and accessibility pages.
 		void Show_Colour_Preview(void);
+		// Sets a GPU option from its intent. Only the modern interface changes it, and an option with needs_gpu
+		// also needs GPU rendering on.
+		void Set_Gpu_Switch(bool & field, int value, bool needs_gpu);
+		// Sends each changed setting to the service, then accepts the page. The call order matters: several
+		// calls change the video mode.
+		void Apply_Settings(void);
 		// The row choices follow the frame that the picked resolution and interface scale give.
 		void Refresh_Rows(void);
 		void Refresh_Preview(void);
@@ -187,35 +202,12 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int Chosen_Rows(void) const;
 
 		UIDisplayServiceClass & Service;
-		int Initial;
-		int InitialScale;
-		bool InitialFullscreen;
-		bool InitialVSync;
-		bool InitialIntegerScaling;
-		int InitialFilter;
-		int InitialFrameRate;
-		int InitialCursorScale;
-		int InitialMenuTheme;
-		bool InitialMenuBattle;
-		int InitialRenderer;
-		int InitialHighlights;
+		// The settings as the page opened. OK compares against these, and a bad pick falls back to them.
+		UIDisplayState const Start;
 		// The rows the player last picked on this page, or -1 for none. Only a pick is saved on OK.
 		int PickedRows = -1;
 		// The index of the row the drop-down shows, as the presenter last set it.
 		int ShownRowIndex = -1;
-		bool InitialBitmapSystemFont;
-		bool InitialShowFPS;
-		int InitialFrameLimit;
-		int InitialWindowSize;
-		int InitialHDROutput;
-		int InitialPaperWhite;
-		int InitialPeakBrightness;
-		int InitialColorBlindMode;
-		int InitialColorBlindStrength;
-		int InitialBrightness;
-		int InitialGamma;
-		int InitialPlayerColors;
-		bool InitialScreenShake;
 		// Whether a colour preview has been shown, and whether the page has put its colour back.
 		bool PreviewShown = false;
 		bool PreviewRestored = false;
@@ -257,10 +249,20 @@ std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter
 std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void);
 // What the display tabs settle to when they close: the mode to try, if any, as UI_Display_Dialog returns it.
 std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter);
+// The mode the presenter asks to try: its pick, or the current mode when only the scale changed.
+std::optional<UIDisplayMode> UI_Display_Mode_To_Try(UIDisplayPresenterClass const & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
 UIDisplayServiceClass & UI_Display_Service(void);
 void UI_Display_State(UIDisplayState & state);
+
+namespace Rml
+{
+	class DataModelConstructor;
+}
+
+// Binds the resolution and interface scale fields the Display and Classic Options pages share. The mode and scale arrays must be registered first.
+bool UI_Bind_Display_Basics(Rml::DataModelConstructor & model, UIDisplayState & state);
 
 // Returns the mode to switch to when the player changed the resolution or the interface scale
 // (the current resolution, in the latter case), or nothing when the display need not be reset.

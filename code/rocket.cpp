@@ -22,6 +22,7 @@
 #include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "inline.h"
 #include "map.h"
 #include "rules.h"
@@ -34,20 +35,10 @@
 
 namespace {
 
-constexpr double HALF_PI = 1.5707963267948966;
-
 RulesClass::RocketTypeStruct const & Rocket_Settings(FootClass const * object)
 {
 	RulesClass::RocketTypeStruct const * rocket = Rule->Rocket_Of((AircraftTypeClass const *)object->TClass);
 	return(rocket != NULL ? *rocket : Rule->DMisl);
-}
-
-void Play_Anim(char const * name, Coord const & coord, int timedelay = 0, int zadjust = 0)
-{
-	AnimType const anim = AnimTypeClass::From_Name(name);
-	if (anim != ANIM_NONE) {
-		new AnimClass(AnimTypes[anim], coord, timedelay, 1, ShapeFlags_Type(SHAPE_WIN_REL | SHAPE_CENTER), zadjust);
-	}
 }
 
 }
@@ -57,8 +48,6 @@ RocketLocomotionClass::RocketLocomotionClass(void) :
 	BASECLASS(),
 	DestinationCoord(COORD_NONE),
 	MissionState(STATE_NONE),
-	TimerStart(0),
-	TimerLength(0),
 	NextTrailFrame(0),
 	CurrentSpeed(0.0),
 	CurrentPitch(0.0f),
@@ -85,8 +74,8 @@ void RocketLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(DestinationCoord);
 	stream.Serialize(MissionState);
-	stream.Serialize(TimerStart);
-	stream.Serialize(TimerLength);
+	stream.Serialize(Timer.Start);
+	stream.Serialize(Timer.Length);
 	stream.Serialize(NextTrailFrame);
 	stream.Serialize(CurrentSpeed);
 	stream.Serialize(CurrentPitch);
@@ -98,6 +87,12 @@ void RocketLocomotionClass::Serialize(SaveStreamClass & stream)
 bool RocketLocomotionClass::Is_Moving(void)
 {
 	return(MissionState != STATE_NONE);
+}
+
+
+bool RocketLocomotionClass::Is_Airborne(void) const
+{
+	return(MissionState >= STATE_CLIMB);
 }
 
 
@@ -135,12 +130,14 @@ LayerType RocketLocomotionClass::In_Which_Layer(void)
 }
 
 
-Matrix3D RocketLocomotionClass::Draw_Matrix(int * key)
+Matrix3D RocketLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 {
 	Matrix3D mtx;
 	mtx.Make_Identity();
-	mtx.Rotate_Z(LinkedTo->SecondaryFacing.Current().As_Radian32());
-	mtx.Rotate_Y(-CurrentPitch);
+	if (matrix) {
+		mtx.Rotate_Z(LinkedTo->SecondaryFacing.Current().As_Radian32());
+		mtx.Rotate_Y(-CurrentPitch);
+	}
 	if (key != NULL) {
 		*key = -1;
 	}
@@ -150,23 +147,22 @@ Matrix3D RocketLocomotionClass::Draw_Matrix(int * key)
 
 bool RocketLocomotionClass::Timer_Expired(void) const
 {
-	return(Frame - TimerStart >= TimerLength);
+	return(Timer.Is_Expired());
 }
 
 
 double RocketLocomotionClass::Timer_Progress(void) const
 {
-	if (TimerLength <= 0) {
+	if (Timer.Length <= 0) {
 		return(1.0);
 	}
-	return(std::min(1.0, double(Frame - TimerStart) / double(TimerLength)));
+	return(std::min(1.0, double(Frame - Timer.Start) / double(Timer.Length)));
 }
 
 
 void RocketLocomotionClass::Start_Timer(int frames)
 {
-	TimerStart = Frame;
-	TimerLength = frames;
+	Timer.Begin(frames);
 }
 
 
@@ -201,13 +197,13 @@ bool RocketLocomotionClass::Process(void)
 			CurrentSpeed = 0.0;
 			if (!Timer_Expired()) {
 				double const progress = Timer_Progress();
-				CurrentPitch = float((rocket.PitchInitial + (rocket.PitchFinal - rocket.PitchInitial) * progress) * HALF_PI);
+				CurrentPitch = float((rocket.PitchInitial + (rocket.PitchFinal - rocket.PitchInitial) * progress) * M_PI_2);
 				break;
 			}
-			CurrentPitch = float(rocket.PitchFinal * HALF_PI);
+			CurrentPitch = float(rocket.PitchFinal * M_PI_2);
 			MissionState = STATE_CLIMB;
 			// The takeoff starts two frames into its life, with a ZAdjust of -10 (gamemd 0x66238A).
-			Play_Anim("V3TAKOFF", position, 2, -10);
+			Spawn_Named_Anim("V3TAKOFF", position, 2, -10);
 			Sound_Effect(LinkedTo->TClass->AuxSound1, position);
 			break;
 
@@ -229,8 +225,9 @@ bool RocketLocomotionClass::Process(void)
 				if (CurrentPitch > 0.0f) {
 					CurrentPitch = std::max(0.0f, CurrentPitch - rocket.TurnRate);
 				}
-				double const distance = std::hypot(horizontal, below);
-				if (distance <= -below) {
+				// The dive starts once the flat distance to the target is no more than the height above it, so the
+				// missile starts diving as far out as it is high (gamemd 0x6622C0, state 4).
+				if (horizontal <= -below) {
 					MissionState = STATE_DIVE;
 				}
 			} else {
@@ -238,8 +235,8 @@ bool RocketLocomotionClass::Process(void)
 					return(false);
 				}
 				double const ratio = horizontal / double(ApogeeDistance);
-				double const angle = horizontal > 0.0 ? std::atan(below / horizontal) : -HALF_PI;
-				CurrentPitch = float(angle * (1.0 - ratio) + rocket.PitchFinal * ratio * HALF_PI);
+				double const angle = horizontal > 0.0 ? std::atan(below / horizontal) : -M_PI_2;
+				CurrentPitch = float(angle * (1.0 - ratio) + rocket.PitchFinal * ratio * M_PI_2);
 			}
 			if (horizontal > 0.0) {
 				DirType const dir = Direction(position, DestinationCoord);
@@ -252,7 +249,7 @@ bool RocketLocomotionClass::Process(void)
 			if (Is_Impact_Due()) {
 				return(false);
 			}
-			double const desired = horizontal > 0.0 ? std::atan(below / horizontal) : -HALF_PI;
+			double const desired = horizontal > 0.0 ? std::atan(below / horizontal) : -M_PI_2;
 			double const turn = desired - CurrentPitch;
 			if (std::abs(turn) <= rocket.TurnRate) {
 				CurrentPitch = float(desired);
@@ -264,7 +261,7 @@ bool RocketLocomotionClass::Process(void)
 	}
 
 	if (MissionState >= STATE_CLIMB && Frame >= NextTrailFrame) {
-		Play_Anim("V3TRAIL", position);
+		Spawn_Named_Anim("V3TRAIL", position);
 		NextTrailFrame = Frame + 3;
 	}
 
@@ -277,14 +274,32 @@ bool RocketLocomotionClass::Process(void)
 
 
 /// <summary>
-/// Detonates the missile if its next step would take it to its target's height, and returns
-/// whether it did.
+/// Returns the point one body length ahead of the missile's centre along its facing and pitch, where it explodes
+/// (gamemd 0x663030 and 0x6620F0).
+/// </summary>
+Coord RocketLocomotionClass::Nose_Coord(void) const
+{
+	int const length = Rocket_Settings(LinkedTo).BodyLength;
+	Coord const position = LinkedTo->Get_Coord();
+	int const flat = int(double(Gamemd_Cosine(CurrentPitch)) * length);
+	Coord nose = Move_Coord(position, LinkedTo->SecondaryFacing.Current(), flat);
+	nose.Z = int(double(Gamemd_Sine(CurrentPitch)) * length + position.Z);
+	return(nose);
+}
+
+
+/// <summary>
+/// Detonates the missile if its nose is at or below its target's height, if it is under a bridge deck at the target's
+/// height and its nose is within a bridge's height above it, or if it is on the ground, and returns whether it did
+/// (gamemd 0x6620F0).
 /// </summary>
 bool RocketLocomotionClass::Is_Impact_Due(void)
 {
-	Coord const position = LinkedTo->Get_Coord();
-	int const nextz = position.Z + int(std::sin(CurrentPitch) * CurrentSpeed);
-	if (nextz <= DestinationCoord.Z || LinkedTo->HeightAGL < 1) {
+	int const nose_z = Nose_Coord().Z;
+	CellClass const * cell = LinkedTo->Get_Cell_Ptr();
+	bool const under_target_bridge = cell != NULL && cell->IsUnderBridge && cell->Center_Coord().Z == DestinationCoord.Z &&
+		nose_z <= DestinationCoord.Z + BRIDGE_LEPTON_HEIGHT;
+	if (nose_z <= DestinationCoord.Z || under_target_bridge || LinkedTo->HeightAGL < 1) {
 		Explode();
 		return(true);
 	}
@@ -317,7 +332,7 @@ void RocketLocomotionClass::Move_Along(void)
 
 
 /// <summary>
-/// Blows the missile up where it is with its type's damage and warhead, elite ones when its
+/// Blows the missile up at its nose with its type's damage and warhead, elite ones when its
 /// launcher was elite (0x663030), and removes it.
 /// </summary>
 void RocketLocomotionClass::Explode(void)
@@ -325,19 +340,12 @@ void RocketLocomotionClass::Explode(void)
 	RulesClass::RocketTypeStruct const & rocket = Rocket_Settings(LinkedTo);
 	AircraftTypeClass const * type = (AircraftTypeClass const *)LinkedTo->TClass;
 
-	WarheadTypeClass const * warhead = NULL;
-	if (type == Rule->V3Rocket.Type) {
-		warhead = IsSpawnerElite ? Rule->V3EliteWarhead : Rule->V3Warhead;
-	} else if (type == Rule->CMisl.Type) {
-		warhead = IsSpawnerElite ? Rule->CMislEliteWarhead : Rule->CMislWarhead;
-	} else {
-		warhead = IsSpawnerElite ? Rule->DMislEliteWarhead : Rule->DMislWarhead;
-	}
+	WarheadTypeClass const * warhead = Rule->Rocket_Warhead(type, IsSpawnerElite);
 	int const damage = IsSpawnerElite ? rocket.EliteDamage : rocket.Damage;
 
-	Coord const coord = LinkedTo->Get_Coord();
+	Coord const coord = Nose_Coord();
 	MissionState = STATE_NONE;
-	DebugString("Rocket: %s explodes at %d,%d\n", LinkedTo->TClass->Name(), coord.As_Cell().X, coord.As_Cell().Y);
+	DebugString("Rocket: %s explodes at %d,%d at %d,%d,%d\n", LinkedTo->TClass->Name(), coord.As_Cell().X, coord.As_Cell().Y, coord.X, coord.Y, coord.Z);
 
 	// The missile deals the blast and keeps its house after its launcher is gone, so the kill is
 	// credited to the house that fired it (RocketLocomotionClass::Explode, 0x6632C7). The blast names

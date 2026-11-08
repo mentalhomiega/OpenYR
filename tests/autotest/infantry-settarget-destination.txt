@@ -1,0 +1,29 @@
+; An infantryman with Infiltrate=yes (given by Engineer=yes, C4=yes or Agent=yes) that takes a building as its target and has
+; no destination gets that building as its destination at once when the building is Capturable (Spyable for an agent),
+; whether or not the soldier carries a weapon (InfantryClass::SetTarget, 0x51B1F0). Stock soldiers with Infiltrate=yes are
+; ENGINEER, TANY, GHOST and PTROOP (all armed) and SPY (the agent). E1 has no Infiltrate, and CABHUT is neither Capturable nor Spyable.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-settarget-destination.txt -Seconds 60 -Filter "AUTOTEST   where|AUTOTEST settarget|Exception"
+; Expected: right after settarget, TANY, ENGINEER, PTROOP and SPY read a nav of 61,41 (the centre of GAPOWR). E1 reads nav -1,-1 and the
+; target 60,40. GHOST, targeted at CABHUT, reads nav -1,-1.
+30 spawn GAPOWR 60 40
+31 spawn CABHUT 66 40
+32 own TANY 56 44
+33 own ENGINEER 57 44
+34 own SPY 58 44
+35 own E1 59 44
+36 own PTROOP 56 46
+37 own GHOST 57 46
+45 settarget TANY 60 40
+46 settarget ENGINEER 60 40
+47 settarget SPY 60 40
+48 settarget E1 60 40
+49 settarget PTROOP 60 40
+50 settarget GHOST 66 40
+52 where TANY
+53 where ENGINEER
+54 where SPY
+55 where E1
+56 where PTROOP
+57 where GHOST
+60 quit

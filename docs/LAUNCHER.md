@@ -1,20 +1,30 @@
 # The OpenYR launcher and beta updates
 
-`OpenYR.exe` is the launcher the setup installs beside `Game.exe`. The Start Menu and desktop shortcuts start it. It starts `Game.exe` with the same arguments. Before that it lets the player pick a mod, and it checks our GitHub releases for a newer beta. We ask the player before we update. We never update silently, and we never start a second game while one from the install is running.
+`OpenYR.exe` is the launcher the setup installs beside `Game.exe`. The Start Menu and desktop shortcuts start it. It starts `Game.exe` with the same arguments. Before that it lets the player pick a mod. It never starts a second game while one from the install is running.
 
-## What it does
+The game checks our GitHub releases for a newer beta and offers it on its title menus. We never update without the player pressing Update, and the check never delays the menus.
 
-1. If `Game.exe` from this install is already running, the launcher says so and stops. It starts nothing and checks nothing.
-2. It shows the mod picker, described below. Cancel in the picker ends the run: nothing is checked and nothing starts.
-3. It reads the installed beta from `openyr-install.ini`, the record the setup writes. Without that record, for example in an unpacked zip, it starts the game and checks nothing.
-4. It fetches the release feed. A feed that cannot be reached, or does not parse, is logged and the game starts as usual.
-5. It offers the update only when the feed names a newer beta that has both release assets. Drafts and prereleases are never offered.
-6. If the player answers Yes, the launcher copies itself to a temporary folder and starts the copy. The copy downloads the setup and its checksum, checks the SHA-256 digest, waits for the launcher to close, runs the setup silently over the install, and then starts `Game.exe`.
-7. A failed download, a checksum that does not match, or a setup that does not finish stops the update. The copy tells the player and starts the version already installed.
+## What the game does
+
+1. On its first title menu, the game reads the installed beta from `openyr-install.ini`, the record the setup writes. Without that record, for example in an unpacked zip, it checks nothing and shows no panel. It also checks nothing when `[Update] Check=` is off or OPENTS.INI names no Yuri's Revenge folder.
+2. A worker thread fetches the release feed, and the menus stay responsive. A feed that cannot be reached, or does not parse, is logged in the game's debug log as `UPDATE feed failed: <reason>` and no panel appears.
+3. The launcher's own code decides the offer: a newer beta with both release assets, never a draft or prerelease. The game logs `UPDATE offered: ...` or `UPDATE not offered: ...`.
+4. An offer shows a panel at the top right of the title menus, under the profile panel in the modern style and in the top right corner in the classic style. It reads "Beta 34 is available" over "You have Beta 33", with the buttons Update and Later. The panel never shows in a match.
+5. Later hides the panel until the game is started again.
+6. Update starts `OpenYR.exe` from the install folder with `/UPDATENOW=<game process id>` and closes the game. If the launcher cannot be started, the panel says why and the game keeps running.
+
+## What the launcher does with /UPDATENOW
+
+1. It waits for the game's process to close, up to 60 seconds.
+2. It reads the feed again, as the check above does, and stops with a message if nothing newer is offered. It does not ask a question.
+3. It copies itself to a temporary folder and starts the copy, which downloads the setup and its checksum, checks the SHA-256 digest, waits for the launcher to close, runs the setup silently over the install, and then starts `Game.exe`.
+4. A failed download, a checksum that does not match, or a setup that does not finish stops the update. The copy tells the player and starts the version already installed.
 
 The copy runs from the temporary folder because the setup replaces `OpenYR.exe` in the install. The launcher exits as soon as the copy starts, so nothing in the install folder is in use while the setup runs.
 
-The question reads "Beta 23 is available (you have Beta 22). Update now?" with the buttons Yes and Not now. Not now, or closing the question, starts the installed version.
+## Asking in the launcher
+
+With `[Update] AskInLauncher=yes`, the launcher checks the feed before it starts the game, as earlier betas did, and asks "Beta 23 is available (you have Beta 22). Update now?" with the buttons Yes and Not now. Not now, or closing the question, starts the installed version. A Yes continues as in step 3 above. The game still shows its own panel.
 
 ## The mod picker
 
@@ -42,7 +52,8 @@ The in-game Mods page and the picker read and write the same key with the same r
 | Key | Default | Effect |
 | --- | --- | --- |
 | `[Update] FeedURL=` | the GitHub latest release | The release feed. An `https://` address, or an absolute local path for tests. A plain `http://` address is refused. |
-| `[Update] Check=` | `yes` | `no`, `0`, `off` or `false` turns update checks off. The game still starts. |
+| `[Update] Check=` | `yes` | `no`, `0`, `off` or `false` turns update checks off, in the game and in the launcher. The game still starts. |
+| `[Update] AskInLauncher=` | `no` | `yes`, `1`, `on` or `true` makes the launcher check the feed and ask before it starts the game. |
 | `[Paths] DataDirectory=` | set by the setup | The Yuri's Revenge folder. The update passes it to the setup. |
 | `[Paths] UserDirectory=` | `user` | The folder for settings, saves and the launcher log. A relative path is taken from the install folder. The mod picker writes its choice to the settings file in this folder, and beside `Game.exe` when the key is absent, as the game does. |
 | `[Paths] Mods=` | empty | The mods used while the player's settings hold no list. The picker reads it and never writes it. |
@@ -58,13 +69,11 @@ The launcher passes any argument it does not know to `Game.exe`, and so does any
 | --- | --- |
 | `/FEED=<url or path>` | The feed for this run, instead of `[Update] FeedURL=`. |
 | `/LOG=<file>` | The log file. The default is `user\OpenYR-Launcher.log`. |
-| `/CHECKONLY` | Reports what it would do and exits. It asks nothing, downloads nothing, changes nothing and starts nothing. |
+| `/CHECKONLY` | Reports what it would do, as if `AskInLauncher=yes`, and exits. It asks nothing, downloads nothing, changes nothing and starts nothing. |
 | `/NOGAME` | Does not start `Game.exe`. |
 | `/QUIET` | Shows no message box and asks no question. The log keeps the text. |
 | `/NOSHORTCUTS` | Passed to the setup on an update. The setup writes no shortcuts or registry entry. |
-| `/NOPICKER` | Does not show the mod picker this run. The mods stay as they are set. |
-| `/PICKER` | Shows the mod picker although the player ticked "Do not ask again". |
-| `/SETMOD=<name>` | Sets `Mods=` to that one mod without showing the picker, and goes on. `/SETMOD=` with nothing after it sets no mods. `/CHECKONLY` only reports the choice. |
+| `/UPDATENOW=<pid>` | The game with that process id asked for the update. The launcher waits for it to close, then updates without a question. The game passes it; do not pass it by hand. |
 
 `/QUIET`, `/NOGAME`, `/NOSHORTCUTS` and `/SETMOD=` are for the tests; `/NOGAME` alone shows the picker, which makes it the way to look at the picker without starting the game. `/CHECKONLY` is for checking a feed.
 
@@ -98,8 +107,10 @@ Each run appends to `user\OpenYR-Launcher.log`: the feed it read, the decision, 
 
 ## Tests
 
-- `LauncherTests` (ctest `launcher`) covers the beta names, the JSON feed, the asset choice, the checksum file, the update decision, the INI keys and argument quoting.
+- `LauncherTests` (ctest `launcher`) covers the beta names, the JSON feed, the asset choice, the checksum file, the update decision, the INI keys, the process id and the update-now command, and argument quoting.
 - `LauncherModsTests` (ctest `launchermods`) covers the INI text the launcher reads and edits, the settings and mod folders it finds, the choices the picker offers and their agreement with the game's `ModChoiceClass`.
-- `launcher_e2e.ps1` (ctest `launcher_e2e`) installs a fake beta22, reads a local feed, runs a check-only pass, runs the update copy against a bad checksum, a setup that refuses the Yuri's Revenge folder, and a good download, then checks the install and `/SETMOD`. It starts no game and shows no dialog. It writes only under a temporary folder.
+- `launcher_e2e.ps1` (ctest `launcher_e2e`) installs a fake beta22, reads a local feed, runs a check-only pass, runs the update asked for in the game (`/UPDATENOW`) against a feed with nothing newer and against beta23, runs the update copy against a bad checksum, a setup that refuses the Yuri's Revenge folder, and a good download, then checks the install and `/SETMOD`. It starts no game and shows no dialog. It writes only under a temporary folder.
 
-The picker window, the question dialog, a running game, and the progress window are not covered by these tests. Check them by hand when the launcher changes.
+- `tests/autotest/update-panel-menu.txt` gives the title menu inline release text through the `ui updatecheck <build> <feed>` step, and checks the log lines for an offer, no offer and a missing feed, with a screenshot of the panel and the Later button. It does not press Update.
+
+The picker window, the question dialog, a running game, the Update button and the progress window are not covered by these tests. Check them by hand when the launcher or the panel changes.

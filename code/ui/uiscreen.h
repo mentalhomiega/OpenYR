@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -29,6 +30,22 @@ struct UIIntent
 	int Value = 0;
 	std::string Text;
 };
+
+
+// One entry of a list of settings values, such as a frame rate, a filter or a mission difficulty.
+struct UIChoice
+{
+	int Value = 0;
+	std::string Label;
+};
+
+
+int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format);
+
+int Fill_Count_Choices(std::vector<UIChoice> & list, std::vector<int> const & values, int limit);
+
+// The name at index, or an empty string when index is outside the list.
+std::string UI_Name_At(std::vector<std::string> const & names, int index);
 
 
 /// <summary>
@@ -71,15 +88,6 @@ class UIPresenterClass
 
 		std::optional<UIResult> Result;
 
-		/// <summary>
-		/// Makes this screen one page of the tabbed Settings. Choosing another tab then applies
-		/// the page as OK does, ends it, and leaves the chosen tab in Tab_Request for the host to
-		/// open next.
-		/// </summary>
-		/// <param name="tab">The tab this screen stands for.</param>
-		/// <param name="offered">A bit for every tab the tab bar offers, 1 << UISettingsTab.</param>
-		void Set_Settings_Tab(UISettingsTab tab, unsigned offered);
-		UISettingsTab Settings_Tab(void) const { return(OwnTab); }
 		unsigned Settings_Tabs_Offered(void) const { return(Offered); }
 
 		/// <summary>Sets the tabs a tab request may name, as a bit for every tab, without making this screen a page.</summary>
@@ -91,7 +99,6 @@ class UIPresenterClass
 	private:
 		void Switch_Tab(int tab);
 
-		UISettingsTab OwnTab = UI_TAB_NONE;
 		unsigned Offered = 0;
 		std::vector<UIIntent> Pending;
 };

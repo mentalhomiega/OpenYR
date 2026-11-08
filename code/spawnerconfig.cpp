@@ -10,6 +10,7 @@
 
 #include "spawnerconfig.h"
 
+#include "cncnet/spawnkeys.h"
 #include "crc.h"
 #include "diff.hh"
 #include "ini.h"
@@ -23,7 +24,10 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <sstream>
 #include <vector>
+
+static_assert(SpawnerConfigClass::SLOT_COUNT == std::size(SPAWN_ALLY_KEYS), "one SPAWN.INI alliance key per seat");
 
 
 namespace {
@@ -112,7 +116,7 @@ bool Is_Address(std::string const & text)
 
 
 /// <summary>Accepts a tunnel number as the client writes it: nonzero, within sixteen bits either side of zero.</summary>
-static bool Is_Tunnel_Number(int value)
+bool Is_Tunnel_Number(int value)
 {
 	return(value != 0 && value >= -65535 && value <= 65535);
 }
@@ -127,7 +131,7 @@ static bool Is_Tunnel_Number(int value)
 /// <param name="section">The section to read from.</param>
 /// <param name="key">The key the spawner knows the value by.</param>
 /// <param name="defvalue">The value when no entry of that name holds a boolean.</param>
-static bool Spawn_Bool(INIClass const & ini, char const * section, char const * key, bool defvalue)
+bool Spawn_Bool(INIClass const & ini, char const * section, char const * key, bool defvalue)
 {
 	int const count = ini.Entry_Count(section);
 	for (int index = 0; index < count; index++) {
@@ -226,11 +230,6 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 	}
 
 	// The alliance sections name seats in sorted order, so they are read after the sort.
-	static char const * const _ordinals[SLOT_COUNT] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
-
 	for (int index = 0; index < SLOT_COUNT; index++) {
 		SlotType & slot = Slots[index];
 
@@ -249,7 +248,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		}
 
 		for (int ally = 0; ally < SLOT_COUNT; ally++) {
-			slot.Alliances[ally] = ini.Get_Int(section.c_str(), _ordinals[ally], -1);
+			slot.Alliances[ally] = ini.Get_Int(section.c_str(), SPAWN_ALLY_KEYS[ally], -1);
 		}
 	}
 }
@@ -321,6 +320,15 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(AutoSurrender);
 
 	// ConnTimeout, ReconnectTimeout and TimingPolicy are each machine's own, so they are left out on purpose.
+	// A host's send period and look-ahead are shared: machines that start with different ones would stall.
+	// They count only when chosen, so a match that chose nothing keeps the identity it always had.
+	if (TimingChoice.Is_Set()) {
+		crc(static_cast<int>(TimingChoice.FrameSendRate));
+		crc(static_cast<int>(TimingChoice.MaxAhead));
+	}
+	if (Protocol != 2) {
+		crc(Protocol);
+	}
 
 	for (bool flag : GlobalFlags) {
 		crc(flag);
@@ -567,6 +575,20 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	ReconnectTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout));
 	AdaptiveTiming = Read_Text(ini, SETTINGS, "TimingPolicy", "") == "Adaptive";
 
+	// A value outside the range the game accepts is passed over, like a key it does not know.
+	int const frame_send_rate = ini.Get_Int(SETTINGS, "FrameSendRate", 0);
+	int const max_ahead = ini.Get_Int(SETTINGS, "MaxAhead", 0);
+	Protocol = ini.Get_Int(SETTINGS, "Protocol", Protocol);
+	// HostTiming=yes takes the three keys literally. Without it the client's default values are no choice.
+	bool const host_timing = Spawn_Bool(ini, SETTINGS, "HostTiming", false);
+	TimingChoice = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
+	// The client writes these keys in every game, with defaults of its own. Those read as no choice unless
+	// the file says the host chose (HostTiming=yes), as the lobby built into the game says.
+	if (!host_timing && NetTiming::Is_CnCNet_Default_Frame_Send_Rate(TimingChoice.FrameSendRate) && TimingChoice.MaxAhead == 0) {
+		TimingChoice.FrameSendRate = 0;
+	}
+	Protocol = host_timing && Protocol == 0 ? 0 : 2;
+
 	QuickMatch = Spawn_Bool(ini, SETTINGS, "QuickMatch", QuickMatch);
 	SkipScoreScreen = Spawn_Bool(ini, SETTINGS, "SkipScoreScreen", SkipScoreScreen);
 	AINamesByDifficulty = Spawn_Bool(ini, SETTINGS, "DifficultyBasedAINames", AINamesByDifficulty);
@@ -595,4 +617,123 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	}
 
 	Read_Slots(ini);
+}
+
+
+namespace {
+
+char const * Yes_No(bool value)
+{
+	return(value ? "yes" : "no");
+}
+
+
+/// <summary>Writes the packed free color of a seat as the ColorRGB entry Read_Free_Color reads.</summary>
+void Write_Free_Color(std::ostringstream & out, unsigned int custom)
+{
+	if (!Player_Color_Is_Custom(custom)) {
+		return;
+	}
+	RGBClass const rgb = Player_Color_Preview(custom);
+	out << "ColorRGB=" << (int)rgb.Get_Red() << "," << (int)rgb.Get_Green() << "," << (int)rgb.Get_Blue() << "\n";
+}
+
+}
+
+
+/// <summary>
+/// Writes this reading as launch file text. Only the entries that decide the match are written, in the
+/// shape Read_INI and Read_Slots expect: the seat on this machine in [Settings], the other people in
+/// [Other1] on, and the computer seats by position in the numbered sections.
+/// </summary>
+std::string SpawnerConfigClass::Write_INI(void) const
+{
+	std::ostringstream out;
+	out << "[Settings]\n";
+	out << "Scenario=" << ScenarioName << "\n";
+	if (!MapName.empty()) {
+		out << "UIMapName=" << MapName << "\n";
+	}
+	out << "IsSinglePlayer=" << Yes_No(IsCampaign) << "\n";
+	out << "Bases=" << Yes_No(Bases) << "\n";
+	out << "Credits=" << Credits << "\n";
+	out << "BridgeDestroy=" << Yes_No(BridgeDestroy) << "\n";
+	out << "Crates=" << Yes_No(Crates) << "\n";
+	out << "ShortGame=" << Yes_No(ShortGame) << "\n";
+	out << "BuildOffAlly=" << Yes_No(BuildOffAlly) << "\n";
+	out << "SuperWeapons=" << Yes_No(SuperWeapons) << "\n";
+	out << "GameSpeed=" << GameSpeed << "\n";
+	out << "MultiEngineer=" << Yes_No(MultiEngineer) << "\n";
+	out << "UnitCount=" << UnitCount << "\n";
+	out << "AIPlayers=" << AIPlayers << "\n";
+	out << "AIDifficulty=" << AIDifficulty << "\n";
+	out << "AlliesAllowed=" << Yes_No(AlliesAllowed) << "\n";
+	out << "GameMode=" << GameMode << "\n";
+	out << "HarvesterTruce=" << Yes_No(HarvesterTruce) << "\n";
+	out << "FogOfWar=" << Yes_No(FogOfWar) << "\n";
+	out << "MCVRedeploy=" << Yes_No(MCVRedeploy) << "\n";
+	out << "AutoDeployMCV=" << Yes_No(AutoDeployMCV) << "\n";
+	out << "Seed=" << Seed << "\n";
+	out << "TechLevel=" << TechLevel << "\n";
+	out << "Firestorm=" << Yes_No(Firestorm) << "\n";
+	out << "CoachMode=" << Yes_No(CoachMode) << "\n";
+	out << "AutoSurrender=" << Yes_No(AutoSurrender) << "\n";
+	out << "AttackNeutralUnits=" << Yes_No(AttackNeutralUnits) << "\n";
+	out << "ScrapMetal=" << Yes_No(ScrapMetal) << "\n";
+	out << "DifficultyBasedAINames=" << Yes_No(AINamesByDifficulty) << "\n";
+
+	// The local person first: the reader gives [Settings] the first seat, and sorts the people by color.
+	int other = 1;
+	for (int pass = 0; pass < 2; pass++) {
+		for (int index = 0; index < SLOT_COUNT; index++) {
+			SlotType const & slot = Slots[index];
+			if (slot.Occupancy != OccupancyType::Human || (pass == 0) != (index == LocalSlot)) {
+				continue;
+			}
+
+			if (pass == 1) {
+				out << "\n[Other" << other++ << "]\n";
+			}
+			out << "Name=" << slot.Name << "\n";
+			out << "Side=" << slot.Country << "\n";
+			out << "Color=" << slot.Color << "\n";
+			Write_Free_Color(out, slot.CustomColor);
+			if (slot.IsSpectator) {
+				out << "IsSpectator=yes\n";
+			}
+		}
+	}
+
+	auto const computer_section = [&out, this](char const * name, auto field) {
+		out << "\n[" << name << "]\n";
+		for (int index = 0; index < SLOT_COUNT; index++) {
+			if (Slots[index].Occupancy == OccupancyType::Computer) {
+				out << "Multi" << index + 1 << "=" << Slots[index].*field << "\n";
+			}
+		}
+	};
+	computer_section("HouseCountries", &SlotType::Country);
+	computer_section("HouseColors", &SlotType::Color);
+	computer_section("HouseHandicaps", &SlotType::Handicap);
+	out << "\n[SpawnLocations]\n";
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		if (Slots[index].Occupancy != OccupancyType::Empty) {
+			out << "Multi" << index + 1 << "=" << Slots[index].StartingPosition << "\n";
+		}
+	}
+
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		SlotType const & slot = Slots[index];
+		int written = 0;
+		std::ostringstream allies;
+		for (int ally : slot.Alliances) {
+			if (ally >= 0 && ally < SLOT_COUNT && written < SLOT_COUNT) {
+				allies << SPAWN_ALLY_KEYS[written++] << "=" << ally << "\n";
+			}
+		}
+		if (written > 0) {
+			out << "\n[Multi" << index + 1 << "_Alliances]\n" << allies.str();
+		}
+	}
+	return(out.str());
 }

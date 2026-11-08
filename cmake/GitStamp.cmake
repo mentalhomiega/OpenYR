@@ -10,8 +10,8 @@
 # does not force a recompile.
 #
 # Expects OPENTS_VERSION_MAJOR, OPENTS_VERSION_MINOR, OPENTS_VERSION_PATCH,
-# OPENTS_VERSION_PRERELEASE, OPENTS_OFFICIAL_BUILD, OPENTS_SOURCE_DIR, OPENTS_VERSION_HEADER,
-# and OPENTS_STAMP_HEADER to be set.
+# OPENTS_VERSION_PRERELEASE, OPENTS_OFFICIAL_BUILD, OPENTS_NIGHTLY, OPENTS_SOURCE_DIR,
+# OPENTS_VERSION_HEADER, and OPENTS_STAMP_HEADER to be set.
 
 # The packed form spends one byte on each component, and the save and network stamps are
 # compared for exact equality. Development snapshots in one cycle deliberately share it;
@@ -165,6 +165,37 @@ if(GIT_FOUND AND EXISTS "${OPENTS_SOURCE_DIR}/.git")
         set(OPENTS_COMMIT_DIRTY 1)
     endif()
 
+    # A nightly is numbered by the first-parent commits since the newest beta tag it contains,
+    # so each merge into the integration branch makes the next number.
+    if(OPENTS_NIGHTLY)
+        execute_process(
+            COMMAND "${GIT_EXECUTABLE}" describe --tags --match "beta*" --abbrev=0 HEAD
+            WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
+            OUTPUT_VARIABLE GIT_BETA_TAG
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+            RESULT_VARIABLE GIT_BETA_RESULT
+        )
+        if(GIT_BETA_RESULT EQUAL 0 AND GIT_BETA_TAG)
+            execute_process(
+                COMMAND "${GIT_EXECUTABLE}" rev-list --first-parent --count "${GIT_BETA_TAG}..HEAD"
+                WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
+                OUTPUT_VARIABLE GIT_NIGHTLY_NUMBER
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+            execute_process(
+                COMMAND "${GIT_EXECUTABLE}" log -1 "--format=%cd" "--date=format-local:%Y-%m-%d %H:%M"
+                WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
+                OUTPUT_VARIABLE GIT_NIGHTLY_DATE
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+            string(REGEX REPLACE "^beta" "Beta " GIT_BETA_NAME "${GIT_BETA_TAG}")
+            set(OPENTS_NIGHTLY_LABEL "Nightly ${GIT_NIGHTLY_NUMBER} after ${GIT_BETA_NAME}, ${GIT_NIGHTLY_DATE}")
+        endif()
+    endif()
+
 endif()
 
 # What the player sees. An official build is the version alone; anything else names the commit
@@ -176,6 +207,12 @@ endif()
 
 if(OPENTS_OFFICIAL_BUILD)
     set(OPENTS_VERSION_DISPLAY "${OPENTS_VERSION} (${OPENTS_ARCH})")
+elseif(DEFINED OPENTS_NIGHTLY_LABEL)
+    set(OPENTS_VERSION_DISPLAY "${OPENTS_VERSION} ${OPENTS_NIGHTLY_LABEL} (${OPENTS_COMMIT}")
+    if(OPENTS_COMMIT_DIRTY)
+        string(APPEND OPENTS_VERSION_DISPLAY ", modified")
+    endif()
+    string(APPEND OPENTS_VERSION_DISPLAY ", ${OPENTS_ARCH})")
 elseif(OPENTS_COMMIT STREQUAL "unknown")
     set(OPENTS_VERSION_DISPLAY "${OPENTS_VERSION} (${OPENTS_ARCH})")
 elseif(OPENTS_COMMIT_DIRTY)

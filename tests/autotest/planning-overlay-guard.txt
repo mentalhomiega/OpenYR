@@ -1,0 +1,22 @@
+; Planned-order overlay, guard area leg: a leg whose order is guard area (or attack move) and that is longer than 36 pixels has a
+; box at its middle, as gamemd draws (0x63CAE0 and 0x63C690). The box is a coloured outline around a fill that is white for a
+; selected unit and black for another, holding the order's cursor from MOUSE.SHA (frame 433 for guard area). A move leg of the same
+; length has no box, and a leg shorter than 37 pixels has none either. Planning is on at both captures.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/planning-overlay-guard.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 90 -ShotDir <folder>
+; Expected:
+;   frame 340: E1 selected, planned move to 70,63 (no box), then guard area at 70,70 (a box at the middle of that leg), and planstate shows orders 2.
+;   frame 360: the same legs for an unselected E1 (black band, black box fill).
+30 command CenterBase
+300 grantunit E1 60 63
+305 reveal
+306 view 65 65
+310 select E1
+320 planning 1
+330 planmove E1 70 63
+331 planguard E1 70 70
+340 planstate E1
+341 command ScreenCapture
+350 select NONE
+360 planstate E1
+361 command ScreenCapture
+400 quit

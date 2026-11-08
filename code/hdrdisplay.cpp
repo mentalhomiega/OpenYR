@@ -32,6 +32,32 @@ HDRDisplayInfo CurrentDisplay;
 
 #ifdef _WIN32
 
+// Fills info and device when output is on monitor and reports DXGI 1.6 data; otherwise both are unchanged.
+static bool Fill_From_Output(IDXGIOutput * output, HMONITOR monitor, HDRDisplayInfo & info, std::wstring & device)
+{
+	DXGI_OUTPUT_DESC desc;
+	if (FAILED(output->GetDesc(&desc)) || desc.Monitor != monitor) {
+		return(false);
+	}
+	IDXGIOutput6 * output6 = nullptr;
+	if (FAILED(output->QueryInterface(__uuidof(IDXGIOutput6), (void **)&output6))) {
+		return(false);
+	}
+	DXGI_OUTPUT_DESC1 desc1;
+	bool const described = SUCCEEDED(output6->GetDesc1(&desc1));
+	output6->Release();
+	if (!described) {
+		return(false);
+	}
+	info.Found = true;
+	info.HDREnabled = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+	info.PeakNits = desc1.MaxLuminance;
+	info.FullFrameNits = desc1.MaxFullFrameLuminance;
+	device = desc.DeviceName;
+	return(true);
+}
+
+
 /// <summary>
 /// Reads the DXGI output on the monitor, with its peak luminance and HDR state.
 /// </summary>
@@ -56,22 +82,7 @@ static bool Read_DXGI_Output(HMONITOR monitor, HDRDisplayInfo & info, std::wstri
 				break;
 			}
 
-			DXGI_OUTPUT_DESC desc;
-			if (SUCCEEDED(output->GetDesc(&desc)) && desc.Monitor == monitor) {
-				IDXGIOutput6 * output6 = nullptr;
-				if (SUCCEEDED(output->QueryInterface(__uuidof(IDXGIOutput6), (void **)&output6))) {
-					DXGI_OUTPUT_DESC1 desc1;
-					if (SUCCEEDED(output6->GetDesc1(&desc1))) {
-						info.Found = true;
-						info.HDREnabled = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
-						info.PeakNits = desc1.MaxLuminance;
-						info.FullFrameNits = desc1.MaxFullFrameLuminance;
-						device = desc.DeviceName;
-						found = true;
-					}
-					output6->Release();
-				}
-			}
+			found = Fill_From_Output(output, monitor, info, device);
 			output->Release();
 		}
 		adapter->Release();

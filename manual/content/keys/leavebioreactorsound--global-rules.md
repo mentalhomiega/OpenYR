@@ -8,4 +8,4 @@ when_omitted:
   value: none
 ---
 
-The sound played at an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure each time an object it held comes back out onto the map. An object that finds no room and is removed plays no sound.
+The sound played at an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) structure each time an object it held comes back out onto the map. The sound plays at the structure's centre. A structure that holds objects only through [`UnitAbsorb=yes`](/keys/unitabsorb/) plays none. An object that finds no room and is removed plays no sound.

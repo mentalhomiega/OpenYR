@@ -17,13 +17,15 @@
 
 
 // Mixing groups. Each has its own gain and duck level. The option sliders drive
-// SFX, SPEECH, MUSIC and MOVIE; SYSTEM plays at unity.
+// SFX, SPEECH, MUSIC, MOVIE and UNIT_VOICE; SYSTEM plays at unity. UNIT_VOICE is
+// counted against the effect budget like SFX.
 enum AudioGroupType {
 	AUDIO_GROUP_SFX,
 	AUDIO_GROUP_SPEECH,
 	AUDIO_GROUP_MUSIC,
 	AUDIO_GROUP_MOVIE,
 	AUDIO_GROUP_SYSTEM,
+	AUDIO_GROUP_UNIT_VOICE,
 
 	AUDIO_GROUP_COUNT
 };

@@ -77,7 +77,7 @@ An `IsMobileWar=yes` structure therefore always reaches these rules, and any oth
 | A non-allied [`Capturable=yes`](/keys/capturable/) structure whose strength fraction is above [`EngineerCaptureLevel`](/keys/engineercapturelevel/) | The damage action, which has no cursor art |
 | A non-allied `Capturable=yes` structure at or below that fraction | The enter cursor |
 
-Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point.
+Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point. An occupiable structure whose owner's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), as the stock `Neutral` country does, counts as allied in the table unless it is being warped out.
 
 Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. For an [`Agent=yes`](/keys/agent/) spy, the structure must be [`Spyable=yes`](/keys/spyable/) instead of `Capturable=yes`. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`.
 
@@ -157,7 +157,7 @@ A deployed vehicle counts as a vehicle here, so this branch runs before any engi
 
 ### Restoring an allied structure
 
-An engineer that reaches an allied structure restores it to full strength at no cost. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength. Nothing else about the structure changes.
+An engineer that reaches an allied structure, or an occupiable structure of a `MultiplayPassive=yes` country, restores it to full strength at no cost and is consumed. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength, and [`BuildingRepairedSound`](/keys/buildingrepairedsound/) plays from it. Nothing else about the structure changes. A structure already at full strength is left alone, and the engineer lives and moves away from it.
 
 ### Repairing a bridge
 
@@ -167,7 +167,7 @@ The engineer's position decides the kind of repair. A rail bridge tile anywhere 
 
 ### Capturing a non-allied structure
 
-An engineer that reaches a non-allied `Capturable=yes` structure takes it, unless the structure can be occupied and its owner's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), as the stock `Neutral` country does. The engineer leaves such a structure alone and is consumed, and the [damage](#damaging-it-instead) branch does not apply to it either. Otherwise the structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
+An engineer that reaches a non-allied `Capturable=yes` structure takes it. An occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country is [restored](#restoring-an-allied-structure) instead, and the [damage](#damaging-it-instead) branch does not apply to it. On a capture, the structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
 
 The robbed mark is what the [Thieved by...](/mapping/events/tevent-thieved/) trigger event tests. Only this capture sets it; a stolen vehicle does not. Nothing clears it, so once a house loses one structure to an engineer, the mark stays for the rest of the match. A trigger that uses this event still [never fires](/systems/trigger-springing/#three-events-that-cannot-be-reached), and no other part of the game reads the mark.
 
@@ -208,9 +208,9 @@ When a structure drops below half strength or below `ConditionRed`, the game rea
 
 ### Infiltrating it
 
-A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. Without [EVAMD.INI](/formats/eva-ini/), EVA announces the infiltration when the spy belongs to a player-controlled house; with it, the announcement depends on the effect, as listed below. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's house is recorded as spying on that structure; there is no alliance test. Capturing a structure clears the capturing house's spy record on it.
+A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. Without [EVAMD.INI](/formats/eva-ini/), EVA announces the infiltration when the spy belongs to a player-controlled house; with it, the announcement depends on the effect, as listed below. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's country is recorded as spying on that structure, so every house of that country has the spy's view of it; there is no alliance test. Capturing a structure clears the capturing house's country from that record.
 
-When the spying player selects a spied structure, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
+When a player whose country has spied on a structure selects it, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
 
 One effect then follows, decided by the first row that fits the structure's type, as in Yuri's Revenge:
 
@@ -238,7 +238,7 @@ With EVAMD.INI, the announcer names the effect to the player whose house owns th
 
 ### The soldier is consumed
 
-Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, an engineer at an occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
+Every soldier that walks into its target structure is deleted, even when nothing happens there, with these exceptions: an engineer that reaches an allied structure at full strength, and an engineer that reaches a `Capturable=yes` non-allied structure that is being sold or warped out, both move away unharmed. The deletion includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, an engineer at an occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge also leaves the soldier alive.
 
 ## What changes hands
 

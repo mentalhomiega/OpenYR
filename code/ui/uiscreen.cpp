@@ -9,6 +9,59 @@
 
 #include "ui/uiscreen.h"
 
+#include <cstdio>
+
+
+std::string UI_Name_At(std::vector<std::string> const & names, int index)
+{
+	if (index >= 0 && index < (int)names.size()) {
+		return(names[index]);
+	}
+	return(std::string());
+}
+
+
+// Adds the choices to the list and returns the index of the one with the current value, adding
+// the current value under its own label when the list does not have it.
+int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format)
+{
+	int picked = -1;
+	for (UIChoice const & choice : choices) {
+		if (choice.Value == current) {
+			picked = (int)list.size();
+		}
+		list.push_back(choice);
+	}
+	if (picked < 0) {
+		UIChoice choice;
+		choice.Value = current;
+		char buffer[32];
+		std::snprintf(buffer, sizeof(buffer), format, current);
+		choice.Label = buffer;
+		picked = (int)list.size();
+		list.push_back(choice);
+	}
+	return(picked);
+}
+
+
+// Adds a choice labelled with its number for each value and returns the index of the last value
+// that does not exceed the limit, or -1 when every value does.
+int Fill_Count_Choices(std::vector<UIChoice> & list, std::vector<int> const & values, int limit)
+{
+	int picked = -1;
+	for (int value : values) {
+		UIChoice choice;
+		choice.Value = value;
+		choice.Label = std::to_string(value);
+		if (value <= limit) {
+			picked = (int)list.size();
+		}
+		list.push_back(choice);
+	}
+	return(picked);
+}
+
 
 void UIPresenterClass::Queue(UIIntent const & intent)
 {
@@ -34,18 +87,11 @@ void UIPresenterClass::Drain(void)
 }
 
 
-void UIPresenterClass::Set_Settings_Tab(UISettingsTab tab, unsigned offered)
-{
-	OwnTab = tab;
-	Offered = offered;
-}
-
-
 void UIPresenterClass::Switch_Tab(int tab)
 {
 	// A tab request applies nothing: the host moves to the page and the pending values stay on their pages until
 	// OK or Cancel acts on every page.
-	if (tab < 0 || tab >= UI_TAB_COUNT || tab == OwnTab || (Offered & (1u << tab)) == 0) {
+	if (tab < 0 || tab >= UI_TAB_COUNT || (Offered & (1u << tab)) == 0) {
 		return;
 	}
 	Tab_Request = (UISettingsTab)tab;

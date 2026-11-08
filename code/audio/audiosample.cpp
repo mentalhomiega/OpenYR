@@ -10,14 +10,13 @@
 #include "audio/audiosample.h"
 
 #include "audio/audiodecode.h"
+#include "fnv.h"
 
 #include <cctype>
 #include <cstring>
 #include <string>
 
 
-uint64_t const FNV_BASIS = 14695981039346656037ULL;
-uint64_t const FNV_PRIME = 1099511628211ULL;
 uint64_t const BLOB_KEY_BIT = 1ULL << 63;
 
 char const * const AudioSampleCacheClass::FORMAT_EXTENSIONS[AudioSampleCacheClass::FORMAT_COUNT] = {
@@ -39,22 +38,16 @@ AudioSampleCacheClass::~AudioSampleCacheClass(void)
 
 uint64_t AudioSampleCacheClass::Hash_Bytes(void const * data, size_t size, uint64_t seed)
 {
-	unsigned char const * bytes = (unsigned char const *)data;
-	uint64_t hash = seed;
-	for (size_t i = 0; i < size; i++) {
-		hash ^= bytes[i];
-		hash *= FNV_PRIME;
-	}
-	return(hash);
+	return(Fnv64_Add_Bytes(seed, data, size));
 }
 
 
 uint64_t AudioSampleCacheClass::Hash_Name(char const * basename)
 {
-	uint64_t hash = FNV_BASIS;
+	uint64_t hash = FNV64_BASIS;
 	for (char const * c = basename; *c != '\0'; c++) {
 		hash ^= (unsigned char)std::toupper((unsigned char)*c);
-		hash *= FNV_PRIME;
+		hash *= FNV64_PRIME;
 	}
 	return(hash & ~BLOB_KEY_BIT);
 }
@@ -179,7 +172,7 @@ AudioSampleClass * AudioSampleCacheClass::Acquire_Blob(void const * blob, size_t
 	}
 
 	uintptr_t address = (uintptr_t)blob;
-	uint64_t key = Hash_Bytes(&address, sizeof(address), FNV_BASIS);
+	uint64_t key = Hash_Bytes(&address, sizeof(address), FNV64_BASIS);
 	key = Hash_Bytes(blob, bytes, key) | BLOB_KEY_BIT;
 
 	AudioSampleClass * sample = Find(key);

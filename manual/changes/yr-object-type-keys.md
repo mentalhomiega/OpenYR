@@ -1,5 +1,5 @@
 ---
-title: Read nine object type keys from rules
+title: Read seven object type keys from rules
 category: feature
 release: 0.2.0
 targets:
@@ -16,9 +16,6 @@ targets:
   id: StupidHunt
   effect: added
 - type: key
-  id: ConsideredAircraft
-  effect: added
-- type: key
   id: TiltCrashJumpjet
   effect: added
 - type: key
@@ -26,9 +23,6 @@ targets:
   effect: added
 - type: key
   id: RejoinTeamIfLimboed
-  effect: added
-- type: key
-  id: RefinerySmokeParticleSystem
   effect: added
 credit: [MentalHomiega]
 ---
@@ -43,4 +37,4 @@ credit: [MentalHomiega]
 
 `RejoinTeamIfLimboed=yes` makes a parasite that fires a LimboLaunch weapon at an infantryman rejoin its team when it comes out of its victim. Before, the key had no effect.
 
-`ConsideredAircraft`, `TiltCrashJumpjet`, `HasTurretTooltips` and `RefinerySmokeParticleSystem` are read and stored. They have no effect in this build.
+`TiltCrashJumpjet` and `HasTurretTooltips` are read and stored. They have no effect in this build.

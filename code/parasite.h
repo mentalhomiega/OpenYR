@@ -39,11 +39,16 @@ class ParasiteClass
 {
 	public:
 		explicit ParasiteClass(TechnoClass * owner = nullptr);
+		// The grapple holder list stores this object's address, so a parasite is never copied.
+		ParasiteClass(ParasiteClass const &) = delete;
+		ParasiteClass & operator=(ParasiteClass const &) = delete;
+		~ParasiteClass(void);
 
 		bool Can_Infect(TechnoClass const * target) const;
 		void Try_Infect(TechnoClass * target);
 		void Update(void);
 		void Exit_Unit(void);
+		void Victim_Removed(void);
 		void Victim_Hit(int damage, TechnoClass const * source);
 		void Detach(AbstractClass const * target);
 		void Serialize(SaveStreamClass & stream);
@@ -71,5 +76,14 @@ class ParasiteClass
 		void Release(bool doomed, bool from_exit);
 		void Update_Squid(void);
 		bool Update_Grapple(void);
+		void Enter_Grapple_Stage(GrappleStage stage);
 		void Create_Wakes(Coord const & where);
+		void Set_Grapple_Anim(AnimClass * anim);
 };
+
+
+// Clears the grapple of each parasite that holds an animation of target. Detach_This_From_All calls this for a removed animation.
+void Detach_Grapple_Holders(AbstractClass const * target);
+
+// Rebuilds the grapple holder list from the technos. A load calls this after its pointers resolve, because the load writes GrappleAnim without Set_Grapple_Anim.
+void Rebuild_Grapple_Holders(void);

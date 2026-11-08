@@ -15,6 +15,8 @@ A value may start with `RA2->`, as in `RA2->ALL01T.MAP`. The prefix is removed b
 
 If the file cannot be read, the game shows an error message and returns to the menu. An empty value fails the same way.
 
+The `RA2->` prefix also changes what follows a won mission: the game starts the next entry of the campaign list when that entry is a Red Alert 2 mission whose map exists, and otherwise returns to the menu. The mission's `NextScenario=` is not read.
+
 Only the first mission is named here. [Choosing the next mission](/systems/campaign-progression/#choosing-the-next-mission) covers how each won mission leads to the next, through the stage's first choice or the mission's [`NextScenario`](/keys/nextscenario/). [Campaign progression](/systems/campaign-progression/) covers the whole sequence and the state carried between missions.
 
 When the campaign's `CD` is above `1`, this value also decides its loading-screen artwork; see [`CD`](/keys/cd/).

@@ -1,15 +1,17 @@
 ---
 key: SoundVolume
 summary: The volume of sound effects, as a fraction from 0 to 1.
-see_also: [VoiceVolume, ScoreVolume, SoundLatency]
+see_also: [VoiceVolume, ScoreVolume, SoundLatency, UnitVoiceVolume, MovieVolume]
 when_omitted:
   kind: value
   value: ".7"
 ---
 
-`SoundVolume` sets the level of every sound effect and of every movie's soundtrack, briefings included. Sound effects include unit responses and the sounds of the menus and the score screen. The fraction multiplies the final volume of every sound effect and movie soundtrack, including sounds already playing.
+`SoundVolume` sets the level of every sound effect, including the sounds of the menus and the score screen. The fraction multiplies the final volume of every sound effect, including sounds already playing.
 
-At `0` or below, sound effects and movie soundtracks are silent.
+Unit and building replies follow [`UnitVoiceVolume`](/keys/unitvoicevolume/), and movie sound follows [`MovieVolume`](/keys/movievolume/), so neither changes with this key. A settings file that omits one of those two keys takes its level from this key.
+
+At `0` or below, sound effects are silent.
 
 Values above `1` are read as `1`. A negative value is kept and saved back as written until the player presses OK in the sound options. OK stores the slider's position, which rounds the level to the nearest tenth and turns a negative value into `0`.
 

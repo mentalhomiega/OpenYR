@@ -288,7 +288,7 @@ void ParticleSystemClass::Clear_System(void)
 
 
 /// <summary>
-/// Handles the per-frame logic for a gas particle system.
+/// Handles the per-frame logic for a gas or web particle system.
 /// This routine drifts the system's particles along and, as each one expires,
 /// spawns the successor particle its type calls for, so that the cloud can change
 /// character as it ages.
@@ -308,7 +308,7 @@ void ParticleSystemClass::Gas_AI(void)
 				Coord coord = spart->PositionCoord;
 				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
 				Coord ncoord = coord + spart->Class->NextParticleOffset;
-				ParticleClass *npart = new ParticleClass(next, ncoord);
+				ParticleClass *npart = new ParticleClass(next, ncoord, COORD_NONE, this);
 				if (npart != NULL) {
 					SystemParticles.Add(npart);
 					npart->Speed = spart->Speed;
@@ -426,7 +426,7 @@ void ParticleSystemClass::Smoke_AI(void)
 {
 	int i;
 
-	if (Source->As_ObjectClass() != NULL && Source->What_Am_I() != RTTI_BUILDING) {
+	if (Source != NULL && Source->As_ObjectClass() != NULL && Source->What_Am_I() != RTTI_BUILDING) {
 		Set_Coord(Source->Center_Coord() + CoordOffset);
 	}
 
@@ -466,7 +466,7 @@ void ParticleSystemClass::Smoke_AI(void)
 				ncoord.Y = y + yrand;
 				ncoord.Z = z;
 				ncoord.X = x + xrand;
-				ParticleClass *npart = new ParticleClass(next, ncoord);
+				ParticleClass *npart = new ParticleClass(next, ncoord, COORD_NONE, this);
 				if (npart != NULL) {
 					SystemParticles.Add(npart);
 					if (npart != NULL) {
@@ -479,7 +479,7 @@ void ParticleSystemClass::Smoke_AI(void)
 				pcoord.X = x - xrand;
 				pcoord.Y = y - yrand;
 				pcoord.Z = z;
-				ParticleClass *ppart = new ParticleClass(next, pcoord);
+				ParticleClass *ppart = new ParticleClass(next, pcoord, COORD_NONE, this);
 				if (ppart != NULL) {
 					SystemParticles.Add(ppart);
 					ppart->Speed = spart->Speed;
@@ -493,7 +493,7 @@ void ParticleSystemClass::Smoke_AI(void)
 	}
 
 	if (!IsMarkedForDeletion && IsActive && (Frame % (int)SpawnFrames) == 0) {
-		FootClass *foot = Source->As_FootClass();
+		FootClass *foot = Source != NULL ? Source->As_FootClass() : NULL;
 		if (foot == NULL || foot->CurrentTube < 0) {
 			int xrand = Scen->RandomNumber();
 			int yrand = Scen->RandomNumber();
@@ -507,7 +507,7 @@ void ParticleSystemClass::Smoke_AI(void)
 					if (SpawnFrames > Class->SpawnTranslucencyCutoff) {
 						npart->Translucency += 25;
 					}
-					npart->Speed = npart->Speed - (SpawnFrames - Class->SpawnFrames) * 0.35f;
+					npart->Speed = npart->Speed - (SpawnFrames - Class->SpawnFrames) * 0.35;
 					if (npart->Speed < 2.0) {
 						npart->Speed = 2.0;
 					}
@@ -603,7 +603,7 @@ void ParticleSystemClass::Railgun_AI(void)
 		}
 
 		if (Class->IsLaser) {
-			new LaserDrawClass(PositionCoord, SpawnCoord, 0, true, Class->LaserColor, RGBClass(0, 0, 0), RGBClass(0, 0, 0), 10, false, true, 0.5f, 0.0f);
+			new LaserDrawClass(PositionCoord, SpawnCoord, 0, Class->LaserColor, RGBClass(0, 0, 0), RGBClass(0, 0, 0), 10, false, true, 0.5f, 0.0f);
 		}
 
 		IsMarkedForDeletion = true;
@@ -660,7 +660,7 @@ void ParticleSystemClass::Fire_AI(void)
 			if (source->TarCom != NULL && source->PrimaryFacing.Is_Rotating()) {
 				Coord cc = source->TarCom->Center_Coord();
 				Coord delta = cc - source->Get_Coord();
-				int dist = (int)std::sqrt((double)delta.X * (double)delta.X + (double)delta.Y * (double)delta.Y + (double)delta.Z * (double)delta.Z);
+				int dist = delta.Length();
 				SpawnCoord = Move_Coord(source->Get_Coord(), source->PrimaryFacing.Current(), dist);
 				Set_Coord(source->Turret_Coord(0));
 				reaimed = true;
@@ -701,42 +701,6 @@ void ParticleSystemClass::Fire_AI(void)
 
 
 /// <summary>
-/// Handles the per-frame logic for a web particle system.
-/// This routine drifts the system's particles along and, as each one expires,
-/// spawns the successor particle its type calls for in its place.
-/// </summary>
-void ParticleSystemClass::Web_AI(void)
-{
-	int i;
-
-	for (i = SystemParticles.Count()-1; i >= 0; i--) {
-		SystemParticles[i]->Behavior_AI();
-	}
-
-	for (i = SystemParticles.Count()-1; i >= 0; i--) {
-		ParticleClass *spart = SystemParticles[i];
-		if (spart->IsToDie) {
-			if (spart->Class->NextParticle != PARTICLE_NONE) {
-				Coord coord = spart->PositionCoord;
-				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
-				Coord ncoord = coord + spart->Class->NextParticleOffset;
-				ParticleClass *npart = new ParticleClass(next, ncoord);
-				if (npart != NULL) {
-					SystemParticles.Add(npart);
-					npart->Speed = spart->Speed;
-					npart->GasDrift = spart->GasDrift;
-					npart->SourceHouse = spart->SourceHouse;
-				}
-			}
-			spart->Delete_Me();
-		} else {
-			spart->Motion_AI();
-		}
-	}
-}
-
-
-/// <summary>
 /// Handles the per-frame logic for this particle system.
 /// This routine hands the system over to the update handler for whatever behavior
 /// its type calls for, ages the system, and retires it once its lifetime has run
@@ -749,9 +713,8 @@ void ParticleSystemClass::AI(void)
 			Smoke_AI();
 			break;
 		case PSYS_BEHAVIOR_GAS:
-			Gas_AI();
-			break;
 		case PSYS_BEHAVIOR_WEAKGAS:
+		case PSYS_BEHAVIOR_WEB:
 			Gas_AI();
 			break;
 		case PSYS_BEHAVIOR_FIRE:
@@ -762,9 +725,6 @@ void ParticleSystemClass::AI(void)
 			break;
 		case PSYS_BEHAVIOR_RAILGUN:
 			Railgun_AI();
-			break;
-		case PSYS_BEHAVIOR_WEB:
-			Web_AI();
 			break;
 	}
 

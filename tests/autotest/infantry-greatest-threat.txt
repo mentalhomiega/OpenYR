@@ -1,0 +1,54 @@
+; The target each stock soldier picks for itself with the map-wide Greatest_Threat scan (InfantryClass::GreatestThreat, 0x51E140).
+; The player's soldiers (human) are asked about a computer GAPOWR at 60,40, E2 at 63,40 and Grizzly at 63,43; the computer's soldiers
+; (the same types) about the player's GAPOWR at 60,52, E2 at 63,52 and Grizzly at 63,55. The gamemd conditions are Engineer=yes
+; (not Infiltrate=yes) for the computer's engineer that heads for a capturable structure, and IsArmed for the unarmed branch.
+; The stock ENGINEER carries the DefuseKit weapon and SPY the MakeupKit, so both count as armed.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-greatest-threat.txt -Seconds 60 -Filter "AUTOTEST   threat|AUTOTEST   own|Exception"
+; Expected, the player's soldiers: E1 and SPY pick the computer's E2, TANY, GHOST, PTROOP, CLEG and DOG pick a computer soldier, and ENGINEER
+; and the unarmed CIV1 pick nothing. The computer's soldiers: ENGINEER picks the player's GAPOWR (it counts as Engineer=yes though it carries a
+; weapon); E1, SPY, TANY, GHOST, PTROOP, CLEG and DOG pick a unit or structure by their weapons and the player's soldiers; CIV1 picks nothing.
+; A player's armed soldier never picks the GAPOWR, which has no weapon. See infantry-greatest-threat-defense.txt for a structure with one.
+30 enemy GAPOWR 60 40
+31 enemy E2 63 40
+32 enemy MTNK 63 43
+33 own GAPOWR 60 52
+34 own E2 63 52
+35 own MTNK 63 55
+36 own E1 54 38
+37 own ENGINEER 54 39
+38 own SPY 54 40
+39 own TANY 54 41
+40 own GHOST 54 42
+41 own PTROOP 54 43
+42 own CLEG 54 44
+43 own DOG 54 45
+44 own CIV1 54 46
+45 enemy E1 54 50
+46 enemy ENGINEER 54 51
+47 enemy SPY 54 52
+48 enemy TANY 54 53
+49 enemy GHOST 54 54
+50 enemy PTROOP 54 55
+51 enemy CLEG 54 56
+52 enemy DOG 54 57
+53 enemy CIV1 54 58
+70 threat E1
+70 threat ENGINEER
+70 threat SPY
+70 threat TANY
+70 threat GHOST
+70 threat PTROOP
+70 threat CLEG
+70 threat DOG
+70 threat CIV1
+70 threat E1 computer
+70 threat ENGINEER computer
+70 threat SPY computer
+70 threat TANY computer
+70 threat GHOST computer
+70 threat PTROOP computer
+70 threat CLEG computer
+70 threat DOG computer
+70 threat CIV1 computer
+90 quit

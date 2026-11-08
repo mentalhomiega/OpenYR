@@ -1,0 +1,34 @@
+; An uncaptured neutral Tech Outpost (CAOUTP, owned by the Civilian house) takes no radio contact from a player's vehicle.
+; Its dock is at 62,41. A damaged MTNK at 60,52 is ordered to enter it. Control: a damaged HTNK at 70,52 is ordered to enter
+; the player's own Tech Outpost at 70,40, which has the same dock layout.
+; Expected: every MTNK recloak line reads radio 0, so the Grizzly never docks and is never repaired. It drives to the dock's
+; side at about 63,41 and stops there, its enter order refused. The outpost fires at it from there; that shot is separate
+; from docking and is not checked here. HTNK reads radio 1 from its first line on, which shows the check is live.
+; Run: scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/neutral-outpost-no-dock.txt -Seconds 120 -Filter "AUTOTEST   recloak|AUTOTEST enter|AUTOTEST   where|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+300 neutral CAOUTP 60 40
+301 own CAOUTP 70 40
+302 grantunit MTNK 60 52
+303 grantunit HTNK 70 52
+304 reveal
+305 view 65 46
+310 damage MTNK 200
+311 damage HTNK 200
+330 enter MTNK 60 40
+331 enter HTNK 70 40
+340 where MTNK
+341 where HTNK
+380 where MTNK
+381 where HTNK
+440 where MTNK
+441 where HTNK
+500 where MTNK
+501 where HTNK
+560 where MTNK
+561 where HTNK
+620 where MTNK
+621 where HTNK
+680 where MTNK
+681 where HTNK
+700 quit

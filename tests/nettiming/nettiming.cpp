@@ -11,6 +11,7 @@
 #include "nettiming.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <initializer_list>
 #include <iostream>
@@ -464,29 +465,68 @@ namespace
 	}
 
 
-	void Test_Frame_Pacer(void)
+	void Test_Frame_Deadline(void)
 	{
 		using namespace NetTiming;
 
-		for (unsigned int rate : { 60u, 45u, 30u, 20u, 15u, 12u, 10u, 7u }) {
-			FramePacer pacer;
-			Milliseconds total = 0;
-			Milliseconds shortest = 1000;
-			Milliseconds longest = 0;
-			for (unsigned int frame = 0; frame < rate; frame++) {
-				Milliseconds const wait = pacer.Next_Wait(rate);
-				total += wait;
-				shortest = std::min(shortest, wait);
-				longest = std::max(longest, wait);
+		constexpr std::int64_t second = 1000000000;
+		constexpr std::int64_t start = 5000000000;
+
+		// Frames that start on time end exactly 1/rate apart, however many there are.
+		for (unsigned int rate : { 60u, 45u, 30u, 20u, 15u, 10u, 7u }) {
+			FrameDeadline deadline;
+			std::int64_t last = deadline.Arm(start, Frame_Period_For_Rate(rate));
+			Expect_Equal(std::to_string(rate) + " first frame lasts one period", last - start, second / rate);
+			std::int64_t shortest = second;
+			std::int64_t longest = 0;
+			for (unsigned int frame = 1; frame < rate * 600; frame++) {
+				// Each frame starts a little after the previous deadline, as the work between frames does.
+				std::int64_t const next = deadline.Arm(last + 3000, Frame_Period_For_Rate(rate));
+				shortest = std::min(shortest, next - last);
+				longest = std::max(longest, next - last);
+				last = next;
 			}
-			Expect_Equal(std::to_string(rate) + " frames last a second", total, 1000u);
-			Expect_Equal(std::to_string(rate) + " frames differ by a millisecond at most", longest - shortest <= 1, true);
+			Expect_Equal(std::to_string(rate) + " frames for ten minutes end on the clock", last - start, second * 600);
+			Expect_Equal(std::to_string(rate) + " periods differ by a nanosecond at most", longest - shortest <= 1, true);
 		}
 
-		FramePacer pacer;
-		Expect_Equal("no rate means no wait", pacer.Next_Wait(0), 0u);
-		pacer.Next_Wait(60);
-		Expect_Equal("a change of rate starts the average again", pacer.Next_Wait(45), 22u);
+		// A frame that starts a period late or less is made up in the next deadline; a later one starts over from now.
+		FrameDeadline deadline;
+		std::int64_t const period = second / 60;
+		std::int64_t const first = deadline.Arm(start, Frame_Period_For_Rate(60));
+		Expect_Equal("a frame started one period late still ends on the old schedule", deadline.Arm(first + period, Frame_Period_For_Rate(60)) - first, period + 1);
+		std::int64_t const late = first + 10 * period;
+		Expect_Equal("a frame started many periods late ends one period from now", deadline.Arm(late, Frame_Period_For_Rate(60)) - late, period);
+		Expect_Equal("the schedule continues from the restart", deadline.Arm(late + period, Frame_Period_For_Rate(60)) - late, 2 * period + 1);
+
+		// No rate means no wait and forgets the schedule.
+		Expect_Equal("rate zero ends the frame at once", deadline.Arm(late, Frame_Period_For_Rate(0)), late);
+		Expect_Equal("a change of rate starts from now", deadline.Arm(late, Frame_Period_For_Rate(30)) - late, second / 30);
+		Expect_Equal("the solo period follows the speed table", Solo_Game_Speed_Frame_Period(1) == Frame_Period_For_Rate(60), true);
+		Expect_Equal("a solo speed with no limit has no period", Solo_Game_Speed_Frame_Period(0).Nanoseconds, std::int64_t(0));
+		FrameDeadline fresh;
+		Expect_Equal("the first frame starts from now", fresh.Arm(start, Frame_Period_For_Rate(45)) - start, second / 45);
+	}
+
+
+	void Test_Interval_Stats(void)
+	{
+		using namespace NetTiming;
+
+		IntervalStats stats;
+		IntervalStats::Summary empty = stats.Take();
+		Expect_Equal("no intervals give a zero count", empty.Count, 0u);
+
+		for (double value : {16.0, 17.0, 16.0, 17.0}) {
+			stats.Add(value);
+		}
+		IntervalStats::Summary sum = stats.Take();
+		Expect_Equal("four intervals are counted", sum.Count, 4u);
+		Expect_Equal("the shortest interval", sum.Min, 16.0);
+		Expect_Equal("the longest interval", sum.Max, 17.0);
+		Expect_Equal("the mean interval", sum.Mean, 16.5);
+		Expect_Equal("the deviation of 16, 17, 16, 17", std::abs(sum.Deviation - 0.5) < 1e-9, true);
+		Expect_Equal("taking the summary starts a new one", stats.Take().Count, 0u);
 	}
 
 
@@ -506,12 +546,13 @@ namespace
 		unsigned int const fastest = Select_Desired_Frame_Rate(measured, 30, Game_Speed_Frame_Rate(0));
 		Expect_Equal("fastest speed with cheap frames asks for 60 FPS", fastest, 60u);
 
-		FramePacer pacer;
-		Milliseconds total = 0;
+		FrameDeadline deadline;
+		std::int64_t const start = 1000;
+		std::int64_t end = start;
 		for (int frame = 0; frame < 60; frame++) {
-			total += pacer.Next_Wait(fastest);
+			end = deadline.Arm(end, Frame_Period_For_Rate(fastest));
 		}
-		Expect_Equal("60 frames at the fastest speed last exactly one second", total, 1000u);
+		Expect_Equal("60 frames at the fastest speed last exactly one second", end - start, std::int64_t(1000000000));
 
 		TimingCensus incomplete = measured;
 		incomplete.ProcessComplete = false;
@@ -615,6 +656,78 @@ namespace
 		Expect_Equal("look-ahead 31 steps at 7, 15 and 23", Gamemd_Local_Pacing(31, 7), 10u);
 		Expect_Equal("look-ahead 31 gives two steps at 15", Gamemd_Local_Pacing(31, 15), 20u);
 		Expect_Equal("look-ahead 31 gives three steps at 23", Gamemd_Local_Pacing(31, 23), 30u);
+	}
+
+
+	void Test_Host_Choice(void)
+	{
+		using namespace NetTiming;
+
+		Expect("no choice leaves settings alone", Apply_Host_Choice(TimingSettings{10, 40}, HostTimingChoice{}) == (TimingSettings{10, 40}));
+		Expect("a chosen send period realigns the look-ahead", Apply_Host_Choice(TimingSettings{10, 40}, HostTimingChoice{6, 0}) == (TimingSettings{6, 42}));
+		Expect("a chosen look-ahead is rounded up to whole send periods", Apply_Host_Choice(TimingSettings{4, 20}, HostTimingChoice{4, 30}) == (TimingSettings{4, 32}));
+		Expect("a chosen look-ahead alone keeps the policy's send period", Apply_Host_Choice(TimingSettings{10, 40}, HostTimingChoice{0, 100}) == (TimingSettings{10, 100}));
+		Expect("the look-ahead is at least three send periods", Host_Max_Ahead_For(4, 6) == 18u && Host_Max_Ahead_For(4, 1) == 4u);
+		Expect("the look-ahead never passes 250", Host_Max_Ahead_For(250, 7) == 245u && Host_Max_Ahead_For(250, 10) == 250u);
+		for (unsigned int rate = 1; rate <= 10; ++rate) {
+			for (unsigned int ahead : {4u, 9u, 30u, 100u, 250u}) {
+				unsigned int const settled = Host_Max_Ahead_For(ahead, rate);
+				Expect("a settled look-ahead is a valid timing value", settled % rate == 0 && Timing_Settings_Are_Valid(TimingSettings{rate, settled}));
+			}
+		}
+
+		Expect("send periods 1 to 10 are valid", Host_Frame_Send_Rate_Is_Valid(1) && Host_Frame_Send_Rate_Is_Valid(10) && !Host_Frame_Send_Rate_Is_Valid(0) && !Host_Frame_Send_Rate_Is_Valid(11));
+		Expect("look-aheads 0 and 4 to 250 are valid", Host_Max_Ahead_Is_Valid(0) && Host_Max_Ahead_Is_Valid(4) && Host_Max_Ahead_Is_Valid(250) && !Host_Max_Ahead_Is_Valid(3) && !Host_Max_Ahead_Is_Valid(251));
+
+		// The master keeps the choice at every evaluation, whatever round trip it measures.
+		for (Milliseconds rtt : {0u, 80u, 400u, 3000u}) {
+			TimingSettings const kept = Gamemd_Timing_Settings(rtt, 45, 40, HostTimingChoice{6, 30});
+			Expect("an evaluation keeps a chosen send period and look-ahead", kept == (TimingSettings{6, 30}));
+			TimingSettings const period_only = Gamemd_Timing_Settings(rtt, 45, 40, HostTimingChoice{6, 0});
+			Expect("an evaluation with a chosen send period yields valid settings",
+				period_only.FrameSendRate == 6 && Timing_Settings_Are_Valid(period_only));
+		}
+
+		HostNetworkOptions options;
+		HostCommandResult result = Apply_Host_Command("/FrameSendRate 6", options);
+		Expect("/framesendrate sets the send period", result.Recognised && result.Changed && options.Timing.FrameSendRate == 6);
+		result = Apply_Host_Command("  /maxahead 40  ", options);
+		Expect("/maxahead sets the look-ahead", result.Recognised && result.Changed && options.Timing.MaxAhead == 40);
+		Expect("the summary shows the settled look-ahead", Describe_Host_Options(options) == "send period 6 frames, look-ahead 42 frames, protocol 2");
+		result = Apply_Host_Command("/protocolversion 0", options);
+		Expect("/protocolversion 0 is accepted", result.Recognised && result.Changed && options.Protocol == 0);
+		result = Apply_Host_Command("/protocolversion 1", options);
+		Expect("protocol 1 is refused", result.Recognised && !result.Changed && options.Protocol == 0);
+		result = Apply_Host_Command("/protocol 2", options);
+		Expect("/protocol is an alias", result.Changed && options.Protocol == 2);
+		result = Apply_Host_Command("/framesendrate 11", options);
+		Expect("a send period of 11 is refused", result.Recognised && !result.Changed && options.Timing.FrameSendRate == 6);
+		result = Apply_Host_Command("/framesendrate 0x5", options);
+		Expect("a send period that is not a number is refused", result.Recognised && !result.Changed && options.Timing.FrameSendRate == 6);
+		result = Apply_Host_Command("/maxahead 3", options);
+		Expect("a look-ahead of 3 is refused", result.Recognised && !result.Changed && options.Timing.MaxAhead == 40);
+		result = Apply_Host_Command("/maxahead 251", options);
+		Expect("a look-ahead of 251 is refused", result.Recognised && !result.Changed && options.Timing.MaxAhead == 40);
+		result = Apply_Host_Command("/maxahead", options);
+		Expect("a command with no value shows the current one", result.Recognised && !result.Changed && result.Message.find("40") != std::string::npos);
+		result = Apply_Host_Command("/maxahead auto", options);
+		Expect("auto leaves the look-ahead to the policy", result.Changed && options.Timing.MaxAhead == 0);
+		result = Apply_Host_Command("/framesendrate 0", options);
+		Expect("0 leaves the send period to the policy", result.Changed && options.Timing.FrameSendRate == 0 && options.Is_Default());
+		result = Apply_Host_Command("/kick someone", options);
+		Expect("another command is not recognised", !result.Recognised);
+		result = Apply_Host_Command("hello", options);
+		Expect("chat is not recognised", !result.Recognised);
+
+		Expect("the default packs to zero", Pack_Host_Options(HostNetworkOptions{}) == 0u);
+		for (HostNetworkOptions const & sample : {HostNetworkOptions{{6, 40}, 2}, HostNetworkOptions{{0, 250}, 0}, HostNetworkOptions{{10, 0}, 2}, HostNetworkOptions{{0, 0}, 0}}) {
+			std::optional<HostNetworkOptions> const back = Unpack_Host_Options(Pack_Host_Options(sample));
+			Expect("options survive packing", back && *back == sample);
+		}
+		Expect("a packed word without the marker is refused", !Unpack_Host_Options(0x00000604u));
+		Expect("a packed word with a send period of 11 is refused", !Unpack_Host_Options(0x8000000Bu));
+		Expect("a packed word with a look-ahead of 3 is refused", !Unpack_Host_Options(0x80000300u));
+		Expect("a packed word with stray bits is refused", !Unpack_Host_Options(0x80020000u));
 	}
 
 
@@ -1442,9 +1555,11 @@ int main(void)
 	Test_Note_Retransmit_Guards();
 	Test_Game_Speed_Frame_Rate();
 	Test_Solo_Game_Speed_Frame_Rate();
-	Test_Frame_Pacer();
+	Test_Frame_Deadline();
+	Test_Interval_Stats();
 	Test_Speed_Reaches_Frame_Rate();
 	Test_Gamemd_Timing();
+	Test_Host_Choice();
 	Test_Census();
 	Test_Rungs();
 	Test_Connection_Quality();

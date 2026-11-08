@@ -1,0 +1,33 @@
+; Picture digests of 20 flying Orcas, whose voxel bodies are cached: drawdigest and presentdigest from frame 0.
+; Run with RenderFrameRate=0 and compare the logs with scripts/compare_digests.py (docs/AUTOTEST.md).
+0 drawdigest 1
+0 presentdigest 1
+0 perflog 1
+1 view 52 56
+3 log BENCH_START
+10 grantunit ORCA 46 52
+10 grantunit ORCA 48 52
+10 grantunit ORCA 50 52
+10 grantunit ORCA 52 52
+10 grantunit ORCA 54 52
+10 grantunit ORCA 56 52
+10 grantunit ORCA 58 52
+10 grantunit ORCA 60 52
+10 grantunit ORCA 62 52
+10 grantunit ORCA 64 52
+10 grantunit ORCA 46 54
+10 grantunit ORCA 48 54
+10 grantunit ORCA 50 54
+10 grantunit ORCA 52 54
+10 grantunit ORCA 54 54
+10 grantunit ORCA 56 54
+10 grantunit ORCA 58 54
+10 grantunit ORCA 60 54
+10 grantunit ORCA 62 54
+10 grantunit ORCA 64 54
+100 airborne ORCA
+300 move ORCA 90 80
+500 airborne ORCA
+900 airborne ORCA
+1400 log BENCH_END
+1400 quit

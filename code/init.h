@@ -15,6 +15,7 @@
 
 #include "stimer.h"
 
+#include "keybinddefaults.h"
 #include "side.hh"
 #include "theater.hh"
 #include "theme.hh"
@@ -32,6 +33,7 @@ bool Select_Game(bool fade);
 int Main_Menu(unsigned int timeout);
 
 bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, const Rect & tile_rect, const Rect & sidebar_rect, bool hidden_first = false);
+Rect Allocate_Tactical_Surfaces(void);
 
 bool Init_Hotkeys(void);
 void Save_Hotkeys(void);
@@ -42,8 +44,10 @@ void Hotkey_Release(int key);
 void Hotkey_Poll(void);
 void Hotkey_Reset_Pending(void);
 bool Hotkey_Wheel(int delta, int modifiers);
+int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger);
 void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
+bool Team_Has_Members(int team);
 
 #define ATTRACT_MODE_TIMEOUT	TIMER_MINUTE
 
@@ -54,6 +58,7 @@ void Init_Campaigns(void);
 class CampaignClass;
 
 bool Campaign_Available(CampaignClass * campaign);
+bool Campaign_Is_Offered(CampaignClass * campaign);
 
 void Prepare_Theater_Roster(void);
 void Prepare_Side_Roster(void);

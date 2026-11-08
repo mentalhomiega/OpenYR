@@ -68,6 +68,15 @@ class CargoClass {
 		void Attach(FootClass * object);
 		void Attach_Group(FootClass * object);
 
+		// Calls body with each attached object in chain order. The next link is read after body returns, so body may change the object it receives.
+		template<typename Body>
+		void For_Each_Attached(Body && body) const
+		{
+			for (FootClass * object = Attached_Object(); object != NULL; object = Next_Attached(object)) {
+				body(object);
+			}
+		}
+
 		// Carries the cargo hold to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
@@ -77,6 +86,9 @@ class CargoClass {
 		}
 
 	private:
+
+		// Returns the object chained after object in the cargo hold, or NULL at the end.
+		static FootClass * Next_Attached(FootClass const * object);
 
 		/*
 		**	This is the number of objects attached to this cargo hold. For transporter

@@ -80,6 +80,7 @@
 #include "wave.h"
 
 #include "bench.hh"
+#include "perfstat.h"
 #include "psydom.h"
 
 #include <algorithm>
@@ -87,8 +88,39 @@
 
 unsigned FramesThisSecond=0;
 unsigned LastFramesPerSecond=0;
+unsigned GameTicksPerSecond=0;
 unsigned TotalFrames=0;
 unsigned SecondsPassed=0;
+
+// gamemd.exe's ReducedEffects flag (0xABCD50): set while the frame count is below the detail minimum.
+static bool ReducedEffects = false;
+
+
+/// <summary>
+/// Returns the frame count that detail-gated effects must reach to be drawn (Detail::GetMinFrameRate, 0x55AF60).
+/// Once the count falls below the minimum, it must regain the minimum plus the buffer zone before the threshold drops back.
+/// </summary>
+/// <remarks>Each call may change the state. While LastFramesPerSecond keeps its value, every call returns the same count.
+/// A negative rules value counts as 0, which disables the test.</remarks>
+/// <returns>unsigned; The frame count an effect needs to be drawn.</returns>
+unsigned Detail_Min_Frame_Rate(void)
+{
+	unsigned const minimum = Rule->DetailMinFrameRateNormal > 0 ? (unsigned)Rule->DetailMinFrameRateNormal : 0;
+	unsigned const buffer = Rule->DetailBufferZoneWidth > 0 ? (unsigned)Rule->DetailBufferZoneWidth : 0;
+
+	if (ReducedEffects) {
+		if (minimum + buffer <= LastFramesPerSecond) {
+			ReducedEffects = false;
+			return(minimum);
+		}
+		return(minimum + buffer);
+	}
+	if (LastFramesPerSecond < minimum) {
+		ReducedEffects = true;
+		return(minimum + buffer);
+	}
+	return(minimum);
+}
 
 
 #ifdef _DEBUG
@@ -217,32 +249,27 @@ void LogicClass::Debug_Dump(MonoClass * mono) const
 #endif
 
 
-/***********************************************************************************************
- * LogicClass::AI -- Handles AI logic processing for game objects.                             *
- *                                                                                             *
- *    This routine is used to perform the AI processing for all game objects. This includes    *
- *    all houses, factories, objects, and teams.                                               *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   05/29/1994 JLB : Created.                                                                 *
- *   12/17/1994 JLB : Must perform one complete pass rather than bailing early.                *
- *   12/23/1994 JLB : Ensures that no object gets skipped if it was deleted.                   *
- *=============================================================================================*/
-void LogicClass::AI(void)
+// The timing phase for one object's AI, by the object's kind.
+static PerfPhase Perf_Object_AI_Phase(RTTIType rtti)
 {
-	int index;
+	switch (rtti) {
+		case RTTI_INFANTRY:
+			return(PERF_FRAME_AI_INFANTRY);
+		case RTTI_UNIT:
+			return(PERF_FRAME_AI_UNIT);
+		case RTTI_BUILDING:
+			return(PERF_FRAME_AI_BUILDING);
+		case RTTI_AIRCRAFT:
+			return(PERF_FRAME_AI_AIRCRAFT);
+		default:
+			return(PERF_FRAME_AI_OTHER);
+	}
+}
 
-	FramesThisSecond++;
 
-	/*
-	**	Handle any general timer trigger events.
-	*/
+static void Process_Logic_Triggers(void)
+{
+	PerfScope triggers_scope(PERF_FRAME_TRIGGERS);
 	for (LogicTriggerID = 0; LogicTriggerID < LogicTags.Count(); LogicTriggerID++) {
 		TagClass * trig = LogicTags[LogicTriggerID];
 
@@ -279,6 +306,50 @@ void LogicClass::AI(void)
 			if (trig->Spring(TEVENT_MISSION_TIMER_EXPIRED)) continue;
 		}
 	}
+}
+
+
+// A nuclear flash or a chronoshift screen effect moves the light at the nuclear rate, a dominator blast at its own (LogicClass::Update, 0x55B330).
+static int Pick_Ambient_Change_Timer(void)
+{
+	if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out() || Chrono_Screen_Effect_Is_Running()) {
+		return(Scen->NukeAmbientChangeRate);
+	}
+	if (PsychicDominatorClass::Is_Active()) {
+		return(Scen->DominatorAmbientChangeRate);
+	}
+	return(TICKS_PER_MINUTE * Rule->AmbientLightChangeRate);
+}
+
+
+/***********************************************************************************************
+ * LogicClass::AI -- Handles AI logic processing for game objects.                             *
+ *                                                                                             *
+ *    This routine is used to perform the AI processing for all game objects. This includes    *
+ *    all houses, factories, objects, and teams.                                               *
+ *                                                                                             *
+ * INPUT:   none                                                                               *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   05/29/1994 JLB : Created.                                                                 *
+ *   12/17/1994 JLB : Must perform one complete pass rather than bailing early.                *
+ *   12/23/1994 JLB : Ensures that no object gets skipped if it was deleted.                   *
+ *=============================================================================================*/
+void LogicClass::AI(void)
+{
+	int index;
+
+	FramesThisSecond++;
+	TotalFrames++;
+
+	/*
+	**	Handle any general timer trigger events.
+	*/
+	Process_Logic_Triggers();
 
 	/*
 	**	Clean up any status values that were maintained only for logic trigger
@@ -308,14 +379,7 @@ void LogicClass::AI(void)
 	}
 
 	if (Scen->DesiredAmbientLight != Scen->CurrentAmbientLight && Rule->AmbientLightChangeRate != 0 && Scen->AmbientChangeTimer == 0) {
-		// A nuclear flash or a chronoshift screen effect moves the light at the nuclear rate, a dominator blast at its own (LogicClass::Update, 0x55B330).
-		if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out() || Chrono_Screen_Effect_Is_Running()) {
-			Scen->AmbientChangeTimer = Scen->NukeAmbientChangeRate;
-		} else if (PsychicDominatorClass::Is_Active()) {
-			Scen->AmbientChangeTimer = Scen->DominatorAmbientChangeRate;
-		} else {
-			Scen->AmbientChangeTimer = TICKS_PER_MINUTE * Rule->AmbientLightChangeRate;
-		}
+		Scen->AmbientChangeTimer = Pick_Ambient_Change_Timer();
 
 		Scen->DesiredAmbientLight = std::max(Scen->DesiredAmbientLight, 0);
 
@@ -355,8 +419,11 @@ void LogicClass::AI(void)
 	/*
 	**	Team AI is processed.
 	*/
-	for (index = 0; index < teams.Count(); index++) {
-		teams[index]->AI();
+	{
+		PerfScope teams_scope(PERF_FRAME_TEAMS);
+		for (index = 0; index < teams.Count(); index++) {
+			teams[index]->AI();
+		}
 	}
 
 	SpotLightClass::Update_All();
@@ -375,11 +442,16 @@ void LogicClass::AI(void)
 	/*
 	**	AI for all sentient objects is processed.
 	*/
+	PerfScope objects_scope(PERF_FRAME_OBJECTS);
 	for (index = 0; index < Count(); index++) {
 		ObjectClass * obj = (*this)[index];
 
 		BStart(BENCH_AI);
-		obj->AI();
+		{
+			PerfScope kind_scope(Perf_Object_AI_Phase(obj->RTTI));
+			Perf_Count(PERF_COUNT_OBJECT_AI);
+			obj->AI();
+		}
 		BEnd(BENCH_AI);
 
 		/*
@@ -404,24 +476,36 @@ void LogicClass::AI(void)
 	/*
 	**	Map related logic is performed.
 	*/
-	Map.Logic();
+	{
+		PerfScope map_scope(PERF_FRAME_MAP);
+		Map.Logic();
+	}
 
-	TacticalMap->AI();
+	{
+		PerfScope tactical_scope(PERF_FRAME_TACTICAL);
+		TacticalMap->AI();
+	}
 
 	/*
 	**	Factory processing is performed.
 	*/
-	for (index = 0; index < Factories.Count(); index++) {
-		Factories[index]->AI();
+	{
+		PerfScope factories_scope(PERF_FRAME_FACTORIES);
+		for (index = 0; index < Factories.Count(); index++) {
+			Factories[index]->AI();
+		}
 	}
 
 	/*
 	**	House processing is performed.
 	*/
-	for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
-		HouseClass * hptr = Houses[house];
-		if (hptr) {
-			hptr->AI();
+	{
+		PerfScope houses_scope(PERF_FRAME_HOUSES);
+		for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
+			HouseClass * hptr = Houses[house];
+			if (hptr) {
+				hptr->AI();
+			}
 		}
 	}
 

@@ -68,10 +68,10 @@ class FlyLocomotionClass : public LocomotionClass
 		virtual void Move_To(Coord to) override;
 		virtual void Stop_Moving(void) override;
 		virtual bool Process(void) override;
-		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual Matrix3D Build_Draw_Matrix(int *key, bool matrix) override;
 		virtual Point2D Draw_Point(void) override;
 		virtual Point2D Shadow_Point(void) override;
-		virtual Matrix3D Shadow_Matrix(int *key) override;
+		virtual Matrix3D Build_Shadow_Matrix(int *key, bool matrix) override;
 		virtual void Do_Turn(DirType coord) override;
 		virtual LayerType In_Which_Layer(void) override;
 		virtual bool Power_Off(void) override;

@@ -10,11 +10,13 @@
 #pragma once
 
 #include "coord.h"
+#include "ftimer.h"
 #include "globals.h"
 
 #include <vector>
 
 class AbstractClass;
+class CellClass;
 class HouseClass;
 class InfantryClass;
 class InfantryTypeClass;
@@ -38,6 +40,7 @@ class SlaveManagerClass
 		void Free_All(TechnoClass * killer);
 		void All_Guard(void);
 		void Detach(AbstractClass const * target);
+		bool Is_Dock_Cell_For(InfantryClass const * slave, CellClass const * cell) const;
 		void Serialize(SaveStreamClass & stream);
 
 	private:
@@ -54,9 +57,7 @@ class SlaveManagerClass
 		struct NodeType {
 			InfantryClass * Slave = nullptr;
 			int Status = NODE_DEAD;
-			int TimerStart = 0;
-			int TimerLength = 0;
-			Cell OreCell = CELL_NONE;
+			FrameCountdown Timer;
 
 			bool Is_Timer_Expired(void) const;
 			void Start_Timer(int frames);
@@ -73,12 +74,22 @@ class SlaveManagerClass
 			MINER_PACKING,
 		};
 
+		void Node_Ready(NodeType & node, bool working);
+		void Node_Scanning(NodeType & node, bool working);
+		void Node_Moving(NodeType & node, bool working);
+		void Node_Harvesting(NodeType & node, bool working);
+		void Node_Returning(NodeType & node);
 		void Miner_AI(void);
+		void Miner_Seeking(void);
+		void Miner_Moving(void);
+		void Miner_Deploying(void);
+		void Miner_Working(void);
 		Cell Find_Ore(int radius) const;
 		Cell Deploy_Cell(Cell ore) const;
 
 		InfantryClass * Create_Slave(void) const;
 		Cell Dock_Cell(void) const;
+		void Go_Idle(void);
 		Cell Home_Cell(void) const;
 		void Send_Home(NodeType & node) const;
 		void Unload(NodeType & node);

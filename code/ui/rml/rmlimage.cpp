@@ -10,6 +10,8 @@
 #include "ui/rml/rmlimage.h"
 
 #include "dbgprint.h"
+#include "pcxrle.h"
+#include "rgb565.h"
 #include "ui/rml/rmlrendermath.h"
 
 #include <algorithm>
@@ -25,12 +27,6 @@ static const int UI_PCX_MAX_DIMENSION = 4096;
 
 // A shape file states its size in 16 bits a side, which would allocate up to 4 GB.
 static const int UI_SHP_MAX_DIMENSION = 4096;
-
-
-static int Read_16(std::span<std::uint8_t const> bytes, std::size_t offset)
-{
-	return((int)bytes[offset] | ((int)bytes[offset + 1] << 8));
-}
 
 
 static std::uint16_t Read_U16(std::span<std::uint8_t const> data, std::size_t at)
@@ -60,9 +56,9 @@ bool UI_Decode_SHP(std::span<std::uint8_t const> encoded, int frame, UIImageInde
 	int const count = Read_U16(encoded, 6);
 	if (width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION) {
 		DebugString("UI shape of %dx%d pixels is refused; a shape may be %d pixels a side at most\n", width, height, UI_SHP_MAX_DIMENSION);
+		return(false);
 	}
-	if (width <= 0 || height <= 0 || width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION
-		|| frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
+	if (width <= 0 || height <= 0 || frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
 		return(false);
 	}
 
@@ -152,9 +148,9 @@ bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image
 		return(false);
 	}
 
-	int width = Read_16(encoded, 8) - Read_16(encoded, 4) + 1;
-	int height = Read_16(encoded, 10) - Read_16(encoded, 6) + 1;
-	int bytesperline = Read_16(encoded, 66);
+	int width = Read_U16(encoded, 8) - Read_U16(encoded, 4) + 1;
+	int height = Read_U16(encoded, 10) - Read_U16(encoded, 6) + 1;
+	int bytesperline = Read_U16(encoded, 66);
 
 	if (width <= 0 || height <= 0 || width > UI_PCX_MAX_DIMENSION || height > UI_PCX_MAX_DIMENSION || bytesperline < width) {
 		return(false);
@@ -167,30 +163,19 @@ bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image
 
 	std::vector<std::uint8_t> pixels((std::size_t)width * (std::size_t)height);
 	std::size_t source = UI_PCX_HEADER_BYTES;
+	// The run data ends where the palette begins, so a read at the palette fails the line.
+	auto get_byte = [&](std::uint8_t & value) {
+		if (source >= palette) {
+			return(false);
+		}
+		value = encoded[source++];
+		return(true);
+	};
 
 	for (int row = 0; row < height; row++) {
 		std::uint8_t * line = pixels.data() + (std::size_t)row * width;
-
-		for (int produced = 0; produced < bytesperline; ) {
-			if (source >= palette) {
-				return(false);
-			}
-
-			std::uint8_t value = encoded[source++];
-			int count = 1;
-
-			if ((value & 0xC0) == 0xC0) {
-				count = value & 0x3F;
-				if (count == 0 || source >= palette) {
-					return(false);
-				}
-				value = encoded[source++];
-			}
-
-			for (int step = 0; step < count && produced + step < width; step++) {
-				line[produced + step] = value;
-			}
-			produced += count;
+		if (!Decode_PCX_RLE_Line(get_byte, line, bytesperline, width, false)) {
+			return(false);
 		}
 	}
 
@@ -255,10 +240,7 @@ bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int he
 		std::uint8_t * out = rgba.data() + (std::size_t)row * (std::size_t)width * 4;
 
 		for (int column = 0; column < width; column++) {
-			unsigned int color = source[column];
-			out[0] = (std::uint8_t)(((color >> 11) & 31) * 255 / 31);
-			out[1] = (std::uint8_t)(((color >> 5) & 63) * 255 / 63);
-			out[2] = (std::uint8_t)((color & 31) * 255 / 31);
+			Rgb565_Widen(source[column], out[0], out[1], out[2]);
 			out[3] = 255;
 			out += 4;
 		}

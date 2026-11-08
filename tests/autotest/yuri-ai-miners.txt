@@ -1,0 +1,19 @@
+; A Yuri computer house (run with -AICountries 9 and -Settings "[Settings]`nAIDifficulty=<0 easy, 1 normal, 2 hard>")
+; builds its base and army. The census lines count its gatherers, the ones actually on the map and what
+; it has finished producing, so a house that keeps building slave miners shows a growing "produced
+; units" count while the rest of its base never appears. Run with -Map XMP29U2.MAP.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 buildtrace 1
+1000 census
+2000 census
+3000 census
+4000 census
+5000 census
+6000 census
+7000 census
+8000 census
+9000 census
+9001 enemies
+9010 quit

@@ -1,0 +1,10 @@
+; A Magnetron (TELE) is ordered to force-fire at bare ground, five cells away, with nothing on the cell (55,41).
+; Expected, from gamemd's TechnoClass::Fire (0x6FDD50): the magnetron beam is made whenever the weapon has IsMagBeam, no laser, bolt or radiation effect and the firer holds no
+; wave, whatever the target is, so the shot writes one AUTOTEST wave line (type 3, the magnetron) aimed at a cell. Before the fix no wave was made for a target that is not an object.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/magnetron-cell-fire.txt -Seconds 120 -Country 8 -Filter "AUTOTEST wave|AUTOTEST   cell|AUTOTEST own|Exception"
+30 command CenterBase
+35 reveal
+40 own TELE 50 40
+45 cell 55 41
+100 forceattack TELE 55 41
+200 quit

@@ -1,0 +1,34 @@
+; Iron Curtain and Force Shield, seen as a player sees them. A tank stands at 75,40 and a power plant at 72,36. IRONBLST plays over the tank when the Iron
+; Curtain is fired at frame 60, and FORCSHLD over the power plant when the Force Shield is fired at frame 100 (it covers structures only). Hitting a curtained
+; or shielded object with damage that is not forced makes a flash over it (TechnoClass::ReceiveDamage 0x701A93): white for the curtain and blue for the shield,
+; as big as a blast of twice the damage. The AUTOTEST curtain flash lines give each flash. The tank and the power plant are each hit by a 40-point damage
+; step at frames 130 and 135; neither takes damage. The shots after a hit show the flash.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sw-anim-ironcurtain.txt -Width 800 -Height 600 -Seconds 150 -RenderFrameRate 30 -Filter "AUTOTEST curtain|AUTOTEST   liveanims|AUTOTEST   damage|Exception"
+10 command CenterBase
+20 reveal
+30 view 74 38
+35 own MTNK 75 40
+37 own GAPOWR 72 36
+40 grant IronCurtainSpecial
+56 windowshot swic-a0-before
+60 fire IronCurtainSpecial 75 40
+62 liveanims IRONBLST
+63 windowshot swic-a1
+66 windowshot swic-a2
+70 windowshot swic-a3
+74 windowshot swic-a4
+80 windowshot swic-a5
+96 grant ForceShieldSpecial
+100 fire ForceShieldSpecial 72 36
+103 liveanims FORCSHLD
+104 windowshot swic-b1
+108 windowshot swic-b2
+112 windowshot swic-b3
+118 windowshot swic-b4
+124 windowshot swic-c0-before-hit
+130 damage MTNK 40
+130 windowshot swic-c1-hit-tank
+135 damage GAPOWR 40
+135 windowshot swic-c2-hit-plant
+141 windowshot swic-c3-after
+160 quit

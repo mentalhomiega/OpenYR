@@ -1,0 +1,37 @@
+; Records a skirmish that is started from the menus. The -Settings text below opens the skirmish lobby on XMP29U2.MAP with one
+; medium computer player; the script presses Skirmish and OK, and then plays the same orders as record-skirmish.txt. The
+; recording holds a launch file written from the lobby's setup, so playback-menu-skirmish.txt starts the same game from it.
+; Run from the workspace root, in PowerShell, with the same build and the same RA2MD.INI for the playback:
+;   $s = "[Skirmish]`r`nMap=XMP29U2.MAP`r`nSlot1=0,0,0,0,0,0`r`nSlot2=3,-1,1,0,0,0"
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent23/tests/replay/record-menu-skirmish.txt -Build agent23 -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 300 -Settings $s -Filter "REPLAY|AUTOTEST hash|AUTOTEST lobby"
+0 recordreplay replay-menu-test.rep
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui click ok
+ui wait 1000
+1 hash 300
+40 select AMCV
+60 command DeployObject
+300 produce GAPOWR
+600 place GAPOWR
+700 place GAPOWR
+800 place GAPOWR
+900 place GAPOWR
+1000 place GAPOWR
+1050 produce GAPILE
+1350 place GAPILE
+1450 place GAPILE
+1550 place GAPILE
+1650 place GAPILE
+1700 produce E1
+2000 place E1
+2050 produce E1
+2350 place E1
+2450 select E1
+2460 order E1 55 95
+2700 forceattack E1 52 93
+3300 quit

@@ -12,6 +12,7 @@
 #include "_ui.h"
 #include "cncnetcopy.h"
 #include "ui/screens/cncnet/uicncnet.h"
+#include "ui/screens/cncnetlobby/uicncnetlobby.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
@@ -100,6 +101,7 @@ bool UI_CNCNet_Dialog(void)
 
 	while (true) {
 		UICNCNetPresenterClass presenter(session);
+		presenter.State.NativeLobby = UI_CnCNet_Lobby_Enabled();
 		std::unique_ptr<UIViewClass> view = UI_CNCNet_View(presenter);
 		UI_Run_Modal(*view);
 
@@ -115,6 +117,14 @@ bool UI_CNCNet_Dialog(void)
 			std::string folder;
 			if (Browse_For_Folder(folder, L"Choose the folder the OpenYR copy is made in. It must be empty, or hold an OpenYR copy of this install.")) {
 				session.Choose_Destination(folder);
+			}
+			continue;
+		}
+
+		if (presenter.Choice == UI_CNCNET_LOBBY) {
+			if (!UI_CnCNet_Lobby_Dialog()) {
+				session.Message = "The lobby has no server it may use. Check Servers= in the [CnCNet] section of the settings.";
+				session.Problem = true;
 			}
 			continue;
 		}

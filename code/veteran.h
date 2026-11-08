@@ -57,6 +57,9 @@ class VeterancyClass
 		bool Is_Veteran(void) const;
 		bool Is_Elite(void) const;
 
+		// 2 for elite, 1 for veteran, 0 for rookie or dumbass.
+		int Rank(void) const;
+
 		/*
 		 * Modifies the value based on the current XP level (unused).
 		 */

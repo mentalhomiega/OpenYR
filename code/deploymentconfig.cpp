@@ -42,6 +42,9 @@ void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)
 	ArtFile = ini.Get_String("Files", "Art", ArtFile.c_str());
 	ArtExpansionFile = ini.Get_String("Files", "ArtExpansion", ArtExpansionFile.c_str());
 	RA2ArtFile = ini.Get_String("Files", "RA2Art", RA2ArtFile.c_str());
+	RA2RulesFile = ini.Get_String("Files", "RA2Rules", RA2RulesFile.c_str());
+	RA2EvaFile = ini.Get_String("Files", "RA2Eva", RA2EvaFile.c_str());
+	RA2AudioFile = ini.Get_String("Files", "RA2Audio", RA2AudioFile.c_str());
 	AIFile = ini.Get_String("Files", "AI", AIFile.c_str());
 	AIExpansionFile = ini.Get_String("Files", "AIExpansion", AIExpansionFile.c_str());
 	SoundFile = ini.Get_String("Files", "Sound", SoundFile.c_str());
@@ -94,7 +97,6 @@ bool DeploymentConfigClass::Read_File(char const * directory)
 		INIClass ini;
 		ini.Load(file);
 		Read_INI(ini);
-		FileName = name;
 
 		DebugString("[DeploymentConfig] Read %s.\n", name.c_str());
 		return(true);

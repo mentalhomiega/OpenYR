@@ -46,6 +46,7 @@
 #include "infantry.h"
 #include "lstorm.h"
 #include "object.h"
+#include "parasite.h"
 #include "partsys.h"
 #include "psydom.h"
 #include "radsite.h"
@@ -135,6 +136,9 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 		for (index = 0; index < AnimPtrTracker.Count(); index++) {
 			AnimPtrTracker[index]->Detach(target, all);
 		}
+
+		// A giant squid's grapple animation is held by its parasite, which the tracker does not list.
+		Detach_Grapple_Holders(target);
 		/*
 		 * nothing else needs to be done
 		 */

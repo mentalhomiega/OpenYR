@@ -32,10 +32,12 @@
 
 #pragma once
 
+#include "custommusic.h"
 #include "keyboard.h"
 #include "video.h"
 
 #include "diff.hh"
+#include "netsemantic.h"
 
 #include <string>
 
@@ -44,6 +46,15 @@
 enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_CLASSIC,
 	HDR_HIGHLIGHTS_ENHANCED
+};
+
+// The weather the GPU map pass draws: Map rains while a lightning storm rages, snows on maps whose
+// theater sets IsArctic and draws nothing elsewhere, and Rain and Snow fall on every map.
+enum WeatherMode {
+	WEATHER_NONE,
+	WEATHER_MAP,
+	WEATHER_RAIN,
+	WEATHER_SNOW
 };
 
 // The faction tint of the modern menus. Random picks one of the three when the game starts.
@@ -61,7 +72,7 @@ class OptionsClass {
 	public:
 		enum {
 			MAX_SCROLL_SETTING=7,
-			MAX_SPEED_SETTING=7,
+			MAX_SPEED_SETTING=NetSemantic::SPEED_SETTING_COUNT,
 			MAX_DETAIL_SETTING=3,
 			MAX_DIFFICULTY_SETTING=DIFF_COUNT,
 			RENDER_FRAME_RATE_MATCH_DISPLAY=-1
@@ -69,14 +80,21 @@ class OptionsClass {
 
 		OptionsClass(void);
 
+		// The speed sliders run opposite to the frame delay: the fastest speed is delay 0 and slider position 6.
+		static int Slider_From_Speed(int speed) {return((MAX_SPEED_SETTING - 1) - speed);}
+		static int Speed_From_Slider(int slider) {return((MAX_SPEED_SETTING - 1) - slider);}
+
 		void One_Time(void);
 
 		void Fixup_Palette(void) const;
 		void Set_Shuffle(bool on);
 		void Set_Repeat(bool on);
+		void Set_Custom_Music(CustomMusicModeType mode);
 		void Set_Score_Volume(float volume, bool feedback);
 		void Set_Sound_Volume(float volume, bool feedback);
 		void Set_Voice_Volume(float volume, bool feedback);
+		void Set_Unit_Voice_Volume(float volume, bool feedback);
+		void Set_Movie_Volume(float volume, bool feedback);
 		int Normalize_Delay(int delay) const;
 		int Normalize_Volume(int volume) const;
 		int Get_Scroll_Method(void) const;
@@ -127,17 +145,17 @@ class OptionsClass {
 		bool AutoScroll;				// Does map autoscroll?
 
 		/*
+		 * If this is on, a scripted scene that takes the input or moves the camera zooms the map view to
+		 * the scene's height, and the player's zoom comes back when control returns. Off leaves the zoom alone.
+		 */
+		bool ScriptedCameraZoom;
+
+		/*
 		 * This is how much detail the renderer is allowed to draw (0 - 2). Animations, particle
 		 * systems and translucency carry a detail level of their own and are skipped when it
 		 * exceeds this one, so a lower setting buys frame rate at the cost of eye candy.
 		 */
 		int DetailLevel;
-
-		/*
-		 * If the sidebar is to be drawn down the right hand edge of the screen, then this flag
-		 * will be true. Tiberian Sun offers no way to move it, so it is always true.
-		 */
-		bool IsSidebarOnRight;
 
 		// The modern interface draws the map over the whole screen with the controls in panels over it.
 		bool ModernInterface;
@@ -147,6 +165,12 @@ class OptionsClass {
 
 		// The cameo rows the modern build panel shows; the panel clamps it to what the screen fits.
 		int SidebarRows;
+
+		// The percent of the modern build panel's background that stays solid; the map shows through the rest. 100 is opaque.
+		int SidebarOpacity;
+
+		// The units a Shift-click queues on a unit cameo in the modern interface. A factory's queue limit caps it.
+		int ShiftQueueCount;
 
 		// Offers the tester debug cheats in single-player games; see debugmode.h.
 		bool DebugMode;
@@ -174,6 +198,9 @@ class OptionsClass {
 
 		// If the marker over an object hidden behind a building is to be shown, then this flag will be true.
 		bool ShowHidden;
+
+		// If a selected defence draws its weapon range ring, then this flag will be true. It defaults on in the modern interface.
+		bool ShowDefenceRange;
 
 		// If warhead and ion blast shakes move the view, then this flag will be true. The simulation never reads it.
 		bool ScreenShake;
@@ -268,6 +295,9 @@ class OptionsClass {
 		// If the game's frame count per second is to be drawn in the corner of the game view, then this flag will be true.
 		bool ShowFPS;
 
+		// If the frame-time graph is to be drawn under the ShowFPS counts, then this flag will be true. It has no effect without ShowFPS.
+		bool ShowFrameGraph;
+
 		// Redraws a second between game frames, drawing moving objects between their positions;
 		// 0 draws once per game frame, as the original game does, and a negative value matches
 		// the display's refresh rate where Render_Frame_Rate allows it.
@@ -275,6 +305,35 @@ class OptionsClass {
 
 		// Caps the presents per second: zero is unlimited, and a negative value follows the display's refresh rate.
 		int FrameRateLimit;
+
+		// Draws the map view's objects on the GPU in the modern interface, on Direct3D 11.
+		// Experimental; a pass the GPU cannot draw falls back to software.
+		bool GpuRender;
+
+		// With GpuRender, shadows are drawn as one blurred mask over the ground, SoftShadowRadius
+		// pixels soft, instead of halving each pixel they cover.
+		bool SoftShadows;
+		int SoftShadowRadius;
+
+		// With GpuRender, each weapon blast sends a ring through the map picture that bends it.
+		bool Shockwaves;
+
+		// With GpuRender, lasers, lamps, fire and other emissive parts of the map glow, at
+		// BloomStrength percent.
+		bool Bloom;
+		int BloomStrength;
+
+		// With GpuRender, the water of the map ripples, at WaterRippleStrength percent.
+		bool WaterRipples;
+		int WaterRippleStrength;
+
+		// With GpuRender, the map is shaded under slowly drifting clouds, at CloudShadowStrength percent.
+		bool CloudShadows;
+		int CloudShadowStrength;
+
+		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
+		int Weather;
+		int WeatherStrength;
 
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
@@ -351,8 +410,11 @@ class OptionsClass {
 		float SoundVolume;				// Volume for sound effects.
 		float VoiceVolume;				/// Volume for voices.
 		float ScoreVolume;				// Volume for scores.
+		float UnitVoiceVolume;			// Volume for unit and building voice responses.
+		float MovieVolume;				// Volume for movies, including the in-game radar movies.
 		bool IsScoreRepeat;				// Score should repeat?
 		bool IsScoreShuffle;			// Score list should shuffle?
+		CustomMusicModeType CustomMusic;	// Whether the playlist has the stock scores, the Music folder, or both.
 
 		/*
 		 * This is how far ahead of the movie the sound card is assumed to be running, expressed
@@ -383,8 +445,4 @@ class OptionsClass {
 		 */
 		int LastSovietMovie;
 		int LastAlliedMovie;
-
-	private:
-
-		static char const * const HotkeyName;
 };

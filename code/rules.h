@@ -244,16 +244,16 @@ class RulesClass
 		VocType LetsDoTheTimeWarpInAgain;
 
 		/*
-		 * The paradrop superweapons: the infantry types each side's planes carry and how many
-		 * of each, how close to the target a plane starts dropping, and the spy plane's camera
-		 * sound and how many frames apart it photographs.
-		 */
-		/*
 		 * The frames the computer waits, by its difficulty (Easy, Normal, Hard), before it digs in a
 		 * Deployer soldier that is on guard (InfantryClass::Do_Guard_Deploy, 0x521320).
 		 */
 		TypeList<int> AIAutoDeployFrameDelay;
 
+		/*
+		 * The paradrop superweapons: the infantry types each side's planes carry and how many
+		 * of each, how close to the target a plane starts dropping, and the spy plane's camera
+		 * sound and how many frames apart it photographs.
+		 */
 		TypeList<InfantryTypeClass const *> AllyParaDropInf;
 		TypeList<int> AllyParaDropNum;
 		TypeList<InfantryTypeClass const *> SovParaDropInf;
@@ -263,6 +263,14 @@ class RulesClass
 		TypeList<InfantryTypeClass const *> AmerParaDropInf;
 		TypeList<int> AmerParaDropNum;
 		int ParadropRadius;
+
+		/*
+		 * Whether a paratrooper lands only on a cell inside the usable map area. When this is
+		 * true, a drop onto a cell outside that area stays aboard, as one onto a cell the
+		 * paratrooper cannot enter does, and the plane tries again at its next drop. When it
+		 * is false, a paratrooper lands on any cell it can enter.
+		 */
+		bool ParadropInUsableArea;
 		VocType SpyPlaneCamera;
 		int SpyPlaneCameraFrames;
 
@@ -333,12 +341,7 @@ class RulesClass
 		int DominatorCaptureRange;
 		AnimTypeClass const * PermaControlledAnimationType;
 
-		/*
-		 * Mind control: the ring over a controlled unit, the sounds of a capture, a release
-		 * and an overloaded controller's death, how long the link line shows after a capture,
-		 * and the overload table: past each OverloadCount, an InfiniteMindControl firer takes
-		 * OverloadDamage every OverloadFrames frames.
-		 */
+		// Mind control: the ring over a controlled unit, and the sound of a capture.
 		AnimTypeClass const * ControlledAnimationType;
 		VocType YuriMindControlSound;
 
@@ -393,8 +396,13 @@ class RulesClass
 		std::vector<RGBClass> ColorAdd;
 		int LaserTargetColor;
 
-		// IronCurtainColor and BerserkColor pick the ColorAdd entries that tint a vehicle under the Iron Curtain and a berserk unit. 0 is the empty entry.
+		// IronCurtainColor picks the ColorAdd entry that tints a vehicle under the Iron Curtain. 0 is the empty entry.
 		int IronCurtainColor;
+
+		// The ColorAdd entry that tints a structure, and its animations, while a Force Shield holds it.
+		int ForceShieldColor;
+
+		// BerserkColor picks the ColorAdd entry that tints a berserk unit. 0 is the empty entry.
 		int BerserkColor;
 
 		/*
@@ -415,15 +423,19 @@ class RulesClass
 		int ElevationIncrement;
 		double ElevationIncrementBonus;
 		double ElevationBonusCap;
+		// Radiation settings that follow the elevation model; the Radiation note above describes the first ones.
 		int RadLevelDelay;
 		int RadLightDelay;
 		double RadLevelFactor;
 		double RadLightFactor;
 		double RadTintFactor;
 		WarheadTypeClass const * RadSiteWarhead;
+		// Mind control: the sounds of a release and of an overloaded controller's death.
 		VocType MindClearedSound;
 		VocType MasterMindOverloadDeathSound;
+		// Mind control: how long the link line shows after a capture.
 		int MindControlAttackLineFrames;
+		// Mind control overload: past each OverloadCount, an InfiniteMindControl firer takes OverloadDamage every OverloadFrames frames.
 		TypeList<int> OverloadCount;
 		TypeList<int> OverloadDamage;
 		TypeList<int> OverloadFrames;
@@ -431,12 +443,12 @@ class RulesClass
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 
-		// The weights a computer house rolls against to decide what a unit it takes over does, by its situation.
 		// How a computer house defends against a super weapon aimed near its base: the chance in percent, by difficulty slot, that it raises its force shield, how many frames the shield stays wanted, and how close to the base a strike must land.
 		TypeList<int> AISuperDefenseProbability;
 		int AISuperDefenseFrames;
 		LEPTON AISuperDefenseDistance;
 
+		// The weights a computer house rolls against to decide what a unit it takes over does, by its situation.
 		TypeList<int> AICaptureNormal;
 		TypeList<int> AICaptureWounded;
 		TypeList<int> AICaptureLowPower;
@@ -741,9 +753,8 @@ class RulesClass
 		VocType SpySatActivationSound;
 		VocType SpySatDeactivationSound;
 
-		// Played where an object is ground up in a grinder. The rules read LeaveGrinderSound too, but nothing plays it.
+		// Played where an object is ground up in a grinder.
 		VocType EnterGrinderSound;
-		VocType LeaveGrinderSound;
 		VocType GateDownSound;
 
 		/*
@@ -790,21 +801,20 @@ class RulesClass
 		int JumpjetWobbleDeviation;
 
 		/*
-		 * These are the suppression distances, expressed in cells and listed per radar
-		 * event type. An event raised within this distance of a live event of the same
-		 * kind is swallowed rather than added to the radar.
+		 * This list is read and saved, but the game ignores it. The distance within which
+		 * a radar event blocks a later one of its kind is built in.
 		 */
 		TypeList<int> RadarEventSuppressionDistances;
 
 		/*
-		 * These are the durations, expressed in game frames and listed per radar event
-		 * type, that an event stays drawn after its box has finished shrinking.
+		 * This list is read and saved, but the game ignores it. The frames a settled radar
+		 * event stays drawn are built in.
 		 */
 		TypeList<int> RadarEventVisibilityDurations;
 
 		/*
-		 * These are the lifetimes, expressed in game frames and listed per radar event
-		 * type, so that a combat ping can linger longer than a dropzone marker.
+		 * This list is read and saved, but the game ignores it. The frames each radar event
+		 * kind stays in play are built in.
 		 */
 		TypeList<int> RadarEventDurations;
 
@@ -826,6 +836,13 @@ class RulesClass
 		 * camera to.
 		 */
 		double ZoomInFactor;
+
+		/*
+		 * This is the height, in map pixels, that a scripted scene shows when the scripted camera zoom is
+		 * on. The map view zooms so that this many map pixels fill its height, and its width follows the
+		 * screen's aspect ratio. Zero or less turns the scripted zoom off.
+		 */
+		int ScriptedCameraHeight;
 
 		/*
 		 * This is the chance each frame that an object damaged below the ConditionRed
@@ -873,6 +890,12 @@ class RulesClass
 		 * This caps how many factories count toward that discount. Zero leaves it uncapped.
 		 */
 		int MultipleFactoryCap;
+
+		// The fewest frames between two all-cheer commands from this machine.
+		int MaximumCheerRate;
+
+		// If the attack cursor shows over an enemy disguised as one of the player's own objects, then this flag will be true.
+		bool IsAttackCursorOnDisguise;
 
 		/*
 		 * This controls how widely a meteor impact deforms the terrain (0 - 4). Zero
@@ -942,6 +965,13 @@ class RulesClass
 		 * rocking force is the damage times this, divided by 100 and capped at 4.
 		 */
 		double DirectRockingCoefficient;
+
+		/*
+		 * This scales how fast a unit linked by a DirectRocker warhead settles back toward level
+		 * while it is tipped less than 90 degrees. The settling is this times 0.002 radians a frame,
+		 * so zero stops the settling and a tipped unit keeps tipping.
+		 */
+		float FallBackCoefficient;
 
 		/*
 		 * This is the strength of the highlight that a vehicle, infantry or building voxel
@@ -1062,6 +1092,8 @@ class RulesClass
 
 		// AlliedSolidTransparency (Ares): a SubjectToBuildings shot flies through solid buildings its owner's allies own.
 		bool IsAlliedSolidTransparency;
+		// Set by MissileLaunchHoldsMove: a spawner's move waits while a missile it launched is on its pad or taking off.
+		bool IsMissileLaunchHoldsMove;
 
 		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
 		int ParachuteMaxFallRate;
@@ -1186,9 +1218,10 @@ class RulesClass
 		TypeList<int> CreditTicks;
 
 		/*
-		 * This is the sound effect played as a building crumbles when it is destroyed.
+		 * This is the sound effect played as a building crumbles when it is destroyed, unless
+		 * its type names a DieSound of its own.
 		 */
-		VocType CrumbleSound;
+		VocType BuildingDieSound;
 
 		/*
 		 * This is the sound effect played as a newly completed building is placed onto
@@ -1304,6 +1337,9 @@ class RulesClass
 		// Played when the player garrisons a structure, and when the player's garrison empties.
 		VocType BuildingGarrisonedSound;
 		VocType BuildingAbandonedSound;
+
+		// Played where an engineer restores a structure (BuildingRepairedSound=).
+		VocType BuildingRepairedSound;
 
 		/*
 		 * This is the sound effect played when the player orders the current selection to
@@ -1731,6 +1767,21 @@ class RulesClass
 		 */
 		bool IsAnimationFires;
 
+		/*
+		 * When true, an animation of the type named RING1 is drawn as an expanding glow on the ground
+		 * instead of its shape. Yuri's Revenge draws the glow only when Direct3D is usable, which in
+		 * the shipped game it never is, so this is false by default.
+		 */
+		bool IsRing1Glow;
+
+		/*
+		 * When true, a structure whose body animation stage reaches the shadow half of its image draws
+		 * its idle body frame instead, as BuildingClass::Body_Frame explains. When false, it draws the
+		 * shadow frame, which is what gamemd's clamp produces. True by default. Read only for drawing,
+		 * so it is neither saved nor part of the checksum.
+		 */
+		bool IsBodyFrameFromIdle;
+
 		/// Unused
 		InfantryTypeClass const * Paratrooper;
 
@@ -1802,6 +1853,14 @@ class RulesClass
 		 */
 		WarheadTypeClass const * CrushWarhead;
 
+		/*
+		 * A vehicle that a locomotor lets go of and that lands where it cannot stand explodes for its
+		 * strength times this factor, from its current strength when CurrentStrengthDamage is set and
+		 * from its full strength otherwise.
+		 */
+		double FallingDamageMultiplier;
+		bool CurrentStrengthDamage;
+
 		// The warheads V3 rockets and Dreadnought and Boomer missiles explode with, normal and elite.
 		// A drained refinery's owner pays DrainMoneyAmount every DrainMoneyFrameDelay frames to the drainer's owner,
 		// and the drainer shows DrainAnimationType while it drains.
@@ -1841,6 +1900,10 @@ class RulesClass
 
 		// The rocket settings for a missile type, or nothing when it is none of the three.
 		RocketTypeStruct const * Rocket_Of(AircraftTypeClass const * type) const;
+
+		// The warhead a missile of this type detonates with, the elite one when its launcher was elite. A type that is
+		// neither V3 nor CMisl gets the DMisl warhead.
+		WarheadTypeClass const * Rocket_Warhead(AircraftTypeClass const * type, bool elite) const;
 
 		/*
 		 * This is the warhead an Ion Cannon strike damages with. It always destroys a
@@ -2667,6 +2730,20 @@ class RulesClass
 		int ChronoRangeMinimum;
 
 		/*
+		 * Whether a super weapon that a structure grants stays usable and keeps charging while a
+		 * Chrono Legionnaire erases that structure. When it is false the weapon is suspended, as it
+		 * is while its structure is unpowered, and it resumes once the erase stops.
+		 */
+		bool ChronoErasedSuperWeapons;
+
+		/*
+		 * Whether a structure that packs up into a vehicle first moves allied soldiers off the cell
+		 * the vehicle appears on and waits a few seconds for it to clear. When it is false a soldier
+		 * on that cell makes the vehicle fail to appear, and the sale is refunded.
+		 */
+		bool UndeployScattersInfantry;
+
+		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
 		 * in 1000 per game frame.
 		 */
@@ -2723,6 +2800,9 @@ class RulesClass
 		// read from [MultiplayerDialogSettings]). Not serialized; the rules INI sets it on every start.
 		bool AlliesAllowed;
 
+		// Whether a player may make or break an alliance during a match ([MultiplayerDialogSettings]).
+		bool AllyChangeAllowed;
+
 		/*
 		**	Should helicopters shuffle their position between firing on their
 		**	target?
@@ -2751,12 +2831,26 @@ class RulesClass
 		bool IsLargeSidebarStrips;
 
 		/*
+		 * If true, sidebar strips are ordered by CameoSortOrder, group and declaration order.
+		 * Otherwise they keep Yuri's Revenge's order.
+		 */
+		bool IsUseCameoSortOrder;
+
+		/*
 		 * If true, an ammunition-limited armed aircraft may take planned orders in planning mode, and
 		 * goes to a dock to rearm when its ammunition runs out, then carries on with the order it left.
 		 * If false, planning mode refuses every aircraft, as gamemd's AircraftTypeClass::CanUseWaypoint
 		 * (0x41CB50) does.
 		 */
 		bool AircraftWaypointReload;
+
+		/*
+		 * If true, a click that attacks a building or unit standing on a waypoint starts that path at its first
+		 * waypoint, so the legs before the attack run first. If false, the path starts at the clicked waypoint,
+		 * and the attack starts at once.
+		 */
+		// Read only when the local player clicks, so it is neither saved nor part of the checksum.
+		bool WaypointAttackFromFirst;
 
 		/*
 		 * If the fog is to be blended evenly into the terrain beneath it, then this flag

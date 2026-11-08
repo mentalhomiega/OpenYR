@@ -25,6 +25,7 @@
 #include "tactical.h"
 #include "techno.h"
 #include "vector.h"
+#include "weapon.h"
 
 #include <cmath>
 #include <cstring>
@@ -61,6 +62,20 @@ EBoltClass::~EBoltClass(void)
 /// Starts the bolt between two points and adds it to the list drawn each frame, as EBolt::Fire
 /// (0x4C2A60) does. The default spark system starts at the target end.
 /// </summary>
+EBoltClass * EBoltClass::Fire_For_Weapon(WeaponTypeClass const * weapon, Coord const & start, Coord const & end, int zadjust)
+{
+	EBoltClass * bolt = new EBoltClass;
+	bolt->IsAlternateColor = weapon->IsAlternateColor;
+	bolt->EmissiveStrength = weapon->EmissiveStrength;
+	bolt->ColorMask = weapon->BoltColorMask;
+	for (int strand = 0; strand < 3; strand++) {
+		bolt->Colors[strand] = weapon->BoltColor[strand];
+	}
+	bolt->Fire(start, end, zadjust);
+	return(bolt);
+}
+
+
 void EBoltClass::Fire(Coord const & start, Coord const & end, int zadjust)
 {
 	Start = start;
@@ -171,10 +186,7 @@ void EBoltClass::Draw_It(void) const
 		int ToZ;
 	};
 
-	int dx = Start.X - End.X;
-	int dy = Start.Y - End.Y;
-	int dz = Start.Z - End.Z;
-	int length = (int)std::sqrt((double)dx * dx + (double)dy * dy + (double)dz * dz);
+	int length = (Start - End).Length();
 	if (length == 0) {
 		return;
 	}
@@ -215,7 +227,7 @@ void EBoltClass::Draw_It(void) const
 				first = false;
 				int sway[6];
 				for (int index = 0; index < 6; index++) {
-					sway[index] = (int)(std::sin(Sway * 3.141592653589793 / (index + 7)) * amplitude);
+					sway[index] = (int)(std::sin(Sway * M_PI / (index + 7)) * amplitude);
 				}
 				for (int strand = 0; strand < 3; strand++) {
 					mid[strand][0] += sway[3] + sway[0];

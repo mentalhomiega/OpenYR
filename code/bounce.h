@@ -99,3 +99,7 @@ class BounceClass
 		 */
 		Quaternion AngularVelocity;
 };
+
+
+// Draws a meteor's launch velocity. Y is drawn before X, and the result has X not below -Y.
+Vector3 Random_Meteor_Velocity(double max_xy, double min_z);

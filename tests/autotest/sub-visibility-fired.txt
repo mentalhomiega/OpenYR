@@ -1,0 +1,29 @@
+; A computer Boomer (BSUB) on the XMP08T2 lake at 84,70 is given a player Rhino tank (HTNK) on the shore at 92,80 as a target,
+; ten cells off: outside its torpedo range of seven, inside its cruise missile range. The player has no destroyer or other sensor,
+; so no cell is sensed. In gamemd a submarine that has a target in range of its chosen weapon does not recloak
+; (TechnoClass::IsReadyToCloak, 0x6FBDC0, through IsCloseEnoughToAttack), so the Boomer stays visible while it fires and is
+; hidden again once the tank is gone.
+; Expected: from the first shot the visual line reads character 0, raw 0 and sensed 0, and the radar line plotted 1, although no house
+; senses the cell. When the tank dies (the Boomer's own missiles kill it before the kill step at frame 700) the cloak line reads 2 and the
+; visual line character 5, with the radar line plotted 0.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script tests/autotest/sub-visibility-fired.txt -Map XMP08T2.MAP -Seconds 120
+30 command CenterBase
+30 enemy BSUB 84 70
+30 own HTNK 92 80
+60 where BSUB
+100 settarget BSUB 92 80 computer
+130 where BSUB
+200 where BSUB
+300 where BSUB
+400 where BSUB
+500 where BSUB
+600 where BSUB
+695 where BSUB
+700 kill HTNK 1
+705 where BSUB
+720 where BSUB
+740 where BSUB
+760 where BSUB
+800 where BSUB
+900 where BSUB
+1000 quit

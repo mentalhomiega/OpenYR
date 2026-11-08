@@ -23,7 +23,6 @@
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uiview.h"
 #include "vector.h"
 
@@ -118,13 +117,8 @@ std::unique_ptr<UIKeyboardPresenterClass> UI_Keyboard_New_Presenter(void)
 
 void UI_Keyboard_Dialog(void)
 {
-	UIKeyboardState state;
-	UI_Keyboard_State(state);
-
-	UIKeyboardPresenterClass presenter(UI_Keyboard_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_KEYBOARD);
-	std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
+	std::unique_ptr<UIKeyboardPresenterClass> presenter = UI_Keyboard_New_Presenter();
+	std::unique_ptr<UIViewClass> view = UI_Keyboard_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
 }

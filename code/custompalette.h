@@ -20,8 +20,6 @@ class ConvertClass;
  */
 ConvertClass * Custom_Palette_Drawer(std::string const & filename);
 
-class ColorScheme;
-
 /*
  * The palette file an object type's art Palette names in the current theater: the name, the theater's suffix and
  * ".pal", or the name and ".pal" when the file with the suffix does not exist. A name that already ends in ".pal"
@@ -30,8 +28,10 @@ class ColorScheme;
 std::string Palette_File_Name(std::string const & filename);
 
 /*
- * The drawer for a palette file an object type names with Palette, with the sixteen remap entries
- * shaded for a colour scheme the way the scheme's own drawer shades them. Null for an empty name
- * or a missing file.
+ * The converter that draws colour scheme `scheme` (an index into ColorSchemes) through the palette a
+ * type names with Palette= (gamemd TechnoTypeClass::Palette, built by ColorScheme::GeneratePalette,
+ * 0x6263D0). The name is the value plus the theater suffix and ".PAL", so "lib" reads LIBTEM.PAL on a
+ * temperate map. The converter takes the scheme's HSV and lighting tint, and it is built on first use
+ * and kept for each name, scheme and tint. Null for an empty name, a missing file or no scenario.
  */
-ConvertClass * Custom_Palette_Drawer(std::string const & filename, ColorScheme const * scheme);
+ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme);

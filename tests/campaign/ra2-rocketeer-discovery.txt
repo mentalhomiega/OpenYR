@@ -1,0 +1,27 @@
+; Allied 2 (Red Alert 2): the two neutral Rocketeers at 74,164 and 76,166 carry the tag "2 Extra Rocketeers". Trigger 07F83F3C fires on "Discovered by player"
+; and changes their house to the player's (house number 0 in the Red Alert 2 numbering), so uncovering them hands them over, as in gamemd.
+; A Rocketeer (BalloonHover) placed without orders stays on the ground, where the reveal pass finds it; JumpjetLocomotionClass takes off only with a
+; destination (0x54B980). Before the fix it rose into the air layer, out of every cell's occupant list, and was never discovered.
+; Expected: before the reveal (frame 5) both Rocketeers belong to Neutral; the reveal at frame 20 springs the trigger ("sprung 07F83F3C ... frame 20") and the
+; "where" lines from frame 25 name the player's house, the same one the player's own rifle soldier (frame 30 grant, "where E1" at 40) belongs to, with the Guard mission.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/ra2-rocketeer-discovery.txt -Campaign -Map ALL02S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   where|AUTOTEST   sprung 07F|Exception"
+0 requirera2
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+5 where JUMPJET
+20 reveal
+25 where JUMPJET
+30 grantunit E1 116 102
+40 where E1
+60 where JUMPJET
+130 quit

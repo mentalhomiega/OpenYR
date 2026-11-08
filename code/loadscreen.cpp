@@ -35,6 +35,7 @@
 #include "lightcon.h"
 #include "map.h"
 #include "mixfile.h"
+#include "mpmode.h"
 #include "palette.h"
 #include "pcx.h"
 #include "playerdisplay.h"
@@ -45,6 +46,7 @@
 #include "session.h"
 #include "shapeset.h"
 #include "side.h"
+#include "strutil.h"
 #include "tactical.h"
 #include "theme.h"
 #include "truecolour.h"
@@ -115,6 +117,9 @@ struct MatchLayoutType {
 MatchLayoutType const MATCH_800 = {Point2D(16, 321), 406, Rect(540, 310, 200, 20), Point2D(20, 90), Rect(20, 158, 398, 130), Point2D(20, 300), Rect(499, 379, 216, 166)};
 MatchLayoutType const MATCH_640 = {Point2D(12, 256), 326, Rect(385, 436, 200, 20), Point2D(16, 72), Rect(16, 126, 318, 104), Point2D(16, 235), Rect(385, 270, 200, 200)};
 
+// The top of the country's text in a Cooperative match at the 800 layout, where a campaign's picture is drawn (LoadProgressManager::Draw, 0x553E54).
+int const COOP_BRIEF_TOP_800 = 124;
+
 
 // True when the scenario's [Basic] Player house is on the first side. A missing or unknown house counts as the first side.
 bool Campaign_Is_Allied(CCINIClass const * mission)
@@ -148,14 +153,9 @@ std::unique_ptr<ConvertClass> Load_Drawer(std::string const & name, Surface cons
 		return(nullptr);
 	}
 
-	PaletteClass palette;
-	file.Read(&palette[0], size);
-
-	// Palette files hold six-bit colours, which the game widens to eight bits.
-	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-		RGBClass const rgb = palette[index];
-		palette[index] = RGBClass((unsigned char)(rgb.Get_Red() << 2), (unsigned char)(rgb.Get_Green() << 2), (unsigned char)(rgb.Get_Blue() << 2));
-	}
+	PaletteClass six_bit;
+	file.Read(&six_bit[0], size);
+	PaletteClass const palette = Widen_Six_Bit_Palette(&six_bit[0]);
 	return(std::make_unique<ConvertClass>(palette, palette, surface));
 }
 
@@ -311,8 +311,10 @@ void Draw_Flag(Surface & dest, Point2D const & point, FlagType const & flag)
 	}
 
 	int const magenta = DSurface::Build_Hicolor_Pixel(255, 0, 255);
-	unsigned char const * pixels = (unsigned char const *)picture->Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock picture_lock(*picture);
+	SurfaceLock dest_lock(dest);
+	unsigned char const * pixels = picture_lock.As<unsigned char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (pixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < picture->Get_Height(); y++) {
 			int const dy = point.Y + y;
@@ -342,12 +344,6 @@ void Draw_Flag(Surface & dest, Point2D const & point, FlagType const & flag)
 			}
 		}
 	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (pixels != NULL) {
-		picture->Unlock();
-	}
 }
 
 
@@ -358,8 +354,10 @@ void Blit_Stretched(Surface & dest, Rect const & to, Surface const & source)
 		return;
 	}
 
-	char const * spixels = (char const *)source.Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock source_lock(source);
+	SurfaceLock dest_lock(dest);
+	char const * spixels = source_lock.As<char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < to.Height; y++) {
 			int const dy = to.Y + y;
@@ -375,12 +373,6 @@ void Blit_Stretched(Surface & dest, Rect const & to, Surface const & source)
 				}
 			}
 		}
-	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (spixels != NULL) {
-		source.Unlock();
 	}
 }
 
@@ -434,8 +426,10 @@ void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_si
 		column_weight[x] = (int)((at - column[x]) * 256);
 	}
 
-	char const * spixels = (char const *)source.Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock source_lock(source);
+	SurfaceLock dest_lock(dest);
+	char const * spixels = source_lock.As<char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < reach.Height; y++) {
 			double const at = std::max(0.0, ((reach.Y + y - origin.Y) + 0.5) / yscale - 0.5);
@@ -467,23 +461,8 @@ void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_si
 			}
 		}
 	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (spixels != NULL) {
-		source.Unlock();
-	}
 }
 
-
-ColorScheme const * Player_Scheme(NodeNameType const * node)
-{
-	int const index = Scheme_Display_Index(Session.Scheme_For_Color(node->Player.Color, node->Player.CustomColor));
-	if (index < 0 || index >= ColorSchemes.Count()) {
-		return(NULL);
-	}
-	return(ColorSchemes[index]);
-}
 
 }
 
@@ -577,7 +556,7 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 	Backdrop->Fill(0);
 
 	Match = Session.Type != GAME_NORMAL;
-	if (!(Match ? Begin_Match(ini, players) : Begin_Campaign(scenario, ini))) {
+	if (!(Match ? Begin_Match(scenario, ini, players) : Begin_Campaign(scenario, ini))) {
 		End();
 		return(false);
 	}
@@ -730,7 +709,53 @@ void LoadScreenClass::Play_Theme(void)
 }
 
 
-bool LoadScreenClass::Begin_Match(CCINIClass const * ini, int players)
+/// Finds the picture a Cooperative match shows on a map that COOPCAMPMD.INI lists, as gamemd does
+/// (LoadProgressManager::Draw, 0x553311 to 0x5533C0).
+/// </summary>
+/// <param name="scenario">The scenario's file name. A listed map name matches when it begins the file name.</param>
+/// <param name="picture">Receives the campaign's CampaignLoadScreen.</param>
+/// <param name="palette">Receives the campaign's CampaignLoadScreenPallet.</param>
+/// <returns>Returns with false when the match is not Cooperative, no campaign lists the map, or the first campaign
+/// that lists it leaves either name empty.</returns>
+static bool Coop_Picture(char const * scenario, std::string & picture, std::string & palette)
+{
+	if (scenario == NULL || !MPMode_Has_Current() || MPMode_Current().Kind != MPModeKind::Cooperative) {
+		return(false);
+	}
+
+	CCFileClass file("COOPCAMPMD.INI");
+	if (!file.Is_Available()) {
+		return(false);
+	}
+	CCINIClass ini;
+	ini.Load(file, false);
+
+	int const campaigns = ini.Entry_Count("Campaigns");
+	for (int index = 0; index < campaigns; index++) {
+		std::string const section = ini.Get_String("Campaigns", ini.Get_Entry("Campaigns", index));
+		int const maps = ini.Get_Int(section.c_str(), "NumberOfCampaignMaps", 0);
+		for (int map = 1; map <= maps; map++) {
+			char key[16];
+			std::snprintf(key, sizeof(key), "Map%d", map);
+			std::string const list = ini.Get_String(section.c_str(), key);
+
+			// Each Map entry holds up to three names, one per difficulty.
+			std::vector<std::string> const names = Split_Parts(list, ',');
+			for (size_t slot = 0; slot < names.size() && slot < 3; slot++) {
+				std::string const & name = names[slot];
+				if (!name.empty() && Starts_With_No_Case(scenario, name)) {
+					picture = ini.Get_String(section.c_str(), "CampaignLoadScreen");
+					palette = ini.Get_String(section.c_str(), "CampaignLoadScreenPallet");
+					return(!picture.empty() && !palette.empty());
+				}
+			}
+		}
+	}
+	return(false);
+}
+
+
+bool LoadScreenClass::Begin_Match(char const * scenario, CCINIClass const * ini, int players)
 {
 	if (Session.Players.Count() == 0) {
 		return(false);
@@ -749,21 +774,22 @@ bool LoadScreenClass::Begin_Match(CCINIClass const * ini, int players)
 	CountryArtType const & stock = observer ? OBSERVER_ART : COUNTRY_ART[std::clamp(country, 0, (int)ARRAY_SIZE(COUNTRY_ART) - 1)];
 	MatchLayoutType const & layout = (Width == 640) ? MATCH_640 : MATCH_800;
 
-	std::string picture;
+	// A Cooperative campaign's picture has one size, which gamemd draws at either screen width.
 	std::string palette = stock.Palette;
-	if (custom) {
-		picture = type->LoadScreenFile;
-		if (!type->LoadScreenPalette.empty()) {
-			palette = type->LoadScreenPalette;
+	if (!Coop_Picture(scenario, PictureName, palette)) {
+		if (custom) {
+			PictureName = type->LoadScreenFile;
+			if (!type->LoadScreenPalette.empty()) {
+				palette = type->LoadScreenPalette;
+			}
+		} else {
+			char picture[32];
+			std::snprintf(picture, sizeof(picture), "LS%d%s.SHP", Width, stock.Picture);
+			PictureName = picture;
 		}
-	} else {
-		char name[32];
-		std::snprintf(name, sizeof(name), "LS%d%s.SHP", Width, stock.Picture);
-		picture = name;
 	}
-	PictureName = picture;
 
-	ShapeFile const shape(picture.c_str());
+	ShapeFile const shape(PictureName.c_str());
 	std::unique_ptr<ConvertClass> const drawer = Load_Drawer(palette, *Backdrop);
 	if (shape.Get() == NULL || drawer == nullptr) {
 		return(false);
@@ -809,11 +835,17 @@ bool LoadScreenClass::Begin_Match(CCINIClass const * ini, int players)
 		Print_Text(Capitals(special), *Backdrop, layout.Special, RGBClass(0, 0, 0));
 	}
 
-	std::string const brief = label(type != NULL ? type->LoadScreenBrief : std::string(), stock.Brief);
-	if (!brief.empty()) {
-		std::vector<std::string> const lines = Wrap_Text(brief, layout.Brief.Width);
-		Shade(*Backdrop, Rect(layout.Brief.X, layout.Brief.Y, layout.Brief.Width, Text_Font().Get_Height() * (int)lines.size()));
-		Print_Lines(lines, *Backdrop, layout.Brief.Top_Left(), color);
+	std::string const brief_text = label(type != NULL ? type->LoadScreenBrief : std::string(), stock.Brief);
+	if (!brief_text.empty()) {
+		// A Cooperative match at the 800 layout starts the country's text higher, to fit the campaign picture.
+		Rect brief = layout.Brief;
+		if (Width != 640 && MPMode_Is_Cooperative()) {
+			brief.Y = COOP_BRIEF_TOP_800;
+		}
+
+		std::vector<std::string> const lines = Wrap_Text(brief_text, brief.Width);
+		Shade(*Backdrop, Rect(brief.X, brief.Y, brief.Width, Text_Font().Get_Height() * (int)lines.size()));
+		Print_Lines(lines, *Backdrop, brief.Top_Left(), color);
 	}
 
 	std::string const loading = Fetch_String_UTF8("GUI:LoadingEx");
@@ -847,6 +879,23 @@ void LoadScreenClass::Draw_Preview(void)
 }
 
 
+static Rect Centred_Bar_Box(Rect const & frame, int left, int row_top, int row_height)
+{
+	int const top = row_top + (row_height - (frame.Height + 6)) / 2;
+	return(Rect(left, top, frame.Width + 6, frame.Height + 6));
+}
+
+
+static double Progress_Fraction(ProgressScreenClass const & progress, int index)
+{
+	double fraction = progress.Get_Current_Progress(index);
+	if (!(fraction > 0.0)) {
+		fraction = 0.0;
+	}
+	return(std::min(fraction, 1.0));
+}
+
+
 // Draws each player's row: an outline in the player's colour for the bar, the flag, and the name.
 void LoadScreenClass::Draw_Rows(int players)
 {
@@ -870,7 +919,7 @@ void LoadScreenClass::Draw_Rows(int players)
 		RGBClass const color = Scheme_Text_Color(Player_Scheme(node));
 		int const top = BarPos.Y + RowHeight * index;
 
-		Rect const box(BarPos.X + 5, top + (RowHeight - (frame.Height + 6)) / 2, frame.Width + 6, frame.Height + 6);
+		Rect const box = Centred_Bar_Box(frame, BarPos.X + 5, top, RowHeight);
 		Backdrop->Draw_Rect(box, DSurface::Build_Hicolor_Pixel(color));
 
 		char const * flag_name = NULL;
@@ -919,13 +968,10 @@ void LoadScreenClass::Draw_Campaign_Progress(ProgressScreenClass const & progres
 
 	// The bar is centred in a row as tall as the text beside it, though no text is printed.
 	int const row = std::max(frame.Height + 6, Text_Font().Get_Height()) + 4;
-	Point2D const at = BarPos + Point2D(5 + 3, (row - (frame.Height + 6)) / 2 + 3);
+	Rect const box = Centred_Bar_Box(frame, BarPos.X + 5, BarPos.Y, row);
+	Point2D const at(box.X + 3, box.Y + 3);
 
-	double fraction = progress.Get_Current_Progress(0);
-	if (!(fraction > 0.0)) {
-		fraction = 0.0;
-	}
-	fraction = std::min(fraction, 1.0);
+	double const fraction = Progress_Fraction(progress, 0);
 
 	Rect const strip(0, Height - STRIP_HEIGHT, Width, STRIP_HEIGHT);
 	Screen->Blit_From(strip, *Backdrop, strip);
@@ -953,14 +999,10 @@ void LoadScreenClass::Draw_Match_Progress(ProgressScreenClass const & progress)
 			continue;
 		}
 
-		double fraction = progress.Get_Current_Progress(index);
-		if (!(fraction > 0.0)) {
-			fraction = 0.0;
-		}
-		fraction = std::min(fraction, 1.0);
+		double const fraction = Progress_Fraction(progress, index);
 
-		int const top = BarPos.Y + RowHeight * index + (RowHeight - (frame.Height + 6)) / 2;
-		Rect const bar(BarPos.X + 5 + 3, top + 3, (int)(frame.Width * fraction), frame.Height);
+		Rect const box = Centred_Bar_Box(frame, BarPos.X + 5, BarPos.Y + RowHeight * index, RowHeight);
+		Rect const bar(box.X + 3, box.Y + 3, (int)(frame.Width * fraction), frame.Height);
 		if (bar.Width > 0) {
 			Draw_Shape(*Screen, *scheme->Converter, shape, 0, Point2D(0, 0), bar, SHAPE_WIN_REL);
 		}
@@ -999,11 +1041,9 @@ void LoadScreenClass::Show_Start_Positions(void)
 		return(Point2D((x / ISO_TILE_PIXEL_W - left) * 2, y / ISO_TILE_PIXEL_H - top));
 	};
 
-	/*
-	** The marks a preview carries for the first start positions are blacked out, as Yuri's
-	** Revenge does: one for each of the first eight waypoints that is set, counted from 0, so a
-	** gap among them leaves the last ones marked.
-	*/
+	// The marks a preview carries for the first start positions are blacked out, as Yuri's
+	// Revenge does: one for each of the first eight waypoints that is set, counted from 0, so a
+	// gap among them leaves the last ones marked.
 	Surface & picture = *Preview->Get_Preview_Surface();
 	int marked = 0;
 	for (int waypoint = 0; waypoint < 8; waypoint++) {

@@ -139,7 +139,7 @@ void UICNCNetSessionClass::Remember_Choices(void)
 
 void UICNCNetSessionClass::Refresh(void)
 {
-	Status = CNCNet_Status(Install, Destination, Build);
+	Status = CNCNet_Status(Destination, Build);
 	Plan = Install.empty() ? CNCNetPlanType() : CNCNet_Plan(Install, Destination, Build);
 }
 
@@ -269,6 +269,12 @@ void UICNCNetPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "removeyes") {
 		Session.Start_Remove();
+
+	} else if (intent.Name == "lobby") {
+		if (!busy && State.NativeLobby) {
+			Choice = UI_CNCNET_LOBBY;
+			Result = UI_RESULT_ACCEPTED;
+		}
 
 	} else if (intent.Name == "start") {
 		if (!busy && copy && Session.Status.Edits_Intact && Session.Status.Copy_Game_Present) {
@@ -424,6 +430,7 @@ class UICNCNetViewClass : public UIRmlViewClass
 				&& model.Bind("cancancel", &state.CanCancel)
 				&& model.Bind("canstart", &state.CanStart)
 				&& model.Bind("canremove", &state.CanRemove)
+				&& model.Bind("nativelobby", &state.NativeLobby)
 				&& model.Bind("confirming", &state.Confirming)
 				&& model.Bind("copypresent", &state.CopyPresent)
 				&& model.Bind("installfound", &state.InstallFound)

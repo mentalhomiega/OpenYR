@@ -17,6 +17,7 @@
 #include "gamedirs.h"
 #include "ini.h"
 #include "rawfile.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -45,36 +46,6 @@ std::string const & ModClass::Overlay(ModOverlayType type) const
 }
 
 
-static std::string Trim(std::string const & text)
-{
-	std::string::size_type first = text.find_first_not_of(" \t");
-	if (first == std::string::npos) {
-		return(std::string());
-	}
-
-	std::string::size_type last = text.find_last_not_of(" \t");
-	return(text.substr(first, last - first + 1));
-}
-
-
-static std::string Terminate_Folder(std::string const & path)
-{
-	if (path.empty()) {
-		return(path);
-	}
-
-	switch (path.back()) {
-		case '\\':
-		case '/':
-		case ':':
-			return(path);
-
-		default:
-			return(path + (char)std::filesystem::path::preferred_separator);
-	}
-}
-
-
 /// <summary>
 /// Names the folder a mod is read from. A path with a drive or a root is used as written;
 /// anything else names a folder inside the Mods folder of the data directory.
@@ -84,13 +55,13 @@ static std::string Terminate_Folder(std::string const & path)
 /// <returns>The folder, ending in a separator.</returns>
 std::string Mod_Folder_Name(std::string const & name, std::string const & datadirectory)
 {
-	std::string const trimmed = Trim(name);
+	std::string const trimmed = Trimmed(name, TRIM_SPACE_TAB);
 
 	if (std::filesystem::path(trimmed).has_root_path()) {
-		return(Terminate_Folder(trimmed));
+		return(Terminate_Path(trimmed));
 	}
 
-	return(Terminate_Folder(datadirectory + ModsFolder + (char)std::filesystem::path::preferred_separator + trimmed));
+	return(Terminate_Path(datadirectory + ModsFolder + (char)std::filesystem::path::preferred_separator + trimmed));
 }
 
 
@@ -108,27 +79,16 @@ std::vector<std::string> const & Command_Line_Mods(void)
 }
 
 
-static std::string Folder_Own_Name(std::string const & folder)
-{
-	std::filesystem::path path(folder);
-	if (!path.has_filename()) {
-		path = path.parent_path();
-	}
-
-	return(path.filename().string());
-}
-
-
 static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key)
 {
-	std::string const file = Trim(ini.Get_String("Mod", key));
+	std::string const file = Trimmed(ini.Get_String("Mod", key), TRIM_SPACE_TAB);
 	return(file.empty() ? file : folder + file);
 }
 
 
 static void Read_Manifest(ModClass & mod)
 {
-	mod.Name = Folder_Own_Name(mod.Folder);
+	mod.Name = Mod_Folder_Own_Name(mod.Folder);
 
 	std::string const manifest = mod.Folder + ManifestName;
 	RawFileClass file(manifest.c_str());
@@ -141,7 +101,7 @@ static void Read_Manifest(ModClass & mod)
 	INIClass ini;
 	ini.Load(file, false);
 
-	std::string const name = Trim(ini.Get_String("Mod", "Name"));
+	std::string const name = Trimmed(ini.Get_String("Mod", "Name"), TRIM_SPACE_TAB);
 	if (!name.empty()) {
 		mod.Name = name;
 	}
@@ -183,12 +143,12 @@ std::vector<ModClass> Find_Mods(std::string const & datadirectory)
 	for (; !error && entry != end; entry.increment(error)) {
 		std::error_code kind;
 		if (entry->is_directory(kind)) {
-			mods.push_back(Read_Mod(Terminate_Folder(entry->path().string())));
+			mods.push_back(Read_Mod(Terminate_Path(entry->path().string())));
 		}
 	}
 
 	std::sort(mods.begin(), mods.end(), [](ModClass const & left, ModClass const & right) {
-		return(_stricmp(Folder_Own_Name(left.Folder).c_str(), Folder_Own_Name(right.Folder).c_str()) < 0);
+		return(_stricmp(Mod_Folder_Own_Name(left.Folder).c_str(), Mod_Folder_Own_Name(right.Folder).c_str()) < 0);
 	});
 
 	return(mods);
@@ -211,7 +171,7 @@ static std::vector<ModChoiceType> Named_Choices(std::vector<std::string> const &
 	std::vector<ModChoiceType> choices;
 
 	for (std::string const & name : names) {
-		std::string const entry = Trim(name);
+		std::string const entry = Trimmed(name, TRIM_SPACE_TAB);
 		if (entry.empty()) {
 			continue;
 		}
@@ -276,7 +236,7 @@ ModChoiceClass Mod_Choices(char const * list, std::string const & datadirectory)
 {
 	std::vector<ModChoiceType> found;
 	for (ModClass const & mod : Find_Mods(datadirectory)) {
-		found.push_back(Choice_Of(mod, Folder_Own_Name(mod.Folder)));
+		found.push_back(Choice_Of(mod, Mod_Folder_Own_Name(mod.Folder)));
 	}
 
 	return(ModChoiceClass(Named_Choices(Parse_Mod_List(list), datadirectory), Named_Choices(CommandLineMods, datadirectory), found));
@@ -318,7 +278,7 @@ void Init_Mods(char const * list)
 	std::string const datadirectory = Data_Directory();
 
 	for (std::string const & name : names) {
-		if (Trim(name).empty()) {
+		if (Trimmed(name, TRIM_SPACE_TAB).empty()) {
 			continue;
 		}
 
@@ -410,7 +370,7 @@ std::string Active_Mod_List(void)
 		if (!list.empty()) {
 			list += ", ";
 		}
-		list += Folder_Own_Name(mod.Folder);
+		list += Mod_Folder_Own_Name(mod.Folder);
 	}
 
 	return(list);

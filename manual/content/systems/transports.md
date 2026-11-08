@@ -18,11 +18,6 @@ keys:
   - OpenToppedAnim
   - OpenToppedDamageMultiplier
   - OpenToppedRangeBonus
-  - Abductor
-  - Abductor.AbductBelowPercent
-  - Abductor.Anim
-  - Abductor.ChangeOwner
-  - ImmuneToAbduction
 ---
 
 A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero is a transport. A structure or infantry type that sets `Passengers` admits nobody, except a structure with [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/), which its owner's infantry or vehicles can enter. A player can order infantry and vehicles aboard a transport, but not aircraft.
@@ -64,10 +59,6 @@ Several passengers can be sent to a transport that has room for only one of them
 
 A passenger that passes is taken off the map into the hold. An infantry passenger that is refused steps aside and stands guard.
 
-## Abduction
-
-A weapon with [`Abductor=yes`](/keys/abductor/) takes the infantry or vehicle it hits aboard the firing vehicle or aircraft. The target is admitted by the size and mind-control tests of [Being admitted](#being-admitted), with no tests of ownership, so enemy units can be taken. [`ImmuneToAbduction=yes`](/keys/immunetoabduction/) and the Iron Curtain protect a target. A target that is refused takes the hit's ordinary damage.
-
 ## Unloading
 
 A vehicle transport unloads when it deploys, and an aircraft transport lands before it unloads. The [`Passengers`](/keys/passengers/) page gives when a vehicle can deploy and which bridge positions block it.
@@ -86,8 +77,8 @@ If a passenger finds no cell, it goes back aboard and the transport stops unload
 
 The passengers of an [`OpenTopped=yes`](/keys/opentopped/) vehicle fight from inside it. Each passenger stays at the transport's position, picks its own targets within reach of it, and fires its own weapons. A passenger aboard never moves off to chase a target and takes no movement orders.
 
-- A passenger fires only a weapon with [`FireInTransport=yes`](/keys/fireintransport/), and none while the transport is itself off the map, such as inside another transport.
-- A passenger with both a primary and a secondary weapon fires the weapon its type's [`OpenTransportWeapon`](/keys/opentransportweapon/) names, if any, instead of choosing between them. So does a [`DeployFire=yes`](/keys/deployfire/#scope-infantrytype) soldier that has not deployed.
+- A passenger fires only a weapon with [`FireInTransport=yes`](/keys/fireintransport/), and none while the transport is itself off the map, such as inside another transport, or while the transport is being warped out by a chronosphere or a temporal beam.
+- A passenger with both a primary and a secondary weapon fires the weapon its type's [`OpenTransportWeapon`](/keys/opentransportweapon/) names, if any, instead of choosing between them. So does a [`DeployFire=yes`](/keys/deployfire/) soldier that has not deployed.
 - Each shot's damage is multiplied by [`OpenToppedDamageMultiplier`](/keys/opentoppeddamagemultiplier/), after the passenger's own firepower bonuses, and rounded down.
 - The passenger can fire at targets [`OpenToppedRangeBonus`](/keys/opentoppedrangebonus/#scope-global-rules) whole cells beyond its weapon's `Range`, except with arcing projectiles.
 - A weapon with no [`Anim`](/keys/anim/) plays its [`OpenToppedAnim`](/keys/opentoppedanim/) when fired from the transport.
@@ -105,15 +96,15 @@ Ordering the transport to attack gives every passenger aboard the same target, a
 
 A passenger that gets out behaves as any other object again. A [gunner vehicle](/systems/gunner-vehicles/) works differently: it fires a weapon its first passenger chooses, and the passenger does not fire.
 
-Yuri's Revenge also gives each passenger its own firing position on the transport, from the art's `AlternateFLH0` to `AlternateFLH4` keys. Seat 1 is the passenger that boarded last and reads `AlternateFLH0`. A seat among the first five without its own key uses the transport's [`PrimaryFireFLH`](/keys/primaryfireflh/). A transport whose [`Passengers`](/keys/passengers/) is above 5 also reads `AlternateFLH5` and on, one key per seat up to `Passengers` and at most 255 seats, and a seat past the fifth without a key has no seat offset. A passenger in a seat with no offset fires from the transport's position, moved only by its [`TurretOffset`](/keys/turretoffset/).
+Yuri's Revenge also gives each passenger its own firing position on the transport, from the art's `AlternateFLH0` to `AlternateFLH4` keys. Seat 1 is the passenger that boarded last and uses `AlternateFLH0`; seat 5 uses `AlternateFLH4`. A seat without its own key uses the transport's [`PrimaryFireFLH`](/keys/primaryfireflh/). A passenger in seat 6 or later has no seat offset and fires from the transport's position, moved only by its [`TurretOffset`](/keys/turretoffset/).
 
 ## Losing the transport
 
-When a vehicle transport is destroyed, each passenger gets out onto the transport's cell if it could enter that cell. Passengers that cannot are killed with it, so a transport destroyed over water kills every passenger that cannot enter water. A type that sets [`Survivor.RookiePassengerChance`](/keys/survivor.rookiepassengerchance/) or its veteran or elite form first rolls that chance for each passenger, kills those that fail, and puts those that succeed on the nearest free cell when the transport's own is taken. A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team when it has one.
+When a vehicle transport is destroyed, each passenger gets out onto the transport's cell if it could enter that cell. Passengers that cannot are killed with it, so a transport destroyed over water kills every passenger that cannot enter water. A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team when it has one.
 
 Every passenger is killed, and none gets out, when the destroying damage was forced, when the vehicle was falling (for example when a bridge collapsed under it), when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). Forced damage ignores armor and [`Immune=yes`](/keys/immune/). [Destruction and debris](/systems/destruction-and-debris/#a-vehicle) gives the full order of what a destroyed vehicle does.
 
-An aircraft transport's passengers always die with it, whether it falls or is removed where it stands. A vehicle with an [`Abductor=yes`](/keys/abductor/) weapon is the exception to the rules above: its passengers get out whatever destroyed it.
+An aircraft transport's passengers always die with it, whether it falls or is removed where it stands.
 
 A passenger killed with a vehicle transport, or with an aircraft transport shot down in the air, counts as a kill for the attacker and can earn it [experience](/systems/veterancy/#earning-experience). A passenger of a `Crashable=yes` vehicle that was not above 208 leptons, or of an aircraft removed on the ground, is killed with no attacker credited.
 

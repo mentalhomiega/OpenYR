@@ -108,11 +108,8 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	EliteOccupyWeapon(),
 	OccupyPip(PIP_PERSON_GREEN),
 	IsDeployer(false),
-	IsDeployFire(false),
-	DeployFireWeapon(1),
-	UndeployDelay(-1),
 	IsDeployedCrushable(true),
-	IsSlaved(false),
+	IsJumpJetTurn(false),
 	HarvestRate(0),
 	DeploySound(VOC_NONE),
 	EnterWaterSound(VOC_NONE),
@@ -336,6 +333,33 @@ char const * SequenceName[DO_COUNT] = {
 };
 
 
+// Maps a facing name in a sequence entry to its facing. Names match case-sensitively, so a name in
+// another case, or one not listed, returns the fallback.
+static FacingType Sequence_Facing_Named(char const * name, FacingType fallback)
+{
+	struct FacingName {
+		char const * Name;
+		FacingType Facing;
+	};
+	static FacingName const NAMES[] = {
+		{"N", FACING_N},
+		{"NE", FACING_NE},
+		{"E", FACING_E},
+		{"SE", FACING_SE},
+		{"S", FACING_S},
+		{"SW", FACING_SW},
+		{"W", FACING_W},
+		{"NW", FACING_NW},
+	};
+	for (FacingName const & entry : NAMES) {
+		if (strcmp(name, entry.Name) == 0) {
+			return(entry.Facing);
+		}
+	}
+	return(fallback);
+}
+
+
 /// <summary>
 /// Fetches the animation sequence controls for this infantry type from the art database.
 /// Every do-type the soldier can perform -- walking, firing, dying, going prone -- gets its
@@ -359,23 +383,7 @@ void InfantryTypeClass::Read_Sequence_INI(void)
 				DoInfoStruct * doinfo = &control[i];
 
 				sscanf(dostring, "%d,%d,%d,%9s", &doinfo->Frame, &doinfo->Count, &doinfo->Jump, facing);
-				if (strcmp("N", facing) == 0) {
-					doinfo->Facing = FACING_N;
-				} else if (strcmp("NE", facing) == 0) {
-					doinfo->Facing = FACING_NE;
-				} else if (strcmp("E", facing) == 0) {
-					doinfo->Facing = FACING_E;
-				} else if (strcmp("SE", facing) == 0) {
-					doinfo->Facing = FACING_SE;
-				} else if (strcmp("S", facing) == 0) {
-					doinfo->Facing = FACING_S;
-				} else if (strcmp("SW", facing) == 0) {
-					doinfo->Facing = FACING_SW;
-				} else if (strcmp("W", facing) == 0) {
-					doinfo->Facing = FACING_W;
-				} else if (strcmp("NW", facing) == 0) {
-					doinfo->Facing = FACING_NW;
-				}
+				doinfo->Facing = Sequence_Facing_Named(facing, doinfo->Facing);
 			}
 
 			// Each pair is a stage then a sound name; a pair whose sound is unknown is dropped.
@@ -446,11 +454,8 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
 		IsAssaulter = ini.Get_Bool(Name(), "Assaulter", IsAssaulter);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
-		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
-		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
-		UndeployDelay = ini.Get_Int(Name(), "UndeployDelay", UndeployDelay);
 		IsDeployedCrushable = ini.Get_Bool(Name(), "DeployedCrushable", IsDeployedCrushable);
-		IsSlaved = ini.Get_Bool(Name(), "Slaved", IsSlaved);
+		IsJumpJetTurn = ini.Get_Bool(Name(), "JumpJetTurn", IsJumpJetTurn);
 		HarvestRate = ini.Get_Int(Name(), "HarvestRate", HarvestRate);
 		DeploySound = ini.Get_VocType(Name(), "DeploySound", DeploySound);
 		UndeploySound = ini.Get_VocType(Name(), "UndeploySound", UndeploySound);
@@ -465,6 +470,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		DeathAnims = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeathAnims", DeathAnims, 0x80);
 		if (IsBomber) IsCapture = true;
 		if (IsEngineer) IsCapture = true;
+		if (IsAgent) IsCapture = true;
 		IsWebImmune = ini.Get_Bool(Name(), "IsWebImmune", IsWebImmune);
 		IsCrawling = ArtINI.Get_Bool(Graphic_Name(), "Crawls", IsCrawling);
 		FireLaunch = ArtINI.Get_Int(Graphic_Name(), "FireUp", FireLaunch);
@@ -559,6 +565,7 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAssaulter);
 	crc(UndeployDelay);
 	crc(IsDeployedCrushable);
+	crc(IsJumpJetTurn);
 	crc(DeathAnims.Count());
 }
 
@@ -616,11 +623,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOccupier);
 	stream.Serialize(IsAssaulter);
 	stream.Serialize(IsDeployer);
-	stream.Serialize(IsDeployFire);
-	stream.Serialize(DeployFireWeapon);
-	stream.Serialize(UndeployDelay);
 	stream.Serialize(IsDeployedCrushable);
-	stream.Serialize(IsSlaved);
+	stream.Serialize(IsJumpJetTurn);
 	stream.Serialize(HarvestRate);
 	stream.Serialize(DeploySound);
 	stream.Serialize(EnterWaterSound);

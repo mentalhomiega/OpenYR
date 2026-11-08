@@ -49,7 +49,7 @@ The stock config passes Syringe's `-i=` DLL options and `gamemd-spawn.exe --args
 | `-Include`, `-Inheritance` | Ignored | No. No lobby file uses the include or inherit syntax |
 | `-RA2ModeSaveID=` | Ignored | No. It names the saves of the stock RA2 mode |
 
-Command-line switches are matched exactly, or by a fixed prefix, in `Parse_Command_Line` (`code/init.cpp`). A switch that matches nothing is skipped without an error. The substring checks, such as `-MPDEBUG`, do not match these strings.
+Command-line switches are matched exactly, or by a fixed prefix, in `Parse_Command_Line` and the option helpers it calls (`code/init.cpp`). A switch that matches nothing is skipped without an error. The substring checks, such as `-MPDEBUG`, do not match these strings.
 
 ### Compatibility check
 

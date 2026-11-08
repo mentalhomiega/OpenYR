@@ -1,0 +1,53 @@
+; Superweapon target radius at three zoom levels. Chrono Sphere is aimed with unit action lines on, then the pointer is
+; parked at three window pixels per zoom. pickat logs the cell a click at that pixel would fire on; cellpixel logs the
+; window pixel of that cell's centre, which is where the ring should be centred. Each ScreenCapture shows the ring.
+; The cell each pointer picks is logged by pickat, so the expected centres come from the log, not from this header.
+; Expected: in each shot the ring is centred within a pixel or two of the cellpixel window pixel logged for that zoom and
+; pointer, and the ring is drawn for every pointer position. Before the fix the ring was drawn away from the pointer at
+; zoom 2 (250,200) and at zoom 0.5 (all three), and missing at zoom 2 (400,300 and 560,420).
+; Run: scripts/run_autotest.ps1 -Build src -Script tests/autotest/sw-radius-zoom.txt -Width 800 -Height 600 -Seconds 150
+;   -Settings "[Options]`r`nUnitActionLines=yes" -ShotDir shots/sw-radius-zoom -Filter "AUTOTEST   pickat|AUTOTEST   cellpixel|Exception"
+10 view 70 70
+20 command DebugChargeSuperweapons
+30 grant ChronoSphereSpecial
+40 swaim ChronoSphereSpecial 70 70
+50 zoom 1
+60 windowmove 400 300
+70 pickat 400 300
+75 cellpixel 70 70
+80 command ScreenCapture
+90 windowmove 250 200
+100 pickat 250 200
+105 cellpixel 64 69
+110 command ScreenCapture
+120 windowmove 560 420
+130 pickat 560 420
+135 cellpixel 77 71
+140 command ScreenCapture
+150 zoom 2
+160 windowmove 400 300
+170 pickat 400 300
+175 cellpixel 70 70
+180 command ScreenCapture
+190 windowmove 250 200
+200 pickat 250 200
+205 cellpixel 67 70
+210 command ScreenCapture
+220 windowmove 560 420
+230 pickat 560 420
+235 cellpixel 73 71
+240 command ScreenCapture
+250 zoom 0.5
+260 windowmove 400 300
+270 pickat 400 300
+275 cellpixel 67 67
+280 command ScreenCapture
+290 windowmove 250 200
+300 pickat 250 200
+305 cellpixel 55 65
+310 command ScreenCapture
+320 windowmove 560 420
+330 pickat 560 420
+335 cellpixel 80 69
+340 command ScreenCapture
+350 quit

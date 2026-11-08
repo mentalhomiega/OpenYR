@@ -1,0 +1,36 @@
+; A band drag in the Modern layout at 1280x720, where the panel covers x 1030 and up, down to y 411 (see
+; panel-release-1280.txt). The map shows below the panel, so a band that lies there must select the player's units
+; on the right. Two units sit below the panel at window 1060,540 (cell 60,40) and 1120,450 (cell 58,36). HTNK sits
+; under the panel at 1180,300 (cell 54,30) and must never be picked by a band.
+; 1. A drag entirely below the panel, from 1000,440 to 1200,600: the band covers both units and not HTNK.
+; 2. A drag from 800,240 (over the open map) down to 1200,600: the part of the band over the panel's rows stays
+;    off the panel's columns, so HTNK is still not picked, and the two units below the panel are picked.
+; Before the fix, case 1 is clamped at x 1029 and selects nothing, and case 2 selects nothing either.
+; Expected after the fix: "selected 2: E1 E1" at 70 and at 90, and no HTNK at either.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/band-below-panel-1280.txt -Width 1280 -Height 720 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80" -Filter "AUTOTEST|Exception"
+30 view 46 40
+35 reveal
+40 grantunit E1 60 40
+41 grantunit E1 58 36
+42 own HTNK 54 30
+45 cellpixel 60 40
+46 cellpixel 58 36
+47 cellpixel 54 30
+50 selected
+60 windowpress 1000 440
+61 hold 01
+62 windowmove 1100 500
+63 windowmove 1200 600
+64 windowmove 1200 600
+65 windowrelease 1200 600
+66 release 01
+70 selected
+80 windowpress 800 240
+81 hold 01
+82 windowmove 1000 400
+83 windowmove 1200 600
+84 windowmove 1200 600
+85 windowrelease 1200 600
+86 release 01
+90 selected
+200 quit

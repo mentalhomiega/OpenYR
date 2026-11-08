@@ -43,14 +43,6 @@ Coord Ring_Point(Coord const & center, int index)
 }
 
 
-// The point the beam is drawn to: an object's target coordinate, or the centre of a cell (DiskLaserClass::Update, 0x4A7340).
-Coord Strike_Point(AbstractClass const * target)
-{
-	ObjectClass const * object = target->As_ObjectClass();
-	return(object != NULL ? object->Target_Coord() : target->Center_Coord());
-}
-
-
 // The position the range is measured to: an object's position, or the centre of a cell.
 Coord Range_Point(AbstractClass const * target)
 {
@@ -130,21 +122,19 @@ void DiskLaserClass::AI(void)
 		return;
 	}
 
-	RGBClass inner = Weapon->LaserInnerColor;
-	RGBClass outer = Weapon->LaserOuterColor;
+	RGBClass inner;
+	RGBClass outer;
+	Weapon_Beam_Colors(Weapon, Owner->House, inner, outer);
 	RGBClass const spread = Weapon->LaserOuterSpread;
-	if (Weapon->IsHouseColor) {
-		inner = Owner->House->Laser_Color();
-		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
-	}
 
 	Coord const center = Owner->Turret_Coord(0);
 	int const clockwise = StartPoint + Step;
 	int const anticlockwise = StartPoint - Step;
 
 	if (Step != 0 && ((clockwise - anticlockwise) % RING_POINTS) == 0) {
-		Coord const at = Strike_Point(Target);
-		new LaserDrawClass(Ring_Point(center, clockwise), at, 0, true, inner, outer, spread, Weapon->LaserDuration, false, false, 1.0, 0.0);
+		// The strike lands on the target's beam point, as DiskLaserClass::Update (0x4A7340) does.
+		Coord const at = Beam_Coord(*Target);
+		new LaserDrawClass(Ring_Point(center, clockwise), at, 0, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
 		DebugString("Disk laser: %s strikes %s for %d\n", Owner->TClass->Name(), Target_Name(Target), Damage);
 		Explosion_Damage(at, Damage, Owner, Weapon->WarheadPtr, true);
 		if (Weapon->Sound.Count() > 0) {
@@ -157,8 +147,8 @@ void DiskLaserClass::AI(void)
 	if (Step == 0) {
 		Sound_Effect(Rule->DiskLaserChargeUp, center);
 	}
-	new LaserDrawClass(Ring_Point(center, clockwise), Ring_Point(center, clockwise + 1), 0, true, inner, outer, spread, Weapon->LaserDuration, false, false, 1.0, 0.0);
-	new LaserDrawClass(Ring_Point(center, anticlockwise), Ring_Point(center, anticlockwise - 1), 0, true, inner, outer, spread, Weapon->LaserDuration, false, false, 1.0, 0.0);
+	new LaserDrawClass(Ring_Point(center, clockwise), Ring_Point(center, clockwise + 1), 0, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
+	new LaserDrawClass(Ring_Point(center, anticlockwise), Ring_Point(center, anticlockwise - 1), 0, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
 	Delay = 1;
 	Step++;
 }

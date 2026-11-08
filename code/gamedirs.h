@@ -29,6 +29,14 @@ bool Apply_Game_Directories(void);
  */
 std::string Data_Directory(void);
 
+// Returns path with a separator appended. Returns it unchanged when it is empty or already
+// ends in a backslash, a slash or a colon.
+std::string Terminate_Path(std::string const & path);
+
+// The full path of the running executable, or an empty string when Windows reports none. A path
+// too long for MAX_PATH is cut short, and *truncated (when given) is set to say so.
+std::string Executable_Path(bool * truncated = nullptr);
+
 // The user directory as applied, empty or ending in a separator.
 std::string User_Directory(void);
 
@@ -54,6 +62,12 @@ std::string User_File_Write_Name(char const * filename);
 std::string Saved_Game_Name(char const * filename);
 
 std::string Screenshot_Name(char const * filename);
+
+// Where a replay is kept, in the same way as a screenshot.
+std::string Replay_Name(char const * filename);
+
+// The folder of the player's own music tracks, ending in a separator.
+std::string Music_Folder(void);
 
 std::vector<std::string> Parse_Search_Folders(char const * list);
 std::vector<std::string> Search_Files(char const * pattern);

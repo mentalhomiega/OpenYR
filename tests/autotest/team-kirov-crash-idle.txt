@@ -1,0 +1,24 @@
+; A computer Kirov (ZEP) on the attack script of its team is shot down at frame 150. Observed on 2026-10-30: the
+; Kirov is on Attack before the kill; TeamClass::Remove runs during the kill with IsCrashing still false (the death
+; path calls Detach_All before FootClass::Crash sets the flag), so the Kirov is sent to idle and is on Move after
+; the kill. The where lines show that mission. This script does not reach the IsCrashing gate of TeamClass::Remove,
+; which covers a living member that starts to fall while in its team (TechnoClass::Release_Held_Vehicle, a magnetron
+; let-go in the air). A script for that case still needs writing.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/team-kirov-crash-idle.txt -Seconds 120 -Filter "AUTOTEST   (where|lift|listhouse)|AUTOTEST team|Crash:|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+50 teamini E:\Claude ra2 decomp\src-agent14\tests\autotest\team-kirov-crash-idle.ini
+55 houseunit ZEP@Africans 40 80
+60 team TSTKT
+120 where ZEP
+130 listhouse Africans
+150 kill ZEP
+151 where ZEP
+151 lift ZEP
+160 lift ZEP
+170 where ZEP
+200 where ZEP
+220 lift ZEP
+260 where ZEP
+300 quit

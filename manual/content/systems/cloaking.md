@@ -93,6 +93,7 @@ Any of the following refuses the attempt:
 - its weapon is still reloading;
 - its target is within range of the weapon chosen for it;
 - the [`CloakDelay`](/keys/cloakdelay/) countdown is still running;
+- the object is above the ground, or a locomotor warhead such as a Magnetron holds it;
 - for a structure, a [`Sensors=yes`](/keys/sensors/) object stands within one cell of its footprint, and that object's owner does not consider the structure allied.
 
 If nothing refuses, an object whose health is above [`ConditionRed`](/keys/conditionred/) starts hiding at once. At or below `ConditionRed`, each frame's attempt succeeds with a 4% chance, so the cloak starts at an unpredictable moment.
@@ -166,17 +167,17 @@ Neither test marks a cell as sensed. Unless it has [`SensorsSight`](/keys/sensor
 
 ### Sensor arrays
 
-A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than [`CloakRadiusInCells`](/keys/cloakradiusincells/). This is the same key that sizes a cloak generator's field, but an array's coverage is not cut off by the square grid a field is drawn on.
+A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than its [`SensorsSight`](/keys/sensorssight/). Its coverage is not cut off by the square grid a cloak field is drawn on, and [`CloakRadiusInCells`](/keys/cloakradiusincells/) does not size it.
 
 The array marks its cells when it first opens, in a single frame, and only if it is operational at that moment. An array that is not operational when it opens marks nothing until a cloaking field next finishes growing while the array is operational.
 
-Coverage is lifted when the array is taken off the map. Capturing an array moves its coverage: the old owner stops sensing the array's cells, and the new owner senses them at once if the array is operational. A power shortfall never lifts coverage.
+Coverage is lifted when the array is taken off the map. Lifting takes one count from every cell within [`CloakRadiusInCells`](/keys/cloakradiusincells/) of the array, which can be wider than its sensing. Capturing an array moves its coverage: the old owner loses those counts, and the new owner senses the cells within `SensorsSight` at once if the array is operational. A power shortfall never lifts coverage.
 
-Arrays of one house may overlap. A cell stays sensed while any of the house's arrays covers it, so taking one array away leaves the cells the others cover in place.
+Arrays of one house may overlap, and each adds one count to its cells. A cell at a count of zero that a lift takes one below zero stays unsensed until two sensors cover it again, so a cell another array covers within the lifted ring can lose its sensing.
 
 ### Mobile sensors
 
-A vehicle, infantryman or aircraft with a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, whatever its `Sensors` flag, for its owner, every cell whose distance from the cell it stands on is less than that many cells. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers and dolphins use this to find submarines.
+A vehicle, infantryman or aircraft with a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, whatever its `Sensors` flag, for its owner, every cell whose distance from the cell it stands on is less than that many cells. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers, dolphins, giant squids and submarines use this to find submarines, so a submarine shows shadowy to an enemy whose own submarine or squid is within its `SensorsSight`, 7 cells for a Typhoon and 8 for a Boomer.
 
 ### What sensing changes
 
@@ -252,7 +253,7 @@ Selection follows the sensing rule. When an object of a house the player does no
 The local player's radar asks these questions in order and uses the first answer that applies:
 
 1. Is it `Invisible=yes`, sinking, no longer alive, or in limbo? Then it is never plotted, for any house.
-2. Is it [`RadarVisible=yes`](/keys/radarvisible/)? Then it is always plotted.
+2. Is it [`RadarVisible=yes`](/keys/radarvisible/) and outside the shroud? Then it is plotted.
 3. Does it belong to a house under the local player's control? Then it is plotted once the player has discovered it.
 4. Is the cell under its centre outside the playable area that [`LocalSize`](/keys/localsize/) declares? Then it is not plotted.
 5. Is it in plain view? It is plotted when all of these hold: it is not fogged, not hidden, not under shroud, not more than 20 leptons below ground level, and it does not hold the `RADAR_INVISIBLE` [veteran ability](/systems/veterancy/#abilities).
@@ -269,9 +270,11 @@ A detection raises an enemy-sensed [radar event](/reference/enums/radar-event/) 
 
 A structure goes through the same questions, with these differences. Step 1 does not ask whether it is sinking or alive. The hidden test in step 4 also fails at its fifteenth translucency level, and the height and ability tests do not apply. A detected structure is always of the hidden kind, never the underground one.
 
+A plotted object is drawn only where the shroud allows. In a cell under the local player's shroud, a blip is drawn only for an object whose house the local player controls. Any other object there, including one that is sensed or detected, leaves the pixel black. Objects in cells outside the shroud are drawn as the questions above decide.
+
 ### Radius rings
 
-A selected structure of a [`HasRadialIndicator=yes`](/keys/hasradialindicator/) type draws an ellipse showing how far its field reaches. The ellipse appears while the structure is switched on and its house is player-controlled. Only a cloak generator and a sensor array draw one; any other type with the key draws nothing. The ellipse is sized from `CloakRadiusInCells`, drawn in [`RadialColor`](/keys/radialcolor/), and has four spokes that sweep around it. Its proportions and sweep speed are fixed in the engine.
+A selected cloak generator or sensor array of a [`HasRadialIndicator=yes`](/keys/hasradialindicator/) type draws a ring sized from `CloakRadiusInCells`, showing how far its field reaches. The ring appears while the structure has power and only for the player who owns it, in that player's color. [The key's page](/keys/hasradialindicator/) covers the ring's size and look, and the other kinds of structure that draw one.
 
 ## Parsed settings without effect
 

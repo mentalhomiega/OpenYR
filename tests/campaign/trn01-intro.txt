@@ -1,0 +1,28 @@
+; Campaign check for the opening of Boot Camp day 1 (Red Alert 2). The map is written against Red Alert 2's lists, so the checks cover what a
+; Yuri's Revenge reading gets wrong: the arrows the drill sergeant points with must be arrow animations (not the Arch of Triumph's wreck, which
+; sits at the same position of Yuri's Revenge's list), the four soldiers at the range must not shoot the player's soldier ("Friendly Fire" must not
+; spring and no "game over" line appears), and the drill sergeant's lines must have samples to play.
+; Expected: the "play animation" lines name ARRW animations, "evafile ... opened" for the three lines, no "Friendly Fire", no "game over".
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/trn01-intro.txt -Campaign -Map TRN01T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST +(play animation|evafile|trigger fired|game over)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+2 evafile Mis_T1_DrillSearg01
+2 evafile Mis_T1_DrillSearg02
+2 evafile Mis_T1_DrillSearg03
+1200 move E1 72 80
+1210 waitcell E1 72 80 2 1200
+1300 where E1
+1800 counts Player_House
+1800 listhouse Other2_House
+1850 quit

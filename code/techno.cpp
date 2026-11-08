@@ -129,6 +129,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "playerdisplay.h"
 #include "techno.h"
@@ -161,15 +162,18 @@
 #include "empulse.h"
 #include "objectkeyrules.h"
 #include "cell.h"
+#include "custompalette.h"
 #include "_mixfile.h"
 #include "mixfile.h"
 #include "combat.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "ovrlight.h"
 #include "dialog.h"
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "font.h"
 #include "radbeam.h"
 #include "fog.h"
 #include "globals.h"
@@ -197,6 +201,7 @@
 #include "psystype.h"
 #include "queue.h"
 #include "revent.h"
+#include "replay.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -231,7 +236,10 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cstring>
 #include <intrin.h>
+#include <string>
+#include <vector>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;
@@ -264,7 +272,6 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsLeader(false),
 	IsALoaner(false),
 	IsLocked(false),
-	IsInRecoilState(false),
 	IsTethered(false),
 	IsOwnedByPlayer(false),
 	DiscoveredBy(),
@@ -302,6 +309,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsAttackedByLocomotor(false),
 	IsLetGoByLocomotor(false),
 	IsCrashing(false),
+	DirectRockerLinkedUnit(NULL),
 	LetGoBy(NULL),
 	LetGoByHouse(NULL),
 	ThreatPosed(0),
@@ -324,6 +332,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	LastFireFrame(-100),
 	Transporter(NULL),
 	IsInOpenToppedTransport(false),
+	IsBeingPlaced(false),
 	TemporalImUsing(),
 	WarpedBy(NULL),
 	IsBeingWarpedOut(false),
@@ -345,6 +354,9 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsGattlingSoundPlaying(false),
 	TurretSound(),
 	IsTurretSoundPlaying(false),
+	QueuedVoice(VOC_NONE),
+	PlayedVoice(VOC_NONE),
+	VoiceChannel(),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -363,6 +375,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BarrelPitch(3),
 	BurstIndex(0),
 	RadialFireIndex(0),
+	SprayIndex(0),
 	IsBurstResetPending(false),
 	BurstResetTimer(),
 	TargetingLaserTimer(),
@@ -520,6 +533,7 @@ bool TechnoClass::Is_Players_Army(void) const
  *=============================================================================================*/
 int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 {
+	Perf_Count(PERF_COUNT_WEAPON_SELECTS);
 	// As InfantryClass::SelectWeapon (0x5218E0): a DeployFire=yes soldier fires DeployFireWeapon
 	// while dug in and its first weapon otherwise.
 	if (RTTI == RTTI_INFANTRY) {
@@ -662,6 +676,18 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		return(1);
 	}
 	return(0);
+}
+
+
+WeaponTypeClass const * TechnoClass::Weapon_Against(AbstractClass * target) const
+{
+	return(Get_Class_Weapon_Data(What_Weapon_Should_I_Use(target))->Weapon);
+}
+
+
+bool TechnoClass::Is_Firing_Garrison(void) const
+{
+	return(RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire());
 }
 
 
@@ -927,7 +953,6 @@ void TechnoClass::Debug_Dump(MonoClass * mono) const
 	mono->Fill_Attrib(27, 13, 12, 1, IsLeader ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 14, 12, 1, IsALoaner ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 15, 12, 1, IsLocked ? MonoClass::INVERSE : MonoClass::NORMAL);
-	mono->Fill_Attrib(27, 16, 12, 1, IsInRecoilState ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 17, 12, 1, IsTethered ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(40, 13, 12, 1, IsOwnedByPlayer ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(40, 14, 12, 1, DiscoveredBy[PlayerPtr] ? MonoClass::INVERSE : MonoClass::NORMAL);
@@ -1392,9 +1417,7 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 		Cell cell = Center_Coord().As_Cell();
 
 		// A firer that moves on to another cell lets its warp go (TechnoClass::Per_Cell_Process, 0x6F5090).
-		if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-			TemporalImUsing->Let_Go();
-		}
+		Release_Warp();
 
 		Try_To_Cloak();
 
@@ -1427,14 +1450,59 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 
 
 /// <summary>
-/// Draws the decorations that appear after the object's body.
+/// Tells whether the local player sees this object's pips. Allies and spies see them, and every
+/// player sees a structure of a passive house or one with PipsDrawForAll. Matches
+/// gamemd's TechnoClass::DrawHealthBar (0x6F64A0).
+/// </summary>
+bool TechnoClass::Pips_Visible_To_Player(void) const
+{
+	if (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr]) {
+		return(true);
+	}
+	return(RTTI == RTTI_BUILDING && (TClass->IsPipsDrawForAll || House->Class->IsMultiplayPassive));
+}
+
+
+/// <summary>
+/// Draws the bomb icon that counts down over an object carrying a bomb the player sees
+/// (TechnoClass::DrawExtras, 0x6F5190).
+/// </summary>
+void TechnoClass::Draw_Bomb_Icon(Point2D const & point, Rect const & cliprect) const
+{
+	if (Is_Bomb_Visible()) {
+		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
+		ShapeSet const * icons = _bombcurs;
+		// A weapon's IvanBomb.Image replaces the icon file when the file can be loaded.
+		if (BombWeapon != NULL && !BombWeapon->IvanImage.empty()) {
+			if (!BombWeapon->IvanImageLooked) {
+				BombWeapon->IvanImageLooked = true;
+				BombWeapon->IvanImageData = (ShapeSet const *)MFCD::Retrieve((BombWeapon->IvanImage + ".SHP").c_str());
+			}
+			if (BombWeapon->IvanImageData != NULL) {
+				icons = BombWeapon->IvanImageData;
+			}
+		}
+		if (icons != NULL) {
+			int const frame = IvanBombRules::Icon_Frame(Frame - BombPlantFrame, Bomb_Delay(), IvanBombRules::Icon_Blocks(icons->Get_Count()), Rule->IvanIconFlickerRate, Frame);
+			if (frame >= 0) {
+				Draw_Shape(*LogicalSurface, *NormalDrawer, icons, frame, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws the decorations that appear after the object's body, in the order TechnoClass::DrawExtras
+/// (0x6F5190) draws them: the bomb icon, a structure's repair wrench, the rank insignia, then the
+/// selection box, condition indicator and pips.
 /// Every object the player can see wears its rank insignia. A selected object, or a
 /// submerged one the player's sensors have picked up, gets its selection box and its
 /// condition indicator drawn over it, plus its pips when the player is allied to its owner
 /// or spying on that house. Without a selection, the object under the mouse still shows its
-/// condition and those pips. A structure that can be garrisoned shows its pips to every
-/// player. The talk bubble, when the object has something to say, is drawn whether the
-/// object is selected or not.
+/// condition and those pips. A structure of a passive house shows its pips to every player.
+/// The talk bubble, when the object has something to say, is drawn whether the object is
+/// selected or not.
 /// </summary>
 void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect) const
 {
@@ -1446,8 +1514,11 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		}
 	}
 
-	bool allied = House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr];
-	bool pips_shown = allied || TClass->IsPipsDrawForAll || (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Class->IsCanBeOccupied);
+	bool pips_shown = Pips_Visible_To_Player();
+
+	// TechnoClass::DrawExtras (0x6F5190) draws the bomb icon first, then a structure's wrench, then the rank insignia.
+	Draw_Bomb_Icon(point, cliprect);
+	Draw_Wrench_Icon(cliprect);
 
 	// Rank insignia show whoever owns the object, as TechnoClass::DrawExtras (0x6F5190) draws them.
 	if (Is_Decoration_Visible()) {
@@ -1514,28 +1585,6 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			}
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
-			}
-		}
-	}
-
-	// The bomb icon counts down over an object carrying a bomb the player sees (TechnoClass::DrawExtras, 0x6F5190).
-	if (Is_Bomb_Visible()) {
-		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
-		ShapeSet const * icons = _bombcurs;
-		// A weapon's IvanBomb.Image replaces the icon file when the file can be loaded.
-		if (BombWeapon != NULL && !BombWeapon->IvanImage.empty()) {
-			if (!BombWeapon->IvanImageLooked) {
-				BombWeapon->IvanImageLooked = true;
-				BombWeapon->IvanImageData = (ShapeSet const *)MFCD::Retrieve((BombWeapon->IvanImage + ".SHP").c_str());
-			}
-			if (BombWeapon->IvanImageData != NULL) {
-				icons = BombWeapon->IvanImageData;
-			}
-		}
-		if (icons != NULL) {
-			int const frame = IvanBombRules::Icon_Frame(Frame - BombPlantFrame, Bomb_Delay(), IvanBombRules::Icon_Blocks(icons->Get_Count()), Rule->IvanIconFlickerRate, Frame);
-			if (frame >= 0) {
-				Draw_Shape(*LogicalSurface, *NormalDrawer, icons, frame, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 			}
 		}
 	}
@@ -1974,19 +2023,15 @@ bool TechnoClass::Limbo(void)
 	}
 
 	if (TClass->IsOpenTopped) {
-		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+		Cargo.For_Each_Attached([](FootClass * passenger) {
 			passenger->Assign_Target(NULL);
-		}
+		});
 	}
 
-	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-		TemporalImUsing->Let_Go();
-	}
+	Release_Warp();
 
-	GattlingSound.Stop();
-	IsGattlingSoundPlaying = false;
-	TurretSound.Stop();
-	IsTurretSoundPlaying = false;
+	Stop_Gattling_Sound();
+	Stop_Turret_Sound();
 
 	AttachedEffects.Limbo(this);
 
@@ -2059,7 +2104,10 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		House->Tracking_Active_Add(this, false);
 		PrimaryFacing.Set(dir);
 		BarrelPitch.Set(DIR_E << 8);
+		// A soldier's idle mode can order a jump, which then clears its destination cell (TechnoClass::Unlimbo, 0x6F6E1B).
+		IsBeingPlaced = (RTTI == RTTI_INFANTRY);
 		Enter_Idle_Mode(true);
+		IsBeingPlaced = false;
 		if (Ready_To_Commence()) {
 			Commence();
 		}
@@ -2265,6 +2313,12 @@ bool TechnoClass::Is_Close_Enough(AbstractClass * target, int which) const
 }
 
 
+bool TechnoClass::Is_Close_Enough_With_Selected_Weapon(AbstractClass * target) const
+{
+	return(Is_Close_Enough(target, What_Weapon_Should_I_Use(target)));
+}
+
+
 // Tests the line from the source to the target's center for walls and cliffs (FUN_006F7220, 0x6F7220; TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
 // A wall at a connecting-wall index does not block a warhead that destroys walls (Wall=yes). A weapon with Range=-2 has no line test.
 bool TechnoClass::Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const
@@ -2326,6 +2380,7 @@ bool TechnoClass::In_Range(Coord const & coord, int which) const
  *=============================================================================================*/
 double TechnoClass::Area_Modify(Cell const & cell) const
 {
+	Perf_Count(PERF_COUNT_AREA_MODIFY);
 //	assert(PrimaryWeapon != NULL);
 	if (PrimaryWeapon == NULL || !PrimaryWeapon->IsSupressed) return(1);
 
@@ -2390,6 +2445,325 @@ double TechnoClass::Area_Modify(Cell const & cell) const
 }
 
 
+bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const
+{
+	/*
+	**	An object in limbo can never be a valid target.
+	*/
+	if (object == NULL || object == this || object->IsInLimbo || object->Strength == 0) {
+		return(false);
+	}
+
+	/*
+	**	Quickly eliminate all unit types that are not allowed according to the mask
+	**	value.
+	*/
+	RTTIType otype = object->RTTI;
+	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
+		return(false);		// Mask failure.
+	}
+
+	// The weapon selection against object is made at most once for the tests below.
+	bool object_index_known = false;
+	int object_index = 0;
+	auto weapon_index_for_object = [&]() {
+		if (!object_index_known) {
+			object_index = What_Weapon_Should_I_Use((AbstractClass *)object);
+			object_index_known = true;
+		}
+		return(object_index);
+	};
+
+	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
+	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	if (TClass->LandTargeting == 2 && object->On_Ground() && object->Get_Cell_Ptr()->Land_Type() != LAND_WATER) {
+		return(false);
+	}
+
+	/*
+	**	If the object is cloaked, then it isn't a legal target.
+	*/
+	if (object->Cloak == CLOAKED) {
+		if (!Map[object->Center_Coord()].Is_Sensed(House) && House != object->House) {
+			return(false);
+		}
+	}
+
+	if (!object->IsLocked) {
+		return(false);
+	}
+
+	/*
+	**	If the object is in a "harmless" state, then don't bother to consider it
+	**	a threat.
+	*/
+	if (object->Current_Mission_Control().IsNoThreat) {
+		return(false);
+	}
+
+	if (object->HeightAGL < -20) {
+		return(false);
+	}
+
+	/*
+	**	If the object is not within the desired zone, then ignore it, but only if
+	**	zone checking is desired.
+	*/
+	Coord objectcoord = object->Center_Coord();
+	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
+		return(false);
+	}
+
+	/*
+	**	Friendly units are never considered a good target. Bail if this
+	**	object is a friend.  Unless we're a medic, of course.  But then,
+	**	only consider it a target if it's injured.
+	*/
+	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
+		if (Combat_Damage() < 0 || engineer) {
+			if (object->HealthRatio == Rule->ConditionGreen) {
+				return(false);
+			}
+			if (Combat_Damage() < 0) {
+				if (object->RTTI == RTTI_AIRCRAFT) {
+					if (object->HeightAGL > 0) {
+						return(false);
+					}
+					if (Map[object->Center_Coord()].Cell_Building()) {
+						return(false);
+					}
+				} else if (!Can_Heal(object)) {
+					return(false);
+				}
+			}
+		} else {
+			return(false);
+		}
+	}
+
+	if (Scen->Special.IsHarvesterImmune) {
+		if (Rule->HarvesterUnit.Is_In_List((UnitTypeClass const *)object->Class_Of())) {
+			return(false);
+		}
+	}
+
+	/*
+	**	If the object is further away than allowed, bail.
+	*/
+	int dist = Distance_To(object);
+	if (range > 0 && dist > range) {
+		return(false);
+	}
+
+	if (range == 0) {
+		if (!Is_Weapon_Equipped()) {
+			if (dist > TClass->ThreatRange) {
+				return(false);
+			}
+		} else {
+			int primary = weapon_index_for_object();
+			if (!In_Range((TechnoClass *)object, primary)) {
+				return(false);
+			}
+		}
+	}
+
+	if (Is_Weapon_Equipped()) {
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
+		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
+			return(false);
+		}
+	}
+
+	/*
+	**	If the object is not visible, then bail. Human controlled units
+	**	are always considered to be visible.
+	*/
+	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
+		return(false);
+	}
+
+	if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) {
+		return(false);
+	}
+
+	// A CivilianEnemy type is a target even when its owner is a neutral house (Ares).
+	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits && !object->TClass->IsCivilianEnemy) {
+		return(false);
+	}
+
+	/*
+	**	An insignificant unit is no automatic target for any house. An insignificant building of a passive
+	**	house is one only for a computer house's infantry in a multiplayer game that can capture or occupy it
+	**	(TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (object->TClass->IsInsignificant && object->MindControlledBy == NULL
+		&& (object->RTTI != RTTI_BUILDING || object->House->Class->IsMultiplayPassive)) {
+		bool capturable = false;
+		if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL && RTTI == RTTI_INFANTRY && object->RTTI == RTTI_BUILDING) {
+			BuildingClass const * building = static_cast<BuildingClass const *>(object);
+			capturable = (((BuildingTypeClass const *)object->TClass)->IsNeedsEngineer && ((InfantryClass const *)this)->Class->IsEngineer && object->House != House)
+				|| building->Can_Be_Occupied_By((InfantryClass const *)this);
+		}
+		if (!capturable) {
+			return(false);
+		}
+	}
+
+	/*
+	**	Determine if the target is theoretically allowed to be a target. If
+	**	not, then bail.
+	*/
+	TechnoTypeClass const * tclass = object->TClass;
+	if (!tclass->IsLegalTarget) {
+		return(false);		// Legality failure.
+	}
+
+	if (tclass->IsTrain && RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief) {
+		return(false);
+	}
+
+	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
+	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
+	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
+		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
+			return(false);
+		}
+	}
+
+	// This test selects a weapon and is the costly one, so it runs after every pure rejection above.
+	/*
+	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
+	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
+		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
+		return(false);
+	}
+
+	return(true);
+}
+
+
+bool TechnoClass::Passes_Mirage_Roll(TechnoClass const * object) const
+{
+	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
+	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
+	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
+		UnitClass const * vehicle = static_cast<UnitClass const *>(object);
+		if (vehicle->Is_Disguised_As(House)) {
+			int const side = House->Class->Side;
+			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
+			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
+				return(false);
+			}
+		}
+	}
+
+	return(true);
+}
+
+
+bool TechnoClass::Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const
+{
+	RTTIType otype = object->RTTI;
+	TechnoTypeClass const * tclass = object->TClass;
+
+	/*
+	**	If only allowed to attack civilians, then eliminate all other types.
+	*/
+	if (method & THREAT_CIVILIANS) {
+		object->Owner_HouseClass(); /// The result is unused.
+		return(false);
+	}
+
+	/*
+	**	If the scan is limited to capturable buildings only, then bail if the examined
+	**	object isn't a capturable building.
+	*/
+	if ((method & THREAT_CAPTURE) && (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsCaptureable)) {
+		return(false);
+	}
+
+	/*
+	**	SPECIAL CASE: Friendly units won't automatically fire on buildings
+	**	if the building is not aggressive. That is, unless it is part of a team. A team
+	**	is allowed to pick any target it so chooses.
+	*/
+	// A weapon that reaches nowhere leaves the building as harmless as an unarmed one.
+	if ((!Is_Foot() || !((FootClass *)this)->Team != NULL) &&
+			House->Is_Human_Player() && !object->Considered_Vehicle() &&
+			otype == RTTI_BUILDING &&
+			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
+
+		if (!engineer) {
+			return(false);
+		}
+	}
+
+	if (engineer) {
+		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->HealthRatio > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
+			return(false);
+		}
+	}
+
+	/*
+	**	If the search is restricted to Tiberium processing objects, then
+	**	perform the special qualification check now.
+	*/
+	if (method & THREAT_TIBERIUM) {
+		if (tclass->Capacity == 0) {
+			return(false);
+		}
+	}
+
+	CellClass * cell_this = &Map[Get_Coord()];
+	CellClass * cell_that = &Map[object->Get_Coord()];
+	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
+		return(false);
+	}
+
+	bool webbysecondary = false;
+	WarheadTypeClass const * wh = NULL;
+	WeaponTypeClass const * secondary = SecondaryWeapon;
+	if (secondary != NULL) {
+		wh = secondary->WarheadPtr;
+		if (wh != NULL && wh->IsWebby) {
+			webbysecondary = true;
+		}
+	}
+
+	if (!webbysecondary) {
+		WeaponTypeClass const * primary = PrimaryWeapon;
+		if (primary != NULL) {
+			wh = primary->WarheadPtr;
+		} else {
+			wh = NULL;
+		}
+	}
+
+	if (wh && wh->IsWebby) {
+		if (object->RTTI == RTTI_INFANTRY) {
+			InfantryClass const * infantry = dynamic_cast<const InfantryClass *>(object);
+			if (infantry != NULL && infantry->ProneStruggleTimer > wh->WebDuration / 4) {
+				return(false);
+			}
+		}
+	}
+
+
+	/*
+	**	A VHPScan=Strong scan passes over a target whose estimated health is spent (TechnoClass::GreatestThreat's
+	**	threat filter, 0x6F7CA0).
+	*/
+	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
+		return(false);
+	}
+
+	return(true);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Evaluate_Object -- Determines score value of specified object.                 *
  *                                                                                             *
@@ -2435,323 +2809,27 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 {
 	assert(object != NULL);
 
-	BStart(BENCH_EVAL_OBJECT);
+	Perf_Count(PERF_COUNT_OBJECT_EVALS);
+	BENCH_SCOPE(BENCH_EVAL_OBJECT);
 
 	bool engineer = Is_Renovator();
 
-	/*
-	**	An object in limbo can never be a valid target.
-	*/
-	if (object == NULL || object == this || object->IsInLimbo || object->Strength == 0) {
-		BEnd(BENCH_EVAL_OBJECT);
+	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer)) {
 		return(false);
 	}
 
-	/*
-	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
-	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
-	*/
-	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
-		&& Can_Fire(const_cast<TechnoClass *>(object), What_Weapon_Should_I_Use(const_cast<TechnoClass *>(object))) == FIRE_ILLEGAL) {
-		BEnd(BENCH_EVAL_OBJECT);
+	// The Mirage roll draws a random number. It stays between the two checks, so a candidate
+	// that the first check rejects draws nothing.
+	if (!Passes_Mirage_Roll(object)) {
 		return(false);
 	}
 
-	/*
-	**	If the object is cloaked, then it isn't a legal target.
-	*/
-	if (object->Cloak == CLOAKED) {
-		if (!Map[object->Center_Coord()].Is_Sensed(House) && House != object->House) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	if (!object->IsLocked) {
-		BEnd(BENCH_EVAL_OBJECT);
+	if (!Passes_After_Disguise_Roll(method, object, engineer)) {
 		return(false);
 	}
 
-	/*
-	**	If the object is in a "harmless" state, then don't bother to consider it
-	**	a threat.
-	*/
-	if (object->Current_Mission_Control().IsNoThreat) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	if (object->HeightAGL < -20) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	If the object is not within the desired zone, then ignore it, but only if
-	**	zone checking is desired.
-	*/
-	Coord objectcoord = object->Center_Coord();
-	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	Friendly units are never considered a good target. Bail if this
-	**	object is a friend.  Unless we're a medic, of course.  But then,
-	**	only consider it a target if it's injured.
-	*/
-	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
-		if (Combat_Damage() < 0 || engineer) {
-			if (object->HealthRatio == Rule->ConditionGreen) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-			if (Combat_Damage() < 0) {
-				if (object->RTTI == RTTI_AIRCRAFT) {
-					if (object->HeightAGL > 0) {
-						BEnd(BENCH_EVAL_OBJECT);
-						return(false);
-					}
-					if (Map[object->Center_Coord()].Cell_Building()) {
-						BEnd(BENCH_EVAL_OBJECT);
-						return(false);
-					}
-				} else if (!Can_Heal(object)) {
-					BEnd(BENCH_EVAL_OBJECT);
-					return(false);
-				}
-			}
-		} else {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	if (Scen->Special.IsHarvesterImmune) {
-		if (Rule->HarvesterUnit.Is_In_List((UnitTypeClass const *)object->Class_Of())) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	If the object is further away than allowed, bail.
-	*/
-	int dist = Distance_To(object);
-	if (range > 0 && dist > range) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	if (range == 0) {
-		if (!Is_Weapon_Equipped()) {
-			if (dist > TClass->ThreatRange) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		} else {
-			int primary = What_Weapon_Should_I_Use((AbstractClass *)object);
-			if (!In_Range((TechnoClass *)object, primary)) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		}
-	}
-
-	if (Is_Weapon_Equipped()) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
-		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	If the object is not visible, then bail. Human controlled units
-	**	are always considered to be visible.
-	*/
-	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	Quickly eliminate all unit types that are not allowed according to the mask
-	**	value.
-	*/
 	RTTIType otype = object->RTTI;
-	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);		// Mask failure.
-	}
-
-	// A CivilianEnemy type is a target even when its owner is a neutral house (Ares).
-	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits && !object->TClass->IsCivilianEnemy) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	An insignificant unit is no automatic target for any house. An insignificant building of a passive
-	**	house is one only for a computer house's infantry in a multiplayer game that can capture or occupy it
-	**	(TechnoClass::Evaluate_Object, 0x6F7CA0).
-	*/
-	if (object->TClass->IsInsignificant && object->MindControlledBy == NULL
-		&& (object->RTTI != RTTI_BUILDING || object->House->Class->IsMultiplayPassive)) {
-		bool capturable = false;
-		if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL && RTTI == RTTI_INFANTRY && object->RTTI == RTTI_BUILDING) {
-			BuildingClass const * building = static_cast<BuildingClass const *>(object);
-			capturable = (((BuildingTypeClass const *)object->TClass)->IsNeedsEngineer && ((InfantryClass const *)this)->Class->IsEngineer && object->House != House)
-				|| building->Can_Be_Occupied_By((InfantryClass const *)this);
-		}
-		if (!capturable) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	Determine if the target is theoretically allowed to be a target. If
-	**	not, then bail.
-	*/
 	TechnoTypeClass const * tclass = object->TClass;
-	if (!tclass->IsLegalTarget) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);		// Legality failure.
-	}
-
-	if (tclass->IsTrain && RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
-	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
-	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
-		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
-	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
-	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
-		UnitClass const * vehicle = static_cast<UnitClass const *>(object);
-		if (vehicle->Is_Disguised_As(House)) {
-			int const side = House->Class->Side;
-			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
-			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		}
-	}
-
-	/*
-	**	If only allowed to attack civilians, then eliminate all other types.
-	*/
-	if (method & THREAT_CIVILIANS) {
-		object->Owner_HouseClass(); /// The result is unused.
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	If the scan is limited to capturable buildings only, then bail if the examined
-	**	object isn't a capturable building.
-	*/
-	if ((method & THREAT_CAPTURE) && (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsCaptureable)) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	SPECIAL CASE: Friendly units won't automatically fire on buildings
-	**	if the building is not aggressive. That is, unless it is part of a team. A team
-	**	is allowed to pick any target it so chooses.
-	*/
-	// A weapon that reaches nowhere leaves the building as harmless as an unarmed one.
-	if ((!Is_Foot() || !((FootClass *)this)->Team != NULL) &&
-			House->Is_Human_Player() && !object->Considered_Vehicle() &&
-			otype == RTTI_BUILDING &&
-			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
-
-		if (!engineer) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	if (engineer) {
-		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->HealthRatio > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	If the search is restricted to Tiberium processing objects, then
-	**	perform the special qualification check now.
-	*/
-	if (method & THREAT_TIBERIUM) {
-		if (tclass->Capacity == 0) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	CellClass * cell_this = &Map[Get_Coord()];
-	CellClass * cell_that = &Map[object->Get_Coord()];
-	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	bool webbysecondary = false;
-	WarheadTypeClass const * wh = NULL;
-	WeaponTypeClass const * secondary = SecondaryWeapon;
-	if (secondary != NULL) {
-		wh = secondary->WarheadPtr;
-		if (wh != NULL && wh->IsWebby) {
-			webbysecondary = true;
-		}
-	}
-
-	if (!webbysecondary) {
-		WeaponTypeClass const * primary = PrimaryWeapon;
-		if (primary != NULL) {
-			wh = primary->WarheadPtr;
-		} else {
-			wh = NULL;
-		}
-	}
-
-	if (wh && wh->IsWebby) {
-		if (object->RTTI == RTTI_INFANTRY) {
-			InfantryClass const * infantry = dynamic_cast<const InfantryClass *>(object);
-			if (infantry != NULL && infantry->ProneStruggleTimer > wh->WebDuration / 4) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		}
-	}
-
-
-	/*
-	**	A VHPScan=Strong scan passes over a target whose estimated health is spent (TechnoClass::GreatestThreat's
-	**	threat filter, 0x6F7CA0).
-	*/
-	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
 
 	/*
 	**	If this target value is better than the previously recorded best
@@ -2801,14 +2879,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (method & THREAT_OCCUPIABLE) {
 		if (otype != RTTI_BUILDING || ((BuildingTypeClass const *)tclass)->MaxNumberOccupants < 1) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 		value += ((BuildingTypeClass const *)tclass)->MaxNumberOccupants * 1000;
 	}
 	if (method & THREAT_TECH) {
 		if (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsNeedsEngineer) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 		value += 1000;
@@ -2855,11 +2931,9 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				ThreatCandidates.emplace_back(candidate, value);
 			}
 		}
-		BEnd(BENCH_EVAL_OBJECT);
 		return(true);
 	}
 	value = 0;
-	BEnd(BENCH_EVAL_OBJECT);
 	return(false);
 }
 
@@ -2956,7 +3030,9 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 		return(false);
 	}
 	*object = tech;
+	Perf_Count(PERF_COUNT_CELL_CANDIDATES);
 
+	PerfScope eval_scope(PERF_FRAME_THREAT_EVAL);
 	bool result = Evaluate_Object(method, mask, range, tech, value);
 
 	BEnd(BENCH_EVAL_CELL);
@@ -3087,6 +3163,8 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
  *=============================================================================================*/
 AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
+	Perf_Count(PERF_COUNT_THREATS);
 	// A DistributedFire object keeps every target the scan accepts (TechnoClass::GreatestThreat, 0x6F8F80).
 	IsCollectingThreats = TClass->IsDistributedFire;
 	if (IsCollectingThreats) {
@@ -3195,7 +3273,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 		// A garrison searches OccupyWeaponRange cells beyond half its narrower side, as
 		// BuildingClass::GetOccupyRangeBonus (0x458E00) and its caller work it out.
-		if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire()) {
+		if (Is_Firing_Garrison()) {
 			BuildingTypeClass const * type = static_cast<BuildingClass const *>(this)->Class;
 			crange = std::min<int>(type->Width(), type->Height()) / 2 + 1 + Rule->OccupyWeaponRange;
 		}
@@ -3206,44 +3284,8 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		**	Scanning by cell is not possible for aircraft since they are not recorded
 		**	at the cell level.
 		*/
-		// An air scan takes In_Air objects, which gamemd's AircraftTrackerClass holds (TechnoClass::GreatestThreat, 0x6F8DF0).
 		if (method & THREAT_AIR) {
-			int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
-			int value;
-			int index;
-			for (index = 0; index < Map.Layer[LAYER_TOP].Count(); index++) {
-				TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_TOP][index];
-
-				if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet) || (object->RTTI == RTTI_UNIT && object->In_Air())) {
-					value = 0;
-					if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
-						(!onlyenemy || object->House->HeapID == House->Enemy) &&
-						Evaluate_Object(method, _mask, range, object, value)) {
-
-						if (value > bestval) {
-							bestobject = object;
-							bestval = value;
-						}
-					}
-				}
-			}
-
-			for (index = 0; index < Map.Layer[LAYER_AIR].Count(); index++) {
-				TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_AIR][index];
-
-				if (object->RTTI == RTTI_INFANTRY || (object->RTTI == RTTI_UNIT && object->In_Air())) {
-					value = 0;
-					if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
-						Evaluate_Object(method, _mask, range, object, value)) {
-
-						if (value > bestval) {
-							bestobject = object;
-							bestval = value;
-						}
-					}
-				}
-			}
+			Scan_Threats_Air(method, mask, range, onlyenemy, bestobject, bestval);
 		}
 
 		/*
@@ -3255,179 +3297,13 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 			mask |= (1 << RTTI_AIRCRAFT);
 		}
 
-		/*
-		**	Radiate outward from the object's location, looking for the best
-		**	target.
-		*/
-		Cell bestcell(0, 0);
-		int bestcellvalue = 0;
-		TechnoClass const * object;
-		int value;
-
-		// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
-		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
-		for (int radius = 0; scan_cells && radius < crange; radius++) {
-
-			/*
-			**	Scan the top and bottom rows of the "box".
-			*/
-			for (int x = -radius; x <= radius; x++) {
-				Cell newcell = cell + Cell(x, -radius);
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
-
-				newcell = cell + Cell(x, radius);
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
-			}
-
-			/*
-			**	Scan the left and right columns of the "box".
-			*/
-			for (int y = -(radius-1); y < radius; y++) {
-				Cell newcell = cell + Cell(-radius, y);
-
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
-
-				newcell = cell + Cell(radius, y);
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
-			}
-
-			/*
-			**	Bail early if a target has already been found and the range is at
-			**	one of the breaking points (i.e., normal range or range * 2).
-			*/
-			if (bestobject != NULL) {
-				if (radius == crange/4) {
-					return((ObjectClass *)bestobject);
-				}
-				if (radius == crange/2) {
-					return((ObjectClass *)bestobject);
-				}
-			}
-			if (bestcell != CELL_NONE) {
-				return(&Map[bestcell]);
-			}
+		AbstractClass * found = NULL;
+		if (Scan_Threats_Ring(method, mask, range, crange, cell, onlyenemy, zone, bestobject, bestval, found)) {
+			return(found);
 		}
 
 	} else {
-		/*
-		**	A full map scan was requested. First scan through aircraft. The top map layer
-		**	is NOT scanned since that layer will probably contain more bullets and animations
-		**	than aircraft.
-		*/
-		int index;
-		if (mask & (1L << RTTI_AIRCRAFT)) {
-			for (index = 0; index < Aircraft.Count(); index++) {
-				TechnoClass * object = Aircraft[index];
-
-				int value = 0;
-				if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
-					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
-					Evaluate_Object(method, mask, -1, object, value)) {
-
-					if (value > bestval) {
-						bestobject = object;
-						bestval = value;
-					}
-				}
-			}
-		}
-
-		/*
-		**	When scanning the ground, always consider landed aircraft as a valid
-		**	potential target. This is only true if vehicles are considered a
-		**	valid target. A landed aircraft is considered a vehicle.
-		*/
-		if (method & THREAT_VEHICLES) {
-			mask |= (1 << RTTI_AIRCRAFT);
-		}
-
-		/*
-		**	Now scan through the entire ground layer. This is painful, but what other
-		**	choice is there?
-		*/
-		for (index = 0; index < Technos.Count(); index++) {
-				TechnoClass * object = Technos[index];
-
-				int value = 0;
-				if (object->Layer == LAYER_GROUND &&
-					(!onlyenemy || object->House->HeapID == House->Enemy) &&
-					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
-					Evaluate_Object(method, mask, -1, object, value, zone, coord)) {
-
-					if (value > bestval) {
-						bestobject = object;
-						bestval = value;
-					}
-				}
-			}
+		Scan_Threats_Full(method, mask, onlyenemy, zone, coord, bestobject, bestval);
 	}
 
 	BEnd(BENCH_GREATEST_THREAT);
@@ -3437,6 +3313,187 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 	**	of it.
 	*/
 	return((ObjectClass *)bestobject);
+}
+
+
+void TechnoClass::Scan_Threats_Air(ThreatType method, int mask, int range, bool onlyenemy, ObjectClass const *& bestobject, int & bestval) const
+{
+	// An air scan takes In_Air objects, which gamemd's AircraftTrackerClass holds (TechnoClass::GreatestThreat, 0x6F8DF0).
+	Perf_Count(PERF_COUNT_SCANS_AIR);
+	int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
+	int value;
+	int index;
+	for (index = 0; index < Map.Layer[LAYER_TOP].Count(); index++) {
+		TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_TOP][index];
+
+		if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet) || (object->RTTI == RTTI_UNIT && object->In_Air())) {
+			value = 0;
+			if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
+				(!onlyenemy || object->House->HeapID == House->Enemy) &&
+				Evaluate_Object(method, _mask, range, object, value)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
+	}
+
+	for (index = 0; index < Map.Layer[LAYER_AIR].Count(); index++) {
+		TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_AIR][index];
+
+		if (object->RTTI == RTTI_INFANTRY || (object->RTTI == RTTI_UNIT && object->In_Air())) {
+			value = 0;
+			if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
+				Evaluate_Object(method, _mask, range, object, value)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
+	}
+}
+
+
+bool TechnoClass::Scan_Threats_Ring(ThreatType method, int mask, int range, int crange, Cell const & cell, bool onlyenemy, int zone, ObjectClass const *& bestobject, int & bestval, AbstractClass *& found) const
+{
+	/*
+	**	Radiate outward from the object's location, looking for the best
+	**	target.
+	*/
+	Cell bestcell(0, 0);
+	int bestcellvalue = 0;
+	TechnoClass const * object;
+	int value;
+
+	// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
+	bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
+	if (scan_cells) {
+		Perf_Count(PERF_COUNT_SCANS_RING);
+	}
+	PerfScope ring_scope(PERF_FRAME_THREAT_RING);
+	// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
+	auto Visit_Ring_Cell = [&](Cell const & newcell) {
+		if (Map.In_Radar(newcell)) {
+			Perf_Count(PERF_COUNT_RING_CELLS);
+			if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
+				if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
+					if (bestval < value) {
+						bestobject = object;
+						bestval = value;
+					}
+				}
+			}
+			if (bestobject == NULL) {
+				value = Evaluate_Just_Cell(newcell);
+				if (bestcellvalue < value) {
+					bestcellvalue = value;
+					bestcell = newcell;
+				}
+			}
+		}
+	};
+
+	for (int radius = 0; scan_cells && radius < crange; radius++) {
+
+		/*
+		**	Scan the top and bottom rows of the "box".
+		*/
+		for (int x = -radius; x <= radius; x++) {
+			Visit_Ring_Cell(cell + Cell(x, -radius));
+			Visit_Ring_Cell(cell + Cell(x, radius));
+		}
+
+		/*
+		**	Scan the left and right columns of the "box".
+		*/
+		for (int y = -(radius-1); y < radius; y++) {
+			Visit_Ring_Cell(cell + Cell(-radius, y));
+			Visit_Ring_Cell(cell + Cell(radius, y));
+		}
+
+		/*
+		**	Bail early if a target has already been found and the range is at
+		**	one of the breaking points (i.e., normal range or range * 2).
+		*/
+		if (bestobject != NULL) {
+			if (radius == crange/4) {
+				found = (ObjectClass *)bestobject;
+				return(true);
+			}
+			if (radius == crange/2) {
+				found = (ObjectClass *)bestobject;
+				return(true);
+			}
+		}
+		if (bestcell != CELL_NONE) {
+			found = &Map[bestcell];
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void TechnoClass::Scan_Threats_Full(ThreatType method, int mask, bool onlyenemy, int zone, Coord const & coord, ObjectClass const *& bestobject, int & bestval) const
+{
+	Perf_Count(PERF_COUNT_SCANS_FULL);
+	/*
+	**	A full map scan was requested. First scan through aircraft. The top map layer
+	**	is NOT scanned since that layer will probably contain more bullets and animations
+	**	than aircraft.
+	*/
+	int index;
+	if (mask & (1L << RTTI_AIRCRAFT)) {
+		for (index = 0; index < Aircraft.Count(); index++) {
+			TechnoClass * object = Aircraft[index];
+
+			int value = 0;
+			if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
+				Evaluate_Object(method, mask, -1, object, value)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
+	}
+
+	/*
+	**	When scanning the ground, always consider landed aircraft as a valid
+	**	potential target. This is only true if vehicles are considered a
+	**	valid target. A landed aircraft is considered a vehicle.
+	*/
+	if (method & THREAT_VEHICLES) {
+		mask |= (1 << RTTI_AIRCRAFT);
+	}
+
+	/*
+	**	Now scan through the entire ground layer. This is painful, but what other
+	**	choice is there?
+	*/
+	for (index = 0; index < Technos.Count(); index++) {
+			TechnoClass * object = Technos[index];
+
+			int value = 0;
+			if (object->Layer == LAYER_GROUND &&
+				(!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
+				Evaluate_Object(method, mask, -1, object, value, zone, coord)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
 }
 
 
@@ -3581,9 +3638,7 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 			Sound_Effect(Rule->AirstrikeAttackVoice);
 		}
 		DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
-		}
+		AUTOTEST_LOG("airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
 	}
 }
 
@@ -3611,9 +3666,7 @@ void TechnoClass::Retire_Airstrike_Planes(void)
 void TechnoClass::Start_Airstrike_Recharge(void)
 {
 	AirstrikeReadyFrame = Frame + (Veterancy.Is_Elite() ? TClass->EliteAirstrikeRechargeTime : TClass->AirstrikeRechargeTime);
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike recharge %s frame %d ready %d\n", TClass->Name(), Frame, AirstrikeReadyFrame);
-	}
+	AUTOTEST_LOG("airstrike recharge %s frame %d ready %d\n", TClass->Name(), Frame, AirstrikeReadyFrame);
 }
 
 
@@ -3633,9 +3686,7 @@ void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
 
 	structure->AirstrikeMarkedBy = this;
 	AirstrikeMarkedTarget = structure;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
-	}
+	AUTOTEST_LOG("airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
 }
 
 
@@ -3652,15 +3703,122 @@ void TechnoClass::Clear_Airstrike_Designation(void)
 		structure->AirstrikeMarkedBy = NULL;
 	}
 	AirstrikeMarkedTarget = NULL;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
+	AUTOTEST_LOG("airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
+}
+
+
+/// <summary>
+/// Begins the compressing phase of this part's recoil, if its type gives it any travel.
+/// </summary>
+/// <param name="control">The travel and frame counts of the part, from the object's type.</param>
+void TechnoRecoilState::Fire(TechnoTypeClass::RecoilControlType const & control)
+{
+	if (control.Travel != 0) {
+		CurrentPhase = PHASE_COMPRESSING;
+		FramesLeft = control.CompressFrames < 1 ? 1 : control.CompressFrames;
+		TravelPerFrame = (float)control.Travel / (float)FramesLeft;
+	}
+}
+
+
+/// <summary>
+/// Advances the recoil by one game frame, moving from compressing through holding to recovering.
+/// </summary>
+/// <param name="control">The travel and frame counts of the part, from the object's type.</param>
+void TechnoRecoilState::Update(TechnoTypeClass::RecoilControlType const & control)
+{
+	if (CurrentPhase == PHASE_IDLE) {
+		return;
+	}
+
+	FramesLeft--;
+	TravelSoFar += TravelPerFrame;
+	if (FramesLeft > 0) {
+		return;
+	}
+
+	if (CurrentPhase == PHASE_COMPRESSING) {
+		FramesLeft = control.HoldFrames;
+		CurrentPhase = PHASE_HOLDING;
+		TravelPerFrame = 0.0f;
+		if (FramesLeft > 1) {
+			return;
+		}
+
+	} else if (CurrentPhase != PHASE_HOLDING) {
+		if (CurrentPhase == PHASE_RECOVERING) {
+			CurrentPhase = PHASE_IDLE;
+			TravelSoFar = 0.0f;
+		}
+		return;
+	}
+
+	FramesLeft = control.RecoverFrames < 1 ? 1 : control.RecoverFrames;
+	CurrentPhase = PHASE_RECOVERING;
+	TravelPerFrame = -((float)control.Travel / (float)FramesLeft);
+}
+
+
+/// <summary>
+/// Starts the turret and barrel recoil after this object fires. Nothing moves unless its type sets TurretRecoil=yes.
+/// </summary>
+void TechnoClass::Start_Turret_Recoil(void)
+{
+	if (TClass->IsTurretRecoil) {
+		TurretRecoil.Fire(TClass->TurretRecoilControl);
+		BarrelRecoil.Fire(TClass->BarrelRecoilControl);
+	}
+}
+
+
+/// <summary>
+/// Advances the turret and barrel recoil by one game frame. Runs once per AI pass, as gamemd's TechnoClass::Update (0x6F9E50) does.
+/// </summary>
+void TechnoClass::Turret_Recoil_AI(void)
+{
+	if (TClass->IsTurretRecoil) {
+		TurretRecoil.Update(TClass->TurretRecoilControl);
+		BarrelRecoil.Update(TClass->BarrelRecoilControl);
+	}
+}
+
+
+void TechnoClass::Powered_Unit_AI(void)
+{
+	// A PoweredUnit object shuts down while its owner has no working control structure for its
+	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
+	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
+		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
+		if (off != IsDeactivated) {
+			IsDeactivated = off;
+			FootClass * foot = (FootClass *)this;
+			if (off) {
+				DebugString("Powered unit: %s shuts down\n", TClass->Name());
+				Sound_Effect(TClass->DeactivateSound, Center_Coord());
+				Assign_Target(NULL);
+				foot->Assign_Destination(NULL);
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_Off();
+				}
+			} else {
+				DebugString("Powered unit: %s starts up\n", TClass->Name());
+				Sound_Effect(TClass->ActivateSound, Center_Coord());
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_On();
+				}
+			}
+		}
 	}
 }
 
 
 void TechnoClass::AI(void)
 {
+	Turret_Recoil_AI();
+
 	Retire_Airstrike_Planes();
+
+	Voice_AI();
 
 	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
 		IsBerzerk = false;
@@ -3717,26 +3875,6 @@ void TechnoClass::AI(void)
 
 	AttachedEffects.AI(this);
 
-	// A held vehicle is let go when the holder turns to something else, and is otherwise pulled
-	// toward the holder (TechnoClass::AI and ReleaseLocomotor, 0x70FEE0).
-	if (LocomotorTarget != NULL) {
-		if (TarCom != LocomotorTarget || Strength <= 0) {
-			Release_Locomotor(false);
-		} else if (Frame % 15 == 0 && LocomotorTarget->Is_Foot()) {
-			Coord const here = Center_Coord();
-			Coord const there = LocomotorTarget->Center_Coord();
-			double const dx = double(there.X - here.X);
-			double const dy = double(there.Y - here.Y);
-			double const distance = std::hypot(dx, dy);
-			if (distance > CELL_LEPTON * 2) {
-				Coord pull = here;
-				pull.X += int(dx / distance * CELL_LEPTON * 2);
-				pull.Y += int(dy / distance * CELL_LEPTON * 2);
-				((FootClass *)LocomotorTarget)->Locomotion->Move_To(pull);
-			}
-		}
-	}
-
 	// A charge turret shows the turret that matches how much of its rearm is left (TechnoClass::AI, 0x6F9E50).
 	if (TClass->IsChargeTurret && TClass->TurretCount > 0 && !TClass->IsGattling) {
 		int turret = 0;
@@ -3746,30 +3884,7 @@ void TechnoClass::AI(void)
 		CurrentTurretNumber = turret;
 	}
 
-	// A PoweredUnit object shuts down while its owner has no working control structure for its
-	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
-	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
-		if (off != IsDeactivated) {
-			IsDeactivated = off;
-			FootClass * foot = (FootClass *)this;
-			if (off) {
-				DebugString("Powered unit: %s shuts down\n", TClass->Name());
-				Sound_Effect(TClass->DeactivateSound, Center_Coord());
-				Assign_Target(NULL);
-				foot->Assign_Destination(NULL);
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_Off();
-				}
-			} else {
-				DebugString("Powered unit: %s starts up\n", TClass->Name());
-				Sound_Effect(TClass->ActivateSound, Center_Coord());
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_On();
-				}
-			}
-		}
-	}
+	Powered_Unit_AI();
 
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
 	if (DrainingMe != NULL && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsRefinery && Rule->DrainMoneyFrameDelay > 0 && Frame % Rule->DrainMoneyFrameDelay == 0) {
@@ -3793,14 +3908,13 @@ void TechnoClass::AI(void)
 	if (TClass->IsTurretEquipped && TClass->TurretRotateSound != VOC_NONE) {
 		bool const turning = RTTI == RTTI_BUILDING ? PrimaryFacing.Is_Rotating() : SecondaryFacing.Is_Rotating();
 		if (turning && !IsTurretSoundPlaying) {
-			TurretSound.Stop();
+			Stop_Turret_Sound();
 			Sound_Effect(TClass->TurretRotateSound, Center_Coord(), &TurretSound);
 			IsTurretSoundPlaying = true;
 		} else if (turning) {
 			Play_If_In_Range(TClass->TurretRotateSound, Center_Coord(), &TurretSound);
 		} else if (IsTurretSoundPlaying) {
-			TurretSound.Stop();
-			IsTurretSoundPlaying = false;
+			Stop_Turret_Sound();
 		}
 	}
 
@@ -3823,7 +3937,7 @@ void TechnoClass::AI(void)
 	 * passenger of an open-topped transport guards, keeps thinking and stays at its position.
 	 */
 	if (TClass->IsOpenTopped) {
-		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+		Cargo.For_Each_Attached([this](FootClass * passenger) {
 			if (!passenger->IsInOpenToppedTransport) {
 				passenger->IsInOpenToppedTransport = true;
 				passenger->Transporter = this;
@@ -3834,14 +3948,14 @@ void TechnoClass::AI(void)
 				Logic.Submit(passenger);
 			}
 			passenger->Set_Coord(PositionCoord);
-		}
+		});
 	}
 
 	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
 	 * (TechnoClass::Update, 0x6F9E50).
 	 */
-	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const rank = Veterancy.Rank();
 	if (rank != CurrentRank) {
 		if (CurrentRank != -1 && rank > 0) {
 			if (House->Is_Player_Control()) {
@@ -3867,14 +3981,9 @@ void TechnoClass::AI(void)
 		}
 	}
 
-	/*
-	**	Handle recoil recovery here.
-	*/
-	if (IsInRecoilState) {
-		IsInRecoilState = false;
-	}
-
-	if (TarCom != NULL && PrimaryWeapon != NULL) {
+	// A vehicle's barrel is not aimed at its target. gamemd sets it only when the vehicle is placed (TechnoClass::Unlimbo,
+	// 0x6F6DAF) and when it deploys (UnitClass::TryToDeploy, 0x739819), so it rests at FireAngle otherwise.
+	if (TarCom != NULL && PrimaryWeapon != NULL && RTTI != RTTI_UNIT) {
 		BarrelPitch.Set_Desired(Barrel_Pitch(TarCom));
 		if (RTTI != RTTI_BUILDING || !PrimaryWeapon->IsLaser) {
 			Coord coord = Predict_Target_Coord() - Turret_Coord();
@@ -3921,8 +4030,8 @@ void TechnoClass::AI(void)
 	/*
 	 * TechnoClass::Update (0x6F9E50, 0x6FA65A to 0x6FA6F5) runs this after the mission's own update. Once the
 	 * targeting timer has run out, an object on a move, harvest or guard mission that can opportunity-fire takes a
-	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). An attack-move mega mission, which
-	 * gamemd tests first, is not ported.
+	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). Attack-move scans in
+	 * FootClass::Do_MISSION_ATTACK_MOVE. The attack-move mega mission check that gamemd runs first is not mirrored here.
 	 */
 	if (Targeting_Timer_Finished() && (Mission == MISSION_MOVE || Mission == MISSION_HARVEST || Mission == MISSION_GUARD) && Can_Opportunity_Fire()) {
 		Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE);
@@ -4065,7 +4174,7 @@ void TechnoClass::AI(void)
 		if (ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL && sparks.Count() > 0) {
 			double probability = HealthRatio < Rule->ConditionRed ? Rule->ConditionRedSparkingProbability : Rule->ConditionYellowSparkingProbability;
 			if (Random_Double(0.0, 1.0) < probability) {
-				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->DamageSmokeOffset, NULL, this);
+				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->Particle_System_Offset(), NULL, this);
 			}
 		}
 	}
@@ -4323,7 +4432,7 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 	**	cloaking either. The range is the one the weapon chosen for the target has, as
 	**	TechnoClass::IsReadyToCloak (0x6FBDC0) tests it through IsCloseEnoughToAttack.
 	*/
-	if (TarCom != NULL && Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom))) {
+	if (TarCom != NULL && Is_Close_Enough_With_Selected_Weapon(TarCom)) {
 		return(false);
 	}
 
@@ -4339,6 +4448,11 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 	**	allow recloaking just yet.
 	*/
 	if (CloakDelay != 0) {
+		return(false);
+	}
+
+	// An object held by a locomotor warhead, or off the ground, does not start to cloak (TechnoClass::IsReadyToCloak, 0x6FBDC0).
+	if (IsAttackedByLocomotor || HeightAGL > 0) {
 		return(false);
 	}
 
@@ -4383,12 +4497,17 @@ bool TechnoClass::Select(void)
 	if (BASECLASS::Select()) {
 
 		/*
+		**	The attached tag sees the selection, whoever owns the object and however many objects are
+		**	selected with it (TechnoClass::Select, 0x6FBFA0).
+		*/
+		if (Tag != NULL) {
+			Tag->Spring(TEVENT_SELECTED, this);
+		}
+
+		/*
 		**	Speak a confirmation of selection.
 		*/
 		if (House->Is_Player_Control() && AllowVoice) {
-			if (Tag != NULL) {
-				Tag->Spring(TEVENT_SELECTED, this);
-			}
 			Response_Select();
 		}
 		return(true);
@@ -4397,85 +4516,11 @@ bool TechnoClass::Select(void)
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Can_Fire -- Determines if this techno object can fire.                         *
- *                                                                                             *
- *    This performs a simple check to make sure that this techno object can fire. At this      *
- *    level, the only thing checked for is the rearming delay.                                 *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  Returns with the fire legality control code.                                       *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   12/23/1994 JLB : Created.                                                                 *
- *=============================================================================================*/
-FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
+// Returns the first reason this weapon cannot fire at the target, or FIRE_OK when none applies.
+FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon, TechnoClass const * techno, AbstractClass * target, CellClass const * cellptr) const
 {
-	/*
-	**	Don't allow firing if the target is illegal.
-	*/
-	if (target == NULL) {
-		return(FIRE_ILLEGAL);
-	}
-
-	// A vehicle a locomotor holds cannot fire, and a holder does not fire at the vehicle it holds (TechnoClass::GetFireError, 0x6FC0B0).
-	if (Is_Foot() && IsAttackedByLocomotor) {
-		return(FIRE_ILLEGAL);
-	}
-	if (LocomotorTarget == target) {
-		return(FIRE_REARM);
-	}
-
-	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
-	CellClass * cellptr = &Map[target->Center_Coord()];
-	WeaponTypeClass const * weapon;
-	WeaponTypeClass const * other_weapon;
-	bool check_rearm;
-
-	/*
-	**	If the object is completely cloaked, then you can't fire on it.
-	*/
-	if (techno != NULL && techno->Visual_Character(true, House) == VISUAL_HIDDEN
-		&& !cellptr->Is_Sensed(House) && techno->House != House
-		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
-
-		goto CANT_FIRE;
-	}
-
-	/*
-	**	A falling object is too busy falling to fire.
-	*/
-	if (IsFalling) {
-		goto CANT_FIRE;
-	}
-
-	// DisableWeapons.Duration keeps the object from firing while the jam lasts (Ares).
-	if (WeaponsDisabledFrames > 0) {
-		goto CANT_FIRE;
-	}
-
-	if (Is_Immobilized()) {
-		if (RTTI != RTTI_UNIT) {
-			goto CANT_FIRE;
-		}
-		if (!((UnitClass*)this)->Class->IsLargeVisceroid && !((UnitClass*)this)->Class->IsSmallVisceroid) {
-			goto CANT_FIRE;
-		}
-	}
-
-	/*
-	**	If there is no weapon, then firing is not allowed.
-	*/
-	weapon = Get_Class_Weapon_Data(which)->Weapon;
-	if (weapon == NULL) {
-		goto CANT_FIRE;
-	}
-
-	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried.
-	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && Transporter->IsInLimbo))) {
+	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried or being warped out.
+	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && (Transporter->IsInLimbo || Transporter->IsBeingWarpedOut)))) {
 		return(FIRE_ILLEGAL);
 	}
 
@@ -4532,7 +4577,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	// A paralyzed object launches no spawned craft, and a paralyzed Organic one does not fire at all (TechnoClass::GetFireError, 0x6FC339).
 	if (Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
 		if (weapon->IsSpawner) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 		if (TClass->IsOrganic) {
 			return(FIRE_ILLEGAL);
@@ -4567,8 +4612,119 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A locomotor warhead does not fire at a unit that is deploying or undeploying, at a harvester that is unloading, or at a
+	// moving jump-jet type (TechnoClass::GetFireError, 0x6FC0B0; UnitClass::Deploy 0x739AC0 sets the Deploying byte).
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsLocomotor) {
+		if (techno->RTTI == RTTI_UNIT) {
+			UnitClass const * unit = static_cast<UnitClass const *>(techno);
+			if (unit->SimpleDeployFrame != -1 || (unit->Class->IsToHarvest && unit->CurrentMission == MISSION_UNLOAD)) {
+				return(FIRE_ILLEGAL);
+			}
+		}
+		if (techno->Is_Foot() && techno->TClass->IsJumpJet) {
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			if (foot->Locomotion != NULL && foot->Locomotion->Is_Moving_Now()) {
+				return(FIRE_ILLEGAL);
+			}
+		}
+	}
+
+	return(FIRE_OK);
+}
+
+
+/***********************************************************************************************
+ * TechnoClass::Can_Fire -- Determines if this techno object can fire.                         *
+ *                                                                                             *
+ *    This performs a simple check to make sure that this techno object can fire. At this      *
+ *    level, the only thing checked for is the rearming delay.                                 *
+ *                                                                                             *
+ * INPUT:   none                                                                               *
+ *                                                                                             *
+ * OUTPUT:  Returns with the fire legality control code.                                       *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   12/23/1994 JLB : Created.                                                                 *
+ *=============================================================================================*/
+FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
+{
+	/*
+	**	Don't allow firing if the target is illegal.
+	*/
+	if (target == NULL) {
+		return(FIRE_ILLEGAL);
+	}
+
+	// A unit warping in cannot fire (FIRE_REARM) and one being warped out cannot fire (FIRE_ILLEGAL), as TechnoClass::GetFireError (0x6FC0B0) checks.
+	if (Is_Chrono_Warping()) {
+		return(FIRE_REARM);
+	}
+
+	// A vehicle a locomotor holds cannot fire, and a holder does not fire at the vehicle it holds (TechnoClass::GetFireError, 0x6FC0B0).
+	if (Is_Foot() && IsAttackedByLocomotor) {
+		return(FIRE_ILLEGAL);
+	}
+	if (LocomotorTarget == target) {
+		return(FIRE_REARM);
+	}
+	if (IsBeingWarpedOut) {
+		return(FIRE_ILLEGAL);
+	}
+
+	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
+	CellClass * cellptr = &Map[target->Center_Coord()];
+	WeaponTypeClass const * weapon;
+	WeaponTypeClass const * other_weapon;
+	bool check_rearm;
+
+	/*
+	**	If the object is completely cloaked, then you can't fire on it.
+	*/
+	if (techno != NULL && techno->Visual_Character(true, House) == VISUAL_HIDDEN
+		&& !cellptr->Is_Sensed(House) && techno->House != House
+		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
+
+		return(FIRE_CANT);
+	}
+
+	/*
+	**	A falling object is too busy falling to fire.
+	*/
+	if (IsFalling) {
+		return(FIRE_CANT);
+	}
+
+	// DisableWeapons.Duration keeps the object from firing while the jam lasts (Ares).
+	if (WeaponsDisabledFrames > 0) {
+		return(FIRE_CANT);
+	}
+
+	if (Is_Immobilized()) {
+		if (RTTI != RTTI_UNIT) {
+			return(FIRE_CANT);
+		}
+		if (!((UnitClass*)this)->Class->IsLargeVisceroid && !((UnitClass*)this)->Class->IsSmallVisceroid) {
+			return(FIRE_CANT);
+		}
+	}
+
+	/*
+	**	If there is no weapon, then firing is not allowed.
+	*/
+	weapon = Get_Class_Weapon_Data(which)->Weapon;
+	if (weapon == NULL) {
+		return(FIRE_CANT);
+	}
+
+	FireErrorType const refusal = Weapon_Target_Refusal(weapon, techno, target, cellptr);
+	if (refusal != FIRE_OK) {
+		return(refusal);
+	}
+
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	other_weapon = Get_Class_Weapon_Data(which == 0 ? 1 : 0)->Weapon;
@@ -4578,7 +4734,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 			|| (other_weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
 			|| (other_weapon->IsSonic && Wave)) {
 
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 	}
 
@@ -4664,9 +4820,6 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_RANGE);
 	}
 	return(FIRE_OK);
-
-CANT_FIRE:
-	return(FIRE_CANT);
 }
 
 
@@ -4830,8 +4983,8 @@ int TechnoClass::Rearm_Delay(int which) const
 
 	if (BurstIndex < weapon->Burst) {
 		int delay = -1;
-		if (BurstIndex > 0 && BurstIndex <= 4) {
-			delay = weapon->BurstDelay[BurstIndex - 1];
+		if (BurstIndex > 0 && BurstIndex <= 4 && What_Am_I() == RTTI_UNIT) {
+			delay = static_cast<UnitClass const *>(this)->Class->BurstDelay[BurstIndex - 1];
 		}
 		if (delay == -1) delay = Random_Pick(3, 5);
 		return(delay);
@@ -4863,6 +5016,22 @@ int TechnoClass::Rearm_Delay(int which) const
 
 
 /// <summary>
+/// Fetches the point an electric bolt or radiation beam ends on. An object is aimed at by its target
+/// point, which for a structure is its center plus the type's TargetCoordOffset, and a cell by its
+/// center (FUN_006FD460, 0x6FD460, and FUN_006FD620, 0x6FD620).
+/// </summary>
+static Coord Beam_Target_Coord(AbstractClass * target)
+{
+	Coord const coord = Beam_Coord(*target);
+	if (AutoTest_Active()) {
+		Coord const center = target->Center_Coord();
+		DebugString("AUTOTEST beam end %d,%d,%d center %d,%d,%d\n", coord.X, coord.Y, coord.Z, center.X, center.Y, center.Z);
+	}
+	return(coord);
+}
+
+
+/// <summary>
 /// Draws an electric bolt from the weapon's mounting to the target, as gamemd's FUN_006FD460 and
 /// FUN_006FD570 do (GetFLH). A vehicle's first bolt follows its mounting while the bolt lasts.
 /// </summary>
@@ -4884,13 +5053,7 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 		zadjust = std::min(muzzle.Y - base.Y, 0);
 	}
 
-	EBoltClass * bolt = new EBoltClass;
-	bolt->IsAlternateColor = weapon->IsAlternateColor;
-	bolt->ColorMask = weapon->BoltColorMask;
-	for (int strand = 0; strand < 3; strand++) {
-		bolt->Colors[strand] = weapon->BoltColor[strand];
-	}
-	bolt->Fire(source, target->Center_Coord(), zadjust);
+	EBoltClass * bolt = EBoltClass::Fire_For_Weapon(weapon, source, Beam_Target_Coord(target), zadjust);
 	bolt->Set_Owner(this, which);
 }
 
@@ -4940,28 +5103,37 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		}
 	}
 
-	ObjectClass *optr = target->As_ObjectClass();
-	if (optr != NULL) {
-		dest = optr->Target_Coord();
-	} else {
-		dest = target->Center_Coord();
-	}
+	dest = Beam_Coord(*target);
 
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->IsCharging = false;
 	}
 
 	// An IsHouseColor laser uses the house's laser color inside and half of it outside. Its spread is the weapon's, as in TechnoClass::CreateLaser (0x6FD210).
-	RGBClass inner = weapon->LaserInnerColor;
-	RGBClass outer = weapon->LaserOuterColor;
+	RGBClass inner;
+	RGBClass outer;
+	Weapon_Beam_Colors(weapon, House, inner, outer);
 	RGBClass const spread = weapon->LaserOuterSpread;
-	if (weapon->IsHouseColor) {
-		inner = House->Laser_Color();
-		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
+	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, inner, outer, spread, duration, false, true, 1.0, 0.0);
+	beam->IsHouseColor = weapon->IsHouseColor;
+	beam->EmissiveStrength = weapon->EmissiveStrength;
+	beam->CoreThickness = weapon->LaserThickness;
+
+	// A house colored beam is drawn thick. A Prism Tower's is 3 lines out, or 5 while other towers support it; any other
+	// structure's stays 1, and a unit's takes 2 (TechnoClass::Fire, 0x6FDD50). No wave is made for a laser; gamemd makes
+	// only sonic and magnetron waves.
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = (BuildingClass const *)this;
+		if (Rule->PrismType != NULL && building->Class == Rule->PrismType) {
+			beam->Thickness = 3;
+			if (building->SupportingPrisms > 0) {
+				beam->IsSupported = true;
+				beam->Thickness = 5;
+			}
+		}
+	} else if (weapon->IsHouseColor) {
+		beam->Thickness = 2;
 	}
-	LaserDrawClass * const beam = new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, false, 1.0, 0.0);
-	beam->Thickness = weapon->LaserThickness;
-	new WaveClass(source, dest, this, weapon->IsBigLaser ? WAVE_BIG_LASER : WAVE_LASER, (TechnoClass *)target, weapon);
 }
 
 
@@ -5041,8 +5213,7 @@ int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
 		}
 	}
-	BuildingClass const * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass const *>(this) : NULL;
-	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+	if (Is_Firing_Garrison()) {
 		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
 	}
 	if (IsInOpenToppedTransport) {
@@ -5094,8 +5265,351 @@ int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass co
 }
 
 
+AbstractClass * TechnoClass::Spray_Or_Area_Fire_Target(AbstractClass * target, WeaponTypeClass const * weapon)
+{
+	// A SprayAttack object strikes a ring of eight points one cell out, starting each burst at a random point and
+	// spacing its shots evenly round the ring; an AreaFire weapon strikes the firer's own cell (TechnoClass::Fire, 0x6FE140).
+	if (TClass->IsSprayAttack) {
+		static Coord const spray[8] = {
+			Coord(256, 0, 0), Coord(180, 180, 0), Coord(0, 256, 0), Coord(-180, 180, 0),
+			Coord(-256, 0, 0), Coord(-180, -180, 0), Coord(0, -256, 0), Coord(180, -180, 0)
+		};
+		if (BurstIndex == 0) {
+			SprayIndex = Random_Pick(0, 7);
+		} else {
+			SprayIndex = (SprayIndex + 8 / weapon->Burst) % 8;
+		}
+		target = &Map[Get_Coord() + spray[SprayIndex]];
+	} else if (weapon->IsAreaFire) {
+		target = &Map[Get_Cell()];
+	}
+	return(target);
+}
+
+
+/// <summary>
+/// Handles a weapon that fires no projectile, and refuses a shot while this object's attached
+/// particle system or sonic wave from an earlier shot is still active. Returns true when Fire_At
+/// must return NULL.
+/// </summary>
+bool TechnoClass::Fire_Without_Projectile(AbstractClass * target, WeaponTypeClass * weapon, int which)
+{
+	// A Suicide weapon destroys the firer, whose death weapon then explodes (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsSuicide) {
+		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
+		int damage = TClass->MaxStrength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
+		return(true);
+	}
+
+	// A DrainWeapon starts draining once the firer is over the structure, and sends it there first (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDrainWeapon) {
+		if (target->Is_Techno() && ((TechnoClass *)target)->TClass->IsDrainable && DrainTarget == NULL) {
+			if (Map[Get_Cell()].Cell_Building() == target) {
+				Start_Drain((TechnoClass *)target);
+				Assign_Target(NULL);
+			} else if (Is_Foot() && ((FootClass *)this)->NavCom == NULL) {
+				Assign_Destination(&Map[((TechnoClass *)target)->Center_Coord().As_Cell()]);
+			}
+		}
+		return(true);
+	}
+
+	// A DiskLaser weapon draws its ring and strikes when the ring closes, at an object or at a cell (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDiskLaser) {
+		if (!DiskLaser.Is_Active()) {
+			// The burst index advances before the rate is read, as TechnoClass::Fire (0x6FDD50) does,
+			// so a one-shot laser waits out its full ROF rather than the short burst delay.
+			BurstIndex++;
+			DiskLaser.Fire(this, target, weapon, Fire_Damage(weapon));
+			LastFireFrame = Frame;
+			Arm = Rearm_Delay(which);
+			ChargeTurretDelay = (int)Arm;
+			BurstIndex %= weapon->Burst;
+		}
+		return(true);
+	}
+
+	// A Spawner weapon sends the carried aircraft or missiles instead of a projectile (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsSpawner) {
+		if (SpawnManager) {
+			SpawnManager->Set_Target(target);
+		}
+		Reveal_Firer_On_Fire(this, target, weapon);
+		return(true);
+	}
+
+	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->LimpetFactor > 0 && target->Is_Techno() == true) {
+		TechnoClass * techno = (TechnoClass *)target;
+		if (!techno->LimpetType[House]) {
+			techno->LimpetType.Set(House);
+			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
+			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			if (weapon->Sound.Count() > 0) {
+				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
+			}
+			if (techno->Tag != NULL) {
+				techno->Tag->Spring(TEVENT_LIMPED, techno);
+			}
+			DebugString("Limped %s\n", (char const *)techno->TClass->IniName);
+			Delete_Me();
+		}
+		return(true);
+	}
+
+	if ((weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE])
+		|| (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN])
+		|| (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
+		|| (weapon->IsSonic && Wave)) {
+
+		return(true);
+	}
+	return(false);
+}
+
+
+void TechnoClass::Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & displacement, Coord const & turret_coord, int which)
+{
+	/*
+	**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
+	**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
+	**	flak shell that stays visible takes a share of BallisticScatter that grows with its
+	**	distance to the target over its weapon's range.
+	*/
+	char const * path = "A";
+	int spread = 0;
+	int distance = 0;
+	int range = 0;
+	bool const ground_path = !bullet->Class->FlakScatter || bullet->Class->IsInvisible;
+	auto const bounds = ProjectileRules::Ballistic_Scatter_Bounds(Rule->BallisticScatter, bullet->Class->BallisticScatterMin, bullet->Class->BallisticScatterMax, ground_path);
+	if (ground_path) {
+		spread = Scen->RandomNumber(bounds.first, bounds.second);
+	} else {
+		path = "B";
+		distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
+		range = Weapon_Range(which);
+		int const share = Scen->RandomNumber(bounds.first, bounds.second);
+		spread = range > 0 ? (share * distance) / range : 0;
+	}
+	int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
+	Coord const aim = displacement;
+	displacement = Ballistic_Offset(displacement, spread, angle);
+	AUTOTEST_LOG("scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
+}
+
+
+/// <summary>
+/// Returns the facing a new projectile leaves at, sets the bullet's top speed, and lowers
+/// max_speed to the launch speed. A dropping projectile also moves fire_coord to this object's
+/// center. Each call advances RadialFireIndex when the type has RadialFireSegments.
+/// </summary>
+DirType TechnoClass::Launch_Direction(BulletClass * bullet, WeaponTypeClass const * weapon, Coord const & displacement, Coord & fire_coord, int & max_speed)
+{
+	BulletTypeClass const & btype = *weapon->Bullet;
+	DirType dir;
+
+	/*
+	**	If the projectile is a homing type (such as a missile), then it will
+	**	launch in the direction the turret is facing, NOT necessarily the same
+	**	direction as the target.
+	*/
+	if (btype.ROT != 0 || btype.IsDropping) {
+		dir = Fire_Direction();
+		if (btype.IsDropping) {
+			fire_coord = Center_Coord();
+		}
+	} else {
+		dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
+	}
+
+	if (max_speed > displacement.Gamemd_Length() / 2) {
+		max_speed = displacement.Gamemd_Length() / 2;
+	}
+
+	// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
+	// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
+	int const segments = TClass->RadialFireSegments;
+	if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
+		bullet->MaxSpeed = weapon->MaxSpeed;
+		if (segments == 0) {
+			max_speed = 1;
+		}
+	}
+
+	// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
+	// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
+	if (segments > 0) {
+		double const step = -9.587672516830327e-05;
+		double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
+		double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
+		dir = DirType((int)(short)(int)raw);
+		RadialFireIndex++;
+		if (RadialFireIndex >= segments) {
+			RadialFireIndex = 0;
+		}
+	}
+	return(dir);
+}
+
+
+/// <summary>
+/// Sets pitch to the launch pitch of a new projectile, leaving it unchanged for a low
+/// non-arcing, non-voxel shot. Returns false when an arcing projectile cannot reach the target
+/// at max_speed.
+/// </summary>
+bool TechnoClass::Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const
+{
+	bool valid_arc = true;
+	if (bullet->Class->IsArcing) {
+		double gravity = Rule->Gravity;
+		if (bullet->Class->IsFloater) {
+			gravity = Get_Floater_Gravity();
+		}
+
+		int planar = Point2D(displacement).Gamemd_Length();
+		valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
+	} else if (bullet->Class->IsVoxel) {
+		// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
+		pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
+	} else {
+		int abs_z = abs(displacement.Z);
+		if (abs_z > 200) {
+			double y = 20.0;
+			BuildingClass * building = TarCom->As_BuildingClass();
+			if (building != NULL) {
+				displacement.Z = 200 * building->Class->ZHeight - turret_coord.Z;
+				abs_z = abs((displacement.Z));
+				if ((double)abs_z < y) {
+					y = 0.0;
+				}
+			}
+
+			double planar = Point2D(displacement).Gamemd_Length();
+			if (planar < 0.05) {
+				planar = 0.05;
+			}
+			double angle = std::atan2f((double)abs_z - y, planar);
+			if (displacement.Z < 0) {
+				angle = -angle;
+			}
+			pitch = angle;
+		}
+	}
+	return(valid_arc);
+}
+
+
+void TechnoClass::Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord const & fire_coord, BuildingClass * garrison, bool garrison_fire)
+{
+	/*
+	**	Perform any animation effect for this weapon.
+	*/
+	AnimTypeClass const * a = NULL;
+	if (weapon->Anim.Count() > 0) {
+		int const entry = weapon->Anim_Picks_By_Facing() ? Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count()) : 0;
+		a = weapon->Anim[entry];
+	}
+	if (a == NULL && IsInOpenToppedTransport) {
+		a = weapon->OpenToppedAnim;
+	}
+	// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
+	if (garrison_fire) {
+		a = weapon->OccupantAnim;
+	}
+
+	/*
+	**	Play any sound effect tied to this weapon type.
+	*/
+	if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
+		Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
+	}
+
+	/*
+	**	If there is a special firing animation, then create and attach it
+	**	now.
+	*/
+	if (a != NULL) {
+		// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
+		Coord anim_coord = fire_coord;
+		AnimClass * anim = new AnimClass(a, anim_coord);
+		AUTOTEST_LOG("muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
+		if (RTTI == RTTI_BUILDING) {
+			int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
+			anim->ZAdjust = std::min(zadjust, 0);
+			// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
+			if (garrison->Occupants.Count() > 0) {
+				anim->ZAdjust = -200;
+			}
+		}
+		if (anim != NULL && RTTI != RTTI_BUILDING) {
+			anim->Attach_To(this);
+		}
+	}
+}
+
+
+void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord)
+{
+	if (weapon->IsSonic) {
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target, weapon);
+	}
+
+	// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target, weapon);
+	}
+
+	if (TClass->IsTargetLaser && House->Is_Player_Control()) {
+		TargetingLaserTimer = UIControls.TargetLaserTime;
+	}
+
+	if (weapon->IsElectricBolt && !weapon->IsLaser) {
+		Electric_Zap(target, which, weapon);
+	}
+
+	// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
+	if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
+		bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
+		RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), weapon->HasBeamColor ? weapon->BeamColor : (temporal ? Rule->ChronoBeamColor : Rule->RadColor), weapon->BeamDuration, weapon->BeamAmplitude);
+	}
+
+	// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
+		RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, weapon->HasBeamColor ? weapon->BeamColor : Rule->RadColor, weapon->BeamDuration, weapon->BeamAmplitude);
+	}
+
+	/*
+	 * Laser zap animation.
+	 */
+	if (weapon->IsLaser) {
+		BuildingClass * building = dynamic_cast<BuildingClass *>(this);
+		// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
+		WeaponTypeClass const * beam_weapon = weapon;
+		if (building != NULL) {
+			WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0)->Weapon;
+			if (turret_weapon != NULL) {
+				beam_weapon = turret_weapon;
+			}
+		}
+		AUTOTEST_LOG("laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
+		Laser_Zap(target, which, beam_weapon, COORD_NONE);
+		if (building != NULL) {
+			building->BuildingStage.Set_Stage(0);
+			building->BuildingStage.Set_Rate(0);
+		}
+		if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
+			BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
+			if (discharge != NULL) {
+				discharge->Discharge_Turret();
+			}
+		}
+	}
+}
+
+
 /***********************************************************************************************
- * TechnoClass::Fire_At -- Fires projectile at target specified.                               *
+ * TechnoClass::Fire_At -- Fires projectile at target specified.                         *
  *                                                                                             *
  *    This is the main projectile firing code. Buildings, units, and infantry route fire       *
  *    requests through this function.                                                          *
@@ -5130,8 +5644,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	*/
 	if (weapon == NULL) return(NULL);
 
-	BulletTypeClass const & btype = *weapon->Bullet;
-
 	/*
 	**	Perform a quick legality check to see if firing can occur.
 	*/
@@ -5139,80 +5651,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		return(NULL);
 	}
 
-	// An AreaFire weapon strikes the firer's own cell, whatever it was aimed at (TechnoClass::Fire, 0x6FE140).
-	if (weapon->IsAreaFire) {
-		target = &Map[Get_Cell()];
-	}
-
-	// A Suicide weapon destroys the firer, whose death weapon then explodes (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsSuicide) {
-		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
-		int damage = TClass->MaxStrength;
-		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
-		return(NULL);
-	}
-
-	// A DrainWeapon starts draining once the firer is over the structure, and sends it there first (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsDrainWeapon) {
-		if (target->Is_Techno() && ((TechnoClass *)target)->TClass->IsDrainable && DrainTarget == NULL) {
-			if (Map[Get_Cell()].Cell_Building() == target) {
-				Start_Drain((TechnoClass *)target);
-				Assign_Target(NULL);
-			} else if (Is_Foot() && ((FootClass *)this)->NavCom == NULL) {
-				Assign_Destination(&Map[((TechnoClass *)target)->Center_Coord().As_Cell()]);
-			}
-		}
-		return(NULL);
-	}
-
-	// A DiskLaser weapon draws its ring and strikes when the ring closes, at an object or at a cell (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsDiskLaser) {
-		if (!DiskLaser.Is_Active()) {
-			// The burst index advances before the rate is read, as TechnoClass::Fire (0x6FDD50) does,
-			// so a one-shot laser waits out its full ROF rather than the short burst delay.
-			BurstIndex++;
-			DiskLaser.Fire(this, target, weapon, Fire_Damage(weapon));
-			LastFireFrame = Frame;
-			Arm = Rearm_Delay(which);
-			ChargeTurretDelay = (int)Arm;
-			BurstIndex %= weapon->Burst;
-		}
-		return(NULL);
-	}
-
-	// A Spawner weapon sends the carried aircraft or missiles instead of a projectile (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsSpawner) {
-		if (SpawnManager) {
-			SpawnManager->Set_Target(target);
-		}
-		Reveal_Firer_On_Fire(this, target, weapon);
-		return(NULL);
-	}
-
-	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->LimpetFactor > 0 && target->Is_Techno() == true) {
-		TechnoClass * techno = (TechnoClass *)target;
-		if (!techno->LimpetType[House]) {
-			techno->LimpetType.Set(House);
-			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
-			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			if (weapon->Sound.Count() > 0) {
-				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
-			}
-			if (techno->Tag != NULL) {
-				techno->Tag->Spring(TEVENT_LIMPED, techno);
-			}
-			DebugString("Limped %s\n", (char const *)techno->TClass->IniName);
-			Delete_Me();
-		}
-		return(NULL);
-	}
-
-	if ((weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE])
-		|| (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN])
-		|| (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
-		|| (weapon->IsSonic && Wave)) {
-
+	target = Spray_Or_Area_Fire_Target(target, weapon);
+	if (Fire_Without_Projectile(target, weapon, which)) {
 		return(NULL);
 	}
 
@@ -5226,7 +5666,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		target_coord = target->As_Coord();
 	}
 
-	BarrelPitch.Set_Desired(Barrel_Pitch(target));
+	if (RTTI != RTTI_UNIT) {
+		BarrelPitch.Set_Desired(Barrel_Pitch(target));
+	}
 
 	/*
 	**	Get the location where the projectile should appear.
@@ -5243,329 +5685,131 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 	int max_speed = weapon->MaxSpeed;
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->IsBright);
-	if (bullet != NULL) {
-		bullet->Weapon = weapon;
+	if (bullet == NULL) {
+		return(NULL);
+	}
+	bullet->Weapon = weapon;
+	bullet->Limbo();
+
+	/*
+	**	If this is firing from a moving platform, then the projectile is inaccurate. A jumpjet
+	**	type is exempt (TechnoClass::Fire, 0x6FDD50, reads TechnoTypeClass::JumpJet at 0xD94).
+	*/
+	if (Is_Foot() && ((FootClass const *)this)->Locomotion->Is_Moving() && !TClass->IsJumpJet) {
+		bullet->IsInaccurate = true;
 	}
 
-	if (bullet != NULL) {
-		bullet->Limbo();
+	// An accurate shot takes its estimated damage off its target's estimated health, at the target this object
+	// has been ordered to attack (TechnoClass::Fire, 0x6FE5D4-0x6FE622).
+	if (!bullet->IsInaccurate && !bullet->Class->IsInaccurate && TarCom != NULL && TarCom->Is_Techno()) {
+		TechnoClass * estimate_target = (TechnoClass *)TarCom;
+		estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
+	}
 
-		/*
-		**	If this is firing from a moving platform, then the projectile is inaccurate. A jumpjet
-		**	type is exempt (TechnoClass::Fire, 0x6FDD50, reads TechnoTypeClass::JumpJet at 0xD94).
-		*/
-		if (Is_Foot() && ((FootClass const *)this)->Locomotion->Is_Moving() && !TClass->IsJumpJet) {
-			bullet->IsInaccurate = true;
+	Coord turret_coord = Turret_Coord(which);
+	Coord displacement = Predict_Target_Coord() - turret_coord;
+
+	if (bullet->Class->IsInaccurate && bullet->Class->IsArcing) {
+		Apply_Ballistic_Scatter(bullet, displacement, turret_coord, which);
+	}
+
+	dir = Launch_Direction(bullet, weapon, displacement, fire_coord, max_speed);
+
+	TVelocity3D<double> velocity;
+	velocity.Set(0.0, 0.0, 0.0);
+	velocity.Set_Yaw(dir);
+	velocity.Set_Speed((double)max_speed);
+
+	DirType pitch((DirType(DIR_E)-DirType(DIR_STEP_256)).As_Int());
+	bool const valid_arc = Launch_Pitch(bullet, which, max_speed, displacement, turret_coord, pitch);
+	velocity.Set_Pitch(pitch);
+
+	if (!valid_arc || !bullet->Unlimbo(turret_coord, velocity)) {
+		delete bullet;
+		return(NULL);
+	}
+
+	if (bullet->Class->IsInvisible && object != NULL && object->IsOnBridge) {
+		bullet->IsOnBridge = true;
+	}
+
+	// gamemd starts the recoil of any object with a turret in TechnoClass::Fire (0x6FDD50), for units and buildings alike.
+	if (Is_Turret_Equipped()) {
+		Start_Turret_Recoil();
+	}
+
+	// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
+	// The effects below start at fire_coord, which gamemd keeps in CStack_74 (TechnoClass::Fire, 0x6FDD50).
+	if (AutoTest_Active() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
+		TPoint3D<int> const flh = Weapon_FLH(which);
+		Coord const center = Center_Coord();
+		DebugString("AUTOTEST designator fire %s %s which %d origin %d,%d,%d center %d,%d,%d flh %d,%d,%d\n", TClass->Name(), weapon->Name(), which, fire_coord.X, fire_coord.Y, fire_coord.Z, center.X, center.Y, center.Z, flh.X, flh.Y, flh.Z);
+	}
+	if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
+		ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
+	}
+	if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
+		ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
+	}
+	if ((weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) || weapon->IsDetachedRailgun) {
+		Coord start = fire_coord;
+		Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
+		ParticleSystemClass * beam = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST railgun %s fires %s at frame %d, detached %d\n", TClass->Name(), weapon->Name(), Frame, (int)weapon->IsDetachedRailgun);
 		}
-
-		// An accurate shot takes its estimated damage off its target's estimated health, at the target this object
-		// has been ordered to attack (TechnoClass::Fire, 0x6FE5D4-0x6FE622).
-		if (!bullet->IsInaccurate && !bullet->Class->IsInaccurate && TarCom != NULL && TarCom->Is_Techno()) {
-			TechnoClass * estimate_target = (TechnoClass *)TarCom;
-			estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
-		}
-
-		Coord turret_coord = Turret_Coord(which);
-		Coord displacement = Predict_Target_Coord() - turret_coord;
-
-		/*
-		**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
-		**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
-		**	flak shell that stays visible takes a share of BallisticScatter that grows with its
-		**	distance to the target over its weapon's range.
-		*/
-		if (bullet->Class->IsInaccurate && bullet->Class->IsArcing) {
-			char const * path = "A";
-			int spread = 0;
-			int distance = 0;
-			int range = 0;
-			bool const ground_path = !bullet->Class->FlakScatter || bullet->Class->IsInvisible;
-			auto const bounds = ProjectileRules::Ballistic_Scatter_Bounds(Rule->BallisticScatter, bullet->Class->BallisticScatterMin, bullet->Class->BallisticScatterMax, ground_path);
-			if (ground_path) {
-				spread = Scen->RandomNumber(bounds.first, bounds.second);
-			} else {
-				path = "B";
-				distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
-				range = Weapon_Range(which);
-				int const share = Scen->RandomNumber(bounds.first, bounds.second);
-				spread = range > 0 ? (share * distance) / range : 0;
-			}
-			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
-			Coord const aim = displacement;
-			displacement = Ballistic_Offset(displacement, spread, angle);
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
-			}
-		}
-
-		/*
-		**	If the projectile is a homing type (such as a missile), then it will
-		**	launch in the direction the turret is facing, NOT necessarily the same
-		**	direction as the target.
-		*/
-		if (btype.ROT != 0 || btype.IsDropping) {
-			dir = Fire_Direction();
-			if (btype.IsDropping) {
-				fire_coord = Center_Coord();
-			}
-		} else {
-			dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
-		}
-
-		if (max_speed > displacement.Gamemd_Length() / 2) {
-			max_speed = displacement.Gamemd_Length() / 2;
-		}
-
-		// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
-		// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
-		int const segments = TClass->RadialFireSegments;
-		if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
-			bullet->MaxSpeed = weapon->MaxSpeed;
-			if (segments == 0) {
-				max_speed = 1;
-			}
-		}
-
-		// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
-		// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
-		if (segments > 0) {
-			double const step = -9.587672516830327e-05;
-			double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
-			double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
-			dir = DirType((int)(short)(int)raw);
-			RadialFireIndex++;
-			if (RadialFireIndex >= segments) {
-				RadialFireIndex = 0;
-			}
-		}
-
-		TVelocity3D<double> velocity;
-		velocity.Set(0.0, 0.0, 0.0);
-		velocity.Set_Yaw(dir);
-		velocity.Set_Speed((double)max_speed);
-
-		DirType pitch((DirType(DIR_E)-DirType(DIR_STEP_256)).As_Int());
-		bool valid_arc = true;
-		if (bullet->Class->IsArcing) {
-			double gravity = Rule->Gravity;
-			if (bullet->Class->IsFloater) {
-				gravity = Get_Floater_Gravity();
-			}
-
-			int planar = Point2D(displacement).Gamemd_Length();
-			valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
-		} else if (bullet->Class->IsVoxel) {
-			// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
-			pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
-		} else {
-			int abs_z = abs(displacement.Z);
-			if (abs_z > 200) {
-				double y = 20.0;
-				BuildingClass * building = TarCom->As_BuildingClass();
-				if (building != NULL) {
-					displacement.Z = 200 * building->Class->ZHeight - turret_coord.Z;
-					abs_z = abs((displacement.Z));
-					if ((double)abs_z < y) {
-						y = 0.0;
-					}
-				}
-
-				double planar = Point2D(displacement).Gamemd_Length();
-				if (planar < 0.05) {
-					planar = 0.05;
-				}
-				double angle = std::atan2f((double)abs_z - y, planar);
-				if (displacement.Z < 0) {
-					angle = -angle;
-				}
-				pitch = angle;
-			}
-		}
-
-		velocity.Set_Pitch(pitch);
-
-		if (valid_arc) {
-			if (!bullet->Unlimbo(turret_coord, velocity)) {
-				delete bullet;
-				bullet = NULL;
-			} else {
-
-				if (bullet->Class->IsInvisible && object != NULL && object->IsOnBridge) {
-					bullet->IsOnBridge = true;
-				}
-
-				if (Is_Turret_Equipped()) {
-					if (RTTI == RTTI_BUILDING) {
-						((BuildingClass *)this)->Start_Turret_Recoil();
-						IsInRecoilState = ((BuildingClass *)this)->Class->IsTurretRecoil;
-					} else if (RTTI == RTTI_UNIT) {
-						IsInRecoilState = ((UnitClass *)this)->Class->IsTurretRecoil;
-					}
-				}
-
-				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
-				// The effects below start at fire_coord, which gamemd keeps in CStack_74 (TechnoClass::Fire, 0x6FDD50).
-				if (AutoTest_Active() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
-					TPoint3D<int> const flh = Weapon_FLH(which);
-					Coord const center = Center_Coord();
-					DebugString("AUTOTEST designator fire %s %s which %d origin %d,%d,%d center %d,%d,%d flh %d,%d,%d\n", TClass->Name(), weapon->Name(), which, fire_coord.X, fire_coord.Y, fire_coord.Z, center.X, center.Y, center.Z, flh.X, flh.Y, flh.Z);
-				}
-				if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
-					ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
-				}
-				if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
-					ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
-				}
-				if ((weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) || weapon->IsDetachedRailgun) {
-					Coord start = fire_coord;
-					Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
-					ParticleSystemClass * beam = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
-					if (AutoTest_Active()) {
-						DebugString("AUTOTEST railgun %s fires %s at frame %d, detached %d\n", TClass->Name(), weapon->Name(), Frame, (int)weapon->IsDetachedRailgun);
-					}
-					// A detached beam is not remembered, so it does not hold up the next shot.
-					if (weapon->IsRailgun) {
-						ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = beam;
-					}
-				}
-
-				LastFireFrame = Frame;
-				BurstIndex++;
-				Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
-				ChargeTurretDelay = (int)Arm;
-				BurstIndex %= weapon->Burst;
-
-				/*
-				**	Perform any animation effect for this weapon.
-				*/
-				AnimTypeClass const * a = NULL;
-				if (weapon->Anim.Count() > 0) {
-					a = weapon->Anim[Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count())];
-				}
-				if (a == NULL && IsInOpenToppedTransport) {
-					a = weapon->OpenToppedAnim;
-				}
-				// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
-				bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
-				if (garrison_fire) {
-					a = weapon->OccupantAnim;
-				}
-
-				/*
-				**	Play any sound effect tied to this weapon type.
-				*/
-				if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
-					Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
-				}
-
-				/*
-				**	If there is a special firing animation, then create and attach it
-				**	now.
-				*/
-				if (a != NULL) {
-					// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
-					Coord anim_coord = fire_coord;
-					AnimClass * anim = new AnimClass(a, anim_coord);
-					if (RTTI == RTTI_BUILDING) {
-						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
-						anim->ZAdjust = std::min(zadjust, 0);
-						// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
-						if (garrison->Occupants.Count() > 0) {
-							anim->ZAdjust = -200;
-						}
-					}
-					if (anim != NULL && RTTI != RTTI_BUILDING) {
-						anim->Attach_To(this);
-					}
-				}
-
-				// A DistributedFire object moves on to another target after each shot, unless it was
-				// ordered to attack this one (TechnoClass::Fire_At, 0x6FF87C).
-				if (TClass->IsDistributedFire && (Get_Mission() != MISSION_ATTACK || RTTI == RTTI_BUILDING) && target->Is_Techno()) {
-					TechnoClass * shot = (TechnoClass *)target;
-					if (std::find(AttackedTargets.begin(), AttackedTargets.end(), shot) == AttackedTargets.end()) {
-						AttackedTargets.push_back(shot);
-					}
-					Assign_Target(NULL);
-				}
-
-				// The occupants of a garrison take turns to fire.
-				if (garrison_fire) {
-					garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
-				}
-
-				if (weapon->IsSonic) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, (TechnoClass *)target, weapon);
-				}
-
-				// A magnetron beam is drawn while none is showing (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsMagBeam && Wave == NULL && target->Is_Techno()) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target, weapon);
-				}
-
-				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
-					TargetingLaserTimer = UIControls.TargetLaserTime;
-				}
-
-				if (weapon->IsElectricBolt && !weapon->IsLaser) {
-					Electric_Zap(target, which, weapon);
-				}
-
-				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
-				if (weapon->IsRadBeam) {
-					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), weapon->HasBeamColor ? weapon->BeamColor : (temporal ? Rule->ChronoBeamColor : Rule->RadColor), weapon->BeamDuration, weapon->BeamAmplitude);
-				}
-
-				// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
-					RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, weapon->HasBeamColor ? weapon->BeamColor : Rule->RadColor, weapon->BeamDuration, weapon->BeamAmplitude);
-				}
-
-				/*
-				 * Laser zap animation.
-				 */
-				if (weapon->IsLaser) {
-					BuildingClass * building = dynamic_cast<BuildingClass *>(this);
-					Laser_Zap(target, which, PrimaryWeapon, COORD_NONE);
-					if (building != NULL) {
-						building->BuildingStage.Set_Stage(0);
-						building->BuildingStage.Set_Rate(0);
-					}
-					if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
-						BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
-						if (discharge != NULL) {
-							discharge->Discharge_Turret();
-						}
-					}
-				}
-
-				/*
-				**	Reduce ammunition for this object.
-				*/
-				Reduce_Ammunition();
-
-				/*
-				**	Firing will in all likelihood, require the unit to be redrawn. Flag it to be
-				**	redrawn here.
-				*/
-				Mark(MARK_CHANGE);
-
-				/*
-				**	If a projectile was fired from a unit that is hidden in the darkness,
-				**	reveal that unit and a little area around it.
-				**	Only reveal the unit if the target belongs to a human player.
-				*/
-				Reveal_Firer_On_Fire(this, target, weapon);
-			}
-		} else {
-			delete bullet;
-			bullet = NULL;
+		// A detached beam is not remembered, so it does not hold up the next shot.
+		if (weapon->IsRailgun) {
+			ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = beam;
 		}
 	}
+
+	LastFireFrame = Frame;
+	BurstIndex++;
+	Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+	ChargeTurretDelay = (int)Arm;
+	BurstIndex %= weapon->Burst;
+
+	bool const garrison_fire = Is_Firing_Garrison();
+	Play_Fire_Anim_And_Sound(weapon, fire_coord, garrison, garrison_fire);
+
+	// A DistributedFire object moves on to another target after each shot, unless it was
+	// ordered to attack this one (TechnoClass::Fire_At, 0x6FF87C).
+	if (TClass->IsDistributedFire && (Get_Mission() != MISSION_ATTACK || RTTI == RTTI_BUILDING) && target->Is_Techno()) {
+		TechnoClass * shot = (TechnoClass *)target;
+		if (std::find(AttackedTargets.begin(), AttackedTargets.end(), shot) == AttackedTargets.end()) {
+			AttackedTargets.push_back(shot);
+		}
+		Assign_Target(NULL);
+	}
+
+	// The occupants of a garrison take turns to fire.
+	if (garrison_fire) {
+		garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
+	}
+
+	Start_Beam_Effects(target, weapon, which, fire_coord, target_coord);
+
+	/*
+	**	Reduce ammunition for this object.
+	*/
+	Reduce_Ammunition();
+
+	/*
+	**	Firing will in all likelihood, require the unit to be redrawn. Flag it to be
+	**	redrawn here.
+	*/
+	Mark(MARK_CHANGE);
+
+	/*
+	**	If a projectile was fired from a unit that is hidden in the darkness,
+	**	reveal that unit and a little area around it.
+	**	Only reveal the unit if the target belongs to a human player.
+	*/
+	Reveal_Firer_On_Fire(this, target, weapon);
 
 	// As TechnoClass::Fire (0x6FDD50): a LimboLaunch weapon takes its firer off the map to ride the shot.
-	if (bullet != NULL && weapon->IsLimboLaunch && Is_Foot()) {
+	if (weapon->IsLimboLaunch && Is_Foot()) {
 		if (ParasiteImUsing) {
 			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed;
 		}
@@ -5581,7 +5825,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	}
 
 	// A FireOnce weapon's firer drops its target after the shot (TechnoClass::Fire, 0x6FDD50).
-	if (bullet != NULL && weapon->IsFireOnce) {
+	if (weapon->IsFireOnce) {
 		Assign_Target(NULL);
 	}
 
@@ -5602,12 +5846,12 @@ void TechnoClass::Draw_Target_Laser(void) const
 
 
 // Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
-static void Play_Unit_Voice(VocType voc)
+static AudioHandle Play_Unit_Voice(VocType voc)
 {
 	if (voc != VOC_NONE) {
 		DebugString("Voice: %s\n", Voc_Name(voc));
 	}
-	Sound_Effect(voc);
+	return(Unit_Voice_Effect(voc));
 }
 
 
@@ -5616,11 +5860,56 @@ bool AttackMoveOrdering = false;
 
 
 /// <summary>
+/// Returns whether Ctrl and Shift are both held, gamemd's key chord for an attack-move.
+/// </summary>
+static bool Force_Attack_Keys_Held(void)
+{
+	return((Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2)) && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2)));
+}
+
+
+/// <summary>
+/// Whether this object can take an attack-move order (TechnoClass::CanAttackOnTheMove, 0x70F090): a soldier or a vehicle
+/// with a primary weapon and no PreventAttackMove=yes. A structure or an aircraft cannot.
+/// </summary>
+bool TechnoClass::Can_Attack_Move(void) const
+{
+	return(Is_Foot() && TClass->Can_Attack_Move());
+}
+
+
+/// <summary>
+/// Whether every selected object can attack-move. Ctrl with Shift gives an attack-move only then
+/// (AllSelectedCanAttackForced, 0x731BF0), and the AttackMove command arms only then (0x731AF0).
+/// </summary>
+bool All_Selected_Can_Attack_Move(void)
+{
+	for (int index = 0; index < CurrentObject.Count(); index++) {
+		ObjectClass const * object = CurrentObject[index];
+		if (object != NULL && (!object->Is_Techno() || !static_cast<TechnoClass const *>(object)->Can_Attack_Move())) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Returns whether the attack-move key is held down. Clicks made while it is held are attack-moves, as the armed click is.
 /// </summary>
 bool Attack_Move_Key_Held(void)
 {
 	return((Options.KeyAttackMove1 != KN_NONE && Keyboard->Down(Options.KeyAttackMove1)) || (Options.KeyAttackMove2 != KN_NONE && Keyboard->Down(Options.KeyAttackMove2)));
+}
+
+
+/// <summary>
+/// Returns whether a move or an attack under the mouse is an attack-move now: the AttackMove command is armed, the attack-move
+/// key is held, or Ctrl and Shift are held over selected objects that can all attack-move (AllSelectedCanAttackForced, 0x731BF0).
+/// </summary>
+bool Attack_Move_Pending(void)
+{
+	return(AttackMoveArmed || Attack_Move_Key_Held() || (Force_Attack_Keys_Held() && All_Selected_Can_Attack_Move()));
 }
 
 
@@ -5648,50 +5937,32 @@ bool Attack_Move_Key_Held(void)
  *=============================================================================================*/
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
-	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held,
-	// and only for a type that can attack-move (TechnoClass::ClickedMission, 0x6FFBE0).
-	bool const ground_move = (mission == MISSION_MOVE && target == NULL && destination != NULL && destination->What_Am_I() == RTTI_CELL);
-	bool const ground_attack = (mission == MISSION_ATTACK && target != NULL && target->What_Am_I() == RTTI_CELL);
-	bool const ctrlshift = (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2)) && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
-	if ((ground_move || ground_attack) && Is_Foot() && (AttackMoveOrdering || ctrlshift) && TClass->Can_Attack_Move()) {
-		destination = (mission == MISSION_MOVE) ? destination : target;
-		target = NULL;
+	// A replay runs the orders it recorded, so the player's order gets no answer and no event.
+	if (Replay_Is_Playing()) {
+		return;
+	}
+
+	// A paralyzed foot, such as a giant squid's victim, takes no move order: no voice, no mission (FootClass::CellClickedAction, 0x4D7D50, via TechnoClass::IsControllable, 0x700C40). Attacks still go through.
+	if ((mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE) && Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
+		return;
+	}
+
+	// A move or an attack order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are
+	// held and every selected object can attack-move, and only for an object that can (TechnoClass::ClickedMission,
+	// 0x6FFBE0, with 0x731BF0). Whatever the order names stays as it is: a move keeps its destination, a cell or an object,
+	// and an attack keeps its target, a cell, an enemy or any other object.
+	bool const move_order = (mission == MISSION_MOVE && target == NULL && destination != NULL);
+	bool const attack_order = (mission == MISSION_ATTACK && target != NULL);
+	if ((move_order || attack_order) && Can_Attack_Move() && (AttackMoveOrdering || (Force_Attack_Keys_Held() && All_Selected_Can_Attack_Move()))) {
 		mission = MISSION_ATTACK_MOVE;
 	}
 
-	/*
-	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
-	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,
-	 * 0x6FFBE0, and VoiceEnter, VoiceCapture and VoiceHarvest). Any other order, such as guard,
-	 * plays a VoiceSpecialAttack entry, or nothing when that list is empty.
-	 */
-	if (AllowVoice) {
-		VocType voice = VOC_NONE;
-		if (mission == MISSION_ENTER) {
-			voice = TClass->VoiceEnter;
-		} else if (mission == MISSION_CAPTURE) {
-			voice = TClass->VoiceCapture != VOC_NONE ? TClass->VoiceCapture : TClass->VoiceEnter;
-		} else if (mission == MISSION_HARVEST) {
-			voice = TClass->VoiceHarvest;
-		}
-
-		// A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier, and never with the move voice (TechnoClass::ClickedMission, 0x6FFBE0).
-		if (mission == MISSION_UNLOAD) {
-			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
-			Play_Unit_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
-		} else
-		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
-			Play_Unit_Voice(Weapon_Attack_Voice(target));
-		} else if (mission == MISSION_ATTACK) {
-			Response_Attack();
-		} else if (voice != VOC_NONE) {
-			Play_Unit_Voice(voice);
-		} else if (mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE || mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_HARVEST) {
-			Response_Move();
-		} else if (TClass->VoiceSpecialAttack.Count() > 0) {
-			Play_Unit_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
-		}
+	// A fully deployed simple deployer takes no plain move order until it packs up: gamemd's UnitClass::MouseOverCell (0x7404B0) gives a move over a deployed unit no action, so no order is issued. An attack-move passes.
+	if (mission == MISSION_MOVE && RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsSimpleDeployed) {
+		return;
 	}
+
+	Order_Voice(mission, target);
 
 	/*
 	**	Cooerce the movement mission into a queued movement mission if the ALT key was
@@ -5729,6 +6000,11 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		return(ACTION_NONE);
 	}
 
+	// A DirectRocker-linked unit that is not Pushy gets no action from a mouse over (TechnoClass::MouseOverObject, 0x6FFEC0).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(ACTION_NONE);
+	}
+
 	if (object != NULL) {
 
 		/*
@@ -5759,6 +6035,12 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		bool altdown = !disallow_force && (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
 		bool ctrldown = !disallow_force && (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2));
 		bool shiftdown = !disallow_force && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
+
+		// Ctrl with Shift is the attack-move chord, and counts as neither key here: no force fire and no toggled selection (TechnoClass::MouseOverObject, 0x6FFEC0).
+		if (ctrldown && shiftdown) {
+			ctrldown = false;
+			shiftdown = false;
+		}
 
 		/*
 		**	Special guard area mission is possible if both the control and the
@@ -5792,21 +6074,56 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		*/
 		TechnoTypeClass const * ttype = TClass;
 
+		// The weapon selection against object is made at most once for the checks below.
+		bool object_index_known = false;
+		int object_index = 0;
+		auto weapon_index_for_object = [&]() {
+			if (!object_index_known) {
+				object_index = What_Weapon_Should_I_Use((ObjectClass *)object);
+				object_index_known = true;
+			}
+			return(object_index);
+		};
+
 		// A terrain object takes the attack cursor under TreeTargeting, or when the weapon that would fire at it has TerrainFire=yes (the terrain branch of gamemd's test, 0x70EF00).
 		bool terrain_target = false;
 		if (object->RTTI == RTTI_TERRAIN) {
-			WeaponTypeClass const * terrain_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			WeaponTypeClass const * terrain_weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 			terrain_target = Rule->IsTreeTarget || (terrain_weapon != NULL && terrain_weapon->IsTerrainFire);
 		}
 
 		// A weapon with a sonic warhead takes the attack cursor over a foot that has a parasite inside, even an allied one (TechnoClass::MouseOverObject, 0x6FFEC0).
 		bool sonic_parasite = false;
 		if (object->Is_Foot() && ((FootClass const *)object)->ParasiteEatingMe != NULL) {
-			WeaponTypeClass const * sonic_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			WeaponTypeClass const * sonic_weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 			sonic_parasite = sonic_weapon != NULL && sonic_weapon->WarheadPtr != NULL && sonic_weapon->WarheadPtr->IsSonic;
 		}
 
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
+		// With AttackCursorOnDisguise=no, an enemy whose disguise fools the player is treated as a friend, unless it is
+		// PermaDisguise or a Mirage blinking after a shot. A Mirage passing for a tree can still be attacked by a
+		// TerrainFire weapon, as a tree could (TechnoClass::MouseOverObject, 0x700180; 0x70EF00).
+		bool fooled = false;
+		if (!Rule->IsAttackCursorOnDisguise && object->Is_Techno() && !((TechnoClass const *)object)->TClass->IsPermaDisguise) {
+			if (object->RTTI == RTTI_INFANTRY) {
+				fooled = ((InfantryClass const *)object)->Is_Disguised_As(House);
+			} else if (object->RTTI == RTTI_UNIT) {
+				UnitClass const * unit = (UnitClass const *)object;
+				fooled = !unit->Is_Blinking_Disguise() && unit->Is_Disguised_As(House);
+				if (fooled) {
+					WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
+					fooled = weapon == NULL || !weapon->IsTerrainFire;
+				}
+			}
+		}
+		// An Ivan bomb weapon over a transport is a boarding order, so AttackCursorOnFriendlies does not make the transport a target (TechnoClass::MouseOverObject, 0x6FFEC0).
+		bool ivan_transport = false;
+		if (object->Is_Techno() && ((TechnoClass const *)object)->TClass->Max_Passengers() > 0) {
+			WeaponTypeClass const * ivan_weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
+			ivan_transport = ivan_weapon != NULL && ivan_weapon->WarheadPtr != NULL && ivan_weapon->WarheadPtr->IsIvanBomb;
+		}
+		bool const friendly_fire = TClass->IsAttackFriendlies || (TClass->IsAttackCursorOnFriendlies && !ivan_transport) || sonic_parasite;
+
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || ((!House->Is_Ally(object) || friendly_fire) && (!fooled || friendly_fire))) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
 			if ((Is_Weapon_Equipped() && !TClass->IsNoManualFire) ||
 					(RTTI == RTTI_INFANTRY &&
@@ -5816,13 +6133,12 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 
 				// The attack cursor needs a weapon that can fire at the object, range aside, unless the force-fire key is held (TechnoClass::MouseOverObject, 0x700542).
 				// A spy's click on a structure it can infiltrate is an attack order whatever its weapon can fire at (TechnoClass::MouseOverObject, 0x6FFEC0).
-				int primary = What_Weapon_Should_I_Use((ObjectClass *)object);
+				int primary = weapon_index_for_object();
 				bool const infiltrates = RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING
-					&& (((InfantryClass *)this)->Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable);
+					&& ((InfantryClass *)this)->Can_Infiltrate((BuildingClass const *)object);
 				bool const can_fire = ctrldown || infiltrates || Can_Fire((ObjectClass *)object, primary) != FIRE_ILLEGAL;
 				if (can_fire && (Can_Player_Move() || In_Range((ObjectClass *)object, primary))) {
-					if (In_Range((ObjectClass *)object, primary) || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING
-						&& (((InfantryClass *)this)->Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable))) {
+					if (In_Range((ObjectClass *)object, primary) || infiltrates) {
 						return(ACTION_ATTACK);
 					} else {
 						if (!Can_Player_Move()) {
@@ -5873,12 +6189,23 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 		return(ACTION_NONE);
 	}
 
+	// A DirectRocker-linked unit that is not Pushy gets no action from a mouse over (TechnoClass::MouseOverCell, 0x700600).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(ACTION_NONE);
+	}
+
 	CellClass const * cellptr = &Map[cell];
 	OverlayTypeClass const * optr = NULL;
 
 	bool ctrldown = !disallow_force && (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2));
 	bool shiftdown = !disallow_force && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
 	bool altdown = !disallow_force && (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
+
+	// Ctrl with Shift is the attack-move chord, and counts as neither key here (TechnoClass::MouseOverCell, 0x700600).
+	if (ctrldown && shiftdown) {
+		ctrldown = false;
+		shiftdown = false;
+	}
 
 	/*
 	 * When fog of war is enabled and the fogged imagery is being examined, then
@@ -5939,7 +6266,7 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 		// An IsARock overlay takes the attack cursor for a TerrainFire weapon (the cell branch of gamemd's test, 0x70EF00, reads the IsARock flag at +0x2B5).
 		bool rock_target = false;
 		if (optr != NULL && optr->IsARock) {
-			WeaponTypeClass const * cell_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(&Map[cell]))->Weapon;
+			WeaponTypeClass const * cell_weapon = Weapon_Against(&Map[cell]);
 			rock_target = cell_weapon != NULL && cell_weapon->IsTerrainFire;
 		}
 
@@ -6070,7 +6397,8 @@ bool TechnoClass::Can_Deploy_Now(void) const
 
 	if (unit != NULL) {
 		blocked = unit->Is_Immobilized() || unit->CurrentTube >= TUBE_FIRST;
-		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer) {
+		// A DeployFire=yes vehicle fires where it stands, so a vehicle with no seats is not blocked for it.
+		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer && !unit->Class->IsDeployFire) {
 			blocked = true;
 		}
 		if (unit->Class->Max_Passengers() > 0) {
@@ -6107,7 +6435,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 
 	BuildingClass const * building = dynamic_cast<BuildingClass const *>(this);
 	if (building != NULL && !Is_Immobilized() && (building->Occupants.Count() > 0
-		|| ((building->Class->IsInfantryAbsorb || building->Class->IsUnitAbsorb) && building->Cargo.How_Many() > 0))) {
+		|| building->Holds_Absorbed())) {
 		blocked = false;
 	}
 	if (building != NULL && building->Class->Can_Always_Undeploy()) {
@@ -6236,12 +6564,12 @@ int TechnoClass::Weapon_Range(int which) const
 	// As TechnoClass::GetWeaponRange (0x7012C0): an open-topped transport reaches no farther than its passengers' primary weapons.
 	if (TClass->IsOpenTopped) {
 		int range = weapon->Range;
-		for (FootClass const * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass const *)(ObjectClass const *)passenger->Next) {
+		Cargo.For_Each_Attached([&range](FootClass * passenger) {
 			WeaponTypeClass const * primary = passenger->Get_Class_Weapon_Data(0)->Weapon;
 			if (primary != NULL) {
 				range = std::min(range, primary->Range);
 			}
-		}
+		});
 		return(range);
 	}
 	return(weapon->Range);
@@ -6315,11 +6643,17 @@ bool TechnoClass::Restore_Mission(void)
 void TechnoClass::Renovate(void)
 {
 	Mark(MARK_CHANGE);
+	bool const damaged = Strength < TClass->MaxStrength;
 	Strength = TClass->MaxStrength;
 	EstimatedHealth = Strength;
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->Repair(0);
 		((BuildingClass *)this)->Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
+
+		// An engineer reaching a structure that is already whole is not an OnFinishRepair call (0x701410), so it makes no sound.
+		if (damaged) {
+			Sound_Effect(Rule->BuildingRepairedSound, Center_Coord());
+		}
 	}
 }
 
@@ -6556,25 +6890,13 @@ void TechnoClass::Set_Owner(HouseClass * newowner)
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Take_Damage -- Records damage assessed to this object.                         *
- *                                                                                             *
- *    This routine is called when this object has taken damage. It handles recording whether   *
- *    this object has been destroyed. If it has, then mark the appropriate kill records as     *
- *    necessary.                                                                               *
- *                                                                                             *
- * INPUT:                                                                                      *
- *                                                                                             *
- * OUTPUT:                                                                                     *
- *                                                                                             *
- * WARNINGS:                                                                                   *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   06/20/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
-ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
+/// <summary>
+/// Adjusts damage for armor, veterancy and immunities, and applies the effects a hit has before
+/// it does any damage. Returns true when Take_Damage must return RESULT_NONE without applying
+/// the hit.
+/// </summary>
+bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative)
 {
-	bool negative = damage < 0;
 	DamageWarhead = warhead;
 
 	// A RelativeDamage warhead hurts by a share of the victim's strength in place of the damage the shot carries; a kind of victim
@@ -6603,7 +6925,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		bool const penetrates = warhead->IsPenetratesBunker;
 		if (RTTI == RTTI_BUILDING ? penetrates : (!penetrates && Map[Get_Cell()].Cell_Building() == BunkerLinkedItem)) {
 			damage = 0;
-			return(RESULT_NONE);
+			return(true);
 		}
 	}
 
@@ -6631,7 +6953,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		if (source != NULL) {
 			if (TClass->IsTypeImmune) {
 				if (TClass == source->TClass && House == source->House) {
-					return(RESULT_NONE);
+					return(true);
 				}
 			}
 		}
@@ -6640,20 +6962,20 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	// A radiation warhead does nothing to a type immune to radiation (TechnoClass::ReceiveDamage, 0x701900).
 	if (warhead != NULL && warhead->IsRadiation && Is_Immune_To_Radiation()) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// Nor does a PsychicDamage warhead to an ImmuneToPsionicWeapons type, or a Poison warhead to an ImmuneToPoison one.
 	if (warhead != NULL && ((warhead->IsPsychicDamage && Is_Immune_To_Psionic_Weapons()) || (warhead->IsPoison && Is_Immune_To_Poison()))) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not
 	// (TechnoClass::ReceiveDamage, 0x701900). An object of the firer's own house follows AffectsOwner instead (Ares).
 	if (warhead != NULL && source != NULL && WarheadRules::Warhead_Spares_House(House == source->House, House->Is_Ally(source->House), warhead->IsAffectsOwner, warhead->IsAffectsAllies)) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// An AffectsEnemies=no warhead does nothing to an object whose owner is no ally of the firer's house, which an explosion with no firer takes from the house it is credited to (Ares).
@@ -6690,11 +7012,15 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
+		// The hit makes a flash over the object, blue for a force shield, as big as a blast of twice the damage (TechnoClass::ReceiveDamage, 0x701A93).
+		int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
+		Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
+		AUTOTEST_LOG("curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
 		if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && effects_apply) {
 			Apply_Iron_Curtain_Warhead(warhead, source, sourcehouse);
 		}
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// A Sonar.Duration warhead decloaks an object it hits and keeps it from cloaking for that many frames, at least as long as
@@ -6727,7 +7053,19 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).
 	if (IsBeingWarpedOut && !forced) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
+	}
+
+	// Healing adds ammunition here as damage removes it, with no cap at the full load (TechnoClass::ReceiveDamage, 0x701AE5).
+	if (TClass->IsDamageReducesReadiness) {
+		double const share = TClass->ReadinessReductionMultiplier * ((double)damage / TClass->MaxStrength);
+		Ammo = (int)((double)Ammo - TClass->MaxAmmo * share);
+		if (Ammo < 0) {
+			Ammo = 0;
+		}
+		if (RTTI == RTTI_UNIT) {
+			((UnitClass *)this)->Start_Reloading();
+		}
 	}
 
 	// A CausesDelayKill warhead sets a fuse on an EligibleForDelayKill structure, later the farther it is from the blast (TechnoClass::ReceiveDamage, 0x701E92).
@@ -6745,7 +7083,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 		Strength = 1;
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	/*
@@ -6768,6 +7106,107 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 		}
 		damage = 0;
+		return(true);
+	}
+	return(false);
+}
+
+
+void TechnoClass::Release_Dependents_On_Death(TechnoClass * source)
+{
+	// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
+	if (CaptureManager) {
+		CaptureManager->Free_All();
+	}
+	if (SpawnManager) {
+		SpawnManager->Kill_Nodes();
+	}
+	if (SlaveManager) {
+		SlaveManager->Free_All(source);
+		SlaveManager.reset();
+	}
+	Stop_Drain();
+	if (DrainingMe != NULL) {
+		DrainingMe->Stop_Drain();
+	}
+	Release_Locomotor(false);
+	Release_Warp();
+}
+
+
+void TechnoClass::Play_Death_Voices(WarheadTypeClass const * warhead)
+{
+	/*
+	 * Play the death voice response, heard only for an object the local player controls
+	 * (TechnoClass::ReceiveDamage, 0x701900). A warhead's VoiceDie.Override and DieSound.Override replace the ones
+	 * of the type, and VOC_NONE silences them (Ares).
+	 */
+	if (warhead != NULL && warhead->IsVoiceDieOverridden) {
+		if (warhead->VoiceDieOverride != VOC_NONE && House->Is_Player_Control()) {
+			Unit_Voice_Effect(warhead->VoiceDieOverride, Get_Coord());
+		}
+	} else if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
+		VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
+		Unit_Voice_Effect(voc, Get_Coord());
+	}
+
+	// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
+	if (warhead != NULL && warhead->IsDieSoundOverridden) {
+		if (warhead->DieSoundOverride != VOC_NONE) {
+			Sound_Effect(warhead->DieSoundOverride, Get_Coord());
+		}
+	} else if (TClass->DieSound.Count() > 0) {
+		VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
+		Sound_Effect(voc, Get_Coord());
+	}
+}
+
+
+void TechnoClass::Spawn_Death_Debris(void)
+{
+	/*
+	 * Spawn destruction debris as Yuri's Revenge does (TechnoClass::ReceiveDamage). Voxel
+	 * debris is dealt out round the DebrisTypes list until the count is used up; flat
+	 * animations come from DebrisAnims, or from MetallicDebris when the type has neither.
+	 */
+	if (TClass->MaxDebris > 0) {
+		int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
+
+		if (TClass->DebrisTypes.Count() > 0) {
+			Throw_Voxel_Debris(TClass->DebrisTypes, TClass->DebrisMaximums, remaining, Center_Coord(), House);
+		}
+
+		TypeList<AnimTypeClass const *> const & anims = TClass->DebrisAnims.Count() > 0 ? TClass->DebrisAnims : Rule->MetallicDebris;
+		if ((TClass->DebrisAnims.Count() > 0 || TClass->DebrisTypes.Count() == 0) && anims.Count() > 0) {
+			for (; remaining > 0; remaining--) {
+				new AnimClass(anims[Scen->RandomNumber(0, anims.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+			}
+		}
+	}
+}
+
+
+/***********************************************************************************************
+ * TechnoClass::Take_Damage -- Records damage assessed to this object.                       *
+ *                                                                                             *
+ *    This routine is called when this object has taken damage. It handles recording whether   *
+ *    this object has been destroyed. If it has, then mark the appropriate kill records as     *
+ *    necessary.                                                                               *
+ *                                                                                             *
+ * INPUT:                                                                                      *
+ *                                                                                             *
+ * OUTPUT:                                                                                     *
+ *                                                                                             *
+ * WARNINGS:                                                                                   *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   06/20/1995 JLB : Created.                                                                 *
+ *=============================================================================================*/
+ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
+{
+	bool negative = damage < 0;
+
+	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative)) {
 		return(RESULT_NONE);
 	}
 
@@ -6840,67 +7279,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	switch (result) {
 		case RESULT_DESTROYED:
-
-			// A vehicle held or let go in the air is not destroyed where it is. It is let go and falls, and the drop
-			// on landing destroys it (FootClass::Crash, 0x4DEBB0).
-			if (Is_Foot() && IsAttackedByLocomotor && HeightAGL > 0) {
-				if (!IsCrashing) {
-					if (LocomotorSource != NULL) {
-						LocomotorSource->LocomotorTarget = NULL;
-						LocomotorSource = NULL;
-					}
-					Release_Held_Vehicle(NULL);
-				}
-				Strength = 1;
-				return(RESULT_NONE);
-			}
-
-			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
-			if (CaptureManager) {
-				CaptureManager->Free_All();
-			}
-			if (SpawnManager) {
-				SpawnManager->Kill_Nodes();
-			}
-			if (SlaveManager) {
-				SlaveManager->Free_All(source);
-				SlaveManager.reset();
-			}
-			Stop_Drain();
-			if (DrainingMe != NULL) {
-				DrainingMe->Stop_Drain();
-			}
-			Release_Locomotor(false);
-			if (LocomotorSource != NULL) {
-				LocomotorSource->Release_Locomotor(false);
-			}
-			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-				TemporalImUsing->Let_Go();
-			}
-
-			/*
-			 * Play the death voice response, heard only for an object the local player controls
-			 * (TechnoClass::ReceiveDamage, 0x701900).
-			 */
-			// A warhead's VoiceDie.Override and DieSound.Override replace the ones of the type, and VOC_NONE silences them (Ares).
-			if (warhead != NULL && warhead->IsVoiceDieOverridden) {
-				if (warhead->VoiceDieOverride != VOC_NONE && House->Is_Player_Control()) {
-					Sound_Effect(warhead->VoiceDieOverride, Get_Coord());
-				}
-			} else if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
-				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
-				Sound_Effect(voc, Get_Coord());
-			}
-
-			// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
-			if (warhead != NULL && warhead->IsDieSoundOverridden) {
-				if (warhead->DieSoundOverride != VOC_NONE) {
-					Sound_Effect(warhead->DieSoundOverride, Get_Coord());
-				}
-			} else if (TClass->DieSound.Count() > 0) {
-				VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
-				Sound_Effect(voc, Get_Coord());
-			}
+			Release_Dependents_On_Death(source);
+			Play_Death_Voices(warhead);
 
 			Transmit_Message(RADIO_OVER_OUT);
 			Stun();
@@ -6939,52 +7319,18 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 			}
 
-			/*
-			 * Spawn destruction debris as Yuri's Revenge does (TechnoClass::ReceiveDamage). Voxel
-			 * debris is dealt out round the DebrisTypes list until the count is used up; flat
-			 * animations come from DebrisAnims, or from MetallicDebris when the type has neither.
-			 */
-			if (TClass->MaxDebris > 0) {
-				int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
-
-				if (TClass->DebrisTypes.Count() > 0) {
-					int index = 0;
-					int idlepasses = 0;
-					bool placed = false;
-					while (remaining > 0 && idlepasses < 2) {
-						int const maximum = index < TClass->DebrisMaximums.Count() ? TClass->DebrisMaximums[index] : 0;
-						int count = abs(Scen->RandomNumber) % (maximum + 1);
-						if (count >= remaining) {
-							count = remaining;
-						}
-						for (int j = 0; j < count; j++) {
-							new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
-						}
-						remaining -= count;
-						placed = placed || count > 0;
-
-						// The original game loops forever when no entry can place any; this stops after two empty passes.
-						if (++index >= TClass->DebrisTypes.Count()) {
-							index = 0;
-							idlepasses = placed ? 0 : idlepasses + 1;
-							placed = false;
-						}
-					}
-				}
-
-				TypeList<AnimTypeClass const *> const & anims = TClass->DebrisAnims.Count() > 0 ? TClass->DebrisAnims : Rule->MetallicDebris;
-				if ((TClass->DebrisAnims.Count() > 0 || TClass->DebrisTypes.Count() == 0) && anims.Count() > 0) {
-					for (; remaining > 0; remaining--) {
-						new AnimClass(anims[Scen->RandomNumber(0, anims.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-					}
-				}
-			}
+			Spawn_Death_Debris();
 
 			/*
 			 * Determine whether this object performs a violent collateral explosion on death.
 			 * Either the type is flagged exploding, or a veteran/elite has the explodes ability.
 			 */
 			if (!TClass->IsExploding && !Has_Ability(ABILITY_EXPLODES)) {
+				// A Suicide weapon as the current weapon sets off the death weapon without the cargo scatter (TechnoClass::ReceiveDamage, 0x701900, 0x7025F5).
+				WeaponTypeClass const * current = Get_Class_Weapon_Data(CurrentWeaponNumber)->Weapon;
+				if (current != NULL && current->IsSuicide) {
+					Fire_Death_Weapon();
+				}
 				break;
 			}
 
@@ -7023,7 +7369,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			TechnoTypeClass const * ttype = TClass;
 			if (ttype->VoiceFeedback.Count() > 0 && NonCriticalRandomNumber(0, 99) < 30 && House->Is_Player_Control()) {
 				VocType voc = (VocType)ttype->VoiceFeedback.Pick(NonCriticalRandomNumber());
-				Sound_Effect(voc, Center_Coord());
+				Unit_Voice_Effect(voc, Center_Coord());
 			}
 			break;
 		}
@@ -7043,6 +7389,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 			}
 			break;
+	}
+
+	// A destroyed object sets off the Ivan bomb it carries, whatever else its death did (TechnoClass::ReceiveDamage, 0x701900).
+	if (result == RESULT_DESTROYED) {
+		Detonate_Bomb();
 	}
 
 	if (result != RESULT_DESTROYED) {
@@ -7073,7 +7424,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 
 				if (ParticleSystems[3] == NULL && systems.Count() > 0 && HeightAGL > -10) {
-					Coord spawn = TClass->DamageSmokeOffset;
+					Coord spawn = TClass->Particle_System_Offset();
 					ParticleSystems[3] = new ParticleSystemClass(systems[Scen->RandomNumber(0, systems.Count() - 1)], Get_Coord() + spawn, NULL, this, COORD_NONE);
 				}
 			}
@@ -7171,7 +7522,7 @@ void TechnoClass::Pay_Bounty(TechnoClass * source) const
 		return;
 	}
 
-	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const rank = Veterancy.Rank();
 	int const value = TClass->BountyValue[rank];
 	if (value > 0) {
 		source->House->Refund_Money(value);
@@ -7314,6 +7665,11 @@ void TechnoClass::Spring_Kill_Events(bool credited)
 void TechnoClass::Count_The_Kill(HouseClass * killer_house)
 {
 	int total_recorded = 0;
+
+	// A type with DontScore adds nothing to the killer's counts.
+	if (TClass->IsDontScore) {
+		killer_house = NULL;
+	}
 
 	switch ((RTTIType)RTTI) {
 		case RTTI_BUILDING:
@@ -8038,11 +8394,13 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 					flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 				}
 			}
+		}
 
-			// An object being warped out is drawn half see-through, as TechnoClass::Draw_Voxel (0x706640) draws it.
-			if (IsBeingWarpedOut) {
-				flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
-			}
+		// Warping out or in draws the object half see-through, as the shape draw (gamemd 0x705E00) does.
+		// A turret composite is blitted without it here; UnitClass::Unit_Blit_Voxel applies it on the screen.
+		bool const composited = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
+		if (Is_Warp_Fading() && !composited) {
+			flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 		}
 
 		ConvertClass * converter;
@@ -8058,6 +8416,9 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 		} else {
 			if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 				converter = EightBitDrawer;
+			} else if (RTTI == RTTI_BUILDING && Palette_Converter() != NULL) {
+				// TechnoClass::GetDrawer (0x705D70) answers with the type's Palette= before anything else.
+				converter = Palette_Converter();
 			} else if (Is_Disguised_To_Player()) {
 				converter = Effect_Converter(ColorSchemes[House_Display_Scheme(DisguiseHouse)]);
 			} else {
@@ -8107,16 +8468,8 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			}
 		}
 
-		// A structure that an airstrike designator marks is drawn with the LaserTargetColor added (BuildingClass::Draw_It, 0x43D290).
-		if (RTTI == RTTI_BUILDING && AirstrikeMarkedBy != NULL && !((BuildingClass *)this)->Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
-			RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
-			if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
-				// The table's red and blue are 5-bit and green 6-bit; the scheme palette is 8-bit, so they are scaled up to it.
-				ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 8, add.Get_Green() * 4, add.Get_Blue() * 8);
-				if (tinted != NULL) {
-					converter = tinted;
-				}
-			}
+		if (RTTI == RTTI_BUILDING) {
+			converter = ((BuildingClass const *)this)->Tinted_Converter(converter);
 		}
 
 		if (zgrad != ZGRAD_NONE) flags = ShapeFlags_Type(flags|SHAPE_ZGRAD);
@@ -8198,6 +8551,9 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 		key = -1;
 	}
 
+	PerfScope voxel_scope(PERF_DRAW_VOXELS);
+	Perf_Count(PERF_COUNT_VOXELS);
+
 	ShapeFlags_Type flags = SHAPE_ZGRAD;
 	if (negflags == SHAPE_NORMAL) {
 		bool visible = false;
@@ -8244,14 +8600,18 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 		}
 	}
 
-	if (IsBeingWarpedOut) {
+	// Warping out or in draws the voxel half see-through, as TechnoClass::Draw_Voxel (0x706640) does.
+	// A turret composite is blitted without it here; UnitClass::Unit_Blit_Voxel applies it on the screen.
+	bool const composited_voxel = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
+	if (Is_Warp_Fading() && !composited_voxel) {
 		flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 	}
 	flags = ShapeFlags_Type(~negflags & (flags|SHAPE_ALPHA));
 
 	Rect cliprect = xcliprect;
 
-	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface && key != -1) {
+	// A turret or barrel part (negflags has SHAPE_NOTRANS) is composed without it, cached or not.
+	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface && key != -1 && !(negflags & SHAPE_NOTRANS)) {
 		flags = ShapeFlags_Type(flags|SHAPE_NOTRANS);
 	}
 
@@ -8270,11 +8630,17 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
+		// A draw between game frames reads the facing part way between two game frames, so it is counted apart.
+		bool const smoothed = RenderBlend < 1.0;
 		if (entry != NULL) {
+			Perf_Count(smoothed ? PERF_COUNT_VOXEL_SMOOTH_HIT : PERF_COUNT_VOXEL_HIT);
 			Techno_Blit_Voxel(*entry, point, cliprect, flags, brightness);
 			note_body(Rect(point.X + entry->X, point.Y + entry->Y, entry->Width, entry->Height));
 			return;
 		}
+		Perf_Count(smoothed ? PERF_COUNT_VOXEL_SMOOTH_MISS : PERF_COUNT_VOXEL_MISS);
+	} else {
+		Perf_Count(PERF_COUNT_VOXEL_UNCACHED);
 	}
 
 	SurfaceRegion region = Techno_Render_Voxel_Object(voxeldata, matrix, point, cliprect, frame, flags, brightness);
@@ -8294,6 +8660,16 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 }
 
 
+// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
+static int Shadow_Cache_Key(int key, VoxelIndexClass const * cache, bool disable_cache)
+{
+	if (key != -1 && (cache == NULL || disable_cache)) {
+		return(-1);
+	}
+	return(key);
+}
+
+
 /// <summary>
 /// Draws the voxel shadow for this object, honoring the cache key when present.
 /// Skips drawing entirely if cloaked, mid-flash, or the voxel library failed to load.
@@ -8309,22 +8685,11 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 /// <param name="force_cache">Force rendering even when a cache key is supplied.</param>
 void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const
 {
-	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
+	if (Techno_Draw_Cached_Voxel_Shadow(voxeldata, key, cache, cliprect, point)) {
 		return;
 	}
 
-	// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
-	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
-		key = -1;
-	}
-
-	if (key != -1) {
-		StaticBufferClass::Entry * entry = (*cache)[key];
-		if (entry != NULL) {
-			Techno_Blit_Voxel(*entry, point, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), NORMAL_LIGHT);
-			return;
-		}
-	}
+	key = Shadow_Cache_Key(key, cache, TClass->IsDisableShadowCache);
 
 	if (key == -1 || force_cache) {
 		SurfaceRegion region = Techno_Render_Voxel_Shadow(voxeldata, matrix, point, cliprect, layer_index, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), key != -1);
@@ -8345,6 +8710,30 @@ void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, in
 			Techno_Draw_Voxel_Shadow(voxeldata, layer_index, key, cache, cliprect, point, matrix, false);
 		}
 	}
+}
+
+
+/// <summary>
+/// Draws the voxel shadow from the cache, when that is all the shadow needs.
+/// A shadow that is not to be drawn at all (cloaked, a type without one, a failed library) counts as done.
+/// </summary>
+/// <returns>Returns true when nothing more is to be drawn, false when the shadow must be rendered.</returns>
+bool TechnoClass::Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const
+{
+	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
+		return(true);
+	}
+
+	key = Shadow_Cache_Key(key, cache, TClass->IsDisableShadowCache);
+
+	if (key != -1) {
+		StaticBufferClass::Entry * entry = (*cache)[key];
+		if (entry != NULL) {
+			Techno_Blit_Voxel(*entry, point, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), NORMAL_LIGHT);
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -8449,6 +8838,17 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 /// <param name="brightness">The brightness to draw the image with.</param>
 void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Point2D const & point, Rect const & cliprect, ShapeFlags_Type flags, int brightness) const
 {
+	Rect const dest(Point2D(entry.X, entry.Y) + point, entry.Width, entry.Height);
+
+	if (RTTI == RTTI_UNIT) {
+		UnitCompositeDirtyRect = Union(UnitCompositeDirtyRect, dest);
+	}
+
+	// An image wholly outside the clip draws nothing, so its converter and blitter are not looked up.
+	if (dest.X >= cliprect.Width || dest.Y >= cliprect.Height || dest.X + dest.Width <= 0 || dest.Y + dest.Height <= 0) {
+		return;
+	}
+
 	BSurface bsurface(entry.Width, entry.Height, 1, entry.Data);
 	flags = ShapeFlags_Type(flags & ~SHAPE_REMAP);
 
@@ -8466,13 +8866,8 @@ void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Poin
 		predoffset = Get_Predator_Offset();
 	}
 
-	if (RTTI == RTTI_UNIT) {
-		Rect r = Rect(Point2D(entry.X, entry.Y) + point, entry.Width, entry.Height);
-		UnitCompositeDirtyRect = Union(UnitCompositeDirtyRect, r);
-	}
-
 	if (blitter != NULL) {
-		RLE_Blit(*LogicalSurface, cliprect, Rect(Point2D(entry.X, entry.Y) + point, entry.Width, entry.Height), bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
+		RLE_Blit(*LogicalSurface, cliprect, dest, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
 	}
 }
 
@@ -8538,13 +8933,11 @@ void TechnoClass::Delete_Me(void)
 	if (SpawnManager) {
 		SpawnManager->Kill_Nodes();
 	}
-	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-		TemporalImUsing->Let_Go();
-	}
+	Release_Warp();
 
 	// A dying victim lets its parasite out where it stood, unless the parasite is doomed (ParasiteClass::PointerExpired, 0x62A260).
 	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
-		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+		ParasiteEatingMe->ParasiteImUsing->Victim_Removed();
 	}
 	if (ParasiteImUsing) {
 		ParasiteImUsing->Reset_Grapple();
@@ -8554,8 +8947,7 @@ void TechnoClass::Delete_Me(void)
 		ParasiteImUsing->Victim = NULL;
 	}
 	Disarm_Bomb();
-	GattlingSound.Stop();
-	IsGattlingSoundPlaying = false;
+	Stop_Gattling_Sound();
 	BASECLASS::Delete_Me();
 }
 
@@ -8656,6 +9048,57 @@ void TechnoClass::Disarm_Bomb(void)
 
 
 /// <summary>
+/// Plays ChronoSparkle1 over a warped object, as the updates of the object kinds do (UnitClass,
+/// InfantryClass, AircraftClass and BuildingClass, gamemd 0x7360C0, 0x51BAB0, 0x414BB0 and
+/// 0x43FB20). It plays every 24 frames while the object is erased by a temporal beam or holds at
+/// its chronoshift landing. A unit or soldier gets it 120 leptons east and south of its position,
+/// an aircraft or structure on its position. A garrisonable structure plays one at each muzzle
+/// flash point of an occupant slot instead, one frame apart, with a depth adjustment of -200.
+/// </summary>
+static void Chrono_Sparkle(TechnoClass const * techno)
+{
+	if (Rule->ChronoSparkle1 == NULL) {
+		return;
+	}
+	switch (techno->RTTI) {
+		case RTTI_UNIT:
+		case RTTI_INFANTRY:
+			if (Frame % 24 == 0) {
+				new AnimClass(Rule->ChronoSparkle1, techno->PositionCoord + Coord(120, 120, 0));
+			}
+			break;
+
+		case RTTI_AIRCRAFT:
+			if (Frame % 24 == 0) {
+				new AnimClass(Rule->ChronoSparkle1, techno->PositionCoord);
+			}
+			break;
+
+		case RTTI_BUILDING: {
+			BuildingTypeClass const * type = ((BuildingClass const *)techno)->Class;
+			if (type->MaxNumberOccupants == 0) {
+				if (Frame % 24 == 0) {
+					new AnimClass(Rule->ChronoSparkle1, techno->PositionCoord);
+				}
+				break;
+			}
+			int const slots = std::min<int>(type->MaxNumberOccupants, BuildingTypeClass::MUZZLE_FLASH_COUNT);
+			for (int slot = 0; slot < slots; slot++) {
+				if ((Frame + slot) % 24 == 0) {
+					AnimClass * anim = new AnimClass(Rule->ChronoSparkle1, techno->Render_Coord() + Coord(TacticalMap->Pixel_To_Lepton(type->MuzzleFlash[slot]), 0));
+					anim->ZAdjust = -200;
+				}
+			}
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
+
+/// <summary>
 /// Steps the warp holding this object and keeps a warped object frozen (UnitClass::Update,
 /// 0x7360C0, and the other kinds' updates): ChronoSparkle1 plays over it every 24 frames, and
 /// it drops its target and destination.
@@ -8670,7 +9113,14 @@ bool TechnoClass::Temporal_AI(void)
 			return(true);
 		}
 	}
+	if (Is_Warp_Fading()) {
+		Chrono_Sparkle(this);
+	}
 	if (Is_Chrono_Warping()) {
+		// A soldier killed while it holds after a jump keeps its AI, so its death sequence advances (gamemd's InfantryClass::Update, 0x51BAB0, runs past IsWarpingIn).
+		if (RTTI == RTTI_INFANTRY && Strength <= 0) {
+			return(false);
+		}
 		// The AI that returns here is also what runs the locomotor, so the warp steps it.
 		FootClass * foot = static_cast<FootClass *>(this);
 		foot->IsLocomotorProcessing = true;
@@ -8681,9 +9131,6 @@ bool TechnoClass::Temporal_AI(void)
 
 	if (!IsBeingWarpedOut) {
 		return(false);
-	}
-	if (Frame % 24 == 0 && Rule->ChronoSparkle1 != NULL) {
-		new AnimClass(Rule->ChronoSparkle1, PositionCoord + Coord(120, 120, 0));
 	}
 	if (TarCom != NULL) {
 		Assign_Target(NULL);
@@ -8758,6 +9205,20 @@ void TechnoClass::Remove_Gunner(FootClass * gunner)
 }
 
 
+void TechnoClass::Stop_Gattling_Sound(void)
+{
+	GattlingSound.Stop();
+	IsGattlingSoundPlaying = false;
+}
+
+
+void TechnoClass::Stop_Turret_Sound(void)
+{
+	TurretSound.Stop();
+	IsTurretSoundPlaying = false;
+}
+
+
 /// <summary>
 /// Spins a gattling weapon up for the frames given (TechnoClass::GattlingRateUp, 0x70DE70).
 /// The spin grows by RateUp a frame until it reaches the last stage's threshold, and the
@@ -8766,7 +9227,7 @@ void TechnoClass::Remove_Gunner(FootClass * gunner)
 /// </summary>
 void TechnoClass::Gattling_Rate_Up(int frames)
 {
-	int const * stages = Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage;
+	int const * stages = Gattling_Stages();
 	int const last = std::min<int>(TClass->WeaponStages, TechnoTypeClass::WEAPON_STAGE_COUNT) - 1;
 	int const value = GattlingValue;
 	if (last >= 0 && value < stages[last]) {
@@ -8774,19 +9235,17 @@ void TechnoClass::Gattling_Rate_Up(int frames)
 	}
 	if (CurrentGattlingStage >= 0 && CurrentGattlingStage < last && stages[CurrentGattlingStage] <= value) {
 		CurrentGattlingStage++;
-		GattlingSound.Stop();
-		IsGattlingSoundPlaying = false;
+		Stop_Gattling_Sound();
 	} else if (TClass->IsGattlingCycle && last > 0 && CurrentGattlingStage == last && stages[last] <= value) {
 		// A cycling weapon that has finished its last stage starts over at the first, with its target kept.
 		CurrentGattlingStage = 0;
 		GattlingValue = 0;
-		GattlingSound.Stop();
-		IsGattlingSoundPlaying = false;
+		Stop_Gattling_Sound();
 	}
 
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(CurrentGattlingStage * 2)->Weapon;
 	if (!IsGattlingSoundPlaying && weapon != NULL && weapon->Sound.Count() > 0) {
-		GattlingSound.Stop();
+		Stop_Gattling_Sound();
 		GattlingVoc = (VocType)weapon->Sound.Pick(SoundRandomSeed);
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound, true);
 		IsGattlingSoundPlaying = true;
@@ -8813,7 +9272,7 @@ void TechnoClass::Gattling_Rate_Down(int frames)
 
 	int const stage = CurrentGattlingStage;
 	if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT) {
-		int const * stages = Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage;
+		int const * stages = Gattling_Stages();
 		if (GattlingValue < stages[stage - 1]) {
 			CurrentGattlingStage = stage - 1;
 		}
@@ -8847,7 +9306,8 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		std::erase(AttackedTargets, (TechnoClass *)target);
 		if (BunkerLinkedItem == target) {
 			BunkerLinkedItem = NULL;
-			if (RTTI == RTTI_BUILDING) {
+			// While a scenario is cleared, gamemd only drops the link (0x7077C0); new anims would need colour schemes already freed.
+			if (RTTI == RTTI_BUILDING && !ScenarioInit) {
 				((BuildingClass *)this)->Bunker_Walls_Down_Anims();
 			}
 		}
@@ -8874,6 +9334,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 				Release_Held_Vehicle(NULL);
 			}
 		}
+		if (DirectRockerLinkedUnit == target) {
+			Clear_Direct_Rocker_Link();
+		}
 		if (DrainTarget == target) {
 			Stop_Drain();
 		}
@@ -8899,6 +9362,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (WarpedBy == target) {
 			WarpedBy = NULL;
 			IsBeingWarpedOut = false;
+			if (RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
+				House->IsRecalcNeeded = true;
+			}
 		}
 		if (ParasiteImUsing) {
 			ParasiteImUsing->Detach(target);
@@ -8932,10 +9398,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 	**	computer must be cleared.
 	*/
 	if (TarCom == target && clear_target && (all || target->Owner_HouseClass() != House)) {
-		// A lost target with more than 10 frames left on the timer shortens the wait to a new scan.
-		if (TargetingTimer.Value() > 10 && !ScenarioInit) {
-			TargetingTimer = Random_Pick(4, 8);
-		}
+		Shorten_Targeting_Delay();
 		Assign_Target(NULL);
 		if (Has_Suspended_Mission()) {
 			Restore_Mission();
@@ -9354,183 +9817,103 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 	*/
 	TeamClass::Suspend_Teams(Rule->SuspendPriority, House);
 
+	// Considers one foot soldier or vehicle as a defender. Its threat is multiplied by `boost` when this
+	// building's own ArchiveTarget is this building, and only a positive threat is when `boost_positive_only` is set.
+	auto consider_defender = [&](FootClass * foot, int boost, bool boost_positive_only) {
+		if (foot == NULL || !foot->IsActive || foot->Owner() != Owner()) {
+			return;
+		}
+
+		/*
+		**	Never recruit sticky guard units to defend a base.
+		*/
+		bool basedefense = foot->Team != NULL && foot->Team->Class->IsBaseDefense;
+		if (foot->Team != NULL && !basedefense) {
+			return;
+		}
+
+		if (foot->SlaveOwner != NULL || !foot->IsTeamRecruitable || !foot->Is_Weapon_Equipped() || !foot->IsAutocreateRecruitable ||
+				(!foot->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) return;
+
+		/*
+		**	Don't allow a response if it doesn't have a weapon that will affect the
+		**	enemy object.
+		*/
+		if (foot->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
+			return;
+		}
+
+		/*
+		**	Don't try to help if the building is on another planet.
+		*/
+		if (!Map.Is_Same_Cell_Zone(foot->Destination_Coord().As_Cell(), Destination_Coord().As_Cell(), foot->TClass->MZone, foot->Is_Moving_Onto_Bridge(), false, false)) return;
+
+		/*
+		**	Find the amount of threat that this unit can apply to the
+		**	enemy.
+		*/
+		int threat = foot->Rescue_Mission((AbstractClass *)enemy);
+
+		/*
+		**	If it can't apply any threat then do just skip it and do not
+		**	add it to the list.
+		*/
+		if (!threat) {
+			return;
+		}
+
+		/*
+		**	Greatly increase the threat value if this unit is already assigned to protect
+		**	the target.
+		*/
+		if ((!boost_positive_only || threat > 0) && ArchiveTarget == this) {
+			threat *= boost;
+		}
+
+		/*
+		**	If the value returned is negative then this unit is already
+		**	assigned to fighting the enemy, so subtract its value from
+		**	the enemy's desired value.
+		*/
+		if (threat < 0) {
+			desired += threat;
+			return;
+		}
+
+		if (count < ARRAY_SIZE(defender)) {
+			defender[count] = foot;
+			value[count] = threat;
+			count++;
+			return;
+		}
+
+		if (threat > weakest) {
+			int newweakest = threat;
+
+			for (int lp = 0; lp < count; lp++) {
+				if (value[lp] == weakest) {
+					value[lp] = threat;
+					defender[lp] = foot;
+					continue;
+				}
+				if (value[lp] < newweakest) {
+					newweakest = value[lp];
+				}
+			}
+			weakest = newweakest;
+		}
+	};
+
 	/*
-	**	Loop through the infantry looking for those who are capable of going
-	**	on a rescue mission.
+	**	Loop through the infantry, then the units, looking for those who are capable of
+	**	going on a rescue mission.
 	*/
 	int index;
 	for (index = 0; index < Infantry.Count() && desired > 0; index++) {
-	 	InfantryClass * infantry = Infantry[index];
-		if (infantry != NULL && infantry->IsActive && infantry->Owner() == Owner()) {
-
-			/*
-			**	Never recruit sticky guard units to defend a base.
-			*/
-			bool basedefense = infantry->Team != NULL && infantry->Team->Class->IsBaseDefense;
-			if (infantry->Team != NULL && !basedefense) {
-				continue;
-			}
-
-			if (infantry->SlaveOwner != NULL || !infantry->IsTeamRecruitable || !infantry->Is_Weapon_Equipped() || !infantry->IsAutocreateRecruitable ||
-					(!infantry->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) continue;
-
-			/*
-			**	Don't allow a response if it doesn't have a weapon that will affect the
-			**	enemy object.
-			*/
-			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
-				continue;
-			}
-
-			/*
-			**	Don't try to help if the building is on another planet.
-			*/
-			if (!Map.Is_Same_Cell_Zone(infantry->Destination_Coord().As_Cell(), Destination_Coord().As_Cell(), infantry->Class->MZone, infantry->Is_Moving_Onto_Bridge(), false, false)) continue;
-
-			/*
-			**	Find the amount of threat that this unit can apply to the
-			**	enemy.
-			*/
-			int threat = infantry->Rescue_Mission((AbstractClass *)enemy);
-
-			/*
-			**	If it can't apply any threat then do just skip it and do not
-			**	add it to the list.
-			*/
-			if (!threat) {
-				continue;
-			}
-
-			/*
-			**	Greatly increase the threat value if this unit is already assigned to protect
-			**	the target.
-			*/
-			if (ArchiveTarget == this) {
-				threat *= 100;
-			}
-
-			/*
-			**	If the value returned is negative then this unit is already
-			**	assigned to fighting the enemy, so subtract its value from
-			**	the enemy's desired value.
-			*/
-			if (threat < 0) {
-				desired += threat;
-				continue;
-			}
-
-			if (count < ARRAY_SIZE(defender)) {
-				defender[count] = infantry;
-				value[count] = threat;
-				count++;
-				continue;
-			}
-
-			if (threat > weakest) {
-				int newweakest = threat;
-
-				for (int lp = 0; lp < count; lp++) {
-					if (value[lp] == weakest) {
-						value[lp] = threat;
-						defender[lp] = (FootClass *) infantry;
-						continue;
-					}
-					if (value[lp] < newweakest) {
-						newweakest = value[lp];
-					}
-				}
-				weakest = newweakest;
-			}
-		}
+		consider_defender(Infantry[index], 100, false);
 	}
-
-	/*
-	**	Loop through the units looking for those who are capable of going
-	**	on a rescue mission.
-	*/
 	for (index = 0; index < Units.Count() && desired > 0; index++) {
-	 	UnitClass * unit = Units[index];
-		if (unit != NULL && unit->IsActive && unit->Owner() == Owner()) {
-
-			/*
-			**	Never recruit sticky guard units to defend a base.
-			*/
-			bool basedefense = unit->Team != NULL && unit->Team->Class->IsBaseDefense;
-			if (unit->Team != NULL && !basedefense) {
-				continue;
-			}
-
-			if (unit->SlaveOwner != NULL || !unit->IsTeamRecruitable || !unit->Is_Weapon_Equipped() || !unit->IsAutocreateRecruitable ||
-					(!unit->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) continue;
-
-			/*
-			**	Don't allow a response if it doesn't have a weapon that will affect the
-			**	enemy object.
-			*/
-			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
-				continue;
-			}
-
-			/*
-			**	Don't try to help if the building is on another planet.
-			*/
-			if (!Map.Is_Same_Cell_Zone(unit->Destination_Coord().As_Cell(), Destination_Coord().As_Cell(), unit->Class->MZone, unit->Is_Moving_Onto_Bridge(), false, false)) continue;
-
-			/*
-			**	Find the amount of threat that this unit can apply to the
-			**	enemy.
-			*/
-			int threat = unit->Rescue_Mission((AbstractClass *)enemy);
-
-			/*
-			**	If it can't apply any threat then do just skip it and do not
-			**	add it to the list.
-			*/
-			if (!threat) {
-				continue;
-			}
-
-			/*
-			**	Greatly increase the threat value if this unit is already assigned to protect
-			**	the target.
-			*/
-			if (threat > 0 && ArchiveTarget == this) {
-				threat *= 10;
-			}
-
-			/*
-			**	If the value returned is negative then this unit is already
-			**	assigned to fighting the enemy, so subtract its value from
-			**	the enemy's desired value.
-			*/
-			if (threat < 0) {
-				desired += threat;
-				continue;
-			}
-
-			if (count < ARRAY_SIZE(defender)) {
-				defender[count] = unit;
-				value[count] = threat;
-				count++;
-				continue;
-			}
-			if (threat > weakest) {
-				int newweakest = threat;
-
-				for (int lp = 0; lp < count; lp ++) {
-					if (value[lp] == weakest) {
-						value[lp] = threat;
-						defender[lp] = (FootClass *) unit;
-						continue;
-					}
-					if (value[lp] < newweakest) {
-//					if (value[count] < newweakest) {
-						newweakest = value[lp];
-					}
-				}
-				weakest = newweakest;
-			}
-		}
+		consider_defender(Units[index], 10, true);
 	}
 
 	if (desired > 0) {
@@ -9921,8 +10304,10 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	if (AllowVoice && TClass->VoiceSelect.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceSelect.Pick(NonCriticalRandomNumber));
+	// A slave of a Slave Miner answers with its enslaved lines, and a shut-down object with its deactivated lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
+	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : (IsDeactivated ? TClass->VoiceSelectDeactivated : TClass->VoiceSelect);
+	if (voices.Count()) {
+		Queue_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -9944,8 +10329,8 @@ void TechnoClass::Response_Select(void)
  *=============================================================================================*/
 void TechnoClass::Response_Move(void)
 {
-	if (AllowVoice && TClass->VoiceMove.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
+	if (TClass->VoiceMove.Count()) {
+		Queue_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -9993,8 +10378,124 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 
 void TechnoClass::Response_Attack(void)
 {
-	if (AllowVoice && TClass->VoiceAttack.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
+	if (TClass->VoiceAttack.Count()) {
+		Queue_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
+	}
+}
+
+
+/// <summary>
+/// Whether this object may answer an order or a selection now. During a group order only the
+/// first selected object may, as gamemd's MoveFeedback is cleared after the first object is
+/// handled; otherwise AllowVoice decides.
+/// </summary>
+bool TechnoClass::May_Speak(void) const
+{
+	return(VoiceSpeaker != NULL ? VoiceSpeaker == this : AllowVoice);
+}
+
+
+/// <summary>
+/// Puts a voice reply on this object's queue (TechnoClass::QueueVoice, 0x708D90). Only the
+/// player's own objects answer, and a reply waiting already is replaced. The reply is played
+/// by Voice_AI.
+/// </summary>
+void TechnoClass::Queue_Voice(VocType voc)
+{
+	if (voc != VOC_NONE && May_Speak() && House->Is_Player_Control()) {
+		QueuedVoice = voc;
+	}
+}
+
+
+/// <summary>
+/// Plays the waiting reply when this object's own voice channel is idle (TechnoClass::Update, 0x6F9E50). A reply
+/// waits for the one still playing, and is dropped when it is the same reply that plays.
+/// </summary>
+void TechnoClass::Voice_AI(void)
+{
+	if (QueuedVoice == VOC_NONE) {
+		return;
+	}
+	if (!VoiceChannel.Is_Playing()) {
+		PlayedVoice = QueuedVoice;
+		VoiceChannel = Play_Unit_Voice(QueuedVoice);
+		QueuedVoice = VOC_NONE;
+	} else if (PlayedVoice == QueuedVoice) {
+		QueuedVoice = VOC_NONE;
+	}
+}
+
+
+/// <summary>
+/// The reply to a deploy order (TechnoClass::VoiceDeploy, 0x708E00): VoiceDeploy, or VoiceUndeploy from a dug-in soldier.
+/// </summary>
+VocType TechnoClass::Deploy_Voice(void) const
+{
+	bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
+	return(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+}
+
+
+/// <summary>
+/// Gives the voice reply to an order the player gave (TechnoClass::ClickedMission, 0x6FFBE0). A harvest, enter or
+/// capture order uses the type's VoiceHarvest, VoiceEnter or VoiceCapture and falls back to the move voice (capture
+/// falls back to VoiceEnter first). A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier.
+/// Any other order, such as guard, plays a VoiceSpecialAttack entry, or nothing when that list is empty.
+/// </summary>
+void TechnoClass::Order_Voice(MissionType mission, AbstractClass * target)
+{
+	switch (mission) {
+		case MISSION_HARVEST:
+			if (TClass->VoiceHarvest != VOC_NONE) {
+				Queue_Voice(TClass->VoiceHarvest);
+			} else {
+				Response_Move();
+			}
+			break;
+
+		case MISSION_ATTACK: {
+			VocType const weapon_voice = Weapon_Attack_Voice(target);
+			if (weapon_voice != VOC_NONE) {
+				Queue_Voice(weapon_voice);
+			} else {
+				Response_Attack();
+			}
+			break;
+		}
+
+		case MISSION_MOVE:
+		case MISSION_ATTACK_MOVE:
+			Response_Move();
+			break;
+
+		case MISSION_ENTER:
+			if (TClass->VoiceEnter != VOC_NONE) {
+				Queue_Voice(TClass->VoiceEnter);
+			} else {
+				Response_Move();
+			}
+			break;
+
+		case MISSION_CAPTURE:
+			if (TClass->VoiceCapture != VOC_NONE) {
+				Queue_Voice(TClass->VoiceCapture);
+			} else if (TClass->VoiceEnter != VOC_NONE) {
+				Queue_Voice(TClass->VoiceEnter);
+			} else {
+				Response_Move();
+			}
+			break;
+
+		case MISSION_UNLOAD:
+			Queue_Voice(Deploy_Voice());
+			break;
+
+		default:
+			if (TClass->VoiceSpecialAttack.Count() > 0) {
+				Queue_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
+			}
+			break;
 	}
 }
 
@@ -10038,13 +10539,14 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 	*/
 	// A slave never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
 	if (TarCom == NULL && SlaveOwner == NULL) {
+		Perf_Count(PERF_COUNT_SCAN_TARGETING);
 		AbstractClass * best = Greatest_Threat(threat, coord, false);
 		Assign_Target(TClass->IsDistributedFire ? Distributed_Target() : best);
 
 		// A target chosen by a scan that takes the estimate (TechnoClass::TargetAndEstimateDamage, 0x709820) takes this
 		// object's estimated damage at once, unless the weapon is inaccurate. A DistributedFire object takes no estimate.
 		if (estimate && !TClass->IsDistributedFire && TarCom != NULL && TarCom->Is_Techno() && Is_Weapon_Equipped()) {
-			WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(TarCom))->Weapon;
+			WeaponTypeClass const * weapon = Weapon_Against(TarCom);
 			if (weapon != NULL && weapon->Bullet != NULL && !weapon->Bullet->IsInaccurate) {
 				TechnoClass * estimate_target = (TechnoClass *)TarCom;
 				estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
@@ -10098,7 +10600,7 @@ bool TechnoClass::Can_Passive_Acquire_Targets(void)
 
 /// <summary>
 /// Whether this object may scan for a target on the move. The port of TechnoClass::CanOpportunityFire (0x709290).
-/// The balloon and special-unit clauses of the gamemd function are not ported.
+/// The special-unit clause of the gamemd function is not ported, and its balloon clause is ported for soldiers only.
 /// </summary>
 /// <returns>bool; True for a computer's aggressive, non-suicide team member on a move order with no target; otherwise
 /// the object must pass Can_Passive_Acquire_Targets, and a type without OpportunityFire scans only on the guard mission.</returns>
@@ -10109,6 +10611,15 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 	}
 	if (!Can_Passive_Acquire_Targets()) {
 		return(false);
+	}
+	// A BalloonHover soldier that has flown to its destination hovers on its move order, and scans from there whether or
+	// not its type has OpportunityFire (gamemd 0x709290 tests that its destination is the cell it is over). A Rocketeer
+	// idles this way; a Kirov or Siege Chopper takes the same test in gamemd, but we keep them on their move order.
+	if (Mission == MISSION_MOVE && RTTI == RTTI_INFANTRY && TClass->IsBalloonHover) {
+		FootClass const * foot = static_cast<FootClass const *>(this);
+		if (foot->NavCom == NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving() && !foot->Locomotion->Is_Moving_Now()) {
+			return(true);
+		}
 	}
 	if (Mission == MISSION_GUARD) {
 		if (!TClass->IsCanPassiveAquireGuard) {
@@ -10129,6 +10640,18 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 		}
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Shortens the wait to the next area scan (gamemd 0x70F770, which a lost target and the end of a teleport's wait or hold
+/// both run): with more than 10 frames left on the targeting timer, outside scenario set-up, it restarts at a random 4 to 8 frames.
+/// </summary>
+void TechnoClass::Shorten_Targeting_Delay(void)
+{
+	if (TargetingTimer.Value() > 10 && !ScenarioInit) {
+		TargetingTimer = Random_Pick(4, 8);
+	}
 }
 
 
@@ -10250,6 +10773,31 @@ void TechnoClass::Draw_Radial_Indicator(void) const
 
 
 /// <summary>
+/// Prints a short label in a black box edged in a house's color, as gamemd does for an object's control
+/// group number and its primary tag (TechnoClass::DrawPipScalePips, 0x709A90, and DrawExtraInfo, 0x70AA60).
+/// </summary>
+/// <param name="point">The label's top-left corner, or the middle of its top edge when centered.</param>
+static void Draw_House_Label(HouseClass const * house, char const * text, Point2D const & point, bool centered, Rect const & cliprect)
+{
+	ColorScheme * scheme = ColorSchemes[(house->Scheme >= 0 && house->Scheme < ColorSchemes.Count()) ? house->Scheme : 0];
+	FontClass const * font = Font_From_TPF(TextPrintType(TPF_EFNT));
+	int width = 0;
+	int lines = 1;
+	for (char const * line = text; ; ) {
+		char const * end = strpbrk(line, "\r\n");
+		width = std::max(width, font->String_Pixel_Width(end != NULL ? std::string(line, end).c_str() : line));
+		if (end == NULL) break;
+		lines++;
+		line = end + 1;
+	}
+	Rect const box((centered ? point.X - width / 2 : point.X) - 1, point.Y, width + 2, font->Get_Height() * lines);
+	LogicalSurface->Fill_Rect(cliprect, box, scheme->Converter->Convert_Pixel(BLACK));
+	LogicalSurface->Draw_Rect(cliprect, box, scheme->Converter->Convert_Pixel(scheme->Color));
+	Simple_Text_Print(text, *LogicalSurface, cliprect, point, scheme, TBLACK, TextPrintType(TPF_EFNT|TPF_FULLSHADOW|(centered ? TPF_CENTER : 0)), 1);
+}
+
+
+/// <summary>
 /// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
 /// whether or not the object is selected, so the caller is responsible for testing that the
 /// player may see the object.
@@ -10329,52 +10877,34 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	ShapeSet const * pip_shapes = (ShapeSet const *)Class_Of()->PipShapes;
 	ShapeSet const * pips2 = (ShapeSet const *)Class_Of()->Pip2Shapes;
 
+	// A structure on the Tiberium scale, a refinery or a silo, shows no pips and no group number
+	// (TechnoClass::DrawPipScalePips, 0x709A90).
+	if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		return;
+	}
+
 	if (RTTI != RTTI_BUILDING) {
 		xy = bottomleft + Point2D(-5, 0);
 		offset = Point2D(4, 0);
 		pip_shapes = pips2;
 	}
-
-	if (RTTI == RTTI_BUILDING) {
-		BuildingClass const * building = (BuildingClass const *)this;
-		if (building->Class->IsShowOccupantPips) {
-			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
-				PipEnum pip = PIP_PERSON_EMPTY;
-				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
-					pip = building->Occupants[index]->Class->OccupyPip;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
-		}
+	if (RTTI == RTTI_INFANTRY) {
+		xy.X += 11;
 	}
+
+	Draw_Spawner_Pips(xy, offset, pip_shapes, rect);
+
+	Draw_Occupant_Pips(xy, offset, pip_shapes, rect);
 
 	/*
 	**	Transporter type objects have a different graphic representation for the pips. The
-	**	pip color represents the type of occupant.
+	**	pip color represents the type of occupant. TechnoClass::DrawPipScalePips (0x709A90)
+	**	lays the row out from the end: the first passenger takes the last pips, one pip for each
+	**	point of size, with a soldier's own color leading and the pips behind it white, and a
+	**	vehicle blue. A structure that absorbs its owner's units shows one pip per passenger.
 	*/
 	if (TClass->Max_Passengers() > 0) {
-		ObjectClass const * object = Cargo.Attached_Object();
-		int remaining = (object != NULL) ? object->TClass->Size : 0;
-
-		for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-			PipEnum pip = PIP_EMPTY;
-
-			if (object != NULL) {
-				pip = PIP_GREEN;
-				if (object->RTTI == RTTI_INFANTRY) {
-					pip = ((InfantryClass *)object)->Class->Pip;
-				}
-
-				// A passenger claims as many pips as it claims hold space.
-				remaining--;
-				if (remaining <= 0) {
-					object = object->Next;
-					remaining = (object != NULL) ? object->TClass->Size : 0;
-				}
-			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-		}
-
+		Draw_Passenger_Pips(xy, offset, pip_shapes, rect);
 	} else {
 
 		/*
@@ -10387,81 +10917,30 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	Check if it's a harvester, to show the right type of pips for the
 		**	various minerals it could have harvested.
 		*/
-		if (RTTI == RTTI_UNIT && TClass->PipScale == PIPSCALE_TIBERIUM) {
-
-			int iron = Storage.Get_Amount(0);
-			int nickel = Storage.Get_Total_Amount() - iron;
-			int greenpips   = TClass->Max_Pips() * (double(iron) / TClass->Capacity) + 0.5;
-			int bluepips  = TClass->Max_Pips() * (double(nickel) / TClass->Capacity) + 0.5;
-
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				int shape = PIP_EMPTY;
-				if (bluepips > 0) {
-					shape = PIP_BLUE;
-					bluepips--;
-				} else if (greenpips > 0) {
-					shape = PIP_GREEN;
-					greenpips--;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
+		if (RTTI != RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
+			Draw_Tiberium_Pips(xy, offset, pip_shapes, rect);
 		}
 
 		/*
-		**
+		**	A mind controller shows a pip for each unit it may hold, lit for each one it does hold, and
+		**	after them a red pip while it holds more than that, white as the overload strikes.
 		*/
+		else if (TClass->PipScale == PIPSCALE_MINDCONTROL) {
+			Draw_Mind_Control_Pips(xy, offset, pip_shapes, rect);
+		}
+
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
-			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
-			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
-			int const wrap = TClass->PipWrap;
-			int const count = Class_Of()->Max_Pips();
-			if (wrap == 0) {
-				int _pips = pips;
-				for (int index = 0; index < count; index++) {
-					if (_pips > 0) {
-						_pips--;
-						Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-					}
-				}
-			} else if (wrap > 0) {
-				int const rows = count / wrap;
-				for (int column = 0; column < wrap; column++) {
-					int frame = 14;
-					for (int row = rows - 1; row >= 0; row--) {
-						if (row * wrap + column < Ammo) {
-							frame = row + 15;
-							break;
-						}
-					}
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-			}
-
+			Draw_Ammo_Pips(pips, xy, offset, pips2, rect);
 		}
-		/*
-		**
-		*/
-		else if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
-			int _pips = pips;
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				int shape = PIP_EMPTY;
-				if (_pips > 0) {
-					shape = PIP_GREEN;
-					_pips--;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
-		}
-
 		/*
 		**
 		*/
 		else if (TClass->PipScale == PIPSCALE_CHARGE) {
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
+			Draw_Charge_Pips(pips, xy, offset, pip_shapes, rect);
 		}
 	}
+
+	Draw_Heal_Icon(xy, rect);
 
 	/*
 	**	Display whether this unit is a leader unit or not.
@@ -10474,6 +10953,178 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	**	Display what group this unit belongs to. This corresponds to the team
 	**	number assigned with the <CTRL> key.
 	*/
+	Draw_Group_Number(bottomleft, rect);
+}
+
+
+void TechnoClass::Draw_Spawner_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	/*
+	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
+	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (TClass->SpawnsNumber > 0) {
+		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
+		for (int index = 0; index < TClass->SpawnsNumber; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Occupant_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = (BuildingClass const *)this;
+		if (building->Class->IsShowOccupantPips) {
+			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
+				PipEnum pip = PIP_PERSON_EMPTY;
+				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
+					pip = building->Occupants[index]->Class->OccupyPip;
+				}
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Passenger_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	int const count = std::max(Class_Of()->Max_Pips(), 0);
+	std::vector<int> slots(count, PIP_EMPTY);
+	bool const absorber = RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->Is_Absorber();
+
+	ObjectClass const * object = Cargo.Attached_Object();
+	int last = absorber ? 0 : Cargo.Total_Size() - 1;
+	for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
+		int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
+		if (absorber) {
+			if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
+			last++;
+			continue;
+		}
+		if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
+			for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
+				if (last >= 0 && last < count) slots[last] = PIP_WHITE;
+				last--;
+			}
+		}
+		if (last >= 0 && last < count) slots[last] = shape;
+		last--;
+	}
+
+	// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
+	int first = 0;
+	Point2D gap(0, 0);
+	if (TClass->IsGunner && count > 0) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		first = 1;
+		gap = offset * 2;
+	}
+	for (int index = first; index < count; index++) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Tiberium_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
+	// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
+	int const count = Class_Of()->Max_Pips();
+	double const capacity = TClass->Capacity;
+	double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
+	int orepips = (int)(ore / capacity * count + 0.5);
+	int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
+
+	for (int index = 0; index < count; index++) {
+		int shape = PIP_EMPTY;
+		if (gempips > 0) {
+			shape = PIP_BLUE;
+			gempips--;
+		} else if (orepips > 0) {
+			shape = PIP_YELLOW;
+			orepips--;
+		}
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Mind_Control_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	if (CaptureManager) {
+		int const count = CaptureManager->Max_Nodes();
+		int const held = CaptureManager->Controlled_Count();
+		for (int index = 0; index < count; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+		if (CaptureManager->Is_Overloading()) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Ammo_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pips2, Rect const & rect) const
+{
+	// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
+	// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
+	int const wrap = TClass->PipWrap;
+	int const count = Class_Of()->Max_Pips();
+	if (wrap == 0) {
+		int _pips = pips;
+		for (int index = 0; index < count; index++) {
+			if (_pips > 0) {
+				_pips--;
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	} else if (wrap > 0) {
+		int const rows = count / wrap;
+		for (int column = 0; column < wrap; column++) {
+			int frame = 14;
+			for (int row = rows - 1; row >= 0; row--) {
+				if (row * wrap + column < Ammo) {
+					frame = row + 15;
+					break;
+				}
+			}
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Charge_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Heal_Icon(Point2D const & xy, Rect const & rect) const
+{
+	/*
+	**	Show that the owner's hospitals mend soldiers and organic vehicles, or its machine shops other
+	**	vehicles, with a cross or a spanner that blinks while this one is hurt (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (RTTI == RTTI_INFANTRY || RTTI == RTTI_UNIT) {
+		bool const infantry = RTTI == RTTI_INFANTRY || TClass->IsOrganic;
+		if (House->Self_Heal_Points(infantry) > 0) {
+			int const frames = infantry ? Rule->SelfHealInfantryFrames : Rule->SelfHealUnitFrames;
+			bool const blink = frames > 0 && (Frame % frames) <= 5 && Strength < TClass->MaxStrength;
+			Point2D const icon = xy + (RTTI == RTTI_UNIT ? Point2D(38, -32) : Point2D(19, -35));
+			Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)Class_Of()->PipShapes, infantry ? 13 : 20, icon, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|(blink ? SHAPE_DARKEN : 0)));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Group_Number(Point2D const & bottomleft, Rect const & rect) const
+{
 	if (Group >= 0 && Group < 10) {
 		int group = Group+1;
 
@@ -10483,7 +11134,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		sprintf(group_text, "%d", group < 10 ? group : 0);
 
 		Point2D offset = UIControls.Group_Number_Offset(RTTI, Class_Of()->Max_Pips() != 0);
-		Plain_Text_Print(group_text, *LogicalSurface, rect, bottomleft + offset, WHITE, TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, group_text, bottomleft + offset, false, rect);
 	}
 }
 
@@ -10497,10 +11148,11 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 /// <param name="point2">The point the text is centered on.</param>
 void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & cliprect) const
 {
-	if (RTTI == RTTI_BUILDING && ((BuildingClass*)this)->Class->Power > 0) {
+	// A primary building shows its tag instead of the power figures (DrawExtraInfo, 0x70AA60).
+	if (RTTI == RTTI_BUILDING && !IsLeader && ((BuildingClass*)this)->Class->Power > 0) {
 		char buffer[128];
 		sprintf(buffer, Fetch_String(TXT_POWER_DRAIN), House->Power_Output(), House->Power_Drain());
-		Plain_Text_Print(buffer, *LogicalSurface, cliprect, point2, WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, buffer, point2, true, cliprect);
 	}
 
 	/*
@@ -10514,7 +11166,7 @@ void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & poin
 				pritext = TXT_PRI;
 			}
 		}
-		Plain_Text_Print(pritext, *LogicalSurface, cliprect, point2, WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, Fetch_String(pritext), point2, true, cliprect);
 	}
 }
 
@@ -10819,6 +11471,29 @@ void TechnoClass::Rock(Coord const & coord, float force, bool direct)
 }
 
 
+// A DirectRocker-linked unit settles back by FallBackCoefficient * 0.002 a frame inside 90 degrees and falls outward by 0.002 beyond it.
+static float Linked_Rocking_Rate(float rate, bool was_positive, bool beyond_right_angle)
+{
+	double const settle = (double)Rule->FallBackCoefficient * 0.002;
+	if (was_positive) {
+		return((float)(rate + (beyond_right_angle ? 0.002 : -settle)));
+	}
+	return((float)(rate + (beyond_right_angle ? -0.002 : settle)));
+}
+
+
+/// <summary>
+/// Ends the DirectRocker link on both units, so neither keeps a pointer to the other.
+/// </summary>
+void TechnoClass::Clear_Direct_Rocker_Link(void)
+{
+	if (DirectRockerLinkedUnit != NULL) {
+		DirectRockerLinkedUnit->DirectRockerLinkedUnit = NULL;
+		DirectRockerLinkedUnit = NULL;
+	}
+}
+
+
 /// <summary>
 /// Handles the rocking of the object for one frame.
 /// This routine tips the object a little further along whatever rocking motion it was
@@ -10830,17 +11505,26 @@ void TechnoClass::Rocking_AI(void)
 {
 	bool sideways_was_positive = AngleRotatedSideways > 0.00002;
 	bool sideways_was_negative = AngleRotatedSideways < -0.00002;
+	bool sideways_beyond_right_angle = AngleRotatedSideways > DEG_TO_RAD(90) || AngleRotatedSideways < -DEG_TO_RAD(90);
+	bool const linked = DirectRockerLinkedUnit != NULL;
 
+	// A sinking object tips by 0.01 a frame, the way its body faces (TechnoClass, 0x70B570).
 	if (IsSinking) {
-		if (AngleRotatedForwards < (float)DEG_TO_RAD(45)) {
-			AngleRotatedForwards += 0.03;
+		if (std::fabs(AngleRotatedForwards) < (float)DEG_TO_RAD(45)) {
+			int const facing = PrimaryFacing.Current().As_Dir8();
+			AngleRotatedForwards += (facing >= 1 && facing <= 5) ? 0.01 : -0.01;
 		}
 		return;
 	}
 
-	if (IsRocking) {
+	if (IsRocking || IsCrashing) {
 		AngleRotatedForwards += RockingForwardsPerFrame;
 		AngleRotatedSideways += RockingSidewaysPerFrame;
+		// A crashing balloon hover object cannot roll past 45 degrees either way or pitch past 45 degrees nose down.
+		if (TClass->IsBalloonHover) {
+			AngleRotatedForwards = std::max(AngleRotatedForwards, (float)-DEG_TO_RAD(45));
+			AngleRotatedSideways = std::clamp(AngleRotatedSideways, (float)-DEG_TO_RAD(45), (float)DEG_TO_RAD(45));
+		}
 		return;
 	}
 
@@ -10850,15 +11534,19 @@ void TechnoClass::Rocking_AI(void)
 
 		float angle = (float)DEG_TO_RAD(45);
 
-		if (AngleRotatedSideways > angle) {
-			AngleRotatedSideways = angle;
-			RockingSidewaysPerFrame = 0.0f;
-		} else if (AngleRotatedSideways < -angle) {
-			AngleRotatedSideways = -angle;
-			RockingSidewaysPerFrame = 0.0f;
+		if (!linked) {
+			if (AngleRotatedSideways > angle) {
+				AngleRotatedSideways = angle;
+				RockingSidewaysPerFrame = 0.0f;
+			} else if (AngleRotatedSideways < -angle) {
+				AngleRotatedSideways = -angle;
+				RockingSidewaysPerFrame = 0.0f;
+			}
 		}
 
-		if (sideways_was_positive) {
+		if (linked) {
+			RockingSidewaysPerFrame = Linked_Rocking_Rate(RockingSidewaysPerFrame, sideways_was_positive, sideways_beyond_right_angle);
+		} else if (sideways_was_positive) {
 			if (RockingSidewaysPerFrame > 0.0f) {
 				RockingSidewaysPerFrame -= 0.002f;
 			} else {
@@ -10883,6 +11571,7 @@ void TechnoClass::Rocking_AI(void)
 
 	bool forwards_was_positive = AngleRotatedForwards > 0.00002;
 	bool forwards_was_negative = AngleRotatedForwards < -0.00002;
+	bool forwards_beyond_right_angle = AngleRotatedForwards > DEG_TO_RAD(90) || AngleRotatedForwards < -DEG_TO_RAD(90);
 
 	if (RockingForwardsPerFrame != 0.0f) {
 
@@ -10895,15 +11584,19 @@ void TechnoClass::Rocking_AI(void)
 			angle = (float)DEG_TO_RAD(18);
 		}
 
-		if (AngleRotatedForwards > angle) {
-			AngleRotatedForwards = angle;
-			RockingForwardsPerFrame = 0.0f;
-		} else if (AngleRotatedForwards < -angle) {
-			AngleRotatedForwards = -angle;
-			RockingForwardsPerFrame = 0.0f;
+		if (!linked) {
+			if (AngleRotatedForwards > angle) {
+				AngleRotatedForwards = angle;
+				RockingForwardsPerFrame = 0.0f;
+			} else if (AngleRotatedForwards < -angle) {
+				AngleRotatedForwards = -angle;
+				RockingForwardsPerFrame = 0.0f;
+			}
 		}
 
-		if (forwards_was_positive) {
+		if (linked) {
+			RockingForwardsPerFrame = Linked_Rocking_Rate(RockingForwardsPerFrame, forwards_was_positive, forwards_beyond_right_angle);
+		} else if (forwards_was_positive) {
 			if (RockingForwardsPerFrame > 0.0f) {
 				RockingForwardsPerFrame -= 0.002f;
 			} else {
@@ -10923,6 +11616,12 @@ void TechnoClass::Rocking_AI(void)
 	if ((forwards_was_positive && AngleRotatedForwards < 0.00002) || (forwards_was_negative && AngleRotatedForwards > -0.00002)) {
 		RockingForwardsPerFrame = 0.0f;
 		AngleRotatedForwards = 0.0f;
+	}
+
+	// A unit tipped past a half turn in either direction is destroyed (TechnoClass::vt_entry_41C, 0x70BC23). An unlinked unit is clamped to 45 degrees first, so only a linked unit reaches this.
+	if (AngleRotatedSideways > 3.1415927f || AngleRotatedSideways < -3.1415927f || AngleRotatedForwards > 3.1415927f || AngleRotatedForwards < -3.1415927f) {
+		int damage = TClass->MaxStrength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
 	}
 }
 
@@ -11040,6 +11739,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AttachedEffects);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);
+	stream.Serialize(DirectRockerLinkedUnit);
 	stream.Serialize(IsAttackedByLocomotor);
 	stream.Serialize(IsLetGoByLocomotor);
 	stream.Serialize(IsCrashing);
@@ -11107,6 +11807,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SecondaryFacing);
 	stream.Serialize(BurstIndex);
 	stream.Serialize(RadialFireIndex);
+	stream.Serialize(SprayIndex);
 	stream.Serialize(IsBurstResetPending);
 	stream.Serialize(BurstResetTimer);
 	stream.Serialize(TargetingLaserTimer);
@@ -11120,7 +11821,6 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLeader);
 	stream.Serialize(IsALoaner);
 	stream.Serialize(IsLocked);
-	stream.Serialize(IsInRecoilState);
 	stream.Serialize(IsTethered);
 	stream.Serialize(IsOwnedByPlayer);
 	stream.Serialize(DiscoveredBy);
@@ -11168,6 +11868,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)TargetingTimer);
 	SpiedBy.Compute_CRC(crc);
 	if (OldTeam != NULL) crc(OldTeam->Fetch_ID());
+	if (DirectRockerLinkedUnit != NULL) crc(DirectRockerLinkedUnit->Fetch_ID());
 	crc(Cloak);
 	crc((int)CloakDelay);
 	crc(PredatorOffset);
@@ -11177,6 +11878,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(PurchasePrice);
 	crc(BurstIndex);
 	crc(RadialFireIndex);
+	crc(SprayIndex);
 	crc(IsBurstResetPending);
 	crc((int)BurstResetTimer);
 	crc(AngleRotatedSideways);
@@ -11192,7 +11894,6 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLeader);
 	crc(IsALoaner);
 	crc(IsLocked);
-	crc(IsInRecoilState);
 	crc(IsTethered);
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		crc(IsOwnedByPlayer);
@@ -11721,6 +12422,34 @@ ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
 
 	ConvertClass * tinted = scheme->Designated_Converter(std::min(red, 255), std::min(green, 255), std::min(blue, 255));
 	return(tinted != NULL ? tinted : scheme->Converter);
+}
+
+
+/// <summary>
+/// Returns the converter that draws this object's animations through its type's Palette=, or null when
+/// the type names none or its palette file is missing. A null result means the house colour scheme applies.
+/// </summary>
+ConvertClass * TechnoClass::Palette_Converter(void) const
+{
+	TechnoTypeClass const * type = Techno_Type_Class();
+	if (type == NULL || type->PaletteFile.empty() || House == NULL) {
+		return(NULL);
+	}
+	return(Palette_Scheme_Drawer(type->PaletteFile, House_Display_Scheme(House)));
+}
+
+
+/// <summary>
+/// Returns the converter that draws this object's animations: its palette when its type names one,
+/// otherwise its house's colour scheme.
+/// </summary>
+ConvertClass * TechnoClass::Remap_Converter(void) const
+{
+	ConvertClass * palette = Palette_Converter();
+	if (palette != NULL) {
+		return(palette);
+	}
+	return(ColorSchemes[House_Display_Scheme(House)]->Converter);
 }
 
 
@@ -12370,16 +13099,18 @@ bool TechnoClass::Is_Bomb_Visible(void) const
 
 /// <summary>
 /// Sets off this dying object's death weapon where it stands (TechnoClass::FireDeathWeapon,
-/// 0x70D690). The type's DeathWeapon, or else its primary weapon, does that weapon's Damage
-/// times DeathWeaponDamageModifier; an object with neither sets off the rules' DeathWeapon for
-/// half its type's Strength. The blast is credited to this object.
+/// 0x70D690). The type's DeathWeapon, or else the weapon GetTurretWeapon (0x70E1A0) picks, does
+/// that weapon's Damage times DeathWeaponDamageModifier; an object with neither sets off the
+/// rules' DeathWeapon for half its type's Strength. The blast is credited to this object.
 /// </summary>
 void TechnoClass::Fire_Death_Weapon(void)
 {
+	// A type with turrets uses its current weapon position; any other type uses position 0 (0x70E1A0, 0x717880).
+	int const which = TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
 	WeaponTypeClass * weapon = TClass->DeathWeapon;
 	int damage = 0;
 	if (weapon == NULL) {
-		weapon = Get_Class_Weapon_Data(0)->Weapon;
+		weapon = Get_Class_Weapon_Data(which)->Weapon;
 	}
 	if (weapon != NULL) {
 		damage = (int)(weapon->Attack * TClass->DeathWeaponDamageModifier);
@@ -12512,21 +13243,51 @@ void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 
 
 /// <summary>
-/// Crushes what stands where this vehicle lands after a locomotor let it go in the air
-/// (JumpjetLocomotionClass, 0x54CA90). Only the first object on the cell, apart from this one,
-/// decides what happens. A vehicle or structure is left alone. A soldier is crushed, and so is
-/// everything after it on the cell. Any other object takes damage from CrushWarhead equal to
-/// its strength, ignoring its defenses; with no CrushWarhead it takes none. The holder, or failing
-/// that its house, is credited.
+/// Records a kill of victim for the object that let this vehicle go, or for its house. With neither,
+/// the kill is credited to this vehicle when fallback_to_self is set and is not recorded otherwise.
 /// </summary>
-void TechnoClass::Crush_On_Landing(void)
+void TechnoClass::Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self)
 {
-	ObjectClass * object = Map[Get_Coord()].Cell_Occupier(false);
+	if (LetGoBy != NULL) {
+		victim->Record_The_Kill(LetGoBy);
+	} else if (LetGoByHouse != NULL) {
+		victim->Record_The_Kill_By_House(LetGoByHouse);
+	} else if (fallback_to_self) {
+		victim->Record_The_Kill(this);
+	}
+}
+
+
+void TechnoClass::Release_Warp(void)
+{
+	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+		TemporalImUsing->Let_Go();
+	}
+}
+
+
+/// <summary>
+/// Crushes what stands where this vehicle lands after a locomotor let it go in the air
+/// (JumpjetLocomotionClass, 0x54CA90). A vehicle that lands on a bridge deck checks the objects on
+/// the deck, and any other checks the ground. Only the first object on the cell, apart from this one,
+/// decides what happens. A vehicle or structure there blocks the landing and is left alone. A
+/// soldier is crushed, and so is everything after it on the cell. Any other object takes damage
+/// from CrushWarhead equal to its strength, ignoring its defenses; with no CrushWarhead it takes
+/// none. With a holder, the holder is the attacker and no house is passed; without one, the vehicle
+/// is the attacker and its LetGoByHouse is passed.
+/// </summary>
+/// <returns>bool; Is the landing blocked by a vehicle or structure on the cell?</returns>
+bool TechnoClass::Crush_On_Landing(void)
+{
+	ObjectClass * object = Map[Get_Coord()].Cell_Occupier(IsOnBridge);
 	if (object == this && object != NULL) {
 		object = object->Next;
 	}
-	if (object == NULL || object->RTTI == RTTI_UNIT || object->RTTI == RTTI_BUILDING) {
-		return;
+	if (object == NULL) {
+		return(false);
+	}
+	if (object->RTTI == RTTI_UNIT || object->RTTI == RTTI_BUILDING) {
+		return(true);
 	}
 
 	if (object->RTTI == RTTI_INFANTRY) {
@@ -12534,13 +13295,7 @@ void TechnoClass::Crush_On_Landing(void)
 			ObjectClass * next = object->Next;
 			if (object != this) {
 				Sound_Effect(object->Class_Of()->CrushSound, PositionCoord);
-				if (LetGoBy != NULL) {
-					object->Record_The_Kill(LetGoBy);
-				} else if (LetGoByHouse != NULL) {
-					object->Record_The_Kill_By_House(LetGoByHouse);
-				} else {
-					object->Record_The_Kill(this);
-				}
+				Credit_Let_Go_Kill(object, true);
 				object->Mark(MARK_UP);
 				object->Limbo();
 				object->Delete_Me();
@@ -12549,7 +13304,32 @@ void TechnoClass::Crush_On_Landing(void)
 		}
 	} else if (Rule->CrushWarhead != NULL) {
 		int damage = object->Strength;
-		object->Take_Damage(damage, 0, Rule->CrushWarhead, LetGoBy, true, false, LetGoByHouse);
+		TechnoClass * attacker = LetGoBy != NULL ? LetGoBy : this;
+		HouseClass * house = LetGoBy != NULL ? NULL : LetGoByHouse;
+		object->Take_Damage(damage, 0, Rule->CrushWarhead, attacker, true, false, house);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Destroys this vehicle where a locomotor let it go onto ground it cannot stand on
+/// (gamemd 0x746209). The CrushWarhead and then the C4Warhead burst at its position, each for its
+/// strength times FallingDamageMultiplier, with the holder as the source. The vehicle is removed
+/// afterwards, and a kill the blast leaves unrecorded is credited to the holder or its house.
+/// </summary>
+void TechnoClass::Explode_On_Landing(void)
+{
+	TechnoClass * owner = LetGoBy != NULL ? LetGoBy : this;
+	int const strength = Rule->CurrentStrengthDamage ? Strength : TClass->MaxStrength;
+	int const damage = static_cast<int>(strength * Rule->FallingDamageMultiplier);
+	Explosion_Damage(PositionCoord, damage, owner, Rule->CrushWarhead, true, LetGoByHouse);
+	if (IsActive) {
+		Explosion_Damage(PositionCoord, damage, owner, Rule->C4Warhead, true, LetGoByHouse);
+	}
+	if (IsActive) {
+		Credit_Let_Go_Kill(this, false);
+		Delete_Me();
 	}
 }
 
@@ -12581,7 +13361,6 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 	foot->Locomotion = std::move(carrier);
 	Mark(MARK_DOWN);
 
-	IsAttackedByLocomotor = true;
 	IsLetGoByLocomotor = false;
 	IsCrashing = false;
 	LetGoBy = NULL;
@@ -12589,7 +13368,9 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 	LocomotorSource = source;
 	source->LocomotorTarget = this;
 	Assign_Target(NULL);
-	foot->Locomotion->Move_To(Center_Coord());
+	// A held vehicle refuses new destinations, so the carrier is sent to the source before the hold is set (ImbueLocomotor, 0x710000).
+	foot->Assign_Destination(source);
+	IsAttackedByLocomotor = true;
 	DebugString("Locomotor: %s lifts %s\n", source->TClass->Name(), TClass->Name());
 }
 

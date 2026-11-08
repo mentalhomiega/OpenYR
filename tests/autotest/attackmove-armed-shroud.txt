@@ -1,0 +1,23 @@
+﻿; Attack move armed by the AttackMove command, with no key held, over black shroud. E1 and HTNK are selected and 67,47 is
+; never seen before the click (view 60 42). Shape 18 is MOUSE_CAN_MOVE before the command, and 71 is the attack cursor drawn
+; over shroud after it. The click gives Attack Move to both units; the "where" lines log each mission.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/attackmove-armed-shroud.txt -Width 640 -Height 480 -Seconds 60 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+35 grantunit E1 60 42
+36 grantunit HTNK 58 44
+40 select E1
+41 selectadd HTNK
+45 selected
+50 cell 67 47
+52 windowmove 380 420
+54 shape
+56 helptext 600
+60 command AttackMove
+62 windowmove 380 420
+64 shape
+66 helptext 600
+68 windowclick 380 420
+120 where E1
+122 where HTNK
+200 quit

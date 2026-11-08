@@ -11,7 +11,7 @@ when_omitted:
 
 The flag also has these effects:
 
-- The player's selected vehicles and aircraft get the enter cursor over the depot. A helipad offers that cursor to aircraft without this flag.
+- The player's selected vehicles and aircraft get the enter cursor over the depot. A helipad offers that cursor to aircraft without this flag. A [`Naval=yes`](/keys/naval/) depot offers it to ships only, and any other depot offers it to everything but ships; [Docking](/systems/repair/#docking) gives the exceptions.
 - A computer house sends its damaged vehicles to its nearest `UnitRepair` building, under the conditions in [Reaching the pad](/systems/repair/#reaching-the-pad).
 - An idle depot leaves guard for its repair mission when a docked object, still on its way in, comes within a quarter of a cell of the depot's center. It repairs only the object on its first dock, once that object stops within 100 leptons of the dock's spot, or 200 leptons for a hovercraft or ship.
 - A vehicle or aircraft parked on the depot can be sold where it stands.

@@ -16,6 +16,7 @@
 #include "tmission.h"
 
 #include "globals.h"
+#include "houstype.h"
 #include "mission.h"
 #include "quarry.h"
 #include "teamtype.h"
@@ -207,6 +208,9 @@ void TeamMissionClass::Fill_In(char const * entry)
 
 		Mission = tmission;
 		Data.Value = value;
+		if (tmission == TMISSION_CHANGE_HOUSE) {
+			Data.House = HouseTypeClass::From_RA2_Number(Data.House);
+		}
 	}
 }
 

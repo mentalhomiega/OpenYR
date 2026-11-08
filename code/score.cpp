@@ -16,144 +16,459 @@
 #include "score.h"
 
 #include "_keyboar.h"
-#include "_mixfile.h"
-#include "_palette.h"
+#include "_rules.h"
 #include "_surface.h"
 #include "_timer.h"
-#include "audio/audioengine.h"
 #include "autotest.h"
 #include "conquer.h"
 #include "csf.h"
-#include "data.h"
-#include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "side.h"
 #include "houstype.h"
+#include "hud.h"
+#include "house.h"
 #include "keyboard.h"
-#include "mixfile.h"
+#include "language/language.h"
 #include "msgloop.h"
+#include "rules.h"
 #include "scenario.h"
-#include "session.h"
+#include "shapeset.h"
+#include "stimer.h"
 #include "surface.h"
 #include "theme.h"
-#include "utf8.h"
 #include "winstub.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
-#include <cstring>
 #include <string>
+#include <vector>
 
-
-#define NUMFAMENAMES				9
-#define MAX_FAMENAME_LENGTH	104
-
-/*
- * The campaign results dialog (dialog 3015) lists two places of the hall of fame, and each one
- * gets a name field of this many dialog units.
- */
-#define FAME_PLACES					2
-
-void const * Beepy6;
-int ControlQ;	// cheat key to skip past score/mapsel screens
-bool StillUpdating;
-
-struct Fame {
-	char	name[MAX_FAMENAME_LENGTH];
-	int	score;
-	int	level;
-	int	side;
-};
 
 namespace {
 
 /*
- * The results screen's layout, in dialog units of gamemd's Campaign Results dialog (dialog 3015)
- * on the 800 by 600 stage.
+ * The emblem animation is 424 by 220 pixels.
  */
-Rect const PICTURE_BOX = ScoreStageClass::Dialog_Rect(70, 84, 282, 141);
-Rect const TABLE_RECT = ScoreStageClass::Dialog_Rect(66, 28, 280, 36);
-Rect const BUTTON_RECT = ScoreStageClass::Dialog_Rect(425, 130, 108, 23);
-Rect const PROMPT_RECT = ScoreStageClass::Dialog_Rect(10, 356, 303, 12);
-
-constexpr int HEADING_Y = 31;
-constexpr int ROW_Y[2] = { 40, 51 };
-constexpr int NAME_X = 83;
-constexpr int KILLS_RIGHT = 186;
-constexpr int LOSSES_RIGHT = 236;
-constexpr int BUILT_RIGHT = 286;
-constexpr int SCORE_RIGHT = 334;
-
-constexpr int PLACE_X[FAME_PLACES] = { 123, 240 };
-constexpr int PLACE_LABEL_X[FAME_PLACES] = { 113, 233 };
+constexpr int EMBLEM_WIDTH = 424;
+constexpr int EMBLEM_HEIGHT = 220;
 
 /*
- * The picture's animation is 44 frames of 424 by 220 pixels, one pass of it runs while the screen
- * comes up, and then it loops until the player continues.
+ * gamemd's emblem control steps its animation on a 100 millisecond timer (0x6033f0 answers 100 for
+ * the picture, control 1835 of dialog 259). When the animation wraps to frame 0 the dialog procedure
+ * (0x6c9383) sets the frame to 29, so the first pass shows every frame and the later passes repeat
+ * frame 29 to the last.
  */
-constexpr int ANIMATION_FRAMES = 44;
+constexpr int EMBLEM_FRAME_MILLISECONDS = 100;
+constexpr int EMBLEM_LOOP_START = 29;
 
 /*
- * The side letter names the art, as on the multiplayer screen: A for the first side in the rules'
- * [Sides] list, S for the second, and Y for any other side.
+ * The classic layout on the 800 by 600 stage. gamemd draws the side's background at the top left
+ * (0x72e730) and the side's plate 80 pixels to the right of it (0x72e920). The emblem animation matches the
+ * plate's art where it is drawn at 24 by 142 pixels inside the plate (found by comparing their frames).
+ * The text controls of dialog 259 appear 50 pixels higher in the original's screenshot than the dialog
+ * template puts them, and its status text starts at x 8; those offsets were measured from that screenshot.
  */
-char const * Art_Prefix(void)
+constexpr int PLATE_X = 80;
+constexpr int PLATE_Y = 0;
+constexpr int EMBLEM_X = PLATE_X + 24;
+constexpr int EMBLEM_Y = PLATE_Y + 142;
+constexpr int TEXT_RISE = 50;
+// The rank, commendation and enemies text sit 3 pixels lower in the original's screenshot than the time boxes' text.
+constexpr int PANEL_TEXT_RISE = 47;
+constexpr int PARAGRAPH_LINE_HEIGHT = 17;
+constexpr int STATUS_X = 10;
+constexpr int STATUS_CENTRE_Y = 584;
+constexpr int TITLE_TOP = 4;
+constexpr int TITLE_HEIGHT = 30;
+
+/*
+ * The side art, indexed by side: Allied, Soviet and Yuri. These are the names in gamemd's table
+ * (0x844c58) for the 800 wide screen. The small 640 wide entries are not used: the stage is always
+ * 800 by 600 and is fitted to the screen.
+ */
+char const * const BACKGROUND[3] = { "ASCRBKMD.SHP", "SSCRBKMD.SHP", "SYCRBKMD.SHP" };
+char const * const PLATE[3] = { "ASCRTMD.SHP", "SSCRTMD.SHP", "SYCRTMD.SHP" };
+char const * const EMBLEM[3] = { "ASCRAMD.SHP", "SSCRAMD.SHP", "SYCRAMD.SHP" };
+char const * const PALETTE[3] = { "ASCORE.PAL", "SSCORE.PAL", "YSCORE.PAL" };
+
+/*
+ * The side index of the art: 0 for the first side in the rules' [Sides] list, 1 for the second and 2
+ * for any other.
+ */
+int Side_Index(void)
 {
 	char letter = ScoreStageClass::Side_Letter();
-	if (letter == 'A') return("ASCR");
-	if (letter == 'S') return("SSCR");
-	return("SYCR");
-}
-
-char const * Palette_Name(void)
-{
-	char letter = ScoreStageClass::Side_Letter();
-	if (letter == 'A') return("ASCORE.PAL");
-	if (letter == 'S') return("SSCORE.PAL");
-	return("YSCORE.PAL");
+	if (letter == 'A') return(0);
+	if (letter == 'S') return(1);
+	return(2);
 }
 
 /*
- * Waits for the given number of ticks while the window keeps its messages.
+ * The text of one results screen, fetched from the mission and the string tables.
  */
-void Score_Delay(int ticks)
+struct Figures {
+	std::string Title;
+	std::string Rank;
+	std::string Message;
+	std::string EnemiesLabel;
+	std::string EnemiesValue;
+	std::string ParLabel;
+	std::string ParValue;
+	std::string YourLabel;
+	std::string YourValue;
+	std::string Caption;
+	std::string Status;
+};
+
+/*
+ * The shared menu art that frames the classic screen: the metal column with its monitor, the button
+ * slots and the status bar. Each piece is drawn through its own palette, as gamemd does (0x72e450).
+ */
+struct ShellArt {
+	ShellArt(void) : Top(NULL), Slot(NULL), Bottom(NULL), Status(NULL), Button(NULL), Shell(NULL), ShellSlot(NULL), ShellButton(NULL) {}
+
+	~ShellArt(void)
+	{
+		ShapeSet const * const shapes[5] = { Top, Slot, Bottom, Status, Button };
+		for (ShapeSet const * shape : shapes) {
+			ScoreStageClass::Free_Shape(shape);
+		}
+		ScoreStageClass::Free_Drawer(Shell);
+		ScoreStageClass::Free_Drawer(ShellSlot);
+		ScoreStageClass::Free_Drawer(ShellButton);
+	}
+
+	ShellArt(ShellArt const &) = delete;
+	ShellArt & operator = (ShellArt const &) = delete;
+
+	ShapeSet * Top;
+	ShapeSet * Slot;
+	ShapeSet * Bottom;
+	ShapeSet * Status;
+	ShapeSet * Button;
+	ConvertClass * Shell;
+	ConvertClass * ShellSlot;
+	ConvertClass * ShellButton;
+};
+
+/*
+ * Formats timer ticks as hh:mm:ss, the way gamemd prints the par and elapsed times.
+ */
+void Format_Time(char * buffer, int ticks)
 {
-	for (int i = 0; i < ticks; i++) {
-		Call_Back();
-		Windows_Message_Handler();
-		Sleep(16);
+	int const seconds = ticks / TIMER_SECOND;
+	sprintf(buffer, "%02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60);
+}
+
+/*
+ * The enemies destroyed by the player's houses. gamemd adds up the kill trackers of every house whose
+ * player control flag is set (0x6c92b0, the flag at +0x1ED), and a tracker counts what that house killed,
+ * except types with DontScore. TechnoClass::Count_The_Kill gives the same kills to the house's UnitsKilled
+ * and BuildingsKilled arrays, by victim house, in every kind of game.
+ */
+int Enemies_Destroyed(void)
+{
+	int total = 0;
+	for (int i = 0; i < Houses.Count(); i++) {
+		HouseClass * house = Houses[i];
+		if (house == NULL || !house->IsPlayerControl) {
+			continue;
+		}
+		for (int victim = 0; victim < ARRAY_SIZE(house->UnitsKilled); victim++) {
+			total += house->UnitsKilled[victim] + house->BuildingsKilled[victim];
+		}
+	}
+	return(total);
+}
+
+/*
+ * Reads the figures of the mission that was just won. The rank is under par when the elapsed time is
+ * not more than the par time, compared in whole seconds as gamemd compares them.
+ */
+Figures Collect_Figures(void)
+{
+	Figures figures;
+
+	int const difficulty = std::clamp((int)Scen->Difficulty, 0, 2);
+	int const par = Scen->ParTime[difficulty];
+	int const elapsed = (int)Scen->ElapsedTimer;
+	bool const under_par = (elapsed / TIMER_SECOND) <= (par / TIMER_SECOND);
+
+	figures.Rank = Fetch_String_UTF8(under_par ? Scen->UnderParTitle : Scen->OverParTitle);
+	figures.Message = Fetch_String_UTF8(under_par ? Scen->UnderParMessage : Scen->OverParMessage);
+
+	char buffer[32];
+	Format_Time(buffer, par);
+	figures.ParValue = buffer;
+	Format_Time(buffer, elapsed);
+	figures.YourValue = buffer;
+	sprintf(buffer, "%d", Enemies_Destroyed());
+	figures.EnemiesValue = buffer;
+
+	figures.Title = Fetch_String_UTF8("GUI:StandaloneScore");
+	figures.EnemiesLabel = Fetch_String_UTF8("GUI:HeadsTaken");
+	figures.ParLabel = Fetch_String_UTF8("GUI:ParTime");
+	figures.YourLabel = Fetch_String_UTF8("GUI:YourTime");
+	figures.Caption = Fetch_String_UTF8("GUI:Continue");
+	figures.Status = Fetch_String_UTF8("STT:StandScoreButtonReturn");
+	return(figures);
+}
+
+/*
+ * Splits text into lines no wider than the width, breaking at spaces. A word wider than the width
+ * keeps a line of its own.
+ */
+std::vector<std::string> Wrap_Text(ScoreStageClass const & stage, std::string const & text, int width)
+{
+	std::vector<std::string> lines;
+	std::string line;
+	std::size_t start = 0;
+	while (start < text.size()) {
+		std::size_t end = text.find(' ', start);
+		if (end == std::string::npos) {
+			end = text.size();
+		}
+		std::string const word = text.substr(start, end - start);
+		start = end + 1;
+		if (word.empty()) {
+			continue;
+		}
+		std::string const joined = line.empty() ? word : line + " " + word;
+		if (!line.empty() && stage.Text_Width(joined.c_str()) > width) {
+			lines.push_back(line);
+			line = word;
+		} else {
+			line = joined;
+		}
+	}
+	if (!line.empty()) {
+		lines.push_back(line);
+	}
+	return(lines);
+}
+
+void Print_Paragraph(ScoreStageClass & stage, std::string const & text, Rect const & area, int line_height)
+{
+	std::vector<std::string> const lines = Wrap_Text(stage, text, area.Width);
+	for (std::size_t i = 0; i < lines.size(); i++) {
+		stage.Print_Left(lines[i].c_str(), area.X, area.Y + (int)i * line_height);
+	}
+}
+
+int Button_Color(void)
+{
+	return(DSurface::Build_Hicolor_Pixel(RGBClass(170, 22, 22)));
+}
+
+int Button_Edge_Color(void)
+{
+	return(DSurface::Build_Hicolor_Pixel(RGBClass(230, 190, 60)));
+}
+
+int Panel_Color(void)
+{
+	return(DSurface::Build_Hicolor_Pixel(RGBClass(10, 14, 24)));
+}
+
+int Panel_Edge_Color(void)
+{
+	return(DSurface::Build_Hicolor_Pixel(RGBClass(110, 130, 160)));
+}
+
+/*
+ * The top of a line of text whose middle is on the given line, for the stage's text height.
+ */
+int Centred_Text_Top(ScoreStageClass const & stage, int centre)
+{
+	return(centre - stage.Text_Height() / 2);
+}
+
+/*
+ * Loads the shared menu art. A missing piece stays NULL and is left out of the screen.
+ */
+void Load_Shell(ScoreStageClass & stage, ShellArt & shell)
+{
+	shell.Top = stage.Load_Shape("SDTP.SHP");
+	shell.Slot = stage.Load_Shape("SDBTNBKGD.SHP");
+	shell.Bottom = stage.Load_Shape("SDBTM.SHP");
+	shell.Status = stage.Load_Shape("LWSCRNL.SHP");
+	shell.Button = stage.Load_Shape("SDBTNANM.SHP");
+	shell.Shell = stage.Load_Drawer("SHELL.PAL");
+	shell.ShellSlot = stage.Load_Drawer("SHELL2.PAL");
+	shell.ShellButton = stage.Load_Drawer("SDBTNANM.PAL");
+}
+
+/*
+ * Draws the art of the classic screen, without text, placed as gamemd places it (0x72e450 and 0x72ec70): the
+ * side's background and plate, the metal column down the right with its button slots, and the status bar
+ * along the bottom. The last full slot of the column holds the Continue button, which is returned with the
+ * column's area.
+ */
+void Draw_Classic_Art(ScoreStageClass & stage, ShapeSet const * background, ShapeSet const * plate, ShellArt const & shell, Rect & button, Rect & column)
+{
+	int const width = stage.Width();
+	int const height = stage.Height();
+
+	if (background != NULL) {
+		stage.Draw_Shape_Frame(background, 0, Rect(0, 0, background->Get_Width(), background->Get_Height()));
+	}
+	if (plate != NULL) {
+		stage.Draw_Shape_Frame(plate, 0, Rect(PLATE_X, PLATE_Y, plate->Get_Width(), plate->Get_Height()));
+	}
+
+	int top_height = 0;
+	int column_x = width;
+	if (shell.Top != NULL) {
+		top_height = shell.Top->Get_Height();
+		column_x = width - shell.Top->Get_Width();
+		stage.Draw_Shape_At(shell.Top, 0, column_x, 0, shell.Shell);
+	}
+	column = Rect(column_x, 0, width - column_x, height);
+
+	int slots = 0;
+	if (shell.Slot != NULL && shell.Slot->Get_Height() > 0) {
+		int const slot_height = shell.Slot->Get_Height();
+		slots = (height - top_height) / slot_height;
+		for (int i = 0; i < slots; i++) {
+			stage.Draw_Shape_At(shell.Slot, 0, width - shell.Slot->Get_Width(), top_height + i * slot_height, shell.ShellSlot);
+		}
+		if (shell.Bottom != NULL) {
+			stage.Draw_Shape_At(shell.Bottom, 0, width - shell.Bottom->Get_Width(), top_height + slots * slot_height, shell.Shell);
+		}
+	}
+
+	if (shell.Status != NULL) {
+		stage.Draw_Shape_At(shell.Status, 0, 0, height - shell.Status->Get_Height(), shell.Shell);
+	}
+
+	if (shell.Button != NULL && slots > 0) {
+		button = Rect(width - shell.Button->Get_Width(), top_height + (slots - 1) * shell.Slot->Get_Height(), shell.Button->Get_Width(), shell.Button->Get_Height());
+		stage.Draw_Shape_At(shell.Button, 2, button.X, button.Y, shell.ShellButton);
+	} else {
+		button = ScoreStageClass::Dialog_Rect(425, 346, 108, 23);
 	}
 }
 
 /*
- * Formats an elapsed time the way the score screens print it.
+ * Prints the texts of the classic screen at the positions of dialog 259's controls. The rank and the
+ * commendation are left aligned, the two times are centred under their labels, and the number of enemies
+ * destroyed is left aligned, as the dialog's static styles say.
  */
-void Format_Elapsed(char * buffer, unsigned time)
+static void Print_Row_Centre(ScoreStageClass & stage, std::string const & text, Rect const & row)
 {
-	if (time / 3600 > 99) {
-		time = (100 * 3600) - 1;
+	stage.Print_Centre(text.c_str(), row.X, row.Width, Centred_Text_Top(stage, row.Y + row.Height / 2));
+}
+
+
+static void Print_Row_Left(ScoreStageClass & stage, std::string const & text, Rect const & row)
+{
+	stage.Print_Left(text.c_str(), row.X, Centred_Text_Top(stage, row.Y + row.Height / 2));
+}
+
+
+void Draw_Classic_Text(ScoreStageClass & stage, Figures const & figures, Rect const & column, Rect const & button)
+{
+	Rect const title(column.X, TITLE_TOP, column.Width, TITLE_HEIGHT);
+	Print_Row_Centre(stage, figures.Title, title);
+
+	Rect const rank(128, 57 - PANEL_TEXT_RISE, 386, 16);
+	Print_Row_Left(stage, figures.Rank, rank);
+	Print_Paragraph(stage, figures.Message, Rect(128, 81 - PANEL_TEXT_RISE, 386, 65), PARAGRAPH_LINE_HEIGHT);
+
+	Rect const enemies_label(128, 163 - PANEL_TEXT_RISE, 165, 16);
+	Rect const enemies_value(300, 163 - PANEL_TEXT_RISE, 213, 16);
+	Print_Row_Left(stage, figures.EnemiesLabel, enemies_label);
+	Print_Row_Left(stage, figures.EnemiesValue, enemies_value);
+
+	Rect const par_label(188, 432 - TEXT_RISE, 83, 16);
+	Rect const par_value(188, 450 - TEXT_RISE, 83, 16);
+	Print_Row_Centre(stage, figures.ParLabel, par_label);
+	Print_Row_Centre(stage, figures.ParValue, par_value);
+
+	Rect const your_label(363, 432 - TEXT_RISE, 83, 16);
+	Rect const your_value(363, 450 - TEXT_RISE, 83, 16);
+	Print_Row_Centre(stage, figures.YourLabel, your_label);
+	Print_Row_Centre(stage, figures.YourValue, your_value);
+
+	Print_Row_Centre(stage, figures.Caption, button);
+	stage.Print_Left(figures.Status.c_str(), STATUS_X, Centred_Text_Top(stage, STATUS_CENTRE_Y));
+}
+
+void Draw_Button(ScoreStageClass & stage, Rect const & button, std::string const & caption)
+{
+	stage.Canvas()->Fill_Rect(button, Button_Color());
+	stage.Canvas()->Draw_Rect(button, Button_Edge_Color());
+	stage.Print_Centre(caption.c_str(), button.X, button.Width, button.Y + (button.Height - stage.Text_Height()) / 2);
+}
+
+/*
+ * Lays out the modern screen: three panels across the screen. The left panel holds the rank and the
+ * commendation, the centre panel the emblem, and the right panel the figures and the Continue button.
+ * The emblem fills the width of its panel.
+ */
+void Draw_Modern(ScoreStageClass & stage, Figures const & figures, Rect & emblem, Rect & button)
+{
+	int const width = stage.Width();
+	int const height = stage.Height();
+	int const text_height = stage.Text_Height();
+	int const pad = std::max(8, height / 40);
+	int const top = height * 14 / 100;
+	int const panel_height = height * 70 / 100;
+
+	Rect const left(width * 4 / 100, top, width * 26 / 100, panel_height);
+	Rect const centre(width * 32 / 100, top, width * 36 / 100, panel_height);
+	Rect const right(width * 70 / 100, top, width * 26 / 100, panel_height);
+
+	stage.Print_Centre(figures.Title.c_str(), 0, width, height * 4 / 100);
+
+	Rect const panels[3] = { left, centre, right };
+	for (Rect const & panel : panels) {
+		stage.Canvas()->Fill_Rect(panel, Panel_Color());
+		stage.Canvas()->Draw_Rect(panel, Panel_Edge_Color());
 	}
-	unsigned hours = time / 3600;
-	time -= hours * 3600;
-	unsigned minutes = time / 60;
-	time -= minutes * 60;
-	std::string format = Fetch_String_UTF8("TXT_TIME_FORMAT_HOURS");
-	sprintf(buffer, format.c_str(), hours, minutes, time);
+
+	int const text_width = left.Width - 2 * pad;
+	int const rank_lines = (int)Wrap_Text(stage, figures.Rank, text_width).size();
+	Print_Paragraph(stage, figures.Rank, Rect(left.X + pad, left.Y + pad, text_width, left.Height), text_height);
+	Print_Paragraph(stage, figures.Message, Rect(left.X + pad, left.Y + pad + (rank_lines + 1) * text_height, text_width, left.Height), text_height);
+
+	double const fit = std::min((centre.Width - 2 * pad) / (double)EMBLEM_WIDTH, (centre.Height - 2 * pad) / (double)EMBLEM_HEIGHT);
+	int const emblem_width = (int)(EMBLEM_WIDTH * fit);
+	int const emblem_height = (int)(EMBLEM_HEIGHT * fit);
+	emblem = Rect(centre.X + (centre.Width - emblem_width) / 2, centre.Y + (centre.Height - emblem_height) / 2, emblem_width, emblem_height);
+
+	int const figure_right = right.X + right.Width - pad;
+	int y = right.Y + pad;
+	stage.Print_Left(figures.EnemiesLabel.c_str(), right.X + pad, y);
+	stage.Print_Right(figures.EnemiesValue.c_str(), figure_right, y + text_height + 2);
+	y += 3 * text_height;
+	stage.Print_Left(figures.ParLabel.c_str(), right.X + pad, y);
+	stage.Print_Right(figures.ParValue.c_str(), figure_right, y + text_height + 2);
+	y += 3 * text_height;
+	stage.Print_Left(figures.YourLabel.c_str(), right.X + pad, y);
+	stage.Print_Right(figures.YourValue.c_str(), figure_right, y + text_height + 2);
+
+	int const button_height = std::max(text_height + 6, height * 6 / 100);
+	button = Rect(right.X + pad, right.Y + right.Height - pad - button_height, right.Width - 2 * pad, button_height);
+	Draw_Button(stage, button, figures.Caption);
+
+	stage.Print_Left(figures.Status.c_str(), left.X, top + panel_height + pad);
 }
 
 }
+
 
 /// <summary>
-/// Shows the campaign results screen after a mission.
-/// The screen is drawn on the side's art in the layout of gamemd's Campaign Results dialog. It lists
-/// the player, and the first enemy house, with the figures of the mission and the efficiency total.
-/// The two best places of the hall of fame are shown below the table, and a score that makes one of
-/// them takes a name from the keyboard.
+/// Shows the campaign mission score after a won mission, in the layout of the interface style: the
+/// classic 800 by 600 dialog or the modern three panels. The side's art is drawn behind it. Only the
+/// Continue button closes the screen; keys and clicks elsewhere do nothing.
 /// </summary>
 void ScoreClass::Presentation(void)
 {
-	if (!Stage.Open()) {
+	bool const modern = Modern_Interface();
+	if (!Stage.Open(modern)) {
 		return;
 	}
 
@@ -164,249 +479,68 @@ void ScoreClass::Presentation(void)
 	Theme.Stop();
 	Theme.Play_Song(Theme.From_Name("SCORE"));
 
-	ScoreSnds = {
-		new SfxEntry("Wipe", "WIPE.AUD"),
-		new SfxEntry("Emblem", "EMBLEM.AUD"),
-		new SfxEntry("BestBox", "BESTBOX.AUD"),
-		new SfxEntry("Efficiency", "EFFICIEN.AUD"),
-		new SfxEntry("BarGraph", "BARGRAPH.AUD"),
-		new SfxEntry("Type", "TYPE.AUD"),
-		new SfxEntry("Back", "SCOLD8.AUD")
-	};
+	int const side = Side_Index();
+	ShellArt shell;
+	if (!modern) {
+		Load_Shell(Stage, shell);
+	}
 
-	DoSound("Wipe", 256);
-
-	/*
-	 * The side's palette, background and emblem animation.
-	 */
+	// A side's own CampaignScore* keys replace the stock art for its palette, background and emblem animation.
 	SideClass const * own = ScoreStageClass::Player_Side();
-	Stage.Load_Palette(own != NULL && !own->CampaignScorePalette.empty() ? own->CampaignScorePalette.c_str() : Palette_Name());
+	auto const art = [own](std::string SideClass::* key, char const * stock) {
+		return(own != NULL && !(own->*key).empty() ? (own->*key).c_str() : stock);
+	};
+	Stage.Load_Palette(art(&SideClass::CampaignScorePalette, PALETTE[side]));
 
-	char name[64];
-	sprintf(name, "%sBK%s.SHP", Art_Prefix(), Stage.Is_Small() ? "SM" : "MD");
-	if (own != NULL && !own->CampaignScoreBackground.empty()) {
-		snprintf(name, sizeof(name), "%s", own->CampaignScoreBackground.c_str());
-	}
-	ShapeSet * background = Stage.Load_Shape(name);
-	if (background != NULL) {
-		Stage.Draw_Shape_Frame(background, 0, Rect(0, 0, 632, 568));
-		ScoreStageClass::Free_Shape(background);
-	}
+	ShapeSet * background = Stage.Load_Shape(art(&SideClass::CampaignScoreBackground, BACKGROUND[side]));
+	ShapeSet * plate = Stage.Load_Shape(PLATE[side]);
+	ShapeSet * emblem = Stage.Load_Shape(art(&SideClass::CampaignScoreAnimation, EMBLEM[side]));
 
-	sprintf(name, "%sAMD.SHP", Art_Prefix());
-	if (own != NULL && !own->CampaignScoreAnimation.empty()) {
-		snprintf(name, sizeof(name), "%s", own->CampaignScoreAnimation.c_str());
-	}
-	ShapeSet * animation = Stage.Load_Shape(name);
+	Rect const whole(0, 0, Stage.Width(), Stage.Height());
+	Figures const figures = Collect_Figures();
+	Rect emblem_box;
+	Rect button;
 
-	/*
-	 * The figures of the two rows. The score is the efficiency total, and the built figure is the
-	 * share of the biggest spender's credits.
-	 */
-	HouseClass * enemy = NULL;
-	for (int i = 0; i < Houses.Count() && enemy == NULL; i++) {
-		HouseClass * hptr = Houses[i];
-		if (hptr != NULL && hptr != PlayerPtr && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver && !PlayerPtr->Is_Ally(hptr)) {
-			enemy = hptr;
+	if (modern) {
+		// The side art is blurred over the whole screen and the panels go over it.
+		if (background != NULL) {
+			Stage.Draw_Shape_Frame(background, 0, whole);
 		}
+		Stage.Fill_Backdrop(*Stage.Canvas(), whole);
+		Draw_Modern(Stage, figures, emblem_box, button);
+	} else {
+		// A screen larger than the stage shows the same art around it, blurred and dimmed.
+		Rect column;
+		Draw_Classic_Art(Stage, background, plate, shell, button, column);
+		Stage.Fill_Backdrop(*HiddenSurface, whole);
+		Stage.Show_Screen();
+		Draw_Classic_Text(Stage, figures, column, button);
+		emblem_box = Rect(EMBLEM_X, EMBLEM_Y, EMBLEM_WIDTH, EMBLEM_HEIGHT);
 	}
-
-	unsigned int most_spent = 0;
-	for (int i = 0; i < Houses.Count(); i++) {
-		HouseClass * hptr = Houses[i];
-		if (hptr != NULL && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver) {
-			most_spent = std::max(most_spent, hptr->CreditsSpent);
-		}
-	}
-
-	struct Figures {
-		std::string Name;
-		int Kills;
-		int Losses;
-		int Built;
-		int Score;
-	} rows[2];
-
-	HouseClass * houses[2] = { PlayerPtr, enemy };
-	int const row_count = (enemy != NULL) ? 2 : 1;
-	for (int row = 0; row < row_count; row++) {
-		HouseClass * hptr = houses[row];
-		rows[row].Name = Session.Shown_Name(hptr);
-		rows[row].Kills = 0;
-		rows[row].Losses = 0;
-		for (unsigned int i = 0; i < sizeof(hptr->UnitsKilled) / sizeof(hptr->UnitsKilled[0]); i++) {
-			rows[row].Kills += hptr->UnitsKilled[i];
-		}
-		for (unsigned int i = 0; i < sizeof(hptr->BuildingsKilled) / sizeof(hptr->BuildingsKilled[0]); i++) {
-			rows[row].Kills += hptr->BuildingsKilled[i];
-		}
-		rows[row].Losses = hptr->UnitsLost + hptr->BuildingsLost;
-		rows[row].Built = (most_spent > 0) ? (int)((double)hptr->CreditsSpent / (double)most_spent * 100.0) : 0;
-		rows[row].Score = Do_Calc(hptr);
-	}
-	unsigned int total = (unsigned int)rows[0].Score;
-
-	/*
-	 * The static part of the screen: title, time, headings and the continue button.
-	 */
-	std::string title = Fetch_String_UTF8("GUI:CampaignResults");
-	Stage.Print_Centre(title.c_str(), ScoreStageClass::Dialog_X(424), ScoreStageClass::Dialog_X(108), ScoreStageClass::Dialog_Y(1));
-
-	char buffer[128];
-	Format_Elapsed(buffer, Scen->ElapsedTimer / 60);
-	Stage.Print_Centre(buffer, ScoreStageClass::Dialog_X(167), ScoreStageClass::Dialog_X(87), ScoreStageClass::Dialog_Y(19));
-
-	std::string heading_player = Fetch_String_UTF8("GUI:Player");
-	std::string heading_kills = Fetch_String_UTF8("GUI:Kills");
-	std::string heading_losses = Fetch_String_UTF8("GUI:Losses");
-	std::string heading_built = Fetch_String_UTF8("GUI:Built");
-	std::string heading_score = Fetch_String_UTF8("GUI:Score");
-	Stage.Print_Left(heading_player.c_str(), ScoreStageClass::Dialog_X(NAME_X), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_kills.c_str(), ScoreStageClass::Dialog_X(KILLS_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_losses.c_str(), ScoreStageClass::Dialog_X(LOSSES_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_built.c_str(), ScoreStageClass::Dialog_X(BUILT_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_score.c_str(), ScoreStageClass::Dialog_X(SCORE_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
-
-	RGBClass const edge(150, 150, 150);
-	Stage.Canvas()->Draw_Rect(BUTTON_RECT, DSurface::Build_Hicolor_Pixel(edge));
-	std::string caption = Fetch_String_UTF8("GUI:Continue");
-	Stage.Print_Centre(caption.c_str(), BUTTON_RECT.X, BUTTON_RECT.Width, BUTTON_RECT.Y + (BUTTON_RECT.Height - Stage.Text_Height()) / 2);
 
 	Stage.Save_Base();
-	Stage.Present(Rect(0, 0, 800, 600));
+	int frame = 0;
+	Draw_Emblem(emblem, frame, emblem_box, modern);
 
-	/*
-	 * The emblem animation plays once as the screen comes up.
-	 */
-	if (animation != NULL) {
-		DoSound("Emblem", 256);
-		Rect const frame_box(PICTURE_BOX.X, PICTURE_BOX.Y, 424, 220);
-		for (int frame = 0; frame < ANIMATION_FRAMES; frame++) {
-			Stage.Draw_Shape_Frame(animation, frame, frame_box);
-			Stage.Present(frame_box);
-			Score_Delay(2);
-		}
+	// A test run captures the screen next, so it shows the emblem at the end of its first pass.
+	if (AutoTest_Active() && emblem != NULL) {
+		frame = std::max(1, emblem->Get_Count()) - 1;
+		Draw_Emblem(emblem, frame, emblem_box, modern);
 	}
-
-	/*
-	 * Each row's name comes up, then the figures count up together, and the score follows.
-	 */
-	DoSound("BestBox", 256);
-	int const left = ScoreStageClass::Dialog_X(NAME_X);
-	int const right = ScoreStageClass::Dialog_X(SCORE_RIGHT);
-	for (int row = 0; row < row_count; row++) {
-		int const y = ScoreStageClass::Dialog_Y(ROW_Y[row]);
-		Stage.Print_Left(rows[row].Name.c_str(), left, y);
-		Rect const line(left, y, right - left, Stage.Text_Height());
-		Stage.Keep(line);
-		Stage.Present(line);
-		Score_Delay(6);
-	}
-
-	DoSound("Efficiency", 128);
-	int const steps = 100;
-	for (int step = 1; step <= steps; step++) {
-		Stage.Restore(TABLE_RECT);
-		for (int row = 0; row < row_count; row++) {
-			Print_Row_Figures(row, rows[row].Kills * step / steps, rows[row].Losses * step / steps, rows[row].Built * step / steps, 0);
-		}
-		Stage.Present(TABLE_RECT);
-		DoSound("BarGraph", 128);
-		Score_Delay(1);
-	}
-	for (int step = 1; step <= steps; step++) {
-		Stage.Restore(TABLE_RECT);
-		for (int row = 0; row < row_count; row++) {
-			Print_Row_Figures(row, rows[row].Kills, rows[row].Losses, rows[row].Built, rows[row].Score * step / steps);
-		}
-		Stage.Present(TABLE_RECT);
-		DoSound("BarGraph", 128);
-		Score_Delay(1);
-	}
-	Stage.Restore(TABLE_RECT);
-	for (int row = 0; row < row_count; row++) {
-		Print_Row_Figures(row, rows[row].Kills, rows[row].Losses, rows[row].Built, rows[row].Score);
-	}
-	Stage.Present(TABLE_RECT);
-
-	/*
-	 * The hall of fame keeps the best nine scores, and its two best places are shown here. A score
-	 * that enters the list takes its name from the player.
-	 */
-	Fame hallfame[NUMFAMENAMES];
-	memset(hallfame, 0, sizeof(hallfame));
-	CCFileClass file;
-	file.Set_Name(FAME_FILE_NAME);
-	if (file.Is_Available() == true) {
-		file.Read(hallfame, sizeof(hallfame));
-		file.Close();
-	}
-
-	if (hallfame[NUMFAMENAMES-1].score >= (int)total) {
-		hallfame[NUMFAMENAMES-1].score = 0;
-	}
-	int index = 0;
-	for (index = 0; index < NUMFAMENAMES; index++) {
-		if ((int)total > hallfame[index].score) {
-			if (index < (NUMFAMENAMES-1)) {
-				for (int i = (NUMFAMENAMES-1); i > index; i--) {
-					hallfame[i] = hallfame[i-1];
-				}
-			}
-			hallfame[index].name[0] = 0;
-			hallfame[index].score = (int)total;
-			hallfame[index].level = Scen->Scenario;
-			hallfame[index].side = PlayerPtr->Class->Side;
-			break;
-		}
-	}
-
-	DoSound("Emblem", 256);
-	for (int place = 0; place < FAME_PLACES; place++) {
-		std::string label = Fetch_String_UTF8(place == 0 ? "GUI:FirstPlace" : "GUI:SecondPlace");
-		Stage.Print_Left(label.c_str(), ScoreStageClass::Dialog_X(PLACE_LABEL_X[place]), ScoreStageClass::Dialog_Y(232));
-		if (hallfame[place].score > 0) {
-			sprintf(buffer, "%d%%", hallfame[place].score);
-			Stage.Print_Left(buffer, ScoreStageClass::Dialog_X(PLACE_X[place]), ScoreStageClass::Dialog_Y(254));
-		}
-		Rect const field = ScoreStageClass::Dialog_Rect(PLACE_X[place], 242, 55, 10);
-		Stage.Print_Left(hallfame[place].name, field.X, field.Y);
-		Rect const place_area = ScoreStageClass::Dialog_Rect(PLACE_LABEL_X[place], 232, 80, 34);
-		Stage.Keep(place_area);
-		Stage.Present(place_area);
-	}
-
-	if (index < FAME_PLACES) {
-		Show_Mouse();
-		Input_Name(hallfame[index].name, ScoreStageClass::Dialog_Rect(PLACE_X[index], 242, 55, 10));
-		Hide_Mouse();
-	}
-
-	if (file.Open(FAME_FILE_NAME, FileClass::WRITE)) {
-		file.Write(hallfame, sizeof(hallfame));
-		file.Close();
-	}
-
-	/*
-	 * The prompt, and the screen waits for the player with the emblem looping.
-	 */
-	std::string prompt = Fetch_String_UTF8("TXT_CLICK_CONTINUE");
-	Stage.Print_Left(prompt.c_str(), PROMPT_RECT.X, PROMPT_RECT.Y);
-	Stage.Present(PROMPT_RECT);
+	Stage.Present(whole);
 
 	AutoTest_Score_Shown();
 
 	Show_Mouse();
-	Wait_For_Click(animation);
+	Wait_For_Click(emblem, emblem_box, button, frame, modern);
 	Hide_Mouse();
 
 	Theme.Stop(true);
 	Theme.Queue_Song(THEME_NONE);
 
-	ScoreSnds.Clear();
-	if (animation != NULL) {
-		ScoreStageClass::Free_Shape(animation);
-	}
+	ScoreStageClass::Free_Shape(emblem);
+	ScoreStageClass::Free_Shape(plate);
+	ScoreStageClass::Free_Shape(background);
 	Stage.Close();
 
 	Stage.Clear_Screen();
@@ -416,226 +550,75 @@ void ScoreClass::Presentation(void)
 
 
 /// <summary>
-/// Determines the efficiency rating for the score screen.
-/// The rating weighs how much of what the house and its allies built came through the
-/// mission alive against how much of the money they had to spend went unspent.
+/// Draws one frame of the emblem animation into its box. The classic emblem goes over the plate it was
+/// made for; the modern emblem is stretched to its panel with its dark background left out.
 /// </summary>
-/// <param name="house">The house being rated -- normally the player.</param>
-/// <returns>Returns with the efficiency rating, expressed as a percentage.</returns>
-unsigned int ScoreClass::Do_Calc(HouseClass * house)
+/// <param name="animation">The emblem animation, or NULL to draw nothing.</param>
+/// <param name="frame">The frame to draw.</param>
+/// <param name="box">The stage area the frame fills.</param>
+/// <param name="modern">Is the modern layout in use?</param>
+void ScoreClass::Draw_Emblem(ShapeSet const * animation, int frame, Rect const & box, bool modern)
 {
-	int remain = 0;
-	int total = 0;
-
-	for (int i = 0; i < Houses.Count(); i++) {
-		HouseClass * hptr = Houses[i];
-		if (house->Is_Ally(hptr) && hptr->Is_Ally(house) || house == hptr) {
-			remain += hptr->ABQuantity.Total();
-			remain += hptr->AUQuantity.Total();
-			remain += hptr->AIQuantity.Total();
-			remain += hptr->AAQuantity.Total();
-			total += hptr->BuildingsLost;
-			total += hptr->UnitsLost;
-		}
-	}
-
-	total += remain;
-	DebugString("Remaining: %ld, Total: %ld\n", remain, total);
-
-	float build_eco = total > 0 ? ((float)remain / total) : 0.0f;
-
-	DebugString("BuildEconomy = %f\n", build_eco);
-
-	DebugString("Money: %ld, Harvested: %ld, Initial: %ld\n", house->Available_Money(), house->HarvestedCredits, house->Control.InitialCredits);
-
-	total = house->HarvestedCredits + house->Control.InitialCredits;
-	float money_eco = total > 0 ? (float)house->Available_Money() / (float)total : 0.0f;
-
-	DebugString("MoneyEconomy = %f\n", money_eco);
-
-	float eco = money_eco + build_eco;
-
-	unsigned int efficiency = (unsigned int)((eco / 2.0) * 100.0);
-
-	DebugString("Efficiency: %ld\n", efficiency);
-
-	return(efficiency);
-}
-
-
-/// <summary>
-/// Prints one row's figures on the results table.
-/// </summary>
-void ScoreClass::Print_Row_Figures(int row, int kills, int losses, int built, int score)
-{
-	char buffer[32];
-	int const y = ScoreStageClass::Dialog_Y(ROW_Y[row]);
-
-	sprintf(buffer, "%d", kills);
-	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(KILLS_RIGHT), y);
-	sprintf(buffer, "%d", losses);
-	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(LOSSES_RIGHT), y);
-	sprintf(buffer, "%d%%", built);
-	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(BUILT_RIGHT), y);
-	sprintf(buffer, "%d%%", score);
-	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(SCORE_RIGHT), y);
-}
-
-
-/// <summary>
-/// Takes a name from the keyboard into a hall of fame place.
-/// The name is typed into the place's field on the stage, and the field is redrawn after each key.
-/// A name that would run past the field is not accepted.
-/// </summary>
-/// <param name="str">The name to type into. It is cleared when it is entered.</param>
-/// <param name="field">The stage area the name is printed in.</param>
-void ScoreClass::Input_Name(char str[], Rect const & field)
-{
-	if (AutoTest_Post_Win()) {
+	if (animation == NULL) {
 		return;
 	}
-
-	int index = (int)std::strlen(str);
-	int key = 0;
-
-	Keyboard->Clear();
-	do {
-		if (Keyboard->Check()) {
-			key = Keyboard->To_ASCII(Keyboard->Get());
-			if (key == KN_BACKSPACE) {
-				if (index > 0) {
-					index = (int)(UTF8::Previous(str, str + index) - str);
-					str[index] = 0;
-					DoSound("Back", 192);
-				}
-			} else if (key != KN_KEYPAD_RETURN && key != KN_RETURN && key >= KN_SPACE && index < MAX_FAMENAME_LENGTH - 8) {
-				int length = UTF8::Encode((char32_t)key, str + index);
-				str[index + length] = 0;
-				if (Stage.Text_Width(str) > field.Width) {
-					str[index] = 0;
-				} else {
-					index += length;
-					DoSound("Type", 128);
-				}
-			}
-		}
-
-		Stage.Restore(field);
-		Stage.Print_Left(str, field.X, field.Y);
-		Stage.Present(field);
-		Call_Back();
-		Windows_Message_Handler();
-		Sleep(16);
-	} while (key != KN_RETURN && key != KN_KEYPAD_RETURN);
+	if (modern) {
+		Stage.Restore(box);
+		Stage.Draw_Keyed_Frame(animation, frame, box);
+	} else {
+		Stage.Draw_Shape_Frame(animation, frame, box);
+	}
 }
 
 
 /// <summary>
-/// Waits for the player to continue, with the emblem looping while the screen is up.
+/// Waits for the player to click the Continue button, with the emblem animation playing while the
+/// screen is up. A left click outside the button, and any key, does nothing: gamemd's dialog 259 procedure
+/// (0x6c8ff0) closes only on the button's command (0x423), ignores Esc's cancel command, and its dialog
+/// initialisation returns false, so nothing gives the button keyboard focus for Enter or Space to press it.
 /// </summary>
-/// <param name="animation">The emblem animation to loop, or NULL to wait with a still picture.</param>
-void ScoreClass::Wait_For_Click(ShapeSet const * animation)
+/// <param name="animation">The emblem animation to play, or NULL to wait with a still picture.</param>
+/// <param name="box">The stage area each animation frame is drawn into.</param>
+/// <param name="button">The stage area of the Continue button.</param>
+/// <param name="start">The frame the animation shows when the wait starts.</param>
+/// <param name="modern">Is the modern layout in use?</param>
+void ScoreClass::Wait_For_Click(ShapeSet const * animation, Rect const & box, Rect const & button, int start, bool modern)
 {
 	Keyboard->Clear();
 	if (AutoTest_Post_Win()) {
 		return;
 	}
 
-	int frame = 0;
-	int ticks = 0;
+	using Clock = std::chrono::steady_clock;
+	auto const step = std::chrono::milliseconds(EMBLEM_FRAME_MILLISECONDS);
+
+	int const frame_count = (animation != NULL) ? std::max(1, animation->Get_Count()) : 1;
+	int current = start;
+	auto next = Clock::now() + step;
 	bool running = true;
-	Rect const frame_box(PICTURE_BOX.X, PICTURE_BOX.Y, 424, 220);
 
 	while (running) {
 		Call_Back();
 		Windows_Message_Handler();
 		if (Keyboard->Check()) {
 			int key = Keyboard->Get();
-			if (key == VK_LBUTTON || key == VK_ESCAPE || key == VK_SPACE) {
+			if (key == VK_LBUTTON && Stage.Contains_Screen_Point(button, Keyboard->Mouse_X(), Keyboard->Mouse_Y())) {
 				running = false;
 			}
 		}
-		if (animation != NULL && ++ticks % 3 == 0) {
-			frame = (frame + 1) % ANIMATION_FRAMES;
-			Stage.Draw_Shape_Frame(animation, frame, frame_box);
-			Stage.Present(frame_box);
+
+		auto const now = Clock::now();
+		if (animation != NULL && now >= next) {
+			next = std::max(next + step, now);
+			current++;
+			if (current >= frame_count) {
+				current = (frame_count > EMBLEM_LOOP_START) ? EMBLEM_LOOP_START : 0;
+			}
+			Draw_Emblem(animation, current, box, modern);
+			Stage.Present(box);
 		}
 		Sleep(16);
 	}
 
 	Keyboard->Clear();
-}
-
-
-/// <summary>
-/// Plays one of the score screen's sound effects by name.
-/// The sound is looked up in the list the score screen loaded at startup. A name that is
-/// not in the list, or one whose sample failed to load, simply plays nothing.
-/// </summary>
-/// <param name="name">The name the sound was registered under.</param>
-/// <param name="volume">The volume to play at, before the player's sound setting is
-/// applied.</param>
-void ScoreClass::DoSound(const char * name, int volume)
-{
-	if (name != NULL && AudioEngine.Is_Available()) {
-
-		for (int i = 0; i < ScoreSnds.Count(); i++) {
-			SfxEntry * snd = ScoreSnds[i];
-
-			if (stricmp(name, snd->Get_Name()) == 0) {
-				if (snd->Get_Sample() != NULL) {
-					AudioEngine.Play_Sample(snd->Get_Sample(), AUDIO_GROUP_SFX, (float)volume / 255.0f, 255);
-				}
-				break;
-			}
-		}
-	}
-}
-
-
-/// <summary>
-/// Constructs a score screen sound effect entry.
-/// The sample is fetched from the mixfiles when it lives there, and otherwise loaded from
-/// disk with this entry taking ownership of the buffer. Nothing is loaded at all when
-/// audio is unavailable.
-/// </summary>
-/// <param name="name">The name the score screen will ask for this sound by.</param>
-/// <param name="filename">The file the sample is loaded from.</param>
-SfxEntry::SfxEntry(char const * name, char const *filename) :
-	Name(NULL),
-	Sample(NULL),
-	IsAllocated(false)
-{
-	if (AudioEngine.Is_Available()) {
-		Name = strdup(name);
-		Sample = (void *)MFCD::Retrieve(filename);
-		if (Sample == NULL) {
-			CCFileClass file(filename);
-			Sample = Load_Alloc_Data(file);
-			IsAllocated = true;
-			file.Close();
-			DebugString("ScoreScreen: Loaded %s\n", filename);
-		}
-	}
-}
-
-
-/// <summary>
-/// Destroys a score screen sound effect entry.
-/// Any playback still in progress is stopped before the sample is released, so a sound
-/// can never outlive the buffer it is playing from. Samples that came out of a mixfile
-/// are left alone.
-/// </summary>
-SfxEntry::~SfxEntry(void)
-{
-	if (Sample != NULL) {
-		AudioEngine.Stop_Sample_Playing(Sample);
-		AudioEngine.Release_Sample(Sample);
-		if (IsAllocated == true) {
-			delete Sample;
-		}
-	}
-	if (Name != NULL) {
-		free(Name);
-	}
 }

@@ -407,15 +407,8 @@ void SaveManagerClass::Multiplayer_Saves_Begin_Match(bool resumed)
 void SaveManagerClass::Write_Spawn_Copy(void)
 {
 	CCFileClass source("SPAWN.INI");
-	if (!source.Is_Available() || !source.Open(FileClass::READ)) {
-		DebugString("SPAWN.INI could not be read for spawnSG.ini\n");
-		return;
-	}
-	int size = source.Size();
-	std::vector<char> bytes(size > 0 ? size : 0);
-	bool read = size > 0 && source.Read(bytes.data(), size) == size;
-	source.Close();
-	if (!read) {
+	std::vector<unsigned char> bytes;
+	if (!Read_File_Bytes(source, bytes)) {
 		DebugString("SPAWN.INI could not be read for spawnSG.ini\n");
 		return;
 	}
@@ -423,7 +416,7 @@ void SaveManagerClass::Write_Spawn_Copy(void)
 	// The file object keeps the name pointer, so the path must outlive it.
 	std::string copy_path = Saved_Game_Name("spawnSG.ini");
 	RawFileClass copy(copy_path.c_str());
-	bool written = copy.Open(FileClass::WRITE) && copy.Write(bytes.data(), size) == size;
+	bool written = copy.Open(FileClass::WRITE) && copy.Write(bytes.data(), (int)bytes.size()) == (int)bytes.size();
 	copy.Close();
 	DebugString(written ? "Wrote spawnSG.ini beside the multiplayer saves\n" : "spawnSG.ini could not be written\n");
 	if (written) {
@@ -474,8 +467,7 @@ bool SaveManagerClass::Multiplayer_Load_Request(int slot)
 
 	std::string file_name = Multiplayer_Save_File_Name(slot);
 	SaveVersionInfo info;
-	if (!Get_Savefile_Info(file_name.c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion
-		|| !info.Is_Current_Revision() || (GameType)info.Get_Game_Type() != Session.Type) {
+	if (!Get_Savefile_Info(file_name.c_str(), &info) || !info.Can_Load(ExpectedGameVersion) || (GameType)info.Get_Game_Type() != Session.Type) {
 		DebugString("Refusing to request the multiplayer save %s\n", file_name.c_str());
 		return(false);
 	}

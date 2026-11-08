@@ -119,6 +119,7 @@
 #include "mono.h"
 #include "partsys.h"
 #include "queue.h"
+#include "rocket.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -132,6 +133,7 @@
 #include "team.h"
 #include "tracker.h"
 #include "unit.h"
+#include "_voxel.h"
 #include "unittype.h"
 #include "waypoint.h"
 #include "weapon.h"
@@ -304,11 +306,14 @@ void AircraftClass::Init(void)
  *=============================================================================================*/
 bool AircraftClass::Unlimbo(Coord const & coord, Dir256 dir)
 {
+	// A MissileSpawn aircraft keeps the height it is given, as gamemd's AircraftClass::Unlimbo (0x414310) does.
 	Coord ucoord = coord;
-	if (IsALoaner || !Map.In_Local_Radar(coord)) {
-		ucoord.Z = Class->Flight_Level() + Map.Get_Height_GL(coord);
-	} else {
-		ucoord.Z = Map.Get_Height_GL(coord);
+	if (!Class->IsMissileSpawn) {
+		if (IsALoaner || !Map.In_Local_Radar(coord)) {
+			ucoord.Z = Class->Flight_Level() + Map.Get_Height_GL(coord);
+		} else {
+			ucoord.Z = Map.Get_Height_GL(coord);
+		}
 	}
 
 	if (BASECLASS::Unlimbo(ucoord, dir)) {
@@ -426,7 +431,9 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		*/
 		Matrix3D matrix;
 		matrix = Locomotion->Shadow_Matrix(&key);
-		Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
+		if (!IsSinking) {
+			Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
+		}
 
 		((AircraftClass &)*this).HeightAGL = height;
 		((AircraftClass &)*this).IsOccupyingCell = occupies_cell;
@@ -441,10 +448,14 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		/*
 		**	Actually draw the root body of the unit.
 		*/
-		// The body is drawn uncached, so its frame is not folded into a cache key.
 		int const body_frame = Class->Voxel.MotLib != NULL && Class->Voxel.MotLib->Get_Frame_Count() > 0 ? TotalFramesWalked % Class->Voxel.MotLib->Get_Frame_Count() : 0;
-		key = -1;
+		key = UseVoxelCache && !IsSinking ? 0 : -1;
 		matrix = Locomotion->Draw_Matrix(&key);
+		if (key != -1) {
+			// The locomotor's key leaves out the airborne state that decides the tilt, and the body frame.
+			bool const airborne = HeightAGL > 0 || Class->IsDropship;
+			key = body_frame < 32 ? (body_frame | (key << 5) | (airborne ? 1 << 13 : 0)) : -1;
+		}
 		Draw_Voxel(Class->Voxel, body_frame, key, &Class->VoxelIndex, cliprect, point, Get_Isometric_View_Matrix() * matrix, newbrightness, SHAPE_NORMAL);
 	}
 
@@ -553,6 +564,21 @@ int AircraftClass::Do_MISSION_HUNT(void)
 		return(1);
 	}
 	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+/// <summary>
+/// Tells whether the aircraft has reached the waypoint it flies to. With no navigation target it has;
+/// otherwise the target's center must lie less than CELL_LEPTON from the aircraft on the ground plane.
+/// </summary>
+bool AircraftClass::Waypoint_Reached(void) const
+{
+	if (NavCom == NULL) {
+		return(true);
+	}
+	Coord const tar_coord = NavCom->Center_Coord();
+	Coord const here_coord = PositionCoord;
+	return(Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON);
 }
 
 
@@ -1017,26 +1043,7 @@ int AircraftClass::Exit_Object(TechnoClass * unit)
  *=============================================================================================*/
 int AircraftClass::Paradrop_Cargo(void)
 {
-	FootClass * passenger = Cargo.Detach_Object();
-	if (passenger) {
-		if (!passenger->Paradrop(Center_Coord())) {
-			Cargo.Attach(passenger);
-			passenger->Hidden();
-		} else {
-
-			/*
-			**	Play a sound effect of the parachute opening.
-			*/
-			Sound_Effect(Rule->ChuteSound, PositionCoord);
-
-			// A soldier's guard or hunt mission is queued by InfantryClass::Paradrop and starts on landing; the aircraft keeps its own mission.
-			if (Team != NULL) {
-				Team->Remove(passenger);
-			}
-//			Arm = Rearm_Delay(IsSecondShot);
-			Arm = 0;
-		}
-	}
+	Drop_Paratrooper();
 	return(Arm);
 }
 
@@ -1303,20 +1310,8 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 		**	Fly toward target.
 		*/
 		case FLY_TO_LZ:
-			if (CurrentPath != PATH_NONE) {
-				bool proceed_to_wp = false;
-				if (NavCom != NULL) {
-					Coord tar_coord = NavCom->Center_Coord();
-					Coord here_coord = PositionCoord;
-					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
-				} else {
-					proceed_to_wp = true;
-				}
-				if (proceed_to_wp) {
-					WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-					WaypointClass * nwp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-					Execute_Waypoint_Path(nwp);
-				}
+			if (CurrentPath != PATH_NONE && Waypoint_Reached()) {
+				Advance_Waypoint_Path();
 			}
 
 			if (Locomotion->Is_Moving()) {
@@ -1630,20 +1625,8 @@ int AircraftClass::Do_MISSION_PATROL(void)
 				}
 			}
 
-			if (CurrentPath != PATH_NONE) {
-				bool proceed_to_wp = false;
-				if (NavCom != NULL) {
-					Coord tar_coord = NavCom->Center_Coord();
-					Coord here_coord = PositionCoord;
-					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
-				} else {
-					proceed_to_wp = true;
-				}
-				if (proceed_to_wp) {
-					WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-					WaypointClass * nwp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-					Execute_Waypoint_Path(nwp);
-				}
+			if (CurrentPath != PATH_NONE && Waypoint_Reached()) {
+				Advance_Waypoint_Path();
 			}
 
 			if (!Locomotion->Is_Moving()) {
@@ -1737,8 +1720,9 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 
 	MissionType mission = (House->Is_Human_Player() || Team || !Is_Weapon_Equipped()) ? MISSION_GUARD : MISSION_GUARD_AREA;
 
+	// A MissileSpawn aircraft takes the landed branch at any height (AircraftClass::EnterIdleMode, 0x4176F0).
 	int landingalt = Landing_Altitude();
-	if (In_Which_Layer() == LAYER_GROUND || HeightAGL <= landingalt) {
+	if (In_Which_Layer() == LAYER_GROUND || HeightAGL <= landingalt || Class->IsMissileSpawn) {
 		if (IsALoaner) {
 			if (Cargo.Is_Something_Attached()) {
 
@@ -1753,6 +1737,9 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 					mission = MISSION_UNLOAD;
 				}
 			} else if (Team == NULL) {
+				// Unlike the non-loaner branch below, the target is cleared first (AircraftClass::EnterIdleMode, 0x4176F0).
+				Assign_Target(NULL);
+				Assign_Destination(NULL);
 				mission = MISSION_RETREAT;
 			}
 		} else {
@@ -2039,15 +2026,7 @@ bool AircraftClass::Active_Click_With(ActionType action, Cell const & cell, bool
  *=============================================================================================*/
 void AircraftClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
-	if (AllowVoice) {
-		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
-			Sound_Effect(Weapon_Attack_Voice(target));
-		} else if (mission == MISSION_ATTACK) {
-			Response_Attack();
-		} else {
-			Response_Move();
-		}
-	}
+	Order_Voice(mission, target);
 	TargetClass dest(destination);
 	TargetClass targ(target);
 	Queue_Mission(TargetClass(this), mission, targ, dest);
@@ -2186,6 +2165,14 @@ Dir256 AircraftClass::Pose_Dir(void) const
 }
 
 
+void AircraftClass::Announce_Incoming(void) const
+{
+	if (TarCom != NULL) {
+		Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+	}
+}
+
+
 /***********************************************************************************************
  * AircraftClass::Mission_Attack -- Handles the attack mission for aircraft.                   *
  *                                                                                             *
@@ -2224,6 +2211,39 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 
 		RETURN_TO_BASE
 	};
+
+	// Fires one middle shot of a strafing run, moves on to next_status and returns the mission delay.
+	auto strafe_shot = [&](int next_status) -> int {
+		if (TarCom == NULL) {
+			Status = RETURN_TO_BASE;
+			return(1);
+		}
+		switch (Can_Fire(TarCom, 0)) {
+			case FIRE_OK:
+			case FIRE_FACING:
+			case FIRE_CLOAKED:
+				break;
+
+			case FIRE_RANGE:
+				Assign_Destination(TarCom);
+				break;
+
+			default:
+				if (!Ammo) {
+					Status = RETURN_TO_BASE;
+					IsLockedStraight = false;
+				}
+				return(1);
+		}
+		if (In_Range(TarCom)) {
+			Fire_At(TarCom, 0);
+		}
+		Announce_Incoming();
+		Assign_Destination(TarCom);
+		Status = next_status;
+		return(PrimaryWeapon->ROF);
+	};
+
 	switch (Status) {
 
 		/*
@@ -2253,7 +2273,12 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (TarCom == NULL || Ammo == 0) {
 				Status = RETURN_TO_BASE;
 			} else {
-				Assign_Destination(Good_Fire_Location(TarCom));
+				// A fighter flies straight at its target, as gamemd's status 3 does while the target is out of range (AircraftClass::Mission_Attack, 0x417FE0, AircraftClass.c:2661).
+				if (Is_Fighter() && !Is_Strafe()) {
+					Assign_Destination(TarCom);
+				} else {
+					Assign_Destination(Good_Fire_Location(TarCom));
+				}
 				if (NavCom != NULL) {
 					Status = FLY_TO_POSITION;
 				} else {
@@ -2406,9 +2431,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 							Fire_At(TarCom, 0);
 						}
 					}
-					if (TarCom != NULL) {
-						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-					}
+					Announce_Incoming();
 					if (Is_Strafe()) {
 						Status = STRAFE_SHOT2;
 						IsLockedStraight = true;
@@ -2476,9 +2499,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					if (TarCom != NULL) {
-						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-					}
+					Announce_Incoming();
 
 					if (Ammo) {
 						Status = Rule->IsCurleyShuffle ? PICK_ATTACK_LOCATION : FIRE_AT_TARGET;
@@ -2502,100 +2523,13 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case STRAFE_SHOT2:
-			if (TarCom == NULL) {
-				Status = RETURN_TO_BASE;
-				return(1);
-			}
-			switch (Can_Fire(TarCom, 0)) {
-				case FIRE_OK:
-				case FIRE_FACING:
-				case FIRE_CLOAKED:
-					break;
-
-				case FIRE_RANGE:
-					Assign_Destination(TarCom);
-					break;
-
-				default:
-					if (!Ammo) {
-						Status = RETURN_TO_BASE;
-						IsLockedStraight = false;
-					}
-					return(1);
-			}
-			if (In_Range(TarCom)) {
-				Fire_At(TarCom, 0);
-			}
-			if (TarCom != NULL) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-			}
-			Assign_Destination(TarCom);
-			Status = STRAFE_SHOT3;
-			return(PrimaryWeapon->ROF);
+			return(strafe_shot(STRAFE_SHOT3));
 
 		case STRAFE_SHOT3:
-			if (TarCom == NULL) {
-				Status = RETURN_TO_BASE;
-				return(1);
-			}
-			switch (Can_Fire(TarCom, 0)) {
-				case FIRE_OK:
-				case FIRE_FACING:
-				case FIRE_CLOAKED:
-					break;
-
-				case FIRE_RANGE:
-					Assign_Destination(TarCom);
-					break;
-
-				default:
-					if (!Ammo) {
-						Status = RETURN_TO_BASE;
-						IsLockedStraight = false;
-					}
-					return(1);
-			}
-			if (In_Range(TarCom)) {
-				Fire_At(TarCom, 0);
-			}
-			if (TarCom != NULL) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-			}
-			Assign_Destination(TarCom);
-			Status = STRAFE_SHOT4;
-			return(PrimaryWeapon->ROF);
+			return(strafe_shot(STRAFE_SHOT4));
 
 		case STRAFE_SHOT4:
-			if (TarCom == NULL) {
-				Status = RETURN_TO_BASE;
-				return(1);
-			}
-			switch (Can_Fire(TarCom, 0)) {
-				case FIRE_OK:
-				case FIRE_FACING:
-				case FIRE_CLOAKED:
-					break;
-
-				case FIRE_RANGE:
-					Assign_Destination(TarCom);
-					break;
-
-				default:
-					if (!Ammo) {
-						Status = RETURN_TO_BASE;
-						IsLockedStraight = false;
-					}
-					return(1);
-			}
-			if (In_Range(TarCom)) {
-				Fire_At(TarCom, 0);
-			}
-			if (TarCom != NULL) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-			}
-			Assign_Destination(TarCom);
-			Status = STRAFE_LAST_SHOT;
-			return(PrimaryWeapon->ROF);
+			return(strafe_shot(STRAFE_LAST_SHOT));
 
 		case STRAFE_LAST_SHOT:
 			if (TarCom == NULL) {
@@ -2610,9 +2544,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					if (TarCom != NULL) {
-						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-					}
+					Announce_Incoming();
 					Status = FLY_TO_POSITION;
 					return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
 
@@ -3433,6 +3365,42 @@ void AircraftClass::Scatter(Coord const & , bool, bool )
 	if (!Current_Mission_Control().IsScatter) return;
 
 	Enter_Idle_Mode();
+}
+
+
+/// <summary>
+/// Tells whether the aircraft is in the air. A V3 or Dreadnought missile is in the air from the start of
+/// its climb, by its rocket locomotor's flight phase, not by its height. This is gamemd's
+/// AircraftClass::IsInAir (0x41B920), which calls the locomotor's slot 0x80. Other aircraft use the height test.
+/// </summary>
+/// <returns>bool; Is the aircraft flying?</returns>
+bool AircraftClass::In_Air(void) const
+{
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+		return(ObjectClass::In_Air());
+	}
+	if (IsInLimbo) {
+		return(false);
+	}
+	RocketLocomotionClass const * rocket = dynamic_cast<RocketLocomotionClass const *>(Locomotion.get());
+	if (rocket == NULL) {
+		return(ObjectClass::In_Air());
+	}
+	return(rocket->Is_Airborne());
+}
+
+
+/// <summary>
+/// Tells whether the aircraft is resting on the ground. For a V3 or Dreadnought missile this is the
+/// complement of In_Air, as gamemd's AircraftClass::IsOnFloor (0x41B980) decides. An aircraft in limbo is never on the ground.
+/// </summary>
+/// <returns>bool; Is the aircraft on the ground?</returns>
+bool AircraftClass::On_Ground(void) const
+{
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+		return(ObjectClass::On_Ground());
+	}
+	return(!IsInLimbo && !In_Air());
 }
 
 
@@ -4325,8 +4293,10 @@ int AircraftClass::Do_MISSION_PARADROP_OVERFLY(void)
 
 /// <summary>
 /// Drops the first paratrooper aboard half a cell to one side of the plane's path, alternating
-/// sides (0x415C60). A paratrooper that cannot land on the cell below stays aboard. Each drop
-/// gives the plane five more passes.
+/// sides by the parity of Ammo (AircraftClass::Unload_Passenger_Paradrop, 0x415C60). Both the
+/// overfly mission and Fire use it. A paratrooper stays aboard when the cell below cannot be
+/// entered, or lies outside the usable area while ParadropInUsableArea is set. A drop gives the
+/// plane five more passes and resets its Arm timer.
 /// </summary>
 void AircraftClass::Drop_Paratrooper(void)
 {
@@ -4338,16 +4308,20 @@ void AircraftClass::Drop_Paratrooper(void)
 	int const turn = (Ammo & 1) ? -0x3FFF : 0x3FFF;
 	Coord const drop = Move_Coord(PositionCoord, DirType(PrimaryFacing.Current().As_Int() + turn), CELL_LEPTON_W / 2);
 	CellClass * cellptr = &Map[drop];
-	if (passenger->Can_Enter_Cell(cellptr) == MOVE_OK) {
+	bool const usable = !Rule->ParadropInUsableArea || Map.In_Local_Radar(cellptr);
+	if (usable && passenger->Can_Enter_Cell(cellptr) == MOVE_OK) {
 		Coord spot = cellptr->Closest_Free_Spot(drop);
 		if (spot != COORD_NONE) {
 			spot.Z = PositionCoord.Z;
 			if (passenger->Paradrop(spot)) {
 				Sound_Effect(Rule->ChuteSound, PositionCoord);
+
+				// A soldier's guard or hunt mission is queued by InfantryClass::Paradrop and starts on landing; the aircraft keeps its own mission.
 				if (Team != NULL) {
 					Team->Remove(passenger);
 				}
 				ParadropPasses = 5;
+				Arm = 0;
 				return;
 			}
 		}
@@ -4489,20 +4463,16 @@ bool AircraftClass::Crash(TechnoClass * source)
 		return(false);
 	}
 
+	// A vehicle a locomotor warhead holds or is dropping has the holder's jumpjet carrier in place of its flight locomotor, and
+	// the carrier has no crash flight for an aircraft. It is destroyed where it hangs, as a held vehicle that cannot crash is
+	// (UnitClass::Destroy, 0x737C90), so it is not left in the air with no strength.
+	if (IsAttackedByLocomotor) {
+		return(false);
+	}
+
 	if (HeightAGL > 0) {
 		if (Strength > 0) {
-			if (source != NULL && Tag != NULL) {
-				Tag->Spring(TEVENT_FIRST_DAMAGED, this);
-			}
-			if (Tag != NULL && IsActive) {
-				Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
-			}
-			if (Tag != NULL) {
-				if (IsActive && source != NULL) {
-					Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
-				}
-			}
-			if (!IsActive) {
+			if (!Spring_First_Damaged(source)) {
 				return(true);
 			}
 			Record_The_Kill(source);

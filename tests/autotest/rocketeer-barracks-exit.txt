@@ -1,0 +1,22 @@
+; Allied Rocketeer (JUMPJET, JumpJet=yes, BalloonHover=yes) produced at a player's Allied Barracks (GAPILE). gamemd's
+; BuildingClass::KickOutUnit (0x443C60) queues no Move to the exit cell for a JumpJet unit (the JumpJet check at 0x444xxx),
+; so the Rocketeer takes to the air where it leaves the barracks and does not walk out first.
+; The Rocketeer needs GAPILE and RADAR (AMRADR), and the barracks needs POWER and GACNST, so the test owns those.
+30 reveal
+40 own GAPOWR 56 43
+41 own GACNST 60 40
+42 own AMRADR 52 36
+43 own GAPILE 56 40
+50 produce JUMPJET
+150 where JUMPJET
+200 where JUMPJET
+230 airborne JUMPJET
+260 where JUMPJET
+290 airborne JUMPJET
+320 where JUMPJET
+350 airborne JUMPJET
+380 where JUMPJET
+420 airborne JUMPJET
+460 where JUMPJET
+500 airborne JUMPJET
+600 quit

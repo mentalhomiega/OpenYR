@@ -1,0 +1,57 @@
+; Upload check over the hdr-emissive-scene steps with the map zoomed to 0.5: uploadverify counts mismatches of the texture copies. Run with -Width 1024 -Height 768, [Video] EmissiveDebugView=yes to see the masks.
+1 uploadverify 1
+60 view 62 62
+61 zoom 0.5
+70 reveal
+80 windowmove 790 590
+90 own GAPOWR 52 56
+100 own ATESLA 58 62
+105 own TESLA 58 68
+110 own GALITE 61 58
+115 own MTNK 54 68
+118 face 64 54 68
+120 spawn HTNK 64 62
+130 spawn HTNK 63 68
+140 spawn GAWEAP 70 60
+200 windowshot hdr-normal-01
+240 windowshot hdr-normal-02
+300 log perf-start
+330 blast HE 64 62
+335 windowshot hdr-normal-03
+360 hit GAWEAP:HE 300
+380 hit GAWEAP:HE 300
+400 hit GAWEAP:HE 300
+420 windowshot hdr-normal-04
+450 kill HTNK
+470 windowshot hdr-normal-05
+500 spawn HTNK 64 64
+505 spawn HTNK 63 70
+540 windowshot hdr-normal-06
+600 log perf-end
+700 windowshot hdr-normal-07
+800 spawn HTNK 64 62
+805 spawn HTNK 63 68
+850 windowshot hdr-normal-08
+857 windowshot hdr-normal-09
+864 windowshot hdr-normal-10
+871 windowshot hdr-normal-11
+878 windowshot hdr-normal-12
+885 windowshot hdr-normal-13
+892 windowshot hdr-normal-14
+899 windowshot hdr-normal-15
+945 kill HTNK
+948 windowshot hdr-normal-16
+954 windowshot hdr-normal-17
+980 spawn HTNK 64 64
+985 spawn HTNK 63 70
+1030 windowshot hdr-normal-18
+1037 windowshot hdr-normal-19
+1044 windowshot hdr-normal-20
+1051 windowshot hdr-normal-21
+1058 windowshot hdr-normal-22
+1065 windowshot hdr-normal-23
+1072 windowshot hdr-normal-24
+1079 windowshot hdr-normal-25
+1200 kill HTNK
+1795 uploadverify 0
+1800 quit

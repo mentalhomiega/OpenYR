@@ -9,7 +9,8 @@
 
 // Holds the depth and alpha buffers to their ring arithmetic: how far the ring spans, where
 // a point within it lands, how an address that walks off either end folds back, what a run
-// fill writes, and which entries a pan and an update reset.
+// fill writes, and which entries a pan and an update reset. Also checks that their memory lists
+// the pages written to it where the system supports that.
 //
 // Every expectation is written as an absolute byte offset from the buffer base and every
 // address crosses the API through a cast, so this file reads the same whether the buffers
@@ -20,11 +21,14 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <utility>
+#include <vector>
 
 #include "abuffer.h"
 #include "point.h"
 #include "rect.h"
 #include "surface.h"
+#include "writewatch.h"
 #include "zbuffer.h"
 
 ABuffer * AlphaBuffer;
@@ -283,6 +287,41 @@ void Run(char const * name, unsigned short reset)
 	Check((unsigned)wholesale.Get_Scroll() == 0x8000u, what);
 }
 
+
+/// <summary>
+/// Checks that the buffer's memory lists the pages written to it, which the GPU map pass relies
+/// on to upload only those rows. Systems that cannot list writes are skipped.
+/// </summary>
+template<typename BufferT>
+void Run_Write_Watch(char const * name)
+{
+	char what[160];
+
+	int const WIDE = 1024;
+	int const TALL = 64;
+	BufferT buffer(Rect(0, 0, WIDE, TALL));
+	void const * memory = buffer.Get_Buffer_Offset(Point2D(0, 0));
+	std::size_t const size = (std::size_t)WIDE * TALL * BPP;
+
+	std::vector<std::pair<std::size_t, std::size_t>> runs;
+	if (!WriteWatch_Take(memory, size, runs)) {
+		return;
+	}
+	std::snprintf(what, sizeof(what), "%s: the fill at creation is listed as written", name);
+	Check(!runs.empty(), what);
+
+	WriteWatch_Take(memory, size, runs);
+	std::snprintf(what, sizeof(what), "%s: nothing is listed after taking the list", name);
+	Check(runs.empty(), what);
+
+	unsigned short * entry = (unsigned short *)buffer.Get_Buffer_Offset(Point2D(5, 40));
+	*entry = MARKER;
+	std::size_t const offset = (std::size_t)((char const *)entry - (char const *)memory);
+	WriteWatch_Take(memory, size, runs);
+	std::snprintf(what, sizeof(what), "%s: one write lists the one page holding it", name);
+	Check(runs.size() == 1 && runs[0].first <= offset && offset < runs[0].second && runs[0].second - runs[0].first < size, what);
+}
+
 } // namespace
 
 
@@ -290,6 +329,8 @@ int main(void)
 {
 	Run<ZBuffer>("depth", 0xFFFF);
 	Run<ABuffer>("alpha", 0x007F);
+	Run_Write_Watch<ZBuffer>("depth");
+	Run_Write_Watch<ABuffer>("alpha");
 
 	std::printf("%-52s %s\n", "Ring addressing in the depth and alpha buffers",
 		Failures == 0 ? "ok" : "FAILED");

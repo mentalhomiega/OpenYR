@@ -1,7 +1,7 @@
 ---
 key: FiringFrames
 summary: The number of frames in one facing's firing animation of a shape-drawn vehicle.
-see_also: ["StartFiringFrame", "FiringSyncFrame1", "FiringSyncFrame2", "StandingFrames", "Facings"]
+see_also: ["StartFiringFrame", "FiringSyncFrame0", "FiringSyncFrame1", "StandingFrames", "Facings"]
 when_omitted:
   kind: value
   value: "0"
@@ -25,4 +25,4 @@ WalkFrames=12
 FiringFrames=4 ; eight runs of 4, starting at frame 8 × (1 + 12) = 104
 ```
 
-By default the round leaves when the animation starts. [`FiringSyncFrame1`](/keys/firingsyncframe1/) and [`FiringSyncFrame2`](/keys/firingsyncframe2/) release the round at a chosen point in the animation instead.
+By default the round leaves when the animation starts. [`FiringSyncFrame0`](/keys/firingsyncframe0/) and [`FiringSyncFrame1`](/keys/firingsyncframe1/) release the round at a chosen point in the animation instead.

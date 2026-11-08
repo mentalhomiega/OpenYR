@@ -49,6 +49,7 @@
 #include "animtype.h"
 #include "bullettype.h"
 #include "combat.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -65,6 +66,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <set>
+#include <string>
 
 
 /***********************************************************************************************
@@ -178,11 +181,9 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsHouseColor(false),
 	IsTurboBoosted(false),
 	Sound(),
-	Anim()
+	Anim(),
+	IsExtendedAnimFacings(false)
 {
-	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
-		BurstDelay[i] = -1;
-	}
 
 	Create_ID();
 	Weapons.Add(this);
@@ -232,7 +233,8 @@ WeaponTypeClass::~WeaponTypeClass(void)
  *=============================================================================================*/
 bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 {
-	if (ini.Is_Present(IniName)) {
+	bool const has_section = ini.Is_Present(IniName);
+	if (has_section) {
 		AmbientDamage = ini.Get_Int(IniName, "AmbientDamage", AmbientDamage);
 		IsSonic = ini.Get_Bool(IniName, "IsSonic", IsSonic);
 		if (ini.Is_Present(IniName, "ApplyDamage")) {
@@ -259,16 +261,11 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Range = ini.Get_Lepton(IniName, "Range", Range);
 		ProjectileRange = ini.Get_Lepton(IniName, "ProjectileRange", ProjectileRange);
 
-		for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
-			char buf[20];
-			sprintf(buf, "BurstDelay%d", i);
-			BurstDelay[i] = ini.Get_Int(IniName, buf, BurstDelay[i]);
-		}
-
 		MinimumRange = ini.Get_Lepton(IniName, "MinimumRange", MinimumRange);
 
 		Sound = ini.Get_VocType_List(ini, IniName, "Report", Sound);
 		Anim = TGet_TypeList<AnimTypeClass>(ini, IniName, "Anim", Anim);
+		IsExtendedAnimFacings = ini.Get_Bool(IniName, "ExtendedAnimFacings", IsExtendedAnimFacings);
 
 		IsCamera = ini.Get_Bool(IniName, "Camera", IsCamera);
 		IsInfiniteMindControl = ini.Get_Bool(IniName, "InfiniteMindControl", IsInfiniteMindControl);
@@ -391,10 +388,43 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		WarheadPtr = TGet_Class(ini, IniName, "Warhead", WarheadPtr);
 		Bullet = TGet_Class(ini, IniName, "Projectile", Bullet);
-
-		return(true);
 	}
-	return(false);
+
+	Ensure_Defaults();
+	return(has_section);
+}
+
+
+/// <summary>
+/// Gives a weapon with no projectile or warhead the default ones, so that it can fire.
+/// A pointer that is already set stays as it is, and each weapon name is logged once per run.
+/// </summary>
+/// <remarks>Read_INI calls this for each weapon it reads. RulesClass::Addition calls it for every
+/// weapon when the rules pass ends, which covers the weapons no Read_INI pass reached.</remarks>
+void WeaponTypeClass::Ensure_Defaults(void)
+{
+	// gamemd crashes on a NULL projectile instead (its range test reads the projectile unchecked).
+	bool const no_projectile = Bullet == NULL;
+	bool const no_warhead = WarheadPtr == NULL;
+	if (no_projectile || no_warhead) {
+		// Each rules layer reads every weapon again, so each weapon is logged once per run.
+		static std::set<std::string> logged;
+		if (logged.insert(Name()).second) {
+			if (no_projectile && no_warhead) {
+				DebugString("[%s] has no projectile or warhead; it uses the default projectile and warhead.\n", Name());
+			} else if (no_projectile) {
+				DebugString("[%s] has no projectile (no section, or Projectile= names none); it uses the default projectile.\n", Name());
+			} else {
+				DebugString("[%s] has no warhead (no section, or Warhead= names none); it uses the default warhead.\n", Name());
+			}
+		}
+		if (no_projectile) {
+			Bullet = BulletTypeClass::Find_Or_Make("<missing>");
+		}
+		if (no_warhead) {
+			WarheadPtr = WarheadTypeClass::Find_Or_Make("<missing>");
+		}
+	}
 }
 
 
@@ -435,15 +465,11 @@ void WeaponTypeClass::Init_Max_Speed(void)
  *=============================================================================================*/
 ArmorType Armor_From_Name(char const * name)
 {
-	if (!name) return(ARMOR_NONE);
-
-	for (int index = ARMOR_FIRST; index < Armor_Type_Count(); index++) {
-		if (stricmp(Armor_Type_Name(ArmorType(index)), name) == 0) {
-			return(ArmorType(index));
-		}
+	ArmorType armor = ARMOR_NONE;
+	if (name != NULL) {
+		Find_Armor_Type(name, armor);
 	}
-
-	return(ARMOR_NONE);
+	return(armor);
 }
 
 
@@ -490,6 +516,19 @@ bool WeaponTypeClass::Is_Wall_Destroyer(void) const
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Tells whether a shot from this weapon picks its Anim entry by the direction it fires in.
+/// </summary>
+/// <remarks>Only an eight-entry list does so, plus 16, 32 and 64 when IsExtendedAnimFacings is set.
+/// Any other list plays entry 0 on every shot.</remarks>
+/// <returns>bool; Does the entry depend on the firing direction?</returns>
+bool WeaponTypeClass::Anim_Picks_By_Facing(void) const
+{
+	int const count = Anim.Count();
+	return(count == 8 || (IsExtendedAnimFacings && (count == 16 || count == 32 || count == 64)));
 }
 
 
@@ -573,10 +612,10 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ROF);
 	stream.Serialize(Range);
 	stream.Serialize(ProjectileRange);
-	stream.Serialize(BurstDelay);
 	stream.Serialize(MinimumRange);
 	stream.Serialize(Sound);
 	stream.Serialize(Anim);
+	stream.Serialize(IsExtendedAnimFacings);
 	stream.Serialize(AttachedParticleSystem);
 	stream.Serialize(LaserInnerColor);
 	stream.Serialize(LaserOuterColor);
@@ -706,6 +745,17 @@ bool WeaponTypeClass::Wave_Is_Reversed_Against(int rtti) const
 WeaponTypeClass * WeaponTypeClass::Find_Or_Make(const char *name)
 {
 	return(TFind_Or_Make<WeaponTypeClass>(name, Weapons));
+}
+
+
+/// <summary>
+/// Finds a weapon that a rules file declared, without creating one.
+/// </summary>
+/// <returns>Returns with the weapon of that name, or NULL when no rules file declared it.</returns>
+WeaponTypeClass * WeaponTypeClass::Find_Declared(const char *name)
+{
+	WeaponType const type = From_Name(name);
+	return(type != WEAPON_NONE ? Weapons[type] : NULL);
 }
 
 

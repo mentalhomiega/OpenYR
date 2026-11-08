@@ -12,9 +12,12 @@
 #include "rulescheck.h"
 
 #include "ccfile.h"
+#include "data.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "inicheck.h"
 #include "mods.h"
+#include "strutil.h"
 #include "rawfile.h"
 
 #include <windows.h>
@@ -22,6 +25,7 @@
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // The log lists at most this many findings, so a mod written for Ares does not flood it.
 static int const MAX_LOGGED_FINDINGS = 200;
@@ -29,14 +33,11 @@ static int const MAX_LOGGED_FINDINGS = 200;
 
 static std::string Catalog_Path(void)
 {
-	char path[MAX_PATH] = {};
-	if (GetModuleFileNameA(NULL, path, sizeof(path)) == 0) {
+	std::string result = Executable_Path();
+	if (result.empty()) {
 		return(std::string());
 	}
-	std::string result(path);
-	std::string::size_type slash = result.find_last_of("\\/");
-	result.erase(slash == std::string::npos ? 0 : slash + 1);
-	return(result + "inicheck-catalog.tsv");
+	return(std::string(Directory_Prefix(result)) + "inicheck-catalog.tsv");
 }
 
 
@@ -62,13 +63,16 @@ static bool Read_Whole_File(FileClass & file, char const * filename, std::string
 		DebugString("INI check: %s not found.\n", filename);
 		return(false);
 	}
-	int size = file.Size();
-	text.assign(size > 0 ? size : 0, '\0');
-	if (size > 0 && file.Read(text.data(), size) != size) {
+	text.clear();
+	if (file.Size() <= 0) {
+		return(true);
+	}
+	std::vector<unsigned char> bytes;
+	if (!Read_File_Bytes(file, bytes)) {
 		DebugString("INI check: %s could not be read.\n", filename);
 		return(false);
 	}
-	file.Close();
+	text.assign(bytes.begin(), bytes.end());
 	return(true);
 }
 

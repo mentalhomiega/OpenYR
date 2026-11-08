@@ -16,7 +16,7 @@ The secondary weapon's delay, before it is quartered, is:
 - 1 frame with no secondary weapon, so the vehicle can fire at once.
 - The weapon's full `ROF` for a sonic secondary weapon, or a spark, fire or railgun secondary whose particle system is already attached to the vehicle. The vehicle then waits a quarter of that `ROF`.
 - The weapon's full `ROF`, adjusted as the `ROF` page describes for an ordinary reload, when the vehicle's place in a burst is at or past the secondary weapon's [`Burst`](/keys/burst/) count. Shots from either weapon advance that place. For example, a vehicle whose primary has `Burst=2` and whose secondary has `Burst=1` reaches this case when it halts after the first shot of a primary burst. The vehicle then waits a quarter of that adjusted `ROF`.
-- Otherwise, the weapon's [`BurstDelay0`](/keys/burstdelay0/) to `BurstDelay3` value partway through a burst, or a random 3 to 5 frames. The random figure leaves a wait of 0 or 1 frames.
+- Otherwise, the vehicle's [`BurstDelay0`](/keys/burstdelay0/) to `BurstDelay3` value partway through a burst, or a random 3 to 5 frames. The random figure leaves a wait of 0 or 1 frames.
 
 The flag does not change how a vehicle reloads. [`Reload`](/keys/reload/) sets the delay, and [`MobileFire=no`](/keys/mobilefire/) is the setting that stops the delay from counting down while the vehicle moves.
 

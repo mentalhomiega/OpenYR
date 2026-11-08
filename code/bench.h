@@ -34,6 +34,7 @@
 
 #include "mpu.h"
 #include "timer.h"
+#include "_bench.h"
 
 /*
 **	This is a timer access object that will fetch the internal Pentium
@@ -99,3 +100,32 @@ class Benchmark
 		*/
 		unsigned int TotalCount;
 };
+
+
+#ifdef _DEBUG
+
+/*
+**	Starts a benchmark on construction and ends it when the scope is left, so every return path
+**	ends the benchmark. Release builds use BENCH_SCOPE, which expands to nothing (see _bench.h).
+*/
+class BenchScopeClass
+{
+	public:
+		explicit BenchScopeClass(int which) : Which(which)
+		{
+			if (Benches != NULL) Benches[Which].Begin();
+		}
+
+		~BenchScopeClass()
+		{
+			if (Benches != NULL) Benches[Which].End();
+		}
+
+		BenchScopeClass(BenchScopeClass const &) = delete;
+		BenchScopeClass & operator=(BenchScopeClass const &) = delete;
+
+	private:
+		int Which;
+};
+
+#endif

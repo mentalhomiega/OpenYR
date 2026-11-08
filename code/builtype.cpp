@@ -59,6 +59,7 @@
 
 #include "builtype.h"
 #include "foundation.h"
+#include "vox.h"
 
 #include "_map.h"
 #include "_mixfile.h"
@@ -256,6 +257,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Adjacent(3),
 	ToBuild(RTTI_NONE),
 	ExitCoordinate(0, 0, 0),
+	IsExitCoordSet(false),
+	TargetCoordOffset(0, 0, 0),
 	ExitList(NULL),
 	StartFace(DIR_N),
 	Power(0),
@@ -269,8 +272,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	DoorStages(0),
 	Upgrades(0),
 	DeployingAnim(NULL),
+	RoofDeployingAnim(NULL),
 	UnderDoorAnim(NULL),
 	UnderRoofDoorAnim(NULL),
+	RubbleShape(NULL),
 	DoorAnim(NULL),
 	SpecialZOverlay(NULL),
 	SpecialZOverlayZAdjust(0),
@@ -366,12 +371,14 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsTurretAnimAVoxel(false),
 	IsCloakGenerator(false),
 	IsSensorArray(false),
-	IsGapGenerator(false),
 	IsBunker(false),
 	NumberImpassableRows(-1),
 	PsychicDetectionRadius(0),
 	IsEligibleForDelayKill(false),
 	BuildupSound(VOC_NONE),
+	PackupSound(VOC_NONE),
+	CaptureEvaEvent(-1),
+	IsConcentricRadialIndicator(false),
 	CreateUnitSound(VOC_NONE),
 	DelayedFireDelay(0),
 	IsAnimDelayedFire(false),
@@ -391,8 +398,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsNODBarracks(false),
 	IsYuriBarracks(false),
 	RefinerySmokeFrames(25),
-	CaptureEvaEvent(),
-	LostEvaEvent(),
+	LostEvaEvent(-1),
 	MessageCapture(),
 	MessageLost(),
 	CursorSpy(),
@@ -435,7 +441,6 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsBarrelAnimAVoxel(false),
 	BarrelAnimZAdjust(-21),
 	IsTurretAnimExclusive(false),
-	IsTurretRecoil(false),
 	IsDamagedDoor(false),
 	IsInvisibleInGame(false),
 	IsTerrainPalette(false),
@@ -1156,46 +1161,51 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 		}
 	}
 
+	auto const load_theater_shape = [&](char const * name) {
+		_makepath(fullname, NULL, NULL, name, ".SHP");
+		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
+		return((ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname));
+	};
+
 	ArtINI.Get_String(Graphic_Name(), "DeployingAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		DeployingAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		DeployingAnim = load_theater_shape(buffer);
+	}
+
+	ArtINI.Get_String(Graphic_Name(), "RoofDeployingAnim", "", buffer, sizeof(buffer));
+	if (strlen(buffer) != 0) {
+		RoofDeployingAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "DoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		DoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		DoorAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "UnderDoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		UnderDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		UnderDoorAnim = load_theater_shape(buffer);
+	}
+
+	RubbleShape = NULL;
+	ArtINI.Get_String(Graphic_Name(), "Rubble", "", buffer, sizeof(buffer));
+	if (strlen(buffer) != 0) {
+		RubbleShape = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "UnderRoofDoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		UnderRoofDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		UnderRoofDoorAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "SpecialZOverlay", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		SpecialZOverlay = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		SpecialZOverlay = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "BibShape", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		BibShape = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		BibShape = load_theater_shape(buffer);
 	}
 
 	char ext[16];
@@ -1423,19 +1433,19 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		TurretChargeAnimRate = ini.Get_Int(Name(), "TurretChargeAnimRate", TurretChargeAnimRate);
 		ChargedAnimTime = ini.Get_Float(Name(), "ChargedAnimTime", ChargedAnimTime);
 		IsTurretAnimExclusive = ini.Get_Bool(Name(), "TurretAnimIsExclusive", IsTurretAnimExclusive);
-		IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
-		TurretRecoilControl.Travel = ini.Get_Int(Name(), "TurretTravel", TurretRecoilControl.Travel);
-		TurretRecoilControl.CompressFrames = ini.Get_Int(Name(), "TurretCompressFrames", TurretRecoilControl.CompressFrames);
-		TurretRecoilControl.HoldFrames = ini.Get_Int(Name(), "TurretHoldFrames", TurretRecoilControl.HoldFrames);
-		TurretRecoilControl.RecoverFrames = ini.Get_Int(Name(), "TurretRecoverFrames", TurretRecoilControl.RecoverFrames);
-		BarrelRecoilControl.Travel = ini.Get_Int(Name(), "BarrelTravel", BarrelRecoilControl.Travel);
-		BarrelRecoilControl.CompressFrames = ini.Get_Int(Name(), "BarrelCompressFrames", BarrelRecoilControl.CompressFrames);
-		BarrelRecoilControl.HoldFrames = ini.Get_Int(Name(), "BarrelHoldFrames", BarrelRecoilControl.HoldFrames);
-		BarrelRecoilControl.RecoverFrames = ini.Get_Int(Name(), "BarrelRecoverFrames", BarrelRecoilControl.RecoverFrames);
 
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
 		BuildupSound = ini.Get_VocType(Name(), "BuildupSound", BuildupSound);
+		PackupSound = ini.Get_VocType(Name(), "PackupSound", PackupSound);
+		{
+			// A line the announcer file does not list reads as none (gamemd's reader, 0x474FA0).
+			char eva[100];
+			if (ini.Get_String(Name(), "CaptureEvaEvent", "", eva, sizeof(eva)) > 0) {
+				CaptureEvaEvent = Eva_Line(eva);
+			}
+		}
+		IsConcentricRadialIndicator = ini.Get_Bool(Name(), "ConcentricRadialIndicator", IsConcentricRadialIndicator);
 		CreateUnitSound = ini.Get_VocType(Name(), "CreateUnitSound", CreateUnitSound);
 		ToBuild = ini.Get_RTTIType(Name(), "Factory", ToBuild);
 		FreeUnit = ini.Get_Foot_Type(Name(), "FreeUnit", FreeUnit);
@@ -1519,11 +1529,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
 		{
 			char text[128];
-			if (ini.Get_String(Name(), "CaptureEvaEvent", "", text, sizeof(text)) > 0) {
-				CaptureEvaEvent = text;
-			}
+			// A line the announcer file does not list reads as none, as CaptureEvaEvent does.
 			if (ini.Get_String(Name(), "LostEvaEvent", "", text, sizeof(text)) > 0) {
-				LostEvaEvent = text;
+				LostEvaEvent = Eva_Line(text);
 			}
 			if (ini.Get_String(Name(), "Message.Capture", "", text, sizeof(text)) > 0) {
 				MessageCapture = text;
@@ -1581,7 +1589,6 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		IsCloakGenerator = ini.Get_Bool(Name(), "CloakGenerator", IsCloakGenerator);
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
-		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 		IsBunker = ini.Get_Bool(Name(), "Bunker", IsBunker);
 		NumberImpassableRows = ini.Get_Int(Name(), "NumberImpassableRows", NumberImpassableRows);
 		PsychicDetectionRadius = ini.Get_Int(Name(), "PsychicDetectionRadius", PsychicDetectionRadius);
@@ -1617,8 +1624,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanPlaceAnywhere = ini.Get_Bool(Name(), "PlaceAnywhere", IsCanPlaceAnywhere);
 		IsICBMLauncher = ini.Get_Bool(Name(), "ICBMLauncher", IsICBMLauncher);
 		IsArtillary = ini.Get_Bool(Name(), "Artillary", IsArtillary);
+		TargetCoordOffset = ini.Get_Point(Name(), "TargetCoordOffset", Point3D(TargetCoordOffset));
 
-		ExitCoordinate = ini.Get_Point(Name(), "ExitCoord", Point3D(ExitCoordinate));
+		if (ini.Is_Present(Name(), "ExitCoord")) {
+			ExitCoordinate = ini.Get_Point(Name(), "ExitCoord", Point3D(ExitCoordinate));
+			IsExitCoordSet = true;
+		}
 
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
 		AIBuildCounts = ini.Get_IntList(Name(), "AIBuildCounts", AIBuildCounts);
@@ -1692,6 +1703,11 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			Read_Custom_Foundation(ArtINI, Graphic_Name());
 		} else if (ArtINI.Is_Present(Graphic_Name(), "Foundation") || ArtINI.Is_Present(Name(), "Foundation")) {
 			Clear_Custom_Foundation();
+		}
+
+		// A weapons factory with no ExitCoord from any INI releases at the offset gamemd's GetCoords gives (0x447AC0), as GetExitCoords (0x44F640) falls back to it.
+		if (IsWeaponsFactory && !IsExitCoordSet) {
+			ExitCoordinate = Default_Exit_Coord();
 		}
 
 		MidPoint = ArtINI.Get_Int(Graphic_Name(), "MidPoint", MidPoint);
@@ -2477,15 +2493,6 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(TurretChargeAnimRate);
 	crc(ChargedAnimTime);
 	crc(IsTurretAnimExclusive);
-	crc(IsTurretRecoil);
-	crc(TurretRecoilControl.Travel);
-	crc(TurretRecoilControl.CompressFrames);
-	crc(TurretRecoilControl.HoldFrames);
-	crc(TurretRecoilControl.RecoverFrames);
-	crc(BarrelRecoilControl.Travel);
-	crc(BarrelRecoilControl.CompressFrames);
-	crc(BarrelRecoilControl.HoldFrames);
-	crc(BarrelRecoilControl.RecoverFrames);
 	crc(IsExtraDamageStage);
 	crc(IsHospital);
 	crc(IsArmory);
@@ -2504,9 +2511,20 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ExtraPowerDrain);
 	crc(NumberImpassableRows);
 	crc(IsYuriBarracks);
+	crc(IsConcentricRadialIndicator);
 	if (SecretInfantry != NULL) crc(SecretInfantry->Fetch_ID());
 	if (SecretUnit != NULL) crc(SecretUnit->Fetch_ID());
 	if (SecretBuilding != NULL) crc(SecretBuilding->Fetch_ID());
+}
+
+
+/// <summary>
+/// Returns the ExitCoord a weapons factory releases at when no INI sets one.
+/// It is half the foundation in leptons, less half a cell on each axis.
+/// </summary>
+Coord BuildingTypeClass::Default_Exit_Coord(void) const
+{
+	return(Coord(Width() * CELL_LEPTON_W / 2 - CELL_LEPTON_W / 2, Height() * CELL_LEPTON_H / 2 - CELL_LEPTON_H / 2, 0));
 }
 
 
@@ -2518,6 +2536,9 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 void BuildingTypeClass::Post_Load(void)
 {
 	BASECLASS::Post_Load();
+
+	// The save does not record whether an INI set ExitCoord, so a loaded value equal to the default counts as unset.
+	IsExitCoordSet = ExitCoordinate != Default_Exit_Coord();
 
 	Fetch_Building_Voxel_Image();
 	if (IsDemandLoad) {
@@ -2571,6 +2592,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Adjacent);
 	stream.Serialize(ToBuild);
 	stream.Serialize(ExitCoordinate);
+	stream.Serialize(TargetCoordOffset);
 	// ExitList -- a shared exit table, re-attached by size as this loads.
 	stream.Serialize(StartFace);
 	stream.Serialize(Power);
@@ -2583,8 +2605,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AnimData);
 	stream.Serialize(Upgrades);
 	// DeployingAnim -- artwork, fetched from the mix files again as this loads.
+	// RoofDeployingAnim -- artwork, fetched from the mix files again as this loads.
 	// UnderDoorAnim
 	// UnderRoofDoorAnim
+	// RubbleShape
 	// DoorAnim
 	// SpecialZOverlay
 	stream.Serialize(SpecialZOverlayZAdjust);
@@ -2680,12 +2704,14 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTurretAnimAVoxel);
 	stream.Serialize(IsCloakGenerator);
 	stream.Serialize(IsSensorArray);
-	stream.Serialize(IsGapGenerator);
 	stream.Serialize(IsBunker);
 	stream.Serialize(NumberImpassableRows);
 	stream.Serialize(PsychicDetectionRadius);
 	stream.Serialize(IsEligibleForDelayKill);
 	stream.Serialize(BuildupSound);
+	stream.Serialize(PackupSound);
+	stream.Serialize(CaptureEvaEvent);
+	stream.Serialize(IsConcentricRadialIndicator);
 	stream.Serialize(CreateUnitSound);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsAnimDelayedFire);
@@ -2706,7 +2732,6 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNODBarracks);
 	stream.Serialize(IsYuriBarracks);
 	stream.Serialize(RefinerySmokeFrames);
-	stream.Serialize(CaptureEvaEvent);
 	stream.Serialize(LostEvaEvent);
 	stream.Serialize(MessageCapture);
 	stream.Serialize(MessageLost);
@@ -2758,15 +2783,6 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBarrelAnimAVoxel);
 	stream.Serialize(BarrelAnimZAdjust);
 	stream.Serialize(IsTurretAnimExclusive);
-	stream.Serialize(IsTurretRecoil);
-	stream.Serialize(TurretRecoilControl.Travel);
-	stream.Serialize(TurretRecoilControl.CompressFrames);
-	stream.Serialize(TurretRecoilControl.HoldFrames);
-	stream.Serialize(TurretRecoilControl.RecoverFrames);
-	stream.Serialize(BarrelRecoilControl.Travel);
-	stream.Serialize(BarrelRecoilControl.CompressFrames);
-	stream.Serialize(BarrelRecoilControl.HoldFrames);
-	stream.Serialize(BarrelRecoilControl.RecoverFrames);
 	stream.Serialize(UnusedBTypeBool1);
 	stream.Serialize(IsDamagedDoor);
 	stream.Serialize(IsInvisibleInGame);
@@ -3213,6 +3229,12 @@ bool BuildingTypeClass::Get_Rubble_Image(ShapeSet const * & image, int & frame, 
 {
 	if (!IsLeaveRubble) {
 		return(false);
+	}
+	if (RubbleShape != NULL) {
+		// The shadow of an art-file rubble shape is reported as absent, though its frame is still set (BuildingTypeClass::Get_Rubble_Image, 0x45F1D0).
+		image = RubbleShape;
+		frame = shadow ? RubbleShape->Get_Count() / 2 : 0;
+		return(!shadow);
 	}
 	image = (ShapeSet const *)Get_Image_Data();
 	if (image == NULL || image->Get_Count() / 2 <= 3) {

@@ -67,6 +67,7 @@
 #include "findmake.h"
 #include "foot.h"
 #include "globals.h"
+#include "hexdigit.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -95,18 +96,9 @@
 /// <returns>Returns with the integer value of the leading hexadecimal digits.</returns>
 int _ahtoi(const char *string)
 {
-	char *s = (char *)string;
 	int integer = 0;
-	while (isxdigit((unsigned char)s[0]))
-	{
-		integer *= 16; /// desired base is 16
-
-		if (isdigit((unsigned char)s[0])) {
-			integer += s[0] - '0';
-		} else {
-			integer += toupper((unsigned char)s[0]) - ('A' - 10);
-		}
-		s++;
+	for (int digit; (digit = Hex_Digit_Value(*string)) >= 0; string++) {
+		integer = integer * 16 + digit;
 	}
 
 	return(integer);
@@ -276,14 +268,18 @@ TeamClass * TeamTypeClass::Create_One_Of(HouseClass * house) const
 
 
 /// <summary>
-/// Gives a team type that has no script a new one, as gamemd does before a reinforcement.
-/// The new script holds a single zero-length Guard mission and stays on the team type, so later
-/// teams of that type share it. A team type that already has a script is left alone.
+/// Gives the team type a script with at least one mission, as gamemd does before a reinforcement.
+/// A team type without a script gets a new one, and a script with no missions gets a single
+/// zero-length Guard mission. The script stays on the team type, so later teams of that type
+/// share it.
 /// </summary>
 void TeamTypeClass::Ensure_Script(void)
 {
 	if (Script == NULL) {
 		Script = new ScriptTypeClass();
+	}
+
+	if (Script->MissionCount == 0) {
 		Script->MissionList[0] = TeamMissionClass(TMISSION_GUARD, 0);
 		Script->MissionCount = 1;
 	}

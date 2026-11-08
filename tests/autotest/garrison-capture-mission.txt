@@ -1,0 +1,33 @@
+; A garrison is carried out on the Capture mission, as in gamemd, not the Enter mission (InfantryClass::ObjectClickedAction 0x51F190 sends a
+; garrison click as the Capture action; InfantryClass::Mission_Attack 0x51F3E0 and Mission_Hunt 0x51F540 hand a computer's Occupier or Assaulter soldier
+; to the Capture mission; the arrival in InfantryClass 0x519630 garrisons a soldier on the Capture mission). FootClass::Mission_Capture (0x4D4B20)
+; sets the structure as the destination for a soldier with Occupier, Assaulter or Infiltrate, and a computer soldier with no target goes
+; hunting unless it is an Occupier.
+; Stock E1 and E2 have Occupier=yes. CAHSE02 is a neutral house a soldier may garrison.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Map XMP29U2.MAP -Script src-agent14/tests/autotest/garrison-capture-mission.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   garrison|AUTOTEST   action|AUTOTEST settarget|Exception"
+; Expected: the player's E1 (clicked on the house at 66 52) is on Capture at frame 150 and the house holds an occupant by frame 600.
+; The computer's E2 (on the house at 66 46 by Hunt) is on Capture at frame 150 and that house is garrisoned by frame 600.
+; The computer's E1 (destination 66 40 and no target) stays on Capture at frame 150, and that house is garrisoned by frame 600;
+; the computer's ENGINEER with the same order is on Hunt at frame 150.
+30 reveal
+32 neutral CAHSE02 66 52
+33 neutral CAHSE02 66 46
+34 neutral CAHSE02 66 40
+40 own E1 54 40
+41 enemy E2 54 55
+42 enemy E1 54 50
+43 enemy ENGINEER 54 56
+60 action E1 66 52
+61 clickon E1 66 52
+62 settarget E2 66 46 computer hunt
+63 settarget E1 66 40 computer capturedest
+64 settarget ENGINEER 66 40 computer capturedest
+150 where E1
+150 where E2
+150 where ENGINEER
+600 where E1
+600 where E2
+600 where ENGINEER
+600 garrisons
+610 quit

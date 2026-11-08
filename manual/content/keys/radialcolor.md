@@ -1,6 +1,6 @@
 ---
 key: RadialColor
-summary: The color of the radius ring a selected structure draws on the tactical map.
+summary: Read by Yuri's Revenge but unused; a structure's radius ring takes its owner's color.
 see_also: [HasRadialIndicator, "system:cloaking"]
 ---
 

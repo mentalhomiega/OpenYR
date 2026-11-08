@@ -206,6 +206,26 @@ RadarClass::~RadarClass(void)
 void RadarClass::One_Time(void)
 {
 	DebugString("RadarClass::One_Time()\n");
+	Lay_Out_Radar();
+
+	BASECLASS::One_Time();
+
+	RadarButton.Set_Flags(GadgetClass::FlagEnum(GadgetClass::FlagEnum::LEFTPRESS |
+														GadgetClass::FlagEnum::LEFTHELD |
+														GadgetClass::FlagEnum::LEFTRELEASE |
+														GadgetClass::FlagEnum::LEFTUP |
+														GadgetClass::FlagEnum::RIGHTPRESS |
+														GadgetClass::FlagEnum::RIGHTRELEASE |
+														GadgetClass::FlagEnum::RIGHTUP));
+}
+
+
+/// <summary>
+/// Sizes the radar for the running interface style and the sidebar surface. A map already
+/// shown keeps its old scale until the next scenario sets the map dimensions.
+/// </summary>
+void RadarClass::Lay_Out_Radar(void)
+{
 	RadX				 = 0;
 	RadY				 = TOP_Y + 32;
 	RadWidth			 = SidebarSurface->Get_Width();
@@ -229,19 +249,10 @@ void RadarClass::One_Time(void)
 		RadPHeight = RadIHeight = box.Height - 2;
 	}
 
-	BASECLASS::One_Time();
-
 	RadarButton.X		= RadX + SidebarRect.X;
 	RadarButton.Y 		= RadY;
 	RadarButton.Width 	= RadWidth;
 	RadarButton.Height 	= RadHeight;
-	RadarButton.Set_Flags(GadgetClass::FlagEnum(GadgetClass::FlagEnum::LEFTPRESS |
-														GadgetClass::FlagEnum::LEFTHELD |
-														GadgetClass::FlagEnum::LEFTRELEASE |
-														GadgetClass::FlagEnum::LEFTUP |
-														GadgetClass::FlagEnum::RIGHTPRESS |
-														GadgetClass::FlagEnum::RIGHTRELEASE |
-														GadgetClass::FlagEnum::RIGHTUP));
 }
 
 
@@ -1251,9 +1262,6 @@ Rect RadarClass::Compute_Background(Rect const & cell_rect, Rect & update_rect, 
 /// <param name="update_rect">The region of that array to fill in.</param>
 void RadarClass::Fill_In_Background(Rect const & cell_rect, Rect const & update_rect)
 {
-	RGBClass low(0, 0, 0);
-	RGBClass high(0, 0, 0);
-
 	Reset_Iterator();
 	CellClass * iter = Map.Iterate();
 
@@ -1271,14 +1279,14 @@ void RadarClass::Fill_In_Background(Rect const & cell_rect, Rect const & update_
 			mrect = Intersect(mrect, update_rect);
 			if (mrect.Is_Valid()) {
 				int idx = mrect.X + mrect.Y * cell_rect.Width;
-				iter->Cell_Color(low, high);
+				RGBClass const color = iter->Cell_Color();
 				if (origx == update_rect.X - 1) {
-					BackgroundColors[idx] = high;
+					BackgroundColors[idx] = color;
 				} else if (origx == update_rect.Width + update_rect.X - 1) {
-					BackgroundColors[idx] = low;
+					BackgroundColors[idx] = color;
 				} else {
-					BackgroundColors[idx] = low;
-					BackgroundColors[idx+1] = high;
+					BackgroundColors[idx] = color;
+					BackgroundColors[idx+1] = color;
 				}
 			}
 		}
@@ -1380,20 +1388,17 @@ void RadarClass::Plot_Radar_Background(void)
 			update_rect = Intersect(update_rect, Rect(0, 0, RadarCellWidth, RadarCellHeight));
 
 			if (update_rect.Is_Valid()) {
-				RGBClass low(0, 0, 0);
-				RGBClass high(0, 0, 0);
-
 				CellClass * cptr = &Map[cell];
 				int idx = update_rect.X + update_rect.Y * RadarCellWidth;
-				cptr->Cell_Color(low, high);
+				RGBClass const color = cptr->Cell_Color();
 
 				if (x == 0 && update_rect.Width == 1) {
-					BackgroundColors[idx+1] = high;
+					BackgroundColors[idx+1] = color;
 				} else if (update_rect.Width == 1) {
-					BackgroundColors[idx] = low;
+					BackgroundColors[idx] = color;
 				} else {
-					BackgroundColors[idx] = low;
-					BackgroundColors[idx+1] = high;
+					BackgroundColors[idx] = color;
+					BackgroundColors[idx+1] = color;
 				}
 
 				Rect radarcellrect(0, 0, RadarCellWidth, RadarCellHeight);
@@ -1542,6 +1547,21 @@ TechnoClass * RadarTrackingClass::Last(Point2D const & pixel) const
 }
 
 
+TechnoClass * RadarTrackingClass::First_Drawn(Point2D const & pixel, bool shrouded) const
+{
+	auto found = Blips.find(std::pair<int, int>(pixel.X, pixel.Y));
+	if (found == Blips.end()) {
+		return(NULL);
+	}
+	for (TechnoClass * object : found->second) {
+		if (!shrouded || object->House->Is_Player_Control()) {
+			return(object);
+		}
+	}
+	return(NULL);
+}
+
+
 /// <summary>
 /// Empties the radar's object tracking.
 /// </summary>
@@ -1651,7 +1671,8 @@ void RadarClass::Plot_Radar_Pixel(Point2D const & point)
 		coord.Z = Map.Get_Height_GL(coord);
 		bool shadow	= (MainWindow && Map.Is_Shrouded(coord));
 
-		TechnoClass *tech = RadarTracking.First(point);
+		// Gamemd's radar pixel plot (0x655C50) draws an object under shroud only when its house is player-controlled.
+		TechnoClass *tech = RadarTracking.First_Drawn(point, shadow);
 
 		if (tech != NULL) {
 			HouseClass *house = tech->House;
@@ -2181,12 +2202,6 @@ void RadarClass::Redraw_Radar(bool complete)
 
 
 /// <summary>
-/// Draws the radar map into the sidebar.
-/// This routine tracks the tactical view rectangle across the radar face, flushes any pending
-/// background and pixel updates, lets the radar events draw themselves, and then blits the
-/// dirty portion of the radar surface onto the sidebar.
-/// </summary>
-/// <summary>
 /// Draws the blinking marker of each beacon the local player can see onto the sidebar's radar.
 /// Each cycle is four times the marker's frame count; the marker shows its first frame count of them.
 /// </summary>
@@ -2203,20 +2218,19 @@ void RadarClass::Draw_Beacon_Blips(void)
 		return;
 	}
 
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			BeaconClass * beacon = Beacons.Get(house, slot);
-			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
-				continue;
-			}
-
-			Rect const pixel = Cell_To_Radar_Pixel(beacon->Where.As_Cell());
-			Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
-		}
-	}
+	Beacons.For_Each_Visible([&](int, BeaconClass & beacon) {
+		Rect const pixel = Cell_To_Radar_Pixel(beacon.Where.As_Cell());
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
+	});
 }
 
 
+/// <summary>
+/// Draws the radar map into the sidebar.
+/// This routine tracks the tactical view rectangle across the radar face, flushes any pending
+/// background and pixel updates, lets the radar events draw themselves, and then blits the
+/// dirty portion of the radar surface onto the sidebar.
+/// </summary>
 void RadarClass::Render_Radar(void)
 {
 	int i;
@@ -2379,6 +2393,7 @@ void RadarClass::Play_Movie(void)
 		AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 0.5f, 250);
 		AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 0.5f, 250);
 		AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 0.5f, 250);
+		AudioEngine.Set_Duck(AUDIO_GROUP_UNIT_VOICE, 0.5f, 250);
 		needs_volume_adjustment = false;
 	}
 
@@ -2413,6 +2428,7 @@ void RadarClass::Play_Movie(void)
 			AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 1.0f, 250);
 			AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 1.0f, 250);
 			AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 1.0f, 250);
+			AudioEngine.Set_Duck(AUDIO_GROUP_UNIT_VOICE, 1.0f, 250);
 			RadarState = RSTATE_MOVIE_DONE;
 			Radar_Activate(SuspendedRadarMode);
 		} else {

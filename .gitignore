@@ -60,3 +60,4 @@ manual/data/.manual-generate-*/
 
 # Owner-local documents (untracked adjudication material)
 /docs/local/
+!tests/mapinfo/sample.map

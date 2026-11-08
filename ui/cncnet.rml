@@ -87,6 +87,7 @@
 		<p class="line">After each match, send the Debug folder beside Game.exe from every player.</p>
 	</div>
 	<div id="buttons">
+		<button id="lobby" data-if="nativelobby" data-class-disabled="busy" tip="Preview of the built-in CnCNet lobby: chat and the game list" data-event-click="queue('lobby')">Online lobby</button>
 		<button id="start" data-class-disabled="!canstart" data-class-primary="copycurrent" data-event-click="queue('start')">Start CnCNet</button>
 		<button id="remove" data-class-disabled="!canremove" data-event-click="queue('remove')">Remove OpenYR copy</button>
 		<button id="ok" data-class-disabled="busy" data-event-click="queue('ok')">[[TXT_OK]]</button>

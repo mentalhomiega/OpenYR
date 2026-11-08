@@ -7,9 +7,10 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Holds HouseSet and HouseArray to their contract: every house has its own mark or value,
-// set algebra works across all houses at once, and a save carries every slot, including
-// those past the thirty-second house.
+// Holds HouseSet, CountrySet and HouseArray to their contract: every house has its own mark or
+// value, set algebra works across all houses at once, a save carries every slot, including
+// those past the thirty-second house, and a CountrySet bit is shared by the houses of one
+// country.
 //
 // Needs no game data.
 
@@ -21,11 +22,15 @@
 
 
 // Stands in for the engine's house, which would drag the whole game in behind it. The
-// templates read nothing but its heap index.
+// templates read its heap index and its country bit only.
 class HouseClass
 {
 	public:
 		int HeapID;
+		int OwnCountry;
+
+		// Mirrors HouseClass::Own_Mask: the bit of the country, modulo 32, or none without one.
+		int Own_Mask(void) const {return(OwnCountry < 0 ? 0 : 1 << (OwnCountry & 31));}
 };
 
 #include "houseset.h"
@@ -136,6 +141,42 @@ void Check_Algebra(void)
 }
 
 
+void Check_Country(void)
+{
+	CountrySet spied;
+	Check(!spied.Any(), "a fresh country set holds no country");
+
+	spied.Set(&House[1]);
+	Check(spied[&House[1]], "the spy's own house reads its country as spied");
+	Check(spied[&House[33]], "a house of the same country reads the spied bit");
+	Check(!spied[&House[2]], "a house of another country reads clear");
+	Check(!spied[static_cast<HouseClass const *>(nullptr)], "no house reads clear in a country set");
+
+	HouseClass countryless;
+	countryless.HeapID = 60;
+	countryless.OwnCountry = -1;
+	spied.Set(&countryless);
+	Check(!spied[&countryless], "a house with no country is in no country set");
+	Check(spied[&House[1]], "setting a countryless house leaves the others");
+
+	spied.Set(&House[9]);
+	spied.Clear(&House[33]);
+	Check(!spied[&House[1]] && !spied[&House[33]], "clearing a house clears its country for all of its houses");
+	Check(spied[&House[9]], "clearing one country leaves the others");
+
+	spied.Clear();
+	Check(!spied.Any(), "clearing the country set removes every country");
+
+	CountrySet americans;
+	americans.Set(&House[0]);
+	CountrySet other;
+	other.Set(&House[2]);
+	Check((americans | other)[&House[32]], "a union keeps every country");
+	Check(((americans | other) & americans) == americans, "an intersection keeps the common country");
+	Check(americans != other, "countries that differ compare unequal");
+}
+
+
 void Check_Array(void)
 {
 	HouseArray<std::uint16_t> counts;
@@ -190,6 +231,25 @@ void Check_Save(void)
 }
 
 
+void Check_Country_Save(void)
+{
+	CountrySet spied;
+	spied.Set(&House[4]);
+	spied.Set(&House[30]);
+
+	ByteStream out(true);
+	spied.Serialize(out);
+	Check(out.Bytes.size() == sizeof(std::uint32_t), "a country set saves one 32-bit word");
+
+	CountrySet back;
+	ByteStream in(false);
+	in.Bytes = out.Bytes;
+	back.Serialize(in);
+	Check(back == spied, "a country set comes back from a save with every country");
+	Check(in.Cursor == out.Bytes.size(), "a country set load reads exactly what the save wrote");
+}
+
+
 void Check_CRC(void)
 {
 	HouseSet low;
@@ -209,8 +269,10 @@ void Check_CRC(void)
 void Check_Layout(void)
 {
 	Check(std::is_trivially_copyable_v<HouseSet>, "a set survives the raw copy cells are moved with");
+	Check(std::is_trivially_copyable_v<CountrySet>, "a country set survives the raw copy cells are moved with");
 	Check(std::is_trivially_copyable_v<HouseArray<std::uint16_t>>, "an array survives the raw copy cells are moved with");
 	Check(sizeof(HouseSet) == 8, "a set is one 64-bit word");
+	Check(sizeof(CountrySet) == 4, "a country set is one 32-bit word");
 }
 
 } // namespace
@@ -220,12 +282,15 @@ int main(void)
 {
 	for (int index = 0; index < HOUSE_MAX; index++) {
 		House[index].HeapID = index;
+		House[index].OwnCountry = index % 32;
 	}
 
 	Check_Set();
 	Check_Algebra();
+	Check_Country();
 	Check_Array();
 	Check_Save();
+	Check_Country_Save();
 	Check_CRC();
 	Check_Layout();
 

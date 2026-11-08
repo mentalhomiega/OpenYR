@@ -1,0 +1,15 @@
+; A Rhino (HTNK) and a Grizzly (MTNK) are destroyed one after the other by a C4 blast with no attacker.
+; Expected, from gamemd's UnitClass::Explode (0x738680) and the warhead debris of BulletClass::Detonate (0x469D06): the vehicle shows its Explosion animation at its location,
+; plus its DestroyAnim when it has one, and the screenshots (every 2 frames) show the blast and what it throws.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/weapon-anim-vehicle-death.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 100 -ShotDir "E:/Claude ra2 decomp/scratch-agent/weapon-effect-anims/death" -Filter "AUTOTEST kill|AUTOTEST own|Exception"
+30 command CenterBase
+35 reveal
+40 own HTNK 56 44
+41 own MTNK 59 44
+50 view 57 44
+51 zoom 2
+80 record 2
+90 kill HTNK 1
+170 kill MTNK 1
+260 record 0
+261 quit

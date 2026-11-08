@@ -77,6 +77,7 @@ class ToolTipManager
 
 		bool Add(ToolTip const * tooltip);
 		void Remove(unsigned id);
+		void Replace(ToolTip const * tooltip);
 
 		bool Find(unsigned id, ToolTip * tooltip);
 

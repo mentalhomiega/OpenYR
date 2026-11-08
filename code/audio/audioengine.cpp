@@ -9,11 +9,12 @@
 
 #include "audio/audioengine.h"
 
-#include "audio/audiobag.h"
 #include "audio/audiodecode.h"
 #include "audio/audiodevice.h"
+#include "audio/samplebagset.h"
 #include "_rand.h"
 #include "ccfile.h"
+#include "data.h"
 #include "dbgprint.h"
 #include "random.h"
 
@@ -140,90 +141,14 @@ class CCFileReaderClass : public AudioAssetReaderClass
 		{
 			CCFileClass file(filename);
 			if (!file.Is_Available()) {
-				return(Read_From_Bag(filename, bytes));
+				return(Bags.Read_From_Bag(filename, bytes));
 			}
-			if (!file.Open(FileClass::READ)) {
-				return(false);
-			}
-			int size = file.Size();
-			bool ok = false;
-			if (size > 0) {
-				bytes.resize((size_t)size);
-				ok = file.Read(bytes.data(), size) == size;
-			}
-			file.Close();
-			return(ok);
+			return(Read_File_Bytes(file, bytes));
 		}
 
 	private:
-		// A WAV that is not a file of its own is looked up in AUDIO.IDX and read from AUDIO.BAG,
-		// so a loose or archived WAV replaces the bag's sample of the same name. As in Ares,
-		// AUDIO01.IDX to AUDIO99.IDX are read after it, each with the bag of its own number,
-		// and a sample in a later index replaces one of the same name in an earlier one.
-		bool Read_From_Bag(char const * filename, std::vector<uint8_t> & bytes)
-		{
-			std::string name(filename);
-			if (name.size() < 4 || _stricmp(name.c_str() + name.size() - 4, ".WAV") != 0) {
-				return(false);
-			}
-			name.resize(name.size() - 4);
-
-			if (!BagTried) {
-				BagTried = true;
-				for (int number = 0; number <= 99; number++) {
-					char stem[16];
-					if (number == 0) {
-						std::snprintf(stem, sizeof(stem), "AUDIO");
-					} else {
-						std::snprintf(stem, sizeof(stem), "AUDIO%02d", number);
-					}
-					CCFileClass index((std::string(stem) + ".IDX").c_str());
-					if (!index.Is_Available() || !index.Open(FileClass::READ)) {
-						continue;
-					}
-					BagFileType bag;
-					bag.BagName = std::string(stem) + ".BAG";
-					std::vector<uint8_t> data((size_t)std::max(index.Size(), 0));
-					if (!data.empty() && index.Read(data.data(), (int)data.size()) == (int)data.size()) {
-						bag.Index.Load_Index(data.data(), data.size());
-					}
-					index.Close();
-					DebugString("Audio: %s.IDX lists %d samples\n", stem, bag.Index.Count());
-					if (bag.Index.Count() > 0) {
-						Bags.push_back(std::move(bag));
-					}
-				}
-			}
-
-			for (auto it = Bags.rbegin(); it != Bags.rend(); ++it) {
-				AudioBagClass::EntryType const * entry = it->Index.Find(name.c_str());
-				if (entry == nullptr || entry->Size == 0) {
-					continue;
-				}
-				CCFileClass bag(it->BagName.c_str());
-				if (!bag.Is_Available() || !bag.Open(FileClass::READ)) {
-					return(false);
-				}
-				std::vector<uint8_t> data(entry->Size);
-				bag.Seek((int)entry->Offset, SEEK_SET);
-				bool const ok = bag.Read(data.data(), (int)entry->Size) == (int)entry->Size;
-				bag.Close();
-				if (ok) {
-					bytes = AudioBagClass::Make_Wav(*entry, data.data(), data.size());
-				}
-				return(ok);
-			}
-			return(false);
-		}
-
-		struct BagFileType {
-			AudioBagClass Index;
-			std::string BagName;
-		};
-
-		// The indexes found, AUDIO.IDX first.
-		std::vector<BagFileType> Bags;
-		bool BagTried = false;
+		// Samples for WAV names that no loose file of the same name holds.
+		SampleBagSetClass Bags;
 };
 
 
@@ -530,6 +455,17 @@ float AudioEngineClass::Stream_Seconds(char const * filename)
 	}
 	double seconds = (double)frames / (double)producer.Rate();
 	return(seconds <= MAX_STREAM_SECONDS ? (float)seconds : 0.0f);
+}
+
+
+bool AudioEngineClass::Can_Decode(char const * filename)
+{
+	if (filename == nullptr || filename[0] == '\0') {
+		return(false);
+	}
+	std::unique_ptr<CCFileByteSourceClass> source(new CCFileByteSourceClass(filename));
+	AudioFileStreamProducerClass producer;
+	return(source->Is_Open() && producer.Open(std::move(source), false) && producer.Rate() != 0);
 }
 
 

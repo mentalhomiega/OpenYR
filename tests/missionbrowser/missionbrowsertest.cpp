@@ -102,7 +102,7 @@ UIMissionBrowserState Sample_State(void)
 		Make_Mission("RA2_ALL02", "ALL02S.MAP", UI_BROWSER_RA2_ALLIED, true, 4),
 		Make_Mission("DEBUG_ALL02", "ALL02UMD.MAP", UI_BROWSER_TESTING, true, 5),
 	};
-	state.Difficulties = { UIBrowserOption{"Easy", 0}, UIBrowserOption{"Normal", 1}, UIBrowserOption{"Hard", 2} };
+	state.Difficulties = { UIChoice{0, "Easy"}, UIChoice{1, "Normal"}, UIChoice{2, "Hard"} };
 	state.Difficulty = 1;
 	return(state);
 }

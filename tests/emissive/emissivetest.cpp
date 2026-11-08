@@ -172,6 +172,7 @@ void Test_Fill_And_Copy(void)
 	for (int i = 0; i < 16; i++) {
 		plane->Pixels[i] = (unsigned char)(i + 1);
 	}
+	Emissive_Mark_Rows(*plane, 0, 4);
 	unsigned char snapshot[16];
 	std::memcpy(snapshot, plane->Pixels, sizeof(snapshot));
 	Emissive_Copy_Rect(*plane, 1, 1, *plane, 0, 0, 2, 2);
@@ -213,6 +214,38 @@ void Test_Segment(void)
 	Emissive_Release_All();
 }
 
+
+void Test_Lit_Rows(void)
+{
+	int a = 0;
+	int b = 0;
+	EmissivePlane * source = Emissive_Bind(&a, 4, 3);
+	EmissivePlane * dest = Emissive_Bind(&b, 4, 3);
+	Check(!Emissive_Row_Lit(*source, 0) && !Emissive_Row_Lit(*source, 2), "a new plane has no lit row");
+
+	Emissive_Fill_Rect(*source, 1, 1, 2, 1, 200);
+	Check(Emissive_Row_Lit(*source, 1) && !Emissive_Row_Lit(*source, 0) && !Emissive_Row_Lit(*source, 2), "a fill lights only its rows");
+
+	Emissive_Copy_Rect(*dest, 0, 0, *source, 0, 0, 4, 3);
+	Check(Emissive_Row_Lit(*dest, 1) && !Emissive_Row_Lit(*dest, 0) && dest->Pixels[5] == 200, "a copy carries values and lit rows");
+
+	Emissive_Fill_Rect(*source, 0, 1, 2, 1, 0);
+	Check(Emissive_Row_Lit(*source, 1), "clearing part of a row leaves it lit");
+	Emissive_Fill_Rect(*source, 0, 1, 4, 1, 0);
+	Check(!Emissive_Row_Lit(*source, 1), "clearing a whole row unlights it");
+
+	Emissive_Copy_Rect(*dest, 0, 0, *source, 0, 0, 4, 3);
+	Check(!Emissive_Row_Lit(*dest, 1) && dest->Pixels[5] == 0 && dest->Pixels[6] == 0, "copying a dark row over a lit one clears it");
+
+	Emissive_Stamp_Segment(*dest, 0, 0, 4, 3, 0, 2, 1, 2, 90);
+	Check(Emissive_Row_Lit(*dest, 2) && !Emissive_Row_Lit(*dest, 1), "a segment lights the rows it writes");
+
+	EmissivePlane bare = {dest->Pixels, 4, 3, 4};
+	Check(Emissive_Row_Lit(bare, 0), "a plane without row flags treats every row as lit");
+
+	Emissive_Release_All();
+}
+
 }
 
 
@@ -227,6 +260,7 @@ int main(void)
 	Test_Lifecycle();
 	Test_Fill_And_Copy();
 	Test_Segment();
+	Test_Lit_Rows();
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);
 }

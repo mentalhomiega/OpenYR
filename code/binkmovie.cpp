@@ -17,6 +17,7 @@
 #include "_xmouse.h"
 #include "audio/audioengine.h"
 #include "ccfile.h"
+#include "data.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "gamedirs.h"
@@ -132,6 +133,96 @@ bool Bink_Is_Playing(void)
 }
 
 
+// Reads the whole movie into data, logging when the file is there but cannot be read in full.
+static bool Load_Movie_Data(char const * name, std::vector<unsigned char> & data)
+{
+	CCFileClass file(name);
+	if (!file.Is_Available()) {
+		return(false);
+	}
+	if (!Read_File_Bytes(file, data)) {
+		DebugString("BINK %s: could not read the whole movie\n", name);
+		return(false);
+	}
+	return(true);
+}
+
+
+// Opens the movie from memory and sets its volume. Returns null when Bink cannot open it.
+static void * Open_Movie(char const * name, std::vector<unsigned char> & data)
+{
+	// The Movies slider scales Bink's own output, on top of the master gain.
+	float const movie_level = AudioEngine.Master_Gain() * AudioEngine.Group_Gain(AUDIO_GROUP_MOVIE);
+	bool const sound = movie_level > 0.0f;
+	if (sound) {
+		Api.SetSoundSystem(Api.OpenDirectSound, 0);
+	}
+
+	void * bink = Api.Open(reinterpret_cast<char const *>(data.data()), BINK_FROM_MEMORY);
+	if (bink == nullptr) {
+		DebugString("BINK %s: not a movie Bink can open\n", name);
+		return(nullptr);
+	}
+
+	BinkInfoType const * info = static_cast<BinkInfoType const *>(bink);
+	int const width = (int)info->Width;
+	int const height = (int)info->Height;
+	DebugString("BINK %s: %dx%d, %u frames at %u/%u\n", name, width, height, info->Frames, info->FrameRate, info->FrameRateDiv);
+	Api.SetVolume(bink, sound ? (int)(32768.0f * movie_level) : 0);
+	DebugString("BINK %s: movie level %.2f\n", name, movie_level);
+	return(bink);
+}
+
+
+// Decodes and shows frames until the movie ends or the player skips it, pausing while the game is out of focus.
+static void Play_Frames(void * bink, Surface * draw, Rect const & area, Rect const & source, unsigned format)
+{
+	BinkInfoType const * info = static_cast<BinkInfoType const *>(bink);
+	bool paused = false;
+	while (true) {
+		Main_Window_Pump_Events();
+		if (MovieSkip::Idle() || UIScript_Fullscreen_Tick()) {
+			break;
+		}
+
+		if (!GameInFocus) {
+			if (!paused) {
+				Api.Pause(bink, 1);
+				paused = true;
+			}
+			Sleep(33);
+			continue;
+		}
+		if (paused) {
+			Api.Pause(bink, 0);
+			paused = false;
+		}
+
+		if (Api.Wait(bink) != 0) {
+			Sleep(1);
+			continue;
+		}
+
+		Api.DoFrame(bink);
+		{
+			SurfaceLock const lock(*draw);
+			if (lock.Is_Valid()) {
+				Api.CopyToBuffer(bink, lock.As<void>(), draw->Stride(), (unsigned)draw->Get_Height(), 0, 0, format);
+			}
+		}
+
+		VisibleSurface->Blit_From(area, *draw, source);
+		MovieSkip::Draw_Overlay(*VisibleSurface, area);
+		Video_Present_If_Dirty();
+
+		if (info->FrameNum + 1 >= info->Frames) {
+			break;
+		}
+		Api.NextFrame(bink);
+	}
+}
+
+
 /// <summary>
 /// Plays a Bink (.BIK) movie from the game's files, returning when it ends or the player skips it.
 /// The movie is shown the way the VQA movies are: centered, or stretched to the screen when movie
@@ -144,39 +235,19 @@ bool Bink_Play(char const * name)
 		return(false);
 	}
 
-	std::vector<char> data;
-	{
-		CCFileClass file(name);
-		if (!file.Is_Available()) {
-			return(false);
-		}
-		int const size = file.Size();
-		if (size <= 0) {
-			return(false);
-		}
-		data.resize((std::size_t)size);
-		if (file.Read(data.data(), size) != size) {
-			DebugString("BINK %s: could not read the whole movie\n", name);
-			return(false);
-		}
+	std::vector<unsigned char> data;
+	if (!Load_Movie_Data(name, data)) {
+		return(false);
 	}
 
-	bool const sound = AudioEngine.Master_Gain() > 0.0f;
-	if (sound) {
-		Api.SetSoundSystem(Api.OpenDirectSound, 0);
-	}
-
-	void * bink = Api.Open(data.data(), BINK_FROM_MEMORY);
+	void * bink = Open_Movie(name, data);
 	if (bink == nullptr) {
-		DebugString("BINK %s: not a movie Bink can open\n", name);
 		return(false);
 	}
 
 	BinkInfoType const * info = static_cast<BinkInfoType const *>(bink);
 	int const width = (int)info->Width;
 	int const height = (int)info->Height;
-	DebugString("BINK %s: %dx%d, %u frames at %u/%u\n", name, width, height, info->Frames, info->FrameRate, info->FrameRateDiv);
-	Api.SetVolume(bink, sound ? (int)(32768.0f * AudioEngine.Master_Gain()) : 0);
 
 	HiddenSurface->Fill(0);
 	Update_Visible_Surface(HiddenSurface);
@@ -219,47 +290,7 @@ bool Bink_Play(char const * name)
 	Hide_Mouse();
 	Keyboard->Clear();
 
-	bool paused = false;
-	while (true) {
-		Main_Window_Pump_Events();
-		if (MovieSkip::Idle() || UIScript_Fullscreen_Tick()) {
-			break;
-		}
-
-		if (!GameInFocus) {
-			if (!paused) {
-				Api.Pause(bink, 1);
-				paused = true;
-			}
-			Sleep(33);
-			continue;
-		}
-		if (paused) {
-			Api.Pause(bink, 0);
-			paused = false;
-		}
-
-		if (Api.Wait(bink) != 0) {
-			Sleep(1);
-			continue;
-		}
-
-		Api.DoFrame(bink);
-		void * pixels = draw->Lock();
-		if (pixels != nullptr) {
-			Api.CopyToBuffer(bink, pixels, draw->Stride(), (unsigned)draw->Get_Height(), 0, 0, format);
-			draw->Unlock();
-		}
-
-		VisibleSurface->Blit_From(area, *draw, source);
-		MovieSkip::Draw_Overlay(*VisibleSurface, area);
-		Video_Present_If_Dirty();
-
-		if (info->FrameNum + 1 >= info->Frames) {
-			break;
-		}
-		Api.NextFrame(bink);
-	}
+	Play_Frames(bink, draw, area, source, format);
 
 	Api.Close(bink);
 	Playing = false;

@@ -43,7 +43,6 @@ class IonStormClass
 		 * A chronoshift screen effect that runs counts as the flash.
 		 */
 		static void Update_Special_Lighting(void);
-		static void Reset_Special_Lighting(void);
 		static void Clear_Special_Lighting(void);
 		static void Restore_Special_Lighting(void);
 		static void Special_Tint(int & red, int & green, int & blue);
@@ -74,6 +73,15 @@ class IonStormClass
 
 		static void Start_Audio(bool instant);
 		static void End_Audio(void);
+
+		struct LightPair {
+			int level;
+			int ground;
+		};
+
+		// The level and ground light of the special lighting in force. Level_Light and Ground_Light
+		// both read it, in the order storm, dominator blast, nuclear flash, then the scenario.
+		static LightPair Current_Light_Pair(void);
 
 		/*
 		 * If an ion storm is raging over the battlefield, then this flag will be true.

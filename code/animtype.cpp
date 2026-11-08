@@ -98,6 +98,29 @@ static void * Load_Demand_Shape(char * name)
 }
 
 
+// Maps a Layer= name to its layer, matched without case. A name not listed returns the fallback.
+static LayerType Layer_Named(char const * name, LayerType fallback)
+{
+	struct LayerName {
+		char const * Name;
+		LayerType Layer;
+	};
+	static LayerName const NAMES[] = {
+		{"underground", LAYER_UNDERGROUND},
+		{"surface", LAYER_SURFACE},
+		{"ground", LAYER_GROUND},
+		{"air", LAYER_AIR},
+		{"top", LAYER_TOP},
+	};
+	for (LayerName const & entry : NAMES) {
+		if (stricmp(name, entry.Name) == 0) {
+			return(entry.Layer);
+		}
+	}
+	return(fallback);
+}
+
+
 /***********************************************************************************************
  * AnimTypeClass::AnimTypeClass -- Constructor for animation types.                            *
  *                                                                                             *
@@ -178,7 +201,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsNormalized(false),
 	MakeInfantry(-1),
 	MakeInfantryOwner(MAKE_OWNER_INVOKER),
-	IsGroundLayer(false),
+	Layer(LAYER_AIR),
 	IsFlat(false),
 	IsDoubleThick(false),
 	IsTranslucent(false),
@@ -339,7 +362,8 @@ void AnimTypeClass::Load_Image(TheaterType theater)
 			char fullname[_MAX_FNAME+_MAX_EXT];
 			_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
 			Theater_Naming_Convention(fullname, theater);
-			ImageData = MFCD::Retrieve(fullname);
+			// A missing file is retried with 'G' as its second letter, as gamemd's GetImage (0x428C30) does through FUN_005F9710.
+			ImageData = Retrieve_Theater_Art(fullname);
 		}
 	}
 
@@ -467,17 +491,19 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 				}
 			}
 		}
-		IsGroundLayer = ini.Get_Bool(Name(), "Surface", IsGroundLayer);
-
-		// Yuri's Revenge names the layer instead; only the ground and the layer above are kept apart here.
-		char layer[16];
-		if (ini.Get_String(Name(), "Layer", "", layer, sizeof(layer)) > 0) {
-			if (stricmp(layer, "ground") == 0 || stricmp(layer, "surface") == 0 || stricmp(layer, "underground") == 0) {
-				IsGroundLayer = true;
-			} else if (stricmp(layer, "air") == 0 || stricmp(layer, "top") == 0) {
-				IsGroundLayer = false;
-			}
+		// Surface= is an older key for the ground layer. A recognised Layer= value overrides it,
+		// and a key left out keeps the layer already set.
+		LayerType layer = Layer;
+		if (ini.Get_Bool(Name(), "Surface", layer == LAYER_GROUND)) {
+			layer = LAYER_GROUND;
+		} else if (layer == LAYER_GROUND) {
+			layer = LAYER_AIR;
 		}
+		char layer_name[16];
+		if (ini.Get_String(Name(), "Layer", "", layer_name, sizeof(layer_name)) > 0) {
+			layer = Layer_Named(layer_name, layer);
+		}
+		Layer = layer;
 		IsTranslucent = ini.Get_Bool(Name(), "Translucent", IsTranslucent);
 		IsScorcher = ini.Get_Bool(Name(), "Scorch", IsScorcher);
 		IsCraterForming = ini.Get_Bool(Name(), "Crater", IsCraterForming);
@@ -691,7 +717,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNormalized);
 	stream.Serialize(MakeInfantry);
 	stream.Serialize(MakeInfantryOwner);
-	stream.Serialize(IsGroundLayer);
+	stream.Serialize(Layer);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsDoubleThick);
 	stream.Serialize(IsTranslucent);
@@ -726,7 +752,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(IsNormalized);
-	crc(IsGroundLayer);
+	crc(static_cast<int>(Layer));
 	crc(IsFlat);
 	crc(IsTranslucent);
 	crc(IsScorcher);

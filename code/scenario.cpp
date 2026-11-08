@@ -66,6 +66,7 @@
 #include "shellmap.h"
 
 #include "autotest.h"
+#include "replay.h"
 #include "_bench.h"
 #include "_deploymentconfig.h"
 #include "_keyboar.h"
@@ -118,6 +119,7 @@
 #include "inline.h"
 #include "intro.h"
 #include "ion.h"
+#include "lightingini.h"
 #include "lstorm.h"
 #include "ipxmgr.h"
 #include "isotype.h"
@@ -139,6 +141,7 @@
 #include "newmenu.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "parasite.h"
 #include "partsys.h"
 #include "pcx.h"
 #include "preview.h"
@@ -202,6 +205,9 @@
 CDTimerClass<SystemTimerClass> ScenUnusedTimer;
 
 
+// How many of a map's first start positions the map keeps for people in a Cooperative match, from
+// [Header] NumCoopHumanStartSpots. The computer players start at the positions after them.
+static int CoopHumanStartSpots = 4;
 static void Assign_Start_Positions(bool official);
 static void Read_Spawn_Houses(CCINIClass const & ini);
 static void Create_Units(bool official);
@@ -259,6 +265,13 @@ ScenarioClass::ScenarioClass(void)
 }
 
 
+// The GUI keys shown for a mission whose [Ranking] section leaves the text out.
+static char const * const UNDER_PAR_TITLE_DEFAULT = "GUI:NoUnderParTitle";
+static char const * const UNDER_PAR_MESSAGE_DEFAULT = "GUI:NoUnderParMessage";
+static char const * const OVER_PAR_TITLE_DEFAULT = "GUI:NoOverParTitle";
+static char const * const OVER_PAR_MESSAGE_DEFAULT = "GUI:NoOverParMessage";
+
+
 /// <summary>
 /// Resets the scenario data back to its defaults.
 /// This routine runs before a scenario is read, so that any setting the mission neglects
@@ -273,6 +286,13 @@ void ScenarioClass::Reset(void)
 	CDifficulty = DIFF_NORMAL;
 	ElapsedTimer = 0;
 	ElapsedTimer.Stop();
+	for (int rank = 0; rank < 3; rank++) {
+		ParTime[rank] = TIMER_MINUTE;
+	}
+	strcpy(UnderParTitle, UNDER_PAR_TITLE_DEFAULT);
+	strcpy(UnderParMessage, UNDER_PAR_MESSAGE_DEFAULT);
+	strcpy(OverParTitle, OVER_PAR_TITLE_DEFAULT);
+	strcpy(OverParMessage, OVER_PAR_MESSAGE_DEFAULT);
 	MissionTimer = 0;
 	MissionTimer.Stop();
 	MissionTimerText[0] = '\0';
@@ -327,14 +347,14 @@ void ScenarioClass::Reset(void)
 	RedTint = 100;
 	GreenTint = 100;
 	BlueTint = 100;
-	GroundLight = NORMAL_LIGHT / 10;
-	LevelLight = NORMAL_LIGHT / 60;
-	IonAmbientLight = 100;
-	IonRedTint = 0;
-	IonGreenTint = 0;
-	IonBlueTint = 0;
-	IonGroundLight = NORMAL_LIGHT / 10;
-	IonLevelLight = NORMAL_LIGHT / 60;
+	GroundLight = LightingIni::GROUND;
+	LevelLight = LightingIni::LEVEL;
+	IonAmbientLight = LightingIni::ION_AMBIENT;
+	IonRedTint = LightingIni::ION_RED;
+	IonGreenTint = LightingIni::ION_GREEN;
+	IonBlueTint = LightingIni::ION_BLUE;
+	IonGroundLight = LightingIni::ION_GROUND;
+	IonLevelLight = LightingIni::ION_LEVEL;
 	DominatorAmbientLight = 150;
 	DominatorRedTint = 85;
 	DominatorGreenTint = 20;
@@ -1129,6 +1149,8 @@ void Post_Load_Game(void)
 	BuildingTypeClass::Post_Load_Game();
 	TiberiumClass::Post_Load_Game();
 	VeinholeMonsterClass::Init(Scen->Theater);
+	Rebuild_Grapple_Holders();
+	FootClass::Restore_Sensor_Radii();
 
 	Map.Post_Load_Radar_Fixup();
 
@@ -1172,6 +1194,8 @@ void Clear_Scenario(void)
 		Shellmap_Stop();
 	}
 
+	// A zoom kept for a scripted scene does not outlive the scenario it belongs to.
+	Forget_Player_View_Zoom();
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
 
@@ -1237,6 +1261,7 @@ void Clear_Scenario(void)
 	LightSourceClass::Reset();
 	IonStormClass::Init();
 	LightningStormClass::Clear();
+	LastCheerFrame = -100;
 	PsychicDominatorClass::Clear();
 	IonStormClass::Clear_Special_Lighting();
 	RadSiteClass::Clear_All();
@@ -1299,6 +1324,7 @@ void Clear_Scenario(void)
  *=============================================================================================*/
 void Do_Win(void)
 {
+	Replay_Note_Game_Over(true);
 	AutoTest_Game_Over(true);
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
@@ -1406,7 +1432,17 @@ void Do_Win(void)
 		** score and map selection, don't increment scenario, and set it to
 		** variation B.
 		*/
-		if (Scen->IsNoMapSel) {
+		if (Scenario_Is_From_RA2()) {
+			// The map names no successor that exists, as Red Alert 2 chooses its next mission outside the map.
+			CampaignType const next = Campaign_Next_RA2_Mission();
+			if (next == CAMPAIGN_NONE) {
+				GameActive = false;
+				Show_Mouse();
+				return;
+			}
+			Scen->Campaign = next;
+			strcpy(Scen->ScenarioName, Campaigns[next]->ScenarioName);
+		} else if (Scen->IsNoMapSel) {
 #ifdef _DEMO
 			if (Scen->GlobalFlags[1].Value) {
 				strcpy(Scen->ScenarioName, Scen->AltNextScenarioName);
@@ -1463,6 +1499,7 @@ void Do_Win(void)
  *=============================================================================================*/
 void Do_Lose(void)
 {
+	Replay_Note_Game_Over(false);
 	AutoTest_Game_Over(false);
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
@@ -1987,6 +2024,114 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 }
 
 
+std::optional<std::string> Mission_UI_Text(std::string const & label)
+{
+	if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+		return(StringTable.Find_UTF8(label.c_str()));
+	}
+	return(std::nullopt);
+}
+
+
+std::string Mission_Label_Text(char const * label, bool log_missing)
+{
+	if (StringTable.Find(label) == nullptr) {
+		if (log_missing) {
+			DebugString("Restate: no string table label %s\n", label);
+		}
+		return(std::string("MISSING:'") + label + "'");
+	}
+	return(StringTable.Find_UTF8(label));
+}
+
+
+std::string Mission_Database_Briefing_Label(char const * map, bool & has_database)
+{
+	CCFileClass database(DeploymentConfig.MissionFile.c_str());
+	has_database = database.Is_Available();
+	if (!has_database) {
+		return(std::string());
+	}
+	CCINIClass missions;
+	missions.Load(database, false);
+	return(missions.Get_String(map, "Briefing"));
+}
+
+
+// Adds the mission INI files of the scenario being started to the rules, and reads its name and
+// briefing from them.
+static void Read_Mission_Files(void)
+{
+	char buffer[32];
+	CCINIClass mini;
+	CCFileClass cfile;
+
+	if (Session.Type == GAME_NORMAL) {
+		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
+		strcat(buffer, ".INI");
+		cfile.Set_Name(buffer);
+
+		// When this is the scenario file itself, a restart must apply what the launch applied.
+		if (Scen->SourceFile.Matches(buffer)) {
+			Load_Held_Scenario_File(mini, buffer, false);
+			Rule->Addition(mini);
+		} else if (cfile.Is_Available() == true) {
+			mini.Load(cfile, false);
+			Rule->Addition(mini);
+		}
+
+		cfile.Close();
+		if (Scen->RequiredAddOn > ADDON_FIRST) {
+			char fname[32];
+			sprintf(fname, "MISSION%1d.INI", Scen->RequiredAddOn);
+			cfile.Set_Name(fname);
+		} else {
+			cfile.Set_Name("MISSION.INI");
+		}
+
+		if (cfile.Is_Available() == true) {
+			mini.Load(cfile, false);
+
+			if (mini.Is_Present(Scen->ScenarioName, "Name")) {
+				mini.Get_String(Scen->ScenarioName, "Name", "", Scen->Description, sizeof(Scen->Description));
+			}
+
+			if (mini.Is_Present(Scen->ScenarioName, "Briefing")) {
+				mini.Get_String(Scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
+
+				if (strlen(buffer) > 0) {
+					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
+				}
+			}
+		}
+
+		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
+		CCFileClass database(DeploymentConfig.MissionFile.c_str());
+		if (database.Is_Available()) {
+			CCINIClass missions;
+			missions.Load(database, false);
+			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
+			std::optional<std::string> const name = Mission_UI_Text(label);
+			if (name.has_value()) {
+				UTF8::Copy(Scen->Description, sizeof(Scen->Description), name->c_str());
+			}
+		}
+	}
+
+	if (Session.Type == GAME_SKIRMISH) {
+		if (Just4Fun) {
+			cfile.Close();
+			cfile.Set_Name("TMCJ4F.INI");
+
+			if (cfile.Is_Available() == true) {
+				mini.Load(cfile, false);
+				Rule->Addition(mini);
+			}
+		}
+	}
+}
+
+
 /// <summary>
 /// Reads a scenario from the database supplied.
 /// This is the workhorse of scenario startup. Whatever scenario was in place is cleared,
@@ -2017,7 +2162,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Special.IsFogOfWar = false;
 	} else {
 		Scen->Difficulty = (DiffType)Session.Options.AIDifficulty;
-		Scen->CDifficulty = (DiffType)(DIFF_COUNT - 1 - Scen->Difficulty);
+		Scen->CDifficulty = (DiffType)Opposite_Difficulty(Scen->Difficulty);
 		Scen->Special.IsFogOfWar = Session.Options.FogOfWar;
 		Special.IsFogOfWar = Session.Options.FogOfWar;
 	}
@@ -2141,6 +2286,8 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	DebugString("Calling Rule->Addition() with scenario overrides\n");
 	Rule->Addition(ini);
 	DebugString("Finished Rule->Addition() with scenario overrides\n");
+	HouseTypeClass::Prepare_RA2_Numbering(ini);
+	AutoTest_Require_RA2_Numbering(HouseTypeClass::RA2_Numbering_Loaded());
 	Check_Map_Rules(Scen->ScenarioName, std::string_view(Scen->SourceFile.Data(), Scen->SourceFile.Size()), DeploymentConfig.RulesFile.c_str());
 	TutorialText.Read_Overrides(ini);
 	Session.Update_Progress(45);
@@ -2179,6 +2326,8 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	/*
 	**
 	*/
+	// Skirmish never calls Commit_Session_Specials, so a non-campaign session with the bridge option off
+	// turns DestroyableBridges off here, after the map's [SpecialFlags] are read.
 	if (Session.Type != GAME_NORMAL && !Session.Options.BridgeDestruction) {
 		Special.IsDestroyBridges = Session.Options.BridgeDestruction;
 	}
@@ -2193,6 +2342,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	// Owners are resolved as objects are read, so start positions are settled ahead of them.
 	if (Session.Type != GAME_NORMAL && !is_mapgen && !Debug_Map) {
+		CoopHumanStartSpots = ini.Get_Int("Header", "NumCoopHumanStartSpots", 4);
 		Assign_Start_Positions(official);
 		Read_Spawn_Houses(ini);
 	}
@@ -2341,74 +2491,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SmudgeClass::Read_INI(ini);
 	Call_Back();
 
-	/*
-	**
-	*/
-	CCINIClass mini;
-	CCFileClass cfile;
-
-	if (Session.Type == GAME_NORMAL) {
-		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
-		strcat(buffer, ".INI");
-		cfile.Set_Name(buffer);
-
-		// When this is the scenario file itself, a restart must apply what the launch applied.
-		if (Scen->SourceFile.Matches(buffer)) {
-			Load_Held_Scenario_File(mini, buffer, false);
-			Rule->Addition(mini);
-		} else if (cfile.Is_Available() == true) {
-			mini.Load(cfile, false);
-			Rule->Addition(mini);
-		}
-
-		cfile.Close();
-		if (Scen->RequiredAddOn > ADDON_FIRST) {
-			char fname[32];
-			sprintf(fname, "MISSION%1d.INI", Scen->RequiredAddOn);
-			cfile.Set_Name(fname);
-		} else {
-			cfile.Set_Name("MISSION.INI");
-		}
-
-		if (cfile.Is_Available() == true) {
-			mini.Load(cfile, false);
-
-			if (mini.Is_Present(Scen->ScenarioName, "Name")) {
-				mini.Get_String(Scen->ScenarioName, "Name", "", Scen->Description, sizeof(Scen->Description));
-			}
-
-			if (mini.Is_Present(Scen->ScenarioName, "Briefing")) {
-				mini.Get_String(Scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
-
-				if (strlen(buffer) > 0) {
-					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
-				}
-			}
-		}
-
-		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
-		CCFileClass database(DeploymentConfig.MissionFile.c_str());
-		if (database.Is_Available()) {
-			CCINIClass missions;
-			missions.Load(database, false);
-			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
-			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
-			}
-		}
-	}
-
-	if (Session.Type == GAME_SKIRMISH) {
-		if (Just4Fun) {
-			cfile.Close();
-			cfile.Set_Name("TMCJ4F.INI");
-
-			if (cfile.Is_Available() == true) {
-				mini.Load(cfile, false);
-				Rule->Addition(mini);
-			}
-		}
-	}
+	Read_Mission_Files();
 
 	Session.Update_Progress(82);
 	Call_Back();
@@ -2693,14 +2776,6 @@ void Assign_Houses(void)
 //		DebugString( "Assigned ID of %i to %s\n", house, player->Name );
 	}
 
-	// True when no person plays, only watchers. Game over does not read it (see MPlayer_Defeated).
-	Session.AIOnly = true;
-	for (i = 0; i < Session.Players.Count(); i++) {
-		if (!Session.Players[i]->Player.IsObserver) {
-			Session.AIOnly = false;
-		}
-	}
-
 	// A computer player is given one of the countries the lobby offers.
 	DynamicVectorClass<HousesType> playable;
 	for (int country = HOUSE_FIRST; country < HouseTypes.Count(); country++) {
@@ -2799,6 +2874,26 @@ void Assign_Houses(void)
 			NodeNameType * other = Seated_Node(target);
 			if (other != NULL && !other->Player.IsObserver) {
 				Houses[node->Player.ID]->Make_Ally(Houses[other->Player.ID]);
+			}
+		}
+	}
+
+	/*
+	 * A Cooperative match puts every person on one side and every computer player on another
+	 * (gamemd's AllyTeams for that mode, slot 34 at 0x5C3220).
+	 */
+	if (MPMode_Is_Cooperative()) {
+		for (int first = 0; first < Houses.Count(); first++) {
+			HouseClass * housep = Houses[first];
+			if (housep->IsObserver || housep->Class->IsMultiplayPassive) {
+				continue;
+			}
+			for (int second = first + 1; second < Houses.Count(); second++) {
+				HouseClass * other = Houses[second];
+				if (!other->IsObserver && !other->Class->IsMultiplayPassive && housep->Is_Human_Player() == other->Is_Human_Player()) {
+					housep->Make_Ally(other);
+					other->Make_Ally(housep);
+				}
 			}
 		}
 	}
@@ -2997,7 +3092,31 @@ static void Assign_Start_Positions(bool official)
 		}
 
 		int best = -1;
-		if (!anyone) {
+
+		/*
+		 * In a Cooperative match a person draws among the positions the map keeps for people, and a
+		 * computer player takes the first free position after them (gamemd's slot 49, 0x5C2DE0).
+		 */
+		if (MPMode_Is_Cooperative()) {
+			int const reserved = std::clamp(CoopHumanStartSpots, 1, MAX_PLAYERS);
+			if (housep->Is_Human_Player()) {
+				int const first = Random_Pick(0, reserved - 1);
+				for (int step = 0; step < reserved && best == -1; step++) {
+					int const spot = (first + step) % reserved;
+					if (open[spot]) {
+						best = spot;
+					}
+				}
+			} else {
+				for (int spot = reserved; spot < MAX_PLAYERS && best == -1; spot++) {
+					if (open[spot]) {
+						best = spot;
+					}
+				}
+			}
+		}
+
+		if (best == -1 && !anyone) {
 			int candidates[MAX_PLAYERS];
 			int count = 0;
 			for (int spot = 0; spot < MAX_PLAYERS; spot++) {
@@ -3008,7 +3127,7 @@ static void Assign_Start_Positions(bool official)
 			if (count > 0) {
 				best = candidates[Random_Pick(0, count - 1)];
 			}
-		} else {
+		} else if (best == -1) {
 			int bestvalue = 0;
 			for (int spot = 0; spot < MAX_PLAYERS; spot++) {
 				if (!open[spot]) {
@@ -3743,6 +3862,11 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMPAIBaseNodes);
 	stream.Serialize(TeamsPresent);
 	stream.Serialize(SourceFile);
+	stream.Serialize(ParTime);
+	stream.Serialize(UnderParTitle);
+	stream.Serialize(UnderParMessage);
+	stream.Serialize(OverParTitle);
+	stream.Serialize(OverParMessage);
 }
 
 
@@ -4065,6 +4189,25 @@ int ScenarioClass::First_Unused_Local(void) const
 }
 
 
+/*
+ * Reads one par time of the [Ranking] section, written hh:mm:ss, as timer ticks. A missing key keeps the
+ * current value. A value that does not parse gives the fields it has and zero for the rest, as gamemd does.
+ */
+static int Read_Par_Time(CCINIClass const & ini, char const * key, int current)
+{
+	char text[32] = "";
+	ini.Get_String("Ranking", key, "", text, sizeof(text));
+	if (text[0] == '\0') {
+		return(current);
+	}
+	int hours = 0;
+	int minutes = 0;
+	int seconds = 0;
+	sscanf(text, "%d:%d:%d", &hours, &minutes, &seconds);
+	return(((hours * 60) + minutes) * 60 + seconds) * TIMER_SECOND;
+}
+
+
 /// <summary>
 /// Reads the scenario's parameters from an INI database.
 /// This routine picks up everything that describes the scenario itself -- the movies, the
@@ -4077,6 +4220,14 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	char const * const BASIC = "Basic";
 
 	int i;
+
+	ParTime[DIFF_EASY] = Read_Par_Time(ini, "ParTimeEasy", ParTime[DIFF_EASY]);
+	ParTime[DIFF_NORMAL] = Read_Par_Time(ini, "ParTimeMedium", ParTime[DIFF_NORMAL]);
+	ParTime[DIFF_HARD] = Read_Par_Time(ini, "ParTimeHard", ParTime[DIFF_HARD]);
+	ini.Get_String("Ranking", "UnderParTitle", UNDER_PAR_TITLE_DEFAULT, UnderParTitle, sizeof(UnderParTitle));
+	ini.Get_String("Ranking", "UnderParMessage", UNDER_PAR_MESSAGE_DEFAULT, UnderParMessage, sizeof(UnderParMessage));
+	ini.Get_String("Ranking", "OverParTitle", OVER_PAR_TITLE_DEFAULT, OverParTitle, sizeof(OverParTitle));
+	ini.Get_String("Ranking", "OverParMessage", OVER_PAR_MESSAGE_DEFAULT, OverParMessage, sizeof(OverParMessage));
 
 	// Only a campaign mission takes the fast-growth switch from its map. A skirmish keeps the value the session has.
 	bool const fast_growth = Special.IsTGrowth;
@@ -4140,29 +4291,30 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 
 	char const * const LIGHTING = "Lighting";
 
-	// gamemd adds 0.01 before truncating (0x68A846 to 0x68A974), so a float32 just below a whole step, such as Red=0.88, keeps that step.
-	AmbientLight        = (int)(100.0 * ini.Get_Float(LIGHTING, "Ambient", AmbientLight / 100.0) + 0.01);
+	// lightingini.h has gamemd's conversion; an omitted key keeps the value Reset gave it.
+	AmbientLight        = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Ambient", LightingIni::Percent_Fraction(AmbientLight)));
 	CurrentAmbientLight = AmbientLight;
 	DesiredAmbientLight = AmbientLight;
-	RedTint         = (int)(100.0 * ini.Get_Float(LIGHTING, "Red", RedTint / 100.0) + 0.01);
-	GreenTint       = (int)(100.0 * ini.Get_Float(LIGHTING, "Green", GreenTint / 100.0) + 0.01);
-	BlueTint        = (int)(100.0 * ini.Get_Float(LIGHTING, "Blue", BlueTint / 100.0) + 0.01);
-	GroundLight     = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "Ground", GroundLight / NORMAL_LIGHT) + 0.01);
-	LevelLight      = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "Level", LevelLight / NORMAL_LIGHT) + 0.01);
-	IonAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "IonAmbient", AmbientLight / 100.0));
-	IonRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "IonRed", RedTint / 100.0));
-	IonGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "IonGreen", GreenTint / 100.0));
-	IonBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "IonBlue", BlueTint / 100.0));
-	IonGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonGround", GroundLight / NORMAL_LIGHT));
-	IonLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonLevel", LevelLight / NORMAL_LIGHT));
+	RedTint         = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Red", LightingIni::Percent_Fraction(RedTint)));
+	GreenTint       = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Green", LightingIni::Percent_Fraction(GreenTint)));
+	BlueTint        = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Blue", LightingIni::Percent_Fraction(BlueTint)));
+	GroundLight     = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "Ground", LightingIni::Thousandths_Fraction(GroundLight)));
+	LevelLight      = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "Level", LightingIni::Thousandths_Fraction(LevelLight)));
+	IonAmbientLight = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonAmbient", LightingIni::Percent_Fraction(IonAmbientLight)));
+	IonRedTint      = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonRed", LightingIni::Percent_Fraction(IonRedTint)));
+	IonGreenTint    = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonGreen", LightingIni::Percent_Fraction(IonGreenTint)));
+	IonBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonBlue", LightingIni::Percent_Fraction(IonBlueTint)));
+	IonGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonGround", LightingIni::Thousandths_Fraction(IonGroundLight)));
+	IonLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonLevel", LightingIni::Thousandths_Fraction(IonLevelLight)));
 	NukeAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "NukeAmbientChangeRate", (float)NukeAmbientChangeRate);
-	DominatorAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorAmbient", DominatorAmbientLight / 100.0) + 0.5);
-	DominatorRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorRed", DominatorRedTint / 100.0) + 0.5);
-	DominatorGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorGreen", DominatorGreenTint / 100.0) + 0.5);
-	DominatorBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorBlue", DominatorBlueTint / 100.0) + 0.5);
-	DominatorGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorGround", DominatorGroundLight / (float)NORMAL_LIGHT) + 0.5);
-	DominatorLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorLevel", DominatorLevelLight / (float)NORMAL_LIGHT) + 0.5);
-	DominatorAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "DominatorAmbientChangeRate", (float)DominatorAmbientChangeRate);
+	DominatorAmbientLight = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorAmbient", LightingIni::Percent_Fraction(DominatorAmbientLight)));
+	DominatorRedTint      = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorRed", LightingIni::Percent_Fraction(DominatorRedTint)));
+	DominatorGreenTint    = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorGreen", LightingIni::Percent_Fraction(DominatorGreenTint)));
+	DominatorBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorBlue", LightingIni::Percent_Fraction(DominatorBlueTint)));
+	DominatorGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorGround", LightingIni::Thousandths_Fraction(DominatorGroundLight)));
+	DominatorLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorLevel", LightingIni::Thousandths_Fraction(DominatorLevelLight)));
+	// gamemd reads this like Ground (0x68AC59): the INI value counts thousands of frames, so DominatorAmbientChangeRate=1 is 1000 frames.
+	DominatorAmbientChangeRate = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorAmbientChangeRate", LightingIni::Thousandths_Fraction(DominatorAmbientChangeRate)));
 
 	Session.Update_Progress(55);
 	Call_Back();
@@ -4293,6 +4445,14 @@ bool ScenarioClass::Write_INI(CCINIClass & ini, bool mplayer) const
 	ini.Put_Float(LIGHTING, "IonBlue",    ((double)IonBlueTint)     / 100.0);
 	ini.Put_Float(LIGHTING, "IonGround",  ((double)IonGroundLight)  / NORMAL_LIGHT);
 	ini.Put_Float(LIGHTING, "IonLevel",   ((double)IonLevelLight)   / NORMAL_LIGHT);
+	// gamemd writes the Dominator lighting next (0x68B79C to 0x68B88C); the change rate is kept in thousandths like Ground.
+	ini.Put_Float(LIGHTING, "DominatorAmbient", LightingIni::Percent_Written(DominatorAmbientLight));
+	ini.Put_Float(LIGHTING, "DominatorRed", LightingIni::Percent_Written(DominatorRedTint));
+	ini.Put_Float(LIGHTING, "DominatorGreen", LightingIni::Percent_Written(DominatorGreenTint));
+	ini.Put_Float(LIGHTING, "DominatorBlue", LightingIni::Percent_Written(DominatorBlueTint));
+	ini.Put_Float(LIGHTING, "DominatorGround", LightingIni::Thousandths_Written(DominatorGroundLight));
+	ini.Put_Float(LIGHTING, "DominatorLevel", LightingIni::Thousandths_Written(DominatorLevelLight));
+	ini.Put_Float(LIGHTING, "DominatorAmbientChangeRate", LightingIni::Thousandths_Written(DominatorAmbientChangeRate));
 	return(true);
 }
 

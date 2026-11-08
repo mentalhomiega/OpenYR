@@ -2,7 +2,7 @@
 ; at radius 4 in eight directions. Each HARV is removed with kill once the tower has fired at it.
 ; Each gattling line gives the primary facing, the desired facing, the aim point of the turret, the fire error of the
 ; primary weapon (6 is FIRE_CANT, 2 is FIRE_FACING, 0 is FIRE_OK), the barrel pitch, the spin, the gattling stage, the
-; turret animation frame, the recoil state, the target cell, and the turret and barrel frame counts of the model.
+; turret animation frame, the target cell, and the turret and barrel frame counts of the model.
 ; Expected: the facing reaches the desired value within a few dozen frames of each target, the spin rises while the tower
 ; fires and falls to 0 once it loses its target, and the animation frame advances one step a frame while it spins.
 ; The screenshots come from ScreenCapture, so the runner copies them with -ShotDir.

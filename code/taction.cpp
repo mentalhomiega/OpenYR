@@ -65,6 +65,7 @@
 #include "globals.h"
 #include "house.h"
 #include "houstype.h"
+#include "ra2lists.h"
 #include "incdec.h"
 #include "init.h"
 #include "infantry.h"
@@ -103,6 +104,7 @@
 #include "vanim.h"
 #include "vector.h"
 #include "velocity.h"
+#include "viewzoom.h"
 #include "voc.h"
 #include "vox.h"
 #include "warhead.h"
@@ -309,21 +311,6 @@ enum ParamCodeType {
 
 
 /// <summary>
-/// Is this one of Yuri's Revenge's actions that this engine does not carry out yet?
-/// </summary>
-/// <param name="action">The action to look up.</param>
-/// <returns>bool; Is the action skipped when it runs?</returns>
-static bool Is_Skipped_Action(TActionType action)
-{
-	switch (action) {
-		default:
-			break;
-	}
-	return(false);
-}
-
-
-/// <summary>
 /// Constructor for the trigger action object.
 /// The new action is registered with the action heap and the trackers, but does nothing at
 /// all until the scenario reader fills in which action it is and what it acts upon.
@@ -526,12 +513,6 @@ void TActionClass::Read_INI(void)
 	if (action < TACTION_NONE || action >= TACTION_COUNT) {
 		DebugString("TAction: map uses action %d, which this engine does not know; it does nothing\n", action);
 		Action = TACTION_NONE;
-	} else if (Is_Skipped_Action(Action)) {
-		static bool noted[TACTION_COUNT] = {};
-		if (!noted[Action]) {
-			noted[Action] = true;
-			DebugString("TAction: map uses action %d, which is not implemented and is skipped\n", action);
-		}
 	}
 	ParamCodeType code = (ParamCodeType)atoi(strtok(NULL, ","));
 	char * text = strtok(NULL, ",");
@@ -543,6 +524,13 @@ void TActionClass::Read_INI(void)
 	{
 		case PARAM_CODE_OTHER:
 			Data.Value = val;
+			if (Action_Needs(Action) == NEED_HOUSE) {
+				Data.House = HouseTypeClass::From_RA2_Number(Data.House);
+			} else if (Action_Needs(Action) == NEED_ANIM_AND_LOCATION) {
+				Data.Anim = RA2_Anim_Position(Data.Anim);
+			} else if (Action_Needs(Action) == NEED_WEAPON_AND_LOCATION) {
+				Data.Weapon = RA2_Weapon_Position(Data.Weapon);
+			}
 			break;
 
 		case PARAM_CODE_TEAM:
@@ -594,6 +582,16 @@ void TActionClass::Read_INI(void)
 		case PARAM_CODE_TECHNO:
 		case PARAM_CODE_BUILDING:
 			snprintf(Text, sizeof(Text), "%s", text);
+			/*
+			**	A Red Alert 2 map gives an object type as its position in one list of every type, buildings first, where
+			**	Yuri's Revenge writes its ID (the action reads it by name, as 0x6E4150 does).
+			*/
+			if (code == PARAM_CODE_TECHNO && Scenario_Is_From_RA2() && text[0] >= '0' && text[0] <= '9') {
+				std::string const name = RA2_Techno_Name(atoi(text));
+				if (!name.empty()) {
+					snprintf(Text, sizeof(Text), "%s", name.c_str());
+				}
+			}
 			break;
 
 		/*
@@ -630,32 +628,6 @@ void TActionClass::Read_INI(void)
 }
 
 
-/***********************************************************************************************
- * TActionClass::operator -- Performs the action that this object does.                        *
- *                                                                                             *
- *    This routine is called when the action associated with this action object must be        *
- *    performed. Typically, this occurs when a trigger has "sprung" and now it must take       *
- *    effect. The action object is what carries out this effect.                               *
- *                                                                                             *
- * INPUT:   house -- The owner of this action. This information is necessary since some        *
- *                   actions depend on who the trigger was owned by.                           *
- *                                                                                             *
- *          object-- Pointer to the object that the springing trigger was attached to. If      *
- *                   this parameter is null, then the trigger wasn't attached to any object.   *
- *                                                                                             *
- *          id    -- Trigger ID (only if forced) otherwise -1.                                 *
- *                                                                                             *
- *          cell  -- The cell this trigger is attached to (if any).                            *
- *                                                                                             *
- * OUTPUT:  bool; Was this action able to perform what it needed to do? Failure could be       *
- *                because a reinforcement couldn't be generated, for example.                  *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   02/22/1996 JLB : Created.                                                                 *
- *   04/10/1996 JLB : Added the ID parameter.                                                  *
- *=============================================================================================*/
 /// <summary>
 /// Does this action act on the house that owns the trigger?
 /// A campaign map has triggers whose owner nobody plays, which run with no house, so these are the
@@ -696,6 +668,11 @@ static bool Action_Needs_Trigger_House(TActionType action)
 		case TACTION_CENTER_BASE_CELL_SET:
 		case TACTION_CENTER_BASE_CELL_CLEAR:
 		case TACTION_TELEPORT_ALL_TO:
+		case TACTION_SET_DEFENSIVE_TARGET_CELL:
+		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
+		case TACTION_MIND_CONTROL_BASE:
+		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
+		case TACTION_RESTORE_STARTING_UNITS:
 			return(true);
 
 		default:
@@ -705,6 +682,32 @@ static bool Action_Needs_Trigger_House(TActionType action)
 }
 
 
+/***********************************************************************************************
+ * TActionClass::operator -- Performs the action that this object does.                        *
+ *                                                                                             *
+ *    This routine is called when the action associated with this action object must be        *
+ *    performed. Typically, this occurs when a trigger has "sprung" and now it must take       *
+ *    effect. The action object is what carries out this effect.                               *
+ *                                                                                             *
+ * INPUT:   house -- The owner of this action. This information is necessary since some        *
+ *                   actions depend on who the trigger was owned by.                           *
+ *                                                                                             *
+ *          object-- Pointer to the object that the springing trigger was attached to. If      *
+ *                   this parameter is null, then the trigger wasn't attached to any object.   *
+ *                                                                                             *
+ *          id    -- Trigger ID (only if forced) otherwise -1.                                 *
+ *                                                                                             *
+ *          cell  -- The cell this trigger is attached to (if any).                            *
+ *                                                                                             *
+ * OUTPUT:  bool; Was this action able to perform what it needed to do? Failure could be       *
+ *                because a reinforcement couldn't be generated, for example.                  *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   02/22/1996 JLB : Created.                                                                 *
+ *   04/10/1996 JLB : Added the ID parameter.                                                  *
+ *=============================================================================================*/
 bool TActionClass::operator() (HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell)
 {
 	Cell waypoint;
@@ -907,14 +910,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		case TACTION_NONE:
 			break;
 
-		/*
-		**	Yuri's Revenge actions this engine does not carry out yet are skipped, with a note in
-		**	the log the first time one runs, rather than being taken for some other action.
-		*/
 		default:
-			if (Is_Skipped_Action(Action)) {
-				success = Not_Implemented();
-			}
 			break;
 	}
 	return(success);
@@ -929,14 +925,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
 	if (house->FirestormDefenseActivated) {
-		int index = -1;
-		for (int i = 0; i < house->SuperWeapon.Count(); i++) {
-			SuperClass * super = house->SuperWeapon[i];
-			if (super->Class->Type == SUPER_FIRESTORM) {
-				index = i;
-				break;
-			}
-		}
+		int index = house->First_Super_Index(SUPER_FIRESTORM);
 
 		if (index != -1) {
 			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
@@ -954,14 +943,7 @@ bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass 
 bool TActionClass::TAction_ACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
 	if (!house->FirestormDefenseActivated) {
-		int index = -1;
-		for (int i = 0; i < house->SuperWeapon.Count(); i++) {
-			SuperClass * super = house->SuperWeapon[i];
-			if (super->Class->Type == SUPER_FIRESTORM) {
-				index = i;
-				break;
-			}
-		}
+		int index = house->First_Super_Index(SUPER_FIRESTORM);
 
 		if (index != -1) {
 			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
@@ -1232,16 +1214,10 @@ bool TActionClass::TAction_SELL_ATTACHED(HouseClass * , ObjectClass * , TriggerC
 
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Tag != NULL &&
-				building->Tag->Is_Trigger_Attached(trig)) {
+		if (building->Is_Tagged_By(trig)) {
 
 			building->Sell_Back(1);
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST   sell attached %s of %s buildup %d mission %s\n", building->Class->Name(), building->House->Class->Name(), (int)building->HasBuildupData, MissionClass::Mission_Name(building->Get_Mission()));
-			}
+			AUTOTEST_LOG("  sell attached %s of %s buildup %d mission %s\n", building->Class->Name(), building->House->Class->Name(), (int)building->HasBuildupData, MissionClass::Mission_Name(building->Get_Mission()));
 			success = true;
 		}
 	}
@@ -1261,11 +1237,7 @@ bool TActionClass::TAction_GO_BERZERK(HouseClass * , ObjectClass * , TriggerClas
 
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsActive &&
-				infantry->IsDown &&
-				!infantry->IsInLimbo &&
-				infantry->Tag != NULL &&
-				infantry->Tag->Is_Trigger_Attached(trig)) {
+		if (infantry->Is_Tagged_By(trig)) {
 
 			infantry->Berzerk();
 			success = true;
@@ -1286,11 +1258,7 @@ bool TActionClass::TAction_TURN_OFF_ATTACHED(HouseClass * , ObjectClass * , Trig
 	bool success = false;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Tag != NULL &&
-				building->Tag->Is_Trigger_Attached(trig) &&
+		if (building->Is_Tagged_By(trig) &&
 				building->IsOn) {
 
 			building->Turn_Off();
@@ -1312,7 +1280,7 @@ bool TActionClass::TAction_TURN_ON_ATTACHED(HouseClass * , ObjectClass * , Trigg
 	bool success = false;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive && building->IsDown && !building->IsInLimbo && building->Tag != NULL && building->Tag->Is_Trigger_Attached(trig) && !building->IsOn) {
+		if (building->Is_Tagged_By(trig) && !building->IsOn) {
 			building->Turn_On();
 			success = true;
 		}
@@ -1338,11 +1306,7 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->IsActive &&
-				techno->IsDown &&
-				!techno->IsInLimbo &&
-				techno->Tag != NULL &&
-				techno->Tag->Is_Trigger_Attached(trig)) {
+		if (techno->Is_Tagged_By(trig)) {
 
 			// The action helper at 0x6E0AA0 (action 0x0E) calls SetOwningHouse without an announcement.
 			techno->Set_Owning_House(newowner, false);
@@ -1825,8 +1789,7 @@ bool TActionClass::TAction_1_SPECIAL(HouseClass * house, ObjectClass * , Trigger
 	house->SuperWeapon[Data.Special]->Enable(true, false);
 
 	if (PlayerPtr == house) {
-		Map.Add(RTTI_SPECIAL, Data.Special);
-		Map.Flag_Strips_To_Redraw();
+		house->Add_Super_Cameo(Data.Special);
 	}
 	return(true);
 }
@@ -1844,8 +1807,7 @@ bool TActionClass::TAction_FULL_SPECIAL(HouseClass * house, ObjectClass * , Trig
 	house->SuperWeapon[Data.Special]->NeedsBuilding = false;
 
 	if (PlayerPtr == house) {
-		Map.Add(RTTI_SPECIAL, Data.Special);
-		Map.Flag_Strips_To_Redraw();
+		house->Add_Super_Cameo(Data.Special);
 	}
 	return(true);
 }
@@ -1878,9 +1840,7 @@ bool TActionClass::TAction_DZ(HouseClass * , ObjectClass * , TriggerClass * , Ce
 /// </summary>
 bool TActionClass::TAction_WIN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   win for house %d, the player is %s (%d)\n", (int)Data.House, PlayerPtr->Class->Name(), (int)PlayerPtr->Class->House);
-	}
+	AUTOTEST_LOG("  win for house %d, the player is %s (%d)\n", (int)Data.House, PlayerPtr->Class->Name(), (int)PlayerPtr->Class->House);
 	if (House_Matches(PlayerPtr, Data.House)) {
 		PlayerPtr->Flag_To_Win();
 	} else {
@@ -1958,11 +1918,12 @@ bool TActionClass::TAction_AUTOCREATE(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_CREATE_TEAM(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	ScenarioInit++;
-	if (Team != NULL) {
-		Team->Create_One_Of();
+	{
+		ScenarioInitScope const scope;
+		if (Team != NULL) {
+			Team->Create_One_Of();
+		}
 	}
-	ScenarioInit--;
 	return(true);
 }
 
@@ -2102,7 +2063,7 @@ bool TActionClass::TAction_DESTROY_OBJECT(HouseClass * , ObjectClass * , Trigger
 		process = false;
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->Strength > 0 && techno->IsActive && techno->IsDown && !techno->IsInLimbo && techno->Tag != NULL && techno->Tag->Is_Trigger_Attached(trig)) {
+			if (techno->Strength > 0 && techno->Is_Tagged_By(trig)) {
 				int damage = techno->Strength;
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, 0, true);
 				any = true;
@@ -2147,6 +2108,11 @@ bool TActionClass::TAction_CHANGE_ZOOM(HouseClass * , ObjectClass * , TriggerCla
 bool TActionClass::TAction_RESIZE_PLAYER_VIEW(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Map.LocalRect = TriggerRect;
+
+	// A smaller area can leave the view past its new edge, so the view is clamped to the new area.
+	if (TacticalMap != NULL) {
+		TacticalMap->Set_Tactical_Position(TacticalMap->Get_Tactical_Position());
+	}
 	Map.Reset_Radar();
 
 	Map.Reset_Iterator();
@@ -2178,12 +2144,17 @@ bool TActionClass::TAction_RESIZE_PLAYER_VIEW(HouseClass * , ObjectClass * , Tri
 /// </summary>
 bool TActionClass::TAction_PLAY_ANIM(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	if ((unsigned)Data.Anim >= (unsigned)AnimTypes.Count()) {
+		DebugString("TAction: play animation %d is not in the animation list\n", (int)Data.Anim);
+		return(false);
+	}
 	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
 	Coord coord = Coord (waypoint);
 	coord.Z = Map.Get_Height_GL(coord);
 	if ( Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge ) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
+	AUTOTEST_LOG("  play animation %s\n", AnimTypes[Data.Anim]->Name());
 	AnimClass * anim = new AnimClass(AnimTypes[Data.Anim], coord);
 	anim->IsInert = true;
 	return(true);
@@ -2293,13 +2264,10 @@ bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClas
 	Map.PendingObject = NULL;
 	Map.PendingHouse = HOUSE_NONE;
 	Map.Set_Cursor_Shape(NULL);
-	Map.Repair_Mode_Control(0);
-	Map.Sell_Mode_Control(0);
-	Map.Power_Mode_Control(0);
-	Map.Waypoint_Mode_Control(0);
-	Map.Place_Beacon_Mode_Control(0);
+	Map.Cancel_Order_Modes(true);
 
 	Lock_Scenario_Input();
+	Scripted_View_Zoom(true);
 
 	return(true);
 }
@@ -2312,6 +2280,7 @@ bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClas
 bool TActionClass::TAction_UNLOCK_INPUT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Unlock_Scenario_Input();
+	Restore_Player_View_Zoom();
 	return(true);
 }
 
@@ -2332,6 +2301,7 @@ bool TActionClass::TAction_CENTER_VIEWPOINT(HouseClass * , ObjectClass * , Trigg
 	}
 
 	TacticalMap->Setup_Trigger_Scroll(coord, Data.Speed);
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	return(true);
 }
 
@@ -2367,6 +2337,9 @@ bool TActionClass::TAction_ZOOM_OUT(HouseClass * , ObjectClass * , TriggerClass 
 	TacticalMap->ZoomFactor = 1;
 	Keyboard->Clear();
 	IgnoreInput = Scen->IsInputLocked;
+	if (!Scen->IsInputLocked) {
+		Restore_Player_View_Zoom();
+	}
 
 	Show_Mouse();
 	Map.Flag_To_Redraw();
@@ -2718,15 +2691,11 @@ bool TActionClass::TAction_ION_CANNON(HouseClass * , ObjectClass * , TriggerClas
 }
 
 
-/// <summary>
-/// Launches a cluster missile at the action's waypoint.
-/// The missile is flown in from the nearest map edge just as the multi missile super
-/// weapon does, so the player sees the usual approach before the impact.
-/// </summary>
-/// <returns>bool; Was the missile launched?</returns>
-bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+// Flies a missile of the super weapon `launcher_name` in from the nearest map edge onto `location`. Returns
+// false when the bullet could not be created.
+static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_name, int max_speed)
 {
-	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
+	Cell waypoint = Scen->Get_Waypoint_Cell(location);
 	Coord coord = Coord (waypoint);
 	coord.Z = Map.Get_Height_GL(coord);
 	if (Map[waypoint].IsUnderBridge) {
@@ -2735,9 +2704,9 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 
 	Cell closest = Map.Closest_Edge_Cell(coord.As_Cell());
 
-	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
+	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name(launcher_name)];
 	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 50, false);
+	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, max_speed, false);
 
 	if (bullet != NULL) {
 		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
@@ -2750,6 +2719,18 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 
 
 /// <summary>
+/// Launches a cluster missile at the action's waypoint.
+/// The missile is flown in from the nearest map edge just as the multi missile super
+/// weapon does, so the player sees the usual approach before the impact.
+/// </summary>
+/// <returns>bool; Was the missile launched?</returns>
+bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	return(Launch_Missile_At_Waypoint(EffectLocation, "MultiLauncher", 50));
+}
+
+
+/// <summary>
 /// Launches a chemical missile at the action's waypoint.
 /// The missile is flown in from the nearest map edge just as the chemical missile super
 /// weapon does, so the player sees the usual approach before the impact.
@@ -2757,26 +2738,7 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 /// <returns>bool; Was the missile launched?</returns>
 bool TActionClass::TAction_CHEM_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
-	Coord coord = Coord (waypoint);
-	coord.Z = Map.Get_Height_GL(coord);
-	if (Map[waypoint].IsUnderBridge) {
-		coord.Z += BRIDGE_LEPTON_HEIGHT;
-	}
-
-	Cell closest = Map.Closest_Edge_Cell(coord.As_Cell());
-
-	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name("ChemLauncher")];
-	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 20, false);
-
-	if (bullet != NULL) {
-		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
-		bullet->Unlimbo(closest, velocity);
-		return(true);
-	}
-
-	return(false);
+	return(Launch_Missile_At_Waypoint(EffectLocation, "ChemLauncher", 20));
 }
 
 
@@ -2855,12 +2817,7 @@ bool TActionClass::TAction_CREATE_BUILDING_AT(HouseClass * , ObjectClass * , Tri
 	Cell cell = Scen->Get_Waypoint_Cell(EffectLocation);
 
 	if (TriggerRect.Y > 0) {
-		ScenarioInit++;
-		BuildingClass * building = new BuildingClass(btype, hptr);
-		bool placed = building != nullptr && building->Unlimbo(Coord(cell));
-		if (!placed) delete building;
-		ScenarioInit--;
-		return(placed);
+		return(hptr->Place_Scenario_Building(btype, cell));
 	}
 
 	BuildingClass * building = new BuildingClass(btype, hptr);
@@ -2889,8 +2846,7 @@ bool TActionClass::TAction_HOUSE_DESTROY_ALL(HouseClass * , ObjectClass * , Trig
 		return(false);
 	}
 
-	hptr->Destroy_All();
-	hptr->MPlayer_Defeated();
+	hptr->Defeat_Now();
 	return(true);
 }
 
@@ -2905,11 +2861,7 @@ bool TActionClass::TAction_MAKE_ELITE(HouseClass * , ObjectClass * , TriggerClas
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->IsActive &&
-				techno->IsDown &&
-				!techno->IsInLimbo &&
-				techno->Tag != NULL &&
-				techno->Tag->Is_Trigger_Attached(trig)) {
+		if (techno->Is_Tagged_By(trig)) {
 
 			techno->Veterancy.Set_Elite(true);
 			success = true;
@@ -2959,11 +2911,7 @@ bool TActionClass::TAction_DELETE_OBJECT(HouseClass * , ObjectClass * , TriggerC
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->IsActive &&
-				techno->IsDown &&
-				!techno->IsInLimbo &&
-				techno->Tag != NULL &&
-				techno->Tag->Is_Trigger_Attached(trig)) {
+		if (techno->Is_Tagged_By(trig)) {
 
 			techno->Delete_Me();
 			success = true;
@@ -3011,9 +2959,10 @@ bool TActionClass::TAction_MAKE_ALLY_ONE_WAY(HouseClass * house, ObjectClass * ,
 		return(false);
 	}
 
-	ScenarioInit++;
-	house->Make_Ally(house2);
-	ScenarioInit--;
+	{
+		ScenarioInitScope const scope;
+		house->Make_Ally(house2);
+	}
 	return(true);
 }
 
@@ -3030,25 +2979,21 @@ bool TActionClass::TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * 
 		return(false);
 	}
 
-	ScenarioInit++;
-	house->Make_Enemy(house2);
-	ScenarioInit--;
+	{
+		ScenarioInitScope const scope;
+		house->Make_Enemy(house2);
+	}
 	return(true);
 }
 
-/// <summary>
-/// Notes in the log that an action this engine does not carry out was skipped.
-/// Each kind of action is noted only the first time it runs, so a trigger that fires every few
-/// frames does not fill the log.
-/// </summary>
-/// <returns>bool; Always true, as the stock game also reports success for an action it skips.</returns>
-bool TActionClass::Not_Implemented(void) const
+// Returns false and runs nothing when the house type names no house.
+static bool Run_On_House_Of(HousesType house_type, void (HouseClass::* action)(void))
 {
-	static bool noted[TACTION_COUNT] = {};
-	if (Action >= TACTION_NONE && Action < TACTION_COUNT && !noted[Action]) {
-		noted[Action] = true;
-		DebugString("TAction: action %d is not implemented and was skipped\n", (int)Action);
+	HouseClass * hptr = House_From_HousesType(house_type);
+	if (hptr == NULL) {
+		return(false);
 	}
+	(hptr->*action)();
 	return(true);
 }
 
@@ -3059,13 +3004,7 @@ bool TActionClass::Not_Implemented(void) const
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Cheer();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Cheer));
 }
 
 
@@ -3075,13 +3014,7 @@ bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * ,
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All));
 }
 
 
@@ -3091,13 +3024,7 @@ bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerCla
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All_Buildings();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Buildings));
 }
 
 
@@ -3107,13 +3034,7 @@ bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , 
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All_Non_Buildings_Non_Naval();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Non_Buildings_Non_Naval));
 }
 
 
@@ -3123,13 +3044,7 @@ bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * ,
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All_Non_Buildings_Naval();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Non_Buildings_Naval));
 }
 
 
@@ -3140,7 +3055,7 @@ bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * 
 /// <returns>bool; Was the building placed?</returns>
 bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 
@@ -3149,11 +3064,10 @@ bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , T
 		return(false);
 	}
 
-	ScenarioInit++;
+	ScenarioInitScope const scope;
 	BuildingClass * building = new BuildingClass(BuildingTypes[type], house);
 	bool placed = building != nullptr && building->Unlimbo(Coord(Scen->Get_Waypoint_Cell(EffectLocation)));
 	if (!placed) delete building;
-	ScenarioInit--;
 	return(placed);
 }
 
@@ -3172,6 +3086,7 @@ bool TActionClass::TAction_JUMP_CAMERA(HouseClass * , ObjectClass * , TriggerCla
 	}
 
 	TacticalMap->Set_Tactical_Position(coord);
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	return(true);
 }
 
@@ -3296,7 +3211,7 @@ HouseClass * TActionClass::Named_House(HouseClass * trigger_house) const
 bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
 	HouseClass * target = Named_House(house);
-	if (house == NULL || target == NULL) {
+	if (target == NULL) {
 		return(false);
 	}
 	if (target != house) {
@@ -3314,7 +3229,7 @@ bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * ,
 bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
 	HouseClass * target = Named_House(house);
-	if (house == NULL || target == NULL) {
+	if (target == NULL) {
 		return(false);
 	}
 	house->Restore_Mind_Controlled_Base(target);
@@ -3330,7 +3245,7 @@ bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, Obje
 bool TActionClass::TAction_RESTORE_STARTING_UNITS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
 	HouseClass * target = Named_House(house);
-	if (house == NULL || target == NULL) {
+	if (target == NULL) {
 		return(false);
 	}
 	target->Restore_Starting_Forces();
@@ -3357,6 +3272,7 @@ bool TActionClass::TAction_PAUSE_GAME(HouseClass * , ObjectClass * , TriggerClas
 bool TActionClass::TAction_JUMP_CAMERA_HOME(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Execute_Command("CenterBase");
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	return(true);
 }
 
@@ -3368,14 +3284,13 @@ bool TActionClass::TAction_JUMP_CAMERA_HOME(HouseClass * , ObjectClass * , Trigg
 /// <returns>bool; Is there an object type of that name?</returns>
 bool TActionClass::TAction_SET_TECH_LEVEL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	for (int index = 0; index < TechnoTypes.Count(); index++) {
-		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
-			TechnoTypes[index]->Level = Extra;
-			for (int house = 0; house < Houses.Count(); house++) {
-				Houses[house]->Production_Status_Changed();
-			}
-			return(true);
+	TechnoTypeClass * const type = TechnoTypeClass::From_Name(Text);
+	if (type != NULL) {
+		type->Level = Extra;
+		for (int house = 0; house < Houses.Count(); house++) {
+			Houses[house]->Production_Status_Changed();
 		}
+		return(true);
 	}
 	return(false);
 }
@@ -3419,11 +3334,7 @@ bool TActionClass::TAction_EVICT_OCCUPIERS(HouseClass * , ObjectClass * , Trigge
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Tag != NULL &&
-				building->Tag->Is_Trigger_Attached(trig)) {
+		if (building->Is_Tagged_By(trig)) {
 
 			building->Eject_Occupants();
 			return(true);
@@ -3455,12 +3366,13 @@ bool TActionClass::TAction_SET_TAB(HouseClass * , ObjectClass * , TriggerClass *
 /// <returns>bool; Is there an object type of that name?</returns>
 bool TActionClass::TAction_FLASH_CAMEO(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	for (int index = 0; index < TechnoTypes.Count(); index++) {
-		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
-			Map.Flash_Cameo(TechnoTypes[index], Extra);
-			return(true);
-		}
+	TechnoTypeClass * const type = TechnoTypeClass::From_Name(Text);
+	if (type != NULL) {
+		AUTOTEST_LOG("  flash cameo %s for %d frames\n", type->Name(), Extra);
+		Map.Flash_Cameo(type, Extra);
+		return(true);
 	}
+	DebugString("TAction: flash cameo names %s, which is not an object type\n", Text);
 	return(false);
 }
 
@@ -3491,9 +3403,6 @@ bool TActionClass::TAction_CLEAR_SMUDGES(HouseClass * , ObjectClass * , TriggerC
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == house && stricmp(building->Class->Name(), Text) == 0) {
@@ -3510,12 +3419,7 @@ bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , T
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
-	house->RadarBlackout = Data.Value;
-	house->IsRadarBlackout = true;
-	house->RecalcRadar = true;
+	house->Start_Radar_Blackout(Data.Value);
 	return(true);
 }
 
@@ -3604,7 +3508,7 @@ bool TActionClass::TAction_SUPER_RESET(HouseClass * house, ObjectClass * , Trigg
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 	house->PreferredTargetCell = Scen->Get_Waypoint_Cell(EffectLocation);
@@ -3619,7 +3523,7 @@ bool TActionClass::TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectC
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_SET_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 	house->PreferredDefensiveCell = Scen->Get_Waypoint_Cell(EffectLocation);
@@ -3634,9 +3538,6 @@ bool TActionClass::TAction_SET_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectC
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_CLEAR_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->PreferredDefensiveCell = CELL_NONE;
 	house->PreferredDefensiveCell2 = CELL_NONE;
 	house->PreferredDefensiveCellStartTime = -100;
@@ -3650,9 +3551,6 @@ bool TActionClass::TAction_CLEAR_DEFENSIVE_TARGET_CELL(HouseClass * house, Objec
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->PreferredTargetCell = CELL_NONE;
 	return(true);
 }
@@ -3665,7 +3563,7 @@ bool TActionClass::TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, Objec
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 	house->CenterOverride = Scen->Get_Waypoint_Cell(EffectLocation);
@@ -3680,9 +3578,6 @@ bool TActionClass::TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass 
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->CenterOverride = CELL_NONE;
 	house->Recalc_Center();
 	return(true);
@@ -3760,12 +3655,7 @@ bool TActionClass::TAction_RESHROUD_AT(HouseClass * , ObjectClass * , TriggerCla
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-	hptr->Restore_Starting_Buildings();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Restore_Starting_Buildings));
 }
 
 
@@ -3778,7 +3668,7 @@ bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_TELEPORT_ALL_TO(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 

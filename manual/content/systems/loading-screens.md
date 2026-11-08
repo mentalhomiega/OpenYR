@@ -61,6 +61,8 @@ The 640 by 480 layout uses the pictures named `LS640` instead of `LS800`. A play
 
 A country can replace the picture, palette, texts, text color and flag of its place with [`File.LoadScreen`](/keys/file.loadscreen/), [`File.LoadScreenPAL`](/keys/file.loadscreenpal/), [`LoadScreenText.Name`](/keys/loadscreentext.name/), [`LoadScreenText.SpecialName`](/keys/loadscreentext.specialname/), [`LoadScreenText.Brief`](/keys/loadscreentext.brief/), [`LoadScreenText.Color`](/keys/loadscreentext.color/) and [`File.Flag`](/keys/file.flag/). A country with its own picture prints only the texts it sets, and uses the same 800 by 600 picture on a 640 by 480 screen.
 
+A Cooperative match on a map that `COOPCAMPMD.INI` lists shows that co-op campaign's picture instead of the country's. The map matches when one of the names in a campaign's `Map1`, `Map2` and later entries begins the scenario's file name, and the first campaign in `[Campaigns]` order that lists it is used. Its `CampaignLoadScreen` is the picture and its `CampaignLoadScreenPallet` the palette, at either screen width. When either entry is empty, the country's picture is shown. A Cooperative match on the 800 by 600 layout prints the description at y 124 instead of y 158, whichever picture it shows. The text, flags and rows are otherwise laid out as for any match.
+
 The screen prints three texts from the string table over the picture, taken from labels fixed for each place:
 
 | Place | Country name | Special unit | Description |

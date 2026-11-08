@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "audio/audiobag.h"
+#include "littleendian.h"
 
 #include <algorithm>
 #include <cstring>
@@ -36,20 +37,6 @@ uint32_t Read32(uint8_t const * p)
 void Put(std::vector<uint8_t> & out, void const * data, size_t size)
 {
 	out.insert(out.end(), (uint8_t const *)data, (uint8_t const *)data + size);
-}
-
-
-void Put16(std::vector<uint8_t> & out, uint16_t v)
-{
-	uint8_t const b[2] = {(uint8_t)v, (uint8_t)(v >> 8)};
-	Put(out, b, 2);
-}
-
-
-void Put32(std::vector<uint8_t> & out, uint32_t v)
-{
-	uint8_t const b[4] = {(uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24)};
-	Put(out, b, 4);
 }
 
 
@@ -139,22 +126,22 @@ std::vector<uint8_t> AudioBagClass::Make_Wav(EntryType const & entry, void const
 	std::vector<uint8_t> out;
 	out.reserve(44 + size);
 	Put(out, "RIFF", 4);
-	Put32(out, (uint32_t)(4 + 8 + fmt_bytes + 8 + size));
+	Put_U32_LE(out, (uint32_t)(4 + 8 + fmt_bytes + 8 + size));
 	Put(out, "WAVE", 4);
 	Put(out, "fmt ", 4);
-	Put32(out, fmt_bytes);
-	Put16(out, format);
-	Put16(out, channels);
-	Put32(out, entry.Rate);
-	Put32(out, byterate);
-	Put16(out, block);
-	Put16(out, bits);
+	Put_U32_LE(out, fmt_bytes);
+	Put_U16_LE(out, format);
+	Put_U16_LE(out, channels);
+	Put_U32_LE(out, entry.Rate);
+	Put_U32_LE(out, byterate);
+	Put_U16_LE(out, block);
+	Put_U16_LE(out, bits);
 	if (adpcm) {
-		Put16(out, 2);
-		Put16(out, samples_per_block);
+		Put_U16_LE(out, 2);
+		Put_U16_LE(out, samples_per_block);
 	}
 	Put(out, "data", 4);
-	Put32(out, (uint32_t)size);
+	Put_U32_LE(out, (uint32_t)size);
 	Put(out, data, size);
 	return(out);
 }

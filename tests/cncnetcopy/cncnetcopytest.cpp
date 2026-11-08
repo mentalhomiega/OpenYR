@@ -305,11 +305,11 @@ int main(void)
 	Check(Read_Text(Join(install, "game.exe")) == stock_game, "the install's game.exe is unchanged");
 	Check(!Exists(Join(install, "OPENTS.INI")) && !Exists(Join(install, CNCNET_MARKER_FILE)), "the install gains no OpenYR files");
 
-	CNCNetStatusType status = CNCNet_Status(install, copy, build);
+	CNCNetStatusType status = CNCNet_Status(copy, build);
 	Check(status.Copy_Present && status.Edits_Intact && status.Engine_Matches, "the status reads a finished copy as intact and current");
 	Check(status.Build_Game_Size == status.Copy_Game_Size, "the status reports the copy's Game.exe size");
-	Check(CNCNet_Status(install, copy, Join(root, "nothing-here")).Copy_Present, "a status from another build folder still finds the copy at its destination");
-	Check(!CNCNet_Status(install, Join(root, "no-copy-here"), build).Copy_Present, "a folder without the marker is not reported as a copy");
+	Check(CNCNet_Status(copy, Join(root, "nothing-here")).Copy_Present, "a status from another build folder still finds the copy at its destination");
+	Check(!CNCNet_Status(Join(root, "no-copy-here"), build).Copy_Present, "a folder without the marker is not reported as a copy");
 	Check(CNCNet_Default_Destination(install, copy, games) == copy, "a build that is a copy defaults to its own folder");
 
 	// A marked copy made from another install is not updated in place, since its install files would be wrong.
@@ -339,14 +339,14 @@ int main(void)
 	broken.replace(broken.find("GameExecutableNames=Game.exe"), 28, "GameExecutableNames=Syringe.exe");
 	fs::permissions(fs::path(Join(copy, "Resources\\ClientDefinitions.ini")), fs::perms::owner_write, fs::perm_options::add);
 	Write_Text(Join(copy, "Resources\\ClientDefinitions.ini"), broken);
-	Check(!CNCNet_Status(install, copy, build).Edits_Intact, "a changed edit makes the status report that the edits are not intact");
+	Check(!CNCNet_Status(copy, build).Edits_Intact, "a changed edit makes the status report that the edits are not intact");
 	{
 		CNCNetJobClass job;
 		Check(job.Start_Copy(CNCNet_Plan(install, copy, build), build), "the repair starts");
 		Finish(job);
 		Check(job.State() == CNCNetJobStateType::Done, "the repair finishes");
 	}
-	Check(CNCNet_Status(install, copy, build).Edits_Intact, "the repair restores the edits");
+	Check(CNCNet_Status(copy, build).Edits_Intact, "the repair restores the edits");
 
 	// The stub launcher at the copy's path is started from the copy folder, and it writes a file there.
 	std::string const stub = Join(Own_Folder(), "cncnetdummylauncher.exe");
@@ -403,6 +403,19 @@ int main(void)
 	Check(cancel_job.State() == CNCNetJobStateType::Cancelled, "a cancelled copy ends as cancelled");
 	Check(!Exists(big_copy), "a cancelled copy removes the folder it created");
 	Check(Exists(Join(big_install, "Maps\\big.bin")), "a cancelled copy leaves the install alone");
+
+	// The hash is FNV-1a 64-bit, so the copy marker's hash matches a standard tool's over the same bytes.
+	std::string const empty_file = Join(root, "hash-empty.bin");
+	std::string const letter_file = Join(root, "hash-a.bin");
+	Write_Text(empty_file, "");
+	Write_Text(letter_file, "a");
+	std::uint64_t hashed_size = 1;
+	std::uint64_t hashed = 0;
+	Check(CNCNet_Hash_File(empty_file, hashed_size, hashed) && hashed_size == 0 && hashed == 0xcbf29ce484222325ull,
+		"hash: an empty file has the FNV-1a 64-bit offset basis");
+	Check(CNCNet_Hash_File(letter_file, hashed_size, hashed) && hashed_size == 1 && hashed == 0xaf63dc4c8601ec8cull,
+		"hash: a one-byte file has the standard FNV-1a 64-bit hash");
+	Check(!CNCNet_Hash_File(Join(root, "hash-missing.bin"), hashed_size, hashed), "hash: a missing file is not hashed");
 
 	std::error_code ec;
 	fs::remove_all(root, ec);

@@ -39,8 +39,10 @@ struct HotkeyEntry
 // The version a keyboard file records in its [Defaults] section. A file without that section is
 // version 1, the version the builds before it wrote. Version 2 files hold the bindings of the
 // version 2 builds. Version 3 adds the slots, the triggers, the control scheme and the timings.
-// Version 4 adds the grid build modifier of the Modern scheme.
-int const KEYBOARD_DEFAULTS_VERSION = 4;
+// Version 4 adds the grid build modifier of the Modern scheme. Version 5 adds the Classic attack-move
+// binding, Ctrl with Shift held. Version 6 adds the replay pause and fast keys. A key of modifier bits
+// alone is written as their number, such as 768.
+int const KEYBOARD_DEFAULTS_VERSION = 6;
 
 // The control schemes a keyboard file can name. Classic is Yuri's Revenge's keys; Modern is the
 // set of current RTS conventions. A file with no scheme is Classic.
@@ -49,15 +51,14 @@ enum KeyboardScheme {
 	KEYBOARD_SCHEME_MODERN = 1,
 };
 
-// The timing of the triggers, in milliseconds. A keyboard file and the controls screen both keep the
-// double-press and hold windows within their range; the controls screen moves them by one step.
+// The timing of the triggers, in milliseconds. A keyboard file keeps the double-press and hold
+// windows within their range.
 int const HOTKEY_DOUBLE_PRESS_MS = 250;
 int const HOTKEY_DOUBLE_PRESS_MIN_MS = 150;
 int const HOTKEY_DOUBLE_PRESS_MAX_MS = 500;
 int const HOTKEY_HOLD_MS = 400;
 int const HOTKEY_HOLD_MIN_MS = 200;
 int const HOTKEY_HOLD_MAX_MS = 800;
-int const HOTKEY_TIMING_STEP_MS = 25;
 int const HOTKEY_HELD_REPEAT_MS = 40;
 
 // The name a keyboard file writes for a trigger, such as "Double".
@@ -90,11 +91,11 @@ std::vector<HotkeyEntry> Legacy_Hotkeys(void);
 
 // Brings the entries of a file of the given version up to the current defaults of its scheme, using
 // Legacy_Hotkeys and Scheme_Hotkeys. A version of KEYBOARD_DEFAULTS_VERSION or later is left unchanged.
-// A version 2 file gets only the Held entries the scheme gives, so a key the player removed stays removed.
+// A file of version 2 to 5 gets only the Held and replay entries that its version predates, so a key the player removed stays removed.
 void Upgrade_Hotkeys(std::vector<HotkeyEntry> & entries, int version, KeyboardScheme scheme);
 
 // The rule behind Upgrade_Hotkeys with the two tables given. An entry still holding its legacy key takes
 // the current key, or is dropped when the current table gives the command no key or the key is held by
 // another entry. A command the entries do not name gets its current key when that key is free. The
-// rule applies only to a version 1 file; a version 2 file gets the Held entries of current, as above.
+// rule applies only to a version 1 file; a version 2 to 5 file gets the Held and replay entries of current that its version predates.
 void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std::vector<HotkeyEntry> const & legacy, std::vector<HotkeyEntry> const & current);

@@ -1,0 +1,104 @@
+; Infantry deaths by warhead InfDeath= (InfantryClass::Destroy 0x517FA0): 1 Die1 (SA), 2 Die2 (HE), 3 InfantryExplode (AP), 4 FlamingInfantry (Fire),
+; 5 electrocution (Electric), 6 head pop (PsiPulse), 7 nuked (NUKE), 8 virus (Virus), 9 mutate or Die2 (Mutate), 10 brute (TRexInfWH).
+; Ten soldiers of ten types stand two cells apart. One by one a soldier is hit with the warhead (a GI is the firer), and the screen is captured 2, 5 and 9 frames later.
+; infstate logs E1 and E2, whose death is their own Die1 and Die2 sequence. Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-deaths.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -Filter "AUTOTEST   infstate|AUTOTEST   hit|Exception"
+5 view 66 70
+6 reveal
+10 own GGI 56 70
+10 own E2 62 68
+10 own ENGINEER 64 68
+10 own SHK 66 68
+10 own CIV2 68 68
+10 own SPY 70 68
+10 own CIV1 62 72
+10 own CIV3 64 72
+10 own TERROR 66 72
+10 own CLEG 68 72
+10 own E1 70 72
+29 infstate E2
+30 hit E2:HE@GGI 400
+30 infstate E2
+31 infstate E2
+32 command ScreenCapture
+32 infstate E2
+33 infstate E2
+34 infstate E2
+35 command ScreenCapture
+35 infstate E2
+36 infstate E2
+37 infstate E2
+38 infstate E2
+39 command ScreenCapture
+39 infstate E2
+40 infstate E2
+41 infstate E2
+42 infstate E2
+43 infstate E2
+44 infstate E2
+45 infstate E2
+46 infstate E2
+47 infstate E2
+48 infstate E2
+49 infstate E2
+50 infstate E2
+50 hit ENGINEER:AP@GGI 400
+51 infstate E2
+52 command ScreenCapture
+55 command ScreenCapture
+59 command ScreenCapture
+70 hit SHK:Fire@GGI 400
+72 command ScreenCapture
+75 command ScreenCapture
+79 command ScreenCapture
+90 hit CIV2:Electric@GGI 400
+92 command ScreenCapture
+95 command ScreenCapture
+99 command ScreenCapture
+110 hit SPY:PsiPulse@GGI 400
+112 command ScreenCapture
+115 command ScreenCapture
+119 command ScreenCapture
+130 hit CIV1:NUKE@GGI 400
+132 command ScreenCapture
+135 command ScreenCapture
+139 command ScreenCapture
+150 hit CIV3:Virus@GGI 400
+152 command ScreenCapture
+155 command ScreenCapture
+159 command ScreenCapture
+170 hit TERROR:Mutate@GGI 400
+172 command ScreenCapture
+175 command ScreenCapture
+179 command ScreenCapture
+190 hit CLEG:TRexInfWH@GGI 400
+192 command ScreenCapture
+195 command ScreenCapture
+199 command ScreenCapture
+209 infstate E1
+210 hit E1:SA@GGI 400
+210 infstate E1
+211 infstate E1
+212 command ScreenCapture
+212 infstate E1
+213 infstate E1
+214 infstate E1
+215 command ScreenCapture
+215 infstate E1
+216 infstate E1
+217 infstate E1
+218 infstate E1
+219 command ScreenCapture
+219 infstate E1
+220 infstate E1
+221 infstate E1
+222 infstate E1
+223 infstate E1
+224 infstate E1
+225 infstate E1
+226 infstate E1
+227 infstate E1
+228 infstate E1
+229 infstate E1
+230 infstate E1
+231 infstate E1
+300 quit

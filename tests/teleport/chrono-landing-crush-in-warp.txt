@@ -1,0 +1,18 @@
+; A chronosphere warp clears its landing cell when the unit leaves its own cell, 60 frames after the warp is fired, and not when
+; it is fired (gamemd stage 2, 0x71981E with 0x718260). A vehicle that drives onto the landing cell during the wait is destroyed.
+; A Rhino (HTNK) at 40,40 is sphered and warped to 56,40, which is empty at frame 70. A Grizzly (MTNK) is put on 56,40 at frame 100.
+; Expected: the Grizzly is listed at frame 110 and gone at frame 150; "chrono landed HTNK cell 56,40 frame 132" and the Rhino is
+; listed at frame 200.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/chrono-landing-crush-in-warp.txt -Seconds 120 -Filter "AUTOTEST   (where|chrono)|AUTOTEST frame|Exception"
+20 own GAPOWR 46 36
+30 own HTNK 40 40
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 56 40
+100 own MTNK 56 40
+110 where MTNK
+150 where MTNK
+200 where HTNK
+230 quit

@@ -22,6 +22,7 @@
 #include "cell.h"
 #include "combat.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "draw.h"
 #include "house.h"
 #include "inline.h"
@@ -32,6 +33,7 @@
 #include "rect.h"
 #include "rules.h"
 #include "savestream.h"
+#include "scenario.h"
 #include "scheme.h"
 #include "sun.h"
 #include "tactical.h"
@@ -82,16 +84,7 @@ VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & co
 		BounceClass::Init(center, Class->Elasticity, 1.4f, 0.0, velocity, rotation);
 
 	} else {
-		// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x7493B0).
-		int const y_draw = abs(Scen->RandomNumber);
-		int const x_draw = abs(Scen->RandomNumber);
-		Vector3 velocity((x_draw % int(Class->MaxXYVel + Class->MaxXYVel)) - Class->MaxXYVel,
-						 (y_draw % int(Class->MaxXYVel + Class->MaxXYVel)) - Class->MaxXYVel, Class->MinZVel);
-
-		if (velocity.X < -velocity.Y) {
-			velocity.X = -velocity.X;
-			velocity.Y = -velocity.Y;
-		}
+		Vector3 velocity = Random_Meteor_Velocity(Class->MaxXYVel, Class->MinZVel);
 
 		ECCounter -= abs(Scen->RandomNumber % 20);
 		int x = coord.X - ECCounter * velocity.X;
@@ -104,7 +97,7 @@ VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & co
 	}
 
 	if (Class->StartSound != VOC_NONE) {
-		Sound_Effect(Class->StartSound, coord);
+		Play_If_In_Range(Class->StartSound, Center_Coord(), &StartSoundHandle, true);
 	}
 
 	if (Class->AttachedSystem) {
@@ -142,6 +135,7 @@ VoxelAnimClass::~VoxelAnimClass(void)
 {
 	Detach_This_From_All(this);
 	VoxelAnims.Delete(this);
+	StartSoundHandle.Stop();
 	if (AttachedParticleSys != NULL) {
 		AttachedParticleSys->Delete_Me();
 		AttachedParticleSys = NULL;
@@ -297,6 +291,15 @@ void VoxelAnimClass::AI(void)
 	}
 
 	/*
+	 * The start sound is re-aimed at the current place on every update, so it follows the
+	 * animation as it flies. A sound that has ended is started again, as gamemd's
+	 * VoxelAnimClass::Update does through AudioController::PlayEvent (0x749F30, 0x750D40).
+	 */
+	if (Class->StartSound != VOC_NONE) {
+		Follow_Sound(Class->StartSound, Center_Coord(), &StartSoundHandle);
+	}
+
+	/*
 	 * Count down the lifetime timer.
 	 */
 	if (ECCounter) {
@@ -333,7 +336,7 @@ void VoxelAnimClass::AI(void)
 		} else if (Class->IsMeteor) {
 			new AnimClass(*(&Rule->SplashList[0] + Rule->SplashList.Count() - 1), Coord(Position) + Coord(0, 0, 5), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
 		} else {
-			if (Rule->Wake != NULL) new AnimClass(Rule->Wake, Coord(Position), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
+			Spawn_Wake(Coord(Position));
 			new AnimClass(Rule->SplashList[0], Position + Coord(0, 0, 10), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
 		}
 
@@ -584,4 +587,41 @@ ObjectTypeClass const * VoxelAnimClass::Class_Of(void) const
 Cell const * VoxelAnimClass::Occupy_List(bool placement) const
 {
 	return(NULL);
+}
+
+
+
+int Throw_Voxel_Debris(TypeList<VoxelAnimTypeClass const *> const & types, TypeList<int> const & maximums, int & remaining, Coord const & origin, HouseClass * house)
+{
+	int const type_count = types.Count();
+	int thrown = 0;
+
+	// A missing or non-positive figure throws nothing. With no figure above zero, gamemd's loop never ends,
+	// so this port throws nothing.
+	auto figure_of = [&maximums](int type) {
+		return type < maximums.Count() ? std::max(maximums[type], 0) : 0;
+	};
+	bool can_throw = false;
+	for (int type = 0; type < type_count; type++) {
+		can_throw = can_throw || figure_of(type) > 0;
+	}
+
+	int type = 0;
+	while (remaining > 0 && can_throw) {
+		// Two's complement absolute value, as gamemd computes it (BulletClass::Detonate, 0x469D7A). A draw of
+		// INT_MIN stays negative, so its count is never positive and it throws nothing.
+		int const draw = Scen->RandomNumber();
+		int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
+		int count = magnitude % (figure_of(type) + 1);
+		if (remaining <= count) {
+			count = remaining;
+		}
+		for (int piece = 0; piece < count; piece++) {
+			new VoxelAnimClass(types[type], origin, house);
+		}
+		thrown += count;
+		remaining -= count;
+		type = (type + 1) % type_count;
+	}
+	return thrown;
 }

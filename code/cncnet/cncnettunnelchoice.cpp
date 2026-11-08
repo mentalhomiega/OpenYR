@@ -1,0 +1,116 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#include "cncnet/cncnettunnelchoice.h"
+
+#include "cncnet/cncnethttp.h"
+#include "diskfile.h"
+
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iterator>
+#include <mutex>
+#include <thread>
+
+
+struct CnCNetTunnelChoiceClass::SharedType
+{
+	std::mutex Lock;
+	bool Done = false;
+	bool ListReady = false;
+	std::vector<CnCNetTunnelEntryType> Listed;
+	std::vector<CnCNetTunnelEntryType> Tunnels;
+	std::string Note;           // Where the list came from, or why it did not.
+};
+
+
+CnCNetTunnelChoiceClass::CnCNetTunnelChoiceClass(void) :
+	Shared(std::make_shared<SharedType>())
+{
+}
+
+
+void CnCNetTunnelChoiceClass::Start(std::string const & url, std::string const & cache_file)
+{
+	std::shared_ptr<SharedType> shared = Shared;
+	std::thread([shared, url, cache_file](void) {
+		std::string text;
+		std::string error;
+		std::string note;
+		if (CnCNet_Http_Get(url, 10000, 1 << 20, text, error) && !CnCNet_Parse_Tunnel_List(text).empty()) {
+			if (!cache_file.empty()) {
+				// A list written whole under another name replaces the cache, so a thread that reads the cache never sees half a list.
+				std::filesystem::path const temporary = cache_file + "." + std::to_string(std::hash<std::thread::id>()(std::this_thread::get_id())) + ".tmp";
+				{
+					std::ofstream file(temporary, std::ios::binary | std::ios::trunc);
+					file << text;
+				}
+				std::error_code ignored;
+				std::filesystem::rename(temporary, cache_file, ignored);
+				std::filesystem::remove(temporary, ignored);
+			}
+		} else {
+			note = error.empty() ? "The tunnel list from " + url + " had no usable tunnel." : error;
+			text.clear();
+			if (!cache_file.empty() && Read_Disk_File(cache_file, text)) {
+				note += " Using the list kept from the last good download.";
+			}
+		}
+
+		std::vector<CnCNetTunnelEntryType> tunnels = CnCNet_Parse_Tunnel_List(text);
+		{
+			std::lock_guard<std::mutex> guard(shared->Lock);
+			shared->Listed = tunnels;
+			shared->Note = note;
+			shared->ListReady = true;
+		}
+		CnCNet_Ping_Tunnels(tunnels, 2, 1000, 12);
+
+		std::lock_guard<std::mutex> guard(shared->Lock);
+		shared->Tunnels = std::move(tunnels);
+		shared->Done = true;
+	}).detach();
+}
+
+
+CnCNetTunnelChoiceType CnCNetTunnelChoiceClass::Poll(int players) const
+{
+	CnCNetTunnelChoiceType choice;
+	std::lock_guard<std::mutex> guard(Shared->Lock);
+	choice.Done = Shared->Done;
+	if (!Shared->Done) {
+		choice.Text = "Looking for the nearest CnCNet tunnel...";
+		return(choice);
+	}
+	std::optional<std::size_t> const best = CnCNet_Pick_Tunnel(Shared->Tunnels, players);
+	if (!best.has_value()) {
+		choice.Text = "No CnCNet tunnel answered. " + Shared->Note;
+		return(choice);
+	}
+	CnCNetTunnelEntryType const & tunnel = Shared->Tunnels[*best];
+	choice.Found = true;
+	choice.Host = tunnel.Host;
+	choice.Port = tunnel.Port;
+	choice.Name = tunnel.Name;
+	choice.PingMS = tunnel.PingMS;
+	choice.Text = "Tunnel " + tunnel.Name + " (" + tunnel.Host + ":" + std::to_string(tunnel.Port) + "), " + std::to_string(tunnel.PingMS) + " ms.";
+	return(choice);
+}
+
+
+CnCNetTunnelListType CnCNetTunnelChoiceClass::List(void) const
+{
+	CnCNetTunnelListType list;
+	std::lock_guard<std::mutex> guard(Shared->Lock);
+	list.Ready = Shared->ListReady;
+	list.Tunnels = Shared->Listed;
+	list.Note = Shared->Note;
+	return(list);
+}

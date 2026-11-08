@@ -73,6 +73,20 @@ class BeaconManagerClass
 		// The owner is the local player or an ally, and the owner is not defeated.
 		bool Visible_To_Player(BeaconClass const * beacon) const;
 
+		// Calls fn(house, beacon) for each beacon the local player can see, in house and slot order.
+		template<typename Fn>
+		void For_Each_Visible(Fn && fn) const
+		{
+			for (int house = 0; house < MAX_PLAYERS; house++) {
+				for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
+					BeaconClass * beacon = Get(house, slot);
+					if (beacon != NULL && Visible_To_Player(beacon)) {
+						fn(house, *beacon);
+					}
+				}
+			}
+		}
+
 		bool Has_Visible(void) const;
 
 		// Removes every beacon. A new scenario starts with none.

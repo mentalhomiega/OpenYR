@@ -1,0 +1,27 @@
+; Terror Drone kills a soldier: a player's Terror Drone (DRON) infects a computer E1 four cells east at frame 160. The first bite takes the
+; soldier's whole strength, so the drone comes out as the soldier dies. An order to move it (order DRON 60 66) is given on frame 192, when the drone is out. Before the fix the order was dropped and the drone stayed in mission Guard for three ROFs; now mission Move shows on frame 193.
+; gamemd's victim-death exit (ParasiteClass::PointerExpired, 0x62A260) does not paralyze the parasite, so the order is taken at once.
+; Run: scripts/run_autotest.ps1 -Build agent22 -Script E:/Claude ra2 decomp/src-agent22/tests/autotest/drone-pause-infantry.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+1 view 62 62
+2 zoom 2.5
+3 reveal
+10 own DRON 60 62
+150 spawn E1 64 62
+160 strike DRON 64 62
+165 where DRON
+168 where DRON
+171 where DRON
+174 where DRON
+177 where DRON
+180 where DRON
+183 where DRON
+186 where DRON
+189 where DRON
+192 where DRON
+192 order DRON 60 66
+193 where DRON
+194 where DRON
+196 where DRON
+200 where DRON
+210 where DRON
+230 where DRON

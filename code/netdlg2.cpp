@@ -40,6 +40,7 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netglobal.h"
+#include "netsemantic.h"
 #include "netshare.h"
 #include "playercolor.h"
 #include "nettiming.h"
@@ -74,7 +75,7 @@ static void Get_Join_Responses(void);
 // The mods this machine runs, as the join packet carries them.
 static ModSync::Signature Local_Mod_Signature(void)
 {
-	return(ModSync::Describe(Active_Mods()));
+	return(ModSync::Describe_Active());
 }
 
 // Reads the mods a packet field names. A field that is not a signature counts as no mods.
@@ -306,12 +307,52 @@ void Net2Request_House_And_Color(int house, int color, unsigned int custom)
 }
 
 
+// The host's network choices for the LAN game being set up. The host sets them with chat commands and sends them
+// in NET_GO; a guest keeps what NET_GO carried. Every lobby that opens starts from the defaults.
+static NetTiming::HostNetworkOptions Lan_Network_Options;
+
+
+/// <summary>
+/// Puts the LAN game's network choices into the session, after PregameSetup has reset the protocol.
+/// </summary>
+static void Net2Apply_Network_Options(void)
+{
+	Session.NetworkTimingChoice = Lan_Network_Options.Timing;
+	Session.CommProtocol = Lan_Network_Options.Protocol == 0 ? COMM_PROTOCOL_SINGLE_NO_COMP : COMM_PROTOCOL_MULTI_E_COMP;
+}
+
+
+static void Net2_Set_Start_Timing(void)
+{
+	PregameSetup();
+	Net2Apply_Network_Options();
+
+	if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
+		NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
+		Session.FrameSendRate = initial.FrameSendRate;
+		Session.MaxAhead = initial.MaxAhead;
+	} else {
+		Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
+		Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
+	}
+}
+
+
 /// <summary>
 /// Shows a line of chat locally and sends it to the other players in the game this machine
 /// hosts or has joined, or otherwise to every contact in the game browser.
 /// </summary>
 void Net2Send_Chat(char const * text)
 {
+	// The host's network commands set the match's timing and are not sent as chat.
+	if (Net2LobbyPhase == NET2_LOBBY_HOST && text != NULL && text[0] == '/') {
+		NetTiming::HostCommandResult const result = NetTiming::Apply_Host_Command(text, Lan_Network_Options);
+		if (result.Recognised) {
+			PMessagePrintf(ColorSystem, "%s", result.Message.c_str());
+			return;
+		}
+	}
+
 	GlobalPacketType gpacket;
 	memset(&gpacket, 0, sizeof(gpacket));
 
@@ -339,12 +380,7 @@ static void Net2Refresh_Preview(void)
 		return;
 	}
 
-	delete MultiplayerMapPreview;
-	MultiplayerMapPreview = new MapPreviewClass;
-	MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-	if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-		Update_Network_Dialog_Preview();
-	}
+	Show_Random_Map_Preview();
 }
 
 
@@ -581,9 +617,7 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 			Seed = rand();
 
 			Restore_Lan_Map();
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST lan host map %s\n", Session.ScenarioFileName);
-			}
+			AUTOTEST_LOG("lan host map %s\n", Session.ScenarioFileName);
 			Update_Network_Dialog_Preview();
 
 			if (Session.Players.Count() > 0) {
@@ -617,6 +651,9 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 {
 	Net2_Clear_Chat_Log();
+	if (phase == NET2_LOBBY_HOST || phase == NET2_LOBBY_GUEST) {
+		Lan_Network_Options = NetTiming::HostNetworkOptions();
+	}
 
 	Net2LobbyPhase = phase;
 	Net2_Enter_Lobby(phase);
@@ -854,11 +891,7 @@ int Net2SetHouseAndColor(char *who, int house, int color, unsigned int custom)
 		}
 
 	if (offset == 0) {
-		Session.PrefColor = color;
-		Session.PrefCustomColor = custom;
-		Session.ColorIdx=color;
-		Session.CustomColor = custom;
-		Session.House=house;
+		Session.Set_Local_Look(house, color, custom);
 	}
 
 	return(retval);
@@ -1082,16 +1115,7 @@ bool Net2Remote_Connect(void)
 			delete MultiplayerMapPreview;
 			MultiplayerMapPreview = NULL;
 
-			PregameSetup();
-
-			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
-				Session.FrameSendRate = initial.FrameSendRate;
-				Session.MaxAhead = initial.MaxAhead;
-			} else {
-				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
-				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
-			}
+			Net2_Set_Start_Timing();
 
 			break;
 		}
@@ -1106,16 +1130,7 @@ bool Net2Remote_Connect(void)
 				MultiplayerMapPreview = NULL;
 			}
 
-			PregameSetup();
-
-			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
-				Session.FrameSendRate = initial.FrameSendRate;
-				Session.MaxAhead = initial.MaxAhead;
-			} else {
-				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
-				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
-			}
+			Net2_Set_Start_Timing();
 
 			Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 2, (unsigned int)Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
 
@@ -1123,6 +1138,7 @@ bool Net2Remote_Connect(void)
 			memset(&gpacket, 0, sizeof(gpacket));
 			gpacket.Command = NET_GO;
 			gpacket.ResponseTime.OneWay = Session.MaxAhead;
+			gpacket.ResponseTime.Options = NetTiming::Pack_Host_Options(Lan_Network_Options);
 			for (int i = 1; i < Session.Players.Count(); i++) {
 				Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &(Session.Players[i]->Address));
 			}
@@ -2197,6 +2213,23 @@ static void Get_Join_Responses(void)
 		//------------------------------------------------------------------------
 		else if (Session.GPacket.Command==NET_GO || Session.GPacket.Command==NET_LOADGAME) {
 			if ( JoinState==JOIN_CONFIRMED) {
+				if (Session.GPacket.Command == NET_GO) {
+					// A host that chose nothing sends the short packet, which leaves these at the defaults.
+					NetTiming::HostNetworkOptions received_options;
+					if (Session.GPacketlen >= static_cast<int>(offsetof(GlobalPacketType, ResponseTime) + sizeof(GlobalPacketType::ResponseTime))) {
+						std::optional<NetTiming::HostNetworkOptions> const unpacked = NetTiming::Unpack_Host_Options(Session.GPacket.ResponseTime.Options);
+						if (!unpacked) {
+							DebugString("Dropped a start packet with unreadable network options.\n");
+							continue;
+						}
+						received_options = *unpacked;
+					}
+					Lan_Network_Options = received_options;
+					if (!received_options.Is_Default()) {
+						PMessagePrintf(ColorSystem, "The host chose: %s.", NetTiming::Describe_Host_Options(received_options).c_str());
+					}
+					Net2Apply_Network_Options();
+				}
 				if (Session.GPacket.Command == NET_GO && Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
 					int const max_ahead = Session.GPacket.ResponseTime.OneWay;
 					if (max_ahead < 0) {
@@ -2213,12 +2246,12 @@ static void Get_Join_Responses(void)
 					Session.MaxAhead = received.MaxAhead;
 				} else {
 					// The largest lead NetSemantic::Timing_Values_Are_Valid accepts.
-					constexpr int LEGACY_MAX_AHEAD_LIMIT = 250;
-					if (Session.GPacket.ResponseTime.OneWay < 0 || Session.GPacket.ResponseTime.OneWay > LEGACY_MAX_AHEAD_LIMIT) {
-						DebugString("Dropped a start packet with a lead of %d frames.\n", Session.GPacket.ResponseTime.OneWay);
+					int const lead = Session.GPacket.ResponseTime.OneWay;
+					if (lead < 0 || static_cast<unsigned int>(lead) > NetSemantic::LEGACY_MAX_AHEAD_LIMIT) {
+						DebugString("Dropped a start packet with a lead of %d frames.\n", lead);
 						continue;
 					}
-					Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
+					Session.MaxAhead = lead;
 				}
 				Session.HostAddress = Session.GAddress;
 				Session.NumPlayers = Session.Players.Count();

@@ -31,6 +31,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
+		virtual void Link_To_Object(void *pointer) override;
 
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
@@ -47,13 +48,14 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker.Has_Locomotor());}
 		bool Stays_Aloft(void) const;
 		bool Hovers_At_Stop(void) const;
 
 		// Speeds in leptons per game frame, and the flight state's name, for the autotest speed probe.
 		double Current_Speed(void) const;
 		double Target_Speed(void) const;
+		DirType Facing_Current(void) const;
 		char const * State_Name(void) const;
 
 		/*---------------------------------------------------------------------
@@ -63,14 +65,20 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		void Process_Ascent(void);
 		void Process_Hover(void);
 		void Arrive_Aloft(void);
+		bool Let_Go_At_Arrival(void);
+		bool Cell_Claimed_By_Other(Cell const & cell) const;
+		bool Relocate_If_Claimed(Cell const & cell);
 		void Process_Cruise(void);
 		void Process_Descent(void);
-		void Process_Unknown(void);
+		void Process_Crashing(void);
+		void Begin_Crash(void);
 		void Movement_AI(void);
 		Coord Closest_Free_Spot(Coord const & to) const;
 		int Desired_Flight_Level(void) const;
 
 	private:
+		void Drop_Landing_Claim(void);
+
 		/*
 		 * This is the coordinate the jumpjet is flying to, or COORD_NONE if it has been
 		 * given nowhere to go. A jumpjet pays no attention to the path list and travels
@@ -96,7 +104,8 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 			HOVERING,
 			CRUISING,
 			DESCENDING,
-			UNKNOWN,
+			CRASHING,
+			CRASHED,
 		} CurrentState;
 
 		/*
@@ -113,6 +122,13 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		 */
 		double CurrentSpeed;
 		double TargetSpeed;
+
+		/*
+		 * This is how many leptons per game frame a crashing vehicle drops by. It starts at the
+		 * type's JumpjetCrash when the vehicle is let go in the air, and a held vehicle's speed
+		 * grows by one lepton each frame until it lands.
+		 */
+		double CrashSpeed;
 
 		/*
 		 * This is the altitude the jumpjet is trying to hold, expressed in leptons above the
@@ -136,5 +152,5 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		bool IsLanding;
 
 		// The unit's own locomotor, carried while a locomotor warhead's holder controls the unit.
-		std::unique_ptr<ILocomotion> Piggybacker;
+		PiggybackSlot Piggybacker;
 };

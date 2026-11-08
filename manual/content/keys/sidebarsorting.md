@@ -1,6 +1,6 @@
 ---
 key: SidebarSorting
-summary: Keeps each sidebar strip in a fixed order that depends only on the rules.
+summary: Keeps each sidebar strip in a fixed order.
 see_also: ["system:sidebar"]
 when_omitted:
   kind: value

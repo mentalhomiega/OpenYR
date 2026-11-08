@@ -47,10 +47,6 @@ class UIVersionViewClass : public UIRmlViewClass
 		{
 		}
 
-		virtual void Sync(void) override
-		{
-		}
-
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{

@@ -1,0 +1,30 @@
+; A player's Typhoon sub on the lake of XMP08T2 is grabbed by an enemy Giant Squid three cells off. While the sub is
+; held and above its red band, it is given click moves (planmove) to water cells. A held sub takes no move order, so
+; its mission stays Guard or Attack and it does not move. Sub and squid are logged with where every 50 frames.
+30 command CenterBase
+300 grantunit SUB 85 65
+301 enemy SQD 86 68
+302 select SUB
+600 where SUB
+600 where SQD
+650 planmove SUB 80 66
+650 where SUB
+650 where SQD
+700 where SUB
+700 where SQD
+750 where SUB
+750 where SQD
+800 planmove SUB 84 70
+800 where SUB
+800 where SQD
+850 where SUB
+850 where SQD
+900 planmove SUB 78 66
+900 where SUB
+900 where SQD
+950 where SUB
+950 where SQD
+1000 where SUB
+1000 where SQD
+1050 dump
+1100 quit

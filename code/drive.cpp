@@ -70,6 +70,7 @@
 #include "rules.h"
 #include "saveload.h"
 #include "savestream.h"
+#include "spawnman.h"
 #include "tube.h"
 #include "unit.h"
 #include "unittype.h"
@@ -157,16 +158,7 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRocking);
 	stream.Serialize(IsLocomotorUnlocked);
 
-	bool haspiggy = (Piggybacker != NULL);
-	stream.Serialize(haspiggy);
-
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybacker.get());
-		} else {
-			Piggybacker = Load_Locomotor(stream);
-		}
-	}
+	Piggybacker.Serialize(stream);
 	// TrackControl -- constant tables shared by every driver.
 	// RawTracks
 	// Track1 - Track13
@@ -182,11 +174,7 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 /// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
 bool DriveLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybacker != nullptr) {
-		return(false);
-	}
-	Piggybacker = std::move(carried);
-	return(true);
+	return(Piggybacker.Begin(carried));
 }
 
 
@@ -198,7 +186,7 @@ bool DriveLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carrie
 /// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
 std::unique_ptr<ILocomotion> DriveLocomotionClass::End_Piggyback(void)
 {
-	return(std::move(Piggybacker));
+	return(Piggybacker.End());
 }
 
 
@@ -211,7 +199,7 @@ std::unique_ptr<ILocomotion> DriveLocomotionClass::End_Piggyback(void)
 /// <returns>bool; Is it safe to end the piggyback?</returns>
 bool DriveLocomotionClass::Is_Ok_To_End(void)
 {
-	if (!Is_Moving() && (Piggybacker != NULL && IsLocomotorUnlocked)) {
+	if (!Is_Moving() && (Piggybacker.Has_Locomotor() && IsLocomotorUnlocked)) {
 		return(true);
 	}
 	return(false);
@@ -417,11 +405,18 @@ BOOL DriveLocomotionClass::Is_Angled(void) const
 /// </summary>
 /// <param name="key">Pointer to the voxel cache key to be updated. May be NULL.</param>
 /// <returns>Returns with the matrix the unit is to be rendered through.</returns>
-Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
+Matrix3D DriveLocomotionClass::Build_Draw_Matrix(int *key, bool matrix)
 {
 	Matrix3D m;
 
 	if (!Is_Angled()) {
+		if (!matrix) {
+			if (key) {
+				*key = -1;
+			}
+			return(Matrix3D(true));
+		}
+
 		Matrix3D m1, m2;
 		m1.Make_Identity();
 		m2.Make_Identity();
@@ -458,7 +453,7 @@ Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
 			*key = -1;
 		}
 
-		Matrix3D basemtx(BASECLASS::Draw_Matrix(key));
+		Matrix3D basemtx(BASECLASS::Build_Draw_Matrix(key, true));
 		Matrix3D slopemtx = Get_Slope_Matrix();
 		m = (((m1 * slopemtx) * basemtx) * m2);
 		return(m);
@@ -470,7 +465,12 @@ Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
 		*key = keybase + CurrentRamp;
 	}
 
-	Matrix3D basemtx(BASECLASS::Draw_Matrix(key));
+	if (!matrix) {
+		BASECLASS::Build_Draw_Matrix(key, false);
+		return(Matrix3D(true));
+	}
+
+	Matrix3D basemtx(BASECLASS::Build_Draw_Matrix(key, true));
 	Matrix3D slopemtx = Get_Slope_Matrix();
 	m = (slopemtx * basemtx);
 	return(m);
@@ -515,6 +515,11 @@ void DriveLocomotionClass::Unlimbo(void)
 bool DriveLocomotionClass::Process(void)
 {
 	Set_Slope(LinkedTo->Get_Cell_Ptr()->Ramp);
+
+	// gamemd 0x4B2630 returns true while CountLaunchingSpawns is nonzero; the Drive caller's use of that result is not fully traced, so MissileLaunchHoldsMove can turn this off.
+	if (Rule->IsMissileLaunchHoldsMove && DestinationCoord != COORD_NONE && LinkedTo->SpawnManager && LinkedTo->SpawnManager->Launching_Count() > 0) {
+		return(false);
+	}
 
 	/*
 	**	If the unit is following a track, then continue
@@ -602,9 +607,7 @@ bool DriveLocomotionClass::Process(void)
 
 	if (Is_Moving_Now() && (Frame % 10) == 0) {
 		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER) {
-			if (Rule->Wake != NULL) {
-				new AnimClass(Rule->Wake, LinkedTo->PositionCoord);
-			}
+			Spawn_Wake(LinkedTo->PositionCoord);
 		}
 	}
 
@@ -1293,6 +1296,48 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 }
 
 
+std::optional<bool> DriveLocomotionClass::Scatter_Friendly_Blockage(FacingType dir)
+{
+	Cell cell = Adjacent_Cell(LinkedTo->Center_Coord().As_Cell(), dir);
+	if (Map.In_Local_Radar(cell)) {
+		MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], dir, LinkedTo->Get_Cell_Height());
+
+		if (ok == MOVE_CLOSED_GATE) {
+			Incoming(cell);
+		} else if (ok == MOVE_TEMP) {
+			CellClass * cellptr = &Map[cell];
+			TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
+			if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
+
+				/*
+				**	If the target can be told to get out of the way, only bother
+				**	to do so if we aren't very close to the target and this
+				**	object can just say "good enough" and stop here.
+				*/
+				if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
+					if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
+						if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
+							Stop_Driver();
+							return(Abandon_Navigation());
+						}
+					}
+				}
+
+				bool is_bridge;
+				if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
+					is_bridge = false;
+				} else {
+					is_bridge = true;
+				}
+				cellptr->Incoming(COORD_NONE, true, true, is_bridge);
+			}
+		}
+	}
+
+	return(std::nullopt);
+}
+
+
 /***********************************************************************************************
  * DriveClass::Start_Of_Move -- Tries to get a unit to advance toward cell.                    *
  *                                                                                             *
@@ -1394,39 +1439,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 					**	blocked by a friendly temporary blockage, then cause that blockage
 					**	to scatter.
 					*/
-					Cell cell = Adjacent_Cell(LinkedTo->Center_Coord().As_Cell(), LinkedTo->PrimaryFacing.Current().As_Dir8());
-					if (Map.In_Local_Radar(cell)) {
-						MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], LinkedTo->PrimaryFacing.Current().As_Dir8(), LinkedTo->Get_Cell_Height());
-						if (ok == MOVE_CLOSED_GATE) {
-							Incoming(cell);
-						} else if (ok == MOVE_TEMP) {
-							CellClass * cellptr = &Map[cell];
-							TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
-							if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
-
-								/*
-								**	If the target can be told to get out of the way, only bother
-								**	to do so if we aren't very close to the target and this
-								**	object can just say "good enough" and stop here.
-								*/
-								if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
-									if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
-										if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
-											Stop_Driver();
-											return(Abandon_Navigation());
-										}
-									}
-								}
-
-								bool is_bridge;
-								if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
-									is_bridge = false;
-								} else {
-									is_bridge = true;
-								}
-								cellptr->Incoming(COORD_NONE, true, true, is_bridge);
-							}
-						}
+					if (std::optional<bool> done = Scatter_Friendly_Blockage(LinkedTo->PrimaryFacing.Current().As_Dir8())) {
+						return(*done);
 					}
 
 					if (LinkedTo->TryTryAgain > 0) {
@@ -1475,40 +1489,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 		**	blocked by a friendly temporary blockage, then cause that blockage
 		**	to scatter.
 		*/
-		Cell cell = Adjacent_Cell(LinkedTo->Center_Coord().As_Cell(), LinkedTo->Path[0]);
-		if (Map.In_Local_Radar(cell)) {
-			MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], LinkedTo->Path[0], LinkedTo->Get_Cell_Height());
-
-			if (ok == MOVE_CLOSED_GATE) {
-				Incoming(cell);
-			} else if (ok == MOVE_TEMP) {
-				CellClass * cellptr = &Map[cell];
-				TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
-				if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
-
-					/*
-					**	If the target can be told to get out of the way, only bother
-					**	to do so if we aren't very close to the target and this
-					**	object can just say "good enough" and stop here.
-					*/
-					if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
-						if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
-							if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
-								Stop_Driver();
-								return(Abandon_Navigation());
-							}
-						}
-					}
-
-					bool is_bridge;
-					if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
-						is_bridge = false;
-					} else {
-						is_bridge = true;
-					}
-					cellptr->Incoming(COORD_NONE, true, true, is_bridge);
-				}
-			}
+		if (std::optional<bool> done = Scatter_Friendly_Blockage(LinkedTo->Path[0])) {
+			return(*done);
 		}
 
 		LinkedTo->TryTryAgain = FootClass::PATH_RETRY;
@@ -2840,13 +2822,35 @@ DriveLocomotionClass::TrackType const DriveLocomotionClass::Track13[] = {
 	{{0,0},DIR_E}
 };
 
+// The drive onto the middle of a tank bunker. The track starts 120 leptons from the middle on each axis and runs
+// northeast; the control table turns it to the other three diagonals.
+DriveLocomotionClass::TrackType const DriveLocomotionClass::Track14[] = {
+	{{-120,120},DIR_NE},
+	{{-112,112},DIR_NE},
+	{{-104,104},DIR_NE},
+	{{-96,96},DIR_NE},
+	{{-88,88},DIR_NE},
+	{{-80,80},DIR_NE},
+	{{-72,72},DIR_NE},
+	{{-64,64},DIR_NE},
+	{{-56,56},DIR_NE},
+	{{-48,48},DIR_NE},
+	{{-40,40},DIR_NE},
+	{{-32,32},DIR_NE},
+	{{-24,24},DIR_NE},
+	{{-16,16},DIR_NE},
+	{{-8,8},DIR_NE},
+
+	{{0,0},DIR_NE}
+};
+
 
 /*
 **	There are a limited basic number of tracks that a vehicle can follow. These
 **	are they. Each track can be interpreted differently but this is controlled
 **	by the TrackControl structure elaborated elsewhere.
 */
-DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[13] = {
+DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[14] = {
 	{Track1, -1, 0, -1},
 	{Track2, -1, 0, -1},
 	{Track3, 37, 12, 22},
@@ -2859,7 +2863,8 @@ DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[13] = {
 	{Track10, -1, 0, -1},
 	{Track11, -1, 0, -1},
 	{Track12, -1, 0, -1},
-	{Track13, -1, 0, -1}
+	{Track13, -1, 0, -1},
+	{Track14, -1, 0, -1}
 };
 
 
@@ -2868,7 +2873,7 @@ DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[13] = {
 **	table determines which track to use and what modifying operations need
 **	be performed on the track data.
 */
-DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[67] = {
+DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[71] = {
 	{1,	0,		DIR_N,	F_},                                                                // 0-0
 	{3,	7,		DIR_NE,	F_D},                                                               //	0-1 (raw chart)
 	{4,	9,		DIR_E,	F_D},                                                               //	0-2 (raw chart)
@@ -2936,5 +2941,9 @@ DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[67]
 
 	{11,	11,	DIR_SW,	F_},                                                            // Backup harvester into refinery.
 	{12,	12,	DIR_SW,	F_},                                                            // Drive back into refinery.
-	{13,	13,	DIR_SW,	F_}                                                             // Drive out of weapons factory.
+	{13,	13,	DIR_SW,	F_},                                                            // Drive out of weapons factory.
+	{14,	14,	DIR_NE,	F_},                                                            // Drive onto the middle of a tank bunker, heading northeast.
+	{14,	14,	DIR_SE,	F_Y},                                                           // Drive onto the middle of a tank bunker, heading southeast.
+	{14,	14,	DIR_SW,	F_T},                                                           // Drive onto the middle of a tank bunker, heading southwest.
+	{14,	14,	DIR_NW,	F_X}                                                            // Drive onto the middle of a tank bunker, heading northwest.
 };

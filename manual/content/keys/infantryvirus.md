@@ -16,4 +16,6 @@ InfantryVirus=MYVIRUS ; an AnimType registered in [Animations]
 
 With the key unset, the soldier is removed without an animation.
 
+A [`NotHuman=yes`](/keys/nothuman/) soldier killed by such a warhead plays its own death sequence, and a soldier killed by it while parachuting bursts apart. Neither shows the animation. Each leaves only the poison cloud that the animation's [`SpawnsParticle`](/keys/spawnsparticle/#scope-animtype) names.
+
 Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

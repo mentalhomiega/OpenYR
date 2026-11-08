@@ -1,0 +1,17 @@
+; A click on a player's slave selects it. gamemd's click path (DisplayClass::LeftMouseButtonUp at 0x4AB9B0, the click
+; handlers and the Select action) checks TechnoClass::CanBeSelected (vtable slot 0x138). A scan of the whole gamemd.exe
+; found TechnoClass::CanBeSelectedNow (slot 0x13C) called only at 0x4AA318, 0x4AA3E8 and 0x4AC2D9, so no click refuses a slave.
+; The "pickable" line gives each slave's window pixel; the click is made at the first one, and "selected" shows the result.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/slave-click-select.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 own SMIN 62 38
+41 own HTNK 58 40
+600 where SLAV
+610 pickable SLAV
+620 windowclick 475 330
+630 selected
+640 pickat 475 330
+800 quit

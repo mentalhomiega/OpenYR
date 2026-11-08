@@ -14,6 +14,7 @@
 #include "always.h"
 
 #include "event.h"
+#include "fnv.h"
 
 
 /***************************************************************************
@@ -115,3 +116,33 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"BEACON_DELETE",
 	"BEACON_TEXT",
 };
+
+
+std::size_t EventClass::Sync_Record_Bytes(unsigned char * out, std::size_t capacity) const
+{
+	std::size_t length = 0;
+	if (Has_Variable_Payload(Type)) {
+		// A payload that the sender sized past this limit still gives the same hash on every peer.
+		constexpr std::uint32_t HASHED_LIMIT = 4096;
+		std::uint32_t const size = Data.Variable.Size;
+		std::uint32_t hash = FNV_BASIS;
+		if (Data.Variable.Pointer != nullptr) {
+			hash = Fnv_Add_Bytes(hash, Data.Variable.Pointer, size < HASHED_LIMIT ? size : HASHED_LIMIT);
+		}
+		unsigned char bytes[8];
+		for (int index = 0; index < 4; index++) {
+			bytes[index] = (unsigned char)(size >> (8 * index));
+			bytes[4 + index] = (unsigned char)(hash >> (8 * index));
+		}
+		length = sizeof(bytes) < capacity ? sizeof(bytes) : capacity;
+		std::memcpy(out, bytes, length);
+		return(length);
+	}
+
+	length = Fixed_Length(Type);
+	if (length > capacity) {
+		length = capacity;
+	}
+	std::memcpy(out, &Data, length);
+	return(length);
+}

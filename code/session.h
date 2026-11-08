@@ -275,7 +275,7 @@ struct RemoteFileTransferType {
 // The encoded game options carry the settings, the scenario description, name and digest,
 // and a name, house and color for every player. The text buffer is 900 bytes, terminator
 // included, so the largest Global Channel packet fits UDP_DATAGRAM_LIMIT once the CRC and the
-// tunnel header are counted. The old sizing reached 960 bytes with 8 players and 64-byte names.
+// tunnel header are counted.
 #define MAX_GAMEOPT_LENGTH	900
 
 // The room a packet gives to a mod signature, terminating zero included (ModSync::CAPACITY).
@@ -338,6 +338,7 @@ struct GlobalPacketType {
 		} Message;
 		struct {
 			int OneWay;							// one-way response time
+			unsigned int Options;				// NET_GO: the host's network choices, NetTiming::Pack_Host_Options; zero when none
 		} ResponseTime;
 		struct {
 			int Why;							// why were we rejected from the game?
@@ -526,6 +527,16 @@ class SessionClass
 		void One_Time(void);
 		void Init(void);
 
+		// Sets this machine's house and colour, and makes the colour the preferred one too.
+		void Set_Local_Look(int house, int color, unsigned int custom)
+		{
+			House = house;
+			ColorIdx = color;
+			CustomColor = custom;
+			PrefColor = color;
+			PrefCustomColor = custom;
+		}
+
 		//.....................................................................
 		// Reads/writes to the INI file
 		//.....................................................................
@@ -610,7 +621,6 @@ class SessionClass
 		unsigned int CustomColor;           // actual free color, zero for the stock color at ColorIdx
 		int House;                          // GDI / NOD
 		int ObiWan;                         // 1 = player can see all
-		bool AIOnly;                        // no human seat plays; kept in saves, and game over does not read it
 		int Solo;                           // 1 = player can play alone
 
 		/*
@@ -646,6 +656,9 @@ class SessionClass
 		int NetworkTimingPolicyOwner;
 		// False uses gamemd's timing; true keeps the adaptive rung table (the spawner's TimingPolicy=Adaptive).
 		bool NetworkTimingAdaptive = false;
+		// The send period and look-ahead the host chose for the match; zero leaves a value to gamemd's timing.
+		// The adaptive policy does not read it.
+		NetTiming::HostTimingChoice NetworkTimingChoice;
 		// Set when the match runs through a tunnel. gamemd adds 20 to the start look-ahead then.
 		bool NetworkThroughTunnel = false;
 		// Frames the most-behind peer was last heard at, behind this machine. Drives the local pacing.

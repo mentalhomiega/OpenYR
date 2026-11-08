@@ -38,7 +38,6 @@ class RadarEventClass
 		void Plot(void);
 		int Get_Visibility_Duration(void);
 		int Get_Duration(void);
-		int Get_Suppression_Distance(void);
 		RGBClass Get_Max_Color(void) const;
 		RGBClass Get_Min_Color(void) const;
 		void Get_Event_Rect(Point2D (& event_rect)[4]) const;
@@ -131,8 +130,6 @@ class RadarEventClass
 
 void Process_Radar_Events(void);
 bool Submit_Radar_Event(RadarEventType event, Cell cell);
-bool Can_Suppress_Radar_Event(RadarEventType event);
-bool Try_Suppress_Radar_Event(RadarEventType event, int, Cell cell);
 bool No_Radar_Events_Submitted(void);
 
 void Push_Radar_Event_Cell(Cell cell);

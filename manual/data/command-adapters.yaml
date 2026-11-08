@@ -205,6 +205,24 @@ fixed_controls:
     availability: *all
     sites:
       - { file: code/display.cpp, function: DisplayClass::Mouse_Left_Release, expression: KN_LSHIFT }
+  - id: fixed:shift-queue
+    title: Queue several units
+    description: Queues ShiftQueueCount units of the clicked sidebar cameo at once in the modern interface. Buildings still queue one.
+    audience: player
+    bindings: [Shift]
+    context: Left-clicking a unit cameo on the sidebar
+    availability: *all
+    sites:
+      - { file: code/sidebar.cpp, function: Cameo_Produce_Count, expression: KN_LSHIFT }
+  - id: fixed:shift-abandon
+    title: Cancel all of a type
+    description: Cancels every queued and in-production unit of the clicked cameo's type, as Yuri's Revenge's AbandonAll does. An active factory is put on hold first.
+    audience: player
+    bindings: [Shift]
+    context: Right-clicking a cameo on the sidebar
+    availability: *all
+    sites:
+      - { file: code/sidebar.cpp, function: Cameo_Abandon, expression: KN_LSHIFT }
   - id: fixed:dropship-accept
     title: Accept dropship loadout
     description: Accepts the current dropship loadout and closes the pre-mission screen.
@@ -227,15 +245,13 @@ fixed_controls:
       - { file: code/mpscore.cpp, function: MultiScore::User_Input, expression: VK_SPACE }
   - id: fixed:campaign-results-continue
     title: Dismiss campaign results
-    description: Closes the campaign results screen after its prompt appears.
+    description: Closes the campaign results screen with a click on its Continue button.
     audience: player
-    bindings: [Left mouse button, Escape, Space]
+    bindings: [Left mouse button]
     context: Campaign results screen after a won mission
     availability: *all
     sites:
       - { file: code/score.cpp, function: ScoreClass::Wait_For_Click, expression: VK_LBUTTON }
-      - { file: code/score.cpp, function: ScoreClass::Wait_For_Click, expression: VK_ESCAPE }
-      - { file: code/score.cpp, function: ScoreClass::Wait_For_Click, expression: VK_SPACE }
   - id: fixed:main-menu-version
     title: Open version information
     description: Opens the version dialog from the classic main menu.
@@ -406,6 +422,11 @@ fixed_exclusions:
     reason: SDL-layer choice of the keys read from Windows after a keyboard reset, not controls.
   - site: { file: code/sdl/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
     reason: SDL-layer classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
+  - sites:
+      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_SHIFT }
+      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_CONTROL }
+      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_MENU }
+    reason: Reads the modifiers a bound key needs as held state; it does not dispatch a game command.
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
     reason: Synchronizes the backend Scroll Lock state; it does not dispatch a game command.
   - sites:
@@ -427,8 +448,6 @@ fixed_exclusions:
       - { file: code/list.h, function: Action, expression: KN_UP }
       - { file: code/list.h, function: Action, expression: KN_DOWN }
     reason: Reusable list-widget navigation, not a top-level command.
-  - site: { file: code/mapsel.cpp, function: MapSelect::Process_Input, expression: KN_LMOUSE }
-    reason: Hit-testing for the map-selection screen, not a named fixed control.
   - sites:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_NONE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_RLSE_BIT+KN_LMOUSE }
@@ -438,12 +457,6 @@ fixed_exclusions:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_BACKSPACE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_ESC }
     reason: Message editor polling, cursor placement, and text-edit termination.
-  - sites:
-      - { file: code/score.cpp, function: ScoreClass::Input_Name, expression: KN_BACKSPACE }
-      - { file: code/score.cpp, function: ScoreClass::Input_Name, expression: KN_KEYPAD_RETURN }
-      - { file: code/score.cpp, function: ScoreClass::Input_Name, expression: KN_SPACE }
-      - { file: code/score.cpp, function: ScoreClass::Input_Name, expression: KN_RETURN }
-    reason: Hall-of-fame name-field editing, not application-level commands.
   - sites:
       - { file: code/scroll.cpp, function: ScrollClass::Scroll_Edge, expression: KN_RMOUSE }
       - { file: code/scroll.cpp, function: ScrollClass::Scroll_AI, expression: KN_LMOUSE }
@@ -480,13 +493,14 @@ fixed_exclusions:
   - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
     reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
   - sites:
-      - { file: code/init.cpp, function: Apply_Hotkeys, expression: KN_NONE }
+      - { file: code/init.cpp, function: Pair_Modifier_Keys, expression: KN_NONE }
       - { file: code/init.cpp, function: Grid_Modifier_Held, expression: KN_NONE }
+      - { file: code/init.cpp, function: Held_Key_Of, expression: KN_NONE }
       - { file: code/techno.cpp, function: Attack_Move_Key_Held, expression: KN_NONE }
     reason: Empty-slot sentinel. An unbound first slot takes the second slot's key, and an unbound modifier is never held.
   - site: { file: code/init.cpp, function: Hotkey_Wheel, expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
     reason: Selects the wheel step's key for its binding lookup; the command it runs is the control.
-  - site: { file: code/ui/screens/keyboard/uikeyboard.cpp, function: '<file-scope>', expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
+  - site: { file: code/ui/screens/keyboard/uikeyboard.cpp, function: Capture_Pointer, expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
     reason: The binding dialog turns a wheel step into the key it captures; it dispatches no command.
   - sites:
       - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_LBUTTON }
@@ -542,7 +556,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-DATADIR=' }
+      - { file: code/init.cpp, function: Parse_Directory_Option, expression: 'literal:-DATADIR=' }
   - id: launch:user-directory
     title: User data directory
     syntax: -USERDIR=<path>
@@ -550,7 +564,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-USERDIR=' }
+      - { file: code/init.cpp, function: Parse_Directory_Option, expression: 'literal:-USERDIR=' }
   - id: launch:mod
     title: Mod folder
     syntax: -MOD=<name or path>
@@ -558,7 +572,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MOD=' }
+      - { file: code/init.cpp, function: Parse_Directory_Option, expression: 'literal:-MOD=' }
   - id: launch:autotest
     title: Unattended test run
     syntax: -AUTOTEST=<script>
@@ -566,7 +580,23 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-AUTOTEST=' }
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-AUTOTEST=' }
+  - id: launch:autotest-uncapped
+    title: Unattended test run without the frame limit
+    syntax: -AUTOTEST-UNCAPPED
+    description: Removes the frame limit from a skirmish or campaign game that runs a test script, so it plays as fast as the machine allows. docs/AUTOTEST.md lists what differs from a run at normal speed.
+    audience: developer
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-AUTOTEST-UNCAPPED' }
+  - id: launch:autotest-stop-after-steps
+    title: Unattended test run that ends after its last step
+    syntax: -AUTOTEST-STOP-AFTER-STEPS
+    description: Ends a test run on the first game frame after the script's last step, once no menu step is left, and logs AUTOTEST steps done.
+    audience: developer
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-AUTOTEST-STOP-AFTER-STEPS' }
   - id: launch:spawn
     title: Client launch
     syntax: -SPAWN
@@ -574,7 +604,15 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SPAWN' }
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-SPAWN' }
+  - id: launch:replay
+    title: Replay playback
+    syntax: -REPLAY=<file>
+    description: Plays back a recorded skirmish in place of the launch file. The file is looked for in the Replays folder when the path names no folder. The game ignores the player's orders and compares its state with the hashes the recording holds.
+    audience: player
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-REPLAY=' }
   - id: launch:tournament-time
     title: Tournament time limit
     syntax: -TIME=<minutes>
@@ -582,7 +620,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-TIME=' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-TIME=' }
   - id: launch:multiplayer-debug
     title: Internet debug display
     syntax: -MPDEBUG
@@ -590,7 +628,7 @@ launch_options:
     audience: debug
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MPDEBUG' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-MPDEBUG' }
   - id: launch:stealth
     title: Network stealth mode
     syntax: -STEALTH
@@ -598,7 +636,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-STEALTH' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-STEALTH' }
   - id: launch:attract
     title: Attract mode
     syntax: -ATTRACT
@@ -606,7 +644,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-ATTRACT' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-ATTRACT' }
   - id: launch:resolution
     title: Resolution
     syntax: -<width>X<height>
@@ -614,7 +652,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'pattern:-<width>X<height>' }
+      - { file: code/init.cpp, function: Parse_Screen_Option, expression: 'pattern:-<width>X<height>' }
   - id: launch:height-480
     title: 480-pixel width
     syntax: "-480"
@@ -622,7 +660,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-480' }
+      - { file: code/init.cpp, function: Parse_Screen_Option, expression: 'literal:-480' }
   - id: launch:windowed
     title: Windowed mode
     syntax: -WIN
@@ -630,7 +668,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-WIN' }
+      - { file: code/init.cpp, function: Parse_Screen_Option, expression: 'literal:-WIN' }
   - id: launch:multiple-instances
     title: Multiple copies
     syntax: -MULTIINSTANCE
@@ -640,7 +678,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MULTIINSTANCE' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-MULTIINSTANCE' }
   - id: launch:exception-test
     title: Exception reporting test
     syntax: -EXCEPTIONTEST=<fault>
@@ -651,7 +689,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-EXCEPTIONTEST=' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-EXCEPTIONTEST=' }
   - id: launch:desync-test
     title: Out-of-sync test
     syntax: -DESYNCTEST=<frame>
@@ -663,7 +701,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-DESYNCTEST=' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-DESYNCTEST=' }
   - id: launch:sync-log
     title: Sync log
     syntax: -SYNCLOG
@@ -674,7 +712,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SYNCLOG' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-SYNCLOG' }
   - id: launch:seed
     title: Random seed
     syntax: -SEED<number>
@@ -682,7 +720,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SEED', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-SEED', guard: _DEBUG }
   - id: launch:monochrome
     title: Monochrome debug display
     syntax: -XM
@@ -690,7 +728,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XM', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XM', guard: _DEBUG }
   - id: launch:inert
     title: Inert weapons
     syntax: -XI
@@ -698,7 +736,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XI', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XI', guard: _DEBUG }
   - id: launch:speed-build
     title: Accelerated timers
     syntax: -XH
@@ -706,7 +744,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XH', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XH', guard: _DEBUG }
   - id: launch:record
     title: Multiplayer recording
     syntax: -XX
@@ -714,7 +752,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XX', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XX', guard: _DEBUG }
   - id: launch:playback
     title: Recording playback
     syntax: -XY
@@ -722,7 +760,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XY', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XY', guard: _DEBUG }
   - id: launch:console-debug
     title: Console debug output
     syntax: -XC
@@ -730,7 +768,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XC' }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XC' }
   - id: launch:event-debug
     title: Event and packet debug
     syntax: -XP
@@ -738,7 +776,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XP', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XP', guard: _DEBUG }
   - id: launch:quiet
     title: Quiet mode
     syntax: -XQ
@@ -746,7 +784,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XQ' }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XQ' }
 
 launch_exclusions:
   - site: { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-O' }

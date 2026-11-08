@@ -1,0 +1,20 @@
+; Airport cap: one Air Force Command (NumberOfDocks=4, so AirportDocks=4) and six Harrier (ORCA) orders in a row, with no
+; pad aircraft built yet. gamemd's CanBuild (0x50B370) refuses an AirportBound aircraft while the pad aircraft in service plus
+; queued reach AirportDocks. Expected: four orders are accepted and the fifth and sixth are refused ("rejected" in the log),
+; for the Harriers in the factory and queue count with the Black Eagle as well. Observed on the build before the fix: all six
+; were accepted.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/aircraft-airport-cap.txt -Seconds 240 -Filter "AUTOTEST|rejected|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 produce ORCA
+312 produce ORCA
+314 produce ORCA
+316 produce ORCA
+318 produce ORCA
+320 produce ORCA
+1500 dump
+1801 quit

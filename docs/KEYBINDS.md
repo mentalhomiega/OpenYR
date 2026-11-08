@@ -45,6 +45,12 @@ While the scenario's input is locked, keyboard bindings do not fire, and the pre
 
 Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W, E and R tab keys and the A, S, D and X command keys.
 
+The keyboard page refuses a key press that cannot be a binding and says why in its notice. It refuses the left and right mouse buttons, a key the page cannot name, and Shift, Control or Alt, alone or in a combination, for every command except the six that read the held key: `AttackMove`, `ForceFire`, `ForceMove`, `SelectModifier`, `QueueMove` and `GridBuildModifier`.
+
+Those six take a modifier-only binding under any trigger, and the game reads it as held. A binding is one key with its Shift, Control and Alt bits; a modifier-only binding has no key. The page captures it when the last modifier is released with no other key pressed in the chord. The page does not let another command take a modifier-only key, so none of them clashes with a held key.
+
+Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAttackForced` (`00731BF0`) passes when the force-fire and force-select keys are held and every selected object can attack-move, and `TechnoClass::Player_Assign_Mission` applies that to any move or attack click (`TechnoClass::ClickedMission`, `006FFBE0`), whatever it names. The notice for Attack move names that chord.
+
 ## New command behaviour
 
 - `TypeSelect` selects the player's units on screen whose types match the selection, when the key is released within half a second. A longer press does nothing, as in gamemd.
@@ -54,6 +60,7 @@ Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W,
 - `PlaceBeacon` and `Delete` work on beacons, which this build does not have. In a single-player game they do nothing, as in gamemd. In a multiplayer game they report that beacons are not available.
 - `Taunt_1` to `Taunt_8` play taunts in multiplayer games in gamemd. In a single-player game they do nothing. In a multiplayer game they report that taunts are not available.
 - `MultiplayerDebug` toggles the multiplayer debug display. gamemd registers the command only when the game starts with `-MPDEBUG`, and nothing in its code turns the display on at start. This build always lists the command, and `-MPDEBUG` still starts the display shown. The display uses gamemd's labels. It does not show gamemd's `NFT`, `LNFT`, `Rout resp` or `MC resp` lines, and gamemd's display has no `FrameSendRate` line.
+- `ReplayPause` (Pause) and `ReplayFast` (numeric keypad plus) work only while a replay plays, in both schemes. Keyboard file version 6 adds them: a file of version 2 to 5 gains each key when the file names no command on it. [REPLAYS.md](REPLAYS.md) describes what they do.
 - `PageUser` sends an event whose gamemd identity the decompile does not settle. `CursorCheat` shows a cell readout, and `ExtraSyncChecking` toggles extra sync logging. We have not ported them.
 
 ## Upgrading existing keyboard files
@@ -62,6 +69,7 @@ Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W,
 - A file without that version is read as version 1, which is what the older builds wrote. Each start applies the upgrade in memory, and the file stays as it was until the keyboard dialog saves it. An entry that still holds its old key takes the current key, or loses its key when the current table gives none. A key the player set stays. A command the file does not name gets its current key when that key is free.
 - With no keyboard file, each command gets its current key.
 - The keyboard page's "Reset category" and "Reset all" buttons change the page's bindings to the scheme's defaults. Nothing is written until OK saves them, and Cancel discards them. The reset does not delete the loose file.
+- A command with no default key in the scheme loses its binding on reset, and the notice names it. Attack move has no Classic default, so a Mouse 5 binding to it is removed by Reset to defaults in Classic and restored to A in Modern. A scheme change does the same.
 
 ## Yuri's Revenge commands
 

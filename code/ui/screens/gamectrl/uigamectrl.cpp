@@ -11,39 +11,14 @@
 
 #include "ui/rml/rmlview.h"
 
+#include <algorithm>
 #include <utility>
-
-
-static int Clamp_Level(int level, int count)
-{
-	if (level < 0) {
-		return(0);
-	}
-	if (level > count - 1) {
-		return(count - 1);
-	}
-	return(level);
-}
-
-
-static std::string Name_Of(std::vector<std::string> const & names, int level)
-{
-	if (level < 0 || level >= (int)names.size()) {
-		return(std::string());
-	}
-	return(names[level]);
-}
 
 
 UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsServiceClass & service, UIGameControlsState state) :
 	State(std::move(state)),
 	Service(service),
-	InitialAltToRally(State.AltToRally),
-	InitialSimulateUnfocused(State.SimulateUnfocused),
-	InitialAircraftBodyPick(State.AircraftBodyPick),
-	InitialSidebarSorting(State.SidebarSorting),
-	InitialAutosave(State.Autosave),
-	InitialDebugMode(State.DebugMode)
+	Start(State)
 {
 	Update_Names();
 }
@@ -52,13 +27,13 @@ UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsService
 void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "speed") {
-		State.Speed = Clamp_Level(intent.Value, SPEED_LEVELS);
+		State.Speed = std::clamp(intent.Value, 0, SPEED_LEVELS - 1);
 	} else if (intent.Name == "scroll") {
-		State.Scroll = Clamp_Level(intent.Value, SCROLL_LEVELS);
+		State.Scroll = std::clamp(intent.Value, 0, SCROLL_LEVELS - 1);
 	} else if (intent.Name == "detail") {
-		State.Detail = Clamp_Level(intent.Value, DETAIL_LEVELS);
+		State.Detail = std::clamp(intent.Value, 0, DETAIL_LEVELS - 1);
 	} else if (intent.Name == "difficulty") {
-		State.Difficulty = Clamp_Level(intent.Value, DIFFICULTY_LEVELS);
+		State.Difficulty = std::clamp(intent.Value, 0, DIFFICULTY_LEVELS - 1);
 	} else if (intent.Name == "cameo") {
 		State.CameoText = (intent.Value != 0);
 	} else if (intent.Name == "lines") {
@@ -71,6 +46,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.EdgeScroll = (intent.Value != 0);
 	} else if (intent.Name == "hidden") {
 		State.ShowHidden = (intent.Value != 0);
+	} else if (intent.Name == "defencerange") {
+		State.ShowDefenceRange = (intent.Value != 0);
 	} else if (intent.Name == "rally") {
 		State.AltToRally = (intent.Value != 0);
 	} else if (intent.Name == "airpick") {
@@ -81,8 +58,10 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.SidebarSorting = (intent.Value != 0);
 	} else if (intent.Name == "debugmode") {
 		State.DebugMode = (intent.Value != 0);
+	} else if (intent.Name == "replays") {
+		State.RecordReplays = (intent.Value != 0);
 	} else if (intent.Name == "autosave") {
-		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : InitialAutosave;
+		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : Start.Autosave;
 	} else if (intent.Name == "ok") {
 		Apply();
 		Result = UI_RESULT_ACCEPTED;
@@ -108,10 +87,12 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.Coasting = true;
 		State.EdgeScroll = true;
 		State.ShowHidden = false;
+		State.ShowDefenceRange = State.ModernInterface;
 		State.AltToRally = false;
 		State.SimulateUnfocused = false;
 		State.SidebarSorting = true;
 		State.DebugMode = false;
+		State.RecordReplays = false;
 		for (int index = 0; index < (int)State.Autosaves.size(); index++) {
 			if (State.Autosaves[index].Value == 10800) {	// Options.AutoSaveInterval's default, in frames
 				State.Autosave = index;
@@ -144,25 +125,29 @@ void UIGameControlsPresenterClass::Apply(void)
 	Service.Set_Scroll_Coasting(State.Coasting);
 	Service.Set_Edge_Scroll(State.EdgeScroll);
 	Service.Set_Show_Hidden(State.ShowHidden);
+	Service.Set_Show_Defence_Range(State.ShowDefenceRange);
 	if (State.HasDifficulty) {
 		Service.Set_Difficulty(State.Difficulty);
 	}
-	if (State.AltToRally != InitialAltToRally) {
+	if (State.AltToRally != Start.AltToRally) {
 		Service.Set_Alt_To_Rally(State.AltToRally);
 	}
-	if (State.SimulateUnfocused != InitialSimulateUnfocused) {
+	if (State.SimulateUnfocused != Start.SimulateUnfocused) {
 		Service.Set_Simulate_Unfocused(State.SimulateUnfocused);
 	}
-	if (State.AircraftBodyPick != InitialAircraftBodyPick) {
+	if (State.AircraftBodyPick != Start.AircraftBodyPick) {
 		Service.Set_Aircraft_Body_Pick(State.AircraftBodyPick);
 	}
-	if (State.SidebarSorting != InitialSidebarSorting) {
+	if (State.SidebarSorting != Start.SidebarSorting) {
 		Service.Set_Sidebar_Sorting(State.SidebarSorting);
 	}
-	if (State.DebugMode != InitialDebugMode) {
+	if (State.DebugMode != Start.DebugMode) {
 		Service.Set_Debug_Mode(State.DebugMode);
 	}
-	if (State.Autosave != InitialAutosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
+	if (State.RecordReplays != Start.RecordReplays) {
+		Service.Set_Record_Replays(State.RecordReplays);
+	}
+	if (State.Autosave != Start.Autosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
 		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
 	}
 	Service.Save();
@@ -171,10 +156,29 @@ void UIGameControlsPresenterClass::Apply(void)
 
 void UIGameControlsPresenterClass::Update_Names(void)
 {
-	State.SpeedName = Name_Of(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
-	State.ScrollName = Name_Of(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
-	State.DetailName = Name_Of(State.DetailNames, State.Detail);
-	State.DifficultyName = Name_Of(State.DifficultyNames, State.Difficulty);
+	State.SpeedName = UI_Name_At(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
+	State.ScrollName = UI_Name_At(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
+	State.DetailName = UI_Name_At(State.DetailNames, State.Detail);
+	State.DifficultyName = UI_Name_At(State.DifficultyNames, State.Difficulty);
+}
+
+
+bool UI_Bind_Game_Controls(Rml::DataModelConstructor & model, UIGameControlsState & state)
+{
+	return(model.Bind("scroll", &state.Scroll)
+		&& model.Bind("detail", &state.Detail)
+		&& model.Bind("difficulty", &state.Difficulty)
+		&& model.Bind("cameo", &state.CameoText)
+		&& model.Bind("lines", &state.ActionLines)
+		&& model.Bind("tooltips", &state.ToolTips)
+		&& model.Bind("coasting", &state.Coasting)
+		&& model.Bind("edge", &state.EdgeScroll)
+		&& model.Bind("hidden", &state.ShowHidden)
+		&& model.Bind("defencerange", &state.ShowDefenceRange)
+		&& model.Bind("hasdifficulty", &state.HasDifficulty)
+		&& model.Bind("scrollname", &state.ScrollName)
+		&& model.Bind("detailname", &state.DetailName)
+		&& model.Bind("difficultyname", &state.DifficultyName));
 }
 
 
@@ -192,57 +196,28 @@ class UIGameControlsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("speed");
-			Model.DirtyVariable("scroll");
-			Model.DirtyVariable("detail");
-			Model.DirtyVariable("difficulty");
-			Model.DirtyVariable("cameo");
-			Model.DirtyVariable("lines");
-			Model.DirtyVariable("tooltips");
-			Model.DirtyVariable("coasting");
-			Model.DirtyVariable("edge");
-			Model.DirtyVariable("hidden");
-			Model.DirtyVariable("speedname");
-			Model.DirtyVariable("scrollname");
-			Model.DirtyVariable("detailname");
-			Model.DirtyVariable("difficultyname");
-			Model.DirtyVariable("rally");
-			Model.DirtyVariable("airpick");
-			Model.DirtyVariable("background");
-			Model.DirtyVariable("sorting");
-			Model.DirtyVariable("debugmode");
-			Model.DirtyVariable("autosave");
+			Dirty({"speed", "scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
+				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname", "rally",
+				"airpick", "background", "sorting", "debugmode", "replays", "autosave"});
 		}
 
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
-			Rml::StructHandle<UIGameControlsChoice> choice = model.RegisterStruct<UIGameControlsChoice>();
+			Rml::StructHandle<UIChoice> choice = model.RegisterStruct<UIChoice>();
 			if (!choice) {
 				return(false);
 			}
-			choice.RegisterMember("label", &UIGameControlsChoice::Label);
+			choice.RegisterMember("label", &UIChoice::Label);
 
 			UIGameControlsState & state = Data.State;
-			return(model.RegisterArray<std::vector<UIGameControlsChoice>>()
+			return(model.RegisterArray<std::vector<UIChoice>>()
+				&& UI_Bind_Game_Controls(model, state)
 				&& model.Bind("speed", &state.Speed)
-				&& model.Bind("scroll", &state.Scroll)
-				&& model.Bind("detail", &state.Detail)
-				&& model.Bind("difficulty", &state.Difficulty)
-				&& model.Bind("cameo", &state.CameoText)
-				&& model.Bind("lines", &state.ActionLines)
-				&& model.Bind("tooltips", &state.ToolTips)
-				&& model.Bind("coasting", &state.Coasting)
-				&& model.Bind("edge", &state.EdgeScroll)
-				&& model.Bind("hidden", &state.ShowHidden)
 				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("hasspeed", &state.HasSpeed)
-				&& model.Bind("hasdifficulty", &state.HasDifficulty)
 				&& model.Bind("soundenabled", &state.SoundEnabled)
 				&& model.Bind("speedname", &state.SpeedName)
-				&& model.Bind("scrollname", &state.ScrollName)
-				&& model.Bind("detailname", &state.DetailName)
-				&& model.Bind("difficultyname", &state.DifficultyName)
 				&& model.Bind("leavelabel", &state.LeaveLabel)
 				&& model.Bind("extras", &state.Extras)
 				&& model.Bind("rally", &state.AltToRally)
@@ -250,6 +225,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("background", &state.SimulateUnfocused)
 				&& model.Bind("sorting", &state.SidebarSorting)
 				&& model.Bind("debugmode", &state.DebugMode)
+				&& model.Bind("replays", &state.RecordReplays)
 				&& model.Bind("autosaves", &state.Autosaves)
 				&& model.Bind("autosave", &state.Autosave));
 		}

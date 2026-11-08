@@ -33,11 +33,9 @@ int Sidebar_Surface_Width(void);
 // Is the screen point over the map, and not over the sidebar, the command bar or a panel drawn on the map?
 bool Point_Over_Map(Point2D const & point);
 
-/*
-** The modern interface's build panel, laid out for the current screen. Panel is in screen
-** coordinates; the other rectangles are in the panel's own coordinates, which are also the
-** sidebar surface's.
-*/
+// The modern interface's build panel, laid out for the current screen. Panel is in screen
+// coordinates; the other rectangles are in the panel's own coordinates, which are also the
+// sidebar surface's.
 struct HudLayout {
 	Rect Panel;
 	Rect Buttons;		// The beacon, sell, power and repair buttons, left to right.
@@ -65,30 +63,23 @@ enum HudEnums {
 	HUD_TIP_PADDING=3,
 	HUD_BUTTON_SIZE=28,
 	HUD_BUTTON_GAP=4,
+	HUD_DEFAULT_OPACITY=80,	// The Sidebar opacity setting's default: the percent of the panel background that stays solid.
 	HUD_ICON_RADIUS=4		// The corner radius of the icons in the ui folder.
 };
 
-// The cameo rows the build panel can show at the current screen height: as many as fit above the
-// scroll arrows, at least HUD_MIN_ROWS and at most the grid's slots allow.
-int Hud_Max_Rows(void);
-
-// The same limit for a frame of the given height, which may be one the screen is not showing yet.
+// The cameo row limit for a frame of the given height, which may be one the screen is not showing yet.
 int Hud_Max_Rows_For_Frame(int frame_height);
 
 // The cameo rows the build panel shows: the Sidebar rows setting, or the value being previewed, held
-// within Hud_Max_Rows.
+// within the rows the current screen height allows.
 int Hud_Rows(void);
 
 // Shows this many rows in the build panel while the Display page previews them. Zero ends the preview
 // and goes back to the saved setting.
 void Hud_Rows_Preview(int rows);
 
-// The build panel laid out for the given number of cameo rows, held within Hud_Max_Rows. Everything
-// that follows the row count is computed here, so a change of rows needs no other constants.
-HudLayout Hud_Layout_For_Rows(int rows);
-
 // The same layout for a frame of the given size, with the panel on its right edge. The rectangles
-// other than Panel are in the panel's own coordinates, as for Hud_Layout_For_Rows.
+// other than Panel are in the panel's own coordinates, as for Hud_Layout.
 HudLayout Hud_Layout_For_Frame(int rows, int frame_width, int frame_height);
 
 // The build panel laid out for the rows the screen shows now.
@@ -136,6 +127,10 @@ void Draw_Hud_Fill(Surface & surface, Rect const & rect);
 // Draws the build panel's frame and its fixed wells onto the sidebar surface. The radar, power
 // bar, credits and buttons draw over it.
 void Draw_Hud_Panel(Surface & surface);
+
+// Copies a part of the sidebar surface onto the frame as the build panel. The panel's background is
+// blended over the map at Options.SidebarOpacity percent; the radar and the buttons are always opaque.
+void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source, Rect const & source_rect);
 
 // The text of a string table label, or the fallback when the table lacks it.
 std::string Panel_Text(char const * label, char const * fallback);

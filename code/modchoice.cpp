@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "modchoice.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>

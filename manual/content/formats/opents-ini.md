@@ -55,6 +55,9 @@ The list is a default. A player whose [`RA2MD.INI`](/keys/mods/) has its own `Mo
 Rules=RULESMD.INI
 Art=ARTMD.INI
 RA2Art=ART.INI
+RA2Rules=RULES.INI
+RA2Eva=EVA.INI
+RA2Audio=AUDIO.MIX
 AI=AIMD.INI
 Sound=SOUNDMD.INI
 Theme=THEMEMD.INI
@@ -78,6 +81,9 @@ Each key names one file, and a key left out keeps the name shown above.
 | `Rules` | The rules |
 | `Art` | The artwork definitions |
 | `RA2Art` | Red Alert 2's artwork definitions, whose movie list its campaigns' missions index |
+| `RA2Rules` | Red Alert 2's rules, whose `[Countries]` order numbers the houses its missions name |
+| `RA2Eva` | Red Alert 2's announcer lines, whose names the Red Alert 2 missions speak |
+| `RA2Audio` | Red Alert 2's sample archive, read for a sample that no Yuri's Revenge sample archive holds |
 | `AI` | The computer player's data |
 | `Sound` | The [sound registry](/formats/sound-ini/) |
 | `Theme` | The [music registry](/formats/theme-ini/) |

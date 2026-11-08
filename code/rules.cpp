@@ -50,6 +50,7 @@
 
 #include "armortypes.h"
 #include "rules.h"
+#include "mpmode.h"
 
 #include "_bench.h"
 #include "_deploymentconfig.h"
@@ -75,6 +76,7 @@
 #include "houstype.h"
 #include "infatype.h"
 #include "levitate.h"
+#include "mapgen.h"
 #include "mission.h"
 #include "mods.h"
 #include "mouse.h"
@@ -243,11 +245,14 @@ RulesClass::RulesClass(void) :
 	Diff(),
 	IsComputerParanoid(true),
 	AlliesAllowed(false),
+	AllyChangeAllowed(true),
 	IsCurleyShuffle(false),
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(true),
 	IsLargeSidebarStrips(false),
+	IsUseCameoSortOrder(false),
 	AircraftWaypointReload(true),
+	WaypointAttackFromFirst(true),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
 	IsFineDifficulty(false),
@@ -319,6 +324,8 @@ RulesClass::RulesClass(void) :
 	ChronoDistanceFactor(32),
 	ChronoMinimumDelay(0),
 	ChronoRangeMinimum(0),
+	ChronoErasedSuperWeapons(false),
+	UndeployScattersInfantry(false),
 	TreeStrength(25),
 	TeamDelays(),
 	AIHateDelays(),
@@ -421,6 +428,7 @@ RulesClass::RulesClass(void) :
 	AmerParaDropInf(),
 	AmerParaDropNum(),
 	ParadropRadius(1024),
+	ParadropInUsableArea(true),
 	SpyPlaneCamera(VOC_NONE),
 	SpyPlaneCameraFrames(16),
 	LightningStormDuration(900),
@@ -499,6 +507,7 @@ RulesClass::RulesClass(void) :
 	LineTrailColorOverride(0, 0, 0),
 	LaserTargetColor(0),
 	IronCurtainColor(0),
+	ForceShieldColor(0),
 	BerserkColor(0),
 	MindClearedSound(VOC_NONE),
 	MasterMindOverloadDeathSound(VOC_NONE),
@@ -542,7 +551,7 @@ RulesClass::RulesClass(void) :
 	Wake(NULL),
 	OreTwinkle(NULL),
 	WeaponNullifyAnim(NULL),
-	OreTwinkleChance(0),
+	OreTwinkleChance(50),
 	FlamingInfantry(NULL),
 	AITriggerSuccessWeightDelta(1),
 	AITriggerFailureWeightDelta(-1),
@@ -584,7 +593,6 @@ RulesClass::RulesClass(void) :
 	SpySatActivationSound(VOC_NONE),
 	SpySatDeactivationSound(VOC_NONE),
 	EnterGrinderSound(VOC_NONE),
-	LeaveGrinderSound(VOC_NONE),
 	GateDownSound(VOC_NONE),
 	JumpjetTurnRate(3),
 	JumpjetSpeed(30),
@@ -599,6 +607,7 @@ RulesClass::RulesClass(void) :
 	IonCannonDamage(700),
 	RailgunDamageRadius(CELL_LEPTON / 2),
 	ZoomInFactor(2),
+	ScriptedCameraHeight(900),
 	ConditionRedSparkingProbability(.02),
 	ConditionYellowSparkingProbability(.01),
 	TiberiumExplosionDamage(100),
@@ -608,6 +617,8 @@ RulesClass::RulesClass(void) :
 	LowPowerPenaltyModifier(1.0),
 	MultipleFactory(1),
 	MultipleFactoryCap(0),
+	MaximumCheerRate(1),
+	IsAttackCursorOnDisguise(false),
 	CraterLevel(0),
 	TreeFlammability(.1),
 	MissileSpeedVar(.25),
@@ -620,6 +631,7 @@ RulesClass::RulesClass(void) :
 	DropPodAngle(M_PI/2), /// 90 deg
 	ScrollMultiplier(1),
 	DirectRockingCoefficient(1),
+	FallBackCoefficient(1),
 	VoxelSpecularStrength(3),
 	VoxelShadeScale(16),
 	VoxelSpecularFromView(false),
@@ -643,6 +655,7 @@ RulesClass::RulesClass(void) :
 	IceBreakingWeight(4),
 	ShipSinkingWeight(3),
 	IsAlliedWallTransparency(false),
+	IsMissileLaunchHoldsMove(true),
 	IsAlliedSolidTransparency(false),
 	ParachuteMaxFallRate(-3),
 	NoParachuteMaxFallRate(-100),
@@ -668,7 +681,7 @@ RulesClass::RulesClass(void) :
 	PlayerJoined(VOC_NONE),
 	Construction(VOC_NONE),
 	CreditTicks(),
-	CrumbleSound(VOC_NONE),
+	BuildingDieSound(VOC_NONE),
 	BuildingSlam(VOC_NONE),
 	RadarOn(VOC_NONE),
 	RadarOff(VOC_NONE),
@@ -695,6 +708,7 @@ RulesClass::RulesClass(void) :
 	DetailBufferZoneWidth(5),
 	BuildingGarrisonedSound(VOC_NONE),
 	BuildingAbandonedSound(VOC_NONE),
+	BuildingRepairedSound(VOC_NONE),
 	ScatterSound(VOC_NONE),
 	DeploySound(VOC_NONE),
 	CheerSound(VOC_NONE),
@@ -818,6 +832,8 @@ RulesClass::RulesClass(void) :
 	SmallFire(NULL),
 	LargeFire(NULL),
 	IsAnimationFires(false),
+	IsRing1Glow(false),
+	IsBodyFrameFromIdle(true),
 	Paratrooper(NULL),
 	Disguise(NULL),
 	AlliedDisguise(NULL),
@@ -838,6 +854,8 @@ RulesClass::RulesClass(void) :
 	EMPulseProjectile(NULL),
 	C4Warhead(NULL),
 	CrushWarhead(NULL),
+	FallingDamageMultiplier(1.0),
+	CurrentStrengthDamage(true),
 	DrainMoneyFrameDelay(30),
 	DrainMoneyAmount(30),
 	DrainAnimationType(NULL),
@@ -1033,6 +1051,94 @@ void RulesClass::Initialize(CCINIClass const & ini)
 			DebugString("Processing %s\n", DeploymentConfig.MultiplayerRulesExpansionFile.c_str());
 			Addition(FSMPRuleINI);
 		}
+
+		// The game mode's own file, such as MPDuelMD.ini, is read as rules over everything above (RulesClass::Init, 0x6686C0).
+		if (MPMode_Has_Current() && !MPMode_Current().RulesOverride.empty()) {
+			CCFileClass modefile(MPMode_Current().RulesOverride.c_str());
+			if (modefile.Is_Available()) {
+				CCINIClass modeini;
+				modeini.Load(modefile, false);
+				DebugString("Processing %s\n", MPMode_Current().RulesOverride.c_str());
+				Addition(modeini);
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// How far each type list had been read when RulesClass::Objects finished with it.
+/// Objects reads the lists one after another, so a type first named by a later list or by a rule
+/// key read after Objects (a DeathWeapon, the nuke projectile) is created behind its list's read.
+/// </summary>
+struct TypeReadMarks
+{
+	int SuperWeapons;
+	int Anims;
+	int Buildings;
+	int Aircraft;
+	int Units;
+	int Infantry;
+	int Weapons;
+	int Bullets;
+	int Warheads;
+	int Terrains;
+	int Smudges;
+	int Overlays;
+	int Particles;
+	int ParticleSystems;
+	int VoxelAnims;
+	int Tiberiums;
+};
+static TypeReadMarks TypeMarks;
+
+
+/// <summary>
+/// Reads the types of one list that were created after the mark, and moves the mark to the end.
+/// </summary>
+/// <returns>The number of types read.</returns>
+template<class LIST>
+static int Read_Types_From(LIST & list, int & mark, CCINIClass const & ini)
+{
+	int read = 0;
+	for (; mark < list.Count(); mark++) {
+		if (ini.Is_Present(list[mark]->Name())) {
+			DebugString("Rules: [%s] was created after its list was read; reading its section now.\n", list[mark]->Name());
+		}
+		list[mark]->Read_INI(ini);
+		read++;
+	}
+	return(read);
+}
+
+
+/// <summary>
+/// Reads the section of every type created after its list was read.
+/// A type that only a rule key names (a DeathWeapon, a special weapon's projectile) is created after
+/// its list's read pass, so without this it would keep its defaults and its section would be ignored.
+/// Reading a type can create another, so the lists are read again until none grows.
+/// gamemd (RulesClass::Read_File, 0x668A40) never reads such a type; its weapon is left with no
+/// projectile and crashes the first time it is used.
+/// </summary>
+static void Read_Late_Types(CCINIClass const & ini)
+{
+	for (int read = 1; read > 0; ) {
+		read = Read_Types_From(SuperWeaponTypes, TypeMarks.SuperWeapons, ini);
+		read += Read_Types_From(AnimTypes, TypeMarks.Anims, ArtINI);
+		read += Read_Types_From(BuildingTypes, TypeMarks.Buildings, ini);
+		read += Read_Types_From(AircraftTypes, TypeMarks.Aircraft, ini);
+		read += Read_Types_From(UnitTypes, TypeMarks.Units, ini);
+		read += Read_Types_From(InfantryTypes, TypeMarks.Infantry, ini);
+		read += Read_Types_From(Weapons, TypeMarks.Weapons, ini);
+		read += Read_Types_From(BulletTypes, TypeMarks.Bullets, ini);
+		read += Read_Types_From(::Warheads, TypeMarks.Warheads, ini);
+		read += Read_Types_From(TerrainTypes, TypeMarks.Terrains, ini);
+		read += Read_Types_From(SmudgeTypes, TypeMarks.Smudges, ini);
+		read += Read_Types_From(OverlayTypes, TypeMarks.Overlays, ini);
+		read += Read_Types_From(ParticleTypes, TypeMarks.Particles, ini);
+		read += Read_Types_From(ParticleSystemTypes, TypeMarks.ParticleSystems, ini);
+		read += Read_Types_From(VoxelAnimTypes, TypeMarks.VoxelAnims, ini);
+		read += Read_Types_From(Tiberiums, TypeMarks.Tiberiums, ini);
 	}
 }
 
@@ -1097,6 +1203,14 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Radiation(ini);
 	Elevation_Model(ini);
 
+	// Combat_Damage and the sections after Objects can create types after the read loops in Objects.
+	// Those types have not been read yet, so they are read now, and a weapon that still names no projectile takes the defaults.
+	Read_Late_Types(ini);
+	for (int windex = 0; windex < Weapons.Count(); windex++) {
+		Weapons[windex]->Ensure_Defaults();
+		Weapons[windex]->Init_Max_Speed();
+	}
+
 	BEnd(BENCH_RULES);
 
 	return(true);
@@ -1159,9 +1273,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BarrelParticle = TGet_Class(ini, YR_GENERAL, "BarrelParticle", BarrelParticle);
 		Wake = TGet_Class(ini, AUDIOVISUAL, "Wake", Wake);
 		// Yuri's Revenge keeps Wake under [General]; that entry wins when both are present.
-		Wake = TGet_Class(ini, "General", "Wake", Wake);
-		OreTwinkle = TGet_Class(ini, "General", "OreTwinkle", OreTwinkle);
-		WeaponNullifyAnim = TGet_Class(ini, "General", "WeaponNullifyAnim", WeaponNullifyAnim);
+		Wake = TGet_Class(ini, YR_GENERAL, "Wake", Wake);
+		OreTwinkle = TGet_Class(ini, YR_GENERAL, "OreTwinkle", OreTwinkle);
+		WeaponNullifyAnim = TGet_Class(ini, YR_GENERAL, "WeaponNullifyAnim", WeaponNullifyAnim);
 		OreTwinkleChance = ini.Get_Int(AUDIOVISUAL, "OreTwinkleChance", OreTwinkleChance);
 		FlamingInfantry = TGet_Class(ini, AUDIOVISUAL, "FlamingInfantry", FlamingInfantry);
 		FlamingInfantry = TGet_Class(ini, YR_GENERAL, "FlamingInfantry", FlamingInfantry);
@@ -1189,11 +1303,13 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		SpySatActivationSound = ini.Get_VocType(AUDIOVISUAL, "SpySatActivationSound", SpySatActivationSound);
 		SpySatDeactivationSound = ini.Get_VocType(AUDIOVISUAL, "SpySatDeactivationSound", SpySatDeactivationSound);
 		EnterGrinderSound = ini.Get_VocType(AUDIOVISUAL, "EnterGrinderSound", EnterGrinderSound);
-		LeaveGrinderSound = ini.Get_VocType(AUDIOVISUAL, "LeaveGrinderSound", LeaveGrinderSound);
+		// Accepted from Yuri's Revenge rules, but nothing plays it.
+		ini.Get_VocType(AUDIOVISUAL, "LeaveGrinderSound", VOC_NONE);
 		GateDownSound = ini.Get_VocType(AUDIOVISUAL, "GateDown", GateDownSound);
 		IsShroudGrow = ini.Get_Bool(AUDIOVISUAL, "ShroudGrow", IsShroudGrow);
 		ScrollMultiplier = ini.Get_Float(AUDIOVISUAL, "ScrollMultiplier", ScrollMultiplier);
 		DirectRockingCoefficient = ini.Get_Float(AUDIOVISUAL, "DirectRockingCoefficient", DirectRockingCoefficient);
+		FallBackCoefficient = (float)ini.Get_Float(AUDIOVISUAL, "FallBackCoefficient", FallBackCoefficient);
 		VoxelSpecularStrength = ini.Get_Float(AUDIOVISUAL, "VoxelSpecularStrength", VoxelSpecularStrength);
 		VoxelShadeScale = ini.Get_Float(AUDIOVISUAL, "VoxelShadeScale", VoxelShadeScale);
 		VoxelSpecularFromView = ini.Get_Bool(AUDIOVISUAL, "VoxelSpecularFromView", VoxelSpecularFromView);
@@ -1213,7 +1329,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		PlayerJoined = ini.Get_VocType(AUDIOVISUAL, "PlayerJoined", PlayerJoined);
 		Construction = ini.Get_VocType(AUDIOVISUAL, "Construction", Construction);
 		CreditTicks = ini.Get_VocType_List(ini, AUDIOVISUAL, "CreditTicks", CreditTicks);
-		CrumbleSound = ini.Get_VocType(AUDIOVISUAL, "CrumbleSound", CrumbleSound);
+		// CrumbleSound is the Tiberian Sun name of this key; Yuri's Revenge reads BuildingDieSound.
+		BuildingDieSound = ini.Get_VocType(AUDIOVISUAL, "CrumbleSound", BuildingDieSound);
+		BuildingDieSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDieSound", BuildingDieSound);
 		BuildingSlam = ini.Get_VocType(AUDIOVISUAL, "BuildingSlam", BuildingSlam);
 		RadarOn = ini.Get_VocType(AUDIOVISUAL, "RadarOn", RadarOn);
 		RadarOff = ini.Get_VocType(AUDIOVISUAL, "RadarOff", RadarOff);
@@ -1244,6 +1362,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		DetailBufferZoneWidth = ini.Get_Int(AUDIOVISUAL, "DetailBufferZoneWidth", DetailBufferZoneWidth);
 		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
 		BuildingAbandonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingAbandonedSound", BuildingAbandonedSound);
+		BuildingRepairedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingRepairedSound", BuildingRepairedSound);
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
 		CheerSound = ini.Get_VocType(AUDIOVISUAL, "CheerSound", CheerSound);
@@ -1278,6 +1397,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		LineTrailColorOverride = ini.Get_RGBClass(AUDIOVISUAL, "LineTrailColorOverride", LineTrailColorOverride);
 		LaserTargetColor = ini.Get_Int(AUDIOVISUAL, "LaserTargetColor", LaserTargetColor);
 		IronCurtainColor = ini.Get_Int(AUDIOVISUAL, "IronCurtainColor", IronCurtainColor);
+		ForceShieldColor = ini.Get_Int(AUDIOVISUAL, "ForceShieldColor", ForceShieldColor);
 		BerserkColor = ini.Get_Int(AUDIOVISUAL, "BerserkColor", BerserkColor);
 		ColorAdd.clear();
 		for (int i = 0; i < ini.Entry_Count("ColorAdd"); i++) {
@@ -1308,6 +1428,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		SmallFire = TGet_Class(ini, AUDIOVISUAL, "SmallFire", SmallFire);
 		LargeFire = TGet_Class(ini, AUDIOVISUAL, "LargeFire", LargeFire);
 		IsAnimationFires = ini.Get_Bool(AUDIOVISUAL, "AnimationFires", IsAnimationFires);
+		IsRing1Glow = ini.Get_Bool(AUDIOVISUAL, "Ring1Glow", IsRing1Glow);
+		IsBodyFrameFromIdle = ini.Get_Bool(AUDIOVISUAL, "BodyFrameFromIdle", IsBodyFrameFromIdle);
 		IsAllyReveal = ini.Get_Bool(AUDIOVISUAL, "AllyReveal", IsAllyReveal);
 		ConditionGreen = 1;
 		ConditionRed = ini.Get_Float(AUDIOVISUAL, "ConditionRed", ConditionRed);
@@ -1385,13 +1507,6 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 
 
 /// <summary>
-/// Fetches the combat and damage control values.
-/// This section holds the constants the combat system works from -- the damage figures for
-/// the fixed weapons, the scatter of ballistic and homing projectiles, the crushing and
-/// suppression distances, and the scorches, craters and smoke systems left behind.
-/// </summary>
-/// <returns>bool; Was a combat damage section found in the control file?</returns>
-/// <summary>
 /// Fetches the radiation values.
 /// </summary>
 /// <returns>bool; Was the [Radiation] section found and processed?</returns>
@@ -1432,6 +1547,13 @@ bool RulesClass::Elevation_Model(CCINIClass const & ini)
 }
 
 
+/// <summary>
+/// Fetches the combat and damage control values.
+/// This section holds the constants the combat system works from -- the damage figures for
+/// the fixed weapons, the scatter of ballistic and homing projectiles, the crushing and
+/// suppression distances, and the scorches, craters and smoke systems left behind.
+/// </summary>
+/// <returns>bool; Was a combat damage section found in the control file?</returns>
 bool RulesClass::Combat_Damage(CCINIClass const & ini)
 {
 	static char const * const COMBATDAMAGE = "CombatDamage";
@@ -1478,6 +1600,8 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		FlameDamage2 = TGet_Class(ini, COMBATDAMAGE, "FlameDamage2", FlameDamage2);
 		C4Warhead = TGet_Class(ini, COMBATDAMAGE, "C4Warhead", C4Warhead);
 		CrushWarhead = TGet_Class(ini, COMBATDAMAGE, "CrushWarhead", CrushWarhead);
+		FallingDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "FallingDamageMultiplier", FallingDamageMultiplier);
+		CurrentStrengthDamage = ini.Get_Bool(COMBATDAMAGE, "CurrentStrengthDamage", CurrentStrengthDamage);
 		DrainMoneyFrameDelay = ini.Get_Int(COMBATDAMAGE, "DrainMoneyFrameDelay", DrainMoneyFrameDelay);
 		DrainMoneyAmount = ini.Get_Int(COMBATDAMAGE, "DrainMoneyAmount", DrainMoneyAmount);
 		DrainAnimationType = TGet_Class(ini, COMBATDAMAGE, "DrainAnimationType", DrainAnimationType);
@@ -1614,6 +1738,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		AmerParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AmerParaDropInf", AmerParaDropInf);
 		AmerParaDropNum = ini.Get_IntList(GENERAL, "AmerParaDropNum", AmerParaDropNum);
 		ParadropRadius = ini.Get_Int(GENERAL, "ParadropRadius", ParadropRadius);
+		ParadropInUsableArea = ini.Get_Bool(GENERAL, "ParadropInUsableArea", ParadropInUsableArea);
 		LightningStormDuration = ini.Get_Int(GENERAL, "LightningStormDuration", LightningStormDuration);
 		LightningStormDeferment = ini.Get_Int(GENERAL, "LightningDeferment", LightningStormDeferment);
 		LightningStormDamage = ini.Get_Int(GENERAL, "LightningDamage", LightningStormDamage);
@@ -1667,6 +1792,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		PrerequisiteGDIFactory = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteGDIFactory", PrerequisiteGDIFactory);
 		PrerequisiteNodFactory = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteNodFactory", PrerequisiteNodFactory);
 		ZoomInFactor = ini.Get_Float(GENERAL, "ZoomInFactor", ZoomInFactor);
+		ScriptedCameraHeight = ini.Get_Int(GENERAL, "ScriptedCameraHeight", ScriptedCameraHeight);
 		IsRevealByHeight = ini.Get_Bool(GENERAL, "RevealByHeight", IsRevealByHeight);
 		IsShroudedSubteranneanMovesAllowed = ini.Get_Bool(GENERAL, "AllowShroudedSubteranneanMoves", IsShroudedSubteranneanMovesAllowed);
 		AircraftFogReveal = ini.Get_Int(GENERAL, "AircraftFogReveal", AircraftFogReveal);
@@ -1675,6 +1801,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		LowPowerPenaltyModifier = ini.Get_Float(GENERAL, "LowPowerPenaltyModifier", LowPowerPenaltyModifier);
 		MultipleFactory = Truncate_To_Single(ini.Get_Double(GENERAL, "MultipleFactory", MultipleFactory));
 		MultipleFactoryCap = ini.Get_Int(GENERAL, "MultipleFactoryCap", MultipleFactoryCap);
+		MaximumCheerRate = ini.Get_Int(GENERAL, "MaximumCheerRate", MaximumCheerRate);
+		IsAttackCursorOnDisguise = ini.Get_Bool(GENERAL, "AttackCursorOnDisguise", IsAttackCursorOnDisguise);
 		CraterLevel = ini.Get_Int(GENERAL, "CraterLevel", CraterLevel);
 		TreeFlammability = ini.Get_Float(GENERAL, "TreeFlammability", TreeFlammability);
 		MissileROTVar = ini.Get_Float(GENERAL, "MissileROTVar", MissileROTVar);
@@ -1712,6 +1840,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IceBreakingWeight = ini.Get_Float(GENERAL, "IceBreakingWeight", IceBreakingWeight);
 		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
 		IsAlliedWallTransparency = ini.Get_Bool("WallModel", "AlliedWallTransparency", IsAlliedWallTransparency);
+		IsMissileLaunchHoldsMove = ini.Get_Bool(GENERAL, "MissileLaunchHoldsMove", IsMissileLaunchHoldsMove);
 		IsAlliedSolidTransparency = ini.Get_Bool("CombatDamage", "AlliedSolidTransparency", IsAlliedSolidTransparency);
 		ParachuteMaxFallRate = ini.Get_Int(GENERAL, "ParachuteMaxFallRate", ParachuteMaxFallRate);
 		NoParachuteMaxFallRate = ini.Get_Int(GENERAL, "NoParachuteMaxFallRate", NoParachuteMaxFallRate);
@@ -1774,7 +1903,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsMultiMCV = ini.Get_Bool(GENERAL, "MultiMCV", IsMultiMCV);
 		IsRecheckPrerequisites = ini.Get_Bool(GENERAL, "RecheckPrerequisites", IsRecheckPrerequisites);
 		IsLargeSidebarStrips = ini.Get_Bool(GENERAL, "LargeSidebarStrips", IsLargeSidebarStrips);
+		IsUseCameoSortOrder = ini.Get_Bool(GENERAL, "UseCameoSortOrder", IsUseCameoSortOrder);
 		AircraftWaypointReload = ini.Get_Bool(GENERAL, "AircraftWaypointReload", AircraftWaypointReload);
+		WaypointAttackFromFirst = ini.Get_Bool(GENERAL, "WaypointAttackFromFirst", WaypointAttackFromFirst);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
@@ -1942,6 +2073,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		ChronoDistanceFactor = ini.Get_Int(GENERAL, "ChronoDistanceFactor", ChronoDistanceFactor);
 		ChronoMinimumDelay = ini.Get_Int(GENERAL, "ChronoMinimumDelay", ChronoMinimumDelay);
 		ChronoRangeMinimum = ini.Get_Int(GENERAL, "ChronoRangeMinimum", ChronoRangeMinimum);
+		ChronoErasedSuperWeapons = ini.Get_Bool(GENERAL, "ChronoErasedSuperWeapons", ChronoErasedSuperWeapons);
+		UndeployScattersInfantry = ini.Get_Bool(GENERAL, "UndeployScattersInfantry", UndeployScattersInfantry);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
@@ -2003,6 +2136,7 @@ bool RulesClass::MPlayer(CCINIClass const & ini)
 		IsMPBuildOffAlly = ini.Get_Bool(MPLAYER, "BuildOffAlly", IsMPBuildOffAlly);
 		IsMPBuildOffAlly = ini.Get_Bool(MPDIALOG, "BuildOffAlly", IsMPBuildOffAlly);
 		AlliesAllowed = ini.Get_Bool(MPDIALOG, "AlliesAllowed", AlliesAllowed);
+		AllyChangeAllowed = ini.Get_Bool(MPDIALOG, "AllyChangeAllowed", AllyChangeAllowed);
 		IsMPFogOfWar = ini.Get_Bool(MPLAYER, "FogOfWar", IsMPFogOfWar);
 		IsMPFogOfWar = ini.Get_Bool(MPDIALOG, "FogOfWar", IsMPFogOfWar);
 		IsMPMCVRedeploys = ini.Get_Bool(MPLAYER, "MCVRedeploys", IsMPMCVRedeploys);
@@ -2898,6 +3032,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmerParaDropInf);
 	stream.Serialize(AmerParaDropNum);
 	stream.Serialize(ParadropRadius);
+	stream.Serialize(ParadropInUsableArea);
 	stream.Serialize(SpyPlaneCamera);
 	stream.Serialize(SpyPlaneCameraFrames);
 	stream.Serialize(LightningStormDuration);
@@ -3065,7 +3200,6 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpySatActivationSound);
 	stream.Serialize(SpySatDeactivationSound);
 	stream.Serialize(EnterGrinderSound);
-	stream.Serialize(LeaveGrinderSound);
 	stream.Serialize(GateDownSound);
 	stream.Serialize(JumpjetTurnRate);
 	stream.Serialize(JumpjetSpeed);
@@ -3089,6 +3223,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LowPowerPenaltyModifier);
 	stream.Serialize(MultipleFactory);
 	stream.Serialize(MultipleFactoryCap);
+	stream.Serialize(MaximumCheerRate);
+	stream.Serialize(IsAttackCursorOnDisguise);
 	stream.Serialize(CraterLevel);
 	stream.Serialize(TreeFlammability);
 	stream.Serialize(MissileSpeedVar);
@@ -3101,6 +3237,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DropPodAngle);
 	stream.Serialize(ScrollMultiplier);
 	stream.Serialize(DirectRockingCoefficient);
+	stream.Serialize(FallBackCoefficient);
 	stream.Serialize(VoxelSpecularStrength);
 	stream.Serialize(VoxelShadeScale);
 	stream.Serialize(VoxelSpecularFromView);
@@ -3124,6 +3261,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IceBreakingWeight);
 	stream.Serialize(ShipSinkingWeight);
 	stream.Serialize(IsAlliedWallTransparency);
+	stream.Serialize(IsMissileLaunchHoldsMove);
 	stream.Serialize(IsAlliedSolidTransparency);
 	stream.Serialize(ParachuteMaxFallRate);
 	stream.Serialize(NoParachuteMaxFallRate);
@@ -3149,7 +3287,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PlayerJoined);
 	stream.Serialize(Construction);
 	stream.Serialize(CreditTicks);
-	stream.Serialize(CrumbleSound);
+	stream.Serialize(BuildingDieSound);
 	stream.Serialize(BuildingSlam);
 	stream.Serialize(RadarOn);
 	stream.Serialize(RadarOff);
@@ -3176,6 +3314,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DetailBufferZoneWidth);
 	stream.Serialize(BuildingGarrisonedSound);
 	stream.Serialize(BuildingAbandonedSound);
+	stream.Serialize(BuildingRepairedSound);
 	stream.Serialize(ScatterSound);
 	stream.Serialize(DeploySound);
 	stream.Serialize(CheerSound);
@@ -3290,6 +3429,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SmallFire);
 	stream.Serialize(LargeFire);
 	stream.Serialize(IsAnimationFires);
+	stream.Serialize(IsRing1Glow);
 	stream.Serialize(Paratrooper);
 	stream.Serialize(Disguise);
 	stream.Serialize(AlliedDisguise);
@@ -3310,6 +3450,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPulseProjectile);
 	stream.Serialize(C4Warhead);
 	stream.Serialize(CrushWarhead);
+	stream.Serialize(FallingDamageMultiplier);
+	stream.Serialize(CurrentStrengthDamage);
 	stream.Serialize(DrainMoneyFrameDelay);
 	stream.Serialize(DrainMoneyAmount);
 	stream.Serialize(DrainAnimationType);
@@ -3524,6 +3666,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoDistanceFactor);
 	stream.Serialize(ChronoMinimumDelay);
 	stream.Serialize(ChronoRangeMinimum);
+	stream.Serialize(ChronoErasedSuperWeapons);
+	stream.Serialize(UndeployScattersInfantry);
 	stream.Serialize(LightningFrequency);
 	stream.Serialize(LightningRandomness);
 	stream.Serialize(LightningDamage);
@@ -3539,6 +3683,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMultiMCV);
 	stream.Serialize(IsRecheckPrerequisites);
 	stream.Serialize(IsLargeSidebarStrips);
+	stream.Serialize(IsUseCameoSortOrder);
 	stream.Serialize(IsBlendedFog);
 	stream.Serialize(IsCompEasyBonus);
 	stream.Serialize(IsFineDifficulty);
@@ -3569,6 +3714,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMPSuperWeapons);
 	stream.Serialize(MPGameSpeed);
 	stream.Serialize(AlliesAllowed);
+	stream.Serialize(AllyChangeAllowed);
 	stream.Serialize(NodAIBuildsWalls);
 	stream.Serialize(AIBuildsWalls);
 	stream.Serialize(UseMinDefenseRule);
@@ -3585,6 +3731,15 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 }
 
 
+template <typename T>
+static void Detach_Pointer(AbstractClass const * target, T *& slot)
+{
+	if (target == slot) {
+		slot = NULL;
+	}
+}
+
+
 /// <summary>
 /// Removes all references to the specified object from the rules.
 /// The rules hold direct pointers to a great many object types and warheads, and keep
@@ -3593,334 +3748,121 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 void RulesClass::Detach(AbstractClass const * target, bool all)
 {
-	if (target == LargeVisceroid) {
-		LargeVisceroid = NULL;
-	}
-	if (target == SmallVisceroid) {
-		SmallVisceroid = NULL;
-	}
-	if (target == UnloadingHarvester) {
-		UnloadingHarvester = NULL;
-	}
-	if (target == VeinAttack) {
-		VeinAttack = NULL;
-	}
-	if (target == Wake) {
-		Wake = NULL;
-	}
-	if (target == OreTwinkle) {
-		OreTwinkle = NULL;
-	}
-	if (target == WeaponNullifyAnim) {
-		WeaponNullifyAnim = NULL;
-	}
-	if (target == FlamingInfantry) {
-		FlamingInfantry = NULL;
-	}
-	if (target == DropPodWeapon) {
-		DropPodWeapon = NULL;
-	}
-	if (target == FlameDamage) {
-		FlameDamage = NULL;
-	}
-	if (target == FlameDamage2) {
-		FlameDamage2 = NULL;
-	}
-	if (target == NukeWarhead) {
-		NukeWarhead = NULL;
-	}
-	if (target == EMPulseWarhead) {
-		EMPulseWarhead = NULL;
-	}
-	if (target == C4Warhead) {
-		C4Warhead = NULL;
-	}
-	if (target == CrushWarhead) {
-		CrushWarhead = NULL;
-	}
-	if (target == DrainAnimationType) {
-		DrainAnimationType = NULL;
-	}
-	for (WarheadTypeClass const ** warhead : {&V3Warhead, &V3EliteWarhead, &DMislWarhead, &DMislEliteWarhead, &CMislWarhead, &CMislEliteWarhead}) {
-		if (target == *warhead) {
-			*warhead = NULL;
-		}
-	}
-	for (RocketTypeStruct * rocket : {&V3Rocket, &DMisl, &CMisl}) {
-		if (target == rocket->Type) {
-			rocket->Type = NULL;
-		}
-	}
-	if (target == IonCannonWarhead) {
-		IonCannonWarhead = NULL;
-	}
-	if (target == FirestormWarhead) {
-		FirestormWarhead = NULL;
-	}
-	if (target == EMPulseSparkles) {
-		EMPulseSparkles = NULL;
-	}
-	if (target == VeinholeWarhead) {
-		VeinholeWarhead = NULL;
-	}
-	if (target == DefaultFirestormExplosionSystem) {
-		DefaultFirestormExplosionSystem = NULL;
-	}
-	if (target == DefaultLargeGreySmokeSystem) {
-		DefaultLargeGreySmokeSystem = NULL;
-	}
-	if (target == DefaultSmallGreySmokeSystem) {
-		DefaultSmallGreySmokeSystem = NULL;
-	}
-	if (target == DefaultSparkSystem) {
-		DefaultSparkSystem = NULL;
-	}
-	if (target == DefaultLargeRedSmokeSystem) {
-		DefaultLargeRedSmokeSystem = NULL;
-	}
-	if (target == DefaultSmallRedSmokeSystem) {
-		DefaultSmallRedSmokeSystem = NULL;
-	}
-	if (target == DefaultDebrisSmokeSystem) {
-		DefaultDebrisSmokeSystem = NULL;
-	}
-	if (target == DefaultFireStreamSystem) {
-		DefaultFireStreamSystem = NULL;
-	}
-	if (target == DefaultTestParticleSystem) {
-		DefaultTestParticleSystem = NULL;
-	}
-	if (target == DefaultRepairParticleSystem) {
-		DefaultRepairParticleSystem = NULL;
-	}
-	if (target == VeinholeTypeClass) {
-		VeinholeTypeClass = NULL;
-	}
-	if (target == Smoke1) {
-		Smoke1 = NULL;
-	}
-	if (target == Smoke2) {
-		Smoke2 = NULL;
-	}
-	if (target == MoveFlash) {
-		MoveFlash = NULL;
-	}
-	if (target == Behind) {
-		Behind = NULL;
-	}
-	if (target == BombParachute) {
-		BombParachute = NULL;
-	}
-	if (target == Parachute) {
-		Parachute = NULL;
-	}
-	if (target == SmallFire) {
-		SmallFire = NULL;
-	}
-	if (target == LargeFire) {
-		LargeFire = NULL;
-	}
-	if (target == FlareAnim) {
-		FlareAnim = NULL;
-	}
-	if (target == UnitCrateType) {
-		UnitCrateType = NULL;
-	}
-	if (target == Paratrooper) {
-		Paratrooper = NULL;
-	}
-	if (target == Disguise) {
-		Disguise = NULL;
-	}
-	if (target == Technician) {
-		Technician = NULL;
-	}
-	if (target == Engineer) {
-		Engineer = NULL;
-	}
-	if (target == Pilot) {
-		Pilot = NULL;
-	}
-	if (target == AlliedCrew) {
-		AlliedCrew = NULL;
-	}
-	if (target == SovietCrew) {
-		SovietCrew = NULL;
-	}
-	if (target == ThirdCrew) {
-		ThirdCrew = NULL;
-	}
-	if (target == RepairBay) {
-		RepairBay = NULL;
-	}
-	if (target == GDIGateOne) {
-		GDIGateOne = NULL;
-	}
-	if (target == GDIGateTwo) {
-		GDIGateTwo = NULL;
-	}
-	if (target == NodGateOne) {
-		NodGateOne = NULL;
-	}
-	if (target == NodGateTwo) {
-		NodGateTwo = NULL;
-	}
-	if (target == WallTower) {
-		WallTower = NULL;
-	}
-	if (target == GDIPowerPlant) {
-		GDIPowerPlant = NULL;
-	}
-	if (target == GDIPowerTurbine) {
-		GDIPowerTurbine = NULL;
-	}
-	if (target == NodRegularPower) {
-		NodRegularPower = NULL;
-	}
-	if (target == NodAdvancedPower) {
-		NodAdvancedPower = NULL;
-	}
-	if (target == ThirdPowerPlant) {
-		ThirdPowerPlant = NULL;
-	}
-	if (target == GDIFirestormGenerator) {
-		GDIFirestormGenerator = NULL;
-	}
-	if (target == GDIHunterSeeker) {
-		GDIHunterSeeker = NULL;
-	}
-	if (target == NodHunterSeeker) {
-		NodHunterSeeker = NULL;
-	}
-	if (target == NukeProjectile) {
-		NukeProjectile = NULL;
-	}
-	if (target == NukeDown) {
-		NukeDown = NULL;
-	}
-	if (target == EMPulseProjectile) {
-		EMPulseProjectile = NULL;
-	}
-	if (target == TireVoxelDebris) {
-		TireVoxelDebris = NULL;
-	}
-	if (target == ScrapVoxelDebris) {
-		ScrapVoxelDebris = NULL;
-	}
-	if (target == AtmosphereEntry) {
-		AtmosphereEntry = NULL;
-	}
-	if (target == InfantryExplode) {
-		InfantryExplode = NULL;
-	}
-	if (target == InfantryHeadPop) {
-		InfantryHeadPop = NULL;
-	}
-	if (target == InfantryNuked) {
-		InfantryNuked = NULL;
-	}
-	if (target == InfantryVirus) {
-		InfantryVirus = NULL;
-	}
-	if (target == InfantryMutate) {
-		InfantryMutate = NULL;
-	}
-	if (target == InfantryBrute) {
-		InfantryBrute = NULL;
-	}
-	if (target == IonBlast) {
-		IonBlast = NULL;
-	}
-	if (target == IronCurtainInvokeAnim) {
-		IronCurtainInvokeAnim = NULL;
-	}
-	if (target == NukeTakeOff) {
-		NukeTakeOff = NULL;
-	}
-	if (target == ChronoPlacement) {
-		ChronoPlacement = NULL;
-	}
-	if (target == ChronoBlast) {
-		ChronoBlast = NULL;
-	}
-	if (target == ChronoBlastDest) {
-		ChronoBlastDest = NULL;
-	}
-	if (target == WarpIn) {
-		WarpIn = NULL;
-	}
-	if (target == WarpOut) {
-		WarpOut = NULL;
-	}
-	if (target == WarpAway) {
-		WarpAway = NULL;
-	}
-	if (target == ChronoSparkle1) {
-		ChronoSparkle1 = NULL;
-	}
-	if (target == LightningWarhead) {
-		LightningWarhead = NULL;
-	}
-	if (target == WeatherConBoltExplosion) {
-		WeatherConBoltExplosion = NULL;
-	}
-	if (target == MutateWarhead) {
-		MutateWarhead = NULL;
-	}
-	if (target == MutateExplosionWarhead) {
-		MutateExplosionWarhead = NULL;
-	}
-	if (target == ForceShieldInvokeAnim) {
-		ForceShieldInvokeAnim = NULL;
-	}
-	if (target == DominatorFirstAnim) {
-		DominatorFirstAnim = NULL;
-	}
-	if (target == DominatorSecondAnim) {
-		DominatorSecondAnim = NULL;
-	}
-	if (target == DominatorWarhead) {
-		DominatorWarhead = NULL;
-	}
-	if (target == PermaControlledAnimationType) {
-		PermaControlledAnimationType = NULL;
-	}
-	if (target == ControlledAnimationType) {
-		ControlledAnimationType = NULL;
-	}
-	if (target == IonBeam) {
-		IonBeam = NULL;
-	}
-	if (target == Dig) {
-		Dig = NULL;
-	}
-	if (target == FirestormIdleAnim) {
-		FirestormIdleAnim = NULL;
-	}
-	if (target == FirestormAirAnim) {
-		FirestormAirAnim = NULL;
-	}
-	if (target == FirestormActiveAnim) {
-		FirestormActiveAnim = NULL;
-	}
-	if (target == FirestormGroundAnim) {
-		FirestormGroundAnim = NULL;
-	}
-	if (target == BarrelExplode) {
-		BarrelExplode = NULL;
-	}
-	if (target == BarrelParticle) {
-		BarrelParticle = NULL;
-	}
-	if (target == DropPodPuff) {
-		DropPodPuff = NULL;
-	}
-	if (target == IonStormWarhead) {
-		IonStormWarhead = NULL;
-	}
-	if (target == WebbedInfantry) {
-		WebbedInfantry = NULL;
-	}
+	Detach_Pointer(target, LargeVisceroid);
+	Detach_Pointer(target, SmallVisceroid);
+	Detach_Pointer(target, UnloadingHarvester);
+	Detach_Pointer(target, VeinAttack);
+	Detach_Pointer(target, Wake);
+	Detach_Pointer(target, OreTwinkle);
+	Detach_Pointer(target, WeaponNullifyAnim);
+	Detach_Pointer(target, FlamingInfantry);
+	Detach_Pointer(target, DropPodWeapon);
+	Detach_Pointer(target, FlameDamage);
+	Detach_Pointer(target, FlameDamage2);
+	Detach_Pointer(target, NukeWarhead);
+	Detach_Pointer(target, EMPulseWarhead);
+	Detach_Pointer(target, C4Warhead);
+	Detach_Pointer(target, CrushWarhead);
+	Detach_Pointer(target, DrainAnimationType);
+	Detach_Pointer(target, V3Warhead);
+	Detach_Pointer(target, V3EliteWarhead);
+	Detach_Pointer(target, DMislWarhead);
+	Detach_Pointer(target, DMislEliteWarhead);
+	Detach_Pointer(target, CMislWarhead);
+	Detach_Pointer(target, CMislEliteWarhead);
+	Detach_Pointer(target, V3Rocket.Type);
+	Detach_Pointer(target, DMisl.Type);
+	Detach_Pointer(target, CMisl.Type);
+	Detach_Pointer(target, IonCannonWarhead);
+	Detach_Pointer(target, FirestormWarhead);
+	Detach_Pointer(target, EMPulseSparkles);
+	Detach_Pointer(target, VeinholeWarhead);
+	Detach_Pointer(target, DefaultFirestormExplosionSystem);
+	Detach_Pointer(target, DefaultLargeGreySmokeSystem);
+	Detach_Pointer(target, DefaultSmallGreySmokeSystem);
+	Detach_Pointer(target, DefaultSparkSystem);
+	Detach_Pointer(target, DefaultLargeRedSmokeSystem);
+	Detach_Pointer(target, DefaultSmallRedSmokeSystem);
+	Detach_Pointer(target, DefaultDebrisSmokeSystem);
+	Detach_Pointer(target, DefaultFireStreamSystem);
+	Detach_Pointer(target, DefaultTestParticleSystem);
+	Detach_Pointer(target, DefaultRepairParticleSystem);
+	Detach_Pointer(target, VeinholeTypeClass);
+	Detach_Pointer(target, Smoke1);
+	Detach_Pointer(target, Smoke2);
+	Detach_Pointer(target, MoveFlash);
+	Detach_Pointer(target, Behind);
+	Detach_Pointer(target, BombParachute);
+	Detach_Pointer(target, Parachute);
+	Detach_Pointer(target, SmallFire);
+	Detach_Pointer(target, LargeFire);
+	Detach_Pointer(target, FlareAnim);
+	Detach_Pointer(target, UnitCrateType);
+	Detach_Pointer(target, Paratrooper);
+	Detach_Pointer(target, Disguise);
+	Detach_Pointer(target, Technician);
+	Detach_Pointer(target, Engineer);
+	Detach_Pointer(target, Pilot);
+	Detach_Pointer(target, AlliedCrew);
+	Detach_Pointer(target, SovietCrew);
+	Detach_Pointer(target, ThirdCrew);
+	Detach_Pointer(target, RepairBay);
+	Detach_Pointer(target, GDIGateOne);
+	Detach_Pointer(target, GDIGateTwo);
+	Detach_Pointer(target, NodGateOne);
+	Detach_Pointer(target, NodGateTwo);
+	Detach_Pointer(target, WallTower);
+	Detach_Pointer(target, GDIPowerPlant);
+	Detach_Pointer(target, GDIPowerTurbine);
+	Detach_Pointer(target, NodRegularPower);
+	Detach_Pointer(target, NodAdvancedPower);
+	Detach_Pointer(target, ThirdPowerPlant);
+	Detach_Pointer(target, GDIFirestormGenerator);
+	Detach_Pointer(target, GDIHunterSeeker);
+	Detach_Pointer(target, NodHunterSeeker);
+	Detach_Pointer(target, NukeProjectile);
+	Detach_Pointer(target, NukeDown);
+	Detach_Pointer(target, EMPulseProjectile);
+	Detach_Pointer(target, TireVoxelDebris);
+	Detach_Pointer(target, ScrapVoxelDebris);
+	Detach_Pointer(target, AtmosphereEntry);
+	Detach_Pointer(target, InfantryExplode);
+	Detach_Pointer(target, InfantryHeadPop);
+	Detach_Pointer(target, InfantryNuked);
+	Detach_Pointer(target, InfantryVirus);
+	Detach_Pointer(target, InfantryMutate);
+	Detach_Pointer(target, InfantryBrute);
+	Detach_Pointer(target, IonBlast);
+	Detach_Pointer(target, IronCurtainInvokeAnim);
+	Detach_Pointer(target, NukeTakeOff);
+	Detach_Pointer(target, ChronoPlacement);
+	Detach_Pointer(target, ChronoBlast);
+	Detach_Pointer(target, ChronoBlastDest);
+	Detach_Pointer(target, WarpIn);
+	Detach_Pointer(target, WarpOut);
+	Detach_Pointer(target, WarpAway);
+	Detach_Pointer(target, ChronoSparkle1);
+	Detach_Pointer(target, LightningWarhead);
+	Detach_Pointer(target, WeatherConBoltExplosion);
+	Detach_Pointer(target, MutateWarhead);
+	Detach_Pointer(target, MutateExplosionWarhead);
+	Detach_Pointer(target, ForceShieldInvokeAnim);
+	Detach_Pointer(target, DominatorFirstAnim);
+	Detach_Pointer(target, DominatorSecondAnim);
+	Detach_Pointer(target, DominatorWarhead);
+	Detach_Pointer(target, PermaControlledAnimationType);
+	Detach_Pointer(target, ControlledAnimationType);
+	Detach_Pointer(target, IonBeam);
+	Detach_Pointer(target, Dig);
+	Detach_Pointer(target, FirestormIdleAnim);
+	Detach_Pointer(target, FirestormAirAnim);
+	Detach_Pointer(target, FirestormActiveAnim);
+	Detach_Pointer(target, FirestormGroundAnim);
+	Detach_Pointer(target, BarrelExplode);
+	Detach_Pointer(target, BarrelParticle);
+	Detach_Pointer(target, DropPodPuff);
+	Detach_Pointer(target, IonStormWarhead);
+	Detach_Pointer(target, WebbedInfantry);
 
 	BarrelDebris.Delete((VoxelAnimTypeClass const *)target);
 
@@ -4021,28 +3963,34 @@ bool RulesClass::Objects(CCINIClass const & ini)
 	for (int index = 0; index < SuperWeaponTypes.Count(); index++) {
 		SuperWeaponTypes[index]->Read_INI(ini);
 	}
+	TypeMarks.SuperWeapons = SuperWeaponTypes.Count();
 
 	for (int anim = 0; anim < AnimTypes.Count(); anim++) {
 		AnimTypes[anim]->Read_INI(ArtINI);
 	}
+	TypeMarks.Anims = AnimTypes.Count();
 
 	int bindex;
 	for (bindex = 0; bindex < BuildingTypes.Count(); bindex++) {
 		BuildingTypes[bindex]->Read_INI(ini);
 	}
+	TypeMarks.Buildings = BuildingTypes.Count();
 
 	for (int aindex = 0; aindex < AircraftTypes.Count(); aindex++) {
 		AircraftTypes[aindex]->Read_INI(ini);
 	}
+	TypeMarks.Aircraft = AircraftTypes.Count();
 
 	for (int uindex = 0; uindex < UnitTypes.Count(); uindex++) {
 		UnitTypes[uindex]->Read_INI(ini);
 	}
+	TypeMarks.Units = UnitTypes.Count();
 
 	for (int iindex = 0; iindex < InfantryTypes.Count(); iindex++) {
 		stricmp(InfantryTypes[iindex]->IniName, "MUTANT"); /// the result of this comparison is discarded
 		InfantryTypes[iindex]->Read_INI(ini);
 	}
+	TypeMarks.Infantry = InfantryTypes.Count();
 
 	// A projectile's AirburstWeapon can create a weapon that nothing else named, and a weapon
 	// can create a projectile, so the lists are read again from where they stood until neither grows.
@@ -4056,42 +4004,48 @@ bool RulesClass::Objects(CCINIClass const & ini)
 			BulletTypes[proj]->Read_INI(ini);
 		}
 	}
+	TypeMarks.Weapons = windex;
+	TypeMarks.Bullets = proj;
 
 	for (int whead = 0; whead < ::Warheads.Count(); whead++) {
 		::Warheads[whead]->Read_INI(ini);
 	}
-
-	for (windex = 0; windex < Weapons.Count(); windex++) {
-		Weapons[windex]->Init_Max_Speed();
-	}
+	TypeMarks.Warheads = ::Warheads.Count();
 
 	for (int tindex = 0; tindex < TerrainTypes.Count(); tindex++) {
 		TerrainTypes[tindex]->Read_INI(ini);
 	}
+	TypeMarks.Terrains = TerrainTypes.Count();
 
 	for (int sindex = 0; sindex < SmudgeTypes.Count(); sindex++) {
 		SmudgeTypes[sindex]->Read_INI(ini);
 	}
+	TypeMarks.Smudges = SmudgeTypes.Count();
 
 	for (int oindex = 0; oindex < OverlayTypes.Count(); oindex++) {
 		OverlayTypes[oindex]->Read_INI(ini);
 	}
+	TypeMarks.Overlays = OverlayTypes.Count();
 
 	for (int pindex = 0; pindex < ParticleTypes.Count(); pindex++) {
 		ParticleTypes[pindex]->Read_INI(ini);
 	}
+	TypeMarks.Particles = ParticleTypes.Count();
 
 	for (int psindex = 0; psindex < ParticleSystemTypes.Count(); psindex++) {
 		ParticleSystemTypes[psindex]->Read_INI(ini);
 	}
+	TypeMarks.ParticleSystems = ParticleSystemTypes.Count();
 
 	for (int vindex = 0; vindex < VoxelAnimTypes.Count(); vindex++) {
 		VoxelAnimTypes[vindex]->Read_INI(ini);
 	}
+	TypeMarks.VoxelAnims = VoxelAnimTypes.Count();
 
 	for (int tibindex = 0; tibindex < Tiberiums.Count(); tibindex++) {
 		Tiberiums[tibindex]->Read_INI(ini);
 	}
+	TypeMarks.Tiberiums = Tiberiums.Count();
 
 	/*
 	**	Fetch the mission control values.
@@ -4111,7 +4065,9 @@ bool RulesClass::Objects(CCINIClass const & ini)
 /// multiplayer game can be refused when the players are not running the same rules. The
 /// Firestorm rule file is folded into the result whenever that addon is enabled, and each
 /// multiplayer rule file whenever it supplied a section. An absent file has to leave the
-/// result alone, because an empty database still hashes to a value of its own.
+/// result alone, because an empty database still hashes to a value of its own. The random map
+/// settings of RMGMD.INI are folded in too, because two machines with different settings lay out
+/// different maps from the same seed.
 /// </summary>
 /// <returns>Returns with the unique ID of the rules currently in force.</returns>
 int RulesClass::Get_Rule_Unique_ID(void)
@@ -4126,6 +4082,7 @@ int RulesClass::Get_Rule_Unique_ID(void)
 	if (Addon_Enabled(ADDON_FIRESTORM) && FSMPRuleINI.Section_Count() > 0) {
 		id += FSMPRuleINI.Get_Unique_ID();
 	}
+	id += Load_RMG_Settings().Unique_ID();
 	return(id);
 }
 
@@ -4241,4 +4198,16 @@ RulesClass::RocketTypeStruct const * RulesClass::Rocket_Of(AircraftTypeClass con
 		return(&DMisl);
 	}
 	return(NULL);
+}
+
+
+WarheadTypeClass const * RulesClass::Rocket_Warhead(AircraftTypeClass const * type, bool elite) const
+{
+	if (type == V3Rocket.Type) {
+		return(elite ? V3EliteWarhead : V3Warhead);
+	}
+	if (type == CMisl.Type) {
+		return(elite ? CMislEliteWarhead : CMislWarhead);
+	}
+	return(elite ? DMislEliteWarhead : DMislWarhead);
 }

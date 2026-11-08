@@ -298,6 +298,15 @@ void Test_Event_Semantics(void)
 	Check(!NetSemantic::Subject_Owner_Is_Valid(3, 4), "a synchronized subject rejects another player's identity");
 	Check(NetSemantic::Game_Speed_Is_Valid(0) && NetSemantic::Game_Speed_Is_Valid(6), "game-speed validation accepts both legal edges");
 	Check(!NetSemantic::Game_Speed_Is_Valid(-1) && !NetSemantic::Game_Speed_Is_Valid(7), "game-speed validation rejects both outside edges");
+	Check(NetSemantic::SPEED_SETTING_COUNT == 7, "the game controls offer seven game speeds, 0 to 6");
+	Check(NetSemantic::Clamp_Game_Speed(0) == 0 && NetSemantic::Clamp_Game_Speed(3) == 3 && NetSemantic::Clamp_Game_Speed(6) == 6
+		&& NetSemantic::Clamp_Game_Speed(7) == 7,
+		"a settings-file game speed from 0 to 7 is kept, 7 included as gamemd allows");
+	Check(NetSemantic::Clamp_Game_Speed(-1) == 0 && NetSemantic::Clamp_Game_Speed(-50) == 0
+		&& NetSemantic::Clamp_Game_Speed(8) == 7 && NetSemantic::Clamp_Game_Speed(99) == 7,
+		"a settings-file game speed outside 0 to 7 is held to the nearest end");
+	Check(!NetSemantic::Game_Speed_Is_Valid(NetSemantic::Clamp_Game_Speed(99)),
+		"a network order still refuses speed 7, which only the settings file allows");
 	Check(NetSemantic::Latency_Fudge_Is_Valid(0) && NetSemantic::Latency_Fudge_Is_Valid(3), "latency-margin validation accepts both legal edges");
 	Check(!NetSemantic::Latency_Fudge_Is_Valid(-1) && !NetSemantic::Latency_Fudge_Is_Valid(4), "latency-margin validation rejects both outside edges");
 	Check(NetSemantic::Animation_Type_Is_Valid(-1, -1, 5) && NetSemantic::Animation_Type_Is_Valid(4, -1, 5),
@@ -368,7 +377,7 @@ void Test_Full_Compressed_Table(void)
 		packet.pop_back();
 		NetPacket::DecodeError expected = NetPacket::DecodeError::TRUNCATED_EVENT;
 		if (EventClass::Has_Variable_Payload(type)) {
-			expected = NetPacket::DecodeError::TRUNCATED_ADDPLAYER;
+			expected = NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD;
 		} else if (type == EventClass::MEGAMISSION) {
 			expected = NetPacket::DecodeError::TRUNCATED_MEGAMISSION;
 		}
@@ -461,10 +470,10 @@ void Check_Add_Player(NetPacket::DecodeResult const & result, char const * what)
 		NetPacket::DecodedEvent const & event = result.Events[1];
 		valid = event.Event.Type == EventClass::ADDPLAYER
 			&& event.Event.Data.Variable.Size == 3
-			&& event.AddPlayerData.size() == 3
-			&& event.Event.Data.Variable.Pointer == event.AddPlayerData.data()
-			&& std::to_integer<int>(event.AddPlayerData[0]) == 0x11
-			&& std::to_integer<int>(event.AddPlayerData[2]) == 0x33;
+			&& event.VariablePayload.size() == 3
+			&& event.Event.Data.Variable.Pointer == event.VariablePayload.data()
+			&& std::to_integer<int>(event.VariablePayload[0]) == 0x11
+			&& std::to_integer<int>(event.VariablePayload[2]) == 0x33;
 	}
 	Check(valid, what);
 }
@@ -492,7 +501,7 @@ void Test_Add_Player(void)
 	truncated.pop_back();
 	Check_Error(
 		NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"compressed ADDPLAYER rejects a payload shorter than its declared size");
 
 	Bytes transactional = Compressed_Packet();
@@ -505,7 +514,7 @@ void Test_Add_Player(void)
 	transactional.push_back(std::byte{0x11});
 	Check_Error(
 		NetPacket::Decode_Event_Packet(transactional, NetPacket::Encoding::COMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"a late ADDPLAYER error discards every previously decoded event");
 
 	Bytes uncompressed = Full_Event(EventClass::FRAMEINFO);
@@ -520,7 +529,7 @@ void Test_Add_Player(void)
 	uncompressed.pop_back();
 	Check_Error(
 		NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"uncompressed ADDPLAYER rejects a truncated owned payload");
 }
 
@@ -544,10 +553,10 @@ void Test_Beacon_Text(void)
 		NetPacket::DecodedEvent const & event = result.Events[1];
 		valid = event.Event.Type == EventClass::BEACON_TEXT
 			&& event.Event.Data.Variable.Size == size
-			&& event.AddPlayerData.size() == size
-			&& event.Event.Data.Variable.Pointer == event.AddPlayerData.data()
-			&& std::to_integer<int>(event.AddPlayerData[0]) == 0x02
-			&& std::to_integer<int>(event.AddPlayerData[2]) == 'i';
+			&& event.VariablePayload.size() == size
+			&& event.Event.Data.Variable.Pointer == event.VariablePayload.data()
+			&& std::to_integer<int>(event.VariablePayload[0]) == 0x02
+			&& std::to_integer<int>(event.VariablePayload[2]) == 'i';
 	}
 	Check(valid, "compressed BEACON_TEXT owns and binds its payload");
 
@@ -555,7 +564,7 @@ void Test_Beacon_Text(void)
 	truncated.pop_back();
 	Check_Error(
 		NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"compressed BEACON_TEXT rejects a payload shorter than its declared size");
 
 	Bytes uncompressed = Full_Event(EventClass::FRAMEINFO);
@@ -566,7 +575,7 @@ void Test_Beacon_Text(void)
 	NetPacket::DecodeResult uncompressed_result = NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender);
 	Check(uncompressed_result.Succeeded() && uncompressed_result.Events.size() == 2
 		&& uncompressed_result.Events[1].Event.Type == EventClass::BEACON_TEXT
-		&& uncompressed_result.Events[1].AddPlayerData.size() == size,
+		&& uncompressed_result.Events[1].VariablePayload.size() == size,
 		"uncompressed BEACON_TEXT owns and binds its payload");
 }
 
@@ -1011,6 +1020,18 @@ void Test_Global_Wire_Lengths(void)
 	std::memset(packet.Options.Buf, 'x', MAX_GAMEOPT_LENGTH - 1);
 	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == sizeof(packet),
 		"options text of the largest size needs the whole packet");
+
+	// A start carries the host's network choices only when it chose some; a start with none is the short packet.
+	std::memset(&packet, 0, sizeof(packet));
+	packet.Command = NET_GO;
+	packet.ResponseTime.OneWay = 40;
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == HEADER + sizeof(int),
+		"a start with no network choices is the short packet");
+	packet.ResponseTime.Options = 0x80000604u;
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == HEADER + sizeof(GlobalPacketType::ResponseTime),
+		"a start with network choices carries them");
+	Check(NetGlobal::Required_Length(&packet, HEADER + sizeof(int)) == HEADER + sizeof(int),
+		"a short start is not read past its end");
 
 	// A caller that asks for less than the requirement keeps what it asked for.
 	std::memset(&packet, 0, sizeof(packet));

@@ -1,0 +1,20 @@
+; An Iron Curtained unit on the landing cell destroys the arriving unit, and it does so when the unit leaves its cell, 60 frames
+; after the warp is fired (gamemd stage 2, 0x718260), not when it is fired. The curtained unit is not harmed.
+; A Rhino (HTNK) at 40,40 is sphered and warped to 56,40, where a Grizzly (MTNK) stands under the Iron Curtain from frame 50.
+; Expected: the Rhino is listed at frame 120 (the wait is not over) and gone at frame 150, with no "chrono landed" line; the Grizzly
+; is listed at frame 150.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/chrono-landing-curtained.txt -Seconds 120 -Filter "AUTOTEST   (where|chrono)|AUTOTEST frame|Exception"
+20 own GAPOWR 46 36
+30 own HTNK 40 40
+31 own MTNK 56 40
+35 reveal
+40 grant IronCurtainSpecial
+50 fire IronCurtainSpecial 56 40
+55 grant ChronoSphereSpecial
+56 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 56 40
+120 where HTNK
+150 where HTNK
+150 where MTNK
+230 quit

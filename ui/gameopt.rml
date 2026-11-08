@@ -25,7 +25,7 @@
 	<div id="timing" class="group" data-if="internet">
 		<div class="rule"><span></span><label>Internet Game Controls</label><span></span></div>
 	</div>
-	<span class="caption" id="cap-connection" data-if="internet">Connection</span>
+	<span class="caption" id="cap-connection" data-if="internet" tip="The game sets this from the slowest connection in the match">Connection</span>
 	<input type="range" id="connection" step="1" disabled="disabled" data-if="internet" data-attr-min="connectionlowest" data-attr-max="connectionhighest" data-attr-value="connection"/>
 	<span class="trough disabled" id="trough-connection" data-if="internet">{{connection}}</span>
 	<span class="trough-edge" id="edge-connection" data-if="internet"></span>

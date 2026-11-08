@@ -1,0 +1,29 @@
+; A computer house is granted its Nuke while it has no power (grantai). Enable(quiet) suspends the weapon and Forced_Charge
+; makes it ready. The countdown must stay stopped, so the computer's AI pass does not fire it. The enemy power plant at
+; frame 140 restores power, Suspend(false) releases the weapon, and the next AI pass fires it.
+; Expected: suspended 1 and no "ready 0" line between frames 60 and 140; "ready 0" appears after 140.
+; Before the Forced_Charge fix (super.cpp) the weapon read suspended 1 with a running countdown and fired between frames 100 and 130.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/ai-super-hold-grantai.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   (super house Africans index 0|grantai|kill|house Africans)|Exception"
+10 command CenterBase
+20 reveal
+30 view 56 40
+40 enemy NAMISL 60 50
+41 enemy GAPOWR 46 34
+42 enemy GAPOWR 46 38
+43 enemy GAPOWR 46 42
+50 kill GAPOWR
+51 houses
+60 grantai NukeSpecial
+61 supers
+80 supers
+100 supers
+120 supers
+135 supers
+140 enemy GAPOWR 46 38
+141 houses
+150 supers
+170 supers
+190 supers
+210 supers
+240 supers
+270 quit

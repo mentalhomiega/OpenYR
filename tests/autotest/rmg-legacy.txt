@@ -1,0 +1,7 @@
+; The rmg-temperate map built with an RMGMD.INI (rmg-legacy) that holds the values the generator had built in before it
+; read the file: tiberium 2500 to 5500, temperate ambient 75,100,75,50 with plain tints, and a MaxTrees no map reaches.
+; Expected: the same map as before the file was read: ambient 50, tint 100,100,100, 30 trees, 8 lamps and 879 ore cells.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/rmg-legacy.txt -Mods src-agent26/tests/autotest/rmg-maps,src-agent26/tests/autotest/rmg-legacy -Map RMGTEMP.MAP -Seconds 150
+2 randommap
+2 census ore
+3 quit

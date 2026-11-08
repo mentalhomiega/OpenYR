@@ -33,6 +33,7 @@
 
 #include "_xmouse.h"
 #include "win.h"
+#include "windowevent.hh"
 
 struct WindowEvent;
 
@@ -46,6 +47,20 @@ enum WWKey_Type {
 	WWKEY_UNK_BIT		= 0x4000,
 	WWKEY_BTN_BIT		= 0x8000,
 };
+
+
+// The WWKEY_*_BIT modifier bits for the flags that are true.
+inline int Key_Bits(bool shift, bool ctrl, bool alt)
+{
+	return((shift ? WWKEY_SHIFT_BIT : 0) | (ctrl ? WWKEY_CTRL_BIT : 0) | (alt ? WWKEY_ALT_BIT : 0));
+}
+
+
+// The WWKEY_*_BIT modifier bits for the WINDOW_MOD_SHIFT, WINDOW_MOD_CTRL and WINDOW_MOD_ALT flags in window_modifiers.
+inline int Key_Bits_From_Window(int window_modifiers)
+{
+	return(Key_Bits((window_modifiers & WINDOW_MOD_SHIFT) != 0, (window_modifiers & WINDOW_MOD_CTRL) != 0, (window_modifiers & WINDOW_MOD_ALT) != 0));
+}
 
 
 class WWKeyboardClass

@@ -1,0 +1,17 @@
+; Rally point line: a selected war factory with a rally point six cells away to the south-east, and a barracks beside it with one to the north-east.
+; gamemd's TacticalClass::RenderLinkLines (0x6DA9D0) draws the line from the structure's centre to the rally cell as a dashed line two pixels thick in the owner's colour with a black line under it; a dash is five pixels long with a three pixel gap, and the dashes march along the line.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-rally-line.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120
+; Expected in the shots: two dashed lines, one from each structure to its rally cell; they run in the colour of the player's house, with a thin black edge below; the dashes shift along the line from one shot to the next.
+30 command CenterBase
+35 reveal
+40 own GAWEAP 60 40
+41 own GAPILE 66 40
+50 view 63 43
+60 rally GAWEAP 66 46
+61 rally GAPILE 70 36
+70 select GAWEAP
+71 selectadd GAPILE
+80 windowshot rl-a1
+83 windowshot rl-a2
+86 windowshot rl-a3
+100 quit

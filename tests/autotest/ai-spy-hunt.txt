@@ -1,0 +1,30 @@
+; A computer's SPY (StupidHunt=yes, Infiltrate=yes, Agent=yes) and the player's buildings. Run with -AICountries 1.
+; Hunt with no target (FootClass::Mission_Hunt, 0x4D5350): a StupidHunt=yes type skips the target scan. In a campaign game it walks to its
+; house's starting cell; in a skirmish it idles, so the spy stays on Hunt with no target and no destination however long it hunts.
+; Hunt with a building as its target (InfantryClass::Mission_Hunt, 0x51F540): a computer's Infiltrate=yes soldier sets the building as its
+; destination and takes the Capture mission, then walks in and infiltrates it.
+; Capture with the building as destination only (settarget ... capturedest, the way a team's garrison mission orders): FootClass::Mission_Capture
+; (0x4D4B20) finds no target and sends a computer's soldier back to Hunt, so the spy never walks in.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/ai-spy-hunt.txt -AICountries 1 -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   wpcell|AUTOTEST settarget|Exception"
+; Expected: wheres at 200 and 600 give SPY mission Hunt, nav -1,-1, target -1,-1. After the target (frame 610) the where at 640 gives Capture
+; with a nav and target at the building (GACNST), and the spy has gone into it by 900 (no where line). The second spy (frame 1290) given the
+; building as destination alone is on Hunt with no nav and no target at 1340 and 1700.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 wpcell 1
+110 spawn SPY 62 28
+112 hunt SPY
+200 where SPY
+600 where SPY
+610 settarget SPY 65 20 computer hunt
+640 where SPY
+900 where SPY
+1200 where SPY
+1290 spawn SPY 62 28
+1295 hunt SPY
+1300 settarget SPY 65 20 computer capturedest
+1340 where SPY
+1700 where SPY
+1800 quit

@@ -1,0 +1,61 @@
+; A Dreadnought (DRED, Spawns=DMISL, SpawnsNumber=2) on the XMP08T2 lake is turned to face a neutral tank (HTNK) on the shore
+; about 13 cells away and strikes it. Its two missiles should leave 20 frames apart. gamemd's SpawnManagerClass::Update (0x6B7230,
+; 0x6B7392) uses 9 frames only when the launching object's own TechnoType has MissileSpawn=yes (0x6B7392 reads TechnoType+0xD68);
+; the Dreadnought's type does not, so its gap is 20. The spawncycle lines show next_spawn, which is set at each launch, and
+; the Spawn lines show each launch.
+; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/dred-missile-spacing.txt -Map XMP08T2.MAP -Seconds 120
+10 command CenterBase
+30 reveal
+40 own DRED 84 70
+41 face 100 84 70
+42 neutral HTNK 92 80
+50 view 90 76
+60 spawns DRED
+100 strike DRED 92 80
+102 spawns DRED
+104 spawns DRED
+106 spawns DRED
+108 spawns DRED
+110 spawns DRED
+112 spawns DRED
+114 spawns DRED
+116 spawns DRED
+118 spawns DRED
+120 spawns DRED
+122 spawns DRED
+124 spawns DRED
+125 command ScreenCapture
+126 spawns DRED
+128 spawns DRED
+130 spawns DRED
+132 spawns DRED
+134 spawns DRED
+136 spawns DRED
+138 spawns DRED
+140 spawns DRED
+142 spawns DRED
+144 spawns DRED
+145 command ScreenCapture
+146 spawns DRED
+148 spawns DRED
+150 spawns DRED
+152 spawns DRED
+154 spawns DRED
+156 spawns DRED
+158 spawns DRED
+160 spawns DRED
+162 spawns DRED
+164 spawns DRED
+166 spawns DRED
+168 spawns DRED
+170 spawns DRED
+172 spawns DRED
+174 spawns DRED
+176 spawns DRED
+178 spawns DRED
+180 spawns DRED
+200 spawns DRED
+240 spawns DRED
+300 spawns DRED
+400 spawns DRED
+500 quit

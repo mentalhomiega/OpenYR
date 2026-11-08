@@ -66,7 +66,6 @@ const double WaveReach = 256.0;
 
 // The speed follows gamemd's 512-pixel constant at 0x53CA30.
 double WaveSpeed = ((512.0 - WaveStartDistance) + WaveBandWidth) * WaveSpeedScale;
-double WavePhaseSpeed = WaveSpeed;
 
 DynamicVectorClass<IonBlastClass *> IonBlastClass::IonBlasts;
 
@@ -154,93 +153,104 @@ void IonBlastClass::AI(void)
 			FootClass * occupier = (FootClass *)Map[center + Cell(x_offset, y_offset)].Cell_Occupier();
 
 			while (occupier != NULL) {
-
-				if (dynamic_cast<InfantryClass *>((ObjectClass *)occupier) != NULL || dynamic_cast<UnitClass *>((ObjectClass *)occupier) != NULL) {
-
-					Point2D occupier_point;
-					TacticalMap->Coord_To_Pixel(occupier->Get_Coord(), occupier_point);
-
-					Point2D diff = occupier_point - point;
-					int screen_dist = diff.Gamemd_Length() + 8;
-
-					if (screen_dist < 256) {
-
-						char * displacement = (char *)BlastSurfaces[Lifetime]->Lock(Point2D(screen_dist + BlastSurfaceWidth / 2, BlastSurfaceHeight / 2));
-
-						if (*displacement > 0) {
-
-							occupier->Set_Speed(0.0);
-
-							int draw_offset = Spiral_Index_To_Point(*displacement).Y;
-							occupier->IonBlastYDrawOffset = 2 * draw_offset;
-						}
-
-						if (occupier->Techno_Type_Class()->Voxel.VoxLib != NULL
-							&& !occupier->Techno_Type_Class()->Voxel.VoxLib->Load_Failed()
-							&& *displacement >= 0) {
-
-							/*
-							 * Rock the voxel unit away from the blast: build the vector
-							 * from the unit to the blast center, rotate it into the unit's
-							 * facing frame, and scale it by the slope of the ripple at the
-							 * unit's distance from the blast. The wave height there is
-							 * height/decay, so its slope comes out by the quotient rule.
-							 */
-							Coord blast_coord = Position;
-							Coord occupier_coord = occupier->Get_Coord();
-
-							Vector3 to_blast((float)(blast_coord.X - occupier_coord.X), (float)(occupier_coord.Y - blast_coord.Y), (float)(blast_coord.Z - occupier_coord.Z));
-							Vector3 flat = to_blast;
-
-							double facing_rad = occupier->PrimaryFacing.Current().As_Radian();
-							// gamemd rocks units with its table sine and cosine (0x53CBE0 calls 0x4CACB0 and 0x4CAD00), not std::.
-							float facing_sin = Gamemd_Sine(facing_rad);
-							float facing_cos = Gamemd_Cosine(facing_rad);
-
-							float blast_dist = Gamemd_Magnitude_3D(to_blast.X, to_blast.Y, to_blast.Z);
-
-							if (fabs(blast_dist) > 0.00002) {
-
-								flat.Z = 0.0;
-
-								double flat_len = Gamemd_Magnitude_2D(flat.X, flat.Y);
-
-								Vector3 normal;
-								if (flat_len != 0.0) {
-									normal = flat / flat_len;
-								} else {
-									normal = flat;
-								}
-
-								float forwards = normal.X * facing_cos + normal.Y * facing_sin;
-								float sideways_zsin = -(normal.Z * facing_sin);
-								double sideways_zcos = normal.Z * facing_cos;
-								double sideways_y = normal.X * facing_sin - normal.Y * facing_cos;
-								float sideways = Gamemd_Magnitude_3D(sideways_zsin, sideways_zcos, sideways_y);
-
-								if (fabs(facing_cos * forwards - facing_sin * sideways - normal.X) > 0.0002
-									|| fabs(facing_cos * sideways + facing_sin * forwards - normal.Y) > 0.0002) {
-									sideways = -sideways;
-								}
-
-								double decay = blast_dist + WaveAmplitudeFalloff;
-								double height = (Gamemd_Sine((blast_dist - (double)Lifetime * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) * WaveAmplitudeFalloff;
-								double phase_cos = Gamemd_Cosine((blast_dist - (double)Lifetime * WavePhaseSpeed + 38.0) * WaveFrequency);
-								double slope = ((phase_cos * WaveFrequency * WaveAmplitudeFalloff * 3.5) * decay - height) / (decay * decay);
-
-								occupier->AngleRotatedSideways = (float)(sideways * slope * WaveRockScale);
-								occupier->AngleRotatedForwards = (float)(-(forwards * slope * WaveRockScale));
-							}
-						}
-					}
-				}
-
+				Rock_Occupier(occupier, point);
 				occupier = (FootClass *)occupier->Next;
 			}
 		}
 	}
 
 	Lifetime++;
+}
+
+
+/*
+ * Rock the voxel unit away from the blast: build the vector
+ * from the unit to the blast center, rotate it into the unit's
+ * facing frame, and scale it by the slope of the ripple at the
+ * unit's distance from the blast. The wave height there is
+ * height/decay, so its slope comes out by the quotient rule.
+ */
+static void Rock_Voxel(FootClass * occupier, Coord blast_coord, int lifetime)
+{
+	Coord occupier_coord = occupier->Get_Coord();
+
+	Vector3 to_blast((float)(blast_coord.X - occupier_coord.X), (float)(occupier_coord.Y - blast_coord.Y), (float)(blast_coord.Z - occupier_coord.Z));
+	Vector3 flat = to_blast;
+
+	double facing_rad = occupier->PrimaryFacing.Current().As_Radian();
+	// gamemd rocks units with its table sine and cosine (0x53CBE0 calls 0x4CACB0 and 0x4CAD00), not std::.
+	float facing_sin = Gamemd_Sine(facing_rad);
+	float facing_cos = Gamemd_Cosine(facing_rad);
+
+	float blast_dist = Gamemd_Magnitude_3D(to_blast.X, to_blast.Y, to_blast.Z);
+
+	if (fabs(blast_dist) > 0.00002) {
+
+		flat.Z = 0.0;
+
+		double flat_len = Gamemd_Magnitude_2D(flat.X, flat.Y);
+
+		Vector3 normal;
+		if (flat_len != 0.0) {
+			normal = flat / flat_len;
+		} else {
+			normal = flat;
+		}
+
+		float forwards = normal.X * facing_cos + normal.Y * facing_sin;
+		float sideways_zsin = -(normal.Z * facing_sin);
+		double sideways_zcos = normal.Z * facing_cos;
+		double sideways_y = normal.X * facing_sin - normal.Y * facing_cos;
+		float sideways = Gamemd_Magnitude_3D(sideways_zsin, sideways_zcos, sideways_y);
+
+		if (fabs(facing_cos * forwards - facing_sin * sideways - normal.X) > 0.0002
+			|| fabs(facing_cos * sideways + facing_sin * forwards - normal.Y) > 0.0002) {
+			sideways = -sideways;
+		}
+
+		double decay = blast_dist + WaveAmplitudeFalloff;
+		double height = (Gamemd_Sine((blast_dist - (double)lifetime * WaveSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) * WaveAmplitudeFalloff;
+		double phase_cos = Gamemd_Cosine((blast_dist - (double)lifetime * WaveSpeed + 38.0) * WaveFrequency);
+		double slope = ((phase_cos * WaveFrequency * WaveAmplitudeFalloff * 3.5) * decay - height) / (decay * decay);
+
+		occupier->AngleRotatedSideways = (float)(sideways * slope * WaveRockScale);
+		occupier->AngleRotatedForwards = (float)(-(forwards * slope * WaveRockScale));
+	}
+}
+
+
+// Stops an infantry or vehicle that the shockwave reaches and rocks it away from the blast; other foot objects are left alone.
+void IonBlastClass::Rock_Occupier(FootClass * occupier, Point2D blast_pixel)
+{
+	if (dynamic_cast<InfantryClass *>((ObjectClass *)occupier) == NULL && dynamic_cast<UnitClass *>((ObjectClass *)occupier) == NULL) {
+		return;
+	}
+
+	Point2D occupier_point;
+	TacticalMap->Coord_To_Pixel(occupier->Get_Coord(), occupier_point);
+
+	Point2D diff = occupier_point - blast_pixel;
+	int screen_dist = diff.Gamemd_Length() + 8;
+	if (screen_dist >= 256) {
+		return;
+	}
+
+	char * displacement = (char *)BlastSurfaces[Lifetime]->Lock(Point2D(screen_dist + BlastSurfaceWidth / 2, BlastSurfaceHeight / 2));
+
+	if (*displacement > 0) {
+		occupier->Set_Speed(0.0);
+
+		int draw_offset = Spiral_Index_To_Point(*displacement).Y;
+		occupier->IonBlastYDrawOffset = 2 * draw_offset;
+	}
+
+	if (occupier->Techno_Type_Class()->Voxel.VoxLib == NULL
+		|| occupier->Techno_Type_Class()->Voxel.VoxLib->Load_Failed()
+		|| *displacement < 0) {
+		return;
+	}
+
+	Rock_Voxel(occupier, Position, Lifetime);
 }
 
 
@@ -293,7 +303,7 @@ void IonBlastClass::One_Time(void)
 				// gamemd's surface build (0x53D330) takes this root and sine from the table helpers 0x4CAC40 and 0x4CACB0, so a cell near a whole index can fall on the other side.
 				double dist = Gamemd_Sqrt(x * x + y_dist_sq);
 				if (dist >= min_dist && dist <= max_dist) {
-					double wave_height = (Gamemd_Sine((dist - frame * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) / (dist / WaveAmplitudeFalloff + 1.0) + 0.5;
+					double wave_height = (Gamemd_Sine((dist - frame * WaveSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) / (dist / WaveAmplitudeFalloff + 1.0) + 0.5;
 					char spiral_index = Point_To_Spiral_Index(Point2D(0, wave_height));
 					int row = y * BlastSurfaceWidth;
 					center[row + x] = spiral_index;  /// Quadrant I
@@ -378,10 +388,6 @@ void IonBlastClass::Draw_It(void)
 		char * sbuffer;
 
 		if (XSurface::Prep_For_Blit(*dest_surface, dcliprect, drect, *source_surface, scliprect, srect, overlapped, (void*&)dbuffer, (void*&)sbuffer)) {
-			char * sptr = sbuffer;
-			short * dest_row = dbuffer;
-			char * source_row = sbuffer;
-
 			int depth_z = TacticalMap->Z_Lepton_To_Pixel(Position.Z);
 			short base_z = (short)DepthBuffer->Get_Scroll() - depth_z;
 			unsigned short draw_z = base_z - drect.Y - 3;
@@ -391,31 +397,16 @@ void IonBlastClass::Draw_It(void)
 			int surface_width = LogicalSurface->Get_Width();
 			int buffer_width = DepthBuffer->Get_Buffer_Width();
 
-			if (zbuffer_base + surface_width + height * buffer_width < DepthBuffer->Get_Buffer_End()) {
-				unsigned short * zptr = zbuffer_base + drect.X;
-				int x;
-				for (int y = 0; y < srect.Height; ++y) {
-					short * dptr = dest_row;
-					for (x = 0; x < srect.Width; ++x) {
-						int index = *sptr++;
-						if (index > 0 && *zptr > draw_z && Fetch_In_View(drect.X + x, drect.Y + y, index)) {
-							*dptr = dptr[SpiralIndexToSurfaceLUT[index]];
-						}
-						dptr++;
-						zptr++;
-					}
-					dest_row = (short *)((char *)dest_row + stride);
-					source_row += BlastSurfaceWidth;
-					draw_z--;
-					sptr = source_row;
-					zptr += buffer_width - x;
-				}
-			} else {
+			// depth_at(x, y) reads the depth of the pixel at (x, y) within the rectangle.
+			auto warp = [&](auto depth_at) {
+				char * sptr = sbuffer;
+				short * dest_row = dbuffer;
+				char * source_row = sbuffer;
 				for (int y = 0; y < srect.Height; ++y) {
 					short * dptr = dest_row;
 					for (int x = 0; x < srect.Width; ++x) {
 						int index = *sptr++;
-						if (index > 0 && *DepthBuffer->Get_Buffer_Offset(Point2D(drect.X + x, drect.Y + y)) > draw_z && Fetch_In_View(drect.X + x, drect.Y + y, index)) {
+						if (index > 0 && depth_at(x, y) > draw_z && Fetch_In_View(drect.X + x, drect.Y + y, index)) {
 							*dptr = dptr[SpiralIndexToSurfaceLUT[index]];
 						}
 						dptr++;
@@ -425,6 +416,13 @@ void IonBlastClass::Draw_It(void)
 					draw_z--;
 					sptr = source_row;
 				}
+			};
+
+			// Get_Buffer_Offset wraps a position past the buffer end, so the direct row walk is used only when the rectangle ends before it.
+			if (zbuffer_base + surface_width + height * buffer_width < DepthBuffer->Get_Buffer_End()) {
+				warp([&](int x, int y) { return zbuffer_base[y * buffer_width + drect.X + x]; });
+			} else {
+				warp([&](int x, int y) { return *DepthBuffer->Get_Buffer_Offset(Point2D(drect.X + x, drect.Y + y)); });
 			}
 
 			dest_surface->Unlock();

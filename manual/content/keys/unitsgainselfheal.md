@@ -15,3 +15,5 @@ UnitsGainSelfHeal=1
 ```
 
 A value of `0` or below adds nothing.
+
+A selected vehicle that is not organic shows a spanner beside its health bar while its owner has such a structure, blinking while it is hurt.

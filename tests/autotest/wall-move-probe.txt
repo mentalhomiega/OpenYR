@@ -1,0 +1,87 @@
+; Vehicles ordered to MOVE across a long wall column, with the detour round its ends dearer than the wall.
+; A Destroyer-zone vehicle with a Wall=yes warhead paths through a wall cell as a Destroyable step (UnitClass::CanReach 0x73F3EA, step cost 20 from the table at 0x81870C,
+; CellClass::IsClearToMove 0x4834A0); it stops at the wall, shoots it (DriveClass start of move: Override_Mission attack on the cell) and drives on once it is gone.
+; A CrusherAll vehicle (the Battle Fortress) takes any wall as a crushable one: the cell is clear, the step costs the same as open ground and the wall is crushed as the
+; vehicle rolls over it (0x4834A0, 0x73F42E, 0x73AFD4).
+; One column of GAWALL (connecting concrete, not Crushable) at x 63, y 38 to 78 (the cells north of y 38 hold ore on this map, which takes no wall), the units at x 56 and the goal at x 67:
+;   row 56: a Rhino (HTNK, MovementZone=Destroyer, 120mm AP Wall=yes). Expected: goes straight at the wall and shoots it, mission Attack on 63 56 (concrete takes a long time to wear down).
+;   row 60: a Grizzly (MTNK, MovementZone=Normal, 105mm AP Wall=yes). Expected: the same, because a Destroyable step costs 20 and the way round the end of the column is dearer.
+;   row 64: a Battle Fortress (BFRT, MovementZone=CrusherAll). Expected: rolls through the wall without stopping to shoot, and `wait done` for 67 64 well inside the timeout;
+;           a crushed wall cell reads overlay -1 and a whole one overlay 2. Before the CrusherAll fix the vehicle drove round the south end of the column instead.
+30 command CenterBase
+300 own HTNK 56 56
+301 own MTNK 56 60
+302 own BFRT 56 64
+320 ewall GAWALL 63 38
+321 ewall GAWALL 63 39
+322 ewall GAWALL 63 40
+323 ewall GAWALL 63 41
+324 ewall GAWALL 63 42
+325 ewall GAWALL 63 43
+326 ewall GAWALL 63 44
+327 ewall GAWALL 63 45
+328 ewall GAWALL 63 46
+329 ewall GAWALL 63 47
+330 ewall GAWALL 63 48
+331 ewall GAWALL 63 49
+332 ewall GAWALL 63 50
+333 ewall GAWALL 63 51
+334 ewall GAWALL 63 52
+335 ewall GAWALL 63 53
+336 ewall GAWALL 63 54
+337 ewall GAWALL 63 55
+338 ewall GAWALL 63 56
+339 ewall GAWALL 63 57
+340 ewall GAWALL 63 58
+341 ewall GAWALL 63 59
+342 ewall GAWALL 63 60
+343 ewall GAWALL 63 61
+344 ewall GAWALL 63 62
+345 ewall GAWALL 63 63
+346 ewall GAWALL 63 64
+347 ewall GAWALL 63 65
+348 ewall GAWALL 63 66
+349 ewall GAWALL 63 67
+350 ewall GAWALL 63 68
+351 ewall GAWALL 63 69
+352 ewall GAWALL 63 70
+353 ewall GAWALL 63 71
+354 ewall GAWALL 63 72
+355 ewall GAWALL 63 73
+356 ewall GAWALL 63 74
+357 ewall GAWALL 63 75
+358 ewall GAWALL 63 76
+359 ewall GAWALL 63 77
+360 ewall GAWALL 63 78
+400 reveal
+410 select HTNK
+410 select MTNK
+410 select BFRT
+420 move HTNK 67 56
+420 move MTNK 67 60
+420 move BFRT 67 64
+430 waitcell BFRT 67 64 0 500
+440 where BFRT
+441 cell 63 61
+441 cell 63 62
+441 cell 63 63
+441 cell 63 64
+441 cell 63 65
+441 cell 63 66
+441 cell 63 67
+500 where HTNK
+500 where MTNK
+500 where BFRT
+600 where HTNK
+600 where MTNK
+600 where BFRT
+700 where HTNK
+700 where MTNK
+700 where BFRT
+800 where HTNK
+800 where MTNK
+800 where BFRT
+900 where HTNK
+900 where MTNK
+900 where BFRT
+1010 quit

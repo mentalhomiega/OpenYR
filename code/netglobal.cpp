@@ -57,13 +57,6 @@ namespace NetGlobal
 		}
 
 
-		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
-		bool Has_Terminator(char const * text, std::size_t capacity)
-		{
-			return(std::memchr(text, '\0', capacity) != NULL);
-		}
-
-
 		/// <summary>Checks a player index against the current session roster.</summary>
 		bool Is_Active_Player(ValidationContext const & context, int player)
 		{
@@ -90,6 +83,12 @@ namespace NetGlobal
 
 
 		int ColorLimit = MAX_MPLAYER_COLORS;
+		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
+		bool Has_Terminator(char const * text, std::size_t capacity)
+		{
+			return(Text_Terminated(text, capacity, 0, capacity));
+		}
+
 
 		/// <summary>Checks a color index against the colors the game draws.</summary>
 		bool Color_Is_Valid(int color)
@@ -229,7 +228,17 @@ namespace NetGlobal
 
 			case NET_GO:
 			case NET_LOADGAME:
-				return(HEADER_SIZE + sizeof(GlobalPacketType::ResponseTime));
+			{
+				// The host's network choices follow the look-ahead only when it chose any, so a start with
+				// none is the short packet every build has sent.
+				std::size_t const short_length = HEADER_SIZE + sizeof(int);
+				std::size_t const full_length = HEADER_SIZE + sizeof(GlobalPacketType::ResponseTime);
+				unsigned int chosen = 0;
+				if (available >= full_length) {
+					std::memcpy(&chosen, static_cast<char const *>(packet) + short_length, sizeof(chosen));
+				}
+				return(chosen != 0 ? full_length : short_length);
+			}
 
 			case NET_PROGRESS_REPORT:
 				return(HEADER_SIZE + sizeof(GlobalPacketType::Progress));
@@ -441,10 +450,7 @@ namespace NetGlobal
 				if (!Text_Terminated(packet, packet_length, sizeof(NetCommandType) + sizeof(GlobalPacketType::Name), sizeof(GlobalPacketType::Serial))) {
 					return(DecodeError::UNTERMINATED_SERIAL);
 				}
-				if (!Color_Is_Valid(message->PlayerInfo.Color) || !Custom_Is_Valid(message->PlayerInfo.CustomColor)) {
-					return(DecodeError::INVALID_COLOR);
-				}
-				break;
+				[[fallthrough]];
 
 			case NET_CONFIRM_JOIN:
 				if (!Color_Is_Valid(message->PlayerInfo.Color) || !Custom_Is_Valid(message->PlayerInfo.CustomColor)) {

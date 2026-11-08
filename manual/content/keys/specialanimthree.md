@@ -9,6 +9,6 @@ when_omitted:
 
 The value names an animation registered in `[Animations]`, which a [`UnitRepair=yes`](/keys/unitrepair/) service depot runs in its third special slot when a repair visit ends. [A service depot](/keys/specialanim/#a-service-depot) gives the whole sequence and the ways a visit can end.
 
-Nothing in the repair cycle stops the third slot once it starts. A later visit starts its first-slot animation while the third is still running. A looping animation here therefore runs until the structure begins to be sold or is taken off the map.
+Nothing in the repair cycle stops the third slot once it starts. A later visit starts its first-slot animation while the third is still running. A looping animation here therefore runs until the structure is sold or taken off the map.
 
 Storing Tiberium in a [`SiloDamage=yes`](/keys/silodamage/) structure and raising a [`FirestormWall=yes`](/keys/firestormwall/) section never start the third slot. On a [`Powered=yes`](/keys/powered/) structure that drains power, including those, [`SpecialAnimThreePoweredLight=yes`](/keys/specialanimthreepoweredlight/) can start it. [Building animations](/systems/building-animations/) covers what the slot's companion settings do.

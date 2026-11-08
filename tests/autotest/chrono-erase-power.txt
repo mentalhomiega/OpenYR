@@ -1,0 +1,20 @@
+; A structure being warped out gives no power and draws none. gamemd's BuildingClass::GetPowerOutput (0x44E7B0) and GetPowerDrain (0x44E880)
+; return 0 while IsBeingWarpedOut, and HouseClass::UpdatePower (0x508C30) sums them. warpout sets the flag without a temporal weapon or an effect.
+; Adding a structure makes the house recount its power, so each houses line after a warpout follows an own line.
+; Expected: at frame 62 the warped power plant adds nothing (power 200, not 400); at frame 82 the warped Chronosphere draws nothing (drain 0, not 200).
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/chrono-erase-power.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   houses|AUTOTEST   house |Exception|AUTOTEST   warpout"
+10 command CenterBase
+20 reveal
+30 view 56 40
+40 own GAPOWR 50 40
+50 houses
+60 warpout GAPOWR 1
+61 own GAPOWR 60 30
+62 houses
+70 warpout GAPOWR 0
+71 houses
+80 own GACSPH 56 44
+81 warpout GACSPH 1
+82 own GAPOWR 46 34
+83 houses
+100 quit

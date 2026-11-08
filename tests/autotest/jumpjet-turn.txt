@@ -1,0 +1,49 @@
+; A Lunar Rocketeer (LUNR) is given a target (an enemy tank to the north) and then ordered to fly east, so its flight heading and the way its target lies differ.
+; A jumpjet soldier is drawn facing its target only when JumpJetTurn is off (InfantryClass::DrawShape, 0x518D80). With JumpJetTurn on, it is drawn at its
+; body facing, which its jumpjet locomotor sets toward the target only while hovering and toward its heading otherwise (JumpjetLocomotionClass, 0x54D610),
+; and it holds its fire while the locomotor is in transit (InfantryClass::GetFireError, 0x51C8B0).
+; The infstate lines give the soldier's sequence, shape, body facing (8-way, 0 north, 2 east), JumpJetTurn and the direction of its target (tardir).
+; While it flies east with the target to the north (tardir 0), the shape numbers are 322-326 (east-facing) with JumpJetTurn on and 334-338 (north-facing)
+; with it off. Both modes shoot while it hovers. Screenshots are taken with -RenderFrameRate 30.
+; Run with the mod for each setting:
+;   scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/jumpjet-turn.txt -Mods src-agent22/tests/autotest/jumpjet-turn-rules-on -RenderFrameRate 30 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   infstate|Exception"
+;   (and jumpjet-turn-rules-off)
+5 view 66 66
+6 reveal
+10 own LUNR 66 66
+11 own JUMPJET 68 66
+12 follow LUNR
+31 enemy MTNK 66 62
+32 enemy MTNK 68 62
+36 infstate LUNR
+38 command ScreenCapture
+38 infstate LUNR
+40 settarget LUNR 66 62
+40 infstate LUNR
+41 move LUNR 76 66
+42 infstate LUNR
+44 command ScreenCapture
+44 infstate LUNR
+46 infstate LUNR
+48 command ScreenCapture
+48 infstate LUNR
+50 infstate LUNR
+52 command ScreenCapture
+52 infstate LUNR
+54 infstate LUNR
+56 command ScreenCapture
+56 infstate LUNR
+58 infstate LUNR
+60 command ScreenCapture
+60 infstate LUNR
+62 infstate LUNR
+64 infstate LUNR
+66 command ScreenCapture
+66 infstate LUNR
+68 infstate LUNR
+75 infstate LUNR
+80 command ScreenCapture
+80 infstate LUNR
+90 infstate LUNR
+100 infstate LUNR
+140 quit

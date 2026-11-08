@@ -1,0 +1,32 @@
+; A Dreadnought (DRED) at 66,62 fires its dive-flying missile (DMISL, LazyCurve=no) at a pillbox (GAPILL) at 66,80 on
+; XMP08T2, and the explosion is logged with its coordinate. The blast is at the missile's nose, one DMislBodyLength
+; (128) ahead of its centre along its pitch and facing, so it lies a little short of the pillbox centre and above its
+; height. The "rocket" lines log the missile every 6 frames from frame 70.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/dread-missile-nose-blast.txt -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST|Rocket: |Exception"
+10 command CenterBase
+30 reveal
+43 own DRED 66 62
+50 spawn GAPILL 66 80
+60 strike DRED 66 80
+70 rocket DMISL
+76 rocket DMISL
+82 rocket DMISL
+88 rocket DMISL
+94 rocket DMISL
+100 rocket DMISL
+106 rocket DMISL
+112 rocket DMISL
+118 rocket DMISL
+124 rocket DMISL
+130 rocket DMISL
+136 rocket DMISL
+142 rocket DMISL
+148 rocket DMISL
+154 rocket DMISL
+160 rocket DMISL
+166 rocket DMISL
+172 rocket DMISL
+178 rocket DMISL
+184 rocket DMISL
+190 rocket DMISL
+300 quit

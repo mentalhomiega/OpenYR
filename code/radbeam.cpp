@@ -50,14 +50,20 @@ double const EruptionStep = 20.0;
 /// </summary>
 void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const & color, int duration, double amplitude)
 {
+	Add_Beam(KIND_WAVE, start, end, color, duration >= 0 ? duration : WaveDuration, amplitude >= 0.0 ? amplitude : WaveAmplitude);
+}
+
+
+void RadBeamClass::Add_Beam(KindType kind, Coord const & start, Coord const & end, RGBClass const & color, int duration, double amplitude)
+{
 	RadBeamClass * beam = new RadBeamClass;
-	beam->Kind = KIND_WAVE;
+	beam->Kind = kind;
 	beam->Start = start;
 	beam->End = end;
 	beam->Color = color;
 	beam->Age = 0;
-	beam->Duration = duration >= 0 ? duration : WaveDuration;
-	beam->Amplitude = amplitude >= 0.0 ? amplitude : WaveAmplitude;
+	beam->Duration = duration;
+	beam->Amplitude = amplitude;
 	beam->IsVisible = true;
 	Beams.Add(beam);
 }
@@ -67,7 +73,7 @@ void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const &
 /// Starts an arching beam from origin to each of the eight cells around it, spread cells out
 /// (TechnoClass::FireRadEruption, 0x6FD800). Each beam ends at a random point within half a cell of the
 /// center of its cell, lasts 5 to 20 frames and arches 100 to 500 leptons high. The cells are taken
-/// column by column, and a cell off the map still gets a beam.
+/// column by column, and a cell off the map still gets a beam. A duration or amplitude of zero or more replaces the random one.
 /// </summary>
 void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass const & color, int duration, double amplitude)
 {
@@ -85,24 +91,12 @@ void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass cons
 			end.X += Sim_Random_Pick(-128, 128);
 			end.Y += Sim_Random_Pick(-128, 128);
 
-			RadBeamClass * beam = new RadBeamClass;
-			beam->Kind = KIND_ERUPTION;
-			beam->Start = origin;
-			beam->End = end;
-			beam->Color = color;
-			beam->Age = 0;
-			beam->Duration = Sim_Random_Pick(5, 20);
-			beam->Amplitude = Sim_Random_Pick(100, 500);
-			if (duration >= 0) {
-				beam->Duration = duration;
-			}
-			if (amplitude >= 0.0) {
-				beam->Amplitude = amplitude;
-			}
+			// Drawn into locals so the random values are taken in this order; the order of call arguments is unspecified.
+			int const random_duration = Sim_Random_Pick(5, 20);
+			double const random_amplitude = Sim_Random_Pick(100, 500);
 			// gamemd also draws a random value from 0 to 20 here and stores it, and no later step uses it.
 			Sim_Random_Pick(0, 20);
-			beam->IsVisible = true;
-			Beams.Add(beam);
+			Add_Beam(KIND_ERUPTION, origin, end, color, duration >= 0 ? duration : random_duration, amplitude >= 0.0 ? amplitude : random_amplitude);
 		}
 	}
 }
@@ -191,6 +185,14 @@ void RadBeamClass::All_Clear(void)
 }
 
 
+// Shades a piece to half the beam colour when its wave is level and to the full colour at the beam's amplitude.
+unsigned RadBeamClass::Wave_Color(int wave) const
+{
+	double const shade = std::abs(wave) * 0.5 / Amplitude + 0.5;
+	return(DSurface::Build_Hicolor_Pixel((int)(Color.Get_Red() * shade), (int)(Color.Get_Green() * shade), (int)(Color.Get_Blue() * shade)));
+}
+
+
 /// <summary>
 /// Draws the beam as a vertical wave along the line from start to end (gamemd's FUN_00659650
 /// and FUN_00659AC0). The wave completes one cycle per 180 leptons of beam, or two cycles on a
@@ -209,7 +211,7 @@ void RadBeamClass::Draw_It(void) const
 	}
 
 	double const height = Amplitude * Age / Duration;
-	double const turn = 3.141592653589793 / 180.0 * 2.0 * std::max(length, 360.0) / pieces;
+	double const turn = M_PI / 180.0 * 2.0 * std::max(length, 360.0) / pieces;
 
 	auto point = [&](int piece) {
 		double const wave = std::sin(turn * piece) * height;
@@ -221,8 +223,7 @@ void RadBeamClass::Draw_It(void) const
 		Coord const to = point(piece + 1);
 		// The wave is truncated to whole units before the shade, as gamemd's FUN_00659AC0 does (0x659AC0).
 		int const wave = (int)(std::sin(turn * piece) * height);
-		double const shade = std::abs(wave) * 0.5 / Amplitude + 0.5;
-		unsigned const color = DSurface::Build_Hicolor_Pixel((int)(Color.Get_Red() * shade), (int)(Color.Get_Green() * shade), (int)(Color.Get_Blue() * shade));
+		unsigned const color = Wave_Color(wave);
 
 		Draw_Piece(from, to, color);
 		from = to;
@@ -281,8 +282,7 @@ void RadBeamClass::Draw_Eruption(void) const
 		Coord const from(Start.X + stepx * piece, Start.Y + stepy * piece, (int)((double)(Start.Z + stepz * piece) + first));
 		Coord const to(Start.X + stepx * (piece + 1), Start.Y + stepy * (piece + 1), (int)((double)(Start.Z + stepz * (piece + 1)) + last));
 
-		double const shade = std::abs((int)last) * 0.5 / Amplitude + 0.5;
-		unsigned const color = DSurface::Build_Hicolor_Pixel((int)(Color.Get_Red() * shade), (int)(Color.Get_Green() * shade), (int)(Color.Get_Blue() * shade));
+		unsigned const color = Wave_Color((int)last);
 		Draw_Piece(from, to, color);
 	}
 }

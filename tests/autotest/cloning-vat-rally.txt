@@ -1,0 +1,22 @@
+; A Cloning Vats (NACLON, Cloning=yes, no Factory key) takes a rally point from a plain click on open ground, as gamemd's
+; BuildingClass::CellClickedAction (0x4436F0) calls SetRallypoint for an IsUnitFactory building (0x455DA0 counts Cloning).
+; Before the fix, What_Action returned no rally action for the vats, so "clickcell" printed NoMove or None and rallyof showed none.
+; The barracks then produces an E1; the vats release a copy, and the copy walks to the rally cell.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/cloning-vat-rally.txt -Map XMP29U2.MAP -Seconds 200 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugInstantBuild
+22 command DebugUnlockAll
+23 reveal
+30 view 62 36
+40 own GAPOWR 52 30
+41 own GAPILE 56 34
+42 own NACLON 62 30
+300 rallyof NACLON
+310 clickcell NACLON 68 36
+320 rallyof NACLON
+340 produce E1
+400 where E1
+500 where E1
+700 where E1
+900 quit

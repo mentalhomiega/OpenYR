@@ -8,11 +8,11 @@ when_omitted:
   value: "yes"
 ---
 
-With `no`, the object does not move toward a target beyond its weapons' reach. It forgets the target instead, even one the player ordered it to attack. The Mirage Tank uses this to stay hidden where it was placed.
+With `no`, the object does not move toward a target beyond its weapons' reach. It forgets a target it picked for itself instead. The Mirage Tank uses this to stay hidden where it was placed.
 
 ```ini title="rulesmd.ini"
 [MYAMBUSHER] ; example VehicleType
 CanApproachTarget=no
 ```
 
-A human player's object that is guarding an area still moves toward targets.
+An object ordered to attack still moves toward its target, as does a human player's object guarding an area and a computer player's object on a hunt. A Magnetron holding a unit, a vehicle in a Tank Bunker and a passenger of an open-topped transport also stop chasing, whatever this key says.

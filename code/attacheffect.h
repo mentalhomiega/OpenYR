@@ -93,11 +93,13 @@ class AttachedEffectsClass
 			AnimClass * Anim = nullptr;
 
 			AttachEffectTypeClass const & Type(void) const;
+			bool Is_Own(TechnoTypeClass const * own) const;
 			void Serialize(SaveStreamClass & stream);
 		};
 
 		void Update_Anim(TechnoClass * owner, EffectStruct & effect);
 		static void Remove_Anim(EffectStruct & effect);
+		double Product(double AttachEffectTypeClass::* member) const;
 
 		std::vector<EffectStruct> Effects;
 

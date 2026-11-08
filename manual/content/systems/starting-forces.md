@@ -85,6 +85,8 @@ Houses take positions in this order:
 2. The remaining houses draw in turn. When no position is held yet, the house takes an eligible position at random. Otherwise it takes the open position with the greatest total distance from the positions already held.
 3. A house still without a position once every eligible waypoint is held starts at a random spot where an 8-by-8 block of cells inside the playable area is open ground that a tracked vehicle can cross. The start cell is three cells along on each axis from the block's first cell. This cell is found after the map has loaded, and the house holds no numbered position.
 
+In a Cooperative match, the draw in step 2 is changed. The map's `[Header]` key `NumCoopHumanStartSpots=` (default `4`) says how many of its first waypoints are kept for people. A person draws at random among waypoints `0` up to that number and takes the next free one when the draw is held. A computer player takes the first free waypoint after them. A house these rules leave without a position draws as in step 2.
+
 On a map read from a file, the numbered positions are settled after the waypoints are read and before the spawn house sections, teams, triggers, and objects. That lets a [spawn house](/formats/scenario-objects/#spawn-houses) name the house that starts at each position.
 
 ## The base unit

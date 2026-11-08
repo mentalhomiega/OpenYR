@@ -13,15 +13,19 @@
 
 #include "_map.h"
 #include "_rect.h"
+#include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
 #include "dbgprint.h"
 #include "debugmode.h"
 #include "dsurface.h"
 #include "ftimer.h"
+#include "globals.h"
+#include "goptions.h"
 #include "gscreen.h"
 #include "map.h"
 #include "mmsys.h"
+#include "rules.h"
 #include "session.h"
 #include "tactical.h"
 #include "video.h"
@@ -59,6 +63,16 @@ static double _AnchorScreenX = 0.0;
 static double _AnchorScreenY = 0.0;
 static double _AnchorMapX = 0.0;
 static double _AnchorMapY = 0.0;
+
+// Whether a scripted scene has the player's zoom kept, and the zoom it is kept as, in ViewZoom units.
+static bool _ScriptedZoomSaved = false;
+static double _PlayerZoom = 1.0;
+
+// Whether GScreenClass::Render is drawing the map, and a zoom set meanwhile that waits for the next
+// Apply_Pending_View_Zoom, as Set_View_Zoom takes it.
+static bool _Drawing = false;
+static bool _ZoomHeld = false;
+static double _HeldZoom = 1.0;
 
 
 static unsigned int Glide_Clock(void)
@@ -129,6 +143,18 @@ Point2D View_To_Screen_Offset(Point2D const & view_offset)
 }
 
 
+Point2D Screen_To_View_Point(Point2D const & screen_pixel)
+{
+	return(Screen_To_View_Offset(screen_pixel - ScreenTacticalRect.Top_Left()));
+}
+
+
+Point2D View_To_Screen_Point(Point2D const & view_offset)
+{
+	return(ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(view_offset));
+}
+
+
 Rect Shown_Map_Rect(void)
 {
 	Rect const shown = Shown_View_Area();
@@ -145,16 +171,21 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 	auto composed = std::make_unique<DSurface>(all.Width, all.Height);
 	composed->Blit_From(all, frame, all);
 
-	// The presenter shows the map layer only where the frame is keyed out, so the capture does the same.
-	DSurface map(all.Width, all.Height);
-	map.Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+	// The software blitter cannot stretch, so the shown map is copied at its own size and sampled onto
+	// ScreenTacticalRect as the presenter stretches it. Only keyed pixels take the map.
+	Rect const shown = Shown_Map_Rect();
+	DSurface map(shown.Width, shown.Height);
+	map.Blit_From(Rect(0, 0, shown.Width, shown.Height), *MapCompositeSurface, shown);
+	double const scale_x = double(shown.Width) / ScreenTacticalRect.Width;
+	double const scale_y = double(shown.Height) / ScreenTacticalRect.Height;
 	Rect const area = Intersect(ScreenTacticalRect, all);
 	for (int y = area.Y; y < area.Y + area.Height; y++) {
-		unsigned short * out = (unsigned short *)((char *)composed->Get_Buffer() + y * composed->Stride()) + area.X;
-		unsigned short const * in = (unsigned short const *)((char const *)map.Get_Buffer() + y * map.Stride()) + area.X;
-		for (int x = 0; x < area.Width; x++) {
+		int const map_y = int(std::floor((y - ScreenTacticalRect.Y) * scale_y));
+		unsigned short * out = (unsigned short *)((char *)composed->Get_Buffer() + y * composed->Stride());
+		unsigned short const * in = (unsigned short const *)((char const *)map.Get_Buffer() + map_y * map.Stride());
+		for (int x = area.X; x < area.X + area.Width; x++) {
 			if (out[x] == VIDEO_LAYER_KEY) {
-				out[x] = in[x];
+				out[x] = in[int(std::floor((x - ScreenTacticalRect.X) * scale_x))];
 			}
 		}
 	}
@@ -164,7 +195,7 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 
 void Allocate_Map_Surfaces(void)
 {
-	Video_Set_Map_Layer(NULL, Rect(), Rect());
+	Video_Drop_Map_Layer();
 	delete MapCompositeSurface;
 	MapCompositeSurface = NULL;
 	delete MapTileSurface;
@@ -180,7 +211,7 @@ void Allocate_Map_Surfaces(void)
 	int const height = TacticalRect.Y + TacticalRect.Height;
 	MapCompositeSurface = new DSurface(width, height);
 	MapCompositeSurface->Fill(0);
-	MapTileSurface = new DSurface(width, height);
+	MapTileSurface = new DSurface(width, height, true);
 	MapTileSurface->Fill(0);
 	DebugString("Map surfaces %dx%d for zoom %.2f\n", width, height, ViewZoom);
 }
@@ -217,9 +248,22 @@ double View_Zoom_Native(void)
 }
 
 
+/// <summary>
+/// Returns the furthest out the view zooms. It is the game's limit, raised when the map's visible
+/// area is too small for the screen at that limit. It never exceeds the native zoom, so on a map
+/// smaller than the screen at native zoom the view is not zoomed in past native to fit.
+/// </summary>
 double View_Zoom_Min(void)
 {
-	return(((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER) * View_Zoom_Native());
+	double const limit = ((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER) * View_Zoom_Native();
+
+	// The view is ScreenTacticalRect / zoom map pixels, so it fits the area once the zoom is at least the screen size over the area size.
+	Rect const area = Tactical_Visible_Map_Area();
+	if (area.Width <= 0 || area.Height <= 0) {
+		return(limit);
+	}
+	double const fit = std::max(ScreenTacticalRect.Width / double(area.Width), ScreenTacticalRect.Height / double(area.Height));
+	return(std::min(std::max(limit, fit), View_Zoom_Native()));
 }
 
 
@@ -247,16 +291,31 @@ void Reset_View_Zoom(void)
 	_PendingZoomStep = 0.0;
 	_Gliding = false;
 	_GlideProgress = 1.0;
+	_ScriptedZoomSaved = false;
+	_ZoomHeld = false;
+}
+
+
+void Set_View_Zoom_Drawing(bool drawing)
+{
+	_Drawing = drawing;
 }
 
 
 /// <summary>
 /// Sets the map view zoom at once, clamped to the zoom limits, and ends any glide. The zoom is
 /// measured as the mouse wheel does, from 1 at the screen's own pixels. The point at the middle of
-/// the view stays put. Returns false when the zoom did not change.
+/// the view stays put. Returns false when the zoom did not change. A zoom set while the map is drawn,
+/// as when a chronoshift effect ends, waits for the next Apply_Pending_View_Zoom: changing it would
+/// free the map surfaces under the draw.
 /// </summary>
 bool Set_View_Zoom(double zoom)
 {
+	if (_Drawing) {
+		_ZoomHeld = true;
+		_HeldZoom = zoom;
+		return(true);
+	}
 	zoom = std::clamp(zoom * View_Zoom_Native(), View_Zoom_Min(), View_Zoom_Max());
 	if (TacticalMap == NULL || (!_Gliding && std::abs(zoom - ViewZoom) < 0.001)) {
 		return(false);
@@ -273,6 +332,10 @@ bool Set_View_Zoom(double zoom)
 
 void Request_View_Zoom_Step(double step, Point2D const & screen_point)
 {
+	// Map clicks are dropped while input is ignored, and so is the wheel, so a scripted scene keeps its zoom.
+	if (IgnoreInput) {
+		return;
+	}
 	_PendingZoomStep += step * View_Zoom_Native();
 	_PendingAnchor = screen_point - ScreenTacticalRect.Top_Left();
 }
@@ -300,7 +363,12 @@ void Apply_Pending_View_Zoom(void)
 		return;
 	}
 
-	// A zoom kept from an earlier skirmish is brought in to the multiplayer limit.
+	if (_ZoomHeld) {
+		_ZoomHeld = false;
+		Set_View_Zoom(_HeldZoom);
+	}
+
+	// A zoom kept from an earlier skirmish, or one the map's visible area no longer allows, is brought in to the limit.
 	if (!_Gliding && _TargetZoom < View_Zoom_Min() - 0.001) {
 		Set_View_Zoom(View_Zoom_Min() / View_Zoom_Native());
 	}
@@ -353,4 +421,54 @@ void Apply_Pending_View_Zoom(void)
 			Map.Flag_To_Redraw(GS_REDRAW_ALL);
 		}
 	}
+}
+
+
+// Takes a zoom in ViewZoom units and sets it at once rather than gliding. A glide would end by putting
+// the view back where it began, which would undo a camera scroll still under way.
+static void SetScriptedZoomAtOnce(double zoom)
+{
+	_PendingZoomStep = 0.0;
+	Set_View_Zoom(zoom / View_Zoom_Native());
+}
+
+
+void Scripted_View_Zoom(bool input_locked)
+{
+	if (!Options.ScriptedCameraZoom || TacticalMap == NULL || Rule->ScriptedCameraHeight <= 0 || ScreenTacticalRect.Height <= 0) {
+		return;
+	}
+	if (input_locked && !_ScriptedZoomSaved) {
+		_ScriptedZoomSaved = true;
+		_PlayerZoom = _TargetZoom;
+	}
+
+	// ViewZoom is measured against the frame, so the view is ScreenTacticalRect.Height / ViewZoom map pixels
+	// tall. The zoom that shows the scene's height in map pixels therefore takes no View_Zoom_Native factor,
+	// while Set_View_Zoom takes its argument in native units.
+	double const scene = ScreenTacticalRect.Height / double(Rule->ScriptedCameraHeight);
+	SetScriptedZoomAtOnce(std::clamp(scene, View_Zoom_Min(), View_Zoom_Max()));
+}
+
+
+void Restore_Player_View_Zoom(void)
+{
+	if (!_ScriptedZoomSaved) {
+		return;
+	}
+	_ScriptedZoomSaved = false;
+	SetScriptedZoomAtOnce(_PlayerZoom);
+}
+
+
+void Forget_Player_View_Zoom(void)
+{
+	_ScriptedZoomSaved = false;
+	_ZoomHeld = false;
+}
+
+
+bool Scripted_View_Zoom_Saved(void)
+{
+	return(_ScriptedZoomSaved);
 }

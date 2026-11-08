@@ -1,0 +1,65 @@
+; A paradrop plane drops six paratroopers over its target (66,66), one about every five frames from frame 370.
+; AircraftClass::Unload_Passenger_Paradrop (gamemd 0x415C60) plays ChuteSound once for each paratrooper it
+; places, at the aircraft's Location: the call at 0x415E21 passes the aircraft's +0x9c coordinate. The rules
+; overlay names ChuteSound as SlaveMinerDeploy so each drop writes a log line.
+; Expected: six "Sound: SlaveMinerDeploy" lines. Each one reads the same cell as the last "where PDPLANE" line
+; before it (65,66; 66,66; 67,66; 67,67; 68,67; 69,68), which is the plane's cell, not the paratrooper's.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/paradrop-chute-sound.txt -Mods src-agent14/tests/autotest/paradrop-chute-sound-rules -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   where PDPLANE|AUTOTEST frame|Sound: SlaveMinerDeploy|Exception"
+5 view 66 66
+6 reveal
+8 sounds 1
+20 grant ParaDropSpecial
+25 fire ParaDropSpecial 66 66
+360 where PDPLANE
+361 where PDPLANE
+362 where PDPLANE
+363 where PDPLANE
+364 where PDPLANE
+365 where PDPLANE
+366 where PDPLANE
+367 where PDPLANE
+368 where PDPLANE
+369 where PDPLANE
+370 where PDPLANE
+371 where PDPLANE
+372 where PDPLANE
+373 where PDPLANE
+374 where PDPLANE
+375 where PDPLANE
+376 where PDPLANE
+377 where PDPLANE
+378 where PDPLANE
+379 where PDPLANE
+380 where PDPLANE
+381 where PDPLANE
+382 where PDPLANE
+383 where PDPLANE
+384 where PDPLANE
+385 where PDPLANE
+386 where PDPLANE
+387 where PDPLANE
+388 where PDPLANE
+389 where PDPLANE
+390 where PDPLANE
+391 where PDPLANE
+392 where PDPLANE
+393 where PDPLANE
+394 where PDPLANE
+395 where PDPLANE
+396 where PDPLANE
+397 where PDPLANE
+398 where PDPLANE
+399 where PDPLANE
+400 where PDPLANE
+401 where PDPLANE
+402 where PDPLANE
+403 where PDPLANE
+404 where PDPLANE
+405 where PDPLANE
+406 where PDPLANE
+407 where PDPLANE
+408 where PDPLANE
+409 where PDPLANE
+410 where PDPLANE
+420 sounds 0
+430 quit

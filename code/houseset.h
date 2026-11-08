@@ -84,6 +84,61 @@ class HouseSet
 
 
 /// <summary>
+/// One bit per country, keyed by the country index modulo 32 as gamemd shifts it. Every house
+/// of one country shares a bit, and a house with no country sets none.
+/// </summary>
+class CountrySet
+{
+	public:
+		constexpr CountrySet(void) : Bits(0) {}
+
+		// A NULL house is in no set.
+		template<std::same_as<HouseClass> H>
+		bool operator[](H const * house) const {return(house != nullptr && (Bits & Bit(house)) != 0);}
+
+		template<std::same_as<HouseClass> H>
+		void Set(H const * house) {Bits |= Bit(house);}
+
+		template<std::same_as<HouseClass> H>
+		void Clear(H const * house) {Bits &= ~Bit(house);}
+
+		void Clear(void) {Bits = 0;}
+		bool Any(void) const {return(Bits != 0);}
+
+		CountrySet operator&(CountrySet other) const {return(CountrySet(Bits & other.Bits));}
+		CountrySet operator|(CountrySet other) const {return(CountrySet(Bits | other.Bits));}
+		CountrySet & operator&=(CountrySet other) {Bits &= other.Bits; return(*this);}
+		CountrySet & operator|=(CountrySet other) {Bits |= other.Bits; return(*this);}
+		bool operator==(CountrySet other) const {return(Bits == other.Bits);}
+		bool operator!=(CountrySet other) const {return(Bits != other.Bits);}
+
+		// For debug output only.
+		std::uint32_t Raw(void) const {return(Bits);}
+
+		template<typename C>
+		void Compute_CRC(C & crc) const
+		{
+			crc((int)Bits);
+		}
+
+		template<typename S>
+		void Serialize(S & stream)
+		{
+			stream.Serialize(Bits);
+		}
+
+	private:
+		explicit constexpr CountrySet(std::uint32_t bits) : Bits(bits) {}
+
+		// The country bit the house's own country maps to; zero for a house with no country.
+		template<std::same_as<HouseClass> H>
+		static std::uint32_t Bit(H const * house) {return(house != nullptr ? static_cast<std::uint32_t>(house->Own_Mask()) : 0);}
+
+		std::uint32_t Bits;
+};
+
+
+/// <summary>
 /// One value per house.
 /// </summary>
 template<typename T>

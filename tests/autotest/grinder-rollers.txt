@@ -1,0 +1,28 @@
+; Yuri's Grinder (YAGRND) for a Yuri player (-Country 9), powered by a Yuri Bio Reactor (YAPOWR) beside it. The idle
+; grinder shows its spiked rollers: they are the IdleAnim (YAGRND_A, slot 18 of banimstate). A soldier sent in at 100 is
+; ground, and while the grind runs the SpecialAnim (YAGRND_B, slot 10) plays and the ActiveAnim (slot 3) is gone. The art
+; for these anims is YGGRND_*.SHP, the generic art, because the plain YAGRND_* names are not in any MIX; gamemd's
+; GetImage (0x428C30) retries a missing name with 'G' as its second letter (FUN_005F9710).
+; Before that retry was added, slot 18 had no frames and drew nothing, and slot 10 ended after about three frames, so the pit
+; showed only the hole and its pole.
+; Expected: at 90 slot 18 is YAGRND_A with stages 0 to 11; at 300 slot 10 is YAGRND_B at a stage above 0 and slot 3 is (none).
+; Run: powershell -File "E:\Claude ra2 decomp\scripts\run_autotest.ps1" -Build agent14 -Country 9 -Script "E:\Claude ra2 decomp\src-agent14\tests\autotest\grinder-rollers.txt" -Seconds 150 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 reveal
+25 view 70 58
+26 zoom 2
+30 own YAPOWR 62 50
+31 own YAGRND 70 58
+40 own E1 66 56
+50 banimstate YAGRND
+50 liveanims YAGRND_A
+50 liveanims YAGRND_B
+60 windowshot grinder-idle
+90 banimstate YAGRND
+100 enter E1 70 58
+240 where E1
+240 windowshot grinder-approach
+300 banimstate YAGRND
+300 liveanims YAGRND_B
+330 windowshot grinder-grinding
+400 quit

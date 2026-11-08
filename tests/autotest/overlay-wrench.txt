@@ -1,0 +1,25 @@
+; Repair wrench and power-off icon: an Allied power plant being repaired, a radar tower switched off, and a war factory both repaired and switched off.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-wrench.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120 -ShotDir scratch-agent/overlay-leftovers/wrench
+; Expected in the shots (gamemd draws no power-off icon at all): only the building being repaired shows the wrench, centred on the north corner of its footprint, whether or not it is switched off; the wrench blinks between frames from one shot to the next.
+30 command CenterBase
+35 reveal
+40 own GAPOWR 60 40
+41 own GAAIRC 64 40
+42 own GAWEAP 60 44
+43 own GAREFN 66 44
+50 view 63 43
+60 damage GAPOWR 300
+61 damage GAWEAP 600
+70 repairon GAPOWR
+71 repairon GAWEAP
+72 poweroff GAAIRC
+73 poweroff GAWEAP
+80 windowshot wr-a1
+84 windowshot wr-a2
+88 windowshot wr-a3
+92 windowshot wr-a4
+96 windowshot wr-a5
+100 windowshot wr-a6
+104 windowshot wr-a7
+108 windowshot wr-a8
+120 quit

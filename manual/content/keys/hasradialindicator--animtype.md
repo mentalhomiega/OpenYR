@@ -8,4 +8,4 @@ when_omitted:
   value: "no"
 ---
 
-Only a cloak generator or sensor array structure draws the ring, so an animation never shows one.
+Only a structure draws the ring, so an animation never shows one.

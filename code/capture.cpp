@@ -44,6 +44,34 @@ CaptureManagerClass::CaptureManagerClass(TechnoClass * owner, int maxnodes, bool
 }
 
 
+static bool Is_Being_Built_Or_Sold(TechnoClass const * techno)
+{
+	return(techno->CurrentMission == MISSION_DECONSTRUCTION || techno->CurrentMission == MISSION_CONSTRUCTION);
+}
+
+
+/// <summary>
+/// Attaches an animation of the given type to the object as its mind control ring. The ring sits at the
+/// object's center, raised by the height of a building or by the unit's ring offset. A building's ring
+/// also gets a ZAdjust of -1024.
+/// </summary>
+/// <param name="techno">The object the ring is attached to.</param>
+/// <param name="type">The animation type of the ring.</param>
+void Attach_Control_Ring(TechnoClass * techno, AnimTypeClass const * type)
+{
+	Coord coord = techno->Center_Coord();
+	bool const building = techno->RTTI == RTTI_BUILDING;
+	coord.Z += building ? ((BuildingClass *)techno)->Class->ZHeight * LEVEL_LEPTON_H : techno->TClass->MindControlRingOffset;
+	AnimClass * anim = new AnimClass(type, coord);
+	if (anim != NULL) {
+		anim->Attach_To(techno);
+		if (building) {
+			anim->ZAdjust = -1024;
+		}
+	}
+}
+
+
 /// <summary>
 /// Can this manager take the target over (CaptureManagerClass::CanCapture, 0x471C90)? Not an
 /// object of the firer's own house, an ImmuneToPsionics type, a vehicle linked to a bunker, an
@@ -65,10 +93,10 @@ bool CaptureManagerClass::Can_Capture(TechnoClass const * target) const
 	if (target->Is_Iron_Curtained()) {
 		return(false);
 	}
-	if (!IsInfinite && (int)Nodes.size() >= MaxControlNodes && MaxControlNodes != 1) {
+	if (Cannot_Control_Any_More() && MaxControlNodes != 1) {
 		return(false);
 	}
-	return(target->CurrentMission != MISSION_DECONSTRUCTION && target->CurrentMission != MISSION_CONSTRUCTION);
+	return(!Is_Being_Built_Or_Sold(target));
 }
 
 
@@ -99,28 +127,17 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 	node.LinkTimer = Rule->MindControlAttackLineFrames;
 	Nodes.push_back(node);
 	target->MindControlledBy = Owner;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST mind control %s taken from %s by %s, link %d frames, ring %s\n", target->TClass->Name(), original != NULL ? original->Class->Name() : "-",
-			Owner->House->Class->Name(), (int)Rule->MindControlAttackLineFrames, Rule->ControlledAnimationType != NULL ? Rule->ControlledAnimationType->Name() : "none");
-	}
+	AUTOTEST_LOG("mind control %s taken from %s by %s, link %d frames, ring %s\n", target->TClass->Name(), original != NULL ? original->Class->Name() : "-",
+		Owner->House->Class->Name(), (int)Rule->MindControlAttackLineFrames, Rule->ControlledAnimationType != NULL ? Rule->ControlledAnimationType->Name() : "none");
 
 	bool const unloading = target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->CurrentMission == MISSION_UNLOAD;
-	if (!unloading && target->CurrentMission != MISSION_DECONSTRUCTION && target->CurrentMission != MISSION_CONSTRUCTION) {
+	if (!unloading && !Is_Being_Built_Or_Sold(target)) {
 		target->Assign_Mission(MISSION_GUARD);
 	}
 	Decide_Unit_Fate(target);
 
 	if (Rule->ControlledAnimationType != NULL) {
-		Coord coord = target->Center_Coord();
-		bool const building = target->RTTI == RTTI_BUILDING;
-		coord.Z += building ? ((BuildingClass *)target)->Class->ZHeight * LEVEL_LEPTON_H : target->TClass->MindControlRingOffset;
-		AnimClass * anim = new AnimClass(Rule->ControlledAnimationType, coord);
-		if (anim != NULL) {
-			anim->Attach_To(target);
-			if (building) {
-				anim->ZAdjust = -1024;
-			}
-		}
+		Attach_Control_Ring(target, Rule->ControlledAnimationType);
 	}
 	return(true);
 }
@@ -131,11 +148,10 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 /// MindClearedSound, or the rules' sound when it names none, and it returns to the house it
 /// was taken from, if that house is still in the game.
 /// </summary>
-/// <returns>bool; Was a unit given?</returns>
-bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
+void CaptureManagerClass::Free_Unit(TechnoClass * unit)
 {
 	if (unit == NULL) {
-		return(false);
+		return;
 	}
 	for (int index = (int)Nodes.size() - 1; index >= 0; index--) {
 		if (Nodes[index].Unit != unit) {
@@ -152,16 +168,13 @@ bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
 		VocType const sound = unit->TClass->MindClearedSound != VOC_NONE ? unit->TClass->MindClearedSound : Rule->MindClearedSound;
 		Sound_Effect(sound, unit->Center_Coord());
 
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST mind control released %s to %s\n", unit->TClass->Name(), original != NULL ? original->Class->Name() : "-");
-		}
+		AUTOTEST_LOG("mind control released %s to %s\n", unit->TClass->Name(), original != NULL ? original->Class->Name() : "-");
 		if (original != NULL) {
 			unit->Set_Owning_House(original, true);
 		}
 		Decide_Unit_Fate(unit);
 		unit->MindControlledBy = NULL;
 	}
-	return(true);
 }
 
 
@@ -171,12 +184,18 @@ bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
 /// <returns>bool; Does a node hold the unit?</returns>
 bool CaptureManagerClass::Holds(TechnoClass const * unit) const
 {
+	return(Find_Node(unit) != NULL);
+}
+
+
+CaptureManagerClass::NodeType const * CaptureManagerClass::Find_Node(TechnoClass const * unit) const
+{
 	for (NodeType const & node : Nodes) {
 		if (node.Unit == unit) {
-			return(true);
+			return(&node);
 		}
 	}
-	return(false);
+	return(NULL);
 }
 
 
@@ -186,12 +205,8 @@ bool CaptureManagerClass::Holds(TechnoClass const * unit) const
 /// <returns>HouseClass *; The original owner, or NULL when no node holds the unit.</returns>
 HouseClass * CaptureManagerClass::Original_Owner_Of(TechnoClass const * unit) const
 {
-	for (NodeType const & node : Nodes) {
-		if (node.Unit == unit) {
-			return(node.OriginalOwner);
-		}
-	}
-	return(NULL);
+	NodeType const * node = Find_Node(unit);
+	return(node != NULL ? node->OriginalOwner : NULL);
 }
 
 
@@ -284,13 +299,6 @@ bool CaptureManagerClass::Is_Link_Shown(int index) const
 }
 
 
-// gamemd ranks by its table square root of the 3D distance, truncated (FootClass::EnterGrinder, 0x4DFA70).
-static int Ranking_Distance(Coord const & from, Coord const & to)
-{
-	return(Gamemd_Length_3D(from.X - to.X, from.Y - to.Y, from.Z - to.Z));
-}
-
-
 /// <summary>
 /// Sends a soldier or vehicle to the nearest of its owner's grinders, or with absorber set, the
 /// nearest of its owner's InfantryAbsorb or UnitAbsorb structures that would take it in
@@ -307,7 +315,10 @@ static bool Send_To_Grinder(FootClass * foot, bool absorber)
 		if (building->House != foot->House || building->IsInLimbo || building->Strength <= 0) continue;
 		bool const fits = absorber ? building->Can_Absorb(foot) : building->Class->IsGrinding;
 		if (!fits) continue;
-		int const dist = Ranking_Distance(foot->Center_Coord(), building->Center_Coord());
+		// gamemd ranks by its table square root of the 3D distance, truncated (FootClass::EnterGrinder, 0x4DFA70).
+		Coord const from = foot->Center_Coord();
+		Coord const to = building->Center_Coord();
+		int const dist = Gamemd_Length_3D(from.X - to.X, from.Y - to.Y, from.Z - to.Z);
 		if (dist < bestdist) {
 			bestdist = dist;
 			best = building;

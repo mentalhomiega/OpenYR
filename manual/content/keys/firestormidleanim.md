@@ -13,6 +13,6 @@ While its house has [raised the wall](/systems/laser-fences/#raising-and-lowerin
 
 The animation is drawn half-transparent, nearly three cells up and to the left of the section.
 
-:::danger[Set `FirestormIdleAnim` before a wall can be raised]
-If the key is missing or empty, the game crashes the first time a raised section starts the animation.
+:::note[A missing key shows nothing]
+If the key is missing or empty, a raised section shows no animation and takes no random number for it. Yuri's Revenge reads no such key, so the animation never plays in its rules.
 :::
