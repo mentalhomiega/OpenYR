@@ -19,6 +19,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
+// Offsets of VOXEL_BASE and up in v_texcoord1.x read the voxel image s_voxel instead of s_index.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
 // u_water: y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
 // w how bright the glints of sunlight on them are.
@@ -35,11 +36,14 @@ SAMPLER2D(s_base, 6);
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
+SAMPLER2D(s_voxel, 10);
 uniform vec4 u_ring[2];
 uniform vec4 u_world;
 uniform vec4 u_water;
 
 #define ARENA_WIDTH 4096
+// Offsets from here on are texels of the voxel image s_voxel, whose rows are as wide as the blit's pitch.
+#define VOXEL_BASE 8388608
 
 int Fetch8(sampler2D s, int offset)
 {
@@ -138,7 +142,15 @@ void main()
 	}
 
 	int width = int(v_texcoord1.y + 0.5);
-	int index = Fetch8(s_index, int(v_texcoord1.x + 0.5) + local.y * width + local.x);
+	// Offsets are whole numbers, and adding 0.5 would round them from 2^23 up, where a float spaces by one.
+	int offset = int(v_texcoord1.x);
+	int index;
+	if (offset >= VOXEL_BASE) {
+		int at = offset - VOXEL_BASE + local.y * width + local.x;
+		index = int(texelFetch(s_voxel, ivec2(at % width, at / width), 0).x * 255.0 + 0.5);
+	} else {
+		index = Fetch8(s_index, offset + local.y * width + local.x);
+	}
 	if (index == 0) {
 		discard;
 	}

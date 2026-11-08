@@ -308,6 +308,74 @@ void VoxelDrawSystem::Prep_For_Object(VoxelLibrary * voxlib, int layer, int info
 }
 
 
+// Orders the prepared objects farthest first, which is the order the drawers lay them down.
+static void Sort_Render_Data(VoxelRenderStruct * (&render_data)[64])
+{
+	for (int index = 0; index < VoxelRenderDataCount; index++) {
+		render_data[index] = &VoxelRenderData[index];
+	}
+
+	for (int index = 1; index - 1 < VoxelRenderDataCount - 1; index++) {
+		for (int index2 = index; index2 < VoxelRenderDataCount; index2++) {
+			VoxelRenderStruct * first = render_data[index - 1];
+			VoxelRenderStruct * second = render_data[index2];
+
+			if (first->MaxBounds.Z > second->MaxBounds.Z) {
+				render_data[index - 1] = second;
+				render_data[index2] = first;
+			}
+		}
+	}
+}
+
+
+// The part of the voxel buffer a scene centered on center covers, and where on the screen it belongs.
+static SurfaceRegion Region_Of(Vector3 const & center)
+{
+	int width = MaxVoxelBounds.X - MinVoxelBounds.X;
+	int height = MaxVoxelBounds.Y - MinVoxelBounds.Y;
+
+	SurfaceRegion region;
+	region.Point.X = (int)center.X - (width + 8) / 2;
+	region.Point.Y = (int)center.Y - (height + 8) / 2;
+	region.Bounds.Width = width + 8;
+	region.Bounds.Height = height + 8;
+	region.Bounds.X = VOXEL_BITMAP_WIDTH / 2 - width / 2 - 4;
+	region.Bounds.Y = VOXEL_BITMAP_HEIGHT / 2 - height / 2 - 4;
+
+	return(region);
+}
+
+
+// Draws the prepared shadows and objects into the voxel buffer and returns the point they are projected about.
+static Vector3 Draw_Prepared(void)
+{
+	static VoxelRenderStruct * render_data[64];
+
+	int index;
+
+	Vector3 center((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
+
+	for (index = 0; index < VoxelShadowRenderDataCount; index++) {
+		VoxelShadowRenderData[index].VoxLib->Render_Shadow(VoxelShadowRenderData[index], center);
+	}
+
+	Sort_Render_Data(render_data);
+
+	if (VoxelDrawSystem::EnableZBuffer) {
+		for (index = VoxelRenderDataCount - 1; index >= 0; index--) {
+			render_data[index]->VoxLib->Render_Object(*render_data[index], center);
+		}
+	} else {
+		for (index = 0; index < VoxelRenderDataCount; index++) {
+			render_data[index]->VoxLib->Render_Object(*render_data[index], center);
+		}
+	}
+
+	return(center);
+}
+
+
 /// <summary>
 /// Draws every prepared voxel object into the drawing buffer.
 /// This routine finishes the voxel drawing sequence. The shadows go down first, then the
@@ -321,41 +389,7 @@ void VoxelDrawSystem::Prep_For_Object(VoxelLibrary * voxlib, int layer, int info
 /// <remarks>Reset must be called, and the objects prepared, before this routine.</remarks>
 void VoxelDrawSystem::Render(Rect & rect, int & x, int & y)
 {
-	static VoxelRenderStruct * render_data[64];
-
-	int index;
-
-	Vector3 center((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
-
-	for (index = 0; index < VoxelShadowRenderDataCount; index++) {
-		VoxelShadowRenderData[index].VoxLib->Render_Shadow(VoxelShadowRenderData[index], center);
-	}
-
-	for (index = 0; index < VoxelRenderDataCount; index++) {
-		render_data[index] = &VoxelRenderData[index];
-	}
-
-	for (index = 1; index - 1 < VoxelRenderDataCount -1; index++) {
-		for (int index2 = index; index2 < VoxelRenderDataCount; index2++) {
-			VoxelRenderStruct * first = render_data[index - 1];
-			VoxelRenderStruct * second = render_data[index2];
-
-			if (first->MaxBounds.Z > second->MaxBounds.Z) {
-				render_data[index - 1] = second;
-				render_data[index2] = first;
-			}
-		}
-	}
-
-	if (VoxelDrawSystem::EnableZBuffer) {
-		for (index = VoxelRenderDataCount - 1; index >= 0; index--) {
-			render_data[index]->VoxLib->Render_Object(*render_data[index], center);
-		}
-	} else {
-		for (index = 0; index < VoxelRenderDataCount; index++) {
-			render_data[index]->VoxLib->Render_Object(*render_data[index], center);
-		}
-	}
+	Vector3 const center = Draw_Prepared();
 
 	rect.Width = MaxVoxelBounds.X - MinVoxelBounds.X;
 
@@ -381,54 +415,30 @@ void VoxelDrawSystem::Render(Rect & rect, int & x, int & y)
 /// <remarks>Reset must be called, and the objects prepared, before this routine.</remarks>
 SurfaceRegion VoxelDrawSystem::Render(void)
 {
+	Vector3 const center = Draw_Prepared();
+
+	return(Region_Of(center));
+}
+
+
+/// <summary>
+/// Describes the prepared objects without drawing them, for a renderer that draws them itself.
+/// </summary>
+/// <returns>Returns with the objects in the order Render would draw them (the shadows are left
+/// out), the point the projection is centered about, and the region Render would return.</returns>
+/// <remarks>The objects are copies, so the scene stays valid after the next Reset.</remarks>
+VoxelScene VoxelDrawSystem::Capture(void)
+{
 	static VoxelRenderStruct * render_data[64];
 
-	int index;
-
-	Vector3 center((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
-
-	for (index = 0; index < VoxelShadowRenderDataCount; index++) {
-		VoxelShadowRenderData[index].VoxLib->Render_Shadow(VoxelShadowRenderData[index], center);
+	VoxelScene scene;
+	scene.Center = Vector3((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
+	Sort_Render_Data(render_data);
+	for (int index = 0; index < VoxelRenderDataCount; index++) {
+		scene.Objects.push_back(*render_data[index]);
 	}
-
-	for (index = 0; index < VoxelRenderDataCount; index++) {
-		render_data[index] = &VoxelRenderData[index];
-	}
-
-	for (index = 1; index - 1 < VoxelRenderDataCount - 1; index++) {
-		for (int index2 = index; index2 < VoxelRenderDataCount; index2++) {
-			VoxelRenderStruct * first = render_data[index - 1];
-			VoxelRenderStruct * second = render_data[index2];
-
-			if (first->MaxBounds.Z > second->MaxBounds.Z) {
-				render_data[index - 1] = second;
-				render_data[index2] = first;
-			}
-		}
-	}
-
-	if (VoxelDrawSystem::EnableZBuffer) {
-		for (index = VoxelRenderDataCount - 1; index >= 0; index--) {
-			render_data[index]->VoxLib->Render_Object(*render_data[index], center);
-		}
-	} else {
-		for (index = 0; index < VoxelRenderDataCount; index++) {
-			render_data[index]->VoxLib->Render_Object(*render_data[index], center);
-		}
-	}
-
-	int width = MaxVoxelBounds.X - MinVoxelBounds.X;
-	int height = MaxVoxelBounds.Y - MinVoxelBounds.Y;
-
-	SurfaceRegion region;
-	region.Point.X = (int)center.X - (width + 8) / 2;
-	region.Point.Y = (int)center.Y - (height + 8) / 2;
-	region.Bounds.Width = width + 8;
-	region.Bounds.Height = height + 8;
-	region.Bounds.X = VOXEL_BITMAP_WIDTH / 2 - width / 2 - 4;
-	region.Bounds.Y = VOXEL_BITMAP_HEIGHT / 2 - height / 2 - 4;
-
-	return(region);
+	scene.Region = Region_Of(scene.Center);
+	return(scene);
 }
 
 

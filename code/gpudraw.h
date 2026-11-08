@@ -12,6 +12,7 @@
 #include "blitter.h"
 #include "point.h"
 #include "rect.h"
+#include "voxdrsys.h"
 
 #include <cstdint>
 #include <memory>
@@ -105,6 +106,14 @@ struct GpuBlit
 	// Set when Pixels is an offset into GpuDraw_Atlas rather than into the pass's arena.
 	bool InAtlas;
 
+	// The index in GpuDrawList::Voxels of the voxel image this blit shows, or -1. The blit's source
+	// starts VoxelX, VoxelY pixels into the part's Region.Bounds. NoPixels means the arena holds no
+	// copy of the image, which the software fallback renders when it needs it.
+	int Voxel;
+	int VoxelX;
+	int VoxelY;
+	bool NoPixels;
+
 	GpuBlitClass Class() const
 	{
 		if (Colour >= 0) {
@@ -133,6 +142,22 @@ struct GpuAtlas
 };
 
 
+// One voxel object the GPU draws from its voxels instead of from a picture the software rendered.
+struct GpuVoxelPart
+{
+	// The prepared layers, the point they are projected about and the part of the 256 by 256 voxel buffer drawn.
+	VoxelScene Scene;
+
+	// VoxelNormalTranslateTable as it stood when the object was prepared.
+	unsigned char Lighting[VOXEL_PALETTE_SIZE];
+
+	// The software result for Scene.Region.Bounds, one index per pixel, or empty when the software did not render it.
+	std::vector<unsigned char> Reference;
+
+	char Label[24];
+};
+
+
 // An allocator whose resize leaves new bytes unset, for an arena whose every recorded draw writes all of its pixels.
 template <typename T>
 struct GpuArenaAllocator : std::allocator<T>
@@ -157,6 +182,9 @@ struct GpuDrawList
 	std::vector<GpuBlit> Blits;
 	std::vector<unsigned char, GpuArenaAllocator<unsigned char>> PixelArena;
 	std::vector<signed char> ZShapeArena;
+
+	// The voxel objects of the pass. A part no blit shows is drawn only so the check can compare it.
+	std::vector<GpuVoxelPart> Voxels;
 
 	// Draws into the target this pass that the list does not hold: blits of other kinds and
 	// any other lock of the target.
@@ -193,6 +221,17 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 // means the GPU draws it and the caller must not.
 bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable);
 
+// True while a pass records and GpuVoxels is on: a voxel object prepared now should be handed to
+// GpuDraw_Voxel_Part. False while the emissive mask is on, which the GPU voxel drawing does not write.
+bool GpuDraw_Voxels_Wanted(void);
+
+// Hands the pass the voxel object VoxelDrawSystem prepared, drawn with the lighting table now in
+// VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
+// the check compares with the GPU's drawing. The next blit from the voxel buffer shows the part;
+// GpuDraw_Voxel_End closes the offer.
+void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software);
+void GpuDraw_Voxel_End(void);
+
 // True while the GPU draws the object pass into surface.
 bool GpuDraw_Is_Rendering(Surface const & surface);
 
@@ -219,5 +258,8 @@ void GpuDraw_Set_Replay_Check(bool enabled);
 
 // The gpucheck autotest step: each pass is also drawn on the GPU and compared (code/gpumap.h).
 void GpuDraw_Set_Gpu_Check(bool enabled);
+
+// Turns the GPU drawing of voxel objects (GpuVoxels) on or off for the passes that follow.
+void GpuDraw_Set_Voxels(bool enabled);
 
 GpuAtlas const & GpuDraw_Atlas(void);

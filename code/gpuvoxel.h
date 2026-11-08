@@ -1,0 +1,44 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#pragma once
+
+#include "voxdrsys.h"
+
+#include <vector>
+
+
+// One voxel of a layer as the GPU draws it: its place in the order the software drawer walks the
+// layer (I along the column row, J along the rows, K along the column) and its data bytes.
+struct GpuVoxelInstance
+{
+	unsigned char I;
+	unsigned char J;
+	unsigned char K;
+	unsigned char Colour;
+	unsigned char Normal;
+};
+
+// Lists the voxels of the layer the drawer would lay down for arg, in drawing order. A later voxel
+// overwrites an earlier one that lands on the same pixel. Lit layers carry a normal byte per voxel.
+void Gpu_Voxel_Walk(VoxelFuncArgumentStruct const & arg, bool reversed, bool lit, std::vector<GpuVoxelInstance> & out);
+
+// The index into the 256 by 256 voxel buffer of the first pixel the software drawer writes for a
+// voxel, from the drawer's projection (VoxelFuncArgumentStruct::TransformMatrix). Pixels past the end
+// of a row continue on the next, as the buffer does.
+inline int Gpu_Voxel_Buffer_Index(Vector3i16 const (&projection)[4], GpuVoxelInstance const & voxel)
+{
+	unsigned short const x = (unsigned short)(projection[0].I + voxel.I * projection[1].I + voxel.J * projection[2].I + voxel.K * projection[3].I);
+	unsigned short const y = (unsigned short)(projection[0].J + voxel.I * projection[1].J + voxel.J * projection[2].J + voxel.K * projection[3].J);
+	return((x >> 8) | (y & 0xFF00));
+}
+
+// Draws the walked voxels into a 256 by 256 buffer exactly as the GPU shader does: one pixel for an
+// unlit layer, two for a lit one, colours through the lighting row of each voxel's normal.
+void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vector3i16 const (&projection)[4], bool lit, unsigned char const (&lighting)[VOXEL_PALETTE_SIZE], unsigned char (&buffer)[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT]);
