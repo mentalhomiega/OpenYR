@@ -11,6 +11,7 @@
 #include "nettiming.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <initializer_list>
 #include <iostream>
@@ -464,29 +465,68 @@ namespace
 	}
 
 
-	void Test_Frame_Pacer(void)
+	void Test_Frame_Deadline(void)
 	{
 		using namespace NetTiming;
 
-		for (unsigned int rate : { 60u, 45u, 30u, 20u, 15u, 12u, 10u, 7u }) {
-			FramePacer pacer;
-			Milliseconds total = 0;
-			Milliseconds shortest = 1000;
-			Milliseconds longest = 0;
-			for (unsigned int frame = 0; frame < rate; frame++) {
-				Milliseconds const wait = pacer.Next_Wait(rate);
-				total += wait;
-				shortest = std::min(shortest, wait);
-				longest = std::max(longest, wait);
+		constexpr std::int64_t second = 1000000000;
+		constexpr std::int64_t start = 5000000000;
+
+		// Frames that start on time end exactly 1/rate apart, however many there are.
+		for (unsigned int rate : { 60u, 45u, 30u, 20u, 15u, 10u, 7u }) {
+			FrameDeadline deadline;
+			std::int64_t last = deadline.Arm(start, Frame_Period_For_Rate(rate));
+			Expect_Equal(std::to_string(rate) + " first frame lasts one period", last - start, second / rate);
+			std::int64_t shortest = second;
+			std::int64_t longest = 0;
+			for (unsigned int frame = 1; frame < rate * 600; frame++) {
+				// Each frame starts a little after the previous deadline, as the work between frames does.
+				std::int64_t const next = deadline.Arm(last + 3000, Frame_Period_For_Rate(rate));
+				shortest = std::min(shortest, next - last);
+				longest = std::max(longest, next - last);
+				last = next;
 			}
-			Expect_Equal(std::to_string(rate) + " frames last a second", total, 1000u);
-			Expect_Equal(std::to_string(rate) + " frames differ by a millisecond at most", longest - shortest <= 1, true);
+			Expect_Equal(std::to_string(rate) + " frames for ten minutes end on the clock", last - start, second * 600);
+			Expect_Equal(std::to_string(rate) + " periods differ by a nanosecond at most", longest - shortest <= 1, true);
 		}
 
-		FramePacer pacer;
-		Expect_Equal("no rate means no wait", pacer.Next_Wait(0), 0u);
-		pacer.Next_Wait(60);
-		Expect_Equal("a change of rate starts the average again", pacer.Next_Wait(45), 22u);
+		// A frame that starts a period late or less is made up in the next deadline; a later one starts over from now.
+		FrameDeadline deadline;
+		std::int64_t const period = second / 60;
+		std::int64_t const first = deadline.Arm(start, Frame_Period_For_Rate(60));
+		Expect_Equal("a frame started one period late still ends on the old schedule", deadline.Arm(first + period, Frame_Period_For_Rate(60)) - first, period + 1);
+		std::int64_t const late = first + 10 * period;
+		Expect_Equal("a frame started many periods late ends one period from now", deadline.Arm(late, Frame_Period_For_Rate(60)) - late, period);
+		Expect_Equal("the schedule continues from the restart", deadline.Arm(late + period, Frame_Period_For_Rate(60)) - late, 2 * period + 1);
+
+		// No rate means no wait and forgets the schedule.
+		Expect_Equal("rate zero ends the frame at once", deadline.Arm(late, Frame_Period_For_Rate(0)), late);
+		Expect_Equal("a change of rate starts from now", deadline.Arm(late, Frame_Period_For_Rate(30)) - late, second / 30);
+		Expect_Equal("the solo period follows the speed table", Solo_Game_Speed_Frame_Period(1) == Frame_Period_For_Rate(60), true);
+		Expect_Equal("a solo speed with no limit has no period", Solo_Game_Speed_Frame_Period(0).Nanoseconds, std::int64_t(0));
+		FrameDeadline fresh;
+		Expect_Equal("the first frame starts from now", fresh.Arm(start, Frame_Period_For_Rate(45)) - start, second / 45);
+	}
+
+
+	void Test_Interval_Stats(void)
+	{
+		using namespace NetTiming;
+
+		IntervalStats stats;
+		IntervalStats::Summary empty = stats.Take();
+		Expect_Equal("no intervals give a zero count", empty.Count, 0u);
+
+		for (double value : {16.0, 17.0, 16.0, 17.0}) {
+			stats.Add(value);
+		}
+		IntervalStats::Summary sum = stats.Take();
+		Expect_Equal("four intervals are counted", sum.Count, 4u);
+		Expect_Equal("the shortest interval", sum.Min, 16.0);
+		Expect_Equal("the longest interval", sum.Max, 17.0);
+		Expect_Equal("the mean interval", sum.Mean, 16.5);
+		Expect_Equal("the deviation of 16, 17, 16, 17", std::abs(sum.Deviation - 0.5) < 1e-9, true);
+		Expect_Equal("taking the summary starts a new one", stats.Take().Count, 0u);
 	}
 
 
@@ -506,12 +546,13 @@ namespace
 		unsigned int const fastest = Select_Desired_Frame_Rate(measured, 30, Game_Speed_Frame_Rate(0));
 		Expect_Equal("fastest speed with cheap frames asks for 60 FPS", fastest, 60u);
 
-		FramePacer pacer;
-		Milliseconds total = 0;
+		FrameDeadline deadline;
+		std::int64_t const start = 1000;
+		std::int64_t end = start;
 		for (int frame = 0; frame < 60; frame++) {
-			total += pacer.Next_Wait(fastest);
+			end = deadline.Arm(end, Frame_Period_For_Rate(fastest));
 		}
-		Expect_Equal("60 frames at the fastest speed last exactly one second", total, 1000u);
+		Expect_Equal("60 frames at the fastest speed last exactly one second", end - start, std::int64_t(1000000000));
 
 		TimingCensus incomplete = measured;
 		incomplete.ProcessComplete = false;
@@ -1514,7 +1555,8 @@ int main(void)
 	Test_Note_Retransmit_Guards();
 	Test_Game_Speed_Frame_Rate();
 	Test_Solo_Game_Speed_Frame_Rate();
-	Test_Frame_Pacer();
+	Test_Frame_Deadline();
+	Test_Interval_Stats();
 	Test_Speed_Reaches_Frame_Rate();
 	Test_Gamemd_Timing();
 	Test_Host_Choice();

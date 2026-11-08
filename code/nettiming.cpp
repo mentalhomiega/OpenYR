@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <limits>
 #include <numeric>
 
@@ -413,24 +414,72 @@ namespace NetTiming
 	}
 
 
-	/// <summary>The whole milliseconds the next frame lasts so frames average the rate exactly.</summary>
-	Milliseconds FramePacer::Next_Wait(unsigned int rate)
+	FramePeriod Frame_Period_For_Rate(unsigned int rate)
 	{
-		if (rate != Rate) {
-			Rate = rate;
-			Leftover = 0;
+		FramePeriod period;
+		if (rate > 0) {
+			period.Nanoseconds = 1000000000;
+			period.Frames = rate;
 		}
-		if (rate == 0) {
-			return(0);
+		return(period);
+	}
+
+
+	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed)
+	{
+		return(Frame_Period_For_Rate(Solo_Game_Speed_Frame_Rate(game_speed)));
+	}
+
+
+	/// <summary>Starts the frame that begins at now and returns the time it ends.</summary>
+	std::int64_t FrameDeadline::Arm(std::int64_t now, FramePeriod period)
+	{
+		if (period.Nanoseconds <= 0 || period.Frames == 0) {
+			Period = FramePeriod();
+			Deadline = now;
+			return(now);
 		}
 
-		Milliseconds wait = 1000 / rate;
-		Leftover += 1000 % rate;
-		if (Leftover >= rate) {
-			Leftover -= rate;
-			wait++;
+		std::int64_t step = period.Nanoseconds / period.Frames;
+		if (!(period == Period) || now - Deadline > step) {
+			Period = period;
+			Deadline = now;
+			Leftover = 0;
 		}
-		return(wait);
+
+		Leftover += static_cast<unsigned int>(period.Nanoseconds % period.Frames);
+		if (Leftover >= period.Frames) {
+			Leftover -= period.Frames;
+			step++;
+		}
+		Deadline += step;
+		return(Deadline);
+	}
+
+
+	void IntervalStats::Add(double milliseconds)
+	{
+		if (Current.Count == 0 || milliseconds < Current.Min) {
+			Current.Min = milliseconds;
+		}
+		if (Current.Count == 0 || milliseconds > Current.Max) {
+			Current.Max = milliseconds;
+		}
+		Current.Count++;
+		Sum += milliseconds;
+		SumOfSquares += milliseconds * milliseconds;
+	}
+
+
+	IntervalStats::Summary IntervalStats::Take(void)
+	{
+		Summary result = Current;
+		if (result.Count > 0) {
+			result.Mean = Sum / result.Count;
+			result.Deviation = std::sqrt(std::max(0.0, SumOfSquares / result.Count - result.Mean * result.Mean));
+		}
+		*this = IntervalStats();
+		return(result);
 	}
 
 
