@@ -34,6 +34,7 @@
 #include "always.h"
 
 #include "tracker.h"
+#include "perfstat.h"
 
 #include "_kamikaze.h"
 #include "_logic.h"
@@ -94,9 +95,32 @@ DynamicVectorClass<AbstractClass *> ObjectsToDelete;
  * HISTORY:                                                                                    *
  *   05/08/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
+static void Count_Detach(AbstractClass const * target)
+{
+	Perf_Count(PERF_COUNT_DETACH_CALLS);
+	int visits = 0;
+	if (target->RTTI == RTTI_HOUSE) visits = HousePtrTracker.Count();
+	else if (target->RTTI == RTTI_ANIM) visits = AnimPtrTracker.Count();
+	else if (target->As_ObjectClass() != NULL) visits = ObjectPtrTracker.Count();
+	Perf_Count(PERF_COUNT_DETACH_VISITS, visits);
+	switch ((RTTIType)target->RTTI) {
+		case RTTI_BULLET: Perf_Count(PERF_COUNT_DETACH_BULLET); break;
+		case RTTI_ANIM: Perf_Count(PERF_COUNT_DETACH_ANIM); break;
+		case RTTI_PARTICLE:
+		case RTTI_PARTICLESYSTEM: Perf_Count(PERF_COUNT_DETACH_PARTICLE); break;
+		case RTTI_UNIT:
+		case RTTI_INFANTRY:
+		case RTTI_AIRCRAFT:
+		case RTTI_BUILDING: Perf_Count(PERF_COUNT_DETACH_TECHNO); break;
+		default: Perf_Count(PERF_COUNT_DETACH_OTHER); break;
+	}
+}
+
 void Detach_This_From_All(AbstractClass const * target, bool all)
 {
 	int index = 0;
+	PerfScope detach_scope(PERF_FRAME_DETACH);
+	if (Perf_Enabled) Count_Detach(target);
 
 	if (Map.PendingObjectPtr == target) {
 		Map.PendingObjectPtr = NULL;

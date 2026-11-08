@@ -33,7 +33,7 @@ enum PerfDomain {
 // Phase names in the order of PerfPhase, as the Perf lines print them.
 char const * const Phase_Names[PERF_PHASE_COUNT] = {
 	"logic", "triggers", "teams", "objects", "infantry", "unit", "building", "aircraft", "other",
-	"pathfind", "threat", "ring", "eval", "map", "tactical", "factories", "houses", "queue", "wait",
+	"pathfind", "threat", "ring", "eval", "map", "tactical", "factories", "houses", "queue", "detach", "wait",
 	"total", "terrain", "shroud", "tilecopy", "objects", "voxels", "particles", "fx", "overlay", "hud", "ui", "gpumap",
 	"total", "upload", "gpu", "gputime",
 };
@@ -44,6 +44,7 @@ char const * const Counter_Names[PERF_COUNTER_COUNT] = {
 	"particles", "paths", "threats", "object ai", "upload bytes", "uploads",
 	"scans ring", "scans air", "scans full", "scan targeting", "scan mission", "scan team", "scan house",
 	"ring cells", "cell candidates", "object evals", "area modify", "weapon selects",
+	"detach calls", "detach visits", "detach bullet", "detach anim", "detach particle", "detach techno", "detach other",
 	"draws skipped",
 };
 
