@@ -19,6 +19,9 @@ namespace Rml
 // Queues one step of a scripted walk through the menus; autotest scripts give them as "ui" lines.
 void UIScript_Add(std::string const & command, std::string const & argument);
 
+// True while menu steps are still waiting to run.
+bool UIScript_Pending(void);
+
 // Carries out the menu steps that are due; the shell calls it once per tick.
 void UIScript_Tick(Rml::Context * context);
 

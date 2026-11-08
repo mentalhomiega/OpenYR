@@ -9,6 +9,12 @@ Combine it with `-SPAWN` to start a skirmish straight away. `scripts/run_autotes
 workspace that hosts this repository writes a muted settings file and a `SPAWN.INI`, then starts
 the game this way.
 
+`-AUTOTEST-UNCAPPED` removes the frame limit from a skirmish or campaign run, so the game plays as fast as the machine
+allows. Each tick does the same work, but anything that reads the clock differs: frames counted per second, the
+scenario's elapsed timer (which the state checksum and the par-time rank use), and menu waits given in milliseconds.
+`-AUTOTEST-STOP-AFTER-STEPS` ends the run on the first game frame after the script's last step, once no `ui` step is
+left, and logs `AUTOTEST steps done`. `run_autotest.ps1` passes them as `-Uncapped` and `-StopAfterSteps`.
+
 ## The script
 
 Each line is `<frame> <command> [arguments]`. Blank lines and lines starting with `;` are ignored.
