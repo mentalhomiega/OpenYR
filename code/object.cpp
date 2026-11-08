@@ -259,7 +259,7 @@ bool ObjectClass::Is_Foot(void) const
 {
 	assert(this != NULL);
 
-	return(dynamic_cast<FootClass const *>(this)!=NULL);
+	return(RTTI_Is_Foot(Fetch_RTTI()));
 }
 
 

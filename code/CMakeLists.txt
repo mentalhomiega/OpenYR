@@ -207,6 +207,9 @@ target_compile_definitions(OpenTS PRIVATE
     _WINDOWS
     NOMINMAX
 )
+if(OPENTS_RTTI_CROSSCHECK)
+    target_compile_definitions(OpenTS PRIVATE OPENTS_RTTI_CROSSCHECK)
+endif()
 
 #
 # ---------------------------------------------------------

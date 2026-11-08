@@ -304,11 +304,11 @@ class InfantryClass : public FootClass
 
 inline InfantryClass * AbstractClass::As_InfantryClass(void)
 {
-	return(dynamic_cast<InfantryClass *>(this));
+	return(Rtti_Leaf_Cast<InfantryClass>(this, RTTI_INFANTRY));
 }
 
 
 inline InfantryClass const * AbstractClass::As_InfantryClass(void) const
 {
-	return(dynamic_cast<InfantryClass const *>(this));
+	return(Rtti_Leaf_Cast<InfantryClass const>(this, RTTI_INFANTRY));
 }

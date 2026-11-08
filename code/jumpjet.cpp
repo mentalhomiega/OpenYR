@@ -668,7 +668,7 @@ bool JumpjetLocomotionClass::Cell_Claimed_By_Other(Cell const & cell) const
 			continue;
 		}
 
-		JumpjetLocomotionClass const * jumpjet = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+		JumpjetLocomotionClass const * jumpjet = Locomotor_As<JumpjetLocomotionClass const>(foot->Locomotion.get());
 		if (jumpjet == NULL || (jumpjet->CurrentState != GROUNDED && jumpjet->CurrentState != HOVERING)) {
 			continue;
 		}
@@ -1156,7 +1156,7 @@ void JumpjetLocomotionClass::Movement_AI(void)
 				if (cellptr != NULL) {
 					ObjectClass * occupier = cellptr->Cell_Occupier(false);
 					while (occupier != NULL) {
-						TechnoClass * tech = dynamic_cast<TechnoClass *>(occupier);
+						TechnoClass * tech = occupier->As_TechnoClass();
 						if (tech != NULL) {
 							tech->Do_Shimmer();
 						}
@@ -1164,7 +1164,7 @@ void JumpjetLocomotionClass::Movement_AI(void)
 					}
 					occupier = cellptr->Cell_Occupier(true);
 					while (occupier != NULL) {
-						TechnoClass * tech = dynamic_cast<TechnoClass *>(occupier);
+						TechnoClass * tech = occupier->As_TechnoClass();
 						if (tech != NULL) {
 							tech->Do_Shimmer();
 						}

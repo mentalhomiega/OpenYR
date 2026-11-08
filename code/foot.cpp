@@ -972,7 +972,7 @@ int FootClass::Do_MISSION_PATROL(void)
  *=============================================================================================*/
 int FootClass::Do_MISSION_CAPTURE(void)
 {
-	InfantryClass * inf = dynamic_cast<InfantryClass *>(this);
+	InfantryClass * inf = As_InfantryClass();
 
 	/*
 	**	If there is a valid TarCom but the NavCom isn't set, then set the NavCom accordingly.
@@ -1096,7 +1096,7 @@ int FootClass::Do_MISSION_GUARD(void)
 
 	int dtime = Current_Mission_Control().Normal_Delay();
 
-	InfantryClass * inf = dynamic_cast<InfantryClass *>(this);
+	InfantryClass * inf = As_InfantryClass();
 	if (inf != NULL) {
 
 		/*
@@ -1194,7 +1194,7 @@ int FootClass::Do_MISSION_HUNT(void)
 /// <returns>bool; True while the teleport is waiting to jump or holding the object after it.</returns>
 bool FootClass::Is_Chrono_Warping(void) const
 {
-	TeleportLocomotionClass const * teleport = dynamic_cast<TeleportLocomotionClass const *>(Locomotion.get());
+	TeleportLocomotionClass const * teleport = Locomotor_As<TeleportLocomotionClass const>(Locomotion.get());
 	return(teleport != NULL && teleport->Is_Warping());
 }
 
@@ -1212,7 +1212,7 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 	Stop_Driver();
 	Assign_Destination(NULL);
 
-	if (dynamic_cast<TeleportLocomotionClass *>(Locomotion.get()) == NULL) {
+	if (Locomotor_As<TeleportLocomotionClass>(Locomotion.get()) == NULL) {
 		std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
 		carried->Mark_All_Occupation_Bits(0);
 		carried->Stop_Movement_Animation();
@@ -1346,7 +1346,7 @@ void FootClass::Stun(void)
 bool FootClass::Crash(TechnoClass * source)
 {
 	// Nothing else can carry an object down, so one that cannot fall is destroyed where it is.
-	if (HeightAGL <= 0 || IsAttackedByLocomotor || dynamic_cast<JumpjetLocomotionClass const *>(Locomotion.get()) == NULL) {
+	if (HeightAGL <= 0 || IsAttackedByLocomotor || Locomotor_As<JumpjetLocomotionClass const>(Locomotion.get()) == NULL) {
 		return(false);
 	}
 

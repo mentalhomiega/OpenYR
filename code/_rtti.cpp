@@ -16,6 +16,12 @@
 #include "_rtti.h"
 
 #include "object.h"
+#include "dbgprint.h"
+
+#include <cstdio>
+#include <map>
+#include <mutex>
+#include <string>
 
 
 struct {
@@ -189,3 +195,60 @@ TechnoClass * Dynamic_Cast<TechnoClass *>(AbstractClass * target)
 	}
 	return(NULL);
 }
+
+
+#if defined(_DEBUG) || defined(OPENTS_RTTI_CROSSCHECK)
+namespace {
+
+struct CrosscheckTally {
+	long long Calls = 0;
+	long long Disagreements = 0;
+};
+
+class CrosscheckTable {
+	public:
+		~CrosscheckTable() {Write();}
+
+		void Add(char const * file, int line, bool agrees)
+		{
+			std::lock_guard<std::mutex> lock(Lock);
+			CrosscheckTally & tally = Tallies[std::string(file) + ":" + std::to_string(line)];
+			tally.Calls++;
+			if (!agrees && tally.Disagreements++ < 5) {
+				DebugString("RTTI crosscheck: disagreement at %s:%d
+", file, line);
+			}
+			if ((++Total & 0xFFFFF) == 0) {
+				Write();
+			}
+		}
+
+	private:
+		// Rewritten every million calls so that a game ended without a clean exit still leaves its counts.
+		void Write() const
+		{
+			FILE * out = fopen("rtti_crosscheck.txt", "w");
+			if (out == NULL) {
+				return;
+			}
+			for (auto const & entry : Tallies) {
+				fprintf(out, "%s calls %lld disagreements %lld
+", entry.first.c_str(), entry.second.Calls, entry.second.Disagreements);
+			}
+			fclose(out);
+		}
+
+		std::mutex Lock;
+		std::map<std::string, CrosscheckTally> Tallies;
+		long long Total = 0;
+};
+
+}
+
+
+void Rtti_Crosscheck(char const * file, int line, bool agrees)
+{
+	static CrosscheckTable table;
+	table.Add(file, line, agrees);
+}
+#endif

@@ -40,6 +40,7 @@ bool Attack_Move_Key_Held(void);
 bool Attack_Move_Pending(void);
 bool All_Selected_Can_Attack_Move(void);
 
+#include "_rtti.h"
 #include "_voxel.h"
 #include "audio/audiohandle.h"
 #include "attacheffect.h"
@@ -1154,13 +1155,17 @@ inline bool TechnoClass::Is_In_Same_Zone_As(ObjectClass const * object) const
 
 inline TechnoClass * AbstractClass::As_TechnoClass(void)
 {
-	return(dynamic_cast<TechnoClass *>(this));
+	TechnoClass * techno = ::Dynamic_Cast<TechnoClass *>(this);
+	RTTI_CROSSCHECK(techno == dynamic_cast<TechnoClass *>(this));
+	return(techno);
 }
 
 
 inline TechnoClass const * AbstractClass::As_TechnoClass(void) const
 {
-	return(dynamic_cast<TechnoClass const *>(this));
+	TechnoClass const * techno = ::Dynamic_Cast<TechnoClass const *>(this);
+	RTTI_CROSSCHECK(techno == dynamic_cast<TechnoClass const *>(this));
+	return(techno);
 }
 
 

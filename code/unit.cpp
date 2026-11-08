@@ -4813,7 +4813,7 @@ std::optional<MoveType> UnitClass::Occupant_Verdict(ObjectClass * obj, MoveType 
 		return(MOVE_NO);
 	}
 
-	FootClass *foot = dynamic_cast<FootClass *>(obj);
+	FootClass *foot = obj->As_FootClass();
 
 	bool is_moving = foot != NULL &&
 			(foot->NavCom || foot->PrimaryFacing.Is_Rotating() || foot->Locomotion->Is_Moving());
