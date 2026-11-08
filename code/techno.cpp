@@ -2433,6 +2433,15 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);
 	}
 
+	/*
+	**	Quickly eliminate all unit types that are not allowed according to the mask
+	**	value.
+	*/
+	RTTIType otype = object->RTTI;
+	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
+		return(false);		// Mask failure.
+	}
+
 	// The weapon selection against object is made at most once for the tests below.
 	bool object_index_known = false;
 	int object_index = 0;
@@ -2443,15 +2452,6 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		}
 		return(object_index);
 	};
-
-	/*
-	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
-	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
-	*/
-	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
-		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
-		return(false);
-	}
 
 	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
 	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
@@ -2566,15 +2566,6 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);
 	}
 
-	/*
-	**	Quickly eliminate all unit types that are not allowed according to the mask
-	**	value.
-	*/
-	RTTIType otype = object->RTTI;
-	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
-		return(false);		// Mask failure.
-	}
-
 	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits) {
 		return(false);
 	}
@@ -2616,6 +2607,16 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
 			return(false);
 		}
+	}
+
+	// This test selects a weapon and is the costly one, so it runs after every pure rejection above.
+	/*
+	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
+	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
+		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
+		return(false);
 	}
 
 	return(true);
