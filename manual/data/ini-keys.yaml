@@ -17377,7 +17377,7 @@ GpuRender:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: 'yes'
       declared_in: OptionsClass
       member: GpuRender
       source: code/options.cpp
