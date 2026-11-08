@@ -4,6 +4,7 @@
 ; N = 6 (limit 10) or 2 (limit 45), and -Filter "AUTOTEST fps|Exception". A spawned skirmish takes its speed from
 ; the [Settings] section, which the runner writes to SPAWN.INI. The first second of a game reads low, so the lines
 ; start at frame 150.
+; Regress: capped it logs the frames counted per wall-clock second
 150 fps
 300 fps
 450 fps
