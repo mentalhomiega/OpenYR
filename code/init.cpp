@@ -212,6 +212,7 @@
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/screens/cncnet/uicncnet.h"
+#include "updatecheck.h"
 #include "ui/screens/cncnetlobby/uicncnetlobby.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
@@ -3124,8 +3125,10 @@ static UIMenuItemType Back_Item(void)
 
 
 // The modern style shows the player's name and the version on every title menu; the classic style shows neither.
+// Both styles end the game when the player presses Update in the offer panel.
 static void Show_Title_Badges(UIMenuState & menu)
 {
+	menu.UpdateExitChoice = SEL_EXIT;
 	if (!Options.IsClassicMenus) {
 		menu.Version = Version_Text();
 		menu.Profile = (Session.Handle[0] != 0) ? Session.Handle : Fetch_String(TXT_NONAME);
@@ -3241,6 +3244,7 @@ int Main_Menu(unsigned int timeout)
 	// The modern menus' loading notice stays up while the battle loads behind the menu.
 	Shellmap_Start();
 	Startup_Notice_Hide();
+	Update_Check_Begin();
 
 	while (retval == SEL_NONE) {
 		MainMenuKeyResult = SEL_NONE;

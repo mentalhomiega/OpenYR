@@ -467,6 +467,68 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	color: var(--t-muted, #a99bc9);
 }
 
+/* The update offer under the profile panel: a beta is out, with Update and Later. Shown by the update-offer class. */
+#update
+{
+	display: none;
+	position: absolute;
+	right: 16dp;
+	top: 74dp;
+	width: 200dp;
+	padding: 6dp 10dp 10dp 10dp;
+	background-color: var(--t-panel, #120d1ce8);
+	border: 1dp var(--t-edge, #6b43a8);
+	border-radius: 3dp;
+}
+
+#update-title
+{
+	font-size: 16dp;
+	line-height: 20dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+#update-line
+{
+	font-size: 11dp;
+	line-height: 14dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+#update-error
+{
+	display: none;
+	margin-top: 4dp;
+	font-size: 11dp;
+	line-height: 14dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+#update-error.shown
+{
+	display: block;
+}
+
+#update-buttons
+{
+	margin-top: 8dp;
+	height: 26dp;
+}
+
+#update #update-buttons button
+{
+	position: relative;
+	left: 0;
+	top: 0;
+	width: 86dp;
+	margin-right: 8dp;
+}
+
+body.titlemenu.update-offer #update
+{
+	display: block;
+}
+
 /* The version at the bottom left of the title menus. */
 #emblem
 {

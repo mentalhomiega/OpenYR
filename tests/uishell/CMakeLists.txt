@@ -7,7 +7,7 @@
 opents_add_test(UIShell
     NAME uishell
     INCLUDES ${OPENTS_GENERATED_DIR}
-    SOURCES uishell.cpp uicolorstub.cpp uidevstub.cpp uiscriptstub.cpp uitexturestub.cpp
+    SOURCES uishell.cpp uicolorstub.cpp uidevstub.cpp updatestub.cpp uiscriptstub.cpp uitexturestub.cpp
     ENGINE
         dbgprint.cpp
         ui/uiscreen.cpp

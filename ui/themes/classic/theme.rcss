@@ -168,6 +168,68 @@ body.main #content button:active, body.singleplayer #content button:active, body
 	padding-top: 12dp;
 }
 
+/* The update offer at the top right of the title menus, in the stage's dark panel look. Shown by the
+   update-offer class. */
+#update
+{
+	display: none;
+	position: absolute;
+	right: 16dp;
+	top: 16dp;
+	width: 200dp;
+	padding: 6dp 10dp 10dp 10dp;
+	background-color: #000000e0;
+	border: 1dp #4eb6dc;
+}
+
+#update-title
+{
+	font-size: 14dp;
+	line-height: 18dp;
+	color: #ffffff;
+}
+
+#update-line
+{
+	font-size: 11dp;
+	line-height: 14dp;
+	color: #e8dcff;
+}
+
+#update-error
+{
+	display: none;
+	margin-top: 4dp;
+	font-size: 11dp;
+	line-height: 14dp;
+	color: #ffffff;
+}
+
+#update-error.shown
+{
+	display: block;
+}
+
+#update-buttons
+{
+	margin-top: 8dp;
+	height: 25dp;
+}
+
+#update #update-buttons button
+{
+	position: relative;
+	left: 0;
+	top: 0;
+	width: 86dp;
+	margin-right: 8dp;
+}
+
+body.titlemenu.update-offer #update
+{
+	display: block;
+}
+
 /* Buttons are Yuri's Revenge's menu button in its three states. */
 button, button.wide, button.tall
 {
