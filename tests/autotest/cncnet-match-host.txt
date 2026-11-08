@@ -8,6 +8,7 @@
 ; guest Commander_. Each copy writes SPAWN.INI and starts the match in a child copy, which logs
 ; CNCNET_MATCH_FRAME_0 and _300 and quits at frame 600; the same session identity in both
 ; children's [Spawner] lines shows they played one match.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 ui waitfor backdrop
 ui wait 2000
 ui press CnCNet

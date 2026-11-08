@@ -2,6 +2,7 @@
 ; Start the stand-in first, with the game build id (the "[CnCNet] Room build id" line in its debug log):
 ;   python scripts/cncnet_irc_standin.py --port 16668 --bots 3 --game-version 9.3.5 --openyr-build "<build id>" --room-password test
 ; then run with -Menus and -Settings "[CnCNet]`nNativeLobby=yes`nAllowLiveServers=no`nServers=127.0.0.1:16668". Screenshots are room-screens-1 to room-screens-6.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 ui theme yuri
 ui waitfor backdrop
 ui wait 2000

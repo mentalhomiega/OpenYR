@@ -112,6 +112,34 @@ each run are left out. `-Logs <file>...` summarises logs that already exist.
 The summary's p95 is the 95th percentile of the per-second p95 values, and its max is the largest
 per-second worst. These are not percentiles of every sample in the run.
 
+## Path search benchmarks
+
+Two benchmarks load the path search, which the small-map large battle barely does (about 31 searches a second).
+
+- `tests/autotest/bench-bigmap-crossing.txt` puts two armies of 90 vehicles and 90 infantry about 200 cells apart on XMP22S8 and sends them across the map for 7200 frames. Run it with `scripts/perf_bench.ps1 -Build agent27 -Script src-agent27/tests/autotest/bench-bigmap-crossing.txt -Map XMP22S8.MAP -AIPlayers 1`.
+- `tests/autotest/bench-mission-all02.txt` plays Yuri's Revenge Allied 2 with a 240-unit army. Add `-Map ALL02UMD.MAP -Campaign`.
+
+On the big-map crossing, `frame.pathfind` is 68% of `frame.logic` (about 2.3 of 3.5 ms). A search spends about 22% in the hierarchical zone search and 78% in the cell search; `Can_Enter_Cell` is about 35% of the whole search. Retries and searches without the zone corridor are under 0.2% of searches there; in ALL02 most cell searches fail and retry. The worst frames (about 110 to 140 ms in both benchmarks) are one frame with 255 to 270 searches, started when a group is ordered across the map. No single search takes more than 3.4 ms.
+
+## Path search speed-ups
+
+Two changes leave every path as it was.
+
+- **Corridor cache.** A first-try zone search for a unit that does not avoid threats depends only on its start and goal zones on the three levels, its movement zone and the zone graph. `AStarClass::Find_Path_Hierarchical` keeps the result of such a search in a 1,024-slot table and, on a repeat, writes the same path lists, counts and corridor stamps without searching. Retries (banned edges), failures and threat-avoiding units are never cached. Every function that changes the zone graph calls `Search.Invalidate_Hierarchical_Cache`; so do `AStarClass::Reset` and `Update_Map_Dimensions`. On the big-map crossing 88% of lookups hit.
+- **Prefetch.** When the cell search expands a node, it starts the cache misses for the eight neighbours' cells, zone entries and visit stamps together before it reads them.
+
+Two environment variables are for debugging. `OPENYR_ASTAR_CACHE=0` turns the cache off. `OPENYR_ASTAR_CHECK=1` runs the real zone search beside every hit and logs `AStar cache check: ... differences` every 5,000 comparisons and a `DIFFERENCE` line for any mismatch. The big-map crossing compared 45,000 hits and ALL02 40,000 hits with no difference.
+
+Means of three runs, with other load on the machine (ms):
+
+| Benchmark | `frame.pathfind` before | after | `frame.logic` before | after | p95 logic after | worst logic after |
+|---|---:|---:|---:|---:|---:|---:|
+| Big-map crossing | 2.31 | 1.84 | 3.51 | 3.05 | 12.0 | 116 |
+| ALL02 mission | 0.57 | 0.42 | 2.24 | 1.67 | 6.3 | 134 |
+| Large battle | 0.008 | 0.006 | 0.99 | 0.97 | 1.9 | 13 |
+
+The big-map "before" is the cache turned off, before the prefetch; the ALL02 "before" is a separate single run of the original code.
+
 ## Limits
 
 - Each timer reads a clock twice, so the timed phases run slower than they do with recording off.

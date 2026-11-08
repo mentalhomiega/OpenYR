@@ -3,6 +3,7 @@
 ;   python scripts/cncnet_irc_standin.py --port 16668 --bots 1 --game-version 9.3.5 --openyr-build "<build id>" --room-password test
 ; then run from the workspace root with -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16668".
 ; Eva_Host's room seats us; Dasha_Guest joins the room we host and gets ready, so Go! lights up.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 ui waitfor backdrop
 ui wait 2000
 ui press CnCNet
