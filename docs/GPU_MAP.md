@@ -1,8 +1,9 @@
 # GPU map drawing
 
-The GPU can draw the map view's object pass in place of the software blitters. Set
-`GpuRender=yes` in the `[Video]` section of `RA2MD.INI` to turn it on. It is experimental, off by
-default, and works only in the modern interface on Direct3D 11.
+The GPU draws the map view's object pass in place of the software blitters. It is on by default
+(`GpuRender=yes` in the `[Video]` section of `RA2MD.INI`) and works only in the modern interface on
+Direct3D 11; elsewhere the pass is drawn in software. Set `GpuRender=no`, or turn it off on the Graphics
+page of the settings, to draw in software everywhere.
 
 ## What exists
 
@@ -44,7 +45,7 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
 
 | Key | Default | Effect |
 |---|---|---|
-| `GpuRender` | `no` | Draws the object pass on the GPU. A pass holding a draw the recorder does not support is drawn in software instead and shows no soft shadows or shockwaves. |
+| `GpuRender` | `yes` | Draws the object pass on the GPU. A pass holding a draw the recorder does not support is drawn in software instead and shows no soft shadows or shockwaves. |
 | `SoftShadows` | `no` | With `GpuRender`, the shadows of objects drawn in the pass and the shadows of buildings and trees in the tile layer go into one mask that is blurred and darkens the ground once, so overlapping shadows do not darken twice. A pass drawn in software shows the same shadows hard. Changing the switch redraws the whole tile layer. |
 | `SoftShadowRadius` | `3` | The blur radius of `SoftShadows` in pixels, from 1 to 16. |
 | `Shockwaves` | `no` | With `GpuRender`, each weapon impact that shows a blast animation sends a ring across the ground that bends the picture under it for 40 game frames. Up to 16 rings run at once; a newer one replaces the oldest. |
