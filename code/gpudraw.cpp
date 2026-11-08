@@ -32,6 +32,7 @@
 #include "shadowplane.h"
 #include "surface.h"
 #include "tactical.h"
+#include "voxlib.h"
 #include "wave.h"
 #include "xsurface.h"
 #include "zbuffer.h"
@@ -45,6 +46,9 @@
 static bool _ReplayCheck = false;
 static bool _GpuCheck = false;
 static bool _Render = false;
+static bool _Voxels = false;
+// The part in GpuDrawList::Voxels the next blit from the voxel buffer shows, or -1.
+static int _PendingPart = -1;
 static Surface * _Target = NULL;
 static Rect _Area;
 static std::vector<unsigned short> _Before;
@@ -193,6 +197,10 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.Fade = 256;
 	blit.Pitch = width;
 	blit.InAtlas = atlas >= 0;
+	blit.Voxel = -1;
+	blit.VoxelX = 0;
+	blit.VoxelY = 0;
+	blit.NoPixels = false;
 	if (blit.InAtlas) {
 		blit.Pixels = (std::uint32_t)atlas;
 		blit.Pitch = pitch;
@@ -307,6 +315,19 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha);
 	_LockedBlits++;
+	if (_PendingPart >= 0 && pixels >= VoxelDrawBuffer && pixels < VoxelDrawBuffer + VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT) {
+		SurfaceRegion const & region = _List.Voxels[_PendingPart].Scene.Region;
+		blit.Voxel = _PendingPart;
+		blit.VoxelX = (int)(pixels - VoxelDrawBuffer) % VOXEL_BITMAP_WIDTH - region.Bounds.X;
+		blit.VoxelY = (int)(pixels - VoxelDrawBuffer) / VOXEL_BITMAP_WIDTH - region.Bounds.Y;
+		_PendingPart = -1;
+		if (_Render) {
+			// The software did not render the image; the GPU draws it, and the fallback renders it if needed.
+			_List.PixelArena.resize(blit.Pixels);
+			blit.NoPixels = true;
+			return(true);
+		}
+	}
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	for (int r = 0; r < height; r++) {
 		std::memcpy(out + r * width, pixels + r * pitch, width);
@@ -875,11 +896,44 @@ static void Count_Render(bool drawn)
 {
 	static int _Drawn = 0;
 	static int _Fallback = 0;
+	static int _VoxelBlits = 0;
 	(drawn ? _Drawn : _Fallback)++;
+	_VoxelBlits += (int)std::count_if(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) { return(blit.Voxel >= 0); });
 	if (_Drawn + _Fallback >= 600) {
-		DebugString("GPU_RENDER frame %d drawn %d fallback %d\n", Frame, _Drawn, _Fallback);
+		DebugString("GPU_RENDER frame %d drawn %d fallback %d voxels %d\n", Frame, _Drawn, _Fallback, _VoxelBlits);
 		_Drawn = 0;
 		_Fallback = 0;
+		_VoxelBlits = 0;
+	}
+}
+
+
+// Renders in software the images of the voxel blits that were left to the GPU, so a pass the GPU
+// cannot draw can be drawn from the list.
+static void Render_Voxel_Pixels(void)
+{
+	int rendered = -1;
+	for (GpuBlit & blit : _List.Blits) {
+		if (!blit.NoPixels) {
+			continue;
+		}
+		if (rendered != blit.Voxel) {
+			GpuVoxelPart const & part = _List.Voxels[blit.Voxel];
+			std::memcpy(VoxelNormalTranslateTable, part.Lighting, sizeof(part.Lighting));
+			VoxelDrawSystem::Clear_Buffer();
+			for (VoxelRenderStruct object : part.Scene.Objects) {
+				Vector3 center = part.Scene.Center;
+				object.VoxLib->Render_Object(object, center);
+			}
+			rendered = blit.Voxel;
+		}
+		SurfaceRegion const & region = _List.Voxels[blit.Voxel].Scene.Region;
+		blit.Pixels = (std::uint32_t)_List.PixelArena.size();
+		_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)blit.Width * blit.Height);
+		for (int r = 0; r < blit.Height; r++) {
+			std::memcpy(&_List.PixelArena[blit.Pixels + (std::size_t)r * blit.Width], VoxelDrawBuffer + (region.Bounds.Y + blit.VoxelY + r) * VOXEL_BITMAP_WIDTH + region.Bounds.X + blit.VoxelX, blit.Width);
+		}
+		blit.NoPixels = false;
 	}
 }
 
@@ -972,11 +1026,58 @@ static bool Finish_Render(Surface & target)
 	if (TileSurface != NULL) {
 		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask(), !tilesleft);
 	}
+	Render_Voxel_Pixels();
 	Replay(base);
 	Write_Area(target, _Area, base);
 	std::fill(changed.begin(), changed.end(), 1);
 	_BaseTiles = NULL;
 	return(false);
+}
+
+
+bool GpuDraw_Voxels_Wanted(void)
+{
+	return(_Voxels && _Target != NULL && !Emissive_Is_Enabled() && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
+}
+
+
+void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
+{
+	_PendingPart = -1;
+	// A pass that renders on the GPU has nothing to compare a software image with.
+	if (!GpuDraw_Voxels_Wanted() || (_Render && software)) {
+		return;
+	}
+	GpuVoxelPart part;
+	part.Scene = scene;
+	std::memcpy(part.Lighting, VoxelNormalTranslateTable, sizeof(part.Lighting));
+	std::strncpy(part.Label, label, sizeof(part.Label) - 1);
+	part.Label[sizeof(part.Label) - 1] = 0;
+	if (software) {
+		Rect const bounds = scene.Region.Bounds;
+		part.Reference.resize((std::size_t)bounds.Width * bounds.Height);
+		for (int r = 0; r < bounds.Height; r++) {
+			std::memcpy(&part.Reference[(std::size_t)r * bounds.Width], VoxelDrawBuffer + (bounds.Y + r) * VOXEL_BITMAP_WIDTH + bounds.X, bounds.Width);
+		}
+	}
+	_List.Voxels.push_back(std::move(part));
+	_PendingPart = (int)_List.Voxels.size() - 1;
+}
+
+
+void GpuDraw_Voxel_End(void)
+{
+	// An image that no blit showed was clipped away; with nothing to compare, the GPU need not draw it.
+	if (_PendingPart >= 0 && _PendingPart == (int)_List.Voxels.size() - 1 && _List.Voxels[_PendingPart].Reference.empty()) {
+		_List.Voxels.pop_back();
+	}
+	_PendingPart = -1;
+}
+
+
+void GpuDraw_Set_Voxels(bool enabled)
+{
+	_Voxels = enabled;
 }
 
 
@@ -1066,6 +1167,8 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	_List.PixelArena.clear();
 	_List.ZShapeArena.clear();
 	_List.Unsupported = 0;
+	_List.Voxels.clear();
+	_PendingPart = -1;
 	_Render = render;
 	_Area = Intersect(area, target.Get_Rect());
 	if (!_Render || target.Bytes_Per_Pixel() != 2 || _Area.Width <= 0 || _Area.Height <= 0 || TileSurface == NULL) {
