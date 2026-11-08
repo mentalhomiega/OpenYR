@@ -163,6 +163,8 @@ and MA went from 6 to 4 at once.
 
 Solo games (`GAME_NORMAL`, `GAME_SKIRMISH`) pace each frame at the rate in the table below. A solo rate of 0 means no limit, and fast-forward removes the limit.
 
+A solo frame ends at a deadline on the steady clock in nanoseconds (`NetTiming::FrameDeadline`, given a `NetTiming::FramePeriod` so a period need not be a whole rate). Each deadline is the previous one plus 1/F of a second, with the fractional part carried, so 60 fps frames last 16.67 ms and a minute holds exactly 3600 of them. A frame that starts more than one period late, because of a slow frame, a pause, a dialog or a change of rate, restarts the schedule from the time it started, so the loop never runs extra frames to catch up. The wait sleeps on a high-resolution timer and spins only for the last 1.5 ms (`Fine_Wait_Until` in `code/framewait.cpp`).
+
 | `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Solo frame rate | no limit | 60 | 45 | 30 | 20 | 15 | 10 |
@@ -175,7 +177,7 @@ In a network game, the desired frame rate F is the lower of the game-speed rate 
 
 Values above 6 give 60 fps here. gamemd gives 60 divided by the speed for speeds 2 and up. The launch file refuses a value above 6.
 
-A network frame waits as described under [Frame wait](#frame-wait) (gamemd's rule). The adaptive policy keeps the `FramePacer` wait, which spreads the remainder so the average rate is exact. It applies only with `TimingPolicy=Adaptive`.
+A network frame waits as described under [Frame wait](#frame-wait) (gamemd's rule). The adaptive policy uses the solo deadline above, which carries the fraction so the average rate is exact. It applies only with `TimingPolicy=Adaptive`.
 
 MA counts frames, so its time depends on F. A look-ahead of 30 frames is 500 ms at 60 fps and 667 ms at 45 fps. A slow machine lowers F for every player, so the same look-ahead takes longer in milliseconds.
 
@@ -224,7 +226,7 @@ The reference is the decomp in `E:\Claude ra2 decomp\decomp`. We traced the prot
 | Stage | 1 by default. | 1. | Not used. |
 | Fall of the look-ahead | Applied on execution. | Staged until the old horizon drains. | Staged. |
 | TIMING event | F, MA (plus 10 for bit 0x1000), FSR. | Same format. The +10 is not read. | Same format. |
-| Frame wait | 1000 / F whole ms, from frame start. | Same. | `FramePacer` exact average. |
+| Frame wait | 1000 / F whole ms, from frame start. | Same. | Solo deadline, exact average. |
 | Online pacing (mode 4, MA ≥ 31) | +10 ms per threshold reached by the per-connection lag. | Same, with the peer frame lag. | None. |
 | Tunnelled response term | Adds the largest per-connection value (default 20 ticks). | Not reproduced. | None. |
 

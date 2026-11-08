@@ -39,10 +39,17 @@ Perf draw ms avg/p95/max: total 4.74/7.34/38.89, ...
 Perf present ms avg/p95/max: total 2.34/3.23/17.14, ...
 Perf gap ms avg/p95/max: present 16.68/17.05/31.20
 Perf count: objects 32925, voxels 4120, ..., draws skipped 3
+Pacing: 60 ticks in 1000.0 ms, interval ms min/mean/max/sd 16.640/16.667/16.702/0.012, cpu 85.2 ms
 ```
 
 Each phase reads `average/p95/worst` in milliseconds over the samples taken in that second. The p95
 is the nearest-rank 95th percentile. Counts are totals for the second.
+
+The `Pacing` line times the game frames themselves. `interval` is the time between the ends of two
+consecutive frame waits: its minimum, mean, maximum and standard deviation over the second, which show
+how evenly the game is paced. A solo game at game speed 1 should read a mean of 16.667 ms. `cpu` is the
+processor time (kernel and user, all threads) that the process used in the window, so the waits are
+idle when it stays well below the window length.
 
 `present.gputime` is the GPU time of the newest frame the GPU finished, from `bgfx::getStats`. bgfx
 measures it a frame or more behind the present that records it, so read it as the GPU cost per present,
@@ -54,7 +61,7 @@ to the start of the next one. Its worst value is the longest interval between tw
 ## Skipped draws
 
 With `RenderFrameRate` above zero, the wait between two game frames redraws the view each
-`1000 / RenderFrameRate` ms. A due redraw is skipped when less time is left in the wait than the last
+`1000 / RenderFrameRate` ms, timed on the nanosecond clock. A due redraw is skipped when less time is left in the wait than the last
 redraw took (`mainloop.cpp`, `Sync_Delay`). `draws skipped` counts a skip at most once for each interval
 between two redraws that happen, so a due redraw that is skipped again and again adds one. The counter stays at zero with `RenderFrameRate=0`, which has no such loop.
 

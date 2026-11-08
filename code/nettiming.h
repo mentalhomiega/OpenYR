@@ -159,14 +159,32 @@ namespace NetTiming
 	unsigned int Game_Speed_Frame_Rate(int game_speed);
 	unsigned int Solo_Game_Speed_Frame_Rate(int game_speed);
 
-	class FramePacer
+	// How long game frames last: Frames frames take Nanoseconds, so a rate that does not divide a second evenly
+	// (60 per second) is exact. Zero nanoseconds means no limit.
+	struct FramePeriod
+	{
+		std::int64_t Nanoseconds = 0;
+		unsigned int Frames = 1;
+
+		bool operator==(FramePeriod const &) const = default;
+	};
+
+	FramePeriod Frame_Period_For_Rate(unsigned int rate);
+	// The solo period for a game speed. It follows Solo_Game_Speed_Frame_Rate, so the speed table is kept there.
+	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed);
+
+	// Frame deadlines on a nanosecond clock. Each deadline is the previous one plus the period, with the
+	// fraction carried, so frames do not drift. A frame that starts more than one period late restarts from now.
+	class FrameDeadline
 	{
 		public:
-			Milliseconds Next_Wait(unsigned int rate);
+			// Starts the frame that begins at now and returns when it ends. A zero period ends it at once.
+			std::int64_t Arm(std::int64_t now, FramePeriod period);
 
 		private:
-			unsigned int Rate = 0;
-			// The part of a millisecond each frame is owed, counted in 1/Rate of a millisecond.
+			FramePeriod Period;
+			std::int64_t Deadline = 0;
+			// The part of a nanosecond each frame is owed, counted in 1/Period.Frames of a nanosecond.
 			unsigned int Leftover = 0;
 	};
 
