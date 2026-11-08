@@ -712,7 +712,7 @@ void GScreenClass::Render(void)
 		weather = GPU_WEATHER_SNOW;
 	}
 	GpuMap_Set_Weather(weather, Options.WeatherStrength);
-	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported());
+	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

@@ -225,6 +225,9 @@ bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & d
 // GpuDraw_Voxel_Part. False while the emissive mask is on, which the GPU voxel drawing does not write.
 bool GpuDraw_Voxels_Wanted(void);
 
+// True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a hull-only object turns to its exact facing.
+bool GpuDraw_Voxels_Smooth(void);
+
 // Hands the pass the voxel object VoxelDrawSystem prepared, drawn with the lighting table now in
 // VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
 // the check compares with the GPU's drawing. The next blit from the voxel buffer shows the part;
@@ -259,7 +262,8 @@ void GpuDraw_Set_Replay_Check(bool enabled);
 // The gpucheck autotest step: each pass is also drawn on the GPU and compared (code/gpumap.h).
 void GpuDraw_Set_Gpu_Check(bool enabled);
 
-// Turns the GPU drawing of voxel objects (GpuVoxels) on or off for the passes that follow.
-void GpuDraw_Set_Voxels(bool enabled);
+// Turns the GPU drawing of voxel objects (GpuVoxels) on or off for the passes that follow, and with
+// smooth (GpuVoxelSmooth) the turning of hull-only objects to their exact facing.
+void GpuDraw_Set_Voxels(bool enabled, bool smooth = false);
 
 GpuAtlas const & GpuDraw_Atlas(void);

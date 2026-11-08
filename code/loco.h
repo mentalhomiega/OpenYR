@@ -139,6 +139,12 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		 * matrix is true, build the matrix; with it false they return an identity matrix.
 		 */
 		virtual Matrix3D Build_Draw_Matrix(int *key, bool matrix);
+
+		/*
+		 * The angle to turn the object's body to for drawing: the nearest of the 32 facings the voxel art
+		 * is drawn at, or the exact facing when the GPU draws a hull-only object from its voxels smoothly.
+		 */
+		double Draw_Body_Radian(DirType const & facing) const;
 		virtual Matrix3D Build_Shadow_Matrix(int *key, bool matrix);
 
 		/*

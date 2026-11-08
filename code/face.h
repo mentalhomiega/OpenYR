@@ -206,6 +206,9 @@ class DirType
 		double		As_Radian(void) const { return (double)		((Facing - 16383) * -DEG_TO_RAD(360.0 / 65534.0)); }
 		double		As_Radian32(void) const { return (double)		((As_Dir32() - 8) * -DEG_TO_RAD(360.0 / 32.0)); }
 
+		// The exact facing in the angle As_Radian32 gives the 32 drawing facings, equal to it at each of them.
+		double		As_Radian_Smooth(void) const { return (double)	((((unsigned short)Facing) / 2048.0 - 8) * -DEG_TO_RAD(360.0 / 32.0)); }
+
 		int			As_Int(void) const { return(Facing); }
 
 		DirType Left_90(void) const { return(DirType(Facing - 0x3FFF)); }

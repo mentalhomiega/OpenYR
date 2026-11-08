@@ -47,6 +47,7 @@ static bool _ReplayCheck = false;
 static bool _GpuCheck = false;
 static bool _Render = false;
 static bool _Voxels = false;
+static bool _VoxelsSmooth = false;
 // The part in GpuDrawList::Voxels the next blit from the voxel buffer shows, or -1.
 static int _PendingPart = -1;
 static Surface * _Target = NULL;
@@ -1041,6 +1042,12 @@ bool GpuDraw_Voxels_Wanted(void)
 }
 
 
+bool GpuDraw_Voxels_Smooth(void)
+{
+	return(_VoxelsSmooth && GpuDraw_Voxels_Wanted());
+}
+
+
 void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
 {
 	_PendingPart = -1;
@@ -1075,9 +1082,10 @@ void GpuDraw_Voxel_End(void)
 }
 
 
-void GpuDraw_Set_Voxels(bool enabled)
+void GpuDraw_Set_Voxels(bool enabled, bool smooth)
 {
 	_Voxels = enabled;
+	_VoxelsSmooth = smooth;
 }
 
 

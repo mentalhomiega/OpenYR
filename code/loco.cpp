@@ -17,6 +17,7 @@
 #include "classfactory.h"
 #include "coord.h"
 #include "foot.h"
+#include "gpudraw.h"
 #include "globals.h"
 #include "map.h"
 #include "saveload.h"
@@ -69,6 +70,14 @@ void LocomotionClass::Link_To_Object(void *pointer)
 }
 
 
+double LocomotionClass::Draw_Body_Radian(DirType const & facing) const
+{
+	// A turret and barrel are composed from the hull's snapped facing, so only a hull-only object turns smoothly.
+	bool const hull_only = LinkedTo->TClass->AuxVoxel.VoxLib == NULL && LinkedTo->TClass->AuxVoxel2.VoxLib == NULL;
+	return(hull_only && GpuDraw_Voxels_Smooth() ? facing.As_Radian_Smooth() : facing.As_Radian32());
+}
+
+
 /// <summary>
 /// Builds the transform matrix to draw the object with.
 /// The base locomotor merely turns the object to its body facing, snapped to one of the
@@ -83,7 +92,7 @@ Matrix3D LocomotionClass::Build_Draw_Matrix(int *key, bool matrix)
 	Matrix3D draw_matrix(true);
 
 	if (matrix) {
-		draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+		draw_matrix.Rotate_Z(Draw_Body_Radian(LinkedTo->PrimaryFacing.Current()));
 	}
 
 	if (key && *key != -1) {

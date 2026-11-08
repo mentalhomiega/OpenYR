@@ -1370,7 +1370,7 @@ Matrix3D FlyLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 		*key |= LinkedTo->SecondaryFacing.Current().As_Dir32();
 	}
 
-	mtx.Rotate_Z(LinkedTo->SecondaryFacing.Current().As_Radian32());
+	mtx.Rotate_Z(Draw_Body_Radian(LinkedTo->SecondaryFacing.Current()));
 
 	if (LinkedTo->HeightAGL > 0 || LinkedTo->TClass->IsDropship) {
 

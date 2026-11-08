@@ -8563,8 +8563,11 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	}
 	SurfaceRegion region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
 	if (gpu) {
+		// A smooth draw is labelled with the exact facing in 32nds of a turn, which the check log shows turning without steps.
 		char label[24];
-		std::snprintf(label, sizeof(label), "%s@%d", (char const *)Class_Of()->IniName, int(PrimaryFacing.Current().As_Dir32()));
+		DirType const facing = PrimaryFacing.Current();
+		double const steps = GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32());
+		std::snprintf(label, sizeof(label), "%s@%.4g", (char const *)Class_Of()->IniName, steps);
 		GpuDraw_Voxel_Part(scene, label, !gpu_draws);
 	}
 	Rect cliprect = xcliprect;

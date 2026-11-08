@@ -23,6 +23,14 @@ While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or 
 because the software voxel drawers write the mask and the GPU drawing does not. A voxel object drawn this way never
 uses the voxel picture cache.
 
+Stage 5 is in too. With `GpuVoxelSmooth=yes` (`[Video]`, default `no`, needs `GpuVoxels=yes`), a hull-only object the GPU
+draws turns to its exact facing: `LocomotionClass::Draw_Body_Radian` (`code/loco.cpp`) gives the matrix `DirType::As_Radian_Smooth`
+instead of `As_Radian32`, which is the same number at each of the 32 facings. `FacingClass::Current` already reads the facing part
+way between two game frames when `RenderFrameRate` is above the game rate (`RenderBlend`), taking the short way round, so the
+smooth angle follows it. A turreted vehicle keeps the 32 facings until stage 2, because its turret and barrel are composed from the
+hull's matrix on the scratch surface, and shadows keep their cache key, so they still move in steps (stage 4). With the key off,
+nothing changes.
+
 ## How the software draws a voxel object
 
 `TechnoClass::Draw_Voxel` (`code/techno.cpp`) draws one model, a hull, a turret or a barrel, at a time.
@@ -110,6 +118,12 @@ same scene with `GpuRender=yes` and `GpuVoxels` on and off gives the same screen
 The numbers vary from run to run in which passes are read back, so the regress log of the script keeps only its
 crash lines.
 
+## Checking smooth facing
+
+`tests/autotest/gpu-voxel-smooth.txt` turns two MCVs half a turn under `gpucheck` with `GpuVoxelSmooth=yes`. Each `GPU_VOXEL` line
+labels its part `TYPE@F` with `F` the facing in 32nds of a turn: whole numbers with the key off, fractions such as 8.62 with it on,
+rising in even steps with no repeats. The software and the GPU draw the same smooth matrix, so the compare stays at 0 differing pixels.
+
 ## Stages
 
 Each stage has a check that fails when its picture departs from the software.
@@ -120,7 +134,7 @@ Each stage has a check that fails when its picture departs from the software.
 | 2 | Turreted vehicles: draw hull, turret and barrel into one tile in the order the scratch surface composes them, and blit the tile like a direct part | `GPU_DIFF` over turreted units; screenshots with `GpuRender` on and off | 1 to 2 sessions |
 | 3 | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | glow and HDR frames compared with the software mask | 1 session |
 | 4 | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened), voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_DIFF` on the existing voxel anim and cloak scripts | 1 session |
-| 5 | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the matrix at each of the 32 keys equals stage 4's; a turning unit shows no snap | 1 session |
+| 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning MCV's facing in fractions of a step | |
 | 6 | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
 | 7 | Settings page switches (greyed unless GPU drawing is on), default on once stage 2 to 5 match, instance buffers and batching, performance numbers on the large battle | the regress suite with the key on | 1 session |
 

@@ -258,6 +258,7 @@ OptionsClass::OptionsClass(void) :
 	CloudShadows(false),
 	CloudShadowStrength(100),
 	GpuVoxels(false),
+	GpuVoxelSmooth(false),
 	Weather(WEATHER_NONE),
 	WeatherStrength(100),
 	VSync(true),
@@ -767,6 +768,7 @@ void OptionsClass::Load_Settings(void)
 	CloudShadows = ConfigINI.Get_Bool("Video", "CloudShadows", CloudShadows);
 	CloudShadowStrength = std::clamp(ConfigINI.Get_Int("Video", "CloudShadowStrength", CloudShadowStrength), 1, 400);
 	GpuVoxels = ConfigINI.Get_Bool("Video", "GpuVoxels", GpuVoxels);
+	GpuVoxelSmooth = ConfigINI.Get_Bool("Video", "GpuVoxelSmooth", GpuVoxelSmooth);
 	char weathername[16];
 	ConfigINI.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
 	Weather = Enum_From_Name(Weather_Names, weathername, WEATHER_NONE);
@@ -981,6 +983,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "CloudShadows", CloudShadows);
 	ConfigINI.Put_Int("Video", "CloudShadowStrength", CloudShadowStrength);
 	ConfigINI.Put_Bool("Video", "GpuVoxels", GpuVoxels);
+	ConfigINI.Put_Bool("Video", "GpuVoxelSmooth", GpuVoxelSmooth);
 	ConfigINI.Put_String("Video", "Weather", Enum_Name(Weather_Names, std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ConfigINI.Put_Int("Video", "WeatherStrength", WeatherStrength);
 	ConfigINI.Put_String("Video", "HDRHighlights", Enum_Name(HDR_Highlights_Names, HDRHighlights, "Enhanced"));
