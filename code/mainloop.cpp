@@ -857,6 +857,17 @@ void Sync_Delay(void)
 		fps_timer = 960;
 	}
 
+	// The shown rate is timed between frame ends over at least a real second, so a steady 60 reads 60.
+	static unsigned int tick_window_start = timeGetTime();
+	static unsigned int tick_window_frames = TotalFrames;
+	unsigned int const tick_now = timeGetTime();
+	unsigned int const tick_elapsed = tick_now - tick_window_start;
+	if (tick_elapsed >= 1000) {
+		GameTicksPerSecond = ((TotalFrames - tick_window_frames) * 1000 + tick_elapsed / 2) / tick_elapsed;
+		tick_window_start = tick_now;
+		tick_window_frames = TotalFrames;
+	}
+
 	static CDTimerClass<MillisecondSystemTimerClass> second_timer;
 	if (!second_timer) {
 		SecondsPassed++;

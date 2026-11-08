@@ -88,6 +88,7 @@
 
 unsigned FramesThisSecond=0;
 unsigned LastFramesPerSecond=0;
+unsigned GameTicksPerSecond=0;
 unsigned TotalFrames=0;
 unsigned SecondsPassed=0;
 

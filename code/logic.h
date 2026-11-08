@@ -60,6 +60,7 @@ class LogicClass : public LayerClass
 extern unsigned FramesThisSecond;
 extern unsigned TotalFrames;
 extern unsigned LastFramesPerSecond;
+extern unsigned GameTicksPerSecond;
 extern unsigned SecondsPassed;
 
 // The frame count detail-gated effects must reach to be drawn, with gamemd's hysteresis (Detail::GetMinFrameRate).

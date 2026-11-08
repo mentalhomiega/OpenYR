@@ -585,8 +585,8 @@ static void Draw_Frame_Graph(Surface & surface, Point2D const & origin)
 /// <summary>
 /// Draws the ShowFPS counts at the top left of the game view.
 /// The first line is the rendered rate: the presents per second that reached the display in
-/// the last complete second. The second line is the game rate, the game frames run in the last
-/// 960 ms window (LastFramesPerSecond), which also gates the detail effects.
+/// the last complete second. The second line is the game rate: the game frames run in about the
+/// last second, scaled to exactly one second.
 /// </summary>
 /// <param name="surface">The surface the counts are drawn on.</param>
 static void Draw_Frame_Rates(Surface & surface)
@@ -596,7 +596,7 @@ static void Draw_Frame_Rates(Surface & surface)
 	snprintf(buffer, sizeof(buffer), "Render %u FPS", Video_Presents_Per_Second());
 	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 4),Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
-	snprintf(buffer, sizeof(buffer), "Game %u ticks/s", LastFramesPerSecond);
+	snprintf(buffer, sizeof(buffer), "Game %u ticks/s", GameTicksPerSecond);
 	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 14), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	if (Options.ShowFrameGraph) {
