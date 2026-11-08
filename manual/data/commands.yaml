@@ -3015,6 +3015,30 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:autotest-uncapped
+  route_id: autotest-uncapped
+  kind: launch
+  title: Unattended test run without the frame limit
+  description: Removes the frame limit from a skirmish or campaign game that runs a test script, so it
+    plays as fast as the machine allows. docs/AUTOTEST.md lists what differs from a run at normal speed.
+  audience: developer
+  availability: *id001
+  syntax: -AUTOTEST-UNCAPPED
+  _provenance:
+    source: code/init.cpp
+    guard: null
+- id: launch:autotest-stop-after-steps
+  route_id: autotest-stop-after-steps
+  kind: launch
+  title: Unattended test run that ends after its last step
+  description: Ends a test run on the first game frame after the script's last step, once no menu step
+    is left, and logs AUTOTEST steps done.
+  audience: developer
+  availability: *id001
+  syntax: -AUTOTEST-STOP-AFTER-STEPS
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:spawn
   route_id: spawn
   kind: launch

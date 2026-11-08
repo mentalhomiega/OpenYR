@@ -600,6 +600,12 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 }
 
 
+bool UIScript_Pending(void)
+{
+	return(Next < Steps.size());
+}
+
+
 /// <summary>
 /// Carries out the menu steps that are due. A step that opens a screen running its own loop
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
