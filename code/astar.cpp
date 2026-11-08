@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <xmmintrin.h>
 #include <utility>
 
 
@@ -377,6 +378,15 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 		Cell & from_id = working_from[0]->CellID;
 		std::optional<RegularOpenNode> temp_node;
 		int from_index = from_id.X + MapCellStride * from_id.Y;
+
+		// Start the neighbours' cache misses together; the loop below reads each of these.
+		for (int ahead = FACING_FIRST; ahead < FACING_COUNT; ahead++) {
+			char const * neighbor_ptr = (char const *)working_from[_offsets[ahead]];
+			_mm_prefetch(neighbor_ptr, _MM_HINT_T0);
+			_mm_prefetch(neighbor_ptr + 64, _MM_HINT_T0);
+			_mm_prefetch((char const *)&Map.CellSubzones[from_index + AStarFacingToOffset[ahead]], _MM_HINT_T0);
+			_mm_prefetch((char const *)&RegularVisited[from_index + AStarFacingToOffset[ahead]], _MM_HINT_T0);
+		}
 
 		for (face = FACING_FIRST; face <= FACING_COUNT; face++) {
 
