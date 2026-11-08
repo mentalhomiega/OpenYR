@@ -1,4 +1,5 @@
 ; The guest half of cncnet-match-host.txt; see that file for how to run both.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 ui waitfor backdrop
 ui wait 2000
 ui press CnCNet

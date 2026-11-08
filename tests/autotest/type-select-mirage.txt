@@ -8,6 +8,7 @@
 ; trees; the tap at 121 finds nothing unselected on screen and widens to the whole map, selecting the one
 ; off screen; the tap at 131 changes nothing.
 ; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/type-select-mirage.txt -Filter "AUTOTEST|Exception"
+; Regress: capped TypeSelectCommandClass (init.cpp) decides a tap by wall-clock milliseconds
 30 view 60 42
 35 reveal
 40 grantunit MGTK 63 44
