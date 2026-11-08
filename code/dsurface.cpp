@@ -2071,15 +2071,23 @@ struct Depth_Line_Buffers {
 	unsigned short * depth;
 	unsigned short * alpha;
 	unsigned short z;
+	int zwidth;
 };
 
 
+static bool Prepare_Depth_Line(Rect const & cliprect, Rect const & surface_rect, Point2D const & startpoint, Point2D const & endpoint, int start_depth, int end_depth, Depth_Line_Span & span);
+
+
 /*
- * Locks the surface at the start of a shaded depth line and finds the depth and alpha buffer entries
- * there. Returns false when a buffer is missing or the lock failed; the surface is then left unlocked.
+ * Clips a shaded depth line to the surface, locks the surface at its start and finds the depth and
+ * alpha buffer entries there. Returns false when nothing of the line is inside the clipping rectangle,
+ * a buffer is missing or the lock failed; the surface is then left unlocked.
  */
-static bool Lock_Depth_Line(DSurface const & surface, Depth_Line_Span const & span, Depth_Line_Buffers & buffers)
+static bool Begin_Depth_Line(DSurface const & surface, Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, int start_depth, int end_depth, Depth_Line_Span & span, Depth_Line_Buffers & buffers)
 {
+	if (!Prepare_Depth_Line(cliprect, surface.Get_Rect(), startpoint, endpoint, start_depth, end_depth, span)) {
+		return(false);
+	}
 	buffers.pixels = surface.Lock(span.start);
 	if (DepthBuffer == NULL || AlphaBuffer == NULL) {
 		if (buffers.pixels != NULL) {
@@ -2098,6 +2106,7 @@ static bool Lock_Depth_Line(DSurface const & surface, Depth_Line_Span const & sp
 	point.Y -= AlphaBuffer->Get_Bounds().Y;
 	buffers.alpha = AlphaBuffer->Get_Buffer_Offset(point);
 	buffers.z = (unsigned short)(span.zstart + (short)DepthBuffer->Get_Scroll_Delta(span.start.Y + span.clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
+	buffers.zwidth = DepthBuffer->Get_Buffer_Width();
 	return(true);
 }
 
@@ -2367,22 +2376,13 @@ static void Walk_Depth_Line(int stride, void * buffer, unsigned short * zbuffer,
 bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth, bool shade_by_alpha, int fade)
 {
 	Depth_Line_Span span;
-	if (!Prepare_Depth_Line(cliprect, Get_Rect(), startpoint, endpoint, start_depth, end_depth, span)) {
+	Depth_Line_Buffers buffers;
+	if (!Begin_Depth_Line(*this, cliprect, startpoint, endpoint, start_depth, end_depth, span, buffers)) {
 		return(false);
 	}
 	Point2D const start = span.start;
 	Point2D const end = span.end;
-
-	Bytes_Per_Pixel();
-	Depth_Line_Buffers buffers;
-	if (!Lock_Depth_Line(*this, span, buffers)) {
-		return(false);
-	}
-	void * const buffer = buffers.pixels;
-	unsigned short * zbuffer = buffers.depth;
-	unsigned short * abuffer = buffers.alpha;
-	unsigned short z = buffers.z;
-	int zwidth = DepthBuffer->Get_Buffer_Width();
+	auto [buffer, zbuffer, abuffer, z, zwidth] = buffers;
 
 	// While the GPU draws the object pass, the line's pixels are recorded at the depth and alpha tested here.
 	bool const record = GpuDraw_Line_Begin(*this, GPU_LINE_SHADED, (unsigned short)color, fade);
@@ -2504,22 +2504,13 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 	}
 
 	Depth_Line_Span span;
-	if (!Prepare_Depth_Line(cliprect, Get_Rect(), startpoint, endpoint, start_depth, end_depth, span)) {
+	Depth_Line_Buffers buffers;
+	if (!Begin_Depth_Line(*this, cliprect, startpoint, endpoint, start_depth, end_depth, span, buffers)) {
 		return(false);
 	}
 	Point2D const start = span.start;
 	Point2D const end = span.end;
-
-	Bytes_Per_Pixel();
-	Depth_Line_Buffers buffers;
-	if (!Lock_Depth_Line(*this, span, buffers)) {
-		return(false);
-	}
-	void * const buffer = buffers.pixels;
-	unsigned short * zbuffer = buffers.depth;
-	unsigned short * abuffer = buffers.alpha;
-	unsigned short z = buffers.z;
-	int zwidth = DepthBuffer->Get_Buffer_Width();
+	auto [buffer, zbuffer, abuffer, z, zwidth] = buffers;
 
 	// While the GPU draws the object pass, the line's pixels are recorded at the depth and alpha tested here.
 	bool const record = GpuDraw_Line_Begin(*this, GPU_LINE_ADDITIVE, (red << 16) | (green << 8) | blue, 0);
