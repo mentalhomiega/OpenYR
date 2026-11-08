@@ -20,6 +20,7 @@
 #include "vector.h"
 
 #include <optional>
+#include <cstring>
 #include <set>
 #include <utility>
 #include <vector>
@@ -62,6 +63,9 @@ class AStarClass
 		void Clear(void);
 		void Reset(void);
 		void Update_Map_Dimensions(Rect const & dimensions);
+
+		// Call after any change to the subzone graph; remembered corridors are then discarded.
+		void Invalidate_Hierarchical_Cache(void) { HierCacheGeneration++; }
 
 		/* -----------------------------------------------------------------------------------
 		 * Query / estimation (non-path-building)
@@ -161,6 +165,7 @@ class AStarClass
 		 * Hierarchical pathfinder (subzone-level A*)
 		 */
 		bool Find_Path_Hierarchical(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot);
+		bool Search_Hierarchical(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot);
 		void Ban_Blocked_Subzone_Edges(FootClass const * foot);
 		bool Subzone_Edge_Banned(int subzone1, int subzone2, int subzone_level);
 		void Ban_Subzone_Edge(int subzone1, int subzone2, int subzone_level);
@@ -345,6 +350,39 @@ class AStarClass
 		 * Number of valid entries in each hierarchical subzone path
 		 */
 		int HierSubzonePathCount[SUBZONE_COUNT];
+
+		/* -----------------------------------------------------------------------------------
+		 * Remembered corridors. A first-try hierarchical search for a unit that does not avoid
+		 * threats depends only on the start and goal subzones, the movement zone and the
+		 * subzone graph, so its result is kept until the graph changes.
+		 */
+		struct HierCacheKey {
+			int Subzones[2][SUBZONE_COUNT];
+			int MZone;
+			bool operator==(HierCacheKey const & other) const { return(memcmp(this, &other, sizeof(HierCacheKey)) == 0); }
+		};
+
+		struct HierCacheEntry {
+			unsigned int Generation = 0;
+			HierCacheKey Key;
+			std::vector<int> Path[SUBZONE_COUNT];
+		};
+
+		enum { HIER_CACHE_SLOTS = 1024 };
+
+		bool Make_Hier_Cache_Key(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot, HierCacheKey & key) const;
+		void Store_Hier_Cache(HierCacheEntry & entry, HierCacheKey const & key) const;
+		void Restore_Hier_Cache(HierCacheEntry const & entry);
+		bool Check_Hier_Cache_Hit(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot, HierCacheEntry const & entry);
+
+		unsigned int HierCacheGeneration;
+		HierCacheEntry * HierCache;
+		bool IsHierCacheEnabled;
+		bool IsHierCacheChecked;
+		unsigned int HierCacheLookups;
+		unsigned int HierCacheHits;
+		unsigned int HierCacheCompared;
+		unsigned int HierCacheDifferences;
 };
 
 /* -----------------------------------------------------------------------------------

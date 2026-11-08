@@ -9114,6 +9114,7 @@ CellClass * MapClass::Find_Nearby_Shroud(FootClass * foot)
 /// </summary>
 void MapClass::Shutdown(void)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	int index;
 
 	for (index = 0; index < MZONE_COUNT; index++) {
@@ -9150,6 +9151,7 @@ void MapClass::Shutdown(void)
 /// <param name="extent">Footprint size in cells; also the far corner used for the redraw area.</param>
 void MapClass::Collapse_Cliff_Tile(Cell point, int tile_type, int slope_a, int slope_b, Cell slope_b_offset, Cell extent)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	/*
 	 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
 	 */
@@ -9300,6 +9302,7 @@ void MapClass::Collapse_Cliff(CellClass * cptr)
 /// </summary>
 void MapClass::Reset_All_Subzones(void)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	for (int index = SUBZONE_COUNT-1; index >= 0; index--) {
 		SubzoneTracking[index].Clear();
 		Reset_Subzone(index);
@@ -9317,6 +9320,7 @@ void MapClass::Reset_All_Subzones(void)
 /// <param name="subzone">The subzone level to rebuild.</param>
 void MapClass::Reset_Subzone(int subzone)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	SubzoneConnectionStaging[subzone].clear();
 
 	DynamicVectorClass<SubzoneTrackingStruct> * track = &SubzoneTracking[subzone];
@@ -9437,6 +9441,7 @@ void MapClass::Reset_Subzone(int subzone)
 /// <returns>Returns with the distance the caller should advance its scan along the row.</returns>
 int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subzone_id, Rect const & bounds, Cell const & cell)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	int zone = seed->ZoneID;
 
 	CellSubzoneStruct * begin = seed;
@@ -9746,6 +9751,7 @@ void MapClass::Register_Zone_Connection_Entries(ZoneConnectionClass & connection
 /// <param name="subzone">The subzone level whose staged links are to be written out.</param>
 void MapClass::Register_Staged_Subzone_Connections(int subzone)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	DynamicVectorClass<SubzoneTrackingStruct> & track = SubzoneTracking[subzone];
 
 	for (auto const & [link, crossblock] : SubzoneConnectionStaging[subzone]) {
@@ -10157,6 +10163,7 @@ bool MapClass::Build_Reachable_Subzones(CellClass * cptr, int subzone_level, Dyn
 /// <param name="cell">The cell whose terrain has changed.</param>
 void MapClass::Update_Cell_Subzones(Cell const & cell)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	if (In_Local_Radar(cell)) {
 
 		int y;
@@ -10323,6 +10330,7 @@ void MapClass::Update_Cell_Subzones(Cell const & cell)
 /// <param name="connection">The zone connection to unregister.</param>
 void MapClass::Unregister_Subzone_Connection(ZoneConnectionClass * connection)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	Cell from = connection->From;
 	Cell to = connection->To;
 
@@ -10400,6 +10408,7 @@ void MapClass::Unregister_Subzone_Connection(ZoneConnectionClass * connection)
 /// <param name="connection">The zone connection to register.</param>
 void MapClass::Register_Subzone_Connection(ZoneConnectionClass * connection)
 {
+	Search.Invalidate_Hierarchical_Cache();
 	Cell from = connection->From;
 	Cell to = connection->To;
 
@@ -11076,6 +11085,7 @@ void MapClass::Recalc_Cells_In_List(DynamicVectorClass<Cell> const & vec)
 	int i;
 	for (i = vec.Count() - 1; i >= 0; i--) {
 		if (In_Local_Radar(vec[i])) {
+			Search.Invalidate_Hierarchical_Cache();
 			CellSubzones[Get_Cell_Zone_Index(vec[i])].SubzoneID[0] = 0;
 			CellClass * cptr = &Map[vec[i]];
 			cptr->Recalc_Attributes();
