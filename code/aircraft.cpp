@@ -133,6 +133,7 @@
 #include "team.h"
 #include "tracker.h"
 #include "unit.h"
+#include "_voxel.h"
 #include "unittype.h"
 #include "waypoint.h"
 #include "weapon.h"
@@ -439,10 +440,14 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		/*
 		**	Actually draw the root body of the unit.
 		*/
-		// The body is drawn uncached, so its frame is not folded into a cache key.
 		int const body_frame = Class->Voxel.MotLib != NULL && Class->Voxel.MotLib->Get_Frame_Count() > 0 ? TotalFramesWalked % Class->Voxel.MotLib->Get_Frame_Count() : 0;
-		key = -1;
+		key = UseVoxelCache && !IsSinking ? 0 : -1;
 		matrix = Locomotion->Draw_Matrix(&key);
+		if (key != -1) {
+			// The locomotor's key leaves out the airborne state that decides the tilt, and the body frame.
+			bool const airborne = HeightAGL > 0 || Class->IsDropship;
+			key = body_frame < 32 ? (body_frame | (key << 5) | (airborne ? 1 << 13 : 0)) : -1;
+		}
 		Draw_Voxel(Class->Voxel, body_frame, key, &Class->VoxelIndex, cliprect, point, Get_Isometric_View_Matrix() * matrix, newbrightness, SHAPE_NORMAL);
 	}
 
