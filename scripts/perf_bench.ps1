@@ -10,6 +10,7 @@
 # per-second p95 values, and max is the largest per-second worst time. Frames, draws and presents are
 # per second. Pass -Logs to summarise existing logs without running the game.
 # -Map and -AIPlayers pick another map and computer player count (default XMP08T2.MAP and 3).
+# -Campaign plays -Map as a campaign mission instead of a skirmish (no -AIPlayers).
 # -Settings passes extra INI text to run_autotest.ps1, for example "[Video]`nGpuRender=yes".
 #
 # Usage:
@@ -29,7 +30,8 @@ param(
 	[int]$RenderFrameRate = 240,
 	[string]$Settings = '',
 	[string]$Map = 'XMP08T2.MAP',
-	[int]$AIPlayers = 3
+	[int]$AIPlayers = 3,
+	[switch]$Campaign
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -45,10 +47,12 @@ if ($Logs.Count -eq 0) {
 	$scriptPath = (Resolve-Path -LiteralPath $Script).Path
 	$Logs = @()
 	$settingsArgs = @()
+	$gameArgs = @('-AIPlayers', $AIPlayers, '-AICountries', (@('5') * $AIPlayers -join ','))
+	if ($Campaign) { $gameArgs = @('-Campaign') }
 	if ($Settings) { $settingsArgs = @('-Settings', $Settings) }
 	for ($run = 1; $run -le $Runs; $run++) {
 		"perf_bench: run $run of $Runs, $scriptPath"
-		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map $Map -Width $Width -Height $Height -RenderFrameRate $RenderFrameRate -AIPlayers $AIPlayers -AICountries (@('5') * $AIPlayers -join ',') -Seconds $Seconds -Filter 'BENCH|Exception' @settingsArgs | Out-Host
+		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map $Map -Width $Width -Height $Height -RenderFrameRate $RenderFrameRate @gameArgs -Seconds $Seconds -Filter 'BENCH|Exception' @settingsArgs | Out-Host
 		$log = Get-ChildItem (Join-Path $debugDir '*.LOG') | Sort-Object LastWriteTime | Select-Object -Last 1
 		if (-not $log) { Write-Error "perf_bench: run $run wrote no debug log in $debugDir"; exit 1 }
 		$copy = Join-Path $OutDir "$Label-run$run.log"

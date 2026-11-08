@@ -1,0 +1,284 @@
+; Big campaign mission for the performance benchmark: Yuri's Revenge Allied 2 (ALL02UMD.MAP), the stock mission
+; with the most placed objects (about 600, most of them city buildings). The mission's own scripts, bases and
+; attack teams run as in play. The player gets an army of 120 vehicles and 120 infantry around 150,135 on frame
+; 10, and from frame 600 every 300 frames it is sent against the object nearest the Yuri bases (strikeobj * ...).
+; Units placed on a cell they cannot leave stay there. The run stops at frame 7200 (120 s at game speed 1).
+; Run: scripts/perf_bench.ps1 -Build agent -Script src-agent/tests/autotest/bench-mission-all02.txt -Map ALL02UMD.MAP -Campaign -Width 1920 -Height 1080
+; The ui lines click through the briefing page.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+0 perflog 1
+1 view 148 134
+3 log BENCH_START
+10 grantunit MTNK 140 126
+10 grantunit GGI 141 127
+11 grantunit E1 140 127
+11 grantunit FV 141 128
+10 grantunit MTNK 142 126
+10 grantunit E1 143 127
+11 grantunit GGI 142 127
+11 grantunit FV 143 128
+10 grantunit MTNK 144 126
+10 grantunit GGI 145 127
+11 grantunit E1 144 127
+11 grantunit FV 145 128
+10 grantunit MTNK 146 126
+10 grantunit E1 147 127
+11 grantunit GGI 146 127
+11 grantunit FV 147 128
+10 grantunit MTNK 148 126
+10 grantunit GGI 149 127
+11 grantunit E1 148 127
+11 grantunit FV 149 128
+10 grantunit MTNK 150 126
+10 grantunit E1 151 127
+11 grantunit GGI 150 127
+11 grantunit FV 151 128
+10 grantunit MTNK 152 126
+10 grantunit GGI 153 127
+11 grantunit E1 152 127
+11 grantunit FV 153 128
+10 grantunit MTNK 154 126
+10 grantunit E1 155 127
+11 grantunit GGI 154 127
+11 grantunit FV 155 128
+10 grantunit MTNK 156 126
+10 grantunit GGI 157 127
+11 grantunit E1 156 127
+11 grantunit FV 157 128
+10 grantunit MTNK 158 126
+10 grantunit E1 159 127
+11 grantunit GGI 158 127
+11 grantunit FV 159 128
+10 grantunit FV 140 129
+10 grantunit GGI 141 130
+11 grantunit E1 140 130
+11 grantunit MTNK 141 131
+10 grantunit FV 142 129
+10 grantunit E1 143 130
+11 grantunit GGI 142 130
+11 grantunit MTNK 143 131
+10 grantunit FV 144 129
+10 grantunit GGI 145 130
+11 grantunit E1 144 130
+11 grantunit MTNK 145 131
+10 grantunit FV 146 129
+10 grantunit E1 147 130
+11 grantunit GGI 146 130
+11 grantunit MTNK 147 131
+10 grantunit FV 148 129
+10 grantunit GGI 149 130
+11 grantunit E1 148 130
+11 grantunit MTNK 149 131
+10 grantunit FV 150 129
+10 grantunit E1 151 130
+11 grantunit GGI 150 130
+11 grantunit MTNK 151 131
+10 grantunit FV 152 129
+10 grantunit GGI 153 130
+11 grantunit E1 152 130
+11 grantunit MTNK 153 131
+10 grantunit FV 154 129
+10 grantunit E1 155 130
+11 grantunit GGI 154 130
+11 grantunit MTNK 155 131
+10 grantunit FV 156 129
+10 grantunit GGI 157 130
+11 grantunit E1 156 130
+11 grantunit MTNK 157 131
+10 grantunit FV 158 129
+10 grantunit E1 159 130
+11 grantunit GGI 158 130
+11 grantunit MTNK 159 131
+10 grantunit MTNK 140 132
+10 grantunit GGI 141 133
+11 grantunit E1 140 133
+11 grantunit SREF 141 134
+10 grantunit MTNK 142 132
+10 grantunit E1 143 133
+11 grantunit GGI 142 133
+11 grantunit SREF 143 134
+10 grantunit MTNK 144 132
+10 grantunit GGI 145 133
+11 grantunit E1 144 133
+11 grantunit SREF 145 134
+10 grantunit MTNK 146 132
+10 grantunit E1 147 133
+11 grantunit GGI 146 133
+11 grantunit SREF 147 134
+10 grantunit MTNK 148 132
+10 grantunit GGI 149 133
+11 grantunit E1 148 133
+11 grantunit SREF 149 134
+10 grantunit MTNK 150 132
+10 grantunit E1 151 133
+11 grantunit GGI 150 133
+11 grantunit SREF 151 134
+10 grantunit MTNK 152 132
+10 grantunit GGI 153 133
+11 grantunit E1 152 133
+11 grantunit SREF 153 134
+10 grantunit MTNK 154 132
+10 grantunit E1 155 133
+11 grantunit GGI 154 133
+11 grantunit SREF 155 134
+10 grantunit MTNK 156 132
+10 grantunit GGI 157 133
+11 grantunit E1 156 133
+11 grantunit SREF 157 134
+10 grantunit MTNK 158 132
+10 grantunit E1 159 133
+11 grantunit GGI 158 133
+11 grantunit SREF 159 134
+10 grantunit SREF 140 135
+10 grantunit GGI 141 136
+11 grantunit E1 140 136
+11 grantunit MTNK 141 137
+10 grantunit SREF 142 135
+10 grantunit E1 143 136
+11 grantunit GGI 142 136
+11 grantunit MTNK 143 137
+10 grantunit SREF 144 135
+10 grantunit GGI 145 136
+11 grantunit E1 144 136
+11 grantunit MTNK 145 137
+10 grantunit SREF 146 135
+10 grantunit E1 147 136
+11 grantunit GGI 146 136
+11 grantunit MTNK 147 137
+10 grantunit SREF 148 135
+10 grantunit GGI 149 136
+11 grantunit E1 148 136
+11 grantunit MTNK 149 137
+10 grantunit SREF 150 135
+10 grantunit E1 151 136
+11 grantunit GGI 150 136
+11 grantunit MTNK 151 137
+10 grantunit SREF 152 135
+10 grantunit GGI 153 136
+11 grantunit E1 152 136
+11 grantunit MTNK 153 137
+10 grantunit SREF 154 135
+10 grantunit E1 155 136
+11 grantunit GGI 154 136
+11 grantunit MTNK 155 137
+10 grantunit SREF 156 135
+10 grantunit GGI 157 136
+11 grantunit E1 156 136
+11 grantunit MTNK 157 137
+10 grantunit SREF 158 135
+10 grantunit E1 159 136
+11 grantunit GGI 158 136
+11 grantunit MTNK 159 137
+10 grantunit MTNK 140 138
+10 grantunit GGI 141 139
+11 grantunit E1 140 139
+11 grantunit FV 141 140
+10 grantunit MTNK 142 138
+10 grantunit E1 143 139
+11 grantunit GGI 142 139
+11 grantunit FV 143 140
+10 grantunit MTNK 144 138
+10 grantunit GGI 145 139
+11 grantunit E1 144 139
+11 grantunit FV 145 140
+10 grantunit MTNK 146 138
+10 grantunit E1 147 139
+11 grantunit GGI 146 139
+11 grantunit FV 147 140
+10 grantunit MTNK 148 138
+10 grantunit GGI 149 139
+11 grantunit E1 148 139
+11 grantunit FV 149 140
+10 grantunit MTNK 150 138
+10 grantunit E1 151 139
+11 grantunit GGI 150 139
+11 grantunit FV 151 140
+10 grantunit MTNK 152 138
+10 grantunit GGI 153 139
+11 grantunit E1 152 139
+11 grantunit FV 153 140
+10 grantunit MTNK 154 138
+10 grantunit E1 155 139
+11 grantunit GGI 154 139
+11 grantunit FV 155 140
+10 grantunit MTNK 156 138
+10 grantunit GGI 157 139
+11 grantunit E1 156 139
+11 grantunit FV 157 140
+10 grantunit MTNK 158 138
+10 grantunit E1 159 139
+11 grantunit GGI 158 139
+11 grantunit FV 159 140
+10 grantunit FV 140 141
+10 grantunit GGI 141 142
+11 grantunit E1 140 142
+11 grantunit MTNK 141 143
+10 grantunit FV 142 141
+10 grantunit E1 143 142
+11 grantunit GGI 142 142
+11 grantunit MTNK 143 143
+10 grantunit FV 144 141
+10 grantunit GGI 145 142
+11 grantunit E1 144 142
+11 grantunit MTNK 145 143
+10 grantunit FV 146 141
+10 grantunit E1 147 142
+11 grantunit GGI 146 142
+11 grantunit MTNK 147 143
+10 grantunit FV 148 141
+10 grantunit GGI 149 142
+11 grantunit E1 148 142
+11 grantunit MTNK 149 143
+10 grantunit FV 150 141
+10 grantunit E1 151 142
+11 grantunit GGI 150 142
+11 grantunit MTNK 151 143
+10 grantunit FV 152 141
+10 grantunit GGI 153 142
+11 grantunit E1 152 142
+11 grantunit MTNK 153 143
+10 grantunit FV 154 141
+10 grantunit E1 155 142
+11 grantunit GGI 154 142
+11 grantunit MTNK 155 143
+10 grantunit FV 156 141
+10 grantunit GGI 157 142
+11 grantunit E1 156 142
+11 grantunit MTNK 157 143
+10 grantunit FV 158 141
+10 grantunit E1 159 142
+11 grantunit GGI 158 142
+11 grantunit MTNK 159 143
+600 log BENCH_ORDERS
+600 strikeobj * 86 95 12 all
+900 strikeobj * 63 118 12 all
+1200 strikeobj * 161 86 12 all
+1500 strikeobj * 158 75 12 all
+1800 strikeobj * 86 95 12 all
+2100 strikeobj * 63 118 12 all
+2400 strikeobj * 161 86 12 all
+2700 strikeobj * 158 75 12 all
+3000 strikeobj * 86 95 12 all
+3300 strikeobj * 63 118 12 all
+3600 strikeobj * 161 86 12 all
+3900 strikeobj * 158 75 12 all
+4200 strikeobj * 86 95 12 all
+4500 strikeobj * 63 118 12 all
+4800 strikeobj * 161 86 12 all
+5100 strikeobj * 158 75 12 all
+5400 strikeobj * 86 95 12 all
+5700 strikeobj * 63 118 12 all
+6000 strikeobj * 161 86 12 all
+6300 strikeobj * 158 75 12 all
+6600 strikeobj * 86 95 12 all
+6900 strikeobj * 63 118 12 all
+7199 log BENCH_END
+7200 quit
