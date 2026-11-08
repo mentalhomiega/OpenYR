@@ -151,6 +151,8 @@ A vehicle whose shadow and turret picture are both cached no longer builds its d
 
 A turretless vehicle whose hull image is cached no longer builds its draw matrix either, and passes the draw an identity matrix that a cached image never reads. Per `Unit_Draw_Voxel` call the median fell from about 5,900 to about 5,100 processor cycles in three alternating pairs of a benchmark with 10 armoured personnel carriers and 10 harvesters.
 
+An aircraft body is cached as a vehicle hull is, keyed by the locomotor's key, the body frame and whether the aircraft is airborne (the locomotor's key does not carry that). A rocking aircraft, a dropship, a sinking one, a missile and a body frame of 32 or more still draw uncached. With 20 Orcas flying over the 4K view the `objects` phase fell from about 0.21 to about 0.07-0.12 ms and the `voxels` phase from about 0.06 to 0.00-0.01 ms in three alternating pairs. The draw digests of the run match with the cache on and off, in software and with `GpuRender`.
+
 The presenter compares the frame's emissive mask with its copy only in rows that the mask's `Lit` flags say may hold a value, now or at the previous compare. Every other row is zero in both, so the copy already holds it. Where no row is lit, which is the usual case with `GpuRender`, the compare reads nothing. In three clean alternating pairs of the 4K benchmark `present.upload` fell from about 0.29 to about 0.21 ms and `present.total` from about 0.63 to about 0.50 ms.
 
 The modern build panel is drawn eight pixels at a time. At 3840x2160 the `ui` phase of a picture fell from about 0.45 ms to about 0.09 ms with this change and the write watch change below.

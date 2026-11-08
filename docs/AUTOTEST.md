@@ -523,7 +523,7 @@ python -I scripts/compare_digests.py --present run-a.log run-b.log
 
 It pairs the lines by frame and by their order within that frame, so a line missing from one log does not shift the rest. It prints the number of lines in each log, the first differing line, and the first line that only one log has. Exit codes: `0` when every line in both logs matches; `3` when a hash or layer differs, or a line is in one log only; `4` when the logs share no line; `1` for a usage or read error.
 
-`tests/autotest/digest-large-battle.txt` runs the large battle with both steps on.
+`tests/autotest/digest-large-battle.txt` runs the large battle with both steps on. `tests/autotest/digest-aircraft.txt` does the same for 20 flying Orcas.
 
 ## Two-copy sync test
 
