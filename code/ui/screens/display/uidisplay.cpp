@@ -166,7 +166,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		// A frame rate of -1 is match the display, and highlights 1 is Enhanced.
 		State.Filter = Index_Of(State.Filters, VIDEO_SCALE_PIXELART, State.Filter);
 		State.IntegerScaling = false;
-		State.GpuRender = false;
+		State.GpuRender = true;
 		State.SoftShadows = false;
 		State.Shockwaves = false;
 		State.Bloom = false;

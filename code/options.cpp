@@ -247,7 +247,7 @@ OptionsClass::OptionsClass(void) :
 	ShowFrameGraph(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
-	GpuRender(false),
+	GpuRender(true),
 	SoftShadows(false),
 	SoftShadowRadius(3),
 	Shockwaves(false),
