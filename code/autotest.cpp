@@ -111,6 +111,7 @@
 #include "viewzoom.h"
 #include "modsync.h"
 #include "mods.h"
+#include "msgloop.h"
 #include "vidscale.h"
 #include "video.h"
 #include "bgfxbackend.h"
@@ -6622,6 +6623,14 @@ static void Glideclock_Step(StepType const &)
 }
 
 
+// overlaypresent: marks the UI overlay changed, then runs the window message handler, which presents the frame when the refresh interval allows.
+static void Overlay_Present_Step(StepType const &)
+{
+	Video_Mark_Overlay_Dirty();
+	Windows_Message_Handler();
+}
+
+
 // scriptedzoom <0|1>: turns the scripted scene zoom option off or on.
 static void Scriptedzoom_Step(StepType const & step)
 {
@@ -7056,6 +7065,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
 		{"glideclock", Glideclock_Step},
+		{"overlaypresent", Overlay_Present_Step},
 		{"scriptedzoom", Scriptedzoom_Step},
 		{"defencerange", Defencerange_Step},
 		{"scriptzoom", Scriptzoom_Step},

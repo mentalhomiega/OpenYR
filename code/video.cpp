@@ -78,6 +78,12 @@ static Rect _LayerDest;
 static bool _LayerFresh = false;
 static bool _LayerGpu = false;
 
+// Set when the map layer was dropped and no map draw has called a layer setter since. The frame holds VIDEO_LAYER_KEY
+// where the map was, so presents wait for that draw, for at most VIDEO_MAP_DROP_HOLD_MS after the first drop.
+static bool _AwaitingMapDraw = false;
+static unsigned int _MapDropTime = 0;
+constexpr unsigned int VIDEO_MAP_DROP_HOLD_MS = 100;
+
 // Part of a view position past its whole pixels, in frame pixels, from Video_Set_Map_Subpixel.
 static double _MapSubpixelX = 0.0;
 static double _MapSubpixelY = 0.0;
@@ -485,6 +491,24 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 	_LayerDest = dest;
 	_LayerFresh = (surface != NULL);
 	_LayerGpu = false;
+	_AwaitingMapDraw = false;
+}
+
+
+/// <summary>
+/// Removes the map layer because its surface is about to be freed. The frame still holds VIDEO_LAYER_KEY
+/// where the map was, so Video_Present_If_Dirty holds back presents until the next map draw calls
+/// Video_Set_Map_Layer or Video_Set_Gpu_Map_Layer, or until VIDEO_MAP_DROP_HOLD_MS has passed since the first drop.
+/// </summary>
+void Video_Drop_Map_Layer(void)
+{
+	bool const was_awaiting = _AwaitingMapDraw;
+	bool const had_layer = _LayerSurface != NULL || _LayerGpu;
+	Video_Set_Map_Layer(NULL, Rect(), Rect());
+	if (had_layer) {
+		_MapDropTime = timeGetTime();
+	}
+	_AwaitingMapDraw = was_awaiting || had_layer;
 }
 
 
@@ -516,6 +540,7 @@ void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest)
 	_LayerDest = dest;
 	_LayerFresh = false;
 	_LayerGpu = true;
+	_AwaitingMapDraw = false;
 }
 
 
@@ -724,7 +749,8 @@ void Video_Present(void)
 
 /// <summary>
 /// Puts the visible surface on the screen if it or the UI overlay has changed and a display
-/// refresh has passed since the last present.
+/// refresh has passed since the last present. It also waits for the next map draw after a map
+/// layer drop, for at most VIDEO_MAP_DROP_HOLD_MS.
 /// A skipped present keeps the changes marked, so the next present shows the newest content.
 /// This never waits: the game loop is not paced by presentation.
 /// </summary>
@@ -736,6 +762,9 @@ void Video_Present_If_Dirty(void)
 
 	unsigned int now = timeGetTime();
 	if ((now - _LastPresentTime) < _PresentInterval) {
+		return;
+	}
+	if (_AwaitingMapDraw && (now - _MapDropTime) < VIDEO_MAP_DROP_HOLD_MS) {
 		return;
 	}
 

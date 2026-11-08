@@ -195,7 +195,7 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 
 void Allocate_Map_Surfaces(void)
 {
-	Video_Set_Map_Layer(NULL, Rect(), Rect());
+	Video_Drop_Map_Layer();
 	delete MapCompositeSurface;
 	MapCompositeSurface = NULL;
 	delete MapTileSurface;
