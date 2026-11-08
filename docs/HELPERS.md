@@ -84,6 +84,9 @@ needs them.
 |---|---|---|
 | `Monotonic_Milliseconds()` | `monotonic.h` | Steady clock in milliseconds. Only differences mean anything. Not sync-safe. |
 | `Monotonic_Elapsed_Milliseconds(begin)` | `monotonic.h` | Milliseconds since a `steady_clock` reading. |
+| `Monotonic_Nanoseconds()` | `monotonic.h` | The steady clock in nanoseconds, for waits finer than a millisecond. |
+| `Fine_Wait_Until(deadline)` | `framewait.h` | Waits until `Monotonic_Nanoseconds()` reaches `deadline`: a coarse sleep, then a short spin. |
+| `NetTiming::FrameDeadline`, `FramePeriod` | `nettiming.h` | Frame end times that add an exact period each frame, so a rate that does not divide a second does not drift. |
 | `Local_Time(stamp, parts)`, `Utc_Time(stamp, parts)` | `wallclock.h` | Portable calendar fields of a `time_t`. Returns false when the conversion fails; read `parts` only after true. |
 | `Frame` | `ftimer.h` | The game frame counter. Sync-safe, and the same on every machine. |
 | `FrameCountdown` | `ftimer.h` | `Begin(frames)` and `Is_Expired()` on the game frame. Use it for a timer that only needs a start and a length. |

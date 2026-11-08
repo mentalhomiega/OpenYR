@@ -1,4 +1,5 @@
 ; The match a cncnet-live-host.txt test starts: log frames for about two minutes, then quit.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 0 log CNCNET_MATCH_FRAME_0
 300 log CNCNET_MATCH_FRAME_300
 1800 log CNCNET_MATCH_FRAME_1800

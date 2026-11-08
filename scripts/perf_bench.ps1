@@ -10,6 +10,8 @@
 # per-second p95 values, and max is the largest per-second worst time. Frames, draws and presents are
 # per second. Pass -Logs to summarise existing logs without running the game.
 # -Map and -AIPlayers pick another map and computer player count (default XMP08T2.MAP and 3).
+# -AICountries lists the computer players' countries (default: Libya, 5, for every player), for a script that names houses.
+# -SpawnIni plays with that launch file in place of the one run_autotest.ps1 writes; -Settings entries still go into it.
 # -Campaign plays -Map as a campaign mission instead of a skirmish (no -AIPlayers).
 # -Settings passes extra INI text to run_autotest.ps1, for example "[Video]`nGpuRender=yes".
 #
@@ -31,6 +33,8 @@ param(
 	[string]$Settings = '',
 	[string]$Map = 'XMP08T2.MAP',
 	[int]$AIPlayers = 3,
+	[string]$AICountries = '',
+	[string]$SpawnIni = '',
 	[switch]$Campaign
 )
 
@@ -47,9 +51,10 @@ if ($Logs.Count -eq 0) {
 	$scriptPath = (Resolve-Path -LiteralPath $Script).Path
 	$Logs = @()
 	$settingsArgs = @()
-	$gameArgs = @('-AIPlayers', $AIPlayers, '-AICountries', (@('5') * $AIPlayers -join ','))
+	$gameArgs = @('-AIPlayers', $AIPlayers, '-AICountries', $(if ($AICountries) { $AICountries } else { @('5') * $AIPlayers -join ',' }))
 	if ($Campaign) { $gameArgs = @('-Campaign') }
 	if ($Settings) { $settingsArgs = @('-Settings', $Settings) }
+	if ($SpawnIni) { $settingsArgs += @('-SpawnIni', (Resolve-Path -LiteralPath $SpawnIni).Path) }
 	for ($run = 1; $run -le $Runs; $run++) {
 		"perf_bench: run $run of $Runs, $scriptPath"
 		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map $Map -Width $Width -Height $Height -RenderFrameRate $RenderFrameRate @gameArgs -Seconds $Seconds -Filter 'BENCH|Exception' @settingsArgs | Out-Host

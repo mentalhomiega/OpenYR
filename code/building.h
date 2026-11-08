@@ -788,6 +788,24 @@ class BuildingClass : public TechnoClass
 		bool Is_Damaged_Art(void) const;
 		std::vector<InfantryClass *> Take_Occupants(void);
 		bool Place_Beside_Structure(FootClass * who, SpeedType speed, bool keep_unplaced);
+		struct CapturedDocker {
+			TechnoClass * object;
+			bool tethered;
+		};
+		void Grant_Cloak_And_Clear_Spy_Bits(HouseClass * newowner);
+		void Announce_Owner_Change(HouseClass * newowner, bool announce);
+		std::vector<CapturedDocker> Hand_Over_Occupants(HouseClass * newowner);
+		void Abandon_Computer_Production(void);
+		void Leave_Yard_And_Lab_Lists(HouseClass * oldowner);
+		void Disable_Cloak_Sensor_And_Gap(void);
+		void Change_Techno_Owner(HouseClass * newowner, bool announce, bool capture);
+		void Enable_Cloak_And_Sensor(void);
+		void Update_Capture_Records(HouseClass * oldowner);
+		void Cancel_Placement_If_Yard_Lost(HouseClass * oldowner);
+		void Take_Over_Production(HouseClass * oldowner, bool capture);
+		void Join_Yard_And_Lab_Lists(HouseClass * newowner);
+		void Refresh_Factory_Lists(HouseClass * oldowner, HouseClass * newowner);
+		void Welcome_Captured_Dockers(std::vector<CapturedDocker> const & dockers);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.

@@ -5,6 +5,7 @@
 ;   [MultiPlayer] Handle=OYRtestH (OYRtestA, OYRtestB)   [Options] SyncLog=yes
 ;   [CnCNet] HostMap=XArena.MAP   MatchArguments=-AUTOTEST=<path with no spaces to cncnet-live-match.txt>
 ; Start the host first and the guests 10 seconds apart. The match copies log SYNC frame lines; compare them.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 ui waitfor backdrop
 ui wait 2000
 ui press CnCNet (experimental)

@@ -19,6 +19,12 @@ inline std::int64_t Monotonic_Milliseconds(void)
 	return(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 
+// The steady clock in nanoseconds, for waits finer than a millisecond. On MSVC it reads the performance counter.
+inline std::int64_t Monotonic_Nanoseconds(void)
+{
+	return(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
 // Milliseconds on the steady clock since begin was read.
 inline std::int64_t Monotonic_Elapsed_Milliseconds(std::chrono::steady_clock::time_point begin)
 {

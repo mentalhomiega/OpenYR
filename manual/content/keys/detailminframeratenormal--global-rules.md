@@ -8,7 +8,7 @@ when_omitted:
   value: "15"
 ---
 
-Animations whose [`DetailLevel`](/keys/detaillevel/#scope-animtype) is above `1` are not drawn while the frame rate is below this value. An animation whose `DetailLevel` is `1` or lower is drawn whatever the frame rate. The frame rate is the count the FPS readout shows: the number of game frames counted in the last 960 milliseconds.
+Animations whose [`DetailLevel`](/keys/detaillevel/#scope-animtype) is above `1` are not drawn while the frame rate is below this value. An animation whose `DetailLevel` is `1` or lower is drawn whatever the frame rate. The frame rate here is the number of game frames counted in the last 960 milliseconds, as in the original game, so a game running at 60 frames a second counts 57 or 58. The FPS readout shows the rate over a full second instead.
 
 Once the rate falls below this value, those animations stay hidden until the rate reaches this value plus [`DetailBufferZoneWidth`](/keys/detailbufferzonewidth/#scope-global-rules). A rate that reaches this value but not the sum keeps them hidden. The count starts at `0`, so they stay hidden until the first 960 milliseconds of play have been counted.
 

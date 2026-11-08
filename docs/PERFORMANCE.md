@@ -39,10 +39,17 @@ Perf draw ms avg/p95/max: total 4.74/7.34/38.89, ...
 Perf present ms avg/p95/max: total 2.34/3.23/17.14, ...
 Perf gap ms avg/p95/max: present 16.68/17.05/31.20
 Perf count: objects 32925, voxels 4120, ..., draws skipped 3
+Pacing: 60 ticks in 1000.0 ms, interval ms min/mean/max/sd 16.640/16.667/16.702/0.012, cpu 85.2 ms
 ```
 
 Each phase reads `average/p95/worst` in milliseconds over the samples taken in that second. The p95
 is the nearest-rank 95th percentile. Counts are totals for the second.
+
+The `Pacing` line times the game frames themselves. `interval` is the time between the ends of two
+consecutive frame waits: its minimum, mean, maximum and standard deviation over the second, which show
+how evenly the game is paced. A solo game at game speed 1 should read a mean of 16.667 ms. `cpu` is the
+processor time (kernel and user, all threads) that the process used in the window, so the waits are
+idle when it stays well below the window length.
 
 `present.gputime` is the GPU time of the newest frame the GPU finished, from `bgfx::getStats`. bgfx
 measures it a frame or more behind the present that records it, so read it as the GPU cost per present,
@@ -54,7 +61,7 @@ to the start of the next one. Its worst value is the longest interval between tw
 ## Skipped draws
 
 With `RenderFrameRate` above zero, the wait between two game frames redraws the view each
-`1000 / RenderFrameRate` ms. A due redraw is skipped when less time is left in the wait than the last
+`1000 / RenderFrameRate` ms, timed on the nanosecond clock. A due redraw is skipped when less time is left in the wait than the last
 redraw took (`mainloop.cpp`, `Sync_Delay`). `draws skipped` counts a skip at most once for each interval
 between two redraws that happen, so a due redraw that is skipped again and again adds one. The counter stays at zero with `RenderFrameRate=0`, which has no such loop.
 
@@ -105,6 +112,34 @@ each run are left out. `-Logs <file>...` summarises logs that already exist.
 The summary's p95 is the 95th percentile of the per-second p95 values, and its max is the largest
 per-second worst. These are not percentiles of every sample in the run.
 
+## Path search benchmarks
+
+Two benchmarks load the path search, which the small-map large battle barely does (about 31 searches a second).
+
+- `tests/autotest/bench-bigmap-crossing.txt` puts two armies of 90 vehicles and 90 infantry about 200 cells apart on XMP22S8 and sends them across the map for 7200 frames. Run it with `scripts/perf_bench.ps1 -Build agent27 -Script src-agent27/tests/autotest/bench-bigmap-crossing.txt -Map XMP22S8.MAP -AIPlayers 1`.
+- `tests/autotest/bench-mission-all02.txt` plays Yuri's Revenge Allied 2 with a 240-unit army. Add `-Map ALL02UMD.MAP -Campaign`.
+
+On the big-map crossing, `frame.pathfind` is 68% of `frame.logic` (about 2.3 of 3.5 ms). A search spends about 22% in the hierarchical zone search and 78% in the cell search; `Can_Enter_Cell` is about 35% of the whole search. Retries and searches without the zone corridor are under 0.2% of searches there; in ALL02 most cell searches fail and retry. The worst frames (about 110 to 140 ms in both benchmarks) are one frame with 255 to 270 searches, started when a group is ordered across the map. No single search takes more than 3.4 ms.
+
+## Path search speed-ups
+
+Two changes leave every path as it was.
+
+- **Corridor cache.** A first-try zone search for a unit that does not avoid threats depends only on its start and goal zones on the three levels, its movement zone and the zone graph. `AStarClass::Find_Path_Hierarchical` keeps the result of such a search in a 1,024-slot table and, on a repeat, writes the same path lists, counts and corridor stamps without searching. Retries (banned edges), failures and threat-avoiding units are never cached. Every function that changes the zone graph calls `Search.Invalidate_Hierarchical_Cache`; so do `AStarClass::Reset` and `Update_Map_Dimensions`. On the big-map crossing 88% of lookups hit.
+- **Prefetch.** When the cell search expands a node, it starts the cache misses for the eight neighbours' cells, zone entries and visit stamps together before it reads them.
+
+Two environment variables are for debugging. `OPENYR_ASTAR_CACHE=0` turns the cache off. `OPENYR_ASTAR_CHECK=1` runs the real zone search beside every hit and logs `AStar cache check: ... differences` every 5,000 comparisons and a `DIFFERENCE` line for any mismatch. The big-map crossing compared 45,000 hits and ALL02 40,000 hits with no difference.
+
+Means of three runs, with other load on the machine (ms):
+
+| Benchmark | `frame.pathfind` before | after | `frame.logic` before | after | p95 logic after | worst logic after |
+|---|---:|---:|---:|---:|---:|---:|
+| Big-map crossing | 2.31 | 1.84 | 3.51 | 3.05 | 12.0 | 116 |
+| ALL02 mission | 0.57 | 0.42 | 2.24 | 1.67 | 6.3 | 134 |
+| Large battle | 0.008 | 0.006 | 0.99 | 0.97 | 1.9 | 13 |
+
+The big-map "before" is the cache turned off, before the prefetch; the ALL02 "before" is a separate single run of the original code.
+
 ## Limits
 
 - Each timer reads a clock twice, so the timed phases run slower than they do with recording off.
@@ -151,6 +186,8 @@ A vehicle whose shadow and turret picture are both cached no longer builds its d
 
 A turretless vehicle whose hull image is cached no longer builds its draw matrix either, and passes the draw an identity matrix that a cached image never reads. Per `Unit_Draw_Voxel` call the median fell from about 5,900 to about 5,100 processor cycles in three alternating pairs of a benchmark with 10 armoured personnel carriers and 10 harvesters.
 
+An aircraft body is cached as a vehicle hull is, keyed by the locomotor's key, the body frame and whether the aircraft is airborne (the locomotor's key does not carry that). A rocking aircraft, a dropship, a sinking one, a missile and a body frame of 32 or more still draw uncached. With 20 Orcas flying over the 4K view the `objects` phase fell from about 0.21 to about 0.07-0.12 ms and the `voxels` phase from about 0.06 to 0.00-0.01 ms in three alternating pairs. The draw digests of the run match with the cache on and off, in software and with `GpuRender`.
+
 The presenter compares the frame's emissive mask with its copy only in rows that the mask's `Lit` flags say may hold a value, now or at the previous compare. Every other row is zero in both, so the copy already holds it. Where no row is lit, which is the usual case with `GpuRender`, the compare reads nothing. In three clean alternating pairs of the 4K benchmark `present.upload` fell from about 0.29 to about 0.21 ms and `present.total` from about 0.63 to about 0.50 ms.
 
 The modern build panel is drawn eight pixels at a time. At 3840x2160 the `ui` phase of a picture fell from about 0.45 ms to about 0.09 ms with this change and the write watch change below.
@@ -160,3 +197,6 @@ The frame surface's write watch (`WriteWatch_Take` with `steady`) stops resettin
 ## Object removal broadcast
 
 `Detach_This_From_All` has a `detach` frame phase and `detach calls`, `detach visits` and per-kind `detach` counters in the Perf lines. In `bench-mission-all02.txt` (ALL02UMD) a second holds about 260 broadcasts (121 animations, 64 bullets, 51 particles, 18 units, infantry, aircraft or buildings) and 394,000 `Detach` visits, which cost 0.17 ms per frame on average (p95 0.91 ms), 7% of logic. In `bench-bigmap-crossing.txt` (XMP22S8, one computer player) a second holds about 170 broadcasts and 201,000 visits, 0.035 ms per frame, 1% of logic. Bullets and particles cause most of the visits, because only animations have a short tracker of their own. A skip of visits is exact only if every `Detach` override is shown unable to hold a pointer to the removed kind; none has been done.
+## Target scans
+
+`TechnoClass::Passes_Before_Disguise_Roll` ran the weapon selection and `Can_Fire` first for every candidate, 111,000 times a second in the large battle, although most candidates fail a cheap test such as the type mask or the owner. The fire test now runs after every other rejection in that function, and the type mask test runs right after the limbo and strength test. Every test involved only reads (the fire test, the weapon choice, the line of fire, the range and the capture and parasite checks draw no random number and assign nothing), so the targets chosen and the random draws are the same. A shadow build that ran the old order beside the new one on every candidate and compared the result and the random draw count checked 12.6 million candidates of the 7200-frame large battle with no mismatch; it is not kept in the tree. In the large battle `frame.threat` fell from about 0.82 to about 0.08 ms a game frame and weapon selects from 111,000 to about 600 a second.

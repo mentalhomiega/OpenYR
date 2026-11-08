@@ -1558,8 +1558,8 @@ test('A game played alone is paced by its own speed table', () => {
 	);
 	assert.match(
 		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
-		/FrameTimer = pacer\.Next_Wait\(Target_Frame_Rate\(\)\);/,
-		'and each frame waits whatever keeps the average on that rate',
+		/FineDeadline = deadline\.Arm\(Monotonic_Nanoseconds\(\), Target_Frame_Period\(\)\);/,
+		'and each frame ends on a deadline that keeps the average on that rate',
 	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'),

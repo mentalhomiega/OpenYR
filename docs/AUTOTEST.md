@@ -9,6 +9,12 @@ Combine it with `-SPAWN` to start a skirmish straight away. `scripts/run_autotes
 workspace that hosts this repository writes a muted settings file and a `SPAWN.INI`, then starts
 the game this way.
 
+`-AUTOTEST-UNCAPPED` removes the frame limit from a skirmish or campaign run, so the game plays as fast as the machine
+allows. Each tick does the same work, but anything that reads the clock differs: frames counted per second, the
+scenario's elapsed timer (which the state checksum and the par-time rank use), and menu waits given in milliseconds.
+`-AUTOTEST-STOP-AFTER-STEPS` ends the run on the first game frame after the script's last step, once no `ui` step is
+left, and logs `AUTOTEST steps done`. `run_autotest.ps1` passes them as `-Uncapped` and `-StopAfterSteps`.
+
 ## The script
 
 Each line is `<frame> <command> [arguments]`. Blank lines and lines starting with `;` are ignored.
@@ -523,7 +529,7 @@ python -I scripts/compare_digests.py --present run-a.log run-b.log
 
 It pairs the lines by frame and by their order within that frame, so a line missing from one log does not shift the rest. It prints the number of lines in each log, the first differing line, and the first line that only one log has. Exit codes: `0` when every line in both logs matches; `3` when a hash or layer differs, or a line is in one log only; `4` when the logs share no line; `1` for a usage or read error.
 
-`tests/autotest/digest-large-battle.txt` runs the large battle with both steps on.
+`tests/autotest/digest-large-battle.txt` runs the large battle with both steps on. `tests/autotest/digest-aircraft.txt` does the same for 20 flying Orcas.
 
 ## Two-copy sync test
 

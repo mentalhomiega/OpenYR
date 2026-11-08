@@ -10,6 +10,7 @@
 ;   -Menus -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16668`nTunnel=127.0.0.1:50000`nMatchArguments=-AUTOTEST=<path to cncnet-match-child.txt>`n[MenuBattle]`nInTests=yes"
 ; The path in MatchArguments must have no spaces. The bot does not play the match, so in a local run the
 ; match child was still alive after 40 seconds.
+; Regress: capped its menu steps are never reached in a skirmish start, so the run only ends at its time limit
 ui waitfor backdrop
 ui wait 2000
 ui press CnCNet
