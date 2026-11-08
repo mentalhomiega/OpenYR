@@ -8,9 +8,10 @@
  ******************************************************************************/
 
 /*
- * OpenYR.exe, the launcher beside Game.exe. It reads OPENTS.INI and the install record, checks the
- * release feed for a newer beta, asks the player, and starts Game.exe. It never updates without a yes,
- * and it does not start a second game while one from this install is running.
+ * OpenYR.exe, the launcher beside Game.exe. It starts Game.exe, which checks the release feed for a newer
+ * beta and offers it on its title menus. It never updates without the player's yes, and it does not
+ * start a second game while one from this install is running. With [Update] AskInLauncher=yes in
+ * OPENTS.INI it checks the feed and asks before it starts the game, as the earlier betas did.
  *
  * An update does not run from this folder. The launcher copies itself to a temporary folder and starts
  * the copy, which downloads and checks the setup, runs it silently over this install, and then starts
@@ -22,6 +23,8 @@
  *   /NOGAME              do not start Game.exe (for the tests)
  *   /QUIET               no message boxes; the log still has the text (for the tests)
  *   /NOSHORTCUTS         the setup writes no shortcuts or registry entries (for the tests)
+ *   /UPDATENOW=<pid>     the player pressed Update in the game with that process id: wait for it to
+ *                        close, then update without asking
  *
  * Other arguments are passed to Game.exe, and so is anything after "--". The update copy takes its own
  * switches, /UPDATE=, /SETUPURL=, /SUMURL=, /FOLDER=, /YR= and /WAITFOR=, which the launcher writes
@@ -57,6 +60,10 @@ struct OptionsType
 	bool Quiet = false;
 	bool NoShortcuts = false;
 	std::vector<std::wstring> GameArgs;
+
+	// Set when the game asked for the update: the process to wait for.
+	bool UpdateNow = false;
+	std::uint32_t GameProcess = 0;
 
 	// Set in an update copy, which the launcher starts with these switches.
 	bool Update = false;
@@ -106,6 +113,8 @@ OptionsType Parse_Command_Line(int argc, wchar_t ** argv)
 			options.Quiet = true;
 		} else if (_wcsicmp(arg.c_str(), L"/NOSHORTCUTS") == 0) {
 			options.NoShortcuts = true;
+		} else if (Switch_Value(arg, launcher::UpdateNowSwitch, value)) {
+			options.UpdateNow = launcher::Parse_Process_Id(value, options.GameProcess);
 		} else if (Switch_Value(arg, L"/UPDATE=", value)) {
 			options.Update = true;
 			options.Tag = value;
@@ -272,17 +281,47 @@ int Start_Update(OptionsType const & options, std::wstring const & folder, std::
 }
 
 
+// Waits for the game that asked for the update to close, so that no game from the install is running
+// when the update copy starts. A process that cannot be opened is taken to be gone already.
+bool Wait_For_Game(OptionsType const & options, std::wstring const & log)
+{
+	HANDLE const game = OpenProcess(SYNCHRONIZE, FALSE, options.GameProcess);
+	if (game == nullptr) {
+		return true;
+	}
+
+	bool const closed = WaitForSingleObject(game, 60 * 1000) == WAIT_OBJECT_0;
+	CloseHandle(game);
+	if (closed) {
+		Say(options, log, L"The game (process " + std::to_wstring(options.GameProcess) + L") has closed.");
+	}
+	return closed;
+}
+
+
 int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::wstring const & log, ConfigType const & config)
 {
 	Say(options, log, L"Launcher in " + folder + L".");
 
+	if (options.UpdateNow && !Wait_For_Game(options, log)) {
+		Tell(options, log, L"OpenYR did not close, so the update did not start.", true);
+		return 1;
+	}
+
 	if (launcher::Game_Running(folder)) {
 		Say(options, log, L"Game.exe from this install is running. Nothing is started and no update is checked.");
-		Tell(options, log, L"OpenYR is already running. Close it, then start OpenYR again to check for updates.", false);
+		Tell(options, log, L"OpenYR is already running.", false);
 		return 0;
 	}
 
-	bool const check = config.Check || !options.Feed.empty();
+	// The game offers the update on its title menus unless the player asked for the question here.
+	bool const ask = config.AskInLauncher || options.CheckOnly || options.UpdateNow;
+	if (!ask) {
+		Say(options, log, L"The game offers updates on its title menus ([Update] AskInLauncher=no), so none is checked here.");
+		return Start_Game(options, folder, log);
+	}
+
+	bool const check = config.Check || !options.Feed.empty() || options.UpdateNow;
 	if (!check) {
 		Say(options, log, L"Update checks are off ([Update] Check=no).");
 		return Start_Game(options, folder, log);
@@ -300,24 +339,16 @@ int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::
 	std::string body;
 	std::wstring error;
 	if (!launcher::Fetch_Text(feed, body, error)) {
-		Say(options, log, L"Update check skipped: " + error);
+		Tell(options, log, L"Update check skipped: " + error, options.UpdateNow);
 		return Start_Game(options, folder, log);
 	}
 
-	launcher::ReleaseType release;
-	if (!launcher::Parse_Release(body, release, error)) {
-		Say(options, log, L"Update check skipped: " + error);
-		return Start_Game(options, folder, log);
-	}
-
-	UpdateType const update = launcher::Decide_Update(build, release);
+	UpdateType const update = launcher::Evaluate_Feed(build, feed, body);
 	Say(options, log, update.Reason);
 	if (!update.Offer) {
-		return Start_Game(options, folder, log);
-	}
-
-	if (!launcher::Asset_Sources_Allowed(feed, update, error)) {
-		Say(options, log, L"Update check skipped: " + error);
+		if (options.UpdateNow) {
+			Tell(options, log, L"There is no update to install now.", false);
+		}
 		return Start_Game(options, folder, log);
 	}
 
@@ -330,8 +361,13 @@ int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::
 	std::wstring const installed = launcher::Beta_Label(update.Installed);
 	if (options.CheckOnly) {
 		Say(options, log, L"CHECKONLY: would ask to update from " + installed + L" to " + offered + L" with " + update.Setup.Name + L". Nothing was downloaded or changed.");
-		Say(options, log, L"CHECKONLY: the update copy would start as: " + Update_Command(options, folder, log, config, L"<temp>\\OpenYR-Update.exe", release.Tag, update));
+		Say(options, log, L"CHECKONLY: the update copy would start as: " + Update_Command(options, folder, log, config, L"<temp>\\OpenYR-Update.exe", update.Tag, update));
 		return 0;
+	}
+
+	if (options.UpdateNow) {
+		Say(options, log, L"Update to " + offered + L" requested in the game.");
+		return Start_Update(options, folder, log, config, update.Tag, update);
 	}
 
 	if (options.Quiet) {
@@ -345,7 +381,7 @@ int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::
 	}
 
 	Say(options, log, L"Update to " + offered + L" accepted.");
-	return Start_Update(options, folder, log, config, release.Tag, update);
+	return Start_Update(options, folder, log, config, update.Tag, update);
 }
 
 

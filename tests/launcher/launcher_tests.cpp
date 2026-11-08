@@ -346,6 +346,39 @@ void Test_Sources_And_Config(void)
 }
 
 
+void Test_Game_Offer(void)
+{
+	launcher::UpdateType const offer = launcher::Evaluate_Feed(L"beta22", L"C:\\feed.json", Release_Json);
+	Check(offer.Offer && offer.Tag == L"beta23", "a feed read for the game offers beta23 to beta22 and keeps the tag");
+	Check(!launcher::Evaluate_Feed(L"beta23", L"C:\\feed.json", Release_Json).Offer, "a feed naming the installed beta offers nothing");
+
+	launcher::UpdateType const broken = launcher::Evaluate_Feed(L"beta22", L"C:\\feed.json", "not json");
+	Check(!broken.Offer && broken.Reason.find(L"Update check skipped") == 0, "a feed that does not parse offers nothing and says the check was skipped");
+
+	std::string const local_assets = Release_Json;
+	Check(launcher::Evaluate_Feed(L"beta22", L"https://api.github.com/x", local_assets).Offer, "a web feed naming https assets is offered");
+
+	std::string file_assets = local_assets;
+	for (std::string::size_type at; (at = file_assets.find("https://github.com/")) != std::string::npos; ) {
+		file_assets.replace(at, 19, "C:/stolen/");
+	}
+	launcher::UpdateType const refused = launcher::Evaluate_Feed(L"beta22", L"https://api.github.com/x", file_assets);
+	Check(!refused.Offer && refused.Reason.find(L"web feed may not") != std::wstring::npos, "a web feed naming local assets is refused");
+	Check(launcher::Evaluate_Feed(L"beta22", L"C:\\feed.json", file_assets).Offer, "a local feed may name local assets");
+
+	std::uint32_t process = 0;
+	Check(launcher::Parse_Process_Id(L"4242", process) && process == 4242, "a process id of digits reads");
+	Check(!launcher::Parse_Process_Id(L"", process) && !launcher::Parse_Process_Id(L"0", process), "an empty or zero process id is refused");
+	Check(!launcher::Parse_Process_Id(L"12a", process) && !launcher::Parse_Process_Id(L"-5", process) && !launcher::Parse_Process_Id(L" 7", process), "a process id with anything but digits is refused");
+	Check(!launcher::Parse_Process_Id(L"4294967296", process) && launcher::Parse_Process_Id(L"4294967295", process) && process == 0xFFFFFFFFu, "a process id past 32 bits is refused");
+	Check(launcher::Update_Now_Command(L"C:\\Games\\Open YR\\OpenYR.exe", 77) == L"\"C:\\Games\\Open YR\\OpenYR.exe\" /UPDATENOW=77", "the update-now command quotes the launcher path and gives the process id");
+
+	Check(!launcher::Read_Config(L"").AskInLauncher, "the launcher does not ask about updates by default");
+	Check(launcher::Read_Config(L"[Update]\r\nAskInLauncher=Yes ; old way\r\n").AskInLauncher, "AskInLauncher=yes makes the launcher ask");
+	Check(!launcher::Read_Config(L"[Update]\r\nAskInLauncher=no\r\n").AskInLauncher, "AskInLauncher=no keeps the question in the game");
+}
+
+
 void Test_Quoting(void)
 {
 	std::vector<std::wstring> const args = {
@@ -547,6 +580,7 @@ int main()
 	Test_Asset_Sources();
 	Test_Download_Size();
 	Test_Sources_And_Config();
+	Test_Game_Offer();
 	Test_Quoting();
 	Test_Update_Folder();
 	Test_Private_Folder();

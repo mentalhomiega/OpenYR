@@ -353,6 +353,13 @@ try {
 	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /FEED="' + (Join-Path $root 'missing.json') + '" /LOG="' + $log + '"')
 	Check ((Read-Text $log).Contains('Update check skipped: Could not read')) 'a missing feed file is logged and the run goes on'
 
+	# By default the launcher no longer asks: the game offers the update on its title menus.
+	$log = Join-Path $logs 'no-ask.log'
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed23 + '" /LOG="' + $log + '"')
+	$text = Read-Text $log
+	Check ($code -eq 0 -and $text.Contains('so none is checked here') -and -not $text.Contains('Checking ')) 'the launcher reads no feed unless [Update] AskInLauncher=yes, and starts the game path'
+	Add-Content -LiteralPath (Join-Path $install 'OPENTS.INI') -Value "[Update]`r`nAskInLauncher=yes`r`n" -Encoding ascii
+
 	$log = Join-Path $logs 'quiet-offer.log'
 	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed23 + '" /LOG="' + $log + '"')
 	Check ($code -eq 0 -and (Read-Text $log).Contains('but no question is asked')) 'a quiet run that finds beta23 asks nothing and starts the version it has'
@@ -381,6 +388,24 @@ try {
 	$code = Run-Exe 'launcher' (Join-Path $helper 'OpenYR-Update.exe') $arguments
 	Check ($code -eq 1 -and (Read-Text $log).Contains('the setup exit code is 4')) 'a setup that finds no Yuri''s Revenge exits with 4, and the update copy reports it'
 	Check ((Read-Text (Join-Path $install 'openyr-install.ini')).Contains('Build=beta22')) 'and the install is still beta22'
+
+	# The update the player asked for in the game: the launcher waits for the game's process, then updates without a question.
+	$log = Join-Path $logs 'update-now-none.log'
+	$waiter = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ping -n 2 127.0.0.1 >nul' -WindowStyle Hidden -PassThru
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/UPDATENOW=' + $waiter.Id + ' /NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed22 + '" /LOG="' + $log + '"')
+	$text = Read-Text $log
+	Check ($code -eq 0 -and $text.Contains('has closed.') -and $text.Contains('There is no update to install now.')) 'an update asked for in the game, with nothing newer in the feed, installs nothing'
+	Check ((Read-Text (Join-Path $install 'Game.exe')) -eq 'engine beta22') 'and Game.exe is still beta22'
+
+	$log = Join-Path $logs 'update-now.log'
+	$waiter = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ping -n 3 127.0.0.1 >nul' -WindowStyle Hidden -PassThru
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/UPDATENOW=' + $waiter.Id + ' /NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed23 + '" /LOG="' + $log + '"')
+	$deadline = (Get-Date).AddSeconds(120)
+	while ((Get-Date) -lt $deadline -and -not (Read-Text $log).Contains('Updated to Beta 23.')) { Start-Sleep -Milliseconds 500 }
+	$text = Read-Text $log
+	Check ($code -eq 0 -and $text.Contains('has closed.') -and $text.Contains('requested in the game.')) 'an update asked for in the game waits for the game to close and starts the update copy without a question'
+	Check ($text.Contains('Updated to Beta 23.')) 'and the update copy installs beta23'
+	Check ((Read-Text (Join-Path $install 'Game.exe')) -eq 'engine beta23') 'Game.exe is now the beta23 package'
 
 	# The update itself: download, check, run the setup over the install, then start the game (not here).
 	$helper = Join-Path $root 'helper-update'
