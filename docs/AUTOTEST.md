@@ -273,6 +273,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `defencerange <0\|1>` | Turns the Show defence range option off or on, as the options screen does, and writes the setting |
 | `evafile <EVA name>` | opens that announcer line's sample for the player's side at no volume, and writes the file and `opened` or `failed`, or `-` when the line has no file |
 | `glideclock` | times zoom glides by game frames instead of real time, for recordings |
+| `overlaypresent` | marks the UI overlay changed and runs the window message handler, which presents the frame if the refresh interval allows. It is the present a window message makes between draws |
 | `helptext <id>` | writes the tooltip text the map gives for the mouse position now, or `(none)` |
 | `holdmove <0\|1>` | Turns `MissileLaunchHoldsMove` off or on for the rest of the run, and writes the setting |
 | `hoverat x y` | moves the pointer to the centre of that cell, as `windowmove` does, so the object there is hovered from the next frame, and writes the pointer position |
@@ -463,6 +464,8 @@ PRESENT_DIGEST frame 1234 present 56 hash 9c1f0a2b3d4e5f60 layer none
 - `present` counts the logged presents from 0, starting when the step runs.
 - `hash` is a 64-bit FNV-1a hash over 8-byte words of every row of the visible frame, as the presenter receives it. A present that uploads nothing still hashes the frame. The UI overlay is not hashed.
 - `layer` is a hash of the map layer rows the presenter draws under the frame, as a zoomed view does. It is `none` when no layer is drawn.
+
+When no map layer is drawn and the frame's map area still holds the layer key, the present also logs `AUTOTEST present keyed N pixels without map layer`, with N the number of keyed pixels in that area. The presenter shows those pixels as magenta, so the line should not appear in a correct run. `tests/autotest/scripted-camera-zoom-present.txt` checks for it.
 
 A present that the refresh interval skips is not logged. Set `FrameRateLimit=0` under `[Video]` in `RA2MD.INI` to log every present; the default follows the display's refresh rate.
 
