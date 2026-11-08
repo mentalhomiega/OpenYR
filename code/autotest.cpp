@@ -261,6 +261,11 @@ int Rank_Of(VeterancyClass const & veterancy)
 
 bool Active = false;
 
+// Set by -AUTOTEST-UNCAPPED; the unattended run then plays without the frame limit.
+bool Uncapped = false;
+// Set by -AUTOTEST-STOP-AFTER-STEPS; the run then ends once the last step has run, for a script that never ends its own game.
+bool StopAfterSteps = false;
+
 // The keys a script holds with hold and lets go with release. An unattended run reads the held keys from here,
 // so Keyboard->Down sees the keys the script holds.
 bool ScriptHeldKeys[256];
@@ -7117,6 +7122,24 @@ bool AutoTest_Active(void)
 }
 
 
+void AutoTest_Set_Uncapped(void)
+{
+	Uncapped = true;
+}
+
+
+bool AutoTest_Uncapped(void)
+{
+	return(Active && Uncapped);
+}
+
+
+void AutoTest_Set_Stop_After_Steps(void)
+{
+	StopAfterSteps = true;
+}
+
+
 bool AutoTest_Key_Held(int virtualkey)
 {
 	return(virtualkey > 0 && virtualkey < 256 && ScriptHeldKeys[virtualkey]);
@@ -7275,6 +7298,10 @@ void AutoTest_Frame(void)
 {
 	if (!Active || PlayerPtr == NULL) {
 		return;
+	}
+	if (StopAfterSteps && Next >= Steps.size() && !UIScript_Pending()) {
+		DebugString("AUTOTEST steps done\n");
+		std::exit(0);
 	}
 	while (Next < Steps.size() && Steps[Next].Frame + WaitShift <= Frame) {
 		StepType const & step = Steps[Next];

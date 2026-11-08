@@ -1536,6 +1536,16 @@ static bool Parse_Launch_Option(char const * string, char * original)
 		return(true);
 	}
 
+	if (stricmp(string, "-AUTOTEST-UNCAPPED") == 0) {
+		AutoTest_Set_Uncapped();
+		return(true);
+	}
+
+	if (stricmp(string, "-AUTOTEST-STOP-AFTER-STEPS") == 0) {
+		AutoTest_Set_Stop_After_Steps();
+		return(true);
+	}
+
 	// A client asking the game to launch what SPAWN.INI describes.
 	if (stricmp(string, "-SPAWN") == 0) {
 		Spawner_Request();

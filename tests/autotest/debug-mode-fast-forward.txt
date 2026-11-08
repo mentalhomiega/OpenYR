@@ -8,6 +8,7 @@
 ; Expected with the setting on: about 60 at frame 200, far more than 60 at frame 9000, and about 60 at frame
 ; 10100. Run it again without -Settings: the lines at frames 200, 9000 and 10100 stay near 60 and no "Debug cheat
 ; used" line is written. That run needs about 200 seconds to reach frame 9000.
+; Regress: capped it logs the frames counted per wall-clock second
 30 fps
 200 fps
 300 command DebugFastForward

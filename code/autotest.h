@@ -18,6 +18,14 @@
 
 bool AutoTest_Active(void);
 
+// -AUTOTEST-UNCAPPED lets an unattended run play without the frame limit. Each tick does the same work.
+void AutoTest_Set_Uncapped(void);
+bool AutoTest_Uncapped(void);
+
+// -AUTOTEST-STOP-AFTER-STEPS ends the run on the first game frame after the script's last step, so a script that
+// only stops by its time limit does not play on. The log ends with "AUTOTEST steps done".
+void AutoTest_Set_Stop_After_Steps(void);
+
 // Writes an "AUTOTEST " debug line only in an unattended run. The format and its arguments are not evaluated
 // otherwise, so they may follow pointers that only exist during a test.
 #define AUTOTEST_LOG(...) do { if (AutoTest_Active()) DebugString("AUTOTEST " __VA_ARGS__); } while (0)
