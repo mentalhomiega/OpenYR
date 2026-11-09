@@ -15,6 +15,7 @@
 #include "hexformat.h"
 #include "littleendian.h"
 #include "mods.h"
+#include "rtti.hh"
 #include "strutil.h"
 #include "ui/uiclamp.h"
 
@@ -220,6 +221,17 @@ void Test_Mod_Folder_Own_Name()
 } // namespace
 
 
+void Test_Rtti_Is_Foot()
+{
+	Check(RTTI_Is_Foot(RTTI_UNIT), "a unit is a foot");
+	Check(RTTI_Is_Foot(RTTI_INFANTRY), "infantry is a foot");
+	Check(RTTI_Is_Foot(RTTI_AIRCRAFT), "an aircraft is a foot");
+	Check(!RTTI_Is_Foot(RTTI_BUILDING), "a building is not a foot");
+	Check(!RTTI_Is_Foot(RTTI_NONE), "no RTTI is not a foot");
+	Check(!RTTI_Is_Foot(RTTI_UNITTYPE), "a unit type is not a foot");
+}
+
+
 int main()
 {
 	Test_Little_Endian();
@@ -233,6 +245,7 @@ int main()
 	Test_Paths();
 	Test_Index_In_Range();
 	Test_Mod_Folder_Own_Name();
+	Test_Rtti_Is_Foot();
 
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);

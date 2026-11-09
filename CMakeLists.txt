@@ -21,6 +21,10 @@ option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF
 # state and move the pointer, and fail while another window holds the focus.
 option(OPENTS_DESKTOP_TESTS "Register the tests that need an otherwise idle desktop" OFF)
 
+# Compares each RTTI-based type test with the dynamic_cast it replaced and counts the calls and
+# disagreements per site in rtti_crosscheck.txt. Debug builds do this without the option.
+option(OPENTS_RTTI_CROSSCHECK "Cross-check the RTTI type tests against dynamic_cast" OFF)
+
 # Lets a target's FOLDER place it in a Visual Studio solution folder. The bgfx submodule sets
 # this as well, so declare it here rather than inherit it from a vendored build.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

@@ -570,7 +570,7 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->IsOverpowered && SecondaryWeapon != NULL) {
 		return(1);
 	}
-	BuildingClass const * targetbuilding = dynamic_cast<BuildingClass const *>(target);
+	BuildingClass const * targetbuilding = target->As_BuildingClass();
 	if (targetbuilding != NULL && targetbuilding->Class->IsOverpowerable && (targetbuilding->House == House || House->Is_Ally(targetbuilding->House))) {
 		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
 		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsElectricAssault) {
@@ -875,7 +875,7 @@ Coord TechnoClass::Turret_Coord(int which, TPoint3D<int> base) const
 
 	Matrix3D matrix;
 	double angle = 0;
-	FootClass const * foot = dynamic_cast<FootClass const *>(this);
+	FootClass const * foot = As_FootClass();
 
 	if (foot != NULL) {
 		matrix = foot->Locomotion->Draw_Matrix(NULL);
@@ -1507,7 +1507,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 
 	if (IsSelected || sensed_underground) {
 
-		UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
+		UnitClass const * unit = (RTTI == RTTI_UNIT) ? As_UnitClass() : NULL;
 		if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
 
 			int color = WHITE;
@@ -1718,7 +1718,7 @@ bool TechnoClass::Is_Hidden_Behind_Building(void) const
 /// </summary>
 Point2D TechnoClass::Pip_Origin(Point2D const & point) const
 {
-	UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
+	UnitClass const * unit = (RTTI == RTTI_UNIT) ? As_UnitClass() : NULL;
 
 	if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
 		Point3D dim = TClass->Lepton_Dimensions();
@@ -1740,7 +1740,7 @@ Point2D TechnoClass::Pip_Origin(Point2D const & point) const
 /// </summary>
 void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect) const
 {
-	UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
+	UnitClass const * unit = (RTTI == RTTI_UNIT) ? As_UnitClass() : NULL;
 
 	if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
 
@@ -2019,7 +2019,7 @@ bool TechnoClass::Limbo(void)
 		House->Tracking_Active_Remove(this, false);
 		HousesType owner = Owner();
 		if (ThreatPosed > 0) {
-			FootClass * foot = dynamic_cast<FootClass *>(this);
+			FootClass * foot = As_FootClass();
 			if (foot) {
 				Map[foot->LastAdjacencyCell].Adjust_Threat(owner, -ThreatPosed);
 			} else {
@@ -4721,7 +4721,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 
 	check_rearm = true;
 	if (which != 1 && RTTI == RTTI_UNIT) {
-		UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+		UnitClass const * unit = As_UnitClass();
 		if (unit != NULL) {
 			int burst = unit->BurstIndex % weapon->Burst;
 			if (burst < 2) {
@@ -5535,7 +5535,7 @@ void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass con
 	 * Laser zap animation.
 	 */
 	if (weapon->IsLaser) {
-		BuildingClass * building = dynamic_cast<BuildingClass *>(this);
+		BuildingClass * building = As_BuildingClass();
 		// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
 		WeaponTypeClass const * beam_weapon = weapon;
 		if (building != NULL) {
@@ -5551,7 +5551,7 @@ void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass con
 			building->BuildingStage.Set_Rate(0);
 		}
 		if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
-			BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
+			BuildingClass * discharge = As_BuildingClass();
 			if (discharge != NULL) {
 				discharge->Discharge_Turret();
 			}
@@ -5967,11 +5967,11 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		}
 
 		if (object == this && CurrentObject.Count() == 1 && House->Is_Ally(PlayerPtr) && Session.Type == GAME_NORMAL) {
-			UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+			UnitClass const * unit = As_UnitClass();
 			if (unit != NULL && unit->Class->Max_Passengers() > 0 && unit->Cargo.How_Many() > 0) {
 				return(ACTION_SELF);
 			}
-			AircraftClass const * airc = dynamic_cast<AircraftClass const *>(this);
+			AircraftClass const * airc = As_AircraftClass();
 			if (airc != NULL && airc->Passenger) {
 				return(ACTION_SELF);
 			}
@@ -6317,7 +6317,7 @@ bool TechnoClass::Can_Player_Move(void) const
 /// <returns>bool; can the object attack right now?</returns>
 bool TechnoClass::Can_Attack_Now(void) const
 {
-	UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+	UnitClass const * unit = As_UnitClass();
 	if (unit != NULL) {
 		if ((unit->CurrentTube >= TUBE_FIRST && unit->Deploy_To_Fire()) || unit->Is_Immobilized()) {
 			return(false);
@@ -6337,7 +6337,7 @@ bool TechnoClass::Can_Attack_Now(void) const
 /// <returns>bool; Can the object deploy now?</returns>
 bool TechnoClass::Can_Deploy_Now(void) const
 {
-	UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+	UnitClass const * unit = As_UnitClass();
 	bool blocked = false;
 
 	if (unit != NULL) {
@@ -6378,7 +6378,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 		}
 	}
 
-	BuildingClass const * building = dynamic_cast<BuildingClass const *>(this);
+	BuildingClass const * building = As_BuildingClass();
 	if (building != NULL && !Is_Immobilized() && (building->Occupants.Count() > 0
 		|| building->Holds_Absorbed())) {
 		blocked = false;
@@ -7312,7 +7312,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 					}
 				}
 
-				FootClass * foot = dynamic_cast<FootClass *>(this);
+				FootClass * foot = As_FootClass();
 				if (foot != NULL) {
 					if (TarCom == NULL && foot->NavCom == NULL) {
 						if (Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
@@ -7323,7 +7323,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 			} else {
 
-				FootClass * foot = dynamic_cast<FootClass *>(this);
+				FootClass * foot = As_FootClass();
 				if (foot != NULL) {
 					if (Current_Mission_Control().IsScatter) {
 						if (!IsTethered) {
@@ -11269,7 +11269,7 @@ void TechnoClass::Rocking_AI(void)
 
 		float angle = (float)DEG_TO_RAD(45);
 
-		FootClass *foot = dynamic_cast<FootClass *>(this);
+		FootClass *foot = As_FootClass();
 		if (foot != NULL && ((FootClass *)this)->IsCrushing) {
 			angle = (float)DEG_TO_RAD(18);
 		}

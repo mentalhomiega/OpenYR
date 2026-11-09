@@ -13,8 +13,11 @@
 #include "coord.h"
 #include "iloco.h"
 #include "persist.h"
+#include "rtti.hh"
 
 #include <memory>
+#include <type_traits>
+#include <typeinfo>
 
 class FootClass;
 class SaveStreamClass;
@@ -22,6 +25,17 @@ class SaveStreamClass;
 // The class identifier of a locomotor reached through its locomotion interface, or
 // all zero when it is not one of ours.
 ClassID Locomotion_Class_ID(ILocomotion * locomotion);
+
+// The locomotor as T when its exact type is T, otherwise nullptr. For a final locomotor class this is
+// dynamic_cast without the walk up the class hierarchy.
+template <class T>
+inline T * Locomotor_As(ILocomotion * locomotion)
+{
+	static_assert(std::is_final_v<std::remove_const_t<T>>, "a locomotor with subclasses is not found by its exact type");
+	T * exact = (locomotion != nullptr && typeid(*locomotion) == typeid(T)) ? static_cast<T *>(locomotion) : nullptr;
+	RTTI_CROSSCHECK(exact == dynamic_cast<T *>(locomotion));
+	return(exact);
+}
 
 // A new, unlinked locomotor of the registered class, or nothing when the identifier
 // names no locomotor.

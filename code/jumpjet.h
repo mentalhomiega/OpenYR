@@ -16,7 +16,7 @@
 #include <memory>
 
 
-class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
+class JumpjetLocomotionClass final : public LocomotionClass, public IPiggyback
 {
 		typedef LocomotionClass BASECLASS;
 

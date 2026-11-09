@@ -680,13 +680,13 @@ inline void FootClass::Draw_Object(ShapeSet const * shapefile, int shapenum, Poi
 
 inline FootClass * AbstractClass::As_FootClass(void)
 {
-	return(dynamic_cast<FootClass *>(this));
+	return(Rtti_Foot_Cast<FootClass>(this));
 }
 
 
 inline FootClass const * AbstractClass::As_FootClass(void) const
 {
-	return(dynamic_cast<FootClass const *>(this));
+	return(Rtti_Foot_Cast<FootClass const>(this));
 }
 
 

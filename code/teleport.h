@@ -46,7 +46,7 @@ enum TeleportWarpPhase
 void Chrono_Kill(TechnoClass * techno, HouseClass * house = NULL);
 
 
-class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
+class TeleportLocomotionClass final : public LocomotionClass, public IPiggyback
 {
 		typedef LocomotionClass BASECLASS;
 

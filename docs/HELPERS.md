@@ -308,6 +308,15 @@ a default and returns it when the section or entry is missing.
 | `Opposite_Difficulty(d)`, `Computer_Difficulty_Name(d)` | `diff.hh` | The computer difficulty paired with a human one, and its lobby name. |
 | `Key_Bits(shift, ctrl, alt)`, `Key_Bits_From_Window(mods)` | `keyboard.h` | The `WWKEY_*_BIT` modifier bits. |
 
+## Type tests and casts
+
+| Helper | Header | Use |
+|---|---|---|
+| `RTTI_Is_Foot(rtti)` | `rtti.hh` | True for `RTTI_UNIT`, `RTTI_INFANTRY` and `RTTI_AIRCRAFT`, the only `FootClass` types. `Is_Foot()` is this test on `Fetch_RTTI()`. |
+| `As_FootClass()`, `As_UnitClass()`, `As_InfantryClass()`, `As_AircraftClass()`, `As_BuildingClass()`, `As_TechnoClass()` | `abstract.h` | The checked cast from an `AbstractClass`, through `Fetch_RTTI()` instead of `dynamic_cast`. They return NULL for anything else. Use them for a type test on a hot path. |
+| `Locomotor_As<T>(locomotion)` | `loco.h` | The locomotor as `T` when its exact type is `T`, for a final locomotor class such as `JumpjetLocomotionClass`. |
+| `RTTI_CROSSCHECK(agrees)` | `rtti.hh` | In a Debug build, or with `OPENTS_RTTI_CROSSCHECK`, counts a call and logs a disagreement between a fast type test and the `dynamic_cast` it replaced. Counts go to `rtti_crosscheck.txt`. |
+
 ## Mode and state queries
 
 | Helper | Header | Use |
