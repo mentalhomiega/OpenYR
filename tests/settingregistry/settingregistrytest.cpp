@@ -229,6 +229,7 @@ struct Old_Gpu
 	int GpuVoxelScale = 1;
 	int Weather = WEATHER_NONE;
 	int WeatherStrength = 100;
+	bool RenderThread = false;
 };
 
 
@@ -252,6 +253,7 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	static NameEntry const Names[] = { { "None", WEATHER_NONE }, { "Map", WEATHER_MAP }, { "Rain", WEATHER_RAIN }, { "Snow", WEATHER_SNOW } };
 	old.Weather = Enum_From_Name(Names, weathername, WEATHER_NONE);
 	old.WeatherStrength = std::clamp(ini.Get_Int("Video", "WeatherStrength", old.WeatherStrength), 1, 400);
+	old.RenderThread = ini.Get_Bool("Video", "RenderThread", old.RenderThread);
 }
 
 
@@ -273,6 +275,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	static NameEntry const Names[] = { { "None", WEATHER_NONE }, { "Map", WEATHER_MAP }, { "Rain", WEATHER_RAIN }, { "Snow", WEATHER_SNOW } };
 	ini.Put_String("Video", "Weather", Enum_Name(Names, std::clamp(old.Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ini.Put_Int("Video", "WeatherStrength", old.WeatherStrength);
+	ini.Put_Bool("Video", "RenderThread", old.RenderThread);
 }
 
 
@@ -332,7 +335,7 @@ void Test_Real_Table(void)
 
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
-		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "Weather", "WeatherStrength",
+		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "Weather", "WeatherStrength", "RenderThread",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them");
 
@@ -389,11 +392,28 @@ void Round_Trip_File(char const * path)
 	std::printf("%s: %s after loading and saving the declared keys\n", path, unchanged ? "byte-identical" : "keys added or rewritten");
 }
 
+
+void Test_Load_Before_Renderer(void)
+{
+	static constexpr Setting<Fields> Early[] = {
+		{ .Section = "Video", .Key = "Master", .Flag = &Fields::Master, .Default = true, .BeforeRenderer = true },
+		{ .Section = "Video", .Key = "Unbounded", .Number = &Fields::Unbounded, .Default = 5 },
+	};
+	INIClass ini;
+	Read(ini, "[Video]\r\nMaster=no\r\nUnbounded=-7\r\n");
+	Fields fields;
+	Settings_Reset(std::span<Setting<Fields> const>(Early), fields);
+	Settings_Load_Before_Renderer(std::span<Setting<Fields> const>(Early), ini, fields);
+	Check(!fields.Master, "a setting marked BeforeRenderer is read before the renderer starts");
+	Check(fields.Unbounded == 5, "an unmarked setting waits for Settings_Load");
+}
+
 }
 
 
 int main(int argc, char * argv[])
 {
+	Test_Load_Before_Renderer();
 	Test_Load_Save();
 	Test_Rows_And_Greying();
 	Test_Real_Table();

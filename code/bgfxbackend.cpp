@@ -18,6 +18,7 @@
 #include "gpumap.h"
 
 #include "hdrcolour.h"
+#include "renderthread.h"
 #include "rgb565.h"
 #include "tilediff.h"
 
@@ -1065,13 +1066,21 @@ static void Start_Capture(void)
 }
 
 
+static uint32_t Submit_Frame(void)
+{
+	uint32_t const frame = bgfx::frame();
+	RenderThread_Note_Frame();
+	return(frame);
+}
+
+
 /// <summary>
 /// Waits for a pending capture to finish reading and writes it, so its buffer is free before the targets change size.
 /// </summary>
 static void Finish_Capture(void)
 {
 	for (int attempt = 0; attempt < 4 && _ReadbackPending; attempt++) {
-		_LastFrame = bgfx::frame();
+		_LastFrame = Submit_Frame();
 		if (_LastFrame >= _ReadbackFrame) {
 			Write_Capture();
 		}
@@ -1079,11 +1088,18 @@ static void Finish_Capture(void)
 }
 
 
+static void Stop_Renderer(void)
+{
+	bgfx::shutdown();
+	RenderThread_Stop();
+}
+
+
 /// <summary>
 /// Starts the renderer on the window, with an HDR10 back buffer when hdr is set.
 /// </summary>
 /// <returns>bool; Did the renderer start with the back buffer asked for? Nothing is left running on false.</returns>
-static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread)
 {
 	_HdrActive = false;
 	_Routed = false;
@@ -1126,15 +1142,20 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 			break;
 	}
 
+	if (renderthread) {
+		RenderThread_Start();
+	}
 	if (!bgfx::init(init)) {
+		RenderThread_Stop();
 		if (hdr) {
 			DebugString("HDR: the renderer did not start with an RGB10A2 back buffer\n");
 		}
 		return(false);
 	}
+	RenderThread_After_Init();
 
 	if (hdr && !HDR_Caps_Available()) {
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
@@ -1142,14 +1163,14 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 
 	_Program = Create_Embedded_Program(_EmbeddedShaders, "vs_ocornut_imgui", _EmbeddedShaders, "fs_ocornut_imgui");
 	if (!bgfx::isValid(_Program)) {
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
 	_TextureSampler = bgfx::createUniform("s_tex", bgfx::UniformType::Sampler);
 
 	if (!bgfx::isValid(_Program) || !bgfx::isValid(_TextureSampler)) {
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
@@ -1163,7 +1184,7 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 
 	if (hdr && !bgfx::isValid(_CompositeProgram)) {
 		DebugString("HDR: the composite shader is not available for this renderer\n");
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
@@ -1188,25 +1209,28 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 /// <param name="renderer">Which graphics API to ask for, or auto to let bgfx decide.</param>
 /// <param name="vsync">Should presents wait for the display's refresh?</param>
 /// <param name="hdr">Should the back buffer be HDR10?</param>
+/// <param name="renderthread">Should the graphics device run on its own thread (docs/RENDER_THREAD.md)?</param>
 /// <returns>bool; Did the renderer start?</returns>
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread)
 {
 	if (_Initialized) {
 		return(true);
 	}
 
-	bgfx::renderFrame();
+	if (!renderthread) {
+		bgfx::renderFrame();
+	}
 
 	_DrawableWidth = drawablewidth;
 	_DrawableHeight = drawableheight;
 
-	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true)) {
+	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true, renderthread)) {
 		return(true);
 	}
 	if (hdr) {
 		DebugString("HDR: starting the SDR back buffer instead\n");
 	}
-	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false));
+	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false, renderthread));
 }
 
 
@@ -1236,7 +1260,7 @@ void Backend_Shutdown(void)
 	Release_Handle(_MaskSampler);
 	Release_Handle(_MaskLevels);
 
-	bgfx::shutdown();
+	Stop_Renderer();
 
 	_FrameWidth = 0;
 	_FrameHeight = 0;
@@ -1627,7 +1651,7 @@ void Backend_End_Frame(void)
 		Start_Capture();
 	}
 	_MaskDrawn = false;
-	_LastFrame = bgfx::frame();
+	_LastFrame = Submit_Frame();
 	GpuMap_After_Frame(_LastFrame);
 	if (Perf_Enabled) {
 		bgfx::Stats const * stats = bgfx::getStats();

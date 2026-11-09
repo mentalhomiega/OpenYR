@@ -338,6 +338,9 @@ class OptionsClass {
 		// With GpuVoxels, 1 to 4: how many times finer than the map pixels the GPU draws voxel objects (docs/GPU_VOXELS.md).
 		int GpuVoxelScale;
 
+		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
+		bool RenderThread;
+
 		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
 		int Weather;
 		int WeatherStrength;

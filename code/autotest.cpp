@@ -17,6 +17,7 @@
 #include "ebolt.h"
 #include "laser.h"
 #include "perfstat.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "replay.h"
 #include "spawner.h"
@@ -3722,6 +3723,13 @@ static void Windowmove_Step(StepType const & step)
 }
 
 
+// windowresize w h: gives the game window a client area of that size, as dragging its frame does.
+static void Windowresize_Step(StepType const & step)
+{
+	Main_Window_Resize(step.Argument_Int(), step.X);
+}
+
+
 // windowclick x y: a left click at that window pixel, taken from the window the way the mouse gives it,
 // so it is converted to the frame as a player's click is. windowdouble x y is the same click as the second
 // of a quick pair, whose press SDL reports with Clicks 2.
@@ -6902,6 +6910,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"view", View_Step},
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
+		{"windowresize", Windowresize_Step},
 		{"windowclick", [](StepType const & step) {Window_Click(step, 1);}},
 		{"commandbutton", Commandbutton_Step},
 		{"beams", Beams_Step},
