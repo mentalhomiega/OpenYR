@@ -229,6 +229,19 @@ voxel draws finish in the hardware blend, so the `GPU_DIFF` of a pass that shows
 
 The compared parts come from the voxel image, so they count the voxel drawing alone; the `GPU_DIFF` column includes everything else in the pass, and the largest values come from those passes' translucent blits.
 
+While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cached blit it replaces (`TechnoClass::Get_Z_Gradient`). The ground gradient of the uncached software path gives exactly the ground's depth, so on flat ground every pixel fails the depth test. A type with `DisableShadowCache=yes` keeps the ground gradient, as in software. A shadow writes no highlight strength.
+
+`GPU_VOXEL` compares the voxel image and `gpucheck` compares against a software replay, so neither shows a shadow the depth test rejects in both. The `gpushadowcount` step reads back the picture a `GpuRender=yes` pass drew and logs one line:
+
+`GPU_VOXEL_SHADOW shadows B pixels P darkened D`
+
+`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `tests/autotest/gpu-voxel-shadow.txt` runs it at scale 1 and `gpu-voxel-shadow-bloom.txt` at scale 2 under `Bloom`, each with two tanks and a Kirov over sand:
+
+| Script | Shadows | Pixels | Darkened | Darkened with the ground gradient |
+|---|---|---|---|---|
+| `gpu-voxel-shadow.txt` | 3 | 14,331 | 2,098 | 23 |
+| `gpu-voxel-shadow-bloom.txt` | 3 | 14,331 | 1,970 | 25 |
+
 ## Checking smooth facing
 
 `tests/autotest/gpu-voxel-smooth.txt` turns two harvesters half a turn, and a tank whose hull and turret turn at their own rates, under `gpucheck` with

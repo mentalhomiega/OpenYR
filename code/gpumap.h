@@ -149,6 +149,10 @@ std::uint16_t GpuMap_Mask_Texture(void);
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
 
+// Makes the next pass the GPU draws log a GPU_VOXEL_SHADOW line with the shadow blits of voxel objects it holds
+// and how many of their pixels the finished picture shows darkened (the gpushadowcount autotest step).
+void GpuMap_Count_Shadows(void);
+
 // Forgets the kept pass and ends a bgfx frame early when the last drawn pass's buffers have not
 // been read yet; call it before freeing the depth or alpha buffer.
 void GpuMap_Release_References(void);

@@ -184,6 +184,23 @@ static std::vector<unsigned char> _ExpectedMask;
 static int _PendingFrame = 0;
 static int _PendingBlits = 0;
 
+// One pass read back for GpuMap_Count_Shadows: its voxel shadow rectangles in area pixels, the base picture and the target.
+struct ShadowCountState
+{
+	bool Armed = false;
+	bool Pending = false;
+	std::uint32_t ReadyFrame = 0;
+	bgfx::TextureHandle Readback = BGFX_INVALID_HANDLE;
+	int Width = 0;
+	int Height = 0;
+	int Scale = 1;
+	std::vector<Rect> Rects;
+	std::vector<unsigned short> Base;
+	std::vector<unsigned char> Pixels;
+};
+
+static ShadowCountState _ShadowCount;
+
 
 static bool Start(void)
 {
@@ -281,6 +298,7 @@ static void Destroy_Target(void)
 		_TargetTexture = BGFX_INVALID_HANDLE;
 	}
 	Release_Handle(_Readback);
+	Release_Handle(_ShadowCount.Readback);
 	Release_Handle(_Snapshot);
 	Release_Handle(_TileShadow);
 	_TileShadowTracked = false;
@@ -1310,12 +1328,80 @@ void GpuMap_Set_Weather(GpuWeather weather, int strength)
 }
 
 
+void GpuMap_Count_Shadows(void)
+{
+	_ShadowCount.Armed = true;
+}
+
+
+// Records the voxel shadow blits of the pass drawn just now and starts reading its picture back.
+static void Begin_Shadow_Count(GpuMapPass const & pass, int scale)
+{
+	Rect const area(0, 0, pass.Area.Width, pass.Area.Height);
+	if (!bgfx::isValid(_ShadowCount.Readback)) {
+		_ShadowCount.Readback = bgfx::createTexture2D((uint16_t)(area.Width * scale), (uint16_t)(area.Height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+	}
+	if (!bgfx::isValid(_ShadowCount.Readback)) {
+		return;
+	}
+	_ShadowCount.Armed = false;
+	_ShadowCount.Width = area.Width;
+	_ShadowCount.Height = area.Height;
+	_ShadowCount.Scale = scale;
+	_ShadowCount.Rects.clear();
+	for (GpuBlit const & blit : pass.List->Blits) {
+		if (blit.Voxel >= 0 && blit.Class() == GPU_BLIT_SHADOW) {
+			_ShadowCount.Rects.push_back(Intersect(Rect(blit.X - pass.Area.X, blit.Y - pass.Area.Y, blit.Width, blit.Height), area));
+		}
+	}
+	_ShadowCount.Base = *pass.Base;
+	_ShadowCount.Pixels.assign((std::size_t)area.Width * area.Height * scale * scale * 4, 0);
+	bgfx::blit(VIEW_MAPREAD, _ShadowCount.Readback, 0, 0, _TargetTexture);
+	_ShadowCount.ReadyFrame = bgfx::readTexture(_ShadowCount.Readback, _ShadowCount.Pixels.data());
+	_ShadowCount.Pending = true;
+}
+
+
+// A darkened target channel is half of the base channel; the margin allows for the shader's rounding and 565 to 8-bit.
+static bool Is_Darkened(unsigned char const * rgba, unsigned short base)
+{
+	int const r = (base >> 11) * 255 / 31;
+	int const g = ((base >> 5) & 63) * 255 / 63;
+	int const b = (base & 31) * 255 / 31;
+	return(r + g + b > 60 && std::abs(rgba[0] * 2 - r) <= 16 && std::abs(rgba[1] * 2 - g) <= 16 && std::abs(rgba[2] * 2 - b) <= 16);
+}
+
+
+static void Finish_Shadow_Count(void)
+{
+	int pixels = 0;
+	int darkened = 0;
+	for (Rect const & rect : _ShadowCount.Rects) {
+		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
+			for (int x = rect.X; x < rect.X + rect.Width; x++) {
+				pixels++;
+				int const tx = x * _ShadowCount.Scale + _ShadowCount.Scale / 2;
+				int const ty = y * _ShadowCount.Scale + _ShadowCount.Scale / 2;
+				unsigned char const * rgba = &_ShadowCount.Pixels[((std::size_t)ty * _ShadowCount.Width * _ShadowCount.Scale + tx) * 4];
+				if (Is_Darkened(rgba, _ShadowCount.Base[(std::size_t)y * _ShadowCount.Width + x])) {
+					darkened++;
+				}
+			}
+		}
+	}
+	DebugString("GPU_VOXEL_SHADOW shadows %d pixels %d darkened %d\n", (int)_ShadowCount.Rects.size(), pixels, darkened);
+}
+
+
 std::uint16_t GpuMap_Texture(void)
 {
 	if (_HasKept) {
 		_HasKept = false;
 		if (Submit_Pass(_Kept, _VoxelScale)) {
 			_TargetDrawn = true;
+			if (_ShadowCount.Armed) {
+				Begin_Shadow_Count(_Kept, _VoxelScale);
+			}
 		} else {
 			// The map area holds the key colour, so this frame shows the last picture, if one of the
 			// same size, and the next pass is drawn in software.
@@ -1338,6 +1424,10 @@ std::uint16_t GpuMap_Mask_Texture(void)
 void GpuMap_After_Frame(std::uint32_t frame)
 {
 	_Referenced = false;
+	if (_ShadowCount.Pending && frame >= _ShadowCount.ReadyFrame) {
+		_ShadowCount.Pending = false;
+		Finish_Shadow_Count();
+	}
 	if (!_Pending || frame < _ReadyFrame) {
 		return;
 	}
