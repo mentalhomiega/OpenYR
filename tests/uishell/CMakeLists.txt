@@ -31,6 +31,9 @@ opents_add_test(UIShell
         ui/rml/rmlrenderbase.cpp
         ui/rml/rmlrendermath.cpp
         ui/rml/rmlsettingpreview.cpp
+        ui/rml/rmlsettingrows.cpp
+        ui/uisettingrows.cpp
+        optionsettings.cpp
         ui/rml/rmlsurface.cpp
         ui/rml/rmlsystem.cpp
         ui/rml/rmlview.cpp

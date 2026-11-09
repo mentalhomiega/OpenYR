@@ -11,6 +11,7 @@
 
 #include "ui/uiscreen.h"
 #include "ui/uisettingpreview.h"
+#include "ui/uisettingrows.h"
 
 #include <memory>
 #include <optional>
@@ -53,7 +54,8 @@ class UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) = 0;
 		virtual void Set_VSync(bool on) = 0;
 		virtual void Set_Integer_Scaling(bool on) = 0;
-		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) = 0;
+		// Writes the rows built from declared settings to the settings they came from.
+		virtual void Set_Declared_Settings(std::vector<UISettingRow> const & rows) = 0;
 		virtual void Set_Filter(int mode) = 0;
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
@@ -111,13 +113,8 @@ struct UIDisplayState
 	bool Fullscreen = false;
 	bool VSync = false;
 	bool IntegerScaling = false;
-	bool GpuRender = false;
-	bool SoftShadows = false;
-	bool Shockwaves = false;
-	bool Bloom = false;
-	bool WaterRipples = false;
-	bool CloudShadows = false;
-	bool Weather = false;
+	// The rows built from declared settings (optionsettings.cpp).
+	std::vector<UISettingRow> SettingRows;
 	std::vector<UIChoice> Filters;
 	int Filter = 0;
 	std::vector<UIChoice> FrameRates;
@@ -189,9 +186,9 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		void Reset_Page(void);
 		// Shows the colour values now on the frame, on the graphics and accessibility pages.
 		void Show_Colour_Preview(void);
-		// Sets a GPU option from its intent. Only the modern interface changes it, and an option with needs_gpu
-		// also needs GPU rendering on.
-		void Set_Gpu_Switch(bool & field, int value, bool needs_gpu);
+		void Execute_Intent(UIIntent const & intent);
+		// Recomputes the declared rows' greying and text from the page's current values.
+		void Refresh_Setting_Rows(void);
 		// Sends each changed setting to the service, then accepts the page. The call order matters: several
 		// calls change the video mode.
 		void Apply_Settings(void);

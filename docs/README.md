@@ -23,6 +23,8 @@ The developer guides are split by subject:
   starting objects by name, with `--find` and `--json`.
 - [True-colour sprites](TRUECOLOUR.md) — PNG sheets drawn in place of SHP
   frames, with an optional house-colour mask.
+- [Settings registry](SETTINGS.md) — one declaration per `RA2MD.INI` setting:
+  its key, default, range, settings row and greying.
 - [HDR output](HDR.md) — the HDR10 back buffer, the composite pass that keeps
   the SDR colours, its settings and how it falls back to SDR.
 - [Colour-blind correction](COLOURBLIND.md) — the colour-blind matrices, the Daltonize correction and its limits.

@@ -11,8 +11,7 @@ Stages 1, 2 and 4 are in. With `GpuVoxels=yes` in `[Video]` of `RA2MD.INI` (defa
 blitted straight into the map view, or a vehicle composed from its hull, turret and barrel, is drawn on the GPU from
 its voxels instead of from the software's 256 by 256 picture. The GPU result is the same picture, index for index;
 nothing is smoother or sharper yet. The key does nothing unless the GPU draws the pass (`GpuRender`) or the
-`gpucheck` autotest step runs, and the Graphics page has no switch for it, because these stages have no visible
-benefit to offer.
+`gpucheck` autotest step runs. The **GPU voxels** group of the Graphics page sets it.
 
 These objects are drawn on the GPU:
 

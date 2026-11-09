@@ -18,6 +18,7 @@
 #include "hud.h"
 #include "misc.h"
 #include "options.h"
+#include "optionsettings.h"
 #include "playerdisplay.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
@@ -154,20 +155,9 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
-		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override
+		virtual void Set_Declared_Settings(std::vector<UISettingRow> const & rows) override
 		{
-			Options.GpuRender = render;
-			Options.SoftShadows = softshadows;
-			Options.Shockwaves = shockwaves;
-			Options.Bloom = bloom;
-			Options.WaterRipples = water;
-			Options.CloudShadows = clouds;
-			// Ticking the switch keeps a Rain or Snow chosen in RA2MD.INI.
-			if (!weather) {
-				Options.Weather = WEATHER_NONE;
-			} else if (Options.Weather == WEATHER_NONE) {
-				Options.Weather = WEATHER_MAP;
-			}
+			UI_Setting_Rows_Apply(Option_Settings(), rows, Options);
 			Apply_HDR_Highlights();
 		}
 
@@ -510,13 +500,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
-	state.GpuRender = Options.GpuRender;
-	state.SoftShadows = Options.SoftShadows;
-	state.Shockwaves = Options.Shockwaves;
-	state.Bloom = Options.Bloom;
-	state.WaterRipples = Options.WaterRipples;
-	state.CloudShadows = Options.CloudShadows;
-	state.Weather = Options.Weather != WEATHER_NONE;
+	state.SettingRows = UI_Setting_Rows(Option_Settings(), "graphics", [](Setting<OptionsClass> const & setting) { return(Setting_Value(setting, Options)); });
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 	state.HDRActive = Video_HDR_Active();
 	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {
