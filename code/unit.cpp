@@ -102,6 +102,7 @@
 #include "unit.h"
 
 #include "_bench.h"
+#include "gpudraw.h"
 #include "_convert.h"
 #include "_map.h"
 #include "_mixfile.h"
@@ -3193,7 +3194,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 	 * depth buffer nor the brightness.
 	 */
 	VoxelCompositeKey const composite_key{Class, key, turret_key, barrel_key};
-	bool const composite_cacheable = turret_drawn && !apc_in_water && !no_spawn_alt && !Class->IsDisableVoxelCache && frame >= 0 && frame < 32 && turret_key != -1 && barrel_key != -1;
+	bool const composite_cacheable = turret_drawn && !GpuDraw_Voxels_Wanted() && !apc_in_water && !no_spawn_alt && !Class->IsDisableVoxelCache && frame >= 0 && frame < 32 && turret_key != -1 && barrel_key != -1;
 	StaticBufferClass::Entry const * composite = NULL;
 	if (composite_cacheable) {
 		Sync_Voxel_Composites();
@@ -3215,7 +3216,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		// A hull with no turret or barrel to place found in the cache needs no matrix.
 		bool const hull_only = !turret_drawn && !(Class->AuxVoxel2.VoxLib != NULL && Class->AuxVoxel2.MotLib != NULL);
 		VoxelIndexClass * const hull_cache = no_spawn_alt ? &Class->NoSpawnAltVoxelIndex : &Class->VoxelIndex;
-		bool const hull_cached = hull_only && !apc_in_water && key != -1 && !Class->IsDisableVoxelCache && (*hull_cache)[key] != NULL;
+		bool const hull_cached = hull_only && !GpuDraw_Voxels_Wanted() && !apc_in_water && key != -1 && !Class->IsDisableVoxelCache && (*hull_cache)[key] != NULL;
 		if (!hull_cached) {
 			int matrix_key = key_seed;
 			main_matrix = Locomotion->Draw_Matrix(&matrix_key);

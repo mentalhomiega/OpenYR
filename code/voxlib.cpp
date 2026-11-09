@@ -480,12 +480,20 @@ int VoxelNormalTableEntryCount[] =
 };
 
 
+static unsigned Next_Serial(void)
+{
+	static unsigned serial = 0;
+	return(++serial);
+}
+
+
 /// <summary>
 /// Creates an empty voxel library.
 /// Use Read_File to fill it in before asking it to draw anything.
 /// </summary>
 VoxelLibrary::VoxelLibrary(void) :
 	LoadFailed(false),
+	Serial(Next_Serial()),
 	LayerCount(0),
 	LayerInfoCount(0),
 	DataSize(0),
@@ -506,6 +514,7 @@ VoxelLibrary::VoxelLibrary(void) :
 /// <param name="load_file_palette">Should the palette in the file become the voxel palette?</param>
 VoxelLibrary::VoxelLibrary(FileClass & file, int load_file_palette) :
 	LoadFailed(false),
+	Serial(Next_Serial()),
 	LayerCount(0),
 	LayerInfoCount(0),
 	DataSize(0),
@@ -571,6 +580,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 	unsigned int i = 0;
 
 	Clear();
+	Serial = Next_Serial();
 
 	if (!file.Open(FileClass::READ)) {
 		return(false);
@@ -811,10 +821,26 @@ int VoxelLibrary::Memory_Used(void)
 /// <param name="center">The point the projection is centered about.</param>
 void VoxelLibrary::Render_Object(VoxelRenderStruct & voxel, Vector3 & center)
 {
+	VoxelDrawSetup setup = Setup_Object(voxel, center);
+	VoxelDrawFunctions[setup.Function](&setup.Arg);
+}
+
+
+/// <summary>
+/// Works out what the low level drawer needs to draw one prepared layer.
+/// This routine turns the layer's bounding box corners into the fixed point projection the
+/// drawers work in, and picks the drawer that suits the viewing orientation and the current
+/// lighting and depth buffer settings.
+/// </summary>
+/// <param name="voxel">The render request, naming the layer and its transformed corners.</param>
+/// <param name="center">The point the projection is centered about.</param>
+VoxelDrawSetup VoxelLibrary::Setup_Object(VoxelRenderStruct const & voxel, Vector3 const & center)
+{
 	LayerInfoStruct const & layerinfo = Get_Layer_Info(voxel.Layer, voxel.Info);
 	int orientation = voxel.AnchorCornerIndex;
 
-	VoxelFuncArgumentStruct arg;
+	VoxelDrawSetup setup;
+	VoxelFuncArgumentStruct & arg = setup.Arg;
 
 	unsigned char x_size = layerinfo.XSize;
 	unsigned char y_size = layerinfo.YSize;
@@ -828,10 +854,10 @@ void VoxelLibrary::Render_Object(VoxelRenderStruct & voxel, Vector3 & center)
 	arg.EndOffset = layerinfo.EndOffset;
 	arg.DataOffset = layerinfo.DataOffset;
 
-	Vector3 & corner_0 = voxel.BoxCorner[VoxelRenderOrientations[orientation].Corner0];
-	Vector3 & corner_x = voxel.BoxCorner[VoxelRenderOrientations[orientation].CornerX];
-	Vector3 & corner_y = voxel.BoxCorner[VoxelRenderOrientations[orientation].CornerY];
-	Vector3 & corner_z = voxel.BoxCorner[VoxelRenderOrientations[orientation].CornerZ];
+	Vector3 const & corner_0 = voxel.BoxCorner[VoxelRenderOrientations[orientation].Corner0];
+	Vector3 const & corner_x = voxel.BoxCorner[VoxelRenderOrientations[orientation].CornerX];
+	Vector3 const & corner_y = voxel.BoxCorner[VoxelRenderOrientations[orientation].CornerY];
+	Vector3 const & corner_z = voxel.BoxCorner[VoxelRenderOrientations[orientation].CornerZ];
 
 	arg.StrideX = VoxelRenderOrientations[orientation].XIndexStride;
 	arg.StrideY = x_size * VoxelRenderOrientations[orientation].YIndexStride;
@@ -871,7 +897,8 @@ void VoxelLibrary::Render_Object(VoxelRenderStruct & voxel, Vector3 & center)
 		funcnum |= 8;
 	}
 
-	VoxelDrawFunctions[funcnum](&arg);
+	setup.Function = funcnum;
+	return(setup);
 }
 
 

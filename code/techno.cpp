@@ -224,6 +224,7 @@
 #include "veteranrules.h"
 #include "voc.h"
 #include "vox.h"
+#include "gpudraw.h"
 #include "voxdrsys.h"
 #include "ivanrules.h"
 #include "projectilerules.h"
@@ -8629,6 +8630,11 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 		}
 	};
 
+	// The GPU draws the voxels afresh each pass, so a cached picture has nothing to offer it.
+	if (GpuDraw_Voxels_Wanted()) {
+		key = -1;
+	}
+
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
 		// A draw between game frames reads the facing part way between two game frames, so it is counted apart.
@@ -8767,7 +8773,19 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 		VoxelDrawSystem::Prep_For_Object(voxlib, layer, 0, VoxelCameraMatrix * mtx);
 	}
 
-	SurfaceRegion region = VoxelDrawSystem::Render();
+	// When the GPU draws this pass, it draws the object from its voxels and the software skips the rendering.
+	bool const gpu = GpuDraw_Voxels_Wanted();
+	bool const gpu_draws = gpu && GpuDraw_Is_Rendering(*LogicalSurface);
+	VoxelScene scene;
+	if (gpu) {
+		scene = VoxelDrawSystem::Capture();
+	}
+	SurfaceRegion region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
+	if (gpu) {
+		char label[24];
+		std::snprintf(label, sizeof(label), "%s@%d", (char const *)Class_Of()->IniName, int(PrimaryFacing.Current().As_Dir32()));
+		GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+	}
 	Rect cliprect = xcliprect;
 
 	if (LogicalSurface != EightBitSurface) {
@@ -8792,6 +8810,9 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	}
 
 	Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(flags), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+	if (gpu) {
+		GpuDraw_Voxel_End();
+	}
 
 	return(region);
 }

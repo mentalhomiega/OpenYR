@@ -331,6 +331,10 @@ class OptionsClass {
 		bool CloudShadows;
 		int CloudShadowStrength;
 
+		// With GpuRender, vehicles and aircraft that are not composed from a turret are drawn from their
+		// voxels on the GPU (docs/GPU_VOXELS.md). Experimental; the software look is the reference.
+		bool GpuVoxels;
+
 		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
 		int Weather;
 		int WeatherStrength;

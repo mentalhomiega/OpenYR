@@ -14,15 +14,17 @@
 #include "sun.h"
 #include "vector3.h"
 #include "vector3i.h"
+#include "stbuffer.h"
 #include "win.h"
 
 #include "voxel.hh"
+
+#include <vector>
 
 class Surface;
 class BSurface;
 class FileClass;
 class VoxelLibrary;
-struct SurfaceRegion;
 class Vector3i16;
 template<class T> class TRect;
 typedef TRect<int> Rect;
@@ -31,6 +33,9 @@ typedef TRect<int> Rect;
 #define VOXEL_BITMAP_WIDTH 256
 #define VOXEL_BITMAP_HEIGHT 256
 #define VOXEL_BITMAP_BPP 1
+
+
+struct VoxelScene;
 
 
 namespace VoxelDrawSystem
@@ -61,6 +66,7 @@ namespace VoxelDrawSystem
 
 	void Render(Rect & rect, int & x, int & y);
 	SurfaceRegion Render(void);
+	VoxelScene Capture(void);
 
 	void Clear_Buffer(void);
 
@@ -79,6 +85,14 @@ struct VoxelRenderStruct {
 	Vector3 MinBounds;						/// The minimum bounds of the voxel model.
 	Vector3 MaxBounds;						/// The maximum bounds of the voxel model.
 	Vector3 BoxCorner[VOXEL_BOUNDS_COUNT];	/// The 8 corners of the voxel model.
+};
+
+
+// The prepared objects of a scene in drawing order (VoxelDrawSystem::Capture).
+struct VoxelScene {
+	std::vector<VoxelRenderStruct> Objects;
+	Vector3 Center;
+	SurfaceRegion Region;
 };
 
 
@@ -164,6 +178,13 @@ struct VoxelFuncArgumentStruct {
 	unsigned char YSize;
 	unsigned char ZSize;
 };
+// A prepared layer ready for a low-level drawer: its arguments and the index into VoxelDrawFunctions
+// (bit 0 reversed walk, 2 depth buffer, 4 lighting, 8 a layer without normals).
+struct VoxelDrawSetup {
+	VoxelFuncArgumentStruct Arg;
+	int Function;
+};
+
 extern "C" {
 extern unsigned char VoxelPaletteTranslateTable[MAX_PALETTE_LOOKUP_ENTRIES][VOXEL_PALETTE_SIZE];
 extern unsigned char VoxelDrawBuffer[];

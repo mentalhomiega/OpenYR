@@ -107,11 +107,15 @@ class VoxelLibrary
 		Vector3 Get_Bounding_Box_Center(int layer, int info);
 		int Memory_Used(void);
 		void Render_Object(VoxelRenderStruct & voxel, Vector3 & center);
+		VoxelDrawSetup Setup_Object(VoxelRenderStruct const & voxel, Vector3 const & center);
 		void Render_Shadow(VoxelShadowRenderStruct & voxel, Vector3 & center);
 		void Compute_Bounding_Box(void);
 
 		bool Load_Failed(void) const { return(LoadFailed); }
 		unsigned int Get_Layer_Count(void) const { return(LayerCount); }
+
+		// Differs for every load, so a GPU copy of the layers can tell this library from a later one at the same address.
+		unsigned Get_Serial(void) const { return(Serial); }
 		unsigned int Get_Layer_Info_Count(void) const { return(LayerInfoCount); }
 		int Get_Data_Size(void) const { return(DataSize); }
 
@@ -121,6 +125,7 @@ class VoxelLibrary
 		 * The library is left empty in that case, so a caller must check it before drawing.
 		 */
 		bool LoadFailed;
+		unsigned Serial;
 
 		unsigned int LayerCount;		/// Layer header count.
 		unsigned int LayerInfoCount;	/// Layer info count (these info can be reused).
