@@ -1867,6 +1867,9 @@ static MouseType Super_Weapon_Mouse(ActionType action)
 		return(SuperWeaponTypes[Map.IsTargettingMode]->Mouse_For(action, stock));
 	}
 	return(stock);
+}
+
+
 /*
  * Whether the action is one of the waypoint actions that show MOUSE_DISALLOWED, over shadowed
  * terrain or in view.

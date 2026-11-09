@@ -6895,7 +6895,7 @@ void TechnoClass::Set_Owner(HouseClass * newowner)
 /// it does any damage. Returns true when Take_Damage must return RESULT_NONE without applying
 /// the hit.
 /// </summary>
-bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative)
+bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative, HouseClass * sourcehouse, bool & effects_apply)
 {
 	DamageWarhead = warhead;
 
@@ -6989,7 +6989,7 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 
 	// The effects of the warhead reach an object whose armor has a nonzero Verses, and that the hit damages when
 	// EffectsRequireDamage is set (Ares); EffectsRequireVerses=no lifts the Verses test.
-	bool const effects_apply = warhead != NULL && WarheadRules::Warhead_Effects_Apply(warhead->IsEffectsRequireVerses, warhead->IsEffectsRequireDamage,
+	effects_apply = warhead != NULL && WarheadRules::Warhead_Effects_Apply(warhead->IsEffectsRequireVerses, warhead->IsEffectsRequireDamage,
 		warhead->Versus(TClass->Armor), warhead->IsEffectsRequireDamage && !negative ? Modify_Damage(damage, warhead, TClass->Armor, distance) : 1);
 
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
@@ -7206,7 +7206,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 {
 	bool negative = damage < 0;
 
-	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative)) {
+	bool effects_apply = false;
+	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative, sourcehouse, effects_apply)) {
 		return(RESULT_NONE);
 	}
 
@@ -12387,7 +12388,7 @@ ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
 {
 	// A type with an art Palette is drawn through that palette, shaded for the house colour (no tint applies to it).
 	if (!TClass->PaletteName.empty()) {
-		if (ConvertClass * custom = Custom_Palette_Drawer(TClass->PaletteName, scheme)) {
+		if (ConvertClass * custom = Palette_Scheme_Drawer(TClass->PaletteName, scheme->ID)) {
 			return(custom);
 		}
 	}

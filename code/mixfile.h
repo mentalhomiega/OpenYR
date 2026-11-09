@@ -60,11 +60,6 @@ class MixFileClass : public Node<MixFileClass *>
 		// archive is destroyed. Meant for archives too big to cache whole.
 		void Set_Resident_Members(bool resident) {ResidentMembers = resident;}
 
-		// Makes Retrieve of a member of this archive return memory even though the archive is not
-		// cached: the member is read from the file on its first Retrieve and kept until the
-		// archive is destroyed. Meant for archives too big to cache whole.
-		void Set_Resident_Members(bool resident) {ResidentMembers = resident;}
-
 		struct SubBlock {
 			int CRC;				// CRC code for embedded file.
 			int Offset;			// Offset from start of data section.

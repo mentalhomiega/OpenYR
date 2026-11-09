@@ -413,7 +413,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTrainable(true),
 	IsDontScore(false),
 	IsNaval(false),
-	IsConsideredAircraft(false),
 	RequiredHouses(-1),
 	ForbiddenHouses(-1),
 	AIBasePlanningSide(-1),
@@ -1023,7 +1022,6 @@ void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
 	PixelSelectionBracketDelta = ini.Get_Int(Name(), "PixelSelectionBracketDelta", PixelSelectionBracketDelta);
 	IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
 	IsRejoinTeamIfLimboed = ini.Get_Bool(Name(), "RejoinTeamIfLimboed", IsRejoinTeamIfLimboed);
-	IsRejoinTeamIfLimboed = ini.Get_Bool(Name(), "RejoinTeamIfLimboed", IsRejoinTeamIfLimboed);
 	MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
 	LeptonMindControlOffset = ini.Get_Int(Name(), "LeptonMindControlOffset", LeptonMindControlOffset);
 	IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
@@ -1048,7 +1046,6 @@ void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
 	Capacity = ini.Get_Int(Name(), "Storage", Capacity);
 	IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
 	IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
-	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
 	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
 	IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
 	SightRange = ini.Get_Int(Name(), "Sight", SightRange);
@@ -1252,7 +1249,6 @@ void TechnoTypeClass::Read_Targeting_INI(CCINIClass const & ini)
 	IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
 	IsCanRecalcApproachTarget = ini.Get_Bool(Name(), "CanRecalcApproachTarget", IsCanRecalcApproachTarget);
 	IsStupidHunt = ini.Get_Bool(Name(), "StupidHunt", IsStupidHunt);
-	IsStupidHunt = ini.Get_Bool(Name(), "StupidHunt", IsStupidHunt);
 	IsNoAutoFire = ini.Get_Bool(Name(), "NoAutoFire", IsNoAutoFire);
 	IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
 }
@@ -1391,7 +1387,6 @@ void TechnoTypeClass::Read_Destruction_INI(CCINIClass const & ini)
 	}
 
 	IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
-	IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
 	DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 	DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 	DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1406,7 +1401,6 @@ void TechnoTypeClass::Read_Weapons_INI(CCINIClass const & ini)
 	WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
 	IsClearAllWeapons = ini.Get_Bool(Name(), "ClearAllWeapons", IsClearAllWeapons);
 	IsMobileFire = ini.Get_Bool(Name(), "MobileFire", IsMobileFire);
-	IsPreventAttackMove = ini.Get_Bool(Name(), "PreventAttackMove", IsPreventAttackMove);
 	IsPreventAttackMove = ini.Get_Bool(Name(), "PreventAttackMove", IsPreventAttackMove);
 	if (!Has_Multiple_Turrets()) {
 		Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
@@ -1540,11 +1534,6 @@ void TechnoTypeClass::Read_Effects_INI(CCINIClass const & ini)
 	RefinerySmokeOffset[1] = ini.Get_Offset(Name(), "RefinerySmokeOffsetTwo", RefinerySmokeOffset[1]);
 	RefinerySmokeOffset[2] = ini.Get_Offset(Name(), "RefinerySmokeOffsetThree", RefinerySmokeOffset[2]);
 	RefinerySmokeOffset[3] = ini.Get_Offset(Name(), "RefinerySmokeOffsetFour", RefinerySmokeOffset[3]);
-	RefinerySmokeParticleSystem = TGet_Class(ini, Name(), "RefinerySmokeParticleSystem", RefinerySmokeParticleSystem);
-	RefinerySmokeOffset[0] = ini.Get_Offset(Name(), "RefinerySmokeOffsetOne", RefinerySmokeOffset[0]);
-	RefinerySmokeOffset[1] = ini.Get_Offset(Name(), "RefinerySmokeOffsetTwo", RefinerySmokeOffset[1]);
-	RefinerySmokeOffset[2] = ini.Get_Offset(Name(), "RefinerySmokeOffsetThree", RefinerySmokeOffset[2]);
-	RefinerySmokeOffset[3] = ini.Get_Offset(Name(), "RefinerySmokeOffsetFour", RefinerySmokeOffset[3]);
 	NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
 	DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
 	DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
@@ -1569,15 +1558,12 @@ void TechnoTypeClass::Read_Ammo_INI(CCINIClass const & ini)
 	EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
 	ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
 	PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
-	ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
-	EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
-	ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
-	PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
 }
 
 
 void TechnoTypeClass::Read_Production_INI(CCINIClass const & ini)
 {
+	char value[64];
 	IsDoubleOwned = ini.Get_Bool(Name(), "DoubleOwned", IsDoubleOwned);
 	BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
 
@@ -1736,7 +1722,6 @@ void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
 	VoiceSinking = ini.Get_VocType(Name(), "VoiceSinking", VoiceSinking);
 	VoiceMove = ini.Get_VocType_List(ini, IniName, "VoiceMove", VoiceMove);
 	VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
-	VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
 	VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 	VoiceSelectEnslaved = ini.Get_VocType_List(ini, IniName, "VoiceSelectEnslaved", VoiceSelectEnslaved);
 	VoiceSelectDeactivated = ini.Get_VocType_List(ini, IniName, "VoiceSelectDeactivated", VoiceSelectDeactivated);
@@ -1768,8 +1753,6 @@ void TechnoTypeClass::Read_Art_INI(void)
 	if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
 		PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
 	}
-	IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
-	IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
 
 	char pcx[64];
 	ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
@@ -2442,7 +2425,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTrainable);
 	stream.Serialize(IsDontScore);
 	stream.Serialize(IsNaval);
-	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(RequiredHouses);
 	stream.Serialize(ForbiddenHouses);
 	stream.Serialize(AIBasePlanningSide);

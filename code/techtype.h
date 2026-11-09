@@ -498,9 +498,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether a destroyed aircraft falls and crashes; when not, it is destroyed where it flies (Ares Crashable).
 		bool IsCrashable;
 
-		// Read from the rules key ConsideredAircraft, which aircraft types default to yes; nothing in this engine uses it yet.
-		bool IsConsideredAircraft;
-
 		// The sounds played on promotion to veteran and elite, or VOC_NONE for the [AudioVisual] ones (Ares Promote.*Sound).
 		VocType PromoteVeteranSound;
 		VocType PromoteEliteSound;

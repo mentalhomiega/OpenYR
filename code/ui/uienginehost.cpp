@@ -25,6 +25,7 @@
 #include "houstype.h"
 #include "init.h"
 #include "keyboard.h"
+#include "csf.h"
 #include "language/language.h"
 #include "lobbycolor.h"
 #include "mainloop.h"

@@ -1120,7 +1120,7 @@ class TechnoClass :	public RadioClass,
 		bool Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const;
 		void Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord const & fire_coord, BuildingClass * garrison, bool garrison_fire);
 		void Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord);
-		bool Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative);
+		bool Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative, HouseClass * sourcehouse, bool & effects_apply);
 		void Release_Dependents_On_Death(TechnoClass * source);
 		void Play_Death_Voices(WarheadTypeClass const * warhead);
 		void Spawn_Death_Debris(void);

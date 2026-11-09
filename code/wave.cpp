@@ -237,6 +237,11 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 	if (cliprect.Is_Point_Within(Point2D(x + shift.X, yscreen + shift.Y))) {
 		color = buffer[WaveIntensityTable[amplitude]];
 	}
+	if (HasCustomColor) {
+		*buffer = color;
+		Tint_Pixel(buffer, IntensityTable[amplitude]);
+		return;
+	}
 	*buffer = Sonic_Tint(color, amplitude, Type == WAVE_MAGNETRON);
 }
 
@@ -258,12 +263,6 @@ Point2D WaveClass::Sonic_Shift(int amplitude, FacingType facing)
 unsigned short WaveClass::Sonic_Tint(unsigned short color, int amplitude, bool magnetron)
 {
 	int mult = IntensityTable[amplitude];
-
-	if (HasCustomColor) {
-		*buffer = color;
-		Tint_Pixel(buffer, mult);
-		return;
-	}
 
 	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(color);
 	int red = rgb.Get_Red();
@@ -723,7 +722,8 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 			int endy = std::min(DrawData.Count + starty - 1, cliprect.Height + cliprect.Y);
 
 			Init_Offset_Tables();
-			_sonic_recording = GpuDraw_Line_Begin(*LogicalSurface, GPU_LINE_SONIC, Direction + (Type == WAVE_MAGNETRON ? 8 : 0), IntensityTable[0]);
+			// A wave with its own color is drawn by this code, which the GPU line has no way to colour.
+			_sonic_recording = !HasCustomColor && GpuDraw_Line_Begin(*LogicalSurface, GPU_LINE_SONIC, Direction + (Type == WAVE_MAGNETRON ? 8 : 0), IntensityTable[0]);
 
 			if (Direction > FACING_NE && Direction < FACING_W) {
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);
