@@ -13,11 +13,11 @@
 enum BgfxViewType : unsigned short
 {
 	// The GPU map passes run first so that the present in the same frame draws their result.
+	// The voxel image comes before them because the shadow mask and the draws read it.
+	VIEW_MAPVOXEL,
 	VIEW_MAPSHADOW,
 	VIEW_MAPBLURX,
 	VIEW_MAPBLURY,
-	// Draws the voxel parts of a map pass into the voxel image the draws below read.
-	VIEW_MAPVOXEL,
 	VIEW_MAPDRAW,
 	// Each sonic wave in a map pass continues the drawing in the next of these views.
 	VIEW_MAPWAVE,

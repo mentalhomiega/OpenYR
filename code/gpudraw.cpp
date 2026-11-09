@@ -965,6 +965,10 @@ static std::vector<unsigned char> Render_Part(GpuVoxelPart const & part)
 	for (GpuVoxelPiece const & piece : part.Pieces) {
 		std::memcpy(VoxelNormalTranslateTable, piece.Lighting, sizeof(piece.Lighting));
 		VoxelDrawSystem::Clear_Buffer();
+		for (VoxelShadowRenderStruct shadow : piece.Scene.Shadows) {
+			Vector3 center = piece.Scene.Center;
+			shadow.VoxLib->Render_Shadow(shadow, center);
+		}
 		for (VoxelRenderStruct object : piece.Scene.Objects) {
 			Vector3 center = piece.Scene.Center;
 			object.VoxLib->Render_Object(object, center);
@@ -1144,6 +1148,18 @@ double GpuDraw_Facing_Radian(DirType const & facing)
 }
 
 
+ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags)
+{
+	return(GpuDraw_Voxels_Wanted() ? ShapeFlags_Type(flags & ~SHAPE_PREDATOR) : flags);
+}
+
+
+double GpuDraw_Facing_Steps(DirType const & facing)
+{
+	return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32()));
+}
+
+
 void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
 {
 	_PendingPart = -1;
@@ -1176,6 +1192,21 @@ void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool softw
 	}
 	_List.Voxels.push_back(std::move(part));
 	_PendingPart = (int)_List.Voxels.size() - 1;
+}
+
+
+SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag)
+{
+	if (!GpuDraw_Voxels_Wanted()) {
+		return(VoxelDrawSystem::Render());
+	}
+	VoxelScene const scene = VoxelDrawSystem::Capture();
+	bool const gpu_draws = GpuDraw_Is_Rendering(*LogicalSurface);
+	SurfaceRegion const region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
+	char label[24];
+	std::snprintf(label, sizeof(label), "%s@%.4g%c", name, steps, tag);
+	GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+	return(region);
 }
 
 

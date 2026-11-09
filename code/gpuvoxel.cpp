@@ -74,6 +74,22 @@ void Gpu_Voxel_Walk(VoxelFuncArgumentStruct const & arg, bool reversed, bool lit
 
 
 /// <summary>
+/// Lists the occupied columns of the layer in the order the shadow drawer stamps them.
+/// </summary>
+void Gpu_Voxel_Walk_Shadow(VoxelFuncArgumentStruct const & arg, std::vector<GpuVoxelInstance> & out)
+{
+	unsigned int const * const table = (unsigned int const *)arg.EndOffset;
+	for (int j = 0; j < arg.YSize; j++) {
+		for (int i = 0; i < arg.XSize; i++) {
+			if (table[j * arg.XSize + i] != UINT_MAX) {
+				out.push_back(GpuVoxelInstance{ (unsigned char)i, (unsigned char)j, 0, 1, 0 });
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Draws the walked voxels into the buffer the way the GPU shader does.
 /// </summary>
 void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vector3i16 const (&projection)[4], bool lit, unsigned char const (&lighting)[VOXEL_PALETTE_SIZE], unsigned char (&buffer)[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT])

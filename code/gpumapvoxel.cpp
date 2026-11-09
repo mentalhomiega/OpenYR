@@ -109,9 +109,12 @@ static bool Start(void)
 }
 
 
-static std::uint64_t Model_Key(unsigned serial, VoxelRenderStruct const & object)
+// The orientation a shadow's walk is stored under, which no object's orientation uses.
+static int const SHADOW_WALK = 0xFF;
+
+static std::uint64_t Model_Key(unsigned serial, int layer, int info, int orientation)
 {
-	return(((std::uint64_t)serial << 32) | ((std::uint64_t)(unsigned short)object.Layer << 16) | ((std::uint64_t)(unsigned char)object.Info << 8) | (unsigned char)object.AnchorCornerIndex);
+	return(((std::uint64_t)serial << 32) | ((std::uint64_t)(unsigned short)layer << 16) | ((std::uint64_t)(unsigned char)info << 8) | (unsigned char)orientation);
 }
 
 
@@ -189,6 +192,7 @@ struct LayerDraw
 	std::uint64_t Key;
 	bool Lit;
 	bool Reversed;
+	bool Shadow;
 	// The index of the layer's piece in its part.
 	int Piece;
 };
@@ -211,7 +215,11 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 			for (LayerDraw const & layer : part) {
 				if (Find_Slot(layer.Key) == NULL && fresh.find(layer.Key) == fresh.end()) {
 					std::vector<GpuVoxelInstance> & voxels = fresh[layer.Key];
-					Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
+					if (layer.Shadow) {
+						Gpu_Voxel_Walk_Shadow(layer.Setup.Arg, voxels);
+					} else {
+						Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
+					}
 					rows += Rows_For(voxels.size());
 				}
 			}
@@ -274,12 +282,24 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		std::vector<GpuVoxelPiece> const & pieces = list.Voxels[i].Pieces;
 		for (std::size_t p = 0; p < pieces.size(); p++) {
+			for (VoxelShadowRenderStruct const & shadow : pieces[p].Scene.Shadows) {
+				LayerDraw layer;
+				layer.Setup = shadow.VoxLib->Setup_Shadow(shadow, pieces[p].Scene.Center);
+				layer.Key = Model_Key(shadow.VoxLib->Get_Serial(), shadow.Layer, shadow.Info, SHADOW_WALK);
+				// A shadow stamps two pixels a column, as a lit voxel does, with no shading.
+				layer.Lit = true;
+				layer.Reversed = false;
+				layer.Shadow = true;
+				layer.Piece = (int)p;
+				parts[i].push_back(layer);
+			}
 			for (VoxelRenderStruct const & object : pieces[p].Scene.Objects) {
 				LayerDraw layer;
 				layer.Setup = object.VoxLib->Setup_Object(object, pieces[p].Scene.Center);
-				layer.Key = Model_Key(object.VoxLib->Get_Serial(), object);
+				layer.Key = Model_Key(object.VoxLib->Get_Serial(), object.Layer, object.Info, object.AnchorCornerIndex);
 				layer.Lit = (layer.Setup.Function & 12) == 4;
 				layer.Reversed = (layer.Setup.Function & 1) != 0;
+				layer.Shadow = false;
 				layer.Piece = (int)p;
 				parts[i].push_back(layer);
 			}
@@ -322,6 +342,10 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 			}
 			float light[VOXEL_PALETTE_SIZE];
 			std::copy(std::begin(piece.Lighting), std::end(piece.Lighting), light);
+			if (layer.Shadow) {
+				// The identity row after the lighting rows keeps the shadow's colour 1.
+				std::fill(std::begin(light), std::end(light), (float)MAX_PALETTE_LOOKUP_ENTRIES);
+			}
 			Vector3i16 const (&steps)[4] = layer.Setup.Arg.TransformMatrix;
 			float const vox[16] = {
 				(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
@@ -384,7 +408,7 @@ std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxe
 		std::memcpy(check.Label, part.Label, sizeof(check.Label));
 		check.Layers = 0;
 		for (GpuVoxelPiece const & piece : part.Pieces) {
-			check.Layers += (int)piece.Scene.Objects.size();
+			check.Layers += (int)(piece.Scene.Shadows.size() + piece.Scene.Objects.size());
 		}
 		check.X = tiles[i].X;
 		check.Y = tiles[i].Y;

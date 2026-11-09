@@ -29,6 +29,10 @@ struct GpuVoxelInstance
 // overwrites an earlier one that lands on the same pixel. Lit layers carry a normal byte per voxel.
 void Gpu_Voxel_Walk(VoxelFuncArgumentStruct const & arg, bool reversed, bool lit, std::vector<GpuVoxelInstance> & out);
 
+// Lists one voxel for each occupied column of a shadow's layer, with K 0, colour 1 and normal 0, in the order
+// VoxelLibrary::Render_Shadow stamps them.
+void Gpu_Voxel_Walk_Shadow(VoxelFuncArgumentStruct const & arg, std::vector<GpuVoxelInstance> & out);
+
 // The index into the 256 by 256 voxel buffer of the first pixel the software drawer writes for a
 // voxel, from the drawer's projection (VoxelFuncArgumentStruct::TransformMatrix). Pixels past the end
 // of a row continue on the next, as the buffer does.

@@ -909,7 +909,7 @@ VoxelDrawSetup VoxelLibrary::Setup_Object(VoxelRenderStruct const & voxel, Vecto
 /// of the object rather than any of its detail.
 /// </summary>
 /// <param name="state">The projection, stride and voxel data setup for this object.</param>
-static void __cdecl _voxel_draw_shadow(VoxelFuncArgumentStruct * state)
+void __cdecl Draw_Voxel_Shadow(VoxelFuncArgumentStruct * state)
 {
 	/// Set starting 2D projection position
 	unsigned short pixel_x = state->TransformMatrix[0].I;
@@ -957,9 +957,22 @@ static void __cdecl _voxel_draw_shadow(VoxelFuncArgumentStruct * state)
 /// <param name="center">The point the projection is centered about.</param>
 void VoxelLibrary::Render_Shadow(VoxelShadowRenderStruct & voxel, Vector3 & center)
 {
+	VoxelDrawSetup setup = Setup_Shadow(voxel, center);
+	Draw_Voxel_Shadow(&setup.Arg);
+}
+
+
+/// <summary>
+/// Works out what the shadow drawer needs to stamp one prepared layer's silhouette.
+/// </summary>
+/// <param name="voxel">The shadow render request, naming the layer and its corners.</param>
+/// <param name="center">The point the projection is centered about.</param>
+VoxelDrawSetup VoxelLibrary::Setup_Shadow(VoxelShadowRenderStruct const & voxel, Vector3 const & center)
+{
 	LayerInfoStruct const & layerinfo = Get_Layer_Info(voxel.Layer, voxel.Info);
 
-	VoxelFuncArgumentStruct arg;
+	VoxelDrawSetup setup;
+	VoxelFuncArgumentStruct & arg = setup.Arg;
 
 	unsigned char x_size = layerinfo.XSize;
 	unsigned char y_size = layerinfo.YSize;
@@ -973,9 +986,9 @@ void VoxelLibrary::Render_Shadow(VoxelShadowRenderStruct & voxel, Vector3 & cent
 	arg.EndOffset = layerinfo.EndOffset; /// Uses EndOffset as presence mask
 	arg.DataOffset = NULL;
 
-	Vector3 & corner_x = voxel.ShadowCorner[1]; /// X step
-	Vector3 & corner_0 = voxel.ShadowCorner[2]; /// Origin
-	Vector3 & corner_y = voxel.ShadowCorner[3]; /// Y step
+	Vector3 const & corner_x = voxel.ShadowCorner[1]; /// X step
+	Vector3 const & corner_0 = voxel.ShadowCorner[2]; /// Origin
+	Vector3 const & corner_y = voxel.ShadowCorner[3]; /// Y step
 
 	arg.StrideX = 1;
 	arg.StrideY = x_size;
@@ -990,7 +1003,11 @@ void VoxelLibrary::Render_Shadow(VoxelShadowRenderStruct & voxel, Vector3 & cent
 	arg.TransformMatrix[1].J = static_cast<unsigned short>(static_cast<int>((corner_x.Y - corner_0.Y) / x_size * 256.0));
 	arg.TransformMatrix[2].J = static_cast<unsigned short>(static_cast<int>((corner_y.Y - corner_0.Y) / y_size * 256.0));
 
-	_voxel_draw_shadow(&arg);
+	arg.TransformMatrix[3].I = 0;
+	arg.TransformMatrix[3].J = 0;
+
+	setup.Function = 0;
+	return(setup);
 }
 
 

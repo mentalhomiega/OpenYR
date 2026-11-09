@@ -23,6 +23,7 @@ void __cdecl Draw_Voxel_Regular_Normals_Lighting(VoxelFuncArgumentStruct * state
 void __cdecl Draw_Voxel_Reverse_Normals_Lighting(VoxelFuncArgumentStruct * state);
 void __cdecl Draw_Voxel_Regular(VoxelFuncArgumentStruct * state);
 void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state);
+void __cdecl Draw_Voxel_Shadow(VoxelFuncArgumentStruct * state);
 
 // Stands in for voxdrsys.cpp, which the harness does not build.
 extern "C" {
@@ -170,6 +171,44 @@ int main(void)
 		}
 	}
 	std::printf("%-52s %s\n", "GPU voxel walk matches the software drawers", failures == 0 ? "ok" : "FAILED");
+	int const walk_failures = failures;
+
+	// A shadow is the flat stamp of the occupied columns: two pixels a column, colour 1, as the shader draws it.
+	for (unsigned int seed = 1; seed <= 24; seed++) {
+		for (int orientation = 0; orientation < VOXEL_BOUNDS_COUNT; orientation++) {
+			Build_Layer(seed * 104729u + (unsigned)orientation, true);
+			VoxelFuncArgumentStruct arg;
+			Setup(arg, orientation);
+			arg.TransformMatrix[3].I = 0;
+			arg.TransformMatrix[3].J = 0;
+			arg.StartIndex = 0;
+			arg.StrideX = 1;
+			arg.StrideY = XSIZE;
+			VoxelFuncArgumentStruct const walk = arg;
+
+			std::memset(VoxelDrawBuffer, 0, sizeof(VoxelDrawBuffer));
+			Draw_Voxel_Shadow(&arg);
+
+			std::vector<GpuVoxelInstance> voxels;
+			Gpu_Voxel_Walk_Shadow(walk, voxels);
+			static unsigned char expected[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT];
+			std::memset(expected, 0, sizeof(expected));
+			for (GpuVoxelInstance const & voxel : voxels) {
+				int const index = Gpu_Voxel_Buffer_Index(walk.TransformMatrix, voxel);
+				expected[index] = 1;
+				if (index + 1 < VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT) {
+					expected[index + 1] = 1;
+				}
+			}
+
+			checked++;
+			if (std::memcmp(expected, VoxelDrawBuffer, sizeof(expected)) != 0) {
+				std::printf("FAILED shadow seed %u orientation %d\n", seed, orientation);
+				failures++;
+			}
+		}
+	}
+	std::printf("%-52s %s\n", "GPU shadow walk matches the software drawer", failures == walk_failures ? "ok" : "FAILED");
 	std::printf("checked %d cases, %d mismatches\n", checked, failures);
 	return(failures == 0 ? 0 : 1);
 }
