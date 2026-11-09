@@ -2755,11 +2755,11 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	case VISUAL_RIPPLE: {
 		int stage = CloakingDevice.Fetch_Stage();
 		if (stage == 0) {
-			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD)));
 		} else if (stage == 1) {
-			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD)));
 		} else {
-			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD)));
 		}
 
 		predoffset = Get_Predator_Offset();
@@ -2966,9 +2966,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		cliprect = LogicalSurface->Get_Rect();
 		IsCompositingToEightBitSurface = true;
 		char label[24];
-		// A smooth draw is labelled with the exact facings in 32nds of a turn.
-		auto const steps = [](DirType const & facing) { return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32())); };
-		std::snprintf(label, sizeof(label), "%s@%.4gt%.4g", (char const *)Class->IniName, steps(PrimaryFacing.Current()), steps(SecondaryFacing.Current()));
+		std::snprintf(label, sizeof(label), "%s@%.4gt%.4g", (char const *)Class->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()), GpuDraw_Facing_Steps(SecondaryFacing.Current()));
 		GpuDraw_Composite_Begin(*old_surface, label);
 	}
 

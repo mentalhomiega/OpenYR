@@ -1565,7 +1565,7 @@ Matrix3D FlyLocomotionClass::Build_Shadow_Matrix(int * key, bool build)
 	}
 
 	Matrix3D matrix = Get_Slope_Matrix(ramp);
-	matrix.Rotate_Z(LinkedTo->SecondaryFacing.Current().As_Radian32());
+	matrix.Rotate_Z(GpuDraw_Facing_Radian(LinkedTo->SecondaryFacing.Current()));
 
 	if (key != NULL && *key != -1) {
 		*key = 32 * (ramp + (*key << 6));

@@ -627,7 +627,7 @@ static void Set_Map_View(bgfx::ViewId view, bgfx::FrameBufferHandle target, Rect
 
 // Draws every shadow's coverage, with the tile layer's shadows when tileshadow is set, into the first
 // shadow mask and blurs it there, through the second.
-static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
+static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, bgfx::TextureHandle voxelimage, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
 {
 	bgfx::TransientVertexBuffer buffer;
 	bgfx::allocTransientVertexBuffer(&buffer, shadowquads * 6, _Layout);
@@ -650,7 +650,7 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 		if (blit.Class() != GPU_BLIT_SHADOW) {
 			continue;
 		}
-		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, 0.0f, -1.0f };
+		float const t1[4] = { Source_Offset(blit, tiles, scale), (float)(blit.Voxel >= 0 ? GPU_VOXEL_IMAGE_SIZE : blit.Pitch), 0.0f, -1.0f };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)KIND_SHADOW_MASK, blit.Desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -659,11 +659,16 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 
 	Set_Map_View(VIEW_MAPSHADOW, _ShadowTarget[0], area, projection);
 	bgfx::setViewClear(VIEW_MAPSHADOW, BGFX_CLEAR_COLOR, 0x00000000);
+	float const shadow_scale[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
 	for (int i = 1; i < shadowquads; i++) {
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
+		if (bgfx::isValid(voxelimage)) {
+			bgfx::setTexture(SLOT_COUNT + 3, _VoxelImageSampler, voxelimage);
+		}
+		bgfx::setUniform(_WaterUniform, shadow_scale);
 		if (tileshadow) {
 			bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
 		}
@@ -1090,10 +1095,11 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, area.Width, area.Height);
+	bgfx::TextureHandle const voxelimage = { list.Voxels.empty() ? bgfx::kInvalidHandle : GpuVoxel_Image() };
 	if (shadowed) {
-		Submit_Shadows(list, area, projection, ring, shadowquads, tileshadow);
+		Submit_Shadows(list, tiles, scale, voxelimage, area, projection, ring, shadowquads, tileshadow);
 	}
-	Submit_Draws(list, scale, bgfx::TextureHandle{ list.Voxels.empty() ? bgfx::kInvalidHandle : GpuVoxel_Image() }, kinds, buffer, area, projection, ring, world, shadowed, water);
+	Submit_Draws(list, scale, voxelimage, kinds, buffer, area, projection, ring, world, shadowed, water);
 
 	bool const glow = pass.Glow != NULL && pass.GlowChanged != NULL && _BloomStrength > 0 && bgfx::isValid(_GlowProgram)
 		&& pass.Glow->size() == (std::size_t)area.Width * area.Height;

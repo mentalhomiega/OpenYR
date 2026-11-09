@@ -8451,7 +8451,7 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 // A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
 static int Shadow_Cache_Key(int key, VoxelIndexClass const * cache, bool disable_cache)
 {
-	if (key != -1 && (cache == NULL || disable_cache)) {
+	if (key != -1 && (cache == NULL || disable_cache || GpuDraw_Voxels_Wanted())) {
 		return(-1);
 	}
 	return(key);
@@ -8567,9 +8567,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	if (gpu) {
 		// A smooth draw is labelled with the exact facing in 32nds of a turn, which the check log shows turning without steps.
 		char label[24];
-		DirType const facing = PrimaryFacing.Current();
-		double const steps = GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32());
-		std::snprintf(label, sizeof(label), "%s@%.4g", (char const *)Class_Of()->IniName, steps);
+		std::snprintf(label, sizeof(label), "%s@%.4g", (char const *)Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()));
 		if (composited) {
 			GpuDraw_Composite_Piece(scene, region.Point + point);
 		} else {
@@ -8601,7 +8599,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 
 	// The GPU composes the pieces of the scratch surface itself, so the software leaves it empty.
 	if (!(gpu_draws && composited)) {
-		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(flags), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
 	}
 	if (gpu && !composited) {
 		GpuDraw_Voxel_End();
@@ -8631,12 +8629,13 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 
 	VoxelDrawSystem::Reset();
 	VoxelDrawSystem::Prep_For_Shadow(voxeldata.VoxLib, layer_index, 0, VoxelCameraMatrix * mtx3, mtx2, VoxelShadowLightVector);
-	SurfaceRegion region = VoxelDrawSystem::Render();
+	SurfaceRegion region = GpuDraw_Render_Prepared(Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()), 's');
 
 	if (!cached) {
 		Rect r = VoxelDrawSystem::Get_Surface()->Get_Rect(); /// The result is unused.
 		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust());
 	}
+	GpuDraw_Voxel_End();
 
 	return(region);
 }

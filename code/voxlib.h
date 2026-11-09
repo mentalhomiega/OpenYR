@@ -109,6 +109,7 @@ class VoxelLibrary
 		void Render_Object(VoxelRenderStruct & voxel, Vector3 & center);
 		VoxelDrawSetup Setup_Object(VoxelRenderStruct const & voxel, Vector3 const & center);
 		void Render_Shadow(VoxelShadowRenderStruct & voxel, Vector3 & center);
+		VoxelDrawSetup Setup_Shadow(VoxelShadowRenderStruct const & voxel, Vector3 const & center);
 		void Compute_Bounding_Box(void);
 
 		bool Load_Failed(void) const { return(LoadFailed); }

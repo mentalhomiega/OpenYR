@@ -1058,8 +1058,8 @@ void BulletClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 
 	if (Class->IsVoxel) {
 		Matrix3D matrix(true);
-		matrix.Rotate_Z(Velocity.Get_Yaw().As_Radian32());
-		matrix.Rotate_Y(-Velocity.Get_Pitch().As_Radian32());
+		matrix.Rotate_Z(GpuDraw_Facing_Radian(Velocity.Get_Yaw()));
+		matrix.Rotate_Y(-GpuDraw_Facing_Radian(Velocity.Get_Pitch()));
 		Draw_Voxel(Class->Voxel, Get_Isometric_View_Matrix() * matrix, point, cliprect, 0, SHAPE_ALPHA, NORMAL_LIGHT);
 
 	} else {
@@ -2041,9 +2041,10 @@ void BulletClass::Draw_Voxel(VoxelDataStruct const & voxeldata, Matrix3D const &
 		VoxelDrawSystem::Prep_For_Object(voxlib, i, 0, VoxelCameraMatrix * matrix);
 	}
 
-	SurfaceRegion region = VoxelDrawSystem::Render();
+	SurfaceRegion region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 'b');
 	flags = ShapeFlags_Type(flags & ~SHAPE_REMAP);
 	Blit_Block(*LogicalSurface, *ColorSchemes[Class->Color]->Converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + drawpoint, cliprect, NULL, ColorSchemes[Class->Color]->Converter->Blitter_From_Flags(ShapeFlags_Type(flags)), 0, ZGRAD_90DEG, brightness);
+	GpuDraw_Voxel_End();
 }
 
 

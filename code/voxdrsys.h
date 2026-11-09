@@ -64,7 +64,6 @@ namespace VoxelDrawSystem
 	void Prep_For_Shadow(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & camera, Matrix3D const & motion, Vector3 const & light);
 	void Prep_For_Object(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & transform);
 
-	void Render(Rect & rect, int & x, int & y);
 	SurfaceRegion Render(void);
 	VoxelScene Capture(void);
 
@@ -88,14 +87,6 @@ struct VoxelRenderStruct {
 };
 
 
-// The prepared objects of a scene in drawing order (VoxelDrawSystem::Capture).
-struct VoxelScene {
-	std::vector<VoxelRenderStruct> Objects;
-	Vector3 Center;
-	SurfaceRegion Region;
-};
-
-
 /*
  * This structure contains pre-processed data for a drawing a voxel object's shadow.
  */
@@ -114,6 +105,15 @@ struct VoxelShadowRenderStruct {
 	 * layer's silhouette is smeared across to make the shadow.
 	 */
 	Vector3 ShadowCorner[4];
+};
+
+
+// The prepared shadows and objects of a scene, each in drawing order (VoxelDrawSystem::Capture).
+struct VoxelScene {
+	std::vector<VoxelShadowRenderStruct> Shadows;
+	std::vector<VoxelRenderStruct> Objects;
+	Vector3 Center;
+	SurfaceRegion Region;
 };
 
 
