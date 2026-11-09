@@ -17,6 +17,7 @@
 #include "classfactory.h"
 #include "coord.h"
 #include "foot.h"
+#include "gpudraw.h"
 #include "globals.h"
 #include "map.h"
 #include "saveload.h"
@@ -83,7 +84,7 @@ Matrix3D LocomotionClass::Build_Draw_Matrix(int *key, bool matrix)
 	Matrix3D draw_matrix(true);
 
 	if (matrix) {
-		draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+		draw_matrix.Rotate_Z(GpuDraw_Facing_Radian(LinkedTo->PrimaryFacing.Current()));
 	}
 
 	if (key && *key != -1) {

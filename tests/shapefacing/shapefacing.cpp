@@ -11,6 +11,7 @@
 // and to the first facing for any other count. Holds Eight_Facing_Entry to the eight entries a
 // parasite's bite reads. Needs no game data.
 
+#include <cmath>
 #include <cstdio>
 
 #include "face.h"
@@ -161,6 +162,25 @@ int main(void)
 		Check(Eight_Facing_Entry(DirType(0x8000), 8) == 4, "    south reads entry four");
 		Check(short_list, "    plays entry zero of a list shorter than eight");
 		Check(long_list, "    never plays past entry seven of a longer list");
+	}
+
+	// The smooth facing angle equals the 32-facing one at each facing and runs between them in even steps.
+	{
+		bool equal_at_keys = true;
+		bool even = true;
+		for (int key = 0; key < 32; key++) {
+			DirType const dir = At(key, 32);
+			if (dir.As_Radian_Smooth() != dir.As_Radian32()) {
+				equal_at_keys = false;
+			}
+			double const half = DirType(key * 2048 + 1024).As_Radian_Smooth();
+			if (std::fabs((half - dir.As_Radian32()) * 2 + 2 * 3.14159265358979323846 / 32) > 1e-9) {
+				even = false;
+			}
+		}
+		std::printf("  the smooth facing angle\n");
+		Check(equal_at_keys, "    equals the 32-facing angle at each of the 32 facings");
+		Check(even, "    lies halfway between two facings halfway through the step");
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Checks FAILED.");

@@ -2965,6 +2965,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
 		cliprect = LogicalSurface->Get_Rect();
 		IsCompositingToEightBitSurface = true;
+		char label[24];
+		// A smooth draw is labelled with the exact facings in 32nds of a turn.
+		auto const steps = [](DirType const & facing) { return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32())); };
+		std::snprintf(label, sizeof(label), "%s@%.4gt%.4g", (char const *)Class->IniName, steps(PrimaryFacing.Current()), steps(SecondaryFacing.Current()));
+		GpuDraw_Composite_Begin(*old_surface, label);
 	}
 
 	int const key_seed = UseVoxelCache ? 0 : -1;
@@ -3081,7 +3086,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 		if (turret_drawn) {
 			main_matrix.Translate_X(float(Class->TurretOffset * VOXEL_UNITS_PER_LEPTON));
-			main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
+			main_matrix.Rotate_Z(GpuDraw_Facing_Radian(SecondaryFacing.Current()) - GpuDraw_Facing_Radian(PrimaryFacing.Current()));
 
 			// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
 			// The barrel pitches about the turret origin, not FireFLH, as DrawAsVXL does (0x73BB6E-0x73BBBD).
@@ -3134,9 +3139,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			rect = Intersect(rect, Rect(0, 0, TacticalRect.Width, SinkingYOffset - TacticalMap->TacPixelY));
 		}
 		if (!composite_drawn) {
+			GpuDraw_Composite_Show(*LogicalSurface, UnitCompositeDirtyRect);
 			Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
 			LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
 		}
+		GpuDraw_Composite_End();
 		LogicalSurface = old_surface;
 		IsCompositingToEightBitSurface = false;
 	}

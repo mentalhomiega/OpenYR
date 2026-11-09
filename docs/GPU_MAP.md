@@ -62,6 +62,7 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
 | `Weather` | `None` | With `GpuRender`, `Map` makes rain fall over the whole map while a lightning storm rages and otherwise makes snow fall on maps whose theater sets `IsArctic=yes`, which in Yuri's Revenge is the snow theater; other maps show no weather. `Snow` and `Rain` fall on every map; rain also dims the picture, by 6% at the usual amount and at most 12%. Under rain, each lightning storm bolt brightens the picture for 8 game frames, at most once every 45 game frames. The flakes and drops are drawn over everything in the pass, fall in two or three layers at different speeds, and move with the ground as the view scrolls. A pass drawn in software shows no weather. |
 | `WeatherStrength` | `100` | How much snow or rain falls, in percent, from 1 to 400. |
 | `GpuVoxels` | `no` | With `GpuRender`, hull-only vehicles and aircraft are drawn from their voxels on the GPU. It has no switch on the Graphics page yet, and it draws nothing while the emissive mask is on. See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuVoxelScale` | `1` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube's outline, so voxel objects stay sharp in a zoomed map view. See [GPU_VOXELS.md](GPU_VOXELS.md). |
 
 ## Limits
 

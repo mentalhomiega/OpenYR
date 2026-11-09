@@ -1,0 +1,17 @@
+﻿; Shows two tanks and a Kirov at map view zooms 1, 2 and 1.5 with the GPU drawing the pass, for comparing GpuVoxelScale 1 to 4 (docs/GPU_VOXELS.md).
+; The shots are named for the zoom and go to the -ShotDir of the run, one run for each scale.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/gpu-voxel-scale.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception" -Uncapped -StopAfterSteps -ShotDir <folder> -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelScale=2"
+1 view 50 57
+2 reveal
+10 grantunit MTNK 49 57
+10 grantunit HTNK 51 57
+12 grantunit ZEP 50 55
+40 face 40 49 57
+40 face 150 51 57
+60 zoom 1
+70 windowshot scale-zoom1
+80 zoom 2
+90 windowshot scale-zoom2
+100 zoom 1.5
+110 windowshot scale-zoom1.5
+120 quit
