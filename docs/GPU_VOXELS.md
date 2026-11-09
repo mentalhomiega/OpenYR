@@ -27,13 +27,13 @@ While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or 
 because the software voxel drawers write the mask and the GPU drawing does not. A voxel object drawn this way never
 uses the voxel picture cache.
 
-Stage 5 is in too. With `GpuVoxelSmooth=yes` (`[Video]`, default `no`, needs `GpuVoxels=yes`), a hull-only object the GPU
-draws turns to its exact facing: `LocomotionClass::Draw_Body_Radian` (`code/loco.cpp`) gives the matrix `DirType::As_Radian_Smooth`
-instead of `As_Radian32`, which is the same number at each of the 32 facings. `FacingClass::Current` already reads the facing part
-way between two game frames when `RenderFrameRate` is above the game rate (`RenderBlend`), taking the short way round, so the
-smooth angle follows it. A turreted vehicle keeps the 32 facings until stage 2, because its turret and barrel are composed from the
-hull's matrix on the scratch surface, and shadows keep their cache key, so they still move in steps (stage 4). With the key off,
-nothing changes.
+Stage 5 is in too. With `GpuVoxelSmooth=yes` (`[Video]`, default `no`, needs `GpuVoxels=yes`), an object the GPU draws turns to its
+exact facing: `GpuDraw_Facing_Radian` (`code/gpudraw.cpp`) gives `DirType::As_Radian_Smooth` instead of `As_Radian32`, which is the
+same number at each of the 32 facings. `LocomotionClass::Build_Draw_Matrix` uses it for the hull, and `UnitClass::Unit_Draw_Voxel`
+for the turret, turned by the exact turret facing minus the exact hull facing so that the turret lands at its own facing on top of
+the hull's. The barrel pitch stays in 32 steps. `FacingClass::Current` already reads the facing part way between two game frames when
+`RenderFrameRate` is above the game rate (`RenderBlend`), taking the short way round, so the smooth angle follows it for the hull
+and for the turret alike. Shadows keep their cache key, so they still move in steps (stage 4). With the key off, nothing changes.
 
 ## How the software draws a voxel object
 
@@ -137,9 +137,10 @@ crash lines.
 
 ## Checking smooth facing
 
-`tests/autotest/gpu-voxel-smooth.txt` turns two MCVs half a turn under `gpucheck` with `GpuVoxelSmooth=yes`. Each `GPU_VOXEL` line
+`tests/autotest/gpu-voxel-smooth.txt` turns two harvesters half a turn, and a tank whose hull and turret turn at their own rates, under `gpucheck` with
+`GpuVoxelSmooth=yes`. Each `GPU_VOXEL` line
 labels its part `TYPE@F` with `F` the facing in 32nds of a turn: whole numbers with the key off, fractions such as 8.62 with it on,
-rising in even steps with no repeats. The software and the GPU draw the same smooth matrix, so the compare stays at 0 differing pixels.
+rising in even steps with no repeats. A composite is labelled `TYPE@FtT`, `T` being the turret's facing in the same units. The software and the GPU draw the same smooth matrix, so the compare stays at 0 differing pixels.
 
 ## Cost
 
@@ -161,7 +162,7 @@ Each stage has a check that fails when its picture departs from the software.
 | 2 (done) | Turreted vehicles: hull, turret and barrel drawn into one tile in the order the scratch surface composes them, and the tile blitted like a direct part | `GPU_VOXEL` and `GPU_DIFF` over turreted units at body and turret facings that differ, zero differing pixels | |
 | 3 | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | glow and HDR frames compared with the software mask | 1 session |
 | 4 | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened), voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_DIFF` on the existing voxel anim and cloak scripts | 1 session |
-| 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning MCV's facing in fractions of a step | |
+| 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning harvester's and tank's hull and turret facings in fractions of a step | |
 | 6 | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
 | 7 | Settings page switches (greyed unless GPU drawing is on), default on once stage 2 to 5 match, instance buffers and batching, performance numbers on the large battle | the regress suite with the key on | 1 session |
 

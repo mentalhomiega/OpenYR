@@ -1,5 +1,6 @@
-﻿; GpuVoxelSmooth: two harvesters turn about half a turn each, one clockwise and one counter-clockwise, while gpucheck logs a GPU_VOXEL line per part
-; with the facing in 32nds of a turn (docs/GPU_VOXELS.md). With the key on, the facing climbs between the log lines in fractions; with it off
+﻿; GpuVoxelSmooth: two harvesters turn about half a turn each, one clockwise and one counter-clockwise, and a tank turns its hull and
+; its turret at their own rates, while gpucheck logs a GPU_VOXEL line per part
+; with the facing in 32nds of a turn (a tank part adds tTURRET; docs/GPU_VOXELS.md). With the key on, the facing climbs between the log lines in fractions; with it off
 ; it moves in whole numbers. The numbers vary with when a pass is read back, so the regress log keeps only the crash lines. Needs GpuRender=no and,
 ; on a display with HDR, HDRHighlights=Classic, because the GPU voxel drawing is off while the emissive mask is on.
 ; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/gpu-voxel-smooth.txt -Width 800 -Height 600 -Seconds 120 -Settings "[Video]
@@ -13,9 +14,13 @@ Bloom=no" -Filter "GPU_VOXEL|Exception|AUTOTEST steps done" -Uncapped -StopAfter
 6 reveal
 10 grantunit HARV 60 44
 10 grantunit HARV 63 44
+10 grantunit MTNK 61 46
 30 face 64 60 44
 30 face 192 63 44
+30 face 64 61 46
+32 turretface 192 61 46
 36 order HARV 61 40
 120 order HARV 61 48
+130 order MTNK 61 52
 240 gpucheck 0
 242 quit

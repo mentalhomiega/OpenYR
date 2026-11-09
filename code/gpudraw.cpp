@@ -1093,6 +1093,12 @@ bool GpuDraw_Voxels_Smooth(void)
 }
 
 
+double GpuDraw_Facing_Radian(DirType const & facing)
+{
+	return(GpuDraw_Voxels_Smooth() ? facing.As_Radian_Smooth() : facing.As_Radian32());
+}
+
+
 void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
 {
 	_PendingPart = -1;

@@ -52,6 +52,7 @@
 #include "face.h"
 #include "foot.h"
 #include "globals.h"
+#include "gpudraw.h"
 #include "house.h"
 #include "houstype.h"
 #include "iflyctrl.h"
@@ -1370,7 +1371,7 @@ Matrix3D FlyLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 		*key |= LinkedTo->SecondaryFacing.Current().As_Dir32();
 	}
 
-	mtx.Rotate_Z(Draw_Body_Radian(LinkedTo->SecondaryFacing.Current()));
+	mtx.Rotate_Z(GpuDraw_Facing_Radian(LinkedTo->SecondaryFacing.Current()));
 
 	if (LinkedTo->HeightAGL > 0 || LinkedTo->TClass->IsDropship) {
 

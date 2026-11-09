@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+class DirType;
+
 
 class Coord;
 class Surface;
@@ -244,8 +246,12 @@ bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & d
 // GpuDraw_Voxel_Part. False while the emissive mask is on, which the GPU voxel drawing does not write.
 bool GpuDraw_Voxels_Wanted(void);
 
-// True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a hull-only object turns to its exact facing.
+// True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a voxel object turns to its exact facing.
 bool GpuDraw_Voxels_Smooth(void);
+
+// The angle to draw a voxel object's body or turret at: the nearest of the 32 facings the voxel art is drawn at,
+// or the exact facing while GpuDraw_Voxels_Smooth.
+double GpuDraw_Facing_Radian(DirType const & facing);
 
 // Hands the pass the voxel object VoxelDrawSystem prepared, drawn with the lighting table now in
 // VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
