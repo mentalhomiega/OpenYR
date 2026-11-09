@@ -8541,36 +8541,48 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	VoxelLibrary * voxlib = voxeldata.VoxLib;
 	MotionLibrary * motlib = voxeldata.MotLib;
 
-	Matrix3D viewer_matrix = Rule->VoxelSpecularFromView ? Get_Isometric_View_Matrix() : mtx2;
-	VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, mtx2, viewer_matrix, VoxelLightSource, (float)Rule->VoxelSpecularStrength, (float)Rule->VoxelShadeScale);
-	VoxelDrawSystem::Reset();
-
-	for (unsigned layer = 0; layer < voxlib->Get_Layer_Count(); layer++) {
-		if (motlib != NULL) {
-			Matrix3D mtx3 = motlib->Get_Layer_Matrix(layer, frame);
-			mtx = mtx2 * mtx3;
-		}
-		VoxelDrawSystem::Prep_For_Object(voxlib, layer, 0, VoxelCameraMatrix * mtx);
-	}
-
 	// When the GPU draws this pass, it draws the object from its voxels and the software skips the rendering.
 	// A part composed on the scratch surface goes to the GPU only inside a composite UnitClass::Unit_Draw_Voxel opened.
 	bool const composited = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
 	bool const gpu = GpuDraw_Voxels_Wanted() && (!composited || GpuDraw_Composite_Open());
 	bool const gpu_draws = gpu && (composited ? GpuDraw_Composite_Rendering() : GpuDraw_Is_Rendering(*LogicalSurface));
-	VoxelScene scene;
-	if (gpu) {
-		scene = VoxelDrawSystem::Capture();
+
+	GpuVoxelPreparedRef prepared;
+	GpuVoxelPrepKey prep_key;
+	if (gpu_draws) {
+		prep_key = GpuDraw_Prep_Key(*voxlib, motlib, frame, mtx2, VoxelLightSource, (float)Rule->VoxelSpecularStrength, (float)Rule->VoxelShadeScale, Rule->VoxelSpecularFromView ? GPU_VOXEL_PREP_BODY_FROM_VIEW : GPU_VOXEL_PREP_BODY);
+		prepared = GpuDraw_Find_Prepared(prep_key);
 	}
-	SurfaceRegion region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
+	if (prepared == NULL) {
+		Matrix3D viewer_matrix = Rule->VoxelSpecularFromView ? Get_Isometric_View_Matrix() : mtx2;
+		VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, mtx2, viewer_matrix, VoxelLightSource, (float)Rule->VoxelSpecularStrength, (float)Rule->VoxelShadeScale);
+		VoxelDrawSystem::Reset();
+
+		for (unsigned layer = 0; layer < voxlib->Get_Layer_Count(); layer++) {
+			if (motlib != NULL) {
+				Matrix3D mtx3 = motlib->Get_Layer_Matrix(layer, frame);
+				mtx = mtx2 * mtx3;
+			}
+			VoxelDrawSystem::Prep_For_Object(voxlib, layer, 0, VoxelCameraMatrix * mtx);
+		}
+		if (gpu) {
+			prepared = GpuDraw_Capture_Prepared();
+		}
+		if (gpu_draws) {
+			GpuDraw_Keep_Prepared(prep_key, prepared);
+		}
+	}
+	SurfaceRegion region = gpu_draws ? prepared->Scene.Region : VoxelDrawSystem::Render();
 	if (gpu) {
 		// A smooth draw is labelled with the exact facing in 32nds of a turn, which the check log shows turning without steps.
-		char label[24];
-		std::snprintf(label, sizeof(label), "%s@%.4g", (char const *)Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()));
+		char label[24] = "";
+		if (!gpu_draws) {
+			std::snprintf(label, sizeof(label), "%s@%.4g", (char const *)Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()));
+		}
 		if (composited) {
-			GpuDraw_Composite_Piece(scene, region.Point + point);
+			GpuDraw_Composite_Piece(prepared, region.Point + point);
 		} else {
-			GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+			GpuDraw_Voxel_Part(prepared, label, !gpu_draws);
 		}
 	}
 	Rect cliprect = xcliprect;
@@ -8621,14 +8633,27 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 /// <returns>Returns with the surface region the shadow was rendered into.</returns>
 SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int layer_index, ShapeFlags_Type flags, bool cached) const
 {
-	Matrix3D mtx = voxeldata.MotLib->Get_Layer_Matrix(layer_index, 0);
-	Matrix3D mtx2 = matrix * mtx;
-	Matrix3D mtx3;
-	mtx3.Make_Identity();
+	bool const gpu_draws = GpuDraw_Voxels_Wanted() && GpuDraw_Is_Rendering(*LogicalSurface);
+	GpuVoxelPrepKey prep_key;
+	GpuVoxelPreparedRef prepared;
+	if (gpu_draws) {
+		prep_key = GpuDraw_Prep_Key(*voxeldata.VoxLib, voxeldata.MotLib, layer_index, matrix, VoxelShadowLightVector, 0.0f, 0.0f, GPU_VOXEL_PREP_SHADOW);
+		prepared = GpuDraw_Find_Prepared(prep_key);
+	}
 
-	VoxelDrawSystem::Reset();
-	VoxelDrawSystem::Prep_For_Shadow(voxeldata.VoxLib, layer_index, 0, VoxelCameraMatrix * mtx3, mtx2, VoxelShadowLightVector);
-	SurfaceRegion region = GpuDraw_Render_Prepared(Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()), 's');
+	SurfaceRegion region;
+	if (prepared != NULL) {
+		region = GpuDraw_Show_Prepared(prepared);
+	} else {
+		Matrix3D mtx = voxeldata.MotLib->Get_Layer_Matrix(layer_index, 0);
+		Matrix3D mtx2 = matrix * mtx;
+		Matrix3D mtx3;
+		mtx3.Make_Identity();
+
+		VoxelDrawSystem::Reset();
+		VoxelDrawSystem::Prep_For_Shadow(voxeldata.VoxLib, layer_index, 0, VoxelCameraMatrix * mtx3, mtx2, VoxelShadowLightVector);
+		region = GpuDraw_Render_Prepared(Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()), 's', gpu_draws ? &prep_key : NULL);
+	}
 
 	if (!cached) {
 		Rect r = VoxelDrawSystem::Get_Surface()->Get_Rect(); /// The result is unused.

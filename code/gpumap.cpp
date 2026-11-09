@@ -863,8 +863,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	std::vector<GpuVoxelTile> tiles;
-	if (!GpuVoxel_Pack(list, _VoxelScale, tiles)) {
+	if (!GpuVoxel_Fits(list, _VoxelScale)) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
@@ -1124,6 +1123,9 @@ static void Submit_Post(GpuMapPass const & pass, int scale, Rect const & area, f
 }
 
 
+// The voxel tiles of the pass Submit_Pass drew last, which GpuMap_Check reads back.
+static std::vector<GpuVoxelTile> _PassTiles;
+
 static bool Submit_Pass(GpuMapPass const & pass, int scale)
 {
 	if (!Start()) {
@@ -1142,8 +1144,9 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	std::vector<unsigned short> alut;
 	Build_Translator_Stacks(list, lutrow, alutbase, lut, alut);
 
-	std::vector<GpuVoxelTile> tiles;
-	if (!list.Voxels.empty() && (!GpuVoxel_Pack(list, scale, tiles) || !GpuVoxel_Submit(list, scale, tiles))) {
+	std::vector<GpuVoxelTile> & tiles = _PassTiles;
+	tiles.clear();
+	if (!list.Voxels.empty() && (!GpuVoxel_Fits(list, scale) || !GpuVoxel_Submit(list, scale, tiles))) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
 	}
@@ -1261,9 +1264,8 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 			_ExpectedMask = *expected_mask;
 		}
 	}
-	std::vector<GpuVoxelTile> tiles;
-	if (!pass.List->Voxels.empty() && GpuVoxel_Pack(*pass.List, 1, tiles)) {
-		_ReadyFrame = std::max(_ReadyFrame, GpuVoxel_Begin_Check(*pass.List, tiles, pass.Frame));
+	if (!pass.List->Voxels.empty()) {
+		_ReadyFrame = std::max(_ReadyFrame, GpuVoxel_Begin_Check(*pass.List, _PassTiles, pass.Frame));
 	}
 	_Expected = expected;
 	_PendingFrame = pass.Frame;

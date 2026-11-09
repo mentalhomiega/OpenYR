@@ -22,6 +22,9 @@
 #include <vector>
 
 class DirType;
+class MotionLibrary;
+class VoxelLibrary;
+struct GpuVoxelPrepKey;
 
 
 class Coord;
@@ -145,14 +148,23 @@ struct GpuAtlas
 };
 
 
-// One prepared voxel object inside a part, with the lighting table it was prepared with.
-struct GpuVoxelPiece
+// A voxel object prepared for the GPU, which identical objects can share.
+struct GpuVoxelPrepared
 {
 	// The prepared layers, the point they are projected about and the part of the 256 by 256 voxel buffer drawn.
 	VoxelScene Scene;
 
 	// VoxelNormalTranslateTable as it stood when the object was prepared.
 	unsigned char Lighting[VOXEL_PALETTE_SIZE];
+};
+
+using GpuVoxelPreparedRef = std::shared_ptr<GpuVoxelPrepared const>;
+
+
+// One prepared voxel object inside a part.
+struct GpuVoxelPiece
+{
+	GpuVoxelPreparedRef Prepared;
 
 	// Where Scene.Region.Bounds lands in the source the part's blits read, which is the voxel buffer itself
 	// for a direct part and the scratch surface for a composite.
@@ -268,13 +280,18 @@ double GpuDraw_Facing_Steps(DirType const & facing);
 // VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
 // the check compares with the GPU's drawing. The next blit from the voxel buffer shows the part;
 // GpuDraw_Voxel_End closes the offer.
-void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software);
+void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, char const * label, bool software);
 void GpuDraw_Voxel_End(void);
 
 // Finishes the scene VoxelDrawSystem prepared for a blit straight to the logical surface: renders it into the voxel
 // buffer, unless the GPU draws this pass, and offers it as a part labelled name@steps followed by tag. The caller
-// blits the returned region from the voxel buffer and then calls GpuDraw_Voxel_End.
-SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag);
+// blits the returned region from the voxel buffer and then calls GpuDraw_Voxel_End. With keep, a pass the GPU draws
+// keeps the preparation under that key for GpuDraw_Show_Prepared.
+SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag, GpuVoxelPrepKey const * keep = NULL);
+
+// Offers a preparation kept from an earlier GpuDraw_Render_Prepared as a part, for a pass the GPU draws; the caller
+// goes on as it does after GpuDraw_Render_Prepared.
+SurfaceRegion GpuDraw_Show_Prepared(GpuVoxelPreparedRef const & prepared);
 
 // A turreted vehicle composes its hull, turret and barrel on the scratch surface and blits that once to dest.
 // Begin opens such a composite when GpuDraw_Voxels_Wanted; GpuDraw_Composite_Rendering says whether the GPU
@@ -284,9 +301,42 @@ SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag)
 void GpuDraw_Composite_Begin(Surface const & dest, char const * label);
 bool GpuDraw_Composite_Open(void);
 bool GpuDraw_Composite_Rendering(void);
-void GpuDraw_Composite_Piece(VoxelScene const & scene, Point2D const & dest);
+void GpuDraw_Composite_Piece(GpuVoxelPreparedRef const & prepared, Point2D const & dest);
 void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty);
 void GpuDraw_Composite_End(void);
+
+// What VoxelDrawSystem prepared, with VoxelNormalTranslateTable as it stands.
+GpuVoxelPreparedRef GpuDraw_Capture_Prepared(void);
+
+// Everything an object's preparation and lighting table are made from. Two objects with equal keys prepare the same.
+struct GpuVoxelPrepKey
+{
+	unsigned Serial;
+	int Frame;
+	MotionLibrary const * Motion;
+	Matrix3D Transform;
+	Matrix3D Camera;
+	Vector3 Light;
+	float Specular;
+	float Shade;
+	int Kind;
+};
+
+// What a prepared object is, for its key: a shadow, or a body lit from the object's own axis or from the view.
+enum GpuVoxelPrepKind
+{
+	GPU_VOXEL_PREP_BODY,
+	GPU_VOXEL_PREP_BODY_FROM_VIEW,
+	GPU_VOXEL_PREP_SHADOW
+};
+
+// A key for preparing voxlib with motion at frame through matrix. Unused bytes are zero, so two keys compare by bytes.
+GpuVoxelPrepKey GpuDraw_Prep_Key(VoxelLibrary const & voxlib, MotionLibrary const * motion, int frame, Matrix3D const & matrix, Vector3 const & light, float specular, float shade, GpuVoxelPrepKind kind);
+
+// The objects prepared while the GPU drew, kept so that one drawn again with the same inputs is not prepared afresh.
+// They are forgotten when the voxel data changes.
+GpuVoxelPreparedRef GpuDraw_Find_Prepared(GpuVoxelPrepKey const & key);
+void GpuDraw_Keep_Prepared(GpuVoxelPrepKey const & key, GpuVoxelPreparedRef const & prepared);
 
 // True while the GPU draws the object pass into surface.
 bool GpuDraw_Is_Rendering(Surface const & surface);

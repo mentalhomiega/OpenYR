@@ -11,6 +11,7 @@
 
 #include "gpuvoxel.h"
 
+#include <algorithm>
 #include <climits>
 
 
@@ -102,4 +103,50 @@ void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vect
 			buffer[index + 1] = colour;
 		}
 	}
+}
+
+
+bool GpuVoxelShelf::Place(int size, int width, int height, int & x, int & y)
+{
+	if (width > size) {
+		return(false);
+	}
+	if (X + width > size) {
+		Y += Height;
+		X = 0;
+		Height = 0;
+	}
+	if (Y + height > size) {
+		return(false);
+	}
+	x = X;
+	y = Y;
+	X += width;
+	Height = std::max(Height, height);
+	return(true);
+}
+
+
+bool GpuVoxelTileStore::Place(std::uint64_t signature, int size, int width, int height, int & x, int & y, bool & fresh)
+{
+	auto const found = Tiles.find(signature);
+	if (found != Tiles.end()) {
+		x = found->second.first;
+		y = found->second.second;
+		fresh = false;
+		return(true);
+	}
+	if (!Shelf.Place(size, width, height, x, y)) {
+		return(false);
+	}
+	Tiles.emplace(signature, std::make_pair(x, y));
+	fresh = true;
+	return(true);
+}
+
+
+void GpuVoxelTileStore::Empty(void)
+{
+	Tiles.clear();
+	Shelf = GpuVoxelShelf();
 }

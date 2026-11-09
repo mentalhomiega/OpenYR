@@ -35,14 +35,14 @@ struct GpuVoxelTile
 	int Y = 0;
 };
 
-// Places a tile for each part of the list, in the list's order, scale times the part's Scene.Region.Bounds
-// in each direction. False when they do not fit the image.
-bool GpuVoxel_Pack(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles);
+// True when the parts of the list fit an empty image, scale times each part's Area in each direction.
+bool GpuVoxel_Fits(GpuDrawList const & list, int scale);
 
-// Draws the parts into the voxel image, in the tiles GpuVoxel_Pack placed. Must be called before the
-// draws that read the image are submitted in the same frame. False when the voxel shaders are
-// unavailable or the layers do not fit the GPU's model store.
-bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> const & tiles);
+// Draws the parts that have no picture yet into the voxel image and returns each part's tile in tiles, in the list's
+// order; a part whose picture the image holds from an earlier pass keeps that tile, and identical parts share one.
+// Must be called before the draws that read the image are submitted in the same frame. False when the voxel
+// shaders are unavailable, the parts do not fit an empty image, or the layers do not fit the GPU's model store.
+bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles);
 
 // The bgfx handle index of the voxel image, or bgfx::kInvalidHandle before the first submit.
 std::uint16_t GpuVoxel_Image(void);

@@ -15,6 +15,8 @@
 #include "gpuvoxel.h"
 #include "convert.h"
 #include "emissive.h"
+#include "fnv.h"
+#include "perfstat.h"
 #include "unittype.h"
 #include "voxlib.h"
 
@@ -41,8 +43,10 @@ static int const MODEL_WIDTH = 2048;
 static int const MODEL_ROWS = 2048;
 static int const VOXELS_PER_ROW = MODEL_WIDTH / 2;
 
-// At a scale above 1 a voxel is the three faces of its cube, six vertices each.
-static int const VERTICES_PER_CUBE = 18;
+// At scale 1 a voxel is a horizontal line one or two pixels long. At a scale above 1 it is the outline of its
+// cube, one triangle strip, with the first and last vertices doubled so the strips of successive voxels join.
+static int const VERTICES_PER_LINE = 2;
+static int const VERTICES_PER_CUBE = 8;
 
 static bool _Ready = false;
 static bool _Failed = false;
@@ -65,6 +69,16 @@ static bool _PaletteUploaded = false;
 // The palette texture holds the lighting rows and an identity row, then the same rows through the scratch
 // surface's translation: PALETTE_BLOCK rows each.
 static int const PALETTE_BLOCK = MAX_PALETTE_LOOKUP_ENTRIES + 1;
+
+// The tiles the voxel image holds, kept between passes, and whether the next pass starts by clearing the image.
+static GpuVoxelTileStore _Tiles;
+static bool _ClearImage = true;
+
+static void Empty_Image(void)
+{
+	_Tiles.Empty();
+	_ClearImage = true;
+}
 
 // The place of a layer's voxels in the model texture, counted in voxels from its start.
 struct ModelSlot
@@ -161,12 +175,13 @@ static void Read_Translator(unsigned char (&translator)[VOXEL_PALETTE_SIZE])
 }
 
 
-static void Upload_Palette(void)
+// Returns true when the palette texture changed, so the pictures drawn through the old one are out of date.
+static bool Upload_Palette(void)
 {
 	unsigned char translator[VOXEL_PALETTE_SIZE];
 	Read_Translator(translator);
 	if (_PaletteUploaded && std::memcmp(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy)) == 0 && std::memcmp(_TranslatorCopy, translator, sizeof(translator)) == 0) {
-		return;
+		return(false);
 	}
 	std::memcpy(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy));
 	std::memcpy(_TranslatorCopy, translator, sizeof(translator));
@@ -182,6 +197,7 @@ static void Upload_Palette(void)
 	}
 	bgfx::updateTexture2D(_Palette, 0, 0, 0, 0, VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, memory);
 	_PaletteUploaded = true;
+	return(true);
 }
 
 
@@ -240,51 +256,90 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 }
 
 
-bool GpuVoxel_Pack(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles)
+bool GpuVoxel_Fits(GpuDrawList const & list, int scale)
 {
-	tiles.assign(list.Voxels.size(), GpuVoxelTile());
-	int x = 0;
-	int y = 0;
-	int shelf = 0;
-	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		Rect const & bounds = list.Voxels[i].Area;
-		if (bounds.Width <= 0 || bounds.Height <= 0) {
-			continue;
-		}
-		int const width = bounds.Width * scale;
-		int const height = bounds.Height * scale;
-		if (width > GPU_VOXEL_IMAGE_SIZE) {
+	GpuVoxelShelf shelf;
+	for (GpuVoxelPart const & part : list.Voxels) {
+		Rect const & bounds = part.Area;
+		int x = 0;
+		int y = 0;
+		if (bounds.Width > 0 && bounds.Height > 0 && !shelf.Place(GPU_VOXEL_IMAGE_SIZE, bounds.Width * scale, bounds.Height * scale, x, y)) {
 			return(false);
 		}
-		if (x + width > GPU_VOXEL_IMAGE_SIZE) {
-			y += shelf;
-			x = 0;
-			shelf = 0;
-		}
-		if (y + height > GPU_VOXEL_IMAGE_SIZE) {
-			return(false);
-		}
-		tiles[i].X = x;
-		tiles[i].Y = y;
-		x += width;
-		shelf = std::max(shelf, height);
 	}
 	return(true);
 }
 
 
-bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> const & tiles)
+// Adds bytes to a hash eight at a time, because every part of a pass hashes a 256-byte lighting table.
+static std::uint64_t Hash_Words(std::uint64_t hash, void const * data, std::size_t length)
+{
+	unsigned char const * bytes = static_cast<unsigned char const *>(data);
+	for (; length >= sizeof(std::uint64_t); bytes += sizeof(std::uint64_t), length -= sizeof(std::uint64_t)) {
+		std::uint64_t word;
+		std::memcpy(&word, bytes, sizeof(word));
+		hash = (hash ^ word) * FNV64_PRIME;
+		hash ^= hash >> 32;
+	}
+	return(Fnv64_Add_Bytes(hash, bytes, length));
+}
+
+
+// A hash of everything the shader's output for a part depends on, apart from the palette texture, whose change empties the image.
+static std::uint64_t Part_Signature(GpuVoxelPart const & part, std::vector<LayerDraw> const & layers, int scale)
+{
+	Rect const & area = part.Area;
+	int const head[5] = { scale, area.Width, area.Height, part.Scratch ? 1 : 0, EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength };
+	std::uint64_t hash = Hash_Words(FNV64_BASIS, head, sizeof(head));
+	for (GpuVoxelPiece const & piece : part.Pieces) {
+		Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
+		int const place[6] = { piece.Dest.X - area.X, piece.Dest.Y - area.Y, bounds.X, bounds.Y, bounds.Width, bounds.Height };
+		hash = Hash_Words(hash, place, sizeof(place));
+		hash = Hash_Words(hash, piece.Prepared->Lighting, sizeof(piece.Prepared->Lighting));
+	}
+	for (LayerDraw const & layer : layers) {
+		int const flags[2] = { (layer.Lit ? 1 : 0) | (layer.Reversed ? 2 : 0) | (layer.Shadow ? 4 : 0), layer.Piece };
+		hash = Hash_Words(hash, &layer.Key, sizeof(layer.Key));
+		hash = Hash_Words(hash, flags, sizeof(flags));
+		hash = Hash_Words(hash, layer.Setup.Arg.TransformMatrix, sizeof(layer.Setup.Arg.TransformMatrix));
+	}
+	return(hash);
+}
+
+
+// Finds each part's tile, placing the ones the image lacks; drawn[i] is set for a part that must be drawn into its
+// tile. False when the parts do not fit what is left of the image.
+static bool Assign_Tiles(GpuDrawList const & list, std::vector<std::vector<LayerDraw>> const & parts, int scale, std::vector<GpuVoxelTile> & tiles, std::vector<char> & drawn)
+{
+	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
+		Rect const & bounds = list.Voxels[i].Area;
+		drawn[i] = 0;
+		if (bounds.Width <= 0 || bounds.Height <= 0) {
+			continue;
+		}
+		bool fresh = false;
+		if (!_Tiles.Place(Part_Signature(list.Voxels[i], parts[i], scale), GPU_VOXEL_IMAGE_SIZE, bounds.Width * scale, bounds.Height * scale, tiles[i].X, tiles[i].Y, fresh)) {
+			return(false);
+		}
+		drawn[i] = fresh ? 1 : 0;
+	}
+	return(true);
+}
+
+
+bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles)
 {
 	if (!Start()) {
 		return(false);
 	}
+	tiles.assign(list.Voxels.size(), GpuVoxelTile());
 	std::vector<std::vector<LayerDraw>> parts(list.Voxels.size());
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		std::vector<GpuVoxelPiece> const & pieces = list.Voxels[i].Pieces;
 		for (std::size_t p = 0; p < pieces.size(); p++) {
-			for (VoxelShadowRenderStruct const & shadow : pieces[p].Scene.Shadows) {
+			for (VoxelShadowRenderStruct const & shadow : pieces[p].Prepared->Scene.Shadows) {
 				LayerDraw layer;
-				layer.Setup = shadow.VoxLib->Setup_Shadow(shadow, pieces[p].Scene.Center);
+				layer.Setup = shadow.VoxLib->Setup_Shadow(shadow, pieces[p].Prepared->Scene.Center);
 				layer.Key = Model_Key(shadow.VoxLib->Get_Serial(), shadow.Layer, shadow.Info, SHADOW_WALK);
 				// A shadow stamps two pixels a column, as a lit voxel does, with no shading.
 				layer.Lit = true;
@@ -293,9 +348,9 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 				layer.Piece = (int)p;
 				parts[i].push_back(layer);
 			}
-			for (VoxelRenderStruct const & object : pieces[p].Scene.Objects) {
+			for (VoxelRenderStruct const & object : pieces[p].Prepared->Scene.Objects) {
 				LayerDraw layer;
-				layer.Setup = object.VoxLib->Setup_Object(object, pieces[p].Scene.Center);
+				layer.Setup = object.VoxLib->Setup_Object(object, pieces[p].Prepared->Scene.Center);
 				layer.Key = Model_Key(object.VoxLib->Get_Serial(), object.Layer, object.Info, object.AnchorCornerIndex);
 				layer.Lit = (layer.Setup.Function & 12) == 4;
 				layer.Reversed = (layer.Setup.Function & 1) != 0;
@@ -305,11 +360,34 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 			}
 		}
 	}
+	if (Upload_Palette()) {
+		Empty_Image();
+	}
+
+	// A pass that does not fit what is left of the image empties it and places every part afresh.
+	std::vector<char> drawn(list.Voxels.size(), 0);
+	for (int attempt = 0; !Assign_Tiles(list, parts, scale, tiles, drawn); attempt++) {
+		Empty_Image();
+		if (attempt == 1) {
+			return(false);
+		}
+	}
+	std::size_t drawn_parts = 0;
+	for (std::size_t i = 0; i < parts.size(); i++) {
+		drawn_parts += drawn[i] != 0 ? 1 : 0;
+		if (drawn[i] == 0) {
+			parts[i].clear();
+		}
+	}
+	Perf_Count(PERF_COUNT_GPU_VOXEL_PARTS, list.Voxels.size());
+	Perf_Count(PERF_COUNT_GPU_VOXEL_DRAWN, drawn_parts);
+
 	if (!Load_Models(parts)) {
+		// The tiles just placed were never drawn, so a later pass must not take them for pictures.
+		Empty_Image();
 		DebugString("GPU_VOXEL: the layers do not fit the model store\n");
 		return(false);
 	}
-	Upload_Palette();
 
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE);
@@ -317,7 +395,8 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 	bgfx::setViewRect(VIEW_MAPVOXEL, 0, 0, GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE);
 	bgfx::setViewTransform(VIEW_MAPVOXEL, NULL, projection);
 	bgfx::setViewMode(VIEW_MAPVOXEL, bgfx::ViewMode::Sequential);
-	bgfx::setViewClear(VIEW_MAPVOXEL, BGFX_CLEAR_COLOR, 0, 0.0f, 0);
+	bgfx::setViewClear(VIEW_MAPVOXEL, _ClearImage ? BGFX_CLEAR_COLOR : BGFX_CLEAR_NONE, 0, 0.0f, 0);
+	_ClearImage = false;
 	bgfx::touch(VIEW_MAPVOXEL);
 
 	for (std::size_t i = 0; i < parts.size(); i++) {
@@ -332,7 +411,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 				continue;
 			}
 			GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
-			Rect const & bounds = piece.Scene.Region.Bounds;
+			Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
 			// Where the piece's pixels land in the tile, and the part of the tile they may cover.
 			int const shift_x = tiles[i].X + (piece.Dest.X - area.X - bounds.X) * scale;
 			int const shift_y = tiles[i].Y + (piece.Dest.Y - area.Y - bounds.Y) * scale;
@@ -341,7 +420,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 				continue;
 			}
 			float light[VOXEL_PALETTE_SIZE];
-			std::copy(std::begin(piece.Lighting), std::end(piece.Lighting), light);
+			std::copy(std::begin(piece.Prepared->Lighting), std::end(piece.Prepared->Lighting), light);
 			if (layer.Shadow) {
 				// The identity row after the lighting rows keeps the shadow's colour 1.
 				std::fill(std::begin(light), std::end(light), (float)MAX_PALETTE_LOOKUP_ENTRIES);
@@ -357,9 +436,9 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 			bgfx::setUniform(_LightUniform, light, 64);
 			bgfx::setTexture(0, _ModelSampler, _Model);
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
-			bgfx::setVertexCount((uint32_t)slot->Count * (scale > 1 ? VERTICES_PER_CUBE : 6));
+			bgfx::setVertexCount((uint32_t)slot->Count * (scale > 1 ? VERTICES_PER_CUBE : VERTICES_PER_LINE));
 			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * scale), (uint16_t)(tiles[i].Y + clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
-			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G);
+			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | (scale > 1 ? BGFX_STATE_PT_TRISTRIP : BGFX_STATE_PT_LINES));
 			bgfx::submit(VIEW_MAPVOXEL, _Program);
 		}
 	}
@@ -408,7 +487,7 @@ std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxe
 		std::memcpy(check.Label, part.Label, sizeof(check.Label));
 		check.Layers = 0;
 		for (GpuVoxelPiece const & piece : part.Pieces) {
-			check.Layers += (int)(piece.Scene.Shadows.size() + piece.Scene.Objects.size());
+			check.Layers += (int)(piece.Prepared->Scene.Shadows.size() + piece.Prepared->Scene.Objects.size());
 		}
 		check.X = tiles[i].X;
 		check.Y = tiles[i].Y;
@@ -519,6 +598,7 @@ void GpuVoxel_Shutdown(void)
 	_Image = BGFX_INVALID_HANDLE;
 	_Models.clear();
 	_ModelNext = 0;
+	Empty_Image();
 	_PaletteUploaded = false;
 	_Pending = false;
 	_Ready = false;

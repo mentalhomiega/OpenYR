@@ -11,6 +11,9 @@
 
 #include "voxdrsys.h"
 
+#include <cstdint>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 
@@ -46,3 +49,30 @@ inline int Gpu_Voxel_Buffer_Index(Vector3i16 const (&projection)[4], GpuVoxelIns
 // Draws the walked voxels into a 256 by 256 buffer exactly as the GPU shader does: one pixel for an
 // unlit layer, two for a lit one, colours through the lighting row of each voxel's normal.
 void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vector3i16 const (&projection)[4], bool lit, unsigned char const (&lighting)[VOXEL_PALETTE_SIZE], unsigned char (&buffer)[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT]);
+
+
+// Lays tiles out on shelves of a square image, left to right and then a shelf further down.
+struct GpuVoxelShelf
+{
+	int X = 0;
+	int Y = 0;
+	int Height = 0;
+
+	// Puts a tile of width by height at x, y; false when it does not fit what is left of an image of size by size.
+	bool Place(int size, int width, int height, int & x, int & y);
+};
+
+// The tiles of a voxel image that keeps its pictures between passes, one for each signature. Tiles are placed
+// until the image is full; Empty then forgets them all, because a tile cannot be freed alone.
+class GpuVoxelTileStore
+{
+public:
+	// Finds the tile of signature or places a new one of width by height; fresh is set when the caller must
+	// draw it. False when a new tile does not fit what is left of the image.
+	bool Place(std::uint64_t signature, int size, int width, int height, int & x, int & y, bool & fresh);
+	void Empty(void);
+
+private:
+	std::unordered_map<std::uint64_t, std::pair<int, int>> Tiles;
+	GpuVoxelShelf Shelf;
+};

@@ -210,5 +210,24 @@ int main(void)
 	}
 	std::printf("%-52s %s\n", "GPU shadow walk matches the software drawer", failures == walk_failures ? "ok" : "FAILED");
 	std::printf("checked %d cases, %d mismatches\n", checked, failures);
+
+	{
+		GpuVoxelTileStore store;
+		int x = -1;
+		int y = -1;
+		bool fresh = false;
+		int const size = 100;
+		bool ok = store.Place(1, size, 60, 40, x, y, fresh) && fresh && x == 0 && y == 0;
+		ok = ok && store.Place(1, size, 60, 40, x, y, fresh) && !fresh && x == 0 && y == 0;
+		ok = ok && store.Place(2, size, 30, 20, x, y, fresh) && fresh && x == 60 && y == 0;
+		// A tile that does not fit the shelf starts the next one, below the tallest tile on this one.
+		ok = ok && store.Place(3, size, 60, 30, x, y, fresh) && fresh && x == 0 && y == 40;
+		ok = ok && !store.Place(4, size, 10, 70, x, y, fresh);
+		ok = ok && !store.Place(5, size, 101, 10, x, y, fresh);
+		store.Empty();
+		ok = ok && store.Place(2, size, 30, 20, x, y, fresh) && fresh && x == 0 && y == 0;
+		std::printf("%-52s %s\n", "tile store reuses signatures and packs shelves", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
 	return(failures == 0 ? 0 : 1);
 }
