@@ -1071,6 +1071,80 @@ UNITS = [
 ]
 
 
+# Tables of one-entry-per-key client settings (code/settingregistry.h). Each
+# entry is read like a typed accessor call, so its key reaches the catalog
+# with the same section, value type and default as a ConfigINI read.
+DECLARED_SETTING_TABLES = [
+    ("optionsettings.cpp", "OptionsClass", {"group": "client settings"}),
+]
+
+DECLARED_SETTING_RE = re.compile(
+    r'\.Section\s*=\s*"(?P<section>[^"]+)"\s*,\s*\.Key\s*=\s*"(?P<key>[^"]+)"')
+
+
+def extract_declared_settings(path, cls, opts):
+    """Pull the keys of one declared-settings table.
+
+    A Flag member reads as a boolean, a Number with Names as a named string
+    whose default is the name of its Default value, and any other Number as an
+    integer. Defaults come from the table entry instead of a constructor.
+    """
+    with open(path, encoding="latin-1") as stream:
+        raw = stream.read()
+    text = strip_comments(raw)
+    records = []
+    defaults = {}
+    matches = list(DECLARED_SETTING_RE.finditer(text))
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        entry = text[match.end():end]
+        flag = re.search(r"\.Flag\s*=\s*&\s*\w+::(\w+)", entry)
+        number = re.search(r"\.Number\s*=\s*&\s*\w+::(\w+)", entry)
+        default = re.search(r"\.Default\s*=\s*([^,}]+?)\s*,", entry)
+        names = re.search(r"\.Names\s*=\s*\w+", entry)
+        if not default or bool(flag) == bool(number):
+            raise ValueError(
+                f"code/{os.path.basename(path)}: setting {match.group('key')!r} "
+                "needs a Default and exactly one of Flag and Number")
+        key = match.group("key")
+        line = text[:match.start()].count("\n") + 1
+        default_expr = default.group(1).strip()
+        member = (flag or number).group(1)
+        if names:
+            suffix = "String"
+            name = re.search(
+                r'\{\s*"([^"]+)"\s*,\s*' + re.escape(default_expr) + r"\s*\}", text)
+            default_expr = f'"{name.group(1)}"' if name else None
+            member = None
+        elif flag:
+            suffix = "Bool"
+            defaults[member] = default_expr
+            default_expr = None
+        else:
+            suffix = "Int"
+            defaults[member] = default_expr
+            default_expr = None
+        records.append({
+            "key": key,
+            "receiver": "ConfigINI",
+            "suffix": suffix,
+            "section_expr": section_selectors.classify(
+                f'"{match.group("section")}"',
+                context=f"code/{os.path.basename(path)}:{line} key {key!r}"),
+            "default_expr": default_expr,
+            "local_lhs": False,
+            "member": member,
+            "value_type": VALUE_TYPES[suffix],
+            "declared_in": cls,
+            "guard": None,
+            "line": line,
+            "src": os.path.basename(path),
+            "group": opts.get("group", "client settings"),
+            "file_hint": opts.get("file"),
+        })
+    return records, defaults
+
+
 def resolve_default(rec, all_defaults, tree):
     """Find a constructor candidate on the declaring class or its base chain.
 

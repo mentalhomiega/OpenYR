@@ -5146,7 +5146,7 @@ Bloom:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: Bloom
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 BloomStrength:
@@ -5161,10 +5161,10 @@ BloomStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: BloomStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 BlowupSound:
@@ -8753,10 +8753,10 @@ CloudShadowStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: CloudShadowStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 CloudShadows:
@@ -8774,7 +8774,7 @@ CloudShadows:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: CloudShadows
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 Cluster:
@@ -17380,7 +17380,7 @@ GpuRender:
       default_candidate: 'yes'
       declared_in: OptionsClass
       member: GpuRender
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 GpuVoxelScale:
@@ -17395,10 +17395,28 @@ GpuVoxelScale:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '1'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: GpuVoxelScale
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
+GpuVoxelSmooth:
+  key: GpuVoxelSmooth
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: GpuVoxelSmooth
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 GpuVoxels:
@@ -17416,7 +17434,7 @@ GpuVoxels:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: GpuVoxels
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 Gravity:
@@ -34597,7 +34615,7 @@ Shockwaves:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: Shockwaves
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 ShorePieces:
@@ -35683,10 +35701,10 @@ SoftShadowRadius:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '3'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: SoftShadowRadius
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 SoftShadows:
@@ -35704,7 +35722,7 @@ SoftShadows:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: SoftShadows
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 SoloCrateMoney:
@@ -45067,10 +45085,10 @@ WaterRippleStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: WaterRippleStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WaterRipples:
@@ -45088,7 +45106,7 @@ WaterRipples:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: WaterRipples
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WaterSet:
@@ -45965,7 +45983,7 @@ Weather:
       default_candidate: None
       declared_in: OptionsClass
       member: null
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WeatherConBoltExplosion:
@@ -46034,10 +46052,10 @@ WeatherStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: WeatherStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WebDuration:

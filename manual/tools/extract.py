@@ -218,6 +218,16 @@ def _extract_all(manifest):
         records_by_class[key] = records
         defaults_by_class[key] = defaults
 
+    for filename, cls, options in _engine.DECLARED_SETTING_TABLES:
+        path = os.path.join(_engine.CODE_DIR, filename)
+        if not os.path.exists(path):
+            missing.append(filename)
+            continue
+        records, defaults = _engine.extract_declared_settings(path, cls, options)
+        key = f"{cls}/{filename}"
+        records_by_class[key] = records
+        defaults_by_class[key] = defaults
+
     # An excluded read is kept out of the catalog even where a configured
     # reader owns its site, so one manifest governs the classification whether
     # or not the site happens to sit inside an enrolled unit.
