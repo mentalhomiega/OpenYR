@@ -94,6 +94,8 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_DETACH_TECHNO,   // broadcasts for a unit, infantry, aircraft or building
 	PERF_COUNT_DETACH_OTHER,    // all other broadcasts
 	PERF_COUNT_DRAWS_SKIPPED,   // draw slots in the frame wait that came due with too little time left; once per slot
+	PERF_COUNT_GPU_VOXEL_PARTS, // voxel parts of the passes the GPU drew
+	PERF_COUNT_GPU_VOXEL_DRAWN, // those parts whose picture had to be drawn into the voxel image
 	PERF_COUNTER_COUNT
 };
 

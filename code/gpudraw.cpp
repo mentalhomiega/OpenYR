@@ -25,6 +25,7 @@
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "emissive.h"
+#include "fnv.h"
 #include "globals.h"
 #include "gpumap.h"
 #include "gpumapvoxel.h"
@@ -963,17 +964,17 @@ static std::vector<unsigned char> Render_Part(GpuVoxelPart const & part)
 	std::vector<unsigned char> image((std::size_t)part.Area.Width * part.Area.Height, 0);
 	unsigned char const * const translator = part.Scratch && EightBitDrawer != NULL ? (unsigned char const *)EightBitDrawer->Get_Translate_Table() : NULL;
 	for (GpuVoxelPiece const & piece : part.Pieces) {
-		std::memcpy(VoxelNormalTranslateTable, piece.Lighting, sizeof(piece.Lighting));
+		std::memcpy(VoxelNormalTranslateTable, piece.Prepared->Lighting, sizeof(piece.Prepared->Lighting));
 		VoxelDrawSystem::Clear_Buffer();
-		for (VoxelShadowRenderStruct shadow : piece.Scene.Shadows) {
-			Vector3 center = piece.Scene.Center;
+		for (VoxelShadowRenderStruct shadow : piece.Prepared->Scene.Shadows) {
+			Vector3 center = piece.Prepared->Scene.Center;
 			shadow.VoxLib->Render_Shadow(shadow, center);
 		}
-		for (VoxelRenderStruct object : piece.Scene.Objects) {
-			Vector3 center = piece.Scene.Center;
+		for (VoxelRenderStruct object : piece.Prepared->Scene.Objects) {
+			Vector3 center = piece.Prepared->Scene.Center;
 			object.VoxLib->Render_Object(object, center);
 		}
-		Rect const & bounds = piece.Scene.Region.Bounds;
+		Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
 		Rect const covered = Intersect(Rect(piece.Dest.X, piece.Dest.Y, bounds.Width, bounds.Height), part.Area);
 		for (int y = covered.Y; y < covered.Y + covered.Height; y++) {
 			for (int x = covered.X; x < covered.X + covered.Width; x++) {
@@ -1160,7 +1161,78 @@ double GpuDraw_Facing_Steps(DirType const & facing)
 }
 
 
-void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
+GpuVoxelPreparedRef GpuDraw_Capture_Prepared(void)
+{
+	std::shared_ptr<GpuVoxelPrepared> prepared = std::make_shared<GpuVoxelPrepared>();
+	prepared->Scene = VoxelDrawSystem::Capture();
+	std::memcpy(prepared->Lighting, VoxelNormalTranslateTable, sizeof(prepared->Lighting));
+	return(prepared);
+}
+
+
+GpuVoxelPrepKey GpuDraw_Prep_Key(VoxelLibrary const & voxlib, MotionLibrary const * motion, int frame, Matrix3D const & matrix, Vector3 const & light, float specular, float shade, GpuVoxelPrepKind kind)
+{
+	GpuVoxelPrepKey key;
+	std::memset(&key, 0, sizeof(key));
+	key.Serial = voxlib.Get_Serial();
+	key.Frame = frame;
+	key.Motion = motion;
+	key.Transform = matrix;
+	key.Camera = VoxelCameraMatrix;
+	key.Light = light;
+	key.Specular = specular;
+	key.Shade = shade;
+	key.Kind = kind;
+	return(key);
+}
+
+
+namespace
+{
+	struct KeptPrepared
+	{
+		GpuVoxelPrepKey Key;
+		GpuVoxelPreparedRef Prepared;
+	};
+
+	// Enough for every type at every facing of a game; a larger set starts again.
+	std::size_t const KEPT_PREPARED_LIMIT = 16384;
+
+	std::unordered_map<std::uint64_t, KeptPrepared> _KeptPrepared;
+	unsigned _KeptPreparedGeneration = 0;
+
+	std::uint64_t Prep_Key_Hash(GpuVoxelPrepKey const & key)
+	{
+		return(Fnv64_Add_Bytes(FNV64_BASIS, &key, sizeof(key)));
+	}
+}
+
+
+GpuVoxelPreparedRef GpuDraw_Find_Prepared(GpuVoxelPrepKey const & key)
+{
+	if (_KeptPreparedGeneration != ObjectTypeClass::VoxelIndexGeneration) {
+		_KeptPrepared.clear();
+		_KeptPreparedGeneration = ObjectTypeClass::VoxelIndexGeneration;
+		return(GpuVoxelPreparedRef());
+	}
+	auto const found = _KeptPrepared.find(Prep_Key_Hash(key));
+	if (found == _KeptPrepared.end() || std::memcmp(&found->second.Key, &key, sizeof(key)) != 0) {
+		return(GpuVoxelPreparedRef());
+	}
+	return(found->second.Prepared);
+}
+
+
+void GpuDraw_Keep_Prepared(GpuVoxelPrepKey const & key, GpuVoxelPreparedRef const & prepared)
+{
+	if (_KeptPrepared.size() >= KEPT_PREPARED_LIMIT) {
+		_KeptPrepared.clear();
+	}
+	_KeptPrepared[Prep_Key_Hash(key)] = KeptPrepared{ key, prepared };
+}
+
+
+void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, char const * label, bool software)
 {
 	_PendingPart = -1;
 	_PartShown = false;
@@ -1169,10 +1241,9 @@ void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool softw
 		return;
 	}
 	GpuVoxelPart part;
-	Rect const bounds = scene.Region.Bounds;
+	Rect const bounds = prepared->Scene.Region.Bounds;
 	GpuVoxelPiece piece;
-	piece.Scene = scene;
-	std::memcpy(piece.Lighting, VoxelNormalTranslateTable, sizeof(piece.Lighting));
+	piece.Prepared = prepared;
 	piece.Dest = Point2D(bounds.X, bounds.Y);
 	part.Pieces.push_back(std::move(piece));
 	part.Area = bounds;
@@ -1195,17 +1266,30 @@ void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool softw
 }
 
 
-SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag)
+SurfaceRegion GpuDraw_Show_Prepared(GpuVoxelPreparedRef const & prepared)
+{
+	// Only a part the software also drew is compared, so a label would never be read.
+	GpuDraw_Voxel_Part(prepared, "", false);
+	return(prepared->Scene.Region);
+}
+
+
+SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag, GpuVoxelPrepKey const * keep)
 {
 	if (!GpuDraw_Voxels_Wanted()) {
 		return(VoxelDrawSystem::Render());
 	}
-	VoxelScene const scene = VoxelDrawSystem::Capture();
-	bool const gpu_draws = GpuDraw_Is_Rendering(*LogicalSurface);
-	SurfaceRegion const region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
+	GpuVoxelPreparedRef const prepared = GpuDraw_Capture_Prepared();
+	if (GpuDraw_Is_Rendering(*LogicalSurface)) {
+		if (keep != NULL) {
+			GpuDraw_Keep_Prepared(*keep, prepared);
+		}
+		return(GpuDraw_Show_Prepared(prepared));
+	}
+	SurfaceRegion const region = VoxelDrawSystem::Render();
 	char label[24];
 	std::snprintf(label, sizeof(label), "%s@%.4g%c", name, steps, tag);
-	GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+	GpuDraw_Voxel_Part(prepared, label, true);
 	return(region);
 }
 
@@ -1251,14 +1335,13 @@ bool GpuDraw_Composite_Rendering(void)
 }
 
 
-void GpuDraw_Composite_Piece(VoxelScene const & scene, Point2D const & dest)
+void GpuDraw_Composite_Piece(GpuVoxelPreparedRef const & prepared, Point2D const & dest)
 {
 	if (_Composite < 0) {
 		return;
 	}
 	GpuVoxelPiece piece;
-	piece.Scene = scene;
-	std::memcpy(piece.Lighting, VoxelNormalTranslateTable, sizeof(piece.Lighting));
+	piece.Prepared = prepared;
 	piece.Dest = dest;
 	_List.Voxels[_Composite].Pieces.push_back(std::move(piece));
 }

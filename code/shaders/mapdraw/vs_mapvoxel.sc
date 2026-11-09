@@ -1,10 +1,12 @@
 $output v_texcoord1
 
-// Draws one layer of a voxel part into its tile of the voxel image (code/gpumap.cpp), one quad per voxel.
-// The vertices come from gl_VertexID: six a voxel, in the order the software drawer walks the layer. The
-// quad lands on the pixel the software drawer writes (code/gpuvoxel.h) and carries the palette index it writes.
-// At a scale above 1 the tile is that many times finer and a voxel is the silhouette of its cube instead: the three
-// faces that meet at the corner nearest the viewer, eighteen vertices a voxel, at the voxel's unrounded position.
+// Draws one layer of a voxel part into its tile of the voxel image (code/gpumap.cpp), one primitive per voxel.
+// The vertices come from gl_VertexID, in the order the software drawer walks the layer.
+// At scale 1 a voxel is a horizontal line over the pixels the software drawer writes (code/gpuvoxel.h), two vertices,
+// carrying the palette index it writes; a line covers the pixel its start is in and stops before the pixel its end is in.
+// At a scale above 1 the tile is that many times finer and a voxel is the outline of its cube, the six corners other than
+// the nearest and farthest, as a triangle strip of eight vertices at the voxel's unrounded position; the first and last
+// vertices are doubled so that the strips of successive voxels join with empty triangles.
 //   s_vmodel  two RGBA8 texels a voxel: (i, j, k, colour) and (normal, 0, 0, 0)
 //   s_vpal    two blocks of 33 rows of 256 colours: VoxelPaletteTranslateTable's 32 lighting rows then the identity row for
 //             an unlit layer, and the same rows run through the scratch surface's colour translation
@@ -32,7 +34,7 @@ vec2 Signed(vec2 v)
 void main()
 {
 	int scale = int(u_vox[3].y + 0.5);
-	int perVoxel = scale > 1 ? 18 : 6;
+	int perVoxel = scale > 1 ? 8 : 2;
 	int id = int(gl_VertexID);
 	int voxel = id / perVoxel;
 	int corner = id - voxel * perVoxel;
@@ -57,7 +59,7 @@ void main()
 		strength = row >= 31 ? top : (row - 16) * top / 15;
 	}
 
-	vec2 at;
+	vec2 at;
 	if (scale > 1) {
 		// The cube's axes on screen, in pixels, and the centre the software's quad is centred on.
 		// The steps are 16-bit values that wrap, so one above 32767 is negative.
@@ -65,38 +67,18 @@ void main()
 		vec2 ey = Signed(vec2(u_vox[1].x, u_vox[1].y)) / 256.0;
 		vec2 ez = Signed(vec2(u_vox[1].z, u_vox[1].w)) / 256.0;
 		vec2 centre = vec2(float(px), float(py)) / 256.0 + vec2(lit ? 1.0 : 0.5, 0.5);
-		// The corner of the cube that lies along the view direction is the one the three faces share.
+		// The corners along the view direction are the nearest and farthest; the other six are the outline, in order around it.
 		vec3 toward = vec3(ey.x * ez.y - ey.y * ez.x, ez.x * ex.y - ez.y * ex.x, ex.x * ey.y - ex.y * ey.x);
 		vec3 side = vec3(toward.x < 0.0 ? -0.5 : 0.5, toward.y < 0.0 ? -0.5 : 0.5, toward.z < 0.0 ? -0.5 : 0.5);
-		int face = corner / 6;
-		int vertex = corner - face * 6;
-		vec2 u = face == 0 ? ex : (face == 1 ? ey : ez);
-		vec2 v = face == 0 ? ey : (face == 1 ? ez : ex);
-		vec2 w = face == 0 ? ez : (face == 1 ? ex : ey);
-		float wside = face == 0 ? side.z : (face == 1 ? side.x : side.y);
-		vec2 c = vec2(-0.5, -0.5);
-		if (vertex == 1) {
-			c = vec2(0.5, -0.5);
-		} else if (vertex == 2 || vertex == 4) {
-			c = vec2(0.5, 0.5);
-		} else if (vertex == 5) {
-			c = vec2(-0.5, 0.5);
-		}
-		vec2 place = centre + w * wside + u * c.x + v * c.y;
+		int h = corner <= 1 ? 0 : (corner == 2 ? 1 : (corner == 3 ? 5 : (corner == 4 ? 2 : (corner == 5 ? 4 : 3))));
+		vec3 outline = vec3((h == 0 || h == 1 || h == 5) ? side.x : -side.x, (h == 1 || h == 2 || h == 3) ? side.y : -side.y, (h == 3 || h == 4 || h == 5) ? side.z : -side.z);
+		vec2 place = centre + ex * outline.x + ey * outline.y + ez * outline.z;
 		at = place * float(scale) + u_vox[2].xy;
 	} else {
 		int bx = px / 256;
 		int by = py / 256;
 		float width = lit ? 2.0 : 1.0;
-		vec2 c = vec2(0.0, 0.0);
-		if (corner == 1) {
-			c = vec2(width, 0.0);
-		} else if (corner == 2 || corner == 4) {
-			c = vec2(width, 1.0);
-		} else if (corner == 5) {
-			c = vec2(0.0, 1.0);
-		}
-		at = vec2(float(bx) + u_vox[2].x, float(by) + u_vox[2].y) + c;
+		at = vec2(float(bx) + u_vox[2].x + 0.5 + (corner == 1 ? width : 0.0), float(by) + u_vox[2].y + 0.5);
 	}
 	gl_Position = mul(u_viewProj, vec4(at, 0.0, 1.0));
 	v_texcoord1 = vec4(float(index), float(strength), 0.0, 0.0);
