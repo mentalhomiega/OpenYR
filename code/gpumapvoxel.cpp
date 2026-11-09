@@ -40,6 +40,9 @@ static int const MODEL_WIDTH = 2048;
 static int const MODEL_ROWS = 2048;
 static int const VOXELS_PER_ROW = MODEL_WIDTH / 2;
 
+// At a scale above 1 a voxel is the three faces of its cube, six vertices each.
+static int const VERTICES_PER_CUBE = 18;
+
 static bool _Ready = false;
 static bool _Failed = false;
 static bgfx::ProgramHandle _Program = BGFX_INVALID_HANDLE;
@@ -228,7 +231,7 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 }
 
 
-bool GpuVoxel_Pack(GpuDrawList const & list, std::vector<GpuVoxelTile> & tiles)
+bool GpuVoxel_Pack(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles)
 {
 	tiles.assign(list.Voxels.size(), GpuVoxelTile());
 	int x = 0;
@@ -239,27 +242,29 @@ bool GpuVoxel_Pack(GpuDrawList const & list, std::vector<GpuVoxelTile> & tiles)
 		if (bounds.Width <= 0 || bounds.Height <= 0) {
 			continue;
 		}
-		if (bounds.Width > GPU_VOXEL_IMAGE_SIZE) {
+		int const width = bounds.Width * scale;
+		int const height = bounds.Height * scale;
+		if (width > GPU_VOXEL_IMAGE_SIZE) {
 			return(false);
 		}
-		if (x + bounds.Width > GPU_VOXEL_IMAGE_SIZE) {
+		if (x + width > GPU_VOXEL_IMAGE_SIZE) {
 			y += shelf;
 			x = 0;
 			shelf = 0;
 		}
-		if (y + bounds.Height > GPU_VOXEL_IMAGE_SIZE) {
+		if (y + height > GPU_VOXEL_IMAGE_SIZE) {
 			return(false);
 		}
 		tiles[i].X = x;
 		tiles[i].Y = y;
-		x += bounds.Width;
-		shelf = std::max(shelf, bounds.Height);
+		x += width;
+		shelf = std::max(shelf, height);
 	}
 	return(true);
 }
 
 
-bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles)
+bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> const & tiles)
 {
 	if (!Start()) {
 		return(false);
@@ -308,8 +313,8 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const &
 			GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
 			Rect const & bounds = piece.Scene.Region.Bounds;
 			// Where the piece's pixels land in the tile, and the part of the tile they may cover.
-			int const shift_x = tiles[i].X + piece.Dest.X - area.X - bounds.X;
-			int const shift_y = tiles[i].Y + piece.Dest.Y - area.Y - bounds.Y;
+			int const shift_x = tiles[i].X + (piece.Dest.X - area.X - bounds.X) * scale;
+			int const shift_y = tiles[i].Y + (piece.Dest.Y - area.Y - bounds.Y) * scale;
 			Rect const clip = Intersect(Rect(piece.Dest.X - area.X, piece.Dest.Y - area.Y, bounds.Width, bounds.Height), Rect(0, 0, area.Width, area.Height));
 			if (clip.Width <= 0 || clip.Height <= 0) {
 				continue;
@@ -321,14 +326,14 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const &
 				(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 				(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
 				(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
-				(float)slot->First, 0.0f, 0.0f, 0.0f
+				(float)slot->First, (float)scale, 0.0f, 0.0f
 			};
 			bgfx::setUniform(_VoxelUniform, vox, 4);
 			bgfx::setUniform(_LightUniform, light, 64);
 			bgfx::setTexture(0, _ModelSampler, _Model);
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
-			bgfx::setVertexCount((uint32_t)slot->Count * 6);
-			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X), (uint16_t)(tiles[i].Y + clip.Y), (uint16_t)clip.Width, (uint16_t)clip.Height);
+			bgfx::setVertexCount((uint32_t)slot->Count * (scale > 1 ? VERTICES_PER_CUBE : 6));
+			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * scale), (uint16_t)(tiles[i].Y + clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
 			bgfx::setState(BGFX_STATE_WRITE_R);
 			bgfx::submit(VIEW_MAPVOXEL, _Program);
 		}

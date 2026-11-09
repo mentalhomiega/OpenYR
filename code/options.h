@@ -335,6 +335,9 @@ class OptionsClass {
 		// With GpuVoxels, an object the GPU draws from its voxels turns to its exact facing, not the nearest of 32.
 		bool GpuVoxelSmooth;
 
+		// With GpuVoxels, 1 to 4: how many times finer than the map pixels the GPU draws voxel objects (docs/GPU_VOXELS.md).
+		int GpuVoxelScale;
+
 		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
 		int Weather;
 		int WeatherStrength;

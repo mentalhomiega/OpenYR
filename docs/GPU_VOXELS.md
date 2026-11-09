@@ -23,6 +23,8 @@ These objects are drawn on the GPU:
 These stay in software: shadows, voxel animations, bullets, and a turreted vehicle whose body is a shape (the
 scratch surface holds a sprite the GPU does not draw).
 
+`GpuVoxelScale` (`[Video]`, 1 to 4, default 1, needs `GpuVoxels=yes`) is stage 6, described under Sharpness below.
+
 While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), `GpuVoxels` draws nothing,
 because the software voxel drawers write the mask and the GPU drawing does not. A voxel object drawn this way never
 uses the voxel picture cache.
@@ -97,6 +99,29 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 - A pass the GPU cannot draw (a limit, a failed program) renders the parts in software when it falls back, so the
   picture is complete.
 
+## Sharpness (stage 6)
+
+With `GpuVoxelScale` above 1, `GpuRender` draws the whole map pass at that many times the map's own pixels. The scene,
+snapshot and post textures are scale times the area in each direction, and the pass's views are scaled the same way, so
+every blit keeps its map pixel coordinates and the shader shows each map pixel as a block of scale by scale pixels.
+The shadow mask, glow and tile shadow planes stay at map size; the post and glow shaders read the scene at the
+matching finer pixel. `bgfxbackend.cpp` treats the texture as scale times larger, so the presenter smooths it when it is
+shown smaller than that and keeps whole pixels when it is shown at that size or larger. Zooming in the map view (`viewzoom.cpp`)
+therefore shows the finer picture.
+
+A voxel part's tile in the voxel image is scale times its buffer region in each direction. A voxel is drawn as the
+silhouette of its cube: the three faces that meet at the corner nearest the viewer (the one on the line of sight through
+the cube, found from the signs of the cross products of the layer's three projected steps), 18 vertices a voxel, centred
+on the point the software's quad is centred on, with the same palette row. Voxels are still written in the software's
+order, so nearer voxels overwrite farther ones. Everything else about a voxel blit, translator, depth test and blend,
+is unchanged.
+
+Scale 1 takes the old path and stays index-exact. A pass that `gpucheck` reads back is drawn at scale 1, because the
+software result it is compared with has no finer pixels. At a scale above 1, `tests/autotest/gpu-voxel-scale.txt` shows
+two tanks and a Kirov at zoom 1, 2 and 3 for comparing scales by eye and by edge counts.
+
+The scale also applies to a turreted vehicle's parts: each piece's offset inside the tile and the clip that keeps it in its tile are scaled the same way, so hull, turret and barrel stay in register and, with `GpuVoxelSmooth=yes`, sharpen at their exact facings.
+
 ## Comparing the two
 
 `tests/autotest/gpu-voxel-compare.txt` plays eight vehicle types turning through sixteen facings, with a Kirov
@@ -163,7 +188,7 @@ Each stage has a check that fails when its picture departs from the software.
 | 3 | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | glow and HDR frames compared with the software mask | 1 session |
 | 4 | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened), voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_DIFF` on the existing voxel anim and cloak scripts | 1 session |
 | 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning harvester's and tank's hull and turret facings in fractions of a step | |
-| 6 | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
+| 6 (done) | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
 | 7 | Settings page switches (greyed unless GPU drawing is on), default on once stage 2 to 5 match, instance buffers and batching, performance numbers on the large battle | the regress suite with the key on | 1 session |
 
 ## Where pixel-exact drawing ends
