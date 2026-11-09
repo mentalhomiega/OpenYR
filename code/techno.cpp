@@ -2425,7 +2425,7 @@ double TechnoClass::Area_Modify(Cell const & cell) const
 }
 
 
-bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const
+bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer, std::optional<int> & object_index) const
 {
 	/*
 	**	An object in limbo can never be a valid target.
@@ -2443,16 +2443,21 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);		// Mask failure.
 	}
 
-	// The weapon selection against object is made at most once for the tests below.
-	bool object_index_known = false;
-	int object_index = 0;
+	// The weapon selection against object is made at most once for the tests below, and the caller keeps the answer.
 	auto weapon_index_for_object = [&]() {
-		if (!object_index_known) {
+		if (!object_index) {
 			object_index = What_Weapon_Should_I_Use((AbstractClass *)object);
-			object_index_known = true;
 		}
-		return(object_index);
+		return(*object_index);
 	};
+
+	/*
+	**	If the object is not within the desired zone, then ignore it, but only if
+	**	zone checking is desired. Most candidates of a map-wide scan fail here, so the zone is judged first.
+	*/
+	if (zone != -1 && Map.Get_Cell_Zone(object->Center_Coord().As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
+		return(false);
+	}
 
 	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
 	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
@@ -2482,15 +2487,6 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 	}
 
 	if (object->HeightAGL < -20) {
-		return(false);
-	}
-
-	/*
-	**	If the object is not within the desired zone, then ignore it, but only if
-	**	zone checking is desired.
-	*/
-	Coord objectcoord = object->Center_Coord();
-	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
 		return(false);
 	}
 
@@ -2530,20 +2526,22 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 	/*
 	**	If the object is further away than allowed, bail.
 	*/
-	int dist = Distance_To(object);
-	if (range > 0 && dist > range) {
-		return(false);
-	}
+	if (range >= 0) {
+		int dist = Distance_To(object);
+		if (range > 0 && dist > range) {
+			return(false);
+		}
 
-	if (range == 0) {
-		if (!Is_Weapon_Equipped()) {
-			if (dist > TClass->ThreatRange) {
-				return(false);
-			}
-		} else {
-			int primary = weapon_index_for_object();
-			if (!In_Range((TechnoClass *)object, primary)) {
-				return(false);
+		if (range == 0) {
+			if (!Is_Weapon_Equipped()) {
+				if (dist > TClass->ThreatRange) {
+					return(false);
+				}
+			} else {
+				int primary = weapon_index_for_object();
+				if (!In_Range((TechnoClass *)object, primary)) {
+					return(false);
+				}
 			}
 		}
 	}
@@ -2698,7 +2696,7 @@ bool TechnoClass::Passes_After_Disguise_Roll(ThreatType method, TechnoClass cons
 
 	CellClass * cell_this = &Map[Get_Coord()];
 	CellClass * cell_that = &Map[object->Get_Coord()];
-	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
+	if (IsOnBridge != object->IsOnBridge && cell_this->IsUnderBridge && cell_that->IsUnderBridge) {
 		return(false);
 	}
 
@@ -2793,7 +2791,8 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 
 	bool engineer = Is_Renovator();
 
-	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer)) {
+	std::optional<int> weapon_index;
+	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer, weapon_index)) {
 		return(false);
 	}
 
@@ -2815,7 +2814,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	target value then record this target for possible return as the
 	**	best.
 	*/
-	value = Target_Threat((TechnoClass *)object, coord);
+	value = Target_Threat((TechnoClass *)object, coord, weapon_index);
 
 	/*
 	**	A VHPScan=Normal scan doubles a target at half strength or less, and halves a target whose
@@ -11803,9 +11802,11 @@ void TechnoClass::Plot_On_Radar(void) const
 /// <param name="target">The candidate target to weigh up.</param>
 /// <param name="firing_coord">The position the shot would be taken from. Pass COORD_NONE to
 /// measure the range from this object's own center.</param>
+/// <param name="known_weapon_index">The weapon this object would use against the target, when the caller has
+/// already worked it out.</param>
 /// <returns>Returns with the threat score. A target with no type at all scores zero, and
 /// every real target scores above that.</returns>
-double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coord) const
+double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coord, std::optional<int> known_weapon_index) const
 {
 	double target_effectiveness_coefficient;
 	double target_special_threat_coefficient;
@@ -11833,7 +11834,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 		target_distance_coefficient = Rule->DumbTargetDistanceCoefficient;
 	}
 
-	int my_weapon_index = What_Weapon_Should_I_Use(target);
+	int my_weapon_index = known_weapon_index ? *known_weapon_index : What_Weapon_Should_I_Use(target);
 	WeaponTypeClass const * my_weapon = Get_Class_Weapon_Data(my_weapon_index)->Weapon;
 	double threat = 0.0;
 	RTTIType target_rtti = target->RTTI;
