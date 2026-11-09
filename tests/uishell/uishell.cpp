@@ -18,6 +18,7 @@
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/classicopt/uiclassicopt.h"
+#include "optionsettings.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/screens/gameopt/uigameopt.h"
@@ -938,7 +939,16 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
 		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
-		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override { Calls.push_back(std::string("gpu effects ") + (render ? "1" : "0") + (softshadows ? "1" : "0") + (shockwaves ? "1" : "0") + (bloom ? "1" : "0") + (water ? "1" : "0") + (clouds ? "1" : "0") + (weather ? "1" : "0")); }
+		virtual void Set_Declared_Settings(std::vector<UISettingRow> const & rows) override
+		{
+			std::string text = "gpu effects ";
+			for (UISettingRow const & row : rows) {
+				if (row.Kind == UISettingRowKind::SWITCH) {
+					text += (row.Value != row.Off) ? "1" : "0";
+				}
+			}
+			Calls.push_back(text);
+		}
 		virtual void Set_Filter(int mode) override { Calls.push_back("filter " + std::to_string(mode)); }
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
@@ -3029,9 +3039,28 @@ static void Send_Intent(UIPresenterClass & presenter, char const * name, int val
 
 
 // The graphics page: the sidebar rows in use, the HDR rows enabled and a colour-blind list for the preview.
+// The declared rows with every switch off and every slider at its lowest value.
+static std::vector<UISettingRow> Fixture_Setting_Rows(void)
+{
+	return(UI_Setting_Rows(Option_Settings(), "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Min); }));
+}
+
+
+static UISettingRow * Fixture_Row(UIDisplayState & state, char const * key)
+{
+	for (UISettingRow & row : state.SettingRows) {
+		if (row.Key == key) {
+			return(&row);
+		}
+	}
+	return(nullptr);
+}
+
+
 static UIDisplayState Graphics_Fixture(void)
 {
 	UIDisplayState state = Display_Fixture();
+	state.SettingRows = Fixture_Setting_Rows();
 	state.Page = UI_TAB_GRAPHICS;
 	state.ModernInterface = true;
 	state.ModernInterfaceRunning = true;
@@ -3296,10 +3325,16 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled") && glow != nullptr && glow->HasAttribute("disabled") && water != nullptr && water->HasAttribute("disabled") && clouds != nullptr && clouds->HasAttribute("disabled") && weather != nullptr && weather->HasAttribute("disabled"), "every GPU effect switch is greyed while GPU drawing is off");
 
 		sync(soft);
-		Check(!presenter.State.SoftShadows, "a greyed soft shadows switch does not turn on");
+		Check(Fixture_Row(presenter.State, "SoftShadows")->Value == 0, "a greyed soft shadows switch does not turn on");
 
 		sync(gpu);
-		Check(presenter.State.GpuRender && soft != nullptr && !soft->HasAttribute("disabled") && waves != nullptr && !waves->HasAttribute("disabled"), "ticking GPU drawing enables its effect switches live");
+		Check(Fixture_Row(presenter.State, "GpuRender")->Value == 1 && soft != nullptr && !soft->HasAttribute("disabled") && waves != nullptr && !waves->HasAttribute("disabled"), "ticking GPU drawing enables its effect switches live");
+		Rml::Element * voxels = document->GetElementById("gpu-voxels");
+		Rml::Element * smooth = document->GetElementById("gpu-voxel-smooth");
+		Rml::Element * scale = document->GetElementById("gpu-voxel-scale");
+		Rml::ElementFormControlInput * scale_slider = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(scale);
+		Check(voxels != nullptr && smooth != nullptr && scale != nullptr && !voxels->HasAttribute("disabled") && !smooth->HasAttribute("disabled") && !scale->HasAttribute("disabled"), "the GPU voxel rows are built from their declarations and follow GPU drawing");
+		Check(scale_slider != nullptr && Rml::FromString<float>(scale_slider->GetValue()) == 1.0f, "the voxel scale slider shows its declared lowest value");
 
 		sync(waves);
 		sync(glow);
@@ -3308,7 +3343,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		sync(weather);
 		Drive(presenter, "ok");
 		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 1011111") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 101111100") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
@@ -3735,7 +3770,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		// The Graphics page: picture, interface, GPU drawing, HDR, picture level and renderer, then the footer.
 		RecordingDisplayServiceClass service;
 		UIDisplayState state = Graphics_Fixture();
-		state.GpuRender = true;
+		Fixture_Row(state, "GpuRender")->Value = 1;
+		Fixture_Row(state, "GpuRender")->Start = 1;
 		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
@@ -3752,7 +3788,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
-			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
