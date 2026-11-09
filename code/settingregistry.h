@@ -68,6 +68,9 @@ struct Setting
 
 	// The text after a slider's number, such as "%".
 	char const * Unit = "";
+
+	// Read by Settings_Load_Before_Renderer too, for a setting the renderer needs when it starts.
+	bool BeforeRenderer = false;
 };
 
 
@@ -138,6 +141,18 @@ void Settings_Load(std::span<Setting<Owner> const> settings, INIClass const & in
 {
 	for (Setting<Owner> const & setting : settings) {
 		Setting_Load(setting, ini, owner);
+	}
+}
+
+
+// The renderer starts before Settings_Load runs, so the settings it needs are read here first.
+template<typename Owner>
+void Settings_Load_Before_Renderer(std::span<Setting<Owner> const> settings, INIClass const & ini, std::type_identity_t<Owner> & owner)
+{
+	for (Setting<Owner> const & setting : settings) {
+		if (setting.BeforeRenderer) {
+			Setting_Load(setting, ini, owner);
+		}
 	}
 }
 

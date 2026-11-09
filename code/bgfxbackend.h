@@ -31,7 +31,7 @@ enum BackendScaleMode {
 // Drawable sizes are physical pixel dimensions supplied by the application shell.
 // With hdr set the renderer asks for an HDR10 back buffer. A renderer that cannot give one starts
 // with the SDR back buffer instead, and Backend_HDR_Active reports which it has.
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr);
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread);
 void Backend_Shutdown(void);
 bool Backend_Is_Running(void);
 

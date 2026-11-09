@@ -122,6 +122,10 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Section = "Video", .Key = "WeatherStrength",
 		.Number = &OptionsClass::WeatherStrength, .Default = 100, .Min = 1, .Max = 400,
 	},
+	{
+		.Section = "Video", .Key = "RenderThread",
+		.Flag = &OptionsClass::RenderThread, .Default = false, .BeforeRenderer = true,
+	},
 };
 
 }

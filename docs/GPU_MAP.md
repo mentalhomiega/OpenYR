@@ -15,7 +15,8 @@ page of the settings, to draw in software everywhere.
 | Voxel renderer | `code/gpumapvoxel.cpp` | Draws the voxel parts of a pass into the voxel image that the pass's blits read ([GPU_VOXELS.md](GPU_VOXELS.md)). |
 
 Voxel objects that are blitted straight into the map view can be drawn on the GPU from their voxels with
-`GpuVoxels`; [GPU_VOXELS.md](GPU_VOXELS.md) describes it.
+`GpuVoxels`; [GPU_VOXELS.md](GPU_VOXELS.md) describes it. `RenderThread` moves the GPU's submission and the present to
+their own thread; [RENDER_THREAD.md](RENDER_THREAD.md) describes it.
 
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,

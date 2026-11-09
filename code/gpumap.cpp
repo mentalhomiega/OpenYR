@@ -15,6 +15,7 @@
 #include "gpudraw.h"
 #include "gpumapvoxel.h"
 #include "monotonic.h"
+#include "renderthread.h"
 #include "writewatch.h"
 
 #include <algorithm>
@@ -914,8 +915,8 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 	bool valid = Fill_Index(_Stores[SLOT_INDEX], GpuDraw_Atlas(), list.PixelArena.data(), list.PixelArena.size());
 	valid = Fill_R16(_Stores[SLOT_LUT], lut.data(), 256, (int)(lut.size() / 256), false) && valid;
 	valid = Fill_R16(_Stores[SLOT_ALUT], alut.data(), 256, (int)(alut.size() / 256), false) && valid;
-	// A pass the GPU has not read yet still holds the buffers' memory, so this one is copied.
-	bool const reference = pass.Persistent && !_Referenced;
+	// A pass the GPU has not read yet still holds the buffers' memory, so this one is copied, and so is every pass while a render thread can read them after the frame is handed over.
+	bool const reference = pass.Persistent && !_Referenced && !RenderThread_Running();
 	if (reference) {
 		static bool registered = false;
 		if (!registered) {

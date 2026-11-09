@@ -28,6 +28,7 @@ The fields are:
 | `.NeedsRestart` | Adds "Applies at the next start." to the tip. |
 | `.SwitchOn` | Shows a `.Names` setting as a switch: ticking it picks this value, unless the page opened on another non-off value. |
 | `.Unit` | The text after a slider's number, such as `%`. |
+| `.BeforeRenderer` | Also reads the key at startup before the renderer starts, for a setting the renderer needs at its start. |
 
 The row kind comes from the entry: a `.Flag`, or a `.Names` setting with `.SwitchOn`, is a switch, and any other
 `.Number` with a label is a slider. Drop-down rows are not built yet.
@@ -54,5 +55,5 @@ writes every row back when any value changed, then calls `Apply_HDR_Highlights`.
 
 ## Converted so far
 
-The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the three GPU voxel keys). `.Names` and `.Number`
+The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the three GPU voxel keys), and `RenderThread`. `.Names` and `.Number`
 cover the rest of `[Video]` and `[Options]` once each is moved beside the code that uses it.

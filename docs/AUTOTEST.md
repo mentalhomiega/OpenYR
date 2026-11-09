@@ -198,6 +198,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `c4watch <frames> x y` | follows the building on that cell for that many frames: writes its charge's placement, countdown and strength changes, and its destruction with the saboteur's experience and the player's money and points |
 | `click x y` | queues a left click at that screen position |
 | `windowmove x y` | moves the pointer to that window pixel, which the hover and placement code reads |
+| `windowresize w h` | gives the game window a client area of that size, as dragging its frame does |
 | `key <Key> [ctrl\|shift\|alt]` | presses and releases that key on the keyboard queue, skipping the interface; the key is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or digit, so Tab is written 09); the modifier words hold that key with the modifier |
 | `release <Key> [ctrl\|shift\|alt]` | lets go of a key a hold step left down; Keyboard->Down stays false in autotests, so the held state is the queue's |
 | `winkey <Key> [ctrl\|shift\|alt]` | presses and releases that key through the game window, so the interface sees it first as it does a player's key; a one-character name is read as a letter or digit, so Backspace is written 08 |
