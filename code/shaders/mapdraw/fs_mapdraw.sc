@@ -21,7 +21,9 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // written as 1 into the shadow mask.
 // Offsets of VOXEL_BASE and up in v_texcoord1.x read the voxel image s_voxel instead of s_index.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
-// u_water: y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
+// u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
+// each of them as scale by scale pixels, and a voxel blit reads its tile at scale times the blit's pixel rate),
+// y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
 // w how bright the glints of sunlight on them are.
 
 #include "bgfx_shader.sh"
@@ -141,12 +143,15 @@ void main()
 		return;
 	}
 
+	int scale = int(u_water.x + 0.5);
+	ivec2 sub = min(ivec2(floor(fract(v_texcoord0.zw) * float(scale))), ivec2(scale - 1, scale - 1));
 	int width = int(v_texcoord1.y + 0.5);
 	// Offsets are whole numbers, and adding 0.5 would round them from 2^23 up, where a float spaces by one.
 	int offset = int(v_texcoord1.x);
 	int index;
 	if (offset >= VOXEL_BASE) {
-		int at = offset - VOXEL_BASE + local.y * width + local.x;
+		ivec2 fine = ivec2(floor(v_texcoord0.xy * float(scale)));
+		int at = offset - VOXEL_BASE + fine.y * width + fine.x;
 		index = int(texelFetch(s_voxel, ivec2(at % width, at / width), 0).x * 255.0 + 0.5);
 	} else {
 		index = Fetch8(s_index, offset + local.y * width + local.x);
@@ -183,11 +188,11 @@ void main()
 		int count = amplitude < 2 ? 0 : (amplitude < 7 ? 1 : (amplitude < 10 ? 2 : 3));
 		ivec2 step = ivec2(facing == 0 || facing == 4 ? 0 : (facing < 4 ? 1 : -1), facing == 2 || facing == 6 ? 0 : (facing > 2 && facing < 6 ? 1 : -1));
 		ivec2 source = area + step * count;
-		ivec2 size = ivec2(textureSize(s_snapshot, 0));
+		ivec2 size = ivec2(textureSize(s_snapshot, 0)) / scale;
 		if (source.x < 0 || source.y < 0 || source.x >= size.x || source.y >= size.y) {
 			source = area;
 		}
-		vec3 under = texelFetch(s_snapshot, source, 0).xyz;
+		vec3 under = texelFetch(s_snapshot, source * scale + sub, 0).xyz;
 		ivec3 c8 = ivec3(floor(under * vec3(31.0, 63.0, 31.0) + 0.5)) * ivec3(8, 4, 8);
 		int mult = int(v_texcoord1.w + 0.5) + amplitude * 8;
 		if (wave >= 8) {

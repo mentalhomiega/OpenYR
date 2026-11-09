@@ -125,6 +125,13 @@ enum GpuWeather {
 // Draws weather falling over the map, with strength percent (at most 400) of the usual amount.
 void GpuMap_Set_Weather(GpuWeather weather, int strength);
 
+// Draws the map pass, and the voxel objects in it, at scale times the map's own pixels (1 to 4). Only the
+// presenter shows the finer picture; the software result and the GPU_DIFF check stay at scale 1.
+void GpuMap_Set_Voxel_Scale(int scale);
+
+// How many times finer than the map the picture GpuMap_Texture returned is drawn.
+int GpuMap_Scale(void);
+
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass
 // does not fit the GPU limits.

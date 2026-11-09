@@ -1346,8 +1346,9 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		if (!bgfx::isValid(layertexture)) {
 			return(false);
 		}
-		layerwidth = layer.Width;
-		layerheight = layer.Height;
+		// A pass drawn at a finer scale is smoothed when it is shown smaller than its own size.
+		layerwidth = layer.Width * GpuMap_Scale();
+		layerheight = layer.Height * GpuMap_Scale();
 		_LayerMask.Uploaded = false;
 	} else if (layer.Pixels != NULL) {
 		if (!Upload_Layer(layer)) {

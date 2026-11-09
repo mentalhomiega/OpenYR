@@ -17,7 +17,7 @@ struct GpuDrawList;
 
 
 // The voxel image, where the GPU draws the voxel parts of a map pass before the pass shows them. Each
-// part has a tile of the size of its Scene.Region.Bounds; a blit reads its pixels from the tile.
+// part has a tile of the size of its Scene.Region.Bounds times the scale; a blit reads its pixels from the tile.
 inline constexpr int GPU_VOXEL_IMAGE_SIZE = 2048;
 
 // A blit whose colour index offset is at least this reads the voxel image: the offset minus this is
@@ -30,13 +30,14 @@ struct GpuVoxelTile
 	int Y = 0;
 };
 
-// Places a tile for each part of the list, in the list's order. False when they do not fit the image.
-bool GpuVoxel_Pack(GpuDrawList const & list, std::vector<GpuVoxelTile> & tiles);
+// Places a tile for each part of the list, in the list's order, scale times the part's Scene.Region.Bounds
+// in each direction. False when they do not fit the image.
+bool GpuVoxel_Pack(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles);
 
 // Draws the parts into the voxel image, in the tiles GpuVoxel_Pack placed. Must be called before the
 // draws that read the image are submitted in the same frame. False when the voxel shaders are
 // unavailable or the layers do not fit the GPU's model store.
-bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles);
+bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> const & tiles);
 
 // The bgfx handle index of the voxel image, or bgfx::kInvalidHandle before the first submit.
 std::uint16_t GpuVoxel_Image(void);
