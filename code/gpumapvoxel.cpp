@@ -14,6 +14,7 @@
 #include "gpudraw.h"
 #include "gpuvoxel.h"
 #include "convert.h"
+#include "emissive.h"
 #include "unittype.h"
 #include "voxlib.h"
 
@@ -94,7 +95,7 @@ static bool Start(void)
 	_LightUniform = bgfx::createUniform("u_vlight", bgfx::UniformType::Vec4, 64);
 	_ModelSampler = bgfx::createUniform("s_vmodel", bgfx::UniformType::Sampler);
 	_PaletteSampler = bgfx::createUniform("s_vpal", bgfx::UniformType::Sampler);
-	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Target = bgfx::isValid(_Image) ? bgfx::createFrameBuffer(1, &_Image, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
 	_Model = bgfx::createTexture2D(MODEL_WIDTH, MODEL_ROWS, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
@@ -108,9 +109,12 @@ static bool Start(void)
 }
 
 
-static std::uint64_t Model_Key(unsigned serial, VoxelRenderStruct const & object)
+// The orientation a shadow's walk is stored under, which no object's orientation uses.
+static int const SHADOW_WALK = 0xFF;
+
+static std::uint64_t Model_Key(unsigned serial, int layer, int info, int orientation)
 {
-	return(((std::uint64_t)serial << 32) | ((std::uint64_t)(unsigned short)object.Layer << 16) | ((std::uint64_t)(unsigned char)object.Info << 8) | (unsigned char)object.AnchorCornerIndex);
+	return(((std::uint64_t)serial << 32) | ((std::uint64_t)(unsigned short)layer << 16) | ((std::uint64_t)(unsigned char)info << 8) | (unsigned char)orientation);
 }
 
 
@@ -188,6 +192,7 @@ struct LayerDraw
 	std::uint64_t Key;
 	bool Lit;
 	bool Reversed;
+	bool Shadow;
 	// The index of the layer's piece in its part.
 	int Piece;
 };
@@ -210,7 +215,11 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 			for (LayerDraw const & layer : part) {
 				if (Find_Slot(layer.Key) == NULL && fresh.find(layer.Key) == fresh.end()) {
 					std::vector<GpuVoxelInstance> & voxels = fresh[layer.Key];
-					Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
+					if (layer.Shadow) {
+						Gpu_Voxel_Walk_Shadow(layer.Setup.Arg, voxels);
+					} else {
+						Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
+					}
 					rows += Rows_For(voxels.size());
 				}
 			}
@@ -273,12 +282,24 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		std::vector<GpuVoxelPiece> const & pieces = list.Voxels[i].Pieces;
 		for (std::size_t p = 0; p < pieces.size(); p++) {
+			for (VoxelShadowRenderStruct const & shadow : pieces[p].Scene.Shadows) {
+				LayerDraw layer;
+				layer.Setup = shadow.VoxLib->Setup_Shadow(shadow, pieces[p].Scene.Center);
+				layer.Key = Model_Key(shadow.VoxLib->Get_Serial(), shadow.Layer, shadow.Info, SHADOW_WALK);
+				// A shadow stamps two pixels a column, as a lit voxel does, with no shading.
+				layer.Lit = true;
+				layer.Reversed = false;
+				layer.Shadow = true;
+				layer.Piece = (int)p;
+				parts[i].push_back(layer);
+			}
 			for (VoxelRenderStruct const & object : pieces[p].Scene.Objects) {
 				LayerDraw layer;
 				layer.Setup = object.VoxLib->Setup_Object(object, pieces[p].Scene.Center);
-				layer.Key = Model_Key(object.VoxLib->Get_Serial(), object);
+				layer.Key = Model_Key(object.VoxLib->Get_Serial(), object.Layer, object.Info, object.AnchorCornerIndex);
 				layer.Lit = (layer.Setup.Function & 12) == 4;
 				layer.Reversed = (layer.Setup.Function & 1) != 0;
+				layer.Shadow = false;
 				layer.Piece = (int)p;
 				parts[i].push_back(layer);
 			}
@@ -321,12 +342,16 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 			}
 			float light[VOXEL_PALETTE_SIZE];
 			std::copy(std::begin(piece.Lighting), std::end(piece.Lighting), light);
+			if (layer.Shadow) {
+				// The identity row after the lighting rows keeps the shadow's colour 1.
+				std::fill(std::begin(light), std::end(light), (float)MAX_PALETTE_LOOKUP_ENTRIES);
+			}
 			Vector3i16 const (&steps)[4] = layer.Setup.Arg.TransformMatrix;
 			float const vox[16] = {
 				(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 				(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
 				(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
-				(float)slot->First, (float)scale, 0.0f, 0.0f
+				(float)slot->First, (float)scale, layer.Shadow ? 0.0f : (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
 			};
 			bgfx::setUniform(_VoxelUniform, vox, 4);
 			bgfx::setUniform(_LightUniform, light, 64);
@@ -334,7 +359,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
 			bgfx::setVertexCount((uint32_t)slot->Count * (scale > 1 ? VERTICES_PER_CUBE : 6));
 			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * scale), (uint16_t)(tiles[i].Y + clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
-			bgfx::setState(BGFX_STATE_WRITE_R);
+			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G);
 			bgfx::submit(VIEW_MAPVOXEL, _Program);
 		}
 	}
@@ -358,6 +383,7 @@ struct PartCheck
 	int Width;
 	int Height;
 	std::vector<unsigned char> Reference;
+	std::vector<unsigned char> MaskReference;
 };
 
 static std::vector<PartCheck> _Checks;
@@ -382,21 +408,22 @@ std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxe
 		std::memcpy(check.Label, part.Label, sizeof(check.Label));
 		check.Layers = 0;
 		for (GpuVoxelPiece const & piece : part.Pieces) {
-			check.Layers += (int)piece.Scene.Objects.size();
+			check.Layers += (int)(piece.Scene.Shadows.size() + piece.Scene.Objects.size());
 		}
 		check.X = tiles[i].X;
 		check.Y = tiles[i].Y;
 		check.Width = part.Area.Width;
 		check.Height = part.Area.Height;
 		check.Reference = part.Reference;
+		check.MaskReference = part.MaskReference;
 		_Checks.push_back(std::move(check));
 	}
 	if (_Checks.empty()) {
 		return(0);
 	}
 	if (!bgfx::isValid(_Readback)) {
-		_Readback = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-		_ImagePixels.assign((std::size_t)GPU_VOXEL_IMAGE_SIZE * GPU_VOXEL_IMAGE_SIZE, 0);
+		_Readback = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		_ImagePixels.assign((std::size_t)GPU_VOXEL_IMAGE_SIZE * GPU_VOXEL_IMAGE_SIZE * 2, 0);
 	}
 	if (!bgfx::isValid(_Readback)) {
 		return(0);
@@ -418,6 +445,27 @@ static int Colour_Step(int a, int b)
 }
 
 
+// Logs how far the highlight strengths the GPU wrote beside a direct part's indices are from the software's mask.
+static void Compare_Mask(PartCheck const & check)
+{
+	int masked = 0;
+	int differing = 0;
+	int largest = 0;
+	for (int r = 0; r < check.Height; r++) {
+		for (int c = 0; c < check.Width; c++) {
+			int const software = check.MaskReference[(std::size_t)r * check.Width + c];
+			int const gpu = _ImagePixels[((std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c) * 2 + 1];
+			masked += (software != 0 || gpu != 0) ? 1 : 0;
+			if (software != gpu) {
+				differing++;
+				largest = std::max(largest, std::abs(software - gpu));
+			}
+		}
+	}
+	DebugString("GPU_VOXEL_MASK frame %d part %s pixels %d masked %d differing %d maxdiff %d\n", _CheckFrame, check.Label, check.Width * check.Height, masked, differing, largest);
+}
+
+
 void GpuVoxel_Compare(std::uint32_t frame)
 {
 	if (!_Pending || frame < _ReadyFrame) {
@@ -432,7 +480,7 @@ void GpuVoxel_Compare(std::uint32_t frame)
 		for (int r = 0; r < check.Height; r++) {
 			for (int c = 0; c < check.Width; c++) {
 				int const software = check.Reference[(std::size_t)r * check.Width + c];
-				int const gpu = _ImagePixels[(std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c];
+				int const gpu = _ImagePixels[((std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c) * 2];
 				covered += (software != 0 || gpu != 0) ? 1 : 0;
 				if (software == gpu) {
 					continue;
@@ -447,6 +495,9 @@ void GpuVoxel_Compare(std::uint32_t frame)
 		}
 		DebugString("GPU_VOXEL frame %d part %s layers %d pixels %d covered %d differing %d coverage %d maxstep %d\n", _CheckFrame, check.Label, check.Layers,
 			check.Width * check.Height, covered, differing, coverage, largest);
+		if (!check.MaskReference.empty()) {
+			Compare_Mask(check);
+		}
 	}
 	_Checks.clear();
 }

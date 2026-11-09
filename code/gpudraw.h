@@ -10,6 +10,7 @@
 #pragma once
 
 #include "blitter.h"
+#include "draw.hh"
 #include "point.h"
 #include "rect.h"
 #include "voxdrsys.h"
@@ -175,6 +176,9 @@ struct GpuVoxelPart
 	// The software result for Area, one index per pixel, or empty when the software did not render it.
 	std::vector<unsigned char> Reference;
 
+	// The software emissive mask of a direct part for Area, or empty while the mask is off or the software did not render it.
+	std::vector<unsigned char> MaskReference;
+
 	char Label[24];
 };
 
@@ -243,7 +247,7 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable);
 
 // True while a pass records and GpuVoxels is on: a voxel object prepared now should be handed to
-// GpuDraw_Voxel_Part. False while the emissive mask is on, which the GPU voxel drawing does not write.
+// GpuDraw_Voxel_Part.
 bool GpuDraw_Voxels_Wanted(void);
 
 // True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a voxel object turns to its exact facing.
@@ -253,12 +257,24 @@ bool GpuDraw_Voxels_Smooth(void);
 // or the exact facing while GpuDraw_Voxels_Smooth.
 double GpuDraw_Facing_Radian(DirType const & facing);
 
+// The flags to blit a voxel object through while GpuDraw_Voxels_Wanted: without SHAPE_PREDATOR, because Bit_Blit
+// passes no warp offset, so a predator blend is the plain translucent one, which the GPU can draw.
+ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags);
+
+// The facing in 32nds of a turn for a GPU_VOXEL check label: a whole number, or a fraction while GpuDraw_Voxels_Smooth.
+double GpuDraw_Facing_Steps(DirType const & facing);
+
 // Hands the pass the voxel object VoxelDrawSystem prepared, drawn with the lighting table now in
 // VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
 // the check compares with the GPU's drawing. The next blit from the voxel buffer shows the part;
 // GpuDraw_Voxel_End closes the offer.
 void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software);
 void GpuDraw_Voxel_End(void);
+
+// Finishes the scene VoxelDrawSystem prepared for a blit straight to the logical surface: renders it into the voxel
+// buffer, unless the GPU draws this pass, and offers it as a part labelled name@steps followed by tag. The caller
+// blits the returned region from the voxel buffer and then calls GpuDraw_Voxel_End.
+SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag);
 
 // A turreted vehicle composes its hull, turret and barrel on the scratch surface and blits that once to dest.
 // Begin opens such a composite when GpuDraw_Voxels_Wanted; GpuDraw_Composite_Rendering says whether the GPU

@@ -27,6 +27,7 @@
 #include "emissive.h"
 #include "globals.h"
 #include "gpumap.h"
+#include "gpumapvoxel.h"
 #include "objtype.h"
 #include "ovrlight.h"
 #include "shadowplane.h"
@@ -924,6 +925,37 @@ static void Count_Render(bool drawn)
 }
 
 
+// Copies the emissive mask the software drawers just wrote for a direct part into its MaskReference.
+static void Copy_Voxel_Mask(GpuVoxelPart & part)
+{
+	Rect const & area = part.Area;
+	part.MaskReference.resize((std::size_t)area.Width * area.Height);
+	for (int r = 0; r < area.Height; r++) {
+		std::memcpy(&part.MaskReference[(std::size_t)r * area.Width], VoxelMaskBuffer + (area.Y + r) * VOXEL_BITMAP_WIDTH + area.X, area.Width);
+	}
+}
+
+
+// Calls visit(x, y, mask) for each target pixel under a direct voxel part's blit with the part's software mask
+// value there, latest blit first, so the first visit of a pixel is the part drawn last over it.
+template <class Visit>
+static void For_Each_Voxel_Mask_Pixel(Visit visit)
+{
+	for (auto blit = _List.Blits.rbegin(); blit != _List.Blits.rend(); ++blit) {
+		if (blit->Voxel < 0 || _List.Voxels[blit->Voxel].MaskReference.empty()) {
+			continue;
+		}
+		GpuVoxelPart const & part = _List.Voxels[blit->Voxel];
+		for (int r = 0; r < blit->Height; r++) {
+			unsigned char const * values = &part.MaskReference[(std::size_t)(blit->VoxelY + r) * part.Area.Width + blit->VoxelX];
+			for (int c = 0; c < blit->Width; c++) {
+				visit(blit->X + c, blit->Y + r, values[c]);
+			}
+		}
+	}
+}
+
+
 // The part's pixels as the software composes them: each piece is rendered into the voxel buffer, and its
 // drawn pixels replace those below, through the scratch surface's colour translation for a composite.
 static std::vector<unsigned char> Render_Part(GpuVoxelPart const & part)
@@ -933,6 +965,10 @@ static std::vector<unsigned char> Render_Part(GpuVoxelPart const & part)
 	for (GpuVoxelPiece const & piece : part.Pieces) {
 		std::memcpy(VoxelNormalTranslateTable, piece.Lighting, sizeof(piece.Lighting));
 		VoxelDrawSystem::Clear_Buffer();
+		for (VoxelShadowRenderStruct shadow : piece.Scene.Shadows) {
+			Vector3 center = piece.Scene.Center;
+			shadow.VoxLib->Render_Shadow(shadow, center);
+		}
 		for (VoxelRenderStruct object : piece.Scene.Objects) {
 			Vector3 center = piece.Scene.Center;
 			object.VoxLib->Render_Object(object, center);
@@ -965,6 +1001,9 @@ static void Render_Voxel_Pixels(void)
 		if (rendered != blit.Voxel) {
 			image = Render_Part(_List.Voxels[blit.Voxel]);
 			rendered = blit.Voxel;
+			if (Emissive_Is_Enabled() && !_List.Voxels[blit.Voxel].Scratch) {
+				Copy_Voxel_Mask(_List.Voxels[blit.Voxel]);
+			}
 		}
 		int const width = _List.Voxels[blit.Voxel].Area.Width;
 		blit.Pixels = (std::uint32_t)_List.PixelArena.size();
@@ -1021,7 +1060,8 @@ static bool Finish_Render(Surface & target)
 	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
 		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged, tileshadowlit);
 	}
-	EmissivePlane const * emissive = GpuMap_Bloom() > 0 ? Emissive_Plane_For(&target) : NULL;
+	bool const voxelmask = _Voxels && Emissive_Is_Enabled();
+	EmissivePlane * emissive = GpuMap_Bloom() > 0 || voxelmask ? Emissive_Plane_For(&target) : NULL;
 	if (emissive != NULL) {
 		Read_Plane(*emissive, _Area, glow, glowchanged, glowlit);
 	}
@@ -1046,6 +1086,7 @@ static bool Finish_Render(Surface & target)
 		pass.TileShadowChanged = plane != NULL ? &tileshadowchanged : NULL;
 		pass.Glow = emissive != NULL ? &glow : NULL;
 		pass.GlowChanged = emissive != NULL ? &glowchanged : NULL;
+		pass.Mask = voxelmask && emissive != NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
 		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
@@ -1066,6 +1107,14 @@ static bool Finish_Render(Surface & target)
 		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask(), !tilesleft);
 	}
 	Render_Voxel_Pixels();
+	if (voxelmask && emissive != NULL) {
+		For_Each_Voxel_Mask_Pixel([&](int x, int y, unsigned char mask) {
+			unsigned char & value = emissive->Pixels[(std::size_t)y * emissive->Pitch + x];
+			if (value == GPU_VOXEL_MASK_MARK) {
+				value = mask;
+			}
+		});
+	}
 	Replay(base);
 	Write_Area(target, _Area, base);
 	std::fill(changed.begin(), changed.end(), 1);
@@ -1083,7 +1132,7 @@ static void Copy_Label(GpuVoxelPart & part, char const * label)
 
 bool GpuDraw_Voxels_Wanted(void)
 {
-	return(_Voxels && _Target != NULL && !Emissive_Is_Enabled() && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
+	return(_Voxels && _Target != NULL && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
 }
 
 
@@ -1096,6 +1145,18 @@ bool GpuDraw_Voxels_Smooth(void)
 double GpuDraw_Facing_Radian(DirType const & facing)
 {
 	return(GpuDraw_Voxels_Smooth() ? facing.As_Radian_Smooth() : facing.As_Radian32());
+}
+
+
+ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags)
+{
+	return(GpuDraw_Voxels_Wanted() ? ShapeFlags_Type(flags & ~SHAPE_PREDATOR) : flags);
+}
+
+
+double GpuDraw_Facing_Steps(DirType const & facing)
+{
+	return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32()));
 }
 
 
@@ -1122,9 +1183,30 @@ void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool softw
 		for (int r = 0; r < bounds.Height; r++) {
 			std::memcpy(&part.Reference[(std::size_t)r * bounds.Width], VoxelDrawBuffer + (bounds.Y + r) * VOXEL_BITMAP_WIDTH + bounds.X, bounds.Width);
 		}
+		if (Emissive_Is_Enabled()) {
+			Copy_Voxel_Mask(part);
+		}
+	} else if (Emissive_Is_Enabled()) {
+		// The blit copies these marks into the target's plane, and the GPU replaces each one that survives the pass.
+		VoxelDrawSystem::Fill_Mask(bounds, GPU_VOXEL_MASK_MARK);
 	}
 	_List.Voxels.push_back(std::move(part));
 	_PendingPart = (int)_List.Voxels.size() - 1;
+}
+
+
+SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag)
+{
+	if (!GpuDraw_Voxels_Wanted()) {
+		return(VoxelDrawSystem::Render());
+	}
+	VoxelScene const scene = VoxelDrawSystem::Capture();
+	bool const gpu_draws = GpuDraw_Is_Rendering(*LogicalSurface);
+	SurfaceRegion const region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
+	char label[24];
+	std::snprintf(label, sizeof(label), "%s@%.4g%c", name, steps, tag);
+	GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+	return(region);
 }
 
 
@@ -1381,7 +1463,31 @@ bool GpuDraw_End(void)
 		// Compared with the software replay, so draws the record does not hold do not count.
 		std::vector<unsigned short> replayed = _Before;
 		Replay(replayed);
-		GpuMap_Check(pass, replayed);
+		// The software mask is compared with the GPU's, whose plane marks the pixels the voxel parts left.
+		std::vector<unsigned char> softwaremask;
+		std::vector<unsigned char> maskchanged;
+		std::vector<unsigned char> masklit;
+		EmissivePlane const * emissive = _Voxels && Emissive_Is_Enabled() ? Emissive_Plane_For(&target) : NULL;
+		std::vector<unsigned char> marked;
+		if (emissive != NULL) {
+			Read_Plane(*emissive, _Area, softwaremask, maskchanged, masklit);
+			marked = softwaremask;
+			std::vector<unsigned char> seen(softwaremask.size(), 0);
+			For_Each_Voxel_Mask_Pixel([&](int x, int y, unsigned char mask) {
+				if (x < _Area.X || y < _Area.Y || x >= _Area.X + _Area.Width || y >= _Area.Y + _Area.Height) {
+					return;
+				}
+				std::size_t const at = (std::size_t)(y - _Area.Y) * _Area.Width + (x - _Area.X);
+				if (seen[at] == 0) {
+					seen[at] = 1;
+					marked[at] = softwaremask[at] == mask ? GPU_VOXEL_MASK_MARK : softwaremask[at];
+				}
+			});
+			pass.Glow = &marked;
+			pass.GlowChanged = &maskchanged;
+			pass.Mask = true;
+		}
+		GpuMap_Check(pass, replayed, emissive != NULL ? &softwaremask : NULL);
 	}
 	if (!_ReplayCheck) {
 		return(false);

@@ -24,6 +24,7 @@
 #include "crc.h"
 #include "dbgprint.h"
 #include "draw.h"
+#include "gpudraw.h"
 #include "house.h"
 #include "inline.h"
 #include "lightcon.h"
@@ -204,29 +205,22 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 			if (voxlib != NULL) {
 
 				Matrix3D matrix;
-				Rect fromrect;
-				int x, y;
 
 				matrix = BounceClass::Get_Matrix();
 				VoxelDrawSystem::Reset();
 				VoxelDrawSystem::Prep_For_Shadow(voxlib, Class->VoxelIndex, 0, VoxelCameraMatrix, matrix, VoxelShadowLightVector);
 
-				VoxelDrawSystem::Render(fromrect, x, y);
+				SurfaceRegion region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 's');
 
-				{
-					Point2D drawpoint;
-					drawpoint.X = pixel.X + x;
-					drawpoint.Y = y + pixel.Y;
-
-					Blit_Block(*LogicalSurface, *VoxelDrawer, *VoxelDrawSystem::Get_Surface(), fromrect, drawpoint, cliprect, 0, VoxelDrawer->Blitter_From_Flags(ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD)), -4 - TacticalMap->Z_Lepton_To_Pixel(z));
-				}
+				Blit_Block(*LogicalSurface, *VoxelDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + pixel, cliprect, 0, VoxelDrawer->Blitter_From_Flags(ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD)), -4 - TacticalMap->Z_Lepton_To_Pixel(z));
+				GpuDraw_Voxel_End();
 
 				matrix = BounceClass::Get_Matrix();
 				VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, matrix, VoxelLightSource, (float)Rule->VoxelShadeScale);
 				VoxelDrawSystem::Reset();
 				VoxelDrawSystem::Prep_For_Object(voxlib, Class->VoxelIndex, 0, VoxelCameraMatrix * matrix);
 
-				VoxelDrawSystem::Render(fromrect, x, y);
+				region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 'a');
 
 				ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
 				if (Class->IsTranslucent) {
@@ -245,13 +239,8 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 					brightness = NORMAL_LIGHT;
 				}
 
-				{
-					Point2D drawpoint;
-					drawpoint.X = x + point.X;
-					drawpoint.Y = y + point.Y;
-
-					Blit_Block(*LogicalSurface, *drawer, *VoxelDrawSystem::Get_Surface(), fromrect, drawpoint, cliprect, 0, drawer->Blitter_From_Flags(flags), -2 - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, brightness);
-				}
+				Blit_Block(*LogicalSurface, *drawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, 0, drawer->Blitter_From_Flags(flags), -2 - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, brightness);
+				GpuDraw_Voxel_End();
 			}
 		}
 	}

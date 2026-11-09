@@ -76,6 +76,10 @@ struct GpuMapPass
 	std::vector<unsigned char> const * Glow = NULL;
 	std::vector<unsigned char> * GlowChanged = NULL;
 
+	// Set when GpuVoxels is on and the emissive mask is kept: Glow holds the mark GPU_VOXEL_MASK_MARK under
+	// the direct voxel parts, and the GPU builds the finished mask from Glow and the voxel image.
+	bool Mask = false;
+
 	// The map position of Area's top left pixel, in pixels, which keeps water ripples and cloud
 	// shadows fixed to the ground as the view moves.
 	int WorldX = 0;
@@ -87,9 +91,10 @@ struct GpuMapPass
 
 
 // Draws the pass on the GPU and keeps expected, the software result, until the GPU picture has been
-// read back; GpuMap_After_Frame then logs a GPU_DIFF line comparing them. Returns false, drawing
+// read back; GpuMap_After_Frame then logs a GPU_DIFF line comparing them, and with expected_mask, the
+// software emissive mask, a GPU_MASK line comparing it with the mask the GPU built. Returns false, drawing
 // nothing, when the renderer is not Direct3D 11 or an earlier check is still being read back.
-bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected);
+bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected, std::vector<unsigned char> const * expected_mask = NULL);
 
 // Keeps the pass for GpuMap_Texture to draw, replacing any pass kept earlier; false means it cannot
 // be drawn. Its list and buffers must stay unchanged until it is drawn or dropped.
@@ -137,8 +142,16 @@ int GpuMap_Scale(void);
 // does not fit the GPU limits.
 std::uint16_t GpuMap_Texture(void);
 
+// The bgfx handle index of the emissive mask the GPU built for the pass GpuMap_Texture last drew, one byte a
+// map pixel, or bgfx::kInvalidHandle when that pass built none.
+std::uint16_t GpuMap_Mask_Texture(void);
+
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
+
+// Makes the next pass the GPU draws log a GPU_VOXEL_SHADOW line with the shadow blits of voxel objects it holds
+// and how many of their pixels the finished picture shows darkened (the gpushadowcount autotest step).
+void GpuMap_Count_Shadows(void);
 
 // Forgets the kept pass and ends a bgfx frame early when the last drawn pass's buffers have not
 // been read yet; call it before freeing the depth or alpha buffer.

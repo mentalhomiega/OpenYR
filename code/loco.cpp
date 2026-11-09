@@ -110,7 +110,7 @@ Matrix3D LocomotionClass::Build_Shadow_Matrix(int *key, bool matrix)
 	Matrix3D draw_matrix(true);
 	if (matrix) {
 		draw_matrix = Get_Slope_Matrix(ramp);
-		draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+		draw_matrix.Rotate_Z(GpuDraw_Facing_Radian(LinkedTo->PrimaryFacing.Current()));
 	}
 
 	if (key && *key != -1) {

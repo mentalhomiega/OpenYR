@@ -1,0 +1,16 @@
+; Shows hull-only vehicles and aircraft, a tank and a light post under Bloom with the GPU drawing the pass, for comparing GpuVoxels off, on, and on with GpuVoxelSmooth and GpuVoxelScale (docs/GPU_VOXELS.md).
+; The shots are saved in the Screenshots folder of the run's autotest user directory, one run for each setting.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/gpu-voxel-bloom.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception" -Uncapped -StopAfterSteps -Settings "[Video]`nGpuRender=yes`nBloom=yes`nHDRHighlights=Classic`nGpuVoxels=yes"
+1 view 50 57
+2 reveal
+10 own GALITE 53 56
+10 grantunit AMCV 48 57
+10 grantunit SMCV 52 58
+10 grantunit MTNK 50 59
+12 grantunit ZEP 50 55
+12 grantunit ORCA 47 55
+40 face 40 48 57
+40 face 150 52 58
+40 face 90 50 59
+100 windowshot bloom
+130 quit

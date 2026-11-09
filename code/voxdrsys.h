@@ -64,11 +64,13 @@ namespace VoxelDrawSystem
 	void Prep_For_Shadow(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & camera, Matrix3D const & motion, Vector3 const & light);
 	void Prep_For_Object(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & transform);
 
-	void Render(Rect & rect, int & x, int & y);
 	SurfaceRegion Render(void);
 	VoxelScene Capture(void);
 
 	void Clear_Buffer(void);
+
+	// Writes value into the emissive mask buffer over a rectangle of the voxel buffer.
+	void Fill_Mask(Rect const & bounds, unsigned char value);
 
 	void Clear_Z_Buffer(void);
 };
@@ -85,14 +87,6 @@ struct VoxelRenderStruct {
 	Vector3 MinBounds;						/// The minimum bounds of the voxel model.
 	Vector3 MaxBounds;						/// The maximum bounds of the voxel model.
 	Vector3 BoxCorner[VOXEL_BOUNDS_COUNT];	/// The 8 corners of the voxel model.
-};
-
-
-// The prepared objects of a scene in drawing order (VoxelDrawSystem::Capture).
-struct VoxelScene {
-	std::vector<VoxelRenderStruct> Objects;
-	Vector3 Center;
-	SurfaceRegion Region;
 };
 
 
@@ -114,6 +108,15 @@ struct VoxelShadowRenderStruct {
 	 * layer's silhouette is smeared across to make the shadow.
 	 */
 	Vector3 ShadowCorner[4];
+};
+
+
+// The prepared shadows and objects of a scene, each in drawing order (VoxelDrawSystem::Capture).
+struct VoxelScene {
+	std::vector<VoxelShadowRenderStruct> Shadows;
+	std::vector<VoxelRenderStruct> Objects;
+	Vector3 Center;
+	SurfaceRegion Region;
 };
 
 

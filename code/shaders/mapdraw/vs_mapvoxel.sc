@@ -12,7 +12,7 @@ $output v_texcoord1
 //   u_vox[1]  xy: its step along j, zw: its step along k
 //   u_vox[2]  xy: the voxel buffer pixel (0, 0) in the image, z: 1 for a lit layer, which draws two pixels a voxel,
 //             w: the first row of the block s_vpal is read from, 0 or 33
-//   u_vox[3]  x: the layer's first voxel in s_vmodel, y: the scale, 1 to 4
+//   u_vox[3]  x: the layer's first voxel in s_vmodel, y: the scale, 1 to 4, z: the emissive strength of row 31
 //   u_vlight  VoxelNormalTranslateTable, four bytes a vector
 
 #include "bgfx_shader.sh"
@@ -50,7 +50,14 @@ void main()
 	}
 	int index = int(texelFetch(s_vpal, ivec2(a.w, int(u_vox[2].w + 0.5) + row), 0).x * 255.0 + 0.5);
 
-	vec2 at;
+	// The strength the software drawers write beside the index (Emissive_Voxel_Highlight); an unlit layer writes none.
+	int strength = 0;
+	if (lit && row > 16) {
+		int top = int(u_vox[3].z + 0.5);
+		strength = row >= 31 ? top : (row - 16) * top / 15;
+	}
+
+	vec2 at;
 	if (scale > 1) {
 		// The cube's axes on screen, in pixels, and the centre the software's quad is centred on.
 		// The steps are 16-bit values that wrap, so one above 32767 is negative.
@@ -92,5 +99,5 @@ void main()
 		at = vec2(float(bx) + u_vox[2].x, float(by) + u_vox[2].y) + c;
 	}
 	gl_Position = mul(u_viewProj, vec4(at, 0.0, 1.0));
-	v_texcoord1 = vec4(float(index), 0.0, 0.0, 0.0);
+	v_texcoord1 = vec4(float(index), float(strength), 0.0, 0.0);
 }
