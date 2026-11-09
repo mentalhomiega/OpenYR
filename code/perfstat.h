@@ -39,6 +39,7 @@ enum PerfPhase : unsigned char {
 	PERF_FRAME_FACTORIES,       // factory AI
 	PERF_FRAME_HOUSES,          // house AI, including the computer houses
 	PERF_FRAME_QUEUE,           // Queue_AI(): player and network orders
+	PERF_FRAME_DETACH,          // Detach_This_From_All; nested in whatever removed the object
 	PERF_FRAME_WAIT,            // sleeping between game frames in Sync_Delay
 	PERF_DRAW_TOTAL,            // one GScreenClass::Render, including any present it makes
 	PERF_DRAW_TERRAIN,          // rebuild of the cached terrain pass, when the view needs one
@@ -85,6 +86,13 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_OBJECT_EVALS,    // Evaluate_Object calls
 	PERF_COUNT_AREA_MODIFY,     // Area_Modify calls
 	PERF_COUNT_WEAPON_SELECTS,  // What_Weapon_Should_I_Use calls
+	PERF_COUNT_DETACH_CALLS,    // Detach_This_From_All calls
+	PERF_COUNT_DETACH_VISITS,   // Detach calls made by those broadcasts
+	PERF_COUNT_DETACH_BULLET,   // broadcasts for a bullet
+	PERF_COUNT_DETACH_ANIM,     // broadcasts for an animation
+	PERF_COUNT_DETACH_PARTICLE, // broadcasts for a particle or particle system
+	PERF_COUNT_DETACH_TECHNO,   // broadcasts for a unit, infantry, aircraft or building
+	PERF_COUNT_DETACH_OTHER,    // all other broadcasts
 	PERF_COUNT_DRAWS_SKIPPED,   // draw slots in the frame wait that came due with too little time left; once per slot
 	PERF_COUNTER_COUNT
 };
