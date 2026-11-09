@@ -85,6 +85,7 @@ between two redraws that happen, so a due redraw that is skipped again and again
 | `area modify` | `Area_Modify` calls, including the calls that return 1 at once for a weapon that is not suppressive |
 | `weapon selects` | `What_Weapon_Should_I_Use` calls |
 | `draws skipped` | Redraws that were due in the wait between game frames but had too little time left. See [Skipped draws](#skipped-draws) |
+| `gpu voxel parts`, `gpu voxel drawn` | With `GpuVoxels=yes`, the voxel parts of the passes the GPU drew, and those whose picture was not already in the voxel image and had to be drawn. See [GPU_VOXELS.md](GPU_VOXELS.md) |
 
 The `ring cells` counter is taken only when the cell walk runs. Each radar-map ring cell the walk visits adds one
 counter increment while recording.

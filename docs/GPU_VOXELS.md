@@ -27,7 +27,7 @@ a predator draw through the plain translucent blend (see "Where pixel-exact draw
 
 `GpuVoxelScale` (`[Video]`, 1 to 4, default 1, needs `GpuVoxels=yes`) is stage 6, described under Sharpness below.
 
-A voxel object drawn this way never uses the voxel picture cache.
+A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
 
 Stage 3 is in. While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also writes each
 voxel's highlight strength beside its index and feeds the glow and the HDR picture from it; see Highlights below.
@@ -84,9 +84,9 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 - `code/gpumapvoxel.cpp` keeps those lists in a 2048 by 2048 model texture, two texels a voxel, one list for each
   layer and orientation, and a 2048 by 2048 voxel image of palette indices. Each part gets a tile of the image the
   size of its buffer region. `vs_mapvoxel.sc` reads the voxel for each vertex from `gl_VertexID`, computes the same
-  16-bit position, looks up the lit index and draws a one or two pixel quad into the tile; the order of the
-  vertices is the order of the software's writes, and Direct3D keeps primitive order, so later voxels overwrite
-  earlier ones as they do in software.
+  16-bit position, looks up the lit index and draws a horizontal line of one or two pixels into the tile, two
+  vertices a voxel; the order of the vertices is the order of the software's writes, and Direct3D keeps primitive
+  order, so later voxels overwrite earlier ones as they do in software.
 - A shadow is one flat layer. `Gpu_Voxel_Walk_Shadow` lists one voxel with K 0 and colour 1 for each occupied column,
   `VoxelLibrary::Setup_Shadow` gives the projection the software shadow drawer uses, and the shader writes two
   pixels a column through the identity palette row. A voxel animation's shadow is drawn the same way.
@@ -117,9 +117,10 @@ shown smaller than that and keeps whole pixels when it is shown at that size or 
 therefore shows the finer picture.
 
 A voxel part's tile in the voxel image is scale times its buffer region in each direction. A voxel is drawn as the
-silhouette of its cube: the three faces that meet at the corner nearest the viewer (the one on the line of sight through
-the cube, found from the signs of the cross products of the layer's three projected steps), 18 vertices a voxel, centred
-on the point the software's quad is centred on, with the same palette row. Voxels are still written in the software's
+outline of its cube: the six corners other than the two on the line of sight through the cube (found from the signs of the
+cross products of the layer's three projected steps), one triangle strip of eight vertices a voxel, the first and last
+doubled so the strips of successive voxels join, centred on the point the software's line is centred on, with the same
+palette row. Voxels are still written in the software's
 order, so nearer voxels overwrite farther ones. Everything else about a voxel blit, translator, depth test and blend,
 is unchanged.
 
@@ -250,13 +251,27 @@ rising in even steps with no repeats. A composite is labelled `TYPE@FtT`, `T` be
 
 ## Cost
 
-With the key on, no voxel object uses the picture cache, so the GPU draws every object from its voxels in every
-pass. On `tests/autotest/bench-large-battle.txt` at 1920 by 1080 with `GpuRender=yes` (two runs of 144 seconds
-each, `scripts/perf_bench.ps1`), the mean draw took 5.5 ms with `GpuVoxels=no` and 7.8 ms with `yes`, and the
-GPU's part of the present 6.0 and 8.6 ms. The CPU's preparation of the voxel objects rose from 0.011 to 0.082 ms
-a draw. The run drew 144 times a second with the key off and 84 with it on, at 49.4 and 47.7 game frames a second,
-with 1,100 cached voxel pictures a second reused with it off and 1,806 uncached ones drawn with it on. Stage 7
-takes this cost down.
+With the key on, no voxel object uses the picture cache, so the GPU would draw every object from its voxels in every pass. Stage 7 keeps the work of earlier passes in two places:
+
+- **Prepared objects.** An object prepared for the GPU, its layers, projection centre and lighting table, is kept under a key made of its voxel library, motion library and frame, its matrix, the camera, the light and the shading rules, and a shadow likewise. An object drawn again with an equal key takes the kept preparation. The kept objects are dropped when the voxel data changes, and any new input to the preparation or the lighting table must be added to that key (`GpuVoxelPrepKey` in `code/gpudraw.h`).
+- **Pictures in the voxel image.** Each part has a signature, a 64-bit hash of everything the shader's output depends on. A part whose signature the image already holds, from this pass or an earlier one, reads that tile and is not drawn. New tiles go on until a pass does not fit what is left; the pass then empties the image and draws its parts afresh. A change of the palette texture empties the image as well.
+
+A voxel is also cheaper to draw: two vertices at scale 1 and eight above it, where it used to take six and eighteen. Scale 1 stays index-exact: `gpu-voxel-compare.txt` has 0 differing pixels over 1,832 parts and 2,123,729 covered pixels, and the `gpu-voxel-shadow` scripts count the same 2,098 and 1,970 darkened pixels.
+
+The numbers below are for `tests/autotest/bench-large-battle.txt` and `bench-late-game.txt` at 3840 by 2160 with `GpuRender=yes`, `RenderFrameRate=240` and HDR Enhanced highlights on. Each cell pools two runs, and the runs of the old and the new build alternated on a machine in other use, so differences of a few tenths of a millisecond are noise; the benchmark-wide means include the map, the interface and everything else in a draw. "On" is `GpuVoxels=yes` with `GpuVoxelSmooth=yes` at the given `GpuVoxelScale`.
+
+| Benchmark | Keys | Mean draw before | after | p95 before | after | Worst before | after | Draws a second before | after |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Large battle | off | 0.86 | 0.88 | 3.48 | 2.53 | 28.1 | 15.7 | 297 | 297 |
+| Large battle | on, scale 1 | 3.54 | 2.18 | 6.01 | 4.83 | 18.2 | 19.3 | 208 | 237 |
+| Large battle | on, scale 2 | 3.56 | 1.91 | 8.30 | 3.94 | 19.5 | 15.7 | 207 | 240 |
+| Late game | off | 2.75 | 2.55 | 12.33 | 11.65 | 21.8 | 22.8 | 152 | 157 |
+| Late game | on, scale 1 | 5.07 | 4.69 | 15.01 | 14.08 | 24.0 | 29.4 | 111 | 113 |
+| Late game | on, scale 2 | 4.48 | 3.89 | 13.33 | 12.78 | 21.6 | 22.2 | 123 | 132 |
+
+On the large battle at scale 1 a pass had about 110 parts, 196 layer draws and 531,000 voxels. Drawing every part took 3.2 million vertices before this stage and takes 1.1 million now, and 9.6 and 4.2 million at scale 2. `draw.voxels` fell from 0.82 to 0.17 ms a draw, and the GPU's part of the present, `present.gputime`, from 1.11 to 0.76 ms at scale 1 and from 4.29 to 1.26 ms at scale 2. Of the parts in a second, 5% had to be drawn at scale 1 and 28% at scale 2 (`gpu voxel drawn` against `gpu voxel parts`). On the late game 24% and 37% were drawn.
+
+With the key on, `draw.gpumap`, the end of the recording, stays about 0.4 ms above its value with the key off on the large battle and 0.4 to 0.7 ms above it on the late game. That is the largest part of the cost left.
 
 ## Stages
 
@@ -270,7 +285,7 @@ Each stage has a check that fails when its picture departs from the software.
 | 4 (done) | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened) and with the smooth key their exact facing, voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_VOXEL` over shadows at the 16 facings of stage 1, `GPU_DIFF` on the voxel anim and cloak scripts, `gpuvoxel` unit test over the shadow walk | |
 | 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning harvester's and tank's hull and turret facings in fractions of a step | |
 | 6 (done) | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
-| 7 | Settings page switches (greyed unless GPU drawing is on), default on once stage 2 to 5 match, instance buffers and batching, performance numbers on the large battle | the regress suite with the key on | 1 session |
+| 7 (cost work done) | Prepared objects and voxel image pictures kept between passes, two or eight vertices a voxel, numbers under Cost. Not done: turning the keys on by default, which the numbers under Cost decide | `gpu-voxel-compare.txt` at 0 differing pixels and the `gpu-voxel-shadow` scripts unchanged; before turning the key on by default, the regress suite with the key on | |
 
 ## Where pixel-exact drawing ends
 
@@ -284,5 +299,5 @@ Each stage has a check that fails when its picture departs from the software.
   them. `Bit_Blit` ignores the offset, so an uncached software draw looks the same as the GPU's.
 - The model texture holds about a million voxels' worth of walks (a layer is stored once for each of the eight
   orientations it is drawn in) and is emptied when full, so a pass with more distinct layers than that falls back
-  to software. The voxel image holds the parts of one pass, several hundred of average size; a pass with more is drawn in software.
+  to software. A pass that does not fit what is left of the voxel image empties the image first; a pass whose parts do not fit an empty image, several hundred of average size, is drawn in software.
 - A float lighting model (stage 6) cannot give the software's palette rows, so it is a separate look.
