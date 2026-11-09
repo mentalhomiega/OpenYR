@@ -319,6 +319,16 @@ a default and returns it when the section or entry is missing.
 | `Modern_Interface()` | `hud.h` | The modern panel interface is on. |
 | `MPMode_Is_Cooperative()` | `mpmode.h` | The running match is Cooperative. |
 
+## Client settings
+
+| Helper | File | Use |
+|---|---|---|
+| `Setting<Owner>`, `Settings_Load`, `Settings_Save`, `Settings_Reset` | `settingregistry.h` | One declaration per `RA2MD.INI` key. [SETTINGS.md](SETTINGS.md) describes how to add one. |
+| `Option_Settings()` | `optionsettings.h` | The declared settings of `OptionsClass`. |
+| `UI_Setting_Rows`, `UI_Setting_Rows_Refresh`, `UI_Setting_Row_Execute`, `UI_Setting_Rows_Reset`, `UI_Setting_Rows_Changed`, `UI_Setting_Rows_Apply` | `ui/uisettingrows.h` | The rows a page builds from declarations, with their greying and pending values. |
+| `UI_Rml_Setting_Rows_Bind(model, name, rows)` | `ui/rml/rmlsettingrows.h` | Binds the rows for a page's markup. |
+| `Enum_Name(table, value, fallback)`, `Enum_From_Name(table, text, fallback)` | `nametable.h` | Name of an enum value from a table of file names, and the reverse. Each also takes a `std::span`. |
+
 ## Local to one file
 
 These are written once, in a `.cpp`, and nothing else can call them. Move one
@@ -329,7 +339,6 @@ to a header when a second file needs it.
 | `For_Technos(filter, action)` | `autotest.cpp` | Runs an action on every techno a filter accepts, re-reading the count each pass. |
 | `Run_Start_Cell(cell, step, part_of_run)` | `map.cpp` | First cell of a bridge run. |
 | `For_Each_Ring_Offset(ring, visit)` | `slaveman.cpp` | Visits the offsets of one square ring. |
-| `Enum_Name(table, value, fallback)` | `options.cpp` | Name of an enum value from a table. |
 | `Find_Type_In(types, name)`, `Type_Name_At(types, id, none)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type by name or ID, or a house by name (including "player"). |
 | `Map.Cross_Bridge_Deck(old, new, bridge_height)` | `map.cpp` | Whether one step dropped onto or rose into a bridge deck. |
 | `Mount_If_Available(name)`, `Add_CC_Expansion_Mix(name)`, `Add_Disk_Expansion_Mix(name)` | `init.cpp` | Mount a mixfile only when the game can find it. |
