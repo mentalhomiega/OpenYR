@@ -351,7 +351,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 				(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 				(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
 				(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
-				(float)slot->First, (float)scale, (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
+				(float)slot->First, (float)scale, layer.Shadow ? 0.0f : (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
 			};
 			bgfx::setUniform(_VoxelUniform, vox, 4);
 			bgfx::setUniform(_LightUniform, light, 64);
