@@ -32,6 +32,8 @@
 #include "shadowplane.h"
 #include "surface.h"
 #include "tactical.h"
+#include "convert.h"
+#include "unittype.h"
 #include "voxlib.h"
 #include "wave.h"
 #include "xsurface.h"
@@ -48,8 +50,16 @@ static bool _GpuCheck = false;
 static bool _Render = false;
 static bool _Voxels = false;
 static bool _VoxelsSmooth = false;
-// The part in GpuDrawList::Voxels the next blit from the voxel buffer shows, or -1.
+// The part in GpuDrawList::Voxels the next blit from its source (the voxel buffer, or the scratch surface for
+// a composite) shows, or -1, and whether a blit has shown it yet.
 static int _PendingPart = -1;
+static bool _PartShown = false;
+// The composite of a turreted vehicle that is being put together, and where the scratch surface's pixels are.
+static int _Composite = -1;
+static bool _CompositeRenders = false;
+static unsigned char const * _ScratchBase = NULL;
+static int _ScratchWidth = 0;
+static int _ScratchHeight = 0;
 static Surface * _Target = NULL;
 static Rect _Area;
 static std::vector<unsigned short> _Before;
@@ -316,17 +326,22 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha);
 	_LockedBlits++;
-	if (_PendingPart >= 0 && pixels >= VoxelDrawBuffer && pixels < VoxelDrawBuffer + VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT) {
-		SurfaceRegion const & region = _List.Voxels[_PendingPart].Scene.Region;
-		blit.Voxel = _PendingPart;
-		blit.VoxelX = (int)(pixels - VoxelDrawBuffer) % VOXEL_BITMAP_WIDTH - region.Bounds.X;
-		blit.VoxelY = (int)(pixels - VoxelDrawBuffer) / VOXEL_BITMAP_WIDTH - region.Bounds.Y;
-		_PendingPart = -1;
-		if (_Render) {
-			// The software did not render the image; the GPU draws it, and the fallback renders it if needed.
-			_List.PixelArena.resize(blit.Pixels);
-			blit.NoPixels = true;
-			return(true);
+	if (_PendingPart >= 0) {
+		GpuVoxelPart const & part = _List.Voxels[_PendingPart];
+		unsigned char const * const base = part.Scratch ? _ScratchBase : VoxelDrawBuffer;
+		int const source_width = part.Scratch ? _ScratchWidth : VOXEL_BITMAP_WIDTH;
+		int const source_size = part.Scratch ? _ScratchWidth * _ScratchHeight : VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT;
+		if (base != NULL && pixels >= base && pixels < base + source_size) {
+			blit.Voxel = _PendingPart;
+			blit.VoxelX = (int)(pixels - base) % source_width - part.Area.X;
+			blit.VoxelY = (int)(pixels - base) / source_width - part.Area.Y;
+			_PartShown = true;
+			if (_Render) {
+				// The software did not render the image; the GPU draws it, and the fallback renders it if needed.
+				_List.PixelArena.resize(blit.Pixels);
+				blit.NoPixels = true;
+				return(true);
+			}
 		}
 	}
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
@@ -909,30 +924,53 @@ static void Count_Render(bool drawn)
 }
 
 
+// The part's pixels as the software composes them: each piece is rendered into the voxel buffer, and its
+// drawn pixels replace those below, through the scratch surface's colour translation for a composite.
+static std::vector<unsigned char> Render_Part(GpuVoxelPart const & part)
+{
+	std::vector<unsigned char> image((std::size_t)part.Area.Width * part.Area.Height, 0);
+	unsigned char const * const translator = part.Scratch && EightBitDrawer != NULL ? (unsigned char const *)EightBitDrawer->Get_Translate_Table() : NULL;
+	for (GpuVoxelPiece const & piece : part.Pieces) {
+		std::memcpy(VoxelNormalTranslateTable, piece.Lighting, sizeof(piece.Lighting));
+		VoxelDrawSystem::Clear_Buffer();
+		for (VoxelRenderStruct object : piece.Scene.Objects) {
+			Vector3 center = piece.Scene.Center;
+			object.VoxLib->Render_Object(object, center);
+		}
+		Rect const & bounds = piece.Scene.Region.Bounds;
+		Rect const covered = Intersect(Rect(piece.Dest.X, piece.Dest.Y, bounds.Width, bounds.Height), part.Area);
+		for (int y = covered.Y; y < covered.Y + covered.Height; y++) {
+			for (int x = covered.X; x < covered.X + covered.Width; x++) {
+				unsigned char const index = VoxelDrawBuffer[(bounds.Y + y - piece.Dest.Y) * VOXEL_BITMAP_WIDTH + bounds.X + x - piece.Dest.X];
+				if (index != 0) {
+					image[(std::size_t)(y - part.Area.Y) * part.Area.Width + x - part.Area.X] = translator != NULL ? translator[index] : index;
+				}
+			}
+		}
+	}
+	return(image);
+}
+
+
 // Renders in software the images of the voxel blits that were left to the GPU, so a pass the GPU
 // cannot draw can be drawn from the list.
 static void Render_Voxel_Pixels(void)
 {
 	int rendered = -1;
+	std::vector<unsigned char> image;
 	for (GpuBlit & blit : _List.Blits) {
 		if (!blit.NoPixels) {
 			continue;
 		}
 		if (rendered != blit.Voxel) {
-			GpuVoxelPart const & part = _List.Voxels[blit.Voxel];
-			std::memcpy(VoxelNormalTranslateTable, part.Lighting, sizeof(part.Lighting));
-			VoxelDrawSystem::Clear_Buffer();
-			for (VoxelRenderStruct object : part.Scene.Objects) {
-				Vector3 center = part.Scene.Center;
-				object.VoxLib->Render_Object(object, center);
-			}
+			image = Render_Part(_List.Voxels[blit.Voxel]);
 			rendered = blit.Voxel;
 		}
-		SurfaceRegion const & region = _List.Voxels[blit.Voxel].Scene.Region;
+		int const width = _List.Voxels[blit.Voxel].Area.Width;
 		blit.Pixels = (std::uint32_t)_List.PixelArena.size();
 		_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)blit.Width * blit.Height);
 		for (int r = 0; r < blit.Height; r++) {
-			std::memcpy(&_List.PixelArena[blit.Pixels + (std::size_t)r * blit.Width], VoxelDrawBuffer + (region.Bounds.Y + blit.VoxelY + r) * VOXEL_BITMAP_WIDTH + region.Bounds.X + blit.VoxelX, blit.Width);
+			std::memcpy(&_List.PixelArena[blit.Pixels + (std::size_t)r * blit.Width], &image[(std::size_t)(blit.VoxelY + r) * width + blit.VoxelX], blit.Width);
 		}
 		blit.NoPixels = false;
 	}
@@ -1036,6 +1074,13 @@ static bool Finish_Render(Surface & target)
 }
 
 
+static void Copy_Label(GpuVoxelPart & part, char const * label)
+{
+	std::strncpy(part.Label, label, sizeof(part.Label) - 1);
+	part.Label[sizeof(part.Label) - 1] = 0;
+}
+
+
 bool GpuDraw_Voxels_Wanted(void)
 {
 	return(_Voxels && _Target != NULL && !Emissive_Is_Enabled() && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
@@ -1051,17 +1096,22 @@ bool GpuDraw_Voxels_Smooth(void)
 void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
 {
 	_PendingPart = -1;
+	_PartShown = false;
 	// A pass that renders on the GPU has nothing to compare a software image with.
 	if (!GpuDraw_Voxels_Wanted() || (_Render && software)) {
 		return;
 	}
 	GpuVoxelPart part;
-	part.Scene = scene;
-	std::memcpy(part.Lighting, VoxelNormalTranslateTable, sizeof(part.Lighting));
-	std::strncpy(part.Label, label, sizeof(part.Label) - 1);
-	part.Label[sizeof(part.Label) - 1] = 0;
+	Rect const bounds = scene.Region.Bounds;
+	GpuVoxelPiece piece;
+	piece.Scene = scene;
+	std::memcpy(piece.Lighting, VoxelNormalTranslateTable, sizeof(piece.Lighting));
+	piece.Dest = Point2D(bounds.X, bounds.Y);
+	part.Pieces.push_back(std::move(piece));
+	part.Area = bounds;
+	part.Scratch = false;
+	Copy_Label(part, label);
 	if (software) {
-		Rect const bounds = scene.Region.Bounds;
 		part.Reference.resize((std::size_t)bounds.Width * bounds.Height);
 		for (int r = 0; r < bounds.Height; r++) {
 			std::memcpy(&part.Reference[(std::size_t)r * bounds.Width], VoxelDrawBuffer + (bounds.Y + r) * VOXEL_BITMAP_WIDTH + bounds.X, bounds.Width);
@@ -1075,10 +1125,89 @@ void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool softw
 void GpuDraw_Voxel_End(void)
 {
 	// An image that no blit showed was clipped away; with nothing to compare, the GPU need not draw it.
-	if (_PendingPart >= 0 && _PendingPart == (int)_List.Voxels.size() - 1 && _List.Voxels[_PendingPart].Reference.empty()) {
+	if (_PendingPart >= 0 && !_PartShown && _PendingPart == (int)_List.Voxels.size() - 1 && _List.Voxels[_PendingPart].Reference.empty()) {
 		_List.Voxels.pop_back();
 	}
 	_PendingPart = -1;
+	_PartShown = false;
+}
+
+
+void GpuDraw_Composite_Begin(Surface const & dest, char const * label)
+{
+	_Composite = -1;
+	_CompositeRenders = false;
+	// A pass that renders on the GPU into another surface has nothing to compare a software image with.
+	if (!GpuDraw_Voxels_Wanted() || (_Render && !GpuDraw_Is_Rendering(dest))) {
+		return;
+	}
+	GpuVoxelPart part;
+	part.Area = Rect();
+	part.Scratch = true;
+	Copy_Label(part, label);
+	_List.Voxels.push_back(std::move(part));
+	_Composite = (int)_List.Voxels.size() - 1;
+	_CompositeRenders = GpuDraw_Is_Rendering(dest);
+}
+
+
+bool GpuDraw_Composite_Open(void)
+{
+	return(_Composite >= 0);
+}
+
+
+bool GpuDraw_Composite_Rendering(void)
+{
+	return(_Composite >= 0 && _CompositeRenders);
+}
+
+
+void GpuDraw_Composite_Piece(VoxelScene const & scene, Point2D const & dest)
+{
+	if (_Composite < 0) {
+		return;
+	}
+	GpuVoxelPiece piece;
+	piece.Scene = scene;
+	std::memcpy(piece.Lighting, VoxelNormalTranslateTable, sizeof(piece.Lighting));
+	piece.Dest = dest;
+	_List.Voxels[_Composite].Pieces.push_back(std::move(piece));
+}
+
+
+void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty)
+{
+	if (_Composite < 0) {
+		return;
+	}
+	GpuVoxelPart & part = _List.Voxels[_Composite];
+	part.Area = Intersect(dirty, scratch.Get_Rect());
+	if (part.Area.Width <= 0 || part.Area.Height <= 0 || part.Pieces.empty()) {
+		return;
+	}
+	_ScratchBase = (unsigned char const *)scratch.Lock();
+	scratch.Unlock();
+	_ScratchWidth = scratch.Get_Width();
+	_ScratchHeight = scratch.Get_Height();
+	if (!_CompositeRenders) {
+		part.Reference.resize((std::size_t)part.Area.Width * part.Area.Height);
+		for (int r = 0; r < part.Area.Height; r++) {
+			std::memcpy(&part.Reference[(std::size_t)r * part.Area.Width], _ScratchBase + (part.Area.Y + r) * _ScratchWidth + part.Area.X, part.Area.Width);
+		}
+	}
+	_PendingPart = _Composite;
+	_PartShown = false;
+}
+
+
+void GpuDraw_Composite_End(void)
+{
+	if (_Composite >= 0 && _PendingPart != _Composite && _Composite == (int)_List.Voxels.size() - 1) {
+		_List.Voxels.pop_back();
+	}
+	GpuDraw_Voxel_End();
+	_Composite = -1;
 }
 
 
@@ -1177,6 +1306,8 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	_List.Unsupported = 0;
 	_List.Voxels.clear();
 	_PendingPart = -1;
+	_PartShown = false;
+	_Composite = -1;
 	_Render = render;
 	_Area = Intersect(area, target.Get_Rect());
 	if (!_Render || target.Bytes_Per_Pixel() != 2 || _Area.Width <= 0 || _Area.Height <= 0 || TileSurface == NULL) {

@@ -142,8 +142,8 @@ struct GpuAtlas
 };
 
 
-// One voxel object the GPU draws from its voxels instead of from a picture the software rendered.
-struct GpuVoxelPart
+// One prepared voxel object inside a part, with the lighting table it was prepared with.
+struct GpuVoxelPiece
 {
 	// The prepared layers, the point they are projected about and the part of the 256 by 256 voxel buffer drawn.
 	VoxelScene Scene;
@@ -151,7 +151,26 @@ struct GpuVoxelPart
 	// VoxelNormalTranslateTable as it stood when the object was prepared.
 	unsigned char Lighting[VOXEL_PALETTE_SIZE];
 
-	// The software result for Scene.Region.Bounds, one index per pixel, or empty when the software did not render it.
+	// Where Scene.Region.Bounds lands in the source the part's blits read, which is the voxel buffer itself
+	// for a direct part and the scratch surface for a composite.
+	Point2D Dest;
+};
+
+
+// What the GPU draws from voxels instead of from a picture the software rendered: one voxel object blitted
+// straight to the map, or the hull, turret and barrel of a vehicle composed on the scratch surface, whose
+// pieces are listed in the order they are drawn.
+struct GpuVoxelPart
+{
+	std::vector<GpuVoxelPiece> Pieces;
+
+	// The pixels of the source (the voxel buffer or the scratch surface) the part's tile stands for.
+	Rect Area;
+
+	// Set for a composite: its pixels take the scratch surface's colour translation.
+	bool Scratch;
+
+	// The software result for Area, one index per pixel, or empty when the software did not render it.
 	std::vector<unsigned char> Reference;
 
 	char Label[24];
@@ -234,6 +253,18 @@ bool GpuDraw_Voxels_Smooth(void);
 // GpuDraw_Voxel_End closes the offer.
 void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software);
 void GpuDraw_Voxel_End(void);
+
+// A turreted vehicle composes its hull, turret and barrel on the scratch surface and blits that once to dest.
+// Begin opens such a composite when GpuDraw_Voxels_Wanted; GpuDraw_Composite_Rendering says whether the GPU
+// draws the pieces, so the software neither renders them nor writes them to the scratch surface. Each
+// piece the software would blit into the scratch surface at dest is offered with GpuDraw_Composite_Piece.
+// Show is called with the scratch surface and its dirty rectangle just before the blit to dest, and End after it.
+void GpuDraw_Composite_Begin(Surface const & dest, char const * label);
+bool GpuDraw_Composite_Open(void);
+bool GpuDraw_Composite_Rendering(void);
+void GpuDraw_Composite_Piece(VoxelScene const & scene, Point2D const & dest);
+void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty);
+void GpuDraw_Composite_End(void);
 
 // True while the GPU draws the object pass into surface.
 bool GpuDraw_Is_Rendering(Surface const & surface);

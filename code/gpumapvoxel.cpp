@@ -13,6 +13,8 @@
 #include "dbgprint.h"
 #include "gpudraw.h"
 #include "gpuvoxel.h"
+#include "convert.h"
+#include "unittype.h"
 #include "voxlib.h"
 
 #include <algorithm>
@@ -53,7 +55,12 @@ static bgfx::TextureHandle _Readback = BGFX_INVALID_HANDLE;
 
 // The palette table the palette texture holds, kept to upload it again only when the game changes it.
 static unsigned char _PaletteCopy[MAX_PALETTE_LOOKUP_ENTRIES * VOXEL_PALETTE_SIZE];
+static unsigned char _TranslatorCopy[VOXEL_PALETTE_SIZE];
 static bool _PaletteUploaded = false;
+
+// The palette texture holds the lighting rows and an identity row, then the same rows through the scratch
+// surface's translation: PALETTE_BLOCK rows each.
+static int const PALETTE_BLOCK = MAX_PALETTE_LOOKUP_ENTRIES + 1;
 
 // The place of a layer's voxels in the model texture, counted in voxels from its start.
 struct ModelSlot
@@ -87,7 +94,7 @@ static bool Start(void)
 	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Target = bgfx::isValid(_Image) ? bgfx::createFrameBuffer(1, &_Image, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
 	_Model = bgfx::createTexture2D(MODEL_WIDTH, MODEL_ROWS, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, MAX_PALETTE_LOOKUP_ENTRIES, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Model) || !bgfx::isValid(_Palette)) {
 		GpuVoxel_Shutdown();
 		return(false);
@@ -136,13 +143,37 @@ static void Upload_Model(std::uint64_t key, std::vector<GpuVoxelInstance> const 
 }
 
 
+// The scratch surface's translation from a voxel palette index to the index a composite keeps; the identity
+// before the scratch drawer exists.
+static void Read_Translator(unsigned char (&translator)[VOXEL_PALETTE_SIZE])
+{
+	unsigned char const * table = EightBitDrawer != NULL ? (unsigned char const *)EightBitDrawer->Get_Translate_Table() : NULL;
+	for (int i = 0; i < VOXEL_PALETTE_SIZE; i++) {
+		translator[i] = table != NULL ? table[i] : (unsigned char)i;
+	}
+}
+
+
 static void Upload_Palette(void)
 {
-	if (_PaletteUploaded && std::memcmp(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy)) == 0) {
+	unsigned char translator[VOXEL_PALETTE_SIZE];
+	Read_Translator(translator);
+	if (_PaletteUploaded && std::memcmp(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy)) == 0 && std::memcmp(_TranslatorCopy, translator, sizeof(translator)) == 0) {
 		return;
 	}
 	std::memcpy(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy));
-	bgfx::updateTexture2D(_Palette, 0, 0, 0, 0, VOXEL_PALETTE_SIZE, MAX_PALETTE_LOOKUP_ENTRIES, bgfx::copy(_PaletteCopy, sizeof(_PaletteCopy)));
+	std::memcpy(_TranslatorCopy, translator, sizeof(translator));
+	bgfx::Memory const * memory = bgfx::alloc(VOXEL_PALETTE_SIZE * PALETTE_BLOCK * 2);
+	for (int block = 0; block < 2; block++) {
+		for (int row = 0; row < PALETTE_BLOCK; row++) {
+			unsigned char * out = memory->data + (block * PALETTE_BLOCK + row) * VOXEL_PALETTE_SIZE;
+			for (int colour = 0; colour < VOXEL_PALETTE_SIZE; colour++) {
+				int const index = row < MAX_PALETTE_LOOKUP_ENTRIES ? _PaletteCopy[row * VOXEL_PALETTE_SIZE + colour] : colour;
+				out[colour] = block == 0 ? (unsigned char)index : _TranslatorCopy[index];
+			}
+		}
+	}
+	bgfx::updateTexture2D(_Palette, 0, 0, 0, 0, VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, memory);
 	_PaletteUploaded = true;
 }
 
@@ -154,6 +185,8 @@ struct LayerDraw
 	std::uint64_t Key;
 	bool Lit;
 	bool Reversed;
+	// The index of the layer's piece in its part.
+	int Piece;
 };
 
 static ModelSlot const * Find_Slot(std::uint64_t key)
@@ -202,7 +235,7 @@ bool GpuVoxel_Pack(GpuDrawList const & list, std::vector<GpuVoxelTile> & tiles)
 	int y = 0;
 	int shelf = 0;
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		Rect const & bounds = list.Voxels[i].Scene.Region.Bounds;
+		Rect const & bounds = list.Voxels[i].Area;
 		if (bounds.Width <= 0 || bounds.Height <= 0) {
 			continue;
 		}
@@ -233,14 +266,17 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const &
 	}
 	std::vector<std::vector<LayerDraw>> parts(list.Voxels.size());
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		VoxelScene const & scene = list.Voxels[i].Scene;
-		for (VoxelRenderStruct const & object : scene.Objects) {
-			LayerDraw layer;
-			layer.Setup = object.VoxLib->Setup_Object(object, scene.Center);
-			layer.Key = Model_Key(object.VoxLib->Get_Serial(), object);
-			layer.Lit = (layer.Setup.Function & 12) == 4;
-			layer.Reversed = (layer.Setup.Function & 1) != 0;
-			parts[i].push_back(layer);
+		std::vector<GpuVoxelPiece> const & pieces = list.Voxels[i].Pieces;
+		for (std::size_t p = 0; p < pieces.size(); p++) {
+			for (VoxelRenderStruct const & object : pieces[p].Scene.Objects) {
+				LayerDraw layer;
+				layer.Setup = object.VoxLib->Setup_Object(object, pieces[p].Scene.Center);
+				layer.Key = Model_Key(object.VoxLib->Get_Serial(), object);
+				layer.Lit = (layer.Setup.Function & 12) == 4;
+				layer.Reversed = (layer.Setup.Function & 1) != 0;
+				layer.Piece = (int)p;
+				parts[i].push_back(layer);
+			}
 		}
 	}
 	if (!Load_Models(parts)) {
@@ -260,22 +296,31 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const &
 
 	for (std::size_t i = 0; i < parts.size(); i++) {
 		GpuVoxelPart const & part = list.Voxels[i];
-		Rect const & bounds = part.Scene.Region.Bounds;
-		if (bounds.Width <= 0 || bounds.Height <= 0) {
+		Rect const & area = part.Area;
+		if (area.Width <= 0 || area.Height <= 0) {
 			continue;
 		}
-		float light[VOXEL_PALETTE_SIZE];
-		std::copy(std::begin(part.Lighting), std::end(part.Lighting), light);
 		for (LayerDraw const & layer : parts[i]) {
 			ModelSlot const * slot = Find_Slot(layer.Key);
 			if (slot == NULL || slot->Count == 0) {
 				continue;
 			}
+			GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
+			Rect const & bounds = piece.Scene.Region.Bounds;
+			// Where the piece's pixels land in the tile, and the part of the tile they may cover.
+			int const shift_x = tiles[i].X + piece.Dest.X - area.X - bounds.X;
+			int const shift_y = tiles[i].Y + piece.Dest.Y - area.Y - bounds.Y;
+			Rect const clip = Intersect(Rect(piece.Dest.X - area.X, piece.Dest.Y - area.Y, bounds.Width, bounds.Height), Rect(0, 0, area.Width, area.Height));
+			if (clip.Width <= 0 || clip.Height <= 0) {
+				continue;
+			}
+			float light[VOXEL_PALETTE_SIZE];
+			std::copy(std::begin(piece.Lighting), std::end(piece.Lighting), light);
 			Vector3i16 const (&steps)[4] = layer.Setup.Arg.TransformMatrix;
 			float const vox[16] = {
 				(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 				(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
-				(float)(tiles[i].X - bounds.X), (float)(tiles[i].Y - bounds.Y), layer.Lit ? 1.0f : 0.0f, 0.0f,
+				(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
 				(float)slot->First, 0.0f, 0.0f, 0.0f
 			};
 			bgfx::setUniform(_VoxelUniform, vox, 4);
@@ -283,7 +328,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const &
 			bgfx::setTexture(0, _ModelSampler, _Model);
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
 			bgfx::setVertexCount((uint32_t)slot->Count * 6);
-			bgfx::setScissor((uint16_t)tiles[i].X, (uint16_t)tiles[i].Y, (uint16_t)bounds.Width, (uint16_t)bounds.Height);
+			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X), (uint16_t)(tiles[i].Y + clip.Y), (uint16_t)clip.Width, (uint16_t)clip.Height);
 			bgfx::setState(BGFX_STATE_WRITE_R);
 			bgfx::submit(VIEW_MAPVOXEL, _Program);
 		}
@@ -330,11 +375,14 @@ std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxe
 		}
 		PartCheck check;
 		std::memcpy(check.Label, part.Label, sizeof(check.Label));
-		check.Layers = (int)part.Scene.Objects.size();
+		check.Layers = 0;
+		for (GpuVoxelPiece const & piece : part.Pieces) {
+			check.Layers += (int)piece.Scene.Objects.size();
+		}
 		check.X = tiles[i].X;
 		check.Y = tiles[i].Y;
-		check.Width = part.Scene.Region.Bounds.Width;
-		check.Height = part.Scene.Region.Bounds.Height;
+		check.Width = part.Area.Width;
+		check.Height = part.Area.Height;
 		check.Reference = part.Reference;
 		_Checks.push_back(std::move(check));
 	}

@@ -2965,6 +2965,9 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
 		cliprect = LogicalSurface->Get_Rect();
 		IsCompositingToEightBitSurface = true;
+		char label[24];
+		std::snprintf(label, sizeof(label), "%s@%dt%d", (char const *)Class->IniName, int(PrimaryFacing.Current().As_Dir32()), int(SecondaryFacing.Current().As_Dir32()));
+		GpuDraw_Composite_Begin(*old_surface, label);
 	}
 
 	int const key_seed = UseVoxelCache ? 0 : -1;
@@ -3134,9 +3137,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			rect = Intersect(rect, Rect(0, 0, TacticalRect.Width, SinkingYOffset - TacticalMap->TacPixelY));
 		}
 		if (!composite_drawn) {
+			GpuDraw_Composite_Show(*LogicalSurface, UnitCompositeDirtyRect);
 			Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
 			LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
 		}
+		GpuDraw_Composite_End();
 		LogicalSurface = old_surface;
 		IsCompositingToEightBitSurface = false;
 	}
