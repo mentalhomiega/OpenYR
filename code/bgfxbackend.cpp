@@ -1392,17 +1392,21 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	// Masks follow the colour in the same order: the layer's mask, or zero, over the layer, then the
 	// keyed mask over the frame, which blends so that keyed pixels keep the layer's mask.
 	bool const masks = _HdrActive && emissive != NULL;
+	bgfx::TextureHandle layermask = _LayerMask.Uploaded ? _LayerMask.Handle : bgfx::TextureHandle{ bgfx::kInvalidHandle };
+	if (layer.Gpu) {
+		layermask.idx = GpuMap_Mask_Texture();
+	}
 	if (masks) {
 		Begin_Mask_View();
-		if (_LayerMask.Uploaded) {
-			Submit_Mask(_LayerMask.Handle, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false);
+		if (bgfx::isValid(layermask)) {
+			Submit_Mask(layermask, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false);
 		} else {
 			Submit_Mask(_FrameTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, true);
 		}
 	}
 
-	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
-	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT))) {
+	bool const layer_masked = _MaskView && bgfx::isValid(layermask);
+	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? layermask : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
 	}
 	if (layer_masked) {

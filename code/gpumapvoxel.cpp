@@ -14,6 +14,7 @@
 #include "gpudraw.h"
 #include "gpuvoxel.h"
 #include "convert.h"
+#include "emissive.h"
 #include "unittype.h"
 #include "voxlib.h"
 
@@ -94,7 +95,7 @@ static bool Start(void)
 	_LightUniform = bgfx::createUniform("u_vlight", bgfx::UniformType::Vec4, 64);
 	_ModelSampler = bgfx::createUniform("s_vmodel", bgfx::UniformType::Sampler);
 	_PaletteSampler = bgfx::createUniform("s_vpal", bgfx::UniformType::Sampler);
-	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Target = bgfx::isValid(_Image) ? bgfx::createFrameBuffer(1, &_Image, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
 	_Model = bgfx::createTexture2D(MODEL_WIDTH, MODEL_ROWS, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
@@ -326,7 +327,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 				(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 				(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
 				(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
-				(float)slot->First, (float)scale, 0.0f, 0.0f
+				(float)slot->First, (float)scale, (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
 			};
 			bgfx::setUniform(_VoxelUniform, vox, 4);
 			bgfx::setUniform(_LightUniform, light, 64);
@@ -334,7 +335,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTi
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
 			bgfx::setVertexCount((uint32_t)slot->Count * (scale > 1 ? VERTICES_PER_CUBE : 6));
 			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * scale), (uint16_t)(tiles[i].Y + clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
-			bgfx::setState(BGFX_STATE_WRITE_R);
+			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G);
 			bgfx::submit(VIEW_MAPVOXEL, _Program);
 		}
 	}
@@ -358,6 +359,7 @@ struct PartCheck
 	int Width;
 	int Height;
 	std::vector<unsigned char> Reference;
+	std::vector<unsigned char> MaskReference;
 };
 
 static std::vector<PartCheck> _Checks;
@@ -389,14 +391,15 @@ std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxe
 		check.Width = part.Area.Width;
 		check.Height = part.Area.Height;
 		check.Reference = part.Reference;
+		check.MaskReference = part.MaskReference;
 		_Checks.push_back(std::move(check));
 	}
 	if (_Checks.empty()) {
 		return(0);
 	}
 	if (!bgfx::isValid(_Readback)) {
-		_Readback = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-		_ImagePixels.assign((std::size_t)GPU_VOXEL_IMAGE_SIZE * GPU_VOXEL_IMAGE_SIZE, 0);
+		_Readback = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		_ImagePixels.assign((std::size_t)GPU_VOXEL_IMAGE_SIZE * GPU_VOXEL_IMAGE_SIZE * 2, 0);
 	}
 	if (!bgfx::isValid(_Readback)) {
 		return(0);
@@ -418,6 +421,27 @@ static int Colour_Step(int a, int b)
 }
 
 
+// Logs how far the highlight strengths the GPU wrote beside a direct part's indices are from the software's mask.
+static void Compare_Mask(PartCheck const & check)
+{
+	int masked = 0;
+	int differing = 0;
+	int largest = 0;
+	for (int r = 0; r < check.Height; r++) {
+		for (int c = 0; c < check.Width; c++) {
+			int const software = check.MaskReference[(std::size_t)r * check.Width + c];
+			int const gpu = _ImagePixels[((std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c) * 2 + 1];
+			masked += (software != 0 || gpu != 0) ? 1 : 0;
+			if (software != gpu) {
+				differing++;
+				largest = std::max(largest, std::abs(software - gpu));
+			}
+		}
+	}
+	DebugString("GPU_VOXEL_MASK frame %d part %s pixels %d masked %d differing %d maxdiff %d\n", _CheckFrame, check.Label, check.Width * check.Height, masked, differing, largest);
+}
+
+
 void GpuVoxel_Compare(std::uint32_t frame)
 {
 	if (!_Pending || frame < _ReadyFrame) {
@@ -432,7 +456,7 @@ void GpuVoxel_Compare(std::uint32_t frame)
 		for (int r = 0; r < check.Height; r++) {
 			for (int c = 0; c < check.Width; c++) {
 				int const software = check.Reference[(std::size_t)r * check.Width + c];
-				int const gpu = _ImagePixels[(std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c];
+				int const gpu = _ImagePixels[((std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c) * 2];
 				covered += (software != 0 || gpu != 0) ? 1 : 0;
 				if (software == gpu) {
 					continue;
@@ -447,6 +471,9 @@ void GpuVoxel_Compare(std::uint32_t frame)
 		}
 		DebugString("GPU_VOXEL frame %d part %s layers %d pixels %d covered %d differing %d coverage %d maxstep %d\n", _CheckFrame, check.Label, check.Layers,
 			check.Width * check.Height, covered, differing, coverage, largest);
+		if (!check.MaskReference.empty()) {
+			Compare_Mask(check);
+		}
 	}
 	_Checks.clear();
 }

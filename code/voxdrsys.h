@@ -70,6 +70,9 @@ namespace VoxelDrawSystem
 
 	void Clear_Buffer(void);
 
+	// Writes value into the emissive mask buffer over a rectangle of the voxel buffer.
+	void Fill_Mask(Rect const & bounds, unsigned char value);
+
 	void Clear_Z_Buffer(void);
 };
 

@@ -19,6 +19,7 @@
 #include "wwfile.h"
 
 #include <algorithm>
+#include <cstring>
 #include <iterator>
 
 BOOL VoxelDrawSystem::EnableLighting;
@@ -454,6 +455,15 @@ void VoxelDrawSystem::Clear_Buffer(void)
 	Emissive_Bind_Fixed(&VoxelSurface, VoxelMaskBuffer, VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT);
 	if (VoxelMaskActive) {
 		std::fill(std::begin(VoxelMaskBuffer), std::end(VoxelMaskBuffer), 0);
+	}
+}
+
+
+void VoxelDrawSystem::Fill_Mask(Rect const & bounds, unsigned char value)
+{
+	Emissive_Bind_Fixed(&VoxelSurface, VoxelMaskBuffer, VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT);
+	for (int y = bounds.Y; y < bounds.Y + bounds.Height; y++) {
+		std::memset(VoxelMaskBuffer + y * VOXEL_BITMAP_WIDTH + bounds.X, value, bounds.Width);
 	}
 }
 

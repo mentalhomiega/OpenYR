@@ -63,7 +63,9 @@ follow the colour exactly, so the mask and the picture agree:
 
 1. Clear the mask target to zero at the start of each HDR frame.
 2. Under a layer, draw the layer's mask over the layer's rectangle. Where the
-   layer has no mask, zero that rectangle instead.
+   layer has no mask, zero that rectangle instead. The GPU-drawn map layer has
+   a mask only with `GpuVoxels`, the one [GPU_VOXELS.md](GPU_VOXELS.md) builds;
+   with `GpuVoxels` off the map area stays at zero under HDR Enhanced.
 3. Draw the frame's mask over the frame's rectangle. Under a layer, the frame
    uses the keyed mask: its red channel is the frame mask, and its alpha is
    zero where the frame has the layer key. The blend then keeps the layer's
@@ -84,6 +86,8 @@ in the red channel. SDR output clears the target and never reads it.
   pass drew nothing.
 - Lasers and electric bolts are stamped along their centre line, one pixel
   wide. Their glow is not stamped.
+- A voxel picture read from the voxel cache writes zero, so with `GpuVoxels` off a
+  cached vehicle has no highlights.
 - Voxels write the mask beside each palette index, with `Emissive_Voxel_Highlight()`
   on the shade row. The table does not separate specular rows from diffuse rows
   above 16, so both feed the mask.

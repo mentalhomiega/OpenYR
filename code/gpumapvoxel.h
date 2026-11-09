@@ -24,6 +24,11 @@ inline constexpr int GPU_VOXEL_IMAGE_SIZE = 2048;
 // the tile pixel's row times GPU_VOXEL_IMAGE_SIZE plus its column.
 inline constexpr std::uint32_t GPU_VOXEL_BASE = 8388608;
 
+// The value a direct voxel part leaves in the target's emissive plane under its blit while the GPU draws it.
+// A pixel still holding it at the end of the pass takes the part's highlight strength from the voxel image
+// (fs_mapmask.sc, which uses the same value).
+inline constexpr unsigned char GPU_VOXEL_MASK_MARK = 1;
+
 struct GpuVoxelTile
 {
 	int X = 0;

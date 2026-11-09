@@ -175,6 +175,9 @@ struct GpuVoxelPart
 	// The software result for Area, one index per pixel, or empty when the software did not render it.
 	std::vector<unsigned char> Reference;
 
+	// The software emissive mask of a direct part for Area, or empty while the mask is off or the software did not render it.
+	std::vector<unsigned char> MaskReference;
+
 	char Label[24];
 };
 
@@ -243,7 +246,7 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable);
 
 // True while a pass records and GpuVoxels is on: a voxel object prepared now should be handed to
-// GpuDraw_Voxel_Part. False while the emissive mask is on, which the GPU voxel drawing does not write.
+// GpuDraw_Voxel_Part.
 bool GpuDraw_Voxels_Wanted(void);
 
 // True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a voxel object turns to its exact facing.

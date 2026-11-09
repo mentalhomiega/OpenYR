@@ -25,9 +25,10 @@ scratch surface holds a sprite the GPU does not draw).
 
 `GpuVoxelScale` (`[Video]`, 1 to 4, default 1, needs `GpuVoxels=yes`) is stage 6, described under Sharpness below.
 
-While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), `GpuVoxels` draws nothing,
-because the software voxel drawers write the mask and the GPU drawing does not. A voxel object drawn this way never
-uses the voxel picture cache.
+A voxel object drawn this way never uses the voxel picture cache.
+
+Stage 3 is in. While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also writes each
+voxel's highlight strength beside its index and feeds the glow and the HDR picture from it; see Highlights below.
 
 Stage 5 is in too. With `GpuVoxelSmooth=yes` (`[Video]`, default `no`, needs `GpuVoxels=yes`), an object the GPU draws turns to its
 exact facing: `GpuDraw_Facing_Radian` (`code/gpudraw.cpp`) gives `DirType::As_Radian_Smooth` instead of `As_Radian32`, which is the
@@ -127,7 +128,7 @@ The scale also applies to a turreted vehicle's parts: each piece's offset inside
 `tests/autotest/gpu-voxel-compare.txt` plays eight vehicle types turning through sixteen facings, with a Kirov
 and an Orca overhead, then turns the turrets of five turreted types to facings other than the body's and lets two
 tanks drive with their turrets turning, under `gpucheck`, with `GpuRender=no` so the software draws the pass, and
-`HDRHighlights=Classic` so the emissive mask is off. Each voxel part drawn in a checked pass, a composite
+`HDRHighlights=Classic`. Each voxel part drawn in a checked pass, a composite
 counting as one part, is also drawn on the GPU and read back, and the log gets one line:
 
 `GPU_VOXEL frame F part TYPE@FACING layers N pixels P covered C differing D coverage V maxstep S`
@@ -160,6 +161,44 @@ vehicle.
 The numbers vary from run to run in which passes are read back, so the regress log of the script keeps only its
 crash lines.
 
+## Highlights (stage 3)
+
+While the emissive mask is on, `vs_mapvoxel.sc` computes the strength the software drawers write beside each palette
+index (`Emissive_Voxel_Highlight`, zero for an unlit layer), and `fs_mapvoxel.sc` writes it into the voxel image's green
+channel, beside the index in its red channel.
+
+A direct part's blit copies the mark `GPU_VOXEL_MASK_MARK` from the voxel mask buffer into the target's plane, over its
+whole rectangle, where the software would have copied the part's mask. Every other draw in the pass writes the plane as
+it always has, so a pixel still holding the mark at the end of the pass is one no later draw covered. The pass then builds
+the finished mask (`fs_mapmask.sc`, `Submit_Voxel_Mask` in `code/gpumap.cpp`): a copy of the plane, then for each direct
+part's blit, in order, the strength from the part's tile wherever the plane holds the mark. The glow reads this mask in
+place of the plane, and the present draws it over the map area for the HDR composite. A pass the GPU cannot draw renders
+its parts in software and replaces the marks with their real strengths.
+
+A turreted composite writes no mask, as in the software: the scratch surface has no plane, so its blit zeroes the mask under
+its rectangle. With `GpuVoxels` off, a picture read from the voxel cache carries no mask either, so a cached software
+vehicle has no highlights; the GPU draws every part afresh, so a vehicle with no turret glows on every pass.
+
+A mask value of exactly 1 written by some other effect over a part's rectangle is taken for the mark and replaced by the
+voxel's strength. The value is so faint, and the case so rare, that we accept it; `gpucheck` showed no such pixel.
+
+At a `GpuVoxelScale` above 1 the mask stays at map size: each pixel takes the strength at the centre of its block of
+finer pixels, so the glow and the HDR picture follow the sharpened part to within a map pixel.
+
+The check runs under `gpucheck` with the emissive mask on (`EmissiveDebugView=yes`, with `GpuRender=no`) at scale 1 and logs two more lines:
+
+`GPU_VOXEL_MASK frame F part TYPE@FACING pixels P masked M differing D maxdiff X` for each direct part, and
+`GPU_MASK frame F pixels P masked M differing D maxdiff X` for each pass, the finished mask against the software plane.
+`masked` counts pixels nonzero on either side.
+
+| Scene | Direct parts | Passes | Masked pixels (parts / finished) | Differing |
+|---|---|---|---|---|
+| `gpu-voxel-compare.txt` (turning vehicles, Kirov, Orca) | 250 | 84 | 107,835 / 89,766 | 0 |
+| `hdr-emissive-scene.txt` with `gpucheck` and voxel vehicles added (lasers, bolts, explosions, 1,800 frames) | 16,827 | 577 | 4,057,653 / 2,251,553 | 0 |
+
+The composites in those runs are compared through `GPU_MASK`: their rectangles are zero on both sides.
+`tests/autotest/gpu-voxel-bloom.txt` saves a shot of one scene under `Bloom`, for comparing `GpuVoxels` off, on, and on with `GpuVoxelSmooth` and `GpuVoxelScale=4` by eye.
+
 ## Checking smooth facing
 
 `tests/autotest/gpu-voxel-smooth.txt` turns two harvesters half a turn, and a tank whose hull and turret turn at their own rates, under `gpucheck` with
@@ -185,7 +224,7 @@ Each stage has a check that fails when its picture departs from the software.
 |---|---|---|---|
 | 1 (done) | Walk, model store, voxel image, shader, direct blits, fallback, `GPU_VOXEL` check | `gpuvoxel` unit test, `gpu-voxel-compare.txt`, zero differing pixels | |
 | 2 (done) | Turreted vehicles: hull, turret and barrel drawn into one tile in the order the scratch surface composes them, and the tile blitted like a direct part | `GPU_VOXEL` and `GPU_DIFF` over turreted units at body and turret facings that differ, zero differing pixels | |
-| 3 | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | glow and HDR frames compared with the software mask | 1 session |
+| 3 (done) | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | `GPU_VOXEL_MASK` and `GPU_MASK` against the software mask at scale 1, zero differing pixels | |
 | 4 | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened), voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_DIFF` on the existing voxel anim and cloak scripts | 1 session |
 | 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning harvester's and tank's hull and turret facings in fractions of a step | |
 | 6 (done) | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
