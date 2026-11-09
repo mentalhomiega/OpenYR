@@ -8632,7 +8632,9 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 
 	if (!cached) {
 		Rect r = VoxelDrawSystem::Get_Surface()->Get_Rect(); /// The result is unused.
-		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust());
+		// With GpuVoxels the shadow takes the place of the cached blit (Techno_Blit_Voxel) and needs its gradient; the ground gradient's depth equals the ground's, so a shadow on flat ground would fail the depth test everywhere.
+		ZGradientType const gradient = (GpuDraw_Voxels_Wanted() && !TClass->IsDisableShadowCache) ? Get_Z_Gradient() : ZGRAD_GROUND;
+		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust(), gradient);
 	}
 	GpuDraw_Voxel_End();
 
