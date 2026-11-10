@@ -15,6 +15,7 @@
 #include "_rules.h"
 #include "dbgprint.h"
 #include "except.h"
+#include "stallcapture.h"
 
 #include <algorithm>
 #include <climits>
@@ -46,6 +47,9 @@ constexpr size_t HANG_REPORT_SIZE = 64 * 1024;
 ULONGLONG LimitMilliseconds = 0;
 HANDLE MainThreadHandle = NULL;
 char Report[HANG_REPORT_SIZE];
+char DumpStatus[512];
+char Header[96];
+StallCaptureType Capture;
 char Status[512];
 char Folder[MAX_PATH];
 
@@ -70,13 +74,15 @@ ULONGLONG Main_Thread_Cpu_Milliseconds(void)
 
 
 /// <summary>
-/// Captures the stalled main thread's stack and minidump, and logs them.
+/// Captures every thread of the stalled process, then writes the report and the minidump.
 /// </summary>
 /// <param name="stalled_milliseconds">How long the main thread has gone without a beat.</param>
 /// <param name="cpu_at_beat">The main thread's processor time at its last beat, or ULLONG_MAX when unknown.</param>
 /// <remarks>
-/// The thread is suspended only for the capture and the dump. The header line is logged before it
-/// is suspended, so a capture that cannot finish still leaves the stall in the log.
+/// The main thread may be stalled on the process heap lock, so nothing that can allocate runs while a thread
+/// is suspended. Each thread is held only while its registers and the top of its stack are copied into static
+/// storage. stall.txt is then written with raw addresses, and again with symbols once the symbol handler,
+/// which allocates, has run. The log lines wait for the raw stall.txt, because the logger allocates too.
 /// </remarks>
 void Report_Stall(ULONGLONG stalled_milliseconds, ULONGLONG cpu_at_beat)
 {
@@ -84,64 +90,71 @@ void Report_Stall(ULONGLONG stalled_milliseconds, ULONGLONG cpu_at_beat)
 				stalled_milliseconds / 1000);
 	size_t const header = (header_length > 0) ? std::min(size_t(header_length), sizeof(Report) - 1) : 0;
 
-	Debug_Log_Block(Report, HANG_LOG_WAIT_MILLISECONDS);
+	memcpy(Header, Report, header + 1);
+
+	ULONGLONG busy = ULLONG_MAX;
+	ULONGLONG const cpu_now = Main_Thread_Cpu_Milliseconds();
+	if (cpu_at_beat != ULLONG_MAX && cpu_now != ULLONG_MAX && cpu_now >= cpu_at_beat) {
+		busy = cpu_now - cpu_at_beat;
+	}
 
 	Exception_Refresh_Module_Table();
-	bool const locked = Exception_Stall_Lock(HANG_LOCK_WAIT_MILLISECONDS);
+	Stall_Open_Threads(&Capture, HangWatchMainThread);
+	Stall_Capture_Threads(&Capture);
 
-	HANDLE const thread = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION,
-				FALSE, HangWatchMainThread);
-
-	bool suspended = false;
-	bool captured = false;
-	bool stacked = false;
+	bool const captured = Capture.Count > 0 && Capture.Threads[0].Id == HangWatchMainThread && Capture.Threads[0].Captured;
+	bool locked = false;
+	bool saved = false;
 	bool dumped = false;
+	bool logged = false;
 	DWORD dump_error = 0;
 
-	CONTEXT context;
-	memset(&context, 0, sizeof(context));
-	context.ContextFlags = CONTEXT_FULL;
+	if (captured) {
+		Exception_Describe_Stall(&Capture, busy, stalled_milliseconds, false, Report + header, sizeof(Report) - header);
+		Exception_Create_Stall_Folder(Folder, sizeof(Folder));
+		saved = Folder[0] != '\0'
+					&& Exception_Write_Stall_Report(Folder, Report, "Symbols     : not resolved yet\r\nMinidump    : not written yet\r\n");
+	}
 
-	if (thread != NULL && SuspendThread(thread) != (DWORD)-1) {
-		suspended = true;
-		captured = GetThreadContext(thread, &context) != FALSE;
+	Debug_Log_Block(Header, HANG_LOG_WAIT_MILLISECONDS);
 
-		if (captured && locked) {
-			ULONGLONG busy = ULLONG_MAX;
-			ULONGLONG const cpu_now = Main_Thread_Cpu_Milliseconds();
-			if (cpu_at_beat != ULLONG_MAX && cpu_now != ULLONG_MAX && cpu_now >= cpu_at_beat) {
-				busy = cpu_now - cpu_at_beat;
+	if (captured) {
+		locked = Exception_Stall_Lock(HANG_LOCK_WAIT_MILLISECONDS);
+		if (locked) {
+			Stall_Read_Thread_Names(&Capture);
+			Exception_Describe_Stall(&Capture, busy, stalled_milliseconds, true, Report + header, sizeof(Report) - header);
+			if (saved) {
+				Exception_Write_Stall_Report(Folder, Report, "Minidump    : being written; this line is replaced when the writer ends\r\n");
 			}
-			Exception_Describe_Stall(thread, HangWatchMainThread, &context, busy, stalled_milliseconds,
-						Report + header, sizeof(Report) - header);
-			stacked = Debug_Log_Block(Report + header, HANG_LOG_WAIT_MILLISECONDS);
-			dumped = Exception_Write_Stall_Dump(Report, Folder, sizeof(Folder), &dump_error);
+			logged = Debug_Log_Block(Report + header, HANG_LOG_WAIT_MILLISECONDS);
+
+			if (saved) {
+				dumped = Exception_Write_Stall_Dump(Folder, DumpStatus, sizeof(DumpStatus), &dump_error);
+				Exception_Write_Stall_Report(Folder, Report, DumpStatus);
+			}
+			Exception_Stall_Unlock();
+		} else if (saved) {
+			Exception_Write_Stall_Report(Folder, Report,
+						"Symbols     : not resolved, because the symbol lock stayed busy\r\nMinidump    : not written, for the same reason\r\n");
 		}
-
-		ResumeThread(thread);
 	}
 
-	if (locked) {
-		Exception_Stall_Unlock();
-	}
-	if (thread != NULL) {
-		CloseHandle(thread);
-	}
+	Stall_Close_Threads(&Capture);
 
-	if (captured && locked && !stacked) {
+	if (captured && !logged) {
 		Debug_Log_Block(Report + header, HANG_RESUMED_LOG_WAIT_MILLISECONDS);
 	}
 
-	if (!suspended) {
-		snprintf(Status, sizeof(Status), "HANG: the main thread could not be suspended, so it was not captured\n");
+	if (!captured) {
+		snprintf(Status, sizeof(Status), "HANG: the main thread could not be captured, so no report was taken\n");
+	} else if (!saved) {
+		snprintf(Status, sizeof(Status), "HANG: no folder could be created, so nothing was saved beyond this log\n");
 	} else if (!locked) {
-		snprintf(Status, sizeof(Status), "HANG: the symbol lock stayed busy, so no stack or minidump was taken\n");
+		snprintf(Status, sizeof(Status), "HANG: the symbol lock stayed busy, so addresses are raw and no minidump was taken; report %s\\stall.txt\n", Folder);
 	} else if (dumped) {
 		snprintf(Status, sizeof(Status), "HANG: minidump %s\\minidump.dmp, report %s\\stall.txt\n", Folder, Folder);
-	} else if (Folder[0] != '\0') {
-		snprintf(Status, sizeof(Status), "HANG: no minidump was written (error 0x%08lX); the report is in %s\\stall.txt\n", dump_error, Folder);
 	} else {
-		snprintf(Status, sizeof(Status), "HANG: no folder could be created, so nothing was saved beyond this log\n");
+		snprintf(Status, sizeof(Status), "HANG: no minidump was written (error 0x%08lX); the report is in %s\\stall.txt\n", dump_error, Folder);
 	}
 
 	Debug_Log_Block(Status, HANG_RESUMED_LOG_WAIT_MILLISECONDS);

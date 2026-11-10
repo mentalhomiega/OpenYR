@@ -200,6 +200,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `AutoTest_Active()` | `autotest.h` | True in an `-AUTOTEST` run. |
 | `Perf_Count(counter, amount)` | `perfstat.h` | Adds to a performance counter while recording is on. |
 | `Hang_Watchdog_Beat()` | `hangwatch.h` | Call from a message pump; only beats from the main thread count. |
+| `Pe_Debug_Id(image, text, size)`, `Pe_Debug_Key(image, text, size)` | `stallcapture.h` | The GUID and age of a loaded image's pdb, as report text or as a symbol store folder name. |
 
 ## INI reading
 
