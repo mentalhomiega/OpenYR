@@ -4906,7 +4906,11 @@ static void Blast_Step(StepType const & step)
 		if (Word(step.Words, 5) == "deck" && Map[Cell(step.X, step.Y)].IsUnderBridge) {
 			coord.Z += BRIDGE_LEPTON_HEIGHT;
 		}
-		DebugString("AUTOTEST   blast %s at %d,%d z %d\n", warhead->Name(), step.X, step.Y, coord.Z);
+		if (Word(step.Words, 5) == "deck") {
+			DebugString("AUTOTEST   blast %s at %d,%d z %d\n", warhead->Name(), step.X, step.Y, coord.Z);
+		} else {
+			DebugString("AUTOTEST   blast %s at %d,%d\n", warhead->Name(), step.X, step.Y);
+		}
 		Explosion_Damage(coord, 1000, NULL, warhead, false, NULL);
 	} else {
 		DebugString("AUTOTEST   blast %s: no such warhead\n", step.Argument.c_str());
