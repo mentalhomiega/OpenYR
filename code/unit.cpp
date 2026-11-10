@@ -2716,6 +2716,13 @@ bool UnitClass::Is_Composite_Fudged(void) const
 }
 
 
+// Where a rectangle of the scratch surface lands on the destination. The unit is composed at (80, 80) there.
+static Rect Composite_Screen_Rect(Rect const & dirty, Point2D drawpoint)
+{
+	return(Rect(drawpoint.X + dirty.X - 80, drawpoint.Y + dirty.Y - 80, dirty.Width, dirty.Height));
+}
+
+
 /// <summary>
 /// Transfers the composed unit image to the destination surface.
 /// This routine is the last step of drawing a turreted vehicle. The image built up on the
@@ -2730,9 +2737,6 @@ bool UnitClass::Is_Composite_Fudged(void) const
 void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness) const
 {
 	bool const fudge = Is_Composite_Fudged();
-	Point2D pt;
-	pt.Y = (2 * (80 - UnitCompositeDirtyRect.Y) - UnitCompositeDirtyRect.Height) / 2;
-	pt.X = (2 * (80 - UnitCompositeDirtyRect.X) - UnitCompositeDirtyRect.Width) / 2;
 
 	Blitter const * blitter = NULL;
 	int predoffset = 0;
@@ -2780,11 +2784,7 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	}
 	}
 
-	int width = UnitCompositeDirtyRect.Width;
-	Rect rect(drawpoint.X - width / 2 - pt.X,
-		drawpoint.Y - UnitCompositeDirtyRect.Height / 2 - pt.Y,
-		width,
-		UnitCompositeDirtyRect.Height);
+	Rect rect = Composite_Screen_Rect(UnitCompositeDirtyRect, drawpoint);
 
 	if (IsSinking && SinkingYOffset == 0) {
 		((UnitClass *)this)->Calculate_Sinking_Offset(rect.Y + cliprect.Y, UnitCompositeDirtyRect.Height);
@@ -2832,12 +2832,8 @@ bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect c
 		return(false);
 	}
 
-	// The scratch route centres the dirty rectangle, which is the entry's rectangle, on the drawpoint.
 	Rect const dirty(Point2D(entry.X + 80, entry.Y + 80), entry.Width, entry.Height);
-	Point2D pt;
-	pt.Y = (2 * (80 - dirty.Y) - dirty.Height) / 2;
-	pt.X = (2 * (80 - dirty.X) - dirty.Width) / 2;
-	Rect const rect(drawpoint.X - dirty.Width / 2 - pt.X, drawpoint.Y - dirty.Height / 2 - pt.Y, dirty.Width, dirty.Height);
+	Rect const rect = Composite_Screen_Rect(dirty, drawpoint);
 
 	// A composite wholly outside the clip draws nothing in the scratch route either. A clipped one takes
 	// a different depth start there, so it goes that way.
