@@ -1,0 +1,23 @@
+; Zooms fully out on XMP04T8, the largest stock Yuri's Revenge map, at 3840x2160 with vehicles, infantry and aircraft in view.
+; The map view is then 7546x4245 map pixels, over 2^24, and at GpuVoxelScale=4 its picture would pass the texture limits,
+; so each pass is drawn at scale 2 (docs/GPU_MAP.md, Limits). The GPU must keep drawing every pass instead of drawing it in software.
+; Expected: the zoom line with the view size, no GPU_RENDER line, since the filter keeps only the lines with a fallback count
+; above 0, then the quit line. Before the fix, every pass at this zoom fell back, so each GPU_RENDER line showed about 600 fallbacks.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/gpu-map-zoomed-out.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 3840 -Height 2160 -Seconds 180 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelScale=4" -Filter "AUTOTEST zoom |GPU_RENDER .*fallback [1-9]|Exception|: quit" -Uncapped -StopAfterSteps
+1 view 132 111
+2 reveal
+4 grantunit MTNK 128 108
+4 grantunit HTNK 130 108
+4 grantunit APOC 132 108
+4 grantunit HARV 134 108
+4 grantunit E1 128 112
+4 grantunit E2 130 112
+4 grantunit E1 132 112
+4 grantunit GGI 134 112
+6 grantunit ORCA 130 104
+6 grantunit ZEP 134 104
+10 zoom 0.1
+40 move MTNK 128 116
+40 move E1 126 114
+40 move ORCA 120 100
+1300 quit

@@ -96,9 +96,9 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 - A shadow is one flat layer. `Gpu_Voxel_Walk_Shadow` lists one voxel with K 0 and colour 1 for each occupied column,
   `VoxelLibrary::Setup_Shadow` gives the projection the software shadow drawer uses, and the shader writes two
   pixels a column through the identity palette row. A voxel animation's shadow is drawn the same way.
-- The recorded blit has no pixels of its own. Its colour index offset points into the voxel image (`GPU_VOXEL_BASE`
-  in `code/gpumapvoxel.h`), and `fs_mapdraw.sc` reads the index there and then does everything it does for any
-  blit: translator, alpha lighting, depth test, blend kind.
+- The recorded blit has no pixels of its own. Its colour index offset is negative, -1 minus a texel of the voxel image
+  (`Source_Offset` in `code/gpumap.cpp`), and `fs_mapdraw.sc` reads the index there and then does everything it does
+  for any blit: translator, alpha lighting, depth test, blend kind.
 - A turreted vehicle is one part with a piece for each of its hull, turret and barrel, drawn in the order the
   software draws them: the hull, then the barrel and the turret, the barrel before the turret at some turret
   facings and after it at the others. The software composes them on the 160 by 160 scratch surface, where a later

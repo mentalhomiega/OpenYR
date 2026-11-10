@@ -22,7 +22,7 @@ The object pass is recorded as a list of blits and drawn in that order over the 
 | Depth | `Upload_Pass_Stores` in `code/gpumap.cpp`, `fs_mapdraw.sc` | The software depth buffer goes up as an R16 texture (`s_zbuf`). A blit fragment is discarded unless its row depth minus its depth shape is below the buffer value. Nothing in the pass writes depth: `BlitDesc` has `ZRead` and no write flag (`code/blitter.h`), and a blitter that cannot describe itself counts as `Unsupported` (`Record_RLE`, `Record_Bit`). The scene framebuffer has no depth attachment (`Size_Target`). |
 | Order | `Submit_Draws`, `Set_Map_View` | One draw per blit, in recorded order, in `ViewMode::Sequential` views. Objects cover each other by this order alone. |
 | Voxel parts | `GpuVoxel_Submit` in `code/gpumapvoxel.cpp`, `vs_mapvoxel.sc` | Each part not already in the 2048 by 2048 RG8 voxel image gets a tile of its buffer region times its tile's scale, which is `GpuVoxelScale` or, when the pass would not fit, a lower one. Its layers are drawn into the tile in the software's walk order: a 2-vertex line a voxel at scale 1, an 8-vertex outline strip above. |
-| Voxel blits | `Source_Offset`, `fs_mapdraw.sc` | An offset of `GPU_VOXEL_BASE` and up reads the tile, then runs the translator, alpha lighting, row depth test and blend as for any blit. |
+| Voxel blits | `Source_Offset`, `fs_mapdraw.sc` | A negative offset, -1 minus a texel of the voxel image, reads the tile, then runs the translator, alpha lighting, row depth test and blend as for any blit. |
 | Model store | `Load_Models`, `Model_Key` | A layer's walk is stored once for each of the eight anchor orientations it is drawn in. |
 | Highlights | `Submit_Voxel_Mask`, `fs_mapmask.sc` | A direct part's blit leaves `GPU_VOXEL_MASK_MARK` in the CPU plane; the mask pass replaces the mark with the strength in the part's tile. |
 
@@ -607,8 +607,8 @@ beside the other:
 ### What stage 8 deletes
 
 - `GpuVoxelTileStore`, `GpuVoxelShelf`, `Part_Signature`, `Assign_Tiles`, `GpuVoxel_Fits` and its use in `Pass_Fits`.
-- The voxel image (`_Image`, `_Target` in `code/gpumapvoxel.cpp`), `GPU_VOXEL_IMAGE_SIZE`, `GPU_VOXEL_BASE` and the
-  branch for it in `Source_Offset` and `fs_mapdraw.sc`, and `fs_mapvoxel.sc`.
+- The voxel image (`_Image`, `_Target` in `code/gpumapvoxel.cpp`), `GPU_VOXEL_IMAGE_SIZE` and the
+  negative-offset branch for it in `Source_Offset` and `fs_mapdraw.sc`, and `fs_mapvoxel.sc`.
 - The tile half of `vs_mapvoxel.sc`, once the splat and faces live in `vs_voxelscene.sc`.
 - The `GPU_VOXEL` and `GPU_VOXEL_MASK` comparisons, which read tiles. `Gpu_Voxel_Walk` and `tests/gpuvoxel` stay only
   if we keep a GPU copy of the classic look (a decision below).
@@ -621,13 +621,14 @@ beside the other:
   A pass with more than 4,096 direct blits takes the image route for those parts until a depth clear with a view split
   lifts the limit; Mental Omega missions are where to count blits first.
 - **Fallback still switches look.** A pass `Pass_Fits` refuses for other reasons (more than 8 sonic waves, a map view
-  over 16,777,216 pixels, the chronoshift effect, an unsupported draw) is drawn in software and shows the classic voxels
-  for that frame. The direct route removes the voxel causes only.
+  wider or taller than 16,384 pixels, the chronoshift effect, an unsupported draw) is drawn in software and shows the
+  classic voxels for that frame. The direct route removes the voxel causes only.
 - **Zoomed out at 4K.** At the campaign and skirmish limit (`VIEW_ZOOM_MIN`, half the native zoom, `View_Zoom_Min` in
   `code/viewzoom.cpp`), the map view is twice the screen's map area each way: up to 7,680 by 4,320 map pixels on a
-  3840x2160 screen, over the 2^24-pixel limit in `Pass_Fits`. Such a pass is drawn in software today, whatever the
-  voxel route. Lifting the limit is GPU_MAP work and comes before the 240 fps
-  target can be met.
+  3840x2160 screen. `Pass_Fits` used to refuse every view over 2^24 pixels, so such passes were drawn in software
+  at about 20 ms a picture. The depth and alpha buffers are now addressed by row and column, the limit is gone, and
+  on XMP04T8 (a 7546x4245 view) every pass is drawn on the GPU ([GPU_MAP.md](GPU_MAP.md), Limits). What remains at
+  that size is a map view wider or taller than 16,384 pixels, and the scale cap described under GPU memory below.
 - **Interface and minimap.** The radar draws units as pixels (`RadarTrackingClass`) and the sidebar draws shapes; neither
   reads the map pass, so they do not change. The CPU picture holds no voxel pixels while the GPU draws the pass, as
   with `GpuVoxels=yes` today.
@@ -650,7 +651,10 @@ beside the other:
   scale 2 and 530.8 MB at scale 4, and `Size_Target` already makes three (target, snapshot, post): about 100 MB,
   400 MB and 1.6 GB. The direct route adds a D24S8 attachment of the same size and an RG8 attachment of half, about
   1.5 more of these textures, and frees the 8.4 MB voxel image and the 16.8 MB model texture. Scale 4 at 4K is about
-  2.4 GB of targets; `GpuVoxelScale=0` should cap the scale by a memory budget.
+  2.4 GB of targets. `Pass_Scale` in `code/gpumap.cpp` lowers the scale of a pass whose scene-sized texture would be
+  over 134,217,728 pixels (536.9 MB in RGBA8) or 16,384 pixels a side, about what scale 4 takes at a 3840x2160 view.
+  Zoomed fully out at 3840x2160 (7546x4245), scales 3 and 4 draw at 2, 512.5 MB a texture. `GpuVoxelScale=0` may
+  still pick a smaller budget.
 - **Small triangles and discard.** Faces at low scale and the fragment discard of the row test are the two costs we
   expect most; the splat level of detail answers the first, measurement the second.
 - **Modding.** Custom voxels need nothing new: the face store is built from the loaded layer and keyed by
@@ -686,8 +690,23 @@ What we measure first, in this order:
    draws a pass), it gives vertices a pass and the face store size before any shader is written.
 2. **The overflow scene.** 48 Kirovs at 3840x2160 at scale 2 and 4, with the stage 1 prototype: `present.gputime`,
    `draw.gpumap` and the count of passes drawn in software, against the image route.
-3. **The zoomed-out baseline.** `bench-large-battle-zoomed-out.txt` at 3840x2160, whose passes the pixel limit keeps in
-   software when the map view is over 2^24 pixels, to know how much of the 4.17 ms the software draw already takes.
+3. **The zoomed-out baseline.** A large battle fully zoomed out at 3840x2160 on a map of 145x137 cells or more, such as
+   XMP04T8. `bench-large-battle-zoomed-out.txt` does not measure this: it runs on XMP08T2, where `View_Zoom_Min` keeps
+   the zoom at 1.00 at 4K.
+
+**Zoomed out at 4K.** Until the 2^24-pixel limit was lifted, every pass fully zoomed out at 3840x2160 on a large map
+was drawn in software. On XMP04T8 at zoom 0.50 (a 7546x4245 view), uncapped (`VSync=no`, `FrameRateLimit=0`) with
+`GpuRender=yes`, times are means of the per-second `Perf` lines after the first:
+
+| Run | Passes in software | Mean draw | p95 draw | `present.gputime` | Draws a second |
+|---|---:|---:|---:|---:|---:|
+| Before, no units | 3,597 of 3,600 | 19.89 ms | 23.62 ms | 0.57 ms | 51 |
+| After, no units | 0 of 19,800 | 0.54 ms | 0.82 ms | 0.25 ms | 1,466 |
+| After, 4 vehicles, 4 infantry and 2 aircraft, `GpuVoxels=yes`, scale 1 | 0 of 7,800 | 0.86 ms | 1.15 ms | 0.78 ms | 985 |
+| The same at `GpuVoxelScale=4`, drawn at 2 | 0 of 7,800 | 1.14 ms | 1.89 ms | 1.02 ms | 771 |
+
+At zoom 0.59 and 0.69 the software draw took 13.52 ms and 9.97 ms before; after, 0.56 ms and 0.47 ms, with no pass
+in software. The large battle itself has not been run zoomed out on XMP04T8 yet.
 
 ## Settings
 
@@ -725,8 +744,8 @@ These are provisional until confirmed; each is cheap to reverse before stage 8.
 - Turreted vehicles get highlights under Glow and HDR Enhanced in the GPU look. The software look keeps none, as in
   gamemd.
 - Stage 8 deletes the image route. The software renderer is the only classic reference.
-- The 2^24-pixel map view limit is lifted before stage 7, once a run on a large map at 3840x2160 confirms that the
-  zoomed-out view passes it.
+- The 2^24-pixel map view limit is lifted (done before stage 7, after a run on XMP04T8 at 3840x2160 confirmed that the
+  zoomed-out view passed it).
 
 ## References
 

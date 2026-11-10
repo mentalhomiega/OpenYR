@@ -19,7 +19,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
-// Offsets of VOXEL_BASE and up in v_texcoord1.x read the voxel image s_voxel instead of s_index.
+// A negative offset in v_texcoord1.x reads the voxel image s_voxel instead of s_index, at texel -1 minus the offset.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
 // u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
 // each of them as scale by scale pixels, and a voxel blit reads its tile at its tile's scale times the blit's pixel rate),
@@ -38,8 +38,7 @@ SAMPLER2D(s_voxel, 10);
 uniform vec4 u_world;
 uniform vec4 u_water;
 
-// Offsets from here on are texels of the voxel image s_voxel, VOXEL_IMAGE_SIZE a row (code/gpumapvoxel.h).
-#define VOXEL_BASE 8388608
+// The voxel image s_voxel has VOXEL_IMAGE_SIZE texels a row (code/gpumapvoxel.h).
 #define VOXEL_IMAGE_SIZE 2048
 
 // The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
@@ -121,10 +120,10 @@ void main()
 	// Offsets are whole numbers, and adding 0.5 would round them from 2^23 up, where a float spaces by one.
 	int offset = int(v_texcoord1.x);
 	int index;
-	if (offset >= VOXEL_BASE) {
+	if (offset < 0) {
 		int tilescale = width;
 		ivec2 fine = ivec2(floor(v_texcoord0.xy * float(tilescale)));
-		int at = offset - VOXEL_BASE + fine.y * VOXEL_IMAGE_SIZE + fine.x;
+		int at = -1 - offset + fine.y * VOXEL_IMAGE_SIZE + fine.x;
 		index = int(texelFetch(s_voxel, ivec2(at % VOXEL_IMAGE_SIZE, at / VOXEL_IMAGE_SIZE), 0).x * 255.0 + 0.5);
 	} else {
 		index = Fetch8(s_index, offset + local.y * width + local.x);

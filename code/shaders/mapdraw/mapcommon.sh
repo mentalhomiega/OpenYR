@@ -1,7 +1,8 @@
 // What every fragment shader that draws a recorded blit of the map view's object pass shares (code/gpumap.cpp):
 // the stores a blit's depth test and colour read, and the steps that read them. A blit's values are the ones
 // fs_mapdraw.sc describes for v_texcoord1 to v_texcoord3.
-//   u_ring  the depth and alpha buffers' ring addressing: (start, width, size) each
+//   u_ring  the depth and alpha buffers' ring addressing, each (start column, start row, width, height): the ring's
+//           texel of the area's top left pixel and the ring's size
 
 SAMPLER2D(s_lut, 1);
 SAMPLER2D(s_alut, 2);
@@ -22,12 +23,14 @@ int Fetch16(sampler2D s, ivec2 p)
 	return int(texelFetch(s, p, 0).x * 65535.0 + 0.5);
 }
 
-// The texel of a ring buffer holding area pixel p; ring is u_ring[i] (start, width, size).
+// The texel of a ring buffer holding area pixel p; ring is u_ring[i]. A row runs on into the next one, and the last row
+// into the first. The ring is passed as a column and a row because a float holds a linear offset past 2^24 inexactly.
 ivec2 Ring(ivec2 p, vec4 ring)
 {
-	int width = int(ring.y + 0.5);
-	int index = (int(ring.x + 0.5) + p.y * width + p.x) % int(ring.z + 0.5);
-	return ivec2(index % width, index / width);
+	int width = int(ring.z + 0.5);
+	int column = int(ring.x + 0.5) + p.x;
+	int row = int(ring.y + 0.5) + p.y + column / width;
+	return ivec2(column % width, row % int(ring.w + 0.5));
 }
 
 vec3 Rgb565(int c)

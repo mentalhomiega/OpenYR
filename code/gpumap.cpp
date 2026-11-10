@@ -50,6 +50,9 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 // Width of the textures that hold byte arenas; fs_mapdraw.sc uses the same value.
 static int const ARENA_WIDTH = 4096;
 static int const TEXTURE_LIMIT = 16384;
+// The most pixels a scaled pass's scene, snapshot and post textures may each have: a little over a 3840x2160 view at
+// scale 4, 536.9 MB a texture in RGBA8.
+static std::int64_t const SCALED_PIXEL_LIMIT = std::int64_t(1) << 27;
 // The index texture holds the atlas in its top rows and the pass's arena below them.
 static int const ATLAS_ROWS = (int)(GPU_ATLAS_BYTES / ARENA_WIDTH);
 static_assert(GPU_ATLAS_BYTES % ARENA_WIDTH == 0);
@@ -113,7 +116,7 @@ static bgfx::TextureHandle _Readback = BGFX_INVALID_HANDLE;
 static int _TargetWidth = 0;
 static int _TargetHeight = 0;
 static int _TargetScale = 1;
-// The scale GpuMap_Set_Voxel_Scale asked for; a pass the check reads back is drawn at 1.
+// The scale GpuMap_Set_Voxel_Scale asked for; a pass the check reads back is drawn at 1, and a large one lower (Pass_Scale).
 static int _VoxelScale = 1;
 
 // Soft shadows: shadows are drawn into a mask, the mask is blurred, and the base is darkened through it.
@@ -488,14 +491,16 @@ static float Index_Offset(GpuBlit const & blit)
 }
 
 
-// The offset the shader reads a blit's colour indices at: in the voxel image for a voxel blit, else in the index texture.
+// The offset the shader reads a blit's colour indices at: in the index texture, or for a voxel blit -1 minus the texel
+// in the voxel image.
 static float Source_Offset(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles)
 {
 	if (blit.Voxel < 0) {
 		return(Index_Offset(blit));
 	}
 	GpuVoxelTile const & tile = tiles[blit.Voxel];
-	return((float)(GPU_VOXEL_BASE + (std::uint32_t)(tile.Y + blit.VoxelY * tile.Scale) * GPU_VOXEL_IMAGE_SIZE + (std::uint32_t)(tile.X + blit.VoxelX * tile.Scale)));
+	int const texel = (tile.Y + blit.VoxelY * tile.Scale) * GPU_VOXEL_IMAGE_SIZE + tile.X + blit.VoxelX * tile.Scale;
+	return((float)(-1 - texel));
 }
 
 
@@ -966,13 +971,25 @@ static int Count_Sonic_Waves(GpuDrawList const & list)
 }
 
 
+// The scale a pass over area is drawn at: the one GpuMap_Set_Voxel_Scale asked for, lowered until the scaled textures fit
+// TEXTURE_LIMIT and SCALED_PIXEL_LIMIT.
+static int Pass_Scale(Rect const & area)
+{
+	int scale = _VoxelScale;
+	while (scale > 1 && (area.Width * scale > TEXTURE_LIMIT || area.Height * scale > TEXTURE_LIMIT || (std::int64_t)area.Width * area.Height * scale * scale > SCALED_PIXEL_LIMIT)) {
+		scale--;
+	}
+	return(scale);
+}
+
+
 // Checks the limits Submit_Pass rejects a pass for that are known when it is kept, so a pass the GPU
 // cannot draw is drawn in software rather than leaving the map's key colour on screen.
 static bool Pass_Fits(GpuMapPass const & pass)
 {
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
-	if (area.Width <= 0 || area.Height <= 0 || area.Width * _VoxelScale > TEXTURE_LIMIT || area.Height * _VoxelScale > TEXTURE_LIMIT) {
+	if (area.Width <= 0 || area.Height <= 0 || area.Width > TEXTURE_LIMIT || area.Height > TEXTURE_LIMIT) {
 		return(false);
 	}
 	std::size_t const arenarows = Arena_Rows(list.PixelArena.size());
@@ -980,13 +997,13 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (ATLAS_ROWS + arenarows > (std::size_t)TEXTURE_LIMIT || zshaperows > (std::size_t)TEXTURE_LIMIT) {
 		return(false);
 	}
-	// Offsets reach the shader as floats, which hold every whole number only up to 2^24.
+	// Arena offsets reach the shader as floats, which hold every whole number only up to 2^24.
 	std::size_t const exact = std::size_t(1) << 24;
-	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact || (std::size_t)area.Width * area.Height > exact) {
+	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact) {
 		return(false);
 	}
 	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing }) {
-		if (pass.Persistent && ring->Values != NULL && (std::size_t)ring->Width * ring->Height > exact) {
+		if (pass.Persistent && ring->Values != NULL && (ring->Width > TEXTURE_LIMIT || ring->Height > TEXTURE_LIMIT)) {
 			return(false);
 		}
 	}
@@ -1034,6 +1051,16 @@ static void Build_Translator_Stacks(GpuDrawList const & list, std::unordered_map
 }
 
 
+// Writes one u_ring entry (mapcommon.sh): the ring's texel of the area's top left pixel and the ring's size.
+static void Set_Ring(float * ring, int column, int row, int width, int height)
+{
+	ring[0] = (float)column;
+	ring[1] = (float)row;
+	ring[2] = (float)width;
+	ring[3] = (float)height;
+}
+
+
 // Uploads the translator stacks and the pass's depth, alpha, shape and base stores. ring receives
 // the depth and alpha ring addressing that the shadow and blit shaders read. False means a store
 // could not take its data.
@@ -1061,9 +1088,7 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 			GpuRing const & source = *rings[i];
 			if (source.Values != NULL) {
 				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference) && valid;
-				ring[i * 4 + 0] = (float)source.Start;
-				ring[i * 4 + 1] = (float)source.Width;
-				ring[i * 4 + 2] = (float)source.Width * source.Height;
+				Set_Ring(ring + i * 4, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 			} else if (!bgfx::isValid(stores[i]->Handle)) {
 				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true) && valid;
 			}
@@ -1347,8 +1372,10 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 
 	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
-	// a ring of the area's width that starts at 0.
-	float ring[8] = { 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f, 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f };
+	// a ring of the area's size that starts at 0.
+	float ring[8];
+	Set_Ring(ring, 0, 0, area.Width, area.Height);
+	Set_Ring(ring + 4, 0, 0, area.Width, area.Height);
 	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
 	int const shadows = _SoftShadowRadius > 0 ? Count_Shadow_Blits(list) : 0;
@@ -1633,10 +1660,11 @@ std::uint16_t GpuMap_Texture(void)
 {
 	if (_HasKept) {
 		_HasKept = false;
-		if (Submit_Pass(_Kept, _VoxelScale)) {
+		int const scale = Pass_Scale(_Kept.Area);
+		if (Submit_Pass(_Kept, scale)) {
 			_TargetDrawn = true;
 			if (_ShadowCount.Armed) {
-				Begin_Shadow_Count(_Kept, _VoxelScale);
+				Begin_Shadow_Count(_Kept, scale);
 			}
 		} else {
 			// The map area holds the key colour, so this frame shows the last picture, if one of the
