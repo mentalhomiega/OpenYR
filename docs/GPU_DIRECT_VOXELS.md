@@ -3,8 +3,10 @@
 We propose to draw each voxel object as geometry into the map pass's scene target, at the place of its blit in the
 pass, with a depth and stencil buffer for the voxels' own depth. The voxel image, its tiles and its overflow go away,
 sharpness becomes the resolution of the scene target, and hull, turret and barrel hide each other by real depth.
-Nothing here is built yet; every "we propose" below is a design choice, and every statement about current behaviour
-cites the code. [GPU_VOXELS.md](GPU_VOXELS.md) owns the current route and [GPU_MAP.md](GPU_MAP.md) the map pass.
+Stage 1 is built, with the hard shadows of stage 3, behind `GpuVoxelPath=Direct`; "Stage 1 (done)" below says what it
+delivered and measured. Every "we propose" elsewhere is a design choice for the later stages, and every statement about
+current behaviour cites the code. [GPU_VOXELS.md](GPU_VOXELS.md) owns the image route and [GPU_MAP.md](GPU_MAP.md) the
+map pass.
 
 The GPU path no longer has to match gamemd pixel for pixel. The software renderer stays the reference and the classic
 look (`GpuRender=no`, or `GpuVoxels=no`); the GPU path becomes the modern look. Stage 1 still has an exact mode, so
@@ -93,12 +95,12 @@ We propose a D24S8 depth and stencil attachment on the scene framebuffer, cleare
 kept through the sonic wave views, which draw into the same framebuffer. The blits other than direct voxel draws
 neither test nor write it, as now.
 
-Each direct part gets its own depth slice. The n-th direct part in blit order writes depth
+Each direct blit gets its own depth slice. The n-th direct blit in blit order writes depth
 `((SLICES - 1 - n) + d) / SLICES`, where `d` in [0, 1) places the voxel inside the part (see the modes below), and
 tests with `LEQUAL`, which gives a tie to the later voxel as the walk does. A later part therefore always passes over
 an earlier one, which keeps the painter's order between objects, and inside a part `d` decides. With 24 bits and
-4,096 slices, each slice has 4,096 depth steps. A pass with more than 4,096 direct parts needs a depth clear, which
-means a new view; that is an open question.
+4,096 slices, each slice has 4,096 depth steps. A pass with more than 4,096 direct blits sends their parts to the image
+route (stage 1); a depth clear, which means a new view, would lift that limit.
 
 Inside a part we offer two modes (proposal, key `GpuVoxelLayerDepth`):
 
@@ -250,9 +252,9 @@ the image route in the same pass, so no stage adds a software fallback.
 
 | Stage | What it adds | Check | Shares | Deletes |
 |---|---|---|---|---|
-| 1 | Direct opaque parts drawn into the scene: vehicles without a turret, aircraft, voxel animations, debris, bullets. D24S8 attachment, depth slices with `Ordered` and `Shared` layer modes, row depth test from the blit, translator and lighting band in `fs_voxelscene.sc`, `GpuVoxelPath=Direct`. While the emissive mask is on, these parts stay on the image route | `gpu-voxel-compare.txt` under `gpucheck` with `GpuRender=no`, `GpuVoxelPath=Direct`, `GpuVoxelLayerDepth=Ordered` at scale 1: no `GPU_DIFF` pixel on a vehicle, as in the image-route run (about three one-step pixels a pass, none on a vehicle). A new scene with 48 Kirovs at `GpuVoxelScale=4` and 3840x2160: no "the voxel parts cannot be drawn" line. A `gpuvoxel` unit test: slice n+1 is nearer than slice n for every `d` | Recorder, prepared-object cache, model store and walk, `Setup_Object` steps, palette texture, translator and lighting stacks, row depth code (moved to `mapcommon.sh`) | Nothing yet |
+| 1 (done) | Direct opaque parts drawn into the scene: vehicles without a turret, aircraft, voxel animations, debris, bullets. D24S8 attachment, depth slices with `Ordered` and `Shared` layer modes, row depth test from the blit, translator and lighting band in `fs_voxelscene.sc`, `GpuVoxelPath=Direct`. While the emissive mask is on, these parts stay on the image route. Built with the hard shadows of stage 3, which the 48-Kirov check needs | `gpu-voxel-compare.txt` under `gpucheck` with `GpuRender=no`, `GpuVoxelPath=Direct`, `GpuVoxelLayerDepth=Ordered` at scale 1: no `GPU_DIFF` pixel on a vehicle, as in the image-route run (about three one-step pixels a pass, none on a vehicle). A new scene with 48 Kirovs at `GpuVoxelScale=4` (`gpu-voxel-direct.txt`): every `GPU_RENDER` line counts 0 passes that fell back. A `gpuvoxel` unit test: slice n+1 is never behind slice n for any `d` | Recorder, prepared-object cache, model store and walk, `Setup_Object` steps, palette texture, translator and lighting stacks, row depth code (moved to `mapcommon.sh`) | Nothing yet |
 | 2 | Composites: hull, turret and barrel in one slice, pieces placed from the blit | `gpu-voxel-compare.txt` turret section with `Ordered`: no `GPU_DIFF` pixel on a vehicle. With `Shared`: a `gpuvoxel` unit test that places two pieces at known offsets and checks which one is nearer, and a `gpu-voxel-shot.txt` still of turreted vehicles at turret facings that differ from the body's, compared by eye | Piece placement arithmetic of `GpuVoxel_Submit` | The barrel-before-turret ordering is no longer needed on this route |
-| 3 | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,148 and 2,002; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
+| 3 (hard shadows done in stage 1) | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,148 and 2,002; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
 | 4 | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
 | 5 | Highlights through the RG8 attachment; parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
 | 6 | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, lighting rows on the GPU, optional face shading | `gpuvoxel` unit test: a single voxel has 6 faces, a solid 3x3x3 block 54, and no listed face has a filled neighbour; the GPU lighting row equals `Precalculate_Normal_Lookup`'s for every normal of the four normal tables under a set of lights. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 not below stage 1's | Face store replaces the model store's slot management (`Load_Models`) | Orientation copies; the per-object `u_vlight` table |
@@ -283,31 +285,102 @@ The check is a measurement, made by a person because automated runs use only the
 p95 draw, `present.gputime` and draws a second, followed by a play session on each. Direct3D 12 becomes the Windows
 default only if it is faster on both benchmarks and the play session shows no driver fault.
 
-### Stage 1 in detail
+### Stage 1 (done)
 
-1. **Key.** Add `GpuVoxelPath` to `code/optionsettings.cpp` with no row, an `OptionsClass` field, and pass it on beside
-   `GpuDraw_Set_Voxels`. Add a manual change record and key page as for any new key ([SETTINGS.md](SETTINGS.md)).
-2. **Routing.** Before `Pass_Fits` runs, mark each part direct when the key is `Direct`, the part is not a composite,
-   every blit that shows it has the copy kind (`BlitDesc::XLAT`), and the emissive mask is off. `GpuVoxel_Fits` (from
-   `Pass_Fits` and `Submit_Pass`) and `GpuVoxel_Submit` then skip direct parts, so they take no tile. The part list itself (`GpuDrawList::Voxels`) does not change.
-3. **Target.** `Size_Target` creates a D24S8 texture of the target's size and builds `_Target` from both textures.
-   `Submit_Draws` clears depth to 1 and stencil to 0 on `VIEW_MAPDRAW` when the pass has a direct part, and the wave
-   views keep `BGFX_CLEAR_NONE`.
-4. **Model data.** For each direct part, build the `LayerDraw` list as `GpuVoxel_Submit` does and call `Load_Models`, so
-   the walks are in the model texture. Add to each layer its depth origin and steps from `BoxCorner`, and, for
-   `Ordered`, its sub-slice and voxel count.
-5. **Draws.** In the blit loop of `Submit_Draws`, a blit whose part is direct submits one draw per layer with
-   `vs_voxelscene.sc` and `fs_voxelscene.sc`: the same model and palette textures and `u_vox` and `u_vlight` as
-   `vs_mapvoxel.sc` reads, `s_lut`, `s_alut`, `s_zbuf` and `s_abuf` as `fs_mapdraw.sc` reads, and new uniforms for the
-   part's map origin and scale, the slice, the depth steps, and the blit's rectangle, row depth, translator row and
-   lighting band row. State: write colour and depth, depth test `LEQUAL`, lines at scale 1 and triangle strips above,
-   scissor to the blit's rectangle times the scale.
-6. **Shaders.** `vs_voxelscene.sc` is `vs_mapvoxel.sc` with the tile origin replaced by the part's origin and a depth
-   output. `fs_voxelscene.sc` discards index 0, runs the row test, and writes the translated 565 colour. Move the shared
-   parts of `fs_mapdraw.sc` into `mapcommon.sh` and add any new varyings to `varying.def.sc`. Rebuild the `.bin.h`
-   headers as [GPU_MAP.md](GPU_MAP.md) describes.
-7. **Checks.** The `gpuvoxel` slice test, the `gpu-voxel-compare.txt` run and the 48-Kirov scene from the table, plus
-   `gpu-voxel-scale.txt` at scale 2 and 4, compared with the image route by eye and by edge counts.
+**State.** Stage 1 is built and committed on branch `gpu-direct-voxels`, together with the hard shadows of stage 3.
+With `GpuVoxels=yes`, `GpuVoxelPath=Direct` and the emissive mask off, hull-only vehicles, aircraft and other plain
+voxel objects, and their shadows while `SoftShadows` is off, are drawn straight into the scene. At scale 1 with
+`GpuVoxelLayerDepth=Ordered` the pass differs from the software exactly where the image route's does, and 48 Kirovs at `GpuVoxelScale=4` and 3840x2160
+stay on the GPU in every pass, where the image route draws 3,579 of 3,600 passes in software. **Next step:** measure the
+direct route's GPU cost without the 240-a-second present cap (see Measurements), then stage 2. Stage 5 is what lets the
+route reach a player with Glow or HDR Enhanced highlights on, since until then the mask keeps every part on the image
+route.
+
+What we built, in the order of the plan:
+
+1. **Keys.** `GpuVoxelPath` (`Image`, `Direct`, default `Image`) and `GpuVoxelLayerDepth` (`Shared`, `Ordered`, default
+   `Shared`) are name-list entries in `code/optionsettings.cpp` with no row, `OptionsClass` members and enums in
+   `code/options.h`, and are passed on with `GpuVoxel_Set_Path` beside `GpuDraw_Set_Voxels` in `code/gscreen.cpp`.
+   The manual has their key pages and `manual/changes/added-gpuvoxelpath.md`; `tests/settingregistry` pins their order
+   and round trip.
+2. **Routing.** `GpuVoxel_Direct_Parts` (`code/gpumapvoxel.cpp`) marks two kinds of part direct while the key is
+   `Direct`, the mask is off and the direct program built: one prepared object without shadows that only copy blits
+   show, and one prepared shadow that only shadow blits show, the second only without soft shadows. A part no blit
+   shows stays on the image route, so `gpucheck` still compares it. A pass with more than `GPU_VOXEL_SLICES` (4,096)
+   direct object blits, or more than `GPU_VOXEL_SHADOW_STENCILS` (255) direct shadow blits, sends those parts to the
+   image route for that pass rather than splitting the view. `GpuVoxel_Fits` and `GpuVoxel_Submit` skip direct parts,
+   which get no tile (`GpuVoxelTile::Direct`), and `GpuVoxel_Begin_Check` leaves them out of the `GPU_VOXEL` lines.
+3. **Target.** `Size_Target` (`code/gpumap.cpp`) adds the D24S8 attachment while `GpuVoxelPath=Direct` is set, whether
+   or not a pass has a direct part, so a pass with none does not remake the targets. `Submit_Draws` clears depth to 1
+   and stencil to 0 on `VIEW_MAPDRAW` when the pass has a direct part; the wave views keep both.
+4. **Model data.** Direct layers go through `Load_Models` in the same call as the image parts' layers, so one emptying
+   of the model texture cannot drop either. `Set_Layer_Depths` gives each layer its depth: `Gpu_Voxel_Ordered_Depth`
+   or `Gpu_Voxel_Shared_Depth` (`code/gpuvoxel.cpp`). `Shared` reads the view Z of the layer's walk origin and of its
+   corners along the three walk axes through `VoxelRenderOrientations`, the corners `VoxelLibrary::Setup_Object` takes
+   its 2D steps from, and counts the largest Z as nearest, because the software depth buffer keeps the larger value
+   (`code/voxlib.cpp`). The range is the part's `BoxCorner` Z range; a cube corner up to half a voxel outside it is
+   clamped to the end of the slice.
+5. **Draws.** For a direct part's blit, `Submit_Draws` calls `GpuVoxel_Draw_Direct` with the values of the blit's own
+   quad (`Direct_Blit`), so the row depth test, translator row and lighting band are the ones the image route's quad
+   carries. An object's layers write depth and test `LEQUAL` in the blit's slice. A shadow's layers neither test nor
+   write depth; they darken through the blend of `Blend_State_For(KIND_DARKEN)` with stencil test `NOTEQUAL` and
+   replace, at the next of the pass's values 1 to 255, so each pixel darkens once per shadow blit.
+6. **Shaders.** `mapcommon.sh` holds the stores and the row test and translator code that `fs_mapdraw.sc` and
+   `fs_voxelscene.sc` share; `voxelwalk.sh` holds the walk that `vs_mapvoxel.sc` and `vs_voxelscene.sc` share.
+   `vs_voxelscene.sc` divides each position by the scale, because the map view's projection maps area pixels, and reads
+   the model and palette textures at stages 11 and 12, because bgfx binds a stage to both shaders of a program and
+   `fs_voxelscene.sc` uses stages 1 to 5. Rebuilt with the same `shaderc`, `vs_mapvoxel.bin.h` is byte-identical
+   after the move; `fs_mapdraw.bin.h` grew from 24,359 to 24,371 bytes, and the image-route checks below did not change.
+
+**Checks.**
+
+| Check | Result |
+|---|---|
+| `gpuvoxel` unit test | The three new checks pass: slice n + 1 is never behind slice n for any `d`, also as stored in 24 bits; `Ordered` depth never moves back along a walk of 20,006 voxels; `Shared` puts a nearer voxel in front |
+| `settingregistry` | 71 checks pass |
+| `gpu-voxel-compare.txt` under `gpucheck`, `GpuRender=no`, scale 1, `Direct` and `Ordered` | The 83 `GPU_DIFF` lines take the same values as the image route's 82: 0 to 6 differing pixels a pass, none more than one step, at the same first pixels. 565 `GPU_VOXEL` lines against 1,594, because a direct part has no tile to compare |
+| The same with `Shared` | 21 to 346 differing pixels a pass, steps up to 60: at scale 1 a voxel is a one or two pixel stamp, and stamps hide each other by depth where the walk would overwrite. Recorded, not a check |
+| `gpu-voxel-shadow.txt` with `Direct` | 2,148 darkened pixels at scale 1 and 2,002 at scale 2, the image route's counts |
+| The 8 `gpu-voxel-*` regress scripts | The 7 recorded ones `same` with the keys at their defaults; `gpu-voxel-direct.txt` new, its log in `tests/autotest/gpu-voxel-direct.log` |
+| `gpu-voxel-direct.txt` (48 Kirovs, scale 4, 800x600) | `Direct`: 0 of 1,200 passes fall back. `Image`: 1,195 fall back |
+| 48 Kirovs at scale 2, zoomed, `Shared` against `Ordered` | 15 of 7,731,216 pixels differ |
+
+The "the voxel parts cannot be drawn" line is not a fallback count: a pass whose parts do not fit an empty image is
+refused by `Pass_Fits` without a line, and the line appears only when `Submit_Pass` fails afterwards. The checks above
+count fallbacks from `GPU_RENDER` lines.
+
+**Measurements.** 48 Kirovs (`scratch-agent/voxel-kirov/kirovs.txt` with `perflog 1`) at 3840x2160, uncapped game
+speed, `HDRHighlights=Classic` and `Bloom=no` so that the mask is off; with this PC's default highlights the mask is on
+and both routes are the image route. Passes are the first six `GPU_RENDER` lines; times are means of the per-second
+`Perf` lines after the first three.
+
+| Route | Scale | Passes on the GPU | Draws a second | Mean / p95 draw | `draw.gpumap` | `present.gputime` |
+|---|---:|---:|---:|---:|---:|---:|
+| Image | 1 | 3,600 of 3,600 | 261 | 3.67 / 4.12 ms | 0.01 ms | 3.48 ms |
+| Image | 2 | 21 | 34 | 29.11 / 31.33 ms | 26.68 ms | 0.88 ms |
+| Image | 4 | 21 | 33 | 30.24 / 36.43 ms | 27.17 ms | 1.03 ms |
+| Direct | 1 | 3,600 | 259 | 3.73 / 4.12 ms | 0.01 ms | 4.14 ms |
+| Direct | 2 | 3,600 | 251 | 3.85 / 4.13 ms | 0.01 ms | 4.14 ms |
+| Direct | 4 | 3,600 | 262 | 3.64 / 4.13 ms | 0.01 ms | 4.14 ms |
+
+The image route's fallback passes spend their time rendering the voxels in software (`draw.gpumap`). On the direct
+route the main thread costs what the image route costs at scale 1. Presents stay at 240 a second in every run, so a
+`present.gputime` of 4.14 ms is that limit (4.17 ms a present), and the direct route's GPU cost is at least that at every
+scale; the image route at scale 1 costs less because this still scene reuses every tile (`gpu voxel drawn` 0). The
+GPU cost of the direct route needs a run without the present limit before stage 7's budget can be judged.
+
+**Changes to the design.**
+
+- The hard shadows of stage 3 came forward into stage 1. Without them the 48 Kirovs still fall back at scale 4: their 49
+  shadow parts of 146 by 77 pixels need 584 by 308 tiles, and fewer than 20 of those fit the image.
+- The slice and stencil limits route parts to the image for the pass instead of splitting the view.
+- The depth attachment follows the key, not the pass.
+- The vertex shader divides by the scale and samples at stages 11 and 12 (step 6).
+
+**Not done.** `gpu-voxel-scale.txt` edge counts at scale 2 and 4 against the image route (we compared the Kirovs by eye
+at zoom 1.5 instead); scale 3, where the division by the scale is not exact in floating point; the
+`pacing-determinism.txt` and `syncrec` checks with the key on and off, which belong to stage 8 but would confirm that the
+route reads no simulation state.
 
 ### What stage 8 deletes
 
@@ -323,8 +396,8 @@ default only if it is faster on both benchmarks and the play session shows no dr
 - **Draw order and depth.** Slices keep the painter's order between objects, and only direct voxel draws touch the
   depth buffer, so a sprite, a translucent effect or an additive line keeps its place. Voxel blits have no additive
   kind (`BlitDesc::KindType`). The new behaviour is inside one object, which the `Ordered` mode can always turn back.
-  A pass with more than 4,096 direct parts needs a depth clear, which needs a view split; Mental Omega missions are
-  where to count parts first.
+  A pass with more than 4,096 direct blits takes the image route for those parts until a depth clear with a view split
+  lifts the limit; Mental Omega missions are where to count blits first.
 - **Fallback still switches look.** A pass `Pass_Fits` refuses for other reasons (more than 8 sonic waves, a map view
   over 16,777,216 pixels, the chronoshift effect, an unsupported draw) is drawn in software and shows the classic voxels
   for that frame. The direct route removes the voxel causes only.
@@ -401,10 +474,10 @@ All keys are in `[Video]` of `RA2MD.INI` unless marked. Current keys keep their 
 | Key | Values | Default | Status |
 |---|---|---|---|
 | `GpuVoxels` | `yes`, `no` | `no` | Unchanged: draws voxels on the GPU, by the route `GpuVoxelPath` picks |
-| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | New (proposal). A name list (`.Names`, as `Weather` has) in `code/optionsettings.cpp`; no row until stage 5, then a row in the **GPU voxels** group |
+| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | Added in stage 1: a name list in `code/optionsettings.cpp` with no row; a row in the **GPU voxels** group from stage 5 |
 | `GpuVoxelSmooth` | `yes`, `no` | `no` | Unchanged |
 | `GpuVoxelScale` | 1 to 4; 0 from stage 7 | `1` | Unchanged for 1 to 4; 0 picks the scale from the zoom |
-| `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | New developer key with no row; `Ordered` is the exact mode the checks use |
+| `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | Added in stage 1: a developer key with no row; `Ordered` is the exact mode the checks use |
 | `GpuVoxelCloak` | `Translucent`, `Ripple` | `Translucent` | New (proposal), stage 4 |
 | `GpuVoxelSmoothTilt` | `yes`, `no` | `no` | Later |
 | `VoxelSceneDepth` in `[AudioVisual]` of `rulesmd.ini`, and per type in `artmd.ini` | `Row`, `Voxel` | `Row` | Later mod key: the row test as now, or the per-voxel footprint depth. A mod sets it because its `ZFudge*` values decide whether `Voxel` looks right |

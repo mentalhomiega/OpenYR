@@ -29,6 +29,11 @@ a predator draw through the plain translucent blend (see "Where pixel-exact draw
 
 A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
 
+This page describes that route, the image route. `GpuVoxelPath=Direct` (`[Video]`, default `Image`) draws hull-only
+objects and, without `SoftShadows`, their shadows straight into the map pass with a depth buffer instead, so they take no
+tile; at scale 1 with `GpuVoxelLayerDepth=Ordered` the picture is the same. While the emissive mask is on, every part
+takes the image route. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) describes the direct route and its measurements.
+
 Stage 3 is in. While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also writes each
 voxel's highlight strength beside its index and feeds the glow and the HDR picture from it; see Highlights below.
 
@@ -299,5 +304,5 @@ Each stage has a check that fails when its picture departs from the software.
   them. `Bit_Blit` ignores the offset, so an uncached software draw looks the same as the GPU's.
 - The model texture holds about a million voxels' worth of walks (a layer is stored once for each of the eight
   orientations it is drawn in) and is emptied when full, so a pass with more distinct layers than that falls back
-  to software. A pass that does not fit what is left of the voxel image empties the image first; a pass whose parts do not fit an empty image, several hundred of average size, is drawn in software.
+  to software. A pass that does not fit what is left of the voxel image empties the image first; a pass whose parts do not fit an empty image, several hundred of average size, is drawn in software. At scale 2 and above that can be a few dozen large ones: 48 Kirovs at 3840 by 2160 fall back in 3,579 of 3,600 passes at scale 2. Parts on the direct route take no tile.
 - A float lighting model (stage 6) cannot give the software's palette rows, so it is a separate look.
