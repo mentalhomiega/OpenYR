@@ -11860,15 +11860,27 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 	int const overlay = Concrete_Overlay_At(cell);
 	int const cracked = family.First + 6;
 
+	// After a hit, objects that can no longer enter a cell of the section, or are moving onto one, are destroyed (0x487A10).
+	auto kill_section_occupiers = [&]() {
+		for (Cell const piece : {Cell(cell - family.Across), cell, Cell(cell + family.Across)}) {
+			CellClass * cptr = Bridge_Cell_At(piece);
+			if (cptr != NULL) {
+				cptr->Kill_Illegal_Occupiers();
+			}
+		}
+	};
+
 	if (overlay == family.Cap) {
 		Set_Concrete_Section(cell, family.Across, family.Cap + 1);
 		Update_Concrete_Side(family, cell - family.ToCap);
+		kill_section_occupiers();
 		return(false);
 	}
 
 	if (overlay == family.Cap + 2) {
 		Set_Concrete_Section(cell, family.Across, family.Cap + 3);
 		Update_Concrete_Side(family, cell + family.ToCap);
+		kill_section_occupiers();
 		return(false);
 	}
 
@@ -11876,6 +11888,7 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 		Set_Concrete_Section(cell, family.Across, cracked);
 		Update_Concrete_Side(family, cell - family.Run);
 		Update_Concrete_Side(family, cell + family.Run);
+		kill_section_occupiers();
 		return(false);
 	}
 
@@ -11887,6 +11900,7 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 	Update_Concrete_Side(family, cell - family.Run);
 	Update_Concrete_Side(family, cell + family.Run);
 	Spring_Concrete_Bridge_Destroyed(family, cell);
+	kill_section_occupiers();
 	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
 	Zone_Reset();
 	return(true);
