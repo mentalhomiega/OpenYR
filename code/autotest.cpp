@@ -4901,8 +4901,13 @@ static void Blast_Step(StepType const & step)
 {
 	WarheadTypeClass const * warhead = stricmp(step.Argument.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(step.Argument.c_str());
 	if (warhead != NULL) {
-		DebugString("AUTOTEST   blast %s at %d,%d\n", warhead->Name(), step.X, step.Y);
-		Explosion_Damage(Map[Cell(step.X, step.Y)].Center_Coord(), 1000, NULL, warhead, false, NULL);
+		// "deck" as a last word explodes it at deck height instead of floor height on a bridge cell.
+		Coord coord = Map[Cell(step.X, step.Y)].Center_Coord();
+		if (Word(step.Words, 5) == "deck" && Map[Cell(step.X, step.Y)].IsUnderBridge) {
+			coord.Z += BRIDGE_LEPTON_HEIGHT;
+		}
+		DebugString("AUTOTEST   blast %s at %d,%d z %d\n", warhead->Name(), step.X, step.Y, coord.Z);
+		Explosion_Damage(coord, 1000, NULL, warhead, false, NULL);
 	} else {
 		DebugString("AUTOTEST   blast %s: no such warhead\n", step.Argument.c_str());
 	}

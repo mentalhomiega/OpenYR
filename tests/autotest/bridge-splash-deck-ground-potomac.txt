@@ -1,0 +1,29 @@
+; Blast damage between a high bridge deck and the ground under it. On Potomac a GI stands on the north bridge deck at 84,49
+; and a destroyer (DEST) floats under it at 84,50, one cell away (the river under the deck is at z 208, the deck at 624). gamemd's
+; Explosion_Damage (0x489280) sets its bridge flag when the blast cell has cell flag 0x100 and the blast is more than half a
+; bridge height above the floor, and then reads each cell's AltObject list (the deck's objects) instead of FirstObject
+; (the ground's). A blast on the deck therefore reaches only deck objects, and a blast at floor height only ground ones.
+; Expected: the ARTYHE blast at deck height on 84,49 (z 624) kills the GI (strength 0) and leaves the destroyer at its
+; full strength 600. A second GI is then placed on the deck; the blast at floor height (z 208) hurts the destroyer
+; (strength below 600) and leaves that GI at its full strength 125.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-splash-deck-ground-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 250 -Filter "AUTOTEST( +(bridgeobj|blast)| wait)|Exception"
+30 reveal
+31 view 84 49
+40 grantunit E1 76 49
+41 grantunit DEST 84 50
+50 move E1 84 49
+60 waitcell E1 84 49 0 1500
+61 bridgeobj E1
+62 bridgeobj DEST
+70 blast ARTYHE 84 49 deck
+71 bridgeobj E1
+72 bridgeobj DEST
+80 grantunit E2 76 49
+81 move E2 84 49
+90 waitcell E2 84 49 0 1500
+91 bridgeobj E2
+92 bridgeobj DEST
+100 blast ARTYHE 84 49
+101 bridgeobj E2
+102 bridgeobj DEST
+103 quit
