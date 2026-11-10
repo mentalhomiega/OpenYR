@@ -909,7 +909,8 @@ static float Flash_Amount(void)
 }
 
 
-// Logs a GPU_RENDER line every 600 passes: how many the GPU drew and how many fell back to software.
+// Logs a GPU_RENDER line every 600 passes: how many the GPU drew, how many fell back to software, the voxel blits,
+// and the voxel parts shown below GpuVoxelScale.
 static void Count_Render(bool drawn)
 {
 	static int _Drawn = 0;
@@ -918,7 +919,7 @@ static void Count_Render(bool drawn)
 	(drawn ? _Drawn : _Fallback)++;
 	_VoxelBlits += (int)std::count_if(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) { return(blit.Voxel >= 0); });
 	if (_Drawn + _Fallback >= 600) {
-		DebugString("GPU_RENDER frame %d drawn %d fallback %d voxels %d\n", Frame, _Drawn, _Fallback, _VoxelBlits);
+		DebugString("GPU_RENDER frame %d drawn %d fallback %d voxels %d reduced %d\n", Frame, _Drawn, _Fallback, _VoxelBlits, GpuVoxel_Take_Reduced());
 		_Drawn = 0;
 		_Fallback = 0;
 		_VoxelBlits = 0;

@@ -4,7 +4,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // direct voxel blit, where the plane still holds the mark the blit left, the highlight strength from the voxel image.
 //   v_texcoord0.xy  pixel position inside the blit
 //   v_texcoord0.zw  pixel position inside the map area
-//   v_texcoord1     z: 0 for the copy of the plane; otherwise xy the tile pixel of the blit's first pixel and z the scale
+//   v_texcoord1     z: 0 for the copy of the plane; otherwise xy the tile pixel of the blit's first pixel and z the tile's scale
 
 #include "bgfx_shader.sh"
 

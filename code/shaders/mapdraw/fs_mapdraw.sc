@@ -4,7 +4,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // blitters do; darken and the translucent kinds finish in the hardware blend (gpumap.cpp).
 //   v_texcoord0.xy  pixel position inside the blit (x, y), interpolated
 //   v_texcoord0.zw  pixel position inside the map area, interpolated
-//   v_texcoord1     x: offset of the blit's colour indices in s_index, y: blit width,
+//   v_texcoord1     x: offset of the blit's colour indices in s_index, y: blit width (for a voxel blit, the scale of its tile),
 //                   z: first row of its translator in s_lut, w: row of s_alut for its lighting level, -1 for none
 //   v_texcoord2     x: depth of the first row, y: fraction, z: numerator, w: denominator (0 when every row has x)
 //   v_texcoord3     x: depth step, y: offset of its depth shape in s_zshape (-1 for none), z: kind,
@@ -22,7 +22,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // Offsets of VOXEL_BASE and up in v_texcoord1.x read the voxel image s_voxel instead of s_index.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
 // u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
-// each of them as scale by scale pixels, and a voxel blit reads its tile at scale times the blit's pixel rate),
+// each of them as scale by scale pixels, and a voxel blit reads its tile at its tile's scale times the blit's pixel rate),
 // y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
 // w how bright the glints of sunlight on them are.
 
@@ -44,8 +44,9 @@ uniform vec4 u_world;
 uniform vec4 u_water;
 
 #define ARENA_WIDTH 4096
-// Offsets from here on are texels of the voxel image s_voxel, whose rows are as wide as the blit's pitch.
+// Offsets from here on are texels of the voxel image s_voxel, VOXEL_IMAGE_SIZE a row (code/gpumapvoxel.h).
 #define VOXEL_BASE 8388608
+#define VOXEL_IMAGE_SIZE 2048
 
 int Fetch8(sampler2D s, int offset)
 {
@@ -150,9 +151,10 @@ void main()
 	int offset = int(v_texcoord1.x);
 	int index;
 	if (offset >= VOXEL_BASE) {
-		ivec2 fine = ivec2(floor(v_texcoord0.xy * float(scale)));
-		int at = offset - VOXEL_BASE + fine.y * width + fine.x;
-		index = int(texelFetch(s_voxel, ivec2(at % width, at / width), 0).x * 255.0 + 0.5);
+		int tilescale = width;
+		ivec2 fine = ivec2(floor(v_texcoord0.xy * float(tilescale)));
+		int at = offset - VOXEL_BASE + fine.y * VOXEL_IMAGE_SIZE + fine.x;
+		index = int(texelFetch(s_voxel, ivec2(at % VOXEL_IMAGE_SIZE, at / VOXEL_IMAGE_SIZE), 0).x * 255.0 + 0.5);
 	} else {
 		index = Fetch8(s_index, offset + local.y * width + local.x);
 	}
