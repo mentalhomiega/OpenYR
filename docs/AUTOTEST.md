@@ -190,6 +190,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `bridgedecks x0 x1 y` | writes how many high bridge deck overlays are left on row y from x0 to x1 |
 | `blast <Warhead\|ion> x y [deck]` | explodes the warhead on the cell as a weapon impact does (Explosion_Damage), at floor height; a wood low bridge there takes one hit. With `deck` the blast is at the height of a high bridge's deck on that cell |
 | `concretehit x y` | damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down |
+| `bridgefix x y` | repairs the bridge near the cell as an engineer at a repair hut does (MapClass::Repair_Concrete_Bridge, which falls back to Repair_Bridge) and writes the cell |
 | `passable x y` | writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell |
 | `targetaction <AttackerTypeID> <TargetTypeID>` | writes the action the player's first object of the attacker type gets over the first live enemy object of the target type, with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it |
 | `enemystrike <TypeID> x y` | orders the first computer-owned object of that type to attack what stands on that cell |

@@ -697,7 +697,7 @@ class CellClass : public AbstractClass
 		void Incoming(Coord const & threat=COORD_NONE, bool forced=false, bool nokidding=false, bool bridge=false);
 		void Adjust_Threat(HousesType house, int threat_value);
 		void Force_New_Slope_For_Occupiers(void) const;
-		void Kill_Illegal_Occupiers(void);
+		void Kill_Illegal_Occupiers(bool kill_jumpjets);
 
 		Cell Get_Bridge_Deck_Cell(void) const
 		{

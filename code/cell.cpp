@@ -6289,15 +6289,19 @@ bool CellClass::Is_Fogged(void) const
 /// longer enter the cell are killed outright, as are any nearby foot units that were in
 /// the middle of moving into it.
 /// </summary>
-void CellClass::Kill_Illegal_Occupiers(void)
+/// <param name="kill_jumpjets">Also destroy every jumpjet type in the cell, even one that can cross the new ground.</param>
+void CellClass::Kill_Illegal_Occupiers(bool kill_jumpjets)
 {
 	ObjectClass * object = Cell_Occupier();
 	ObjectClass *next = NULL;
 
 	while (object) {
 		next = object->Next;
-		// gamemd (0x487A10) also destroys any aircraft landed on the cell, though it can cross water.
-		if (object->RTTI == RTTI_AIRCRAFT || object->Can_Enter_Cell(this, FACING_NONE) == MOVE_NO) {
+		// gamemd (0x487A10) also destroys any aircraft landed on the cell, though it can cross water,
+		// and the jumpjets too when the caller asks.
+		TechnoTypeClass const * ttype = object->Techno_Type_Class();
+		bool jumpjet = kill_jumpjets && ttype != NULL && ttype->IsJumpJet;
+		if (object->Can_Enter_Cell(this, FACING_NONE) == MOVE_NO || jumpjet || object->RTTI == RTTI_AIRCRAFT) {
 			int damage = object->Strength;
 			object->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 		}

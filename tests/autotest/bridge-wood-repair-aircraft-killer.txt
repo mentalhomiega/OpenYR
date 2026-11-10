@@ -1,0 +1,19 @@
+; A repair destroys a landed aircraft on the cells it rebuilds, on a wood low bridge. On Killer the piece at 66,67 takes
+; two weapon hits (bridgehit) and falls; a Harrier (ORCA) is then placed on it, and the span is repaired as a hut
+; engineer does (bridgefix). gamemd's wood repair routines (0x57F6A0, 0x57FBC0) call 0x487A10 with a zero jumpjet
+; argument on the three cells of each piece they change, which destroys every aircraft in the cells.
+; Expected: before the repair the Harrier is alive on 66,67 (overlay 100); after it the Harrier is gone and 66,67 is a
+; whole piece. Before the fix the Harrier stayed.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-wood-repair-aircraft-killer.txt -Build agent30 -Map Killer.mmx -Seconds 100 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridgefix|bridge)| wait)|Exception"
+30 reveal
+31 view 66 67
+60 bridgehit 66 67
+61 bridgehit 66 67
+62 bridge 66 67
+70 grantunit ORCA 66 67
+80 bridgeobj ORCA
+90 bridgefix 66 67
+91 bridge 66 67
+95 bridgeobj ORCA
+150 bridgeobj ORCA
+151 quit

@@ -2412,6 +2412,18 @@ static void Concrete_Hit_Step(StepType const & step)
 
 
 /// <summary>
+/// Repairs the bridge near a cell as an engineer at a repair hut does (MapClass::Repair_Concrete_Bridge, which falls
+/// back to Repair_Bridge for a wood or high bridge).
+/// </summary>
+/// <param name="step">The x in the argument and the y in X.</param>
+static void Bridge_Fix_Step(StepType const & step)
+{
+	Map.Repair_Concrete_Bridge(step.Argument_Cell());
+	DebugString("AUTOTEST   bridgefix %d,%d\n", step.Argument_Int(), step.X);
+}
+
+
+/// <summary>
 /// Logs whether a foot unit and a tracked unit can move onto a cell, and the overlay on it.
 /// </summary>
 /// <param name="step">The x in the argument and the y in X.</param>
@@ -6920,6 +6932,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"bridgehut", Bridge_Hut_Step},
 		{"bridgedecks", Bridge_Decks_Step},
 		{"concretehit", Concrete_Hit_Step},
+		{"bridgefix", Bridge_Fix_Step},
 		{"passable", Passable_Step},
 		{"targetaction", Target_Action_Step},
 		{"enemystrike", Enemy_Strike_Step},
