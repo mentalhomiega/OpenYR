@@ -249,7 +249,7 @@ CellClass::CellClass(void) :
 	BASECLASS(),
 	CellID(CELL_NONE),
 	RadLevel(0.0),
-	GapCount(0),
+	GapShrouded(),
 	Rubble(NULL),
 	IsPlot(false),
 	IsCursorHere(false),
@@ -4409,7 +4409,7 @@ void CellClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(CellID);
 	stream.Serialize(RadLevel);
-	stream.Serialize(GapCount);
+	stream.Serialize(GapShrouded);
 	stream.Serialize(Rubble);
 
 	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate

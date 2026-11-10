@@ -288,7 +288,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	DamageFireAnims{},
 	PsiWarnAnim(NULL),
 	IsRequiresDamageFires(false),
-	IsGapCounted(false),
+	GapShroudedHouses(),
 	IsSensing(false),
 	IsDetectingDisguise(false),
 	TranslucencyLevel(0),
@@ -2389,10 +2389,18 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			House->Update_Base_Edge(this);
 		}
 
-		// Another house's RevealToAll structure shows the player its surroundings (BuildingClass::Place, 0x445F80).
-		if (Class->IsRevealToAll && !House->Is_Player_Control() && PlayerPtr != NULL) {
-			Map.Sight_From(Center_Coord(), Class->SightRange, PlayerPtr);
-			Submit_Radar_Event(RADAREVENT_BUILDING_PLACED, Get_Cell());
+		// Another house's RevealToAll structure shows each human player its surroundings (BuildingClass::Place, 0x445F80, reveals
+		// for the local player only; every copy of a network game reveals for the same houses here).
+		if (Class->IsRevealToAll) {
+			for (int index = 0; index < Houses.Count(); index++) {
+				HouseClass * viewer = Houses[index];
+				if (viewer->Is_Player_View() && House->Player_View() != viewer) {
+					Map.Sight_From(Center_Coord(), Class->SightRange, viewer);
+				}
+			}
+			if (!House->Is_Player_Control() && PlayerPtr != NULL) {
+				Submit_Radar_Event(RADAREVENT_BUILDING_PLACED, Get_Cell());
+			}
 		}
 
 		// A NeedsEngineer structure that no engineer has taken is placed with its Powered animations frozen (DisableStuff, 0x452480).
@@ -11281,7 +11289,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HasExtraPowerDrain);
 	stream.Serialize(DamageFireAnims);
 	stream.Serialize(IsRequiresDamageFires);
-	stream.Serialize(IsGapCounted);
+	stream.Serialize(GapShroudedHouses);
 	stream.Serialize(CloakFieldCells);
 	stream.Serialize(IsSensing);
 	stream.Serialize(IsDetectingDisguise);
@@ -11573,9 +11581,28 @@ static void For_Each_Gap_Cell(BuildingClass const * building, Fn && fn)
 
 
 /// <summary>
+/// The human houses a gap this building puts up now would shroud: each one still in the game
+/// that is neither the owner nor an ally of the owner. Every copy of a network game gets the same set.
+/// </summary>
+static HouseSet Gap_Shrouded_Houses(BuildingClass const * building)
+{
+	HouseSet houses;
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		if (house->Is_Player_View() && house != building->House && !building->House->Is_Ally(house) && !house->IsDefeated) {
+			houses.Set(house);
+		}
+	}
+	return(houses);
+}
+
+
+/// <summary>
 /// Puts this gap generator's shroud in place (TechnoClass::CreateGap, 0x6FB170). Its cells are
-/// shrouded and kept from being revealed for the local player when that player is still in the
-/// game and is neither its owner nor an ally of its owner; other players are not affected.
+/// shrouded and kept from being revealed for each human house that is still in the game and is
+/// neither its owner nor an ally of its owner. gamemd keeps the shroud of the local player only;
+/// here every copy of a network game shrouds the same houses, so their shroud stays the same on
+/// every machine. Computer houses are not affected.
 /// </summary>
 void BuildingClass::Create_Gap(void)
 {
@@ -11586,27 +11613,35 @@ void BuildingClass::Create_Gap(void)
 		GapRadius = Class->GapRadiusInCells;
 	}
 	IsGeneratingGap = true;
-	IsGapCounted = (House != PlayerPtr && !House->Is_Ally(PlayerPtr) && !PlayerPtr->IsDefeated);
-	if (!IsGapCounted) {
+	GapShroudedHouses = Gap_Shrouded_Houses(this);
+	HouseSet const houses = GapShroudedHouses;
+	if (!houses.Any()) {
 		return;
 	}
 
-	For_Each_Gap_Cell(this, [](CellClass & cell) {
-		cell.GapCount++;
-		cell.IsMapped.Clear(PlayerPtr);
-		cell.IsVisible.Clear(PlayerPtr);
-		cell.IsFogMapped.Clear(PlayerPtr);
-		cell.IsFogVisible.Clear(PlayerPtr);
+	For_Each_Gap_Cell(this, [houses](CellClass & cell) {
+		cell.GapShrouded |= houses;
+		cell.IsMapped &= ~houses;
+		cell.IsVisible &= ~houses;
+		cell.IsFogMapped &= ~houses;
+		cell.IsFogVisible &= ~houses;
 	});
-	PlayerPtr->IsVisionary = false;
-	Map.Complete_Radar_Refresh();
-	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (houses[Houses[index]]) {
+			Houses[index]->IsVisionary = false;
+		}
+	}
+	if (houses[PlayerPtr]) {
+		Map.Complete_Radar_Refresh();
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	}
 }
 
 
 /// <summary>
 /// Lifts this gap generator's shroud (TechnoClass::DestroyGap, 0x6FB470). Its cells stay
-/// shrouded until the local player's objects or a working spy satellite reveal them again.
+/// shrouded until the shrouded houses' objects or their working spy satellites reveal them
+/// again. Cells that another working gap covers stay kept from those houses it shrouds.
 /// </summary>
 void BuildingClass::Destroy_Gap(void)
 {
@@ -11617,15 +11652,14 @@ void BuildingClass::Destroy_Gap(void)
 		GapRadius = Class->GapRadiusInCells;
 	}
 	IsGeneratingGap = false;
-	if (!IsGapCounted) {
+	HouseSet const houses = GapShroudedHouses;
+	if (!houses.Any()) {
 		return;
 	}
-	IsGapCounted = false;
+	GapShroudedHouses.Clear();
 
-	For_Each_Gap_Cell(this, [](CellClass & cell) {
-		if (cell.GapCount > 0) {
-			cell.GapCount--;
-		}
+	For_Each_Gap_Cell(this, [houses](CellClass & cell) {
+		cell.GapShrouded &= ~houses;
 	});
 
 	// Objects deleted while the game is inactive stay in the map's layers, where All_To_Look
@@ -11633,10 +11667,22 @@ void BuildingClass::Destroy_Gap(void)
 	if (!GameActive) {
 		return;
 	}
-	if (PlayerPtr != NULL) {
-		PlayerPtr->IsVisionary = false;
-		if (PlayerPtr->IsSpySatActive) {
-			Map.Reveal_The_Map(PlayerPtr);
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * other = Buildings[index];
+		if (other->IsGeneratingGap && other->GapShroudedHouses.Any()) {
+			HouseSet const kept = other->GapShroudedHouses;
+			For_Each_Gap_Cell(other, [kept](CellClass & cell) {
+				cell.GapShrouded |= kept;
+			});
+		}
+	}
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (houses[house]) {
+			house->IsVisionary = false;
+			if (house->IsSpySatActive) {
+				Map.Reveal_The_Map(house);
+			}
 		}
 	}
 	Map.All_To_Look();
@@ -12593,8 +12639,9 @@ void BuildingClass::Spied_By(HouseClass * house)
 	 */
 	if (Class->IsRadar) {
 		if (!House->IsSpySatActive) {
-			// Only the local player's map is shrouded again. For another house only the visionary flag is cleared, as in gamemd's HouseClass::ReshroudMap.
-			if (House == PlayerPtr) {
+			// A human owner's map is shrouded again; for a computer owner only the visionary flag is cleared. gamemd's HouseClass::ReshroudMap
+			// shrouds only the local player's map, so here every copy of a network game shrouds the same human house's map.
+			if (House->Is_Player_View()) {
 				Map.Shroud_The_Map(House);
 			} else {
 				House->IsVisionary = false;

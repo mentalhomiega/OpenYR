@@ -148,7 +148,9 @@ A command runs once the game frame reaches its frame, in file order.
 | `defeat <house>` | Runs the defeat a house gets once it has nothing left, on that house: its forces are destroyed, then MPlayer_Defeated runs. The house is named as the waits name one; `player` is the local player. Every copy of a network game must run it on the same frame |
 | `observer` | Writes the local player's defeat, watching, whole-map and Session.ObiWan state, its owned objects, the houses still playing, its selection and the beacon and planning modes |
 | `modes` | Writes the repair, sell, power, waypoint and beacon placement flags and the targeting flag as 0 or 1, then the object pending placement |
-| `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
+| `cell <x> <y>` | Writes the cell's map state, then its building and its occupier. `gap` is 1 when a working gap generator keeps the cell shrouded for the local player |
+| `shroudhash` | Writes, for each human house, how many cells it has mapped and fog-mapped, whether it sees the whole map through a spy satellite or a reveal (`visionary`), and a checksum of its shroud and fog over the map. Every copy of a network game must write the same lines |
+| `offmapcell` | Writes the location game logic left the shared off-map cell at (see [Camera](#camera)) |
 | `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1), `BallisticScatter` (leptons) and `AircraftWaypointReload` (0 or 1). Any other name logs `unknown` and changes nothing |
 | `strike <TypeID> x y` | The player-controlled objects of that type (see `select`) attack the object on that cell |
@@ -470,7 +472,11 @@ The game must play the same at any frame pacing: a frame that takes longer, the 
 
 The game must also play the same whatever the camera shows, because each player of a network game has their own view and zoom. `tests/autotest/camera-determinism-still.txt` and `camera-determinism-moves.txt` play one match at 3840x2160, the second with `zoom` and `view` steps; their header gives the runs and the `scripts/compare_digests.py --hash` comparison, which should print `identical`.
 
-A cell outside the map array, such as `CELL_NONE`, gives the map's one shared off-map cell. Drawing the map view also reaches that cell and changes its location. The main loop puts back the location game logic last left at the start of each frame's logic (`Restore_Off_Map_Cell_Location` in `code/map.cpp`), so a unit that keeps that cell as a destination or target plays the same whatever the view drew. A location that any other code outside a frame's logic gives that cell is dropped the same way. `syncrec` does not catch reads of that cell, because they happen inside a frame's logic.
+A cell outside the map array, such as `CELL_NONE`, gives the map's one shared off-map cell. Drawing the map view also reaches that cell and changes its location. The main loop puts back the location game logic last left at the start of each frame's logic (`Restore_Off_Map_Cell_Location` in `code/map.cpp`), so a unit that keeps that cell as a destination or target plays the same whatever the view drew. A location that any other code outside a frame's logic gives that cell is dropped the same way. `syncrec` does not catch reads of that cell, because they happen inside a frame's logic. A save keeps that location, so a destination on the cell points at the same place after a load; `save-offmap-cell.txt` and `save-offmap-cell-nosave.txt` check it.
+
+`camera-determinism-fog-still.txt` and `camera-determinism-fog-moves.txt` play the same pair with fog of war on. The fog, the fogged structures the player remembers and the deselection of units that fall under fog follow the local player, and game logic must not read them.
+
+Each copy of a network game also keeps the shroud and fog of every human house, and every copy must keep the same copy of each, because game logic reads them. Code that changes a house's shroud in game logic must not ask about the local player (`PlayerPtr`, `Is_Player_Control()` outside a campaign): use `Player_View()`, `Is_Player_View()` or `Is_Ally_Of_Player_View()` instead. `tests/netsync/gap-shroud-side-a.txt` and `gap-shroud-side-b.txt` log `shroudhash` on both copies of a match with a gap generator; the lines of the two logs must be the same. They also catch drawing code that changes what game logic reads: drawing an aircraft's shadow once moved the aircraft off the map and back, which revealed it on the copy whose screen showed it.
 
 ## Comparing presented frames
 

@@ -1,0 +1,18 @@
+; A save keeps the location game logic left the shared off-map cell at, so a destination or target saved on that cell points at the same place
+; after the load. At frame 100 the cell step looks up cell 250,250, off the map, inside the frame's logic, which moves the off-map cell there,
+; and the game is saved on the same frame and loaded at frame 101. offmapcell logs the location logic left the cell at on every frame from 99
+; to 106. save-offmap-cell-nosave.txt is this script without the save and load. For every frame the last offmapcell line must be the same in
+; both logs. Before the fix the load put the cell at 0,0, so the loaded game logged 0,0 where the unsaved game logged 250,250.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/save-offmap-cell.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST offmapcell|SAVING GAME|LOADING GAME|Exception"
+99 offmapcell
+100 cell 250 250
+100 command QuickSave
+100 offmapcell
+101 offmapcell
+101 command QuickLoad
+102 offmapcell
+103 offmapcell
+104 offmapcell
+105 offmapcell
+106 offmapcell
+107 quit
