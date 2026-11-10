@@ -349,6 +349,21 @@ bool AircraftClass::Unlimbo(Coord const & coord, Dir256 dir)
 }
 
 
+/// <summary>
+/// Puts the aircraft at a height above the ground for drawing its shadow. Unlike Set_Height_AGL, it
+/// does not take the aircraft off the map and put it back, which reveals it, reorders the objects of
+/// its cell and would make game logic depend on what each player's screen draws. gamemd's
+/// AircraftClass::DrawIt (0x4144B0) uses the full height change.
+/// </summary>
+static void Set_Draw_Height_AGL(AircraftClass & aircraft, int height)
+{
+	if (aircraft.IsOnBridge) {
+		height += BRIDGE_LEPTON_HEIGHT;
+	}
+	aircraft.Position.Z = height + Map.Get_Height_GL(aircraft.PositionCoord);
+}
+
+
 /***********************************************************************************************
  * AircraftClass::Draw_It -- Renders an aircraft object at the location specified.             *
  *                                                                                             *
@@ -393,6 +408,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 
 		int key = 0;
 		int height = HeightAGL;
+		int const saved_z = Position.Z;
 
 		bool occupies_cell = Occupies_Cells();
 		((AircraftClass &)*this).IsOccupyingCell = false;
@@ -407,7 +423,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 				(cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_N).IsUnderBridge ||
 				!cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_W).IsUnderBridge)) {
 
-				((AircraftClass &)*this).HeightAGL = BRIDGE_LEPTON_HEIGHT;
+				Set_Draw_Height_AGL((AircraftClass &)*this, BRIDGE_LEPTON_HEIGHT);
 				shadow.Y -= TacticalMap->Z_Lepton_To_Pixel(BRIDGE_LEPTON_HEIGHT);
 			} else {
 				draw_on_ground = true;
@@ -415,7 +431,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		}
 
 		if (draw_on_ground) {
-			((AircraftClass &)*this).HeightAGL = 0;
+			Set_Draw_Height_AGL((AircraftClass &)*this, 0);
 		}
 
 		/*
@@ -427,7 +443,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 			Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
 		}
 
-		((AircraftClass &)*this).HeightAGL = height;
+		((AircraftClass &)*this).Position.Z = saved_z;
 		((AircraftClass &)*this).IsOccupyingCell = occupies_cell;
 
 		TacticalMap->Add_To_Selectables((AircraftClass *)this, point);
