@@ -252,7 +252,7 @@ the image route in the same pass, so no stage adds a software fallback.
 |---|---|---|---|---|
 | 1 | Direct opaque parts drawn into the scene: vehicles without a turret, aircraft, voxel animations, debris, bullets. D24S8 attachment, depth slices with `Ordered` and `Shared` layer modes, row depth test from the blit, translator and lighting band in `fs_voxelscene.sc`, `GpuVoxelPath=Direct`. While the emissive mask is on, these parts stay on the image route | `gpu-voxel-compare.txt` under `gpucheck` with `GpuRender=no`, `GpuVoxelPath=Direct`, `GpuVoxelLayerDepth=Ordered` at scale 1: no `GPU_DIFF` pixel on a vehicle, as in the image-route run (about three one-step pixels a pass, none on a vehicle). A new scene with 48 Kirovs at `GpuVoxelScale=4` and 3840x2160: no "the voxel parts cannot be drawn" line. A `gpuvoxel` unit test: slice n+1 is nearer than slice n for every `d` | Recorder, prepared-object cache, model store and walk, `Setup_Object` steps, palette texture, translator and lighting stacks, row depth code (moved to `mapcommon.sh`) | Nothing yet |
 | 2 | Composites: hull, turret and barrel in one slice, pieces placed from the blit | `gpu-voxel-compare.txt` turret section with `Ordered`: no `GPU_DIFF` pixel on a vehicle. With `Shared`: a `gpuvoxel` unit test that places two pieces at known offsets and checks which one is nearer, and a `gpu-voxel-shot.txt` still of turreted vehicles at turret facings that differ from the body's, compared by eye | Piece placement arithmetic of `GpuVoxel_Submit` | The barrel-before-turret ordering is no longer needed on this route |
-| 3 | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,098 and 1,970; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
+| 3 | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,148 and 2,002; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
 | 4 | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
 | 5 | Highlights through the RG8 attachment; parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
 | 6 | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, lighting rows on the GPU, optional face shading | `gpuvoxel` unit test: a single voxel has 6 faces, a solid 3x3x3 block 54, and no listed face has a filled neighbour; the GPU lighting row equals `Precalculate_Normal_Lookup`'s for every normal of the four normal tables under a set of lights. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 not below stage 1's | Face store replaces the model store's slot management (`Load_Models`) | Orientation copies; the per-object `u_vlight` table |
@@ -263,6 +263,25 @@ Later, outside these stages: smooth tilt, the `Voxel` scene depth mode, and GPU 
 tile layer from tile images and their depth data into the same depth attachment in the map's row units, replacing the
 uploaded base picture and `s_zbuf`. The voxel row test would then become a hardware test only if voxels wrote row depth,
 which conflicts with the slices; that choice belongs to the terrain design.
+
+### Other backends and Direct3D 12
+
+A backend stage runs alongside the stages above, once stage 1's shaders exist. It compiles the map, voxel and scene
+shaders for every backend bgfx offers and removes the Direct3D 11 check from the `Start` functions in `code/gpumap.cpp`
+and `code/gpumapvoxel.cpp`. Linux needs Vulkan or OpenGL and macOS needs Metal, so this work is required whatever
+Direct3D 12 turns out to be worth. Today `Renderer=2` (Direct3D 12) starts the game, but the map pass is drawn in
+software there, so Direct3D 12 is slower than Direct3D 11 until this stage lands.
+
+We expect little gain from Direct3D 12 at today's draw counts. It lowers the CPU cost of each draw command, and a pass
+today sends one batch of quads plus one draw for each voxel part, about 100 to 200 draws. Most of the frame goes to the
+software terrain layer, its upload and the recording (Performance budget below), which no API change speeds up. The
+gain should grow once GPU terrain and direct voxels raise the draw count, and once the render thread
+([RENDER_THREAD.md](RENDER_THREAD.md)) can record draws in parallel, which Direct3D 12 and Vulkan allow.
+
+The check is a measurement, made by a person because automated runs use only the default renderer:
+`bench-large-battle.txt` and `bench-late-game.txt` at 3840x2160 with `Renderer=1` and `Renderer=2`, comparing mean and
+p95 draw, `present.gputime` and draws a second, followed by a play session on each. Direct3D 12 becomes the Windows
+default only if it is faster on both benchmarks and the play session shows no driver fault.
 
 ### Stage 1 in detail
 
@@ -330,7 +349,8 @@ which conflicts with the slices; that choice belongs to the terrain design.
   should be compiled for SPIR-V, Metal and GLSL as well and embedded with `BGFX_EMBEDDED_SHADER`, with the depth range
   from `bgfx::getCaps()->homogeneousDepth`. D24S8 is not available on every Metal GPU, so the depth format must be
   picked from what bgfx reports. We do not run non-default renderers in automated runs (a Vulkan run froze a
-  development PC), so these checks need a person.
+  development PC), so these checks need a person. The backend stage under Stages covers this work and the Direct3D
+  12 measurement.
 - **GPU memory at 4K.** At a 3840x2160 map view, one RGBA8 scene-sized texture is 33.2 MB at scale 1, 132.7 MB at
   scale 2 and 530.8 MB at scale 4, and `Size_Target` already makes three (target, snapshot, post): about 100 MB,
   400 MB and 1.6 GB. The direct route adds a D24S8 attachment of the same size and an RG8 attachment of half, about
