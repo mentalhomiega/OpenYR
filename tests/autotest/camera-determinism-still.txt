@@ -2,8 +2,8 @@
 ; steps, as a player or a film makes. The camera is not part of the game, so both logs must hold the same hashes. Run both, then compare:
 ; The computer houses play camera-determinism-spawn.ini's match: all allied with the player, at war with each other, with 50000 credits each.
 ; At frame 12000 the script gives the Russians and the French armies and sends them to hunt; the state hash is logged every 30 frames from then.
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script tests/autotest/camera-determinism-still.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/camera-determinism-spawn.ini -Width 3840 -Height 2160 -Seconds 600 -Uncapped -Filter "AUTOTEST hash|Exception" > still.log
-;       powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script tests/autotest/camera-determinism-moves.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/camera-determinism-spawn.ini -Width 3840 -Height 2160 -Seconds 600 -Uncapped -Filter "AUTOTEST hash|Exception" > moves.log
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script tests/autotest/camera-determinism-still.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/camera-determinism-spawn.ini -Width 3840 -Height 2160 -Seconds 600 -Uncapped -Filter "AUTOTEST hash|AUTOTEST frame 13001|Exception" > still.log
+;       powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script tests/autotest/camera-determinism-moves.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/camera-determinism-spawn.ini -Width 3840 -Height 2160 -Seconds 600 -Uncapped -Filter "AUTOTEST hash|AUTOTEST frame 13001|Exception" > moves.log
 ;   python -I scripts/compare_digests.py --hash still.log moves.log
 ; Expected: "identical", with 35 hash lines in each log: two at frame 12000, then one every 30 frames to 12990.
 ; Before the fix, the logs differed from frame 12990: a damaged Russian Rhino queued for a busy repair depot with no clear cell near it was sent
