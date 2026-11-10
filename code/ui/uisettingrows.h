@@ -94,7 +94,7 @@ UISettingRow Row_Of(Setting<Owner> const & setting, int value)
 	row.Value = value;
 	row.Start = value;
 	row.Default = setting.Default;
-	row.Off = (setting.Flag != nullptr) ? 0 : setting.Default;
+	row.Off = (setting.Flag != nullptr) ? 0 : setting.Off;
 	row.SwitchOn = (setting.Flag != nullptr) ? 1 : setting.SwitchOn;
 	row.Min = setting.Min;
 	row.Max = setting.Max;

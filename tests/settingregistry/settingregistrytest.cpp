@@ -232,7 +232,7 @@ struct Old_Gpu
 	bool GpuVoxels = false;
 	bool GpuVoxelSmooth = false;
 	int GpuVoxelScale = 1;
-	int GpuVoxelPath = GPU_VOXEL_PATH_IMAGE;
+	int GpuVoxelPath = GPU_VOXEL_PATH_DIRECT;
 	int GpuVoxelLayerDepth = GPU_VOXEL_LAYER_DEPTH_SHARED;
 	int GpuVoxelCloak = GPU_VOXEL_CLOAK_TRANSLUCENT;
 	bool SteadyVoxelPlacement = true;
@@ -258,8 +258,8 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.GpuVoxelSmooth = ini.Get_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
 	old.GpuVoxelScale = std::clamp(ini.Get_Int("Video", "GpuVoxelScale", old.GpuVoxelScale), 1, 4);
 	char name[16];
-	ini.Get_String("Video", "GpuVoxelPath", "Image", name, sizeof(name));
-	old.GpuVoxelPath = Enum_From_Name(Path_Names, name, GPU_VOXEL_PATH_IMAGE);
+	ini.Get_String("Video", "GpuVoxelPath", "Direct", name, sizeof(name));
+	old.GpuVoxelPath = Enum_From_Name(Path_Names, name, GPU_VOXEL_PATH_DIRECT);
 	ini.Get_String("Video", "GpuVoxelLayerDepth", "Shared", name, sizeof(name));
 	old.GpuVoxelLayerDepth = Enum_From_Name(Layer_Depth_Names, name, GPU_VOXEL_LAYER_DEPTH_SHARED);
 	ini.Get_String("Video", "GpuVoxelCloak", "Translucent", name, sizeof(name));
@@ -289,7 +289,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_Bool("Video", "GpuVoxels", old.GpuVoxels);
 	ini.Put_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
 	ini.Put_Int("Video", "GpuVoxelScale", old.GpuVoxelScale);
-	ini.Put_String("Video", "GpuVoxelPath", Enum_Name(Path_Names, old.GpuVoxelPath, "Image"));
+	ini.Put_String("Video", "GpuVoxelPath", Enum_Name(Path_Names, old.GpuVoxelPath, "Direct"));
 	ini.Put_String("Video", "GpuVoxelLayerDepth", Enum_Name(Layer_Depth_Names, old.GpuVoxelLayerDepth, "Shared"));
 	ini.Put_String("Video", "GpuVoxelCloak", Enum_Name(Cloak_Names, old.GpuVoxelCloak, "Translucent"));
 	ini.Put_Bool("Video", "SteadyVoxelPlacement", old.SteadyVoxelPlacement);
@@ -376,6 +376,7 @@ void Test_Real_Table(void)
 	char const * const texts[] = {
 		"[Video]\r\n",
 		"[Video]\r\nGpuRender=no\r\nSoftShadows=yes\r\nSoftShadowRadius=99\r\nBloom=1\r\nBloomStrength=0\r\nWeather=Rain\r\nWeatherStrength=999\r\nGpuVoxelScale=9\r\nGpuVoxelPath=Direct\r\nGpuVoxelLayerDepth=Ordered\r\nGpuVoxelCloak=Ripple\r\nCustomKey=abc\r\n\r\n[Options]\r\nGameSpeed=1\r\n",
+		"[Video]\r\nGpuVoxelPath=Image\r\n",
 		"[Video]\r\nWeather=Bogus\r\nGpuVoxelPath=Sideways\r\nGpuVoxelCloak=Invisible\r\nGpuVoxels=true\r\nCloudShadowStrength=not a number\r\nWaterRipples=0\r\nShockwaves=TRUE\r\n",
 		"[Video]\r\nGpuRender=yes\r\nSoftShadows=no\r\nSoftShadowRadius=3\r\nShockwaves=no\r\nBloom=no\r\nBloomStrength=100\r\nWaterRipples=no\r\nWaterRippleStrength=100\r\nCloudShadows=no\r\nCloudShadowStrength=100\r\nGpuVoxels=no\r\nGpuVoxelSmooth=no\r\nGpuVoxelScale=1\r\nWeather=None\r\nWeatherStrength=100\r\n",
 	};

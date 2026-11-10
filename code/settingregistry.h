@@ -66,6 +66,9 @@ struct Setting
 	// A Names setting shown as a switch: the value ticking it picks, unless the page opened on another non-off value.
 	int SwitchOn = 0;
 
+	// The value of that switch when it is cleared; the setting's default may be the switched-on value.
+	int Off = 0;
+
 	// The text after a slider's number, such as "%".
 	char const * Unit = "";
 

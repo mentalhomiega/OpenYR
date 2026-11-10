@@ -130,10 +130,10 @@ constexpr Setting<OptionsClass> Settings[] = {
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelPath",
-		.Number = &OptionsClass::GpuVoxelPath, .Default = GPU_VOXEL_PATH_IMAGE, .Names = GpuVoxelPath_Names,
+		.Number = &OptionsClass::GpuVoxelPath, .Default = GPU_VOXEL_PATH_DIRECT, .Names = GpuVoxelPath_Names,
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Draw voxels directly",
-		.Tip = "Draws voxel objects straight into the map picture instead of through a shared voxel image, so turrets and barrels hide each other by depth and sharpness never falls back. Experimental. Works with Draw voxels on the GPU. Needs GPU drawing.",
-		.Needs = "GpuRender", .SwitchOn = GPU_VOXEL_PATH_DIRECT,
+		.Tip = "Draws voxel objects straight into the map picture instead of through a shared voxel image, so turrets and barrels hide each other by depth and sharpness never falls back. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Needs = "GpuRender", .SwitchOn = GPU_VOXEL_PATH_DIRECT, .Off = GPU_VOXEL_PATH_IMAGE,
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelLayerDepth",

@@ -3038,6 +3038,15 @@ static void Send_Intent(UIPresenterClass & presenter, char const * name, int val
 }
 
 
+// A switch whose setting defaults to its switched-on value still clears to another value.
+static void Test_Switch_Rows_Clear(void)
+{
+	std::vector<UISettingRow> const rows = UI_Setting_Rows(Option_Settings(), "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
+	auto const row = std::find_if(rows.begin(), rows.end(), [](UISettingRow const & candidate) { return(candidate.Key == "GpuVoxelPath"); });
+	Check(row != rows.end() && row->Kind == UISettingRowKind::SWITCH && row->Value == row->SwitchOn && row->Off != row->SwitchOn, "the voxel route switch starts ticked at its default and clears to the image route");
+}
+
+
 // The graphics page: the sidebar rows in use, the HDR rows enabled and a colour-blind list for the preview.
 // The declared rows with every switch off and every slider at its lowest value.
 static std::vector<UISettingRow> Fixture_Setting_Rows(void)
@@ -6744,6 +6753,7 @@ void Test_Documents(void)
 		Test_Settings_Tab_Buttons();
 		Test_Settings_Tabs_Screen(*context, system);
 		Test_Display_Screen(*context, system);
+		Test_Switch_Rows_Clear();
 		Test_Classic_Options_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
 		Test_Keyboard_Navigation(*context, system, render);

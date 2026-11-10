@@ -17431,7 +17431,7 @@ GpuVoxelPath:
     value_type: string
     status: generated
     _provenance:
-      default_candidate: Image
+      default_candidate: Direct
       declared_in: OptionsClass
       member: null
       source: code/optionsettings.cpp
