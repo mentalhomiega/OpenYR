@@ -44,6 +44,7 @@ constexpr NameEntry GpuVoxelCloak_Names[] = {
 constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
+constexpr char const * VOXEL_DRAWING = "Voxel drawing";
 
 
 // The order is the order of the keys in a saved RA2MD.INI: a save rewrites each key in this order.
@@ -141,6 +142,12 @@ constexpr Setting<OptionsClass> Settings[] = {
 	{
 		.Section = "Video", .Key = "GpuVoxelCloak",
 		.Number = &OptionsClass::GpuVoxelCloak, .Default = GPU_VOXEL_CLOAK_TRANSLUCENT, .Names = GpuVoxelCloak_Names,
+	},
+	{
+		.Section = "Video", .Key = "SteadyVoxelPlacement",
+		.Flag = &OptionsClass::SteadyVoxelPlacement, .Default = true,
+		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Steady voxel placement",
+		.Tip = "A turning vehicle or aircraft stays in place instead of wobbling by a pixel. Off places it as the original game does.",
 	},
 	{
 		.Section = "Video", .Key = "Weather",
