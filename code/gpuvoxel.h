@@ -76,6 +76,10 @@ GpuVoxelLayerDepth Gpu_Voxel_Ordered_Depth(int first, int total);
 // axes), scaled so that nearest, the largest view Z of the part, is 0 and farthest is 1.
 GpuVoxelLayerDepth Gpu_Voxel_Shared_Depth(VoxelRenderStruct const & object, VoxelFuncArgumentStruct const & arg, float nearest, float farthest);
 
+// Widens nearest and farthest to the view Z of the prepared layer's box. Start them at -FLT_MAX and FLT_MAX; every
+// layer of a part, hull, turret and barrel alike, widens the same pair, because their corners share one view space.
+void Gpu_Voxel_Widen_Depth_Range(VoxelRenderStruct const & object, float & nearest, float & farthest);
+
 
 // Lays tiles out on shelves of a square image, left to right and then a shelf further down.
 struct GpuVoxelShelf

@@ -54,8 +54,9 @@ bool GpuVoxel_Direct_Path(void);
 inline constexpr int GPU_VOXEL_SHADOW_STENCILS = 255;
 
 // Marks the parts of the list the direct route draws, one flag per part. On the direct path, while the emissive mask
-// is off (mask false) and the direct program built, they are the parts of one prepared object without shadows that
-// only copy blits show, when the pass has at most GPU_VOXEL_SLICES such blits, and, without soft shadows, the parts
+// is off (mask false) and the direct program built, they are the parts without shadow layers that only copy blits show,
+// whether one prepared object or a composite of hull, turret and barrel, when the pass has at most GPU_VOXEL_SLICES
+// such blits, and, without soft shadows, the parts
 // of one prepared shadow that only shadow blits show, when the pass has at most GPU_VOXEL_SHADOW_STENCILS such
 // blits. Every other flag is 0.
 std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, bool soft_shadows);

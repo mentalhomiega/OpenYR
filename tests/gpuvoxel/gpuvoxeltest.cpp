@@ -11,6 +11,7 @@
 // layers in every orientation, drawing the walked voxels the way the shader does must give the
 // same 256 by 256 buffer as the drawer. Needs no game data.
 
+#include <cfloat>
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -289,6 +290,43 @@ int main(void)
 		};
 		bool const ok = place(0.0f) == 1.0f && std::fabs(place((float)XSIZE)) < 1.0e-6f &&place(1.0f) < place(0.0f) && depth.Step[1] == 0.0f && depth.Step[2] == 0.0f;
 		std::printf("%-52s %s\n", "shared depth puts the nearer voxel in front", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// A hull whose box spans view Z 0 to 4, and a turret placed by its matrix 2 nearer, spanning 2 to 6. The turret
+		// is drawn second, so drawing order alone would put it in front everywhere; shared depth must put each part
+		// where its view Z is, so the turret's front is nearer than the hull's front and its back behind it.
+		VoxelRenderOrientation const & o = VoxelRenderOrientations[0];
+		auto const piece = [&o](float back, float front) {
+			VoxelRenderStruct object = {};
+			object.AnchorCornerIndex = 0;
+			for (Vector3 & corner : object.BoxCorner) {
+				corner = Vector3(0.0f, 0.0f, back);
+			}
+			object.BoxCorner[o.CornerX] = Vector3(0.0f, 0.0f, front);
+			return(object);
+		};
+		VoxelRenderStruct const hull = piece(0.0f, 4.0f);
+		VoxelRenderStruct const turret = piece(2.0f, 6.0f);
+		float nearest = -FLT_MAX;
+		float farthest = FLT_MAX;
+		Gpu_Voxel_Widen_Depth_Range(hull, nearest, farthest);
+		Gpu_Voxel_Widen_Depth_Range(turret, nearest, farthest);
+		VoxelFuncArgumentStruct arg;
+		Setup(arg, 0);
+		GpuVoxelLayerDepth const hull_depth = Gpu_Voxel_Shared_Depth(hull, arg, nearest, farthest);
+		GpuVoxelLayerDepth const turret_depth = Gpu_Voxel_Shared_Depth(turret, arg, nearest, farthest);
+		auto const place = [](GpuVoxelLayerDepth const & depth, float i) {
+			return(depth.Origin + i * depth.Step[0]);
+		};
+		float const hull_front = place(hull_depth, (float)XSIZE);
+		float const turret_front = place(turret_depth, (float)XSIZE);
+		float const turret_back = place(turret_depth, 0.0f);
+		bool const ok = nearest == 6.0f && farthest == 0.0f && std::fabs(turret_front) < 1.0e-6f && std::fabs(place(hull_depth, 0.0f) - 1.0f) < 1.0e-6f
+			&& turret_front < hull_front && turret_back > hull_front
+			&& Gpu_Voxel_Slice_Depth(9, turret_front) < Gpu_Voxel_Slice_Depth(9, hull_front);
+		std::printf("%-52s %s\n", "shared depth orders two pieces by their placement", ok ? "ok" : "FAILED");
 		failures += ok ? 0 : 1;
 	}
 	return(failures == 0 ? 0 : 1);

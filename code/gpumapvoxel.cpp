@@ -296,6 +296,12 @@ bool GpuVoxel_Direct_Path(void)
 }
 
 
+static bool Objects_Only(GpuVoxelPart const & part)
+{
+	return(std::all_of(part.Pieces.begin(), part.Pieces.end(), [](GpuVoxelPiece const & piece) { return(piece.Prepared->Scene.Shadows.empty()); }));
+}
+
+
 std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, bool soft_shadows)
 {
 	std::vector<char> direct(list.Voxels.size(), 0);
@@ -323,14 +329,13 @@ std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, boo
 	std::vector<char> objects(list.Voxels.size(), 0);
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		GpuVoxelPart const & part = list.Voxels[i];
-		if (part.Scratch || part.Pieces.size() != 1 || shown[i].Blits == 0) {
+		if (part.Pieces.empty() || shown[i].Blits == 0) {
 			continue;
 		}
-		VoxelScene const & scene = part.Pieces[0].Prepared->Scene;
-		if (scene.Shadows.empty() && shown[i].Copies) {
+		if (shown[i].Copies && Objects_Only(part)) {
 			objects[i] = 1;
 			slices += shown[i].Blits;
-		} else if (scene.Objects.empty() && shown[i].Shadows && !soft_shadows) {
+		} else if (!part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Objects.empty() && shown[i].Shadows && !soft_shadows) {
 			direct[i] = 1;
 			shadows += shown[i].Blits;
 		}
@@ -521,10 +526,7 @@ static void Set_Layer_Depths(std::vector<LayerDraw> & layers)
 		float nearest = -FLT_MAX;
 		float farthest = FLT_MAX;
 		for (LayerDraw const & layer : layers) {
-			for (Vector3 const & corner : layer.Object->BoxCorner) {
-				nearest = std::max(nearest, corner.Z);
-				farthest = std::min(farthest, corner.Z);
-			}
+			Gpu_Voxel_Widen_Depth_Range(*layer.Object, nearest, farthest);
 		}
 		for (LayerDraw & layer : layers) {
 			layer.Depth = Gpu_Voxel_Shared_Depth(*layer.Object, layer.Setup.Arg, nearest, farthest);

@@ -140,6 +140,15 @@ GpuVoxelLayerDepth Gpu_Voxel_Shared_Depth(VoxelRenderStruct const & object, Voxe
 }
 
 
+void Gpu_Voxel_Widen_Depth_Range(VoxelRenderStruct const & object, float & nearest, float & farthest)
+{
+	for (Vector3 const & corner : object.BoxCorner) {
+		nearest = std::max(nearest, corner.Z);
+		farthest = std::min(farthest, corner.Z);
+	}
+}
+
+
 bool GpuVoxelShelf::Place(int size, int width, int height, int & x, int & y)
 {
 	if (width > size) {
