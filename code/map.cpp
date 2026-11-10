@@ -8482,6 +8482,26 @@ bool MapClass::Damage_Low_Bridge(Cell const & cell)
 }
 
 
+void MapClass::Low_Bridge_Span_Damaged(Cell const & cell, CellClass * cellptr1, CellClass * cellptr2, CellClass * cellptr3, Rect draw_rect, bool destroyed)
+{
+	draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+	TacticalMap->Register_Dirty_Area(draw_rect);
+
+	cellptr1->Recalc_Attributes(-1);
+	cellptr2->Recalc_Attributes(-1);
+	cellptr3->Recalc_Attributes(-1);
+	// gamemd 0x57BCF0 and 0x57C2B0 pass the flag only for the stage that brings the span down.
+	cellptr1->Kill_Illegal_Occupiers(destroyed);
+	cellptr2->Kill_Illegal_Occupiers(destroyed);
+	cellptr3->Kill_Illegal_Occupiers(destroyed);
+
+	if (destroyed) {
+		Zone_Reset();
+		Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
+	}
+}
+
+
 /// <summary>
 /// Damages the center span of an east-west low bridge.
 /// The span degrades a stage at a time and drags its flanking pieces down with it. Past the
@@ -8500,7 +8520,6 @@ bool MapClass::Damage_Low_Bridge_EW(Cell const & cell)
 	bool didwork = false;
 
 	Rect draw_rect = Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect());
-	Rect recalc_rect(0, 0, 0, 0);
 
 	do {
 		if (otype == OVERLAY_LOWBRIDGE_19) {
@@ -8530,29 +8549,11 @@ bool MapClass::Damage_Low_Bridge_EW(Cell const & cell)
 			Damage_Low_Bridge_Piece_EW(cell + Cell(1, 0));
 			Spring_Low_Bridge_Destroyed_EW(cell);
 			didwork = true;
-			recalc_rect = Rect(cell.X - 1, cell.Y - 1, 3, 3);
 		} else {
 			break;
 		}
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
-		TacticalMap->Register_Dirty_Area(draw_rect);
-
-		cellptr1->Recalc_Attributes(-1);
-		cellptr2->Recalc_Attributes(-1);
-		cellptr3->Recalc_Attributes(-1);
-		// gamemd 0x57BCF0 and 0x57C2B0 pass the flag only for the stage that brings the span down.
-		cellptr1->Kill_Illegal_Occupiers(didwork);
-		cellptr2->Kill_Illegal_Occupiers(didwork);
-		cellptr3->Kill_Illegal_Occupiers(didwork);
-
-		if (didwork) {
-			Zone_Reset();
-		}
-
-		if (recalc_rect.Is_Valid()) {
-			Recalc_Cells_In_Rect(recalc_rect);
-		}
+		Low_Bridge_Span_Damaged(cell, cellptr1, cellptr2, cellptr3, draw_rect, didwork);
 	} while (false);
 
 	return(didwork);
@@ -8577,7 +8578,6 @@ bool MapClass::Damage_Low_Bridge_NS(Cell const & cell)
 	bool didwork = false;
 
 	Rect draw_rect = Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect());
-	Rect recalc_rect(0, 0, 0, 0);
 
 	do {
 		if (otype == OVERLAY_LOWBRIDGE_23) {
@@ -8607,29 +8607,11 @@ bool MapClass::Damage_Low_Bridge_NS(Cell const & cell)
 			Damage_Low_Bridge_Piece_NS(cell + Cell(0, 1));
 			Spring_Low_Bridge_Destroyed_NS(cell);
 			didwork = true;
-			recalc_rect = Rect(cell.X - 1, cell.Y - 1, 3, 3);
 		} else {
 			break;
 		}
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
-		TacticalMap->Register_Dirty_Area(draw_rect);
-
-		cellptr1->Recalc_Attributes(-1);
-		cellptr2->Recalc_Attributes(-1);
-		cellptr3->Recalc_Attributes(-1);
-		// gamemd 0x57BCF0 and 0x57C2B0 pass the flag only for the stage that brings the span down.
-		cellptr1->Kill_Illegal_Occupiers(didwork);
-		cellptr2->Kill_Illegal_Occupiers(didwork);
-		cellptr3->Kill_Illegal_Occupiers(didwork);
-
-		if (didwork) {
-			Zone_Reset();
-		}
-
-		if (recalc_rect.Is_Valid()) {
-			Recalc_Cells_In_Rect(recalc_rect);
-		}
+		Low_Bridge_Span_Damaged(cell, cellptr1, cellptr2, cellptr3, draw_rect, didwork);
 	} while (false);
 
 	return(didwork);

@@ -263,6 +263,7 @@ class MapClass: public GScreenClass
 		static int Get_Low_Bridge_NS_Neighbor_Mask(Cell const & cell);
 		bool Damage_Low_Bridge_EW(Cell const & cell);
 		bool Damage_Low_Bridge_NS(Cell const & cell);
+		void Low_Bridge_Span_Damaged(Cell const & cell, CellClass * cellptr1, CellClass * cellptr2, CellClass * cellptr3, Rect draw_rect, bool destroyed);
 		void Damage_Low_Bridge_Piece_EW(Cell const & cell);
 		void Damage_Low_Bridge_Piece_NS(Cell const & cell);
 		void Spring_Low_Bridge_Destroyed_EW(Cell cell);
