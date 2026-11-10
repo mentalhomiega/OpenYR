@@ -32,8 +32,8 @@ A voxel object drawn this way never uses the voxel picture cache. The GPU keeps 
 This page describes that route, the image route. `GpuVoxelPath=Direct` (`[Video]`, default `Image`) draws opaque
 voxel objects, turreted vehicles included, and their shadows straight into the map pass, or into the soft shadow mask, with a
 depth buffer instead, so they take no tile; with `GpuVoxelLayerDepth=Ordered` the picture is the same at scale 1 to 4
-wherever the image route draws its parts at the full scale. While the emissive mask is on, every part takes the image
-route. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) describes the direct route and its measurements.
+wherever the image route draws its parts at the full scale. Direct parts keep their route while the emissive mask is on
+and write their highlights from their layers, turreted vehicles included. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) describes the direct route and its measurements.
 
 Stage 3 is in. While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also writes each
 voxel's highlight strength beside its index and feeds the glow and the HDR picture from it; see Highlights below.
@@ -206,8 +206,9 @@ part's blit, in order, the strength from the part's tile wherever the plane hold
 place of the plane, and the present draws it over the map area for the HDR composite. A pass the GPU cannot draw renders
 its parts in software and replaces the marks with their real strengths.
 
-A turreted composite writes no mask, as in the software: the scratch surface has no plane, so its blit zeroes the mask under
-its rectangle. With `GpuVoxels` off, a picture read from the voxel cache carries no mask either, so a cached software
+A turreted composite writes no mask on the image route, as in the software: the scratch surface has no plane, so its blit
+zeroes the mask under its rectangle. On the direct route its blit leaves the mark instead, and its highlights are drawn
+from its layers ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), stage 5). With `GpuVoxels` off, a picture read from the voxel cache carries no mask either, so a cached software
 vehicle has no highlights; the GPU draws every part afresh, so a vehicle with no turret glows on every pass.
 
 A mask value of exactly 1 written by some other effect over a part's rectangle is taken for the mark and replaced by the

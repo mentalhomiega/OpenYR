@@ -3,8 +3,8 @@
 We propose to draw each voxel object as geometry into the map pass's scene target, at the place of its blit in the
 pass, with a depth and stencil buffer for the voxels' own depth. The voxel image, its tiles and its overflow go away,
 sharpness becomes the resolution of the scene target, and hull, turret and barrel hide each other by real depth.
-Stages 1 to 3 are built behind `GpuVoxelPath=Direct`; "Stage 1 (done)", "Stage 2 (done)" and "Stage 3 (done)" below
-say what they delivered and measured. Every "we propose" elsewhere is a design choice for the
+Stages 1, 2, 3 and 5 are built behind `GpuVoxelPath=Direct`; the "(done)" sections after the Stages table say what
+they delivered and measured. Every "we propose" elsewhere is a design choice for the
 later stages, and every statement about current behaviour cites the code. [GPU_VOXELS.md](GPU_VOXELS.md) owns the
 image route and [GPU_MAP.md](GPU_MAP.md) the map pass.
 
@@ -208,8 +208,11 @@ If writing a second output from every map shader proves awkward, the alternative
 geometry with `EQUAL` depth into a separate target, paid only while the mask is on.
 
 The glow (`Submit_Glow`), the post pass and the HDR composite ([EMISSIVE_MASK.md](EMISSIVE_MASK.md)) read the finished
-mask and do not change. A composite writes no mask today because the scratch surface has none; we propose that a direct
+mask and do not change. A composite writes no mask on the image route because the scratch surface has none; a direct
 composite writes one, so turreted vehicles glow too. That is a deliberate change from the software.
+
+Stage 5 built the alternative above in place of the RG8 attachment: a second draw of the direct geometry, into the
+mask target, with that target's own depth attachment; "Stage 5 (done)" describes it.
 
 ### Facing and tilt
 
@@ -238,7 +241,7 @@ one map pixel covers at least one screen pixel, capped by the memory budget belo
 | Large scale with many large units | Unchanged | Draws the largest parts at a lower scale, down to 1 | No voxel image to overflow, so every part keeps the scale; the remaining limit is the face store, about 4 million faces at the proposed size |
 | Hull, turret and barrel | Order by turret facing | Same | Depth decides |
 | Cloaked unit | Ripple from the cached picture (`RLE_Blit` predator offset) | Plain translucent | Plain translucent, ripple as an option |
-| Turreted vehicle under Glow or HDR Enhanced | No highlight | No highlight | Highlights (proposal) |
+| Turreted vehicle under Glow or HDR Enhanced | No highlight | No highlight | Highlights |
 | Turning and tilt | 32 facings | Exact facing with `GpuVoxelSmooth` | Same; smooth tilt as a later option |
 | Main thread | Software voxel drawing | Tile hashing, shelf placement, part signatures | No tiles or signatures; per-layer uniforms only |
 | GPU | None | Draws only parts not in the image (5% to 37% of parts a second in the Cost runs of GPU_VOXELS.md) | Draws every visible voxel every pass; we expect it to cost more at scale 1 and less where tiles were redrawn often |
@@ -257,7 +260,7 @@ the image route in the same pass, so no stage adds a software fallback.
 | 2 (done) | Composites: hull, turret and barrel in one slice, pieces placed from the blit | `gpu-voxel-compare.txt` turret section with `Ordered`: no `GPU_DIFF` pixel on a vehicle. With `Shared`: a `gpuvoxel` unit test that places two pieces at known offsets and checks which one is nearer, and a `gpu-voxel-shot.txt` still of turreted vehicles at turret facings that differ from the body's, compared by eye | Piece placement arithmetic of `GpuVoxel_Submit` | Nothing: `Ordered` still draws the pieces in the barrel-before-turret order of the software |
 | 3 (done) | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,148 and 2,002; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
 | 4 | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
-| 5 | Highlights through the RG8 attachment; parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
+| 5 (done) | Highlights, drawn into the mask target with its own depth attachment (see "Stage 5 (done)"); parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
 | 6 | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, lighting rows on the GPU, optional face shading | `gpuvoxel` unit test: a single voxel has 6 faces, a solid 3x3x3 block 54, and no listed face has a filled neighbour; the GPU lighting row equals `Precalculate_Normal_Lookup`'s for every normal of the four normal tables under a set of lights. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 not below stage 1's | Face store replaces the model store's slot management (`Load_Models`) | Orientation copies; the per-object `u_vlight` table |
 | 7 | Splat below a size threshold, faces above; `GpuVoxelScale=0` from the zoom | `bench-large-battle.txt` and `bench-large-battle-zoomed-out.txt` at 3840x2160 meet the budget below; edge counts at zoom 1, 2, 3 | | |
 | 8 | Direct by default, then removal of the image route | The regress suite with `GpuVoxelPath=Direct`; `pacing-determinism.txt` hashes identical with the key on and off | | See below |
@@ -294,8 +297,8 @@ voxel objects, and their shadows while `SoftShadows` is off, are drawn straight 
 `GpuVoxelLayerDepth=Ordered` the pass differs from the software exactly where the image route's does, and 48 Kirovs at
 `GpuVoxelScale=4` and 3840x2160 stay on the GPU at full scale in every pass. Before the overflow fix the image route drew
 3,579 of 3,600 of those passes in software; since it, the image route draws them on the GPU with the Kirovs at scale 1.
-Stage 2 (below) added turreted vehicles. Stage 5 is what lets the route reach a player with Glow or HDR Enhanced
-highlights on, since until then the mask keeps every part on the image route.
+Stage 2 (below) added turreted vehicles. Stage 5 lets the route reach a player with Glow or HDR Enhanced highlights
+on; before it the mask kept every part on the image route.
 
 What we built, in the order of the plan:
 
@@ -352,7 +355,7 @@ count fallbacks from `GPU_RENDER` lines.
 
 **Measurements.** 48 Kirovs (`scratch-agent/voxel-kirov/kirovs.txt` with `perflog 1`) at 3840x2160, uncapped game
 speed, `HDRHighlights=Classic` and `Bloom=no` so that the mask is off; with this PC's default highlights the mask is on
-and both routes are the image route. Passes are the first six `GPU_RENDER` lines; times are means of the per-second
+and, until stage 5, both routes were the image route. Passes are the first six `GPU_RENDER` lines; times are means of the per-second
 `Perf` lines after the first three.
 
 | Route | Scale | Passes on the GPU | Draws a second | Mean / p95 draw | `draw.gpumap` | `present.gputime` |
@@ -454,8 +457,7 @@ What we built:
 
 **State.** Built and committed on branch `gpu-direct-voxels`. With the direct path on and the emissive mask off, every
 voxel shadow takes the direct route: with hard shadows it darkens the scene once per blit through the stencil (built in
-stage 1), and with `SoftShadows` its layers are drawn into the shadow mask. **Next step:** stage 5, which lets the route
-reach players with Glow or HDR Enhanced highlights on.
+stage 1), and with `SoftShadows` its layers are drawn into the shadow mask. Stage 5 (below) came next.
 
 What we built:
 
@@ -492,6 +494,67 @@ What we built:
   at scale 2 and 4. The mask keeps them on the image route until stage 5, which shows them below the scale.
 - `pacing-determinism.txt` with `GpuRender=yes`, `GpuVoxels=yes`, `SoftShadows=yes`, `Bloom=no` and
   `HDRHighlights=Classic`, `GpuVoxelPath=Direct` against `Image`: the 1,500 hash lines are identical.
+
+### Stage 5 (done)
+
+**State.** Built and committed on branch `gpu-direct-voxels`. Direct parts keep the direct route while the emissive mask
+is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), which this PC's default settings turn on, and write
+their highlight strengths into the mask; turreted vehicles get highlights. **Next step:** stage 4, translucent, warp and
+cloak parts.
+
+We built the alternative the design names for the mask, not the RG8 scene attachment: the mask target gets its own
+D24S8 attachment, at map size, and each direct part's layers are drawn into it a second time at scale 1. No other map
+shader changes, and the scene target keeps one colour attachment.
+
+1. **Routing.** `GpuVoxel_Direct_Parts` no longer takes the mask into account.
+2. **The mask pass.** `Submit_Voxel_Mask` (`code/gpumap.cpp`) keeps its order: a copy of the CPU plane, then one quad
+   per voxel blit in blit order. An image part's quad still reads its tile. A direct part's quad writes 0 wherever the
+   plane holds `GPU_VOXEL_MASK_MARK` (`fs_mapmask.sc`), and the part's layers follow at scale 1 in the blit's depth
+   slice, depth test `LEQUAL`, writing the voxel's strength where the plane holds the mark (`fs_voxelscene.sc`, kind
+   16). Within a part each pixel takes the voxel depth puts in front, the last in the walk with `Ordered`, which is
+   what the tile holds; across parts a later blit's zeroing and slice put it over an earlier one, as its quad does on
+   the image route. The tile holds every voxel's strength whatever the map's depth test says, so these draws skip
+   that test, and an index 0 voxel writes its strength as it does in the tile.
+3. **Composites.** The scratch surface has no plane, so a composite's blit zeroes the target's plane. On the direct
+   path `GpuDraw_Composite_End` (`Mark_Composite_Mask`, `code/gpudraw.cpp`) fills the rectangles of the composite's
+   blits with the mark afterwards. A composite on the image route then gets a zeroing quad, and a pass drawn in software
+   turns the marks into 0, so only a direct composite shows highlights. A pass `gpucheck` compares draws no composite
+   highlights, because the software it is compared with has none.
+4. **Scale.** The mask is map-sized, so a direct part's strengths are those of scale 1 whatever `GpuVoxelScale` is,
+   where the image route reads the centre of each block of its tile.
+
+**Checks.**
+
+| Check | Result |
+|---|---|
+| `gpu-voxel-compare.txt` under `gpucheck`, `GpuRender=no`, `EmissiveDebugView=yes`, `Ordered`, scale 1 | 90 `GPU_MASK` lines, all 0 differing (95,602 masked pixels). The image route in the same setup: 86 lines, all 0. The `GPU_DIFF` lines on both routes: up to 6 differing pixels a pass, none more than one step |
+| `hdr-emissive-scene.txt` with `gpucheck`, a harvester, an MCV, a Kirov and an Orca added, and no window shots | 583 `GPU_MASK` lines, all 0 differing (929,720 masked pixels). The image route: 572 lines, all 0 |
+| Before composites were left out of checked passes | The compare scene's passes differed by up to 2,148 pixels, every one a turreted vehicle's highlight over a mask the software leaves at 0 |
+| `gpu-voxel-turrets.txt` with `EmissiveDebugView=yes`, scale 2, `Shared` | By eye: on the direct route the turreted vehicles show highlights on hull and turret, in the vehicles' outlines; on the image route only the two hull-only vehicles do. `gpu-voxel-bloom.txt` under `Bloom` shows the Grizzly tank glowing on the direct route only |
+| `gpu-voxel-direct-bloom.txt` (new, log in `tests/autotest/`): 48 Kirovs at scale 4 under `Bloom`, 800x600 | Direct: 0 fallback, 0 reduced. Image: 0 fallback, 28,416 and 54,912 reduced in the two lines |
+| 48 Kirovs at 3840x2160, `Bloom=yes`, scale 2 and 4 | 0 of 600 passes fall back, 0 reduced (stage 3: 13,536 and 23,912 reduced) |
+| The other `gpu-voxel-*` regress scripts | `same`, except that the logs of `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt` gain stage 3's `twice` field; the direct route's scripts match their logs in `tests/autotest/` |
+| `pacing-determinism.txt`, `GpuRender=yes`, `GpuVoxels=yes`, `Bloom=yes`, `SoftShadows=yes`, `Direct` against `Image` | The 1,500 hash lines are identical |
+
+**GPU cost.** 48 Kirovs (`kirovs.txt` with `perflog 1`, quitting at frame 6,000) at 3840x2160, uncapped game speed,
+`Bloom=yes` with this PC's other defaults, `VSync=no` and `FrameRateLimit=0`, so presents follow every draw. Times are
+means of the per-second `Perf` lines after the first three, 4 to 13 lines a run.
+
+| Route | Scale | Draws and presents a second | Mean / p95 draw | `present.gputime` mean / p95 | Kirovs drawn below the scale |
+|---|---:|---:|---:|---:|---|
+| Image | 1 | 802 | 1.17 / 1.45 ms | 0.37 / 0.44 ms | |
+| Image | 2 | 805 | 1.17 / 1.45 ms | 0.69 / 0.86 ms | All, at 1 |
+| Image | 4 | 553 | 1.74 / 2.21 ms | 1.75 / 2.26 ms | All, at 1 |
+| Direct | 1 | 719 | 1.32 / 1.60 ms | 0.86 / 1.09 ms | |
+| Direct | 2 | 660 | 1.44 / 1.86 ms | 1.29 / 1.89 ms | None |
+| Direct | 4 | 370 | 2.63 / 2.86 ms | 2.67 / 2.91 ms | None |
+
+The direct route costs about 0.5 ms more GPU time a present than the image route at scale 1, 0.6 ms at scale 2 and
+0.9 ms at scale 4, where the image route reuses its tiles in this still scene and shows the Kirovs at scale 1 above
+scale 1. Without the mask (stage 2's table) the difference was 0.2, 0.6 and 0.8 ms, so the second draw of the layers
+into the mask adds about 0.3 ms at scale 1 and 0.1 ms or less at scales 2 and 4, where the scene's own draws grow with
+the scale and the mask's, drawn at scale 1, do not. The whole pass at scale 4 takes 2.7 ms of GPU time, under the
+4.17 ms a picture has at 240 a second.
 
 ### What stage 8 deletes
 
@@ -585,7 +648,7 @@ All keys are in `[Video]` of `RA2MD.INI` unless marked. Current keys keep their 
 | Key | Values | Default | Status |
 |---|---|---|---|
 | `GpuVoxels` | `yes`, `no` | `no` | Unchanged: draws voxels on the GPU, by the route `GpuVoxelPath` picks |
-| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | Added in stage 1: a name list in `code/optionsettings.cpp` with no row; a row in the **GPU voxels** group from stage 5 |
+| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | Added in stage 1: a name list in `code/optionsettings.cpp` with no row; a row in the **GPU voxels** group was planned for stage 5 and is not added yet |
 | `GpuVoxelSmooth` | `yes`, `no` | `no` | Unchanged |
 | `GpuVoxelScale` | 1 to 4; 0 from stage 7 | `1` | Unchanged for 1 to 4; 0 picks the scale from the zoom |
 | `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | Added in stage 1: a developer key with no row; `Ordered` is the exact mode the checks use |
