@@ -152,6 +152,7 @@
 #include "mapgen.h"
 #include "strutil.h"
 #include "surface.h"
+#include "dsurface.h"
 #include "truecolour.h"
 #include "weapon.h"
 #include "waypoint.h"
@@ -6700,6 +6701,46 @@ static void Perflog_Step(StepType const & step)
 }
 
 
+// keyrect <x> <y> <w> <h>: logs how many pixels of the last presented frame in that screen rectangle hold the map layer key.
+static void Keyrect_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 2, 0), Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0));
+	DebugString("AUTOTEST keyrect %d,%d %dx%d keyed %llu of %d\n", area.X, area.Y, area.Width, area.Height, Video_Count_Keyed_Pixels(area), area.Width * area.Height);
+}
+
+
+// stretchprobe: stretches a 2x2 block pattern to 8x8 and shrinks it back for each pairing of ordinary and watched
+// surfaces, and logs which pairings put every pixel where the sampling puts it. Each should read ok.
+static void Stretchprobe_Step(StepType const &)
+{
+	for (int pairing = 0; pairing < 4; pairing++) {
+		bool const watched_source = (pairing & 1) != 0;
+		bool const watched_dest = (pairing & 2) != 0;
+		DSurface source(16, 16, watched_source);
+		DSurface dest(32, 32, watched_dest);
+		for (int y = 0; y < 16; y++) {
+			unsigned short * row = (unsigned short *)((char *)source.Get_Buffer() + y * source.Stride());
+			for (int x = 0; x < 16; x++) {
+				row[x] = (unsigned short)(1 + y * 16 + x);
+			}
+		}
+		dest.Fill_Rect(dest.Get_Rect(), 0);
+		// Source 4..11 (8 wide) to destination 10..25 (16 wide): each source pixel covers two destination pixels.
+		bool const drawn = dest.Blit_From(Rect(10, 10, 16, 16), source, Rect(4, 4, 8, 8));
+		int wrong = 0;
+		for (int y = 0; y < 32; y++) {
+			unsigned short const * row = (unsigned short const *)((char const *)dest.Get_Buffer() + y * dest.Stride());
+			for (int x = 0; x < 32; x++) {
+				bool const inside = x >= 10 && x < 26 && y >= 10 && y < 26;
+				unsigned short const wanted = inside ? (unsigned short)(1 + (4 + (y - 10) / 2) * 16 + 4 + (x - 10) / 2) : 0;
+				wrong += (row[x] != wanted);
+			}
+		}
+		DebugString("AUTOTEST stretchprobe source %s dest %s drawn %d wrong %d %s\n", watched_source ? "watched" : "plain", watched_dest ? "watched" : "plain", drawn ? 1 : 0, wrong, (drawn && wrong == 0) ? "ok" : "FAIL");
+	}
+}
+
+
 // uploadverify <0|1>: 1 checks, at every present, that the copy kept of each texture matches its picture; 0 logs the checks and mismatches so far.
 static void Uploadverify_Step(StepType const & step)
 {
@@ -7104,6 +7145,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
 		{"uploadverify", Uploadverify_Step},
+		{"keyrect", Keyrect_Step},
+		{"stretchprobe", Stretchprobe_Step},
 		{"hash", Hash_Step},
 		{"statecrc", Statecrc_Step},
 		{"syncrec", Syncrec_Step},

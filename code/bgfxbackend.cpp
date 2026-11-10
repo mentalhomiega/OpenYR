@@ -156,6 +156,8 @@ static bool _KeyedMaskMasked = false;
 static bool _VerifyUploads = false;
 static unsigned int _VerifyChecks = 0;
 static unsigned int _VerifyMismatches = 0;
+// The keyed mask texture as the sent rectangles build it. It is empty until checking has seen a full upload.
+static std::vector<unsigned int> _VerifyMaskMirror;
 
 // HDR output and the colour adjustment. Frames are routed through the scene target when HDR10 output
 // is on or the colour adjustment is not the identity; the composite pass then draws them to the window.
@@ -857,8 +859,11 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 	// With checking on, the sent rectangles are also applied to a copy of the texture, which must equal the whole
 	// picture's conversion.
 	if (_VerifyUploads) {
-		static std::vector<unsigned int> mirror;
-		if (mirror.size() != (size_t)_FrameWidth * _FrameHeight || !wascurrent) {
+		std::vector<unsigned int> & mirror = _VerifyMaskMirror;
+		// A texture that was already current when checking began cannot be rebuilt from the rectangles, so the
+		// first check after that has no copy to compare and starts one.
+		bool const unseeded = mirror.size() != (size_t)_FrameWidth * _FrameHeight;
+		if (unseeded || !wascurrent) {
 			mirror.assign((size_t)_FrameWidth * _FrameHeight, 0);
 		}
 		for (TileRect const & rect : _Rects) {
@@ -867,6 +872,9 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 		TileRect const whole = {0, 0, _FrameWidth, _FrameHeight};
 		std::vector<unsigned int> expected((size_t)_FrameWidth * _FrameHeight);
 		fill((unsigned char *)expected.data(), _FrameWidth * 4, whole);
+		if (unseeded && wascurrent) {
+			mirror = expected;
+		}
 		_VerifyChecks++;
 		if (std::memcmp(mirror.data(), expected.data(), expected.size() * 4) != 0) {
 			_VerifyMismatches++;
@@ -1757,6 +1765,7 @@ void Backend_Note_Changed_Rows(unsigned char const * rows, int count)
 void Backend_Verify_Uploads(bool on)
 {
 	_VerifyUploads = on;
+	_VerifyMaskMirror.clear();
 	if (on) {
 		_VerifyChecks = 0;
 		_VerifyMismatches = 0;

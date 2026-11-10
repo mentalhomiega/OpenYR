@@ -219,6 +219,8 @@ class DSurface : public XSurface
 		// The pixels came from WriteWatch_Alloc instead of a bitmap.
 		bool IsWatched;
 
+		bool Stretch_Without_GDI(Rect const & dcliprect, Rect const & destrect, DSurface const & source, Rect const & scliprect, Rect const & sourcerect);
+
 		mutable unsigned Changes;
 
 		unsigned Serial;

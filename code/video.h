@@ -149,6 +149,9 @@ void Video_Set_Present_Digest(bool enabled);
 // Logs the PRESENT_DIGEST line for a present while the step is on; layer is NULL when no map layer is drawn.
 void Video_Log_Present_Digest(DSurface const * surface, BackendLayer const * layer);
 
+// The keyrect autotest step: how many pixels of the last presented frame in the rectangle hold the map layer key.
+unsigned long long Video_Count_Keyed_Pixels(Rect const & area);
+
 // The drawdigest autotest step: on logs a DRAW_DIGEST line for each map view passed to Video_Note_Draw_Digest.
 void Video_Set_Draw_Digest(bool enabled);
 void Video_Note_Draw_Digest(Surface const & surface, Rect const & area);

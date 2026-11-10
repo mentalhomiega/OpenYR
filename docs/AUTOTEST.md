@@ -267,6 +267,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `plan` | writes each computer house's base plan |
 | `fps` | writes the game frames counted in the last whole second, which the game's FPS readout shows |
 | `uploadverify <0\|1>` | 1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches |
+| `stretchprobe` | stretches a block to twice its size for each pairing of ordinary and watched surfaces and writes `ok` or `FAIL` for each |
+| `keyrect <x> <y> <w> <h>` | writes how many pixels of the last presented frame inside that screen rectangle hold the map layer key. In a zoomed view on the presenter's map layer, a rectangle clear of the panel and buttons is all key |
 | `ally <TypeID> x y` | like `spawn`, but the object belongs to the first house that is an ally of the player. The log says `placed` or `failed`, `no such type`, or `no house allied with the player` |
 | `banimstate <TypeID>` | writes each building of that type with its cell, health, building state, animation stage and rate, power and house, then its construction animation, then each animation slot with the animation wanted, the one running, its stage and rate, and whether it is held still |
 | `bind <Command> <vk> [trigger]` | gives the command that virtual-key code (decimal) with the trigger, `0` Press, `1` Double, `2` Hold or `3` Held, which is Press when left out. A conflicting binding is displaced, as the keyboard screen does. The log gets the key and the trigger name |

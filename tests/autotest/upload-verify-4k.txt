@@ -1,0 +1,8 @@
+; Checks at 3840x2160, zoomed out with the build panel, that every texture copy the presenter keeps matches its picture.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/upload-verify-4k.txt -Map XMP22S8.MAP -Width 3840 -Height 2160 -Settings "[Video]`nGpuRender=no" -Seconds 60 -Filter "AUTOTEST uploadverify|Backend: .* differs"
+; Expected: mismatches 0.
+0 uploadverify 1
+1 view 100 100
+2 reveal
+60 uploadverify 0
+62 quit
