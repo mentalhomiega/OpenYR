@@ -421,13 +421,17 @@ A pass picks its route like this:
 A direct program that fails to build leaves `GpuVoxelPath=Direct` drawing by the image route until stage 8, and by the
 software afterwards, with one log line, as `Start` in `code/gpumapvoxel.cpp` does today.
 
-## Decisions we need
+## Decisions
 
-- Whether `Shared` layer depth is the default, given that it changes how turret and barrel overlap compared with gamemd.
-- Whether turreted vehicles get highlights under Glow and HDR Enhanced, which the software never shows.
-- Whether to keep a GPU copy of the classic look (the scale 1 image route and the `GPU_VOXEL` comparison) after stage 8,
-  or delete it and leave the software as the only classic reference.
-- Whether lifting the 2^24-pixel map view limit is scheduled before stage 7, since the zoomed-out 4K target depends on it.
+These are provisional until confirmed; each is cheap to reverse before stage 8.
+
+- `Shared` layer depth is the default, so turret and barrel overlap by real depth. `Ordered` stays as the developer key
+  the exact checks use.
+- Turreted vehicles get highlights under Glow and HDR Enhanced in the GPU look. The software look keeps none, as in
+  gamemd.
+- Stage 8 deletes the image route. The software renderer is the only classic reference.
+- The 2^24-pixel map view limit is lifted before stage 7, once a run on a large map at 3840x2160 confirms that the
+  zoomed-out view passes it.
 
 ## References
 
