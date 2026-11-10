@@ -27,48 +27,19 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // w how bright the glints of sunlight on them are.
 
 #include "bgfx_shader.sh"
+#include "mapcommon.sh"
 
 SAMPLER2D(s_index, 0);
-SAMPLER2D(s_lut, 1);
-SAMPLER2D(s_alut, 2);
-SAMPLER2D(s_zbuf, 3);
-SAMPLER2D(s_abuf, 4);
-SAMPLER2D(s_zshape, 5);
 SAMPLER2D(s_base, 6);
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
 SAMPLER2D(s_voxel, 10);
-uniform vec4 u_ring[2];
 uniform vec4 u_world;
 uniform vec4 u_water;
 
-#define ARENA_WIDTH 4096
 // Offsets from here on are texels of the voxel image s_voxel, whose rows are as wide as the blit's pitch.
 #define VOXEL_BASE 8388608
-
-int Fetch8(sampler2D s, int offset)
-{
-	return int(texelFetch(s, ivec2(offset % ARENA_WIDTH, offset / ARENA_WIDTH), 0).x * 255.0 + 0.5);
-}
-
-int Fetch16(sampler2D s, ivec2 p)
-{
-	return int(texelFetch(s, p, 0).x * 65535.0 + 0.5);
-}
-
-// The texel of a ring buffer holding area pixel p; ring is u_ring[i] (start, width, size).
-ivec2 Ring(ivec2 p, vec4 ring)
-{
-	int width = int(ring.y + 0.5);
-	int index = (int(ring.x + 0.5) + p.y * width + p.x) % int(ring.z + 0.5);
-	return ivec2(index % width, index / width);
-}
-
-vec3 Rgb565(int c)
-{
-	return vec3(float((c / 2048) % 32) / 31.0, float((c / 32) % 64) / 63.0, float(c % 32) / 31.0);
-}
 
 // The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
 int Plane(ivec2 p)
@@ -231,22 +202,8 @@ void main()
 		return;
 	}
 
-	if (kind != 6 && v_texcoord3.w < 0.5) {
-		int z = int(v_texcoord2.x);
-		int denominator = int(v_texcoord2.w + 0.5);
-		if (denominator != 0) {
-			z += int(v_texcoord3.x) * ((int(v_texcoord2.y + 0.5) + local.y * denominator) / int(v_texcoord2.z + 0.5));
-		}
-		int shape = 0;
-		if (v_texcoord3.y >= 0.0) {
-			shape = Fetch8(s_zshape, int(v_texcoord3.y + 0.5) + local.y * width + local.x);
-			if (shape > 127) {
-				shape -= 256;
-			}
-		}
-		if (!((z - shape) < Fetch16(s_zbuf, Ring(area, u_ring[0])))) {
-			discard;
-		}
+	if (kind != 6 && v_texcoord3.w < 0.5 && !Row_Depth_Passes(local, area, width, v_texcoord2, v_texcoord3)) {
+		discard;
 	}
 
 	// The software blends floor each halved or quartered term. The source term is floored here; the
@@ -262,14 +219,7 @@ void main()
 		return;
 	}
 
-	int band = 0;
-	if (v_texcoord1.w >= 0.0) {
-		// The alpha buffer value indexes on past the row's end the way the software lookup does.
-		int entry = int(v_texcoord1.w + 0.5) * 256 + Fetch16(s_abuf, Ring(area, u_ring[1]));
-		band = Fetch16(s_alut, ivec2(entry % 256, entry / 256));
-	}
-	int value = index + band;
-	int colour = Fetch16(s_lut, ivec2(value % 256, int(v_texcoord1.z + 0.5) + value / 256));
+	int colour = Translated_Colour(index, area, v_texcoord1);
 	if (kind == 0 || kind == 6) {
 		gl_FragColor = vec4(Rgb565(colour), 1.0);
 		return;
