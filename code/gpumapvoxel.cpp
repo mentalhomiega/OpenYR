@@ -124,7 +124,7 @@ static bool Start(void)
 	if (!bgfx::isValid(_DirectProgram)) {
 		DebugString("GPU_VOXEL: the direct program did not build, so GpuVoxelPath=Direct draws by the image route\n");
 	}
-	_DepthUniform = bgfx::createUniform("u_vdepth", bgfx::UniformType::Vec4, 2);
+	_DepthUniform = bgfx::createUniform("u_vdepth", bgfx::UniformType::Vec4, 3);
 	_BlitUniform = bgfx::createUniform("u_vblit", bgfx::UniformType::Vec4, 4);
 	_VoxelUniform = bgfx::createUniform("u_vox", bgfx::UniformType::Vec4, 4);
 	_LightUniform = bgfx::createUniform("u_vlight", bgfx::UniformType::Vec4, 64);
@@ -308,11 +308,13 @@ std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool soft_shad
 	if (!_DirectWanted || list.Voxels.empty() || !Start() || !bgfx::isValid(_DirectProgram)) {
 		return(direct);
 	}
-	// The blits that show each part and whether every one of them is a copy, or every one a shadow.
+	// The blits that show each part, how many of them are translucent, and whether every one of them is a copy or
+	// translucent, or every one a shadow.
 	struct Shown
 	{
 		int Blits = 0;
-		bool Copies = true;
+		int Translucent = 0;
+		bool Images = true;
 		bool Shadows = true;
 	};
 	std::vector<Shown> shown(list.Voxels.size());
@@ -320,30 +322,35 @@ std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool soft_shad
 		if (blit.Voxel >= 0) {
 			Shown & part = shown[blit.Voxel];
 			part.Blits++;
-			part.Copies = part.Copies && blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind == BlitDesc::XLAT;
+			part.Translucent += blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind != BlitDesc::XLAT ? 1 : 0;
+			part.Images = part.Images && blit.Class() == GPU_BLIT_IMAGE;
 			part.Shadows = part.Shadows && blit.Class() == GPU_BLIT_SHADOW;
 		}
 	}
 	int slices = 0;
-	int shadows = 0;
+	int stencils = 0;
 	std::vector<char> objects(list.Voxels.size(), 0);
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		GpuVoxelPart const & part = list.Voxels[i];
 		if (part.Pieces.empty() || shown[i].Blits == 0) {
 			continue;
 		}
-		if (shown[i].Copies && Objects_Only(part)) {
+		if (shown[i].Images && Objects_Only(part)) {
 			objects[i] = 1;
 			slices += shown[i].Blits;
+			stencils += shown[i].Translucent;
 		} else if (!part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Objects.empty() && shown[i].Shadows) {
 			direct[i] = 1;
-			shadows += shown[i].Blits;
+			// A soft shadow writes the shadow mask, where overlaps are harmless, and takes no stencil value.
+			stencils += soft_shadows ? 0 : shown[i].Blits;
 		}
 	}
-	// A pass clears depth and stencil once, which gives it no more slices or shadow stencil values than these. A soft
-	// shadow writes the shadow mask, where overlaps are harmless, and takes no stencil value.
-	if (!soft_shadows && shadows > GPU_VOXEL_SHADOW_STENCILS) {
-		direct.assign(list.Voxels.size(), 0);
+	// A pass clears depth and stencil once, which gives it no more slices or stencil values than these.
+	if (stencils > GPU_VOXEL_STENCILS) {
+		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
+			direct[i] = 0;
+			objects[i] = objects[i] && shown[i].Translucent == 0;
+		}
 	}
 	if (slices <= GPU_VOXEL_SLICES) {
 		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
@@ -705,7 +712,9 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 	GpuVoxelPart const & part = list.Voxels[blit.Part];
 	Rect const & area = part.Area;
 	Rect const shown = Intersect(Rect(blit.OriginX, blit.OriginY, area.Width, area.Height), blit.Clip);
-	for (LayerDraw const & layer : _DirectLayers[blit.Part]) {
+	std::vector<LayerDraw> const & layers = _DirectLayers[blit.Part];
+	for (std::size_t i = 0; i < layers.size(); i++) {
+		LayerDraw const & layer = layers[blit.LastFirst ? layers.size() - 1 - i : i];
 		ModelSlot const * slot = Find_Slot(layer.Key);
 		if (slot == NULL || slot->Count == 0) {
 			continue;
@@ -720,11 +729,12 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 			continue;
 		}
 		Set_Layer_Uniforms(part, layer, *slot, (left - bounds.X) * scale, (top - bounds.Y) * scale, scale);
-		float const depth[8] = {
+		float const depth[12] = {
 			(float)(GPU_VOXEL_SLICES - 1 - blit.Slice), 1.0f / GPU_VOXEL_SLICES, bgfx::getCaps()->homogeneousDepth ? 1.0f : 0.0f, layer.Depth.PerVoxel,
-			layer.Depth.Origin, layer.Depth.Step[0], layer.Depth.Step[1], layer.Depth.Step[2]
+			layer.Depth.Origin, layer.Depth.Step[0], layer.Depth.Step[1], layer.Depth.Step[2],
+			blit.LastFirst ? 1.0f : 0.0f, (float)slot->Count, 0.0f, 0.0f
 		};
-		bgfx::setUniform(_DepthUniform, depth, 2);
+		bgfx::setUniform(_DepthUniform, depth, 3);
 		bgfx::setUniform(_BlitUniform, blit.Values, 4);
 		bind();
 		bgfx::setTexture(DIRECT_MODEL_STAGE, _ModelSampler, _Model);

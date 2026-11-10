@@ -1167,20 +1167,51 @@ static uint64_t Blend_State_For(int kind, int channels)
 }
 
 
-// A direct blit drawn into the scene. A copy takes the next depth slice; a shadow darkens each pixel once through the
-// next stencil value (GpuVoxel_Direct_Parts bounds both).
-static GpuVoxelDirectBlit Scene_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int & slices, int & shadows)
+static bool Is_Translucent(GpuBlit const & blit)
+{
+	return(blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind != BlitDesc::XLAT);
+}
+
+
+// The stencil state that lets a draw pass each pixel once, through the next of the pass's stencil values.
+static uint32_t Once_Stencil(int & stencils)
+{
+	return(BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_FUNC_REF(++stencils) | BGFX_STENCIL_FUNC_RMASK(0xFF)
+		| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+}
+
+
+// A direct blit drawn into the scene. A copy writes the next depth slice. A translucent blit takes the next slice too
+// and blends once a pixel where the depth its pre-pass wrote (Depth_Pre_Pass) is equal, which is its nearest voxel,
+// drawing last first so that of voxels at equal depth the one a copy would show blends. A shadow darkens each pixel
+// once. GpuVoxel_Direct_Parts bounds the slices and stencil values.
+static GpuVoxelDirectBlit Scene_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int & slices, int & stencils)
 {
 	GpuVoxelDirectBlit direct = Direct_Blit(blit, quad, area, scale);
 	if (blit.Class() == GPU_BLIT_SHADOW) {
 		direct.State = Blend_State_For(KIND_DARKEN, 0);
-		direct.Stencil = BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_FUNC_REF(++shadows) | BGFX_STENCIL_FUNC_RMASK(0xFF)
-			| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE;
+		direct.Stencil = Once_Stencil(stencils);
+	} else if (Is_Translucent(blit)) {
+		direct.Slice = slices++;
+		direct.State = Blend_State_For(Shader_Kind(blit.Desc), 0) | BGFX_STATE_DEPTH_TEST_EQUAL;
+		direct.Stencil = Once_Stencil(stencils);
+		direct.LastFirst = true;
 	} else {
 		direct.Slice = slices++;
 		direct.State = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
 	}
 	return(direct);
+}
+
+
+// The draw that writes a translucent blit's depth, and no colour, before the blit blends.
+static GpuVoxelDirectBlit Depth_Pre_Pass(GpuVoxelDirectBlit const & blended)
+{
+	GpuVoxelDirectBlit depth = blended;
+	depth.State = BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
+	depth.Stencil = 0;
+	depth.LastFirst = false;
+	return(depth);
 }
 
 
@@ -1196,7 +1227,7 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 	}
 	MapVertex const * const vertices = (MapVertex const *)buffer.data;
 	int slices = 0;
-	int shadows = 0;
+	int stencils = 0;
 	bgfx::ViewId view = VIEW_MAPDRAW;
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
@@ -1207,7 +1238,12 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 			continue;
 		}
 		if (i > 0 && Is_Direct(list.Blits[i - 1], tiles)) {
-			GpuVoxel_Draw_Direct(list, Scene_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slices, shadows), scale, view, [ring]() { Bind_Stores(ring); });
+			GpuVoxelDirectBlit const drawn = Scene_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slices, stencils);
+			auto const bind = [ring]() { Bind_Stores(ring); };
+			if (Is_Translucent(list.Blits[i - 1])) {
+				GpuVoxel_Draw_Direct(list, Depth_Pre_Pass(drawn), scale, view, bind);
+			}
+			GpuVoxel_Draw_Direct(list, drawn, scale, view, bind);
 			continue;
 		}
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);

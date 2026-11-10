@@ -2,8 +2,8 @@ $input v_texcoord1
 
 // Writes a fragment of a direct voxel part into the map pass's scene target the way fs_mapdraw.sc writes the blit's
 // pixel from the part's tile: index 0 is transparent and the blit's row depth test applies; a copy's index goes through
-// the blit's lighting band and translator, a shadow (kind 1) darkens, and a soft shadow (kind 8) writes 1 into the
-// shadow mask. Kind 16 writes the voxel's highlight strength into the emissive mask where the CPU plane s_glowmask
+// the blit's lighting band and translator, then is written by a copy or, for the translucent kinds 2 to 4, blended
+// (Translucent_Output); a shadow (kind 1) darkens, and a soft shadow (kind 8) writes 1 into the shadow mask. Kind 16 writes the voxel's highlight strength into the emissive mask where the CPU plane s_glowmask
 // holds the mark, as the voxel image's tile holds it, so index 0 writes too.
 //   v_texcoord1.x  the palette index vs_voxelscene.sc chose, y: its highlight strength
 //   u_vblit[0..2]  the blit's values, as fs_mapdraw.sc describes v_texcoord1 to v_texcoord3, with u_vblit[0].y the
@@ -48,5 +48,10 @@ void main()
 		gl_FragColor = vec4_splat(v_texcoord1.y / 255.0);
 		return;
 	}
-	gl_FragColor = vec4(Rgb565(Translated_Colour(index, area, u_vblit[0])), 1.0);
+	int colour = Translated_Colour(index, area, u_vblit[0]);
+	if (kind >= 2 && kind <= 4) {
+		gl_FragColor = Translucent_Output(kind, colour);
+		return;
+	}
+	gl_FragColor = vec4(Rgb565(colour), 1.0);
 }

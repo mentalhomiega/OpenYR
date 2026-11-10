@@ -208,16 +208,12 @@ void main()
 		discard;
 	}
 
-	// The software blends floor each halved or quartered term. The source term is floored here; the
-	// blend scales the target by alpha and takes off rgb, which is centred on the flooring loss of the
-	// target term.
 	if (kind == 8) {
 		gl_FragColor = vec4_splat(1.0);
 		return;
 	}
-	vec3 unit = vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0);
 	if (kind == 1) {
-		gl_FragColor = vec4(0.25 * unit, 0.5);
+		gl_FragColor = vec4(0.25 / 31.0, 0.25 / 63.0, 0.25 / 31.0, 0.5);
 		return;
 	}
 
@@ -226,22 +222,5 @@ void main()
 		gl_FragColor = vec4(Rgb565(colour), 1.0);
 		return;
 	}
-	ivec3 channel = ivec3((colour / 2048) % 32, (colour / 32) % 64, colour % 32);
-	vec3 source;
-	vec3 loss;
-	float keep;
-	if (kind == 2) {
-		source = vec3(channel / 4) * 3.0;
-		loss = vec3_splat(0.375);
-		keep = 0.25;
-	} else if (kind == 3) {
-		source = vec3(channel / 2);
-		loss = vec3_splat(0.25);
-		keep = 0.5;
-	} else {
-		source = vec3(channel / 4);
-		loss = vec3_splat(1.125);
-		keep = 0.75;
-	}
-	gl_FragColor = vec4(max(source - loss, vec3_splat(0.0)) * unit, keep);
+	gl_FragColor = Translucent_Output(kind, colour);
 }

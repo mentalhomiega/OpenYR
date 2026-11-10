@@ -54,6 +54,33 @@ bool Row_Depth_Passes(ivec2 local, ivec2 area, int width, vec4 rows, vec4 shape)
 	return (z - offset) < Fetch16(s_zbuf, Ring(area, u_ring[0]));
 }
 
+// The output of a translucent kind (2 75% source, 3 half, 4 25% source) for 565 colour, which the blend
+// (Blend_State_For in code/gpumap.cpp) finishes: the source term in rgb and the target's weight in alpha. The software
+// blends floor each halved or quartered term. The source term is floored here; the blend scales the target by alpha and
+// takes off rgb, which is centred on the flooring loss of the target term.
+vec4 Translucent_Output(int kind, int colour)
+{
+	ivec3 channel = ivec3((colour / 2048) % 32, (colour / 32) % 64, colour % 32);
+	vec3 unit = vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0);
+	vec3 source;
+	vec3 loss;
+	float keep;
+	if (kind == 2) {
+		source = vec3(channel / 4) * 3.0;
+		loss = vec3_splat(0.375);
+		keep = 0.25;
+	} else if (kind == 3) {
+		source = vec3(channel / 2);
+		loss = vec3_splat(0.25);
+		keep = 0.5;
+	} else {
+		source = vec3(channel / 4);
+		loss = vec3_splat(1.125);
+		keep = 0.75;
+	}
+	return vec4(max(source - loss, vec3_splat(0.0)) * unit, keep);
+}
+
 // The 565 colour the blit writes for palette index at area pixel area: the index plus its lighting band, through the
 // blit's translator. source is the blit's v_texcoord1.
 int Translated_Colour(int index, ivec2 area, vec4 source)

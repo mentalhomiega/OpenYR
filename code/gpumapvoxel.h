@@ -50,14 +50,15 @@ void GpuVoxel_Set_Path(bool direct, bool shared);
 // True while GpuVoxelPath=Direct is set, whether or not a pass has a part the direct route draws.
 bool GpuVoxel_Direct_Path(void);
 
-// The shadow blits of direct parts a pass can hold: each darkens through its own stencil value from 1 to this.
-inline constexpr int GPU_VOXEL_SHADOW_STENCILS = 255;
+// The direct blits a pass can hold that blend once a pixel, hard shadows and translucent blits: each passes through its
+// own stencil value from 1 to this.
+inline constexpr int GPU_VOXEL_STENCILS = 255;
 
 // Marks the parts of the list the direct route draws, one flag per part. On the direct path, while the direct program
-// built, they are the parts without shadow layers that only copy blits show, whether one prepared object or a
-// composite of hull, turret and barrel, when the pass has at most GPU_VOXEL_SLICES such blits, and the parts of one
-// prepared shadow that only shadow blits show, when soft shadows are on or the pass has at most
-// GPU_VOXEL_SHADOW_STENCILS such blits. Every other flag is 0.
+// built, they are the parts without shadow layers that only copy or translucent blits show, whether one prepared
+// object or a composite of hull, turret and barrel, when the pass has at most GPU_VOXEL_SLICES such blits, and the
+// parts of one prepared shadow that only shadow blits show. When the pass's hard shadow and translucent blits of those
+// parts are more than GPU_VOXEL_STENCILS, the parts with such blits are left out. Every other flag is 0.
 std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool soft_shadows);
 
 // True when the parts of the list that direct leaves to the image fit an empty image at scale 1, the least
@@ -86,6 +87,9 @@ struct GpuVoxelDirectBlit
 	float Values[16] = {};
 	std::uint64_t State = 0;
 	std::uint32_t Stencil = 0;
+	// Draws the layers and their voxels last first, so a draw that passes each pixel once takes the voxel the walk
+	// draws last among those at the nearest depth, the one a LEQUAL draw in walk order leaves.
+	bool LastFirst = false;
 };
 
 // Submits the layers of a direct part into view, which draws into a target at scale times the area; the target needs a
