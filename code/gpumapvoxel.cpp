@@ -75,6 +75,7 @@ static uint8_t const DIRECT_MODEL_STAGE = 11;
 static uint8_t const DIRECT_PALETTE_STAGE = 12;
 static bool _DirectWanted = false;
 static bool _SharedDepth = true;
+static bool _CloakRipple = false;
 
 // The palette table the palette texture holds, kept to upload it again only when the game changes it.
 static unsigned char _PaletteCopy[MAX_PALETTE_LOOKUP_ENTRIES * VOXEL_PALETTE_SIZE];
@@ -287,6 +288,18 @@ void GpuVoxel_Set_Path(bool direct, bool shared)
 {
 	_DirectWanted = direct;
 	_SharedDepth = shared;
+}
+
+
+void GpuVoxel_Set_Cloak_Ripple(bool ripple)
+{
+	_CloakRipple = ripple;
+}
+
+
+bool GpuVoxel_Cloak_Ripple(void)
+{
+	return(_CloakRipple);
 }
 
 

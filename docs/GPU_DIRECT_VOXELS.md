@@ -3,7 +3,7 @@
 We propose to draw each voxel object as geometry into the map pass's scene target, at the place of its blit in the
 pass, with a depth and stencil buffer for the voxels' own depth. The voxel image, its tiles and its overflow go away,
 sharpness becomes the resolution of the scene target, and hull, turret and barrel hide each other by real depth.
-Stages 1 to 5 are built, apart from the `GpuVoxelCloak` key of stage 4, behind `GpuVoxelPath=Direct`; the "(done)" sections after the Stages table say what
+Stages 1 to 5 are built behind `GpuVoxelPath=Direct`; the "(done)" sections after the Stages table say what
 they delivered and measured. Every "we propose" elsewhere is a design choice for the
 later stages, and every statement about current behaviour cites the code. [GPU_VOXELS.md](GPU_VOXELS.md) owns the
 image route and [GPU_MAP.md](GPU_MAP.md) the map pass.
@@ -174,10 +174,10 @@ pre-pass for a translucent part: its layers are drawn once writing depth only, t
 translucent blend from `Blend_State_For`, so each pixel blends once with the nearest voxel. Only cloaked and warping
 objects pay the second draw.
 
-The cloak ripple is an option (proposal, `GpuVoxelCloak=Ripple`): a snapshot of the scene before the first cloaked part,
-taken the way a sonic wave takes one (`bgfx::blit` into `_Snapshot` in a new view), and each cloaked fragment reads it
-at a small offset. It uses one of the eight wave views, and a cloaked object would not show objects drawn between the
-snapshot and itself.
+The cloak ripple is an option (`GpuVoxelCloak=Ripple`, built; "Stage 4" below describes it). The software draws no ripple
+today: `RLE_Blit` takes the predator offset as an unnamed parameter and gives its blitter a warp offset of 0, and
+`Bit_Blit` does the same, so the `Warp` blitters read the pixel they write. The ripple is therefore a new look of the
+direct route, not a copy of the software's.
 
 ### Shadows
 
@@ -240,13 +240,13 @@ one map pixel covers at least one screen pixel, capped by the memory budget belo
 | Picture at scale 1 | gamemd's | Index-exact with the software | Equal with `GpuVoxelLayerDepth=Ordered`; with `Shared`, layers and turret pieces hide each other by depth |
 | Large scale with many large units | Unchanged | Draws the largest parts at a lower scale, down to 1 | No voxel image to overflow, so every part keeps the scale; the remaining limit is the face store, about 4 million faces at the proposed size |
 | Hull, turret and barrel | Order by turret facing | Same | Depth decides |
-| Cloaked unit | Ripple from the cached picture (`RLE_Blit` predator offset) | Plain translucent | Plain translucent, ripple as an option |
+| Cloaked unit | Plain translucent (the predator offset is not applied) | Plain translucent | Plain translucent, or a ripple with `GpuVoxelCloak=Ripple` |
 | Turreted vehicle under Glow or HDR Enhanced | No highlight | No highlight | Highlights |
 | Turning and tilt | 32 facings | Exact facing with `GpuVoxelSmooth` | Same; smooth tilt as a later option |
 | Main thread | Software voxel drawing | Tile hashing, shelf placement, part signatures | No tiles or signatures; per-layer uniforms only |
 | GPU | None | Draws only parts not in the image (5% to 37% of parts a second in the Cost runs of GPU_VOXELS.md) | Draws every visible voxel every pass; we expect it to cost more at scale 1 and less where tiles were redrawn often |
 
-The classic look keeps everything gamemd shows, including the cloak ripple from cached pictures, and stays the reference
+The classic look keeps what the software draws and stays the reference
 for `gpucheck` and `GPU_VOXEL`.
 
 ## Stages
@@ -259,7 +259,7 @@ the image route in the same pass, so no stage adds a software fallback.
 | 1 (done) | Direct opaque parts drawn into the scene: vehicles without a turret, aircraft, voxel animations, debris, bullets. D24S8 attachment, depth slices with `Ordered` and `Shared` layer modes, row depth test from the blit, translator and lighting band in `fs_voxelscene.sc`, `GpuVoxelPath=Direct`. While the emissive mask is on, these parts stay on the image route. Built with the hard shadows of stage 3, which the 48-Kirov check needs | `gpu-voxel-compare.txt` under `gpucheck` with `GpuRender=no`, `GpuVoxelPath=Direct`, `GpuVoxelLayerDepth=Ordered` at scale 1: no `GPU_DIFF` pixel on a vehicle, as in the image-route run (about three one-step pixels a pass, none on a vehicle). A new scene with 48 Kirovs at `GpuVoxelScale=4` (`gpu-voxel-direct.txt`): every `GPU_RENDER` line counts 0 passes that fell back. A `gpuvoxel` unit test: slice n+1 is never behind slice n for any `d` | Recorder, prepared-object cache, model store and walk, `Setup_Object` steps, palette texture, translator and lighting stacks, row depth code (moved to `mapcommon.sh`) | Nothing yet |
 | 2 (done) | Composites: hull, turret and barrel in one slice, pieces placed from the blit | `gpu-voxel-compare.txt` turret section with `Ordered`: no `GPU_DIFF` pixel on a vehicle. With `Shared`: a `gpuvoxel` unit test that places two pieces at known offsets and checks which one is nearer, and a `gpu-voxel-shot.txt` still of turreted vehicles at turret facings that differ from the body's, compared by eye | Piece placement arithmetic of `GpuVoxel_Submit` | Nothing: `Ordered` still draws the pieces in the barrel-before-turret order of the software |
 | 3 (done) | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,148 and 2,002; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
-| 4 (done, without `GpuVoxelCloak`) | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
+| 4 (done) | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
 | 5 (done) | Highlights, drawn into the mask target with its own depth attachment (see "Stage 5 (done)"); parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
 | 6 | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, lighting rows on the GPU, optional face shading | `gpuvoxel` unit test: a single voxel has 6 faces, a solid 3x3x3 block 54, and no listed face has a filled neighbour; the GPU lighting row equals `Precalculate_Normal_Lookup`'s for every normal of the four normal tables under a set of lights. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 not below stage 1's | Face store replaces the model store's slot management (`Load_Models`) | Orientation copies; the per-object `u_vlight` table |
 | 7 | Splat below a size threshold, faces above; `GpuVoxelScale=0` from the zoom | `bench-large-battle.txt` and `bench-large-battle-zoomed-out.txt` at 3840x2160 meet the budget below; edge counts at zoom 1, 2, 3 | | |
@@ -555,12 +555,11 @@ into the mask adds about 0.3 ms at scale 1 and 0.1 ms or less at scales 2 and 4,
 the scale and the mask's, drawn at scale 1, do not. The whole pass at scale 4 takes 2.7 ms of GPU time, under the
 4.17 ms a picture has at 240 a second.
 
-### Stage 4 (done, without `GpuVoxelCloak`)
+### Stage 4 (done)
 
 **State.** Built and committed on branch `gpu-direct-voxels`. A part whose blits are translucent (25%, 50% or 75%; the
-warp fade draws at 50%) takes the direct route, a composite included. The `GpuVoxelCloak=Ripple`
-option is not built. **Next step:** stage 6, the face store, or the `GpuVoxelCloak` ripple first if we want it before
-stage 8.
+warp fade draws at 50%) takes the direct route, a composite included. `GpuVoxelCloak=Ripple` adds a ripple to a cloaked
+object; it is described after the checks. **Next step:** stage 6, the face store.
 
 What we built:
 
@@ -603,6 +602,33 @@ beside the other:
 - 48 Kirovs at 3840x2160, `Bloom=yes`, scale 2 and 4: 0 of 600 passes fall back, 0 reduced.
 - `pacing-determinism.txt` with `GpuRender=yes`, `GpuVoxels=yes`, `Bloom=yes` and `SoftShadows=yes`, `Direct` against
   `Image`: the 1,500 hash lines are identical.
+
+#### Cloak ripple
+
+With `GpuVoxelCloak=Ripple`, the voxel blits of an object in the last stage of cloaking (`VISUAL_RIPPLE`, which the software marks with
+`SHAPE_PREDATOR`) draw with a ripple. `GpuDraw_Voxel_Cloak` (`code/gpudraw.cpp`), called where `techno.cpp` and `unit.cpp` pick the blitter, records
+on the blit whether the object is cloaked (`GpuBlit::Cloaked`) and its predator offset (`GpuBlit::Predator`), because
+`GpuDraw_Voxel_Blit_Flags` drops the flag. For such a blit `Submit_Draws` starts the next wave view with a copy of the
+target (`Begin_Snapshot_View`, shared with the sonic waves), binds the copy as `s_snapshot`, and draws the part with no blend:
+`fs_voxelscene.sc` (`Cloak_Ripple`) adds the translucent source term to the copy's colour at a pixel shifted by up to two
+map pixels along a wave of the object's offset and the time.
+
+- **Views.** A rippled cloak and a sonic wave each take one of the eight wave views, so a pass draws the ripples that fit
+  beside its waves and the remaining cloaked objects plainly translucent.
+- **Differs from the software.** The software draws no ripple, so there is nothing to match; the ripple is a new look and
+  reads the picture as it was just before the object, which includes every object drawn earlier.
+- **Only `VISUAL_RIPPLE`.** The game draws it only for an object that is not the player's own and is between 192/256 and
+  255/256 of the way to cloaked (`TechnoClass::Visual_Character`), which lasts a few frames. A cloaked object an owner or ally
+  sees (`VISUAL_SHADOWY`) and a warping object stay translucent.
+- **Check.** Under `gpucheck`, `GpuMap_Check` logs `GPU_VOXEL_CLOAK frame F direct D image I ripple R` for a pass that has
+  cloaked voxel blits: D drawn direct, I through the voxel image, R with the ripple. `cloak-tank.txt` with the cloak test mod,
+  `GpuVoxelPath=Direct`, `Ordered`, scale 1, and a `follow MTNK` line so that the camera shows the tank, gave 45 such lines,
+  all `direct 1 image 0`: the cloaked tank was drawn direct in every pass that showed it. The tank was off-screen in the
+  script as recorded, which is why the earlier check proved nothing; the script has no `follow` line yet. With the tank in view, `GPU_DIFF` gave 173 passes, 110 differing, mean 253 and at most 1,914
+  differing pixels, largest step 2 on the direct route; the image route gave 174, 111, 246, 1,879 and 2.
+- **Ripple screenshot.** To see the ripple, a debug build drew the player's own cloaked tank with the predator offset
+  (the game gives it none); a shot with `Ripple` differed from one with `Translucent` in the tank's pixels (1,168 and 654
+  pixels more than 6 apart in the two cloaked shots, none after it decloaked). That build change is not committed.
 
 ### What stage 8 deletes
 
@@ -715,11 +741,11 @@ All keys are in `[Video]` of `RA2MD.INI` unless marked. Current keys keep their 
 | Key | Values | Default | Status |
 |---|---|---|---|
 | `GpuVoxels` | `yes`, `no` | `no` | Unchanged: draws voxels on the GPU, by the route `GpuVoxelPath` picks |
-| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | Added in stage 1: a name list in `code/optionsettings.cpp` with no row; a row in the **GPU voxels** group was planned for stage 5 and is not added yet |
+| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | Added in stage 1 as a name list in `code/optionsettings.cpp`; the **Draw voxels directly** switch of the **GPU voxels** group sets it, and is greyed until **Draw units on the GPU** is ticked |
 | `GpuVoxelSmooth` | `yes`, `no` | `no` | Unchanged |
 | `GpuVoxelScale` | 1 to 4; 0 from stage 7 | `1` | Unchanged for 1 to 4; 0 picks the scale from the zoom |
 | `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | Added in stage 1: a developer key with no row; `Ordered` is the exact mode the checks use |
-| `GpuVoxelCloak` | `Translucent`, `Ripple` | `Translucent` | New (proposal), planned for stage 4 and not built |
+| `GpuVoxelCloak` | `Translucent`, `Ripple` | `Translucent` | Added after stage 4: a developer key with no row; `Ripple` needs `GpuVoxelPath=Direct` |
 | `GpuVoxelSmoothTilt` | `yes`, `no` | `no` | Later |
 | `VoxelSceneDepth` in `[AudioVisual]` of `rulesmd.ini`, and per type in `artmd.ini` | `Row`, `Voxel` | `Row` | Later mod key: the row test as now, or the per-voxel footprint depth. A mod sets it because its `ZFudge*` values decide whether `Voxel` looks right |
 

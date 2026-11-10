@@ -1229,6 +1229,46 @@ static GpuVoxelDirectBlit Scene_Blit(GpuBlit const & blit, MapVertex const & qua
 }
 
 
+// A voxel blit of a cloaked object, which GpuDraw_Voxel_Cloak marks.
+static bool Is_Cloaked(GpuBlit const & blit)
+{
+	return(blit.Cloaked && Is_Translucent(blit));
+}
+
+
+// The cloaked voxel blits of the pass and the route of each, for the check's GPU_VOXEL_CLOAK line; Rippled counts those
+// drawn with the ripple.
+struct CloakCount
+{
+	int Direct = 0;
+	int Image = 0;
+	int Rippled = 0;
+};
+
+static CloakCount _CloakCount;
+
+
+// Starts the pass's next view, which copies the target as the draws before it left it; a draw in the view reads the copy
+// as s_snapshot. A sonic wave and a rippled cloak each take one of the VIEW_MAPWAVE views.
+static bgfx::ViewId Begin_Snapshot_View(bgfx::ViewId view, Rect const & area, float const * projection, int scale)
+{
+	view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
+	Set_Map_View(view, _Target, area, projection, scale);
+	// A view's blits run before its draws, so the copy holds everything drawn before this view.
+	bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+	return(view);
+}
+
+
+// Makes a cloaked blit draw with the ripple of fs_voxelscene.sc. The shader blends against the view's copy of the
+// target and writes the result, so the draw has no blend state.
+static void Ripple_Blit(GpuVoxelDirectBlit & direct, GpuBlit const & blit)
+{
+	direct.Values[15] = (float)(blit.Predator + 1);
+	direct.State = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_EQUAL;
+}
+
+
 // The draw that writes a translucent blit's depth, and no colour, before the blit blends.
 static GpuVoxelDirectBlit Depth_Pre_Pass(GpuVoxelDirectBlit const & blended)
 {
@@ -1254,6 +1294,9 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 	int slices = 0;
 	int stencils = 0;
 	bgfx::ViewId view = VIEW_MAPDRAW;
+	// The views left for rippled cloaks once every sonic wave has its own.
+	int ripple_views = GpuVoxel_Cloak_Ripple() ? VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1 - Count_Sonic_Waves(list) : 0;
+	_CloakCount = CloakCount();
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
 		if (i > 0) {
@@ -1263,14 +1306,31 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 			continue;
 		}
 		if (i > 0 && Is_Direct(list.Blits[i - 1], tiles)) {
-			GpuVoxelDirectBlit const drawn = Scene_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slices, stencils);
-			auto const bind = [ring]() { Bind_Stores(ring); };
-			if (Is_Translucent(list.Blits[i - 1])) {
+			GpuBlit const & blit = list.Blits[i - 1];
+			GpuVoxelDirectBlit drawn = Scene_Blit(blit, vertices[i * 6], area, scale, slices, stencils);
+			bool const cloaked = Is_Cloaked(blit);
+			bool const rippled = cloaked && blit.Predator >= 0 && ripple_views > 0;
+			_CloakCount.Direct += cloaked;
+			if (rippled) {
+				ripple_views--;
+				_CloakCount.Rippled++;
+				view = Begin_Snapshot_View(view, area, projection, scale);
+				Ripple_Blit(drawn, blit);
+			}
+			auto const bind = [ring, world, rippled]() {
+				Bind_Stores(ring);
+				if (rippled) {
+					bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
+					bgfx::setUniform(_WorldUniform, world);
+				}
+			};
+			if (Is_Translucent(blit)) {
 				GpuVoxel_Draw_Direct(list, Depth_Pre_Pass(drawn), scale, view, bind);
 			}
 			GpuVoxel_Draw_Direct(list, drawn, scale, view, bind);
 			continue;
 		}
+		_CloakCount.Image += i > 0 && Is_Cloaked(list.Blits[i - 1]);
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
@@ -1294,10 +1354,7 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 			bgfx::setUniform(_WorldUniform, world);
 		}
 		if (kind == KIND_SONIC) {
-			// A view's blits run before its draws, so the wave reads everything drawn before it.
-			view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
-			Set_Map_View(view, _Target, area, projection, scale);
-			bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+			view = Begin_Snapshot_View(view, area, projection, scale);
 			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
@@ -1394,7 +1451,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	bool const clouds = _CloudStrength > 0;
 	bool const weather = _Weather != GPU_WEATHER_NONE && _WeatherStrength > 0;
 	float world[4] = { (float)pass.WorldX, (float)pass.WorldY, 0.0f, clouds ? 0.3f * _CloudStrength / 100.0f : 0.0f };
-	if (water || clouds || weather) {
+	if (water || clouds || weather || GpuVoxel_Cloak_Ripple()) {
 		// Wrapped every 1,000 seconds, so the float keeps its precision.
 		long long const ms = Monotonic_Milliseconds();
 		world[2] = (float)(ms % 1000000) / 1000.0f;
@@ -1470,6 +1527,9 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 {
 	if (_Pending || !Submit_Pass(pass, 1)) {
 		return(false);
+	}
+	if (_CloakCount.Direct + _CloakCount.Image > 0) {
+		DebugString("GPU_VOXEL_CLOAK frame %d direct %d image %d ripple %d\n", pass.Frame, _CloakCount.Direct, _CloakCount.Image, _CloakCount.Rippled);
 	}
 	bgfx::blit(VIEW_MAPREAD, _Readback, 0, 0, _TargetTexture);
 	_ReadyFrame = bgfx::readTexture(_Readback, _Pixels.data());

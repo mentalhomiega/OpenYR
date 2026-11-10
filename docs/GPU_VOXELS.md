@@ -317,9 +317,9 @@ Each stage has a check that fails when its picture departs from the software.
   clips it. Objects sit near the buffer's centre, so no object we have drawn reaches that column.
 - Hardware blending cannot reproduce the software's flooring of halved and quartered terms; this limits the
   translucent blits ([GPU_MAP.md](GPU_MAP.md), Limits), translucent voxels included.
-- With `GpuVoxels=yes`, a cloaked voxel object has no ripple: it is drawn as the plain 25% or 50% translucent blend.
-  Only the cached voxel images go through `RLE_Blit`, which applies the predator offset, and `GpuVoxels` draws none of
-  them. `Bit_Blit` ignores the offset, so an uncached software draw looks the same as the GPU's.
+- A cloaked voxel object is drawn as the plain 25% or 50% translucent blend, by the software and by the image route.
+  `RLE_Blit` and `Bit_Blit` both give their blitter a warp offset of 0, so the `Warp` blitters read the pixel they write.
+  `GpuVoxelCloak=Ripple` on the direct route adds a ripple the software does not draw ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple").
 - The model texture holds about a million voxels' worth of walks (a layer is stored once for each of the eight
   orientations it is drawn in) and is emptied when full, so a pass with more distinct layers than that falls back
   to software. A pass that does not fit what is left of the voxel image empties the image first. A pass whose parts

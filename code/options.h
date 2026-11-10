@@ -71,6 +71,13 @@ enum GpuVoxelLayerDepthMode {
 	GPU_VOXEL_LAYER_DEPTH_ORDERED
 };
 
+// How the direct voxel route draws a cloaked object: as a plain translucent blend, or with the predator ripple the
+// software applies to a cached voxel picture.
+enum GpuVoxelCloakMode {
+	GPU_VOXEL_CLOAK_TRANSLUCENT,
+	GPU_VOXEL_CLOAK_RIPPLE
+};
+
 // The faction tint of the modern menus. Random picks one of the three when the game starts.
 enum MenuThemeType {
 	MENU_THEME_RANDOM,
@@ -352,9 +359,10 @@ class OptionsClass {
 		// With GpuVoxels, 1 to 4: how many times finer than the map pixels the GPU draws voxel objects (docs/GPU_VOXELS.md).
 		int GpuVoxelScale;
 
-		// With GpuVoxels, a GpuVoxelPathMode, and for the direct path a GpuVoxelLayerDepthMode (docs/GPU_DIRECT_VOXELS.md).
+		// With GpuVoxels, a GpuVoxelPathMode, and for the direct path a GpuVoxelLayerDepthMode and a GpuVoxelCloakMode (docs/GPU_DIRECT_VOXELS.md).
 		int GpuVoxelPath;
 		int GpuVoxelLayerDepth;
+		int GpuVoxelCloak;
 
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;

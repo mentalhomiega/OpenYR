@@ -43,6 +43,11 @@ struct GpuVoxelTile
 // layers of such a part hide each other by depth rather than by drawing order.
 void GpuVoxel_Set_Path(bool direct, bool shared);
 
+// With ripple (GpuVoxelCloak=Ripple), the direct route draws a cloaked object with the predator ripple instead of the
+// plain translucent blend.
+void GpuVoxel_Set_Cloak_Ripple(bool ripple);
+bool GpuVoxel_Cloak_Ripple(void);
+
 // True while GpuVoxelPath=Direct is set, whether or not a pass has a part the direct route draws.
 bool GpuVoxel_Direct_Path(void);
 

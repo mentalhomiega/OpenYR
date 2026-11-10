@@ -55,6 +55,8 @@ static bool _VoxelsSmooth = false;
 // The part in GpuDrawList::Voxels the next blit from its source (the voxel buffer, or the scratch surface for
 // a composite) shows, or -1, and whether a blit has shown it yet.
 static int _PendingPart = -1;
+static bool _PendingCloaked = false;
+static int _PendingPredator = -1;
 static bool _PartShown = false;
 // The composite of a turreted vehicle that is being put together, and where the scratch surface's pixels are.
 static int _Composite = -1;
@@ -216,6 +218,8 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.VoxelX = 0;
 	blit.VoxelY = 0;
 	blit.NoPixels = false;
+	blit.Cloaked = false;
+	blit.Predator = -1;
 	if (blit.InAtlas) {
 		blit.Pixels = (std::uint32_t)atlas;
 		blit.Pitch = pitch;
@@ -337,6 +341,8 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 		int const source_size = part.Scratch ? _ScratchWidth * _ScratchHeight : VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT;
 		if (base != NULL && pixels >= base && pixels < base + source_size) {
 			blit.Voxel = _PendingPart;
+			blit.Cloaked = _PendingCloaked;
+			blit.Predator = _PendingPredator;
 			blit.VoxelX = (int)(pixels - base) % source_width - part.Area.X;
 			blit.VoxelY = (int)(pixels - base) / source_width - part.Area.Y;
 			_PartShown = true;
@@ -1162,6 +1168,13 @@ ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags)
 }
 
 
+void GpuDraw_Voxel_Cloak(bool cloaked, int predator)
+{
+	_PendingCloaked = cloaked;
+	_PendingPredator = predator;
+}
+
+
 double GpuDraw_Facing_Steps(DirType const & facing)
 {
 	return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32()));
@@ -1308,6 +1321,8 @@ void GpuDraw_Voxel_End(void)
 		_List.Voxels.pop_back();
 	}
 	_PendingPart = -1;
+	_PendingCloaked = false;
+	_PendingPredator = -1;
 	_PartShown = false;
 }
 

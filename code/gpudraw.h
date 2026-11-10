@@ -120,6 +120,11 @@ struct GpuBlit
 	int VoxelY;
 	bool NoPixels;
 
+	// For a voxel blit of a cloaked object, Cloaked; and Predator, the object's predator offset (0 to 399), while the
+	// software would draw it with the ripple, else -1.
+	bool Cloaked;
+	int Predator;
+
 	GpuBlitClass Class() const
 	{
 		if (Colour >= 0) {
@@ -272,6 +277,10 @@ double GpuDraw_Facing_Radian(DirType const & facing);
 // The flags to blit a voxel object through while GpuDraw_Voxels_Wanted: without SHAPE_PREDATOR, because Bit_Blit
 // passes no warp offset, so a predator blend is the plain translucent one, which the GPU can draw.
 ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags);
+
+// Marks the voxel blits recorded from now until GpuDraw_Voxel_End as those of a cloaked object. predator is its
+// predator offset when the software draws it with SHAPE_PREDATOR, which GpuDraw_Voxel_Blit_Flags drops, else -1.
+void GpuDraw_Voxel_Cloak(bool cloaked, int predator);
 
 // The facing in 32nds of a turn for a GPU_VOXEL check label: a whole number, or a fraction while GpuDraw_Voxels_Smooth.
 double GpuDraw_Facing_Steps(DirType const & facing);

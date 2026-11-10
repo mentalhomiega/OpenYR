@@ -8,16 +8,35 @@ $input v_texcoord1
 //   v_texcoord1.x  the palette index vs_voxelscene.sc chose, y: its highlight strength
 //   u_vblit[0..2]  the blit's values, as fs_mapdraw.sc describes v_texcoord1 to v_texcoord3, with u_vblit[0].y the
 //                  blit's width
-//   u_vblit[3]     xy: the blit's top left in area pixels, z: the scale the target is drawn at
+//   u_vblit[3]     xy: the blit's top left in area pixels, z: the scale the target is drawn at, w: for a cloaked object
+//                  drawn with the ripple, its predator offset plus 1, else 0. Such a blit blends in the shader: it reads
+//                  the target from s_snapshot, a copy taken before the blit, and the translucent kinds add their source
+//                  term to the colour under a pixel shifted by a travelling wave.
+//   u_world        z: the time in seconds, which moves the ripple
 
 #include "bgfx_shader.sh"
 #include "mapcommon.sh"
 
 SAMPLER2D(s_glowmask, 6);
+SAMPLER2D(s_snapshot, 8);
 uniform vec4 u_vblit[4];
+uniform vec4 u_world;
 
 // GPU_VOXEL_MASK_MARK in code/gpumapvoxel.h.
 #define VOXEL_MARK 1
+
+// The translucent output of a cloaked fragment drawn with the ripple: the pixel under it is the one a wave of the
+// object's phase and the time moves up to two map pixels from, so the target is shown through the object, bent.
+vec4 Cloak_Ripple(vec4 translucent, vec2 fragment, int scale)
+{
+	float phase = u_vblit[3].w - 1.0;
+	vec2 wave = fragment / float(scale) * 0.45 + vec2_splat(u_world.z * 7.0 + phase * 0.35);
+	ivec2 shift = ivec2(vec2(sin(wave.y), cos(wave.x)) * 2.99) * scale;
+	ivec2 size = ivec2(textureSize(s_snapshot, 0));
+	ivec2 source = clamp(ivec2(floor(fragment)) + shift, ivec2(0, 0), size - ivec2(1, 1));
+	vec3 under = texelFetch(s_snapshot, source, 0).xyz;
+	return vec4(translucent.xyz + under * translucent.w, 1.0);
+}
 
 void main()
 {
@@ -50,7 +69,8 @@ void main()
 	}
 	int colour = Translated_Colour(index, area, u_vblit[0]);
 	if (kind >= 2 && kind <= 4) {
-		gl_FragColor = Translucent_Output(kind, colour);
+		vec4 translucent = Translucent_Output(kind, colour);
+		gl_FragColor = u_vblit[3].w > 0.5 ? Cloak_Ripple(translucent, gl_FragCoord.xy, scale) : translucent;
 		return;
 	}
 	gl_FragColor = vec4(Rgb565(colour), 1.0);
