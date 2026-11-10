@@ -28,8 +28,10 @@ void main()
 	Voxel_Vertex(int(gl_VertexID), at, cell, voxel, index, strength);
 	float d = u_vdepth[1].x + float(voxel) * u_vdepth[0].w + dot(cell, u_vdepth[1].yzw);
 	float depth = (u_vdepth[0].x + clamp(d, 0.0, 1.0)) * u_vdepth[0].y;
-	// The map view's projection maps area pixels.
-	gl_Position = mul(u_viewProj, vec4(at / u_vox[3].y, 0.0, 1.0));
+	// The map view's projection maps area pixels. At scale 3 the division is inexact and a corner can fall halfway
+	// between two of the rasterizer's 1/256-pixel steps, so the corner is put on a step first, rounding a tie to even
+	// as the rasterizer does for the voxel image.
+	gl_Position = mul(u_viewProj, vec4(round(at * 256.0) / 256.0 / u_vox[3].y, 0.0, 1.0));
 	gl_Position.z = u_vdepth[0].z > 0.5 ? depth * 2.0 - 1.0 : depth;
 	v_texcoord1 = vec4(float(index), float(strength), 0.0, 0.0);
 }
