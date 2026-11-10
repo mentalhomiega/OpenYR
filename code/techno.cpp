@@ -11198,6 +11198,38 @@ static float Linked_Rocking_Rate(float rate, bool was_positive, bool beyond_righ
 }
 
 
+// An unlinked unit's tilt rate eases back toward level, and beyond 90 degrees it pushes the other way (TechnoClass::vt_entry_41C, 0x70B570).
+static float Unlinked_Rocking_Rate(float rate, bool was_positive, bool beyond_right_angle)
+{
+	if (was_positive) {
+		if (beyond_right_angle) {
+			return((float)(rate + 0.002));
+		}
+		return(rate > 0.0f ? rate - 0.002f : (float)(rate - 0.0050000002374872565));
+	}
+	if (beyond_right_angle) {
+		return((float)(rate - 0.002));
+	}
+	return(rate < 0.0f ? rate + 0.002f : (float)(rate + 0.0050000002374872565));
+}
+
+
+// The tilt stops at the limit only when the previous frame was still inside it; a unit already past the limit or 90 degrees over keeps tipping.
+static void Clamp_Rocking_Tilt(float & angle, float & rate, float previous, float limit, bool beyond_right_angle)
+{
+	if (beyond_right_angle) {
+		return;
+	}
+	if (angle > limit && previous < limit) {
+		angle = limit;
+		rate = 0.0f;
+	} else if (angle < -limit && previous > -limit) {
+		angle = -limit;
+		rate = 0.0f;
+	}
+}
+
+
 /// <summary>
 /// Ends the DirectRocker link on both units, so neither keeps a pointer to the other.
 /// </summary>
@@ -11246,34 +11278,17 @@ void TechnoClass::Rocking_AI(void)
 
 	if (RockingSidewaysPerFrame != 0.0f) {
 
+		float const previous = AngleRotatedSideways;
 		AngleRotatedSideways += RockingSidewaysPerFrame;
 
-		float angle = (float)DEG_TO_RAD(45);
-
 		if (!linked) {
-			if (AngleRotatedSideways > angle) {
-				AngleRotatedSideways = angle;
-				RockingSidewaysPerFrame = 0.0f;
-			} else if (AngleRotatedSideways < -angle) {
-				AngleRotatedSideways = -angle;
-				RockingSidewaysPerFrame = 0.0f;
-			}
+			Clamp_Rocking_Tilt(AngleRotatedSideways, RockingSidewaysPerFrame, previous, (float)DEG_TO_RAD(45), sideways_beyond_right_angle);
 		}
 
 		if (linked) {
 			RockingSidewaysPerFrame = Linked_Rocking_Rate(RockingSidewaysPerFrame, sideways_was_positive, sideways_beyond_right_angle);
-		} else if (sideways_was_positive) {
-			if (RockingSidewaysPerFrame > 0.0f) {
-				RockingSidewaysPerFrame -= 0.002f;
-			} else {
-				RockingSidewaysPerFrame -= 0.0050000002374872565;
-			}
 		} else {
-			if (RockingSidewaysPerFrame < 0.0f) {
-				RockingSidewaysPerFrame += 0.002f;
-			} else {
-				RockingSidewaysPerFrame += 0.0050000002374872565;
-			}
+			RockingSidewaysPerFrame = Unlinked_Rocking_Rate(RockingSidewaysPerFrame, sideways_was_positive, sideways_beyond_right_angle);
 		}
 
 	} else {
@@ -11291,6 +11306,7 @@ void TechnoClass::Rocking_AI(void)
 
 	if (RockingForwardsPerFrame != 0.0f) {
 
+		float const previous = AngleRotatedForwards;
 		AngleRotatedForwards += RockingForwardsPerFrame;
 
 		float angle = (float)DEG_TO_RAD(45);
@@ -11301,29 +11317,13 @@ void TechnoClass::Rocking_AI(void)
 		}
 
 		if (!linked) {
-			if (AngleRotatedForwards > angle) {
-				AngleRotatedForwards = angle;
-				RockingForwardsPerFrame = 0.0f;
-			} else if (AngleRotatedForwards < -angle) {
-				AngleRotatedForwards = -angle;
-				RockingForwardsPerFrame = 0.0f;
-			}
+			Clamp_Rocking_Tilt(AngleRotatedForwards, RockingForwardsPerFrame, previous, angle, forwards_beyond_right_angle);
 		}
 
 		if (linked) {
 			RockingForwardsPerFrame = Linked_Rocking_Rate(RockingForwardsPerFrame, forwards_was_positive, forwards_beyond_right_angle);
-		} else if (forwards_was_positive) {
-			if (RockingForwardsPerFrame > 0.0f) {
-				RockingForwardsPerFrame -= 0.002f;
-			} else {
-				RockingForwardsPerFrame -= 0.0050000002374872565;
-			}
 		} else {
-			if (RockingForwardsPerFrame < 0.0f) {
-				RockingForwardsPerFrame += 0.002f;
-			} else {
-				RockingForwardsPerFrame += 0.0050000002374872565;
-			}
+			RockingForwardsPerFrame = Unlinked_Rocking_Rate(RockingForwardsPerFrame, forwards_was_positive, forwards_beyond_right_angle);
 		}
 	} else {
 		AngleRotatedForwards = 0.0f;
