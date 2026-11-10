@@ -33,6 +33,7 @@
 #include "shaders/mapdraw/fs_mapvoxel.bin.h"
 #include "shaders/mapdraw/fs_voxelscene.bin.h"
 #include "shaders/mapdraw/vs_mapvoxel.bin.h"
+#include "shaders/mapdraw/vs_voxelface.bin.h"
 #include "shaders/mapdraw/vs_voxelscene.bin.h"
 
 
@@ -40,6 +41,7 @@ static const bgfx::EmbeddedShader _Shaders[] = {
 	BGFX_EMBEDDED_SHADER_D3D11(vs_mapvoxel),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapvoxel),
 	BGFX_EMBEDDED_SHADER_D3D11(vs_voxelscene),
+	BGFX_EMBEDDED_SHADER_D3D11(vs_voxelface),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_voxelscene),
 	BGFX_EMBEDDED_SHADER_END()
 };
@@ -49,10 +51,16 @@ static int const MODEL_WIDTH = 2048;
 static int const MODEL_ROWS = 2048;
 static int const VOXELS_PER_ROW = MODEL_WIDTH / 2;
 
+// The face texture holds one RG32U texel a face; vs_voxelface.sc uses the same width.
+static int const FACE_WIDTH = 2048;
+static int const FACE_ROWS = 2048;
+
 // At scale 1 a voxel is a horizontal line one or two pixels long. At a scale above 1 it is the outline of its
-// cube, one triangle strip, with the first and last vertices doubled so the strips of successive voxels join.
+// cube, one triangle strip, with the first and last vertices doubled so the strips of successive voxels join,
+// or, for a layer in the face texture, two triangles for each face turned toward the viewer.
 static int const VERTICES_PER_LINE = 2;
 static int const VERTICES_PER_CUBE = 8;
+static int const VERTICES_PER_FACE = 6;
 
 static bool _Ready = false;
 static bool _Failed = false;
@@ -76,6 +84,12 @@ static uint8_t const DIRECT_PALETTE_STAGE = 12;
 static bool _DirectWanted = false;
 static bool _SharedDepth = true;
 static bool _CloakRipple = false;
+
+// The program that draws a direct layer's faces, valid only with the face texture, which it reads at the model's stage.
+static bgfx::ProgramHandle _FaceProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _FaceUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _FaceSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _FaceStore = BGFX_INVALID_HANDLE;
 
 // The palette table the palette texture holds, kept to upload it again only when the game changes it.
 static unsigned char _PaletteCopy[MAX_PALETTE_LOOKUP_ENTRIES * VOXEL_PALETTE_SIZE];
@@ -106,6 +120,16 @@ struct ModelSlot
 static std::unordered_map<std::uint64_t, ModelSlot> _Models;
 static int _ModelNext = 0;
 
+// The place of a layer's faces in the face texture: its first face, and where each direction's faces start after it.
+struct FaceSlot
+{
+	int First;
+	int Start[GPU_VOXEL_DIRECTIONS + 1];
+};
+
+static std::unordered_map<std::uint64_t, FaceSlot> _Faces;
+static int _FaceNext = 0;
+
 
 static bool Start(void)
 {
@@ -125,6 +149,17 @@ static bool Start(void)
 	if (!bgfx::isValid(_DirectProgram)) {
 		DebugString("GPU_VOXEL: the direct program did not build, so GpuVoxelPath=Direct draws by the image route\n");
 	}
+	uint64_t const face_flags = BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP;
+	if (bgfx::isValid(_DirectProgram) && bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RG32U, face_flags)) {
+		_FaceStore = bgfx::createTexture2D(FACE_WIDTH, FACE_ROWS, false, 1, bgfx::TextureFormat::RG32U, face_flags);
+		_FaceProgram = Create_Embedded_Program(_Shaders, "vs_voxelface", _Shaders, "fs_voxelscene");
+	}
+	if (!bgfx::isValid(_FaceStore) || !bgfx::isValid(_FaceProgram)) {
+		Release_Handle(_FaceProgram);
+		DebugString("GPU_VOXEL: no face store, so direct layers draw as cube outlines at every scale\n");
+	}
+	_FaceUniform = bgfx::createUniform("u_vface", bgfx::UniformType::Vec4, 2);
+	_FaceSampler = bgfx::createUniform("s_vface", bgfx::UniformType::Sampler);
 	_DepthUniform = bgfx::createUniform("u_vdepth", bgfx::UniformType::Vec4, 3);
 	_BlitUniform = bgfx::createUniform("u_vblit", bgfx::UniformType::Vec4, 4);
 	_VoxelUniform = bgfx::createUniform("u_vox", bgfx::UniformType::Vec4, 4);
@@ -154,9 +189,9 @@ static std::uint64_t Model_Key(unsigned serial, int layer, int info, int orienta
 }
 
 
-static int Rows_For(std::size_t voxels)
+static int Rows_For(std::size_t items, int per_row)
 {
-	return((int)((voxels + VOXELS_PER_ROW - 1) / VOXELS_PER_ROW));
+	return((int)((items + per_row - 1) / per_row));
 }
 
 
@@ -165,7 +200,7 @@ static int Rows_For(std::size_t voxels)
 static void Upload_Model(std::uint64_t key, std::vector<GpuVoxelInstance> const & voxels)
 {
 	int const first = _ModelNext;
-	int const rows = Rows_For(voxels.size());
+	int const rows = Rows_For(voxels.size(), VOXELS_PER_ROW);
 	_Models[key] = ModelSlot{ first, (int)voxels.size() };
 	if (rows == 0) {
 		return;
@@ -183,6 +218,35 @@ static void Upload_Model(std::uint64_t key, std::vector<GpuVoxelInstance> const 
 	}
 	bgfx::updateTexture2D(_Model, 0, 0, 0, (uint16_t)(first / VOXELS_PER_ROW), (uint16_t)MODEL_WIDTH, (uint16_t)rows, memory);
 	_ModelNext = first + rows * VOXELS_PER_ROW;
+}
+
+
+// Writes a layer's faces into the face texture after the ones already there, in whole rows as Upload_Model does.
+static void Upload_Faces(std::uint64_t key, GpuVoxelFaceList const & list)
+{
+	FaceSlot slot;
+	slot.First = _FaceNext;
+	std::copy(std::begin(list.First), std::end(list.First), slot.Start);
+	_Faces[key] = slot;
+	int const rows = Rows_For(list.Faces.size(), FACE_WIDTH);
+	if (rows == 0) {
+		return;
+	}
+	bgfx::Memory const * memory = bgfx::alloc((uint32_t)rows * FACE_WIDTH * 8);
+	std::memset(memory->data, 0, memory->size);
+	for (std::size_t i = 0; i < list.Faces.size(); i++) {
+		GpuVoxelFace const & face = list.Faces[i];
+		// The bytes of the texel's two 32-bit channels, lowest first.
+		unsigned char * texel = memory->data + i * 8;
+		texel[0] = face.X;
+		texel[1] = face.Y;
+		texel[2] = face.Z;
+		texel[3] = face.Direction;
+		texel[4] = face.Colour;
+		texel[5] = face.Normal;
+	}
+	bgfx::updateTexture2D(_FaceStore, 0, 0, 0, (uint16_t)(slot.First / FACE_WIDTH), (uint16_t)FACE_WIDTH, (uint16_t)rows, memory);
+	_FaceNext = slot.First + rows * FACE_WIDTH;
 }
 
 
@@ -264,7 +328,7 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 					} else {
 						Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
 					}
-					rows += Rows_For(voxels.size());
+					rows += Rows_For(voxels.size(), VOXELS_PER_ROW);
 				}
 			}
 		}
@@ -281,6 +345,67 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 		_ModelNext = 0;
 	}
 	return(false);
+}
+
+
+// True when a direct part's object layers draw as faces at this scale; otherwise they draw as the model store's walk.
+static bool Faces_Wanted(int scale)
+{
+	return(scale > 1 && _SharedDepth && bgfx::isValid(_FaceProgram));
+}
+
+
+// A layer's faces are the same in every orientation, so the face texture keeps one list for all of them.
+static std::uint64_t Face_Key(LayerDraw const & layer)
+{
+	return(Model_Key(layer.Object->VoxLib->Get_Serial(), layer.Object->Layer, layer.Object->Info, layer.Lit ? 1 : 0));
+}
+
+
+// The layer's place in the face texture, or NULL when it draws as its walk.
+static FaceSlot const * Find_Faces(LayerDraw const & layer, int scale)
+{
+	if (layer.Shadow || !Faces_Wanted(scale)) {
+		return(NULL);
+	}
+	auto const found = _Faces.find(Face_Key(layer));
+	return(found != _Faces.end() ? &found->second : NULL);
+}
+
+
+// Makes the face texture hold the object layers of the direct parts, listing the faces of the ones it lacks. A pass
+// that does not fit what is left empties the texture first; one that does not fit an empty texture leaves it empty,
+// and Find_Faces then finds none of its layers.
+static void Load_Faces(std::vector<std::vector<LayerDraw>> const & parts, std::vector<GpuVoxelTile> const & tiles)
+{
+	for (int attempt = 0; attempt < 2; attempt++) {
+		std::unordered_map<std::uint64_t, GpuVoxelFaceList> fresh;
+		int rows = 0;
+		for (std::size_t i = 0; i < parts.size(); i++) {
+			if (!tiles[i].Direct) {
+				continue;
+			}
+			for (LayerDraw const & layer : parts[i]) {
+				if (layer.Shadow) {
+					continue;
+				}
+				std::uint64_t const key = Face_Key(layer);
+				if (_Faces.find(key) == _Faces.end() && fresh.find(key) == fresh.end()) {
+					GpuVoxelFaceList & list = fresh[key];
+					Gpu_Voxel_Faces(layer.Setup.Arg, layer.Lit, list);
+					rows += Rows_For(list.Faces.size(), FACE_WIDTH);
+				}
+			}
+		}
+		if (_FaceNext / FACE_WIDTH + rows <= FACE_ROWS) {
+			for (auto const & faces : fresh) {
+				Upload_Faces(faces.first, faces.second);
+			}
+			return;
+		}
+		_Faces.clear();
+		_FaceNext = 0;
+	}
 }
 
 
@@ -568,8 +693,10 @@ static void Set_Layer_Depths(std::vector<LayerDraw> & layers)
 }
 
 
-// Sets u_vox and u_vlight for drawing a layer of part whose voxel buffer pixel (0, 0) lands at shift_x, shift_y in the target.
-static void Set_Layer_Uniforms(GpuVoxelPart const & part, LayerDraw const & layer, ModelSlot const & slot, int shift_x, int shift_y, int scale)
+// Sets u_vox and u_vlight for drawing a layer of part whose voxel buffer pixel (0, 0) lands at shift_x, shift_y in the
+// target. The projection is for the axes the layer's records count along, and first is the place of its first voxel
+// in the model store.
+static void Set_Layer_Uniforms(GpuVoxelPart const & part, LayerDraw const & layer, Vector3i16 const (&steps)[4], int first, int shift_x, int shift_y, int scale)
 {
 	GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
 	float light[VOXEL_PALETTE_SIZE];
@@ -578,12 +705,11 @@ static void Set_Layer_Uniforms(GpuVoxelPart const & part, LayerDraw const & laye
 		// The identity row after the lighting rows keeps the shadow's colour 1.
 		std::fill(std::begin(light), std::end(light), (float)MAX_PALETTE_LOOKUP_ENTRIES);
 	}
-	Vector3i16 const (&steps)[4] = layer.Setup.Arg.TransformMatrix;
 	float const vox[16] = {
 		(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 		(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
 		(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
-		(float)slot.First, (float)scale, layer.Shadow ? 0.0f : (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
+		(float)first, (float)scale, layer.Shadow ? 0.0f : (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
 	};
 	bgfx::setUniform(_VoxelUniform, vox, 4);
 	bgfx::setUniform(_LightUniform, light, 64);
@@ -665,6 +791,9 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 		return(false);
 	}
 	_ReducedParts += reduced;
+	if (Faces_Wanted(scale)) {
+		Load_Faces(parts, tiles);
+	}
 	for (std::size_t i = 0; i < parts.size(); i++) {
 		if (tiles[i].Direct) {
 			Set_Layer_Depths(parts[i]);
@@ -704,7 +833,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 			if (clip.Width <= 0 || clip.Height <= 0) {
 				continue;
 			}
-			Set_Layer_Uniforms(part, layer, *slot, shift_x, shift_y, tilescale);
+			Set_Layer_Uniforms(part, layer, layer.Setup.Arg.TransformMatrix, slot->First, shift_x, shift_y, tilescale);
 			bgfx::setTexture(0, _ModelSampler, _Model);
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
 			bgfx::setVertexCount(Vertex_Count(*slot, tilescale));
@@ -714,6 +843,18 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 		}
 	}
 	return(true);
+}
+
+
+// Sets u_vdepth for a layer of a direct blit. Only the walk's shader reads voxels, the number the layer's walk holds.
+static void Set_Depth_Uniform(GpuVoxelDirectBlit const & blit, GpuVoxelLayerDepth const & depth, int voxels)
+{
+	float const values[12] = {
+		(float)(GPU_VOXEL_SLICES - 1 - blit.Slice), 1.0f / GPU_VOXEL_SLICES, bgfx::getCaps()->homogeneousDepth ? 1.0f : 0.0f, depth.PerVoxel,
+		depth.Origin, depth.Step[0], depth.Step[1], depth.Step[2],
+		blit.LastFirst ? 1.0f : 0.0f, (float)voxels, 0.0f, 0.0f
+	};
+	bgfx::setUniform(_DepthUniform, values, 3);
 }
 
 
@@ -741,22 +882,43 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 		if (clip.Width <= 0 || clip.Height <= 0) {
 			continue;
 		}
-		Set_Layer_Uniforms(part, layer, *slot, (left - bounds.X) * scale, (top - bounds.Y) * scale, scale);
-		float const depth[12] = {
-			(float)(GPU_VOXEL_SLICES - 1 - blit.Slice), 1.0f / GPU_VOXEL_SLICES, bgfx::getCaps()->homogeneousDepth ? 1.0f : 0.0f, layer.Depth.PerVoxel,
-			layer.Depth.Origin, layer.Depth.Step[0], layer.Depth.Step[1], layer.Depth.Step[2],
-			blit.LastFirst ? 1.0f : 0.0f, (float)slot->Count, 0.0f, 0.0f
-		};
-		bgfx::setUniform(_DepthUniform, depth, 3);
+		int const shift_x = (left - bounds.X) * scale;
+		int const shift_y = (top - bounds.Y) * scale;
+		FaceSlot const * faces = Find_Faces(layer, scale);
+		if (faces != NULL) {
+			GpuVoxelModelView const model = Gpu_Voxel_Model_View(layer.Setup.Arg, layer.Reversed, layer.Depth);
+			float face[8] = {};
+			int total = 0;
+			for (int axis = 0; axis < 3; axis++) {
+				int const direction = model.Visible[axis];
+				int const count = faces->Start[direction + 1] - faces->Start[direction];
+				face[axis] = (float)(faces->First + faces->Start[direction]);
+				face[4 + axis] = (float)count;
+				total += count;
+			}
+			if (total == 0) {
+				continue;
+			}
+			Set_Layer_Uniforms(part, layer, model.Projection, 0, shift_x, shift_y, scale);
+			Set_Depth_Uniform(blit, model.Depth, 0);
+			bgfx::setUniform(_FaceUniform, face, 2);
+			bgfx::setTexture(DIRECT_MODEL_STAGE, _FaceSampler, _FaceStore);
+			bgfx::setVertexCount((uint32_t)total * VERTICES_PER_FACE);
+			Perf_Count(PERF_COUNT_GPU_VOXEL_FACES, total);
+			bgfx::setState(blit.State);
+		} else {
+			Set_Layer_Uniforms(part, layer, layer.Setup.Arg.TransformMatrix, slot->First, shift_x, shift_y, scale);
+			Set_Depth_Uniform(blit, layer.Depth, slot->Count);
+			bgfx::setTexture(DIRECT_MODEL_STAGE, _ModelSampler, _Model);
+			bgfx::setVertexCount(Vertex_Count(*slot, scale));
+			bgfx::setState(blit.State | Primitive_State(scale));
+		}
 		bgfx::setUniform(_BlitUniform, blit.Values, 4);
 		bind();
-		bgfx::setTexture(DIRECT_MODEL_STAGE, _ModelSampler, _Model);
 		bgfx::setTexture(DIRECT_PALETTE_STAGE, _PaletteSampler, _Palette);
-		bgfx::setVertexCount(Vertex_Count(*slot, scale));
 		bgfx::setScissor((uint16_t)(clip.X * scale), (uint16_t)(clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
-		bgfx::setState(blit.State | Primitive_State(scale));
 		bgfx::setStencil(blit.Stencil);
-		bgfx::submit((bgfx::ViewId)view, _DirectProgram);
+		bgfx::submit((bgfx::ViewId)view, faces != NULL ? _FaceProgram : _DirectProgram);
 	}
 }
 
@@ -916,6 +1078,12 @@ void GpuVoxel_Shutdown(void)
 	Release_Handle(_Model);
 	Release_Handle(_Palette);
 	Release_Handle(_Readback);
+	Release_Handle(_FaceProgram);
+	Release_Handle(_FaceUniform);
+	Release_Handle(_FaceSampler);
+	Release_Handle(_FaceStore);
+	_Faces.clear();
+	_FaceNext = 0;
 	if (bgfx::isValid(_Target)) {
 		Release_Handle(_Target);
 	}

@@ -58,6 +58,10 @@ unsigned char StartOffsets[4 * XSIZE * YSIZE];
 unsigned char EndOffsets[4 * XSIZE * YSIZE];
 unsigned char VoxelData[65536];
 
+// The layer Build_Layer made, on its own axes: each cell's colour, 0 where it has no voxel, and its normal.
+unsigned char CellColours[ZSIZE][YSIZE][XSIZE];
+unsigned char CellNormals[ZSIZE][YSIZE][XSIZE];
+
 unsigned int Seed = 0;
 
 unsigned int Next_Random(void)
@@ -74,6 +78,8 @@ void Build_Layer(unsigned int seed, bool lit)
 	unsigned int * starts = (unsigned int *)StartOffsets;
 	unsigned int * ends = (unsigned int *)EndOffsets;
 	int at = 0;
+	std::memset(CellColours, 0, sizeof(CellColours));
+	std::memset(CellNormals, 0, sizeof(CellNormals));
 	for (int i = 0; i < XSIZE * YSIZE; i++) {
 		if ((Next_Random() % 4) == 0) {
 			starts[i] = UINT_MAX;
@@ -82,17 +88,21 @@ void Build_Layer(unsigned int seed, bool lit)
 		}
 		starts[i] = (unsigned int)at;
 		int remaining = ZSIZE;
+		int z = 0;
 		while (remaining > 0) {
 			int const skip = (int)(Next_Random() % (unsigned int)remaining);
 			remaining -= skip;
+			z += skip;
 			int const run = 1 + (int)(Next_Random() % (unsigned int)remaining);
 			remaining -= run;
 			VoxelData[at++] = (unsigned char)skip;
 			VoxelData[at++] = (unsigned char)run;
-			for (int v = 0; v < run; v++) {
+			for (int v = 0; v < run; v++, z++) {
 				VoxelData[at++] = (unsigned char)(1 + (Next_Random() % 254));
+				CellColours[z][i / XSIZE][i % XSIZE] = VoxelData[at - 1];
 				if (lit) {
 					VoxelData[at++] = (unsigned char)(Next_Random() % 244);
+					CellNormals[z][i / XSIZE][i % XSIZE] = VoxelData[at - 1];
 				}
 			}
 			VoxelData[at++] = (unsigned char)run;
@@ -133,6 +143,37 @@ void Setup(VoxelFuncArgumentStruct & arg, int orientation)
 	arg.TransformMatrix[2].J = (unsigned short)(0x00C0 + orientation);
 	arg.TransformMatrix[3].I = (unsigned short)(0x0050 - orientation * 11);
 	arg.TransformMatrix[3].J = (unsigned short)(0xFE00 + orientation * 9);
+}
+
+
+
+// Fills a cube of size voxels a side, every voxel with a normal byte, and names it in arg.
+void Solid_Layer(VoxelFuncArgumentStruct & arg, int size)
+{
+	std::memset(&arg, 0, sizeof(arg));
+	unsigned int * starts = (unsigned int *)StartOffsets;
+	int at = 0;
+	for (int column = 0; column < size * size; column++) {
+		starts[column] = (unsigned int)at;
+		VoxelData[at++] = 0;
+		VoxelData[at++] = (unsigned char)size;
+		for (int v = 0; v < size; v++) {
+			VoxelData[at++] = (unsigned char)(1 + column);
+			VoxelData[at++] = (unsigned char)v;
+		}
+		VoxelData[at++] = (unsigned char)size;
+	}
+	arg.StartOffset = StartOffsets;
+	arg.DataOffset = VoxelData;
+	arg.XSize = (unsigned char)size;
+	arg.YSize = (unsigned char)size;
+	arg.ZSize = (unsigned char)size;
+}
+
+
+bool Cell_Filled(int x, int y, int z)
+{
+	return(x >= 0 && x < XSIZE && y >= 0 && y < YSIZE && z >= 0 && z < ZSIZE && CellColours[z][y][x] != 0);
 }
 
 }	// namespace
@@ -350,6 +391,112 @@ int main(void)
 		Vector3 const rounded = VoxelDrawSystem::Scene_Center(Vector3(0.0f, 0.0f, 0.0f), Vector3(7.0f, 9.0f, 4.0f), true);
 		ok = ok && rounded.X == 4.0f && rounded.Y == 5.0f;
 		std::printf("%-52s %s\n", "steady scene centre is a whole pixel, classic is exact", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		VoxelFuncArgumentStruct arg;
+		GpuVoxelFaceList single;
+		Solid_Layer(arg, 1);
+		Gpu_Voxel_Faces(arg, true, single);
+		GpuVoxelFaceList block;
+		Solid_Layer(arg, 3);
+		Gpu_Voxel_Faces(arg, true, block);
+		bool ok = single.Faces.size() == 6 && block.Faces.size() == 54;
+		for (int direction = 0; direction < GPU_VOXEL_DIRECTIONS; direction++) {
+			ok = ok && single.First[direction] == direction && block.First[direction] == direction * 9;
+		}
+		std::printf("%-52s %s\n", "a voxel has 6 faces and a solid 3x3x3 block 54", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// Every face of a voxel with no voxel beside it is listed once, in its direction's range, and no other.
+		bool ok = true;
+		for (unsigned int seed = 1; seed <= 48; seed++) {
+			bool const lit = (seed & 1) != 0;
+			Build_Layer(seed * 15485863u, lit);
+			VoxelFuncArgumentStruct arg;
+			Setup(arg, (int)(seed % VOXEL_BOUNDS_COUNT));
+			GpuVoxelFaceList list;
+			Gpu_Voxel_Faces(arg, lit, list);
+
+			static bool listed[GPU_VOXEL_DIRECTIONS][ZSIZE][YSIZE][XSIZE];
+			std::memset(listed, 0, sizeof(listed));
+			ok = ok && list.First[0] == 0 && list.First[GPU_VOXEL_DIRECTIONS] == (int)list.Faces.size();
+			for (int direction = 0; direction < GPU_VOXEL_DIRECTIONS && ok; direction++) {
+				ok = list.First[direction] <= list.First[direction + 1];
+				for (int at = list.First[direction]; at < list.First[direction + 1] && ok; at++) {
+					GpuVoxelFace const & face = list.Faces[at];
+					int beside[3] = { face.X, face.Y, face.Z };
+					beside[direction / 2] += (direction & 1) ? 1 : -1;
+					ok = face.Direction == direction && Cell_Filled(face.X, face.Y, face.Z)
+						&& !Cell_Filled(beside[0], beside[1], beside[2]) && !listed[direction][face.Z][face.Y][face.X]
+						&& face.Colour == CellColours[face.Z][face.Y][face.X] && face.Normal == CellNormals[face.Z][face.Y][face.X];
+					if (ok) {
+						listed[direction][face.Z][face.Y][face.X] = true;
+					}
+				}
+			}
+			for (int direction = 0; direction < GPU_VOXEL_DIRECTIONS && ok; direction++) {
+				for (int cell = 0; cell < XSIZE * YSIZE * ZSIZE && ok; cell++) {
+					int const at[3] = { cell % XSIZE, cell / XSIZE % YSIZE, cell / (XSIZE * YSIZE) };
+					int beside[3] = { at[0], at[1], at[2] };
+					beside[direction / 2] += (direction & 1) ? 1 : -1;
+					bool const exposed = Cell_Filled(at[0], at[1], at[2]) && !Cell_Filled(beside[0], beside[1], beside[2]);
+					ok = listed[direction][at[2]][at[1]][at[0]] == exposed;
+				}
+			}
+		}
+		std::printf("%-52s %s\n", "the face list is the layer's exposed faces", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// On the layer's own axes a voxel lands on the pixel and at the depth its walk gives it, in every orientation.
+		bool ok = true;
+		GpuVoxelLayerDepth walk_depth;
+		walk_depth.Origin = 0.95f;
+		walk_depth.PerVoxel = 0.001f;
+		walk_depth.Step[0] = -0.01f;
+		walk_depth.Step[1] = -0.02f;
+		walk_depth.Step[2] = -0.03f;
+		for (int orientation = 0; orientation < VOXEL_BOUNDS_COUNT; orientation++) {
+			VoxelRenderOrientation const & o = VoxelRenderOrientations[orientation];
+			Build_Layer(32452843u + (unsigned)orientation, true);
+			VoxelFuncArgumentStruct arg;
+			Setup(arg, orientation);
+			arg.TransformMatrix[0].K = (unsigned short)(0x7000 + orientation);
+			arg.TransformMatrix[1].K = 0x0123;
+			arg.TransformMatrix[2].K = 0xFEDC;
+			arg.TransformMatrix[3].K = 0x0042;
+			std::vector<GpuVoxelInstance> voxels;
+			Gpu_Voxel_Walk(arg, o.Reversed != 0, true, voxels);
+			GpuVoxelModelView const view = Gpu_Voxel_Model_View(arg, o.Reversed != 0, walk_depth);
+			bool const against[3] = { o.XIndexStride < 0, o.YIndexStride < 0, o.Reversed != 0 };
+			ok = ok && !voxels.empty() && view.Depth.PerVoxel == 0.0f;
+			for (int axis = 0; axis < 3; axis++) {
+				// The face that shows is nearer than the voxel's centre.
+				float const toward = (view.Visible[axis] & 1) ? 0.5f : -0.5f;
+				ok = ok && view.Visible[axis] == 2 * axis + (against[axis] ? 0 : 1) && view.Depth.Step[axis] * toward < 0.0f;
+			}
+			for (GpuVoxelInstance const & voxel : voxels) {
+				GpuVoxelInstance model = voxel;
+				model.I = (unsigned char)(against[0] ? XSIZE - 1 - voxel.I : voxel.I);
+				model.J = (unsigned char)(against[1] ? YSIZE - 1 - voxel.J : voxel.J);
+				model.K = (unsigned char)(against[2] ? ZSIZE - 1 - voxel.K : voxel.K);
+				unsigned short const walk_k = (unsigned short)(arg.TransformMatrix[0].K + voxel.I * arg.TransformMatrix[1].K
+					+ voxel.J * arg.TransformMatrix[2].K + voxel.K * arg.TransformMatrix[3].K);
+				unsigned short const model_k = (unsigned short)(view.Projection[0].K + model.I * view.Projection[1].K
+					+ model.J * view.Projection[2].K + model.K * view.Projection[3].K);
+				float const walk_d = walk_depth.Origin + voxel.I * walk_depth.Step[0] + voxel.J * walk_depth.Step[1] + voxel.K * walk_depth.Step[2];
+				float const model_d = view.Depth.Origin + model.I * view.Depth.Step[0] + model.J * view.Depth.Step[1] + model.K * view.Depth.Step[2];
+				ok = ok && CellColours[model.K][model.J][model.I] == voxel.Colour
+					&& Gpu_Voxel_Buffer_Index(view.Projection, model) == Gpu_Voxel_Buffer_Index(arg.TransformMatrix, voxel)
+					&& model_k == walk_k && std::fabs(model_d - walk_d) < 1.0e-5f;
+			}
+		}
+		std::printf("%-52s %s\n", "the model view places voxels where the walk does", ok ? "ok" : "FAILED");
 		failures += ok ? 0 : 1;
 	}
 	return(failures == 0 ? 0 : 1);

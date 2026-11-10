@@ -261,7 +261,7 @@ the image route in the same pass, so no stage adds a software fallback.
 | 3 (done) | Shadows as flat cells, stencil once per blit, soft shadows into the mask | `gpu-voxel-shadow.txt` and `gpu-voxel-shadow-bloom.txt`: darkened counts within 5% of 2,148 and 2,002; a new `twice` count in `GPU_VOXEL_SHADOW` of pixels darkened twice by one blit is 0 | `Gpu_Voxel_Walk_Shadow`, `Setup_Shadow`, `Submit_Shadows` | |
 | 4 (done) | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
 | 5 (done) | Highlights, drawn into the mask target with its own depth attachment (see "Stage 5 (done)"); parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
-| 6 | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, lighting rows on the GPU, optional face shading | `gpuvoxel` unit test: a single voxel has 6 faces, a solid 3x3x3 block 54, and no listed face has a filled neighbour; the GPU lighting row equals `Precalculate_Normal_Lookup`'s for every normal of the four normal tables under a set of lights. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 not below stage 1's | Face store replaces the model store's slot management (`Load_Models`) | Orientation copies; the per-object `u_vlight` table |
+| 6 (done) | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, at `GpuVoxelScale` above 1 with `Shared`. Lighting rows on the GPU and face shading were left out (see "Stage 6 (done)") | `gpuvoxel` unit tests: a single voxel has 6 faces, a solid 3x3x3 block 54, no listed face has a filled neighbour, and the model view places every voxel where the walk does. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 against the image route in the same build | `voxelshade.sh`: the walk's placement, palette and lighting | Nothing: the model store keeps its orientation copies and the per-object `u_vlight` table for scale 1, `Ordered`, shadows and the mask |
 | 7 | Splat below a size threshold, faces above; `GpuVoxelScale=0` from the zoom | `bench-large-battle.txt` and `bench-large-battle-zoomed-out.txt` at 3840x2160 meet the budget below; edge counts at zoom 1, 2, 3 | | |
 | 8 | Direct by default, then removal of the image route | The regress suite with `GpuVoxelPath=Direct`; `pacing-determinism.txt` hashes identical with the key on and off | | See below |
 
@@ -559,7 +559,7 @@ the scale and the mask's, drawn at scale 1, do not. The whole pass at scale 4 ta
 
 **State.** Built and committed on branch `gpu-direct-voxels`. A part whose blits are translucent (25%, 50% or 75%; the
 warp fade draws at 50%) takes the direct route, a composite included. `GpuVoxelCloak=Ripple` adds a ripple to a cloaked
-object; it is described after the checks. **Next step:** stage 6, the face store.
+object; it is described after the checks. Stage 6, the face store, came next.
 
 What we built:
 
@@ -629,6 +629,85 @@ map pixels along a wave of the object's offset and the time.
 - **Ripple screenshot.** To see the ripple, a debug build drew the player's own cloaked tank with the predator offset
   (the game gives it none); a shot with `Ripple` differed from one with `Translucent` in the tank's pixels (1,168 and 654
   pixels more than 6 apart in the two cloaked shots, none after it decloaked). That build change is not committed.
+
+### Stage 6 (done)
+
+**State.** Built on branch `direct-voxels-faces`. With `GpuVoxelPath=Direct`, `GpuVoxelLayerDepth=Shared` and
+`GpuVoxelScale` above 1, the object layers of a direct part draw as the exposed faces of their voxels, where they drew
+each voxel's cube outline before. Scale 1, `Ordered`, shadows and the mask draws are unchanged. Fully zoomed out at
+3840x2160 the faces cost the same as the outlines (table below). **Next step:** stage 7.
+
+What we built:
+
+1. **The face list.** `Gpu_Voxel_Faces` (`code/gpuvoxel.cpp`) lists every voxel face of a layer that has no voxel
+   beside it, sorted into the six directions. The list is the same in every orientation, so a layer has one list where
+   the model store holds a walk for each orientation. A voxel that a column's runs place above the layer's height is
+   left out. The VXLs of Yuri's Revenge have 2,098,462 exposed faces in 242 layers, the largest layer 88,186; those of
+   Mental Omega have 9,942,900 in 1,053 layers, the largest 163,812.
+2. **The face store.** A 2048x2048 RG32U texture holds 4,194,304 faces. `Load_Faces` (`code/gpumapvoxel.cpp`) lists a
+   layer's faces in the first pass that draws it as faces and keeps them under the voxel library, the layer and
+   whether the layer is lit. A pass whose new layers do not fit the space left empties the store first. A pass whose
+   layers do not fit an empty store draws them as outlines, and lists their faces again in every such pass.
+3. **The draw.** `Gpu_Voxel_Model_View` gives the three directions that face the viewer in the layer's orientation, and
+   the draw submits those three ranges, which hold half of the layer's exposed faces. `vs_voxelface.sc` makes six
+   vertices a face from `gl_VertexID` and the face's record. It shares the walk's placement, palette and lighting
+   through `voxelshade.sh`, and each vertex takes the `Shared` depth of its own corner.
+4. **The counter.** `gpu voxel faces` in the `Perf` count line is the number of faces the direct draws submitted.
+
+What differs from the plan in the stage table:
+
+- **Lighting rows stay on the CPU.** A face draw reads the `u_vlight` table the walk reads, so a face has the colour
+  the walk gives its voxel, and the planned comparison of GPU lighting rows with `Precalculate_Normal_Lookup` has
+  nothing to test. A texture of lighting rows remains a candidate for stage 7: the table is a 64-vector uniform set
+  for every layer draw.
+- **No face shading.** A face takes its voxel's colour whatever its direction.
+- **The model store stays.** Scale 1, `Ordered`, shadows and the mask draws use its walks, and `Load_Models` still
+  loads the walk of a layer that draws as faces. This stage deletes nothing.
+
+**Checks.**
+
+| Check | Result |
+|---|---|
+| `gpuvoxel` unit tests | Pass, with three new ones: "a voxel has 6 faces and a solid 3x3x3 block 54", "the face list is the layer's exposed faces", "the model view places voxels where the walk does" |
+| `gpu-voxel-scale.txt` at 800x600, edge counts as in stage 1 over the window without its right 168 pixels | Table below. With `Shared`, the faces are 5 and 11 edges below the image route at scale 2 (zoom 1.5 and 2) and 1 and 19 below at scale 4; stage 1's outlines were 10, 10, 4 and 25 below. Stage 1's absolute counts belong to an older window layout and do not compare |
+| The same shots, pixels that differ from the image route's | Scale 2: 44, 43 and 53 at zoom 1, 1.5 and 2. Scale 4: 40, 45 and 74 |
+| `regress.py --only "gpu-voxel\|voxel\|cloak"` | 23 scripts, all `same` |
+| Unit tests, the two test missions and the netsync run of the branch check | 119 tests pass, both missions won, in sync over 5,266 ticks |
+| `gpu voxel faces` in the bench below | A mean of 327,095 faces a draw over 91 direct parts at scale 2; 0 at scale 1 |
+
+| Route | Scale | Edges at zoom 1.5 | Zoom 1 | Zoom 2 |
+|---|---:|---:|---:|---:|
+| Image | 2 | 30,014 | 74,951 | 44,275 |
+| Direct, `Shared` (faces) | 2 | 30,009 | 74,950 | 44,264 |
+| Direct, `Ordered` (outlines) | 2 | 30,013 | 74,951 | 44,275 |
+| Image | 4 | 35,669 | 75,153 | 44,250 |
+| Direct, `Shared` (faces) | 4 | 35,668 | 75,151 | 44,231 |
+
+**Zoomed out at 4K.** `bench-large-battle-xmp04-zoomed-out.txt` as in "Performance budget": XMP04T8 at zoom 0.50,
+3840x2160, uncapped, `GpuVoxelSmooth=yes`. Times are means of the per-second `Perf` lines after the first five. Another
+game was using the GPU while we measured: 8 of the 20 runs had a mean draw of 69 to 141 ms and are left out, and the
+table holds the two least disturbed rounds. No pass fell back to software in any run.
+
+| Keys | Draws a second | Mean / p95 draw | `draw.gpumap` | `present.upload` | `present.gpu` | `present.gputime` |
+|---|---:|---:|---:|---:|---:|---:|
+| `GpuVoxels=no` | 628 | 1.16 / 2.45 ms | 0.09 ms | 0.29 ms | 0.23 ms | 0.66 ms |
+| Direct, scale 2, before this stage (outlines) | 319 | 2.69 / 5.67 ms | 0.40 ms | 0.72 ms | 0.72 ms | 1.57 ms |
+| Direct, scale 2 (faces), two runs | 310, 309 | 2.78 / 5.72, 2.78 / 5.91 ms | 0.40, 0.41 ms | 0.74 ms | 0.79 ms | 1.82, 1.64 ms |
+| Direct, scale 1, two runs | 314, 317 | 2.72 / 5.81, 2.71 / 5.63 ms | 0.40, 0.41 ms | 0.73, 0.72 ms | 0.74 ms | 1.10, 1.10 ms |
+
+- **Faces against outlines.** The two cost the same at this zoom within the spread between runs, on the CPU and on the
+  GPU. Two more rounds under heavier load agree: 255 and 241 draws a second with outlines, 263 with faces.
+- **Against the budget.** `draw.voxels` is 0.12 ms on every direct row, within its 0.2 ms. `present.gputime` meets its
+  1.5 ms at scale 1 and misses it at scale 2. `draw.gpumap` is 0.31 ms above `GpuVoxels=no`, over its 0.2 ms.
+- **Where the direct route's time goes.** The faces at scale 2 take 1.62 ms a draw more than `GpuVoxels=no`:
+  `present.gpu` 0.56 ms, `present.upload` 0.45 ms, `draw.gpumap` 0.32 ms, `draw.objects` 0.21 ms and `draw.voxels`
+  0.08 ms, for about 92 parts. No texture is uploaded in these runs (`uploads` is 0). `present.upload` grows because
+  the presenter submits the map pass there: `draw.gpumap` times `GpuDraw_End`, which checks that the pass fits and
+  keeps it, and `GpuMap_Texture`, called from `Backend_Present`, then submits its draws, the voxel layers among them
+  and, while the emissive mask is on, a second time for the mask. `present.gpu` is `bgfx::frame` carrying those draws out.
+- **For stage 7.** The cost at this zoom follows the number of layer draws and their vertices, which faces do not
+  lower. Stage 7's splats and its scale from the zoom apply to this view. For the three CPU phases the candidates are
+  fewer and cheaper layer draws: the lighting rows in a texture, and no fit check for a pass that needs no voxel image.
 
 ### What stage 8 deletes
 
@@ -744,7 +823,7 @@ The large battle is `bench-large-battle-xmp04-zoomed-out.txt`: the forces of `be
 | Direct, scale 1 | 219 | 2.85 / 7.04 ms | 252 | 3.42 / 5.56 ms | 0.74 ms | 1.07 ms |
 | Direct, scale 2 | 229 | 2.58 / 6.38 ms | 251 | 3.44 / 5.47 ms | 0.73 ms | 1.84 ms |
 
-`draw.voxels` is 0.12 to 0.14 ms on every voxel route. Direct does not reach 240 draws a second capped, and uncapped it takes 3.97 ms a picture against the 4.17 ms budget with a p95 of 5.5 ms. Of its 3.42 ms draw, the present takes 1.71 ms (`present.upload` 0.80, `present.gpu` 0.90), `draw.gpumap` 0.74 ms and `draw.objects` 0.58 ms; `frame.logic` adds 0.50 ms.
+`draw.voxels` is 0.12 to 0.14 ms on every voxel route. Direct does not reach 240 draws a second capped, and uncapped it takes 3.97 ms a picture against the 4.17 ms budget with a p95 of 5.5 ms. Of its 3.42 ms draw, the present takes 1.71 ms (`present.upload` 0.80, `present.gpu` 0.90), `draw.gpumap` 0.74 ms and `draw.objects` 0.58 ms; `frame.logic` adds 0.50 ms. "Stage 6 (done)" has a later measurement of the same scene under less load, with the direct route at 309 to 319 draws a second.
 
 
 ## Settings

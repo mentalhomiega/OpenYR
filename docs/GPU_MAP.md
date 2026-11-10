@@ -11,7 +11,7 @@ page of the settings, to draw in software everywhere.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), `vs_mapvoxel.sc` with `fs_mapvoxel.sc` (voxel parts in the voxel image), and `vs_voxelscene.sc` with `fs_voxelscene.sc` (voxel parts drawn straight into the pass, [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)), each compiled into a `.bin.h` header. `mapcommon.sh` and `voxelwalk.sh` hold the code those shaders share. |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), `vs_mapvoxel.sc` with `fs_mapvoxel.sc` (voxel parts in the voxel image), and `vs_voxelscene.sc` and `vs_voxelface.sc` with `fs_voxelscene.sc` (voxel parts drawn straight into the pass as cube outlines and as faces, [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)), each compiled into a `.bin.h` header. `mapcommon.sh`, `voxelwalk.sh` and `voxelshade.sh` hold the code those shaders share. |
 | Voxel renderer | `code/gpumapvoxel.cpp` | Draws the voxel parts of a pass into the voxel image that the pass's blits read ([GPU_VOXELS.md](GPU_VOXELS.md)). |
 
 Voxel objects that are blitted straight into the map view can be drawn on the GPU from their voxels with
@@ -142,7 +142,7 @@ file, rebuild its header from the repository root with a `shaderc` built from
 shaderc -f code/shaders/mapdraw/fs_mapdraw.sc -o fs_mapdraw.bin --type fragment --platform windows -p s_5_0 -O 3 --varyingdef code/shaders/mapdraw/varying.def.sc -i thirdparty/bgfx.cmake/bgfx/src
 ```
 
-Use `--type vertex` for the `vs_` files. After editing `mapcommon.sh` or `voxelwalk.sh`, rebuild every shader that
+Use `--type vertex` for the `vs_` files. After editing `mapcommon.sh`, `voxelwalk.sh` or `voxelshade.sh` (which `voxelwalk.sh` includes), rebuild every shader that
 includes it. Then write each `.bin` into its header as a
 `static const uint8_t <name>_dxbc[]` array, keeping the comment line at the top. `shaderc` rejects
 the `vs_5_0` and `ps_5_0` profile names; use `s_5_0` for both.
