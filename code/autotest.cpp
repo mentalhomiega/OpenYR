@@ -5693,6 +5693,18 @@ static void Rock_Step(StepType const & step)
 }
 
 
+// settilt <TypeID> <degrees> <thousandths>: tips each object of that type sideways by that angle with that rocking rate per frame, as a blast that rocked it past the limit would leave it.
+static void Settilt_Step(StepType const & step)
+{
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
+			techno->AngleRotatedSideways = (float)DEG_TO_RAD(step.X);
+			techno->RockingSidewaysPerFrame = step.Y / 1000.0f;
+		});
+}
+
+
 // statics: how many positioned sounds a trigger started are still going.
 static void Statics_Step(StepType const &)
 {
@@ -7033,6 +7045,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"recoil", Recoil_Step},
 		{"unitrecoil", Unitrecoil_Step},
 		{"rock", Rock_Step},
+		{"settilt", Settilt_Step},
 		{"statics", Statics_Step},
 		{"enterprobe", Enterprobe_Step},
 		{"supers", Supers_Step},
