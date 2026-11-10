@@ -1101,13 +1101,13 @@ void Log_Ore(void)
 
 
 /// <summary>
-/// Writes the tiberium cells nearest the player's first building, nearest first.
+/// Writes the tiberium cells nearest the player's first building, or nearest the given cell, nearest first.
 /// </summary>
-void Log_Ore_Cells(int limit)
+void Log_Ore_Cells(int limit, Cell const * from)
 {
 	if (limit > 32) limit = 32;
-	Cell origin(-1, -1);
-	for (int index = 0; index < Buildings.Count(); index++) {
+	Cell origin = from != NULL ? *from : Cell(-1, -1);
+	for (int index = 0; from == NULL && index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo) {
 			origin = building->Get_Cell();
@@ -5841,7 +5841,13 @@ static void Census_Step(StepType const & step)
 		return;
 	}
 	if (step.Argument == "cells") {
-		Log_Ore_Cells(8);
+		// "census cells <x> <y>" lists the 32 nearest to that cell instead.
+		Cell const from(std::atoi(Word(step.Words, 3).c_str()), std::atoi(Word(step.Words, 4).c_str()));
+		if (step.Words.size() > 4) {
+			Log_Ore_Cells(32, &from);
+		} else {
+			Log_Ore_Cells(8, NULL);
+		}
 		return;
 	}
 	DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());

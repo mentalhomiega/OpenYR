@@ -1,0 +1,21 @@
+; A full War Miner caught on a high bridge deck that is destroyed under it. On Potomac the player's refinery stands at 91,46
+; on the east bank and the miner starts at 76,50 on the west bank, sent to unload over the north bridge. When it is on the deck beside
+; 84,49 (frame 216) the deck at 84,49 takes two weapon hits (bridgehit, Map.Damage_Bridge). gamemd drops what stands on a removed deck cell
+; with ObjectClass::DropAsBomb (0x5F4160), and the landing deals the object's full strength in damage (0x5F3E70).
+; Expected: the second hit removes 84,49 (bridgedecks left 5); the miner reads falling 1 with onbridge 0 right after it and is
+; gone by frame 600, and the load is lost with it.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-harvester-collapse-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 300 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridgedecks)| enter)|Exception"
+30 reveal
+31 view 84 49
+40 own GAREFN 91 46
+41 own HARV 76 50
+42 load HARV
+50 enter HARV 91 46
+216 bridgeobj HARV
+217 bridgehit 84 49
+218 bridgehit 84 49
+219 bridgedecks 79 88 49
+220 bridgeobj HARV
+300 bridgeobj HARV
+600 bridgeobj HARV
+601 quit
