@@ -253,8 +253,10 @@ While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cach
 
 | Script | Shadows | Pixels | Darkened | Darkened with the ground gradient |
 |---|---|---|---|---|
-| `gpu-voxel-shadow.txt` | 3 | 14,331 | 2,098 | 23 |
-| `gpu-voxel-shadow-bloom.txt` | 3 | 14,331 | 1,970 | 25 |
+| `gpu-voxel-shadow.txt` | 3 | 14,331 | 2,148 | 23 |
+| `gpu-voxel-shadow-bloom.txt` | 3 | 14,331 | 2,002 | 25 |
+
+The last column was measured before turreted vehicles stopped being placed a pixel off on odd-sized facings. That fix moved the two tanks over their shadows and raised the darkened counts from 2,098 and 1,970.
 
 ## Checking smooth facing
 
@@ -270,7 +272,7 @@ With the key on, no voxel object uses the picture cache, so the GPU would draw e
 - **Prepared objects.** An object prepared for the GPU, its layers, projection centre and lighting table, is kept under a key made of its voxel library, motion library and frame, its matrix, the camera, the light and the shading rules, and a shadow likewise. An object drawn again with an equal key takes the kept preparation. The kept objects are dropped when the voxel data changes, and any new input to the preparation or the lighting table must be added to that key (`GpuVoxelPrepKey` in `code/gpudraw.h`).
 - **Pictures in the voxel image.** Each part has a signature, a 64-bit hash of everything the shader's output depends on. A part whose signature the image already holds, from this pass or an earlier one, reads that tile and is not drawn. New tiles go on until a pass does not fit what is left; the pass then empties the image and draws its parts afresh. A change of the palette texture empties the image as well.
 
-A voxel is also cheaper to draw: two vertices at scale 1 and eight above it, where it used to take six and eighteen. Scale 1 stays index-exact: `gpu-voxel-compare.txt` has 0 differing pixels over 1,832 parts and 2,123,729 covered pixels, and the `gpu-voxel-shadow` scripts count the same 2,098 and 1,970 darkened pixels.
+A voxel is also cheaper to draw: two vertices at scale 1 and eight above it, where it used to take six and eighteen. Scale 1 stays index-exact: `gpu-voxel-compare.txt` has 0 differing pixels over 1,832 parts and 2,123,729 covered pixels, and the `gpu-voxel-shadow` scripts counted the same darkened pixels as before it.
 
 The numbers below are for `tests/autotest/bench-large-battle.txt` and `bench-late-game.txt` at 3840 by 2160 with `GpuRender=yes`, `RenderFrameRate=240` and HDR Enhanced highlights on. Each cell pools two runs, and the runs of the old and the new build alternated on a machine in other use, so differences of a few tenths of a millisecond are noise; the benchmark-wide means include the map, the interface and everything else in a draw. "On" is `GpuVoxels=yes` with `GpuVoxelSmooth=yes` at the given `GpuVoxelScale`.
 
