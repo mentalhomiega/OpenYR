@@ -686,6 +686,7 @@ void GScreenClass::Render(void)
 		TacticalMap->IsToRedraw = true;
 	}
 	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
+	ShadowOnce_Set_Enabled(!Options.ShadowStacking);
 	GpuDraw_Plan(gpu_render);
 	// Pictures cached under the old placement are dropped before this frame draws any.
 	if (VoxelDrawSystem::SteadyCenter != Options.SteadyVoxelPlacement) {
@@ -709,7 +710,7 @@ void GScreenClass::Render(void)
 	Video_Draw_Probe_Target(CompositeSurface);
 	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
 	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
-	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
+	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0, !Options.ShadowStacking);
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
 	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);

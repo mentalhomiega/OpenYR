@@ -6696,6 +6696,15 @@ static void Windowshot_Step(StepType const & step)
 }
 
 
+// windowdark <name> <x> <y> <w> <h>: logs one `AUTOTEST windowdark` line with the mean and the darkest brightness (0 to 255) of
+// that window rectangle, as a windowshot would show it.
+static void Windowdark_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
+	Backend_Request_Window_Measure(area, step.Argument.c_str());
+}
+
+
 // glideclock: times zoom glides by game frames, for recordings.
 static void Glideclock_Step(StepType const &)
 {
@@ -7189,6 +7198,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wheel", Wheel_Step},
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
+		{"windowdark", Windowdark_Step},
 		{"glideclock", Glideclock_Step},
 		{"overlaypresent", Overlay_Present_Step},
 		{"scriptedzoom", Scriptedzoom_Step},

@@ -1340,6 +1340,8 @@ void Tactical::Render_Foreground(Surface & composite)
 {
 	int i;
 
+	ShadowOnce_Next_Frame();
+
 	Add_Buildings_To_Selectable(TacticalRect);
 	composite.Lock();
 	Surface * savedlogical = LogicalSurface;

@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -234,6 +235,45 @@ static void Write_Tga_Header(FILE * file, uint32_t width, uint32_t height, bool 
 }
 
 
+// A window capture can measure a rectangle instead of being saved: the request names it with this path, and the
+// captures arrive in the order they were asked for.
+static char const MeasurePath[] = "window-measure";
+struct MeasureRequest
+{
+	Rect Area;
+	std::string Label;
+};
+static std::deque<MeasureRequest> _Measures;
+
+
+// Logs the mean and the darkest value of the red, green and blue average of the pixels of a 32-bit capture
+// inside the oldest request's area, counted from the top of the window.
+static void Log_Measure(unsigned char const * data, uint32_t width, uint32_t height, uint32_t pitch, bool yflip)
+{
+	if (_Measures.empty()) {
+		return;
+	}
+	MeasureRequest const request = _Measures.front();
+	_Measures.pop_front();
+	Rect const area = Intersect(request.Area, Rect(0, 0, (int)width, (int)height));
+	if (!area.Is_Valid()) {
+		DebugString("AUTOTEST windowdark %s outside the %ux%u window\n", request.Label.c_str(), width, height);
+		return;
+	}
+	unsigned long long total = 0;
+	int darkest = 255;
+	for (int y = area.Y; y < area.Y + area.Height; y++) {
+		unsigned char const * row = data + (size_t)(yflip ? height - 1 - y : y) * pitch;
+		for (int x = area.X; x < area.X + area.Width; x++) {
+			int const value = (row[x * 4] + row[x * 4 + 1] + row[x * 4 + 2]) / 3;
+			total += value;
+			darkest = std::min(darkest, value);
+		}
+	}
+	DebugString("AUTOTEST windowdark %s %d,%d %dx%d mean %.2f darkest %d\n", request.Label.c_str(), area.X, area.Y, area.Width, area.Height, (double)total / ((double)area.Width * area.Height), darkest);
+}
+
+
 // bgfx reports lost devices and shader failures through this rather than a return code,
 // so the engine would otherwise present to a black window with no explanation.
 class BackendCallback : public bgfx::CallbackI
@@ -273,6 +313,10 @@ class BackendCallback : public bgfx::CallbackI
 		// Writes a capture of the window as a 32-bit TGA file.
 		virtual void screenShot(const char * filepath, uint32_t width, uint32_t height, uint32_t pitch, bgfx::TextureFormat::Enum, const void * data, uint32_t, bool yflip) override
 		{
+			if (std::strcmp(filepath, MeasurePath) == 0) {
+				Log_Measure((unsigned char const *)data, width, height, pitch, yflip);
+				return;
+			}
 			FILE * file = std::fopen(filepath, "wb");
 			if (file == NULL) {
 				return;
@@ -1046,6 +1090,10 @@ static void Submit_Composite(bgfx::ViewId view, bgfx::FrameBufferHandle target, 
 static void Write_Capture(void)
 {
 	_ReadbackPending = false;
+	if (_ReadbackPath == MeasurePath) {
+		Log_Measure(_ReadbackPixels.data(), (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, (uint32_t)_DrawableWidth * 4, false);
+		return;
+	}
 	FILE * file = std::fopen(_ReadbackPath.c_str(), "wb");
 	if (file == NULL) {
 		return;
@@ -1724,6 +1772,13 @@ void Backend_Request_Window_Capture(char const * filepath)
 	}
 	_ReadbackPath = filepath;
 	_ShotRequested = true;
+}
+
+
+void Backend_Request_Window_Measure(Rect const & area, char const * label)
+{
+	_Measures.push_back({ area, label });
+	Backend_Request_Window_Capture(MeasurePath);
 }
 
 

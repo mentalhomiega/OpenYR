@@ -315,6 +315,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `typedump [Name]` | writes the main fields of every weapon, projectile and warhead type, or only those with that name, one line each |
 | `water x y` | writes the open water cell nearest to that cell |
 | `wheel <step> [x y]` | glides the zoom by that step around a screen point, as the mouse wheel does. Without a point the zoom centres on the middle of the map view |
+| `windowdark <name> <x> <y> <w> <h>` | logs `AUTOTEST windowdark <name> x,y WxH mean M darkest D`: the mean and the darkest value of the red, green and blue average (0 to 255) over that window rectangle, counted from the top left, as `windowshot` would show it. The line arrives a few frames after the step. Under HDR output, leave a few frames between two `windowdark` or `windowshot` steps |
 | `windowshot <name>` | saves what the window shows, map layer included, as `<name>.tga` in the screenshots folder |
 | `xbutton <1\|2>` | A press and release of side button 1 or 2 at the pointer, given to the window as the mouse gives it |
 | `zoom <factor>` | sets the map view zoom at once, measured from the screen's own pixels (0.5 shows twice as much), and writes the view and screen sizes |
