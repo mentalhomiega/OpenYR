@@ -2299,6 +2299,30 @@ static void Bridge_Unit_Step(StepType const & step)
 
 
 /// <summary>
+/// Logs each live object of the type, whoever owns it, with its cell, whether it is on a bridge, its height above sea
+/// level and above the ground, its layer, whether it is falling, its strength, its mission and its destination.
+/// </summary>
+/// <param name="step">A step whose argument is the type name.</param>
+static void Bridge_Object_Step(StepType const & step)
+{
+	int count = 0;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
+			Cell const cell = techno->Get_Cell();
+			FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
+			Cell const nav = foot != NULL && foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+			DebugString("AUTOTEST   bridgeobj %s of %s cell %d,%d onbridge %d z %d agl %d layer %d falling %d strength %d mission %s nav %d,%d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), cell.X, cell.Y, (int)techno->IsOnBridge, techno->Center_Coord().Z,
+				(int)techno->HeightAGL, (int)techno->In_Which_Layer(), (int)techno->IsFalling, (int)techno->Strength,
+				MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y);
+			count++;
+		});
+	DebugString("AUTOTEST   bridgeobj %s count %d\n", step.Argument.c_str(), count);
+}
+
+
+/// <summary>
 /// Logs the bridge tile, overlay and flags of every on-map cell within four cells of a cell.
 /// </summary>
 /// <param name="step">A step whose argument is the centre's X and whose X field is its Y.</param>
@@ -6795,6 +6819,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wallcensus", Wall_Census_Step},
 		{"bridgearea", Bridge_Area_Step},
 		{"bridgeunit", Bridge_Unit_Step},
+		{"bridgeobj", Bridge_Object_Step},
 		{"repairbridge", Repair_Bridge_Step},
 		{"bridgehit", Bridge_Hit_Step},
 		{"bridgehut", Bridge_Hut_Step},
