@@ -86,7 +86,7 @@ between two redraws that happen, so a due redraw that is skipped again and again
 | `weapon selects` | `What_Weapon_Should_I_Use` calls |
 | `draws skipped` | Redraws that were due in the wait between game frames but had too little time left. See [Skipped draws](#skipped-draws) |
 | `presents busy` | Presents put off because the render thread had not finished the last frame. It stays at zero without `RenderThread`. See [RENDER_THREAD.md](RENDER_THREAD.md) |
-| `gpu voxel parts`, `gpu voxel drawn`, `gpu voxel direct` | With `GpuVoxels=yes`, the voxel parts of the passes the GPU drew, those whose picture was not already in the voxel image and had to be drawn, and those drawn straight into the pass with `GpuVoxelPath=Direct`. See [GPU_VOXELS.md](GPU_VOXELS.md) and [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) |
+| `gpu voxel parts`, `gpu voxel drawn`, `gpu voxel direct`, `gpu voxel faces` | With `GpuVoxels=yes`, the voxel parts of the passes the GPU drew, those whose picture was not already in the voxel image and had to be drawn, those drawn straight into the pass with `GpuVoxelPath=Direct`, and the cube faces those direct parts' draws submitted, counted only with `GpuVoxelScale` above 1 and `GpuVoxelLayerDepth=Shared`. See [GPU_VOXELS.md](GPU_VOXELS.md) and [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) |
 
 The `ring cells` counter is taken only when the cell walk runs. Each radar-map ring cell the walk visits adds one
 counter increment while recording.
