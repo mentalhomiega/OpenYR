@@ -558,6 +558,30 @@ static Rect Shown_Map_Part(Rect const & screen_part)
 
 
 /// <summary>
+/// Copies the shown map into the frame under the build panel, sampled as the presenter scales it. A stretching
+/// Blit_From of this area leaves a panel-sized block of stale map at the top left of the picture.
+/// </summary>
+static void Copy_Map_Under_Panel(Surface & frame, Surface const & map, Rect const & panel)
+{
+	DSurface & out = static_cast<DSurface &>(frame);
+	DSurface const & in = static_cast<DSurface const &>(map);
+	if (out.Bytes_Per_Pixel() != 2 || in.Bytes_Per_Pixel() != 2) {
+		return;
+	}
+	Rect const part = Shown_Map_Part(panel);
+	Rect const area = Intersect(panel, out.Get_Rect());
+	for (int y = area.Y; y < area.Y + area.Height; y++) {
+		int const map_y = std::min(part.Y + (y - panel.Y) * part.Height / panel.Height, in.Get_Height() - 1);
+		unsigned short * row = (unsigned short *)((char *)out.Get_Buffer() + y * out.Stride());
+		unsigned short const * source = (unsigned short const *)((char const *)in.Get_Buffer() + map_y * in.Stride());
+		for (int x = area.X; x < area.X + area.Width; x++) {
+			row[x] = source[std::min(part.X + (x - panel.X) * part.Width / panel.Width, in.Get_Width() - 1)];
+		}
+	}
+}
+
+
+/// <summary>
 /// Draws the frame-time graph: one column for each gap between presents, newest at the right.
 /// A column is 1 pixel per millisecond, and a gap of 40 ms or more fills the graph's full height.
 /// Gaps that have not yet been recorded leave their columns black.
@@ -736,7 +760,7 @@ void GScreenClass::Render(void)
 		CompositeSurface->Fill_Rect(ScreenTacticalRect, VIDEO_LAYER_KEY);
 		if (hud && Modern_Interface()) {
 			Rect const panel = Hud_Layout().Panel;
-			CompositeSurface->Blit_From(panel, *MapCompositeSurface, Shown_Map_Part(panel));
+			Copy_Map_Under_Panel(*CompositeSurface, *MapCompositeSurface, panel);
 		}
 		Video_Set_Map_Layer(MapCompositeSurface, Shown_Map_Rect(), ScreenTacticalRect);
 	} else {

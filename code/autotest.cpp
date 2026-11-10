@@ -6700,6 +6700,14 @@ static void Perflog_Step(StepType const & step)
 }
 
 
+// keyrect <x> <y> <w> <h>: logs how many pixels of the last presented frame in that screen rectangle hold the map layer key.
+static void Keyrect_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 2, 0), Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0));
+	DebugString("AUTOTEST keyrect %d,%d %dx%d keyed %llu of %d\n", area.X, area.Y, area.Width, area.Height, Video_Count_Keyed_Pixels(area), area.Width * area.Height);
+}
+
+
 // uploadverify <0|1>: 1 checks, at every present, that the copy kept of each texture matches its picture; 0 logs the checks and mismatches so far.
 static void Uploadverify_Step(StepType const & step)
 {
@@ -7104,6 +7112,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
 		{"uploadverify", Uploadverify_Step},
+		{"keyrect", Keyrect_Step},
 		{"hash", Hash_Step},
 		{"statecrc", Statecrc_Step},
 		{"syncrec", Syncrec_Step},
