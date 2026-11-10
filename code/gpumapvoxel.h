@@ -17,7 +17,7 @@ struct GpuDrawList;
 
 
 // The voxel image, where the GPU draws the voxel parts of a map pass before the pass shows them. Each
-// part has a tile of the size of its Scene.Region.Bounds times the scale; a blit reads its pixels from the tile.
+// part has a tile of the size of its Area times the tile's scale; a blit reads its pixels from the tile.
 inline constexpr int GPU_VOXEL_IMAGE_SIZE = 2048;
 
 // A blit whose colour index offset is at least this reads the voxel image: the offset minus this is
@@ -33,16 +33,23 @@ struct GpuVoxelTile
 {
 	int X = 0;
 	int Y = 0;
+	// The scale the part is drawn at in its tile: the pass's scale, or a smaller one that divides it.
+	int Scale = 1;
 };
 
-// True when the parts of the list fit an empty image, scale times each part's Area in each direction.
-bool GpuVoxel_Fits(GpuDrawList const & list, int scale);
+// True when the parts of the list fit an empty image at scale 1, the least GpuVoxel_Submit draws a part at.
+bool GpuVoxel_Fits(GpuDrawList const & list);
 
 // Draws the parts that have no picture yet into the voxel image and returns each part's tile in tiles, in the list's
 // order; a part whose picture the image holds from an earlier pass keeps that tile, and identical parts share one.
-// Must be called before the draws that read the image are submitted in the same frame. False when the voxel
-// shaders are unavailable, the parts do not fit an empty image, or the layers do not fit the GPU's model store.
+// When the parts do not fit an empty image at scale, the largest parts get tiles at a smaller scale that divides it,
+// and a part keeps its smaller scale for a while after the parts would fit again. Must be called before the draws
+// that read the image are submitted in the same frame. False when the voxel shaders are unavailable, the parts do
+// not fit an empty image at scale 1, or the layers do not fit the GPU's model store.
 bool GpuVoxel_Submit(GpuDrawList const & list, int scale, std::vector<GpuVoxelTile> & tiles);
+
+// The parts shown below the scale GpuVoxel_Submit was asked for since the last call, a part counting once a pass.
+int GpuVoxel_Take_Reduced(void);
 
 // The bgfx handle index of the voxel image, or bgfx::kInvalidHandle before the first submit.
 std::uint16_t GpuVoxel_Image(void);

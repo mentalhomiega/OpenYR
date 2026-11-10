@@ -124,6 +124,19 @@ palette row. Voxels are still written in the software's
 order, so nearer voxels overwrite farther ones. Everything else about a voxel blit, translator, depth test and blend,
 is unchanged.
 
+When the parts of a pass do not fit an empty voxel image at the chosen scale, the largest parts are drawn at a
+smaller scale that divides it (4 to 2 to 1, 3 or 2 to 1), and the rest of the pass, terrain included, keeps the chosen
+scale. A part's scale is set by the longer side of its tile: a part whose tile side at a scale would exceed a cap drops
+to the next scale down, and the cap steps down from 2048 (no part lowered) through 1536, 1024, 768, 512, 384 and on to 0
+(every part at 1) until the parts fit. Parts of the same size therefore get the same scale, so units of one type stay
+alike. The cap goes back up one step only after the parts have fitted under the larger cap for 120 drawn passes in a
+row, so a part near the limit does not change sharpness from one frame to the next. 48 Kirovs at 3840 by 2160 fit
+only with every Kirov at scale 1, since all of them have the same size; a mixed army loses sharpness on its largest
+units first. The `reduced` count of the `GPU_RENDER` line counts the parts shown below `GpuVoxelScale`, once for each
+pass the GPU drew for a present (fewer than the passes counted as `drawn` when the game runs more frames than it
+shows), and `tests/autotest/gpu-voxel-overflow.txt` checks that twelve Kirovs at scale 4 cause no software
+fallback.
+
 Scale 1 takes the old path and stays index-exact. A pass that `gpucheck` reads back is drawn at scale 1, because the
 software result it is compared with has no finer pixels. At a scale above 1, `tests/autotest/gpu-voxel-scale.txt` shows
 two tanks and a Kirov at zoom 1, 2 and 3 for comparing scales by eye and by edge counts.
@@ -149,7 +162,8 @@ part's tile, `covered` the pixels either side wrote, `differing` the pixels whos
 `coverage` those where only one side wrote a pixel, and `maxstep` the largest difference in a 565 channel between
 the voxel palette colours of the two indices. For a composite the software side is the scratch surface after
 the pieces are composed. The pass's usual `GPU_DIFF` line then compares the finished picture, where a voxel blit
-goes through the same shader as every other blit. `GPU_RENDER` lines also count the voxel blits the GPU drew.
+goes through the same shader as every other blit. `GPU_RENDER` lines also count the voxel blits the GPU drew and
+the parts it showed at a reduced scale (see Sharpness).
 
 | Type | Parts compared | Body facings | Turret facings at a body facing | Covered pixels | Differing |
 |---|---|---|---|---|---|
@@ -299,5 +313,7 @@ Each stage has a check that fails when its picture departs from the software.
   them. `Bit_Blit` ignores the offset, so an uncached software draw looks the same as the GPU's.
 - The model texture holds about a million voxels' worth of walks (a layer is stored once for each of the eight
   orientations it is drawn in) and is emptied when full, so a pass with more distinct layers than that falls back
-  to software. A pass that does not fit what is left of the voxel image empties the image first; a pass whose parts do not fit an empty image, several hundred of average size, is drawn in software.
+  to software. A pass that does not fit what is left of the voxel image empties the image first. A pass whose parts
+  do not fit an empty image at `GpuVoxelScale` draws its largest parts at a smaller scale (see Sharpness); only a
+  pass whose parts do not fit an empty image even at scale 1, several hundred of average size, is drawn in software.
 - A float lighting model (stage 6) cannot give the software's palette rows, so it is a separate look.
