@@ -603,4 +603,8 @@ class MapClass: public GScreenClass
 
 extern CellClass BlubCell;
 
+void Restore_Off_Map_Cell_Location(void);
+void Remember_Off_Map_Cell_Location(void);
+void Reset_Off_Map_Cell_Location(void);
+
 extern int MZonePassability[MZONE_COUNT][PASSABLE_COUNT];

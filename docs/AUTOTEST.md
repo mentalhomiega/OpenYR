@@ -463,6 +463,12 @@ The game must play the same at any frame pacing: a frame that takes longer, the 
 
 `GameSpeed` is part of the game rather than the pacing. As in Yuri's Revenge, it scales the rate of some animations, such as infantry idle animations, and so it changes when those objects act. To compare pacing, keep `GameSpeed` the same in both runs and use the fast-forward cheat (`command DebugFastForward` with `DebugMode=yes` under `[Options]`) for the fast run.
 
+## Camera
+
+The game must also play the same whatever the camera shows, because each player of a network game has their own view and zoom. `tests/autotest/camera-determinism-still.txt` and `camera-determinism-moves.txt` play one match at 3840x2160, the second with `zoom` and `view` steps; their header gives the runs and the `scripts/compare_digests.py --hash` comparison, which should print `identical`.
+
+A cell outside the map array, such as `CELL_NONE`, gives the map's one shared off-map cell. Drawing the map view also reaches that cell and changes its location. The main loop puts back the location game logic last left at the start of each frame's logic (`Restore_Off_Map_Cell_Location` in `code/map.cpp`), so a unit that keeps that cell as a destination or target plays the same whatever the view drew. A location that any other code outside a frame's logic gives that cell is dropped the same way. `syncrec` does not catch reads of that cell, because they happen inside a frame's logic.
+
 ## Comparing presented frames
 
 `presentdigest 1` logs one line at each present that reaches the presenter:

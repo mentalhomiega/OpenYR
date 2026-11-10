@@ -12501,7 +12501,9 @@ bool TechnoClass::Enter_Object_Nearby(void)
 
 /// <summary>
 /// Assigns a MISSION_MOVE toward a cell near the cached nearby object.
-/// Clears the nearby object reference if it is no longer active.
+/// Clears the nearby object reference if it is no longer active. When no clear cell is
+/// found near the object, nothing is assigned and the reference is kept, as gamemd's
+/// FUN_0070D8F0 does.
 /// </summary>
 /// <returns>True if a move mission was assigned; false otherwise.</returns>
 bool TechnoClass::Move_To_Object_Nearby(void)
@@ -12510,7 +12512,12 @@ bool TechnoClass::Move_To_Object_Nearby(void)
 		if (NearbyObject->IsActive) {
 			TechnoClass * techno = NearbyObject->As_TechnoClass();
 			if (techno != NULL) {
-				Assign_Destination(&Map[Nearby_Location(techno)]);
+				// Map[CELL_NONE] is the shared off-map cell, whose location drawing the map view can change, so a destination there breaks sync.
+				Cell const nearby = Nearby_Location(techno);
+				if (nearby == CELL_NONE) {
+					return(false);
+				}
+				Assign_Destination(&Map[nearby]);
 				Assign_Mission(MISSION_MOVE);
 				return(true);
 			}

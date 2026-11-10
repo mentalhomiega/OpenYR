@@ -511,6 +511,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 			int(Rule->MessageDelay * TICKS_PER_MINUTE));
 	}
 
+	Reset_Off_Map_Cell_Location();
 	ScenarioActive = true;
 	TacticalActive = true;
 

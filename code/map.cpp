@@ -162,6 +162,8 @@ int const MapClass::RadiusCount[] = {
 
 CellClass BlubCell;
 
+static Cell BlubCellLogicLocation;
+
 /*
  * This is what each movement class makes of each kind of terrain. A cell is only ever joined
  * to a movement zone when this reads TRAVERSAL_PASSABLE for it, so this one table decides zone
@@ -479,6 +481,38 @@ CellClass & MapClass::operator[](Cell const & cell) const
 	BlubCell.CellID = cell;
 	return(BlubCell);
 };
+
+
+/// <summary>
+/// Puts back the off-map cell's location as game logic last left it. Call it at the start of
+/// each frame's logic: the view's lookups between frames move that cell, and logic that keeps
+/// it as a destination or target would otherwise follow what each player's screen drew.
+/// </summary>
+void Restore_Off_Map_Cell_Location(void)
+{
+	BlubCell.CellID = BlubCellLogicLocation;
+}
+
+
+/// <summary>
+/// Records the off-map cell's location for Restore_Off_Map_Cell_Location. Call it at the end
+/// of each frame's logic.
+/// </summary>
+void Remember_Off_Map_Cell_Location(void)
+{
+	BlubCellLogicLocation = BlubCell.CellID;
+}
+
+
+/// <summary>
+/// Makes the next frame's logic start with the off-map cell at CELL_NONE. Call it when a
+/// scenario starts or a game is loaded, since the view may have looked up cells before the
+/// first frame.
+/// </summary>
+void Reset_Off_Map_Cell_Location(void)
+{
+	BlubCellLogicLocation = CELL_NONE;
+}
 
 
 /// <summary>
