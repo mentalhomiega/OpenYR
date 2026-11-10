@@ -302,10 +302,10 @@ static bool Objects_Only(GpuVoxelPart const & part)
 }
 
 
-std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, bool soft_shadows)
+std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool soft_shadows)
 {
 	std::vector<char> direct(list.Voxels.size(), 0);
-	if (!_DirectWanted || mask || list.Voxels.empty() || !Start() || !bgfx::isValid(_DirectProgram)) {
+	if (!_DirectWanted || list.Voxels.empty() || !Start() || !bgfx::isValid(_DirectProgram)) {
 		return(direct);
 	}
 	// The blits that show each part and whether every one of them is a copy, or every one a shadow.

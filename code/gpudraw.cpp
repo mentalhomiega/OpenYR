@@ -59,6 +59,8 @@ static bool _PartShown = false;
 // The composite of a turreted vehicle that is being put together, and where the scratch surface's pixels are.
 static int _Composite = -1;
 static bool _CompositeRenders = false;
+// The first blit recorded after the open composite was shown.
+static std::size_t _CompositeFirstBlit = 0;
 static unsigned char const * _ScratchBase = NULL;
 static int _ScratchWidth = 0;
 static int _ScratchHeight = 0;
@@ -1003,8 +1005,12 @@ static void Render_Voxel_Pixels(void)
 		if (rendered != blit.Voxel) {
 			image = Render_Part(_List.Voxels[blit.Voxel]);
 			rendered = blit.Voxel;
-			if (Emissive_Is_Enabled() && !_List.Voxels[blit.Voxel].Scratch) {
-				Copy_Voxel_Mask(_List.Voxels[blit.Voxel]);
+			GpuVoxelPart & part = _List.Voxels[blit.Voxel];
+			if (Emissive_Is_Enabled() && !part.Scratch) {
+				Copy_Voxel_Mask(part);
+			} else if (Emissive_Is_Enabled() && GpuVoxel_Direct_Path()) {
+				// The software composite has no highlights, so the marks Mark_Composite_Mask left become 0.
+				part.MaskReference.assign((std::size_t)part.Area.Width * part.Area.Height, 0);
 			}
 		}
 		int const width = _List.Voxels[blit.Voxel].Area.Width;
@@ -1370,11 +1376,35 @@ void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty)
 	}
 	_PendingPart = _Composite;
 	_PartShown = false;
+	_CompositeFirstBlit = _List.Blits.size();
+}
+
+
+// The scratch surface has no emissive plane, so a composite's blit zeroes the target's plane under it. On the direct
+// route the GPU gives a composite highlights (docs/GPU_DIRECT_VOXELS.md, stage 5), so its blits leave the mark instead.
+static void Mark_Composite_Mask(void)
+{
+	if (!_CompositeRenders || !GpuVoxel_Direct_Path() || !Emissive_Is_Enabled()) {
+		return;
+	}
+	EmissivePlane * plane = Emissive_Plane_For(_Target);
+	if (plane == NULL) {
+		return;
+	}
+	for (std::size_t i = _CompositeFirstBlit; i < _List.Blits.size(); i++) {
+		GpuBlit const & blit = _List.Blits[i];
+		if (blit.Voxel == _Composite) {
+			Emissive_Fill_Rect(*plane, blit.X, blit.Y, blit.Width, blit.Height, GPU_VOXEL_MASK_MARK);
+		}
+	}
 }
 
 
 void GpuDraw_Composite_End(void)
 {
+	if (_Composite >= 0 && _PendingPart == _Composite) {
+		Mark_Composite_Mask();
+	}
 	if (_Composite >= 0 && _PendingPart != _Composite && _Composite == (int)_List.Voxels.size() - 1) {
 		_List.Voxels.pop_back();
 	}

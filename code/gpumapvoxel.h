@@ -27,9 +27,9 @@ inline constexpr int GPU_VOXEL_IMAGE_SIZE = 2048;
 // the tile pixel's row times GPU_VOXEL_IMAGE_SIZE plus its column.
 inline constexpr std::uint32_t GPU_VOXEL_BASE = 8388608;
 
-// The value a direct voxel part leaves in the target's emissive plane under its blit while the GPU draws it.
-// A pixel still holding it at the end of the pass takes the part's highlight strength from the voxel image
-// (fs_mapmask.sc, which uses the same value).
+// The value a voxel part leaves in the target's emissive plane under its blit while the GPU draws it. A pixel still
+// holding it at the end of the pass takes the part's highlight strength from the voxel image or, on the direct route,
+// from the part's layers (fs_mapmask.sc and fs_voxelscene.sc use the same value).
 inline constexpr unsigned char GPU_VOXEL_MASK_MARK = 1;
 
 // Where a part's picture is: its tile in the voxel image, or, for a part the direct route draws, no tile.
@@ -53,12 +53,12 @@ bool GpuVoxel_Direct_Path(void);
 // The shadow blits of direct parts a pass can hold: each darkens through its own stencil value from 1 to this.
 inline constexpr int GPU_VOXEL_SHADOW_STENCILS = 255;
 
-// Marks the parts of the list the direct route draws, one flag per part. On the direct path, while the emissive mask
-// is off (mask false) and the direct program built, they are the parts without shadow layers that only copy blits show,
-// whether one prepared object or a composite of hull, turret and barrel, when the pass has at most GPU_VOXEL_SLICES
-// such blits, and the parts of one prepared shadow that only shadow blits show, when soft shadows are on or the pass
-// has at most GPU_VOXEL_SHADOW_STENCILS such blits. Every other flag is 0.
-std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, bool soft_shadows);
+// Marks the parts of the list the direct route draws, one flag per part. On the direct path, while the direct program
+// built, they are the parts without shadow layers that only copy blits show, whether one prepared object or a
+// composite of hull, turret and barrel, when the pass has at most GPU_VOXEL_SLICES such blits, and the parts of one
+// prepared shadow that only shadow blits show, when soft shadows are on or the pass has at most
+// GPU_VOXEL_SHADOW_STENCILS such blits. Every other flag is 0.
+std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool soft_shadows);
 
 // True when the parts of the list that direct leaves to the image fit an empty image at scale 1, the least
 // GpuVoxel_Submit draws a part at.

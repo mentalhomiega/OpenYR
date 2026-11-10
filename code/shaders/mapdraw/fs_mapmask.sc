@@ -1,10 +1,12 @@
 $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 
 // Builds the emissive mask of a pass with GPU voxels (code/gpumap.cpp): the CPU plane copied unchanged, then each
-// direct voxel blit, where the plane still holds the mark the blit left, the highlight strength from the voxel image.
+// voxel blit, where the plane still holds the mark the blit left, the highlight strength from the voxel image, or 0
+// for a blit that reads no tile.
 //   v_texcoord0.xy  pixel position inside the blit
 //   v_texcoord0.zw  pixel position inside the map area
-//   v_texcoord1     z: 0 for the copy of the plane; otherwise xy the tile pixel of the blit's first pixel and z the tile's scale
+//   v_texcoord1     z: 0 for the copy of the plane; otherwise w 1 to write 0, or else xy the tile pixel of the blit's
+//                   first pixel and z the tile's scale
 
 #include "bgfx_shader.sh"
 
@@ -24,6 +26,10 @@ void main()
 	}
 	if (plane != VOXEL_MARK) {
 		discard;
+	}
+	if (v_texcoord1.w > 0.5) {
+		gl_FragColor = vec4_splat(0.0);
+		return;
 	}
 	int scale = int(v_texcoord1.z + 0.5);
 	ivec2 tile = ivec2(v_texcoord1.xy + vec2_splat(0.5)) + ivec2(floor(v_texcoord0.xy)) * scale + scale / 2;
