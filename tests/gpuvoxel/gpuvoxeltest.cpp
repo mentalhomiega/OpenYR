@@ -229,5 +229,28 @@ int main(void)
 		std::printf("%-52s %s\n", "tile store reuses signatures and packs shelves", ok ? "ok" : "FAILED");
 		failures += ok ? 0 : 1;
 	}
+
+	{
+		// The picture is placed at the whole pixel below the centre, so only a whole-pixel centre sits on its model.
+		bool ok = true;
+		for (int step = 0; step < 16; step++) {
+			float const fraction = step / 16.0f;
+			Vector3 const min(-40.0f + fraction, -30.0f + fraction * 0.5f, -10.0f);
+			Vector3 const max(37.0f + fraction, 52.0f, 20.0f);
+			Vector3 const classic = VoxelDrawSystem::Scene_Center(min, max, false);
+			Vector3 const steady = VoxelDrawSystem::Scene_Center(min, max, true);
+			float const exact_x = (max.X + min.X) * 0.5f;
+			float const exact_y = (max.Y + min.Y) * 0.5f;
+			ok = ok && classic.X == exact_x && classic.Y == exact_y && classic.Z == steady.Z;
+			ok = ok && steady.X == std::floor(steady.X) && steady.Y == std::floor(steady.Y);
+			ok = ok && std::fabs(steady.X - exact_x) <= 0.5f && std::fabs(steady.Y - exact_y) <= 0.5f;
+		}
+		Vector3 const fractional = VoxelDrawSystem::Scene_Center(Vector3(0.0f, 0.0f, 0.0f), Vector3(7.0f, 9.0f, 4.0f), false);
+		ok = ok && fractional.X == 3.5f && fractional.Y == 4.5f;
+		Vector3 const rounded = VoxelDrawSystem::Scene_Center(Vector3(0.0f, 0.0f, 0.0f), Vector3(7.0f, 9.0f, 4.0f), true);
+		ok = ok && rounded.X == 4.0f && rounded.Y == 5.0f;
+		std::printf("%-52s %s\n", "steady scene centre is a whole pixel, classic is exact", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
 	return(failures == 0 ? 0 : 1);
 }

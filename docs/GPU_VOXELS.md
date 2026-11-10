@@ -39,7 +39,24 @@ for the turret, turned by the exact turret facing minus the exact hull facing so
 the hull's. The barrel pitch stays in 32 steps. `FacingClass::Current` already reads the facing part way between two game frames when
 `RenderFrameRate` is above the game rate (`RenderBlend`), taking the short way round, so the smooth angle follows it for the hull
 and for the turret alike. A shadow turns the same way: `LocomotionClass::Build_Shadow_Matrix` and `FlyLocomotionClass::Build_Shadow_Matrix`
-use `GpuDraw_Facing_Radian` too, so the shadow stays under its object. With the key off, nothing changes.
+use `GpuDraw_Facing_Radian` too, so the shadow stays under its object. With the key off, nothing changes.
+
+## Voxel placement
+
+`SteadyVoxelPlacement` (`[Video]`, default `yes`) projects each voxel scene about a whole-pixel centre. It applies to the software
+drawing and to `GpuVoxels` alike. `VoxelDrawSystem::Scene_Center` (`code/voxdrsys.h`) gives the point, and both `Draw_Prepared` (software)
+and `Capture` (GPU) read it, so the two renderers stay pixel-identical with the key on and off.
+
+The original game projects the model about the exact fractional centre of the scene, but `Region_Of` places the picture at the centre with its
+fraction cut off. A turning vehicle's centre moves by fractions of a pixel from facing to facing, so its picture sits up to a pixel off its model
+and wobbles as it turns. With the key on, the centre is rounded first, and the cut removes nothing. At 4K and zoom 2 with units turning, the vertical hops of a Grizzly and an
+Apocalypse went from 16 and 2 pixels to 0 and 0, and the horizontal ones from 35 and 18 to 7 and 9.
+
+Classification: intentionally changed. The default departs from gamemd, and `SteadyVoxelPlacement=no` keeps gamemd's placement. Pictures differ by up to a pixel in
+position, so the shadow counts and pictures that tests record change with the default. Only drawing changes, and the simulation is the same.
+
+Changing the key while the game runs clears every voxel picture cache at the start of the next frame (`ObjectTypeClass::Clear_Voxel_Indexes`).
+That also invalidates the turreted-vehicle pictures and the GPU's voxel image and prepared objects, which follow the same clear.
 
 ## How the software draws a voxel object
 

@@ -338,6 +338,10 @@ class OptionsClass {
 		// With GpuVoxels, 1 to 4: how many times finer than the map pixels the GPU draws voxel objects (docs/GPU_VOXELS.md).
 		int GpuVoxelScale;
 
+		// Places a voxel object's picture on a whole pixel, so a turning object does not wobble by a pixel.
+		// Off places it as the original game does, with the fraction of the scene centre cut off (docs/GPU_VOXELS.md).
+		bool SteadyVoxelPlacement;
+
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;
 

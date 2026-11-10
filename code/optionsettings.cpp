@@ -28,6 +28,7 @@ constexpr NameEntry Weather_Names[] = {
 constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
+constexpr char const * VOXEL_DRAWING = "Voxel drawing";
 
 
 // The order is the order of the keys in a saved RA2MD.INI: a save rewrites each key in this order.
@@ -110,6 +111,12 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Voxel sharpness",
 		.Tip = "Draws the map at this many times its pixels, so voxel objects stay sharp in a zoomed view. Works with Draw voxels on the GPU. Needs GPU drawing.",
 		.Needs = "GpuRender", .Unit = "x",
+	},
+	{
+		.Section = "Video", .Key = "SteadyVoxelPlacement",
+		.Flag = &OptionsClass::SteadyVoxelPlacement, .Default = true,
+		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Steady voxel placement",
+		.Tip = "A turning vehicle or aircraft stays in place instead of wobbling by a pixel. Off places it as the original game does.",
 	},
 	{
 		.Section = "Video", .Key = "Weather",

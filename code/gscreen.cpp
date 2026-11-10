@@ -49,6 +49,8 @@
 
 #include "gpudraw.h"
 #include "gpumap.h"
+#include "objtype.h"
+#include "voxdrsys.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -684,6 +686,11 @@ void GScreenClass::Render(void)
 	}
 	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
 	GpuDraw_Plan(gpu_render);
+	// Pictures cached under the old placement are dropped before this frame draws any.
+	if (VoxelDrawSystem::SteadyCenter != Options.SteadyVoxelPlacement) {
+		VoxelDrawSystem::SteadyCenter = Options.SteadyVoxelPlacement;
+		ObjectTypeClass::Clear_Voxel_Indexes();
+	}
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);

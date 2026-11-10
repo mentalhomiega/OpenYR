@@ -19,11 +19,13 @@
 #include "wwfile.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <iterator>
 
 BOOL VoxelDrawSystem::EnableLighting;
 BOOL VoxelDrawSystem::EnableZBuffer;
+bool VoxelDrawSystem::SteadyCenter = false;
 
 unsigned char VoxelDrawBuffer[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT * VOXEL_BITMAP_BPP];
 BSurface VoxelSurface(VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT, VOXEL_BITMAP_BPP, VoxelDrawBuffer);
@@ -330,6 +332,13 @@ static void Sort_Render_Data(VoxelRenderStruct * (&render_data)[64])
 }
 
 
+// The point the prepared scene is projected about; Region_Of drops its fraction of a pixel.
+static Vector3 Prepared_Center(void)
+{
+	return(VoxelDrawSystem::Scene_Center(MinVoxelBounds, MaxVoxelBounds, VoxelDrawSystem::SteadyCenter));
+}
+
+
 // The part of the voxel buffer a scene centered on center covers, and where on the screen it belongs.
 static SurfaceRegion Region_Of(Vector3 const & center)
 {
@@ -355,7 +364,7 @@ static Vector3 Draw_Prepared(void)
 
 	int index;
 
-	Vector3 center((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
+	Vector3 center = Prepared_Center();
 
 	for (index = 0; index < VoxelShadowRenderDataCount; index++) {
 		VoxelShadowRenderData[index].VoxLib->Render_Shadow(VoxelShadowRenderData[index], center);
@@ -404,7 +413,7 @@ VoxelScene VoxelDrawSystem::Capture(void)
 	static VoxelRenderStruct * render_data[64];
 
 	VoxelScene scene;
-	scene.Center = Vector3((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
+	scene.Center = Prepared_Center();
 	Sort_Render_Data(render_data);
 	scene.Shadows.assign(VoxelShadowRenderData, VoxelShadowRenderData + VoxelShadowRenderDataCount);
 	for (int index = 0; index < VoxelRenderDataCount; index++) {

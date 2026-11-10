@@ -19,6 +19,7 @@
 
 #include "voxel.hh"
 
+#include <cmath>
 #include <vector>
 
 class Surface;
@@ -42,6 +43,21 @@ namespace VoxelDrawSystem
 {
 	extern BOOL EnableLighting;
 	extern BOOL EnableZBuffer;
+
+	// While set, a scene is projected about a whole pixel, so its picture is placed without a rounding error.
+	extern bool SteadyCenter;
+
+	// The point a scene with these bounds is projected about. Steady rounds it to a whole pixel, because the
+	// picture is placed at the whole pixel below the centre and would otherwise sit up to a pixel off its model.
+	inline Vector3 Scene_Center(Vector3 const & min, Vector3 const & max, bool steady)
+	{
+		Vector3 center((max.X + min.X) * 0.5f, (max.Y + min.Y) * 0.5f, (max.Z + min.Z) * 0.5f);
+		if (steady) {
+			center.X = std::floor(center.X + 0.5f);
+			center.Y = std::floor(center.Y + 0.5f);
+		}
+		return(center);
+	}
 
 	int Load_VPL_File(FileClass & file);
 
