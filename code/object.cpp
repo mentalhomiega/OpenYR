@@ -2004,6 +2004,15 @@ bool ObjectClass::Paradrop(Coord const & coord)
 	assert(this != NULL);
 
 	IsFalling = true;
+
+	// A drop over a high bridge lands on its deck, and the deck's outer edge cells refuse it (gamemd 0x5F5948).
+	// gamemd only ever sets the flag here, so a refused drop could leave it set for the next one; we clear it.
+	CellClass const & cellptr = Map[coord];
+	IsOnBridge = cellptr.IsUnderBridge;
+	if (IsOnBridge && !cellptr.IsBridgeTraversable) {
+		return(false);
+	}
+
 	if (Unlimbo(coord, DIR_S)) {
 		AnimClass * anim = NULL;
 
