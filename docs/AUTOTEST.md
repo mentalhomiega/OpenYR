@@ -128,6 +128,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `poweroff <TypeID>` | Turns off the player's structures of that type, as a click with the power cursor does |
 | `rally <TypeID> x y` | Sets the rally point of the player's structures of that type to the cell, without the nearby-cell search an Alt-click makes |
 | `census cells` | Writes the eight tiberium cells nearest the player's first building, nearest first, with their squared distance in cells |
+| `census cells <x> <y>` | Writes the 32 tiberium cells nearest cell x,y instead |
 | `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers it counts, the ones actually on the map and the slave miners among them, the destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
