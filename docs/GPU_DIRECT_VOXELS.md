@@ -718,7 +718,7 @@ What we measure first, in this order:
    `draw.gpumap` and the count of passes drawn in software, against the image route.
 3. **The zoomed-out baseline.** A large battle fully zoomed out at 3840x2160 on a map of 145x137 cells or more, such as
    XMP04T8. `bench-large-battle-zoomed-out.txt` does not measure this: it runs on XMP08T2, where `View_Zoom_Min` keeps
-   the zoom at 1.00 at 4K.
+   the zoom at 1.00 at 4K. `bench-large-battle-xmp04-zoomed-out.txt` does, with the numbers below.
 
 **Zoomed out at 4K.** Until the 2^24-pixel limit was lifted, every pass fully zoomed out at 3840x2160 on a large map
 was drawn in software. On XMP04T8 at zoom 0.50 (a 7546x4245 view), uncapped (`VSync=no`, `FrameRateLimit=0`) with
@@ -732,7 +732,20 @@ was drawn in software. On XMP04T8 at zoom 0.50 (a 7546x4245 view), uncapped (`VS
 | The same at `GpuVoxelScale=4`, drawn at 2 | 0 of 7,800 | 1.14 ms | 1.89 ms | 1.02 ms | 771 |
 
 At zoom 0.59 and 0.69 the software draw took 13.52 ms and 9.97 ms before; after, 0.56 ms and 0.47 ms, with no pass
-in software. The large battle itself has not been run zoomed out on XMP04T8 yet.
+in software.
+
+The large battle is `bench-large-battle-xmp04-zoomed-out.txt`: the forces of `bench-large-battle.txt` (336 objects) on XMP04T8 with the map revealed, at zoom 0.50 and 3840x2160. No pass is drawn in software. Capped at `RenderFrameRate=240` and uncapped, steadier of two runs, with other games running on the machine (`scratch-agent/direct-voxels/ZOOMED_OUT.md` has every run):
+
+| Keys | Capped draws a second | Capped mean / p95 draw | Uncapped draws a second | Uncapped mean / p95 draw | Uncapped `draw.gpumap` | Uncapped `present.gputime` |
+|---|---:|---:|---:|---:|---:|---:|
+| `GpuVoxels=no` | 299 | 0.62 / 1.52 ms | 533 | 1.38 / 4.04 ms | 0.12 ms | 0.64 ms |
+| Image, scale 1 | 269 | 1.71 / 3.94 ms | 286 | 2.95 / 5.11 ms | 0.70 ms | 0.79 ms |
+| Image, scale 2 | 240 | 2.02 / 4.19 ms | 298 | 2.86 / 5.86 ms | 0.67 ms | 1.33 ms |
+| Direct, scale 1 | 219 | 2.85 / 7.04 ms | 252 | 3.42 / 5.56 ms | 0.74 ms | 1.07 ms |
+| Direct, scale 2 | 229 | 2.58 / 6.38 ms | 251 | 3.44 / 5.47 ms | 0.73 ms | 1.84 ms |
+
+`draw.voxels` is 0.12 to 0.14 ms on every voxel route. Direct does not reach 240 draws a second capped, and uncapped it takes 3.97 ms a picture against the 4.17 ms budget with a p95 of 5.5 ms. Of its 3.42 ms draw, the present takes 1.71 ms (`present.upload` 0.80, `present.gpu` 0.90), `draw.gpumap` 0.74 ms and `draw.objects` 0.58 ms; `frame.logic` adds 0.50 ms.
+
 
 ## Settings
 
