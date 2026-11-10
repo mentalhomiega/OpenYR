@@ -1,0 +1,23 @@
+; A weapon impact on a railway bridge deck. On Carville the east-west rail span has its deck on row 63 (50-54) and the
+; north-south one in column 60 (52-57). An ion cannon blast (the warhead that always breaks a deck piece, Bridge_Takes_Hit)
+; is exploded at deck height on 52,63 and on 60,54 (blast ... deck). gamemd's combat code damages a high bridge through
+; the cell's bridge deck overlay, and the railway overlays 237 and 238 take the same path as the road ones (0x48A214).
+; Expected: each hit removes its deck cell (overlay -1, deck 0) and marks the neighbours with the span's state values:
+; 8 on 51,63 and 7 on 53,63, 16 on 60,53 and 17 on 60,55. A second blast at the gap changes nothing.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-rail-weapon-carville.txt -Build agent30 -Map Carville.mmx -Seconds 60 -Filter "AUTOTEST( +(bridge [0-9]|blast))|Exception"
+30 reveal
+31 view 52 63
+40 bridge 52 63
+50 blast ion 52 63 deck
+51 bridge 52 63
+52 blast ion 52 63
+53 bridge 52 63
+54 bridge 51 63
+55 bridge 53 63
+60 blast ion 60 54 deck
+61 bridge 60 54
+62 blast ion 60 54
+63 bridge 60 54
+64 bridge 60 53
+65 bridge 60 55
+66 quit
