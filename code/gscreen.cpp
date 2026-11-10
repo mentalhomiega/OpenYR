@@ -49,6 +49,7 @@
 
 #include "gpudraw.h"
 #include "gpumap.h"
+#include "gpumapvoxel.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -714,6 +715,7 @@ void GScreenClass::Render(void)
 	GpuMap_Set_Weather(weather, Options.WeatherStrength);
 	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
 	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Options.GpuVoxelScale : 1);
+	GpuVoxel_Set_Path(Options.GpuVoxels && Options.GpuVoxelPath == GPU_VOXEL_PATH_DIRECT, Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

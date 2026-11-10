@@ -97,6 +97,7 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_PRESENTS_BUSY,   // presents put off because the render thread had not finished the last frame
 	PERF_COUNT_GPU_VOXEL_PARTS, // voxel parts of the passes the GPU drew
 	PERF_COUNT_GPU_VOXEL_DRAWN, // those parts whose picture had to be drawn into the voxel image
+	PERF_COUNT_GPU_VOXEL_DIRECT, // those parts drawn straight into the scene (GpuVoxelPath=Direct)
 	PERF_COUNTER_COUNT
 };
 

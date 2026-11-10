@@ -103,6 +103,8 @@ static bgfx::ProgramHandle _Program = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _Samplers[SLOT_COUNT];
 static bgfx::VertexLayout _Layout;
 static bgfx::TextureHandle _TargetTexture = BGFX_INVALID_HANDLE;
+// The target's depth and stencil attachment, made only while the direct voxel route is on.
+static bgfx::TextureHandle _DepthTexture = BGFX_INVALID_HANDLE;
 static bgfx::FrameBufferHandle _Target = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _Readback = BGFX_INVALID_HANDLE;
 static int _TargetWidth = 0;
@@ -297,7 +299,10 @@ static void Destroy_Target(void)
 	if (bgfx::isValid(_Target)) {
 		Release_Handle(_Target);
 		_TargetTexture = BGFX_INVALID_HANDLE;
+		_DepthTexture = BGFX_INVALID_HANDLE;
 	}
+	Release_Handle(_TargetTexture);
+	Release_Handle(_DepthTexture);
 	Release_Handle(_Readback);
 	Release_Handle(_ShadowCount.Readback);
 	Release_Handle(_Snapshot);
@@ -309,19 +314,25 @@ static void Destroy_Target(void)
 }
 
 
-// The scene, snapshot and post textures are scale times the area; every other texture is the area's size.
-static bool Size_Target(int width, int height, int scale)
+// The scene, snapshot and post textures are scale times the area; every other texture is the area's size. With depth,
+// the scene target also has a depth and stencil attachment of its size.
+static bool Size_Target(int width, int height, int scale, bool depth)
 {
-	if (width == _TargetWidth && height == _TargetHeight && scale == _TargetScale && bgfx::isValid(_Target)) {
+	if (width == _TargetWidth && height == _TargetHeight && scale == _TargetScale && depth == bgfx::isValid(_DepthTexture) && bgfx::isValid(_Target)) {
 		return(true);
 	}
 	Destroy_Target();
 	uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 	_TargetTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | point);
-	if (!bgfx::isValid(_TargetTexture)) {
+	if (depth) {
+		_DepthTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
+	}
+	if (!bgfx::isValid(_TargetTexture) || (depth && !bgfx::isValid(_DepthTexture))) {
+		Destroy_Target();
 		return(false);
 	}
-	_Target = bgfx::createFrameBuffer(1, &_TargetTexture, true);
+	bgfx::TextureHandle const attachments[2] = { _TargetTexture, _DepthTexture };
+	_Target = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, true);
 	_Readback = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
 	_Snapshot = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | point);
 	_TileShadow = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, point);
@@ -864,7 +875,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	if (!GpuVoxel_Fits(list, _VoxelScale)) {
+	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, pass.Mask), _VoxelScale)) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
@@ -1038,12 +1049,45 @@ static uint64_t Blend_State_For(int kind, int channels)
 }
 
 
-// Draws the base quad and then each blit's quad into the target, in blit order. A sonic wave copies
-// the target first, so it reads everything drawn before it.
-static void Submit_Draws(GpuDrawList const & list, int scale, bgfx::TextureHandle voxelimage, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water)
+// A blit of a direct voxel part as GpuVoxel_Draw_Direct takes it, with the values of the blit's quad.
+static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int slice)
+{
+	GpuVoxelDirectBlit direct;
+	direct.Part = blit.Voxel;
+	direct.OriginX = blit.X - area.X - blit.VoxelX;
+	direct.OriginY = blit.Y - area.Y - blit.VoxelY;
+	direct.Clip = Intersect(Rect(blit.X - area.X, blit.Y - area.Y, blit.Width, blit.Height), Rect(0, 0, area.Width, area.Height));
+	direct.Slice = slice;
+	std::memcpy(direct.Values, quad.T1, sizeof(quad.T1));
+	std::memcpy(direct.Values + 4, quad.T2, sizeof(quad.T2));
+	std::memcpy(direct.Values + 8, quad.T3, sizeof(quad.T3));
+	// The quad's pitch is the voxel image's; the depth shape is laid out at the blit's width.
+	direct.Values[1] = (float)blit.Width;
+	direct.Values[12] = (float)(blit.X - area.X);
+	direct.Values[13] = (float)(blit.Y - area.Y);
+	direct.Values[14] = (float)scale;
+	return(direct);
+}
+
+
+// Draws the base quad and then each blit's quad into the target, in blit order; a blit of a part the direct route
+// draws submits the part's layers instead. A sonic wave copies the target first, so it reads everything drawn before it.
+static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, bgfx::TextureHandle voxelimage, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water)
 {
 	int const quads = (int)list.Blits.size() + 1;
 	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection, scale);
+	bool const direct = std::any_of(tiles.begin(), tiles.end(), [](GpuVoxelTile const & tile) { return(tile.Direct); });
+	if (direct) {
+		bgfx::setViewClear(VIEW_MAPDRAW, BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, 0, 1.0f, 0);
+	}
+	MapVertex const * const vertices = (MapVertex const *)buffer.data;
+	auto const bind_stores = [ring]() {
+		for (int slot = 0; slot < SLOT_COUNT; slot++) {
+			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
+		}
+		bgfx::setUniform(_RingUniform, ring, 2);
+	};
+	int slice = 0;
 	bgfx::ViewId view = VIEW_MAPDRAW;
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
@@ -1051,6 +1095,10 @@ static void Submit_Draws(GpuDrawList const & list, int scale, bgfx::TextureHandl
 			kind = kinds[i - 1];
 		}
 		if (kind == KIND_DARKEN && shadowed) {
+			continue;
+		}
+		if (i > 0 && list.Blits[i - 1].Voxel >= 0 && tiles[list.Blits[i - 1].Voxel].Direct) {
+			GpuVoxel_Draw_Direct(list, Direct_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slice++), scale, view, bind_stores);
 			continue;
 		}
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
@@ -1134,7 +1182,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
-	if (!Size_Target(area.Width, area.Height, scale)) {
+	if (!Size_Target(area.Width, area.Height, scale, GpuVoxel_Direct_Path())) {
 		DebugString("GPU_DIFF frame %d: no %dx%d target\n", pass.Frame, area.Width, area.Height);
 		return(false);
 	}
@@ -1147,7 +1195,8 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	std::vector<GpuVoxelTile> & tiles = _PassTiles;
 	tiles.clear();
-	if (!list.Voxels.empty() && (!GpuVoxel_Fits(list, scale) || !GpuVoxel_Submit(list, scale, tiles))) {
+	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, pass.Mask);
+	if (!list.Voxels.empty() && (!GpuVoxel_Fits(list, direct, scale) || !GpuVoxel_Submit(list, direct, scale, tiles))) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
 	}
@@ -1199,7 +1248,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	if (shadowed) {
 		Submit_Shadows(list, tiles, scale, voxelimage, area, projection, ring, shadowquads, tileshadow);
 	}
-	Submit_Draws(list, scale, voxelimage, kinds, buffer, area, projection, ring, world, shadowed, water);
+	Submit_Draws(list, tiles, scale, voxelimage, kinds, buffer, area, projection, ring, world, shadowed, water);
 
 	bool const planed = pass.Glow != NULL && pass.GlowChanged != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
 	if (planed) {
