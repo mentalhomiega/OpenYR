@@ -1,0 +1,6 @@
+; A change of size between two surfaces must sample the source into the destination whichever of them is a watched surface. A watched
+; destination once drew nothing and a watched source copied an unscaled block, so the zoomed map under the build panel was not drawn.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/stretch-surfaces.txt -Seconds 30 -Filter "AUTOTEST stretchprobe|Exception"
+; Expected: four stretchprobe lines, all ending ok.
+1 stretchprobe
+3 quit

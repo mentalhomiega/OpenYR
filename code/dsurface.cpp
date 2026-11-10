@@ -507,6 +507,35 @@ bool DSurface::Blit_From(Rect const & destrect, Surface const & ssource, Rect co
 }
 
 
+/// <summary>
+/// Copies a block to a block of another size by taking the nearest source pixel for each destination pixel, which is
+/// the sampling GDI's COLORONCOLOR stretch does. It serves the watched surfaces, which have no device context.
+/// </summary>
+/// <returns>bool; Was any pixel written?</returns>
+bool DSurface::Stretch_Without_GDI(Rect const & dcliprect, Rect const & destrect, DSurface const & source, Rect const & scliprect, Rect const & sourcerect)
+{
+	if (GDIBuffer == NULL || source.GDIBuffer == NULL) return(false);
+
+	Rect const drect = destrect.Bias_To(dcliprect);
+	Rect const srect = sourcerect.Bias_To(scliprect);
+	Rect const area = Intersect(drect, Intersect(dcliprect, Get_Rect()));
+	if (!area.Is_Valid() || !srect.Is_Valid()) return(false);
+
+	Changes = Next_Change();
+	for (int y = area.Y; y < area.Y + area.Height; y++) {
+		int const source_y = std::clamp(srect.Y + (int)((long long)(y - drect.Y) * srect.Height / drect.Height), 0, source.Get_Height() - 1);
+		unsigned short * row = (unsigned short *)((char *)GDIBuffer + (size_t)y * Pitch);
+		unsigned short const * from = (unsigned short const *)((char const *)source.GDIBuffer + (size_t)source_y * source.Pitch);
+		for (int x = area.X; x < area.X + area.Width; x++) {
+			row[x] = from[std::clamp(srect.X + (int)((long long)(x - drect.X) * srect.Width / drect.Width), 0, source.Get_Width() - 1)];
+		}
+	}
+
+	Planes_After_Fill(*this, area);
+	return(true);
+}
+
+
 /***********************************************************************************************
  * DSurface::Blit_From -- Blit from one surface to this one.                                   *
  *                                                                                             *
@@ -542,10 +571,12 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	bool samesize = (sourcerect.Width == destrect.Width && sourcerect.Height == destrect.Height);
 
 	/*
-	 * The software blitter handles everything except a size change between two of these
-	 * surfaces, which GDI stretches instead.
+	 * The software blitter copies a block of the same size, and a transparent blit of another size
+	 * is not scaled. An opaque change of size goes to GDI when both surfaces have a device context,
+	 * and to the sampling copy otherwise.
 	 */
-	if (trans || !ssource.Is_GDI_Backed() || samesize) {
+	DSurface const * stretch_source = dynamic_cast<DSurface const *>(&ssource);
+	if (trans || samesize || stretch_source == NULL) {
 		bool result = BASECLASS::Blit_From(dcliprect, destrect, ssource, scliprect, sourcerect, trans, unknown);
 		if (result && IsPrimary) {
 			Video_Mark_Dirty();
@@ -553,11 +584,15 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 		return(result);
 	}
 
-	DSurface const & source = (DSurface const &)ssource;
-
-	if (GDIDC == NULL || source.GDIDC == NULL) {
-		return(false);
+	if (GDIDC == NULL || stretch_source->GDIDC == NULL) {
+		bool result = Stretch_Without_GDI(dcliprect, destrect, *stretch_source, scliprect, sourcerect);
+		if (result && IsPrimary) {
+			Video_Mark_Dirty();
+		}
+		return(result);
 	}
+
+	DSurface const & source = (DSurface const &)ssource;
 
 	Rect drect = destrect.Bias_To(dcliprect);
 	Rect srect = sourcerect.Bias_To(scliprect);
