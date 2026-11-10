@@ -295,33 +295,53 @@ bool GpuVoxel_Direct_Path(void)
 }
 
 
-std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask)
+std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, bool soft_shadows)
 {
 	std::vector<char> direct(list.Voxels.size(), 0);
 	if (!_DirectWanted || mask || list.Voxels.empty() || !Start() || !bgfx::isValid(_DirectProgram)) {
 		return(direct);
 	}
-	// The blits that show each part, or -1 once one of them is not a copy.
-	std::vector<int> shown(list.Voxels.size(), 0);
+	// The blits that show each part and whether every one of them is a copy, or every one a shadow.
+	struct Shown
+	{
+		int Blits = 0;
+		bool Copies = true;
+		bool Shadows = true;
+	};
+	std::vector<Shown> shown(list.Voxels.size());
 	for (GpuBlit const & blit : list.Blits) {
-		if (blit.Voxel < 0 || shown[blit.Voxel] < 0) {
-			continue;
+		if (blit.Voxel >= 0) {
+			Shown & part = shown[blit.Voxel];
+			part.Blits++;
+			part.Copies = part.Copies && blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind == BlitDesc::XLAT;
+			part.Shadows = part.Shadows && blit.Class() == GPU_BLIT_SHADOW;
 		}
-		bool const copy = blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind == BlitDesc::XLAT;
-		shown[blit.Voxel] = copy ? shown[blit.Voxel] + 1 : -1;
 	}
 	int slices = 0;
+	int shadows = 0;
+	std::vector<char> objects(list.Voxels.size(), 0);
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		GpuVoxelPart const & part = list.Voxels[i];
-		bool const plain = !part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Shadows.empty();
-		if (plain && shown[i] > 0) {
+		if (part.Scratch || part.Pieces.size() != 1 || shown[i].Blits == 0) {
+			continue;
+		}
+		VoxelScene const & scene = part.Pieces[0].Prepared->Scene;
+		if (scene.Shadows.empty() && shown[i].Copies) {
+			objects[i] = 1;
+			slices += shown[i].Blits;
+		} else if (scene.Objects.empty() && shown[i].Shadows && !soft_shadows) {
 			direct[i] = 1;
-			slices += shown[i];
+			shadows += shown[i].Blits;
 		}
 	}
-	// A pass clears depth once, which gives it no more slices than this.
-	if (slices > GPU_VOXEL_SLICES) {
+	// A pass clears depth and stencil once, which gives it no more slices or shadow stencil values than these.
+	if (shadows > GPU_VOXEL_SHADOW_STENCILS) {
 		direct.assign(list.Voxels.size(), 0);
+	}
+	if (slices <= GPU_VOXEL_SLICES) {
+		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
+			direct[i] = direct[i] || objects[i];
+		}
 	}
 	return(direct);
 }
@@ -435,6 +455,10 @@ static std::vector<LayerDraw> Layers_Of(GpuVoxelPart const & part)
 // GpuVoxelLayerDepth=Shared, else in drawing order. The layers must be in the model store.
 static void Set_Layer_Depths(std::vector<LayerDraw> & layers)
 {
+	// A direct shadow part is all shadow layers, which neither test nor write depth.
+	if (layers.empty() || layers[0].Shadow) {
+		return;
+	}
 	if (_SharedDepth) {
 		float nearest = -FLT_MAX;
 		float farthest = FLT_MAX;
@@ -625,7 +649,8 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 		bgfx::setTexture(DIRECT_PALETTE_STAGE, _PaletteSampler, _Palette);
 		bgfx::setVertexCount(Vertex_Count(*slot, scale));
 		bgfx::setScissor((uint16_t)(clip.X * scale), (uint16_t)(clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
-		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL | Primitive_State(scale));
+		bgfx::setState(blit.State | Primitive_State(scale));
+		bgfx::setStencil(blit.Stencil);
 		bgfx::submit((bgfx::ViewId)view, _DirectProgram);
 	}
 }

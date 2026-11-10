@@ -875,7 +875,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, pass.Mask), _VoxelScale)) {
+	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, pass.Mask, _SoftShadowRadius > 0), _VoxelScale)) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
@@ -1049,15 +1049,23 @@ static uint64_t Blend_State_For(int kind, int channels)
 }
 
 
-// A blit of a direct voxel part as GpuVoxel_Draw_Direct takes it, with the values of the blit's quad.
-static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int slice)
+// A blit of a direct voxel part as GpuVoxel_Draw_Direct takes it, with the values of the blit's quad. A copy takes the
+// next depth slice; a shadow darkens each pixel once through the next stencil value (GpuVoxel_Direct_Parts bounds both).
+static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int & slices, int & shadows)
 {
 	GpuVoxelDirectBlit direct;
 	direct.Part = blit.Voxel;
 	direct.OriginX = blit.X - area.X - blit.VoxelX;
 	direct.OriginY = blit.Y - area.Y - blit.VoxelY;
 	direct.Clip = Intersect(Rect(blit.X - area.X, blit.Y - area.Y, blit.Width, blit.Height), Rect(0, 0, area.Width, area.Height));
-	direct.Slice = slice;
+	if (blit.Class() == GPU_BLIT_SHADOW) {
+		direct.State = Blend_State_For(KIND_DARKEN, 0);
+		direct.Stencil = BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_FUNC_REF(++shadows) | BGFX_STENCIL_FUNC_RMASK(0xFF)
+			| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE;
+	} else {
+		direct.Slice = slices++;
+		direct.State = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
+	}
 	std::memcpy(direct.Values, quad.T1, sizeof(quad.T1));
 	std::memcpy(direct.Values + 4, quad.T2, sizeof(quad.T2));
 	std::memcpy(direct.Values + 8, quad.T3, sizeof(quad.T3));
@@ -1087,7 +1095,8 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
 	};
-	int slice = 0;
+	int slices = 0;
+	int shadows = 0;
 	bgfx::ViewId view = VIEW_MAPDRAW;
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
@@ -1098,7 +1107,7 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 			continue;
 		}
 		if (i > 0 && list.Blits[i - 1].Voxel >= 0 && tiles[list.Blits[i - 1].Voxel].Direct) {
-			GpuVoxel_Draw_Direct(list, Direct_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slice++), scale, view, bind_stores);
+			GpuVoxel_Draw_Direct(list, Direct_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slices, shadows), scale, view, bind_stores);
 			continue;
 		}
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
@@ -1195,7 +1204,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	std::vector<GpuVoxelTile> & tiles = _PassTiles;
 	tiles.clear();
-	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, pass.Mask);
+	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, pass.Mask, _SoftShadowRadius > 0);
 	if (!list.Voxels.empty() && (!GpuVoxel_Fits(list, direct, scale) || !GpuVoxel_Submit(list, direct, scale, tiles))) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
