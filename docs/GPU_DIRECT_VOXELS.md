@@ -3,7 +3,7 @@
 We propose to draw each voxel object as geometry into the map pass's scene target, at the place of its blit in the
 pass, with a depth and stencil buffer for the voxels' own depth. The voxel image, its tiles and its overflow go away,
 sharpness becomes the resolution of the scene target, and hull, turret and barrel hide each other by real depth.
-Stages 1 to 5 are built behind `GpuVoxelPath=Direct`; the "(done)" sections after the Stages table say what
+Stages 1 to 5 are built, and `GpuVoxelPath=Direct` is the default; `GpuVoxelPath=Image` keeps the image route; the "(done)" sections after the Stages table say what
 they delivered and measured. Every "we propose" elsewhere is a design choice for the
 later stages, and every statement about current behaviour cites the code. [GPU_VOXELS.md](GPU_VOXELS.md) owns the
 image route and [GPU_MAP.md](GPU_MAP.md) the map pass.
@@ -302,7 +302,7 @@ on; before it the mask kept every part on the image route.
 
 What we built, in the order of the plan:
 
-1. **Keys.** `GpuVoxelPath` (`Image`, `Direct`, default `Image`) and `GpuVoxelLayerDepth` (`Shared`, `Ordered`, default
+1. **Keys.** `GpuVoxelPath` (`Image`, `Direct`, default `Direct`) and `GpuVoxelLayerDepth` (`Shared`, `Ordered`, default
    `Shared`) are name-list entries in `code/optionsettings.cpp` with no row, `OptionsClass` members and enums in
    `code/options.h`, and are passed on with `GpuVoxel_Set_Path` beside `GpuDraw_Set_Voxels` in `code/gscreen.cpp`.
    The manual has their key pages and `manual/changes/added-gpuvoxelpath.md`; `tests/settingregistry` pins their order
@@ -741,7 +741,7 @@ All keys are in `[Video]` of `RA2MD.INI` unless marked. Current keys keep their 
 | Key | Values | Default | Status |
 |---|---|---|---|
 | `GpuVoxels` | `yes`, `no` | `no` | Unchanged: draws voxels on the GPU, by the route `GpuVoxelPath` picks |
-| `GpuVoxelPath` | `Image`, `Direct` | `Image`, then `Direct` at stage 8 | Added in stage 1 as a name list in `code/optionsettings.cpp`; the **Draw voxels directly** switch of the **GPU voxels** group sets it, and is greyed until **Draw units on the GPU** is ticked |
+| `GpuVoxelPath` | `Image`, `Direct` | `Direct` | Added in stage 1 as a name list in `code/optionsettings.cpp`; the **Draw voxels directly** switch of the **GPU voxels** group sets it, and is greyed until **Draw units on the GPU** is ticked |
 | `GpuVoxelSmooth` | `yes`, `no` | `no` | Unchanged |
 | `GpuVoxelScale` | 1 to 4; 0 from stage 7 | `1` | Unchanged for 1 to 4; 0 picks the scale from the zoom |
 | `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | Added in stage 1: a developer key with no row; `Ordered` is the exact mode the checks use |
@@ -769,6 +769,7 @@ These are provisional until confirmed; each is cheap to reverse before stage 8.
   the exact checks use.
 - Turreted vehicles get highlights under Glow and HDR Enhanced in the GPU look. The software look keeps none, as in
   gamemd.
+- `GpuVoxelPath=Direct` is the default for everyone who has not set the key (decided 2026-11-10); `GpuVoxels` keeps its default `no`. The image route stays as `GpuVoxelPath=Image` until stage 8 deletes it, and `gpu-voxel-overflow`, `gpu-voxel-scale`, `gpu-voxel-compare`, `gpu-voxel-shadow` and `gpu-voxel-shadow-bloom` pin it.
 - Stage 8 deletes the image route. The software renderer is the only classic reference.
 - The 2^24-pixel map view limit is lifted (done before stage 7, after a run on XMP04T8 at 3840x2160 confirmed that the
   zoomed-out view passed it).

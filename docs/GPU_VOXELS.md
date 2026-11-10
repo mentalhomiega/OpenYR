@@ -29,7 +29,7 @@ a predator draw through the plain translucent blend (see "Where pixel-exact draw
 
 A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
 
-This page describes that route, the image route. `GpuVoxelPath=Direct` (`[Video]`, default `Image`) draws opaque
+This page describes the image route, which `GpuVoxelPath=Image` keeps. `GpuVoxelPath=Direct` (`[Video]`, the default) draws opaque
 and translucent voxel objects, turreted vehicles included, and their shadows straight into the map pass, or into the soft shadow mask, with a
 depth buffer instead, so they take no tile; with `GpuVoxelLayerDepth=Ordered` the picture is the same at scale 1 to 4
 wherever the image route draws its parts at the full scale. Direct parts keep their route while the emissive mask is on
