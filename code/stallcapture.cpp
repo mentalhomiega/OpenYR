@@ -313,7 +313,8 @@ bool Read_Pdb_Id(void const * image, GUID * guid, DWORD * age)
 }
 
 
-bool Pe_Debug_Id(void const * image, char * text, unsigned size)
+// Writes the module's pdb GUID and age through format, which takes the GUID's eleven fields and then the age.
+static bool Format_Pdb_Id(void const * image, char * text, unsigned size, char const * format)
 {
 	if (text == NULL || size == 0) {
 		return(false);
@@ -326,30 +327,21 @@ bool Pe_Debug_Id(void const * image, char * text, unsigned size)
 		return(false);
 	}
 
-	snprintf(text, size, "{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X} age %lu",
-				guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2],
+	snprintf(text, size, format, guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2],
 				guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7], age);
 	return(true);
 }
 
 
+bool Pe_Debug_Id(void const * image, char * text, unsigned size)
+{
+	return(Format_Pdb_Id(image, text, size, "{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X} age %lu"));
+}
+
+
 bool Pe_Debug_Key(void const * image, char * text, unsigned size)
 {
-	if (text == NULL || size == 0) {
-		return(false);
-	}
-	text[0] = '\0';
-
-	GUID guid;
-	DWORD age;
-	if (!Read_Pdb_Id(image, &guid, &age)) {
-		return(false);
-	}
-
-	snprintf(text, size, "%08lX%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X%lX",
-				guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2],
-				guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7], age);
-	return(true);
+	return(Format_Pdb_Id(image, text, size, "%08lX%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X%lX"));
 }
 
 #endif
