@@ -482,13 +482,20 @@ static float Index_Offset(GpuBlit const & blit)
 
 
 // The offset the shader reads a blit's colour indices at: in the voxel image for a voxel blit, else in the index texture.
-static float Source_Offset(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles, int scale)
+static float Source_Offset(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles)
 {
 	if (blit.Voxel < 0) {
 		return(Index_Offset(blit));
 	}
 	GpuVoxelTile const & tile = tiles[blit.Voxel];
-	return((float)(GPU_VOXEL_BASE + (std::uint32_t)(tile.Y + blit.VoxelY * scale) * GPU_VOXEL_IMAGE_SIZE + (std::uint32_t)(tile.X + blit.VoxelX * scale)));
+	return((float)(GPU_VOXEL_BASE + (std::uint32_t)(tile.Y + blit.VoxelY * tile.Scale) * GPU_VOXEL_IMAGE_SIZE + (std::uint32_t)(tile.X + blit.VoxelX * tile.Scale)));
+}
+
+
+// What the shader reads beside the offset: the row pitch of a blit's colour indices, or the scale of a voxel blit's tile.
+static float Source_Pitch(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles)
+{
+	return((float)(blit.Voxel >= 0 ? tiles[blit.Voxel].Scale : blit.Pitch));
 }
 
 
@@ -702,7 +709,7 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 		if (blit.Class() != GPU_BLIT_SHADOW) {
 			continue;
 		}
-		float const t1[4] = { Source_Offset(blit, tiles, scale), (float)(blit.Voxel >= 0 ? GPU_VOXEL_IMAGE_SIZE : blit.Pitch), 0.0f, -1.0f };
+		float const t1[4] = { Source_Offset(blit, tiles), Source_Pitch(blit, tiles), 0.0f, -1.0f };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)KIND_SHADOW_MASK, blit.Desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -787,7 +794,7 @@ static int Count_Mask_Quads(GpuDrawList const & list)
 
 // Fills the emissive mask of a pass with GPU voxels: the CPU plane, then the highlight strengths of each direct
 // voxel blit, in blit order, where the plane still holds the part's mark. False when the mask cannot be drawn.
-static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile> const & tiles, int scale, float const * projection)
+static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile> const & tiles, float const * projection)
 {
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
@@ -813,7 +820,8 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile>
 		if (blit.Voxel < 0 || list.Voxels[blit.Voxel].Scratch) {
 			continue;
 		}
-		float const t1[4] = { (float)(tiles[blit.Voxel].X + blit.VoxelX * scale), (float)(tiles[blit.Voxel].Y + blit.VoxelY * scale), (float)scale, 0.0f };
+		GpuVoxelTile const & tile = tiles[blit.Voxel];
+		float const t1[4] = { (float)(tile.X + blit.VoxelX * tile.Scale), (float)(tile.Y + blit.VoxelY * tile.Scale), (float)tile.Scale, 0.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, none, none);
 		quad++;
 	}
@@ -875,7 +883,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, pass.Mask, _SoftShadowRadius > 0), _VoxelScale)) {
+	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, pass.Mask, _SoftShadowRadius > 0))) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
@@ -966,7 +974,7 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 
 // Writes the base quad, then one quad per blit, into vertex. Returns each blit's shader kind in blit
 // order; the draw loop reads these back.
-static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, Rect const & area, bool shadowed, MapVertex * vertex, std::unordered_map<unsigned short const *, std::pair<int, int>> & lutrow, std::unordered_map<AlphaLightingRemapClass const *, int> & alutbase)
+static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, Rect const & area, bool shadowed, MapVertex * vertex, std::unordered_map<unsigned short const *, std::pair<int, int>> & lutrow, std::unordered_map<AlphaLightingRemapClass const *, int> & alutbase)
 {
 	{
 		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
@@ -980,7 +988,7 @@ static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, std::vector
 		BlitDesc const & desc = blit.Desc;
 		GpuBlitClass const blitclass = blit.Class();
 		if (blitclass == GPU_BLIT_LIGHT) {
-			float const t1[4] = { Source_Offset(blit, tiles, scale), (float)blit.Pitch, (float)blit.Brighten, -1.0f };
+			float const t1[4] = { Source_Offset(blit, tiles), (float)blit.Pitch, (float)blit.Brighten, -1.0f };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)KIND_BRIGHTEN, 1.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -988,7 +996,7 @@ static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, std::vector
 			continue;
 		}
 		if (blitclass == GPU_BLIT_LINE) {
-			float const t1[4] = { Source_Offset(blit, tiles, scale), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
+			float const t1[4] = { Source_Offset(blit, tiles), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -1014,7 +1022,7 @@ static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, std::vector
 		}
 		int const kind = Shader_Kind(desc);
 		kinds[i] = kind;
-		float const t1[4] = { Source_Offset(blit, tiles, scale), (float)(blit.Voxel >= 0 ? GPU_VOXEL_IMAGE_SIZE : blit.Pitch), lutfirst, alutrow };
+		float const t1[4] = { Source_Offset(blit, tiles), Source_Pitch(blit, tiles), lutfirst, alutrow };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)kind, desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -1069,7 +1077,7 @@ static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & qu
 	std::memcpy(direct.Values, quad.T1, sizeof(quad.T1));
 	std::memcpy(direct.Values + 4, quad.T2, sizeof(quad.T2));
 	std::memcpy(direct.Values + 8, quad.T3, sizeof(quad.T3));
-	// The quad's pitch is the voxel image's; the depth shape is laid out at the blit's width.
+	// The quad carries the tile's scale where a blit has its pitch; the depth shape is laid out at the blit's width.
 	direct.Values[1] = (float)blit.Width;
 	direct.Values[12] = (float)(blit.X - area.X);
 	direct.Values[13] = (float)(blit.Y - area.Y);
@@ -1205,7 +1213,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	std::vector<GpuVoxelTile> & tiles = _PassTiles;
 	tiles.clear();
 	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, pass.Mask, _SoftShadowRadius > 0);
-	if (!list.Voxels.empty() && (!GpuVoxel_Fits(list, direct, scale) || !GpuVoxel_Submit(list, direct, scale, tiles))) {
+	if (!list.Voxels.empty() && !GpuVoxel_Submit(list, direct, scale, tiles)) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
 	}
@@ -1249,7 +1257,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	bgfx::TransientVertexBuffer buffer;
 	bgfx::allocTransientVertexBuffer(&buffer, quads * 6, _Layout);
-	std::vector<int> const kinds = Fill_Pass_Vertices(list, tiles, scale, area, shadowed, (MapVertex *)buffer.data, lutrow, alutbase);
+	std::vector<int> const kinds = Fill_Pass_Vertices(list, tiles, area, shadowed, (MapVertex *)buffer.data, lutrow, alutbase);
 
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, area.Width, area.Height);
@@ -1263,7 +1271,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	if (planed) {
 		Upload_Plane(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowChanged);
 	}
-	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, tiles, scale, projection);
+	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, tiles, projection);
 	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram);
 	if (glow) {
 		Submit_Glow(_MaskBuilt ? _MaskTexture : _GlowMask, area, scale);

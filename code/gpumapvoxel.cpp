@@ -28,6 +28,7 @@
 #include <cstring>
 #include <iterator>
 #include <unordered_map>
+#include <utility>
 
 #include "shaders/mapdraw/fs_mapvoxel.bin.h"
 #include "shaders/mapdraw/fs_voxelscene.bin.h"
@@ -347,18 +348,74 @@ std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, boo
 }
 
 
-bool GpuVoxel_Fits(GpuDrawList const & list, std::vector<char> const & direct, int scale)
+// The longest tile side a part may have at each step down from the asked-for scale. The first cap lowers no part
+// that could fit the image, and the last lowers every part to scale 1.
+static int const TILE_CAPS[] = { GPU_VOXEL_IMAGE_SIZE, 1536, 1024, 768, 512, 384, 256, 192, 128, 96, 64, 48, 32, 0 };
+static int const CAP_STEPS = (int)std::size(TILE_CAPS);
+
+// The passes in a row that the next larger cap must fit before the parts go back to it, so that a part near the
+// limit does not change sharpness from one pass to the next.
+static int const CALM_PASSES = 120;
+
+static int _CapStep = 0;
+static int _CalmPasses = 0;
+static int _ReducedParts = 0;
+
+// The largest scale that divides scale and keeps the part's longer tile side within cap, or 1 when none does.
+static int Part_Scale(Rect const & area, int scale, int cap)
+{
+	int const side = std::max(area.Width, area.Height);
+	for (int candidate = scale; candidate > 1; candidate--) {
+		if (scale % candidate == 0 && side * candidate <= cap) {
+			return(candidate);
+		}
+	}
+	return(1);
+}
+
+
+// True when the parts direct leaves to the image fit an empty image, each at the scale Part_Scale gives it under cap.
+static bool Fits_Empty_Image(GpuDrawList const & list, std::vector<char> const & direct, int scale, int cap)
 {
 	GpuVoxelShelf shelf;
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		Rect const & bounds = list.Voxels[i].Area;
+		int const partscale = Part_Scale(bounds, scale, cap);
 		int x = 0;
 		int y = 0;
-		if (direct[i] == 0 && bounds.Width > 0 && bounds.Height > 0 && !shelf.Place(GPU_VOXEL_IMAGE_SIZE, bounds.Width * scale, bounds.Height * scale, x, y)) {
+		if (direct[i] == 0 && bounds.Width > 0 && bounds.Height > 0 && !shelf.Place(GPU_VOXEL_IMAGE_SIZE, bounds.Width * partscale, bounds.Height * partscale, x, y)) {
 			return(false);
 		}
 	}
 	return(true);
+}
+
+
+bool GpuVoxel_Fits(GpuDrawList const & list, std::vector<char> const & direct)
+{
+	return(Fits_Empty_Image(list, direct, 1, 0));
+}
+
+
+// The cap step for this pass: the step kept from earlier passes, a later one when the parts do not fit an empty image
+// under it, or the one before it once that has fitted for CALM_PASSES passes in a row. CAP_STEPS when none fits.
+static int Choose_Cap_Step(GpuDrawList const & list, std::vector<char> const & direct, int scale)
+{
+	int step = _CapStep;
+	while (step < CAP_STEPS && !Fits_Empty_Image(list, direct, scale, TILE_CAPS[step])) {
+		step++;
+	}
+	if (step == CAP_STEPS) {
+		return(step);
+	}
+	if (step > _CapStep || step == 0 || !Fits_Empty_Image(list, direct, scale, TILE_CAPS[step - 1])) {
+		_CalmPasses = 0;
+	} else if (++_CalmPasses >= CALM_PASSES) {
+		_CalmPasses = 0;
+		step--;
+	}
+	_CapStep = step;
+	return(step);
 }
 
 
@@ -398,18 +455,19 @@ static std::uint64_t Part_Signature(GpuVoxelPart const & part, std::vector<Layer
 }
 
 
-// Finds each part's tile, placing the ones the image lacks; drawn[i] is set for a part that must be drawn into its
-// tile. False when the parts do not fit what is left of the image.
-static bool Assign_Tiles(GpuDrawList const & list, std::vector<std::vector<LayerDraw>> const & parts, int scale, std::vector<GpuVoxelTile> & tiles, std::vector<char> & drawn)
+// Finds each part's tile at the tile's scale, placing the ones the image lacks; drawn[i] is set for a part that must
+// be drawn into its tile. False when the parts do not fit what is left of the image.
+static bool Assign_Tiles(GpuDrawList const & list, std::vector<std::vector<LayerDraw>> const & parts, std::vector<GpuVoxelTile> & tiles, std::vector<char> & drawn)
 {
 	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
 		Rect const & bounds = list.Voxels[i].Area;
+		GpuVoxelTile & tile = tiles[i];
 		drawn[i] = 0;
 		if (tiles[i].Direct || bounds.Width <= 0 || bounds.Height <= 0) {
 			continue;
 		}
 		bool fresh = false;
-		if (!_Tiles.Place(Part_Signature(list.Voxels[i], parts[i], scale), GPU_VOXEL_IMAGE_SIZE, bounds.Width * scale, bounds.Height * scale, tiles[i].X, tiles[i].Y, fresh)) {
+		if (!_Tiles.Place(Part_Signature(list.Voxels[i], parts[i], tile.Scale), GPU_VOXEL_IMAGE_SIZE, bounds.Width * tile.Scale, bounds.Height * tile.Scale, tile.X, tile.Y, fresh)) {
 			return(false);
 		}
 		drawn[i] = fresh ? 1 : 0;
@@ -521,6 +579,27 @@ static uint32_t Vertex_Count(ModelSlot const & slot, int scale)
 }
 
 
+// Gives each image part its scale and tile; a direct part keeps the pass's scale. A pass that does not fit what is left
+// of the image empties it and places every part afresh, and one that does not fit an empty image either lowers the
+// scale of more parts. False when the image parts do not fit at scale 1.
+static bool Place_Parts(GpuDrawList const & list, std::vector<char> const & direct, std::vector<std::vector<LayerDraw>> const & parts, int scale, std::vector<GpuVoxelTile> & tiles, std::vector<char> & drawn)
+{
+	for (int step = Choose_Cap_Step(list, direct, scale); step < CAP_STEPS; step++) {
+		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
+			tiles[i].Scale = tiles[i].Direct ? scale : Part_Scale(list.Voxels[i].Area, scale, TILE_CAPS[step]);
+		}
+		for (int attempt = 0; attempt < 2; attempt++) {
+			if (Assign_Tiles(list, parts, tiles, drawn)) {
+				_CapStep = step;
+				return(true);
+			}
+			Empty_Image();
+		}
+	}
+	return(false);
+}
+
+
 bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct, int scale, std::vector<GpuVoxelTile> & tiles)
 {
 	if (!Start()) {
@@ -538,17 +617,15 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 		Empty_Image();
 	}
 
-	// A pass that does not fit what is left of the image empties it and places every part afresh.
 	std::vector<char> drawn(list.Voxels.size(), 0);
-	for (int attempt = 0; !Assign_Tiles(list, parts, scale, tiles, drawn); attempt++) {
-		Empty_Image();
-		if (attempt == 1) {
-			return(false);
-		}
+	if (!Place_Parts(list, direct, parts, scale, tiles, drawn)) {
+		return(false);
 	}
 	std::size_t drawn_parts = 0;
+	int reduced = 0;
 	for (std::size_t i = 0; i < parts.size(); i++) {
 		drawn_parts += drawn[i] != 0 ? 1 : 0;
+		reduced += !tiles[i].Direct && tiles[i].Scale < scale ? 1 : 0;
 		if (drawn[i] == 0 && !tiles[i].Direct) {
 			parts[i].clear();
 		}
@@ -564,6 +641,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 		DebugString("GPU_VOXEL: the layers do not fit the model store\n");
 		return(false);
 	}
+	_ReducedParts += reduced;
 	for (std::size_t i = 0; i < parts.size(); i++) {
 		if (tiles[i].Direct) {
 			Set_Layer_Depths(parts[i]);
@@ -585,6 +663,7 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 	for (std::size_t i = 0; i < parts.size(); i++) {
 		GpuVoxelPart const & part = list.Voxels[i];
 		Rect const & area = part.Area;
+		int const tilescale = tiles[i].Scale;
 		if (area.Width <= 0 || area.Height <= 0) {
 			continue;
 		}
@@ -596,18 +675,18 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 			GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
 			Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
 			// Where the piece's pixels land in the tile, and the part of the tile they may cover.
-			int const shift_x = tiles[i].X + (piece.Dest.X - area.X - bounds.X) * scale;
-			int const shift_y = tiles[i].Y + (piece.Dest.Y - area.Y - bounds.Y) * scale;
+			int const shift_x = tiles[i].X + (piece.Dest.X - area.X - bounds.X) * tilescale;
+			int const shift_y = tiles[i].Y + (piece.Dest.Y - area.Y - bounds.Y) * tilescale;
 			Rect const clip = Intersect(Rect(piece.Dest.X - area.X, piece.Dest.Y - area.Y, bounds.Width, bounds.Height), Rect(0, 0, area.Width, area.Height));
 			if (clip.Width <= 0 || clip.Height <= 0) {
 				continue;
 			}
-			Set_Layer_Uniforms(part, layer, *slot, shift_x, shift_y, scale);
+			Set_Layer_Uniforms(part, layer, *slot, shift_x, shift_y, tilescale);
 			bgfx::setTexture(0, _ModelSampler, _Model);
 			bgfx::setTexture(1, _PaletteSampler, _Palette);
-			bgfx::setVertexCount(Vertex_Count(*slot, scale));
-			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * scale), (uint16_t)(tiles[i].Y + clip.Y * scale), (uint16_t)(clip.Width * scale), (uint16_t)(clip.Height * scale));
-			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | Primitive_State(scale));
+			bgfx::setVertexCount(Vertex_Count(*slot, tilescale));
+			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * tilescale), (uint16_t)(tiles[i].Y + clip.Y * tilescale), (uint16_t)(clip.Width * tilescale), (uint16_t)(clip.Height * tilescale));
+			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | Primitive_State(tilescale));
 			bgfx::submit(VIEW_MAPVOXEL, _Program);
 		}
 	}
@@ -653,6 +732,12 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 		bgfx::setStencil(blit.Stencil);
 		bgfx::submit((bgfx::ViewId)view, _DirectProgram);
 	}
+}
+
+
+int GpuVoxel_Take_Reduced(void)
+{
+	return(std::exchange(_ReducedParts, 0));
 }
 
 
@@ -813,6 +898,8 @@ void GpuVoxel_Shutdown(void)
 	_ModelNext = 0;
 	_DirectLayers.clear();
 	Empty_Image();
+	_CapStep = 0;
+	_CalmPasses = 0;
 	_PaletteUploaded = false;
 	_Pending = false;
 	_Ready = false;
