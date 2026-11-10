@@ -4045,8 +4045,7 @@ int FootClass::Do_MISSION_RETREAT(void)
 					cell = Map.Calculated_Cell(House->Starting_Edge(), CELL_NONE, Center_Coord().As_Cell(), TClass->Speed);
 				}
 
-				assert(cell == Cell(0,0));		// An edge cell must be found!
-
+				// With no edge cell found this is the off-map cell, as in gamemd's FootClass::Mission_Retreat (0x4DA2C0).
 				Assign_Destination(&Map[cell]);
 				Status = TRAVELLING;
 			}
@@ -5702,13 +5701,14 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 
 /// <summary>
 /// Looks around once each time SightTimer expires, while this object is in the air, moving now (a hovering
-/// jump jet is not), and owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
-/// aircraft and vehicles. The timer runs whether or not the object qualifies. Infantry keep their
+/// jump jet is not), and owned by an ally of a human player. gamemd's FootClass::Update (0x4DA530) does the same for
+/// aircraft and vehicles of an ally of the local player; asking about every human player instead gives every copy of
+/// a network game the same looks. The timer runs whether or not the object qualifies. Infantry keep their
 /// own once-a-second look in InfantryClass::AI.
 /// </summary>
 void FootClass::Airborne_Look(void)
 {
-	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving_Now() || !House->Is_Ally(PlayerPtr)) {
+	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving_Now() || !House->Is_Ally_Of_Player_View()) {
 		return;
 	}
 	if (SightTimer == 0) {

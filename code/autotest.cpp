@@ -3853,8 +3853,50 @@ static void Cell_Step(StepType const & step)
 	TechnoClass const * techno = dynamic_cast<TechnoClass const *>(occupier);
 	DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d gap %d land %d sensed %d cloak %d\n",
 		step.Argument_Int(), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
-		(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), cell.GapCount, (int)cell.Land_Type(),
+		(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), (int)cell.GapShrouded[PlayerPtr], (int)cell.Land_Type(),
 		(int)cell.Is_Sensed(PlayerPtr), techno != NULL ? (int)techno->Cloak : -1);
+}
+
+
+// shroudhash [cells]: logs, for each house a player sees through, how many cells it has mapped and fog-mapped and a
+// checksum of its shroud and fog over the whole map. Every copy of a network game must log the same lines. With
+// cells, it also logs each cell the house has any shroud or fog bit of, with the mapped, visible, fog-mapped and
+// fog-visible bits.
+static void Shroudhash_Step(StepType const & step)
+{
+	bool const cells = (step.Argument == "cells");
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		if (!house->Is_Player_View()) continue;
+		CRCEngine crc;
+		int mapped = 0;
+		int fogmapped = 0;
+		for (int y = 0; y < MAP_CELL_H; y++) {
+			for (int x = 0; x < MAP_CELL_W; x++) {
+				Cell const cell(x, y);
+				if (!Map.In_Radar(cell) || !Map.Is_Valid(cell)) continue;
+				CellClass const & cellptr = Map[cell];
+				mapped += cellptr.IsMapped[house] ? 1 : 0;
+				fogmapped += cellptr.IsFogMapped[house] ? 1 : 0;
+				crc(cellptr.IsMapped[house]);
+				crc(cellptr.IsVisible[house]);
+				crc(cellptr.IsFogMapped[house]);
+				crc(cellptr.IsFogVisible[house]);
+				if (cells && (cellptr.IsMapped[house] || cellptr.IsVisible[house] || cellptr.IsFogMapped[house] || cellptr.IsFogVisible[house])) {
+					DebugString("AUTOTEST shroudcell frame %d house %d cell %d,%d bits %d%d%d%d\n", Frame, index, x, y, (int)cellptr.IsMapped[house], (int)cellptr.IsVisible[house], (int)cellptr.IsFogMapped[house], (int)cellptr.IsFogVisible[house]);
+				}
+			}
+		}
+		DebugString("AUTOTEST shroudhash frame %d house %d %s mapped %d fogmapped %d visionary %d crc %08X\n", Frame, index, house->Class->Name(), mapped, fogmapped, (int)house->IsVisionary, (unsigned int)crc());
+	}
+}
+
+
+// offmapcell: logs the location game logic has left the shared off-map cell at, which a destination or target on it points to.
+static void Offmapcell_Step(StepType const &)
+{
+	Cell const location = Off_Map_Cell_Logic_Location();
+	DebugString("AUTOTEST offmapcell frame %d location %d,%d\n", Frame, (int)location.X, (int)location.Y);
 }
 
 
@@ -7053,6 +7095,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"xbutton", Xbutton_Step},
 		{"mapclick", Mapclick_Step},
 		{"cell", Cell_Step},
+		{"shroudhash", Shroudhash_Step},
+		{"offmapcell", Offmapcell_Step},
 		{"water", Water_Step},
 		{"terrain", Terrain_Step},
 		{"raise", Raise_Step},

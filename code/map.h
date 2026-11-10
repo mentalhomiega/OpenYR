@@ -606,5 +606,7 @@ extern CellClass BlubCell;
 void Restore_Off_Map_Cell_Location(void);
 void Remember_Off_Map_Cell_Location(void);
 void Reset_Off_Map_Cell_Location(void);
+void Serialize_Off_Map_Cell_Location(SaveStreamClass & stream);
+Cell Off_Map_Cell_Logic_Location(void);
 
 extern int MZonePassability[MZONE_COUNT][PASSABLE_COUNT];

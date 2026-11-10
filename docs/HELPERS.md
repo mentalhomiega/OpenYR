@@ -328,6 +328,7 @@ a default and returns it when the section or entry is missing.
 | `Shellmap_Running()`, `Shellmap_In_Scope()`, `Shellmap_Silent()` | `shellmap.h` | The menu battle is loaded, its session state is swapped in, and its sounds are off. |
 | `Modern_Interface()` | `hud.h` | The modern panel interface is on. |
 | `MPMode_Is_Cooperative()` | `mpmode.h` | The running match is Cooperative. |
+| `house->Player_View()`, `house->Is_Player_View()`, `house->Is_Ally_Of_Player_View()` | `house.h` | The human seat whose view a house feeds, and whether it is one or is allied with one. Every copy of a network game gives the same answers, unlike `PlayerPtr` or `Is_Player_Control()`, so use these in game logic that changes a house's shroud. |
 
 ## Client settings
 

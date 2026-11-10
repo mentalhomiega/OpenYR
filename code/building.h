@@ -406,7 +406,8 @@ class BuildingClass : public TechnoClass
 		bool IsRequiresDamageFires;
 		void Create_Damage_Fires(void);
 		void Remove_Damage_Fires(void);
-		bool IsGapCounted;
+		// The human houses this gap generator's working gap shrouds, fixed when the gap goes up.
+		HouseSet GapShroudedHouses;
 
 		void Create_Gap(void);
 		void Destroy_Gap(void);

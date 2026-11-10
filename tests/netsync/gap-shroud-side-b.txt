@@ -1,0 +1,323 @@
+; Shroud determinism, side B (Russians, Side 8) for scripts/run_netsync.ps1 on XMP29U2.MAP, with side A running gap-shroud-side-a.txt.
+; This is xmp29u2-side-b.txt with its spy plane sent over side A's base, where side A's Gap Generator stands, camera steps that differ from
+; side A's, and a shroudhash line on the same frames as side A's. See gap-shroud-side-a.txt for the run and the check.
+1 log netsync side B: spy plane over the gap and shroud
+40 select SMCV
+60 command DeployObject
+100 shroudhash
+300 produce NAPOWR
+500 zoom 2.5
+501 view 100 10
+600 place NAPOWR
+700 place NAPOWR
+750 zoom 1.6
+751 view 2 90
+800 place NAPOWR
+900 place NAPOWR
+1000 place NAPOWR
+1000 zoom 2.5
+1001 view 50 50
+1050 produce NAHAND
+1250 zoom 1.6
+1251 view 110 60
+1350 place NAHAND
+1450 place NAHAND
+1500 zoom 2.5
+1501 view 10 10
+1550 place NAHAND
+1650 place NAHAND
+1700 produce NAREFN
+1750 zoom 1.6
+1751 view 100 10
+2000 zoom 2.5
+2001 view 2 90
+2250 zoom 1.6
+2251 view 50 50
+2500 zoom 2.5
+2501 view 110 60
+2750 zoom 1.6
+2751 view 10 10
+2800 place NAREFN
+2900 place NAREFN
+3000 place NAREFN
+3000 zoom 2.5
+3001 view 100 10
+3100 place NAREFN
+3200 place NAREFN
+3250 produce NARADR
+3250 zoom 1.6
+3251 view 2 90
+3500 zoom 2.5
+3501 view 50 50
+3650 place NARADR
+3750 place NARADR
+3750 zoom 1.6
+3751 view 110 60
+3850 place NARADR
+3950 place NARADR
+4000 zoom 2.5
+4001 view 10 10
+4050 place NARADR
+4150 place NARADR
+4250 place NARADR
+4250 zoom 1.6
+4251 view 100 10
+4350 place NARADR
+4450 place NARADR
+4500 produce NAWEAP
+4500 zoom 2.5
+4501 view 2 90
+4750 zoom 1.6
+4751 view 50 50
+5000 zoom 2.5
+5001 view 110 60
+5100 place NAWEAP
+5200 place NAWEAP
+5250 zoom 1.6
+5251 view 10 10
+5300 place NAWEAP
+5400 place NAWEAP
+5500 place NAWEAP
+5500 zoom 2.5
+5501 view 100 10
+5600 place NAWEAP
+5700 place NAWEAP
+5750 zoom 1.6
+5751 view 2 90
+5800 place NAWEAP
+5900 place NAWEAP
+5950 produce E2
+5960 produce HTNK
+6000 zoom 2.5
+6000 shroudhash
+6001 view 50 50
+6050 place E2
+6100 place HTNK
+6150 place E2
+6200 place HTNK
+6250 place E2
+6250 zoom 1.6
+6251 view 110 60
+6300 place HTNK
+6350 place E2
+6400 place HTNK
+6450 place E2
+6500 place HTNK
+6500 zoom 2.5
+6501 view 10 10
+6550 place E2
+6600 place HTNK
+6650 place E2
+6700 place HTNK
+6750 place E2
+6750 zoom 1.6
+6751 view 100 10
+6800 place HTNK
+6850 place E2
+6900 rally NAWEAP 63 17
+6910 primary NAWEAP
+6920 move E2 63 17
+6950 stop E2
+7000 clickcell E2 61 15
+7000 zoom 2.5
+7001 view 2 90
+7050 planning 1
+7070 move E2 61 16
+7090 move HTNK 61 16
+7110 planstate E2
+7150 planning 0
+7200 produce NAPOWR
+7250 zoom 1.6
+7251 view 50 50
+7500 zoom 2.5
+7501 view 110 60
+7600 place NAPOWR
+7700 place NAPOWR
+7750 zoom 1.6
+7751 view 10 10
+7800 place NAPOWR
+7900 place NAPOWR
+8000 produce NATECH
+8000 zoom 2.5
+8001 view 100 10
+8250 zoom 1.6
+8251 view 2 90
+8500 place NATECH
+8500 zoom 2.5
+8501 view 50 50
+8600 place NATECH
+8700 place NATECH
+8750 zoom 1.6
+8751 view 110 60
+8800 place NATECH
+8900 place NATECH
+9000 place NATECH
+9000 zoom 2.5
+9001 view 10 10
+9100 produce NAIRON
+9250 zoom 1.6
+9251 view 100 10
+9500 place NAIRON
+9500 zoom 2.5
+9501 view 2 90
+9550 place NAIRON
+9600 place NAIRON
+9650 place NAIRON
+9700 place NAIRON
+9750 place NAIRON
+9750 zoom 1.6
+9751 view 50 50
+9800 place NAIRON
+9900 attack HTNK
+9950 strikeobj YACNST 89 41 6 all
+10000 strike E2 89 41
+10000 zoom 2.5
+10000 shroudhash
+10001 view 110 60
+10050 rally NAHAND 63 14
+10200 dump
+10250 zoom 1.6
+10251 view 10 10
+10300 where HTNK
+10400 supers
+10500 zoom 2.5
+10501 view 100 10
+10750 zoom 1.6
+10751 view 2 90
+11000 sell 65 17
+11000 zoom 2.5
+11000 shroudhash
+11001 view 50 50
+11250 zoom 1.6
+11251 view 110 60
+11500 attack HTNK
+11500 zoom 2.5
+11500 fire SpyPlaneSpecial 52 97
+11500 shroudhash
+11501 view 10 10
+11600 shroudhash
+11700 shroudhash
+11750 zoom 1.6
+11751 view 100 10
+11800 shroudhash
+11900 shroudhash
+12000 dump
+12000 zoom 2.5
+12000 shroudhash
+12001 view 2 90
+12100 shroudhash
+12200 shroudhash
+12250 zoom 1.6
+12251 view 50 50
+12300 shroudhash
+12400 shroudhash
+12500 zoom 2.5
+12500 shroudhash
+12501 view 110 60
+12600 shroudhash
+12750 zoom 1.6
+12751 view 10 10
+13000 supers
+13000 zoom 2.5
+13000 shroudhash
+13001 view 100 10
+13250 zoom 1.6
+13251 view 2 90
+13500 zoom 2.5
+13501 view 50 50
+13750 zoom 1.6
+13751 view 110 60
+14000 zoom 2.5
+14000 shroudhash
+14001 view 10 10
+14100 shroudhash
+14250 zoom 1.6
+14250 shroudhash
+14251 view 100 10
+14500 zoom 2.5
+14500 shroudhash
+14501 view 2 90
+14750 zoom 1.6
+14751 view 50 50
+15000 zoom 2.5
+15000 shroudhash
+15001 view 110 60
+15250 zoom 1.6
+15251 view 10 10
+15500 dump
+15500 zoom 2.5
+15500 shroudhash
+15501 view 100 10
+15700 command ScreenCapture
+15750 zoom 1.6
+15751 view 2 90
+15800 alliance 0
+16000 zoom 2.5
+16000 shroudhash
+16001 view 50 50
+16010 command ScreenCapture
+16250 zoom 1.6
+16251 view 110 60
+16500 zoom 2.5
+16501 view 10 10
+16750 zoom 1.6
+16751 view 100 10
+17000 zoom 2.5
+17001 view 2 90
+17250 zoom 1.6
+17251 view 50 50
+17500 zoom 2.5
+17501 view 110 60
+17750 zoom 1.6
+17751 view 10 10
+18000 zoom 2.5
+18000 shroudhash
+18001 view 100 10
+18250 zoom 1.6
+18251 view 2 90
+18500 zoom 2.5
+18501 view 50 50
+18750 zoom 1.6
+18751 view 110 60
+19000 zoom 2.5
+19001 view 10 10
+19250 zoom 1.6
+19251 view 100 10
+19500 zoom 2.5
+19501 view 2 90
+19750 zoom 1.6
+19751 view 50 50
+20000 zoom 2.5
+20000 shroudhash
+20001 view 110 60
+20250 zoom 1.6
+20251 view 10 10
+20500 zoom 2.5
+20501 view 100 10
+20750 zoom 1.6
+20751 view 2 90
+21000 zoom 2.5
+21001 view 50 50
+21250 zoom 1.6
+21251 view 110 60
+21500 zoom 2.5
+21501 view 10 10
+21750 zoom 1.6
+21751 view 100 10
+22000 zoom 2.5
+22001 view 2 90
+22250 zoom 1.6
+22251 view 50 50
+22500 zoom 2.5
+22501 view 110 60
+22750 zoom 1.6
+22751 view 10 10
+23000 zoom 2.5
+23000 shroudhash
+23001 view 100 10
+23250 zoom 1.6
+23251 view 2 90
+23500 zoom 2.5
+23501 view 50 50
+23750 zoom 1.6
+23751 view 110 60

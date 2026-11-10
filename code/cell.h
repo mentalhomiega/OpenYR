@@ -78,8 +78,8 @@ class CellClass : public AbstractClass
 		// The radiation the sites around this cell give it.
 		double RadLevel;
 
-		// The number of gap generators shrouding this cell for the local player.
-		int GapCount;
+		// The human houses a working gap generator keeps this cell shrouded for.
+		HouseSet GapShrouded;
 
 		// The destroyed structure whose rubble this cell draws, set on the structure's top left cell only.
 		BuildingTypeClass * Rubble;

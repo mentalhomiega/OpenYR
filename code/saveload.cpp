@@ -1071,7 +1071,6 @@ bool Load_Game(const char *file_name)
 	**	data loaded.
 	*/
 	Post_Load_Game();
-	Reset_Off_Map_Cell_Location();
 
 	// The next mission of a resumed campaign is played at the pair the save carries.
 	Session.CampaignDifficulty = Scen->Difficulty;
@@ -1164,6 +1163,8 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 
 	// The scenario's own tutorial lines travel here, since a load never re-reads the map.
 	stream.Serialize(TutorialText);
+
+	Serialize_Off_Map_Cell_Location(stream);
 
 	// Placed sounds and the sounds attached to objects come back on the next
 	// sound tick; the playing sounds themselves are not saved.

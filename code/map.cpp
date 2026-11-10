@@ -163,6 +163,7 @@ int const MapClass::RadiusCount[] = {
 CellClass BlubCell;
 
 static Cell BlubCellLogicLocation;
+static bool BlubCellInFrameLogic = false;
 
 /*
  * This is what each movement class makes of each kind of terrain. A cell is only ever joined
@@ -491,6 +492,7 @@ CellClass & MapClass::operator[](Cell const & cell) const
 void Restore_Off_Map_Cell_Location(void)
 {
 	BlubCell.CellID = BlubCellLogicLocation;
+	BlubCellInFrameLogic = true;
 }
 
 
@@ -501,17 +503,43 @@ void Restore_Off_Map_Cell_Location(void)
 void Remember_Off_Map_Cell_Location(void)
 {
 	BlubCellLogicLocation = BlubCell.CellID;
+	BlubCellInFrameLogic = false;
 }
 
 
 /// <summary>
 /// Makes the next frame's logic start with the off-map cell at CELL_NONE. Call it when a
-/// scenario starts or a game is loaded, since the view may have looked up cells before the
-/// first frame.
+/// scenario starts, since the view may have looked up cells before the first frame.
 /// </summary>
 void Reset_Off_Map_Cell_Location(void)
 {
 	BlubCellLogicLocation = CELL_NONE;
+	BlubCellInFrameLogic = false;
+}
+
+
+/// <summary>
+/// Saves or loads the off-map cell's location as game logic left it, so a destination or target
+/// saved on that cell points at the same place after a load. A save made during a frame's logic
+/// keeps the location logic has reached so far.
+/// </summary>
+void Serialize_Off_Map_Cell_Location(SaveStreamClass & stream)
+{
+	Cell location = Off_Map_Cell_Logic_Location();
+	stream.Serialize(location);
+	if (stream.Is_Loading()) {
+		BlubCellLogicLocation = location;
+		BlubCellInFrameLogic = false;
+	}
+}
+
+
+/// <summary>
+/// The off-map cell's location that game logic last left.
+/// </summary>
+Cell Off_Map_Cell_Logic_Location(void)
+{
+	return(BlubCellInFrameLogic ? BlubCell.CellID : BlubCellLogicLocation);
 }
 
 
@@ -1052,8 +1080,9 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
 		TechnoClass * t = Technos[i];
 		bool was = t->IsLocked;
 		t->IsLocked = In_Local_Radar(t->PositionCell);
-		// As MapClass::SetVisibleRect (0x567230): only a player-controlled house's object takes a fresh look.
-		if (!was && t->IsLocked && t->House->Is_Player_Control() && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
+		// As MapClass::SetVisibleRect (0x567230): only a player-controlled house's object takes a fresh look. gamemd asks
+		// about the local player; any human seat's object looks here, so every copy of a network game looks alike.
+		if (!was && t->IsLocked && t->House->Player_View() != NULL && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
 			t->Look();
 		}
 	}

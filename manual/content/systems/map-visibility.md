@@ -162,7 +162,7 @@ Regular looks happen as follows:
 
 - A vehicle or infantryman looks each time it reaches the center of a cell.
 - An infantryman looks once a second while it is moving in the air, if its `Sight=` is above zero.
-- An aircraft or a vehicle in the air looks every 15 frames while it is moving and its owner is the player or an ally of the player. An aircraft's look skips the playable-area test, the height bonus and the veteran bonus. A vehicle's look keeps them.
+- An aircraft or a vehicle in the air looks every 15 frames while it is moving and its owner is a human player or an ally of one. Yuri's Revenge asks about the local player only; asking about every human player keeps the shroud the same on every machine of a network game. An aircraft's look skips the playable-area test, the height bonus and the veteran bonus. A vehicle's look keeps them.
 
 A landed aircraft sees one cell, whatever its `Sight=`.
 
@@ -223,7 +223,7 @@ When the last one stops counting, every cell goes back under the shroud and the 
 
 ### Gap generators
 
-A [`GapGenerator=yes`](/keys/gapgenerator/) structure shrouds the ground around it for the local player while it works, if that player is still in the game and is neither its owner nor an ally of its owner. Other players, and computer houses, are not affected.
+A [`GapGenerator=yes`](/keys/gapgenerator/) structure shrouds the ground around it while it works for each human player who is still in the game and is neither its owner nor an ally of its owner. Which players it shrouds is settled when it starts working. Its owner, the owner's allies and computer houses are not affected.
 
 ```ini title="rulesmd.ini"
 [MYGAP] ; example BuildingType
@@ -232,9 +232,9 @@ GapRadiusInCells=10
 Powered=yes
 ```
 
-The structure works while it stands on the map, is [operational](/systems/power/#defenses), and has finished its buildup. Its gap covers every cell within [`GapRadiusInCells`](/keys/gapradiusincells/) cells of the cell it is drawn over. When it starts working, those cells go under the shroud and the fog. While any gap covers a cell, nothing uncovers it for the local player, not even the player's own objects standing there, unless the player has a working [spy satellite](#the-spy-satellite). The local player also loses the fully-revealed mark, so a later reveal works again.
+The structure works while it stands on the map, is [operational](/systems/power/#defenses), and has finished its buildup. Its gap covers every cell within [`GapRadiusInCells`](/keys/gapradiusincells/) cells of the cell it is drawn over. When it starts working, those cells go under the shroud and the fog. While a gap covers a cell, nothing uncovers it for a player that gap shrouds, not even the player's own objects standing there, unless the player has a working [spy satellite](#the-spy-satellite). Each shrouded player also loses the fully-revealed mark, so a later reveal works again.
 
-When the structure stops working because it is sold, destroyed, captured or loses power, the cells stay covered. The local player's objects look again at once, so the ground they see is uncovered, and a working spy satellite reveals the whole map again. A captured gap generator starts working for its new owner on its next update.
+When the structure stops working because it is sold, destroyed, captured or loses power, the cells stay covered. Objects look again at once, so the ground the shrouded players' objects see is uncovered, and a shrouded player's working spy satellite reveals the whole map again. A captured gap generator starts working for its new owner on its next update.
 
 The owner can also charge the structure by clicking it, if its type has [`SuperGapRadiusInCells`](/keys/supergapradiusincells/). The gap then covers that many cells until the owner discharges it by clicking again or the structure loses power. The change happens at once: the old gap is lifted and the new one put in place.
 

@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-While a `GapGenerator=yes` structure works, the local player cannot see the ground around it unless that player is its owner or an ally of its owner. [Gap generators](/systems/map-visibility/#gap-generators) gives the conditions.
+While a `GapGenerator=yes` structure works, a human player cannot see the ground around it unless that player is its owner or an ally of its owner. [Gap generators](/systems/map-visibility/#gap-generators) gives the conditions.
 
 The key is read on every object type, but only a structure shrouds the ground. A vehicle, soldier or aircraft with `GapGenerator=yes` has no effect.
 
