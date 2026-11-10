@@ -23,6 +23,7 @@
 #include "tilediff.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
@@ -33,6 +34,7 @@
 #include <cstring>
 #include <deque>
 #include <iterator>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <fs_ocornut_imgui.bin.h>
@@ -244,17 +246,25 @@ struct MeasureRequest
 	std::string Label;
 };
 static std::deque<MeasureRequest> _Measures;
+static std::mutex _MeasuresLock;
+
+// Captures asked for whose result has not been written or logged yet.
+static std::atomic<int> _CapturesPending{0};
 
 
 // Logs the mean and the darkest value of the red, green and blue average of the pixels of a 32-bit capture
 // inside the oldest request's area, counted from the top of the window.
 static void Log_Measure(unsigned char const * data, uint32_t width, uint32_t height, uint32_t pitch, bool yflip)
 {
-	if (_Measures.empty()) {
-		return;
+	MeasureRequest request;
+	{
+		std::lock_guard<std::mutex> lock(_MeasuresLock);
+		if (_Measures.empty()) {
+			return;
+		}
+		request = _Measures.front();
+		_Measures.pop_front();
 	}
-	MeasureRequest const request = _Measures.front();
-	_Measures.pop_front();
 	Rect const area = Intersect(request.Area, Rect(0, 0, (int)width, (int)height));
 	if (!area.Is_Valid()) {
 		DebugString("AUTOTEST windowdark %s outside the %ux%u window\n", request.Label.c_str(), width, height);
@@ -315,10 +325,12 @@ class BackendCallback : public bgfx::CallbackI
 		{
 			if (std::strcmp(filepath, MeasurePath) == 0) {
 				Log_Measure((unsigned char const *)data, width, height, pitch, yflip);
+				_CapturesPending--;
 				return;
 			}
 			FILE * file = std::fopen(filepath, "wb");
 			if (file == NULL) {
+				_CapturesPending--;
 				return;
 			}
 			Write_Tga_Header(file, width, height, yflip);
@@ -326,6 +338,7 @@ class BackendCallback : public bgfx::CallbackI
 				std::fwrite((unsigned char const *)data + y * pitch, 4, width, file);
 			}
 			std::fclose(file);
+			_CapturesPending--;
 		}
 		virtual void captureBegin(uint32_t, uint32_t, uint32_t, bgfx::TextureFormat::Enum, bool) override {}
 		virtual void captureEnd(void) override {}
@@ -1092,15 +1105,16 @@ static void Write_Capture(void)
 	_ReadbackPending = false;
 	if (_ReadbackPath == MeasurePath) {
 		Log_Measure(_ReadbackPixels.data(), (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, (uint32_t)_DrawableWidth * 4, false);
+		_CapturesPending--;
 		return;
 	}
 	FILE * file = std::fopen(_ReadbackPath.c_str(), "wb");
-	if (file == NULL) {
-		return;
+	if (file != NULL) {
+		Write_Tga_Header(file, (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, false);
+		std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
+		std::fclose(file);
 	}
-	Write_Tga_Header(file, (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, false);
-	std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
-	std::fclose(file);
+	_CapturesPending--;
 }
 
 
@@ -1326,6 +1340,7 @@ void Backend_Shutdown(void)
 	_Routed = false;
 	_ShotRequested = false;
 	_ReadbackPending = false;
+	_CapturesPending = 0;
 	// bgfx::shutdown frees the readback texture, so a later Backend_Init must not reuse its handle.
 	_ReadbackTexture = BGFX_INVALID_HANDLE;
 	_ReadbackPixels.clear();
@@ -1759,26 +1774,40 @@ void Backend_Set_View_Target(unsigned short view)
 }
 
 
-void Backend_Request_Window_Capture(char const * filepath)
+bool Backend_Request_Window_Capture(char const * filepath)
 {
 	if (!_Initialized) {
-		return;
+		return(false);
 	}
+	_CapturesPending++;
 
 	// Under HDR10 the window holds PQ values, so the capture reads the SDR picture back instead of the window.
 	if (!_HdrActive) {
 		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
-		return;
+		return(true);
 	}
 	_ReadbackPath = filepath;
 	_ShotRequested = true;
+	return(true);
 }
 
 
-void Backend_Request_Window_Measure(Rect const & area, char const * label)
+bool Backend_Request_Window_Measure(Rect const & area, char const * label)
 {
-	_Measures.push_back({ area, label });
-	Backend_Request_Window_Capture(MeasurePath);
+	if (!_Initialized) {
+		return(false);
+	}
+	{
+		std::lock_guard<std::mutex> lock(_MeasuresLock);
+		_Measures.push_back({ area, label });
+	}
+	return(Backend_Request_Window_Capture(MeasurePath));
+}
+
+
+bool Backend_Window_Capture_Pending(void)
+{
+	return(_CapturesPending > 0);
 }
 
 

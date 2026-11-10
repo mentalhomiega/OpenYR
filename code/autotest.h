@@ -36,6 +36,9 @@ bool AutoTest_Key_Held(int virtualkey);
 // and windowclick steps; it starts away from the screen's edges.
 void AutoTest_Cursor_Position(int & x, int & y);
 bool AutoTest_Load(char const * filename);
+// True while a windowshot or windowdark step waits for its capture; the main loop then runs no game frame and
+// calls this again next time round.
+bool AutoTest_Capture_Hold(void);
 void AutoTest_Frame(void);
 
 // Ends an unattended run when the game is won or lost, instead of waiting at the score screen.
