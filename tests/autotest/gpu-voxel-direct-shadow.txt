@@ -1,0 +1,11 @@
+; Checks that GpuVoxelPath=Direct darkens each pixel once for each voxel shadow blit (docs/GPU_DIRECT_VOXELS.md, stage 3): the scene of gpu-voxel-shadow.txt at GpuVoxelScale=1 with hard shadows, and one GPU_VOXEL_SHADOW line. The darkened count matches the image route's 2,148, and the twice count, ground under one shadow darkened two or three times, is 0; drawing the shadow's cells without the stencil gives about 500.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/gpu-voxel-direct-shadow.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelSmooth=yes`nGpuVoxelScale=1`nHDRHighlights=Classic`nBloom=no`nGpuVoxelPath=Direct`nGpuVoxelLayerDepth=Ordered" -Filter "GPU_VOXEL_SHADOW|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
+1 view 38 58
+2 reveal
+10 grantunit MTNK 36 58
+10 grantunit HTNK 39 58
+12 grantunit ZEP 38 55
+40 face 40 36 58
+40 face 150 39 58
+70 gpushadowcount
+600 quit

@@ -211,6 +211,11 @@ void Test_Rows_And_Greying(void)
 }
 
 
+static NameEntry const Path_Names[] = { { "Image", GPU_VOXEL_PATH_IMAGE }, { "Direct", GPU_VOXEL_PATH_DIRECT } };
+static NameEntry const Layer_Depth_Names[] = { { "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED }, { "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED } };
+static NameEntry const Cloak_Names[] = { { "Translucent", GPU_VOXEL_CLOAK_TRANSLUCENT }, { "Ripple", GPU_VOXEL_CLOAK_RIPPLE } };
+
+
 // The GPU options as OptionsClass reads and writes them today; kept here to pin the table against that code.
 struct Old_Gpu
 {
@@ -227,6 +232,9 @@ struct Old_Gpu
 	bool GpuVoxels = false;
 	bool GpuVoxelSmooth = false;
 	int GpuVoxelScale = 1;
+	int GpuVoxelPath = GPU_VOXEL_PATH_IMAGE;
+	int GpuVoxelLayerDepth = GPU_VOXEL_LAYER_DEPTH_SHARED;
+	int GpuVoxelCloak = GPU_VOXEL_CLOAK_TRANSLUCENT;
 	int Weather = WEATHER_NONE;
 	int WeatherStrength = 100;
 	bool RenderThread = false;
@@ -248,6 +256,13 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.GpuVoxels = ini.Get_Bool("Video", "GpuVoxels", old.GpuVoxels);
 	old.GpuVoxelSmooth = ini.Get_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
 	old.GpuVoxelScale = std::clamp(ini.Get_Int("Video", "GpuVoxelScale", old.GpuVoxelScale), 1, 4);
+	char name[16];
+	ini.Get_String("Video", "GpuVoxelPath", "Image", name, sizeof(name));
+	old.GpuVoxelPath = Enum_From_Name(Path_Names, name, GPU_VOXEL_PATH_IMAGE);
+	ini.Get_String("Video", "GpuVoxelLayerDepth", "Shared", name, sizeof(name));
+	old.GpuVoxelLayerDepth = Enum_From_Name(Layer_Depth_Names, name, GPU_VOXEL_LAYER_DEPTH_SHARED);
+	ini.Get_String("Video", "GpuVoxelCloak", "Translucent", name, sizeof(name));
+	old.GpuVoxelCloak = Enum_From_Name(Cloak_Names, name, GPU_VOXEL_CLOAK_TRANSLUCENT);
 	char weathername[16];
 	ini.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
 	static NameEntry const Names[] = { { "None", WEATHER_NONE }, { "Map", WEATHER_MAP }, { "Rain", WEATHER_RAIN }, { "Snow", WEATHER_SNOW } };
@@ -272,6 +287,9 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_Bool("Video", "GpuVoxels", old.GpuVoxels);
 	ini.Put_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
 	ini.Put_Int("Video", "GpuVoxelScale", old.GpuVoxelScale);
+	ini.Put_String("Video", "GpuVoxelPath", Enum_Name(Path_Names, old.GpuVoxelPath, "Image"));
+	ini.Put_String("Video", "GpuVoxelLayerDepth", Enum_Name(Layer_Depth_Names, old.GpuVoxelLayerDepth, "Shared"));
+	ini.Put_String("Video", "GpuVoxelCloak", Enum_Name(Cloak_Names, old.GpuVoxelCloak, "Translucent"));
 	static NameEntry const Names[] = { { "None", WEATHER_NONE }, { "Map", WEATHER_MAP }, { "Rain", WEATHER_RAIN }, { "Snow", WEATHER_SNOW } };
 	ini.Put_String("Video", "Weather", Enum_Name(Names, std::clamp(old.Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ini.Put_Int("Video", "WeatherStrength", old.WeatherStrength);
@@ -335,7 +353,8 @@ void Test_Real_Table(void)
 
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
-		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "Weather", "WeatherStrength", "RenderThread",
+		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelPath", "GpuVoxelLayerDepth", "GpuVoxelCloak", "Weather", "WeatherStrength",
+		"RenderThread",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them");
 
@@ -346,14 +365,14 @@ void Test_Real_Table(void)
 	}
 	std::vector<std::string> const page_order = {
 		"GPU drawing", "Draw units on the GPU", "Soft shadows", "Shockwaves", "Glow", "Water ripples", "Cloud shadows", "Weather",
-		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness",
+		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness", "Draw voxels directly",
 	};
 	Check(labels == page_order, "the Graphics page keeps the GPU drawing rows in their old order, with the voxel rows after them");
 
 	char const * const texts[] = {
 		"[Video]\r\n",
-		"[Video]\r\nGpuRender=no\r\nSoftShadows=yes\r\nSoftShadowRadius=99\r\nBloom=1\r\nBloomStrength=0\r\nWeather=Rain\r\nWeatherStrength=999\r\nGpuVoxelScale=9\r\nCustomKey=abc\r\n\r\n[Options]\r\nGameSpeed=1\r\n",
-		"[Video]\r\nWeather=Bogus\r\nGpuVoxels=true\r\nCloudShadowStrength=not a number\r\nWaterRipples=0\r\nShockwaves=TRUE\r\n",
+		"[Video]\r\nGpuRender=no\r\nSoftShadows=yes\r\nSoftShadowRadius=99\r\nBloom=1\r\nBloomStrength=0\r\nWeather=Rain\r\nWeatherStrength=999\r\nGpuVoxelScale=9\r\nGpuVoxelPath=Direct\r\nGpuVoxelLayerDepth=Ordered\r\nGpuVoxelCloak=Ripple\r\nCustomKey=abc\r\n\r\n[Options]\r\nGameSpeed=1\r\n",
+		"[Video]\r\nWeather=Bogus\r\nGpuVoxelPath=Sideways\r\nGpuVoxelCloak=Invisible\r\nGpuVoxels=true\r\nCloudShadowStrength=not a number\r\nWaterRipples=0\r\nShockwaves=TRUE\r\n",
 		"[Video]\r\nGpuRender=yes\r\nSoftShadows=no\r\nSoftShadowRadius=3\r\nShockwaves=no\r\nBloom=no\r\nBloomStrength=100\r\nWaterRipples=no\r\nWaterRippleStrength=100\r\nCloudShadows=no\r\nCloudShadowStrength=100\r\nGpuVoxels=no\r\nGpuVoxelSmooth=no\r\nGpuVoxelScale=1\r\nWeather=None\r\nWeatherStrength=100\r\n",
 	};
 	for (char const * text : texts) {

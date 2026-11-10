@@ -2784,6 +2784,8 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	}
 	}
 
+	GpuDraw_Voxel_Cloak(Visual_Character() != VISUAL_NORMAL, Visual_Character() == VISUAL_RIPPLE ? predoffset : -1);
+
 	Rect rect = Composite_Screen_Rect(UnitCompositeDirtyRect, drawpoint);
 
 	if (IsSinking && SinkingYOffset == 0) {

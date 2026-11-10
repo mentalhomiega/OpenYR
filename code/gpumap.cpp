@@ -22,6 +22,7 @@
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
 #include "bgfxviews.hh"
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
@@ -49,6 +50,9 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 // Width of the textures that hold byte arenas; fs_mapdraw.sc uses the same value.
 static int const ARENA_WIDTH = 4096;
 static int const TEXTURE_LIMIT = 16384;
+// The most pixels a scaled pass's scene, snapshot and post textures may each have: a little over a 3840x2160 view at
+// scale 4, 536.9 MB a texture in RGBA8.
+static std::int64_t const SCALED_PIXEL_LIMIT = std::int64_t(1) << 27;
 // The index texture holds the atlas in its top rows and the pass's arena below them.
 static int const ATLAS_ROWS = (int)(GPU_ATLAS_BYTES / ARENA_WIDTH);
 static_assert(GPU_ATLAS_BYTES % ARENA_WIDTH == 0);
@@ -71,6 +75,8 @@ enum ShaderKind
 	KIND_ANTIALIASED_LINE,
 	KIND_SONIC,
 	KIND_TILE_SHADOW,
+	// Only fs_voxelscene.sc draws this kind: a direct voxel's highlight strength into the emissive mask.
+	KIND_VOXEL_STRENGTH,
 };
 
 enum SamplerSlot
@@ -103,12 +109,14 @@ static bgfx::ProgramHandle _Program = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _Samplers[SLOT_COUNT];
 static bgfx::VertexLayout _Layout;
 static bgfx::TextureHandle _TargetTexture = BGFX_INVALID_HANDLE;
+// The target's depth and stencil attachment, made only while the direct voxel route is on.
+static bgfx::TextureHandle _DepthTexture = BGFX_INVALID_HANDLE;
 static bgfx::FrameBufferHandle _Target = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _Readback = BGFX_INVALID_HANDLE;
 static int _TargetWidth = 0;
 static int _TargetHeight = 0;
 static int _TargetScale = 1;
-// The scale GpuMap_Set_Voxel_Scale asked for; a pass the check reads back is drawn at 1.
+// The scale GpuMap_Set_Voxel_Scale asked for; a pass the check reads back is drawn at 1, and a large one lower (Pass_Scale).
 static int _VoxelScale = 1;
 
 // Soft shadows: shadows are drawn into a mask, the mask is blurred, and the base is darkened through it.
@@ -163,9 +171,12 @@ static bgfx::TextureHandle _GlowTexture[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID
 static bgfx::FrameBufferHandle _GlowTarget[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
 static bgfx::TextureHandle _Snapshot = BGFX_INVALID_HANDLE;
 
-// The emissive mask of a pass with GPU voxels, built from the CPU plane and the voxel image; made on first use.
+// The emissive mask of a pass with GPU voxels, built from the CPU plane, the voxel image and the direct parts' layers;
+// made on first use.
 static bgfx::ProgramHandle _MaskProgram = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _MaskTexture = BGFX_INVALID_HANDLE;
+// The mask target's depth attachment, made while the direct voxel route is on.
+static bgfx::TextureHandle _MaskDepth = BGFX_INVALID_HANDLE;
 static bgfx::FrameBufferHandle _MaskTarget = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _MaskReadback = BGFX_INVALID_HANDLE;
 static bool _MaskBuilt = false;
@@ -285,6 +296,7 @@ static void Destroy_Target(void)
 	if (bgfx::isValid(_MaskTarget)) {
 		Release_Handle(_MaskTarget);
 		_MaskTexture = BGFX_INVALID_HANDLE;
+		_MaskDepth = BGFX_INVALID_HANDLE;
 	}
 	Release_Handle(_MaskReadback);
 	_MaskBuilt = false;
@@ -297,7 +309,10 @@ static void Destroy_Target(void)
 	if (bgfx::isValid(_Target)) {
 		Release_Handle(_Target);
 		_TargetTexture = BGFX_INVALID_HANDLE;
+		_DepthTexture = BGFX_INVALID_HANDLE;
 	}
+	Release_Handle(_TargetTexture);
+	Release_Handle(_DepthTexture);
 	Release_Handle(_Readback);
 	Release_Handle(_ShadowCount.Readback);
 	Release_Handle(_Snapshot);
@@ -309,19 +324,25 @@ static void Destroy_Target(void)
 }
 
 
-// The scene, snapshot and post textures are scale times the area; every other texture is the area's size.
-static bool Size_Target(int width, int height, int scale)
+// The scene, snapshot and post textures are scale times the area; every other texture is the area's size. With depth,
+// the scene target also has a depth and stencil attachment of its size.
+static bool Size_Target(int width, int height, int scale, bool depth)
 {
-	if (width == _TargetWidth && height == _TargetHeight && scale == _TargetScale && bgfx::isValid(_Target)) {
+	if (width == _TargetWidth && height == _TargetHeight && scale == _TargetScale && depth == bgfx::isValid(_DepthTexture) && bgfx::isValid(_Target)) {
 		return(true);
 	}
 	Destroy_Target();
 	uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 	_TargetTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | point);
-	if (!bgfx::isValid(_TargetTexture)) {
+	if (depth) {
+		_DepthTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
+	}
+	if (!bgfx::isValid(_TargetTexture) || (depth && !bgfx::isValid(_DepthTexture))) {
+		Destroy_Target();
 		return(false);
 	}
-	_Target = bgfx::createFrameBuffer(1, &_TargetTexture, true);
+	bgfx::TextureHandle const attachments[2] = { _TargetTexture, _DepthTexture };
+	_Target = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, true);
 	_Readback = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
 	_Snapshot = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | point);
 	_TileShadow = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, point);
@@ -470,14 +491,16 @@ static float Index_Offset(GpuBlit const & blit)
 }
 
 
-// The offset the shader reads a blit's colour indices at: in the voxel image for a voxel blit, else in the index texture.
+// The offset the shader reads a blit's colour indices at: in the index texture, or for a voxel blit -1 minus the texel
+// in the voxel image.
 static float Source_Offset(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles)
 {
 	if (blit.Voxel < 0) {
 		return(Index_Offset(blit));
 	}
 	GpuVoxelTile const & tile = tiles[blit.Voxel];
-	return((float)(GPU_VOXEL_BASE + (std::uint32_t)(tile.Y + blit.VoxelY * tile.Scale) * GPU_VOXEL_IMAGE_SIZE + (std::uint32_t)(tile.X + blit.VoxelX * tile.Scale)));
+	int const texel = (tile.Y + blit.VoxelY * tile.Scale) * GPU_VOXEL_IMAGE_SIZE + tile.X + blit.VoxelX * tile.Scale;
+	return((float)(-1 - texel));
 }
 
 
@@ -673,8 +696,46 @@ static void Set_Map_View(bgfx::ViewId view, bgfx::FrameBufferHandle target, Rect
 }
 
 
+static bool Is_Direct(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles)
+{
+	return(blit.Voxel >= 0 && tiles[blit.Voxel].Direct);
+}
+
+
+// A blit of a direct voxel part as GpuVoxel_Draw_Direct takes it into a target at scale, with the values of the blit's
+// quad; the caller sets its state.
+static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale)
+{
+	GpuVoxelDirectBlit direct;
+	direct.Part = blit.Voxel;
+	direct.OriginX = blit.X - area.X - blit.VoxelX;
+	direct.OriginY = blit.Y - area.Y - blit.VoxelY;
+	direct.Clip = Intersect(Rect(blit.X - area.X, blit.Y - area.Y, blit.Width, blit.Height), Rect(0, 0, area.Width, area.Height));
+	std::memcpy(direct.Values, quad.T1, sizeof(quad.T1));
+	std::memcpy(direct.Values + 4, quad.T2, sizeof(quad.T2));
+	std::memcpy(direct.Values + 8, quad.T3, sizeof(quad.T3));
+	// The quad carries the tile's scale where a blit has its pitch; the depth shape is laid out at the blit's width.
+	direct.Values[1] = (float)blit.Width;
+	direct.Values[12] = (float)(blit.X - area.X);
+	direct.Values[13] = (float)(blit.Y - area.Y);
+	direct.Values[14] = (float)scale;
+	return(direct);
+}
+
+
+// Binds the pass's stores and their ring addressing for the next draw.
+static void Bind_Stores(float const * ring)
+{
+	for (int slot = 0; slot < SLOT_COUNT; slot++) {
+		bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
+	}
+	bgfx::setUniform(_RingUniform, ring, 2);
+}
+
+
 // Draws every shadow's coverage, with the tile layer's shadows when tileshadow is set, into the first
-// shadow mask and blurs it there, through the second.
+// shadow mask and blurs it there, through the second. A direct part's shadow is drawn from its layers at scale 1,
+// the mask's own scale.
 static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, bgfx::TextureHandle voxelimage, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
 {
 	bgfx::TransientVertexBuffer buffer;
@@ -686,6 +747,8 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 		float const t3[4] = { 0.0f, -1.0f, 0.0f, 1.0f };
 		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
 	}
+	// The blit each quad draws, NULL for the whole-area quads.
+	std::vector<GpuBlit const *> blits(shadowquads, NULL);
 	int quad = 1;
 	if (tileshadow) {
 		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
@@ -702,6 +765,7 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)KIND_SHADOW_MASK, blit.Desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+		blits[quad] = &blit;
 		quad++;
 	}
 
@@ -709,6 +773,12 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 	bgfx::setViewClear(VIEW_MAPSHADOW, BGFX_CLEAR_COLOR, 0x00000000);
 	float const shadow_scale[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
 	for (int i = 1; i < shadowquads; i++) {
+		if (blits[i] != NULL && Is_Direct(*blits[i], tiles)) {
+			GpuVoxelDirectBlit direct = Direct_Blit(*blits[i], vertex[i * 6], area, 1);
+			direct.State = BGFX_STATE_WRITE_RGB;
+			GpuVoxel_Draw_Direct(list, direct, 1, VIEW_MAPSHADOW, [ring]() { Bind_Stores(ring); });
+			continue;
+		}
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
@@ -772,28 +842,59 @@ static void Submit_Glow(bgfx::TextureHandle mask, Rect const & area, int scale)
 }
 
 
-// The quads the mask pass draws: the copy of the CPU plane and one for each direct voxel blit.
+// The quads the mask pass draws: the copy of the CPU plane and one for each voxel blit.
 static int Count_Mask_Quads(GpuDrawList const & list)
 {
-	return(1 + (int)std::count_if(list.Blits.begin(), list.Blits.end(), [&list](GpuBlit const & blit) {
-		return(blit.Voxel >= 0 && !list.Voxels[blit.Voxel].Scratch);
-	}));
+	return(1 + (int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) { return(blit.Voxel >= 0); }));
 }
 
 
-// Fills the emissive mask of a pass with GPU voxels: the CPU plane, then the highlight strengths of each direct
-// voxel blit, in blit order, where the plane still holds the part's mark. False when the mask cannot be drawn.
-static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile> const & tiles, float const * projection)
+// Makes the mask target at the area's size, with a depth attachment when depth is set; false when it cannot be made.
+static bool Size_Mask_Target(Rect const & area, bool depth)
+{
+	if (bgfx::isValid(_MaskTarget) && depth == bgfx::isValid(_MaskDepth)) {
+		return(true);
+	}
+	if (bgfx::isValid(_MaskTarget)) {
+		Release_Handle(_MaskTarget);
+		_MaskTexture = BGFX_INVALID_HANDLE;
+		_MaskDepth = BGFX_INVALID_HANDLE;
+	}
+	uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+	_MaskTexture = bgfx::createTexture2D((uint16_t)area.Width, (uint16_t)area.Height, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | point);
+	if (depth) {
+		_MaskDepth = bgfx::createTexture2D((uint16_t)area.Width, (uint16_t)area.Height, false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
+	}
+	if (!bgfx::isValid(_MaskTexture) || (depth && !bgfx::isValid(_MaskDepth))) {
+		Release_Handle(_MaskTexture);
+		Release_Handle(_MaskDepth);
+		return(false);
+	}
+	bgfx::TextureHandle const attachments[2] = { _MaskTexture, _MaskDepth };
+	_MaskTarget = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, true);
+	if (!bgfx::isValid(_MaskTarget)) {
+		Release_Handle(_MaskTexture);
+		Release_Handle(_MaskDepth);
+		return(false);
+	}
+	return(true);
+}
+
+
+// fs_voxelscene.sc reads the CPU plane at this stage.
+static uint8_t const DIRECT_PLANE_STAGE = 6;
+
+// Fills the emissive mask of a pass with GPU voxels: the CPU plane, then, in blit order, the highlight strengths of each
+// voxel blit where the plane still holds the mark (GPU_VOXEL_MASK_MARK). An image part's strengths come from its tile;
+// a direct part's blit zeroes its rectangle and draws its layers at scale 1, each pixel taking the voxel the scene
+// shows there. A composite on the image route writes zero, as in the software. False when the mask cannot be drawn.
+static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile> const & tiles, float const * projection, float const * ring)
 {
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
-	if (!bgfx::isValid(_MaskTarget)) {
-		uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-		_MaskTexture = bgfx::createTexture2D((uint16_t)area.Width, (uint16_t)area.Height, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | point);
-		_MaskTarget = bgfx::isValid(_MaskTexture) ? bgfx::createFrameBuffer(1, &_MaskTexture, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
-		if (!bgfx::isValid(_MaskTarget)) {
-			return(false);
-		}
+	bool const direct = std::any_of(tiles.begin(), tiles.end(), [](GpuVoxelTile const & tile) { return(tile.Direct); });
+	if (!Size_Mask_Target(area, GpuVoxel_Direct_Path())) {
+		return(false);
 	}
 	int const quads = Count_Mask_Quads(list);
 	if (bgfx::getAvailTransientVertexBuffer((uint32_t)quads * 6, _Layout) < (uint32_t)quads * 6) {
@@ -804,18 +905,31 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile>
 	MapVertex * vertex = (MapVertex *)buffer.data;
 	float const none[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, none, none, none);
+	// The blit each quad draws, NULL for the copy of the plane.
+	std::vector<GpuBlit const *> blits(quads, NULL);
 	int quad = 1;
 	for (GpuBlit const & blit : list.Blits) {
-		if (blit.Voxel < 0 || list.Voxels[blit.Voxel].Scratch) {
+		if (blit.Voxel < 0) {
 			continue;
 		}
 		GpuVoxelTile const & tile = tiles[blit.Voxel];
-		float const t1[4] = { (float)(tile.X + blit.VoxelX * tile.Scale), (float)(tile.Y + blit.VoxelY * tile.Scale), (float)tile.Scale, 0.0f };
-		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, none, none);
+		float const zero[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+		float const fromtile[4] = { (float)(tile.X + blit.VoxelX * tile.Scale), (float)(tile.Y + blit.VoxelY * tile.Scale), (float)tile.Scale, 0.0f };
+		bool const tiled = !tile.Direct && !list.Voxels[blit.Voxel].Scratch;
+		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, tiled ? fromtile : zero, none, none);
+		blits[quad] = &blit;
 		quad++;
 	}
 	Set_Map_View(VIEW_MAPMASK, _MaskTarget, area, projection);
+	if (direct) {
+		bgfx::setViewClear(VIEW_MAPMASK, BGFX_CLEAR_DEPTH, 0, 1.0f, 0);
+	}
 	bgfx::TextureHandle const image = bgfx::TextureHandle{ list.Voxels.empty() ? bgfx::kInvalidHandle : GpuVoxel_Image() };
+	MapVertex strength = {};
+	strength.T3[2] = (float)KIND_VOXEL_STRENGTH;
+	// A tile holds the strength of every voxel, whether or not the voxel passes the map's depth test, so the test is skipped.
+	strength.T3[3] = 1.0f;
+	int slices = 0;
 	for (int i = 0; i < quads; i++) {
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		bgfx::setTexture(0, _GlowMaskSampler, _GlowMask);
@@ -824,6 +938,18 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile>
 		}
 		bgfx::setState(BGFX_STATE_WRITE_R);
 		bgfx::submit(VIEW_MAPMASK, _MaskProgram);
+		GpuBlit const * blit = blits[i];
+		// A pass gpucheck compares with the software, whose composites have no highlights, gives them none.
+		bool const highlights = pass.Persistent || (blit != NULL && !list.Voxels[blit->Voxel].Scratch);
+		if (blit != NULL && Is_Direct(*blit, tiles) && blit->Class() == GPU_BLIT_IMAGE && highlights) {
+			GpuVoxelDirectBlit drawn = Direct_Blit(*blit, strength, area, 1);
+			drawn.Slice = slices++;
+			drawn.State = BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
+			GpuVoxel_Draw_Direct(list, drawn, 1, VIEW_MAPMASK, [ring]() {
+				Bind_Stores(ring);
+				bgfx::setTexture(DIRECT_PLANE_STAGE, _GlowMaskSampler, _GlowMask);
+			});
+		}
 	}
 	return(true);
 }
@@ -845,13 +971,25 @@ static int Count_Sonic_Waves(GpuDrawList const & list)
 }
 
 
+// The scale a pass over area is drawn at: the one GpuMap_Set_Voxel_Scale asked for, lowered until the scaled textures fit
+// TEXTURE_LIMIT and SCALED_PIXEL_LIMIT.
+static int Pass_Scale(Rect const & area)
+{
+	int scale = _VoxelScale;
+	while (scale > 1 && (area.Width * scale > TEXTURE_LIMIT || area.Height * scale > TEXTURE_LIMIT || (std::int64_t)area.Width * area.Height * scale * scale > SCALED_PIXEL_LIMIT)) {
+		scale--;
+	}
+	return(scale);
+}
+
+
 // Checks the limits Submit_Pass rejects a pass for that are known when it is kept, so a pass the GPU
 // cannot draw is drawn in software rather than leaving the map's key colour on screen.
 static bool Pass_Fits(GpuMapPass const & pass)
 {
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
-	if (area.Width <= 0 || area.Height <= 0 || area.Width * _VoxelScale > TEXTURE_LIMIT || area.Height * _VoxelScale > TEXTURE_LIMIT) {
+	if (area.Width <= 0 || area.Height <= 0 || area.Width > TEXTURE_LIMIT || area.Height > TEXTURE_LIMIT) {
 		return(false);
 	}
 	std::size_t const arenarows = Arena_Rows(list.PixelArena.size());
@@ -859,20 +997,20 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (ATLAS_ROWS + arenarows > (std::size_t)TEXTURE_LIMIT || zshaperows > (std::size_t)TEXTURE_LIMIT) {
 		return(false);
 	}
-	// Offsets reach the shader as floats, which hold every whole number only up to 2^24.
+	// Arena offsets reach the shader as floats, which hold every whole number only up to 2^24.
 	std::size_t const exact = std::size_t(1) << 24;
-	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact || (std::size_t)area.Width * area.Height > exact) {
+	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact) {
 		return(false);
 	}
 	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing }) {
-		if (pass.Persistent && ring->Values != NULL && (std::size_t)ring->Width * ring->Height > exact) {
+		if (pass.Persistent && ring->Values != NULL && (ring->Width > TEXTURE_LIMIT || ring->Height > TEXTURE_LIMIT)) {
 			return(false);
 		}
 	}
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	if (!GpuVoxel_Fits(list)) {
+	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, _SoftShadowRadius > 0))) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
@@ -913,6 +1051,16 @@ static void Build_Translator_Stacks(GpuDrawList const & list, std::unordered_map
 }
 
 
+// Writes one u_ring entry (mapcommon.sh): the ring's texel of the area's top left pixel and the ring's size.
+static void Set_Ring(float * ring, int column, int row, int width, int height)
+{
+	ring[0] = (float)column;
+	ring[1] = (float)row;
+	ring[2] = (float)width;
+	ring[3] = (float)height;
+}
+
+
 // Uploads the translator stacks and the pass's depth, alpha, shape and base stores. ring receives
 // the depth and alpha ring addressing that the shadow and blit shaders read. False means a store
 // could not take its data.
@@ -940,9 +1088,7 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 			GpuRing const & source = *rings[i];
 			if (source.Values != NULL) {
 				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference) && valid;
-				ring[i * 4 + 0] = (float)source.Start;
-				ring[i * 4 + 1] = (float)source.Width;
-				ring[i * 4 + 2] = (float)source.Width * source.Height;
+				Set_Ring(ring + i * 4, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 			} else if (!bgfx::isValid(stores[i]->Handle)) {
 				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true) && valid;
 			}
@@ -1046,13 +1192,111 @@ static uint64_t Blend_State_For(int kind, int channels)
 }
 
 
-// Draws the base quad and then each blit's quad into the target, in blit order. A sonic wave copies
-// the target first, so it reads everything drawn before it.
-static void Submit_Draws(GpuDrawList const & list, int scale, bgfx::TextureHandle voxelimage, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water)
+static bool Is_Translucent(GpuBlit const & blit)
+{
+	return(blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind != BlitDesc::XLAT);
+}
+
+
+// The stencil state that lets a draw pass each pixel once, through the next of the pass's stencil values.
+static uint32_t Once_Stencil(int & stencils)
+{
+	return(BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_FUNC_REF(++stencils) | BGFX_STENCIL_FUNC_RMASK(0xFF)
+		| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+}
+
+
+// A direct blit drawn into the scene. A copy writes the next depth slice. A translucent blit takes the next slice too
+// and blends once a pixel where the depth its pre-pass wrote (Depth_Pre_Pass) is equal, which is its nearest voxel,
+// drawing last first so that of voxels at equal depth the one a copy would show blends. A shadow darkens each pixel
+// once. GpuVoxel_Direct_Parts bounds the slices and stencil values.
+static GpuVoxelDirectBlit Scene_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int & slices, int & stencils)
+{
+	GpuVoxelDirectBlit direct = Direct_Blit(blit, quad, area, scale);
+	if (blit.Class() == GPU_BLIT_SHADOW) {
+		direct.State = Blend_State_For(KIND_DARKEN, 0);
+		direct.Stencil = Once_Stencil(stencils);
+	} else if (Is_Translucent(blit)) {
+		direct.Slice = slices++;
+		direct.State = Blend_State_For(Shader_Kind(blit.Desc), 0) | BGFX_STATE_DEPTH_TEST_EQUAL;
+		direct.Stencil = Once_Stencil(stencils);
+		direct.LastFirst = true;
+	} else {
+		direct.Slice = slices++;
+		direct.State = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
+	}
+	return(direct);
+}
+
+
+// A voxel blit of a cloaked object, which GpuDraw_Voxel_Cloak marks.
+static bool Is_Cloaked(GpuBlit const & blit)
+{
+	return(blit.Cloaked && Is_Translucent(blit));
+}
+
+
+// The cloaked voxel blits of the pass and the route of each, for the check's GPU_VOXEL_CLOAK line; Rippled counts those
+// drawn with the ripple.
+struct CloakCount
+{
+	int Direct = 0;
+	int Image = 0;
+	int Rippled = 0;
+};
+
+static CloakCount _CloakCount;
+
+
+// Starts the pass's next view, which copies the target as the draws before it left it; a draw in the view reads the copy
+// as s_snapshot. A sonic wave and a rippled cloak each take one of the VIEW_MAPWAVE views.
+static bgfx::ViewId Begin_Snapshot_View(bgfx::ViewId view, Rect const & area, float const * projection, int scale)
+{
+	view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
+	Set_Map_View(view, _Target, area, projection, scale);
+	// A view's blits run before its draws, so the copy holds everything drawn before this view.
+	bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+	return(view);
+}
+
+
+// Makes a cloaked blit draw with the ripple of fs_voxelscene.sc. The shader blends against the view's copy of the
+// target and writes the result, so the draw has no blend state.
+static void Ripple_Blit(GpuVoxelDirectBlit & direct, GpuBlit const & blit)
+{
+	direct.Values[15] = (float)(blit.Predator + 1);
+	direct.State = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_EQUAL;
+}
+
+
+// The draw that writes a translucent blit's depth, and no colour, before the blit blends.
+static GpuVoxelDirectBlit Depth_Pre_Pass(GpuVoxelDirectBlit const & blended)
+{
+	GpuVoxelDirectBlit depth = blended;
+	depth.State = BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
+	depth.Stencil = 0;
+	depth.LastFirst = false;
+	return(depth);
+}
+
+
+// Draws the base quad and then each blit's quad into the target, in blit order; a blit of a part the direct route
+// draws submits the part's layers instead. A sonic wave copies the target first, so it reads everything drawn before it.
+static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, bgfx::TextureHandle voxelimage, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water)
 {
 	int const quads = (int)list.Blits.size() + 1;
 	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection, scale);
+	bool const direct = std::any_of(tiles.begin(), tiles.end(), [](GpuVoxelTile const & tile) { return(tile.Direct); });
+	if (direct) {
+		bgfx::setViewClear(VIEW_MAPDRAW, BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, 0, 1.0f, 0);
+	}
+	MapVertex const * const vertices = (MapVertex const *)buffer.data;
+	int slices = 0;
+	int stencils = 0;
 	bgfx::ViewId view = VIEW_MAPDRAW;
+	// The views left for rippled cloaks once every sonic wave has its own.
+	int ripple_views = GpuVoxel_Cloak_Ripple() ? VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1 - Count_Sonic_Waves(list) : 0;
+	_CloakCount = CloakCount();
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
 		if (i > 0) {
@@ -1061,6 +1305,32 @@ static void Submit_Draws(GpuDrawList const & list, int scale, bgfx::TextureHandl
 		if (kind == KIND_DARKEN && shadowed) {
 			continue;
 		}
+		if (i > 0 && Is_Direct(list.Blits[i - 1], tiles)) {
+			GpuBlit const & blit = list.Blits[i - 1];
+			GpuVoxelDirectBlit drawn = Scene_Blit(blit, vertices[i * 6], area, scale, slices, stencils);
+			bool const cloaked = Is_Cloaked(blit);
+			bool const rippled = cloaked && blit.Predator >= 0 && ripple_views > 0;
+			_CloakCount.Direct += cloaked;
+			if (rippled) {
+				ripple_views--;
+				_CloakCount.Rippled++;
+				view = Begin_Snapshot_View(view, area, projection, scale);
+				Ripple_Blit(drawn, blit);
+			}
+			auto const bind = [ring, world, rippled]() {
+				Bind_Stores(ring);
+				if (rippled) {
+					bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
+					bgfx::setUniform(_WorldUniform, world);
+				}
+			};
+			if (Is_Translucent(blit)) {
+				GpuVoxel_Draw_Direct(list, Depth_Pre_Pass(drawn), scale, view, bind);
+			}
+			GpuVoxel_Draw_Direct(list, drawn, scale, view, bind);
+			continue;
+		}
+		_CloakCount.Image += i > 0 && Is_Cloaked(list.Blits[i - 1]);
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
@@ -1084,10 +1354,7 @@ static void Submit_Draws(GpuDrawList const & list, int scale, bgfx::TextureHandl
 			bgfx::setUniform(_WorldUniform, world);
 		}
 		if (kind == KIND_SONIC) {
-			// A view's blits run before its draws, so the wave reads everything drawn before it.
-			view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
-			Set_Map_View(view, _Target, area, projection, scale);
-			bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+			view = Begin_Snapshot_View(view, area, projection, scale);
 			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
@@ -1142,7 +1409,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
-	if (!Size_Target(area.Width, area.Height, scale)) {
+	if (!Size_Target(area.Width, area.Height, scale, GpuVoxel_Direct_Path())) {
 		DebugString("GPU_DIFF frame %d: no %dx%d target\n", pass.Frame, area.Width, area.Height);
 		return(false);
 	}
@@ -1155,14 +1422,17 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	std::vector<GpuVoxelTile> & tiles = _PassTiles;
 	tiles.clear();
-	if (!list.Voxels.empty() && !GpuVoxel_Submit(list, scale, tiles)) {
+	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, _SoftShadowRadius > 0);
+	if (!list.Voxels.empty() && !GpuVoxel_Submit(list, direct, scale, tiles)) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
 	}
 
 	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
-	// a ring of the area's width that starts at 0.
-	float ring[8] = { 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f, 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f };
+	// a ring of the area's size that starts at 0.
+	float ring[8];
+	Set_Ring(ring, 0, 0, area.Width, area.Height);
+	Set_Ring(ring + 4, 0, 0, area.Width, area.Height);
 	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
 	int const shadows = _SoftShadowRadius > 0 ? Count_Shadow_Blits(list) : 0;
@@ -1181,7 +1451,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	bool const clouds = _CloudStrength > 0;
 	bool const weather = _Weather != GPU_WEATHER_NONE && _WeatherStrength > 0;
 	float world[4] = { (float)pass.WorldX, (float)pass.WorldY, 0.0f, clouds ? 0.3f * _CloudStrength / 100.0f : 0.0f };
-	if (water || clouds || weather) {
+	if (water || clouds || weather || GpuVoxel_Cloak_Ripple()) {
 		// Wrapped every 1,000 seconds, so the float keeps its precision.
 		long long const ms = Monotonic_Milliseconds();
 		world[2] = (float)(ms % 1000000) / 1000.0f;
@@ -1207,13 +1477,13 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	if (shadowed) {
 		Submit_Shadows(list, tiles, scale, voxelimage, area, projection, ring, shadowquads, tileshadow);
 	}
-	Submit_Draws(list, scale, voxelimage, kinds, buffer, area, projection, ring, world, shadowed, water);
+	Submit_Draws(list, tiles, scale, voxelimage, kinds, buffer, area, projection, ring, world, shadowed, water);
 
 	bool const planed = pass.Glow != NULL && pass.GlowChanged != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
 	if (planed) {
 		Upload_Plane(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowChanged);
 	}
-	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, tiles, projection);
+	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, tiles, projection, ring);
 	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram);
 	if (glow) {
 		Submit_Glow(_MaskBuilt ? _MaskTexture : _GlowMask, area, scale);
@@ -1257,6 +1527,9 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 {
 	if (_Pending || !Submit_Pass(pass, 1)) {
 		return(false);
+	}
+	if (_CloakCount.Direct + _CloakCount.Image > 0) {
+		DebugString("GPU_VOXEL_CLOAK frame %d direct %d image %d ripple %d\n", pass.Frame, _CloakCount.Direct, _CloakCount.Image, _CloakCount.Rippled);
 	}
 	bgfx::blit(VIEW_MAPREAD, _Readback, 0, 0, _TargetTexture);
 	_ReadyFrame = bgfx::readTexture(_Readback, _Pixels.data());
@@ -1383,10 +1656,46 @@ static bool Is_Darkened(unsigned char const * rgba, unsigned short base)
 }
 
 
+// True when the target pixel holds, to within one 8-bit step, the base darkened two or three times the way the darken
+// blend does it in the 8-bit target (Blend_State_For, fs_mapdraw.sc). An object's pixel is a 565 colour widened to 8
+// bits, which such a value rarely equals in all three channels.
+static bool Is_Darkened_Again(unsigned char const * rgba, unsigned short base)
+{
+	int const maximum[3] = { 31, 63, 31 };
+	int const ground[3] = { base >> 11, (base >> 5) & 63, base & 31 };
+	float value[3];
+	for (int c = 0; c < 3; c++) {
+		value[c] = std::round(ground[c] * 255.0f / maximum[c]);
+	}
+	for (int times = 1; times <= 3; times++) {
+		bool matches = true;
+		for (int c = 0; c < 3; c++) {
+			value[c] = std::max(0.0f, std::round(value[c] * 0.5f - 255.0f * 0.25f / maximum[c]));
+			matches = matches && std::abs(rgba[c] - value[c]) <= 1.0f;
+		}
+		if (times >= 2 && matches && value[0] + value[1] + value[2] > 30.0f) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 static void Finish_Shadow_Count(void)
 {
+	// How many shadow rectangles cover each area pixel; ground that only one covers is darkened again only by its blit.
+	std::vector<unsigned char> cover((std::size_t)_ShadowCount.Width * _ShadowCount.Height, 0);
+	for (Rect const & rect : _ShadowCount.Rects) {
+		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
+			for (int x = rect.X; x < rect.X + rect.Width; x++) {
+				unsigned char & count = cover[(std::size_t)y * _ShadowCount.Width + x];
+				count = (unsigned char)std::min(count + 1, 255);
+			}
+		}
+	}
 	int pixels = 0;
 	int darkened = 0;
+	int twice = 0;
 	for (Rect const & rect : _ShadowCount.Rects) {
 		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
 			for (int x = rect.X; x < rect.X + rect.Width; x++) {
@@ -1394,13 +1703,16 @@ static void Finish_Shadow_Count(void)
 				int const tx = x * _ShadowCount.Scale + _ShadowCount.Scale / 2;
 				int const ty = y * _ShadowCount.Scale + _ShadowCount.Scale / 2;
 				unsigned char const * rgba = &_ShadowCount.Pixels[((std::size_t)ty * _ShadowCount.Width * _ShadowCount.Scale + tx) * 4];
-				if (Is_Darkened(rgba, _ShadowCount.Base[(std::size_t)y * _ShadowCount.Width + x])) {
+				std::size_t const at = (std::size_t)y * _ShadowCount.Width + x;
+				if (Is_Darkened(rgba, _ShadowCount.Base[at])) {
 					darkened++;
+				} else if (cover[at] == 1 && Is_Darkened_Again(rgba, _ShadowCount.Base[at])) {
+					twice++;
 				}
 			}
 		}
 	}
-	DebugString("GPU_VOXEL_SHADOW shadows %d pixels %d darkened %d\n", (int)_ShadowCount.Rects.size(), pixels, darkened);
+	DebugString("GPU_VOXEL_SHADOW shadows %d pixels %d darkened %d twice %d\n", (int)_ShadowCount.Rects.size(), pixels, darkened, twice);
 }
 
 
@@ -1408,10 +1720,11 @@ std::uint16_t GpuMap_Texture(void)
 {
 	if (_HasKept) {
 		_HasKept = false;
-		if (Submit_Pass(_Kept, _VoxelScale)) {
+		int const scale = Pass_Scale(_Kept.Area);
+		if (Submit_Pass(_Kept, scale)) {
 			_TargetDrawn = true;
 			if (_ShadowCount.Armed) {
-				Begin_Shadow_Count(_Kept, _VoxelScale);
+				Begin_Shadow_Count(_Kept, scale);
 			}
 		} else {
 			// The map area holds the key colour, so this frame shows the last picture, if one of the

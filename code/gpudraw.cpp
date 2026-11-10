@@ -55,10 +55,14 @@ static bool _VoxelsSmooth = false;
 // The part in GpuDrawList::Voxels the next blit from its source (the voxel buffer, or the scratch surface for
 // a composite) shows, or -1, and whether a blit has shown it yet.
 static int _PendingPart = -1;
+static bool _PendingCloaked = false;
+static int _PendingPredator = -1;
 static bool _PartShown = false;
 // The composite of a turreted vehicle that is being put together, and where the scratch surface's pixels are.
 static int _Composite = -1;
 static bool _CompositeRenders = false;
+// The first blit recorded after the open composite was shown.
+static std::size_t _CompositeFirstBlit = 0;
 static unsigned char const * _ScratchBase = NULL;
 static int _ScratchWidth = 0;
 static int _ScratchHeight = 0;
@@ -214,6 +218,8 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.VoxelX = 0;
 	blit.VoxelY = 0;
 	blit.NoPixels = false;
+	blit.Cloaked = false;
+	blit.Predator = -1;
 	if (blit.InAtlas) {
 		blit.Pixels = (std::uint32_t)atlas;
 		blit.Pitch = pitch;
@@ -335,6 +341,8 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 		int const source_size = part.Scratch ? _ScratchWidth * _ScratchHeight : VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT;
 		if (base != NULL && pixels >= base && pixels < base + source_size) {
 			blit.Voxel = _PendingPart;
+			blit.Cloaked = _PendingCloaked;
+			blit.Predator = _PendingPredator;
 			blit.VoxelX = (int)(pixels - base) % source_width - part.Area.X;
 			blit.VoxelY = (int)(pixels - base) / source_width - part.Area.Y;
 			_PartShown = true;
@@ -1003,8 +1011,12 @@ static void Render_Voxel_Pixels(void)
 		if (rendered != blit.Voxel) {
 			image = Render_Part(_List.Voxels[blit.Voxel]);
 			rendered = blit.Voxel;
-			if (Emissive_Is_Enabled() && !_List.Voxels[blit.Voxel].Scratch) {
-				Copy_Voxel_Mask(_List.Voxels[blit.Voxel]);
+			GpuVoxelPart & part = _List.Voxels[blit.Voxel];
+			if (Emissive_Is_Enabled() && !part.Scratch) {
+				Copy_Voxel_Mask(part);
+			} else if (Emissive_Is_Enabled() && GpuVoxel_Direct_Path()) {
+				// The software composite has no highlights, so the marks Mark_Composite_Mask left become 0.
+				part.MaskReference.assign((std::size_t)part.Area.Width * part.Area.Height, 0);
 			}
 		}
 		int const width = _List.Voxels[blit.Voxel].Area.Width;
@@ -1156,6 +1168,13 @@ ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags)
 }
 
 
+void GpuDraw_Voxel_Cloak(bool cloaked, int predator)
+{
+	_PendingCloaked = cloaked;
+	_PendingPredator = predator;
+}
+
+
 double GpuDraw_Facing_Steps(DirType const & facing)
 {
 	return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32()));
@@ -1302,6 +1321,8 @@ void GpuDraw_Voxel_End(void)
 		_List.Voxels.pop_back();
 	}
 	_PendingPart = -1;
+	_PendingCloaked = false;
+	_PendingPredator = -1;
 	_PartShown = false;
 }
 
@@ -1370,11 +1391,35 @@ void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty)
 	}
 	_PendingPart = _Composite;
 	_PartShown = false;
+	_CompositeFirstBlit = _List.Blits.size();
+}
+
+
+// The scratch surface has no emissive plane, so a composite's blit zeroes the target's plane under it. On the direct
+// route the GPU gives a composite highlights (docs/GPU_DIRECT_VOXELS.md, stage 5), so its blits leave the mark instead.
+static void Mark_Composite_Mask(void)
+{
+	if (!_CompositeRenders || !GpuVoxel_Direct_Path() || !Emissive_Is_Enabled()) {
+		return;
+	}
+	EmissivePlane * plane = Emissive_Plane_For(_Target);
+	if (plane == NULL) {
+		return;
+	}
+	for (std::size_t i = _CompositeFirstBlit; i < _List.Blits.size(); i++) {
+		GpuBlit const & blit = _List.Blits[i];
+		if (blit.Voxel == _Composite) {
+			Emissive_Fill_Rect(*plane, blit.X, blit.Y, blit.Width, blit.Height, GPU_VOXEL_MASK_MARK);
+		}
+	}
 }
 
 
 void GpuDraw_Composite_End(void)
 {
+	if (_Composite >= 0 && _PendingPart == _Composite) {
+		Mark_Composite_Mask();
+	}
 	if (_Composite >= 0 && _PendingPart != _Composite && _Composite == (int)_List.Voxels.size() - 1) {
 		_List.Voxels.pop_back();
 	}

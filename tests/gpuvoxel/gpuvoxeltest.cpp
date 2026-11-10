@@ -11,7 +11,9 @@
 // layers in every orientation, drawing the walked voxels the way the shader does must give the
 // same 256 by 256 buffer as the drawer. Needs no game data.
 
+#include <cfloat>
 #include <climits>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -227,6 +229,104 @@ int main(void)
 		store.Empty();
 		ok = ok && store.Place(2, size, 30, 20, x, y, fresh) && fresh && x == 0 && y == 0;
 		std::printf("%-52s %s\n", "tile store reuses signatures and packs shelves", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// Depths as a D24 attachment stores them.
+		auto const stored = [](float depth) {
+			return((long long)std::llround((double)depth * 16777215.0));
+		};
+		float const places[] = { 0.0f, 1.0e-7f, 0.25f, 0.5f, 0.999999f, 1.0f, -0.5f, 1.5f };
+		bool ok = Gpu_Voxel_Slice_Depth(0, 1.0f) == 1.0f;
+		for (int slice = 0; slice + 1 < GPU_VOXEL_SLICES && ok; slice++) {
+			for (float earlier : places) {
+				for (float later : places) {
+					float const behind = Gpu_Voxel_Slice_Depth(slice, earlier);
+					float const ahead = Gpu_Voxel_Slice_Depth(slice + 1, later);
+					ok = ok && ahead <= behind && stored(ahead) <= stored(behind);
+				}
+			}
+		}
+		std::printf("%-52s %s\n", "slice n + 1 is never behind slice n", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// A part of three layers, the last larger than the depth steps of one slice.
+		int const counts[] = { 5, 1, 20000 };
+		int const total = 5 + 1 + 20000;
+		bool ok = true;
+		float last = 2.0f;
+		int first = 0;
+		for (int count : counts) {
+			GpuVoxelLayerDepth const depth = Gpu_Voxel_Ordered_Depth(first, total);
+			for (int voxel = 0; voxel < count && ok; voxel++) {
+				float const d = depth.Origin + (float)voxel * depth.PerVoxel;
+				float const written = Gpu_Voxel_Slice_Depth(7, d);
+				ok = d >= 0.0f && d <= 1.0f && written <= last;
+				last = written;
+			}
+			first += count;
+		}
+		std::printf("%-52s %s\n", "ordered depth never moves back along the walk", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// A layer whose X axis runs toward the viewer: its first column is farthest and its last nearest.
+		VoxelRenderStruct object = {};
+		object.AnchorCornerIndex = 0;
+		VoxelRenderOrientation const & o = VoxelRenderOrientations[0];
+		for (Vector3 & corner : object.BoxCorner) {
+			corner = Vector3(0.0f, 0.0f, 3.0f);
+		}
+		object.BoxCorner[o.CornerX] = Vector3(0.0f, 0.0f, 3.0f + XSIZE);
+		VoxelFuncArgumentStruct arg;
+		Setup(arg, 0);
+		GpuVoxelLayerDepth const depth = Gpu_Voxel_Shared_Depth(object, arg, 3.0f + XSIZE, 3.0f);
+		auto const place = [&depth](float i) {
+			return(depth.Origin + i * depth.Step[0]);
+		};
+		bool const ok = place(0.0f) == 1.0f && std::fabs(place((float)XSIZE)) < 1.0e-6f &&place(1.0f) < place(0.0f) && depth.Step[1] == 0.0f && depth.Step[2] == 0.0f;
+		std::printf("%-52s %s\n", "shared depth puts the nearer voxel in front", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
+
+	{
+		// A hull whose box spans view Z 0 to 4, and a turret placed by its matrix 2 nearer, spanning 2 to 6. The turret
+		// is drawn second, so drawing order alone would put it in front everywhere; shared depth must put each part
+		// where its view Z is, so the turret's front is nearer than the hull's front and its back behind it.
+		VoxelRenderOrientation const & o = VoxelRenderOrientations[0];
+		auto const piece = [&o](float back, float front) {
+			VoxelRenderStruct object = {};
+			object.AnchorCornerIndex = 0;
+			for (Vector3 & corner : object.BoxCorner) {
+				corner = Vector3(0.0f, 0.0f, back);
+			}
+			object.BoxCorner[o.CornerX] = Vector3(0.0f, 0.0f, front);
+			return(object);
+		};
+		VoxelRenderStruct const hull = piece(0.0f, 4.0f);
+		VoxelRenderStruct const turret = piece(2.0f, 6.0f);
+		float nearest = -FLT_MAX;
+		float farthest = FLT_MAX;
+		Gpu_Voxel_Widen_Depth_Range(hull, nearest, farthest);
+		Gpu_Voxel_Widen_Depth_Range(turret, nearest, farthest);
+		VoxelFuncArgumentStruct arg;
+		Setup(arg, 0);
+		GpuVoxelLayerDepth const hull_depth = Gpu_Voxel_Shared_Depth(hull, arg, nearest, farthest);
+		GpuVoxelLayerDepth const turret_depth = Gpu_Voxel_Shared_Depth(turret, arg, nearest, farthest);
+		auto const place = [](GpuVoxelLayerDepth const & depth, float i) {
+			return(depth.Origin + i * depth.Step[0]);
+		};
+		float const hull_front = place(hull_depth, (float)XSIZE);
+		float const turret_front = place(turret_depth, (float)XSIZE);
+		float const turret_back = place(turret_depth, 0.0f);
+		bool const ok = nearest == 6.0f && farthest == 0.0f && std::fabs(turret_front) < 1.0e-6f && std::fabs(place(hull_depth, 0.0f) - 1.0f) < 1.0e-6f
+			&& turret_front < hull_front && turret_back > hull_front
+			&& Gpu_Voxel_Slice_Depth(9, turret_front) < Gpu_Voxel_Slice_Depth(9, hull_front);
+		std::printf("%-52s %s\n", "shared depth orders two pieces by their placement", ok ? "ok" : "FAILED");
 		failures += ok ? 0 : 1;
 	}
 	return(failures == 0 ? 0 : 1);

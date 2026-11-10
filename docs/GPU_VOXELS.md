@@ -29,6 +29,12 @@ a predator draw through the plain translucent blend (see "Where pixel-exact draw
 
 A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
 
+This page describes that route, the image route. `GpuVoxelPath=Direct` (`[Video]`, default `Image`) draws opaque
+and translucent voxel objects, turreted vehicles included, and their shadows straight into the map pass, or into the soft shadow mask, with a
+depth buffer instead, so they take no tile; with `GpuVoxelLayerDepth=Ordered` the picture is the same at scale 1 to 4
+wherever the image route draws its parts at the full scale. Direct parts keep their route while the emissive mask is on
+and write their highlights from their layers, turreted vehicles included. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) describes the direct route and its measurements.
+
 Stage 3 is in. While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also writes each
 voxel's highlight strength beside its index and feeds the glow and the HDR picture from it; see Highlights below.
 
@@ -90,9 +96,9 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 - A shadow is one flat layer. `Gpu_Voxel_Walk_Shadow` lists one voxel with K 0 and colour 1 for each occupied column,
   `VoxelLibrary::Setup_Shadow` gives the projection the software shadow drawer uses, and the shader writes two
   pixels a column through the identity palette row. A voxel animation's shadow is drawn the same way.
-- The recorded blit has no pixels of its own. Its colour index offset points into the voxel image (`GPU_VOXEL_BASE`
-  in `code/gpumapvoxel.h`), and `fs_mapdraw.sc` reads the index there and then does everything it does for any
-  blit: translator, alpha lighting, depth test, blend kind.
+- The recorded blit has no pixels of its own. Its colour index offset is negative, -1 minus a texel of the voxel image
+  (`Source_Offset` in `code/gpumap.cpp`), and `fs_mapdraw.sc` reads the index there and then does everything it does
+  for any blit: translator, alpha lighting, depth test, blend kind.
 - A turreted vehicle is one part with a piece for each of its hull, turret and barrel, drawn in the order the
   software draws them: the hull, then the barrel and the turret, the barrel before the turret at some turret
   facings and after it at the others. The software composes them on the 160 by 160 scratch surface, where a later
@@ -143,7 +149,7 @@ two tanks and a Kirov at zoom 1, 2 and 3 for comparing scales by eye and by edge
 
 A shadow's column is drawn as its flat cell, the one face of the cube a zero Z step leaves, in the same tile as a
 direct part, so a shadow stays in register with its object at any scale. With `SoftShadows`, the shadow reads its tile
-for the map-sized mask.
+for the map-sized mask; on the direct route its layers are drawn into that mask at scale 1.
 
 The scale also applies to a turreted vehicle's parts: each piece's offset inside the tile and the clip that keeps it in its tile are scaled the same way, so hull, turret and barrel stay in register and, with `GpuVoxelSmooth=yes`, sharpen at their exact facings.
 
@@ -200,8 +206,9 @@ part's blit, in order, the strength from the part's tile wherever the plane hold
 place of the plane, and the present draws it over the map area for the HDR composite. A pass the GPU cannot draw renders
 its parts in software and replaces the marks with their real strengths.
 
-A turreted composite writes no mask, as in the software: the scratch surface has no plane, so its blit zeroes the mask under
-its rectangle. With `GpuVoxels` off, a picture read from the voxel cache carries no mask either, so a cached software
+A turreted composite writes no mask on the image route, as in the software: the scratch surface has no plane, so its blit
+zeroes the mask under its rectangle. On the direct route its blit leaves the mark instead, and its highlights are drawn
+from its layers ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), stage 5). With `GpuVoxels` off, a picture read from the voxel cache carries no mask either, so a cached software
 vehicle has no highlights; the GPU draws every part afresh, so a vehicle with no turret glows on every pass.
 
 A mask value of exactly 1 written by some other effect over a part's rectangle is taken for the mark and replaced by the
@@ -247,9 +254,9 @@ While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cach
 
 `GPU_VOXEL` compares the voxel image and `gpucheck` compares against a software replay, so neither shows a shadow the depth test rejects in both. The `gpushadowcount` step reads back the picture a `GpuRender=yes` pass drew and logs one line:
 
-`GPU_VOXEL_SHADOW shadows B pixels P darkened D`
+`GPU_VOXEL_SHADOW shadows B pixels P darkened D twice T`
 
-`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `tests/autotest/gpu-voxel-shadow.txt` runs it at scale 1 and `gpu-voxel-shadow-bloom.txt` at scale 2 under `Bloom`, each with two tanks and a Kirov over sand:
+`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `T` counts the pixels inside only one shadow's rectangle that show the ground darkened two or three times, to within one 8-bit step of what the darken blend gives, which a shadow drawn as overlapping cells without a once-per-blit rule leaves; it is 0 on both routes in these scenes, and about 500 at scale 1 when the direct route draws hard shadows without its stencil. A part of an object whose colour matches such a value in all three channels would also count. `tests/autotest/gpu-voxel-shadow.txt` runs it at scale 1 and `gpu-voxel-shadow-bloom.txt` at scale 2 under `Bloom`, each with two tanks and a Kirov over sand:
 
 | Script | Shadows | Pixels | Darkened | Darkened with the ground gradient |
 |---|---|---|---|---|
@@ -310,12 +317,13 @@ Each stage has a check that fails when its picture departs from the software.
   clips it. Objects sit near the buffer's centre, so no object we have drawn reaches that column.
 - Hardware blending cannot reproduce the software's flooring of halved and quartered terms; this limits the
   translucent blits ([GPU_MAP.md](GPU_MAP.md), Limits), translucent voxels included.
-- With `GpuVoxels=yes`, a cloaked voxel object has no ripple: it is drawn as the plain 25% or 50% translucent blend.
-  Only the cached voxel images go through `RLE_Blit`, which applies the predator offset, and `GpuVoxels` draws none of
-  them. `Bit_Blit` ignores the offset, so an uncached software draw looks the same as the GPU's.
+- A cloaked voxel object is drawn as the plain 25% or 50% translucent blend, by the software and by the image route.
+  `RLE_Blit` and `Bit_Blit` both give their blitter a warp offset of 0, so the `Warp` blitters read the pixel they write.
+  `GpuVoxelCloak=Ripple` on the direct route adds a ripple the software does not draw ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple").
 - The model texture holds about a million voxels' worth of walks (a layer is stored once for each of the eight
   orientations it is drawn in) and is emptied when full, so a pass with more distinct layers than that falls back
   to software. A pass that does not fit what is left of the voxel image empties the image first. A pass whose parts
   do not fit an empty image at `GpuVoxelScale` draws its largest parts at a smaller scale (see Sharpness); only a
   pass whose parts do not fit an empty image even at scale 1, several hundred of average size, is drawn in software.
+  Parts on the direct route take no tile and keep `GpuVoxelScale`.
 - A float lighting model (stage 6) cannot give the software's palette rows, so it is a separate look.

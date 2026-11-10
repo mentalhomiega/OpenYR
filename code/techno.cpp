@@ -8610,6 +8610,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 
 	// The GPU composes the pieces of the scratch surface itself, so the software leaves it empty.
 	if (!(gpu_draws && composited)) {
+		GpuDraw_Voxel_Cloak(Visual_Character() != VISUAL_NORMAL, (flags & SHAPE_PREDATOR) ? predoffset : -1);
 		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
 	}
 	if (gpu && !composited) {

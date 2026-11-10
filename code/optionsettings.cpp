@@ -25,6 +25,22 @@ constexpr NameEntry Weather_Names[] = {
 };
 
 
+constexpr NameEntry GpuVoxelPath_Names[] = {
+	{ "Image", GPU_VOXEL_PATH_IMAGE },
+	{ "Direct", GPU_VOXEL_PATH_DIRECT },
+};
+
+constexpr NameEntry GpuVoxelLayerDepth_Names[] = {
+	{ "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED },
+	{ "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED },
+};
+
+constexpr NameEntry GpuVoxelCloak_Names[] = {
+	{ "Translucent", GPU_VOXEL_CLOAK_TRANSLUCENT },
+	{ "Ripple", GPU_VOXEL_CLOAK_RIPPLE },
+};
+
+
 constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
@@ -110,6 +126,21 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Voxel sharpness",
 		.Tip = "Draws the map at this many times its pixels, so voxel objects stay sharp in a zoomed view. Works with Draw voxels on the GPU. Needs GPU drawing.",
 		.Needs = "GpuRender", .Unit = "x",
+	},
+	{
+		.Section = "Video", .Key = "GpuVoxelPath",
+		.Number = &OptionsClass::GpuVoxelPath, .Default = GPU_VOXEL_PATH_IMAGE, .Names = GpuVoxelPath_Names,
+		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Draw voxels directly",
+		.Tip = "Draws voxel objects straight into the map picture instead of through a shared voxel image, so turrets and barrels hide each other by depth and sharpness never falls back. Experimental. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Needs = "GpuRender", .SwitchOn = GPU_VOXEL_PATH_DIRECT,
+	},
+	{
+		.Section = "Video", .Key = "GpuVoxelLayerDepth",
+		.Number = &OptionsClass::GpuVoxelLayerDepth, .Default = GPU_VOXEL_LAYER_DEPTH_SHARED, .Names = GpuVoxelLayerDepth_Names,
+	},
+	{
+		.Section = "Video", .Key = "GpuVoxelCloak",
+		.Number = &OptionsClass::GpuVoxelCloak, .Default = GPU_VOXEL_CLOAK_TRANSLUCENT, .Names = GpuVoxelCloak_Names,
 	},
 	{
 		.Section = "Video", .Key = "Weather",

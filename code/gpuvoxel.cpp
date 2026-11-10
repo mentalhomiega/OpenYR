@@ -106,6 +106,49 @@ void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vect
 }
 
 
+float Gpu_Voxel_Slice_Depth(int slice, float d)
+{
+	return(((float)(GPU_VOXEL_SLICES - 1 - slice) + std::clamp(d, 0.0f, 1.0f)) * (1.0f / GPU_VOXEL_SLICES));
+}
+
+
+GpuVoxelLayerDepth Gpu_Voxel_Ordered_Depth(int first, int total)
+{
+	GpuVoxelLayerDepth depth;
+	depth.Origin = (float)(total - first) / (float)(total + 1);
+	depth.PerVoxel = -1.0f / (float)(total + 1);
+	return(depth);
+}
+
+
+GpuVoxelLayerDepth Gpu_Voxel_Shared_Depth(VoxelRenderStruct const & object, VoxelFuncArgumentStruct const & arg, float nearest, float farthest)
+{
+	GpuVoxelLayerDepth depth;
+	float const range = nearest - farthest;
+	if (!(range > 0.0f)) {
+		return(depth);
+	}
+	VoxelRenderOrientation const & orientation = VoxelRenderOrientations[object.AnchorCornerIndex];
+	float const origin = object.BoxCorner[orientation.Corner0].Z;
+	int const axes[3] = { orientation.CornerX, orientation.CornerY, orientation.CornerZ };
+	int const sizes[3] = { std::max<int>(arg.XSize, 1), std::max<int>(arg.YSize, 1), std::max<int>(arg.ZSize, 1) };
+	depth.Origin = (nearest - origin) / range;
+	for (int axis = 0; axis < 3; axis++) {
+		depth.Step[axis] = -(object.BoxCorner[axes[axis]].Z - origin) / (float)sizes[axis] / range;
+	}
+	return(depth);
+}
+
+
+void Gpu_Voxel_Widen_Depth_Range(VoxelRenderStruct const & object, float & nearest, float & farthest)
+{
+	for (Vector3 const & corner : object.BoxCorner) {
+		nearest = std::max(nearest, corner.Z);
+		farthest = std::min(farthest, corner.Z);
+	}
+}
+
+
 bool GpuVoxelShelf::Place(int size, int width, int height, int & x, int & y)
 {
 	if (width > size) {

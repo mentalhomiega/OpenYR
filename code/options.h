@@ -57,6 +57,27 @@ enum WeatherMode {
 	WEATHER_SNOW
 };
 
+// How GpuVoxels draws a voxel object: into the voxel image, which the object's blit then reads, or straight into the
+// map pass's scene (docs/GPU_DIRECT_VOXELS.md).
+enum GpuVoxelPathMode {
+	GPU_VOXEL_PATH_IMAGE,
+	GPU_VOXEL_PATH_DIRECT
+};
+
+// How the direct voxel route orders the layers of one object: Shared by their depth, Ordered by the software's
+// drawing order, which gives the image route's pixels.
+enum GpuVoxelLayerDepthMode {
+	GPU_VOXEL_LAYER_DEPTH_SHARED,
+	GPU_VOXEL_LAYER_DEPTH_ORDERED
+};
+
+// How the direct voxel route draws a cloaked object: as a plain translucent blend, or with the predator ripple the
+// software applies to a cached voxel picture.
+enum GpuVoxelCloakMode {
+	GPU_VOXEL_CLOAK_TRANSLUCENT,
+	GPU_VOXEL_CLOAK_RIPPLE
+};
+
 // The faction tint of the modern menus. Random picks one of the three when the game starts.
 enum MenuThemeType {
 	MENU_THEME_RANDOM,
@@ -337,6 +358,11 @@ class OptionsClass {
 
 		// With GpuVoxels, 1 to 4: how many times finer than the map pixels the GPU draws voxel objects (docs/GPU_VOXELS.md).
 		int GpuVoxelScale;
+
+		// With GpuVoxels, a GpuVoxelPathMode, and for the direct path a GpuVoxelLayerDepthMode and a GpuVoxelCloakMode (docs/GPU_DIRECT_VOXELS.md).
+		int GpuVoxelPath;
+		int GpuVoxelLayerDepth;
+		int GpuVoxelCloak;
 
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;

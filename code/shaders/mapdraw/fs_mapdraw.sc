@@ -19,7 +19,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
-// Offsets of VOXEL_BASE and up in v_texcoord1.x read the voxel image s_voxel instead of s_index.
+// A negative offset in v_texcoord1.x reads the voxel image s_voxel instead of s_index, at texel -1 minus the offset.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
 // u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
 // each of them as scale by scale pixels, and a voxel blit reads its tile at its tile's scale times the blit's pixel rate),
@@ -27,49 +27,19 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // w how bright the glints of sunlight on them are.
 
 #include "bgfx_shader.sh"
+#include "mapcommon.sh"
 
 SAMPLER2D(s_index, 0);
-SAMPLER2D(s_lut, 1);
-SAMPLER2D(s_alut, 2);
-SAMPLER2D(s_zbuf, 3);
-SAMPLER2D(s_abuf, 4);
-SAMPLER2D(s_zshape, 5);
 SAMPLER2D(s_base, 6);
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
 SAMPLER2D(s_voxel, 10);
-uniform vec4 u_ring[2];
 uniform vec4 u_world;
 uniform vec4 u_water;
 
-#define ARENA_WIDTH 4096
-// Offsets from here on are texels of the voxel image s_voxel, VOXEL_IMAGE_SIZE a row (code/gpumapvoxel.h).
-#define VOXEL_BASE 8388608
+// The voxel image s_voxel has VOXEL_IMAGE_SIZE texels a row (code/gpumapvoxel.h).
 #define VOXEL_IMAGE_SIZE 2048
-
-int Fetch8(sampler2D s, int offset)
-{
-	return int(texelFetch(s, ivec2(offset % ARENA_WIDTH, offset / ARENA_WIDTH), 0).x * 255.0 + 0.5);
-}
-
-int Fetch16(sampler2D s, ivec2 p)
-{
-	return int(texelFetch(s, p, 0).x * 65535.0 + 0.5);
-}
-
-// The texel of a ring buffer holding area pixel p; ring is u_ring[i] (start, width, size).
-ivec2 Ring(ivec2 p, vec4 ring)
-{
-	int width = int(ring.y + 0.5);
-	int index = (int(ring.x + 0.5) + p.y * width + p.x) % int(ring.z + 0.5);
-	return ivec2(index % width, index / width);
-}
-
-vec3 Rgb565(int c)
-{
-	return vec3(float((c / 2048) % 32) / 31.0, float((c / 32) % 64) / 63.0, float(c % 32) / 31.0);
-}
 
 // The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
 int Plane(ivec2 p)
@@ -150,10 +120,10 @@ void main()
 	// Offsets are whole numbers, and adding 0.5 would round them from 2^23 up, where a float spaces by one.
 	int offset = int(v_texcoord1.x);
 	int index;
-	if (offset >= VOXEL_BASE) {
+	if (offset < 0) {
 		int tilescale = width;
 		ivec2 fine = ivec2(floor(v_texcoord0.xy * float(tilescale)));
-		int at = offset - VOXEL_BASE + fine.y * VOXEL_IMAGE_SIZE + fine.x;
+		int at = -1 - offset + fine.y * VOXEL_IMAGE_SIZE + fine.x;
 		index = int(texelFetch(s_voxel, ivec2(at % VOXEL_IMAGE_SIZE, at / VOXEL_IMAGE_SIZE), 0).x * 255.0 + 0.5);
 	} else {
 		index = Fetch8(s_index, offset + local.y * width + local.x);
@@ -233,65 +203,23 @@ void main()
 		return;
 	}
 
-	if (kind != 6 && v_texcoord3.w < 0.5) {
-		int z = int(v_texcoord2.x);
-		int denominator = int(v_texcoord2.w + 0.5);
-		if (denominator != 0) {
-			z += int(v_texcoord3.x) * ((int(v_texcoord2.y + 0.5) + local.y * denominator) / int(v_texcoord2.z + 0.5));
-		}
-		int shape = 0;
-		if (v_texcoord3.y >= 0.0) {
-			shape = Fetch8(s_zshape, int(v_texcoord3.y + 0.5) + local.y * width + local.x);
-			if (shape > 127) {
-				shape -= 256;
-			}
-		}
-		if (!((z - shape) < Fetch16(s_zbuf, Ring(area, u_ring[0])))) {
-			discard;
-		}
+	if (kind != 6 && v_texcoord3.w < 0.5 && !Row_Depth_Passes(local, area, width, v_texcoord2, v_texcoord3)) {
+		discard;
 	}
 
-	// The software blends floor each halved or quartered term. The source term is floored here; the
-	// blend scales the target by alpha and takes off rgb, which is centred on the flooring loss of the
-	// target term.
 	if (kind == 8) {
 		gl_FragColor = vec4_splat(1.0);
 		return;
 	}
-	vec3 unit = vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0);
 	if (kind == 1) {
-		gl_FragColor = vec4(0.25 * unit, 0.5);
+		gl_FragColor = vec4(0.25 / 31.0, 0.25 / 63.0, 0.25 / 31.0, 0.5);
 		return;
 	}
 
-	int band = 0;
-	if (v_texcoord1.w >= 0.0) {
-		// The alpha buffer value indexes on past the row's end the way the software lookup does.
-		int entry = int(v_texcoord1.w + 0.5) * 256 + Fetch16(s_abuf, Ring(area, u_ring[1]));
-		band = Fetch16(s_alut, ivec2(entry % 256, entry / 256));
-	}
-	int value = index + band;
-	int colour = Fetch16(s_lut, ivec2(value % 256, int(v_texcoord1.z + 0.5) + value / 256));
+	int colour = Translated_Colour(index, area, v_texcoord1);
 	if (kind == 0 || kind == 6) {
 		gl_FragColor = vec4(Rgb565(colour), 1.0);
 		return;
 	}
-	ivec3 channel = ivec3((colour / 2048) % 32, (colour / 32) % 64, colour % 32);
-	vec3 source;
-	vec3 loss;
-	float keep;
-	if (kind == 2) {
-		source = vec3(channel / 4) * 3.0;
-		loss = vec3_splat(0.375);
-		keep = 0.25;
-	} else if (kind == 3) {
-		source = vec3(channel / 2);
-		loss = vec3_splat(0.25);
-		keep = 0.5;
-	} else {
-		source = vec3(channel / 4);
-		loss = vec3_splat(1.125);
-		keep = 0.75;
-	}
-	gl_FragColor = vec4(max(source - loss, vec3_splat(0.0)) * unit, keep);
+	gl_FragColor = Translucent_Output(kind, colour);
 }

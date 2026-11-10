@@ -11,7 +11,7 @@ page of the settings, to draw in software everywhere.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), and `vs_mapvoxel.sc` with `fs_mapvoxel.sc` (voxel parts), each compiled into a `.bin.h` header. |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), `vs_mapvoxel.sc` with `fs_mapvoxel.sc` (voxel parts in the voxel image), and `vs_voxelscene.sc` with `fs_voxelscene.sc` (voxel parts drawn straight into the pass, [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)), each compiled into a `.bin.h` header. `mapcommon.sh` and `voxelwalk.sh` hold the code those shaders share. |
 | Voxel renderer | `code/gpumapvoxel.cpp` | Draws the voxel parts of a pass into the voxel image that the pass's blits read ([GPU_VOXELS.md](GPU_VOXELS.md)). |
 
 Voxel objects that are blitted straight into the map view can be drawn on the GPU from their voxels with
@@ -66,7 +66,7 @@ The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTI
 | `WeatherStrength` | `100` | How much snow or rain falls, in percent, from 1 to 400. |
 | `GpuVoxels` | `no` | With `GpuRender`, vehicles, aircraft, their shadows, voxel animations and bullets are drawn from their voxels on the GPU, and vehicles and aircraft with no turret feed their highlights to `Bloom` and HDR Enhanced. The Graphics page sets it. See [GPU_VOXELS.md](GPU_VOXELS.md). |
 | `GpuVoxelSmooth` | `no` | With `GpuVoxels`, an object the GPU draws from its voxels turns to its exact facing instead of the nearest of 32. See [GPU_VOXELS.md](GPU_VOXELS.md). |
-| `GpuVoxelScale` | `1` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube's outline, so voxel objects stay sharp in a zoomed map view. See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuVoxelScale` | `1` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube's outline, so voxel objects stay sharp in a zoomed map view. A very large map view draws at a lower scale (Limits). See [GPU_VOXELS.md](GPU_VOXELS.md). |
 
 ## Limits
 
@@ -88,11 +88,18 @@ The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTI
 - A sonic or magnetron wave lifts each shifted pixel from the picture as it stood before the wave.
   The software lifts some pixels from ones the wave has already shifted, so the ripple can differ by
   a pixel. A pass with more than 8 waves is drawn in software.
-- A pass that would not fit the GPU's limits (more than 8 waves, an area or arena past the texture
-  size, too many vertices for the frame) is drawn in software. So is a map view of more than
-  16,777,216 pixels, such as 7680x4320, because the shader reads positions as 32-bit floats. If the GPU still cannot take the kept
-  pass when the frame is presented, that frame shows the last GPU picture and the next pass is drawn
-  in software.
+- A pass that would not fit the GPU's limits is drawn in software: more than 8 waves, a map view, depth buffer or alpha
+  buffer wider or taller than 16,384 pixels, an arena past the texture size, too many vertices for the frame, or more
+  than 12,582,912 bytes of blit pixels outside the shape atlas or 16,777,216 bytes of depth shapes, whose offsets the
+  shader reads as 32-bit floats. If the GPU still cannot take the kept pass when the frame is presented, that frame
+  shows the last GPU picture and the next pass is drawn in software.
+- The map view's pixel count has no limit of its own, because the shader finds a pixel of the depth and alpha buffers
+  by row and column. Zoomed fully out on a 3840x2160 screen, a 7546x4245 view (32 million pixels) is drawn on the GPU
+  (times in [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), Performance budget), and `tests/autotest/gpu-map-zoomed-out.txt`
+  checks that no such pass is drawn in software.
+- With `GpuVoxelScale` above 1, a pass whose picture at that scale would be wider or taller than 16,384 pixels or
+  larger than 134,217,728 pixels (536.9 MB in RGBA8, a little over a 3840x2160 view at scale 4) is drawn at the
+  largest scale within both limits, down to 1. Zoomed fully out at 3840x2160, scales 3 and 4 draw at 2.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
   picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 254 pictures per second
@@ -134,10 +141,11 @@ file, rebuild its header from the repository root with a `shaderc` built from
 shaderc -f code/shaders/mapdraw/fs_mapdraw.sc -o fs_mapdraw.bin --type fragment --platform windows -p s_5_0 -O 3 --varyingdef code/shaders/mapdraw/varying.def.sc -i thirdparty/bgfx.cmake/bgfx/src
 ```
 
-Use `--type vertex` for `vs_mapdraw.sc`. Then write each `.bin` into its header as a
+Use `--type vertex` for the `vs_` files. After editing `mapcommon.sh` or `voxelwalk.sh`, rebuild every shader that
+includes it. Then write each `.bin` into its header as a
 `static const uint8_t <name>_dxbc[]` array, keeping the comment line at the top. `shaderc` rejects
 the `vs_5_0` and `ps_5_0` profile names; use `s_5_0` for both.
 
-Every fragment shader must declare the same `$input` list as `vs_mapdraw.sc` outputs, even inputs
+A fragment shader must declare the same `$input` list as its vertex shader outputs (`vs_mapdraw.sc` for most of them), even inputs
 it does not read. bgfx refuses to build a program whose fragment inputs differ, and the effect that
 uses it then draws nothing.

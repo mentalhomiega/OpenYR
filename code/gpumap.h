@@ -130,7 +130,8 @@ enum GpuWeather {
 // Draws weather falling over the map, with strength percent (at most 400) of the usual amount.
 void GpuMap_Set_Weather(GpuWeather weather, int strength);
 
-// Draws the map pass, and the voxel objects in it, at scale times the map's own pixels (1 to 4). Only the
+// Draws the map pass, and the voxel objects in it, at scale times the map's own pixels (1 to 4). A pass whose picture
+// at that scale would be over 16384 pixels a side or 2^27 pixels is drawn at the largest scale under both. Only the
 // presenter shows the finer picture; the software result and the GPU_DIFF check stay at scale 1.
 void GpuMap_Set_Voxel_Scale(int scale);
 
