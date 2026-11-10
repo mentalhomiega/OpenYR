@@ -569,6 +569,7 @@ bool Main_Loop(void)
 	{
 		PerfScope logic_scope(PERF_FRAME_LOGIC);
 		Sync_Enter_Frame_Logic();
+		Restore_Off_Map_Cell_Location();
 		Logic.AI();
 	}
 	AutoTest_Frame();
@@ -592,6 +593,7 @@ bool Main_Loop(void)
 		PerfScope queue_scope(PERF_FRAME_QUEUE);
 		Queue_AI();
 	}
+	Remember_Off_Map_Cell_Location();
 	Sync_Leave_Frame_Logic();
 
 	Call_Back();

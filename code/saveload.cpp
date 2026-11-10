@@ -1071,6 +1071,7 @@ bool Load_Game(const char *file_name)
 	**	data loaded.
 	*/
 	Post_Load_Game();
+	Reset_Off_Map_Cell_Location();
 
 	// The next mission of a resumed campaign is played at the pair the save carries.
 	Session.CampaignDifficulty = Scen->Difficulty;
