@@ -81,6 +81,45 @@ GpuVoxelLayerDepth Gpu_Voxel_Shared_Depth(VoxelRenderStruct const & object, Voxe
 void Gpu_Voxel_Widen_Depth_Range(VoxelRenderStruct const & object, float & nearest, float & farthest);
 
 
+inline constexpr int GPU_VOXEL_DIRECTIONS = 6;
+
+// One face of a voxel that has no voxel beside it, at the voxel's position on the layer's own axes, which no
+// orientation changes. Direction 2 * axis is the face toward the axis's start and 2 * axis + 1 the one toward its end.
+struct GpuVoxelFace
+{
+	unsigned char X;
+	unsigned char Y;
+	unsigned char Z;
+	unsigned char Direction;
+	unsigned char Colour;
+	unsigned char Normal;
+};
+
+// A layer's exposed faces sorted by direction: those of direction d are Faces[First[d]] up to Faces[First[d + 1]].
+struct GpuVoxelFaceList
+{
+	std::vector<GpuVoxelFace> Faces;
+	int First[GPU_VOXEL_DIRECTIONS + 1] = {};
+};
+
+// Lists the exposed faces of the layer arg names, whatever orientation arg was set up for. A layer with normals
+// carries a normal byte per voxel.
+void Gpu_Voxel_Faces(VoxelFuncArgumentStruct const & arg, bool normals, GpuVoxelFaceList & out);
+
+// A walk's projection and depth for voxel positions on the layer's own axes, and the three directions whose faces
+// are turned toward the viewer, one an axis.
+struct GpuVoxelModelView
+{
+	Vector3i16 Projection[4];
+	GpuVoxelLayerDepth Depth;
+	int Visible[3];
+};
+
+// Restates the walk of arg: a voxel at (x, y, z) on the layer's axes gets the pixel and the depth the walk gives it.
+// The depth's PerVoxel has no meaning off the walk and is left out.
+GpuVoxelModelView Gpu_Voxel_Model_View(VoxelFuncArgumentStruct const & arg, bool reversed, GpuVoxelLayerDepth const & depth);
+
+
 // Lays tiles out on shelves of a square image, left to right and then a shelf further down.
 struct GpuVoxelShelf
 {
