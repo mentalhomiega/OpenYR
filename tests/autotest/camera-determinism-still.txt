@@ -1,0 +1,173 @@
+; Camera determinism, still half: a match the camera never moves in. camera-determinism-moves.txt is the same match with zoom and view
+; steps, as a player or a film makes. The camera is not part of the game, so both logs must hold the same hashes. Run both, then compare:
+; The computer houses play camera-determinism-spawn.ini's match: all allied with the player, at war with each other, with 50000 credits each.
+; At frame 12000 the script gives the Russians and the French armies and sends them to hunt; the state hash is logged every 30 frames from then.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script tests/autotest/camera-determinism-still.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/camera-determinism-spawn.ini -Width 3840 -Height 2160 -Seconds 600 -Uncapped -Filter "AUTOTEST hash|Exception" > still.log
+;       powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script tests/autotest/camera-determinism-moves.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/camera-determinism-spawn.ini -Width 3840 -Height 2160 -Seconds 600 -Uncapped -Filter "AUTOTEST hash|Exception" > moves.log
+;   python -I scripts/compare_digests.py --hash still.log moves.log
+; Expected: "identical", with 35 hash lines in each log: two at frame 12000, then one every 30 frames to 12990.
+; Before the fix, the logs differed from frame 12990: a damaged Russian Rhino queued for a busy repair depot with no clear cell near it was sent
+; to the shared off-map cell, whose location the map drawing changes, so its turret and its next shot depended on what the view showed.
+1 reveal
+12000 hash 30
+12000 houseunit APOC@Russians 62 93
+12000 houseunit APOC@Russians 64 91
+12000 houseunit APOC@Russians 66 89
+12000 houseunit APOC@Russians 68 87
+12000 houseunit APOC@Russians 70 85
+12000 houseunit APOC@Russians 72 83
+12000 houseunit APOC@Russians 60 91
+12000 houseunit APOC@Russians 62 89
+12000 houseunit APOC@Russians 64 87
+12000 houseunit APOC@Russians 66 85
+12000 houseunit APOC@Russians 68 83
+12000 houseunit APOC@Russians 70 81
+12000 houseunit APOC@Russians 58 89
+12000 houseunit APOC@Russians 60 87
+12000 houseunit APOC@Russians 62 85
+12000 houseunit APOC@Russians 64 83
+12000 houseunit APOC@Russians 66 81
+12000 houseunit APOC@Russians 68 79
+12000 houseunit HTNK@Russians 56 87
+12000 houseunit HTNK@Russians 58 85
+12000 houseunit HTNK@Russians 60 83
+12000 houseunit HTNK@Russians 62 81
+12000 houseunit HTNK@Russians 64 79
+12000 houseunit HTNK@Russians 66 77
+12000 houseunit HTNK@Russians 54 85
+12000 houseunit HTNK@Russians 56 83
+12000 houseunit HTNK@Russians 60 79
+12000 houseunit HTNK@Russians 62 77
+12000 houseunit HTNK@Russians 64 75
+12000 houseunit HTNK@Russians 52 83
+12000 houseunit HTNK@Russians 54 81
+12000 houseunit HTNK@Russians 56 79
+12000 houseunit HTNK@Russians 58 77
+12000 houseunit HTNK@Russians 60 75
+12000 houseunit MTNK@French 74 105
+12000 houseunit MTNK@French 76 103
+12000 houseunit MTNK@French 78 101
+12000 houseunit MTNK@French 80 99
+12000 houseunit MTNK@French 82 97
+12000 houseunit MTNK@French 84 95
+12000 houseunit MTNK@French 76 107
+12000 houseunit MTNK@French 78 105
+12000 houseunit MTNK@French 80 103
+12000 houseunit MTNK@French 82 101
+12000 houseunit MTNK@French 84 99
+12000 houseunit MTNK@French 86 97
+12000 houseunit MTNK@French 78 109
+12000 houseunit MTNK@French 80 107
+12000 houseunit MTNK@French 82 105
+12000 houseunit MTNK@French 84 103
+12000 houseunit MTNK@French 86 101
+12000 houseunit MTNK@French 88 99
+12000 houseunit MTNK@French 80 111
+12000 houseunit MTNK@French 82 109
+12000 houseunit MTNK@French 84 107
+12000 houseunit MTNK@French 86 105
+12000 houseunit MTNK@French 88 103
+12000 houseunit MTNK@French 90 101
+12000 houseunit MTNK@French 82 113
+12000 houseunit MTNK@French 84 111
+12000 houseunit MTNK@French 86 109
+12000 houseunit MTNK@French 88 107
+12000 houseunit MTNK@French 90 105
+12000 houseunit MTNK@French 92 103
+12000 houseunit SREF@French 84 115
+12000 houseunit SREF@French 86 113
+12000 houseunit SREF@French 88 111
+12000 houseunit SREF@French 90 109
+12000 houseunit SREF@French 92 107
+12000 houseunit SREF@French 94 105
+12000 houseunit SREF@French 86 117
+12000 houseunit SREF@French 88 115
+12000 houseunit SREF@French 90 113
+12000 houseunit SREF@French 92 111
+12000 houseunit SREF@French 94 109
+12000 houseunit SREF@French 96 107
+12000 houseunit ZEP@Russians 66 87
+12000 houseunit ZEP@Russians 74 92
+12060 hunt APOC
+12060 hunt HTNK
+12060 hunt MTNK
+12060 hunt SREF
+12060 hunt ZEP
+12300 houseunit MTNK@French 76 107
+12300 houseunit MTNK@French 78 105
+12300 houseunit MTNK@French 80 103
+12300 houseunit MTNK@French 82 101
+12300 houseunit MTNK@French 84 99
+12300 houseunit MTNK@French 86 97
+12300 houseunit MTNK@French 78 109
+12300 houseunit MTNK@French 80 107
+12300 houseunit MTNK@French 82 105
+12300 houseunit MTNK@French 84 103
+12300 houseunit MTNK@French 86 101
+12300 houseunit MTNK@French 88 99
+12300 houseunit MTNK@French 80 111
+12300 houseunit MTNK@French 82 109
+12300 houseunit MTNK@French 84 107
+12300 houseunit MTNK@French 86 105
+12300 houseunit MTNK@French 88 103
+12300 houseunit MTNK@French 90 101
+12300 houseunit SREF@French 82 113
+12300 houseunit SREF@French 84 111
+12300 houseunit SREF@French 86 109
+12300 houseunit SREF@French 88 107
+12300 houseunit SREF@French 90 105
+12300 houseunit SREF@French 92 103
+12330 hunt MTNK
+12330 hunt SREF
+12550 houseunit HTNK@Russians 58 89
+12550 houseunit HTNK@Russians 60 87
+12550 houseunit HTNK@Russians 62 85
+12550 houseunit HTNK@Russians 64 83
+12550 houseunit HTNK@Russians 66 81
+12550 houseunit HTNK@Russians 68 79
+12550 houseunit HTNK@Russians 56 87
+12550 houseunit HTNK@Russians 58 85
+12550 houseunit HTNK@Russians 60 83
+12550 houseunit HTNK@Russians 62 81
+12550 houseunit HTNK@Russians 64 79
+12550 houseunit HTNK@Russians 66 77
+12550 houseunit HTNK@Russians 54 85
+12550 houseunit HTNK@Russians 56 83
+12550 houseunit HTNK@Russians 60 79
+12550 houseunit HTNK@Russians 62 77
+12550 houseunit HTNK@Russians 64 75
+12550 houseunit APOC@Russians 60 91
+12550 houseunit APOC@Russians 62 89
+12550 houseunit APOC@Russians 64 87
+12550 houseunit APOC@Russians 66 85
+12550 houseunit APOC@Russians 68 83
+12550 houseunit APOC@Russians 70 81
+12580 hunt APOC
+12580 hunt HTNK
+12800 houseunit MTNK@French 76 107
+12800 houseunit MTNK@French 78 105
+12800 houseunit MTNK@French 80 103
+12800 houseunit MTNK@French 82 101
+12800 houseunit MTNK@French 84 99
+12800 houseunit MTNK@French 86 97
+12800 houseunit MTNK@French 78 109
+12800 houseunit MTNK@French 80 107
+12800 houseunit MTNK@French 82 105
+12800 houseunit MTNK@French 84 103
+12800 houseunit MTNK@French 86 101
+12800 houseunit MTNK@French 88 99
+12800 houseunit MTNK@French 80 111
+12800 houseunit MTNK@French 82 109
+12800 houseunit MTNK@French 84 107
+12800 houseunit MTNK@French 86 105
+12800 houseunit MTNK@French 88 103
+12800 houseunit MTNK@French 90 101
+12800 houseunit SREF@French 82 113
+12800 houseunit SREF@French 84 111
+12800 houseunit SREF@French 86 109
+12800 houseunit SREF@French 88 107
+12800 houseunit SREF@French 90 105
+12800 houseunit SREF@French 92 103
+12830 hunt MTNK
+12830 hunt SREF
+13001 quit
