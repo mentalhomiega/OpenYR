@@ -1,0 +1,27 @@
+; A computer tank and a harvester crossing a high bridge. On Potomac a computer Rhino on the east bank (93,49) is ordered
+; to attack a player Grizzly on the west bank (72,49) out of its range, and a player War Miner is ordered from the west
+; bank to the east bank over the same north bridge (row 49).
+; Expected: the Rhino drives onto the deck (onbridge 1 at 86,49) and fights the harvester there; the harvester crosses
+; with onbridge 1 on the deck cells and reaches the east bank with onbridge 0. Neither leaves the bridge at ground
+; level (z stays 624).
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-ai-harvester-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 150 -Filter "AUTOTEST( +bridgeobj|enemystrike)|Exception"
+30 reveal
+31 view 84 49
+40 enemy HTNK 93 49
+41 own MTNK 72 49
+42 grantunit HARV 76 50
+50 enemystrike HTNK 72 49
+51 move HARV 93 50
+70 bridgeobj HTNK
+71 bridgeobj HARV
+100 bridgeobj HTNK
+101 bridgeobj HARV
+130 bridgeobj HTNK
+131 bridgeobj HARV
+160 bridgeobj HTNK
+161 bridgeobj HARV
+200 bridgeobj HTNK
+201 bridgeobj HARV
+300 bridgeobj HTNK
+301 bridgeobj HARV
+302 quit

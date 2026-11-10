@@ -1,0 +1,38 @@
+; A damaged high bridge survives a save and a load. On Potomac a Grizzly tank stops on the north bridge deck at 82,49;
+; the deck at 84,49 is cut (two hits) and 86,49 takes one hit, which sets the deck states of 83, 85 and 86 (OverlayData
+; 8, 7 and 6 of gamemd's BlowUpBridgeArea, 0x576BA0). The game is quick-saved, 86,49 is hit again (it falls), and the
+; save is loaded. Then 86,49 is hit once more and the tank is ordered to the east bank.
+; Expected: after the load the four cells read as they did before the save (83 od 8, 84 gone, 85 od 7, 86 od 6) and
+; the tank is on the deck (onbridge 1, z 624). The hit after the load removes 86 and 85 (od 7 cascades west), so
+; bridgedecks reads left 3, as the same hit did before the load. The tank reaches the east bank by the south bridge.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-high-saveload-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 300 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridgedecks|bridge )| wait| frame [0-9]+: command)|Exception"
+30 reveal
+31 view 84 49
+40 grantunit MTNK 76 49
+50 move MTNK 82 49
+60 bridgehit 84 49
+61 bridgehit 84 49
+62 bridgehit 86 49
+200 waitcell MTNK 82 49 0 800
+201 bridgeobj MTNK
+202 bridge 83 49
+203 bridge 84 49
+204 bridge 85 49
+205 bridge 86 49
+210 command QuickSave
+260 bridgehit 86 49
+261 bridge 86 49
+262 move MTNK 76 49
+300 command QuickLoad
+320 bridgeobj MTNK
+321 bridge 83 49
+322 bridge 84 49
+323 bridge 85 49
+324 bridge 86 49
+330 bridgehit 86 49
+331 bridge 86 49
+332 bridgedecks 79 88 49
+340 move MTNK 92 49
+341 waitcell MTNK 92 49 1 3000
+342 bridgeobj MTNK
+343 quit
