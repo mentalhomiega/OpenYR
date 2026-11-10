@@ -124,12 +124,16 @@ char const * Backend_Renderer_Name(void);
 // Logs the live texture and buffer counts from bgfx, tagged with the given label.
 void Backend_Log_Resource_Counts(char const * when);
 
-// Saves what the window shows after the next present as a TGA file.
-void Backend_Request_Window_Capture(char const * filepath);
+// Saves what the window shows after the next present as a TGA file. Returns false when there is no renderer to ask.
+bool Backend_Request_Window_Capture(char const * filepath);
 
 // Asks for the same capture, and logs one `AUTOTEST windowdark` line with the mean and the darkest brightness of the
-// pixels of area (window pixels, counted from the top left) instead of saving a file.
-void Backend_Request_Window_Measure(Rect const & area, char const * label);
+// pixels of area (window pixels, counted from the top left) instead of saving a file. Returns false when there is
+// no renderer to ask.
+bool Backend_Request_Window_Measure(Rect const & area, char const * label);
+
+// Whether a capture or measure that was asked for has not been written or logged yet.
+bool Backend_Window_Capture_Pending(void);
 
 // Turns on a check that the copy kept of each texture matches the picture it was sent from, counting
 // checks and mismatches. Turning it on zeroes the counts.

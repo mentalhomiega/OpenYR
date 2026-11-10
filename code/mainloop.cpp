@@ -445,6 +445,13 @@ bool Main_Loop(void)
 	}
 
 	/*
+	**	A script waiting for a window capture runs no frame until the capture is written.
+	*/
+	if (AutoTest_Capture_Hold()) {
+		return(!GameActive);
+	}
+
+	/*
 	**	A paused replay keeps the view drawn and answers the keys and the mouse, so that it can be
 	**	resumed, but runs no frame.
 	*/

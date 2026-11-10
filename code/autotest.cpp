@@ -164,6 +164,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <deque>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -6687,21 +6688,38 @@ static void Options_Step(StepType const &)
 }
 
 
+// A window capture a step asked for. The script holds still until each one is written: AutoTest_Capture_Hold
+// draws the game frame the step ran on, asks for the capture then, and runs no game frame until it arrives.
+struct PendingCapture
+{
+	// A measure logs a windowdark line for Area; a shot saves Path.
+	bool Measure;
+	Rect Area;
+	std::string Label;
+	std::string Path;
+	// The time the hold on this capture began, in milliseconds, or zero before its first hold frame.
+	unsigned int Started;
+};
+std::deque<PendingCapture> PendingCaptures;
+
+// How long a capture may take to arrive once it is asked for, in milliseconds.
+unsigned int const Capture_Timeout = 10000;
+
+
 // windowshot <name>: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
+// The script holds until the file is written.
 static void Windowshot_Step(StepType const & step)
 {
-	static std::string path;
-	path = Screenshot_Name((step.Argument + ".tga").c_str());
-	Backend_Request_Window_Capture(path.c_str());
+	PendingCaptures.push_back({false, Rect(), step.Argument, Screenshot_Name((step.Argument + ".tga").c_str()), 0});
 }
 
 
 // windowdark <name> <x> <y> <w> <h>: logs one `AUTOTEST windowdark` line with the mean and the darkest brightness (0 to 255) of
-// that window rectangle, as a windowshot would show it.
+// that window rectangle, as a windowshot would show it. The script holds until the line is logged.
 static void Windowdark_Step(StepType const & step)
 {
 	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
-	Backend_Request_Window_Measure(area, step.Argument.c_str());
+	PendingCaptures.push_back({true, area, step.Argument, "", 0});
 }
 
 
@@ -7424,6 +7442,46 @@ T * First_Followed(DynamicVectorClass<T *> & list)
 
 
 /// <summary>
+/// Holds the game while a capture a step asked for is on its way. The first call draws the frame the step ran on
+/// and asks for the capture, and the calls after it present until the capture is written. A capture that takes more
+/// than Capture_Timeout milliseconds is logged as failed and dropped.
+/// </summary>
+/// <returns>bool; Is a capture pending? The main loop runs no game frame then.</returns>
+bool AutoTest_Capture_Hold(void)
+{
+	if (!Active || PendingCaptures.empty()) {
+		return(false);
+	}
+	PendingCapture & capture = PendingCaptures.front();
+	char const * const name = capture.Measure ? "windowdark" : "windowshot";
+	if (capture.Started == 0) {
+		capture.Started = std::max<unsigned int>(timeGetTime(), 1);
+		RenderBlend = 1.0;
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		Map.Render();
+		bool const asked = capture.Measure ? Backend_Request_Window_Measure(capture.Area, capture.Label.c_str())
+			: Backend_Request_Window_Capture(capture.Path.c_str());
+		if (!asked) {
+			DebugString("AUTOTEST %s %s FAILED no renderer\n", name, capture.Label.c_str());
+			PendingCaptures.pop_front();
+			return(!PendingCaptures.empty());
+		}
+	} else if (!Backend_Window_Capture_Pending()) {
+		PendingCaptures.pop_front();
+		return(!PendingCaptures.empty());
+	} else if (timeGetTime() - capture.Started > Capture_Timeout) {
+		DebugString("AUTOTEST %s %s FAILED no capture in %u ms\n", name, capture.Label.c_str(), Capture_Timeout);
+		PendingCaptures.pop_front();
+		return(!PendingCaptures.empty());
+	}
+	Video_Present();
+	Call_Back();
+	Sleep(1);
+	return(true);
+}
+
+
+/// <summary>
 /// Plays every step whose frame has been reached. Call once per game logic frame.
 /// </summary>
 void AutoTest_Frame(void)
@@ -7452,6 +7510,10 @@ void AutoTest_Frame(void)
 			Run(step);
 		}
 		Next++;
+		// A capture step ends the frame's steps, so the capture shows the game as that step left it.
+		if (!PendingCaptures.empty()) {
+			break;
+		}
 	}
 
 	C4_Watch_Frame();
