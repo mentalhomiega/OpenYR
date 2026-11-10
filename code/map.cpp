@@ -8512,9 +8512,10 @@ bool MapClass::Damage_Low_Bridge_EW(Cell const & cell)
 		cellptr1->Recalc_Attributes(-1);
 		cellptr2->Recalc_Attributes(-1);
 		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
+		// gamemd 0x57BCF0 and 0x57C2B0 pass the flag only for the stage that brings the span down.
+		cellptr1->Kill_Illegal_Occupiers(didwork);
+		cellptr2->Kill_Illegal_Occupiers(didwork);
+		cellptr3->Kill_Illegal_Occupiers(didwork);
 
 		if (didwork) {
 			Zone_Reset();
@@ -8588,9 +8589,10 @@ bool MapClass::Damage_Low_Bridge_NS(Cell const & cell)
 		cellptr1->Recalc_Attributes(-1);
 		cellptr2->Recalc_Attributes(-1);
 		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
+		// gamemd 0x57BCF0 and 0x57C2B0 pass the flag only for the stage that brings the span down.
+		cellptr1->Kill_Illegal_Occupiers(didwork);
+		cellptr2->Kill_Illegal_Occupiers(didwork);
+		cellptr3->Kill_Illegal_Occupiers(didwork);
 
 		if (didwork) {
 			Zone_Reset();
@@ -8730,9 +8732,11 @@ void MapClass::Damage_Low_Bridge_Piece_EW(Cell const & cell)
 		cellptr1->Recalc_Attributes(-1);
 		cellptr2->Recalc_Attributes(-1);
 		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
+		// gamemd 0x57DD50: jumpjets die only when the piece falls.
+		bool const fallen = newoverlay == OVERLAY_LOWBRIDGE_27;
+		cellptr1->Kill_Illegal_Occupiers(fallen);
+		cellptr2->Kill_Illegal_Occupiers(fallen);
+		cellptr3->Kill_Illegal_Occupiers(fallen);
 	}
 }
 
@@ -8809,9 +8813,11 @@ void MapClass::Damage_Low_Bridge_Piece_NS(Cell const & cell)
 		cellptr1->Recalc_Attributes(-1);
 		cellptr2->Recalc_Attributes(-1);
 		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
+		// gamemd 0x57E2A0: jumpjets die only when the piece falls.
+		bool const fallen = newoverlay == OVERLAY_LOWBRIDGE_28;
+		cellptr1->Kill_Illegal_Occupiers(fallen);
+		cellptr2->Kill_Illegal_Occupiers(fallen);
+		cellptr3->Kill_Illegal_Occupiers(fallen);
 	}
 }
 
@@ -8921,6 +8927,10 @@ void MapClass::Repair_Low_Bridge_EW(Cell const & cell)
 			cellptr1->Recalc_Attributes(-1);
 			cellptr2->Recalc_Attributes(-1);
 			cellptr3->Recalc_Attributes(-1);
+			// gamemd 0x57F6A0 and 0x57FBC0: a repair still destroys landed aircraft.
+			cellptr1->Kill_Illegal_Occupiers(false);
+			cellptr2->Kill_Illegal_Occupiers(false);
+			cellptr3->Kill_Illegal_Occupiers(false);
 		}
 
 		cellnum.X++;
@@ -9006,6 +9016,9 @@ void MapClass::Repair_Low_Bridge_NS(Cell const & cell)
 			cellptr1->Recalc_Attributes(-1);
 			cellptr2->Recalc_Attributes(-1);
 			cellptr3->Recalc_Attributes(-1);
+			cellptr1->Kill_Illegal_Occupiers(false);
+			cellptr2->Kill_Illegal_Occupiers(false);
+			cellptr3->Kill_Illegal_Occupiers(false);
 		}
 
 		cellnum.Y++;
@@ -11705,14 +11718,15 @@ struct ConcreteFamily
 	int First;
 	int Cap;
 	int Fallen;
+	bool JumpjetsDieOnAnyHit;   // gamemd's east-west section routine (0x57D530) always passes the jumpjet flag.
 };
 
 
 // The north-south family: 205 to 213, caps 223 and 225, fallen 231.
-static ConcreteFamily const CONCRETE_NS = {Cell(1, 0), Cell(0, 1), Cell(1, 0), OVERLAY_CONCRETE_BRIDGE_FIRST, OVERLAY_CONCRETE_BRIDGE_FIRST + 18, OVERLAY_CONCRETE_BRIDGE_END1};
+static ConcreteFamily const CONCRETE_NS = {Cell(1, 0), Cell(0, 1), Cell(1, 0), OVERLAY_CONCRETE_BRIDGE_FIRST, OVERLAY_CONCRETE_BRIDGE_FIRST + 18, OVERLAY_CONCRETE_BRIDGE_END1, false};
 
 // The east-west family: 214 to 222, caps 227 and 229, fallen 232.
-static ConcreteFamily const CONCRETE_EW = {Cell(0, 1), Cell(1, 0), Cell(0, -1), OVERLAY_CONCRETE_BRIDGE_FIRST + 9, OVERLAY_CONCRETE_BRIDGE_FIRST + 22, OVERLAY_CONCRETE_BRIDGE_END2};
+static ConcreteFamily const CONCRETE_EW = {Cell(0, 1), Cell(1, 0), Cell(0, -1), OVERLAY_CONCRETE_BRIDGE_FIRST + 9, OVERLAY_CONCRETE_BRIDGE_FIRST + 22, OVERLAY_CONCRETE_BRIDGE_END2, true};
 
 
 static bool Is_Concrete_Family_Overlay(ConcreteFamily const & family, int overlay)
@@ -11775,6 +11789,20 @@ static int Concrete_Side_Shape(ConcreteFamily const & family, int mask)
 			return(family.Fallen);
 		default:
 			return(-1);
+	}
+}
+
+
+/*
+ * Destroys the illegal occupiers of a section's three cells (gamemd 0x487A10 on each).
+ */
+static void Kill_Concrete_Section_Occupiers(Cell const & cell, Cell const & across, bool kill_jumpjets)
+{
+	for (Cell const piece : {Cell(cell - across), cell, Cell(cell + across)}) {
+		CellClass * cptr = Bridge_Cell_At(piece);
+		if (cptr != NULL) {
+			cptr->Kill_Illegal_Occupiers(kill_jumpjets);
+		}
 	}
 }
 
@@ -11853,6 +11881,8 @@ void MapClass::Update_Concrete_Side(ConcreteFamily const & family, Cell const & 
 	}
 
 	Set_Concrete_Section(cell, family.Across, next);
+	// gamemd 0x57E7A0 and 0x57ED00: jumpjets die only when the section falls.
+	Kill_Concrete_Section_Occupiers(cell, family.Across, next == family.Fallen);
 }
 
 
@@ -11895,26 +11925,22 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 	int const cracked = family.First + 6;
 
 	// After a hit, objects that can no longer enter a cell of the section, or are moving onto one, are destroyed (0x487A10).
-	auto kill_section_occupiers = [&]() {
-		for (Cell const piece : {Cell(cell - family.Across), cell, Cell(cell + family.Across)}) {
-			CellClass * cptr = Bridge_Cell_At(piece);
-			if (cptr != NULL) {
-				cptr->Kill_Illegal_Occupiers();
-			}
-		}
+	// Jumpjets die in the stage that brings the section down, and in every stage for the east-west family.
+	auto kill_section_occupiers = [&](bool fell) {
+		Kill_Concrete_Section_Occupiers(cell, family.Across, fell || family.JumpjetsDieOnAnyHit);
 	};
 
 	if (overlay == family.Cap) {
 		Set_Concrete_Section(cell, family.Across, family.Cap + 1);
 		Update_Concrete_Side(family, cell - family.ToCap);
-		kill_section_occupiers();
+		kill_section_occupiers(false);
 		return(false);
 	}
 
 	if (overlay == family.Cap + 2) {
 		Set_Concrete_Section(cell, family.Across, family.Cap + 3);
 		Update_Concrete_Side(family, cell + family.ToCap);
-		kill_section_occupiers();
+		kill_section_occupiers(false);
 		return(false);
 	}
 
@@ -11922,7 +11948,7 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 		Set_Concrete_Section(cell, family.Across, cracked);
 		Update_Concrete_Side(family, cell - family.Run);
 		Update_Concrete_Side(family, cell + family.Run);
-		kill_section_occupiers();
+		kill_section_occupiers(false);
 		return(false);
 	}
 
@@ -11934,7 +11960,7 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 	Update_Concrete_Side(family, cell - family.Run);
 	Update_Concrete_Side(family, cell + family.Run);
 	Spring_Concrete_Bridge_Destroyed(family, cell);
-	kill_section_occupiers();
+	kill_section_occupiers(true);
 	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
 	Zone_Reset();
 	return(true);
@@ -12107,6 +12133,8 @@ void MapClass::Repair_Concrete_Run(ConcreteFamily const & family, Cell const & c
 
 		if (next != overlay) {
 			Set_Concrete_Section(cur, family.Across, next);
+			// gamemd 0x5800D0 and 0x580600: a repair still destroys landed aircraft.
+			Kill_Concrete_Section_Occupiers(cur, family.Across, false);
 		}
 	}
 
