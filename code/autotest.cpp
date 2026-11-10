@@ -6700,10 +6700,10 @@ struct PendingCapture
 	// The time the hold on this capture began, in milliseconds, or zero before its first hold frame.
 	unsigned int Started;
 };
-std::deque<PendingCapture> PendingCaptures;
+static std::deque<PendingCapture> PendingCaptures;
 
 // How long a capture may take to arrive once it is asked for, in milliseconds.
-unsigned int const Capture_Timeout = 10000;
+static unsigned int const Capture_Timeout = 10000;
 
 
 // windowshot <name>: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
