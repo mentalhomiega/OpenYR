@@ -335,13 +335,14 @@ std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, boo
 		if (shown[i].Copies && Objects_Only(part)) {
 			objects[i] = 1;
 			slices += shown[i].Blits;
-		} else if (!part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Objects.empty() && shown[i].Shadows && !soft_shadows) {
+		} else if (!part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Objects.empty() && shown[i].Shadows) {
 			direct[i] = 1;
 			shadows += shown[i].Blits;
 		}
 	}
-	// A pass clears depth and stencil once, which gives it no more slices or shadow stencil values than these.
-	if (shadows > GPU_VOXEL_SHADOW_STENCILS) {
+	// A pass clears depth and stencil once, which gives it no more slices or shadow stencil values than these. A soft
+	// shadow writes the shadow mask, where overlaps are harmless, and takes no stencil value.
+	if (!soft_shadows && shadows > GPU_VOXEL_SHADOW_STENCILS) {
 		direct.assign(list.Voxels.size(), 0);
 	}
 	if (slices <= GPU_VOXEL_SLICES) {

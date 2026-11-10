@@ -22,6 +22,7 @@
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
 #include "bgfxviews.hh"
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
@@ -684,8 +685,46 @@ static void Set_Map_View(bgfx::ViewId view, bgfx::FrameBufferHandle target, Rect
 }
 
 
+static bool Is_Direct(GpuBlit const & blit, std::vector<GpuVoxelTile> const & tiles)
+{
+	return(blit.Voxel >= 0 && tiles[blit.Voxel].Direct);
+}
+
+
+// A blit of a direct voxel part as GpuVoxel_Draw_Direct takes it into a target at scale, with the values of the blit's
+// quad; the caller sets its state.
+static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale)
+{
+	GpuVoxelDirectBlit direct;
+	direct.Part = blit.Voxel;
+	direct.OriginX = blit.X - area.X - blit.VoxelX;
+	direct.OriginY = blit.Y - area.Y - blit.VoxelY;
+	direct.Clip = Intersect(Rect(blit.X - area.X, blit.Y - area.Y, blit.Width, blit.Height), Rect(0, 0, area.Width, area.Height));
+	std::memcpy(direct.Values, quad.T1, sizeof(quad.T1));
+	std::memcpy(direct.Values + 4, quad.T2, sizeof(quad.T2));
+	std::memcpy(direct.Values + 8, quad.T3, sizeof(quad.T3));
+	// The quad carries the tile's scale where a blit has its pitch; the depth shape is laid out at the blit's width.
+	direct.Values[1] = (float)blit.Width;
+	direct.Values[12] = (float)(blit.X - area.X);
+	direct.Values[13] = (float)(blit.Y - area.Y);
+	direct.Values[14] = (float)scale;
+	return(direct);
+}
+
+
+// Binds the pass's stores and their ring addressing for the next draw.
+static void Bind_Stores(float const * ring)
+{
+	for (int slot = 0; slot < SLOT_COUNT; slot++) {
+		bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
+	}
+	bgfx::setUniform(_RingUniform, ring, 2);
+}
+
+
 // Draws every shadow's coverage, with the tile layer's shadows when tileshadow is set, into the first
-// shadow mask and blurs it there, through the second.
+// shadow mask and blurs it there, through the second. A direct part's shadow is drawn from its layers at scale 1,
+// the mask's own scale.
 static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, bgfx::TextureHandle voxelimage, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
 {
 	bgfx::TransientVertexBuffer buffer;
@@ -697,6 +736,8 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 		float const t3[4] = { 0.0f, -1.0f, 0.0f, 1.0f };
 		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
 	}
+	// The blit each quad draws, NULL for the whole-area quads.
+	std::vector<GpuBlit const *> blits(shadowquads, NULL);
 	int quad = 1;
 	if (tileshadow) {
 		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
@@ -713,6 +754,7 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)KIND_SHADOW_MASK, blit.Desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+		blits[quad] = &blit;
 		quad++;
 	}
 
@@ -720,6 +762,12 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 	bgfx::setViewClear(VIEW_MAPSHADOW, BGFX_CLEAR_COLOR, 0x00000000);
 	float const shadow_scale[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
 	for (int i = 1; i < shadowquads; i++) {
+		if (blits[i] != NULL && Is_Direct(*blits[i], tiles)) {
+			GpuVoxelDirectBlit direct = Direct_Blit(*blits[i], vertex[i * 6], area, 1);
+			direct.State = BGFX_STATE_WRITE_RGB;
+			GpuVoxel_Draw_Direct(list, direct, 1, VIEW_MAPSHADOW, [ring]() { Bind_Stores(ring); });
+			continue;
+		}
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
@@ -1057,15 +1105,11 @@ static uint64_t Blend_State_For(int kind, int channels)
 }
 
 
-// A blit of a direct voxel part as GpuVoxel_Draw_Direct takes it, with the values of the blit's quad. A copy takes the
-// next depth slice; a shadow darkens each pixel once through the next stencil value (GpuVoxel_Direct_Parts bounds both).
-static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int & slices, int & shadows)
+// A direct blit drawn into the scene. A copy takes the next depth slice; a shadow darkens each pixel once through the
+// next stencil value (GpuVoxel_Direct_Parts bounds both).
+static GpuVoxelDirectBlit Scene_Blit(GpuBlit const & blit, MapVertex const & quad, Rect const & area, int scale, int & slices, int & shadows)
 {
-	GpuVoxelDirectBlit direct;
-	direct.Part = blit.Voxel;
-	direct.OriginX = blit.X - area.X - blit.VoxelX;
-	direct.OriginY = blit.Y - area.Y - blit.VoxelY;
-	direct.Clip = Intersect(Rect(blit.X - area.X, blit.Y - area.Y, blit.Width, blit.Height), Rect(0, 0, area.Width, area.Height));
+	GpuVoxelDirectBlit direct = Direct_Blit(blit, quad, area, scale);
 	if (blit.Class() == GPU_BLIT_SHADOW) {
 		direct.State = Blend_State_For(KIND_DARKEN, 0);
 		direct.Stencil = BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_FUNC_REF(++shadows) | BGFX_STENCIL_FUNC_RMASK(0xFF)
@@ -1074,14 +1118,6 @@ static GpuVoxelDirectBlit Direct_Blit(GpuBlit const & blit, MapVertex const & qu
 		direct.Slice = slices++;
 		direct.State = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
 	}
-	std::memcpy(direct.Values, quad.T1, sizeof(quad.T1));
-	std::memcpy(direct.Values + 4, quad.T2, sizeof(quad.T2));
-	std::memcpy(direct.Values + 8, quad.T3, sizeof(quad.T3));
-	// The quad carries the tile's scale where a blit has its pitch; the depth shape is laid out at the blit's width.
-	direct.Values[1] = (float)blit.Width;
-	direct.Values[12] = (float)(blit.X - area.X);
-	direct.Values[13] = (float)(blit.Y - area.Y);
-	direct.Values[14] = (float)scale;
 	return(direct);
 }
 
@@ -1097,12 +1133,6 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 		bgfx::setViewClear(VIEW_MAPDRAW, BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, 0, 1.0f, 0);
 	}
 	MapVertex const * const vertices = (MapVertex const *)buffer.data;
-	auto const bind_stores = [ring]() {
-		for (int slot = 0; slot < SLOT_COUNT; slot++) {
-			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
-		}
-		bgfx::setUniform(_RingUniform, ring, 2);
-	};
 	int slices = 0;
 	int shadows = 0;
 	bgfx::ViewId view = VIEW_MAPDRAW;
@@ -1114,8 +1144,8 @@ static void Submit_Draws(GpuDrawList const & list, std::vector<GpuVoxelTile> con
 		if (kind == KIND_DARKEN && shadowed) {
 			continue;
 		}
-		if (i > 0 && list.Blits[i - 1].Voxel >= 0 && tiles[list.Blits[i - 1].Voxel].Direct) {
-			GpuVoxel_Draw_Direct(list, Direct_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slices, shadows), scale, view, bind_stores);
+		if (i > 0 && Is_Direct(list.Blits[i - 1], tiles)) {
+			GpuVoxel_Draw_Direct(list, Scene_Blit(list.Blits[i - 1], vertices[i * 6], area, scale, slices, shadows), scale, view, [ring]() { Bind_Stores(ring); });
 			continue;
 		}
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
@@ -1441,10 +1471,46 @@ static bool Is_Darkened(unsigned char const * rgba, unsigned short base)
 }
 
 
+// True when the target pixel holds, to within one 8-bit step, the base darkened two or three times the way the darken
+// blend does it in the 8-bit target (Blend_State_For, fs_mapdraw.sc). An object's pixel is a 565 colour widened to 8
+// bits, which such a value rarely equals in all three channels.
+static bool Is_Darkened_Again(unsigned char const * rgba, unsigned short base)
+{
+	int const maximum[3] = { 31, 63, 31 };
+	int const ground[3] = { base >> 11, (base >> 5) & 63, base & 31 };
+	float value[3];
+	for (int c = 0; c < 3; c++) {
+		value[c] = std::round(ground[c] * 255.0f / maximum[c]);
+	}
+	for (int times = 1; times <= 3; times++) {
+		bool matches = true;
+		for (int c = 0; c < 3; c++) {
+			value[c] = std::max(0.0f, std::round(value[c] * 0.5f - 255.0f * 0.25f / maximum[c]));
+			matches = matches && std::abs(rgba[c] - value[c]) <= 1.0f;
+		}
+		if (times >= 2 && matches && value[0] + value[1] + value[2] > 30.0f) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 static void Finish_Shadow_Count(void)
 {
+	// How many shadow rectangles cover each area pixel; ground that only one covers is darkened again only by its blit.
+	std::vector<unsigned char> cover((std::size_t)_ShadowCount.Width * _ShadowCount.Height, 0);
+	for (Rect const & rect : _ShadowCount.Rects) {
+		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
+			for (int x = rect.X; x < rect.X + rect.Width; x++) {
+				unsigned char & count = cover[(std::size_t)y * _ShadowCount.Width + x];
+				count = (unsigned char)std::min(count + 1, 255);
+			}
+		}
+	}
 	int pixels = 0;
 	int darkened = 0;
+	int twice = 0;
 	for (Rect const & rect : _ShadowCount.Rects) {
 		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
 			for (int x = rect.X; x < rect.X + rect.Width; x++) {
@@ -1452,13 +1518,16 @@ static void Finish_Shadow_Count(void)
 				int const tx = x * _ShadowCount.Scale + _ShadowCount.Scale / 2;
 				int const ty = y * _ShadowCount.Scale + _ShadowCount.Scale / 2;
 				unsigned char const * rgba = &_ShadowCount.Pixels[((std::size_t)ty * _ShadowCount.Width * _ShadowCount.Scale + tx) * 4];
-				if (Is_Darkened(rgba, _ShadowCount.Base[(std::size_t)y * _ShadowCount.Width + x])) {
+				std::size_t const at = (std::size_t)y * _ShadowCount.Width + x;
+				if (Is_Darkened(rgba, _ShadowCount.Base[at])) {
 					darkened++;
+				} else if (cover[at] == 1 && Is_Darkened_Again(rgba, _ShadowCount.Base[at])) {
+					twice++;
 				}
 			}
 		}
 	}
-	DebugString("GPU_VOXEL_SHADOW shadows %d pixels %d darkened %d\n", (int)_ShadowCount.Rects.size(), pixels, darkened);
+	DebugString("GPU_VOXEL_SHADOW shadows %d pixels %d darkened %d twice %d\n", (int)_ShadowCount.Rects.size(), pixels, darkened, twice);
 }
 
 

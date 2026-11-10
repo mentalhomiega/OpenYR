@@ -56,9 +56,8 @@ inline constexpr int GPU_VOXEL_SHADOW_STENCILS = 255;
 // Marks the parts of the list the direct route draws, one flag per part. On the direct path, while the emissive mask
 // is off (mask false) and the direct program built, they are the parts without shadow layers that only copy blits show,
 // whether one prepared object or a composite of hull, turret and barrel, when the pass has at most GPU_VOXEL_SLICES
-// such blits, and, without soft shadows, the parts
-// of one prepared shadow that only shadow blits show, when the pass has at most GPU_VOXEL_SHADOW_STENCILS such
-// blits. Every other flag is 0.
+// such blits, and the parts of one prepared shadow that only shadow blits show, when soft shadows are on or the pass
+// has at most GPU_VOXEL_SHADOW_STENCILS such blits. Every other flag is 0.
 std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool mask, bool soft_shadows);
 
 // True when the parts of the list that direct leaves to the image fit an empty image at scale 1, the least
@@ -89,8 +88,8 @@ struct GpuVoxelDirectBlit
 	std::uint32_t Stencil = 0;
 };
 
-// Submits the layers of a direct part into view, which draws into a target with a depth and stencil attachment at scale times
-// the area. bind is called before each draw to set the map pass's stores (mapcommon.sh). Call it after
+// Submits the layers of a direct part into view, which draws into a target at scale times the area; the target needs a
+// depth and stencil attachment when the blit's state or stencil uses one. bind is called before each draw to set the map pass's stores (mapcommon.sh). Call it after
 // GpuVoxel_Submit in the same pass.
 void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & blit, int scale, std::uint16_t view, std::function<void(void)> const & bind);
 
