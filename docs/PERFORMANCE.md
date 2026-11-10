@@ -98,7 +98,8 @@ quits. It places 336 objects on frame 10: the player and three computer houses e
 vehicles, 40 infantry and two aircraft, and eight destroyers sit on the lake. The houses are named
 with `houseunit` by their position in the house list (`#1` to `#3`). From frame 600 on, the computer
 houses hunt, the player moves its forces across the map, and focus-fire orders go out.
-`bench-large-battle-zoomed-out.txt` is the same battle with the view set to `zoom 0.5`.
+`bench-large-battle-zoomed-out.txt` is the same battle with the view set to `zoom 0.5`; on XMP08T2 that is zoom 1.00 at 3840x2160, because the map is small.
+`bench-large-battle-xmp04-zoomed-out.txt` is a battle of the same size on XMP04T8, the largest stock map, with the map revealed, for 3840x2160 at the furthest zoom (0.50, a 7546x4245 view); run it with `-Map XMP04T8.MAP -Width 3840 -Height 2160` and three computer players.
 `bench-large-battle-revealed.txt` and `bench-large-battle-revealed-zoomed-out.txt` reveal the map first, and `bench-large-battle-scrolling.txt` moves the view around the middle of the map every four game frames; these three stop at frame 3600.
 
 ```text
