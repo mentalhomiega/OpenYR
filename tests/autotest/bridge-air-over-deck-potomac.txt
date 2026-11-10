@@ -1,0 +1,26 @@
+; Aircraft and jumpjets over a high bridge deck. On Potomac a Rocketeer (JUMPJET) is ordered onto the north bridge deck
+; at 84,49 and a Kirov (ZEP) to fly to it. gamemd keeps a landed jumpjet on the deck's AltObject list (OnBridge set,
+; deck height) and drops it with the deck when the cell is destroyed (0x47DD70, ObjectClass::DropAsBomb 0x5F4160); an
+; aircraft in flight is on neither list and is not touched. The deck then takes two weapon hits (bridgehit).
+; Expected: the Rocketeer stops at 84,49 with onbridge 1 at z 624 and agl 0, and the Kirov flies in at agl 750, well
+; above the deck. After the second hit (bridgedecks left 5) the Rocketeer reads
+; falling 1 with onbridge 0 and is gone by frame 500; the Kirov is still alive at full strength (2000).
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-air-over-deck-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 200 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridgedecks)| wait)|Exception"
+30 reveal
+31 view 84 49
+40 grantunit JUMPJET 76 49
+41 grantunit ZEP 76 51
+50 move JUMPJET 84 49
+51 move ZEP 84 49
+200 bridgeobj JUMPJET
+201 bridgeobj ZEP
+300 bridgeobj JUMPJET
+301 bridgeobj ZEP
+310 bridgehit 84 49
+311 bridgehit 84 49
+312 bridgedecks 79 88 49
+313 bridgeobj JUMPJET
+314 bridgeobj ZEP
+500 bridgeobj JUMPJET
+501 bridgeobj ZEP
+502 quit
