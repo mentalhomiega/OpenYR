@@ -90,7 +90,18 @@ After writing the folder, the game shows the report and the folder's path in a d
 
 When the main thread goes without pumping messages for longer than `HangSeconds` in the `[Debug]` section of `RA2MD.INI`, the game reports a hang. The default is 5 seconds, and `HangSeconds=0` turns the check off.
 
-The report is a block in the debug log that starts `HANG: main thread stuck for N s`, followed by the stalled thread's processor time during the stall, the machine's memory use, the game's working set and page-fault count, and the thread's call stack with symbols. A thread that used almost all of the stall as processor time was computing; one that used little was waiting. The game suspends the thread only while it captures the stack and writes a minidump, then resumes it. The `Exceptions` folder beside the executable gets a folder named `exception-hang-...`, which holds `minidump.dmp` and `stall.txt`. `stall.txt` repeats the stack and says whether the minidump was written. When the thread runs again, the log says `HANG: main thread responded again after N s`.
+The report is a block in the debug log that starts `HANG: main thread stuck for N s`, followed by the stalled thread's processor time during the stall, the machine's memory use, the game's working set and page-fault count, and the thread's call stack with symbols. A thread that used almost all of the stall as processor time was computing; one that used little was waiting. When the thread runs again, the log says `HANG: main thread responded again after N s`.
+
+The `Exceptions` folder beside the executable gets a folder named `exception-hang-...`, which holds `minidump.dmp` and `stall.txt`. `stall.txt` has the log block's lines plus:
+
+- `Linked` and `PDB id`, the link time and the GUID and age of the executable's symbol file. A minidump can be read with a `Game.pdb` only when both match.
+- `Waiting on`, when the main thread is waiting for a critical section: its address, whether it is the process heap's lock, its owner, and how many threads wait for it.
+- A `Threads` list with every thread in the process: its identifier, its name when it has one, the processor time it has used, whether another thread had suspended it or it stopped in a system wait, and its top frames. Threads with the same stack share one entry.
+- The status of the minidump.
+
+The game suspends each thread only for the moment it copies the thread's registers and the top of its stack. Listing the threads, copying them and writing a first `stall.txt` use no memory from the process heap, so a stall caused by a blocked heap still leaves that file. It has module offsets in place of symbol names and no thread names, and says `Symbols     : not resolved yet`. The game then writes `stall.txt` again with names, symbols and the minidump status. If the symbol handler stays busy for 2 seconds, the file says so and no minidump is written. The minidump writer suspends threads and allocates; if it stops, `stall.txt` still ends with `Minidump    : being written`, and the log lines after the first one do not appear.
+
+A run of an autotest script also copies `Game.pdb` to `Exceptions\symbols\Game.pdb\<GUID and age>`, once per build, and `stall.txt` and `except.txt` name that folder as `pdb copy`. Players' runs keep no copy, since the file is over 100 MB. The linker adds one to the pdb's age at every link, so a pdb from a later build of the same sources does not match an earlier dump.
 
 Nothing is timed before the first message pump after the game's one-time initialization. A scenario load is reported only after 60 seconds, or after `HangSeconds` when that is longer. A native message box waiting for an answer is not reported.
 

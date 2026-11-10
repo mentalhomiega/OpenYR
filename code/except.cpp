@@ -52,6 +52,7 @@
 #include "autotest.h"
 #include "hangwatch.h"
 #include "misc.h"
+#include "stallcapture.h"
 #include "resource.h"
 #include "version.h"
 #include "win.h"
@@ -196,6 +197,9 @@ struct ReportSinkType
 
 static ReportSinkType CrashReportSink = { ExceptionReport, sizeof(ExceptionReport), 0 };
 static thread_local ReportSinkType * ThreadReportSink = nullptr;
+
+// Set while a report is built without calling the symbol handler, because the handler allocates.
+static thread_local bool ThreadSymbolsOff = false;
 
 struct ModuleEntryType
 {
@@ -428,7 +432,7 @@ static ModuleEntryType const * Module_For_Address(DWORD_PTR address)
 /// Appends everything but the address itself: the module, symbol, and source line it belongs to.
 /// </summary>
 /// <param name="address">The address to identify.</param>
-static void Append_Address_Details(DWORD_PTR address)
+static void Append_Address_Details(DWORD_PTR address, bool with_line = true)
 {
 	char symbol[256];
 	char file[MAX_PATH];
@@ -444,7 +448,7 @@ static void Append_Address_Details(DWORD_PTR address)
 		Exception_Printf("  %s()+0x%IX", symbol, displacement);
 	}
 
-	if (Resolve_Line(address, file, sizeof(file), &line)) {
+	if (with_line && Resolve_Line(address, file, sizeof(file), &line)) {
 		Exception_Printf("  [%s:%u]", file, line);
 	}
 }
@@ -455,10 +459,11 @@ static void Append_Address_Details(DWORD_PTR address)
 /// </summary>
 /// <param name="address">The address to describe.</param>
 /// <param name="prefix">Text placed before the address, normally indentation.</param>
-static void Append_Address(DWORD_PTR address, char const * prefix)
+/// <param name="with_line">False to leave out the source line.</param>
+static void Append_Address(DWORD_PTR address, char const * prefix, bool with_line = true)
 {
 	Exception_Printf("%s0x" ADDRESS_FORMAT, prefix, address);
-	Append_Address_Details(address);
+	Append_Address_Details(address, with_line);
 	Exception_Printf("\r\n");
 }
 
@@ -487,11 +492,12 @@ static BOOL Guarded_Sym_Get_Line(DWORD_PTR address, DWORD * displacement, IMAGEH
 }
 
 
-static BOOL Guarded_Stack_Walk(HANDLE thread, STACKFRAME64 * frame, CONTEXT * context)
+static BOOL Guarded_Stack_Walk(HANDLE thread, STACKFRAME64 * frame, CONTEXT * context,
+			PREAD_PROCESS_MEMORY_ROUTINE64 reader = NULL)
 {
 	__try {
 		return(StackWalk64(MACHINE_TYPE, GetCurrentProcess(), thread,
-					frame, context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL));
+					frame, context, reader, SymFunctionTableAccess64, SymGetModuleBase64, NULL));
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
 		return(FALSE);
 	}
@@ -516,7 +522,7 @@ static BOOL Guarded_Mini_Dump_Write(HANDLE file, MINIDUMP_TYPE flags, MINIDUMP_E
 /// <returns>True when a symbol was found.</returns>
 static bool Resolve_Symbol(DWORD_PTR address, char * name, unsigned name_size, DWORD_PTR * displacement)
 {
-	if (!Symbols_Usable()) {
+	if (!Symbols_Usable() || ThreadSymbolsOff) {
 		return(false);
 	}
 
@@ -551,7 +557,7 @@ static bool Resolve_Symbol(DWORD_PTR address, char * name, unsigned name_size, D
 /// <returns>True when line information was found.</returns>
 static bool Resolve_Line(DWORD_PTR address, char * file, unsigned file_size, unsigned * line)
 {
-	if (!Symbols_Usable()) {
+	if (!Symbols_Usable() || ThreadSymbolsOff) {
 		return(false);
 	}
 
@@ -1134,16 +1140,6 @@ static void Append_Stall_Load(ULONGLONG busy_milliseconds, ULONGLONG stalled_mil
 }
 
 
-static void Guarded_Stall_Address(CONTEXT const * context)
-{
-	__try {
-		Append_Address(Instruction_Pointer(context), "Stopped at  : ");
-	} __except (EXCEPTION_EXECUTE_HANDLER) {
-		Exception_Printf("  <stopped address faulted>\r\n");
-	}
-}
-
-
 static void Guarded_Registers(CONTEXT const * context)
 {
 	__try {
@@ -1252,6 +1248,18 @@ static bool Get_Link_Time(SYSTEMTIME * when)
 
 
 /// <summary>
+/// Appends the image's pdb identity, which names the symbol file that matches this executable.
+/// </summary>
+static void Append_Symbol_File_Id(void)
+{
+	char id[STALL_BUILD_ID_SIZE];
+	if (Pe_Debug_Id(GetModuleHandle(NULL), id, sizeof(id))) {
+		Exception_Printf("PDB id      : %s\r\n", id);
+	}
+}
+
+
+/// <summary>
 /// Builds the whole machine state report into the static report buffer.
 /// </summary>
 /// <param name="e_info">The saved machine state of the crashing thread.</param>
@@ -1281,6 +1289,8 @@ static void Build_Exception_Report(EXCEPTION_POINTERS * e_info, DWORD crashed_th
 #else
 	Exception_Printf("Build       : Release\r\n");
 #endif
+
+	Append_Symbol_File_Id();
 
 	Exception_Printf("Executable  : %s\r\n", ExecutablePath);
 	Exception_Printf("Command line: %s\r\n", GetCommandLineA());
@@ -1494,6 +1504,69 @@ static void Exception_Folder_Path(char * folder, size_t folder_size, char const 
 
 
 /// <summary>
+/// Keeps a copy of this build's pdb for the reports of an autotest run.
+/// </summary>
+/// <param name="kept">Receives the copy's folder, relative to the executable's, or an empty string.</param>
+/// <returns>True when a copy of this build's pdb is in Exceptions\symbols.</returns>
+/// <remarks>
+/// The folder is named as a symbol store names it, by the pdb's file name and the image's GUID and age, so a
+/// copy is made once per build. A test harness replaces the pdb next to the executable when it starts
+/// another build, after which a dump from this one could no longer be read. Players' runs keep nothing: the
+/// pdb is over 100 MB and they have no use for it.
+/// </remarks>
+static bool Keep_Symbol_File(char * kept, unsigned kept_size)
+{
+	kept[0] = '\0';
+	if (!AutoTest_Active()) {
+		return(false);
+	}
+
+	char key[STALL_BUILD_ID_SIZE];
+	if (!Pe_Debug_Key(GetModuleHandle(NULL), key, sizeof(key))) {
+		return(false);
+	}
+
+	char source[MAX_PATH];
+	strncpy(source, ExecutablePath, sizeof(source) - 1);
+	source[sizeof(source) - 1] = '\0';
+	char * const dot = strrchr(source, '.');
+	if (dot == NULL || dot + 4 >= source + sizeof(source)) {
+		return(false);
+	}
+	strcpy(dot, ".pdb");
+
+	char const * name = strrchr(source, '\\');
+	name = (name != NULL) ? name + 1 : source;
+
+	char folder[MAX_PATH];
+	char root[MAX_PATH];
+	Exceptions_Root(root, sizeof(root));
+	CreateDirectoryA(root, NULL);
+	snprintf(folder, sizeof(folder), "%s\\symbols", root);
+	CreateDirectoryA(folder, NULL);
+	snprintf(folder, sizeof(folder), "%s\\symbols\\%s", root, name);
+	CreateDirectoryA(folder, NULL);
+	snprintf(folder, sizeof(folder), "%s\\symbols\\%s\\%s", root, name, key);
+	CreateDirectoryA(folder, NULL);
+
+	char target[MAX_PATH];
+	snprintf(target, sizeof(target), "%s\\%s", folder, name);
+
+	if (GetFileAttributesA(target) == INVALID_FILE_ATTRIBUTES) {
+		char partial[MAX_PATH];
+		snprintf(partial, sizeof(partial), "%s.part", target);
+		if (!CopyFileA(source, partial, FALSE) || !MoveFileExA(partial, target, MOVEFILE_REPLACE_EXISTING)) {
+			DeleteFileA(partial);
+			return(false);
+		}
+	}
+
+	snprintf(kept, kept_size, "Exceptions\\symbols\\%s\\%s", name, key);
+	return(true);
+}
+
+
+/// <summary>
 /// Creates the folder that holds every artifact for this crash.
 /// </summary>
 /// <returns>True when a folder of its own was created.</returns>
@@ -1533,6 +1606,9 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 	snprintf(dump_path, sizeof(dump_path), "%s\\minidump.dmp", ArtifactFolder);
 	bool const dumped = Write_Mini_Dump(dump_path, false, crashed_thread, e_info, NULL);
 
+	char symbols_kept[MAX_PATH];
+	Keep_Symbol_File(symbols_kept, sizeof(symbols_kept));
+
 	Build_Exception_Report(e_info, crashed_thread);
 
 	bool const copied = Copy_Log_Tail();
@@ -1541,6 +1617,9 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 	Exception_Printf("Folder        : %s\r\n", ArtifactFolder);
 	Exception_Printf("minidump.dmp  : %s\r\n", dumped ? "written" : "not written");
 	Exception_Printf("debug-tail.log: %s\r\n", copied ? "written" : "not written, no debug log was available");
+	if (symbols_kept[0] != '\0') {
+		Exception_Printf("pdb copy      : %s\r\n", symbols_kept);
+	}
 	Exception_Printf("\r\nPlease include this whole folder when reporting the crash.\r\n");
 
 	char report_path[MAX_PATH];
@@ -1559,8 +1638,7 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 /// <param name="wait_milliseconds">How long to wait before giving up.</param>
 /// <returns>True when the lock is held and must be released with Exception_Stall_Unlock.</returns>
 /// <remarks>
-/// Taking the lock before the stalled thread is suspended keeps that thread out of the symbol
-/// handler while it is stopped. The lock is recursive, so the capture may take it again.
+/// The lock is recursive, so the capture may take it again.
 /// </remarks>
 bool Exception_Stall_Lock(unsigned wait_milliseconds)
 {
@@ -1593,8 +1671,8 @@ void Exception_Stall_Unlock(void)
 /// Refreshes the module table that addresses in a stall report are named from.
 /// </summary>
 /// <remarks>
-/// Call before the thread is suspended. The snapshot can wait on the loader lock, which a
-/// suspended thread may hold.
+/// Call before the threads are captured. The snapshot allocates and can wait on the loader lock,
+/// which a suspended thread may hold.
 /// </remarks>
 void Exception_Refresh_Module_Table(void)
 {
@@ -1603,26 +1681,275 @@ void Exception_Refresh_Module_Table(void)
 
 
 /// <summary>
-/// Writes the call stack of a stalled thread into a text buffer.
+/// Reads from the stack copy of the thread being described, and from live memory for anything else.
 /// </summary>
-/// <param name="thread">A handle to the thread, which the caller has suspended.</param>
-/// <param name="thread_id">The thread's identifier, shown in the report.</param>
-/// <param name="context">The thread's machine state, from GetThreadContext on the suspended thread.</param>
-/// <param name="busy_milliseconds">The processor time the thread used during the stall, or ULLONG_MAX when unknown.</param>
-/// <param name="stalled_milliseconds">How long the thread went without a beat.</param>
+static thread_local StalledThreadType const * CapturedThread = nullptr;
+
+static BOOL CALLBACK Read_Captured_Memory(HANDLE, DWORD64 address, PVOID buffer, DWORD size, LPDWORD read)
+{
+	SIZE_T count = 0;
+	if (CapturedThread != nullptr && Stall_Read_Captured(*CapturedThread, (DWORD_PTR)address, buffer, size)) {
+		count = size;
+	} else {
+		ReadProcessMemory(GetCurrentProcess(), (void const *)(DWORD_PTR)address, buffer, size, &count);
+	}
+
+	*read = (DWORD)count;
+	return(count == size);
+}
+
+
+/// <summary>
+/// Reports whether a stack word could be the address after a call instruction in a loaded module.
+/// </summary>
+static bool Looks_Like_Return_Address(DWORD_PTR value)
+{
+	if (Module_For_Address(value) == NULL) {
+		return(false);
+	}
+
+	BYTE before[6];
+	SIZE_T count = 0;
+	if (!ReadProcessMemory(GetCurrentProcess(), (void const *)(value - sizeof(before)), before, sizeof(before), &count)
+				|| count != sizeof(before)) {
+		return(false);
+	}
+
+	// before[5] is the last byte of the call: rel32, [disp32], register, [register+disp8], [register+disp32].
+	return(before[1] == 0xE8
+				|| (before[0] == 0xFF && (before[1] == 0x15 || (before[1] & 0xF8) == 0x90))
+				|| (before[4] == 0xFF && (before[5] & 0xF8) == 0xD0)
+				|| (before[3] == 0xFF && ((before[4] & 0xF8) == 0x50 || before[4] == 0x14)));
+}
+
+
+/// <summary>
+/// Lists the code addresses of a captured thread, innermost first.
+/// </summary>
+/// <param name="symbols">True to walk with the symbol handler, which allocates. Otherwise, or when the walk finds
+/// nothing past the first address, stack words that follow a call instruction are listed.</param>
+/// <returns>The number of addresses written to frames, at least one.</returns>
+static unsigned Walk_Captured_Stack(StalledThreadType const & thread, bool symbols, DWORD_PTR * frames, unsigned limit)
+{
+	unsigned count = 0;
+
+	if (symbols && Symbols_Usable()) {
+		CapturedThread = &thread;
+
+		CONTEXT working = thread.Context;
+		STACKFRAME64 frame;
+		memset(&frame, 0, sizeof(frame));
+		frame.AddrPC.Offset = Instruction_Pointer(&working);
+		frame.AddrPC.Mode = AddrModeFlat;
+		frame.AddrFrame.Offset = Frame_Pointer(&working);
+		frame.AddrFrame.Mode = AddrModeFlat;
+		frame.AddrStack.Offset = Stack_Pointer(&working);
+		frame.AddrStack.Mode = AddrModeFlat;
+
+		while (count < limit) {
+			EnterCriticalSection(&DbgHelpLock);
+			BOOL const walked = Guarded_Stack_Walk(thread.Handle, &frame, &working, Read_Captured_Memory);
+			LeaveCriticalSection(&DbgHelpLock);
+
+			if (!walked || frame.AddrPC.Offset == 0) {
+				break;
+			}
+			frames[count++] = (DWORD_PTR)frame.AddrPC.Offset;
+		}
+
+		CapturedThread = nullptr;
+	}
+
+	if (count < 2) {
+		count = 0;
+		frames[count++] = Instruction_Pointer(&thread.Context);
+
+		for (unsigned offset = 0; count < limit && offset + sizeof(DWORD_PTR) <= thread.StackLength;
+					offset += sizeof(DWORD_PTR)) {
+			DWORD_PTR value = 0;
+			memcpy(&value, thread.StackBytes + offset, sizeof(value));
+			if (Looks_Like_Return_Address(value)) {
+				frames[count++] = value;
+			}
+		}
+	}
+
+	return(count);
+}
+
+
+/// <summary>
+/// Reports whether a thread stopped in the part of the system that waits for other threads.
+/// </summary>
+static bool In_System_Wait(StalledThreadType const & thread)
+{
+	ModuleEntryType const * const module = Module_For_Address(Instruction_Pointer(&thread.Context));
+	return(module != NULL && (_stricmp(module->Name, "ntdll.dll") == 0 || _stricmp(module->Name, "win32u.dll") == 0));
+}
+
+
+/// <summary>
+/// Appends the critical section a waiting thread is blocked on, when one can be found on its stack.
+/// </summary>
+static void Append_Wait_Lock(StallCaptureType const & capture, StalledThreadType const & thread, char const * prefix)
+{
+	StallLockType lock;
+	if (!In_System_Wait(thread) || !Stall_Find_Lock(thread, &lock)) {
+		return;
+	}
+
+	Exception_Printf("%sCritical section 0x" ADDRESS_FORMAT "%s: ", prefix, lock.Address,
+				lock.InProcessHeap ? " (process heap lock)" : "");
+
+	if (lock.Free) {
+		Exception_Printf("free");
+	} else {
+		Exception_Printf("held by thread 0x%04X", lock.OwnerThread);
+		for (unsigned index = 0; index < capture.Count; index++) {
+			if (capture.Threads[index].Id == lock.OwnerThread && capture.Threads[index].Name[0] != '\0') {
+				Exception_Printf(" \"%s\"", capture.Threads[index].Name);
+			}
+		}
+		Exception_Printf(", recursion %ld", lock.RecursionCount);
+	}
+
+	Exception_Printf(", %u waiting%s\r\n", lock.Waiters, lock.WakePending ? ", wake-up posted and not yet taken" : "");
+}
+
+
+/// <summary>
+/// Appends how a thread stands: suspended by another thread, or stopped in a system wait.
+/// </summary>
+static void Append_Thread_State(StalledThreadType const & thread)
+{
+	if (thread.CpuMilliseconds != ULLONG_MAX) {
+		Exception_Printf("  CPU %I64u ms", thread.CpuMilliseconds);
+	}
+	if (thread.SuspendCount > 0) {
+		Exception_Printf("  suspended (count %lu)", thread.SuspendCount);
+	} else if (In_System_Wait(thread)) {
+		Exception_Printf("  likely waiting (stopped in the system library)");
+	}
+}
+
+
+/// <summary>
+/// Appends the stalled thread's address, call stack and the lock it waits on.
+/// </summary>
+static void Append_Stalled_Thread(StallCaptureType const & capture, bool symbols)
+{
+	StalledThreadType const & thread = capture.Threads[0];
+
+	DWORD_PTR frames[MAX_FRAME_DEPTH];
+	unsigned const count = Walk_Captured_Stack(thread, symbols, frames, MAX_FRAME_DEPTH);
+
+	Append_Address(frames[0], "Stopped at  : ");
+	Append_Wait_Lock(capture, thread, "Waiting on  : ");
+
+	Exception_Printf("\r\n%s\r\n", symbols ? "Call stack (symbol handler)" : "Call stack (stack scan, possible return addresses)");
+	Exception_Printf("%s\r\n", symbols ? "---------------------------" : "-------------------------------------------------");
+
+	for (unsigned index = 0; index < count; index++) {
+		Append_Address(frames[index], "  ");
+	}
+}
+
+
+// Frames kept for each other thread in the report, the stopped address included.
+#define STALL_LIST_FRAMES 6
+#define STALL_LIST_SHARED_IDS 6
+
+/// <summary>
+/// Appends every thread with its top frames. Threads with the same stack and state share one entry.
+/// </summary>
+static void Append_Thread_List(StallCaptureType const & capture, bool symbols)
+{
+	Exception_Printf("\r\nThreads (%u listed", capture.Count);
+	if (capture.Omitted > 0) {
+		Exception_Printf(", %u more not listed", capture.Omitted);
+	}
+	Exception_Printf("; the watchdog thread is not included)\r\n--------------------------------------------\r\n");
+
+	DWORD_PTR frames[STALL_MAX_THREADS][STALL_LIST_FRAMES];
+	unsigned counts[STALL_MAX_THREADS];
+	bool listed[STALL_MAX_THREADS];
+
+	for (unsigned index = 0; index < capture.Count; index++) {
+		listed[index] = false;
+		counts[index] = (index > 0 && capture.Threads[index].Captured)
+					? Walk_Captured_Stack(capture.Threads[index], symbols, frames[index], STALL_LIST_FRAMES) : 0;
+	}
+
+	for (unsigned index = 0; index < capture.Count; index++) {
+		StalledThreadType const & thread = capture.Threads[index];
+		if (listed[index]) {
+			continue;
+		}
+
+		Exception_Printf("0x%04X", thread.Id);
+		if (index == 0) {
+			Exception_Printf(" (main thread, described above)");
+		}
+		if (thread.Name[0] != '\0') {
+			Exception_Printf(" \"%s\"", thread.Name);
+		}
+
+		unsigned shared[STALL_MAX_THREADS];
+		unsigned shared_count = 0;
+		for (unsigned other = index + 1; counts[index] > 0 && other < capture.Count; other++) {
+			if (!listed[other] && counts[other] == counts[index]
+						&& (capture.Threads[other].SuspendCount > 0) == (thread.SuspendCount > 0)
+						&& memcmp(frames[other], frames[index], counts[index] * sizeof(DWORD_PTR)) == 0) {
+				shared[shared_count++] = other;
+				listed[other] = true;
+			}
+		}
+		if (shared_count > 0) {
+			Exception_Printf(" and %u more with the same stack:", shared_count);
+			for (unsigned member = 0; member < shared_count && member < STALL_LIST_SHARED_IDS; member++) {
+				Exception_Printf(" 0x%04X", capture.Threads[shared[member]].Id);
+			}
+			if (shared_count > STALL_LIST_SHARED_IDS) {
+				Exception_Printf(" ...");
+			}
+		}
+
+		Append_Thread_State(thread);
+		Exception_Printf("\r\n");
+
+		if (index > 0 && !thread.Captured) {
+			Exception_Printf("  <not captured>\r\n");
+			continue;
+		}
+		for (unsigned frame = 0; frame < counts[index]; frame++) {
+			Append_Address(frames[index][frame], "  ", false);
+		}
+		if (index > 0) {
+			Append_Wait_Lock(capture, thread, "  ");
+		}
+	}
+}
+
+
+/// <summary>
+/// Writes the report of a stalled process into a text buffer: the main thread in full, then every thread briefly.
+/// </summary>
+/// <param name="capture">The threads, as Stall_Capture_Threads left them. The main thread is first.</param>
+/// <param name="busy_milliseconds">The processor time the main thread used during the stall, or ULLONG_MAX when unknown.</param>
+/// <param name="stalled_milliseconds">How long the main thread went without a beat.</param>
+/// <param name="symbols">True to name addresses with the symbol handler, which allocates, so no thread may be
+/// suspended by the caller. False writes module offsets only and allocates no heap memory.</param>
 /// <param name="text">The buffer to write into. The text is always null terminated.</param>
 /// <param name="size">The size of the buffer in characters.</param>
 /// <returns>True when the buffer holds text.</returns>
 /// <remarks>
-/// The caller must hold the symbol lock from Exception_Stall_Lock. Symbols are named only when the
-/// symbol handler is ready; otherwise the stack is listed as return addresses. The processor time
-/// tells a thread that was computing from one that was waiting, and the memory lines tell a stall
-/// on a machine that is paging from one that is not.
+/// With symbols the caller must hold the symbol lock from Exception_Stall_Lock. The module table should be
+/// refreshed first, since addresses are named from it.
 /// </remarks>
-bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, ULONGLONG busy_milliseconds,
-			ULONGLONG stalled_milliseconds, char * text, unsigned size)
+bool Exception_Describe_Stall(StallCaptureType const * capture, ULONGLONG busy_milliseconds,
+			ULONGLONG stalled_milliseconds, bool symbols, char * text, unsigned size)
 {
-	if (text == NULL || size == 0 || context == NULL) {
+	if (text == NULL || size == 0 || capture == NULL || capture->Count == 0 || !capture->Threads[0].Captured) {
 		return(false);
 	}
 
@@ -1631,16 +1958,27 @@ bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * co
 	ReportSinkType sink = { text, size, 0 };
 	ReportSinkType * const previous = ThreadReportSink;
 	ThreadReportSink = &sink;
+	ThreadSymbolsOff = !symbols;
 
-	Exception_Printf("Thread      : 0x%04X%s\r\n", thread_id, (thread_id == MainThreadId) ? " (main thread)" : "");
-	Append_Stall_Load(busy_milliseconds, stalled_milliseconds);
-	Guarded_Stall_Address(context);
-	Guarded_Call_Stack(context, thread);
+	__try {
+		Exception_Printf("Thread      : 0x%04X (main thread)\r\n", capture->Threads[0].Id);
 
-	if (!Symbols_Usable()) {
-		Guarded_Frame_Chain(context);
+		SYSTEMTIME link_time;
+		if (Get_Link_Time(&link_time)) {
+			Exception_Printf("Linked      : %04u-%02u-%02u %02u:%02u:%02u UTC\r\n",
+						link_time.wYear, link_time.wMonth, link_time.wDay,
+						link_time.wHour, link_time.wMinute, link_time.wSecond);
+		}
+		Append_Symbol_File_Id();
+
+		Append_Stall_Load(busy_milliseconds, stalled_milliseconds);
+		Append_Stalled_Thread(*capture, symbols);
+		Append_Thread_List(*capture, symbols);
+	} __except (EXCEPTION_EXECUTE_HANDLER) {
+		Exception_Printf("  <the report faulted here and is cut short>\r\n");
 	}
 
+	ThreadSymbolsOff = false;
 	ThreadReportSink = previous;
 
 	return(sink.Length > 0);
@@ -1650,9 +1988,17 @@ bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * co
 /// <summary>
 /// Creates the folder for a stall's artifacts, named for the time and the process.
 /// </summary>
-/// <returns>True when the folder was created and its path is in folder.</returns>
-static bool Create_Stall_Folder(char * folder, unsigned folder_size)
+/// <param name="folder">Receives the folder's path, or an empty string when no folder was created.</param>
+/// <param name="folder_size">The size of the folder buffer in characters.</param>
+/// <returns>True when the folder was created. Allocates no heap memory.</returns>
+bool Exception_Create_Stall_Folder(char * folder, unsigned folder_size)
 {
+	if (folder == NULL || folder_size == 0) {
+		return(false);
+	}
+
+	folder[0] = '\0';
+
 	SYSTEMTIME now;
 	GetLocalTime(&now);
 
@@ -1672,34 +2018,40 @@ static bool Create_Stall_Folder(char * folder, unsigned folder_size)
 
 
 /// <summary>
-/// Writes a stall's minidump and its report, in a folder of its own.
+/// Writes stall.txt in a stall's folder, replacing an earlier version.
 /// </summary>
-/// <param name="text">The report to save beside the dump, as Exception_Describe_Stall wrote it.</param>
-/// <param name="folder">Receives the folder's path, or an empty string when no folder was created.</param>
-/// <param name="folder_size">The size of the folder buffer in characters.</param>
+/// <param name="text">The report, as Exception_Describe_Stall wrote it.</param>
+/// <param name="status">A line saying what became of the minidump, written after the report.</param>
+/// <returns>True when the file was written. Allocates no heap memory.</returns>
+bool Exception_Write_Stall_Report(char const * folder, char const * text, char const * status)
+{
+	char report_path[MAX_PATH];
+	snprintf(report_path, sizeof(report_path), "%s\\stall.txt", folder);
+
+	return(Write_Whole_File(report_path, text, (DWORD)strlen(text), FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH,
+				status, (DWORD)strlen(status)));
+}
+
+
+/// <summary>
+/// Writes a stall's minidump into its folder.
+/// </summary>
+/// <param name="status">Receives the line for stall.txt that says what became of the dump.</param>
 /// <param name="error">Receives the reason the dump was not written, or zero. May be null.</param>
 /// <returns>True when the minidump was written.</returns>
 /// <remarks>
-/// The caller must hold the symbol lock and keep the thread suspended until this returns. The dump
-/// is skipped, as with a crash, while the symbol handler is starting up. A dump that fails part way
-/// can leave a partial minidump.dmp, which the report names.
+/// The caller must hold the symbol lock. The dump is skipped, as with a crash, while the symbol handler is
+/// starting up. The writer suspends the other threads and allocates, so a thread that holds the heap lock when
+/// it is suspended stops it for good; the caller writes stall.txt before the dump starts for that reason. A dump
+/// that fails part way can leave a partial minidump.dmp, which the status line names.
 /// </remarks>
-bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folder_size, DWORD * error)
+bool Exception_Write_Stall_Dump(char const * folder, char * status, unsigned status_size, DWORD * error)
 {
 	if (error != NULL) {
 		*error = 0;
 	}
-	if (folder == NULL || folder_size == 0) {
-		return(false);
-	}
 
-	folder[0] = '\0';
-	if (!Create_Stall_Folder(folder, folder_size)) {
-		return(false);
-	}
-
-	// A stall raises no exception, so the dump has no exception record. The threads are captured
-	// as they stand, and the stalled one is already suspended.
+	// A stall raises no exception, so the dump has no exception record.
 	char dump_path[MAX_PATH];
 	snprintf(dump_path, sizeof(dump_path), "%s\\minidump.dmp", folder);
 	DWORD dump_error = 0;
@@ -1708,20 +2060,19 @@ bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folde
 		*error = dump_error;
 	}
 
-	char status[160];
 	if (dumped) {
-		snprintf(status, sizeof(status), "Minidump    : written\r\n");
+		snprintf(status, status_size, "Minidump    : written\r\n");
 	} else if (dump_error == 0) {
-		snprintf(status, sizeof(status), "Minidump    : not written, because the symbol handler was still starting\r\n");
+		snprintf(status, status_size, "Minidump    : not written, because the symbol handler was still starting\r\n");
 	} else {
-		snprintf(status, sizeof(status), "Minidump    : not written, error 0x%08lX; a partial file may remain\r\n", dump_error);
+		snprintf(status, status_size, "Minidump    : not written, error 0x%08lX; a partial file may remain\r\n", dump_error);
 	}
 
-	char report_path[MAX_PATH];
-	snprintf(report_path, sizeof(report_path), "%s\\stall.txt", folder);
-
-	Write_Whole_File(report_path, text, (DWORD)strlen(text), FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH,
-				status, (DWORD)strlen(status));
+	char symbols_kept[MAX_PATH];
+	size_t const used = strlen(status);
+	if (Keep_Symbol_File(symbols_kept, sizeof(symbols_kept)) && used < status_size) {
+		snprintf(status + used, status_size - used, "pdb copy    : %s\r\n", symbols_kept);
+	}
 
 	return(dumped);
 }

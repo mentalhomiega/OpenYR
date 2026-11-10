@@ -62,15 +62,19 @@ bool Describe_Code_Address(void const * address, char * buffer, unsigned size);
 
 #if defined(_WIN32)
 
-// Hooks for the hang watchdog. A stall is captured in this order: refresh the module table, take
-// the symbol lock, suspend the thread, describe it, write the dump, resume, then release the lock.
-// The lock keeps the stalled thread from holding the symbol handler when it is suspended.
+// Hooks for the hang watchdog. A stall is captured in this order: refresh the module table, open and
+// capture the threads (stallcapture.h; the only time any thread is suspended, and it allocates nothing),
+// write a report of raw addresses, then take the symbol lock, write the report again with symbols, and write
+// the dump. Everything up to the raw report allocates no heap memory.
+struct StallCaptureType;
 void Exception_Refresh_Module_Table(void);
 bool Exception_Stall_Lock(unsigned wait_milliseconds);
 void Exception_Stall_Unlock(void);
-bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, ULONGLONG busy_milliseconds,
-			ULONGLONG stalled_milliseconds, char * text, unsigned size);
-bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folder_size, DWORD * error);
+bool Exception_Describe_Stall(StallCaptureType const * capture, ULONGLONG busy_milliseconds,
+			ULONGLONG stalled_milliseconds, bool symbols, char * text, unsigned size);
+bool Exception_Create_Stall_Folder(char * folder, unsigned folder_size);
+bool Exception_Write_Stall_Report(char const * folder, char const * text, char const * status);
+bool Exception_Write_Stall_Dump(char const * folder, char * status, unsigned status_size, DWORD * error);
 
 #endif
 
