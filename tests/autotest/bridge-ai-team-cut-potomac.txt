@@ -1,0 +1,27 @@
+; A computer team whose bridge is cut while it approaches. The team of bridge-ai-team-potomac.ini starts on the west bank
+; of Potomac (75,49 and 75,50) with orders to move to 92,49; once the tanks are on the road to the north span the deck
+; at 84,49 takes two weapon hits (bridgehit), which cuts the span. gamemd rebuilds the zone map after a removal (0x56DAE0)
+; and the tanks plan a new route; another route leads round the south end of the river.
+; Expected: the span is cut (bridgedecks left 5), no tank is lost, and both tanks end on the east bank beside 92,49 by
+; the long way round (they are near 76,81 and 89,88 on the way), and the script ends at frame 1599, against 506 for the
+; uncut crossing. The tank already on the deck when it is cut turns back.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-ai-team-cut-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 400 -AICountries 1 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridgedecks)| team)|TEAMTRACE|Exception"
+1 teamtrace 1
+30 reveal
+31 view 84 49
+300 spawn MTNK 75 49
+301 spawn MTNK 75 50
+310 teamini bridge-ai-team-potomac.ini
+320 team TSTBRGT
+350 bridgehit 84 49
+351 bridgehit 84 49
+352 bridgedecks 79 88 49
+400 bridgeobj MTNK
+800 bridgeobj MTNK
+1200 bridgeobj MTNK
+1600 bridgeobj MTNK
+2000 bridgeobj MTNK
+2400 bridgeobj MTNK
+3000 bridgeobj MTNK
+3600 bridgeobj MTNK
+3601 quit

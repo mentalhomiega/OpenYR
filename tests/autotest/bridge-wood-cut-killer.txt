@@ -1,0 +1,36 @@
+; A wood low bridge cut under units, and a ship that cannot pass it. On Killer the wood bridge runs east-west on rows 66
+; to 68 from x 57 to 77, over water. A Grizzly tank stops on 66,67 and a GI on 67,67; a Rhino tank is ordered across
+; from 54,68 to 80,68; a destroyer north of the bridge is ordered to 66,72, south of it. The piece at 66,67 then takes
+; two weapon hits (bridgehit, Map.Damage_Bridge).
+; Expected: the destroyer gets no route and stays on Guard at 66,62. After the second hit the column at 66 (rows 66 to
+; 68) is overlay 100 and not passable, and 67 is overlay 81 and passable. The tank on 66,67 is gone (killed through
+; Kill_Illegal_Occupiers); the GI on 67,67 lives. The Rhino stops on Guard at 65,68, beside the gap.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-wood-cut-killer.txt -Build agent30 -Map Killer.mmx -Seconds 200 -Filter "AUTOTEST( +(bridgeobj|bridgehit|passable|bridge )| wait)|Exception"
+30 reveal
+31 view 66 67
+40 grantunit MTNK 62 67
+41 grantunit E1 62 66
+42 grantunit HTNK 54 68
+43 grantunit DEST 66 62
+50 move DEST 66 72
+70 move MTNK 66 67
+71 move E1 67 67
+72 waitcell MTNK 66 67 0 1500
+73 waitcell E1 67 67 0 1500
+80 bridgeobj MTNK
+81 bridgeobj E1
+82 bridgeobj DEST
+83 move HTNK 80 68
+100 bridgehit 66 67
+110 bridgehit 66 67
+111 bridge 66 67
+112 bridge 67 67
+113 passable 66 66
+114 passable 66 67
+115 passable 66 68
+116 passable 67 67
+120 bridgeobj MTNK
+121 bridgeobj E1
+600 bridgeobj HTNK
+601 bridgeobj DEST
+602 quit

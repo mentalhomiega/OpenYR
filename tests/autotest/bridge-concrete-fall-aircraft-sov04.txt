@@ -1,0 +1,28 @@
+; A landed aircraft on a concrete low bridge piece that falls is destroyed with it. On SOV04DMD the north-south concrete
+; span runs at 95-97, 46-56. A Harrier (ORCA) is placed on 96,50, a Rocketeer (JUMPJET) on 96,51 and a GI on 96,52, then
+; the piece at 96,50 takes two weapon hits (concretehit, Map.Damage_Concrete_Bridge). gamemd's section routines end each
+; hit with 0x487A10 on the section's three cells; it destroys every aircraft in the cell's ground list whether or not
+; the aircraft can cross water. The Harrier can, so our Can_Enter_Cell test alone never killed it.
+; The placement is by grantunit, which the autotest steps give no way to replace with an order for a landed aircraft.
+; Expected: after the second hit 96,50 is overlay 232 (fallen) and the Harrier is gone (count 0). The Rocketeer on 96,51
+; and the GI on 96,52 are on cells that are not the one hit and stay at full strength. Before the fix the Harrier stayed
+; landed on the fallen piece with strength 150.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-concrete-fall-aircraft-sov04.txt -Build agent30 -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST( +(bridgeobj|concretehit|passable)| wait)|Exception"
+30 reveal
+31 view 96 50
+40 grantunit ORCA 96 50
+41 grantunit JUMPJET 96 51
+42 grantunit E1 96 52
+70 bridgeobj ORCA
+71 bridgeobj JUMPJET
+72 bridgeobj E1
+80 concretehit 96 50
+81 concretehit 96 50
+82 passable 96 50
+83 bridgeobj ORCA
+84 bridgeobj JUMPJET
+85 bridgeobj E1
+150 bridgeobj ORCA
+151 bridgeobj JUMPJET
+152 bridgeobj E1
+153 quit

@@ -6296,7 +6296,8 @@ void CellClass::Kill_Illegal_Occupiers(void)
 
 	while (object) {
 		next = object->Next;
-		if (object->Can_Enter_Cell(this, FACING_NONE) == MOVE_NO) {
+		// gamemd (0x487A10) also destroys any aircraft landed on the cell, though it can cross water.
+		if (object->RTTI == RTTI_AIRCRAFT || object->Can_Enter_Cell(this, FACING_NONE) == MOVE_NO) {
 			int damage = object->Strength;
 			object->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 		}

@@ -1,0 +1,32 @@
+; Crossing a high bridge both ways and stopping on it. On Potomac the north high bridge spans the river on row 49: head
+; tiles at 79-81 (west) and 87-88 (east) on banks at height 6, deck overlays from 81 to 86 at 624 leptons, water under
+; it at height 2. A Grizzly tank and a GI are ordered from the west bank to the east bank and back, then each is
+; ordered to stop on the deck (84,49 and 84,48).
+; Expected: on the way each unit reads onbridge 1 at z 624 on the deck cells and onbridge 0 at z 624 on the banks; all
+; the waits are done, none times out. Stopped on the deck, both read onbridge 1, z 624, mission Guard.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-high-cross-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 200 -Filter "AUTOTEST( +bridgeobj| wait)|Exception"
+30 reveal
+31 view 84 49
+40 grantunit MTNK 76 49
+41 grantunit E1 76 50
+60 move MTNK 92 49
+61 move E1 92 50
+120 bridgeobj MTNK
+121 waitcell MTNK 92 49 1 1500
+122 bridgeobj MTNK
+123 waitcell E1 92 50 1 1500
+124 bridgeobj E1
+130 move MTNK 74 49
+131 move E1 74 50
+140 waitcell MTNK 84 49 1 1500
+141 bridgeobj MTNK
+142 waitcell MTNK 74 49 1 1500
+143 waitcell E1 74 50 1 1500
+144 bridgeobj E1
+150 move MTNK 84 49
+151 move E1 84 48
+160 waitcell MTNK 84 49 0 1500
+161 waitcell E1 84 48 0 1500
+250 bridgeobj MTNK
+251 bridgeobj E1
+252 quit

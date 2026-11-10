@@ -1,0 +1,26 @@
+; A cut high bridge repaired by an engineer through a repair hut, then crossed. On Potomac the deck at 84,49 of the
+; north bridge is cut by two weapon hits. The neutral repair hut at 78,47 serves that span; a player's engineer at 76,48
+; clicks it (hutclick, the object path of a real click). Then a Grizzly tank crosses from 75,49 to 92,49.
+; Expected: after the hits bridgedecks reads left 5 and repairbridge at the hut reads 1; the engineer's action is
+; GRepair. By frame 600 the deck is back (overlay 24, deck 1, left 6) and repairbridge reads 0. The tank's wait at the
+; deck is done with onbridge 1, and it reaches the east bank (wait done) without the detour by the south bridge.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-high-repair-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 200 -Filter "AUTOTEST( +(bridgeobj|bridgedecks|bridge |repairbridge|hutclick)| wait)|Exception"
+30 reveal
+31 view 84 49
+41 grantunit ENGINEER 76 48
+42 grantunit MTNK 75 49
+50 bridgehit 84 49
+60 bridgehit 84 49
+70 bridgedecks 79 88 49
+71 bridge 84 49
+72 repairbridge 78 47
+80 hutclick ENGINEER 78 47
+600 bridgedecks 79 88 49
+601 bridge 84 49
+602 repairbridge 78 47
+610 move MTNK 92 49
+611 waitcell MTNK 84 49 1 800
+612 bridgeobj MTNK
+613 waitcell MTNK 92 49 0 1500
+614 bridgeobj MTNK
+615 quit

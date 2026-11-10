@@ -1,0 +1,33 @@
+; Rail bridges on Carville, crossed by vehicles and infantry on foot. The east-west span runs along row 63 (railway deck
+; overlay 237 on 50-54) and the north-south span down column 60 (overlay 238 on 52-57, a two-cell-wide tile set with the
+; deck overlay in column 60 only). Both are the TrainBridgeSet tiles with the deck flags set (IsBridgeDeck and
+; IsUnderBridge), which the unit code reads the same way as a road bridge's. A Grizzly tank and a GI cross the east-west
+; span and back; a Rhino tank and a Conscript cross the north-south span.
+; Expected: units on the span read onbridge 1 at z 1248 (the span's height, 12 levels, is the same on both banks), and
+; read onbridge 0 on the banks. Each unit reaches the far side (wait done), the east-west pair twice.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-rail-cross-carville.txt -Build agent30 -Map Carville.mmx -Seconds 200 -Filter "AUTOTEST( +bridgeobj| wait)|Exception"
+30 reveal
+31 view 55 58
+40 grantunit MTNK 46 63
+41 grantunit E1 46 64
+42 grantunit HTNK 60 49
+43 grantunit E2 61 49
+60 move MTNK 58 63
+61 move E1 58 64
+62 move HTNK 60 61
+63 move E2 61 61
+130 bridgeobj MTNK
+160 bridgeobj HTNK
+200 bridgeobj E1
+301 bridgeobj E2
+500 waitcell MTNK 58 63 1 1500
+501 bridgeobj MTNK
+502 waitcell HTNK 60 61 1 1500
+503 bridgeobj HTNK
+510 move MTNK 46 63
+511 move E1 46 64
+520 waitcell MTNK 46 63 1 1500
+521 bridgeobj MTNK
+522 waitcell E1 46 64 1 1500
+523 bridgeobj E1
+524 quit

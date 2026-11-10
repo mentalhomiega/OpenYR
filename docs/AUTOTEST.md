@@ -128,6 +128,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `poweroff <TypeID>` | Turns off the player's structures of that type, as a click with the power cursor does |
 | `rally <TypeID> x y` | Sets the rally point of the player's structures of that type to the cell, without the nearby-cell search an Alt-click makes |
 | `census cells` | Writes the eight tiberium cells nearest the player's first building, nearest first, with their squared distance in cells |
+| `census cells <x> <y>` | Writes the 32 tiberium cells nearest cell x,y instead |
 | `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers it counts, the ones actually on the map and the slave miners among them, the destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
@@ -187,7 +188,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `bridgehit x y` | damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down |
 | `bridgehut x y` | brings the bridge near the cell down as a bridge repair hut's C4 does (MapClass::Destroy_Bridge_At) |
 | `bridgedecks x0 x1 y` | writes how many high bridge deck overlays are left on row y from x0 to x1 |
-| `blast <Warhead\|ion> x y` | explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit |
+| `blast <Warhead\|ion> x y [deck]` | explodes the warhead on the cell as a weapon impact does (Explosion_Damage), at floor height; a wood low bridge there takes one hit. With `deck` the blast is at the height of a high bridge's deck on that cell |
 | `concretehit x y` | damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down |
 | `passable x y` | writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell |
 | `targetaction <AttackerTypeID> <TargetTypeID>` | writes the action the player's first object of the attacker type gets over the first live enemy object of the target type, with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it |
@@ -273,6 +274,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `banimstate <TypeID>` | writes each building of that type with its cell, health, building state, animation stage and rate, power and house, then its construction animation, then each animation slot with the animation wanted, the one running, its stage and rate, and whether it is held still |
 | `bind <Command> <vk> [trigger]` | gives the command that virtual-key code (decimal) with the trigger, `0` Press, `1` Double, `2` Hold or `3` Held, which is Press when left out. A conflicting binding is displaced, as the keyboard screen does. The log gets the key and the trigger name |
 | `blackout <frames>` | starts a spy's power blackout of that many frames on the player's house |
+| `bridgeobj <TypeID>` | writes each object of that type on the map, whoever owns it, with its cell, whether it is on a bridge, its height (`z`) and height above the ground (`agl`) in leptons, its layer, whether it is falling, its strength, mission and destination, then how many it listed |
 | `bridgeunit <TypeID>` | writes each foot object of that type the player owns with its cell, whether it stands on a bridge, whether its cell is under a bridge or is a bridge deck, and its height |
 | `bshadow <TypeID>` | writes each building of that type with the frame its body is drawn from, the frame its shadow is drawn from (half the image's frames further on), that frame's size and how many pixels it sets |
 | `bshape <TypeID>` | writes each building of that type with its health, the `ConditionYellow` ratio, building state, mission, shape number, the body frame drawn, the image's frame count and whether its animations are the damaged forms |

@@ -1,0 +1,19 @@
+; Paratroopers dropped over a high bridge land on its deck. The player's paradrop is fired at 84,49, the middle of the
+; Potomac high bridge over the river (deck overlays on row 49 from x 81 to 86, the water under it at height 2, the deck
+; at 624 leptons). gamemd's ObjectClass::SpawnParachuted (0x5F5940) sets a dropped object's OnBridge when the cell
+; below is under a bridge (cell flag 0x100), and refuses the drop on the deck's outer edge cells (no flag 0x200).
+; The soldiers then walk to the east bank.
+; Expected: every GI dropped over the bridge strip lands with onbridge 1 at z 624 and strength 125, and all of them
+; reach the east bank (wait done for 92,49). Before the fix each one fell through the deck with onbridge 0 into the
+; water at z 208 and died, so the frame 1000 line read count 0.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-paradrop-deck-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 200 -Filter "AUTOTEST( +bridgeobj| wait)|Exception"
+5 view 84 49
+6 reveal
+20 grant ParaDropSpecial
+25 fire ParaDropSpecial 84 49
+600 bridgeobj E1
+1000 bridgeobj E1
+1010 move E1 92 49
+1020 waitcell E1 92 49 3 1500
+1400 bridgeobj E1
+1401 quit
