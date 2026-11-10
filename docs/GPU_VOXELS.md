@@ -30,7 +30,7 @@ a predator draw through the plain translucent blend (see "Where pixel-exact draw
 A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
 
 This page describes that route, the image route. `GpuVoxelPath=Direct` (`[Video]`, default `Image`) draws opaque
-voxel objects, turreted vehicles included, and, without `SoftShadows`, their shadows straight into the map pass with a
+voxel objects, turreted vehicles included, and their shadows straight into the map pass, or into the soft shadow mask, with a
 depth buffer instead, so they take no tile; with `GpuVoxelLayerDepth=Ordered` the picture is the same at scale 1 to 4
 wherever the image route draws its parts at the full scale. While the emissive mask is on, every part takes the image
 route. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) describes the direct route and its measurements.
@@ -149,7 +149,7 @@ two tanks and a Kirov at zoom 1, 2 and 3 for comparing scales by eye and by edge
 
 A shadow's column is drawn as its flat cell, the one face of the cube a zero Z step leaves, in the same tile as a
 direct part, so a shadow stays in register with its object at any scale. With `SoftShadows`, the shadow reads its tile
-for the map-sized mask.
+for the map-sized mask; on the direct route its layers are drawn into that mask at scale 1.
 
 The scale also applies to a turreted vehicle's parts: each piece's offset inside the tile and the clip that keeps it in its tile are scaled the same way, so hull, turret and barrel stay in register and, with `GpuVoxelSmooth=yes`, sharpen at their exact facings.
 
@@ -253,9 +253,9 @@ While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cach
 
 `GPU_VOXEL` compares the voxel image and `gpucheck` compares against a software replay, so neither shows a shadow the depth test rejects in both. The `gpushadowcount` step reads back the picture a `GpuRender=yes` pass drew and logs one line:
 
-`GPU_VOXEL_SHADOW shadows B pixels P darkened D`
+`GPU_VOXEL_SHADOW shadows B pixels P darkened D twice T`
 
-`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `tests/autotest/gpu-voxel-shadow.txt` runs it at scale 1 and `gpu-voxel-shadow-bloom.txt` at scale 2 under `Bloom`, each with two tanks and a Kirov over sand:
+`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `T` counts the pixels inside only one shadow's rectangle that show the ground darkened two or three times, to within one 8-bit step of what the darken blend gives, which a shadow drawn as overlapping cells without a once-per-blit rule leaves; it is 0 on both routes in these scenes, and about 500 at scale 1 when the direct route draws hard shadows without its stencil. A part of an object whose colour matches such a value in all three channels would also count. `tests/autotest/gpu-voxel-shadow.txt` runs it at scale 1 and `gpu-voxel-shadow-bloom.txt` at scale 2 under `Bloom`, each with two tanks and a Kirov over sand:
 
 | Script | Shadows | Pixels | Darkened | Darkened with the ground gradient |
 |---|---|---|---|---|
