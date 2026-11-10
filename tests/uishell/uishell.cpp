@@ -3343,7 +3343,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		sync(weather);
 		Drive(presenter, "ok");
 		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 10111110000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 101111100000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
@@ -3788,7 +3788,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
-			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "gpu-voxel-path", "steady-voxel-placement", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "gpu-voxel-path", "steady-voxel-placement", "shadow-stacking", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;

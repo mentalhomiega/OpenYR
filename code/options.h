@@ -367,6 +367,9 @@ class OptionsClass {
 		// Off places it as the original game does, with the fraction of the scene centre cut off (docs/GPU_VOXELS.md).
 		bool SteadyVoxelPlacement;
 
+		// Off makes overlapping voxel shadows darken the ground once; on darkens it again under each, as the original game does (docs/GPU_VOXELS.md).
+		bool ShadowStacking;
+
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;
 

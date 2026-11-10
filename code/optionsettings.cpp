@@ -150,6 +150,12 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Tip = "A turning vehicle or aircraft stays in place instead of wobbling by a pixel. Off places it as the original game does.",
 	},
 	{
+		.Section = "Video", .Key = "ShadowStacking",
+		.Flag = &OptionsClass::ShadowStacking, .Default = true,
+		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Stacked shadows",
+		.Tip = "Overlapping vehicle and aircraft shadows darken the ground again under each, as in the original game. Off darkens it once, so a crowd of aircraft leaves a grey patch instead of a black one.",
+	},
+	{
 		.Section = "Video", .Key = "Weather",
 		.Number = &OptionsClass::Weather, .Default = WEATHER_NONE, .Names = Weather_Names,
 		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Weather",

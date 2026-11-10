@@ -120,7 +120,9 @@ static int _TargetScale = 1;
 static int _VoxelScale = 1;
 
 // Soft shadows: shadows are drawn into a mask, the mask is blurred, and the base is darkened through it.
+// With one shadow darkening the ground once (ShadowStacking=no) the mask is drawn and not blurred.
 static int _SoftShadowRadius = 0;
+static bool _UnionShadows = false;
 static bgfx::ProgramHandle _BlurProgram = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _BlurUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _MaskSampler = BGFX_INVALID_HANDLE;
@@ -734,7 +736,7 @@ static void Bind_Stores(float const * ring)
 
 
 // Draws every shadow's coverage, with the tile layer's shadows when tileshadow is set, into the first
-// shadow mask and blurs it there, through the second. A direct part's shadow is drawn from its layers at scale 1,
+// shadow mask and, with a soft radius, blurs it there through the second. A direct part's shadow is drawn from its layers at scale 1,
 // the mask's own scale.
 static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int scale, bgfx::TextureHandle voxelimage, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
 {
@@ -795,6 +797,9 @@ static void Submit_Shadows(GpuDrawList const & list, std::vector<GpuVoxelTile> c
 		bgfx::submit(VIEW_MAPSHADOW, _Program);
 	}
 
+	if (_SoftShadowRadius == 0) {
+		return;
+	}
 	bgfx::ViewId const views[2] = { VIEW_MAPBLURX, VIEW_MAPBLURY };
 	for (int pass = 0; pass < 2; pass++) {
 		Set_Map_View(views[pass], _ShadowTarget[1 - pass], area, projection);
@@ -955,6 +960,13 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, std::vector<GpuVoxelTile>
 }
 
 
+// True while shadows go into the mask, blurred or not.
+static bool Shadow_Mask_On(void)
+{
+	return(_SoftShadowRadius > 0 || _UnionShadows);
+}
+
+
 static int Count_Shadow_Blits(GpuDrawList const & list)
 {
 	return((int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
@@ -1010,12 +1022,12 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, _SoftShadowRadius > 0))) {
+	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, Shadow_Mask_On()))) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
 	// At most the vertices Submit_Pass takes, which allocates them later in the same frame.
-	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (_SoftShadowRadius > 0 ? shadows + 2 : 0) + (pass.Mask ? Count_Mask_Quads(list) : 0)) * 6);
+	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (Shadow_Mask_On() ? shadows + 2 : 0) + (pass.Mask ? Count_Mask_Quads(list) : 0)) * 6);
 	return(bgfx::getAvailTransientVertexBuffer(vertices, _Layout) >= vertices);
 }
 
@@ -1422,7 +1434,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	std::vector<GpuVoxelTile> & tiles = _PassTiles;
 	tiles.clear();
-	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, _SoftShadowRadius > 0);
+	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, Shadow_Mask_On());
 	if (!list.Voxels.empty() && !GpuVoxel_Submit(list, direct, scale, tiles)) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
@@ -1435,7 +1447,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	Set_Ring(ring + 4, 0, 0, area.Width, area.Height);
 	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
-	int const shadows = _SoftShadowRadius > 0 ? Count_Shadow_Blits(list) : 0;
+	int const shadows = Shadow_Mask_On() ? Count_Shadow_Blits(list) : 0;
 	int const waves = Count_Sonic_Waves(list);
 	if (waves > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
@@ -1563,9 +1575,10 @@ bool GpuMap_Supported(void)
 }
 
 
-void GpuMap_Set_Soft_Shadows(int radius)
+void GpuMap_Set_Soft_Shadows(int radius, bool union_shadows)
 {
 	_SoftShadowRadius = std::clamp(radius, 0, 16);
+	_UnionShadows = union_shadows;
 }
 
 

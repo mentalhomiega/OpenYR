@@ -104,8 +104,9 @@ bool GpuMap_Draw(GpuMapPass const & pass);
 void GpuMap_Drop(void);
 
 // Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
-// 0 draws each shadow as the software does.
-void GpuMap_Set_Soft_Shadows(int radius);
+// 0 draws each shadow as the software does. With union_shadows the mask is used at radius 0 too, unblurred,
+// so overlapping shadows darken the ground once with hard edges.
+void GpuMap_Set_Soft_Shadows(int radius, bool union_shadows = false);
 
 // True when the renderer is running and can draw map passes.
 bool GpuMap_Supported(void);

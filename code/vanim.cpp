@@ -36,6 +36,7 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
+#include "shadowplane.h"
 #include "sun.h"
 #include "tactical.h"
 #include "techno.h"
@@ -212,7 +213,10 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 
 				SurfaceRegion region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 's');
 
-				Blit_Block(*LogicalSurface, *VoxelDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + pixel, cliprect, 0, VoxelDrawer->Blitter_From_Flags(ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD)), -4 - TacticalMap->Z_Lepton_To_Pixel(z));
+				{
+					ShadowOnceScope once;
+					Blit_Block(*LogicalSurface, *VoxelDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + pixel, cliprect, 0, VoxelDrawer->Blitter_From_Flags(ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD)), -4 - TacticalMap->Z_Lepton_To_Pixel(z));
+				}
 				GpuDraw_Voxel_End();
 
 				matrix = BounceClass::Get_Matrix();

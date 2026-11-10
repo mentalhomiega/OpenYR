@@ -198,6 +198,50 @@ void Test_Water(void)
 }
 
 
+void Test_Shadow_Once(void)
+{
+	std::vector<unsigned short> pixels(W * H, GROUND);
+	std::vector<unsigned short> reference(W * H, GROUND);
+	std::vector<unsigned char> shape(SHAPE, SHAPE + sizeof(SHAPE));
+	BSurface surface(W, H, 2, pixels.data());
+	BSurface ref(W, H, 2, reference.data());
+	BSurface source(4, 2, 1, shape.data());
+	RLEBlitTransDarken<unsigned short> darken(HALF_MASK);
+	unsigned short const half = (unsigned short)((GROUND >> 1) & HALF_MASK);
+
+	// Two overlapping shadows; the second starts a pixel to the right.
+	auto shadows = [&](Surface & target) {
+		ShadowOnceScope scope;
+		RLE_Blit(target, Rect(2, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
+		RLE_Blit(target, Rect(3, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
+	};
+
+	shadows(ref);
+	Check(reference[1 * W + 3] == (unsigned short)((half >> 1) & HALF_MASK), "while off, overlapping shadows darken twice");
+
+	ShadowOnce_Set_Enabled(true);
+	ShadowOnce_Next_Frame();
+	shadows(surface);
+	Check(pixels[1 * W + 2] == half && pixels[1 * W + 3] == half && pixels[1 * W + 6] == half, "overlapping shadows darken the pixels they share once");
+	Check(pixels[1 * W + 1] == GROUND && pixels[2 * W + 3] == GROUND, "pixels outside the shadows are unchanged");
+
+	std::fill(pixels.begin(), pixels.end(), GROUND);
+	RLE_Blit(surface, Rect(2, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
+	RLE_Blit(surface, Rect(3, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
+	Check(pixels[1 * W + 3] == (unsigned short)((half >> 1) & HALF_MASK), "a darkening blit outside a scope is not limited");
+
+	std::fill(pixels.begin(), pixels.end(), GROUND);
+	ShadowOnce_Next_Frame();
+	shadows(surface);
+	Check(pixels[1 * W + 3] == half, "a new frame marks the pixels afresh");
+
+	ShadowOnce_Set_Enabled(false);
+	std::fill(pixels.begin(), pixels.end(), GROUND);
+	shadows(surface);
+	Check(Same(pixels, reference), "with the setting off the shadows draw as the blitter draws them");
+}
+
+
 void Test_Depth_Write(void)
 {
 	DepthBuffer = new ZBuffer(Rect(0, 0, 16, 4));
@@ -226,6 +270,7 @@ int main(void)
 {
 	Test_Plane();
 	Test_Water();
+	Test_Shadow_Once();
 	Test_Depth_Write();
 
 	std::printf("%-52s %s\n", "Shadow plane of the tile layer",

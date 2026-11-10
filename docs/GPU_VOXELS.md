@@ -64,6 +64,31 @@ position, so the shadow counts and pictures that tests record change with the de
 Changing the key while the game runs clears every voxel picture cache at the start of the next frame (`ObjectTypeClass::Clear_Voxel_Indexes`).
 That also invalidates the turreted-vehicle pictures and the GPU's voxel image and prepared objects, which follow the same clear.
 
+## Stacked shadows
+
+`ShadowStacking` (`[Video]`, default `yes`) decides what overlapping voxel shadows do to the ground. With `yes` each shadow darkens the ground again, as in
+gamemd: `TechnoClass::DrawVoxelShadow` draws every shadow through a darken blit with no shared mask, so eight Kirovs over one cell leave the ground
+near black. With `no` the ground under overlapping shadows darkens once, with hard edges. The key applies to software drawing and to every
+`GpuRender` path, and a change takes effect on the next frame. Only drawing changes: `pacing-determinism-fast.txt` gives the same 1,500 state hashes with both values.
+
+- **Software.** The three voxel shadow blits (the cached shadow, the uncached one, and the shadow of a voxel animation) run through `ShadowOnceRows` (`code/shadowplane.h`). It keeps a mark per pixel of the
+  surface holding the frame number of the shadow that last darkened the pixel, and puts back a pixel that a mark from this frame covers. `Tactical::Render_Foreground` starts a frame.
+  A pixel an opaque object has since covered keeps its mark, so a later shadow does not darken that object.
+- **GPU.** Every shadow in the pass goes into the shadow mask, which is not blurred, and the ground is darkened once through it. This is the `SoftShadows` path with a blur radius of 0, for `GpuVoxels` off and for both `GpuVoxelPath` routes. The
+  mask holds every darkening blit of the pass, so the shadows of shapes drawn in the pass (infantry, buildings) are unioned too, which software does not do.
+- Shadows that buildings and trees draw into the tile layer are not changed by the key; `SoftShadows` unions them.
+
+Classification: preserved with the default, and intentionally changed for `no`. Eight Kirovs over one cell, window brightness over a 32 by 10 patch of shadowed sand (`shadow-stack-*.txt`, `windowdark`), as a fraction of the unshadowed ground:
+
+| Kirovs | 1 | 2 | 4 | 8 |
+|---|---|---|---|---|
+| `yes` | 0.49 | 0.24 | 0.05 | 0.01 |
+| `no`, software | 0.49 | 0.49 | 0.49 | 0.49 |
+| `no`, GPU | 0.50 | 0.50 | 0.50 | 0.50 |
+
+The GPU values match the default's at one Kirov and are slightly lighter than software's because the mask darkens the ground picture before objects are drawn.
+With eight Kirovs `no` costs software drawing about 0.09 ms a frame at 800 by 600.
+
 ## How the software draws a voxel object
 
 `TechnoClass::Draw_Voxel` (`code/techno.cpp`) draws one model, a hull, a turret or a barrel, at a time.
