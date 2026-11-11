@@ -1307,6 +1307,8 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 		case RADIO_CAN_LOAD:
 			if (Class->Max_Passengers() == 0 || from == NULL || !House->Is_Ally(from)) return(RADIO_STATIC);
 			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
+			// A vehicle with a parasite inside it may not board (UnitClass radio handler, 0x737602).
+			if (from->Is_Foot() && ((FootClass *)from)->ParasiteEatingMe != NULL) return(RADIO_STATIC);
 			if (Can_Fit_Passenger(from)) {
 				return(RADIO_ROGER);
 			}
@@ -4524,6 +4526,11 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	while (obj != NULL) {
 
 		if (const_cast<UnitClass *>(this) != obj) {
+
+			// A parasite whose victim shares this cell may enter it (UnitClass::CanReach, 0x73F0A0, at 0x73F530).
+			if (ParasiteImUsing.has_value() && ParasiteImUsing->Victim != NULL && ParasiteImUsing->Victim->Get_Cell() == obj->Get_Cell()) {
+				return(MOVE_OK);
+			}
 
 			// A structure in radio contact with this vehicle does not stop it on a cell outside the structure's
 			// NumberImpassableRows (UnitClass::CanReach, 0x73F0A0).

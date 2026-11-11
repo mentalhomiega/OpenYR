@@ -1067,8 +1067,9 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 		}
 		FootClass * foot = (FootClass *)object;
 
-		// A parasite inside a unit the warp touches is doomed for 500 frames and driven out, so it dies (SuperClass::Launch, 0x6CC7B7).
-		if (foot->ParasiteEatingMe != NULL && foot->ParasiteEatingMe->ParasiteImUsing) {
+		// A naval parasite, the giant squid, holding a unit the warp touches is driven out (SuperClass::Launch, 0x6CC775 tests
+		// Naval, 0x6CC7B7). A terror drone stays inside and comes out when its victim leaves the map.
+		if (foot->ParasiteEatingMe != NULL && foot->ParasiteEatingMe->ParasiteImUsing && foot->ParasiteEatingMe->TClass->IsNaval) {
 			foot->ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 500;
 			foot->ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
 		}

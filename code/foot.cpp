@@ -2001,6 +2001,11 @@ ResultType FootClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 		}
 	}
 
+	// The parasite inside reacts to the hit as dealt, before armor or other modifiers change it (FootClass::ReceiveDamage, 0x4D7330).
+	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Victim_Hit(damage, source);
+	}
+
 	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	if (result == RESULT_ALREADY_DESTROYED) {

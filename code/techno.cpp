@@ -334,6 +334,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsBeingWarpedOut(false),
 	ParasiteImUsing(),
 	ParasiteEatingMe(NULL),
+	ParasiteLeapFrame(0),
 	OldTeam(NULL),
 	DisguiseType(NULL),
 	DisguiseHouse(NULL),
@@ -1319,6 +1320,12 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 					}
 					Strength += step;
 					EstimatedHealth += step;
+
+					// A repair step drives out a parasite eating this object, doomed for 50 frames, so it dies (the radio handler at 0x6F4AB0, 0x6F4DA6).
+					if (Is_Foot() && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+						ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 50;
+						ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+					}
 
 					if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
 						if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE]) {
@@ -4108,6 +4115,15 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	// Every 16 frames a target this object may never fire at is dropped, such as a vehicle another
+	// terror drone already sits in (TechnoClass::Update, 0x6FA482). Capture and sabotage keep theirs.
+	if (TarCom != NULL && Frame % 16 == 0 && CurrentMission != MISSION_CAPTURE && CurrentMission != MISSION_SABOTAGE) {
+		FireErrorType const error = Can_Fire(TarCom, What_Weapon_Should_I_Use(TarCom));
+		if (error == FIRE_ILLEGAL || error == FIRE_CANT) {
+			Assign_Target(NULL);
+		}
+	}
+
 	/*
 	**	Update the animation timer system. If the animation stage
 	**	changes, then flag the object to be redrawn as well as determine
@@ -4564,6 +4580,10 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 	if (Is_Foot() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsParasite) {
 		TechnoClass const * victim = (techno != NULL && techno->Is_Foot()) ? techno : NULL;
 		if (!ParasiteImUsing || !ParasiteImUsing->Can_Infect(victim)) {
+			return(FIRE_ILLEGAL);
+		}
+		// A target another parasite leapt at in the last 20 frames is left to that parasite (TechnoClass::GetFireError, 0x6FCAE1).
+		if (Frame < victim->ParasiteLeapFrame) {
 			return(FIRE_ILLEGAL);
 		}
 	}
@@ -5756,8 +5776,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 	// As TechnoClass::Fire (0x6FDD50): a LimboLaunch weapon takes its firer off the map to ride the shot.
 	if (weapon->IsLimboLaunch && Is_Foot()) {
+		// Only a leap at a soldier, which dies at the first bite, selects the firer again when it comes back (TechnoClass::Fire, 0x6FF751).
 		if (ParasiteImUsing) {
-			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed;
+			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed && House->Is_Player_Control() && target != NULL && target->What_Am_I() == RTTI_INFANTRY;
 		}
 
 		// A shot that fails this test leaves OldTeam as it was (TechnoClass::Fire, 0x6FDD50).
@@ -5768,6 +5789,12 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 		// Leaving the map detached the shot from its firer; the firer still rides it.
 		bullet->Set_Payback(this);
+
+		// No other parasite leaps at the same target for 20 frames (TechnoClass::Fire, 0x6FF81F).
+		FootClass * const leap_target = dynamic_cast<FootClass *>(target);
+		if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsParasite && leap_target != NULL) {
+			leap_target->ParasiteLeapFrame = Frame + 20;
+		}
 	}
 
 	// A FireOnce weapon's firer drops its target after the shot (TechnoClass::Fire, 0x6FDD50).
@@ -6345,6 +6372,10 @@ bool TechnoClass::Can_Deploy_Now(void) const
 		blocked = unit->Is_Immobilized() || unit->CurrentTube >= TUBE_FIRST;
 		// A DeployFire=yes vehicle fires where it stands, so a vehicle with no seats is not blocked for it.
 		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer && !unit->Class->IsDeployFire) {
+			blocked = true;
+		}
+		// A vehicle that deploys into a structure cannot deploy while a parasite is inside it (TechnoClass::CanDeploySlashUnload, 0x700EB4).
+		if (unit->Class->DeploysInto != NULL && ParasiteEatingMe != NULL) {
 			blocked = true;
 		}
 		if (unit->Class->Max_Passengers() > 0) {
@@ -7068,10 +7099,6 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative)) {
 		return(RESULT_NONE);
-	}
-
-	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
-		ParasiteEatingMe->ParasiteImUsing->Victim_Hit(damage, source);
 	}
 
 	/*
@@ -11485,6 +11512,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBeingWarpedOut);
 	stream.Serialize(ParasiteImUsing);
 	stream.Serialize(ParasiteEatingMe);
+	stream.Serialize(ParasiteLeapFrame);
 	stream.Serialize(OldTeam);
 	stream.Serialize(DisguiseType);
 	stream.Serialize(DisguiseHouse);
