@@ -1,0 +1,21 @@
+; Terror Drone and boarding: a computer Terror Drone (DRON) on 60,62 attacks the player's Rhino (HTNK) on 62,62 at frame 160.
+; The player's Amphibious Transport (SAPC, SizeLimit 6) stands on 66,62. The action probe asks what a click of the Rhino on the
+; transport would do, before the drone is inside (frame 140) and while it is inside (frame 250).
+; gamemd: a vehicle with a parasite inside may not board; the transport answers its CAN_LOAD radio message with static
+; (the UnitClass radio handler at 0x737430, CAN_LOAD case at 0x73758A, tests ParasiteEatingMe at 0x737602), so the click
+; offers no enter action.
+; Before the fix: both action lines show the enter action.
+; After the fix: frame 140 shows enter, frame 250 does not.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script E:/Claude ra2 decomp/src-agent31/tests/autotest/drone-board-transport.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+1 view 63 62
+2 zoom 2
+3 reveal
+10 own HTNK 62 62
+12 own SAPC 66 62
+140 action HTNK 66 62
+150 spawn DRON 60 62
+160 enemystrike DRON 62 62
+250 where DRON
+250 where HTNK
+250 action HTNK 66 62
+251 quit

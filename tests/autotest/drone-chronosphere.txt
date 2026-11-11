@@ -1,0 +1,33 @@
+; Terror Drone and the Chronosphere: a computer Terror Drone (DRON) on 62,62 attacks the player's Rhino (HTNK) on 64,62 at frame 40.
+; The Chronosphere fires on 64,62 at frame 120 and the warp at frame 130 sends the Rhino to 70,62.
+; gamemd: the warp drives out only a naval parasite, the giant squid (SuperClass::Launch tests the parasite's Naval flag at
+; 0x6CC775 before it sets 500 frames of suppression and calls ParasiteClass::ExitUnit at 0x6CC7B7). A terror drone is not
+; driven out by the warp itself.
+; Before the fix: the warp dooms the drone and deletes it, so no DRON line follows frame 120.
+; After the fix: the drone stays inside the Rhino through the warp (DRON limbo 1 on every probe) and keeps biting it at 70,62.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script E:/Claude ra2 decomp/src-agent31/tests/autotest/drone-chronosphere.txt -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Exception"
+20 command CenterBase
+25 reveal
+30 own GAPOWR 56 40
+32 own HTNK 64 62
+34 spawn DRON 62 62
+40 enemystrike DRON 64 62
+44 view 66 62
+50 grant ChronoSphereSpecial
+51 grant ChronoWarpSpecial
+100 where DRON
+100 where HTNK
+120 fire ChronoSphereSpecial 64 62
+125 where DRON
+130 fire ChronoWarpSpecial 70 62
+135 where DRON
+135 where HTNK
+150 where DRON
+150 where HTNK
+200 where DRON
+200 where HTNK
+250 where DRON
+250 where HTNK
+300 where DRON
+300 where HTNK
+301 quit
