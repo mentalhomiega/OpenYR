@@ -329,6 +329,9 @@ class TechnoClass :	public RadioClass,
 		std::optional<ParasiteClass> ParasiteImUsing;
 		TechnoClass * ParasiteEatingMe;
 
+		// Until this frame no parasite weapon fires at this foot object, because a parasite has just leapt at it.
+		int ParasiteLeapFrame;
+
 		// The team this object was on when a LimboLaunch shot took it off the map (RejoinTeamIfLimboed). Cleared when that team is deleted.
 		TeamClass * OldTeam;
 

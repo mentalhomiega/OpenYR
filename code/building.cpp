@@ -10218,6 +10218,13 @@ void BuildingClass::Grind(FootClass * object)
 		refund += passenger->Refund_Amount();
 		passenger->Delete_Me();
 	}
+
+	// A parasite inside is refunded to the grinder's owner as well, and is driven out doomed for 50 frames, so it dies (0x73A13E).
+	if (object->ParasiteEatingMe != NULL && object->ParasiteEatingMe->ParasiteImUsing) {
+		refund += object->ParasiteEatingMe->Refund_Amount();
+		object->ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 50;
+		object->ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+	}
 	House->Refund_Money(refund);
 
 	// A reverse engineering grinder teaches its owner the type of what it grinds, or the type it names as ReversedAs (Ares).

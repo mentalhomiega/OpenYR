@@ -1,0 +1,26 @@
+; Terror Drone and the Iron Curtain: the player's Rhino (HTNK) on 64,62 is put under the Iron Curtain at frame 100, then a computer
+; Terror Drone (DRON) on 62,62 is ordered to attack it at frame 160.
+; gamemd: a parasite weapon does not fire at an Iron Curtained target (TechnoClass::GetFireError, 0x6FC0B0, the IsIronCurtained
+; test after the parasite checks), and every 16 frames an object drops a target it may never fire at (TechnoClass::Update, 0x6FA482).
+; Before the fix: the drone leaps into the curtained Rhino (DRON limbo 1, parasite inside).
+; After the fix: the drone stays on the map (DRON limbo 0 on every line) and lets the Rhino go as its target.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script E:/Claude ra2 decomp/src-agent31/tests/autotest/drone-iron-curtain.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+1 view 63 62
+2 zoom 2
+3 reveal
+10 own HTNK 64 62
+50 grant IronCurtainSpecial
+100 fire IronCurtainSpecial 64 62
+150 spawn DRON 62 62
+150 where HTNK
+160 enemystrike DRON 64 62
+170 where DRON
+180 where DRON
+190 where DRON
+200 where DRON
+220 where DRON
+250 where DRON
+250 where HTNK
+300 where DRON
+300 where HTNK
+301 quit

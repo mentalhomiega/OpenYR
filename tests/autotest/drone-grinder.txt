@@ -1,0 +1,23 @@
+; Terror Drone and the Grinder: a computer Terror Drone (DRON) on 60,62 attacks the player's Rhino (HTNK) on 62,62 at frame 160.
+; At frame 260 the Rhino is sent into the player's Grinder (YAGRND) on 66,61. The dumps before and after give the player's credits.
+; gamemd: the grinder refunds a parasite inside the vehicle to the grinder's owner along with the vehicle, sets the parasite's
+; suppression to 50 frames and drives it out, so it dies (the grinder entry at 0x739EC0, refund and ParasiteClass::ExitUnit
+; at 0x73A13E to 0x73A181).
+; Before the fix: the drone survives the grinding and comes back onto the map beside the grinder, and only the Rhino is refunded.
+; After the fix: no DRON line follows the grinding, and the credits rise by the drone's refund as well as the Rhino's.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script E:/Claude ra2 decomp/src-agent31/tests/autotest/drone-grinder.txt -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Exception"
+1 view 64 62
+2 zoom 2
+3 reveal
+10 own HTNK 62 62
+20 own YAGRND 66 61
+150 spawn DRON 60 62
+160 enemystrike DRON 62 62
+250 where DRON
+250 where HTNK
+250 dump
+260 enter HTNK 66 61
+450 where DRON
+450 where HTNK
+450 dump
+451 quit

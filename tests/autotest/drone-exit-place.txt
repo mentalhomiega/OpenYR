@@ -1,0 +1,49 @@
+; Terror Drone exit place: a computer Terror Drone (DRON) on 60,62 attacks the player's Rhino (HTNK) on 62,62 at frame 160.
+; At frame 250 the Rhino is ordered to 70,62 and drives there with the drone inside. Its bites (DroneJump, ROF 60, 50 damage)
+; take the Rhino from 400 strength to 0 after eight bites, so it dies on or near 70,62.
+; gamemd: a victim's death lets the drone out at the victim's own position, on the center of that cell for a vehicle drone
+; (ParasiteClass::PointerExpired, 0x62A260, and the exit point at 0x62AC30), then sets it to its idle mission (EnterIdleMode),
+; which is Area Guard for DRON (DefaultToGuardArea=yes).
+; Before the fix: the drone searched for a free cell around its own last position, so it came out on 60,62 or 61,62, the cell
+; it leapt from, eight cells from the wreck, and on Guard.
+; After the fix: the first DRON line with limbo 0 after the Rhino is gone shows the cell the Rhino stood on when it died
+; (the last HTNK line), and mission Area Guard.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script E:/Claude ra2 decomp/src-agent31/tests/autotest/drone-exit-place.txt -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST|Exception"
+1 view 65 62
+2 zoom 2
+3 reveal
+10 own HTNK 62 62
+150 spawn DRON 60 62
+160 enemystrike DRON 62 62
+200 where DRON
+200 where HTNK
+250 order HTNK 70 62
+300 where HTNK
+350 where HTNK
+400 where HTNK
+450 where HTNK
+500 where HTNK
+520 where HTNK
+540 where HTNK
+560 where HTNK
+580 where HTNK
+600 where HTNK
+610 where HTNK
+610 where DRON
+620 where HTNK
+620 where DRON
+630 where HTNK
+630 where DRON
+640 where HTNK
+640 where DRON
+650 where HTNK
+650 where DRON
+660 where HTNK
+660 where DRON
+670 where HTNK
+670 where DRON
+680 where HTNK
+680 where DRON
+700 where DRON
+720 where DRON
+760 quit

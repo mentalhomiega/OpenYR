@@ -37,9 +37,11 @@ Parasite=yes
 
 ## Getting in
 
-A weapon with [`LimboLaunch=yes`](/keys/limbolaunch/) takes its firer off the map as it fires, to ride the shot. When the shot lands, the parasite gets into its target if the target is a vehicle, soldier or aircraft on the map and alive, of a [`Parasiteable=yes`](/keys/parasiteable/) type, not in a bunker, with no parasite already inside it. A naval parasite also needs the target in water. A parasite that cannot get in comes back onto the map where it leapt from, or is lost if there is no room.
+A weapon with [`LimboLaunch=yes`](/keys/limbolaunch/) takes its firer off the map as it fires, to ride the shot. When the shot lands, the parasite gets into its target if the target is a vehicle, soldier or aircraft on the map and alive, of a [`Parasiteable=yes`](/keys/parasiteable/) type, not in a bunker, with no parasite already inside it. A naval parasite also needs the target in water. A parasite that cannot get in comes back onto the map where it leapt from and takes up its idle mission, or is lost if there is no room.
 
-A parasite weapon does not fire at a target it could not get into. It never fires at a structure, at a vehicle in a bunker, or at a victim that already holds a parasite.
+A parasite weapon does not fire at a target it could not get into. It never fires at a structure, at a vehicle in a bunker, at a victim that already holds a parasite, or at an Iron Curtained target. It does not leap between a bridge deck and the ground below when the two are more than two levels apart. After a parasite leaps at a target, no other parasite weapon fires at that target for 20 frames, so two drones sent at one vehicle do not both leap. A parasite that keeps a target it may no longer fire at drops it within 16 frames and takes up its idle mission.
+
+Units that were firing at the parasite drop it as their target when it leaps, because it leaves the map. Its victim never fires back at the parasite inside it.
 
 ## Eating the victim
 
@@ -61,10 +63,18 @@ A parasite whose warhead has [`Paralyzes`](/keys/paralyzes/) set paralyzes its v
 
 ## Coming out
 
-When the victim dies or leaves the map, the parasite comes back out on the victim's cell, or the nearest cell it can stand on. It guards there, and a [`ReselectIfLimboed=yes`](/keys/reselectiflimboed/) parasite the player had selected when it leapt is selected again. This exit does not paralyze the parasite, so it takes a move order at once. A parasite with no room to come out is lost. A parasite with [`RejoinTeamIfLimboed=yes`](/keys/rejointeamiflimboed/) is added back to the team it left, unless the team refuses it. The Iron Curtain on a vehicle or aircraft it holds kills the parasite at once instead, and ends the victim's paralysis. A chronosphere warp over its victim kills the parasite the same way. A soldier under the curtain dies, and its parasite comes out as it does for any dead victim.
+When the victim dies or leaves the map, the parasite comes back out where the victim stood, facing the way the victim faced; a vehicle parasite stands on the center of that cell. It then takes up its idle mission, which is Area Guard for a type with [`DefaultToGuardArea=yes`](/keys/defaulttoguardarea/) such as the terror drone, and a [`ReselectIfLimboed=yes`](/keys/reselectiflimboed/) parasite that the player had selected when it leapt at a soldier is selected again. This exit does not paralyze the parasite, so it takes a move order at once. A parasite with [`RejoinTeamIfLimboed=yes`](/keys/rejointeamiflimboed/) is added back to the team it left, unless the team refuses it.
 
-A parasite that a sonic hit or a teleport jump drives out is paralyzed for three times the `ROF` of its primary weapon, and it ignores move orders during that time. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time.
+A parasite cannot come out on the victim's cell when the victim is in the air or the cell holds a structure, a parasite that is not naval cannot come out on water, beach or rock unless a bridge spans the cell, and a vehicle parasite cannot come out on a cell with a tree. It then comes out on the next cell in the direction the victim faced, and is lost if that cell is water, beach or rock with no bridge over the victim's cell, or if the map refuses it there.
 
-Heavy damage to the victim can kill the parasite instead. A hit from anyone else above the parasite type's [`SuppressionThreshold`](/keys/suppressionthreshold/) dooms the parasite for twice the damage less the threshold, in frames; if the victim dies or the parasite is driven out in that time, the parasite dies with it. Healing the victim kills the parasite.
+A parasite that a sonic hit, a teleport jump or a giant squid's victim reaching land drives out comes out on the victim's cell, or on the nearest free cell around the victim, turned a quarter turn from the victim's facing. It is lost if it cannot stand where the victim is, by the rules above. It is paralyzed for three times the `ROF` of its primary weapon, and it ignores move orders during that time. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time. A naval parasite comes out on the cell beside the victim in the turned direction instead.
+
+The Iron Curtain on a vehicle or aircraft it holds kills a parasite that is not naval at once and drives a naval one out, and ends the victim's paralysis. A soldier under the curtain dies, and its parasite comes out as it does for any dead victim. A chronosphere warp drives out only a naval parasite; a terror drone stays inside its victim through the warp.
+
+Heavy damage to the victim can kill the parasite instead. A hit from anyone else above the parasite type's [`SuppressionThreshold`](/keys/suppressionthreshold/) dooms the parasite for twice the damage less the threshold, in frames, counting the damage as dealt, before the victim's armor reduces it. If the victim dies in that time, the parasite dies with it unless the parasite is under the Iron Curtain; if a parasite that is not naval is driven out in that time, it dies. Healing the victim drives the parasite out doomed, so a parasite that is not naval dies.
 
 A hit from a warhead with [`Sonic=yes`](/keys/sonic/) drives the parasite out of its victim. The parasite comes out unless it is doomed, in which case it dies.
+
+## What the victim can do
+
+A vehicle with a parasite inside it can still move and fire, unless the parasite's warhead paralyzes it. A transport refuses it as a passenger, so clicking it on a transport gives no enter order, and a vehicle that deploys into a structure, such as a construction vehicle, cannot deploy. Each repair step a service depot gives it drives the parasite out doomed, so a parasite that is not naval dies. A vehicle fed to a grinder with a parasite inside refunds the parasite to the grinder's owner as well, and the parasite dies.
