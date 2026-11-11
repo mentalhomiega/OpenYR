@@ -57,22 +57,15 @@ enum WeatherMode {
 	WEATHER_SNOW
 };
 
-// How GpuVoxels draws a voxel object: into the voxel image, which the object's blit then reads, or straight into the
-// map pass's scene (docs/GPU_DIRECT_VOXELS.md).
-enum GpuVoxelPathMode {
-	GPU_VOXEL_PATH_IMAGE,
-	GPU_VOXEL_PATH_DIRECT
-};
-
-// How the direct voxel route orders the layers of one object: Shared by their depth, Ordered by the software's
-// drawing order, which gives the image route's pixels.
+// How GpuVoxels orders the layers of one object: Shared by their depth, Ordered as the software draws them, each
+// over the ones before it (docs/GPU_DIRECT_VOXELS.md).
 enum GpuVoxelLayerDepthMode {
 	GPU_VOXEL_LAYER_DEPTH_SHARED,
 	GPU_VOXEL_LAYER_DEPTH_ORDERED
 };
 
-// How the direct voxel route draws a cloaked object: as a plain translucent blend, or with the predator ripple the
-// software applies to a cached voxel picture.
+// How GpuVoxels draws a cloaked object: as a plain translucent blend, or with the predator ripple the software
+// applies to a cached voxel picture.
 enum GpuVoxelCloakMode {
 	GPU_VOXEL_CLOAK_TRANSLUCENT,
 	GPU_VOXEL_CLOAK_RIPPLE
@@ -349,18 +342,18 @@ class OptionsClass {
 		bool CloudShadows;
 		int CloudShadowStrength;
 
-		// With GpuRender, vehicles and aircraft that are not composed from a turret are drawn from their
-		// voxels on the GPU (docs/GPU_VOXELS.md). Experimental; the software look is the reference.
+		// With GpuRender, voxel objects are drawn from their voxels on the GPU (docs/GPU_DIRECT_VOXELS.md).
+		// Experimental; the software look is the reference.
 		bool GpuVoxels;
 
 		// With GpuVoxels, an object the GPU draws from its voxels turns to its exact facing, not the nearest of 32.
 		bool GpuVoxelSmooth;
 
-		// With GpuVoxels, 1 to 4: how many times finer than the map pixels the GPU draws voxel objects (docs/GPU_VOXELS.md).
+		// With GpuVoxels, how many times finer than the map pixels the GPU draws the map, 1 to 4, or 0 to follow the zoom
+		// (Gpu_Voxel_Pass_Scale).
 		int GpuVoxelScale;
 
-		// With GpuVoxels, a GpuVoxelPathMode, and for the direct path a GpuVoxelLayerDepthMode and a GpuVoxelCloakMode (docs/GPU_DIRECT_VOXELS.md).
-		int GpuVoxelPath;
+		// With GpuVoxels, a GpuVoxelLayerDepthMode and a GpuVoxelCloakMode.
 		int GpuVoxelLayerDepth;
 		int GpuVoxelCloak;
 		// Places a voxel object's picture on a whole pixel, so a turning object does not wobble by a pixel.

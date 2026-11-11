@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-[`GpuVoxels=yes`](/keys/gpuvoxels/) draws vehicles, aircraft, shadows, voxel animations and bullets from their voxels on the GPU, turreted vehicles with a voxel turret included. It is off by default, and the picture is the same as the software's.
+[`GpuVoxels=yes`](/keys/gpuvoxels/) draws vehicles, aircraft, shadows, voxel animations and bullets from their voxels on the GPU, turreted vehicles with a voxel turret included, straight into the GPU map view. It is off by default.

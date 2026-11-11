@@ -917,8 +917,7 @@ static float Flash_Amount(void)
 }
 
 
-// Logs a GPU_RENDER line every 600 passes: how many the GPU drew, how many fell back to software, the voxel blits,
-// and the voxel parts shown below the pass's scale.
+// Logs a GPU_RENDER line every 600 passes: how many the GPU drew, how many fell back to software, and the voxel blits.
 static void Count_Render(bool drawn)
 {
 	static int _Drawn = 0;
@@ -927,7 +926,7 @@ static void Count_Render(bool drawn)
 	(drawn ? _Drawn : _Fallback)++;
 	_VoxelBlits += (int)std::count_if(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) { return(blit.Voxel >= 0); });
 	if (_Drawn + _Fallback >= 600) {
-		DebugString("GPU_RENDER frame %d drawn %d fallback %d voxels %d reduced %d\n", Frame, _Drawn, _Fallback, _VoxelBlits, GpuVoxel_Take_Reduced());
+		DebugString("GPU_RENDER frame %d drawn %d fallback %d voxels %d\n", Frame, _Drawn, _Fallback, _VoxelBlits);
 		_Drawn = 0;
 		_Fallback = 0;
 		_VoxelBlits = 0;
@@ -935,7 +934,7 @@ static void Count_Render(bool drawn)
 }
 
 
-// Copies the emissive mask the software drawers just wrote for a direct part into its MaskReference.
+// Copies the emissive mask the software drawers just wrote for part into its MaskReference.
 static void Copy_Voxel_Mask(GpuVoxelPart & part)
 {
 	Rect const & area = part.Area;
@@ -946,8 +945,8 @@ static void Copy_Voxel_Mask(GpuVoxelPart & part)
 }
 
 
-// Calls visit(x, y, mask) for each target pixel under a direct voxel part's blit with the part's software mask
-// value there, latest blit first, so the first visit of a pixel is the part drawn last over it.
+// Calls visit(x, y, mask) for each target pixel under the blit of a voxel part that has a MaskReference, with the
+// part's mask value there, latest blit first, so the first visit of a pixel is the part drawn last over it.
 template <class Visit>
 static void For_Each_Voxel_Mask_Pixel(Visit visit)
 {
@@ -1014,7 +1013,7 @@ static void Render_Voxel_Pixels(void)
 			GpuVoxelPart & part = _List.Voxels[blit.Voxel];
 			if (Emissive_Is_Enabled() && !part.Scratch) {
 				Copy_Voxel_Mask(part);
-			} else if (Emissive_Is_Enabled() && GpuVoxel_Direct_Path()) {
+			} else if (Emissive_Is_Enabled()) {
 				// The software composite has no highlights, so the marks Mark_Composite_Mask left become 0.
 				part.MaskReference.assign((std::size_t)part.Area.Width * part.Area.Height, 0);
 			}
@@ -1137,13 +1136,6 @@ static bool Finish_Render(Surface & target)
 }
 
 
-static void Copy_Label(GpuVoxelPart & part, char const * label)
-{
-	std::strncpy(part.Label, label, sizeof(part.Label) - 1);
-	part.Label[sizeof(part.Label) - 1] = 0;
-}
-
-
 bool GpuDraw_Voxels_Wanted(void)
 {
 	return(_Voxels && _Target != NULL && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
@@ -1172,12 +1164,6 @@ void GpuDraw_Voxel_Cloak(bool cloaked, int predator)
 {
 	_PendingCloaked = cloaked;
 	_PendingPredator = predator;
-}
-
-
-double GpuDraw_Facing_Steps(DirType const & facing)
-{
-	return(GpuDraw_Voxels_Smooth() ? (unsigned short)facing.Facing / 2048.0 : double(facing.As_Dir32()));
 }
 
 
@@ -1252,11 +1238,11 @@ void GpuDraw_Keep_Prepared(GpuVoxelPrepKey const & key, GpuVoxelPreparedRef cons
 }
 
 
-void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, char const * label, bool software)
+void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, bool software)
 {
 	_PendingPart = -1;
 	_PartShown = false;
-	// A pass that renders on the GPU has nothing to compare a software image with.
+	// While the GPU renders the pass, the software draws a part only for another surface.
 	if (!GpuDraw_Voxels_Wanted() || (_Render && software)) {
 		return;
 	}
@@ -1268,12 +1254,7 @@ void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, char const * label
 	part.Pieces.push_back(std::move(piece));
 	part.Area = bounds;
 	part.Scratch = false;
-	Copy_Label(part, label);
 	if (software) {
-		part.Reference.resize((std::size_t)bounds.Width * bounds.Height);
-		for (int r = 0; r < bounds.Height; r++) {
-			std::memcpy(&part.Reference[(std::size_t)r * bounds.Width], VoxelDrawBuffer + (bounds.Y + r) * VOXEL_BITMAP_WIDTH + bounds.X, bounds.Width);
-		}
 		if (Emissive_Is_Enabled()) {
 			Copy_Voxel_Mask(part);
 		}
@@ -1288,13 +1269,12 @@ void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, char const * label
 
 SurfaceRegion GpuDraw_Show_Prepared(GpuVoxelPreparedRef const & prepared)
 {
-	// Only a part the software also drew is compared, so a label would never be read.
-	GpuDraw_Voxel_Part(prepared, "", false);
+	GpuDraw_Voxel_Part(prepared, false);
 	return(prepared->Scene.Region);
 }
 
 
-SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag, GpuVoxelPrepKey const * keep)
+SurfaceRegion GpuDraw_Render_Prepared(GpuVoxelPrepKey const * keep)
 {
 	if (!GpuDraw_Voxels_Wanted()) {
 		return(VoxelDrawSystem::Render());
@@ -1307,17 +1287,15 @@ SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag,
 		return(GpuDraw_Show_Prepared(prepared));
 	}
 	SurfaceRegion const region = VoxelDrawSystem::Render();
-	char label[24];
-	std::snprintf(label, sizeof(label), "%s@%.4g%c", name, steps, tag);
-	GpuDraw_Voxel_Part(prepared, label, true);
+	GpuDraw_Voxel_Part(prepared, true);
 	return(region);
 }
 
 
 void GpuDraw_Voxel_End(void)
 {
-	// An image that no blit showed was clipped away; with nothing to compare, the GPU need not draw it.
-	if (_PendingPart >= 0 && !_PartShown && _PendingPart == (int)_List.Voxels.size() - 1 && _List.Voxels[_PendingPart].Reference.empty()) {
+	// A part no blit showed was clipped away, so the GPU need not draw it.
+	if (_PendingPart >= 0 && !_PartShown && _PendingPart == (int)_List.Voxels.size() - 1) {
 		_List.Voxels.pop_back();
 	}
 	_PendingPart = -1;
@@ -1327,18 +1305,17 @@ void GpuDraw_Voxel_End(void)
 }
 
 
-void GpuDraw_Composite_Begin(Surface const & dest, char const * label)
+void GpuDraw_Composite_Begin(Surface const & dest)
 {
 	_Composite = -1;
 	_CompositeRenders = false;
-	// A pass that renders on the GPU into another surface has nothing to compare a software image with.
+	// While the GPU renders the pass, a composite blitted to another surface is the software's alone.
 	if (!GpuDraw_Voxels_Wanted() || (_Render && !GpuDraw_Is_Rendering(dest))) {
 		return;
 	}
 	GpuVoxelPart part;
 	part.Area = Rect();
 	part.Scratch = true;
-	Copy_Label(part, label);
 	_List.Voxels.push_back(std::move(part));
 	_Composite = (int)_List.Voxels.size() - 1;
 	_CompositeRenders = GpuDraw_Is_Rendering(dest);
@@ -1383,23 +1360,17 @@ void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty)
 	scratch.Unlock();
 	_ScratchWidth = scratch.Get_Width();
 	_ScratchHeight = scratch.Get_Height();
-	if (!_CompositeRenders) {
-		part.Reference.resize((std::size_t)part.Area.Width * part.Area.Height);
-		for (int r = 0; r < part.Area.Height; r++) {
-			std::memcpy(&part.Reference[(std::size_t)r * part.Area.Width], _ScratchBase + (part.Area.Y + r) * _ScratchWidth + part.Area.X, part.Area.Width);
-		}
-	}
 	_PendingPart = _Composite;
 	_PartShown = false;
 	_CompositeFirstBlit = _List.Blits.size();
 }
 
 
-// The scratch surface has no emissive plane, so a composite's blit zeroes the target's plane under it. On the direct
-// route the GPU gives a composite highlights (docs/GPU_DIRECT_VOXELS.md, stage 5), so its blits leave the mark instead.
+// The scratch surface has no emissive plane, so a composite's blit zeroes the target's plane under it. The GPU gives a
+// composite highlights (docs/GPU_DIRECT_VOXELS.md, stage 5), so the blits of one it draws leave the mark instead.
 static void Mark_Composite_Mask(void)
 {
-	if (!_CompositeRenders || !GpuVoxel_Direct_Path() || !Emissive_Is_Enabled()) {
+	if (!_CompositeRenders || !Emissive_Is_Enabled()) {
 		return;
 	}
 	EmissivePlane * plane = Emissive_Plane_For(_Target);

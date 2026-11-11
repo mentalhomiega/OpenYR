@@ -1,8 +1,7 @@
 $output v_texcoord1
 
-// Draws one layer of a direct voxel part straight into the map pass's scene target (code/gpumapvoxel.cpp), with the
-// primitives and uniforms of vs_mapvoxel.sc, where u_vox[2].xy is now the voxel buffer pixel (0, 0) in the target,
-// in target pixels, scale of which make one area pixel.
+// Draws one layer of a voxel part into the map pass's scene target (code/gpumapvoxel.cpp), with the primitives of
+// voxelwalk.sh and the uniforms of voxelshade.sh.
 // Each vertex gets a depth in its blit's slice (GPU_VOXEL_SLICES in code/gpuvoxel.h):
 // (slice base + clamp(d, 0, 1)) / slices, with d = u_vdepth[1].x + voxel * u_vdepth[0].w + dot(cell, u_vdepth[1].yzw).
 //   u_vdepth[0]  x: GPU_VOXEL_SLICES - 1 minus the slice, y: 1 / GPU_VOXEL_SLICES, z: 1 when clip depth runs from -1,
@@ -37,7 +36,7 @@ void main()
 	float depth = (u_vdepth[0].x + clamp(d, 0.0, 1.0)) * u_vdepth[0].y;
 	// The map view's projection maps area pixels. At scale 3 the division is inexact and a corner can fall halfway
 	// between two of the rasterizer's 1/256-pixel steps, so the corner is put on a step first, rounding a tie to even
-	// as the rasterizer does for the voxel image.
+	// as the rasterizer does.
 	gl_Position = mul(u_viewProj, vec4(round(at * 256.0) / 256.0 / u_vox[3].y, 0.0, 1.0));
 	gl_Position.z = u_vdepth[0].z > 0.5 ? depth * 2.0 - 1.0 : depth;
 	v_texcoord1 = vec4(float(index), float(strength), 0.0, 0.0);

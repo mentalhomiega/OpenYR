@@ -4,7 +4,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // blitters do; darken and the translucent kinds finish in the hardware blend (gpumap.cpp).
 //   v_texcoord0.xy  pixel position inside the blit (x, y), interpolated
 //   v_texcoord0.zw  pixel position inside the map area, interpolated
-//   v_texcoord1     x: offset of the blit's colour indices in s_index, y: blit width (for a voxel blit, the scale of its tile),
+//   v_texcoord1     x: offset of the blit's colour indices in s_index, y: blit width,
 //                   z: first row of its translator in s_lut, w: row of s_alut for its lighting level, -1 for none
 //   v_texcoord2     x: depth of the first row, y: fraction, z: numerator, w: denominator (0 when every row has x)
 //   v_texcoord3     x: depth step, y: offset of its depth shape in s_zshape (-1 for none), z: kind,
@@ -19,10 +19,9 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
-// A negative offset in v_texcoord1.x reads the voxel image s_voxel instead of s_index, at texel -1 minus the offset.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
 // u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
-// each of them as scale by scale pixels, and a voxel blit reads its tile at its tile's scale times the blit's pixel rate),
+// each of them as scale by scale pixels),
 // y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
 // w how bright the glints of sunlight on them are.
 
@@ -34,12 +33,8 @@ SAMPLER2D(s_base, 6);
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
-SAMPLER2D(s_voxel, 10);
 uniform vec4 u_world;
 uniform vec4 u_water;
-
-// The voxel image s_voxel has VOXEL_IMAGE_SIZE texels a row (code/gpumapvoxel.h).
-#define VOXEL_IMAGE_SIZE 2048
 
 // The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
 int Plane(ivec2 p)
@@ -119,15 +114,7 @@ void main()
 	int width = int(v_texcoord1.y + 0.5);
 	// Offsets are whole numbers, and adding 0.5 would round them from 2^23 up, where a float spaces by one.
 	int offset = int(v_texcoord1.x);
-	int index;
-	if (offset < 0) {
-		int tilescale = width;
-		ivec2 fine = ivec2(floor(v_texcoord0.xy * float(tilescale)));
-		int at = -1 - offset + fine.y * VOXEL_IMAGE_SIZE + fine.x;
-		index = int(texelFetch(s_voxel, ivec2(at % VOXEL_IMAGE_SIZE, at / VOXEL_IMAGE_SIZE), 0).x * 255.0 + 0.5);
-	} else {
-		index = Fetch8(s_index, offset + local.y * width + local.x);
-	}
+	int index = Fetch8(s_index, offset + local.y * width + local.x);
 	if (index == 0) {
 		discard;
 	}

@@ -3038,15 +3038,6 @@ static void Send_Intent(UIPresenterClass & presenter, char const * name, int val
 }
 
 
-// A switch whose setting defaults to its switched-on value still clears to another value.
-static void Test_Switch_Rows_Clear(void)
-{
-	std::vector<UISettingRow> const rows = UI_Setting_Rows(Option_Settings(), "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
-	auto const row = std::find_if(rows.begin(), rows.end(), [](UISettingRow const & candidate) { return(candidate.Key == "GpuVoxelPath"); });
-	Check(row != rows.end() && row->Kind == UISettingRowKind::SWITCH && row->Value == row->SwitchOn && row->Off != row->SwitchOn, "the voxel route switch starts ticked at its default and clears to the image route");
-}
-
-
 // The graphics page: the sidebar rows in use, the HDR rows enabled and a colour-blind list for the preview.
 // The declared rows with every switch off and every slider at its lowest value.
 static std::vector<UISettingRow> Fixture_Setting_Rows(void)
@@ -3352,7 +3343,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		sync(weather);
 		Drive(presenter, "ok");
 		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 101111100000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 10111110000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
@@ -3797,7 +3788,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
-			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "gpu-voxel-path", "steady-voxel-placement", "shadow-stacking", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
@@ -6753,7 +6744,6 @@ void Test_Documents(void)
 		Test_Settings_Tab_Buttons();
 		Test_Settings_Tabs_Screen(*context, system);
 		Test_Display_Screen(*context, system);
-		Test_Switch_Rows_Clear();
 		Test_Classic_Options_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
 		Test_Keyboard_Navigation(*context, system, render);

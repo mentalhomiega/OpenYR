@@ -1,12 +1,12 @@
 $output v_texcoord1
 
-// Draws the faces of one layer of a direct voxel part that are turned toward the viewer, straight into the map pass's
-// scene target (code/gpumapvoxel.cpp), in place of vs_voxelscene.sc's cube outlines. A face is two triangles, six
+// Draws the faces of one layer of a voxel part that are turned toward the viewer into the map pass's scene target
+// (code/gpumapvoxel.cpp), in place of vs_voxelscene.sc's cube outlines. A face is two triangles, six
 // vertices from gl_VertexID, on the cube vs_voxelscene.sc gives its voxel, and its depth is that shader's d with no
 // step per voxel. Faces that share a corner compute the same position for it, so the surface has no gaps.
 //   s_vface      one RG32U texel a face (GpuVoxelFace in code/gpuvoxel.h): r holds x, y << 8, z << 16 and
 //                direction << 24, g holds colour and normal << 8
-//   u_vox        as vs_mapvoxel.sc describes it, with the projection stated for the layer's own axes
+//   u_vox        as voxelshade.sh describes it, with the projection stated for the layer's own axes
 //                (Gpu_Voxel_Model_View) and u_vox[3].x unused
 //   u_vdepth     as vs_voxelscene.sc describes it, with the steps along the layer's own axes; [0].w and [2].y are unused
 //   u_vface[0]   xyz: the place in s_vface of the first face of each of the three directions drawn

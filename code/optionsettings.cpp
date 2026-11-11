@@ -27,11 +27,6 @@ constexpr NameEntry Weather_Names[] = {
 };
 
 
-constexpr NameEntry GpuVoxelPath_Names[] = {
-	{ "Image", GPU_VOXEL_PATH_IMAGE },
-	{ "Direct", GPU_VOXEL_PATH_DIRECT },
-};
-
 constexpr NameEntry GpuVoxelLayerDepth_Names[] = {
 	{ "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED },
 	{ "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED },
@@ -113,7 +108,7 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Section = "Video", .Key = "GpuVoxels",
 		.Flag = &OptionsClass::GpuVoxels, .Default = false,
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Draw voxels on the GPU",
-		.Tip = "Draws vehicles and aircraft from their voxels with the graphics card. Experimental. Nothing is drawn this way while Glow or HDR highlights are on. Needs GPU drawing.",
+		.Tip = "Draws vehicles and aircraft from their voxels with the graphics card, so turrets and barrels hide each other by depth. Experimental. Needs GPU drawing.",
 		.Needs = "GpuRender",
 	},
 	{
@@ -129,13 +124,6 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Voxel sharpness",
 		.Tip = "Draws the map at this many times its pixels, so voxel objects stay sharp in a zoomed view. Auto follows the zoom. Works with Draw voxels on the GPU. Needs GPU drawing.",
 		.Needs = "GpuRender", .Unit = "x", .ZeroText = "Auto",
-	},
-	{
-		.Section = "Video", .Key = "GpuVoxelPath",
-		.Number = &OptionsClass::GpuVoxelPath, .Default = GPU_VOXEL_PATH_DIRECT, .Names = GpuVoxelPath_Names,
-		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Draw voxels directly",
-		.Tip = "Draws voxel objects straight into the map picture instead of through a shared voxel image, so turrets and barrels hide each other by depth and sharpness never falls back. Works with Draw voxels on the GPU. Needs GPU drawing.",
-		.Needs = "GpuRender", .SwitchOn = GPU_VOXEL_PATH_DIRECT, .Off = GPU_VOXEL_PATH_IMAGE,
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelLayerDepth",

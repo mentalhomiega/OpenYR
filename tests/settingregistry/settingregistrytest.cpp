@@ -220,7 +220,30 @@ void Test_Rows_And_Greying(void)
 }
 
 
-static NameEntry const Path_Names[] = { { "Image", GPU_VOXEL_PATH_IMAGE }, { "Direct", GPU_VOXEL_PATH_DIRECT } };
+constexpr NameEntry Route_Names[] = {
+	{ "Plain", 1 },
+	{ "Fancy", 2 },
+};
+
+
+constexpr Setting<Fields> Default_On_Table[] = {
+	{ .Section = "Video", .Key = "Mode", .Number = &Fields::Mode, .Default = 2, .Names = Route_Names,
+	  .Page = "test", .Group = "Group A", .Label = "Mode", .Tip = "A mode that starts switched on.", .SwitchOn = 2, .Off = 1 },
+};
+
+
+void Test_Switch_Default_On(void)
+{
+	std::vector<UISettingRow> rows = UI_Setting_Rows(std::span<Setting<Fields> const>(Default_On_Table), "test", [](Setting<Fields> const & setting) { return(setting.Default); });
+	UI_Setting_Rows_Refresh(rows, [](SettingCondition) { return(true); });
+	Check(Row_Of(rows, "Mode") != nullptr && Row_Of(rows, "Mode")->Kind == UISettingRowKind::SWITCH && Row_Of(rows, "Mode")->Value == 2, "a switch whose setting defaults to its switched-on value starts ticked");
+	UI_Setting_Row_Execute(rows, "mode", 0);
+	Check(Row_Of(rows, "Mode")->Value == 1, "clearing that switch stores its off value");
+	UI_Setting_Row_Execute(rows, "mode", 1);
+	Check(Row_Of(rows, "Mode")->Value == 2, "ticking it again stores its switched-on value");
+}
+
+
 static NameEntry const Layer_Depth_Names[] = { { "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED }, { "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED } };
 static NameEntry const Cloak_Names[] = { { "Translucent", GPU_VOXEL_CLOAK_TRANSLUCENT }, { "Ripple", GPU_VOXEL_CLOAK_RIPPLE } };
 
@@ -241,7 +264,6 @@ struct Old_Gpu
 	bool GpuVoxels = false;
 	bool GpuVoxelSmooth = false;
 	int GpuVoxelScale = 0;
-	int GpuVoxelPath = GPU_VOXEL_PATH_DIRECT;
 	int GpuVoxelLayerDepth = GPU_VOXEL_LAYER_DEPTH_SHARED;
 	int GpuVoxelCloak = GPU_VOXEL_CLOAK_TRANSLUCENT;
 	bool SteadyVoxelPlacement = true;
@@ -268,8 +290,6 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.GpuVoxelSmooth = ini.Get_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
 	old.GpuVoxelScale = std::clamp(ini.Get_Int("Video", "GpuVoxelScale", old.GpuVoxelScale), 0, 4);
 	char name[16];
-	ini.Get_String("Video", "GpuVoxelPath", "Direct", name, sizeof(name));
-	old.GpuVoxelPath = Enum_From_Name(Path_Names, name, GPU_VOXEL_PATH_DIRECT);
 	ini.Get_String("Video", "GpuVoxelLayerDepth", "Shared", name, sizeof(name));
 	old.GpuVoxelLayerDepth = Enum_From_Name(Layer_Depth_Names, name, GPU_VOXEL_LAYER_DEPTH_SHARED);
 	ini.Get_String("Video", "GpuVoxelCloak", "Translucent", name, sizeof(name));
@@ -300,7 +320,6 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_Bool("Video", "GpuVoxels", old.GpuVoxels);
 	ini.Put_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
 	ini.Put_Int("Video", "GpuVoxelScale", old.GpuVoxelScale);
-	ini.Put_String("Video", "GpuVoxelPath", Enum_Name(Path_Names, old.GpuVoxelPath, "Direct"));
 	ini.Put_String("Video", "GpuVoxelLayerDepth", Enum_Name(Layer_Depth_Names, old.GpuVoxelLayerDepth, "Shared"));
 	ini.Put_String("Video", "GpuVoxelCloak", Enum_Name(Cloak_Names, old.GpuVoxelCloak, "Translucent"));
 	ini.Put_Bool("Video", "SteadyVoxelPlacement", old.SteadyVoxelPlacement);
@@ -368,7 +387,7 @@ void Test_Real_Table(void)
 
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
-		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelPath", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
+		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
 		"RenderThread",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them");
@@ -380,7 +399,7 @@ void Test_Real_Table(void)
 	}
 	std::vector<std::string> const page_order = {
 		"GPU drawing", "Draw units on the GPU", "Soft shadows", "Shockwaves", "Glow", "Water ripples", "Cloud shadows", "Weather",
-		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness", "Draw voxels directly",
+		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness",
 		"Voxel drawing", "Steady voxel placement", "Stacked shadows",
 	};
 	Check(labels == page_order, "the Graphics page keeps the GPU drawing rows in their old order, with the voxel rows after them");
@@ -452,6 +471,7 @@ int main(int argc, char * argv[])
 	Test_Load_Before_Renderer();
 	Test_Load_Save();
 	Test_Rows_And_Greying();
+	Test_Switch_Default_On();
 	Test_Real_Table();
 	if (argc > 1) {
 		Round_Trip_File(argv[1]);

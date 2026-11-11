@@ -725,7 +725,7 @@ void GScreenClass::Render(void)
 	GpuMap_Set_Weather(weather, Options.WeatherStrength);
 	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
 	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Gpu_Voxel_Pass_Scale(Options.GpuVoxelScale, DisplayZoom * InterfaceScale) : 1);
-	GpuVoxel_Set_Path(Options.GpuVoxels && Options.GpuVoxelPath == GPU_VOXEL_PATH_DIRECT, Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);
+	GpuVoxel_Set_Shared_Depth(Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);
 	GpuVoxel_Set_Cloak_Ripple(Options.GpuVoxelCloak == GPU_VOXEL_CLOAK_RIPPLE);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);

@@ -1,5 +1,5 @@
 ---
-title: Add GpuVoxelCloak for the cloak ripple of direct GPU voxels
+title: Add GpuVoxelCloak for the cloak ripple of GPU voxels
 category: feature
 release: 0.2.0
 targets:
@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-[`GpuVoxelCloak=Ripple`](/keys/gpuvoxelcloak/) distorts the picture under an object in the last stage of cloaking, as the game shows it to other players, when [`GpuVoxelPath=Direct`](/keys/gpuvoxelpath/) is set. The default `Translucent` changes nothing.
+[`GpuVoxelCloak=Ripple`](/keys/gpuvoxelcloak/) distorts the picture under an object in the last stage of cloaking, as the game shows it to other players, when [`GpuVoxels=yes`](/keys/gpuvoxels/) is set. The default `Translucent` changes nothing.

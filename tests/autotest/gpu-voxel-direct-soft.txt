@@ -1,5 +1,5 @@
-; Checks that GpuVoxelPath=Direct draws voxel shadows into the soft shadow mask (docs/GPU_DIRECT_VOXELS.md, stage 3): the scene of gpu-voxel-shadow.txt at GpuVoxelScale=2 with SoftShadows, and one GPU_VOXEL_SHADOW line. A direct shadow is drawn into the map-sized mask at scale 1, so the darkened count, 1,522, is near the 1,531 of scale 1, where both routes give the same mask.
-; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/gpu-voxel-direct-soft.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelSmooth=yes`nGpuVoxelScale=2`nHDRHighlights=Classic`nBloom=no`nSoftShadows=yes`nGpuVoxelPath=Direct" -Filter "GPU_VOXEL_SHADOW|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
+; Checks that voxel shadows are drawn into the soft shadow mask (docs/GPU_DIRECT_VOXELS.md, stage 3): the scene of gpu-voxel-direct-shadow.txt at GpuVoxelScale=2 with SoftShadows, and one GPU_VOXEL_SHADOW line. The mask is map-sized at every scale, so the darkened count, 1,554, is near the 1,550 of GpuVoxelScale=1.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/gpu-voxel-direct-soft.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelSmooth=yes`nGpuVoxelScale=2`nHDRHighlights=Classic`nBloom=no`nSoftShadows=yes" -Filter "GPU_VOXEL_SHADOW|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
 1 view 38 58
 2 reveal
 10 grantunit MTNK 36 58

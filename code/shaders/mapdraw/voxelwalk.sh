@@ -1,5 +1,12 @@
-// One vertex of a voxel layer's walk, which vs_mapvoxel.sc and vs_voxelscene.sc draw the same way. The including
-// shader declares s_vmodel and s_vpal; vs_mapvoxel.sc describes them, the uniforms and the primitives.
+// One vertex of a voxel layer's walk (vs_voxelscene.sc), which draws one primitive per voxel in the order the software
+// drawer walks the layer. The including shader declares s_vmodel and s_vpal; voxelshade.sh describes s_vpal and the
+// uniforms.
+// At scale 1 a voxel is a horizontal line over the pixels the software drawer writes (code/gpuvoxel.h), two vertices;
+// a line covers the pixel its start is in and stops before the pixel its end is in.
+// At a scale above 1 a voxel is the outline of its cube, the six corners other than the nearest and farthest, as a
+// triangle strip of eight vertices at the voxel's unrounded position; the first and last vertices are doubled so that
+// the strips of successive voxels join with empty triangles.
+//   s_vmodel  two RGBA8 texels a voxel: (i, j, k, colour) and (normal, 0, 0, 0)
 
 #include "voxelshade.sh"
 

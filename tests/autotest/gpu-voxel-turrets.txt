@@ -1,6 +1,6 @@
 ; Shows vehicles with their turrets at facings other than the body's, zoomed in, and saves the window as gpu-voxel-turrets.tga
-; in the screenshots folder, for comparing GpuVoxelLayerDepth=Ordered and Shared on the direct route by eye (docs/GPU_DIRECT_VOXELS.md, stage 2).
-; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/gpu-voxel-turrets.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception" -Uncapped -StopAfterSteps -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelScale=2`nHDRHighlights=Classic`nBloom=no`nGpuVoxelPath=Direct`nGpuVoxelLayerDepth=Shared"
+; in the screenshots folder, for comparing GpuVoxelLayerDepth=Ordered and Shared by eye (docs/GPU_DIRECT_VOXELS.md, stage 2).
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/gpu-voxel-turrets.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception" -Uncapped -StopAfterSteps -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelScale=2`nHDRHighlights=Classic`nBloom=no`nGpuVoxelLayerDepth=Shared"
 1 view 50 57
 2 reveal
 10 grantunit MTNK 44 56

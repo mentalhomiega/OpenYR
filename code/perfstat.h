@@ -96,9 +96,8 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_DRAWS_SKIPPED,   // draw slots in the frame wait that came due with too little time left; once per slot
 	PERF_COUNT_PRESENTS_BUSY,   // presents put off because the render thread had not finished the last frame
 	PERF_COUNT_GPU_VOXEL_PARTS, // voxel parts of the passes the GPU drew
-	PERF_COUNT_GPU_VOXEL_DRAWN, // those parts whose picture had to be drawn into the voxel image
-	PERF_COUNT_GPU_VOXEL_DIRECT, // those parts drawn straight into the scene (GpuVoxelPath=Direct)
-	PERF_COUNT_GPU_VOXEL_FACES, // cube faces the direct parts' draws submitted (a pass scale above 1)
+	PERF_COUNT_GPU_VOXEL_DIRECT, // those parts a blit shows
+	PERF_COUNT_GPU_VOXEL_FACES, // cube faces those parts' draws submitted (a pass scale above 1)
 	PERF_COUNTER_COUNT
 };
 

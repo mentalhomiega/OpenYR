@@ -2963,9 +2963,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
 		cliprect = LogicalSurface->Get_Rect();
 		IsCompositingToEightBitSurface = true;
-		char label[24];
-		std::snprintf(label, sizeof(label), "%s@%.4gt%.4g", (char const *)Class->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()), GpuDraw_Facing_Steps(SecondaryFacing.Current()));
-		GpuDraw_Composite_Begin(*old_surface, label);
+		GpuDraw_Composite_Begin(*old_surface);
 	}
 
 	int const key_seed = UseVoxelCache ? 0 : -1;

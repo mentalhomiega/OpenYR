@@ -45,8 +45,7 @@ char const * const Counter_Names[PERF_COUNTER_COUNT] = {
 	"scans ring", "scans air", "scans full", "scan targeting", "scan mission", "scan team", "scan house",
 	"ring cells", "cell candidates", "object evals", "area modify", "weapon selects",
 	"detach calls", "detach visits", "detach bullet", "detach anim", "detach particle", "detach techno", "detach other",
-	"draws skipped", "presents busy", "gpu voxel parts", "gpu voxel drawn",
-	"gpu voxel direct", "gpu voxel faces",
+	"draws skipped", "presents busy", "gpu voxel parts", "gpu voxel direct", "gpu voxel faces",
 };
 
 struct PhaseState {

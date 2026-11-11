@@ -211,7 +211,7 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 				VoxelDrawSystem::Reset();
 				VoxelDrawSystem::Prep_For_Shadow(voxlib, Class->VoxelIndex, 0, VoxelCameraMatrix, matrix, VoxelShadowLightVector);
 
-				SurfaceRegion region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 's');
+				SurfaceRegion region = GpuDraw_Render_Prepared();
 
 				{
 					ShadowOnceScope once;
@@ -224,7 +224,7 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 				VoxelDrawSystem::Reset();
 				VoxelDrawSystem::Prep_For_Object(voxlib, Class->VoxelIndex, 0, VoxelCameraMatrix * matrix);
 
-				region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 'a');
+				region = GpuDraw_Render_Prepared();
 
 				ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
 				if (Class->IsTranslucent) {

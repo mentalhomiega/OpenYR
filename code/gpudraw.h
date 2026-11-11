@@ -172,7 +172,7 @@ struct GpuVoxelPiece
 	GpuVoxelPreparedRef Prepared;
 
 	// Where Scene.Region.Bounds lands in the source the part's blits read, which is the voxel buffer itself
-	// for a direct part and the scratch surface for a composite.
+	// for one object and the scratch surface for a composite.
 	Point2D Dest;
 };
 
@@ -184,19 +184,14 @@ struct GpuVoxelPart
 {
 	std::vector<GpuVoxelPiece> Pieces;
 
-	// The pixels of the source (the voxel buffer or the scratch surface) the part's tile stands for.
+	// The pixels of the source (the voxel buffer or the scratch surface) the part's blits read.
 	Rect Area;
 
 	// Set for a composite: its pixels take the scratch surface's colour translation.
 	bool Scratch;
 
-	// The software result for Area, one index per pixel, or empty when the software did not render it.
-	std::vector<unsigned char> Reference;
-
-	// The software emissive mask of a direct part for Area, or empty while the mask is off or the software did not render it.
+	// The emissive mask the software gives Area, or empty while the mask is off or the software did not render the part.
 	std::vector<unsigned char> MaskReference;
-
-	char Label[24];
 };
 
 
@@ -225,7 +220,7 @@ struct GpuDrawList
 	std::vector<unsigned char, GpuArenaAllocator<unsigned char>> PixelArena;
 	std::vector<signed char> ZShapeArena;
 
-	// The voxel objects of the pass. A part no blit shows is drawn only so the check can compare it.
+	// The voxel objects of the pass; the GPU draws those a blit shows.
 	std::vector<GpuVoxelPart> Voxels;
 
 	// Draws into the target this pass that the list does not hold: blits of other kinds and
@@ -282,21 +277,17 @@ ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags);
 // predator offset when the software draws it with SHAPE_PREDATOR, which GpuDraw_Voxel_Blit_Flags drops, else -1.
 void GpuDraw_Voxel_Cloak(bool cloaked, int predator);
 
-// The facing in 32nds of a turn for a GPU_VOXEL check label: a whole number, or a fraction while GpuDraw_Voxels_Smooth.
-double GpuDraw_Facing_Steps(DirType const & facing);
-
 // Hands the pass the voxel object VoxelDrawSystem prepared, drawn with the lighting table now in
-// VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
-// the check compares with the GPU's drawing. The next blit from the voxel buffer shows the part;
-// GpuDraw_Voxel_End closes the offer.
-void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, char const * label, bool software);
+// VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer. The next blit
+// from the voxel buffer shows the part; GpuDraw_Voxel_End closes the offer.
+void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, bool software);
 void GpuDraw_Voxel_End(void);
 
 // Finishes the scene VoxelDrawSystem prepared for a blit straight to the logical surface: renders it into the voxel
-// buffer, unless the GPU draws this pass, and offers it as a part labelled name@steps followed by tag. The caller
-// blits the returned region from the voxel buffer and then calls GpuDraw_Voxel_End. With keep, a pass the GPU draws
-// keeps the preparation under that key for GpuDraw_Show_Prepared.
-SurfaceRegion GpuDraw_Render_Prepared(char const * name, double steps, char tag, GpuVoxelPrepKey const * keep = NULL);
+// buffer, unless the GPU draws this pass, and offers it as a part. The caller blits the returned region from the
+// voxel buffer and then calls GpuDraw_Voxel_End. With keep, a pass the GPU draws keeps the preparation under that
+// key for GpuDraw_Show_Prepared.
+SurfaceRegion GpuDraw_Render_Prepared(GpuVoxelPrepKey const * keep = NULL);
 
 // Offers a preparation kept from an earlier GpuDraw_Render_Prepared as a part, for a pass the GPU draws; the caller
 // goes on as it does after GpuDraw_Render_Prepared.
@@ -307,7 +298,7 @@ SurfaceRegion GpuDraw_Show_Prepared(GpuVoxelPreparedRef const & prepared);
 // draws the pieces, so the software neither renders them nor writes them to the scratch surface. Each
 // piece the software would blit into the scratch surface at dest is offered with GpuDraw_Composite_Piece.
 // Show is called with the scratch surface and its dirty rectangle just before the blit to dest, and End after it.
-void GpuDraw_Composite_Begin(Surface const & dest, char const * label);
+void GpuDraw_Composite_Begin(Surface const & dest);
 bool GpuDraw_Composite_Open(void);
 bool GpuDraw_Composite_Rendering(void);
 void GpuDraw_Composite_Piece(GpuVoxelPreparedRef const & prepared, Point2D const & dest);

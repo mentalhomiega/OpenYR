@@ -12,8 +12,6 @@
 #include "voxdrsys.h"
 
 #include <cstdint>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 
@@ -57,12 +55,12 @@ inline int Gpu_Voxel_Buffer_Index(Vector3i16 const (&projection)[4], GpuVoxelIns
 void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vector3i16 const (&projection)[4], bool lit, unsigned char const (&lighting)[VOXEL_PALETTE_SIZE], unsigned char (&buffer)[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT]);
 
 
-// The depth slices of the direct route (docs/GPU_DIRECT_VOXELS.md): the n-th direct blit of a pass writes its depths
-// in slice n, and no depth of slice n + 1 is farther than any depth of slice n, so a later blit passes a LEQUAL test
-// over an earlier one.
+// The depth slices of a map pass's voxel blits (docs/GPU_DIRECT_VOXELS.md): the n-th voxel blit since the pass last
+// emptied its depth writes its depths in slice n, and no depth of slice n + 1 is farther than any depth of slice n, so
+// a later blit passes a LEQUAL test over an earlier one.
 inline constexpr int GPU_VOXEL_SLICES = 4096;
 
-// Where a direct layer puts a voxel inside its slice: d = Origin + voxel * PerVoxel + dot(cell, Step), 0 nearest and 1
+// Where a layer puts a voxel inside its slice: d = Origin + voxel * PerVoxel + dot(cell, Step), 0 nearest and 1
 // farthest, where voxel is its place in the layer's walk and cell its position along the walk's three axes in voxels.
 struct GpuVoxelLayerDepth
 {
@@ -124,30 +122,3 @@ struct GpuVoxelModelView
 // Restates the walk of arg: a voxel at (x, y, z) on the layer's axes gets the pixel and the depth the walk gives it.
 // The depth's PerVoxel has no meaning off the walk and is left out.
 GpuVoxelModelView Gpu_Voxel_Model_View(VoxelFuncArgumentStruct const & arg, bool reversed, GpuVoxelLayerDepth const & depth);
-
-
-// Lays tiles out on shelves of a square image, left to right and then a shelf further down.
-struct GpuVoxelShelf
-{
-	int X = 0;
-	int Y = 0;
-	int Height = 0;
-
-	// Puts a tile of width by height at x, y; false when it does not fit what is left of an image of size by size.
-	bool Place(int size, int width, int height, int & x, int & y);
-};
-
-// The tiles of a voxel image that keeps its pictures between passes, one for each signature. Tiles are placed
-// until the image is full; Empty then forgets them all, because a tile cannot be freed alone.
-class GpuVoxelTileStore
-{
-public:
-	// Finds the tile of signature or places a new one of width by height; fresh is set when the caller must
-	// draw it. False when a new tile does not fit what is left of the image.
-	bool Place(std::uint64_t signature, int size, int width, int height, int & x, int & y, bool & fresh);
-	void Empty(void);
-
-private:
-	std::unordered_map<std::uint64_t, std::pair<int, int>> Tiles;
-	GpuVoxelShelf Shelf;
-};

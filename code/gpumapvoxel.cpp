@@ -24,29 +24,24 @@
 #include <bgfx/embedded_shader.h>
 #include "bgfxviews.hh"
 #include <cfloat>
-#include <cstdlib>
 #include <cstring>
 #include <iterator>
 #include <unordered_map>
 #include <utility>
 
-#include "shaders/mapdraw/fs_mapvoxel.bin.h"
 #include "shaders/mapdraw/fs_voxelscene.bin.h"
-#include "shaders/mapdraw/vs_mapvoxel.bin.h"
 #include "shaders/mapdraw/vs_voxelface.bin.h"
 #include "shaders/mapdraw/vs_voxelscene.bin.h"
 
 
 static const bgfx::EmbeddedShader _Shaders[] = {
-	BGFX_EMBEDDED_SHADER_D3D11(vs_mapvoxel),
-	BGFX_EMBEDDED_SHADER_D3D11(fs_mapvoxel),
 	BGFX_EMBEDDED_SHADER_D3D11(vs_voxelscene),
 	BGFX_EMBEDDED_SHADER_D3D11(vs_voxelface),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_voxelscene),
 	BGFX_EMBEDDED_SHADER_END()
 };
 
-// The model texture holds two RGBA8 texels a voxel; vs_mapvoxel.sc uses the same width.
+// The model texture holds two RGBA8 texels a voxel; voxelwalk.sh uses the same width.
 static int const MODEL_WIDTH = 2048;
 static int const MODEL_ROWS = 2048;
 static int const VOXELS_PER_ROW = MODEL_WIDTH / 2;
@@ -64,27 +59,23 @@ static int const VERTICES_PER_FACE = 6;
 
 static bool _Ready = false;
 static bool _Failed = false;
-static bgfx::ProgramHandle _Program = BGFX_INVALID_HANDLE;
+static bool _UnfitLogged = false;
 static bgfx::UniformHandle _VoxelUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _ModelSampler = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _PaletteSampler = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _Model = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _Palette = BGFX_INVALID_HANDLE;
-static bgfx::TextureHandle _Image = BGFX_INVALID_HANDLE;
-static bgfx::FrameBufferHandle _Target = BGFX_INVALID_HANDLE;
-static bgfx::TextureHandle _Readback = BGFX_INVALID_HANDLE;
 
-// The direct route's program and its own uniforms; the program reads the model and palette textures at these stages.
+// The program that draws a layer's walk into the map pass, which reads the model and palette textures at these stages.
 static bgfx::ProgramHandle _DirectProgram = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _DepthUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _BlitUniform = BGFX_INVALID_HANDLE;
 static uint8_t const DIRECT_MODEL_STAGE = 11;
 static uint8_t const DIRECT_PALETTE_STAGE = 12;
-static bool _DirectWanted = false;
 static bool _SharedDepth = true;
 static bool _CloakRipple = false;
 
-// The program that draws a direct layer's faces, valid only with the face texture, which it reads at the model's stage.
+// The program that draws a layer's faces, valid only with the face texture, which it reads at the model's stage.
 static bgfx::ProgramHandle _FaceProgram = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _FaceUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _FaceSampler = BGFX_INVALID_HANDLE;
@@ -109,16 +100,6 @@ static int const LIGHT_ROWS = PALETTE_ROWS - LIGHT_FIRST;
 // The tables in the palette texture's rows from LIGHT_FIRST, in row order, and the rows that hold a table of each hash.
 static std::vector<unsigned char> _Lights;
 static std::unordered_multimap<std::uint64_t, int> _LightIndex;
-
-// The tiles the voxel image holds, kept between passes, and whether the next pass starts by clearing the image.
-static GpuVoxelTileStore _Tiles;
-static bool _ClearImage = true;
-
-static void Empty_Image(void)
-{
-	_Tiles.Empty();
-	_ClearImage = true;
-}
 
 // The place of a layer's voxels in the model texture, counted in voxels from its start.
 struct ModelSlot
@@ -150,23 +131,19 @@ static bool Start(void)
 	if (bgfx::getRendererType() != bgfx::RendererType::Direct3D11 || !(bgfx::getCaps()->supported & BGFX_CAPS_VERTEX_ID)) {
 		return(false);
 	}
-	_Program = Create_Embedded_Program(_Shaders, "vs_mapvoxel", _Shaders, "fs_mapvoxel");
-	if (!bgfx::isValid(_Program)) {
+	_DirectProgram = Create_Embedded_Program(_Shaders, "vs_voxelscene", _Shaders, "fs_voxelscene");
+	if (!bgfx::isValid(_DirectProgram)) {
 		DebugString("GPU_VOXEL unavailable: the voxel program did not build\n");
 		return(false);
 	}
-	_DirectProgram = Create_Embedded_Program(_Shaders, "vs_voxelscene", _Shaders, "fs_voxelscene");
-	if (!bgfx::isValid(_DirectProgram)) {
-		DebugString("GPU_VOXEL: the direct program did not build, so GpuVoxelPath=Direct draws by the image route\n");
-	}
 	uint64_t const face_flags = BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP;
-	if (bgfx::isValid(_DirectProgram) && bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RG32U, face_flags)) {
+	if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RG32U, face_flags)) {
 		_FaceStore = bgfx::createTexture2D(FACE_WIDTH, FACE_ROWS, false, 1, bgfx::TextureFormat::RG32U, face_flags);
 		_FaceProgram = Create_Embedded_Program(_Shaders, "vs_voxelface", _Shaders, "fs_voxelscene");
 	}
 	if (!bgfx::isValid(_FaceStore) || !bgfx::isValid(_FaceProgram)) {
 		Release_Handle(_FaceProgram);
-		DebugString("GPU_VOXEL: no face store, so direct layers draw as cube outlines at every scale\n");
+		DebugString("GPU_VOXEL: no face store, so layers draw as cube outlines at every scale\n");
 	}
 	_FaceUniform = bgfx::createUniform("u_vface", bgfx::UniformType::Vec4, 2);
 	_FaceSampler = bgfx::createUniform("s_vface", bgfx::UniformType::Sampler);
@@ -175,12 +152,12 @@ static bool Start(void)
 	_VoxelUniform = bgfx::createUniform("u_vox", bgfx::UniformType::Vec4, 4);
 	_ModelSampler = bgfx::createUniform("s_vmodel", bgfx::UniformType::Sampler);
 	_PaletteSampler = bgfx::createUniform("s_vpal", bgfx::UniformType::Sampler);
-	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-	_Target = bgfx::isValid(_Image) ? bgfx::createFrameBuffer(1, &_Image, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
 	_Model = bgfx::createTexture2D(MODEL_WIDTH, MODEL_ROWS, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, PALETTE_ROWS, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Model) || !bgfx::isValid(_Palette)) {
+	if (!bgfx::isValid(_Model) || !bgfx::isValid(_Palette)) {
 		GpuVoxel_Shutdown();
+		_Failed = true;
+		DebugString("GPU_VOXEL unavailable: the model or palette texture could not be made\n");
 		return(false);
 	}
 	bgfx::Memory const * identity = bgfx::alloc(VOXEL_PALETTE_SIZE);
@@ -273,13 +250,12 @@ static void Read_Translator(unsigned char (&translator)[VOXEL_PALETTE_SIZE])
 }
 
 
-// Returns true when the palette texture changed, so the pictures drawn through the old one are out of date.
-static bool Upload_Palette(void)
+static void Upload_Palette(void)
 {
 	unsigned char translator[VOXEL_PALETTE_SIZE];
 	Read_Translator(translator);
 	if (_PaletteUploaded && std::memcmp(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy)) == 0 && std::memcmp(_TranslatorCopy, translator, sizeof(translator)) == 0) {
-		return(false);
+		return;
 	}
 	std::memcpy(_PaletteCopy, VoxelPaletteTranslateTable, sizeof(_PaletteCopy));
 	std::memcpy(_TranslatorCopy, translator, sizeof(translator));
@@ -295,7 +271,6 @@ static bool Upload_Palette(void)
 	}
 	bgfx::updateTexture2D(_Palette, 0, 0, 0, 0, VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, memory);
 	_PaletteUploaded = true;
-	return(true);
 }
 
 
@@ -311,12 +286,12 @@ struct LayerDraw
 	int Piece;
 	// The palette texture row that holds the layer's lighting table.
 	int LightRow = IDENTITY_LIGHT_ROW;
-	// The prepared layer of an object, NULL for a shadow, and its place in a direct part's depth.
+	// The prepared layer of an object, NULL for a shadow, and its place in the part's depth.
 	VoxelRenderStruct const * Object = NULL;
 	GpuVoxelLayerDepth Depth;
 };
 
-// The layers of each direct part of the pass GpuVoxel_Submit took last, in the list's order; empty for an image part.
+// The layers of each part of the pass GpuVoxel_Submit took last, in the list's order; empty for a part no blit shows.
 static std::vector<std::vector<LayerDraw>> _DirectLayers;
 
 static ModelSlot const * Find_Slot(std::uint64_t key)
@@ -362,7 +337,7 @@ static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 }
 
 
-// True when a direct part's object layers draw as faces at this scale; otherwise they draw as the model store's walk.
+// True when a part's object layers draw as faces at this scale; otherwise they draw as the model store's walk.
 static bool Faces_Wanted(int scale)
 {
 	return(scale > 1 && _SharedDepth && bgfx::isValid(_FaceProgram));
@@ -387,19 +362,16 @@ static FaceSlot const * Find_Faces(LayerDraw const & layer, int scale)
 }
 
 
-// Makes the face texture hold the object layers of the direct parts, listing the faces of the ones it lacks. A pass
-// that does not fit what is left empties the texture first; one that does not fit an empty texture leaves it empty,
-// and Find_Faces then finds none of its layers.
-static void Load_Faces(std::vector<std::vector<LayerDraw>> const & parts, std::vector<GpuVoxelTile> const & tiles)
+// Makes the face texture hold the object layers of the parts, listing the faces of the ones it lacks. A pass that does
+// not fit what is left empties the texture first; one that does not fit an empty texture leaves it empty, and
+// Find_Faces then finds none of its layers.
+static void Load_Faces(std::vector<std::vector<LayerDraw>> const & parts)
 {
 	for (int attempt = 0; attempt < 2; attempt++) {
 		std::unordered_map<std::uint64_t, GpuVoxelFaceList> fresh;
 		int rows = 0;
-		for (std::size_t i = 0; i < parts.size(); i++) {
-			if (!tiles[i].Direct) {
-				continue;
-			}
-			for (LayerDraw const & layer : parts[i]) {
+		for (std::vector<LayerDraw> const & part : parts) {
+			for (LayerDraw const & layer : part) {
 				if (layer.Shadow) {
 					continue;
 				}
@@ -423,9 +395,8 @@ static void Load_Faces(std::vector<std::vector<LayerDraw>> const & parts, std::v
 }
 
 
-void GpuVoxel_Set_Path(bool direct, bool shared)
+void GpuVoxel_Set_Shared_Depth(bool shared)
 {
-	_DirectWanted = direct;
 	_SharedDepth = shared;
 }
 
@@ -442,145 +413,43 @@ bool GpuVoxel_Cloak_Ripple(void)
 }
 
 
-bool GpuVoxel_Direct_Path(void)
-{
-	return(_DirectWanted);
-}
-
-
 static bool Objects_Only(GpuVoxelPart const & part)
 {
 	return(std::all_of(part.Pieces.begin(), part.Pieces.end(), [](GpuVoxelPiece const & piece) { return(piece.Prepared->Scene.Shadows.empty()); }));
 }
 
 
-std::vector<char> GpuVoxel_Direct_Parts(GpuDrawList const & list, bool soft_shadows)
+static bool Shadows_Only(GpuVoxelPart const & part)
 {
-	std::vector<char> direct(list.Voxels.size(), 0);
-	if (!_DirectWanted || list.Voxels.empty() || !Start() || !bgfx::isValid(_DirectProgram)) {
-		return(direct);
+	return(!part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Objects.empty());
+}
+
+
+bool GpuVoxel_Fits(GpuDrawList const & list)
+{
+	if (list.Voxels.empty()) {
+		return(true);
 	}
-	// The blits that show each part, how many of them are translucent, and whether every one of them is a copy or
-	// translucent, or every one a shadow.
-	struct Shown
-	{
-		int Blits = 0;
-		int Translucent = 0;
-		bool Images = true;
-		bool Shadows = true;
-	};
-	std::vector<Shown> shown(list.Voxels.size());
+	if (!Start()) {
+		return(false);
+	}
 	for (GpuBlit const & blit : list.Blits) {
-		if (blit.Voxel >= 0) {
-			Shown & part = shown[blit.Voxel];
-			part.Blits++;
-			part.Translucent += blit.Class() == GPU_BLIT_IMAGE && blit.Desc.Kind != BlitDesc::XLAT ? 1 : 0;
-			part.Images = part.Images && blit.Class() == GPU_BLIT_IMAGE;
-			part.Shadows = part.Shadows && blit.Class() == GPU_BLIT_SHADOW;
-		}
-	}
-	int slices = 0;
-	int stencils = 0;
-	std::vector<char> objects(list.Voxels.size(), 0);
-	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		GpuVoxelPart const & part = list.Voxels[i];
-		if (part.Pieces.empty() || shown[i].Blits == 0) {
+		if (blit.Voxel < 0 || list.Voxels[blit.Voxel].Pieces.empty()) {
 			continue;
 		}
-		if (shown[i].Images && Objects_Only(part)) {
-			objects[i] = 1;
-			slices += shown[i].Blits;
-			stencils += shown[i].Translucent;
-		} else if (!part.Scratch && part.Pieces.size() == 1 && part.Pieces[0].Prepared->Scene.Objects.empty() && shown[i].Shadows) {
-			direct[i] = 1;
-			// A soft shadow writes the shadow mask, where overlaps are harmless, and takes no stencil value.
-			stencils += soft_shadows ? 0 : shown[i].Blits;
+		GpuVoxelPart const & part = list.Voxels[blit.Voxel];
+		GpuBlitClass const shown = blit.Class();
+		if ((shown == GPU_BLIT_IMAGE && Objects_Only(part)) || (shown == GPU_BLIT_SHADOW && Shadows_Only(part))) {
+			continue;
 		}
-	}
-	// A pass clears depth and stencil once, which gives it no more slices or stencil values than these.
-	if (stencils > GPU_VOXEL_STENCILS) {
-		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-			direct[i] = 0;
-			objects[i] = objects[i] && shown[i].Translucent == 0;
+		if (!_UnfitLogged) {
+			_UnfitLogged = true;
+			DebugString("GPU_VOXEL: a voxel part is shown in a way the GPU does not draw, so the software draws the pass\n");
 		}
+		return(false);
 	}
-	if (slices <= GPU_VOXEL_SLICES) {
-		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-			direct[i] = direct[i] || objects[i];
-		}
-	}
-	return(direct);
-}
-
-
-// The longest tile side a part may have at each step down from the asked-for scale. The first cap lowers no part
-// that could fit the image, and the last lowers every part to scale 1.
-static int const TILE_CAPS[] = { GPU_VOXEL_IMAGE_SIZE, 1536, 1024, 768, 512, 384, 256, 192, 128, 96, 64, 48, 32, 0 };
-static int const CAP_STEPS = (int)std::size(TILE_CAPS);
-
-// The passes in a row that the next larger cap must fit before the parts go back to it, so that a part near the
-// limit does not change sharpness from one pass to the next.
-static int const CALM_PASSES = 120;
-
-static int _CapStep = 0;
-static int _CalmPasses = 0;
-static int _ReducedParts = 0;
-
-// The largest scale that divides scale and keeps the part's longer tile side within cap, or 1 when none does.
-static int Part_Scale(Rect const & area, int scale, int cap)
-{
-	int const side = std::max(area.Width, area.Height);
-	for (int candidate = scale; candidate > 1; candidate--) {
-		if (scale % candidate == 0 && side * candidate <= cap) {
-			return(candidate);
-		}
-	}
-	return(1);
-}
-
-
-// True when the parts direct leaves to the image fit an empty image, each at the scale Part_Scale gives it under cap.
-static bool Fits_Empty_Image(GpuDrawList const & list, std::vector<char> const & direct, int scale, int cap)
-{
-	GpuVoxelShelf shelf;
-	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		Rect const & bounds = list.Voxels[i].Area;
-		int const partscale = Part_Scale(bounds, scale, cap);
-		int x = 0;
-		int y = 0;
-		if (direct[i] == 0 && bounds.Width > 0 && bounds.Height > 0 && !shelf.Place(GPU_VOXEL_IMAGE_SIZE, bounds.Width * partscale, bounds.Height * partscale, x, y)) {
-			return(false);
-		}
-	}
+	_UnfitLogged = false;
 	return(true);
-}
-
-
-bool GpuVoxel_Fits(GpuDrawList const & list, std::vector<char> const & direct)
-{
-	return(Fits_Empty_Image(list, direct, 1, 0));
-}
-
-
-// The cap step for this pass: the step kept from earlier passes, a later one when the parts do not fit an empty image
-// under it, or the one before it once that has fitted for CALM_PASSES passes in a row. CAP_STEPS when none fits.
-static int Choose_Cap_Step(GpuDrawList const & list, std::vector<char> const & direct, int scale)
-{
-	int step = _CapStep;
-	while (step < CAP_STEPS && !Fits_Empty_Image(list, direct, scale, TILE_CAPS[step])) {
-		step++;
-	}
-	if (step == CAP_STEPS) {
-		return(step);
-	}
-	if (step > _CapStep || step == 0 || !Fits_Empty_Image(list, direct, scale, TILE_CAPS[step - 1])) {
-		_CalmPasses = 0;
-	} else if (++_CalmPasses >= CALM_PASSES) {
-		_CalmPasses = 0;
-		step--;
-	}
-	_CapStep = step;
-	return(step);
 }
 
 
@@ -661,49 +530,6 @@ static bool Load_Lights(GpuDrawList const & list, std::vector<std::vector<LayerD
 }
 
 
-// A hash of everything the shader's output for a part depends on, apart from the palette texture, whose change empties the image.
-static std::uint64_t Part_Signature(GpuVoxelPart const & part, std::vector<LayerDraw> const & layers, int scale)
-{
-	Rect const & area = part.Area;
-	int const head[5] = { scale, area.Width, area.Height, part.Scratch ? 1 : 0, EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength };
-	std::uint64_t hash = Hash_Words(FNV64_BASIS, head, sizeof(head));
-	for (GpuVoxelPiece const & piece : part.Pieces) {
-		Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
-		int const place[6] = { piece.Dest.X - area.X, piece.Dest.Y - area.Y, bounds.X, bounds.Y, bounds.Width, bounds.Height };
-		hash = Hash_Words(hash, place, sizeof(place));
-		hash = Hash_Words(hash, piece.Prepared->Lighting, sizeof(piece.Prepared->Lighting));
-	}
-	for (LayerDraw const & layer : layers) {
-		int const flags[2] = { (layer.Lit ? 1 : 0) | (layer.Reversed ? 2 : 0) | (layer.Shadow ? 4 : 0), layer.Piece };
-		hash = Hash_Words(hash, &layer.Key, sizeof(layer.Key));
-		hash = Hash_Words(hash, flags, sizeof(flags));
-		hash = Hash_Words(hash, layer.Setup.Arg.TransformMatrix, sizeof(layer.Setup.Arg.TransformMatrix));
-	}
-	return(hash);
-}
-
-
-// Finds each part's tile at the tile's scale, placing the ones the image lacks; drawn[i] is set for a part that must
-// be drawn into its tile. False when the parts do not fit what is left of the image.
-static bool Assign_Tiles(GpuDrawList const & list, std::vector<std::vector<LayerDraw>> const & parts, std::vector<GpuVoxelTile> & tiles, std::vector<char> & drawn)
-{
-	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		Rect const & bounds = list.Voxels[i].Area;
-		GpuVoxelTile & tile = tiles[i];
-		drawn[i] = 0;
-		if (tiles[i].Direct || bounds.Width <= 0 || bounds.Height <= 0) {
-			continue;
-		}
-		bool fresh = false;
-		if (!_Tiles.Place(Part_Signature(list.Voxels[i], parts[i], tile.Scale), GPU_VOXEL_IMAGE_SIZE, bounds.Width * tile.Scale, bounds.Height * tile.Scale, tile.X, tile.Y, fresh)) {
-			return(false);
-		}
-		drawn[i] = fresh ? 1 : 0;
-	}
-	return(true);
-}
-
-
 // The layers of a part in drawing order: each piece's shadows, then its objects.
 static std::vector<LayerDraw> Layers_Of(GpuVoxelPart const & part)
 {
@@ -737,11 +563,11 @@ static std::vector<LayerDraw> Layers_Of(GpuVoxelPart const & part)
 }
 
 
-// Places each layer of a direct part, which has no shadows, in the part's depth: by view depth across the part with
-// GpuVoxelLayerDepth=Shared, else in drawing order. The layers must be in the model store.
+// Places each object layer in its part's depth: by view depth across the part with GpuVoxelLayerDepth=Shared, else in
+// drawing order. The layers must be in the model store.
 static void Set_Layer_Depths(std::vector<LayerDraw> & layers)
 {
-	// A direct shadow part is all shadow layers, which neither test nor write depth.
+	// A shadow part is all shadow layers, which neither test nor write depth.
 	if (layers.empty() || layers[0].Shadow) {
 		return;
 	}
@@ -797,120 +623,41 @@ static uint32_t Vertex_Count(ModelSlot const & slot, int scale)
 }
 
 
-// Gives each image part its scale and tile; a direct part keeps the pass's scale. A pass that does not fit what is left
-// of the image empties it and places every part afresh, and one that does not fit an empty image either lowers the
-// scale of more parts. False when the image parts do not fit at scale 1.
-static bool Place_Parts(GpuDrawList const & list, std::vector<char> const & direct, std::vector<std::vector<LayerDraw>> const & parts, int scale, std::vector<GpuVoxelTile> & tiles, std::vector<char> & drawn)
-{
-	for (int step = Choose_Cap_Step(list, direct, scale); step < CAP_STEPS; step++) {
-		for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-			tiles[i].Scale = tiles[i].Direct ? scale : Part_Scale(list.Voxels[i].Area, scale, TILE_CAPS[step]);
-		}
-		for (int attempt = 0; attempt < 2; attempt++) {
-			if (Assign_Tiles(list, parts, tiles, drawn)) {
-				_CapStep = step;
-				return(true);
-			}
-			Empty_Image();
-		}
-	}
-	return(false);
-}
-
-
-bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct, int scale, std::vector<GpuVoxelTile> & tiles)
+bool GpuVoxel_Submit(GpuDrawList const & list, int scale)
 {
 	if (!Start()) {
 		return(false);
 	}
-	tiles.assign(list.Voxels.size(), GpuVoxelTile());
-	std::vector<std::vector<LayerDraw>> parts(list.Voxels.size());
-	std::size_t direct_parts = 0;
-	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		parts[i] = Layers_Of(list.Voxels[i]);
-		tiles[i].Direct = direct[i] != 0;
-		direct_parts += tiles[i].Direct ? 1 : 0;
-	}
-	if (Upload_Palette()) {
-		Empty_Image();
-	}
-
-	std::vector<char> drawn(list.Voxels.size(), 0);
-	if (!Place_Parts(list, direct, parts, scale, tiles, drawn)) {
-		return(false);
-	}
-	std::size_t drawn_parts = 0;
-	int reduced = 0;
-	for (std::size_t i = 0; i < parts.size(); i++) {
-		drawn_parts += drawn[i] != 0 ? 1 : 0;
-		reduced += !tiles[i].Direct && tiles[i].Scale < scale ? 1 : 0;
-		if (drawn[i] == 0 && !tiles[i].Direct) {
-			parts[i].clear();
+	std::vector<char> shown(list.Voxels.size(), 0);
+	for (GpuBlit const & blit : list.Blits) {
+		if (blit.Voxel >= 0) {
+			shown[blit.Voxel] = 1;
 		}
 	}
+	std::vector<std::vector<LayerDraw>> parts(list.Voxels.size());
+	std::size_t shown_parts = 0;
+	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
+		if (shown[i] != 0) {
+			parts[i] = Layers_Of(list.Voxels[i]);
+			shown_parts++;
+		}
+	}
+	Upload_Palette();
 	Perf_Count(PERF_COUNT_GPU_VOXEL_PARTS, list.Voxels.size());
-	Perf_Count(PERF_COUNT_GPU_VOXEL_DRAWN, drawn_parts);
-	Perf_Count(PERF_COUNT_GPU_VOXEL_DIRECT, direct_parts);
+	Perf_Count(PERF_COUNT_GPU_VOXEL_DIRECT, shown_parts);
 
 	_DirectLayers.assign(list.Voxels.size(), std::vector<LayerDraw>());
 	if (!Load_Models(parts) || !Load_Lights(list, parts)) {
-		// The tiles just placed were never drawn, so a later pass must not take them for pictures.
-		Empty_Image();
 		DebugString("GPU_VOXEL: the layers do not fit the model store or the lighting rows\n");
 		return(false);
 	}
-	_ReducedParts += reduced;
 	if (Faces_Wanted(scale)) {
-		Load_Faces(parts, tiles);
+		Load_Faces(parts);
 	}
-	for (std::size_t i = 0; i < parts.size(); i++) {
-		if (tiles[i].Direct) {
-			Set_Layer_Depths(parts[i]);
-			_DirectLayers[i] = std::move(parts[i]);
-			parts[i].clear();
-		}
+	for (std::vector<LayerDraw> & layers : parts) {
+		Set_Layer_Depths(layers);
 	}
-
-	float projection[16];
-	Backend_Build_Ortho_Projection(projection, GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE);
-	bgfx::setViewFrameBuffer(VIEW_MAPVOXEL, _Target);
-	bgfx::setViewRect(VIEW_MAPVOXEL, 0, 0, GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE);
-	bgfx::setViewTransform(VIEW_MAPVOXEL, NULL, projection);
-	bgfx::setViewMode(VIEW_MAPVOXEL, bgfx::ViewMode::Sequential);
-	bgfx::setViewClear(VIEW_MAPVOXEL, _ClearImage ? BGFX_CLEAR_COLOR : BGFX_CLEAR_NONE, 0, 0.0f, 0);
-	_ClearImage = false;
-	bgfx::touch(VIEW_MAPVOXEL);
-
-	for (std::size_t i = 0; i < parts.size(); i++) {
-		GpuVoxelPart const & part = list.Voxels[i];
-		Rect const & area = part.Area;
-		int const tilescale = tiles[i].Scale;
-		if (area.Width <= 0 || area.Height <= 0) {
-			continue;
-		}
-		for (LayerDraw const & layer : parts[i]) {
-			ModelSlot const * slot = Find_Slot(layer.Key);
-			if (slot == NULL || slot->Count == 0) {
-				continue;
-			}
-			GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
-			Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
-			// Where the piece's pixels land in the tile, and the part of the tile they may cover.
-			int const shift_x = tiles[i].X + (piece.Dest.X - area.X - bounds.X) * tilescale;
-			int const shift_y = tiles[i].Y + (piece.Dest.Y - area.Y - bounds.Y) * tilescale;
-			Rect const clip = Intersect(Rect(piece.Dest.X - area.X, piece.Dest.Y - area.Y, bounds.Width, bounds.Height), Rect(0, 0, area.Width, area.Height));
-			if (clip.Width <= 0 || clip.Height <= 0) {
-				continue;
-			}
-			Set_Layer_Uniforms(part, layer, layer.Setup.Arg.TransformMatrix, slot->First, shift_x, shift_y, tilescale);
-			bgfx::setTexture(0, _ModelSampler, _Model);
-			bgfx::setTexture(1, _PaletteSampler, _Palette);
-			bgfx::setVertexCount(Vertex_Count(*slot, tilescale));
-			bgfx::setScissor((uint16_t)(tiles[i].X + clip.X * tilescale), (uint16_t)(tiles[i].Y + clip.Y * tilescale), (uint16_t)(clip.Width * tilescale), (uint16_t)(clip.Height * tilescale));
-			bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | Primitive_State(tilescale));
-			bgfx::submit(VIEW_MAPVOXEL, _Program);
-		}
-	}
+	_DirectLayers = std::move(parts);
 	return(true);
 }
 
@@ -929,7 +676,7 @@ static void Set_Depth_Uniform(GpuVoxelDirectBlit const & blit, GpuVoxelLayerDept
 
 void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & blit, int scale, std::uint16_t view, std::function<void(void)> const & bind)
 {
-	if (!_Ready || !bgfx::isValid(_DirectProgram) || blit.Part < 0 || blit.Part >= (int)_DirectLayers.size()) {
+	if (!_Ready || blit.Part < 0 || blit.Part >= (int)_DirectLayers.size()) {
 		return;
 	}
 	GpuVoxelPart const & part = list.Voxels[blit.Part];
@@ -944,7 +691,7 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 		}
 		GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
 		Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
-		// The piece's pixels in area pixels, placed as the image route places them in the part's tile.
+		// The piece's top left corner in pass pixels, before the scale.
 		int const left = blit.OriginX + piece.Dest.X - area.X;
 		int const top = blit.OriginY + piece.Dest.Y - area.Y;
 		Rect const clip = Intersect(Rect(left, top, bounds.Width, bounds.Height), shown);
@@ -992,151 +739,8 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 }
 
 
-int GpuVoxel_Take_Reduced(void)
-{
-	return(std::exchange(_ReducedParts, 0));
-}
-
-
-std::uint16_t GpuVoxel_Image(void)
-{
-	return(_Image.idx);
-}
-
-
-// What the check compares the voxel image with.
-struct PartCheck
-{
-	char Label[24];
-	int Layers;
-	int X;
-	int Y;
-	int Width;
-	int Height;
-	std::vector<unsigned char> Reference;
-	std::vector<unsigned char> MaskReference;
-};
-
-static std::vector<PartCheck> _Checks;
-static std::vector<unsigned char> _ImagePixels;
-static std::uint32_t _ReadyFrame = 0;
-static int _CheckFrame = 0;
-static bool _Pending = false;
-
-
-std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int frame)
-{
-	if (_Pending || !_Ready) {
-		return(0);
-	}
-	_Checks.clear();
-	for (std::size_t i = 0; i < list.Voxels.size(); i++) {
-		GpuVoxelPart const & part = list.Voxels[i];
-		if (part.Reference.empty() || tiles[i].Direct) {
-			continue;
-		}
-		PartCheck check;
-		std::memcpy(check.Label, part.Label, sizeof(check.Label));
-		check.Layers = 0;
-		for (GpuVoxelPiece const & piece : part.Pieces) {
-			check.Layers += (int)(piece.Prepared->Scene.Shadows.size() + piece.Prepared->Scene.Objects.size());
-		}
-		check.X = tiles[i].X;
-		check.Y = tiles[i].Y;
-		check.Width = part.Area.Width;
-		check.Height = part.Area.Height;
-		check.Reference = part.Reference;
-		check.MaskReference = part.MaskReference;
-		_Checks.push_back(std::move(check));
-	}
-	if (_Checks.empty()) {
-		return(0);
-	}
-	if (!bgfx::isValid(_Readback)) {
-		_Readback = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-		_ImagePixels.assign((std::size_t)GPU_VOXEL_IMAGE_SIZE * GPU_VOXEL_IMAGE_SIZE * 2, 0);
-	}
-	if (!bgfx::isValid(_Readback)) {
-		return(0);
-	}
-	bgfx::blit(VIEW_MAPREAD, _Readback, 0, 0, _Image);
-	_ReadyFrame = bgfx::readTexture(_Readback, _ImagePixels.data());
-	_CheckFrame = frame;
-	_Pending = true;
-	return(_ReadyFrame);
-}
-
-
-// The largest step in a 565 channel between two voxel palette colours.
-static int Colour_Step(int a, int b)
-{
-	return(std::max({ std::abs((VoxelRGBColors[a].Red >> 3) - (VoxelRGBColors[b].Red >> 3)),
-		std::abs((VoxelRGBColors[a].Green >> 2) - (VoxelRGBColors[b].Green >> 2)),
-		std::abs((VoxelRGBColors[a].Blue >> 3) - (VoxelRGBColors[b].Blue >> 3)) }));
-}
-
-
-// Logs how far the highlight strengths the GPU wrote beside a direct part's indices are from the software's mask.
-static void Compare_Mask(PartCheck const & check)
-{
-	int masked = 0;
-	int differing = 0;
-	int largest = 0;
-	for (int r = 0; r < check.Height; r++) {
-		for (int c = 0; c < check.Width; c++) {
-			int const software = check.MaskReference[(std::size_t)r * check.Width + c];
-			int const gpu = _ImagePixels[((std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c) * 2 + 1];
-			masked += (software != 0 || gpu != 0) ? 1 : 0;
-			if (software != gpu) {
-				differing++;
-				largest = std::max(largest, std::abs(software - gpu));
-			}
-		}
-	}
-	DebugString("GPU_VOXEL_MASK frame %d part %s pixels %d masked %d differing %d maxdiff %d\n", _CheckFrame, check.Label, check.Width * check.Height, masked, differing, largest);
-}
-
-
-void GpuVoxel_Compare(std::uint32_t frame)
-{
-	if (!_Pending || frame < _ReadyFrame) {
-		return;
-	}
-	_Pending = false;
-	for (PartCheck const & check : _Checks) {
-		int covered = 0;
-		int differing = 0;
-		int coverage = 0;
-		int largest = 0;
-		for (int r = 0; r < check.Height; r++) {
-			for (int c = 0; c < check.Width; c++) {
-				int const software = check.Reference[(std::size_t)r * check.Width + c];
-				int const gpu = _ImagePixels[((std::size_t)(check.Y + r) * GPU_VOXEL_IMAGE_SIZE + check.X + c) * 2];
-				covered += (software != 0 || gpu != 0) ? 1 : 0;
-				if (software == gpu) {
-					continue;
-				}
-				differing++;
-				if ((software == 0) != (gpu == 0)) {
-					coverage++;
-				} else {
-					largest = std::max(largest, Colour_Step(software, gpu));
-				}
-			}
-		}
-		DebugString("GPU_VOXEL frame %d part %s layers %d pixels %d covered %d differing %d coverage %d maxstep %d\n", _CheckFrame, check.Label, check.Layers,
-			check.Width * check.Height, covered, differing, coverage, largest);
-		if (!check.MaskReference.empty()) {
-			Compare_Mask(check);
-		}
-	}
-	_Checks.clear();
-}
-
-
 void GpuVoxel_Shutdown(void)
 {
-	Release_Handle(_Program);
 	Release_Handle(_DirectProgram);
 	Release_Handle(_DepthUniform);
 	Release_Handle(_BlitUniform);
@@ -1145,27 +749,19 @@ void GpuVoxel_Shutdown(void)
 	Release_Handle(_PaletteSampler);
 	Release_Handle(_Model);
 	Release_Handle(_Palette);
-	Release_Handle(_Readback);
 	Release_Handle(_FaceProgram);
 	Release_Handle(_FaceUniform);
 	Release_Handle(_FaceSampler);
 	Release_Handle(_FaceStore);
 	_Faces.clear();
 	_FaceNext = 0;
-	if (bgfx::isValid(_Target)) {
-		Release_Handle(_Target);
-	}
-	_Image = BGFX_INVALID_HANDLE;
 	_Models.clear();
 	_ModelNext = 0;
 	_Lights.clear();
 	_LightIndex.clear();
 	_DirectLayers.clear();
-	Empty_Image();
-	_CapStep = 0;
-	_CalmPasses = 0;
 	_PaletteUploaded = false;
-	_Pending = false;
+	_UnfitLogged = false;
 	_Ready = false;
 	_Failed = false;
 }

@@ -77,7 +77,7 @@ struct GpuMapPass
 	std::vector<unsigned char> * GlowChanged = NULL;
 
 	// Set when GpuVoxels is on and the emissive mask is kept: Glow holds the mark GPU_VOXEL_MASK_MARK under
-	// the direct voxel parts, and the GPU builds the finished mask from Glow and the voxel image.
+	// the voxel parts, and the GPU builds the finished mask from Glow and the parts' layers.
 	bool Mask = false;
 
 	// The map position of Area's top left pixel, in pixels, which keeps water ripples and cloud

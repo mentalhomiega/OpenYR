@@ -2041,7 +2041,7 @@ void BulletClass::Draw_Voxel(VoxelDataStruct const & voxeldata, Matrix3D const &
 		VoxelDrawSystem::Prep_For_Object(voxlib, i, 0, VoxelCameraMatrix * matrix);
 	}
 
-	SurfaceRegion region = GpuDraw_Render_Prepared(Class->IniName, 0.0, 'b');
+	SurfaceRegion region = GpuDraw_Render_Prepared();
 	flags = ShapeFlags_Type(flags & ~SHAPE_REMAP);
 	Blit_Block(*LogicalSurface, *ColorSchemes[Class->Color]->Converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + drawpoint, cliprect, NULL, ColorSchemes[Class->Color]->Converter->Blitter_From_Flags(ShapeFlags_Type(flags)), 0, ZGRAD_90DEG, brightness);
 	GpuDraw_Voxel_End();

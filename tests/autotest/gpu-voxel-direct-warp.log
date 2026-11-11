@@ -4,5 +4,5 @@ AUTOTEST   where E1 of Americans cell 41,40 mission Guard nav -1,-1 target -1,-1
 AUTOTEST   where E1 of Americans cell 39,41 mission Guard nav -1,-1 target -1,-1 strength 0 limbo 0 tarcom - tarlimbo -1 warped 0
 AUTOTEST   where HTNK of Americans cell 45,39 mission Guard nav -1,-1 target -1,-1 strength 400 limbo 0 tarcom - tarlimbo -1 warped 0
 AUTOTEST   where HARV of Americans cell 45,40 mission Guard nav -1,-1 target -1,-1 strength 1000 limbo 0 tarcom - tarlimbo -1 warped 0
-GPU_RENDER frame 599 drawn 590 fallback 10 voxels 8505 reduced 0
-GPU_RENDER frame 1199 drawn 600 fallback 0 voxels 9000 reduced 0
+GPU_RENDER frame 599 drawn 590 fallback 10 voxels 8505
+GPU_RENDER frame 1199 drawn 600 fallback 0 voxels 9000

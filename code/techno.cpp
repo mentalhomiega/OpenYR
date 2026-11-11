@@ -8576,15 +8576,10 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	}
 	SurfaceRegion region = gpu_draws ? prepared->Scene.Region : VoxelDrawSystem::Render();
 	if (gpu) {
-		// A smooth draw is labelled with the exact facing in 32nds of a turn, which the check log shows turning without steps.
-		char label[24] = "";
-		if (!gpu_draws) {
-			std::snprintf(label, sizeof(label), "%s@%.4g", (char const *)Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()));
-		}
 		if (composited) {
 			GpuDraw_Composite_Piece(prepared, region.Point + point);
 		} else {
-			GpuDraw_Voxel_Part(prepared, label, !gpu_draws);
+			GpuDraw_Voxel_Part(prepared, !gpu_draws);
 		}
 	}
 	Rect cliprect = xcliprect;
@@ -8655,7 +8650,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 
 		VoxelDrawSystem::Reset();
 		VoxelDrawSystem::Prep_For_Shadow(voxeldata.VoxLib, layer_index, 0, VoxelCameraMatrix * mtx3, mtx2, VoxelShadowLightVector);
-		region = GpuDraw_Render_Prepared(Class_Of()->IniName, GpuDraw_Facing_Steps(PrimaryFacing.Current()), 's', gpu_draws ? &prep_key : NULL);
+		region = GpuDraw_Render_Prepared(gpu_draws ? &prep_key : NULL);
 	}
 
 	if (!cached) {
