@@ -15,6 +15,8 @@ When the planes are called onto a structure, the structure is drawn tinted. The 
 
 While tinted, the structure also pulses: it flashes to double brightness and back over about 30 frames, then swings between its normal and double brightness, 64 frames each way. The tint covers the structure's image and the animations drawn in its house colours; animations with their own `Palette=`, a structure drawn with the terrain palette, and a structure whose centre cell is under the shroud are drawn untinted.
 
+While the structure is marked, whatever `LaserTargetColor=` is, a laser line runs from the firer's first weapon to the middle of the structure, and the same events that lift the tint remove the line. Every player sees the line, also under the shroud and fog, except in planning mode. It is three pixels wide and fades in four steps from the firer to the structure. It is red, a little brighter or darker each time it is drawn, and now and then orange. Its end at the structure jitters by a pixel or two. Objects and terrain nearer the viewer hide the line. When the structure's middle is higher on the screen than the firer's weapon, a small solid red dot is drawn there, over everything.
+
 A unit whose second weapon has an airstrike warhead uses it against structures that allow C4 ([`CanC4`](/keys/canc4/)), except a structure that is both a [`ResourceGatherer`](/keys/resourcegatherer/) and a [`ResourceDestination`](/keys/resourcedestination/), such as a deployed Slave Miner. It uses its first weapon against everything else.
 
 ```ini title="rulesmd.ini"

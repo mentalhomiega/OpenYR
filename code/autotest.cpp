@@ -6793,6 +6793,20 @@ static void Windowred_Step(StepType const & step)
 }
 
 
+static int LaserPinTick = -1;
+static int LaserPinBrightness = 0;
+
+
+// laserpin <tick> <brightness>: draws every airstrike laser line at that wall-clock tick (milliseconds / 128) and
+// brightness (190 to 270) instead of the live ones, so a measurement of the line repeats; a negative tick ends the pin.
+static void Laserpin_Step(StepType const & step)
+{
+	LaserPinTick = Number(step.Words, 2, -1);
+	LaserPinBrightness = Number(step.Words, 3, 255);
+	DebugString("AUTOTEST laserpin tick %d brightness %d\n", LaserPinTick, LaserPinBrightness);
+}
+
+
 // glideclock: times zoom glides by game frames, for recordings.
 static void Glideclock_Step(StepType const &)
 {
@@ -7291,6 +7305,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"windowshot", Windowshot_Step},
 		{"windowdark", Windowdark_Step},
 		{"windowred", Windowred_Step},
+		{"laserpin", Laserpin_Step},
 		{"glideclock", Glideclock_Step},
 		{"overlaypresent", Overlay_Present_Step},
 		{"scriptedzoom", Scriptedzoom_Step},
@@ -7330,6 +7345,17 @@ void Run(StepType const & step)
 	DebugString("AUTOTEST unknown command %s\n", step.Command.c_str());
 }
 
+}
+
+
+bool AutoTest_Airstrike_Line_Pin(unsigned & tick, int & brightness)
+{
+	if (LaserPinTick < 0) {
+		return(false);
+	}
+	tick = (unsigned)LaserPinTick;
+	brightness = LaserPinBrightness;
+	return(true);
 }
 
 

@@ -1,0 +1,19 @@
+; Boris marks a civilian house for his MiGs and points a red laser line at it until a stop order lifts the mark. The line
+; runs up and to the left from Boris's gun to the house and is hidden behind the house past its well. Rectangle L covers
+; the open part of the line between the well and Boris, and windowred counts its strongly red pixels: 35 at L1 and 34 at
+; L2 while the line shows, and 6, the scene alone, at L3 after the mark lifts. The laserpin step fixes the line's wall-clock
+; wobble and random brightness so the counts repeat; L2 uses the brightest setting, which turns the line orange.
+; boris-airstrike-line-soft.txt plays the same steps in software.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/boris-airstrike-line.txt -Country 8 -Width 800 -Height 600 -Seconds 120 -Settings "[Video]`nGpuRender=yes" -Filter "AUTOTEST windowred|AUTOTEST airstrike (mark|unmark)|AUTOTEST laserpin|Exception" -Uncapped -StopAfterSteps
+30 view 48 41
+35 reveal
+36 laserpin 0 255
+40 grantunit BORIS 51 44
+50 neutral CAHSE02 47 42
+80 strike BORIS 47 42
+140 windowred L1 370 344 24 20
+141 laserpin 0 270
+142 windowred L2 370 344 24 20
+150 stop BORIS
+160 windowred L3 370 344 24 20
+170 quit
