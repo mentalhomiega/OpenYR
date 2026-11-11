@@ -4586,6 +4586,13 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 		if (Frame < victim->ParasiteLeapFrame) {
 			return(FIRE_ILLEGAL);
 		}
+		// Nor does it leap at an Iron Curtained target, or across more than two levels between a bridge deck and the ground (TechnoClass::GetFireError, 0x6FC0B0).
+		if (victim->Is_Iron_Curtained()) {
+			return(FIRE_ILLEGAL);
+		}
+		if (IsOnBridge != victim->IsOnBridge && std::abs(PositionCoord.Z - victim->PositionCoord.Z) > LEVEL_LEPTON_H * 2) {
+			return(FIRE_ILLEGAL);
+		}
 	}
 
 	// A warhead that does nothing to the target's armor does not fire at it, even when ordered to (TechnoClass::GetFireError, 0x6FC3FE).
