@@ -17449,7 +17449,7 @@ GpuVoxelScale:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '1'
+      default_candidate: '0'
       declared_in: OptionsClass
       member: GpuVoxelScale
       source: code/optionsettings.cpp

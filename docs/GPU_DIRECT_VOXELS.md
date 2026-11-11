@@ -263,7 +263,7 @@ the image route in the same pass, so no stage adds a software fallback.
 | 4 (done) | Translucent, warp and cloak parts with the depth pre-pass; `GpuVoxelCloak` | `cloak-tank.txt` and `chrono-warp-colour.txt` with `Ordered`: `GPU_DIFF` largest step not above the image route's (2 and 1) and mean within its run-to-run spread (161 and 498 in GPU_VOXELS.md) | `Blend_State_For` | |
 | 5 (done) | Highlights, drawn into the mask target with its own depth attachment (see "Stage 5 (done)"); parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
 | 6 (done) | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, at `GpuVoxelScale` above 1 with `Shared`. Lighting rows on the GPU and face shading were left out (see "Stage 6 (done)") | `gpuvoxel` unit tests: a single voxel has 6 faces, a solid 3x3x3 block 54, no listed face has a filled neighbour, and the model view places every voxel where the walk does. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 against the image route in the same build | `voxelshade.sh`: the walk's placement, palette and lighting | Nothing: the model store keeps its orientation copies and the per-object `u_vlight` table for scale 1, `Ordered`, shadows and the mask |
-| 7 | Splat below a size threshold, faces above; `GpuVoxelScale=0` from the zoom | `bench-large-battle.txt` and `bench-large-battle-zoomed-out.txt` at 3840x2160 meet the budget below; edge counts at zoom 1, 2, 3 | | |
+| 7 (done) | `GpuVoxelScale=0` takes the scale from the zoom and is the default, so a view shown at less than 1.5 screen pixels a map pixel draws each voxel as the walk's line and a closer view draws faces. Lighting rows in the palette texture. No separate splat and no batching across parts (see "Stage 7 (done)") | `bench-large-battle.txt` and `bench-large-battle-xmp04-zoomed-out.txt` at 3840x2160 against the budget below; `gpu-voxel-scale.txt` shots at zoom 1, 1.5 and 2 against the fixed scales; a `gpuvoxel` unit test of the scale for zooms up to 9 | The walk as the small-size draw | The `u_vlight` uniform |
 | 8 | Direct by default, then removal of the image route | The regress suite with `GpuVoxelPath=Direct`; `pacing-determinism.txt` hashes identical with the key on and off | | See below |
 
 Later, outside these stages: smooth tilt, the `Voxel` scene depth mode, and GPU terrain. GPU terrain would draw the
@@ -709,6 +709,72 @@ table holds the two least disturbed rounds. No pass fell back to software in any
 - **For stage 7.** The cost at this zoom follows the number of layer draws and their vertices, which faces do not
   lower. Stage 7's splats and its scale from the zoom apply to this view. For the three CPU phases the candidates are
   fewer and cheaper layer draws: the lighting rows in a texture, and no fit check for a pass that needs no voxel image.
+
+### Stage 7 (done)
+
+**State.** Built on branch `direct-voxels-splat`. `GpuVoxelScale=0` is the new default and takes the pass scale from
+the zoom. Fully zoomed out at 3840x2160 the direct route then draws at scale 1 and its GPU time falls from 1.59 ms to
+0.96 ms a picture, within the budget. The CPU cost of a direct part is unchanged, and `draw.gpumap` still misses its
+budget. **Next step:** stage 8.
+
+What we built:
+
+1. **The scale from the zoom.** `Gpu_Voxel_Pass_Scale` (`code/gpuvoxel.cpp`) rounds the screen pixels one map pixel
+   covers to the nearest whole number from 1 to 4. `GScreenClass::Render` calls it for each picture. A setting of 1 to
+   4 is used as before. The settings row shows 0 as "Auto".
+2. **Lighting rows in the palette texture.** The palette texture is 256 by 4,096 texels. Its rows from 67 hold the
+   lighting tables of the pieces drawn, one row a distinct table, and a layer draw passes its row in `u_vox[3].w`. The
+   64-vector `u_vlight` uniform is gone. A table stays in its row until a pass brings more new tables than the rows
+   left, which empties the rows first. A pass with more than 4,029 distinct tables is not drawn: that picture shows
+   the previous one, and the next pass is drawn in software.
+3. **Direct parts once a pass.** `GpuMap_Draw` works out which parts are direct when it accepts the pass and keeps the
+   answer with the pass, where it was worked out again when the pass was submitted.
+
+What differs from the plan in the stage table:
+
+- **No separate splat.** At scale 1 a voxel is already the walk's two-vertex line, one map pixel high, which is the
+  small-size draw the plan asked for. The scale picks between that line and the faces of stage 6, and no size
+  threshold inside a pass was added.
+- **Round to nearest.** The plan rounded the zoom up. We round to nearest, so a view at zoom 1.25 draws at scale 1
+  and one at 1.5 at scale 2.
+- **No batching across parts.** Every layer is still its own draw call. The bench below shows that these calls are
+  what the direct route costs on the CPU; one draw for all the layers of a pass needs the layer values in a texture
+  and is a later redesign.
+
+**Checks.**
+
+| Check | Result |
+|---|---|
+| `gpuvoxel` unit tests | Pass, with a new one: "a scale of 0 follows the zoom, 1 to 4 are kept" (zooms 0 to 9; 1.49 gives 1, 1.5 gives 2, 2.5 and 3 give 3) |
+| `gpu-voxel-scale.txt` at 800x600, the three shots with `GpuVoxelScale=0` against 1 and 2, byte for byte | Zoom 1: identical to scale 1. Zoom 1.5 and 2: identical to scale 2 |
+| The same at 3840x2160 against scales 1 to 4 | Zoom 1: identical to scale 1. Zoom 1.5 and 2: identical to scale 2 except 272 bytes in a block 95 pixels wide and 4 high at the left of the picture; two runs at scale 2 differ from each other in the same block at zoom 1.5 |
+| Zoom 3 | Not shot: the closest zoom outside debug mode is 2 at these sizes. The unit test covers it |
+| `regress.py` on the 39 scripts named for voxels, cloak, shadows, warp, highlights or scale | All `same` |
+| Unit tests, the two test missions and the netsync run of the branch check | 119 tests pass, both missions won, in sync over 5,257 ticks |
+
+**Zoomed out at 4K.** `bench-large-battle-xmp04-zoomed-out.txt` (XMP04T8 at zoom 0.50) and `bench-large-battle.txt`
+(XMP08T2 at zoom 1) at 3840x2160, uncapped, `GpuVoxelSmooth=yes`. Each figure is the mean of three runs on XMP04T8 and
+two on XMP08T2, measured as in stage 6. No pass fell back to software in any run.
+
+| Map | Keys | Draws a second | Mean draw | `draw.gpumap` | `draw.voxels` | `present.upload` | `present.gputime` |
+|---|---|---:|---:|---:|---:|---:|---:|
+| XMP04T8 | `GpuVoxels=no` | 612 | 1.20 ms | 0.09 ms | 0.05 ms | 0.29 ms | 0.60 ms |
+| XMP04T8 | `GpuVoxelScale=0` (draws at scale 1) | 311 | 2.76 ms | 0.43 ms | 0.13 ms | 0.73 ms | 0.96 ms |
+| XMP04T8 | `GpuVoxelScale=2` | 306 | 2.81 ms | 0.43 ms | 0.13 ms | 0.73 ms | 1.59 ms |
+| XMP04T8 | `GpuVoxelScale=2`, stage 6 build | 305 | 2.84 ms | 0.43 ms | 0.13 ms | 0.76 ms | 1.61 ms |
+| XMP08T2 | `GpuVoxels=no` | 775 | 1.01 ms | 0.04 ms | 0.02 ms | 0.21 ms | 0.24 ms |
+| XMP08T2 | `GpuVoxelScale=0` (draws at scale 1) | 407 | 2.18 ms | 0.33 ms | 0.12 ms | 0.44 ms | 0.63 ms |
+
+- **Against the budget.** Both benchmarks draw more than 240 pictures a second with GPU voxels on. `present.gputime`
+  is 0.96 ms and 0.63 ms with the default scale, within its 1.5 ms, where scale 2 took 1.59 ms zoomed out.
+  `draw.voxels` is 0.13 ms and 0.12 ms, within its 0.2 ms. `draw.gpumap` is 0.34 ms and 0.29 ms above `GpuVoxels=no`
+  and misses its 0.2 ms.
+- **The lighting rows and the kept direct parts.** At scale 2 this build and the stage 6 build draw the same within
+  the spread between runs (306 and 305 a second), so neither change lowered the cost we could measure.
+- **What GPU voxels still cost.** Zoomed out, a picture takes 1.56 ms more on the main thread than with
+  `GpuVoxels=no`. In the second run of each setting that is `present.gpu` 0.49 ms, `present.upload` 0.42 ms,
+  `draw.gpumap` 0.34 ms, `draw.objects` 0.22 ms and `draw.voxels` 0.08 ms. The first two are the layer draws being
+  submitted and carried out, one draw call a layer.
 
 ### What stage 8 deletes
 

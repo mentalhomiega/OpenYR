@@ -158,7 +158,7 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 
 `GpuVoxelScale=0`, the default, takes the scale from the zoom: the screen pixels one map pixel covers (the map view's
 zoom times the interface scale), rounded to the nearest whole number from 1 to 4, so a view shown at less than 1.5
-screen pixels a map pixel draws at scale 1. `Gpu_Voxel_Pass_Scale` (`code/gpuvoxel.cpp`) computes it for every pass.
+screen pixels a map pixel draws at scale 1. `Gpu_Voxel_Pass_Scale` (`code/gpuvoxel.cpp`) computes it for each picture.
 
 At a scale above 1, `GpuRender` draws the whole map pass at that many times the map's own pixels. The scene,
 snapshot and post textures are scale times the area in each direction, and the pass's views are scaled the same way, so
