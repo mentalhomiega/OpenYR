@@ -1,17 +1,20 @@
 # GPU voxel drawing
 
 Vehicles, aircraft and other voxel objects are drawn by the software voxel renderer, which projects each voxel
-model at one of 32 prepared facings and caches the picture. We are moving that drawing onto the GPU in stages, so
-that objects can turn smoothly and stay sharp at high resolution. [GPU_MAP.md](GPU_MAP.md) describes the GPU map
-pass this builds on.
+model at one of 32 prepared facings and caches the picture. With `GpuVoxels=yes` the GPU draws them from their
+voxels, so that objects can turn smoothly and stay sharp at high resolution. [GPU_MAP.md](GPU_MAP.md) describes the
+GPU map pass this builds on, and [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) how the GPU draws a voxel object into
+that pass, with its stages, measurements and limits.
+
+This page owns which objects the GPU draws, voxel placement, stacked shadows, how the software draws a voxel object,
+smooth facing, the shadow count, and the record of the image route, the first GPU voxel renderer, which is deleted.
 
 ## Where we are
 
-Stages 1, 2 and 4 are in. With `GpuVoxels=yes` in `[Video]` of `RA2MD.INI` (default `no`), a voxel object that is
-blitted straight into the map view, or a vehicle composed from its hull, turret and barrel, is drawn on the GPU from
-its voxels instead of from the software's 256 by 256 picture. The GPU result is the same picture, index for index;
-nothing is smoother or sharper yet. The key does nothing unless the GPU draws the pass (`GpuRender`) or the
-`gpucheck` autotest step runs. The **GPU voxels** group of the Graphics page sets it.
+With `GpuVoxels=yes` in `[Video]` of `RA2MD.INI` (default `no`), a voxel object that is blitted straight into the map
+view, or a vehicle composed from its hull, turret and barrel, is drawn on the GPU from its voxels instead of from the
+software's 256 by 256 picture. The key does nothing unless the GPU draws the pass (`GpuRender`) or the `gpucheck`
+autotest step runs. The **GPU voxels** group of the Graphics page sets it.
 
 These objects are drawn on the GPU:
 
@@ -23,35 +26,45 @@ These objects are drawn on the GPU:
 - voxel bullets, such as a V3 rocket or a Dreadnought missile.
 
 The translucent and warp flags of a voxel object are drawn through the same translucent blends as any other blit, and
-a predator draw through the plain translucent blend (see "Where pixel-exact drawing ends"). A turreted vehicle whose body is a shape stays in software (the scratch surface holds a sprite the GPU does not draw).
+a predator draw through the plain translucent blend (see "Where pixel-exact drawing ends"). A turreted vehicle whose
+body is a shape stays in software (the scratch surface holds a sprite the GPU does not draw).
 
-`GpuVoxelScale` (`[Video]`, 0 to 4, default 0, needs `GpuVoxels=yes`) is stage 6, described under Sharpness below.
+A voxel object drawn this way never uses the voxel picture cache.
 
-A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
+The other keys need `GpuVoxels=yes`:
 
-This page describes the image route, which `GpuVoxelPath=Image` keeps. `GpuVoxelPath=Direct` (`[Video]`, the default) draws opaque
-and translucent voxel objects, turreted vehicles included, and their shadows straight into the map pass, or into the soft shadow mask, with a
-depth buffer instead, so they take no tile; with `GpuVoxelLayerDepth=Ordered` the picture is the same at scale 1 to 4
-wherever the image route draws its parts at the full scale. Direct parts keep their route while the emissive mask is on
-and write their highlights from their layers, turreted vehicles included. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) describes the direct route and its measurements.
+| Key in `[Video]` | Default | What it does |
+|---|---|---|
+| `GpuVoxelScale` (0 to 4) | 0 | The scale the map pass is drawn at; see Sharpness |
+| `GpuVoxelSmooth` | `no` | Objects turn to their exact facing; see Smooth facing |
+| `GpuVoxelLayerDepth` (`Shared`, `Ordered`) | `Shared` | Whether layers and turret pieces hide each other by depth or by the software's draw order ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)) |
+| `GpuVoxelCloak` (`Translucent`, `Ripple`) | `Translucent` | Whether a cloaked voxel object ripples ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple") |
 
-Stage 3 is in. While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also writes each
-voxel's highlight strength beside its index and feeds the glow and the HDR picture from it; see Highlights below.
+While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also draws each
+voxel's highlight strength into the mask that feeds the glow and the HDR picture, turreted vehicles included
+([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Stage 5 (done)").
 
-Stage 5 is in too. With `GpuVoxelSmooth=yes` (`[Video]`, default `no`, needs `GpuVoxels=yes`), an object the GPU draws turns to its
-exact facing: `GpuDraw_Facing_Radian` (`code/gpudraw.cpp`) gives `DirType::As_Radian_Smooth` instead of `As_Radian32`, which is the
-same number at each of the 32 facings. `LocomotionClass::Build_Draw_Matrix` uses it for the hull, and `UnitClass::Unit_Draw_Voxel`
-for the turret, turned by the exact turret facing minus the exact hull facing so that the turret lands at its own facing on top of
-the hull's. The barrel pitch stays in 32 steps. `FacingClass::Current` already reads the facing part way between two game frames when
-`RenderFrameRate` is above the game rate (`RenderBlend`), taking the short way round, so the smooth angle follows it for the hull
-and for the turret alike. A shadow turns the same way: `LocomotionClass::Build_Shadow_Matrix` and `FlyLocomotionClass::Build_Shadow_Matrix`
-use `GpuDraw_Facing_Radian` too, so the shadow stays under its object. With the key off, nothing changes.
+## Smooth facing
+
+With `GpuVoxelSmooth=yes`, an object the GPU draws turns to its exact facing: `GpuDraw_Facing_Radian`
+(`code/gpudraw.cpp`) gives `DirType::As_Radian_Smooth` instead of `As_Radian32`, which is the same number at each of the
+32 facings. `LocomotionClass::Build_Draw_Matrix` uses it for the hull, and `UnitClass::Unit_Draw_Voxel` for the turret,
+turned by the exact turret facing minus the exact hull facing so that the turret lands at its own facing on top of the
+hull's. The barrel pitch stays in 32 steps. `FacingClass::Current` already reads the facing part way between two game
+frames when `RenderFrameRate` is above the game rate (`RenderBlend`), taking the short way round, so the smooth angle
+follows it for the hull and for the turret alike. A shadow turns the same way: `LocomotionClass::Build_Shadow_Matrix`
+and `FlyLocomotionClass::Build_Shadow_Matrix` use `GpuDraw_Facing_Radian` too, so the shadow stays under its object.
+With the key off, nothing changes.
+
+`tests/autotest/gpu-voxel-smooth.txt` turns two harvesters half a turn, and a tank whose hull and turret turn at their
+own rates, under `gpucheck` with `GpuVoxelSmooth=yes`. It checks that the game draws those passes without a crash; its
+`GPU_DIFF` numbers vary with when a pass is read back, so regress compares only the crash lines.
 
 ## Voxel placement
 
 `SteadyVoxelPlacement` (`[Video]`, default `yes`) projects each voxel scene about a whole-pixel centre. It applies to the software
 drawing and to `GpuVoxels` alike. `VoxelDrawSystem::Scene_Center` (`code/voxdrsys.h`) gives the point, and both `Draw_Prepared` (software)
-and `Capture` (GPU) read it, so the two renderers stay pixel-identical with the key on and off.
+and `Capture` (GPU) read it.
 
 The original game projects the model about the exact fractional centre of the scene, but `Region_Of` places the picture at the centre with its
 fraction cut off. A turning vehicle's centre moves by fractions of a pixel from facing to facing, so its picture sits up to a pixel off its model
@@ -62,7 +75,7 @@ Classification: intentionally changed. The default departs from gamemd, and `Ste
 position, so the shadow counts and pictures that tests record change with the default. Only drawing changes, and the simulation is the same.
 
 Changing the key while the game runs clears every voxel picture cache at the start of the next frame (`ObjectTypeClass::Clear_Voxel_Indexes`).
-That also invalidates the turreted-vehicle pictures and the GPU's voxel image and prepared objects, which follow the same clear.
+That also invalidates the turreted-vehicle pictures.
 
 ## Stacked shadows
 
@@ -74,7 +87,7 @@ near black. With `no` the ground under overlapping shadows darkens once, with ha
 - **Software.** The three voxel shadow blits (the cached shadow, the uncached one, and the shadow of a voxel animation) run through `ShadowOnceRows` (`code/shadowplane.h`). It keeps a mark per pixel of the
   surface holding the frame number of the shadow that last darkened the pixel, and puts back a pixel that a mark from this frame covers. `Tactical::Render_Foreground` starts a frame.
   A pixel an opaque object has since covered keeps its mark, so a later shadow does not darken that object.
-- **GPU.** Every shadow in the pass goes into the shadow mask, which is not blurred, and the ground is darkened once through it. This is the `SoftShadows` path with a blur radius of 0, for `GpuVoxels` off and for both `GpuVoxelPath` routes. The
+- **GPU.** Every shadow in the pass goes into the shadow mask, which is not blurred, and the ground is darkened once through it. This is the `SoftShadows` path with a blur radius of 0, with `GpuVoxels` off and on. The
   mask holds every darkening blit of the pass, so the shadows of shapes drawn in the pass (infantry, buildings) are unioned too, which software does not do.
 - Shadows that buildings and trees draw into the tile layer are not changed by the key; `SoftShadows` unions them.
 
@@ -116,45 +129,39 @@ With eight Kirovs `no` costs software drawing about 0.09 ms a frame at 800 by 60
    alpha lighting from the shape flags. The blit tests depth against the map's depth buffer with a per-row gradient
    (`Get_Z_Adjust`, `Get_Z_Gradient`) and writes no depth. This is the same blit the GPU map pass records for any
    shape.
-6. **Caches.** A picture is cached per type and facing key (`VoxelIndexClass`, `VoxelStaticBuffer`), a turreted
-   vehicle's composed picture is cached too, and the GPU keeps cached pictures in its image atlas. A shadow is
-   drawn separately by `Render_Shadow`: the occupied columns of the layer, flattened onto the ground and slid along
-   the light vector, blitted darkened.
+6. **Caches.** A picture is cached per type and facing key (`VoxelIndexClass`, `VoxelStaticBuffer`), and a turreted
+   vehicle's composed picture is cached too. With `GpuVoxels=no` the GPU map pass keeps those cached pictures in its
+   atlas ([GPU_MAP.md](GPU_MAP.md)). A shadow is drawn separately by `Render_Shadow`: the occupied columns of the
+   layer, flattened onto the ground and slid along the light vector, blitted darkened.
 
 ## The GPU path
 
 A part is one prepared object: its layers' `VoxelRenderStruct` copies, the projection centre, the lighting table and
-the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPart` in `code/gpudraw.h`).
+the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPart` in `code/gpudraw.h`). The blit that
+shows a part is recorded without pixels, and the map pass draws the part's layers in the blit's place.
 
 - `Gpu_Voxel_Walk` (`code/gpuvoxel.cpp`) lists a layer's voxels in the order the drawer writes them, with their
   place in the walk, colour and normal. `tests/gpuvoxel` draws that list on the CPU the way the shader does and
   compares it with the software drawers for random layers in all eight orientations.
 - `code/gpumapvoxel.cpp` keeps those lists in a 2048 by 2048 model texture, two texels a voxel, one list for each
-  layer and orientation, and a 2048 by 2048 voxel image of palette indices. Each part gets a tile of the image the
-  size of its buffer region. `vs_mapvoxel.sc` reads the voxel for each vertex from `gl_VertexID`, computes the same
-  16-bit position, looks up the lit index and draws a horizontal line of one or two pixels into the tile, two
-  vertices a voxel; the order of the vertices is the order of the software's writes, and Direct3D keeps primitive
-  order, so later voxels overwrite earlier ones as they do in software.
+  layer and orientation.
 - A shadow is one flat layer. `Gpu_Voxel_Walk_Shadow` lists one voxel with K 0 and colour 1 for each occupied column,
-  `VoxelLibrary::Setup_Shadow` gives the projection the software shadow drawer uses, and the shader writes two
-  pixels a column through the identity palette row. A voxel animation's shadow is drawn the same way.
-- The recorded blit has no pixels of its own. Its colour index offset is negative, -1 minus a texel of the voxel image
-  (`Source_Offset` in `code/gpumap.cpp`), and `fs_mapdraw.sc` reads the index there and then does everything it does
-  for any blit: translator, alpha lighting, depth test, blend kind.
-- A turreted vehicle is one part with a piece for each of its hull, turret and barrel, drawn in the order the
-  software draws them: the hull, then the barrel and the turret, the barrel before the turret at some turret
-  facings and after it at the others. The software composes them on the 160 by 160 scratch surface, where a later
-  piece replaces the pixels below it that it draws, and the scratch surface passes each pixel through the colour
-  translation of its own drawer. The part's tile covers the scratch surface's dirty rectangle; each piece is
-  drawn into the tile at the place it would land on the scratch surface, clipped to the tile, with the palette
-  texture's second block, which is the first run through that translation. The blit that shows the composite
-  reads the tile at the pixels it would read from the scratch surface, so the sorting, depth and lighting of the
-  blit are the same as for a direct part.
+  and `VoxelLibrary::Setup_Shadow` gives the projection the software shadow drawer uses. A voxel animation's shadow is
+  drawn the same way.
+- A turreted vehicle is one part with a piece for each of its hull, turret and barrel. The software composes them on
+  the 160 by 160 scratch surface, where a later piece replaces the pixels below it that it draws, and the scratch
+  surface passes each pixel through the colour translation of its own drawer. The GPU places each piece where it
+  would land on the scratch surface and reads the palette texture's second block, which is the first run through that
+  translation.
+- A prepared object is kept under a key made of its voxel library, motion library and frame, its matrix, the camera,
+  the light and the shading rules, and a shadow likewise. An object drawn again with an equal key takes the kept
+  preparation. Any new input to the preparation or the lighting table must be added to that key (`GpuVoxelPrepKey` in
+  `code/gpudraw.h`).
 - While the GPU draws a pass, the software renders none of a part's pieces and writes nothing to the scratch surface.
 - A pass the GPU cannot draw (a limit, a failed program) renders the parts in software when it falls back, so the
   picture is complete.
 
-## Sharpness (stage 6)
+## Sharpness
 
 `GpuVoxelScale=0`, the default, takes the scale from the zoom: the screen pixels one map pixel covers (the map view's
 zoom times the interface scale), rounded to the nearest whole number from 1 to 4, so a view shown at less than 1.5
@@ -168,54 +175,71 @@ matching finer pixel. `bgfxbackend.cpp` treats the texture as scale times larger
 shown smaller than that and keeps whole pixels when it is shown at that size or larger. Zooming in the map view (`viewzoom.cpp`)
 therefore shows the finer picture.
 
-A voxel part's tile in the voxel image is scale times its buffer region in each direction. A voxel is drawn as the
-outline of its cube: the six corners other than the two on the line of sight through the cube (found from the signs of the
-cross products of the layer's three projected steps), one triangle strip of eight vertices a voxel, the first and last
-doubled so the strips of successive voxels join, centred on the point the software's line is centred on, with the same
-palette row. Voxels are still written in the software's
-order, so nearer voxels overwrite farther ones. Everything else about a voxel blit, translator, depth test and blend,
-is unchanged.
+At scale 1 a voxel is the line of one or two pixels the software writes. Above it a voxel is drawn as the exposed
+faces of its cube with `GpuVoxelLayerDepth=Shared`, and as the outline of its cube with `Ordered` or when the faces of
+a pass do not fit the face store. Every voxel object keeps the scale of its pass.
 
-When the parts of a pass do not fit an empty voxel image at the chosen scale, the largest parts are drawn at a
-smaller scale that divides it (4 to 2 to 1, 3 or 2 to 1), and the rest of the pass, terrain included, keeps the chosen
-scale. A part's scale is set by the longer side of its tile: a part whose tile side at a scale would exceed a cap drops
-to the next scale down, and the cap steps down from 2048 (no part lowered) through 1536, 1024, 768, 512, 384 and on to 0
-(every part at 1) until the parts fit. Parts of the same size therefore get the same scale, so units of one type stay
-alike. The cap goes back up one step only after the parts have fitted under the larger cap for 120 drawn passes in a
-row, so a part near the limit does not change sharpness from one frame to the next. 48 Kirovs at 3840 by 2160 fit
-only with every Kirov at scale 1, since all of them have the same size; a mixed army loses sharpness on its largest
-units first. The `reduced` count of the `GPU_RENDER` line counts the parts shown below `GpuVoxelScale`, once for each
-pass the GPU drew for a present (fewer than the passes counted as `drawn` when the game runs more frames than it
-shows), and `tests/autotest/gpu-voxel-overflow.txt` checks that twelve Kirovs at scale 4 cause no software
-fallback.
+A pass that `gpucheck` reads back is drawn at scale 1, because the software result it is compared with has no finer
+pixels. `tests/autotest/gpu-voxel-scale.txt` shows two tanks and a Kirov at three zooms for comparing scales by eye
+and by edge counts.
 
-Scale 1 takes the old path and stays index-exact. A pass that `gpucheck` reads back is drawn at scale 1, because the
-software result it is compared with has no finer pixels. At a scale above 1, `tests/autotest/gpu-voxel-scale.txt` shows
-two tanks and a Kirov at zoom 1, 2 and 3 for comparing scales by eye and by edge counts.
+A shadow's column is drawn as its flat cell, so a shadow stays in register with its object at any scale. With
+`SoftShadows`, a shadow's layers are drawn into the map-sized mask at scale 1.
 
-A shadow's column is drawn as its flat cell, the one face of the cube a zero Z step leaves, in the same tile as a
-direct part, so a shadow stays in register with its object at any scale. With `SoftShadows`, the shadow reads its tile
-for the map-sized mask; on the direct route its layers are drawn into that mask at scale 1.
+## Voxel shadows on the GPU
 
-The scale also applies to a turreted vehicle's parts: each piece's offset inside the tile and the clip that keeps it in its tile are scaled the same way, so hull, turret and barrel stay in register and, with `GpuVoxelSmooth=yes`, sharpen at their exact facings.
+While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cached blit it replaces (`TechnoClass::Get_Z_Gradient`). The ground gradient of the uncached software path gives exactly the ground's depth, so on flat ground every pixel fails the depth test. A type with `DisableShadowCache=yes` keeps the ground gradient, as in software. A shadow writes no highlight strength.
 
-## Comparing the two
+`gpucheck` compares against a software replay, so it does not show a shadow the depth test rejects in both. The `gpushadowcount` step reads back the picture a `GpuRender=yes` pass drew and logs one line:
 
-`tests/autotest/gpu-voxel-compare.txt` plays eight vehicle types turning through sixteen facings, with a Kirov
-and an Orca overhead, then turns the turrets of five turreted types to facings other than the body's and lets two
-tanks drive with their turrets turning, under `gpucheck`, with `GpuRender=no` so the software draws the pass, and
-`HDRHighlights=Classic`. Each voxel part drawn in a checked pass, a composite
-counting as one part, is also drawn on the GPU and read back, and the log gets one line:
+`GPU_VOXEL_SHADOW shadows B pixels P darkened D twice T`
 
-`GPU_VOXEL frame F part TYPE@FACING layers N pixels P covered C differing D coverage V maxstep S`
+`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `T` counts the pixels inside only one shadow's rectangle that show the ground darkened two or three times, to within one 8-bit step of what the darken blend gives, which a shadow drawn as overlapping cells without a once-per-blit rule leaves; it is 0 in these scenes, and about 500 at scale 1 when hard shadows are drawn without their stencil. A part of an object whose colour matches such a value in all three channels would also count. Three scripts run it with two tanks and a Kirov over sand:
 
-`FACING` is the body's facing in 32 steps, followed by `t` and the turret's facing for a composite. `pixels` is the
-part's tile, `covered` the pixels either side wrote, `differing` the pixels whose palette index differs,
-`coverage` those where only one side wrote a pixel, and `maxstep` the largest difference in a 565 channel between
-the voxel palette colours of the two indices. For a composite the software side is the scratch surface after
-the pieces are composed. The pass's usual `GPU_DIFF` line then compares the finished picture, where a voxel blit
-goes through the same shader as every other blit. `GPU_RENDER` lines also count the voxel blits the GPU drew and
-the parts it showed at a reduced scale (see Sharpness).
+| Script | Scale | Shadows | Pixels | Darkened |
+|---|---|---|---|---|
+| `gpu-voxel-direct-shadow.txt` | 1 | 3 | 14,331 | 2,239 |
+| `gpu-voxel-shadow-bloom.txt`, under `Bloom` | 2 | 3 | 14,331 | 2,074 |
+| `gpu-voxel-direct-soft.txt`, with `SoftShadows` | 2 | 3 | 14,331 | 1,554 |
+
+With the ground gradient in place of the cached blit's, the first two scenes darkened 23 and 25 pixels, measured on the image route before a placement fix moved the two tanks over their shadows.
+
+`gpu-voxel-overflow.txt` runs the count over 300 tanks, more shadow blits than the pass has stencil values ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Stage 8 (done)").
+
+## Where pixel-exact drawing ends
+
+- Smooth facing and a scale above 1 change the picture on purpose, so the GPU can only match the software at the 32
+  facings and at scale 1, and there only with `GpuVoxelLayerDepth=Ordered`.
+- Hardware blending cannot reproduce the software's flooring of halved and quartered terms; this limits the
+  translucent blits ([GPU_MAP.md](GPU_MAP.md), Limits), translucent voxels included.
+- A cloaked voxel object is drawn as the plain 25% or 50% translucent blend, by the software and by the GPU.
+  `RLE_Blit` and `Bit_Blit` both give their blitter a warp offset of 0, so the `Warp` blitters read the pixel they write.
+  `GpuVoxelCloak=Ripple` adds a ripple the software does not draw ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple").
+- The model texture holds 2,097,152 voxels' worth of walks (a layer is stored once for each of the eight
+  orientations it is drawn in) and is emptied when full. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) lists what
+  happens to a pass that does not fit it, under "Fallback still switches look".
+
+## The image route (deleted)
+
+The first GPU voxel renderer drew each part into a tile of a 2048 by 2048 voxel image of palette indices, and the
+part's blit read its tile through the map shader like any other blit. It was built in seven stages (walk, model store
+and voxel image; turreted vehicles; highlights; shadows, animations and bullets; smooth facing; sharpness; kept
+pictures), and stage 8 of [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) deleted it once the GPU drew every part
+straight into the pass. The walk, the model texture, the prepared objects, smooth facing and the shadow count above
+come from it. The numbers below are what it measured, kept as the record the direct route was checked against.
+
+**How it worked.** `vs_mapvoxel.sc` drew each voxel as a line of one or two pixels into the part's tile, in the
+software's write order, so later voxels overwrote earlier ones. A tile was the part's buffer region times
+`GpuVoxelScale`. A part had a signature, a 64-bit hash of everything the shader's output depended on, and a part
+whose signature the image already held was not drawn again. When the parts of a pass did not fit an empty image at
+the chosen scale, the largest parts were drawn at a lower scale, and a pass whose parts did not fit at scale 1 was
+drawn in software. While the emissive mask was on, the tile's green channel held each voxel's highlight strength, and
+the mask pass copied it wherever a part's blit had left a mark in the CPU plane.
+
+**Exactness.** Under `gpucheck` every part drawn in a checked pass was read back from its tile, and a `GPU_VOXEL`
+line compared its palette indices with the software's. `tests/autotest/gpu-voxel-compare.txt` plays eight vehicle
+types turning through sixteen facings, with a Kirov and an Orca overhead, then turns the turrets of five turreted
+types to facings other than the body's:
 
 | Type | Parts compared | Body facings | Turret facings at a body facing | Covered pixels | Differing |
 |---|---|---|---|---|---|
@@ -230,60 +254,11 @@ the parts it showed at a reduced scale (see Sharpness).
 | ZEP (Kirov) | 81 | 1 | 0 | 317,034 | 0 |
 | ORCA | 81 | 1 | 0 | 45,603 | 0 |
 
-A part is compared at most once for each pass the check reads back, so the same facing appears in several
-parts. Sixty-five of the 567 composites had a turret facing different from the body's. The `GPU_DIFF` lines of the
-same run have the same one-step pixels, about three a pass, as the run with `GpuVoxels=no`; none of them lies on a
-vehicle.
+Sixty-five of the 567 composites had a turret facing different from the body's. The `GPU_DIFF` lines of the same run
+had the same one-step pixels, about three a pass, as the run with `GpuVoxels=no`; none of them lay on a vehicle.
 
-The numbers vary from run to run in which passes are read back, so the regress log of the script keeps only its
-crash lines.
-
-## Highlights (stage 3)
-
-While the emissive mask is on, `vs_mapvoxel.sc` computes the strength the software drawers write beside each palette
-index (`Emissive_Voxel_Highlight`, zero for an unlit layer), and `fs_mapvoxel.sc` writes it into the voxel image's green
-channel, beside the index in its red channel.
-
-A direct part's blit copies the mark `GPU_VOXEL_MASK_MARK` from the voxel mask buffer into the target's plane, over its
-whole rectangle, where the software would have copied the part's mask. Every other draw in the pass writes the plane as
-it always has, so a pixel still holding the mark at the end of the pass is one no later draw covered. The pass then builds
-the finished mask (`fs_mapmask.sc`, `Submit_Voxel_Mask` in `code/gpumap.cpp`): a copy of the plane, then for each direct
-part's blit, in order, the strength from the part's tile wherever the plane holds the mark. The glow reads this mask in
-place of the plane, and the present draws it over the map area for the HDR composite. A pass the GPU cannot draw renders
-its parts in software and replaces the marks with their real strengths.
-
-A turreted composite writes no mask on the image route, as in the software: the scratch surface has no plane, so its blit
-zeroes the mask under its rectangle. On the direct route its blit leaves the mark instead, and its highlights are drawn
-from its layers ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), stage 5). With `GpuVoxels` off, a picture read from the voxel cache carries no mask either, so a cached software
-vehicle has no highlights; the GPU draws every part afresh, so a vehicle with no turret glows on every pass.
-
-A mask value of exactly 1 written by some other effect over a part's rectangle is taken for the mark and replaced by the
-voxel's strength. The value is so faint, and the case so rare, that we accept it; `gpucheck` showed no such pixel.
-
-At a `GpuVoxelScale` above 1 the mask stays at map size: each pixel takes the strength at the centre of its block of
-finer pixels, so the glow and the HDR picture follow the sharpened part to within a map pixel.
-
-The check runs under `gpucheck` with the emissive mask on (`EmissiveDebugView=yes`, with `GpuRender=no`) at scale 1 and logs two more lines:
-
-`GPU_VOXEL_MASK frame F part TYPE@FACING pixels P masked M differing D maxdiff X` for each direct part, and
-`GPU_MASK frame F pixels P masked M differing D maxdiff X` for each pass, the finished mask against the software plane.
-`masked` counts pixels nonzero on either side.
-
-| Scene | Direct parts | Passes | Masked pixels (parts / finished) | Differing |
-|---|---|---|---|---|
-| `gpu-voxel-compare.txt` (turning vehicles, Kirov, Orca) | 250 | 84 | 107,835 / 89,766 | 0 |
-| `hdr-emissive-scene.txt` with `gpucheck` and voxel vehicles added (lasers, bolts, explosions, 1,800 frames) | 16,827 | 577 | 4,057,653 / 2,251,553 | 0 |
-
-The composites in those runs are compared through `GPU_MASK`: their rectangles are zero on both sides.
-`tests/autotest/gpu-voxel-bloom.txt` saves a shot of one scene under `Bloom`, for comparing `GpuVoxels` off, on, and on with `GpuVoxelSmooth` and `GpuVoxelScale=4` by eye.
-
-## Other voxel draws
-
-Each shadow, voxel animation and bullet is one part with a `GPU_VOXEL` line of its own, labelled `TYPE@FACINGs` for a
-shadow, `TYPE@0a` for a voxel animation and `TYPE@0b` for a bullet, and the finished pass has its usual `GPU_DIFF` line.
-At scale 1 every shadow, animation and bullet part compared had 0 differing palette indices. Translucent and predator
-voxel draws finish in the hardware blend, so the `GPU_DIFF` of a pass that shows one has the rounding differences
-[GPU_MAP.md](GPU_MAP.md) lists under Limits, one step in a 565 channel on the translucent pixels.
+The other voxel draws were compared the same way. Translucent and predator draws finish in the hardware blend, so
+the `GPU_DIFF` of a pass that shows one has the rounding differences [GPU_MAP.md](GPU_MAP.md) lists under Limits.
 
 | What | Script | Parts compared | Covered pixels | Differing indices | `GPU_DIFF` per pass, mean / most differing, largest step |
 |---|---|---|---|---|---|
@@ -294,40 +269,21 @@ voxel draws finish in the hardware blend, so the `GPU_DIFF` of a pass that shows
 | Voxel shells, on a mod that gives the Grizzly shell a voxel | `scalable-bullets.txt` | 4,321 | 2,766,463 | 0 | 749 / 6,177, 3 |
 | V3 rockets, Dreadnought missiles (drawn as aircraft) | `v3-attack-then-wait.txt`, `dreadnought-missile-dive.txt` | 1,041 | 1,232,026 | 0 | 147 / 2,589, 2 |
 
-The compared parts come from the voxel image, so they count the voxel drawing alone; the `GPU_DIFF` column includes everything else in the pass, and the largest values come from those passes' translucent blits.
+**Highlights.** With the emissive mask on, `GPU_VOXEL_MASK` lines compared each part's strengths and `GPU_MASK` lines
+the finished mask of each pass with the software plane, at scale 1:
 
-While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cached blit it replaces (`TechnoClass::Get_Z_Gradient`). The ground gradient of the uncached software path gives exactly the ground's depth, so on flat ground every pixel fails the depth test. A type with `DisableShadowCache=yes` keeps the ground gradient, as in software. A shadow writes no highlight strength.
-
-`GPU_VOXEL` compares the voxel image and `gpucheck` compares against a software replay, so neither shows a shadow the depth test rejects in both. The `gpushadowcount` step reads back the picture a `GpuRender=yes` pass drew and logs one line:
-
-`GPU_VOXEL_SHADOW shadows B pixels P darkened D twice T`
-
-`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `T` counts the pixels inside only one shadow's rectangle that show the ground darkened two or three times, to within one 8-bit step of what the darken blend gives, which a shadow drawn as overlapping cells without a once-per-blit rule leaves; it is 0 on both routes in these scenes, and about 500 at scale 1 when the direct route draws hard shadows without its stencil. A part of an object whose colour matches such a value in all three channels would also count. `tests/autotest/gpu-voxel-shadow.txt` runs it at scale 1 and `gpu-voxel-shadow-bloom.txt` at scale 2 under `Bloom`, each with two tanks and a Kirov over sand:
-
-| Script | Shadows | Pixels | Darkened | Darkened with the ground gradient |
+| Scene | Parts | Passes | Masked pixels (parts / finished) | Differing |
 |---|---|---|---|---|
-| `gpu-voxel-shadow.txt` | 3 | 14,331 | 2,148 | 23 |
-| `gpu-voxel-shadow-bloom.txt` | 3 | 14,331 | 2,002 | 25 |
+| `gpu-voxel-compare.txt` (turning vehicles, Kirov, Orca) | 250 | 84 | 107,835 / 89,766 | 0 |
+| `hdr-emissive-scene.txt` with `gpucheck` and voxel vehicles added (lasers, bolts, explosions, 1,800 frames) | 16,827 | 577 | 4,057,653 / 2,251,553 | 0 |
 
-The last column was measured before turreted vehicles stopped being placed a pixel off on odd-sized facings. That fix moved the two tanks over their shadows and raised the darkened counts from 2,098 and 1,970.
+A turreted composite wrote no mask on the image route, as in the software.
 
-## Checking smooth facing
-
-`tests/autotest/gpu-voxel-smooth.txt` turns two harvesters half a turn, and a tank whose hull and turret turn at their own rates, under `gpucheck` with
-`GpuVoxelSmooth=yes`. Each `GPU_VOXEL` line
-labels its part `TYPE@F` with `F` the facing in 32nds of a turn: whole numbers with the key off, fractions such as 8.62 with it on,
-rising in even steps with no repeats. A composite is labelled `TYPE@FtT`, `T` being the turret's facing in the same units. The software and the GPU draw the same smooth matrix, so the compare stays at 0 differing pixels.
-
-## Cost
-
-With the key on, no voxel object uses the picture cache, so the GPU would draw every object from its voxels in every pass. Stage 7 keeps the work of earlier passes in two places:
-
-- **Prepared objects.** An object prepared for the GPU, its layers, projection centre and lighting table, is kept under a key made of its voxel library, motion library and frame, its matrix, the camera, the light and the shading rules, and a shadow likewise. An object drawn again with an equal key takes the kept preparation. The kept objects are dropped when the voxel data changes, and any new input to the preparation or the lighting table must be added to that key (`GpuVoxelPrepKey` in `code/gpudraw.h`).
-- **Pictures in the voxel image.** Each part has a signature, a 64-bit hash of everything the shader's output depends on. A part whose signature the image already holds, from this pass or an earlier one, reads that tile and is not drawn. New tiles go on until a pass does not fit what is left; the pass then empties the image and draws its parts afresh. A change of the palette texture empties the image as well.
-
-A voxel is also cheaper to draw: two vertices at scale 1 and eight above it, where it used to take six and eighteen. Scale 1 stays index-exact: `gpu-voxel-compare.txt` has 0 differing pixels over 1,832 parts and 2,123,729 covered pixels, and the `gpu-voxel-shadow` scripts counted the same darkened pixels as before it.
-
-The numbers below are for `tests/autotest/bench-large-battle.txt` and `bench-late-game.txt` at 3840 by 2160 with `GpuRender=yes`, `RenderFrameRate=240` and HDR Enhanced highlights on. Each cell pools two runs, and the runs of the old and the new build alternated on a machine in other use, so differences of a few tenths of a millisecond are noise; the benchmark-wide means include the map, the interface and everything else in a draw. "On" is `GpuVoxels=yes` with `GpuVoxelSmooth=yes` at the given `GpuVoxelScale`.
+**Cost.** `tests/autotest/bench-large-battle.txt` and `bench-late-game.txt` at 3840 by 2160 with `GpuRender=yes`,
+`RenderFrameRate=240` and HDR Enhanced highlights, before and after the image route kept prepared objects and tile
+pictures between passes. Each cell pools two runs, and the runs of the old and the new build alternated on a machine
+in other use, so differences of a few tenths of a millisecond are noise. "On" is `GpuVoxels=yes` with
+`GpuVoxelSmooth=yes` at the given `GpuVoxelScale`.
 
 | Benchmark | Keys | Mean draw before | after | p95 before | after | Worst before | after | Draws a second before | after |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -338,38 +294,8 @@ The numbers below are for `tests/autotest/bench-large-battle.txt` and `bench-lat
 | Late game | on, scale 1 | 5.07 | 4.69 | 15.01 | 14.08 | 24.0 | 29.4 | 111 | 113 |
 | Late game | on, scale 2 | 4.48 | 3.89 | 13.33 | 12.78 | 21.6 | 22.2 | 123 | 132 |
 
-On the large battle at scale 1 a pass had about 110 parts, 196 layer draws and 531,000 voxels. Drawing every part took 3.2 million vertices before this stage and takes 1.1 million now, and 9.6 and 4.2 million at scale 2. `draw.voxels` fell from 0.82 to 0.17 ms a draw, and the GPU's part of the present, `present.gputime`, from 1.11 to 0.76 ms at scale 1 and from 4.29 to 1.26 ms at scale 2. Of the parts in a second, 5% had to be drawn at scale 1 and 28% at scale 2 (`gpu voxel drawn` against `gpu voxel parts`). On the late game 24% and 37% were drawn.
-
-With the key on, `draw.gpumap`, the end of the recording, stays about 0.4 ms above its value with the key off on the large battle and 0.4 to 0.7 ms above it on the late game. That is the largest part of the cost left.
-
-## Stages
-
-Each stage has a check that fails when its picture departs from the software.
-
-| Stage | What it adds | Check | Estimate |
-|---|---|---|---|
-| 1 (done) | Walk, model store, voxel image, shader, direct blits, fallback, `GPU_VOXEL` check | `gpuvoxel` unit test, `gpu-voxel-compare.txt`, zero differing pixels | |
-| 2 (done) | Turreted vehicles: hull, turret and barrel drawn into one tile in the order the scratch surface composes them, and the tile blitted like a direct part | `GPU_VOXEL` and `GPU_DIFF` over turreted units at body and turret facings that differ, zero differing pixels | |
-| 3 (done) | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | `GPU_VOXEL_MASK` and `GPU_MASK` against the software mask at scale 1, zero differing pixels | |
-| 4 (done) | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened) and with the smooth key their exact facing, voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_VOXEL` over shadows at the 16 facings of stage 1, `GPU_DIFF` on the voxel anim and cloak scripts, `gpuvoxel` unit test over the shadow walk | |
-| 5 (done) | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the angle at each of the 32 keys equals the stage 1 angle (`shapefacing` test); `gpu-voxel-compare.txt` stays at 0 differing pixels; `gpu-voxel-smooth.txt` logs a turning harvester's and tank's hull and turret facings in fractions of a step | |
-| 6 (done) | Sharpness: draw at a scale factor, each voxel as the silhouette of its cube instead of a one or two pixel quad, with lighting kept in palette rows (or in float behind a second key) | the scale 1 mode stays index-exact; larger scales are compared by eye and by edge counts | 2 sessions |
-| 7 (cost work done) | Prepared objects and voxel image pictures kept between passes, two or eight vertices a voxel, numbers under Cost. Not done: turning the keys on by default, which the numbers under Cost decide | `gpu-voxel-compare.txt` at 0 differing pixels and the `gpu-voxel-shadow` scripts unchanged; before turning the key on by default, the regress suite with the key on | |
-
-## Where pixel-exact drawing ends
-
-- Stage 5 and 6 change the picture on purpose, so they can only be exact at the facing keys and at scale 1.
-- The software writes a voxel's second pixel on the next buffer row when the first is in the last column; the GPU
-  clips it. Objects sit near the buffer's centre, so no object we have drawn reaches that column.
-- Hardware blending cannot reproduce the software's flooring of halved and quartered terms; this limits the
-  translucent blits ([GPU_MAP.md](GPU_MAP.md), Limits), translucent voxels included.
-- A cloaked voxel object is drawn as the plain 25% or 50% translucent blend, by the software and by the image route.
-  `RLE_Blit` and `Bit_Blit` both give their blitter a warp offset of 0, so the `Warp` blitters read the pixel they write.
-  `GpuVoxelCloak=Ripple` on the direct route adds a ripple the software does not draw ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple").
-- The model texture holds about a million voxels' worth of walks (a layer is stored once for each of the eight
-  orientations it is drawn in) and is emptied when full, so a pass with more distinct layers than that falls back
-  to software. A pass that does not fit what is left of the voxel image empties the image first. A pass whose parts
-  do not fit an empty image at `GpuVoxelScale` draws its largest parts at a smaller scale (see Sharpness); only a
-  pass whose parts do not fit an empty image even at scale 1, several hundred of average size, is drawn in software.
-  Parts on the direct route take no tile and keep `GpuVoxelScale`.
-- A float lighting model (stage 6) cannot give the software's palette rows, so it is a separate look.
+On the large battle at scale 1 a pass had about 110 parts, 196 layer draws and 531,000 voxels. `draw.voxels` fell
+from 0.82 to 0.17 ms a draw, and `present.gputime` from 1.11 to 0.76 ms at scale 1 and from 4.29 to 1.26 ms at scale
+2. Of the parts in a second, 5% had to be drawn at scale 1 and 28% at scale 2; on the late game 24% and 37%. With the
+key on, `draw.gpumap` stayed about 0.4 ms above its value with the key off on the large battle and 0.4 to 0.7 ms above
+it on the late game. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) takes these numbers as its baseline.

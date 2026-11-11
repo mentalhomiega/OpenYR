@@ -1,12 +1,16 @@
 # Drawing voxels straight into the GPU scene (design)
 
-We propose to draw each voxel object as geometry into the map pass's scene target, at the place of its blit in the
-pass, with a depth and stencil buffer for the voxels' own depth. The voxel image, its tiles and its overflow go away,
-sharpness becomes the resolution of the scene target, and hull, turret and barrel hide each other by real depth.
-Stages 1 to 5 are built, and `GpuVoxelPath=Direct` is the default; `GpuVoxelPath=Image` keeps the image route; the "(done)" sections after the Stages table say what
-they delivered and measured. Every "we propose" elsewhere is a design choice for the
-later stages, and every statement about current behaviour cites the code. [GPU_VOXELS.md](GPU_VOXELS.md) owns the
-image route and [GPU_MAP.md](GPU_MAP.md) the map pass.
+With `GpuVoxels=yes`, each voxel object is drawn as geometry into the map pass's scene target, at the place of its
+blit in the pass, with a depth and stencil buffer for the voxels' own depth. Sharpness is the resolution of the scene
+target, and hull, turret and barrel hide each other by real depth. All eight stages are built. Stage 8 deleted the
+image route this design replaced, with its voxel image, tiles and overflow, and the `GpuVoxelPath` key that chose
+between the two routes.
+
+The sections up to the Stages table are the design as we proposed it: a "we propose" there is a choice made before
+its stage was built. The "(done)" sections after the table say what each stage delivered and measured, and where it
+built something other than the proposal. Their checks name the keys, scripts and log lines of their time, some of
+which stage 8 removed. [GPU_VOXELS.md](GPU_VOXELS.md) owns voxel placement, stacked shadows, smooth facing and the
+record of the image route, and [GPU_MAP.md](GPU_MAP.md) the map pass.
 
 The GPU path no longer has to match gamemd pixel for pixel. The software renderer stays the reference and the classic
 look (`GpuRender=no`, or `GpuVoxels=no`); the GPU path becomes the modern look. Stage 1 still has an exact mode, so
@@ -14,9 +18,10 @@ its first check can demand zero differing pixels.
 
 ## Where we start
 
-The object pass is recorded as a list of blits and drawn in that order over the uploaded tile layer.
+The object pass is recorded as a list of blits and drawn in that order over the uploaded tile layer. The table is the
+code as it stood before stage 1. Its rows for depth, voxel parts, voxel blits and highlights describe the image route.
 
-| Part | Code | What it does today |
+| Part | Code | What it did before stage 1 |
 |---|---|---|
 | Recording | `code/gpudraw.cpp`, `GpuBlit` and `GpuVoxelPart` in `code/gpudraw.h` | Each blit keeps its rectangle, translator, lighting remap, blend kind and row depth (`ZFirst`, `ZFraction`, `ZNumerator`, `ZDenominator`, `ZWrap`). A voxel object's blit has no pixels; `Voxel`, `VoxelX` and `VoxelY` name its part and where the blit starts in it. |
 | Depth | `Upload_Pass_Stores` in `code/gpumap.cpp`, `fs_mapdraw.sc` | The software depth buffer goes up as an R16 texture (`s_zbuf`). A blit fragment is discarded unless its row depth minus its depth shape is below the buffer value. Nothing in the pass writes depth: `BlitDesc` has `ZRead` and no write flag (`code/blitter.h`), and a blitter that cannot describe itself counts as `Unsupported` (`Record_RLE`, `Record_Bit`). The scene framebuffer has no depth attachment (`Size_Target`). |
@@ -26,19 +31,19 @@ The object pass is recorded as a list of blits and drawn in that order over the 
 | Model store | `Load_Models`, `Model_Key` | A layer's walk is stored once for each of the eight anchor orientations it is drawn in. |
 | Highlights | `Submit_Voxel_Mask`, `fs_mapmask.sc` | A direct part's blit leaves `GPU_VOXEL_MASK_MARK` in the CPU plane; the mask pass replaces the mark with the strength in the part's tile. |
 
-The image route has four limits that this design removes.
+The image route had four limits that this design removed.
 
-- **Overflow.** A tile's side grows with the scale, so its area grows with the scale squared. Before the overflow fix, a
+- **Overflow.** A tile's side grew with the scale, so its area grew with the scale squared. Before the overflow fix, a
   pass whose tiles did not fit an empty image was drawn in software: with 48 Kirovs at 4K, 595 of 600 passes fell back,
-  and the picture switched between the GPU look and the software look. Since the fix (`Place_Parts`, `TILE_CAPS` in
-  `code/gpumapvoxel.cpp`), the largest parts of such a pass get tiles at a lower scale, down to 1, and only a pass whose
-  parts do not fit at scale 1 is drawn in software; the 48 Kirovs then lose their sharpness instead.
-- **Picture upkeep.** Parts are hashed (`Part_Signature`), placed on shelves (`GpuVoxelTileStore`) and drawn into tiles;
-  the image is emptied whole when it fills or when the palette texture changes.
-- **Depth.** A voxel blit tests one depth per row, from the object's gradient (`TechnoClass::Get_Z_Adjust`,
-  `Get_Z_Gradient`, the `ZGradients` table in `code/_zbuffer.cpp`). Hull, turret and barrel are ordered by the order
+  and the picture switched between the GPU look and the software look. After the fix (`Place_Parts`, `TILE_CAPS` in
+  `code/gpumapvoxel.cpp`), the largest parts of such a pass got tiles at a lower scale, down to 1, and only a pass whose
+  parts did not fit at scale 1 was drawn in software; the 48 Kirovs then lost their sharpness instead.
+- **Picture upkeep.** Parts were hashed (`Part_Signature`), placed on shelves (`GpuVoxelTileStore`) and drawn into
+  tiles; the image was emptied whole when it filled or when the palette texture changed.
+- **Depth.** A voxel blit tested one depth per row, from the object's gradient (`TechnoClass::Get_Z_Adjust`,
+  `Get_Z_Gradient`, the `ZGradients` table in `code/_zbuffer.cpp`). Hull, turret and barrel were ordered by the order
   `UnitClass::Unit_Draw_Voxel` composes them, which swaps barrel and turret by turret facing.
-- **Sharpness.** A tile is the software's buffer region times the scale, so the picture is capped by the tile.
+- **Sharpness.** A tile was the software's buffer region times the scale, so the picture was capped by the tile.
 
 The `voxel-depth-cubes` experiment (`scratch-agent/voxel-cubes/REPORT.md`) drew voxels as depth-tested cubes inside the
 tile at scale 2 and got the same picture as the ordered drawing, because for whole cubes a layer's walk is already back
@@ -236,7 +241,7 @@ rounded to the nearest whole number from 1 to 4, which `Pass_Scale` then lowers 
 
 ## What changes for the player
 
-| Look or cost | Classic (software, or `GpuVoxels=no`) | Image route today | Direct route |
+| Look or cost | Classic (software, or `GpuVoxels=no`) | Image route (deleted in stage 8) | Direct route |
 |---|---|---|---|
 | Picture at scale 1 | gamemd's | Index-exact with the software | Equal with `GpuVoxelLayerDepth=Ordered`; with `Shared`, layers and turret pieces hide each other by depth |
 | Large scale with many large units | Unchanged | Draws the largest parts at a lower scale, down to 1 | No voxel image to overflow, so every part keeps the scale; the remaining limit is the face store, about 4 million faces at the proposed size |
@@ -247,13 +252,13 @@ rounded to the nearest whole number from 1 to 4, which `Pass_Scale` then lowers 
 | Main thread | Software voxel drawing | Tile hashing, shelf placement, part signatures | No tiles or signatures; per-layer uniforms only |
 | GPU | None | Draws only parts not in the image (5% to 37% of parts a second in the Cost runs of GPU_VOXELS.md) | Draws every visible voxel every pass; we expect it to cost more at scale 1 and less where tiles were redrawn often |
 
-The classic look keeps what the software draws and stays the reference
-for `gpucheck` and `GPU_VOXEL`.
+The classic look keeps what the software draws and stays the reference for `gpucheck`.
 
 ## Stages
 
-Each stage has a check that fails when its result breaks. Until stage 8 a part the current stage does not handle takes
-the image route in the same pass, so no stage adds a software fallback.
+Each stage has a check that fails when its result breaks. In stages 1 to 7 a part the stage did not handle took the
+image route in the same pass, so those stages added no software fallback. Since stage 8 a pass with a voxel part the
+GPU does not draw is drawn in software ("Stage 8 (done)" lists the cases).
 
 | Stage | What it adds | Check | Shares | Deletes |
 |---|---|---|---|---|
@@ -264,7 +269,7 @@ the image route in the same pass, so no stage adds a software fallback.
 | 5 (done) | Highlights, drawn into the mask target with its own depth attachment (see "Stage 5 (done)"); parts stay direct while the mask is on | `GPU_MASK` at scale 1 under `gpucheck` with `EmissiveDebugView=yes` and `Ordered`: 0 differing on `gpu-voxel-compare.txt` and `hdr-emissive-scene.txt` with voxel vehicles | `Submit_Voxel_Mask`, `fs_mapmask.sc` structure | `fs_mapmask.sc` reading the voxel image |
 | 6 (done) | Face store per layer (no orientation copies), exposed faces only, three visible direction ranges a draw, at `GpuVoxelScale` above 1 with `Shared`. Lighting rows on the GPU and face shading were left out (see "Stage 6 (done)") | `gpuvoxel` unit tests: a single voxel has 6 faces, a solid 3x3x3 block 54, no listed face has a filled neighbour, and the model view places every voxel where the walk does. `gpu-voxel-scale.txt` edge counts at scale 2 and 4 against the image route in the same build | `voxelshade.sh`: the walk's placement, palette and lighting | Nothing: the model store keeps its orientation copies and the per-object `u_vlight` table for scale 1, `Ordered`, shadows and the mask |
 | 7 (done) | `GpuVoxelScale=0` takes the scale from the zoom and is the default, so a view shown at less than 1.5 screen pixels a map pixel draws each voxel as the walk's line and a closer view draws faces. Lighting rows in the palette texture. No separate splat and no batching across parts (see "Stage 7 (done)") | `bench-large-battle.txt` and `bench-large-battle-xmp04-zoomed-out.txt` at 3840x2160 against the budget below; `gpu-voxel-scale.txt` shots at zoom 1, 1.5 and 2 against the fixed scales; a `gpuvoxel` unit test of the scale for zooms up to 9 | The walk as the small-size draw | The `u_vlight` uniform |
-| 8 | Direct by default, then removal of the image route | The regress suite with `GpuVoxelPath=Direct`; `pacing-determinism.txt` hashes identical with the key on and off | | See below |
+| 8 (done) | `GpuVoxels=yes` draws every voxel part directly. The image route and `GpuVoxelPath` are deleted | The regress suite; `pacing-determinism.txt` hashes identical with `GpuVoxels` on and off | | The image route (see "Stage 8 (done)") |
 
 Later, outside these stages: smooth tilt, the `Voxel` scene depth mode, and GPU terrain. GPU terrain would draw the
 tile layer from tile images and their depth data into the same depth attachment in the map's row units, replacing the
@@ -715,7 +720,7 @@ table holds the two least disturbed rounds. No pass fell back to software in any
 **State.** Built on branch `direct-voxels-splat`. `GpuVoxelScale=0` is the new default and takes the pass scale from
 the zoom. Fully zoomed out at 3840x2160 the direct route then draws at scale 1 and its GPU time falls from 1.59 ms to
 0.96 ms a picture, within the budget. The CPU cost of a direct part is unchanged, and `draw.gpumap` still misses its
-budget. **Next step:** stage 8.
+budget.
 
 What we built:
 
@@ -776,25 +781,58 @@ two on XMP08T2, measured as in stage 6. No pass fell back to software in any run
   `draw.gpumap` 0.34 ms, `draw.objects` 0.22 ms and `draw.voxels` 0.08 ms. The first two are the layer draws being
   submitted and carried out, one draw call a layer.
 
-### What stage 8 deletes
+### Stage 8 (done)
 
-- `GpuVoxelTileStore`, `GpuVoxelShelf`, `Part_Signature`, `Assign_Tiles`, `GpuVoxel_Fits` and its use in `Pass_Fits`.
-- The voxel image (`_Image`, `_Target` in `code/gpumapvoxel.cpp`), `GPU_VOXEL_IMAGE_SIZE` and the
-  negative-offset branch for it in `Source_Offset` and `fs_mapdraw.sc`, and `fs_mapvoxel.sc`.
-- The tile half of `vs_mapvoxel.sc`, once the splat and faces live in `vs_voxelscene.sc`.
-- The `GPU_VOXEL` and `GPU_VOXEL_MASK` comparisons, which read tiles. `Gpu_Voxel_Walk` and `tests/gpuvoxel` stay only
-  if we keep a GPU copy of the classic look (a decision below).
+**State.** Built on branch `direct-voxels-only`. `GpuVoxels=yes` draws every voxel part directly, and the image
+route and `GpuVoxelPath` are deleted. `GpuVoxels` keeps its default `no`.
+
+What we built:
+
+1. **One route.** `GpuVoxel_Fits` (`code/gpumapvoxel.cpp`) stays in `Pass_Fits` with a new job: it accepts a pass
+   only when the GPU can draw every voxel blit in it. It accepts an image blit of a part without shadow layers and a
+   shadow blit of a part that is one prepared shadow. Any other voxel blit, or voxel programs that could not start,
+   makes the software draw the pass, with one `GPU_VOXEL:` log line until a pass is accepted again.
+2. **More blits than slices or stencil values.** `Submit_Draws` empties depth and stencil after 4,096 voxel blits or
+   255 stencil values and carries on. Before stage 8 such a pass sent those parts to the image route.
+
+What stage 8 deleted:
+
+- `GpuVoxelTileStore`, `GpuVoxelShelf`, `Part_Signature`, `Assign_Tiles` and the tile store unit test.
+- The voxel image, `GPU_VOXEL_IMAGE_SIZE`, the negative-offset branch for it in `Source_Offset` and `fs_mapdraw.sc`,
+  and `vs_mapvoxel.sc` with `fs_mapvoxel.sc`.
+- The `GPU_VOXEL` and `GPU_VOXEL_MASK` comparison lines of `gpucheck`, which read tiles, and the `reduced` count of
+  the `GPU_RENDER` line.
+- `GpuVoxelPath` and its settings row. The manual keeps the key's page as a removed key.
+- The `gpu voxel drawn` counter, and the record stage 7 kept of which parts of a pass were direct.
+- `gpu-voxel-shadow.txt` and `shadow-stack-off-gpu-voxels.txt`, the image-route twins of
+  `gpu-voxel-direct-shadow.txt` and `shadow-stack-off-gpu-direct.txt`.
+
+`Gpu_Voxel_Walk` and `tests/gpuvoxel` stay, because the walk is the scale 1 draw.
+
+**Checks.**
+
+| Check | Result |
+|---|---|
+| `regress.py` on the 16 GPU voxel scripts | 12 `same`. `gpu-voxel-direct`, `-direct-bloom` and `-direct-warp` lose ` reduced 0` from their `GPU_RENDER` lines, and `gpu-voxel-overflow` logs its new `GPU_VOXEL_SHADOW` line |
+| `gpu-voxel-overflow.txt`, rewritten: 300 tanks, more shadow blits than stencil values | 64,398 darkened pixels, 0 darkened twice. With the reset taken out, 64,206 |
+| More than 4,096 voxel blits in a pass, and the reset in the mask view | Not tested |
+| The full regress suite, 639 scripts | 635 `same`; the four changed are the ones above |
+| `pacing-determinism.txt` with `GpuRender=yes` and `HDRHighlights=Classic`, `GpuVoxels=yes` against `no`, compared with `compare_digests.py --hash` | The 1,500 hash lines are identical. With `GpuVoxels=yes` every `GPU_RENDER` line counts 600 passes drawn, 0 that fell back and 2,400 voxel blits. Neither run logged an `AUTOTEST syncrec outside frame logic` line |
+| Unit tests, the two test missions and the netsync run of the branch check | 119 tests pass, both missions won, in sync over 5,257 ticks |
 
 ## Risks and open questions
 
 - **Draw order and depth.** Slices keep the painter's order between objects, and only direct voxel draws touch the
   depth buffer, so a sprite, a translucent effect or an additive line keeps its place. Voxel blits have no additive
   kind (`BlitDesc::KindType`). The new behaviour is inside one object, which the `Ordered` mode can always turn back.
-  A pass with more than 4,096 direct blits takes the image route for those parts until a depth clear with a view split
-  lifts the limit; Mental Omega missions are where to count blits first.
-- **Fallback still switches look.** A pass `Pass_Fits` refuses for other reasons (more than 8 sonic waves, a map view
-  wider or taller than 16,384 pixels, the chronoshift effect, an unsupported draw) is drawn in software and shows the
-  classic voxels for that frame. The direct route removes the voxel causes only.
+  A pass with more than 4,096 voxel blits, or more than 255 that need a stencil value, empties depth and stencil and
+  carries on (stage 8). `gpu-voxel-overflow.txt` checks the stencil case; the 4,096-blit case and the same reset in
+  the mask view have no test.
+- **Fallback still switches look.** A pass `Pass_Fits` refuses (more than 8 sonic waves, a map view wider or taller
+  than 16,384 pixels, the chronoshift effect, an unsupported draw, or a voxel blit `GpuVoxel_Fits` does not accept) is
+  drawn in software and shows the classic voxels for that frame. A pass whose voxel layers do not fit an empty model
+  texture, or whose lighting tables do not fit the 4,029 rows, is not drawn: that picture shows the previous one, and
+  the next pass is drawn in software.
 - **Zoomed out at 4K.** At the campaign and skirmish limit (`VIEW_ZOOM_MIN`, half the native zoom, `View_Zoom_Min` in
   `code/viewzoom.cpp`), the map view is twice the screen's map area each way: up to 7,680 by 4,320 map pixels on a
   3840x2160 screen. `Pass_Fits` used to refuse every view over 2^24 pixels, so such passes were drawn in software
@@ -803,7 +841,7 @@ two on XMP08T2, measured as in stage 6. No pass fell back to software in any run
   that size is a map view wider or taller than 16,384 pixels, and the scale cap described under GPU memory below.
 - **Interface and minimap.** The radar draws units as pixels (`RadarTrackingClass`) and the sidebar draws shapes; neither
   reads the map pass, so they do not change. The CPU picture holds no voxel pixels while the GPU draws the pass, as
-  with `GpuVoxels=yes` today.
+  on the image route.
 - **Render thread.** All bgfx calls stay on the main thread ([RENDER_THREAD.md](RENDER_THREAD.md)). Face store uploads
   must use `bgfx::copy`, never `bgfx::makeRef`, because the render thread can read them after the frame is handed over,
   the same rule `Upload_Pass_Stores` follows.
@@ -822,7 +860,8 @@ two on XMP08T2, measured as in stage 6. No pass fell back to software in any run
 - **GPU memory at 4K.** At a 3840x2160 map view, one RGBA8 scene-sized texture is 33.2 MB at scale 1, 132.7 MB at
   scale 2 and 530.8 MB at scale 4, and `Size_Target` already makes three (target, snapshot, post): about 100 MB,
   400 MB and 1.6 GB. The direct route adds a D24S8 attachment of the same size and an RG8 attachment of half, about
-  1.5 more of these textures, and frees the 8.4 MB voxel image and the 16.8 MB model texture. Scale 4 at 4K is about
+  1.5 more of these textures. Stage 8 freed the 8.4 MB voxel image; the 16.8 MB model texture stays, and the face
+  store adds 33.6 MB. Scale 4 at 4K is about
   2.4 GB of targets. `Pass_Scale` in `code/gpumap.cpp` lowers the scale of a pass whose scene-sized texture would be
   over 134,217,728 pixels (536.9 MB in RGBA8) or 16,384 pixels a side, about what scale 4 takes at a 3840x2160 view.
   Zoomed fully out at 3840x2160 (7546x4245), scales 3 and 4 draw at 2, 512.5 MB a texture. `GpuVoxelScale=0` draws
@@ -832,7 +871,8 @@ two on XMP08T2, measured as in stage 6. No pass fell back to software in any run
 - **Modding.** Custom voxels need nothing new: the face store is built from the loaded layer and keyed by
   `VoxelLibrary::Get_Serial`, so a reloaded library gets new faces. HVA animation changes only the layer matrix a draw
   uploads, not the stored faces. A large Mental Omega map with many distinct voxel types fills the face store; like
-  the model store it is emptied and refilled, and a pass whose layers do not fit an empty store is drawn in software.
+  the model store it is emptied and refilled. A pass whose faces do not fit an empty face store draws its layers as
+  cube outlines; one whose layers do not fit an empty model store is not drawn, as under "Fallback" above.
   The first measurement below tells how close stock and Mental Omega art come.
 
 ## Performance budget
@@ -841,10 +881,10 @@ Our target is 240 pictures a second, 4.17 ms each, fully zoomed out at 4K on lar
 the Cost section of GPU_VOXELS.md: `bench-large-battle.txt` and `bench-late-game.txt` at 3840x2160 with `GpuRender=yes`,
 `RenderFrameRate=240`, HDR Enhanced highlights, `GpuVoxels=yes` and `GpuVoxelSmooth=yes`.
 
-| Measure | Today, large battle, scale 2 | Today, late game, scale 2 | Budget for the direct route (proposal) |
+| Measure | Image route, large battle, scale 2 | Image route, late game, scale 2 | Budget for the direct route (proposal) |
 |---|---:|---:|---:|
-| Mean draw (main thread) | 1.91 ms | 3.89 ms | Not above today's |
-| p95 draw | 3.94 ms | 12.78 ms | Not above today's |
+| Mean draw (main thread) | 1.91 ms | 3.89 ms | Not above the image route's |
+| p95 draw | 3.94 ms | 12.78 ms | Not above the image route's |
 | Draws a second (capped at 240) | 240 | 132 | 240 on the large battle |
 | `draw.voxels` | 0.17 ms (scale 1) | | 0.2 ms |
 | `draw.gpumap` above `GpuVoxels=no` | about 0.4 ms | 0.4 to 0.7 ms | 0.2 ms, with tiles and signatures gone |
@@ -895,16 +935,16 @@ The large battle is `bench-large-battle-xmp04-zoomed-out.txt`: the forces of `be
 
 ## Settings
 
-All keys are in `[Video]` of `RA2MD.INI` unless marked. Current keys keep their meaning.
+All keys are in `[Video]` of `RA2MD.INI` unless marked. `GpuVoxelPath` (`Image`, `Direct`), added in stage 1, was
+removed in stage 8; the game ignores it in an existing `RA2MD.INI`.
 
 | Key | Values | Default | Status |
 |---|---|---|---|
-| `GpuVoxels` | `yes`, `no` | `no` | Unchanged: draws voxels on the GPU, by the route `GpuVoxelPath` picks |
-| `GpuVoxelPath` | `Image`, `Direct` | `Direct` | Added in stage 1 as a name list in `code/optionsettings.cpp`; the **Draw voxels directly** switch of the **GPU voxels** group sets it, and is greyed until **Draw units on the GPU** is ticked |
+| `GpuVoxels` | `yes`, `no` | `no` | Draws voxel objects on the GPU, straight into the map pass |
 | `GpuVoxelSmooth` | `yes`, `no` | `no` | Unchanged |
 | `GpuVoxelScale` | 0 to 4 | `0` | Since stage 7, 0 takes the scale from the zoom and is the default; 1 to 4 are unchanged |
 | `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | Added in stage 1: a developer key with no row; `Ordered` is the exact mode the checks use |
-| `GpuVoxelCloak` | `Translucent`, `Ripple` | `Translucent` | Added after stage 4: a developer key with no row; `Ripple` needs `GpuVoxelPath=Direct` |
+| `GpuVoxelCloak` | `Translucent`, `Ripple` | `Translucent` | Added after stage 4: a developer key with no row; `Ripple` needs `GpuVoxels=yes` |
 | `GpuVoxelSmoothTilt` | `yes`, `no` | `no` | Later |
 | `VoxelSceneDepth` in `[AudioVisual]` of `rulesmd.ini`, and per type in `artmd.ini` | `Row`, `Voxel` | `Row` | Later mod key: the row test as now, or the per-voxel footprint depth. A mod sets it because its `ZFudge*` values decide whether `Voxel` looks right |
 
@@ -914,22 +954,21 @@ A pass picks its route like this:
 |---|---|
 | `GpuRender=no`, the classic interface, or a pass `Pass_Fits` refuses | The software |
 | `GpuVoxels=no` | The software voxel renderer, shown as ordinary blits |
-| `GpuVoxels=yes`, `GpuVoxelPath=Image` | The image route |
-| `GpuVoxels=yes`, `GpuVoxelPath=Direct`, Direct3D 11 with vertex ID support | The direct route for the part kinds the current stage covers, the image route for the rest; after stage 8, the direct route for all parts |
+| `GpuVoxels=yes`, Direct3D 11 with vertex ID support | The GPU, straight into the pass |
+| `GpuVoxels=yes` without vertex ID support, or when the voxel program or its textures could not be made | The software, which draws every pass that has a voxel object |
 
-A direct program that fails to build leaves `GpuVoxelPath=Direct` drawing by the image route until stage 8, and by the
-software afterwards, with one log line, as `Start` in `code/gpumapvoxel.cpp` does today.
+`Start` in `code/gpumapvoxel.cpp` logs one `GPU_VOXEL unavailable` line when the voxel program does not build or a
+texture cannot be made. It logs nothing for missing vertex ID support. On a renderer other than Direct3D 11 the map
+pass itself is not drawn on the GPU.
 
 ## Decisions
-
-These are provisional until confirmed; each is cheap to reverse before stage 8.
 
 - `Shared` layer depth is the default, so turret and barrel overlap by real depth. `Ordered` stays as the developer key
   the exact checks use.
 - Turreted vehicles get highlights under Glow and HDR Enhanced in the GPU look. The software look keeps none, as in
   gamemd.
-- `GpuVoxelPath=Direct` is the default for everyone who has not set the key (decided 2026-11-10); `GpuVoxels` keeps its default `no`. The image route stays as `GpuVoxelPath=Image` until stage 8 deletes it, and `gpu-voxel-overflow`, `gpu-voxel-scale`, `gpu-voxel-compare`, `gpu-voxel-shadow` and `gpu-voxel-shadow-bloom` pin it.
-- Stage 8 deletes the image route. The software renderer is the only classic reference.
+- `GpuVoxels` keeps its default `no`.
+- Stage 8 deleted the image route. The software renderer is the only classic reference.
 - The 2^24-pixel map view limit is lifted (done before stage 7, after a run on XMP04T8 at 3840x2160 confirmed that the
   zoomed-out view passed it).
 
