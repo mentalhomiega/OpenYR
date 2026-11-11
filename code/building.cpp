@@ -1754,7 +1754,8 @@ void BuildingClass::AI(void)
 
 	// A structure under the Iron Curtain is marked every frame, so its body draws each frame with the brightness pulse, as gamemd's
 	// NeedsRedraw does (BuildingClass::UpdateAnimations). The frame the curtain ends is marked too, so the body drops the last pulse.
-	if (Is_Iron_Curtained() || IsCurtainDrawn) {
+	// A structure an airstrike attacks is marked every frame too, for its own pulse (BuildingClass::Update, 0x43FB20).
+	if (Is_Iron_Curtained() || IsCurtainDrawn || Is_Airstrike_Tinted()) {
 		Mark(MARK_CHANGE);
 	}
 	IsCurtainDrawn = Is_Iron_Curtained();
@@ -9620,7 +9621,7 @@ ConvertClass * BuildingClass::Anim_Converter(void) const
 /// Returns the converter that draws this structure with the colours its state adds:
 /// LaserTargetColor while an airstrike marks it and ForceShieldColor while a Force Shield
 /// holds it, combined as BuildingClass::DrawIt (0x43D290) combines them. A structure in the
-/// terrain palette takes neither.
+/// terrain palette takes neither, and neither does one whose centre cell is shrouded.
 /// </summary>
 /// <param name="converter">The converter to use when no colour is added.</param>
 ConvertClass * BuildingClass::Tinted_Converter(ConvertClass * converter) const
@@ -9645,7 +9646,7 @@ ConvertClass * BuildingClass::Tinted_Converter(ConvertClass * converter) const
 	if (Is_Iron_Curtained() && IsForceShielded) {
 		add_entry(Rule->ForceShieldColor);
 	}
-	if (red == 0 && green == 0 && blue == 0) {
+	if ((red == 0 && green == 0 && blue == 0) || Map.Is_Shrouded(Center_Coord())) {
 		return(converter);
 	}
 	// The table's red and blue are 5-bit and green 6-bit; the scheme palette is 8-bit, so they are scaled up to it.
@@ -12538,7 +12539,8 @@ void BuildingClass::Clicked_As_Target(int count)
 /// <summary>
 /// Adjusts the brightness that this building is drawn with.
 /// A building that is flashing has its lighting pushed away from the norm, so that the
-/// flash reads against both bright and dark surroundings.
+/// flash reads against both bright and dark surroundings. The Iron Curtain pulse and then the
+/// airstrike mark pulse scale the result (TechnoClass::GetEffectTintIntensity, 0x70E360).
 /// </summary>
 /// <param name="brightness">The brightness the building would otherwise be drawn with.</param>
 /// <returns>Returns with the brightness to actually draw the building with.</returns>
@@ -12547,7 +12549,7 @@ int BuildingClass::Apparent_Brightness(int brightness) const
 	if ((FlashCount & 2) == 2) {
 		brightness = (brightness > 1500 ? brightness - 500 : brightness + 500);
 	}
-	return(Iron_Curtain_Brightness(brightness));
+	return(Airstrike_Tint_Brightness(Iron_Curtain_Brightness(brightness)));
 }
 
 

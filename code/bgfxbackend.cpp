@@ -244,6 +244,7 @@ struct MeasureRequest
 {
 	Rect Area;
 	std::string Label;
+	bool Red;
 };
 static std::deque<MeasureRequest> _Measures;
 static std::mutex _MeasuresLock;
@@ -252,8 +253,9 @@ static std::mutex _MeasuresLock;
 static std::atomic<int> _CapturesPending{0};
 
 
-// Logs the mean and the darkest value of the red, green and blue average of the pixels of a 32-bit capture
-// inside the oldest request's area, counted from the top of the window.
+// Logs the mean and the darkest value of the red, green and blue average of the pixels of a 32-bit BGRA capture
+// inside the oldest request's area, counted from the top of the window. A red request logs each colour's mean and
+// the count of pixels whose red is 192 or more and exceeds both green and blue by 64 or more instead.
 static void Log_Measure(unsigned char const * data, uint32_t width, uint32_t height, uint32_t pitch, bool yflip)
 {
 	MeasureRequest request;
@@ -265,22 +267,40 @@ static void Log_Measure(unsigned char const * data, uint32_t width, uint32_t hei
 		request = _Measures.front();
 		_Measures.pop_front();
 	}
+	char const * const name = request.Red ? "windowred" : "windowdark";
 	Rect const area = Intersect(request.Area, Rect(0, 0, (int)width, (int)height));
 	if (!area.Is_Valid()) {
-		DebugString("AUTOTEST windowdark %s outside the %ux%u window\n", request.Label.c_str(), width, height);
+		DebugString("AUTOTEST %s %s outside the %ux%u window\n", name, request.Label.c_str(), width, height);
 		return;
 	}
 	unsigned long long total = 0;
+	unsigned long long channel[3] = {0, 0, 0};
 	int darkest = 255;
+	int reddish = 0;
 	for (int y = area.Y; y < area.Y + area.Height; y++) {
 		unsigned char const * row = data + (size_t)(yflip ? height - 1 - y : y) * pitch;
 		for (int x = area.X; x < area.X + area.Width; x++) {
-			int const value = (row[x * 4] + row[x * 4 + 1] + row[x * 4 + 2]) / 3;
+			int const blue = row[x * 4];
+			int const green = row[x * 4 + 1];
+			int const red = row[x * 4 + 2];
+			int const value = (red + green + blue) / 3;
 			total += value;
 			darkest = std::min(darkest, value);
+			channel[0] += red;
+			channel[1] += green;
+			channel[2] += blue;
+			if (red >= 192 && red >= green + 64 && red >= blue + 64) {
+				reddish++;
+			}
 		}
 	}
-	DebugString("AUTOTEST windowdark %s %d,%d %dx%d mean %.2f darkest %d\n", request.Label.c_str(), area.X, area.Y, area.Width, area.Height, (double)total / ((double)area.Width * area.Height), darkest);
+	double const pixels = (double)area.Width * area.Height;
+	if (request.Red) {
+		DebugString("AUTOTEST windowred %s %d,%d %dx%d red %.2f green %.2f blue %.2f reddish %d\n", request.Label.c_str(), area.X, area.Y, area.Width, area.Height,
+			(double)channel[0] / pixels, (double)channel[1] / pixels, (double)channel[2] / pixels, reddish);
+		return;
+	}
+	DebugString("AUTOTEST windowdark %s %d,%d %dx%d mean %.2f darkest %d\n", request.Label.c_str(), area.X, area.Y, area.Width, area.Height, (double)total / pixels, darkest);
 }
 
 
@@ -1792,14 +1812,14 @@ bool Backend_Request_Window_Capture(char const * filepath)
 }
 
 
-bool Backend_Request_Window_Measure(Rect const & area, char const * label)
+bool Backend_Request_Window_Measure(Rect const & area, char const * label, bool red)
 {
 	if (!_Initialized) {
 		return(false);
 	}
 	{
 		std::lock_guard<std::mutex> lock(_MeasuresLock);
-		_Measures.push_back({ area, label });
+		_Measures.push_back({ area, label, red });
 	}
 	return(Backend_Request_Window_Capture(MeasurePath));
 }

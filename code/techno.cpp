@@ -312,6 +312,9 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	AirstrikeReadyFrame(0),
 	AirstrikeMarkedBy(NULL),
 	AirstrikeMarkedTarget(NULL),
+	AirstrikeMarkTimer(),
+	AirstrikeTintTimer(),
+	AirstrikeTintStage(0),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
 	DrainAnim(NULL),
@@ -3651,8 +3654,10 @@ void TechnoClass::Start_Airstrike_Recharge(void)
 
 /// <summary>
 /// Marks the structure that this object's airstrike is attacking, so it is drawn with the
-/// LaserTargetColor tint, and lifts the mark from the structure marked before. Only a structure
-/// is marked; any other target leaves the tint off. The mark is lifted by Clear_Airstrike_Designation.
+/// LaserTargetColor tint and its brightness pulse, and lifts the mark from the structure marked
+/// before. Only a structure is marked; any other target leaves the tint off. The mark is lifted
+/// by Clear_Airstrike_Designation. AirstrikeClass::Fire (0x41D860) and ResetTarget (0x41DA20)
+/// start the structure's mark timer at 100000 frames and redraw it.
 /// </summary>
 /// <param name="target">The object the airstrike planes were called onto.</param>
 void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
@@ -3664,25 +3669,49 @@ void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
 	if (structure == NULL || structure->RTTI != RTTI_BUILDING) return;
 
 	structure->AirstrikeMarkedBy = this;
+	structure->AirstrikeMarkTimer = 100000;
+	structure->AirstrikeTintStage = 0;
+	structure->Mark(MARK_CHANGE);
 	AirstrikeMarkedTarget = structure;
 	AUTOTEST_LOG("airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
 }
 
 
 /// <summary>
-/// Lifts the tint from the structure this object's airstrike marked. It runs when this object
-/// changes its target and when either side leaves the map.
+/// Lifts this object's airstrike mark from the structure it marked. It runs when this object
+/// changes its target and when either side leaves the map. Another designator whose airstrike
+/// attacks the same structure takes the mark over; otherwise the structure is redrawn without
+/// the tint (AirstrikeClass::ClearTarget, 0x41DB40).
 /// </summary>
 void TechnoClass::Clear_Airstrike_Designation(void)
 {
 	TechnoClass * structure = AirstrikeMarkedTarget;
 	if (structure == NULL) return;
 
+	AirstrikeMarkedTarget = NULL;
 	if (structure->AirstrikeMarkedBy == this) {
 		structure->AirstrikeMarkedBy = NULL;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * other = Technos[index];
+			if (other != this && other->AirstrikeMarkedTarget == structure) {
+				structure->AirstrikeMarkedBy = other;
+			}
+		}
+		if (structure->AirstrikeMarkedBy == NULL) {
+			structure->Mark(MARK_CHANGE);
+		}
 	}
-	AirstrikeMarkedTarget = NULL;
 	AUTOTEST_LOG("airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
+}
+
+
+/// <summary>
+/// Whether this object is a structure that a designator's airstrike is attacking now, which makes it
+/// pulse (TechnoClass::GetEffectiveFlashIntensity, 0x456FB0).
+/// </summary>
+bool TechnoClass::Is_Airstrike_Tinted(void) const
+{
+	return(RTTI == RTTI_BUILDING && AirstrikeMarkedBy != NULL && AirstrikeMarkedBy->AirstrikeMarkedTarget == this);
 }
 
 
@@ -3830,6 +3859,7 @@ void TechnoClass::AI(void)
 	}
 
 	Iron_Tint_AI();
+	Airstrike_Tint_AI();
 
 	if (CaptureManager) {
 		CaptureManager->Handle_Overload();
@@ -11465,6 +11495,9 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AirstrikePlanes);
 	stream.Serialize(AirstrikeMarkedBy);
 	stream.Serialize(AirstrikeMarkedTarget);
+	stream.Serialize(AirstrikeMarkTimer);
+	stream.Serialize(AirstrikeTintTimer);
+	stream.Serialize(AirstrikeTintStage);
 	stream.Serialize(DrainTarget);
 	stream.Serialize(DrainingMe);
 	stream.Serialize(DrainAnim);
@@ -12090,6 +12123,58 @@ int TechnoClass::Iron_Curtain_Brightness(int brightness) const
 
 
 /// <summary>
+/// Scales the brightness of a structure an airstrike designator marks by the stage of its pulse, as
+/// TechnoClass::GetAirstrikeTintIntensity (0x70E4B0) does: a flash to double brightness as the mark
+/// starts, then a slow swing between normal and double brightness, 64 frames each way. Once the mark
+/// is lifted the brightness is left alone at once, before the next AI resets the stage, as
+/// TechnoClass::DrawObject (0x705E00) applies the scale only to a structure an airstrike attacks.
+/// </summary>
+/// <param name="brightness">The brightness the structure would otherwise be drawn with.</param>
+/// <returns>Returns with the brightness to draw the structure with, no more than 2000.</returns>
+int TechnoClass::Airstrike_Tint_Brightness(int brightness) const
+{
+	if (!Is_Airstrike_Tinted()) {
+		return(brightness);
+	}
+
+	int left = AirstrikeTintTimer;
+	int scale = 256;
+	switch (AirstrikeTintStage) {
+		case 1:
+		case 7:
+			scale = (12 - left) * 256 / 6;
+			break;
+
+		case 2:
+		case 8:
+			scale = 512;
+			break;
+
+		case 3:
+		case 9:
+			scale = (left + 20) * 256 / 20;
+			break;
+
+		case 4:
+			scale = (128 - left) * 4;
+			break;
+
+		case 5:
+			scale = (left + 64) * 4;
+			break;
+
+		case 6:
+			scale = 256;
+			break;
+
+		default:
+			return(brightness);
+	}
+	return(std::min((scale * brightness) >> 8, 2000));
+}
+
+
+/// <summary>
 /// Returns the converter that draws this object, with the palette tinted by the colour of the
 /// effect it is under. A voxel vehicle under the Iron Curtain takes IronCurtainColor, and a
 /// berserk vehicle or infantryman takes BerserkColor. Shape vehicles take no tint, as
@@ -12245,6 +12330,97 @@ void TechnoClass::Iron_Tint_AI(void)
 
 		default:
 			IronTintStage = 10;
+			break;
+	}
+}
+
+
+/// <summary>
+/// Steps the pulse of a structure an airstrike designator marks (FUN_0070E920): a flash as the mark
+/// starts, then a swing of brightness that repeats while the mark timer has 158 frames or more left,
+/// and a closing flash once it is under 31.
+/// </summary>
+void TechnoClass::Airstrike_Tint_AI(void)
+{
+	if (!Is_Airstrike_Tinted()) {
+		AirstrikeTintStage = 0;
+		return;
+	}
+
+	switch (AirstrikeTintStage) {
+		case 0:
+			AirstrikeTintStage = 1;
+			AirstrikeTintTimer = 6;
+			break;
+
+		case 1:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 2;
+				AirstrikeTintTimer = 4;
+			}
+			break;
+
+		case 2:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 3;
+				AirstrikeTintTimer = Random_Pick(-5, 5) + 20;
+			}
+			break;
+
+		case 3:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 4;
+				AirstrikeTintTimer = 64;
+			}
+			break;
+
+		case 4:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 5;
+				AirstrikeTintTimer = 64;
+			}
+			break;
+
+		case 5:
+			if (AirstrikeTintTimer == 0) {
+				if (AirstrikeMarkTimer < 158) {
+					AirstrikeTintStage = 6;
+				} else {
+					AirstrikeTintStage = 4;
+					AirstrikeTintTimer = 64;
+				}
+			}
+			break;
+
+		case 6:
+			if (AirstrikeMarkTimer < 31) {
+				AirstrikeTintStage = 7;
+				AirstrikeTintTimer = 6;
+			}
+			break;
+
+		case 7:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 8;
+				AirstrikeTintTimer = 4;
+			}
+			break;
+
+		case 8:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 9;
+				AirstrikeTintTimer = 20;
+			}
+			break;
+
+		case 9:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 10;
+			}
+			break;
+
+		default:
+			AirstrikeTintStage = 10;
 			break;
 	}
 }

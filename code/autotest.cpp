@@ -5627,13 +5627,17 @@ static void Spots_Step(StepType const & step)
 
 
 // airstrike <TypeID>: each object of that type, whoever owns it, with the frame its next strike is ready, and each
-// plane that strike still has out, with its cell, mission, ammunition and target.
+// plane that strike still has out, with its cell, mission, ammunition and target. A structure a strike attacks also
+// gets the stage of its brightness pulse and the brightness 1000 is drawn at.
 static void Airstrike_Step(StepType const & step)
 {
 	For_Technos(
 		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
 		[&](TechnoClass const * techno) {
 			DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d marked by %s\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size(), techno->AirstrikeMarkedBy != NULL ? techno->AirstrikeMarkedBy->TClass->Name() : "-");
+			if (techno->Is_Airstrike_Tinted()) {
+				DebugString("AUTOTEST   airstrike tint stage %d light %d\n", techno->AirstrikeTintStage, techno->Apparent_Brightness(1000));
+			}
 			{
 				// The weapon chosen for the target, its range, and whether it reaches and can fire at the target now.
 				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
@@ -6753,6 +6757,8 @@ struct PendingCapture
 	std::string Path;
 	// The time the hold on this capture began, in milliseconds, or zero before its first hold frame.
 	unsigned int Started;
+	// A red measure logs a windowred line instead, from the view as the last frames left it, without a full redraw.
+	bool Red = false;
 };
 static std::deque<PendingCapture> PendingCaptures;
 
@@ -6774,6 +6780,16 @@ static void Windowdark_Step(StepType const & step)
 {
 	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
 	PendingCaptures.push_back({true, area, step.Argument, "", 0});
+}
+
+
+// windowred <name> <x> <y> <w> <h>: logs one `AUTOTEST windowred` line with the mean red, green and blue of that window
+// rectangle and the number of its pixels whose red is 192 or more and exceeds both green and blue by 64 or more. The
+// view is not redrawn whole first, so the line shows what the player sees, stale parts of the cached map layer included.
+static void Windowred_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
+	PendingCaptures.push_back({true, area, step.Argument, "", 0, true});
 }
 
 
@@ -7274,6 +7290,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
 		{"windowdark", Windowdark_Step},
+		{"windowred", Windowred_Step},
 		{"glideclock", Glideclock_Step},
 		{"overlaypresent", Overlay_Present_Step},
 		{"scriptedzoom", Scriptedzoom_Step},
@@ -7510,13 +7527,15 @@ bool AutoTest_Capture_Hold(void)
 		return(false);
 	}
 	PendingCapture & capture = PendingCaptures.front();
-	char const * const name = capture.Measure ? "windowdark" : "windowshot";
+	char const * const name = capture.Red ? "windowred" : (capture.Measure ? "windowdark" : "windowshot");
 	if (capture.Started == 0) {
 		capture.Started = std::max<unsigned int>(timeGetTime(), 1);
 		RenderBlend = 1.0;
-		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		if (!capture.Red) {
+			Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		}
 		Map.Render();
-		bool const asked = capture.Measure ? Backend_Request_Window_Measure(capture.Area, capture.Label.c_str())
+		bool const asked = capture.Measure ? Backend_Request_Window_Measure(capture.Area, capture.Label.c_str(), capture.Red)
 			: Backend_Request_Window_Capture(capture.Path.c_str());
 		if (!asked) {
 			DebugString("AUTOTEST %s %s FAILED no renderer\n", name, capture.Label.c_str());

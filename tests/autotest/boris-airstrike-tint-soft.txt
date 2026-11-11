@@ -1,0 +1,31 @@
+; Boris marks a civilian house for his MiGs, then switches to a damaged civilian office block that the MiGs destroy. Each
+; marked structure is drawn whole in the LaserTargetColor tint and pulses, and loses the tint at once when the mark lifts,
+; also where nothing else redraws it. The windowred steps read the view as the player sees it, without a full redraw: the
+; house (rectangle A) and the office block (rectangle T) each hold a few hundred bright red pixels of brick and fire when
+; unmarked and several thousand while marked (A1 about 7600, T2 and T3 about 11600 to 12100). The airstrike lines show the
+; office block's pulse stage and brightness while it is marked. Before the mark redrew the structure, A1, T2 and T3 stayed
+; at the unmarked counts, and only parts of a structure that something else redrew took the tint, and kept it after the
+; mark lifted. This copy of boris-airstrike-tint.txt plays the steps with the software map drawing.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/boris-airstrike-tint-soft.txt -Country 8 -Width 800 -Height 600 -Seconds 150 -Settings "[Video]`nGpuRender=no" -Filter "AUTOTEST windowred|AUTOTEST airstrike (mark|unmark)|AUTOTEST   airstrike (CA|tint)|AUTOTEST   where CATEXS03 of Neutral cell 46,36|Exception" -Uncapped -StopAfterSteps
+30 view 48 36
+35 reveal
+40 grantunit BORIS 44 36
+50 neutral CAHSE02 47 39
+55 blast AP 46 38
+56 blast HE 46 38
+60 where CATEXS03
+70 windowred A0 230 265 110 105
+71 windowred T0 345 120 150 200
+80 strike BORIS 47 39
+150 airstrike CAHSE02
+151 windowred A1 230 265 110 105
+152 windowred T1 345 120 150 200
+160 strike BORIS 46 38
+175 windowred A2 230 265 110 105
+176 windowred T2 345 120 150 200
+200 airstrike CATEXS03
+240 airstrike CATEXS03
+241 windowred T3 345 120 150 200
+300 windowred T4 345 120 150 200
+301 windowred A3 230 265 110 105
+310 quit

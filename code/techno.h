@@ -278,6 +278,11 @@ class TechnoClass :	public RadioClass,
 		// The airstrike designator that marks this structure, and the structure this object's airstrike marked (both NULL when none).
 		TechnoClass * AirstrikeMarkedBy;
 		TechnoClass * AirstrikeMarkedTarget;
+
+		// While a structure is marked, the mark timer runs and the tint stage and its timer step the structure's brightness pulse.
+		CDTimerClass<FrameTimerClass> AirstrikeMarkTimer;
+		CDTimerClass<FrameTimerClass> AirstrikeTintTimer;
+		int AirstrikeTintStage;
 		void Mark_Airstrike_Target(AbstractClass * target);
 		void Clear_Airstrike_Designation(void);
 
@@ -1028,8 +1033,11 @@ class TechnoClass :	public RadioClass,
 		*/
 		virtual int Apparent_Brightness(int brightness = 1000) const;
 		int Iron_Curtain_Brightness(int brightness) const;
+		int Airstrike_Tint_Brightness(int brightness) const;
+		bool Is_Airstrike_Tinted(void) const;
 		ConvertClass * Effect_Converter(ColorScheme * scheme) const;
 		void Iron_Tint_AI(void);
+		void Airstrike_Tint_AI(void);
 		void Start_Turret_Recoil(void);
 		void Turret_Recoil_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
