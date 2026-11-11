@@ -13,6 +13,8 @@
 
 #include "optionsettings.h"
 
+#include "gpuvoxel.h"
+
 
 namespace
 {
@@ -123,10 +125,10 @@ constexpr Setting<OptionsClass> Settings[] = {
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelScale",
-		.Number = &OptionsClass::GpuVoxelScale, .Default = 1, .Min = 1, .Max = 4,
+		.Number = &OptionsClass::GpuVoxelScale, .Default = 0, .Min = 0, .Max = GPU_VOXEL_SCALE_MAX,
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Voxel sharpness",
-		.Tip = "Draws the map at this many times its pixels, so voxel objects stay sharp in a zoomed view. Works with Draw voxels on the GPU. Needs GPU drawing.",
-		.Needs = "GpuRender", .Unit = "x",
+		.Tip = "Draws the map at this many times its pixels, so voxel objects stay sharp in a zoomed view. Auto follows the zoom. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Needs = "GpuRender", .Unit = "x", .ZeroText = "Auto",
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelPath",

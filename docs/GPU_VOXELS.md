@@ -25,7 +25,7 @@ These objects are drawn on the GPU:
 The translucent and warp flags of a voxel object are drawn through the same translucent blends as any other blit, and
 a predator draw through the plain translucent blend (see "Where pixel-exact drawing ends"). A turreted vehicle whose body is a shape stays in software (the scratch surface holds a sprite the GPU does not draw).
 
-`GpuVoxelScale` (`[Video]`, 1 to 4, default 1, needs `GpuVoxels=yes`) is stage 6, described under Sharpness below.
+`GpuVoxelScale` (`[Video]`, 0 to 4, default 0, needs `GpuVoxels=yes`) is stage 6, described under Sharpness below.
 
 A voxel object drawn this way never uses the voxel picture cache. The GPU keeps its own pictures in the voxel image instead; see Cost.
 
@@ -156,7 +156,11 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 
 ## Sharpness (stage 6)
 
-With `GpuVoxelScale` above 1, `GpuRender` draws the whole map pass at that many times the map's own pixels. The scene,
+`GpuVoxelScale=0`, the default, takes the scale from the zoom: the screen pixels one map pixel covers (the map view's
+zoom times the interface scale), rounded to the nearest whole number from 1 to 4, so a view shown at less than 1.5
+screen pixels a map pixel draws at scale 1. `Gpu_Voxel_Pass_Scale` (`code/gpuvoxel.cpp`) computes it for every pass.
+
+At a scale above 1, `GpuRender` draws the whole map pass at that many times the map's own pixels. The scene,
 snapshot and post textures are scale times the area in each direction, and the pass's views are scaled the same way, so
 every blit keeps its map pixel coordinates and the shader shows each map pixel as a block of scale by scale pixels.
 The shadow mask, glow and tile shadow planes stay at map size; the post and glow shaders read the scene at the

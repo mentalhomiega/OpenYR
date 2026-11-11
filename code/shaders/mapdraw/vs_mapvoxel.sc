@@ -9,13 +9,14 @@ $output v_texcoord1
 // vertices are doubled so that the strips of successive voxels join with empty triangles.
 //   s_vmodel  two RGBA8 texels a voxel: (i, j, k, colour) and (normal, 0, 0, 0)
 //   s_vpal    two blocks of 33 rows of 256 colours: VoxelPaletteTranslateTable's 32 lighting rows then the identity row for
-//             an unlit layer, and the same rows run through the scratch surface's colour translation
+//             an unlit layer, and the same rows run through the scratch surface's colour translation; the rows after
+//             them are lighting tables, the lighting row of each of 256 normals
 //   u_vox[0]  xy: the projection's origin, zw: its step along i
 //   u_vox[1]  xy: its step along j, zw: its step along k
 //   u_vox[2]  xy: the voxel buffer pixel (0, 0) in the image, z: 1 for a lit layer, which draws two pixels a voxel,
 //             w: the first row of the block s_vpal is read from, 0 or 33
-//   u_vox[3]  x: the layer's first voxel in s_vmodel, y: the scale, 1 to 4, z: the emissive strength of row 31
-//   u_vlight  VoxelNormalTranslateTable, four bytes a vector
+//   u_vox[3]  x: the layer's first voxel in s_vmodel, y: the scale, 1 to 4, z: the emissive strength of row 31,
+//             w: the row of s_vpal that holds the layer's lighting table
 
 #include "bgfx_shader.sh"
 

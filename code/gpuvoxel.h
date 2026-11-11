@@ -28,6 +28,12 @@ struct GpuVoxelInstance
 	unsigned char Normal;
 };
 
+enum { GPU_VOXEL_SCALE_MAX = 4 };
+
+// The scale a map pass draws at for a GpuVoxelScale setting, 1 to GPU_VOXEL_SCALE_MAX: the setting itself, or for a
+// setting of 0 the whole number nearest screen_zoom, the screen pixels one map pixel covers.
+int Gpu_Voxel_Pass_Scale(int setting, double screen_zoom);
+
 // Lists the voxels of the layer the drawer would lay down for arg, in drawing order. A later voxel
 // overwrites an earlier one that lands on the same pixel. Lit layers carry a normal byte per voxel.
 void Gpu_Voxel_Walk(VoxelFuncArgumentStruct const & arg, bool reversed, bool lit, std::vector<GpuVoxelInstance> & out);

@@ -918,7 +918,7 @@ static float Flash_Amount(void)
 
 
 // Logs a GPU_RENDER line every 600 passes: how many the GPU drew, how many fell back to software, the voxel blits,
-// and the voxel parts shown below GpuVoxelScale.
+// and the voxel parts shown below the pass's scale.
 static void Count_Render(bool drawn)
 {
 	static int _Drawn = 0;

@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 
 
 // Follows one column's runs the way the drawers do. A forward walk reads each run as skip, length,
@@ -193,6 +194,15 @@ void Gpu_Voxel_Faces(VoxelFuncArgumentStruct const & arg, bool normals, GpuVoxel
 		}
 	}
 	out.First[GPU_VOXEL_DIRECTIONS] = (int)out.Faces.size();
+}
+
+
+int Gpu_Voxel_Pass_Scale(int setting, double screen_zoom)
+{
+	if (setting > 0) {
+		return(std::min<int>(setting, GPU_VOXEL_SCALE_MAX));
+	}
+	return((int)std::clamp(std::floor(screen_zoom + 0.5), 1.0, (double)GPU_VOXEL_SCALE_MAX));
 }
 
 

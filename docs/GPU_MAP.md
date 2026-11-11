@@ -67,7 +67,7 @@ The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTI
 | `WeatherStrength` | `100` | How much snow or rain falls, in percent, from 1 to 400. |
 | `GpuVoxels` | `no` | With `GpuRender`, vehicles, aircraft, their shadows, voxel animations and bullets are drawn from their voxels on the GPU, and vehicles and aircraft with no turret feed their highlights to `Bloom` and HDR Enhanced. The Graphics page sets it. See [GPU_VOXELS.md](GPU_VOXELS.md). |
 | `GpuVoxelSmooth` | `no` | With `GpuVoxels`, an object the GPU draws from its voxels turns to its exact facing instead of the nearest of 32. See [GPU_VOXELS.md](GPU_VOXELS.md). |
-| `GpuVoxelScale` | `1` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube's outline, so voxel objects stay sharp in a zoomed map view. A very large map view draws at a lower scale (Limits). See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuVoxelScale` | `0` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube, so voxel objects stay sharp in a zoomed map view. 0, shown as **Auto**, takes the scale from the zoom: the screen pixels a map pixel covers, rounded to the nearest whole number from 1 to 4. A very large map view draws at a lower scale (Limits). See [GPU_VOXELS.md](GPU_VOXELS.md). |
 
 ## Limits
 
@@ -98,7 +98,7 @@ The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTI
   by row and column. Zoomed fully out on a 3840x2160 screen, a 7546x4245 view (32 million pixels) is drawn on the GPU
   (times in [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), Performance budget), and `tests/autotest/gpu-map-zoomed-out.txt`
   checks that no such pass is drawn in software.
-- With `GpuVoxelScale` above 1, a pass whose picture at that scale would be wider or taller than 16,384 pixels or
+- At a voxel scale above 1, a pass whose picture at that scale would be wider or taller than 16,384 pixels or
   larger than 134,217,728 pixels (536.9 MB in RGBA8, a little over a 3840x2160 view at scale 4) is drawn at the
   largest scale within both limits, down to 1. Zoomed fully out at 3840x2160, scales 3 and 4 draw at 2.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a

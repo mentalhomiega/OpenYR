@@ -148,8 +148,8 @@ pays the same discard in `fs_mapdraw.sc` today.
 ### Colour: palette, house colours, lighting
 
 The palette model stays. The vertex shader turns the voxel's normal into a lighting row through the object's table
-(`Precalculate_Normal_Lookup`, `code/voxlib.cpp`, uploaded as `u_vlight`) and the row and colour into a palette index
-through `VoxelPaletteTranslateTable` (`s_vpal`, `Upload_Palette`). The fragment shader then does what `fs_mapdraw.sc`
+(`Precalculate_Normal_Lookup`, `code/voxlib.cpp`; a `u_vlight` uniform until stage 7, a row of `s_vpal` since) and the
+row and colour into a palette index through `VoxelPaletteTranslateTable` (`s_vpal`, `Upload_Palette`). The fragment shader then does what `fs_mapdraw.sc`
 does for a copy blit: adds the alpha lighting band from `s_alut` at the blit's level, reads the 565 colour from the
 blit's translator row in `s_lut`, which carries the house colours, and writes it. A composite reads the second block
 of `s_vpal`, the scratch surface's translation, as now.
@@ -157,8 +157,9 @@ of `s_vpal`, the scratch surface's translation, as now.
 We propose to move the depth test, the translator lookup and `Rgb565` from `fs_mapdraw.sc` into a shared include
 (`mapcommon.sh`) that both fragment shaders use, so the two cannot drift.
 
-In stage 6 the lighting row is computed on the GPU from the normal tables and the light vector, so `u_vlight` and
-the CPU half of `GpuDraw_Capture_Prepared` lose their per-object table. The rows stay palette rows. A float lighting
+We planned to compute the lighting row on the GPU in stage 6, from the normal tables and the light vector, so that
+`u_vlight` and the CPU half of `GpuDraw_Capture_Prepared` would lose their per-object table. Stage 6 left it out, and
+stage 7 moved the table into `s_vpal` instead: the CPU still computes it. The rows stay palette rows. A float lighting
 model is a separate look (GPU_VOXELS.md, "Where pixel-exact drawing ends") and stays outside this design. The face
 shading of the unmerged `voxel-depth-cubes` branch (`GpuVoxelFaces`) fits stage 6 directly, since each face knows its
 direction.
@@ -230,8 +231,8 @@ to the GPU.
 
 Sharpness becomes the scene target's resolution. `GpuVoxelScale` already draws the whole pass at that many times the
 map's pixels (`Size_Target`, `Set_Map_View`), and the direct geometry draws at whatever resolution the target has, with
-no tile in between. We propose `GpuVoxelScale=0` (stage 7) to mean "from the zoom": the smallest whole scale at which
-one map pixel covers at least one screen pixel, capped by the memory budget below.
+no tile in between. `GpuVoxelScale=0` (stage 7) takes the scale from the zoom: the screen pixels one map pixel covers,
+rounded to the nearest whole number from 1 to 4, which `Pass_Scale` then lowers to the texture limits below.
 
 ## What changes for the player
 
@@ -758,8 +759,8 @@ table holds the two least disturbed rounds. No pass fell back to software in any
   1.5 more of these textures, and frees the 8.4 MB voxel image and the 16.8 MB model texture. Scale 4 at 4K is about
   2.4 GB of targets. `Pass_Scale` in `code/gpumap.cpp` lowers the scale of a pass whose scene-sized texture would be
   over 134,217,728 pixels (536.9 MB in RGBA8) or 16,384 pixels a side, about what scale 4 takes at a 3840x2160 view.
-  Zoomed fully out at 3840x2160 (7546x4245), scales 3 and 4 draw at 2, 512.5 MB a texture. `GpuVoxelScale=0` may
-  still pick a smaller budget.
+  Zoomed fully out at 3840x2160 (7546x4245), scales 3 and 4 draw at 2, 512.5 MB a texture. `GpuVoxelScale=0` draws
+  that view at scale 1, 128.1 MB a texture.
 - **Small triangles and discard.** Faces at low scale and the fragment discard of the row test are the two costs we
   expect most; the splat level of detail answers the first, measurement the second.
 - **Modding.** Custom voxels need nothing new: the face store is built from the loaded layer and keyed by
@@ -835,7 +836,7 @@ All keys are in `[Video]` of `RA2MD.INI` unless marked. Current keys keep their 
 | `GpuVoxels` | `yes`, `no` | `no` | Unchanged: draws voxels on the GPU, by the route `GpuVoxelPath` picks |
 | `GpuVoxelPath` | `Image`, `Direct` | `Direct` | Added in stage 1 as a name list in `code/optionsettings.cpp`; the **Draw voxels directly** switch of the **GPU voxels** group sets it, and is greyed until **Draw units on the GPU** is ticked |
 | `GpuVoxelSmooth` | `yes`, `no` | `no` | Unchanged |
-| `GpuVoxelScale` | 1 to 4; 0 from stage 7 | `1` | Unchanged for 1 to 4; 0 picks the scale from the zoom |
+| `GpuVoxelScale` | 0 to 4 | `0` | Since stage 7, 0 takes the scale from the zoom and is the default; 1 to 4 are unchanged |
 | `GpuVoxelLayerDepth` | `Ordered`, `Shared` | `Shared` | Added in stage 1: a developer key with no row; `Ordered` is the exact mode the checks use |
 | `GpuVoxelCloak` | `Translucent`, `Ripple` | `Translucent` | Added after stage 4: a developer key with no row; `Ripple` needs `GpuVoxelPath=Direct` |
 | `GpuVoxelSmoothTilt` | `yes`, `no` | `no` | Later |

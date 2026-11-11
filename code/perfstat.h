@@ -98,7 +98,7 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_GPU_VOXEL_PARTS, // voxel parts of the passes the GPU drew
 	PERF_COUNT_GPU_VOXEL_DRAWN, // those parts whose picture had to be drawn into the voxel image
 	PERF_COUNT_GPU_VOXEL_DIRECT, // those parts drawn straight into the scene (GpuVoxelPath=Direct)
-	PERF_COUNT_GPU_VOXEL_FACES, // cube faces the direct parts' draws submitted (GpuVoxelScale above 1)
+	PERF_COUNT_GPU_VOXEL_FACES, // cube faces the direct parts' draws submitted (a pass scale above 1)
 	PERF_COUNTER_COUNT
 };
 

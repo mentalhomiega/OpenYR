@@ -50,6 +50,7 @@
 #include "gpudraw.h"
 #include "gpumap.h"
 #include "gpumapvoxel.h"
+#include "gpuvoxel.h"
 #include "objtype.h"
 #include "voxdrsys.h"
 
@@ -88,6 +89,7 @@
 #include "dsurface.h"
 #include "video.h"
 #include "shellmap.h"
+#include "vidscale.h"
 #include "viewzoom.h"
 
 #include <algorithm>
@@ -722,7 +724,7 @@ void GScreenClass::Render(void)
 	}
 	GpuMap_Set_Weather(weather, Options.WeatherStrength);
 	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
-	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Options.GpuVoxelScale : 1);
+	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Gpu_Voxel_Pass_Scale(Options.GpuVoxelScale, DisplayZoom * InterfaceScale) : 1);
 	GpuVoxel_Set_Path(Options.GpuVoxels && Options.GpuVoxelPath == GPU_VOXEL_PATH_DIRECT, Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);
 	GpuVoxel_Set_Cloak_Ripple(Options.GpuVoxelCloak == GPU_VOXEL_CLOAK_RIPPLE);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);

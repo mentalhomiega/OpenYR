@@ -44,6 +44,7 @@ struct UISettingRow
 	int Min = 0;
 	int Max = 0;
 	std::string Unit;
+	std::string ZeroText;
 
 	// Filled by UI_Setting_Rows_Refresh for the page's markup.
 	std::string KindName;
@@ -99,6 +100,7 @@ UISettingRow Row_Of(Setting<Owner> const & setting, int value)
 	row.Min = setting.Min;
 	row.Max = setting.Max;
 	row.Unit = setting.Unit;
+	row.ZeroText = setting.ZeroText;
 	return(row);
 }
 

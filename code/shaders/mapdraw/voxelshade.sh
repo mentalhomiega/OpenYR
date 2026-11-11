@@ -2,7 +2,6 @@
 // The including shader declares s_vpal; vs_mapvoxel.sc describes it and the uniforms.
 
 uniform vec4 u_vox[4];
-uniform vec4 u_vlight[64];
 
 vec2 Signed(vec2 v)
 {
@@ -34,10 +33,7 @@ vec2 Voxel_Cube_Place(ivec2 spot, vec3 offset)
 void Voxel_Shade(int colour, int normal, out int index, out int strength)
 {
 	bool lit = u_vox[2].z > 0.5;
-	int row = 32;
-	if (lit) {
-		row = int(u_vlight[normal / 4][normal % 4] + 0.5);
-	}
+	int row = int(texelFetch(s_vpal, ivec2(normal, int(u_vox[3].w + 0.5)), 0).x * 255.0 + 0.5);
 	index = int(texelFetch(s_vpal, ivec2(colour, int(u_vox[2].w + 0.5) + row), 0).x * 255.0 + 0.5);
 
 	// The strength the software drawers write beside the index (Emissive_Voxel_Highlight); an unlit layer writes none.

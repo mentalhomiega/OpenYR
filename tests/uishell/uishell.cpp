@@ -3343,7 +3343,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Rml::Element * scale = document->GetElementById("gpu-voxel-scale");
 		Rml::ElementFormControlInput * scale_slider = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(scale);
 		Check(voxels != nullptr && smooth != nullptr && scale != nullptr && !voxels->HasAttribute("disabled") && !smooth->HasAttribute("disabled") && !scale->HasAttribute("disabled"), "the GPU voxel rows are built from their declarations and follow GPU drawing");
-		Check(scale_slider != nullptr && Rml::FromString<float>(scale_slider->GetValue()) == 1.0f, "the voxel scale slider shows its declared lowest value");
+		Check(scale_slider != nullptr && Rml::FromString<float>(scale_slider->GetValue()) == 0.0f && Fixture_Row(presenter.State, "GpuVoxelScale")->ValueText == "Auto", "the voxel scale slider starts at 0, which its row shows as Auto");
 
 		sync(waves);
 		sync(glow);

@@ -499,5 +499,16 @@ int main(void)
 		std::printf("%-52s %s\n", "the model view places voxels where the walk does", ok ? "ok" : "FAILED");
 		failures += ok ? 0 : 1;
 	}
+	{
+		bool ok = Gpu_Voxel_Pass_Scale(0, 0.5) == 1 && Gpu_Voxel_Pass_Scale(0, 1.0) == 1 && Gpu_Voxel_Pass_Scale(0, 1.49) == 1
+			&& Gpu_Voxel_Pass_Scale(0, 1.5) == 2 && Gpu_Voxel_Pass_Scale(0, 2.0) == 2 && Gpu_Voxel_Pass_Scale(0, 2.5) == 3
+			&& Gpu_Voxel_Pass_Scale(0, 3.0) == 3 && Gpu_Voxel_Pass_Scale(0, 9.0) == 4 && Gpu_Voxel_Pass_Scale(0, 0.0) == 1;
+		for (int setting = 1; setting <= GPU_VOXEL_SCALE_MAX; setting++) {
+			ok = ok && Gpu_Voxel_Pass_Scale(setting, 0.5) == setting && Gpu_Voxel_Pass_Scale(setting, 3.0) == setting;
+		}
+		ok = ok && Gpu_Voxel_Pass_Scale(7, 1.0) == GPU_VOXEL_SCALE_MAX;
+		std::printf("%-52s %s\n", "a scale of 0 follows the zoom, 1 to 4 are kept", ok ? "ok" : "FAILED");
+		failures += ok ? 0 : 1;
+	}
 	return(failures == 0 ? 0 : 1);
 }

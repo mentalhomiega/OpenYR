@@ -104,7 +104,7 @@ void UI_Setting_Rows_Refresh(std::vector<UISettingRow> & rows, UISettingConditio
 		row.Intent = Lower_Text(row.Key);
 		row.ElementId = UI_Setting_Element_Id(row.Key);
 		row.RowId = (row.Kind == UISettingRowKind::SWITCH) ? "switch-" + row.ElementId : row.ElementId + "-row";
-		row.ValueText = std::to_string(row.Value) + row.Unit;
+		row.ValueText = (row.Value == 0 && !row.ZeroText.empty()) ? row.ZeroText : std::to_string(row.Value) + row.Unit;
 	}
 }
 

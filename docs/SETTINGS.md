@@ -28,6 +28,7 @@ The fields are:
 | `.NeedsRestart` | Adds "Applies at the next start." to the tip. |
 | `.SwitchOn` | Shows a `.Names` setting as a switch: ticking it picks this value, unless the page opened on another non-off value. |
 | `.Unit` | The text after a slider's number, such as `%`. |
+| `.ZeroText` | The text a slider shows in place of its number and unit at 0, such as `Auto`. |
 | `.BeforeRenderer` | Also reads the key at startup before the renderer starts, for a setting the renderer needs at its start. |
 
 The row kind comes from the entry: a `.Flag`, or a `.Names` setting with `.SwitchOn`, is a switch, and any other

@@ -66,7 +66,6 @@ static bool _Ready = false;
 static bool _Failed = false;
 static bgfx::ProgramHandle _Program = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _VoxelUniform = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _LightUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _ModelSampler = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _PaletteSampler = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _Model = BGFX_INVALID_HANDLE;
@@ -99,6 +98,17 @@ static bool _PaletteUploaded = false;
 // The palette texture holds the lighting rows and an identity row, then the same rows through the scratch
 // surface's translation: PALETTE_BLOCK rows each.
 static int const PALETTE_BLOCK = MAX_PALETTE_LOOKUP_ENTRIES + 1;
+
+// The rows after the palette's hold lighting tables, a lighting row for each normal: first the table of a shadow or
+// unlit layer, whose every entry is the identity row, then the tables of the pieces drawn lately.
+static int const PALETTE_ROWS = 4096;
+static int const IDENTITY_LIGHT_ROW = PALETTE_BLOCK * 2;
+static int const LIGHT_FIRST = IDENTITY_LIGHT_ROW + 1;
+static int const LIGHT_ROWS = PALETTE_ROWS - LIGHT_FIRST;
+
+// The tables in the palette texture's rows from LIGHT_FIRST, in row order, and the rows that hold a table of each hash.
+static std::vector<unsigned char> _Lights;
+static std::unordered_multimap<std::uint64_t, int> _LightIndex;
 
 // The tiles the voxel image holds, kept between passes, and whether the next pass starts by clearing the image.
 static GpuVoxelTileStore _Tiles;
@@ -163,17 +173,19 @@ static bool Start(void)
 	_DepthUniform = bgfx::createUniform("u_vdepth", bgfx::UniformType::Vec4, 3);
 	_BlitUniform = bgfx::createUniform("u_vblit", bgfx::UniformType::Vec4, 4);
 	_VoxelUniform = bgfx::createUniform("u_vox", bgfx::UniformType::Vec4, 4);
-	_LightUniform = bgfx::createUniform("u_vlight", bgfx::UniformType::Vec4, 64);
 	_ModelSampler = bgfx::createUniform("s_vmodel", bgfx::UniformType::Sampler);
 	_PaletteSampler = bgfx::createUniform("s_vpal", bgfx::UniformType::Sampler);
 	_Image = bgfx::createTexture2D(GPU_VOXEL_IMAGE_SIZE, GPU_VOXEL_IMAGE_SIZE, false, 1, bgfx::TextureFormat::RG8, BGFX_TEXTURE_RT | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	_Target = bgfx::isValid(_Image) ? bgfx::createFrameBuffer(1, &_Image, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
 	_Model = bgfx::createTexture2D(MODEL_WIDTH, MODEL_ROWS, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
-	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, PALETTE_BLOCK * 2, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+	_Palette = bgfx::createTexture2D(VOXEL_PALETTE_SIZE, PALETTE_ROWS, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Model) || !bgfx::isValid(_Palette)) {
 		GpuVoxel_Shutdown();
 		return(false);
 	}
+	bgfx::Memory const * identity = bgfx::alloc(VOXEL_PALETTE_SIZE);
+	std::memset(identity->data, MAX_PALETTE_LOOKUP_ENTRIES, identity->size);
+	bgfx::updateTexture2D(_Palette, 0, 0, 0, IDENTITY_LIGHT_ROW, VOXEL_PALETTE_SIZE, 1, identity);
 	_Failed = false;
 	_Ready = true;
 	return(true);
@@ -297,6 +309,8 @@ struct LayerDraw
 	bool Shadow;
 	// The index of the layer's piece in its part.
 	int Piece;
+	// The palette texture row that holds the layer's lighting table.
+	int LightRow = IDENTITY_LIGHT_ROW;
 	// The prepared layer of an object, NULL for a shadow, and its place in a direct part's depth.
 	VoxelRenderStruct const * Object = NULL;
 	GpuVoxelLayerDepth Depth;
@@ -584,6 +598,69 @@ static std::uint64_t Hash_Words(std::uint64_t hash, void const * data, std::size
 }
 
 
+static int Find_Light(std::uint64_t hash, unsigned char const * table)
+{
+	auto const range = _LightIndex.equal_range(hash);
+	for (auto found = range.first; found != range.second; ++found) {
+		if (std::memcmp(&_Lights[(std::size_t)found->second * VOXEL_PALETTE_SIZE], table, VOXEL_PALETTE_SIZE) == 0) {
+			return(found->second);
+		}
+	}
+	return(-1);
+}
+
+
+// Gives each lit object layer the palette texture row of its piece's lighting table, adding the tables the texture
+// lacks. Tables that do not fit the rows left empty the rows first; false when they do not fit empty rows either,
+// which leaves the rows empty.
+static bool Load_Lights(GpuDrawList const & list, std::vector<std::vector<LayerDraw>> & parts)
+{
+	for (int attempt = 0; attempt < 2; attempt++) {
+		int const kept = (int)(_Lights.size() / VOXEL_PALETTE_SIZE);
+		bool fits = true;
+		for (std::size_t i = 0; i < parts.size() && fits; i++) {
+			int piece = -1;
+			int row = IDENTITY_LIGHT_ROW;
+			for (LayerDraw & layer : parts[i]) {
+				if (layer.Shadow || !layer.Lit) {
+					continue;
+				}
+				if (layer.Piece != piece) {
+					unsigned char const * table = list.Voxels[i].Pieces[layer.Piece].Prepared->Lighting;
+					std::uint64_t const hash = Hash_Words(FNV64_BASIS, table, VOXEL_PALETTE_SIZE);
+					int index = Find_Light(hash, table);
+					if (index < 0) {
+						index = (int)(_Lights.size() / VOXEL_PALETTE_SIZE);
+						if (index == LIGHT_ROWS) {
+							fits = false;
+							break;
+						}
+						_Lights.insert(_Lights.end(), table, table + VOXEL_PALETTE_SIZE);
+						_LightIndex.emplace(hash, index);
+					}
+					piece = layer.Piece;
+					row = LIGHT_FIRST + index;
+				}
+				layer.LightRow = row;
+			}
+		}
+		if (fits) {
+			int const added = (int)(_Lights.size() / VOXEL_PALETTE_SIZE) - kept;
+			if (added > 0) {
+				bgfx::updateTexture2D(_Palette, 0, 0, 0, (uint16_t)(LIGHT_FIRST + kept), VOXEL_PALETTE_SIZE, (uint16_t)added, bgfx::copy(&_Lights[(std::size_t)kept * VOXEL_PALETTE_SIZE], (uint32_t)added * VOXEL_PALETTE_SIZE));
+			}
+			return(true);
+		}
+		_Lights.clear();
+		_LightIndex.clear();
+		if (kept == 0) {
+			return(false);
+		}
+	}
+	return(false);
+}
+
+
 // A hash of everything the shader's output for a part depends on, apart from the palette texture, whose change empties the image.
 static std::uint64_t Part_Signature(GpuVoxelPart const & part, std::vector<LayerDraw> const & layers, int scale)
 {
@@ -693,26 +770,18 @@ static void Set_Layer_Depths(std::vector<LayerDraw> & layers)
 }
 
 
-// Sets u_vox and u_vlight for drawing a layer of part whose voxel buffer pixel (0, 0) lands at shift_x, shift_y in the
-// target. The projection is for the axes the layer's records count along, and first is the place of its first voxel
-// in the model store.
+// Sets u_vox for drawing a layer of part whose voxel buffer pixel (0, 0) lands at shift_x, shift_y in the target. The
+// projection is for the axes the layer's records count along, and first is the place of its first voxel in the model
+// store.
 static void Set_Layer_Uniforms(GpuVoxelPart const & part, LayerDraw const & layer, Vector3i16 const (&steps)[4], int first, int shift_x, int shift_y, int scale)
 {
-	GpuVoxelPiece const & piece = part.Pieces[layer.Piece];
-	float light[VOXEL_PALETTE_SIZE];
-	std::copy(std::begin(piece.Prepared->Lighting), std::end(piece.Prepared->Lighting), light);
-	if (layer.Shadow) {
-		// The identity row after the lighting rows keeps the shadow's colour 1.
-		std::fill(std::begin(light), std::end(light), (float)MAX_PALETTE_LOOKUP_ENTRIES);
-	}
 	float const vox[16] = {
 		(float)steps[0].I, (float)steps[0].J, (float)steps[1].I, (float)steps[1].J,
 		(float)steps[2].I, (float)steps[2].J, (float)steps[3].I, (float)steps[3].J,
 		(float)shift_x, (float)shift_y, layer.Lit ? 1.0f : 0.0f, part.Scratch ? (float)PALETTE_BLOCK : 0.0f,
-		(float)first, (float)scale, layer.Shadow ? 0.0f : (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, 0.0f
+		(float)first, (float)scale, layer.Shadow ? 0.0f : (float)EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength, (float)layer.LightRow
 	};
 	bgfx::setUniform(_VoxelUniform, vox, 4);
-	bgfx::setUniform(_LightUniform, light, 64);
 }
 
 
@@ -784,10 +853,10 @@ bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<char> const & direct,
 	Perf_Count(PERF_COUNT_GPU_VOXEL_DIRECT, direct_parts);
 
 	_DirectLayers.assign(list.Voxels.size(), std::vector<LayerDraw>());
-	if (!Load_Models(parts)) {
+	if (!Load_Models(parts) || !Load_Lights(list, parts)) {
 		// The tiles just placed were never drawn, so a later pass must not take them for pictures.
 		Empty_Image();
-		DebugString("GPU_VOXEL: the layers do not fit the model store\n");
+		DebugString("GPU_VOXEL: the layers do not fit the model store or the lighting rows\n");
 		return(false);
 	}
 	_ReducedParts += reduced;
@@ -1072,7 +1141,6 @@ void GpuVoxel_Shutdown(void)
 	Release_Handle(_DepthUniform);
 	Release_Handle(_BlitUniform);
 	Release_Handle(_VoxelUniform);
-	Release_Handle(_LightUniform);
 	Release_Handle(_ModelSampler);
 	Release_Handle(_PaletteSampler);
 	Release_Handle(_Model);
@@ -1090,6 +1158,8 @@ void GpuVoxel_Shutdown(void)
 	_Image = BGFX_INVALID_HANDLE;
 	_Models.clear();
 	_ModelNext = 0;
+	_Lights.clear();
+	_LightIndex.clear();
 	_DirectLayers.clear();
 	Empty_Image();
 	_CapStep = 0;

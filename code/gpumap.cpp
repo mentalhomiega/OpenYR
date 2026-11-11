@@ -14,6 +14,7 @@
 #include "dbgprint.h"
 #include "gpudraw.h"
 #include "gpumapvoxel.h"
+#include "gpuvoxel.h"
 #include "monotonic.h"
 #include "renderthread.h"
 #include "writewatch.h"
@@ -996,8 +997,9 @@ static int Pass_Scale(Rect const & area)
 
 
 // Checks the limits Submit_Pass rejects a pass for that are known when it is kept, so a pass the GPU
-// cannot draw is drawn in software rather than leaving the map's key colour on screen.
-static bool Pass_Fits(GpuMapPass const & pass)
+// cannot draw is drawn in software rather than leaving the map's key colour on screen. direct is the
+// pass's GpuVoxel_Direct_Parts.
+static bool Pass_Fits(GpuMapPass const & pass, std::vector<char> const & direct)
 {
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
@@ -1022,7 +1024,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
-	if (!GpuVoxel_Fits(list, GpuVoxel_Direct_Parts(list, Shadow_Mask_On()))) {
+	if (!GpuVoxel_Fits(list, direct)) {
 		return(false);
 	}
 	int const shadows = Count_Shadow_Blits(list);
@@ -1414,7 +1416,8 @@ static void Submit_Post(GpuMapPass const & pass, int scale, Rect const & area, f
 // The voxel tiles of the pass Submit_Pass drew last, which GpuMap_Check reads back.
 static std::vector<GpuVoxelTile> _PassTiles;
 
-static bool Submit_Pass(GpuMapPass const & pass, int scale)
+// direct is the pass's GpuVoxel_Direct_Parts.
+static bool Submit_Pass(GpuMapPass const & pass, std::vector<char> const & direct, int scale)
 {
 	if (!Start()) {
 		return(false);
@@ -1434,7 +1437,6 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	std::vector<GpuVoxelTile> & tiles = _PassTiles;
 	tiles.clear();
-	std::vector<char> const direct = GpuVoxel_Direct_Parts(list, Shadow_Mask_On());
 	if (!list.Voxels.empty() && !GpuVoxel_Submit(list, direct, scale, tiles)) {
 		DebugString("GPU_DIFF frame %d: the voxel parts cannot be drawn\n", pass.Frame);
 		return(false);
@@ -1509,12 +1511,17 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 // share the views and the uploaded buffers.
 static GpuMapPass _Kept;
 static std::vector<GpuRipple> _KeptRipples;
+static std::vector<char> _KeptDirect;
 static bool _HasKept = false;
 
 
 bool GpuMap_Draw(GpuMapPass const & pass)
 {
-	if (!Start() || !Pass_Fits(pass)) {
+	if (!Start()) {
+		return(false);
+	}
+	std::vector<char> direct = GpuVoxel_Direct_Parts(*pass.List, Shadow_Mask_On());
+	if (!Pass_Fits(pass, direct)) {
 		return(false);
 	}
 	if (_SubmitFailed) {
@@ -1522,6 +1529,7 @@ bool GpuMap_Draw(GpuMapPass const & pass)
 		return(false);
 	}
 	_Kept = pass;
+	_KeptDirect = std::move(direct);
 	_KeptRipples = pass.Ripples != NULL ? *pass.Ripples : std::vector<GpuRipple>();
 	_Kept.Ripples = &_KeptRipples;
 	_HasKept = true;
@@ -1537,7 +1545,7 @@ void GpuMap_Drop(void)
 
 bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected, std::vector<unsigned char> const * expected_mask)
 {
-	if (_Pending || !Submit_Pass(pass, 1)) {
+	if (_Pending || !Submit_Pass(pass, GpuVoxel_Direct_Parts(*pass.List, Shadow_Mask_On()), 1)) {
 		return(false);
 	}
 	if (_CloakCount.Direct + _CloakCount.Image > 0) {
@@ -1608,7 +1616,7 @@ void GpuMap_Set_Clouds(int strength)
 
 void GpuMap_Set_Voxel_Scale(int scale)
 {
-	_VoxelScale = std::clamp(scale, 1, 4);
+	_VoxelScale = std::clamp<int>(scale, 1, GPU_VOXEL_SCALE_MAX);
 }
 
 
@@ -1734,7 +1742,7 @@ std::uint16_t GpuMap_Texture(void)
 	if (_HasKept) {
 		_HasKept = false;
 		int const scale = Pass_Scale(_Kept.Area);
-		if (Submit_Pass(_Kept, scale)) {
+		if (Submit_Pass(_Kept, _KeptDirect, scale)) {
 			_TargetDrawn = true;
 			if (_ShadowCount.Armed) {
 				Begin_Shadow_Count(_Kept, scale);

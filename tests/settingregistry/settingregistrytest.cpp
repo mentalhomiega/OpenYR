@@ -46,6 +46,7 @@ struct Fields
 	int Strength = 0;
 	int Unbounded = 0;
 	int Mode = 0;
+	int Sharpness = 0;
 };
 
 
@@ -64,6 +65,8 @@ constexpr Setting<Fields> Table[] = {
 	  .Page = "test", .Group = "Group A", .Label = "Child", .Tip = "A child switch.", .Needs = "Master" },
 	{ .Section = "Video", .Key = "StrengthLevel", .Number = &Fields::Strength, .Default = 100, .Min = 1, .Max = 400,
 	  .Page = "test", .Group = "Group B", .Label = "Strength", .Tip = "How strong.", .Needs = "ChildSwitch", .Unit = "%" },
+	{ .Section = "Video", .Key = "Sharpness", .Number = &Fields::Sharpness, .Default = 0, .Min = 0, .Max = 4,
+	  .Page = "test", .Group = "Group B", .Label = "Sharpness", .Tip = "How sharp.", .Unit = "x", .ZeroText = "Auto" },
 	{ .Section = "Video", .Key = "Unbounded", .Number = &Fields::Unbounded, .Default = 5 },
 	{ .Section = "Video", .Key = "Mode", .Number = &Fields::Mode, .Default = 0, .Names = Mode_Names,
 	  .Page = "test", .Group = "Group A", .Label = "Mode", .Tip = "A mode shown as a switch.", .Needs = "Master", .SwitchOn = 1 },
@@ -153,7 +156,7 @@ void Test_Rows_And_Greying(void)
 	std::vector<UISettingRow> rows = Test_Rows(fields);
 
 	// Two groups appear in the order the table first names them, with the Mode row in Group A though the table lists it last.
-	Check(rows.size() == 6 && rows[0].Kind == UISettingRowKind::HEADING && rows[0].Label == "Group A" && rows[4].Kind == UISettingRowKind::HEADING && rows[4].Label == "Group B", "each group gets a heading in first-appearance order");
+	Check(rows.size() == 7 && rows[0].Kind == UISettingRowKind::HEADING && rows[0].Label == "Group A" && rows[4].Kind == UISettingRowKind::HEADING && rows[4].Label == "Group B", "each group gets a heading in first-appearance order");
 	Check(rows[3].Key == "Mode", "a row follows its own group, not its place in the table");
 	Check(Row_Of(rows, "Unbounded") == nullptr, "a declaration without a label gets no row");
 	Check(Row_Of(rows, "Master")->Tip == "The master switch. Applies at the next start.", "a setting that needs a restart says so in its tip");
@@ -186,6 +189,12 @@ void Test_Rows_And_Greying(void)
 	Check(!Row_Of(rows, "StrengthLevel")->Disabled, "a chain enables once every link is on");
 	UI_Setting_Row_Execute(rows, "strengthlevel", 9999);
 	Check(Row_Of(rows, "StrengthLevel")->Value == 400, "a slider intent is held to the declared range");
+	UI_Setting_Rows_Refresh(rows, met);
+	Check(Row_Of(rows, "StrengthLevel")->ValueText == "400%" && Row_Of(rows, "Sharpness")->ValueText == "Auto", "a slider shows its number and unit, or its zero text at 0");
+	UI_Setting_Row_Execute(rows, "sharpness", 2);
+	UI_Setting_Rows_Refresh(rows, met);
+	Check(Row_Of(rows, "Sharpness")->ValueText == "2x", "a slider with a zero text shows other values as numbers");
+	UI_Setting_Row_Execute(rows, "sharpness", 0);
 
 	modern = false;
 	UI_Setting_Rows_Refresh(rows, met);
@@ -231,7 +240,7 @@ struct Old_Gpu
 	int CloudShadowStrength = 100;
 	bool GpuVoxels = false;
 	bool GpuVoxelSmooth = false;
-	int GpuVoxelScale = 1;
+	int GpuVoxelScale = 0;
 	int GpuVoxelPath = GPU_VOXEL_PATH_DIRECT;
 	int GpuVoxelLayerDepth = GPU_VOXEL_LAYER_DEPTH_SHARED;
 	int GpuVoxelCloak = GPU_VOXEL_CLOAK_TRANSLUCENT;
@@ -257,7 +266,7 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.CloudShadowStrength = std::clamp(ini.Get_Int("Video", "CloudShadowStrength", old.CloudShadowStrength), 1, 400);
 	old.GpuVoxels = ini.Get_Bool("Video", "GpuVoxels", old.GpuVoxels);
 	old.GpuVoxelSmooth = ini.Get_Bool("Video", "GpuVoxelSmooth", old.GpuVoxelSmooth);
-	old.GpuVoxelScale = std::clamp(ini.Get_Int("Video", "GpuVoxelScale", old.GpuVoxelScale), 1, 4);
+	old.GpuVoxelScale = std::clamp(ini.Get_Int("Video", "GpuVoxelScale", old.GpuVoxelScale), 0, 4);
 	char name[16];
 	ini.Get_String("Video", "GpuVoxelPath", "Direct", name, sizeof(name));
 	old.GpuVoxelPath = Enum_From_Name(Path_Names, name, GPU_VOXEL_PATH_DIRECT);

@@ -72,6 +72,9 @@ struct Setting
 	// The text after a slider's number, such as "%".
 	char const * Unit = "";
 
+	// The text a slider shows in place of the number 0, such as "Auto".
+	char const * ZeroText = "";
+
 	// Read by Settings_Load_Before_Renderer too, for a setting the renderer needs when it starts.
 	bool BeforeRenderer = false;
 };
