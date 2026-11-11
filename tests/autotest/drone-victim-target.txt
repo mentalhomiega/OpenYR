@@ -1,0 +1,75 @@
+; Terror Drone victim target: a player's Terror Drone (DRON) on 60,62 attacks a computer Rhino (HTNK) on 62,62 at frame 160.
+; At frame 156 that Rhino and a computer GI (E1) on 60,65 are given the drone as target with the attack mission, so both fire at it.
+; gamemd: the leap takes the drone off the map (TechnoClass::Fire, 0x6FF751 -> ObjectClass::Limbo, 0x5F4D30 -> ObjectClass::Disappear,
+; 0x5F5280 -> AnnounceExpiredPointer), so the Rhino and the GI drop it as their target. The bites name the drone as attacker, but a
+; victim never fires back at the parasite inside it (TechnoClass::CanRetaliateToAttacker, 0x708ABD compares the attacker with
+; ParasiteEatingMe).
+; Before the fix: the Rhino's first bite makes it fire back at the drone, which is off the map, so the Rhino shows
+; mission Attack, tarcom DRON tarlimbo 1, and keeps firing at the cell the drone leapt from.
+; After the fix: while the drone is inside, no Rhino or GI line shows tarcom DRON with tarlimbo 1. When the Rhino dies, the drone
+; comes back onto the map, and the GI may target it again (tarlimbo 0).
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script E:/Claude ra2 decomp/src-agent31/tests/autotest/drone-victim-target.txt -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST|Exception"
+1 view 61 63
+2 zoom 2.5
+3 reveal
+10 own DRON 60 62
+150 spawn HTNK 62 62
+150 spawn E1 60 65
+156 settarget HTNK 60 62 computer attack
+156 settarget E1 60 62 computer attack
+158 where HTNK
+158 where E1
+158 where DRON
+160 strike DRON 62 62
+165 where HTNK
+165 where E1
+165 where DRON
+170 where HTNK
+170 where E1
+170 where DRON
+175 where HTNK
+175 where E1
+175 where DRON
+180 where HTNK
+180 where E1
+180 where DRON
+190 where HTNK
+190 where E1
+190 where DRON
+200 where HTNK
+200 where E1
+200 where DRON
+220 where HTNK
+220 where E1
+220 where DRON
+250 where HTNK
+250 where E1
+250 where DRON
+300 where HTNK
+300 where E1
+300 where DRON
+350 where HTNK
+350 where E1
+350 where DRON
+400 where HTNK
+400 where E1
+400 where DRON
+450 where HTNK
+450 where E1
+450 where DRON
+500 where HTNK
+500 where E1
+500 where DRON
+550 where HTNK
+550 where E1
+550 where DRON
+600 where HTNK
+600 where E1
+600 where DRON
+650 where HTNK
+650 where E1
+650 where DRON
+700 where HTNK
+700 where E1
+700 where DRON
+800 quit
