@@ -284,6 +284,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `schemes` | writes the color schemes and the scheme each house draws with |
 | `seq <TypeID>` | writes an infantry type's art sequences |
 | `plan` | writes each computer house's base plan |
+| `aisummary` | writes one line per computer house: whether it is defeated, its structures, power and drain, harvesters, other vehicles, soldiers and aircraft (`army`), the objects it has destroyed and lost, the structure it is building and the first base node it has not built |
 | `fps` | writes the game frames counted in the last whole second, which the game's FPS readout shows |
 | `uploadverify <0\|1>` | 1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches |
 | `stretchprobe` | stretches a block to twice its size for each pairing of ordinary and watched surfaces and writes `ok` or `FAIL` for each |

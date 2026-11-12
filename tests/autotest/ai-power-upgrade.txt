@@ -1,0 +1,12 @@
+; A computer player whose country lists a power plant upgrade in AI.PowerPlants (Ares) builds the upgrade only while one of its
+; power plants has a free slot, and otherwise builds the regular plant. The mod in tests/autotest/ai-power-upgrade gives the
+; Allied power plant one upgrade slot and lists TESTPOWRUP after GAPOWR for the Americans. Expected: BUILDTRACE places TESTPOWRUP
+; on the first power plant at frame 5310; the next power shortage, at frame 8983, starts GAPOWR; the log has no "Abandoning
+; production of Test Power Upgrade" line. Without the slot check the computer starts TESTPOWRUP at frame 8983 and abandons it
+; every 270 frames or so.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ai-power-upgrade.txt -Mods "E:\Claude ra2 decomp\src-agent30\tests\autotest\ai-power-upgrade" -AICountries 0 -Uncapped -Seconds 400 -Filter "BUILDTRACE.*(TESTPOWRUP|GAPOWR)|Abandoning|aisummary|Exception"
+10 buildtrace 1
+30 command CenterBase
+6000 aisummary
+10000 aisummary
+10001 quit

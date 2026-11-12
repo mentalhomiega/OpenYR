@@ -5395,7 +5395,8 @@ int HouseClass::AI_Building(void)
 		BuildingTypeClass const * choice = NULL;
 
 		// The country's AI.PowerPlants (Ares) replace the side's pair: the first is the regular plant and the computer
-		// builds the last one it has the prerequisites for.
+		// builds the last one it has the prerequisites for. An upgrade in the list counts only while a structure it fits
+		// has room for it, so that a plant with no host is not started and abandoned over and over.
 		TypeList<BuildingTypeClass const *> const * listed = NULL;
 		if (ActLike >= HOUSE_FIRST && ActLike < HouseTypes.Count() && HouseTypes[ActLike]->AIPowerPlants.Count() > 0) {
 			listed = &HouseTypes[ActLike]->AIPowerPlants;
@@ -5441,7 +5442,8 @@ int HouseClass::AI_Building(void)
 			}
 			for (int i = 0; i < listed->Count(); i++) {
 				BuildingTypeClass const * plant = (*listed)[i];
-				if (plant != NULL && AI_Has_Prerequisites(plant, owned_buildings, owned_buildings.Count())) {
+				bool const placeable = plant != NULL && (plant->PowersUpBuilding.empty() || Where_To_Place_Upgrade(plant) != CELL_NONE);
+				if (placeable && AI_Has_Prerequisites(plant, owned_buildings, owned_buildings.Count())) {
 					choice = plant;
 				}
 			}

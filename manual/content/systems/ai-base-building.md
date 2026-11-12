@@ -375,7 +375,7 @@ A house that is not following a map plan checks power before it starts a structu
 - the node's type drains power;
 - the house is not in a power blackout, and none of its power plants is being drained by an enemy.
 
-The plant comes from the acted side. When the country the house acts as sets [`AI.PowerPlants`](/keys/ai.powerplants/), the list replaces steps 2 to 4 below: the house takes the last listed type whose prerequisites its structures meet, or the first listed type when none does. Otherwise the house takes the first of these that applies:
+The plant comes from the acted side. When the country the house acts as sets [`AI.PowerPlants`](/keys/ai.powerplants/), the list replaces steps 2 to 4 below: the house takes the last listed type whose prerequisites its structures meet, or the first listed type when none does. A listed upgrade counts only while one of the house's structures it plugs into has room for it. Otherwise the house takes the first of these that applies:
 
 1. The side's [`PowerTurbine`](/keys/powerturbine/), when the house owns one of the side's [`RegularPowerPlant`](/keys/regularpowerplant/) structures with a free upgrade slot and a random draw passes [`AIUseTurbineUpgradeProbability`](/keys/aiuseturbineupgradeprobability/). That probability is a fraction of 1. At its default, the turbine is chosen whenever a slot is free.
 2. The side's [`AdvancedPowerPlant`](/keys/advancedpowerplant/), when the structures the house owns meet its prerequisites.
