@@ -33,6 +33,10 @@ extern DynamicVectorClass<AbstractClass *> AbstractTypePtrTracker;
 extern DynamicVectorClass<AbstractClass *> TagPtrTracker;
 extern DynamicVectorClass<AbstractClass *> TriggerPtrTracker;
 extern DynamicVectorClass<AbstractClass *> AnimPtrTracker;
+
+// Adds an object that may store animation pointers to AnimPtrTracker, or takes it out again.
+void Track_Anim_Holder(AbstractClass * holder);
+void Untrack_Anim_Holder(AbstractClass * holder);
 extern DynamicVectorClass<AbstractClass *> FactoryPtrTracker;
 extern DynamicVectorClass<AbstractClass *> EventActionPtrTracker;
 extern DynamicVectorClass<AbstractClass *> WaypointPathPtrTracker;

@@ -304,7 +304,7 @@ void AttachedEffectsClass::Update_Anim(TechnoClass * owner, EffectStruct & effec
 		&& !(type.IsTemporalHidesAnim && owner->IsBeingWarpedOut);
 
 	if (show && effect.Anim == nullptr) {
-		effect.Anim = AnimClass::Held(new AnimClass(type.Animation, owner->Center_Coord()));
+		effect.Anim = AnimClass::Held(new AnimClass(type.Animation, owner->Center_Coord()), owner);
 		if (effect.Anim != nullptr) {
 			effect.Anim->Attach_To(owner);
 			effect.Anim->Loops = UCHAR_MAX;

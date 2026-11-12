@@ -66,6 +66,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <typeinfo>
+#include <unordered_set>
 #include <vector>
 
 
@@ -74,6 +75,10 @@ DynamicVectorClass<AbstractClass *> AbstractTypePtrTracker;
 DynamicVectorClass<AbstractClass *> TagPtrTracker;
 DynamicVectorClass<AbstractClass *> TriggerPtrTracker;
 DynamicVectorClass<AbstractClass *> AnimPtrTracker;
+
+// The members of AnimPtrTracker, to tell whether an animation's remembered holder still exists.
+// Membership only; never walked, so the order of the addresses does not reach the game.
+static std::unordered_set<AbstractClass const *> AnimHolders;
 DynamicVectorClass<AbstractClass *> FactoryPtrTracker;
 DynamicVectorClass<AbstractClass *> EventActionPtrTracker;
 DynamicVectorClass<AbstractClass *> WaypointPathPtrTracker;
@@ -112,7 +117,7 @@ static void Count_Detach(AbstractClass const * target)
 	Perf_Count(PERF_COUNT_DETACH_CALLS);
 	int visits = 0;
 	if (target->RTTI == RTTI_HOUSE) visits = HousePtrTracker.Count();
-	else if (target->RTTI == RTTI_ANIM) visits = ((AnimClass const *)target)->IsHeld ? AnimPtrTracker.Count() : 0;
+	else if (target->RTTI == RTTI_ANIM) visits = !((AnimClass const *)target)->IsHeld ? 0 : (((AnimClass const *)target)->IsHeldByMany ? AnimPtrTracker.Count() : 1);
 	else if (target->As_ObjectClass() != NULL) {
 		for (int index = 0; index < ObjectPtrTracker.Count(); index++) {
 			visits += !Holder_Cannot_Name(ObjectPtrTracker[index], (RTTIType)target->RTTI);
@@ -167,13 +172,31 @@ static size_t Anim_Holder_Size(AbstractClass const * holder)
 }
 
 
-static void Check_Unheld_Anim(AbstractClass const * target, bool all)
+void Track_Anim_Holder(AbstractClass * holder)
+{
+	AnimPtrTracker.Add(holder);
+	AnimHolders.insert(holder);
+}
+
+
+void Untrack_Anim_Holder(AbstractClass * holder)
+{
+	AnimPtrTracker.Delete(holder);
+	AnimHolders.erase(holder);
+}
+
+
+// The check for the holders an animation's removal skipped; `visited` is the one holder that was not skipped.
+static void Check_Unheld_Anim(AbstractClass const * target, bool all, AbstractClass const * visited)
 {
 	static long long checks = 0;
 	static long long differences = 0;
 	std::vector<unsigned char> before;
 	for (int index = 0; index < AnimPtrTracker.Count(); index++) {
 		AbstractClass * holder = AnimPtrTracker[index];
+		if (holder == visited) {
+			continue;
+		}
 		size_t const size = Anim_Holder_Size(holder);
 		before.assign((unsigned char const *)holder, (unsigned char const *)holder + size);
 		holder->Detach(target, all);
@@ -295,13 +318,22 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	if (target->RTTI == RTTI_ANIM) {
 		LightningStormClass::Detach(target);
 		PsychicDominatorClass::Detach(target);
-		// Only an animation that a building, a bullet or a super weapon has stored can be named by one of them.
-		if (((AnimClass const *)target)->IsHeld) {
+		// Only an animation that a building, a bullet or a super weapon has stored can be named by one
+		// of them, and one stored by a single object only by that object, if it still exists.
+		AnimClass const * anim = (AnimClass const *)target;
+		if (anim->IsHeld && anim->IsHeldByMany) {
 			for (index = 0; index < AnimPtrTracker.Count(); index++) {
 				AnimPtrTracker[index]->Detach(target, all);
 			}
-		} else if (Detach_Is_Checked()) {
-			Check_Unheld_Anim(target, all);
+		} else {
+			AbstractClass const * holder = NULL;
+			if (anim->IsHeld && AnimHolders.find(anim->HeldBy) != AnimHolders.end()) {
+				holder = anim->HeldBy;
+				const_cast<AbstractClass *>(holder)->Detach(target, all);
+			}
+			if (Detach_Is_Checked()) {
+				Check_Unheld_Anim(target, all, holder);
+			}
 		}
 
 		// A giant squid's grapple animation is held by its parasite, which the tracker does not list.
