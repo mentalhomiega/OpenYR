@@ -62,6 +62,7 @@ TheaterClass::TheaterClass(char const * name, bool listed) :
 	ImageLetter('\0'),
 	IsArctic(false),
 	IsIceGrowth(false),
+	IsIceGrowthWanted(false),
 	LowRadarBrightness(1.0f),
 	HighRadarBrightness(1.6f)
 {
@@ -74,6 +75,7 @@ TheaterClass::TheaterClass(char const * name, bool listed) :
 			ImageLetter = seed.ImageLetter;
 			IsArctic = seed.IsArctic;
 			IsIceGrowth = seed.IsIceGrowth;
+			IsIceGrowthWanted = seed.IsIceGrowth;
 			LowRadarBrightness = seed.LowRadarBrightness;
 			HighRadarBrightness = seed.HighRadarBrightness;
 			break;
@@ -182,7 +184,8 @@ bool TheaterClass::Read_INI(CCINIClass const & ini)
 	}
 
 	IsArctic = ini.Get_Bool(Name(), "IsArctic", IsArctic);
-	IsIceGrowth = ini.Get_Bool(Name(), "IsIceGrowthEnabled", IsIceGrowth);
+	IsIceGrowthWanted = ini.Get_Bool(Name(), "IsIceGrowthEnabled", IsIceGrowthWanted);
+	IsIceGrowth = IsIceGrowthWanted;
 	LowRadarBrightness = (float)ini.Get_Float(Name(), "LowRadarBrightness", LowRadarBrightness);
 	HighRadarBrightness = (float)ini.Get_Float(Name(), "HighRadarBrightness", HighRadarBrightness);
 	return(true);

@@ -471,6 +471,13 @@ bool KeyPattern::Parse(std::string const & text, KeyPattern & pattern)
 		return(false);
 	}
 	std::string const range = text.substr(open + 1, close - open - 1);
+	pattern.Any = false;
+	if (range == "*") {
+		pattern.Any = true;
+		pattern.Prefix = text.substr(0, open);
+		pattern.Suffix = text.substr(close + 1);
+		return(true);
+	}
 	std::size_t const dash = range.find('-');
 	if (dash == std::string::npos || dash == 0) {
 		return(false);
@@ -500,6 +507,9 @@ bool KeyPattern::Matches(std::string_view key) const
 		return(false);
 	}
 	std::string_view const digits = key.substr(Prefix.size(), key.size() - Prefix.size() - Suffix.size());
+	if (Any) {
+		return(digits.find('.') == std::string_view::npos);
+	}
 	if (digits.size() > 9) {
 		return(false);
 	}
@@ -653,6 +663,11 @@ static Report Check_Sections(Catalog const & catalog, std::vector<Section> const
 			Finding finding;
 			finding.Line = entry.Line;
 			finding.Section = section.Name;
+			if (is_object) {
+				for (std::string const & type : kind->second) {
+					finding.Kinds += (finding.Kinds.empty() ? "" : ",") + type;
+				}
+			}
 			finding.Key = entry.Key;
 			finding.Value = entry.Value;
 

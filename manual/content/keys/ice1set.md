@@ -10,7 +10,7 @@ when_omitted:
 
 This set, [`Ice2Set`](/keys/ice2set/) and [`Ice3Set`](/keys/ice3set/) are three ice sets of the same shape. When the engine matches an ice cell's tile to its neighbors, or when ice cracks, breaks or refreezes, it picks one of the three sets at random, so a frozen stretch does not repeat one pattern. Ice growth and the random map generator lay tiles of this set before that matching runs. [Theater control files](/formats/theater-control/) explains how the set number is resolved.
 
-Resolve all three roles in any theater with [`IsIceGrowthEnabled`](/keys/isicegrowthenabled/) on. The ice passes below do not check them, and a pick of an unresolved set lays a tile counted from `-1`, which is not an ice tile.
+Resolve all four ice roles ([`Ice1Set`](/keys/ice1set/), [`Ice2Set`](/keys/ice2set/), [`Ice3Set`](/keys/ice3set/) and [`IceShoreSet`](/keys/iceshoreset/)) to sets that hold tiles in any theater with [`IsIceGrowthEnabled`](/keys/isicegrowthenabled/) on. A theater with an unresolved or empty ice set gets no ice behavior at all, and the debug log says so when it loads.
 
 Keep the three sets consecutive, in the order `Ice1Set`, `Ice2Set`, `Ice3Set`. Several tests treat a whole range of tiles, from the first tile of this set to a point in a later set, as ice. [`Ice2Set`](/keys/ice2set/) and [`Ice3Set`](/keys/ice3set/) describe where those ranges end.
 

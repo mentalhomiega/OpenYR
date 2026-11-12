@@ -1246,6 +1246,20 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 		remap(isotype->NonMarbleMadness, "NonMarbleMadness");
 	}
 
+	// Ice behavior needs ice tiles. A theater whose ice sets are unresolved or hold no tiles, such as a
+	// mod's snow theater with no ice artwork, has the tiles that follow the first ice set's number read
+	// as ice, and the ice passes rewrite them. gamemd reads no ice sets at all (Read_Control_File,
+	// 0x00545150), so its snow maps never reach those passes.
+	auto set_holds_tiles = [&](IsometricTileType set) {
+		return set >= 0 && static_cast<std::size_t>(set) < tile_set_lookup.size() && tile_set_lookup[set].Count > 0;
+	};
+	bool const ice_sets_hold_tiles = set_holds_tiles(_Ice1Set) && set_holds_tiles(_Ice2Set)
+		&& set_holds_tiles(_Ice3Set) && set_holds_tiles(_IceShoreSet);
+	if (data.IsIceGrowthWanted && !ice_sets_hold_tiles) {
+		DebugString("Theater %s: its ice tile sets hold no tiles, so its ice behavior is off.\n", data.Name());
+	}
+	Theaters[theater]->Resolve_Ice_Growth(ice_sets_hold_tiles);
+
 	// Ice tiles count as water. The remap stops at the end of a set shorter than the Tiberian Sun
 	// layout instead of running into the next set.
 	if (data.IsIceGrowth) {

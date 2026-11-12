@@ -20,9 +20,12 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# Keys the engine builds from a number that the manual's extractor does not list. Each range
-# starts where the reading loop starts; the loops end at NumberOfDocks, Upgrades and TilesInSet,
-# which have no fixed limit.
+# The object kinds whose rules sections read the techno type keys.
+TECHNO_KINDS = ["AircraftType", "BuildingType", "InfantryType", "UnitType"]
+
+# Keys the engine builds from a number or a name that the manual's extractor does not list. Each
+# range starts where the reading loop starts; the loops end at NumberOfDocks, Upgrades,
+# TilesInSet and the custom foundation's size, which have no fixed limit.
 PATTERN_SCOPES = [
     # BuildingTypeClass::Read_INI.
     ("DockingOffset{0-}", "art.ini", "@image", ["BuildingType"], "point (x,y,z)"),
@@ -32,6 +35,28 @@ PATTERN_SCOPES = [
     ("PowerUp{1-}LocYY", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}LocZZ", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}YSort", "art.ini", "@image", ["BuildingType"], "integer"),
+    # BuildingTypeClass::Read_INI: the burning damage fires, and the cells a structure adds to and
+    # removes from the cells it occupies. Each table holds eight entries.
+    ("DamageFireOffset{0-7}", "art.ini", "@image", ["BuildingType"], "point (x,y)"),
+    ("AddOccupy{1-8}", "art.ini", "@image", ["BuildingType"], "point (x,y)"),
+    ("RemoveOccupy{1-8}", "art.ini", "@image", ["BuildingType"], "point (x,y)"),
+    # BuildingTypeClass::Read_Custom_Foundation: the cells of a Foundation=Custom building and of
+    # its outline, numbered from 0 up to Foundation.X * Foundation.Y and FoundationOutline.Length.
+    ("Foundation.{0-}", "art.ini", "@image", ["BuildingType"], "point (x,y)"),
+    ("FoundationOutline.{0-}", "art.ini", "@image", ["BuildingType"], "point (x,y)"),
+    # TechnoTypeClass::Read_Insignia_INI: a key for each rank.
+    ("Insignia.Rookie", "rules.ini", "*", TECHNO_KINDS, "string"),
+    ("Insignia.Veteran", "rules.ini", "*", TECHNO_KINDS, "string"),
+    ("Insignia.Elite", "rules.ini", "*", TECHNO_KINDS, "string"),
+    ("InsigniaFrame.Rookie", "rules.ini", "*", TECHNO_KINDS, "integer"),
+    ("InsigniaFrame.Veteran", "rules.ini", "*", TECHNO_KINDS, "integer"),
+    ("InsigniaFrame.Elite", "rules.ini", "*", TECHNO_KINDS, "integer"),
+    # WarheadTypeClass::Read_INI: a percentage for each armor type and, for each, three switches.
+    # The star stands for the armor's name, which the rules' [ArmorTypes] declare.
+    ("Versus.{*}", "rules.ini", "*", ["WarheadType"], "string"),
+    ("Versus.{*}.ForceFire", "rules.ini", "*", ["WarheadType"], "boolean"),
+    ("Versus.{*}.Retaliate", "rules.ini", "*", ["WarheadType"], "boolean"),
+    ("Versus.{*}.PassiveAcquire", "rules.ini", "*", ["WarheadType"], "boolean"),
     # IsometricTileTypeClass::Init: the per-tile keys, numbered from 1 as "%02d" up to the set's
     # TilesInSet. They are read from the section the set's SetName= names, not from the TileSet
     # section itself. A lower bound written with a leading zero stands for that printed width.
@@ -41,6 +66,30 @@ PATTERN_SCOPES = [
     ("Tile{01-}AttachesTo", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
     ("Tile{01-}ZAdjust", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
 ]
+
+
+# RulesClass::RocketTypeStruct::Read reads one missile's flight settings from the keys named after a
+# prefix: V3Rocket, DMisl and CMisl in [General], and Missile. in the rules section of an aircraft type.
+ROCKET_KEYS = [
+    ("PauseFrames", "integer"),
+    ("TiltFrames", "integer"),
+    ("PitchInitial", "floating point"),
+    ("PitchFinal", "floating point"),
+    ("TurnRate", "floating point"),
+    ("RaiseRate", "integer"),
+    ("Acceleration", "floating point"),
+    ("Altitude", "integer"),
+    ("Damage", "integer"),
+    ("EliteDamage", "integer"),
+    ("BodyLength", "integer"),
+    ("LazyCurve", "boolean"),
+    ("Type", "class"),
+]
+for _prefix in ("V3Rocket", "DMisl", "CMisl"):
+    for _name, _type in ROCKET_KEYS:
+        PATTERN_SCOPES.append((_prefix + _name, "rules.ini", "General", ["global rules"], _type))
+for _name, _type in ROCKET_KEYS:
+    PATTERN_SCOPES.append(("Missile." + _name, "rules.ini", "*", ["AircraftType"], _type))
 
 
 # InfantryTypeClass::Read_Sequence_INI reads one do-string from the section an infantry art

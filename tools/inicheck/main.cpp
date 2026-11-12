@@ -23,7 +23,7 @@
 
 static int Usage(void)
 {
-	std::fprintf(stderr, "usage: inicheck --catalog <catalog.tsv> [--file rules.ini] [--art <art ini>] [--theater <theater ini>] [--unchecked] [<rules ini>]\n");
+	std::fprintf(stderr, "usage: inicheck --catalog <catalog.tsv> [--file rules.ini] [--art <art ini>] [--theater <theater ini>] [--unchecked] [--tsv] [<rules ini>]\n");
 	return(2);
 }
 
@@ -40,10 +40,16 @@ static bool Read_File(char const * path, std::string & text)
 }
 
 
-static std::size_t Print_Report(IniCheck::Report const & report, char const * path, bool list_unchecked)
+// With tsv, each finding is one tab separated line of file, line, section, type kinds, key and value, for sorting
+// and counting. The kinds are empty for a literal section such as [General].
+static std::size_t Print_Report(IniCheck::Report const & report, char const * path, bool list_unchecked, bool tsv)
 {
 	for (IniCheck::Finding const & finding : report.Findings) {
-		std::printf("%s: %s\n", path, IniCheck::Format(finding).c_str());
+		if (tsv) {
+			std::printf("%s\t%d\t%s\t%s\t%s\t%s\n", path, finding.Line, finding.Section.c_str(), finding.Kinds.c_str(), finding.Key.c_str(), finding.Value.c_str());
+		} else {
+			std::printf("%s: %s\n", path, IniCheck::Format(finding).c_str());
+		}
 	}
 	if (list_unchecked) {
 		for (std::string const & section : report.UncheckedSections) {
@@ -62,6 +68,7 @@ int main(int argc, char ** argv)
 	char const * theater_path = nullptr;
 	std::string file = "rules.ini";
 	bool list_unchecked = false;
+	bool tsv = false;
 
 	for (int index = 1; index < argc; index++) {
 		if (std::strcmp(argv[index], "--catalog") == 0 && index + 1 < argc) {
@@ -74,6 +81,8 @@ int main(int argc, char ** argv)
 			theater_path = argv[++index];
 		} else if (std::strcmp(argv[index], "--unchecked") == 0) {
 			list_unchecked = true;
+		} else if (std::strcmp(argv[index], "--tsv") == 0) {
+			tsv = true;
 		} else if (argv[index][0] != '-' && ini_path == nullptr) {
 			ini_path = argv[index];
 		} else {
@@ -114,17 +123,17 @@ int main(int argc, char ** argv)
 	std::size_t unchecked = 0;
 	if (ini_path != nullptr) {
 		IniCheck::Report const report = IniCheck::Check_Rules(catalog, text, file);
-		findings += Print_Report(report, ini_path, list_unchecked);
+		findings += Print_Report(report, ini_path, list_unchecked, tsv);
 		unchecked += report.UncheckedSections.size();
 	}
 	if (art_path != nullptr) {
 		IniCheck::Report const art_report = IniCheck::Check_Art(catalog, art_text, text);
-		findings += Print_Report(art_report, art_path, list_unchecked);
+		findings += Print_Report(art_report, art_path, list_unchecked, tsv);
 		unchecked += art_report.UncheckedSections.size();
 	}
 	if (theater_path != nullptr) {
 		IniCheck::Report const theater_report = IniCheck::Check_Theater(catalog, theater_text);
-		findings += Print_Report(theater_report, theater_path, list_unchecked);
+		findings += Print_Report(theater_report, theater_path, list_unchecked, tsv);
 		unchecked += theater_report.UncheckedSections.size();
 	}
 	std::fprintf(stderr, "inicheck: %zu findings, %zu sections not checked\n", findings, unchecked);
