@@ -42,6 +42,11 @@
 #include "_rules.h"
 #include "_tactica.h"
 #include "abstract.h"
+#include "globals.h"
+#include "dbgprint.h"
+#include "super.h"
+#include "bullet.h"
+#include "anim.h"
 #include "aircraft.h"
 #include "building.h"
 #include "infantry.h"
@@ -56,7 +61,10 @@
 #include "unit.h"
 #include "vector.h"
 
+#include <cstdlib>
+#include <cstring>
 #include <typeinfo>
+#include <vector>
 
 
 DynamicVectorClass<AbstractClass *> ObjectPtrTracker;
@@ -116,6 +124,53 @@ static void Count_Detach(AbstractClass const * target)
 	}
 }
 
+// OPENYR_DETACH_CHECK=1 visits the holders of an animation that is not held as well, and logs any
+// holder whose bytes the visit changed. A line in the log means a store of an animation pointer
+// that does not go through AnimClass::Held.
+static bool Detach_Is_Checked(void)
+{
+	static int checked = -1;
+	if (checked < 0) {
+		char const * value = std::getenv("OPENYR_DETACH_CHECK");
+		checked = (value != NULL && value[0] == '1') ? 1 : 0;
+	}
+	return(checked == 1);
+}
+
+
+static size_t Anim_Holder_Size(AbstractClass const * holder)
+{
+	switch ((RTTIType)holder->RTTI) {
+		case RTTI_BUILDING: return(sizeof(BuildingClass));
+		case RTTI_BULLET: return(sizeof(BulletClass));
+		case RTTI_SUPERWEAPON: return(sizeof(SuperClass));
+		default: return(0);
+	}
+}
+
+
+static void Check_Unheld_Anim(AbstractClass const * target, bool all)
+{
+	static long long checks = 0;
+	static long long differences = 0;
+	std::vector<unsigned char> before;
+	for (int index = 0; index < AnimPtrTracker.Count(); index++) {
+		AbstractClass * holder = AnimPtrTracker[index];
+		size_t const size = Anim_Holder_Size(holder);
+		before.assign((unsigned char const *)holder, (unsigned char const *)holder + size);
+		holder->Detach(target, all);
+		checks++;
+		if (size == 0 || memcmp(before.data(), holder, size) != 0) {
+			differences++;
+			DebugString("DETACH CHECK DIFFERENCE frame %d holder rtti %d size %d\n", Frame, (int)holder->RTTI, (int)size);
+		}
+	}
+	if (checks / 5000000 != (checks - AnimPtrTracker.Count()) / 5000000) {
+		DebugString("DETACH CHECK %lld visits, %lld differences\n", checks, differences);
+	}
+}
+
+
 void Detach_This_From_All(AbstractClass const * target, bool all)
 {
 	int index = 0;
@@ -157,8 +212,13 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	if (target->RTTI == RTTI_ANIM) {
 		LightningStormClass::Detach(target);
 		PsychicDominatorClass::Detach(target);
-		for (index = 0; index < AnimPtrTracker.Count(); index++) {
-			AnimPtrTracker[index]->Detach(target, all);
+		// Only an animation that a building, a bullet or a super weapon has stored can be named by one of them.
+		if (((AnimClass const *)target)->IsHeld) {
+			for (index = 0; index < AnimPtrTracker.Count(); index++) {
+				AnimPtrTracker[index]->Detach(target, all);
+			}
+		} else if (Detach_Is_Checked()) {
+			Check_Unheld_Anim(target, all);
 		}
 
 		// A giant squid's grapple animation is held by its parasite, which the tracker does not list.

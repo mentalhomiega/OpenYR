@@ -285,6 +285,19 @@ class AnimClass : public ObjectClass, public StageClass
 		 */
 		BulletClass * AttachedBullet;
 
+		// True once a building, a bullet or a super weapon has stored a pointer to this animation.
+		// Detach_This_From_All visits those holders only for an animation with this set, so every
+		// store of an animation pointer in them goes through Held(). It is never cleared.
+		bool IsHeld;
+
+		static AnimClass * Held(AnimClass * anim)
+		{
+			if (anim != NULL) {
+				anim->IsHeld = true;
+			}
+			return(anim);
+		}
+
 	private:
 		/*
 		**	Delete this animation at the next opportunity. This is flagged when the

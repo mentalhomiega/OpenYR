@@ -1189,7 +1189,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				Stop_Pre_Click_Anim();
 				if (Rule->ChronoPlacement != NULL) {
 					Coord const coord = Map[cell].As_Coord();
-					PreClickAnim = new AnimClass(Rule->ChronoPlacement, Coord(coord.X, coord.Y, coord.Z + 5));
+					PreClickAnim = AnimClass::Held(new AnimClass(Rule->ChronoPlacement, Coord(coord.X, coord.Y, coord.Z + 5)));
 				}
 				if (player) {
 					Map.IsTargettingMode = Follow_Up();
