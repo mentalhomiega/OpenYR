@@ -139,6 +139,7 @@
 #include "pcx.h"
 #include "planning.h"
 #include "preview.h"
+#include "ui/dev/uiperfoverlay.h"
 #include "ui/rml/rmlimage.h"
 #include "unittype.h"
 #include "light.h"
@@ -6858,8 +6859,20 @@ static void Statedump_Step(StepType const & step)
 // perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
 static void Perflog_Step(StepType const & step)
 {
-	Perf_Set_Enabled(step.Argument_Int() != 0);
-	DebugString("AUTOTEST perflog %d\n", (int)Perf_Enabled);
+	Perf_Set_User(PERF_USER_LOG, step.Argument_Int() != 0);
+	DebugString("AUTOTEST perflog %d\n", (int)Perf_Has_User(PERF_USER_LOG));
+}
+
+
+// perfoverlay <0|1|2|report>: sets the performance overlay's level as its key does, or logs the numbers it shows.
+static void Perfoverlay_Step(StepType const & step)
+{
+	if (step.Argument == "report") {
+		UIPerf_Overlay_Report();
+		return;
+	}
+	Perf_Overlay_Set_Level(step.Argument_Int());
+	DebugString("AUTOTEST perfoverlay %d recording %d\n", Options.PerfOverlay, (int)Perf_Enabled);
 }
 
 
@@ -7314,6 +7327,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"statedump", Statedump_Step},
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
+		{"perfoverlay", Perfoverlay_Step},
 		{"uploadverify", Uploadverify_Step},
 		{"keyrect", Keyrect_Step},
 		{"stretchprobe", Stretchprobe_Step},

@@ -122,6 +122,7 @@ std::vector<HotkeyEntry> const Extra_Table = {
 	{ "ReloadRules", 850 },
 	{ "ReplayPause", 19 },
 	{ "ReplayFast", 107 },
+	{ "PerfOverlay", 848 },
 };
 
 // The defaults of the builds before KEYBOARD_DEFAULTS_VERSION. Saved files hold these keys for the
@@ -322,6 +323,7 @@ std::vector<HotkeyEntry> const Modern_Table = {
 	{ "ReloadRules", 850 },
 	{ "ReplayPause", 19 },
 	{ "ReplayFast", 107 },
+	{ "PerfOverlay", 848 },
 	{ "TeamCenter_10", 1072, 1 },
 	{ "TeamCenter_1", 1073, 1 },
 	{ "TeamCenter_2", 1074, 1 },
@@ -383,6 +385,9 @@ int Added_Command_Version(std::string const & command)
 {
 	if (command == "ReplayPause" || command == "ReplayFast") {
 		return(6);
+	}
+	if (command == "PerfOverlay") {
+		return(7);
 	}
 	return(0);
 }
@@ -501,8 +506,8 @@ void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std
 		return;
 	}
 
-	// A file of version 2 to 5 predates some Held entries, which Held_Binding_Version gives, and the
-	// commands Added_Command_Version names. Its other bindings are kept as saved.
+	// A file of version 2 to 6 predates some of the Held entries, which Held_Binding_Version gives, or of
+	// the commands Added_Command_Version names. Its other bindings are kept as saved.
 	if (version >= 2) {
 		for (HotkeyEntry const & entry : current) {
 			if (version >= Added_Command_Version(entry.Command) || Names_Command(entries, entry.Command)) {

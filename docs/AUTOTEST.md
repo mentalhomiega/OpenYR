@@ -47,6 +47,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `musiclist` | Logs each custom track with its title, whether the list allows it and its length in seconds |
 | `musicopen <n>` | Opens the n-th custom track's stream at no volume, counting from 0, logs `opened` or `failed`, and closes it |
 | `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
+| `perfoverlay <0\|1\|2\|report>` | Sets the performance overlay to off, Basic or Detailed, as its key does, and logs `AUTOTEST perfoverlay <level> recording <0\|1>`. The overlay then logs `AUTOTEST perfoverlay drew level <Basic\|Detailed>` the first time it draws at that level. `report` logs the numbers the overlay shows; they depend on the machine. See [PERFORMANCE.md](PERFORMANCE.md#performance-overlay) |
 | `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
 | `stop <TypeID>` | Sends the Stop command's idle event to the player's objects of that type that can move or fire. It logs how many it sent |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |

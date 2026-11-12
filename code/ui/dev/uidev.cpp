@@ -15,9 +15,14 @@
 #include "bench.h"
 #include "dbgprint.h"
 #include "globals.h"
+#include "goptions.h"
 #include "logic.h"
+#include "monotonic.h"
 #include "mono.h"
 #include "mpu.h"
+#include "options.h"
+#include "perfstat.h"
+#include "ui/dev/uiperfoverlay.h"
 #include "ui/rml/rmlrender.h"
 #include "video.h"
 
@@ -30,6 +35,9 @@
 static ImGuiContext * _Context = NULL;
 static bool _Shown = false;
 static bool _ShowDemo = false;
+
+// The performance overlay's window is in the ImGui frame last built.
+static bool _OverlayBuilt = false;
 static long long _LastFrameTicks = 0;
 
 static int _CPUSpeed = 0;
@@ -388,7 +396,13 @@ bool UIDev_Active(void)
 }
 
 
-void UIDev_Toggle(UIRmlRenderClass const & render)
+bool UIDev_Drawing(void)
+{
+	return(_Context != NULL && (_Shown || _OverlayBuilt));
+}
+
+
+static void Ensure_Context(UIRmlRenderClass const & render)
 {
 	if (_Context == NULL) {
 		IMGUI_CHECKVERSION();
@@ -413,17 +427,26 @@ void UIDev_Toggle(UIRmlRenderClass const & render)
 
 		DebugString("UI: Dear ImGui %s context created, processor %d MHz\n", ImGui::GetVersion(), _CPUSpeed);
 	}
+}
 
+
+void UIDev_Toggle(UIRmlRenderClass const & render)
+{
+	Ensure_Context(render);
 	_Shown = !_Shown;
 	render.Log_Resource_Counts(_Shown ? "developer overlay shown" : "developer overlay hidden");
 }
 
 
-void UIDev_Tick(void)
+void UIDev_Tick(UIRmlRenderClass const & render)
 {
-	if (!UIDev_Active()) {
+	// The settings file and the Graphics page set the level without the key, so recording follows it here.
+	Perf_Set_User(PERF_USER_OVERLAY, Options.PerfOverlay != PERF_OVERLAY_OFF);
+	if (!UIDev_Active() && !UIPerf_Overlay_Wanted()) {
+		_OverlayBuilt = false;
 		return;
 	}
+	Ensure_Context(render);
 
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
 	if (scale.DestWidth <= 0 || scale.DestHeight <= 0) {
@@ -451,21 +474,28 @@ void UIDev_Tick(void)
 	ImGui::GetStyle().FontScaleDpi = ratio;
 
 	ImGui::NewFrame();
-	Draw_Benchmark_Window();
-	if (_ShowDemo) {
-		ImGui::ShowDemoWindow(&_ShowDemo);
+	if (UIDev_Active()) {
+		Draw_Benchmark_Window();
+		if (_ShowDemo) {
+			ImGui::ShowDemoWindow(&_ShowDemo);
+		}
 	}
+	_OverlayBuilt = UIPerf_Overlay_Build();
 	ImGui::Render();
 }
 
 
 void UIDev_Render(UIRmlRenderClass & render)
 {
-	if (!UIDev_Active()) {
+	if (!UIDev_Drawing()) {
 		return;
 	}
 
+	std::int64_t const start = Monotonic_Nanoseconds();
 	render.Render_ImGui(ImGui::GetDrawData());
+	if (_OverlayBuilt) {
+		UIPerf_Overlay_Note_Drawn((Monotonic_Nanoseconds() - start) / 1e6);
+	}
 }
 
 
@@ -480,6 +510,7 @@ void UIDev_Shutdown(UIRmlRenderClass & render)
 	_Context = NULL;
 	_Shown = false;
 	_ShowDemo = false;
+	_OverlayBuilt = false;
 }
 
 

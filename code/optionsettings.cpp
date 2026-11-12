@@ -37,6 +37,12 @@ constexpr NameEntry GpuVoxelCloak_Names[] = {
 	{ "Ripple", GPU_VOXEL_CLOAK_RIPPLE },
 };
 
+constexpr NameEntry PerfOverlay_Names[] = {
+	{ "Off", PERF_OVERLAY_OFF },
+	{ "Basic", PERF_OVERLAY_BASIC },
+	{ "Detailed", PERF_OVERLAY_DETAILED },
+};
+
 
 constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
@@ -184,6 +190,13 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = PERFORMANCE, .Group = PATH_SEARCHES, .Label = "Path search threads",
 		.Tip = "How many processor threads search paths. Auto leaves one thread free and uses at most 8. The number does not change any path.",
 		.Needs = "ParallelPaths", .ZeroText = "Auto",
+	},
+	{
+		.Section = "Video", .Key = "PerfOverlay",
+		.Number = &OptionsClass::PerfOverlay, .Default = PERF_OVERLAY_OFF, .Names = PerfOverlay_Names,
+		.Page = GRAPHICS, .Group = "Diagnostics", .Label = "Performance overlay",
+		.Tip = "Shows the frame rates, a graph of recent frame times and where the time goes, over the top left of the map. The PerfOverlay key (Ctrl+Shift+P) also cycles it through Basic, Detailed and off.",
+		.SwitchOn = PERF_OVERLAY_BASIC,
 	},
 };
 

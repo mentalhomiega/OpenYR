@@ -100,5 +100,5 @@ writes every row back when any value changed, then calls `Apply_HDR_Highlights`.
 
 ## Converted so far
 
-The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the five GPU voxel keys), `SteadyVoxelPlacement`, `ShadowStacking` and `RenderThread`, and the two `[Options]` path search keys `ParallelPaths` and `PathThreads`. `RenderThread` and the path search keys are the rows of the Performance page. `.Names` and `.Number`
+The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the five GPU voxel keys), `SteadyVoxelPlacement`, `ShadowStacking`, `RenderThread` and `PerfOverlay`, and the two `[Options]` path search keys `ParallelPaths` and `PathThreads`. `RenderThread` and the path search keys are the rows of the Performance page. `.Names` and `.Number`
 cover the rest of `[Video]` and `[Options]` once each is moved beside the code that uses it.

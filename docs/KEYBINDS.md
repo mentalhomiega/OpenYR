@@ -61,6 +61,7 @@ Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAtt
 - `Taunt_1` to `Taunt_8` play taunts in multiplayer games in gamemd. In a single-player game they do nothing. In a multiplayer game they report that taunts are not available.
 - `MultiplayerDebug` toggles the multiplayer debug display. gamemd registers the command only when the game starts with `-MPDEBUG`, and nothing in its code turns the display on at start. This build always lists the command, and `-MPDEBUG` still starts the display shown. The display uses gamemd's labels. It does not show gamemd's `NFT`, `LNFT`, `Rout resp` or `MC resp` lines, and gamemd's display has no `FrameSendRate` line.
 - `ReplayPause` (Pause) and `ReplayFast` (numeric keypad plus) work only while a replay plays, in both schemes. Keyboard file version 6 adds them: a file of version 2 to 5 gains each key when the file names no command on it. [REPLAYS.md](REPLAYS.md) describes what they do.
+- `PerfOverlay` (Ctrl+Shift+P) shows the performance overlay, then its detailed level, then hides it, in both schemes. Keyboard file version 7 adds it: a file of version 2 to 6 gains the key when the file names no command on it and no other command holds the key. [PERFORMANCE.md](PERFORMANCE.md#performance-overlay) describes the overlay.
 - `PageUser` sends an event whose gamemd identity the decompile does not settle. `CursorCheat` shows a cell readout, and `ExtraSyncChecking` toggles extra sync logging. We have not ported them.
 
 ## Upgrading existing keyboard files
@@ -201,6 +202,7 @@ Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAtt
 | `LeftSidebarPageUp` | Interface | none | none | OpenTS only; no default |
 | `ManualPlace` | Interface | none | none | OpenTS only; no default |
 | `NextTheme` | Interface | none | none | OpenTS only; no default |
+| `PerfOverlay` | Interface | none | none | OpenTS only; Ctrl+Shift+P (848) in both schemes |
 | `PrevTheme` | Interface | none | none | OpenTS only; no default |
 | `QuickLoad` | Interface | none | none | OpenTS only; no default |
 | `QuickSave` | Interface | none | none | OpenTS only; no default |

@@ -246,6 +246,7 @@ void Test_Switch_Default_On(void)
 
 static NameEntry const Layer_Depth_Names[] = { { "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED }, { "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED } };
 static NameEntry const Cloak_Names[] = { { "Translucent", GPU_VOXEL_CLOAK_TRANSLUCENT }, { "Ripple", GPU_VOXEL_CLOAK_RIPPLE } };
+static NameEntry const Overlay_Names[] = { { "Off", PERF_OVERLAY_OFF }, { "Basic", PERF_OVERLAY_BASIC }, { "Detailed", PERF_OVERLAY_DETAILED } };
 
 
 // The GPU options as OptionsClass reads and writes them today; kept here to pin the table against that code.
@@ -273,6 +274,7 @@ struct Old_Gpu
 	bool RenderThread = false;
 	bool ParallelPaths = false;
 	int PathThreads = 0;
+	int PerfOverlay = PERF_OVERLAY_OFF;
 };
 
 
@@ -306,6 +308,8 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.RenderThread = ini.Get_Bool("Video", "RenderThread", old.RenderThread);
 	old.ParallelPaths = ini.Get_Bool("Options", "ParallelPaths", old.ParallelPaths);
 	old.PathThreads = std::clamp(ini.Get_Int("Options", "PathThreads", old.PathThreads), 0, 32);
+	ini.Get_String("Video", "PerfOverlay", "Off", name, sizeof(name));
+	old.PerfOverlay = Enum_From_Name(Overlay_Names, name, PERF_OVERLAY_OFF);
 }
 
 
@@ -334,6 +338,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_Bool("Video", "RenderThread", old.RenderThread);
 	ini.Put_Bool("Options", "ParallelPaths", old.ParallelPaths);
 	ini.Put_Int("Options", "PathThreads", old.PathThreads);
+	ini.Put_String("Video", "PerfOverlay", Enum_Name(Overlay_Names, old.PerfOverlay, "Off"));
 }
 
 
@@ -394,7 +399,7 @@ void Test_Real_Table(void)
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
 		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
-		"RenderThread", "ParallelPaths", "PathThreads",
+		"RenderThread", "ParallelPaths", "PathThreads", "PerfOverlay",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys");
 
@@ -407,6 +412,7 @@ void Test_Real_Table(void)
 		"GPU drawing", "Draw units on the GPU", "Soft shadows", "Shockwaves", "Glow", "Water ripples", "Cloud shadows", "Weather",
 		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness",
 		"Voxel drawing", "Steady voxel placement", "Stacked shadows",
+		"Diagnostics", "Performance overlay",
 	};
 	Check(labels == page_order, "the Graphics page keeps the GPU drawing rows in their old order, with the voxel rows after them");
 
@@ -414,6 +420,8 @@ void Test_Real_Table(void)
 		"[Video]\r\n",
 		"[Video]\r\nGpuRender=no\r\nSoftShadows=yes\r\nSoftShadowRadius=99\r\nBloom=1\r\nBloomStrength=0\r\nWeather=Rain\r\nWeatherStrength=999\r\nGpuVoxelScale=9\r\nGpuVoxelPath=Direct\r\nGpuVoxelLayerDepth=Ordered\r\nGpuVoxelCloak=Ripple\r\nCustomKey=abc\r\n\r\n[Options]\r\nGameSpeed=1\r\n",
 		"[Video]\r\nGpuVoxelPath=Image\r\n",
+		"[Video]\r\nPerfOverlay=Detailed\r\n",
+		"[Video]\r\nPerfOverlay=Loud\r\n",
 		"[Video]\r\nWeather=Bogus\r\nGpuVoxelPath=Sideways\r\nGpuVoxelCloak=Invisible\r\nGpuVoxels=true\r\nCloudShadowStrength=not a number\r\nWaterRipples=0\r\nShockwaves=TRUE\r\n",
 		"[Video]\r\nGpuRender=yes\r\nSoftShadows=no\r\nSoftShadowRadius=3\r\nShockwaves=no\r\nBloom=no\r\nBloomStrength=100\r\nWaterRipples=no\r\nWaterRippleStrength=100\r\nCloudShadows=no\r\nCloudShadowStrength=100\r\nGpuVoxels=no\r\nGpuVoxelSmooth=no\r\nGpuVoxelScale=1\r\nWeather=None\r\nWeatherStrength=100\r\n",
 	};

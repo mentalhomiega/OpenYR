@@ -259,7 +259,7 @@ static double RenderCost = 0.0;
 
 
 /// <summary>
-/// With performance recording on, logs once a second how evenly the game frames ended and how much processor time
+/// With the Perf lines on, logs once a second how evenly the game frames ended and how much processor time
 /// the process used. Call it as each game frame ends.
 /// </summary>
 static void Log_Tick_Intervals(void)
@@ -269,7 +269,7 @@ static void Log_Tick_Intervals(void)
 	static std::int64_t window_start = 0;
 	static std::uint64_t window_cpu = 0;
 
-	if (!Perf_Enabled) {
+	if (!Perf_Has_User(PERF_USER_LOG)) {
 		last_tick = 0;
 		return;
 	}
