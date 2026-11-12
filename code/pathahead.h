@@ -17,6 +17,11 @@ class FootClass;
 // about to ask for is searched on several threads, and the unit is handed that path when it asks.
 // The paths made depend on the game state alone, never on the number of threads.
 
+// Sets the match rule of a campaign or skirmish game started from the menus to the player's
+// ParallelPaths option. A match from a launch file keeps the file's rule, and a multiplayer match
+// the host's. Start_Scenario calls it.
+void Path_Ahead_Choose_Rule(void);
+
 // True while paths are made ahead in this game.
 bool Path_Ahead_Enabled(void);
 

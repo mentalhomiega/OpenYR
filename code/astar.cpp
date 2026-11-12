@@ -1575,53 +1575,33 @@ bool AStarClass::Plot_Straight_Line(FacingType * moves, int move_count, Cell con
 			int count1 = first_dist;
 			int count2 = second_dist;
 
-			while (count1 > 0 && !blocked) {
+			auto walk_steps = [&](int count, FacingType dir) {
+				while (count > 0 && !blocked) {
 
-				current = ::Adjacent_Cell(current, first_dir);
-				CellClass * cellptr = &Map[current];
+					current = ::Adjacent_Cell(current, dir);
+					CellClass * cellptr = &Map[current];
 
-				if (avoid_threats && Map.Cell_Threat(current, *house) * avoidance >= 0.01) {
-					threats++;
-				}
-
-				blocked = foot->Can_Enter_Cell(cellptr, first_dir, height) != MOVE_OK || Is_Predicted_Path(cellptr) || threats > 3 || (!fearless && threats > 0);
-				count1--;
-
-				int step_height = cellptr->Height;
-
-				if (height - step_height == BRIDGE_CELL_HEIGHT) {
-					height = step_height + BRIDGE_CELL_HEIGHT;
-					if (cellptr->IsUnderBridge) {
-						continue;
+					if (avoid_threats && Map.Cell_Threat(current, *house) * avoidance >= 0.01) {
+						threats++;
 					}
-				}
 
-				height = step_height;
-			}
+					blocked = foot->Can_Enter_Cell(cellptr, dir, height) != MOVE_OK || Is_Predicted_Path(cellptr) || threats > 3 || (!fearless && threats > 0);
+					count--;
 
-			while (count2 > 0 && !blocked) {
+					int step_height = cellptr->Height;
 
-				current = Adjacent_Cell(current, second_dir);
-				CellClass * cellptr = &Map[current];
-
-				if (avoid_threats && Map.Cell_Threat(current, *house) * avoidance >= 0.01) {
-					threats++;
-				}
-
-				blocked = foot->Can_Enter_Cell(cellptr, second_dir, height) != MOVE_OK || Is_Predicted_Path(cellptr) || threats > 3 || (!fearless && threats > 0);
-				count2--;
-
-				int step_height = cellptr->Height;
-
-				if (height - step_height == BRIDGE_CELL_HEIGHT) {
-					height = step_height + BRIDGE_CELL_HEIGHT;
-					if (cellptr->IsUnderBridge) {
-						continue;
+					if (height - step_height == BRIDGE_CELL_HEIGHT) {
+						height = step_height + BRIDGE_CELL_HEIGHT;
+						if (cellptr->IsUnderBridge) {
+							continue;
+						}
 					}
-				}
 
-				height = step_height;
-			}
+					height = step_height;
+				}
+			};
+			walk_steps(count1, first_dir);
+			walk_steps(count2, second_dir);
 		}
 
 		if (first_dist == 0 || blocked) {

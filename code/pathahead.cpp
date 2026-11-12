@@ -19,6 +19,7 @@
 #include "goptions.h"
 #include "perfstat.h"
 #include "session.h"
+#include "spawner.h"
 #include "walk.h"
 
 #include <algorithm>
@@ -343,6 +344,14 @@ void Add_Request(FootClass * foot, Cell const & to, int avoidance)
 	Requests.push_back(std::move(request));
 }
 
+}
+
+
+void Path_Ahead_Choose_Rule(void)
+{
+	if (!Spawner_Is_Active() && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH)) {
+		Session.Options.ParallelPaths = Options.ParallelPaths;
+	}
 }
 
 
