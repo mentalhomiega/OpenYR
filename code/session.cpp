@@ -1909,6 +1909,7 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ParallelPaths);
 	stream.Serialize(SWAllowed);
 	stream.Serialize(ScenarioDescription);
+	stream.Serialize(LobbyChoice);
 }
 
 /************************** end of session.cpp *****************************/

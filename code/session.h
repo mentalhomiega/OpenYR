@@ -482,6 +482,8 @@ struct GameOptionsType {
 	bool		ParallelPaths;		// Unit paths are searched in batches on several threads (docs/PERFORMANCE.md).
 	bool		SWAllowed;			// Off, the superweapon buildings the shell can disable cannot be built or granted.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
+	// The mod lobby's mode and options as LobbyChoiceType text (docs/LOBBY_MODES.md); empty when the match has none.
+	std::string	LobbyChoice;
 
 	bool Save(SaveStreamClass & stream);
 	bool Load(SaveStreamClass & stream);

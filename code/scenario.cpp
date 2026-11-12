@@ -131,6 +131,7 @@
 #include "mapgen.h"
 #include "mapsel.h"
 #include "misc.h"
+#include "modlobby.h"
 #include "mouse.h"
 #include "movie.h"
 #include "movieskip.h"
@@ -791,6 +792,10 @@ bool Read_Scenario(char const * fname)
 		file_read = Load_Scenario_File(requested, name, true) != 0;
 		if (file_read) {
 			random_map = requested.Get_Bool("Basic", "RandomMap", false);
+		}
+		// A mod's game mode and game options rewrite the map before anything reads it, as the client's merge does.
+		if (file_read && !random_map) {
+			Mod_Lobby_Apply_To_Scenario(requested, name);
 		}
 	}
 

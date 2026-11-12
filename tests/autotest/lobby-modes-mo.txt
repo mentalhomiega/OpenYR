@@ -1,0 +1,23 @@
+; Needs Mental Omega: opens the skirmish lobby with the mod's own game modes and game options, picks Unholy Alliance and
+; then No Bases, and takes a picture after each. Make the mod folder with scripts/setup_mo_mod.ps1, which copies the
+; client's mode and option files and names them in mod.ini. The log should show "[Lobby] Mental Omega declares 25 game
+; modes, 22 game options" and "AUTOTEST lobby mode", and the pictures the mode list, the options as rows, and the rows
+; No Bases sets greyed with "Set by No Bases".
+; Run from the workspace root, in PowerShell, with the folder the setup script made:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/lobby-modes-mo.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 240 -Mods "<mod folder>" -Filter "AUTOTEST|Lobby|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 4000
+ui shot lobby-mo-open
+ui set lobby-mode 4
+ui wait 1500
+ui shot lobby-mo-unholy
+ui set lobby-mode 1
+ui wait 1500
+ui shot lobby-mo-nobases
+ui click cancel
+ui wait 1000
+ui quit

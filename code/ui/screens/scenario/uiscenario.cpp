@@ -115,7 +115,7 @@ void UIScenarioPresenterClass::Rebuild(void)
 
 	std::set<int> found;
 	for (UIScenarioEntry const & entry : State.Entries) {
-		if (entry.Players > 0) {
+		if (entry.Players > 0 && entry.InMode) {
 			found.insert(entry.Players);
 		}
 	}
@@ -154,7 +154,7 @@ void UIScenarioPresenterClass::Rebuild(void)
 	State.Rows.clear();
 	for (int index = 0; index < (int)State.Entries.size(); index++) {
 		UIScenarioEntry const & entry = State.Entries[index];
-		if (listed[index] != index) {
+		if (listed[index] != index || !entry.InMode) {
 			continue;
 		}
 		if (State.Players != 0 && entry.Players != State.Players) {
@@ -207,7 +207,10 @@ void UIScenarioPresenterClass::Rebuild(void)
 		Service.Preview(State.Selected, State.Preview);
 	}
 
-	std::size_t const maps = first_of_file.size();
+	std::size_t maps = 0;
+	for (int index = 0; index < (int)State.Entries.size(); index++) {
+		maps += (listed[index] == index && State.Entries[index].InMode) ? 1 : 0;
+	}
 	if (State.Rows.size() == maps) {
 		State.Summary = std::to_string(maps) + (maps == 1 ? " map" : " maps");
 	} else {

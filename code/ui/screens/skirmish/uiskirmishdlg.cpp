@@ -22,6 +22,7 @@
 #include "houstype.h"
 #include "language/language.h"
 #include "mapgen.h"
+#include "modlobby.h"
 #include "mplayer.h"
 #include "msgbox.h"
 #include "netshare.h"
@@ -29,7 +30,10 @@
 #include "rules.h"
 #include "scenario.h"
 #include "session.h"
+#include "spawner.h"
+#include "strutil.h"
 #include "ui/screens/colorpick/uicolorpick.h"
+#include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/uiclamp.h"
 #include "ui/uienginehost.h"
@@ -82,6 +86,9 @@ struct SkirmishMemory
 	int MultiEngineer = -1;
 	int SuperWeapons = -1;
 	int BuildOffAlly = -1;
+
+	// The declared lobby's mode and options, as LobbyChoiceType text; empty when the settings file holds none.
+	std::string Lobby;
 };
 
 static SkirmishMemory Memory;
@@ -189,6 +196,7 @@ static void Load_Memory(void)
 	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
 		Memory.*option.Saved = ConfigINI.Get_Int(SKIRMISH_SECTION, option.Key, -1);
 	}
+	Memory.Lobby = ConfigINI.Get_String(SKIRMISH_SECTION, "Lobby", "");
 }
 
 
@@ -221,6 +229,12 @@ static void Remember_Preferences(UISkirmishState const & state)
 	}
 	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
 		ConfigINI.Put_Int(SKIRMISH_SECTION, option.Key, Memory.*option.Saved);
+	}
+
+	// A game without declarations leaves the remembered choice for the next run of the mod.
+	if (state.Declared) {
+		Memory.Lobby = state.Lobby.To_Text();
+		ConfigINI.Put_String(SKIRMISH_SECTION, "Lobby", Memory.Lobby.c_str());
 	}
 }
 
@@ -345,6 +359,12 @@ static void Commit(UISkirmishState const & state)
 	Session.Options.SWAllowed = state.SuperWeapons;
 	Session.Options.BuildOffAlly = state.BuildOffAlly;
 
+	// A declared lobby's options replace the screen's own, as the launch file the client writes would.
+	Session.Options.LobbyChoice.clear();
+	if (state.Declared) {
+		Spawner_Commit_Lobby_Choice(state.Lobby, Session.ScenarioFileName);
+	}
+
 	delete MultiplayerMapPreview;
 	MultiplayerMapPreview = NULL;
 }
@@ -367,11 +387,136 @@ static void Fill_Starts(UISkirmishState & state)
 }
 
 
+/// The place in the declarations of the mode the lobby shows, or -1 without one.
+static int Declared_Mode(UISkirmishState const & state)
+{
+	return(state.Declared && Index_In_Range(state.Mode, state.Modes.size()) ? state.Modes[state.Mode].Value : -1);
+}
+
+
+static void Show_Session_Map(UISkirmishState & state)
+{
+	state.MapName = Session.Options.ScenarioDescription;
+	Fill_Starts(state);
+	UI_Map_Preview_Image(state.Preview);
+}
+
+
+/// <summary>
+/// Moves the lobby to the first map on hand that the mode offers, unless the mode offers the map it shows. With no
+/// such map the lobby keeps its map, and the log says so.
+/// </summary>
+static void Move_To_Mode_Map(UISkirmishState & state, int mode)
+{
+	LobbyDeclarationsClass const & lobby = Mod_Lobby();
+	if (lobby.Map_In_Mode(Session.ScenarioFileName, mode)) {
+		return;
+	}
+	for (int index = 0; index < Session.Scenarios.Count(); index++) {
+		char const * file = Session.Scenarios[index]->Get_Filename();
+		if (lobby.Map_In_Mode(file, mode) && CCFileClass(file).Is_Available() && Set_Scenario_Info_From_Index(index)) {
+			Session.Options.ScenarioIndex = index;
+			Refresh_Preview();
+			Show_Session_Map(state);
+			return;
+		}
+	}
+	DebugString("[Lobby] No map on hand is offered in %s; the lobby keeps %s.\n", lobby.Modes[mode].Name.c_str(), Session.ScenarioFileName);
+}
+
+
+/// <summary>
+/// Builds the declared game options as rows from the choice and the map: a value the mode or the map sets is
+/// locked, and its note and tip name who set it. Hidden options keep their values in the choice but have no row.
+/// </summary>
+static void Settle_Lobby(UISkirmishState & state, bool mode_changed)
+{
+	int const mode = Declared_Mode(state);
+	if (mode < 0) {
+		return;
+	}
+	LobbyDeclarationsClass const & lobby = Mod_Lobby();
+	state.Lobby.Mode = lobby.Modes[mode].Name;
+	if (mode_changed) {
+		Move_To_Mode_Map(state, mode);
+	}
+
+	std::vector<LobbyResolvedType> const resolved = lobby.Resolve(state.Lobby, Session.ScenarioFileName);
+	int locked = 0;
+	state.LobbyRows.clear();
+	for (std::size_t index = 0; index < lobby.Options.size(); index++) {
+		LobbyOptionType const & option = lobby.Options[index];
+		if (!option.Shown) {
+			continue;
+		}
+		UISettingRow row;
+		row.Kind = option.Kind == LobbyOptionKind::CHECK ? UISettingRowKind::SWITCH : UISettingRowKind::CHOICE;
+		row.Key = UI_SKIRMISH_LOBBY_KEY + option.Name;
+		row.Label = option.Label;
+		row.Tip = option.Tip;
+		row.Items = option.Labels;
+		row.Value = resolved[index].Value;
+		row.Start = row.Value;
+		row.Default = option.Default;
+		if (resolved[index].Forced) {
+			std::string const by = resolved[index].ForcedBy.empty() ? "the map" : resolved[index].ForcedBy;
+			row.Locked = true;
+			row.Note = "Set by " + by;
+			row.Tip += (row.Tip.empty() ? "" : " ") + std::string("Locked: ") + by + " sets this option.";
+			locked++;
+		}
+		state.LobbyRows.push_back(row);
+	}
+	UI_Setting_Rows_Refresh(state.LobbyRows, [](SettingCondition) { return(true); });
+
+	state.ModeTip = locked == 0 ? std::string() : std::to_string(locked) + (locked == 1 ? " option is" : " options are") + " set by this mode or map.";
+}
+
+
+/// <summary>
+/// Offers the modes a mod declares, apart from those only a network match offers, and takes the remembered choice.
+/// </summary>
+static void Fill_Lobby(UISkirmishState & state)
+{
+	LobbyDeclarationsClass const & lobby = Mod_Lobby();
+	state.Declared = false;
+	state.Modes.clear();
+	for (std::size_t index = 0; index < lobby.Modes.size(); index++) {
+		if (!lobby.Modes[index].MultiplayerOnly) {
+			UISkirmishOption mode;
+			mode.Label = lobby.Modes[index].UIName;
+			mode.Value = (int)index;
+			state.Modes.push_back(mode);
+		}
+	}
+	if (state.Modes.empty()) {
+		return;
+	}
+
+	state.Declared = true;
+	state.Lobby = LobbyChoiceType::From_Text(Memory.Lobby);
+	state.Mode = 0;
+	for (std::size_t index = 0; index < state.Modes.size(); index++) {
+		if (Equals_No_Case(lobby.Modes[state.Modes[index].Value].Name, state.Lobby.Mode)) {
+			state.Mode = (int)index;
+		}
+	}
+	Settle_Lobby(state, true);
+}
+
+
 static void Pick_Map(UISkirmishState & state)
 {
 	int old = Session.Options.ScenarioIndex;
 
-	if (!Scenario_Dialog()) {
+	int const mode = Declared_Mode(state);
+	if (mode >= 0) {
+		UI_Scenario_Dialog_Filter([mode](std::string const & file) { return(Mod_Lobby().Map_In_Mode(file, mode)); });
+	}
+	bool const picked = Scenario_Dialog();
+	UI_Scenario_Dialog_Filter(nullptr);
+
+	if (!picked) {
 		Session.Options.ScenarioIndex = old;
 		Set_Scenario_Info_From_Index(old);
 		Refresh_Preview();
@@ -381,9 +526,8 @@ static void Pick_Map(UISkirmishState & state)
 		Session.Options.ScenarioIndex = old;
 	}
 
-	state.MapName = Session.Options.ScenarioDescription;
-	Fill_Starts(state);
-	UI_Map_Preview_Image(state.Preview);
+	Show_Session_Map(state);
+	Settle_Lobby(state, false);
 }
 
 
@@ -396,6 +540,11 @@ class UISkirmishEngineServiceClass : public UISkirmishServiceClass
 		virtual void Pick_Map(UISkirmishState & state) override
 		{
 			::Pick_Map(state);
+		}
+
+		virtual void Settle_Lobby(UISkirmishState & state, bool mode_changed) override
+		{
+			::Settle_Lobby(state, mode_changed);
 		}
 
 		virtual bool Can_Start(UISkirmishState const & state) override
@@ -538,6 +687,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 	Fill_Choice_Tables(state);
 	Fill_Rule_Options(state);
 	Restore_Remembered_Options(state);
+	Fill_Lobby(state);
 	Fill_Slots(state);
 
 	Clear_Vector(&Session.Players);
@@ -558,6 +708,9 @@ static void Log_Lobby_Setup(UISkirmishState const & state)
 		Session.ScenarioFileName, state.Rows, state.UnitCount, state.Credits, state.TechLevel, state.GameSpeed,
 		state.Bases, state.Crates, state.Fog, state.Bridges, state.Redeploy, state.ShortGame, state.MultiEngineer,
 		state.SuperWeapons, state.BuildOffAlly);
+	if (state.Declared) {
+		DebugString("AUTOTEST lobby mode %s choice %s\n", state.Lobby.Mode.c_str(), state.Lobby.To_Text().c_str());
+	}
 	for (int row = 0; row < state.Rows && row < (int)state.Slots.size(); row++) {
 		DebugString("AUTOTEST lobby row %d active %d %s\n", row, state.Is_Active(row) ? 1 : 0, UI_Skirmish_Slot_Text(state, row).c_str());
 	}

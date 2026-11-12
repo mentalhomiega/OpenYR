@@ -218,6 +218,7 @@ a default and returns it when the section or entry is missing.
 | `Get_Lepton`, `Get_Angle`, `Get_Cell`, `Get_RGBClass`, `Get_IntList`, `Get_Vector`, `Get_Offset` | Typed reads. `Get_Lepton` converts cells to leptons and `Get_Angle` converts degrees to 0 to 255. |
 | `Is_Present(section, entry)`, `Section_Present` | Test for a key or section without reading it. |
 | `TGet_TypeList(ini, section, entry, default, size)` | `findmake.h`. Reads a list of type names into a `TypeList`. |
+| `LobbyIniClass` | `lobbymodes.h`. INI text in file order that keeps empty values, which `INIClass` drops; names match without regard to case. For files written for the CnCNet client. |
 
 ## Colour
 
@@ -276,6 +277,7 @@ a default and returns it when the section or entry is missing.
 | `UI_Net_Fill_Options(state, ai_max, credits_min)` | `ui/screens/netlobby/uinetlobby.h` | Fills a lobby state from `Session.Options`. Used by LAN and CnCNet. |
 | `CNCNET_OPTION_*` | `cncnet/cncnetspawn.h` | Names of the CnCNet room options. |
 | `SPAWN_ALLY_KEYS` | `cncnet/spawnkeys.h` | SPAWN.INI alliance keys in slot order. Readers and writers must share this order. |
+| `Mod_Lobby()`, `Mod_Lobby_Launch_Keys(choice, map)` | `modlobby.h` | The game modes and options the mods in force declare, and the launch keys a choice writes for a map (LOBBY_MODES.md). |
 | `NativeSocket`, `NO_SOCKET`, `Close_Native(handle)` | `cncnet/cncnetnative.h` | Socket handle type for Winsock and POSIX. |
 | `Show_Random_Map_Preview()` | `netshare.h` | Shows a random map's picture as the dialog preview. |
 

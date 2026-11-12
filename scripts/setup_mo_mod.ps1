@@ -6,9 +6,11 @@
 #   expandmo*.mix, ecachemo*.mix, thememo.mix   the mod's archives (-Link links them instead of copying)
 #   rules, art, AI, sound, eva, theme and battle INI files, ra2md.csf and stringtable*.csf, when they sit loose in the install
 #   with -Maps, the .map files under MapsMO, flat into the folder, so a skirmish can name them
+#   the client's game modes and game options: INI\MentalOmegaMaps.ini, INI\Map Code\*.ini, INI\Game Options\*.ini and
+#   Resources\GameOptions.ini, kept in their folders, and a [Lobby] section in mod.ini that names them (docs/LOBBY_MODES.md)
 # The mod's uimd.ini hides the Single Player and Skirmish buttons, which suits the launcher the mod is played through, so mod.ini
 # sets FollowMenuButtons=no to keep them. Remove that line to follow the mod's menu.
-# It never copies a DLL, an EXE, a client file or a save. The base game's archives (ra2md.mix, langmd.mix and so on)
+# It never copies a DLL, an EXE, a save or any client file but the lobby files above. The base game's archives (ra2md.mix, langmd.mix and so on)
 # stay in the data directory; the mod needs its own copy of the game, as Mental Omega does.
 #
 # The mod is then chosen with Mods=MentalOmega in [Options] of RA2MD.INI, with -MOD=MentalOmega, or on the Mods screen,
@@ -62,6 +64,32 @@ foreach ($file in Get-ChildItem -LiteralPath $sourceFull -File) {
 	}
 }
 
+# The lobby files keep their folders, because the client's files name one another by those paths.
+$lobby = @('INI\MentalOmegaMaps.ini', 'Resources\GameOptions.ini')
+foreach ($folder in @('INI\Map Code', 'INI\Game Options')) {
+	$full = Join-Path $sourceFull $folder
+	if (Test-Path -LiteralPath $full -PathType Container) {
+		$lobby += @(Get-ChildItem -LiteralPath $full -File -Filter *.ini | ForEach-Object { Join-Path $folder $_.Name })
+	}
+}
+$lobbyFound = $false
+foreach ($relative in $lobby) {
+	$file = Join-Path $sourceFull $relative
+	if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { continue }
+	$target = Join-Path $destFull $relative
+	New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+	Install-File (Get-Item -LiteralPath $file) $target
+	if ($relative -eq 'INI\MentalOmegaMaps.ini') { $lobbyFound = $true }
+}
+
+# The modes the client also offers for maps its list does not name.
+$customModes = ''
+$definitions = Join-Path $sourceFull 'Resources\ClientDefinitions.ini'
+if (Test-Path -LiteralPath $definitions -PathType Leaf) {
+	$line = Select-String -LiteralPath $definitions -Pattern '^\s*AllowedCustomGameModes\s*=\s*(.*?)\s*$' | Select-Object -First 1
+	if ($line) { $customModes = $line.Matches[0].Groups[1].Value }
+}
+
 if ($Maps) {
 	$mapRoot = Join-Path $sourceFull 'MapsMO'
 	if (Test-Path -LiteralPath $mapRoot -PathType Container) {
@@ -94,6 +122,16 @@ ExpandPrefix=EXPANDMO,EXPANDMD
 [Menu]
 FollowMenuButtons=no
 "@
+if ($lobbyFound) {
+	$manifest += @"
+
+
+[Lobby]
+Maps=INI\MentalOmegaMaps.ini
+Options=Resources\GameOptions.ini
+CustomMapModes=$customModes
+"@
+}
 Set-Content -LiteralPath (Join-Path $destFull 'mod.ini') -Value $manifest -Encoding ascii
 
 "setup_mo_mod: $copied files written, $kept already there, mod.ini written in $destFull"

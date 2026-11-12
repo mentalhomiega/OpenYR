@@ -984,6 +984,7 @@ class HouseClass : public AbstractClass
 		template<typename T> T const * Get_Preferred(DynamicVectorClass<T const *> const & list) const;
 		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const;
 		template<typename T> int Count_Owned(CounterClass const & tally, TypeList<T const *> const & list) const;
+		bool Team_Breaks_Build_Limit(TeamTypeClass const & team) const;
 		bool AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
 		void Make_Base_Nodes(void);
 		static int Base_Cell_Weight_By_Distance(HouseClass const & house, Cell const & cell, int tie_breaker, int context);

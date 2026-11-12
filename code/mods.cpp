@@ -79,9 +79,9 @@ std::vector<std::string> const & Command_Line_Mods(void)
 }
 
 
-static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key)
+static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key, char const * section = "Mod")
 {
-	std::string const file = Trimmed(ini.Get_String("Mod", key), TRIM_SPACE_TAB);
+	std::string const file = Trimmed(ini.Get_String(section, key), TRIM_SPACE_TAB);
 	return(file.empty() ? file : folder + file);
 }
 
@@ -109,6 +109,9 @@ static void Read_Manifest(ModClass & mod)
 	mod.RulesFile = Overlay_Path(ini, mod.Folder, "Rules");
 	mod.ArtFile = Overlay_Path(ini, mod.Folder, "Art");
 	mod.AIFile = Overlay_Path(ini, mod.Folder, "AI");
+	mod.LobbyMapsFile = Overlay_Path(ini, mod.Folder, "Maps", "Lobby");
+	mod.LobbyOptionsFile = Overlay_Path(ini, mod.Folder, "Options", "Lobby");
+	mod.LobbyCustomMapModes = ini.Get_String("Lobby", "CustomMapModes");
 }
 
 

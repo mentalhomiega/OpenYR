@@ -32,7 +32,7 @@ UISettingRow const * Row_Named(std::vector<UISettingRow> const & rows, std::stri
 // A chain longer than the table can only be a declaration that needs itself, which reads as greyed.
 bool Row_Enabled(std::vector<UISettingRow> const & rows, UISettingRow const & row, UISettingConditionCheck const & met, std::size_t depth = 0)
 {
-	if (depth > rows.size() || (row.Condition != SettingCondition::NONE && !met(row.Condition))) {
+	if (row.Locked || depth > rows.size() || (row.Condition != SettingCondition::NONE && !met(row.Condition))) {
 		return(false);
 	}
 	if (row.Needs.empty()) {
@@ -57,6 +57,8 @@ char const * Kind_Name(UISettingRowKind kind)
 			return("heading");
 		case UISettingRowKind::SLIDER:
 			return("slider");
+		case UISettingRowKind::CHOICE:
+			return("choice");
 		default:
 			return("switch");
 	}
@@ -70,6 +72,8 @@ std::string Row_Classes(UISettingRow const & row)
 			return("section");
 		case UISettingRowKind::SLIDER:
 			return(row.Disabled ? "setting slider-row disabled" : "setting slider-row");
+		case UISettingRowKind::CHOICE:
+			return(row.Disabled ? "setting choice-row disabled" : "setting choice-row");
 		default:
 			return(row.Disabled ? "check setting disabled" : "check setting");
 	}
@@ -104,7 +108,11 @@ void UI_Setting_Rows_Refresh(std::vector<UISettingRow> & rows, UISettingConditio
 		row.Intent = Lower_Text(row.Key);
 		row.ElementId = UI_Setting_Element_Id(row.Key);
 		row.RowId = (row.Kind == UISettingRowKind::SWITCH) ? "switch-" + row.ElementId : row.ElementId + "-row";
-		row.ValueText = (row.Value == 0 && !row.ZeroText.empty()) ? row.ZeroText : std::to_string(row.Value) + row.Unit;
+		if (row.Kind == UISettingRowKind::CHOICE) {
+			row.ValueText = Index_In_Range(row.Value, row.Items.size()) ? row.Items[row.Value] : std::string();
+		} else {
+			row.ValueText = (row.Value == 0 && !row.ZeroText.empty()) ? row.ZeroText : std::to_string(row.Value) + row.Unit;
+		}
 	}
 }
 
@@ -120,6 +128,8 @@ bool UI_Setting_Row_Execute(std::vector<UISettingRow> & rows, std::string const 
 		}
 		if (row.Kind == UISettingRowKind::SLIDER) {
 			row.Value = (row.Min < row.Max) ? std::clamp(value, row.Min, row.Max) : value;
+		} else if (row.Kind == UISettingRowKind::CHOICE) {
+			row.Value = row.Items.empty() ? 0 : std::clamp(value, 0, (int)row.Items.size() - 1);
 		} else if (value == 0) {
 			row.Value = row.Off;
 		} else {

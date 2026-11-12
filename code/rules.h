@@ -133,6 +133,7 @@ class RulesClass
 		bool Do_Tiberiums(CCINIClass const & ini);
 
 		bool AI(CCINIClass const & ini);
+		bool Global_Controls(CCINIClass const & ini);
 		bool Powerups(CCINIClass const & ini);
 		bool Land_Types(CCINIClass const & ini);
 		bool IQ(CCINIClass const & ini);
@@ -2168,6 +2169,19 @@ class RulesClass
 		**	smaller this number, the more often checking for team creation will occur.
 		*/
 		TypeList<int> TeamDelays;
+
+		// [General] TeamRetaliate (Ares): set, an idle team turns on whoever hurts a member (yes) or keeps its orders
+		// (no). Unset keeps the engine's own response (docs/LOBBY_MODES.md).
+		bool IsTeamRetaliateSet = false;
+		bool IsTeamRetaliate = false;
+
+		// [GlobalControls] AllowParallelAIQueues (Ares): no lets a computer house build in one factory of a kind at a time.
+		bool IsAllowParallelAIQueues = true;
+
+		// [GlobalControls] AllowBypassBuildLimit (Ares), one per difficulty in the order of TeamDelays: no keeps a computer
+		// house from creating a team that would take a type past its BuildLimit. Unset lets every difficulty do so.
+		bool IsBypassBuildLimitSet = false;
+		bool AllowBypassBuildLimit[DIFF_COUNT] = {true, true, true};
 
 		/*
 		 * This is the delay, expressed in game frames, before a computer house first

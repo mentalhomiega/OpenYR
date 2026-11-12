@@ -1431,6 +1431,48 @@ int main(void)
 		Check(again.Is_Playable(10, 8, fault), "a match written out can be launched");
 	}
 
+	/*
+	 * A mod lobby's choice travels in [LobbyChoice] and counts in the identity only when written, and the
+	 * [Settings] entries the game does not read are kept in order and written back.
+	 */
+	{
+		static char const lobby[] =
+			"[Settings]\n"
+			"Scenario=XMP29U2.MAP\n"
+			"Name=Tester\n"
+			"Side=1\n"
+			"Color=0\n"
+			"StolenTech=True\n"
+			"OreKind=Double\n"
+			"[LobbyChoice]\n"
+			"Mode=Walls Only\n"
+			"chkAlpha=1\n"
+			"cmbBeta=2\n";
+		SpawnerConfigClass const config = Read(lobby, sizeof(lobby) - 1);
+		Check(config.LobbyChoice == "Walls Only|chkAlpha=1|cmbBeta=2", "[LobbyChoice] is read as the choice's text");
+		Check(config.UnreadSettings.size() == 2 && config.UnreadSettings[0].first == "StolenTech" && config.UnreadSettings[1].second == "Double",
+			"entries the game does not read are kept in file order");
+
+		std::string const text = config.Write_INI();
+		SpawnerConfigClass const again = Read(text.c_str(), (int)text.size());
+		Check(again.LobbyChoice == config.LobbyChoice && again.UnreadSettings.size() == 2, "the choice and the unread entries are written back");
+		Check(again.Session_Identity_CRC() == config.Session_Identity_CRC(), "a lobby match written out is the same match");
+
+		SpawnerConfigClass other = config;
+		other.LobbyChoice = "Walls Only|chkAlpha=0|cmbBeta=2";
+		Check(other.Session_Identity_CRC() != config.Session_Identity_CRC(), "another option value is another match");
+		other.LobbyChoice = "Skirmish|chkAlpha=1|cmbBeta=2";
+		Check(other.Session_Identity_CRC() != config.Session_Identity_CRC(), "another mode is another match");
+
+		SpawnerConfigClass const plain = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		std::string const plain_text = plain.Write_INI();
+		SpawnerConfigClass const reread = Read(plain_text.c_str(), (int)plain_text.size());
+		Check(reread.LobbyChoice.empty() && reread.Session_Identity_CRC() == plain.Session_Identity_CRC(), "a file without a choice keeps its identity");
+
+		static char const modeless[] = "[Settings]\nScenario=a.map\n[LobbyChoice]\nchkAlpha=1\n";
+		Check(Read(modeless, sizeof(modeless) - 1).LobbyChoice.empty(), "a choice without a mode is no choice");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

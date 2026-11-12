@@ -38,6 +38,8 @@ The developer guides are split by subject:
 - [Multiplayer game modes](MULTIPLAYER_MODES.md) — the modes gamemd defines
   in `MPModesMD.ini`, the virtual slots of its mode class, and what the port
   applies from them.
+- [Lobby game modes](LOBBY_MODES.md) — a mod's game modes and game options in
+  the CnCNet client's files, how a choice becomes a match, and the skirmish screen.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution and review rules.
 Player and modder documentation is under [manual/](../manual/README.md). When a

@@ -1559,7 +1559,9 @@ void HouseClass::AI(void)
 		SUGGESTED_TEAM_LIST team = Suggested_New_Team(false);
 		if (team.Count() > 0) {
 			for (int i = 0; i < team.Count(); i++) {
-				team[i]->Create_One_Of(this);
+				if (!Team_Breaks_Build_Limit(*team[i])) {
+					team[i]->Create_One_Of(this);
+				}
 			}
 		}
 
@@ -11141,6 +11143,39 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// With AllowBypassBuildLimit=no for this house's difficulty, would a team of the type take one of its members past a
+/// positive BuildLimit, counting what the house owns? Ares then keeps the computer from creating the team. Without the
+/// key, or with yes, the team is created as before and the answer is false.
+/// </summary>
+bool HouseClass::Team_Breaks_Build_Limit(TeamTypeClass const & team) const
+{
+	int const difficulty = std::clamp((int)Difficulty, 0, DIFF_COUNT - 1);
+	if (!Rule->IsBypassBuildLimitSet || Rule->AllowBypassBuildLimit[difficulty] || team.TaskForce == NULL) {
+		return(false);
+	}
+	for (int index = 0; index < team.TaskForce->ClassCount; index++) {
+		EnlistedMemberClass const & member = team.TaskForce->Members[index];
+		TechnoTypeClass const * type = member.Class;
+		if (type == NULL || type->BuildLimit <= 0) {
+			continue;
+		}
+		int owned = 0;
+		switch (type->RTTI) {
+			case RTTI_UNITTYPE: owned = UQuantity.Value(type->Fetch_Heap_ID()); break;
+			case RTTI_INFANTRYTYPE: owned = IQuantity.Value(type->Fetch_Heap_ID()); break;
+			case RTTI_AIRCRAFTTYPE: owned = AQuantity.Value(type->Fetch_Heap_ID()); break;
+			case RTTI_BUILDINGTYPE: owned = BQuantity.Value(type->Fetch_Heap_ID()); break;
+			default: break;
+		}
+		if (owned + member.Quantity > type->BuildLimit) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
