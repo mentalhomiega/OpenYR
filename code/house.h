@@ -985,6 +985,8 @@ class HouseClass : public AbstractClass
 		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const;
 		template<typename T> int Count_Owned(CounterClass const & tally, TypeList<T const *> const & list) const;
 		bool AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
+		bool AI_Prerequisite_Planned(int pre, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
+		bool AI_Prerequisite_List_Planned(TypeList<int> const & list, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
 		void Make_Base_Nodes(void);
 		static int Base_Cell_Weight_By_Distance(HouseClass const & house, Cell const & cell, int tie_breaker, int context);
 		static int Base_Cell_Weight_By_Defense_Coverage(HouseClass const & house, Cell const & cell, int tie_breaker, int context);
@@ -1043,6 +1045,8 @@ class HouseClass : public AbstractClass
 		bool Is_Reversed(ObjectTypeClass const * type) const;
 		bool Is_Secret_Item(ObjectTypeClass const * type) const;
 		bool Owns_Prerequisite_Override(TechnoTypeClass const * type) const;
+		// How many objects of the type the house has in service, as the A*Quantity counts hold them.
+		int Active_Count(TechnoTypeClass const * type) const;
 		bool Has_Keep_Alive(void) const;
 		bool Add_Reversed(TechnoTypeClass const * type);
 

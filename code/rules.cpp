@@ -82,6 +82,7 @@
 #include "mouse.h"
 #include "movie.h"
 #include "numparse.h"
+#include "objectkeyrules.h"
 #include "overtype.h"
 #include "psystype.h"
 #include "ptype.h"
@@ -96,6 +97,7 @@
 #include "suprtype.h"
 #include "taskforc.h"
 #include "teamtype.h"
+#include "techtype.h"
 #include "terrtype.h"
 #include "tiberium.h"
 #include "trim.h"
@@ -1002,6 +1004,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	WebbedInfantry = NULL;
 	PrerequisiteGDIFactory.Clear();
 	PrerequisiteNodFactory.Clear();
+	GenericPrerequisites.clear();
 
 	Load_Art_INI();
 
@@ -1194,6 +1197,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	IQ(ini);
 
 	General(ini);
+	Generic_Prerequisites(ini);
 	Objects(ini);
 	Difficulty(ini);
 	Crate_Rules(ini);
@@ -1669,6 +1673,135 @@ bool RulesClass::Color_Schemes(CCINIClass const & ini)
 		return(true);
 	}
 	return(false);
+}
+
+
+namespace {
+
+struct StockPrerequisiteGroup
+{
+	char const * Name;
+	int Group;
+	TypeList<int> RulesClass::* Buildings;
+};
+
+StockPrerequisiteGroup const StockPrerequisiteGroups[] = {
+	{"POWER", STRUCT_G_POWER, &RulesClass::PrerequisitePower},
+	{"FACTORY", STRUCT_G_FACTORY, &RulesClass::PrerequisiteFactory},
+	{"BARRACKS", STRUCT_G_BARRACKS, &RulesClass::PrerequisiteBarracks},
+	{"RADAR", STRUCT_G_RADAR, &RulesClass::PrerequisiteRadar},
+	{"TECH", STRUCT_G_TECH, &RulesClass::PrerequisiteTech},
+	{"GDIFACTORY", STRUCT_G_GDIFACTORY, &RulesClass::PrerequisiteGDIFactory},
+	{"NODFACTORY", STRUCT_G_NODFACTORY, &RulesClass::PrerequisiteNodFactory},
+	{"PROC", STRUCT_G_PROC, &RulesClass::PrerequisiteProc},
+};
+
+// Ares names the alternate key after the group with only its first letter upper case, as PrerequisiteNavalyardAlternate.
+std::string Alternate_Key(std::string const & group)
+{
+	std::string key = "Prerequisite";
+	for (std::size_t index = 0; index < group.size(); index++) {
+		key += (char)(index == 0 ? toupper((unsigned char)group[index]) : tolower((unsigned char)group[index]));
+	}
+	return(key + "Alternate");
+}
+
+}
+
+
+void GenericPrerequisiteClass::Serialize(SaveStreamClass & stream)
+{
+	stream.Serialize(Name);
+	stream.Serialize(Buildings);
+	stream.Serialize(Alternates);
+}
+
+
+std::optional<int> RulesClass::Prerequisite_Group(char const * name) const
+{
+	for (StockPrerequisiteGroup const & stock : StockPrerequisiteGroups) {
+		if (stricmp(stock.Name, name) == 0) {
+			return(stock.Group);
+		}
+	}
+	for (std::size_t index = 0; index < GenericPrerequisites.size(); index++) {
+		if (stricmp(GenericPrerequisites[index].Name.c_str(), name) == 0) {
+			return(STRUCT_G_CUSTOM - (int)index);
+		}
+	}
+	return(std::nullopt);
+}
+
+
+TypeList<int> const * RulesClass::Prerequisite_Group_Buildings(int group) const
+{
+	for (StockPrerequisiteGroup const & stock : StockPrerequisiteGroups) {
+		if (stock.Group == group) {
+			return(&(this->*stock.Buildings));
+		}
+	}
+	GenericPrerequisiteClass const * custom = Custom_Prerequisite_Group(group);
+	return(custom != NULL ? &custom->Buildings : NULL);
+}
+
+
+GenericPrerequisiteClass const * RulesClass::Custom_Prerequisite_Group(int group) const
+{
+	int const index = STRUCT_G_CUSTOM - group;
+	if (index < 0 || index >= (int)GenericPrerequisites.size()) {
+		return(NULL);
+	}
+	return(&GenericPrerequisites[index]);
+}
+
+
+/// <summary>
+/// Reads the Ares [GenericPrerequisites] groups and the [General] Prerequisite<Name>Alternate key of each group
+/// it adds. A stock group name (POWER, FACTORY, BARRACKS, RADAR, TECH, PROC) replaces the matching [General]
+/// PrerequisiteX list; PrerequisiteProcAlternate stays as it is. A group lists buildings only.
+/// </summary>
+/// <returns>bool; Was a [GenericPrerequisites] section found?</returns>
+bool RulesClass::Generic_Prerequisites(CCINIClass const & ini)
+{
+	static char const * const SECTION = "GenericPrerequisites";
+	bool const present = ini.Is_Present(SECTION);
+	int const count = present ? ini.Entry_Count(SECTION) : 0;
+	for (int entry = 0; entry < count; entry++) {
+		char const * name = ini.Get_Entry(SECTION, entry);
+		TypeList<int> buildings = ini.Get_BuildingType_List(ini, SECTION, name, TypeList<int>());
+		for (int index = buildings.Count() - 1; index >= 0; index--) {
+			if (buildings[index] < 0) {
+				buildings.Delete_Index(index);
+			}
+		}
+
+		std::optional<int> const group = Prerequisite_Group(name);
+		if (!group.has_value()) {
+			GenericPrerequisites.push_back(GenericPrerequisiteClass{name, buildings, {}});
+		} else if (*group <= STRUCT_G_CUSTOM) {
+			GenericPrerequisites[STRUCT_G_CUSTOM - *group].Buildings = buildings;
+		} else {
+			for (StockPrerequisiteGroup const & stock : StockPrerequisiteGroups) {
+				if (stock.Group == *group) {
+					this->*stock.Buildings = buildings;
+				}
+			}
+		}
+	}
+
+	for (GenericPrerequisiteClass & group : GenericPrerequisites) {
+		std::string const key = Alternate_Key(group.Name);
+		if (ini.Is_Present("General", key.c_str())) {
+			group.Alternates.Clear();
+			for (std::string const & name : ObjectKeyRules::Split_List(ini.Get_String("General", key.c_str()))) {
+				TechnoTypeClass const * type = TechnoTypeClass::From_Name(name.c_str());
+				if (type != NULL) {
+					group.Alternates.Add(type);
+				}
+			}
+		}
+	}
+	return(present);
 }
 
 
@@ -3728,6 +3861,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrerequisiteNodFactory);
 	stream.Serialize(EngineerCaptureLevel);
 	stream.Serialize(EngineerDamage);
+	stream.Serialize(GenericPrerequisites);
 }
 
 
@@ -3882,6 +4016,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 
 	HarvesterUnit.Delete((UnitTypeClass const *)target);
 	PrerequisiteProcAlternate.Delete((UnitTypeClass const *)target);
+	for (GenericPrerequisiteClass & group : GenericPrerequisites) {
+		group.Alternates.Delete((TechnoTypeClass const *)target);
+	}
 	BaseUnit.Delete((UnitTypeClass const *)target);
 
 	BuildConst.Delete((BuildingTypeClass const *)target);

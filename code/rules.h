@@ -37,6 +37,10 @@
 
 #include "diff.hh"
 
+#include <optional>
+#include <string>
+#include <vector>
+
 class AircraftTypeClass;
 class AnimTypeClass;
 class BuildingTypeClass;
@@ -89,6 +93,20 @@ class DifficultyClass
 		}
 };
 
+class TechnoTypeClass;
+
+// A prerequisite group that [GenericPrerequisites] adds beyond the stock ones (Ares).
+struct GenericPrerequisiteClass
+{
+	std::string Name;
+	TypeList<int> Buildings;
+
+	// [General] Prerequisite<Name>Alternate: objects that satisfy the group when no member building is owned.
+	TypeList<TechnoTypeClass const *> Alternates;
+
+	void Serialize(SaveStreamClass & stream);
+};
+
 class RulesClass
 {
 	public:
@@ -98,6 +116,14 @@ class RulesClass
 		void Initialize(CCINIClass const & ini);
 
 		bool Addition(CCINIClass const & ini);
+
+		// The prerequisite entry a group name stands for: a STRUCT_G_ code, or nothing when no group has the name.
+		std::optional<int> Prerequisite_Group(char const * name) const;
+		// The buildings that satisfy a group code; NULL for a code that names no group.
+		TypeList<int> const * Prerequisite_Group_Buildings(int group) const;
+		// The [GenericPrerequisites] group of a code below the stock ones; NULL for a stock or unknown code.
+		GenericPrerequisiteClass const * Custom_Prerequisite_Group(int group) const;
+		bool Generic_Prerequisites(CCINIClass const & ini);
 
 		bool Special_Weapons(CCINIClass const & ini);
 		bool Audio_Visual_Rules(CCINIClass const & ini);
@@ -742,6 +768,9 @@ class RulesClass
 
 		// The vehicles that stand in for a refinery in a PROC prerequisite, such as the slave miner.
 		TypeList<UnitTypeClass const *> PrerequisiteProcAlternate;
+
+		// The groups [GenericPrerequisites] defines beyond the stock ones; entry N is group code STRUCT_G_CUSTOM - N.
+		std::vector<GenericPrerequisiteClass> GenericPrerequisites;
 
 		/*
 		 * These are the sound effects of a gate rising to bar the way and lowering again to

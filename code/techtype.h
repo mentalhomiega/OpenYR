@@ -880,6 +880,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		TypeList<int> Prerequisite;
 
+		// Ares Prerequisite.List1 to Prerequisite.ListN: further lists, any one of which may be met in place of Prerequisite.
+		std::vector<TypeList<int>> PrerequisiteLists;
+
+		// Ares Prerequisite.Negative: owning any of these buildings or groups makes the type unbuildable.
+		TypeList<int> PrerequisiteNegative;
+
+		// Ares Prerequisite.RequiredTheaters: the theater names the type may be built in; empty allows every theater.
+		std::vector<std::string> PrerequisiteTheaters;
+
 		// The kinds of stolen technology a house must have stolen before it can build this type, as indexes from 0 to 31 (Ares Prerequisite.StolenTechs).
 		std::vector<int> PrerequisiteStolenTechs;
 

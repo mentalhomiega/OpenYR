@@ -479,29 +479,7 @@ bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip
 /// </summary>
 bool AITriggerTypeClass::Owned_Count_Meets_Condition(HouseClass * owner)
 {
-	int count = 0;
-	TechnoTypeClass * obj = ConditionObject;
-
-	if (obj != NULL) {
-		int id = obj->Fetch_Heap_ID();
-		switch (obj->RTTI) {
-			case RTTI_BUILDINGTYPE:
-				count = owner->ABQuantity.Value(id);
-				break;
-
-			case RTTI_UNITTYPE:
-				count = owner->AUQuantity.Value(id);
-				break;
-
-			case RTTI_INFANTRYTYPE:
-				count = owner->AIQuantity.Value(id);
-				break;
-
-			case RTTI_AIRCRAFTTYPE:
-				count = owner->AAQuantity.Value(id);
-				break;
-		}
-	}
+	int const count = ConditionObject != NULL ? owner->Active_Count(ConditionObject) : 0;
 
 	switch (Params.Condition) {
 		case COND_LT:

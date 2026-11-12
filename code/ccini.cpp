@@ -81,6 +81,7 @@
 #include "ccini.h"
 
 #include "_rtti.h"
+#include "_rules.h"
 #include "_source.h"
 #include "_theater.h"
 #include "airctype.h"
@@ -94,6 +95,7 @@
 #include "incdec.h"
 #include "infatype.h"
 #include "movie.h"
+#include "rules.h"
 #include "scheme.h"
 #include "shapipe.h"
 #include "side.h"
@@ -2218,9 +2220,9 @@ bool CCINIClass::Put_SpeedType(char const * section, char const * entry, SpeedTy
 
 /// <summary>
 /// Fetches a building type list from the INI database.
-/// This routine will read a comma separated list of building names. The special group
-/// names, such as "POWER" and "BARRACKS", are recognized and stored as the matching group
-/// identifier rather than as an individual building type.
+/// This routine will read a comma separated list of building names. A prerequisite group
+/// name, stock (such as "POWER") or from [GenericPrerequisites], is stored as its group code
+/// rather than as an individual building type.
 /// </summary>
 /// <param name="ini">The INI database to fetch the entry from.</param>
 /// <returns>Returns with the list of building types specified. If the entry could not be
@@ -2234,40 +2236,10 @@ TypeList<int> CCINIClass::Get_BuildingType_List(CCINIClass const & ini, char con
 		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 
-			bool isgroup = false;
-			if (!strcmpi(token, "POWER")) {
-				list.Add(STRUCT_G_POWER);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "FACTORY")) {
-				list.Add(STRUCT_G_FACTORY);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "BARRACKS")) {
-				list.Add(STRUCT_G_BARRACKS);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "RADAR")) {
-				list.Add(STRUCT_G_RADAR);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "TECH")) {
-				list.Add(STRUCT_G_TECH);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "GDIFACTORY")) {
-				list.Add(STRUCT_G_GDIFACTORY);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "NODFACTORY")) {
-				list.Add(STRUCT_G_NODFACTORY);
-				isgroup = true;
-			}
-			if (!strcmpi(token, "PROC")) {
-				list.Add(STRUCT_G_PROC);
-				isgroup = true;
-			}
-			if (!isgroup) {
+			std::optional<int> const group = Rule != NULL ? Rule->Prerequisite_Group(token) : std::nullopt;
+			if (group.has_value()) {
+				list.Add(*group);
+			} else {
 				int building = BuildingTypeClass::From_Name(token);
 				if (building != STRUCT_NONE) {
 					list.Add(building);
