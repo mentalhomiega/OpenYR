@@ -150,6 +150,11 @@ void Read_Settings(void)
 		ThreadCount = (int)std::thread::hardware_concurrency() - 1;
 		ThreadCount = std::clamp(ThreadCount, 1, 8);
 	}
+	// OPENYR_PATH_THREADS=<threads> sets this machine's count alone, for sync tests that pair counts.
+	char const * own_threads = std::getenv("OPENYR_PATH_THREADS");
+	if (ThreadCount > 0 && own_threads != NULL && std::atoi(own_threads) > 0) {
+		ThreadCount = std::atoi(own_threads);
+	}
 	ThreadCount = std::clamp(ThreadCount, 0, 32);
 	char const * check = std::getenv("OPENYR_PATH_AHEAD_CHECK");
 	IsChecked = check != NULL && check[0] == '1';

@@ -174,7 +174,7 @@ Late-game benchmark, 8 threads, one run each (ms; the two games play out differe
 
 With it on, 86% of the path requests took a path from a batch. The largest second batch held 370 searches and took 16 ms on 8 threads and 104 ms on 1.
 
-Three environment variables are for development. `OPENYR_PATH_AHEAD=<threads>` overrides the rule and the thread count; 0 turns the batches off. `OPENYR_PATH_AHEAD_CHECK=1` repeats every batch on one thread with a separate pathfinder and logs `PATHAHEAD CHECK DIFFERENCE` for any path that differs. `OPENYR_PATH_AHEAD_STATS=1` logs a `PATHAHEAD frame` line of counts every 600 frames. On the late-game benchmark the check found no difference, and runs with 1 and 8 threads gave the same 182 game-state hashes.
+Four environment variables are for development. `OPENYR_PATH_AHEAD=<threads>` overrides the rule and the thread count; 0 turns the batches off. `OPENYR_PATH_THREADS=<threads>` sets the thread count alone; `scripts/run_netsync.ps1 -ParallelPaths -PathThreadsA 1 -PathThreadsB 8` uses it to pair two counts in one match. `OPENYR_PATH_AHEAD_CHECK=1` repeats every batch on one thread with a separate pathfinder and logs `PATHAHEAD CHECK DIFFERENCE` for any path that differs. `OPENYR_PATH_AHEAD_STATS=1` logs a `PATHAHEAD frame` line of counts every 600 frames. On the late-game benchmark the check found no difference, and runs with 1 and 8 threads gave the same 182 game-state hashes.
 
 ## Limits
 
