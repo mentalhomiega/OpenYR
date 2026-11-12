@@ -28,14 +28,43 @@ tiles that no later tile, extra tile image or opaque draw in the layer covers, a
 ripples the ground only there, before it draws the objects. A shadow on the water ripples with it.
 
 After 30 passes in a row that the GPU drew, the tile layer is no longer copied into the frame; the
-GPU reads it from the tile layer directly, and only when that layer has changed. On Windows the
-tile layer lists the memory pages written to it, so a changed layer is compared only on the rows
-written since the last pass; elsewhere the whole layer is compared. If a pass then
+GPU reads it from the tile layer directly. On Windows the GPU keeps a texture of the tile layer's
+memory as it lies, and a scroll moves the layer's picture inside that memory without copying it, so
+a scroll sends only the strips it brings into view ([Uploads](#uploads)). Elsewhere the layer is
+copied on a scroll and compared whole. If a pass then
 falls back to software, the draws the recorder does not hold are missing from that one frame, and
 the copy resumes until the GPU has again drawn 30 passes in a row.
 
 The autotest steps `gpureplay` and `gpucheck` check the recorder and the GPU against the software
 result; [AUTOTEST.md](AUTOTEST.md) documents them.
+
+## Uploads
+
+On Windows the tile layer, the depth buffer and the alpha buffer go to the GPU in parts, and nothing goes
+up for a pass that wrote to none of them.
+
+The tile layer's memory is twice the size of its picture, up to 16,384 rows. A scroll moves the place
+where the picture starts in that memory (`DSurface::Scroll`), as the depth and alpha buffers have always
+done, and the shader finds a pixel of each by row and column from that start. When the picture reaches an
+end of the memory, the part that stays in view is copied back to the middle and the whole layer goes up
+once. `OPENYR_NO_TILE_SCROLL=1` in the environment makes a scroll copy the layer instead, which is how the
+two pictures were compared.
+
+The background pass of the map view names each rectangle it draws into (`Tactical::Note_Layer_Writes`):
+the whole view on a full redraw, the strips a scroll brings in, the cells flagged for redraw and the dirty
+areas. The depth and alpha buffers name what their own pans, fills and updates write. A pass sends the
+named rectangles. A memory page written outside every named rectangle goes up as whole rows, so a draw
+that names nothing still reaches the GPU, unless it shares a page of 4,096 bytes with a named rectangle.
+More than 512 rectangles named between two passes count as the whole buffer.
+
+A new draw into the tile layer, the depth buffer or the alpha buffer that is not clipped to one of those
+rectangles must name its own (`DSurface::Note_Written`, `ZBuffer::Note_Written`, `ABuffer::Note_Written`);
+otherwise the GPU can keep showing the old pixels beside a rectangle that was named.
+
+The autotest step `uploadcheck` ([AUTOTEST.md](AUTOTEST.md)) and `OPENYR_UPLOAD_CHECK=1` in the environment
+compare each upload with the buffer it came from and log an `UPLOAD_CHECK DIFFERENCE` line for an upload
+that left a value out. `tests/autotest/tile-scroll-uploads.txt` scrolls a zoomed-out view in every
+direction under the check.
 
 ## Settings
 
@@ -107,8 +136,8 @@ The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTI
   with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 175 in
   software. With `SoftShadows` it drew 243, with `Bloom` 255, with `WaterRipples` 250, with
   `CloudShadows` and `Weather=Snow` 244, and with every effect on 230; no effect added more than half a millisecond of processor time to a picture. Each pass uploads only
-  the rows of the base picture, the depth buffer and the alpha buffer that changed since the last
-  drawn pass. Outside Windows the depth and alpha buffers cannot list the pages written to them,
+  the parts of the base picture, the depth buffer and the alpha buffer that changed since the last
+  drawn pass ([Uploads](#uploads)). Outside Windows the depth and alpha buffers cannot list the pages written to them,
   so those two go up whole every pass. With the frame rate uncapped (`FrameRateLimit=0`, `VSync=no`)
   the same benchmark drew about 507 pictures per second with `GpuRender` and 154 in software.
 - On Windows the game watches the frame surface's written pages. The frame is split into 32 column

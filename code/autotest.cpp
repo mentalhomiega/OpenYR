@@ -7014,6 +7014,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
 		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
 		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
+		{"uploadcheck", [](StepType const & step) {GpuMap_Set_Upload_Check(step.Argument_Int() != 0);}},
 		{"gpushadowcount", [](StepType const & step) {GpuMap_Count_Shadows(); DebugString("AUTOTEST %s\n", step.Command.c_str());}},
 		{"drawprobe", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Probe);}},
 		{"shield", Shield_Step},

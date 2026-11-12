@@ -549,30 +549,45 @@ static void Update_Rect(Store & store, unsigned short const * values, int width,
 }
 
 
-// OPENYR_UPLOAD_CHECK=1 keeps a copy of what each watched store was sent and logs an UPLOAD_CHECK DIFFERENCE
+// The upload check keeps a copy of what each watched store was sent and logs an UPLOAD_CHECK DIFFERENCE
 // line when the values differ from it after an upload, which means a write was neither named nor listed.
+// OPENYR_UPLOAD_CHECK=1 turns it on from the start, and the uploadcheck autotest step turns it on and off.
+static bool _UploadChecked = [] {
+	char const * const value = std::getenv("OPENYR_UPLOAD_CHECK");
+	return(value != NULL && value[0] == '1');
+}();
+static std::unordered_map<Store const *, std::vector<unsigned short>> _UploadCopies;
+static int _UploadDifferences = 0;
+static int _NamedUploads = 0;
+
 static bool Upload_Is_Checked(void)
 {
-	static bool const checked = [] {
-		char const * const value = std::getenv("OPENYR_UPLOAD_CHECK");
-		bool const on = value != NULL && value[0] == '1';
-		if (on) {
-			DebugString("UPLOAD_CHECK on\n");
-		}
-		return(on);
-	}();
-	return(checked);
+	return(_UploadChecked);
+}
+
+
+void GpuMap_Set_Upload_Check(bool enabled)
+{
+	if (_UploadChecked && !enabled) {
+		DebugString("UPLOAD_CHECK differences %d, uploads of named rectangles %s\n", _UploadDifferences, _NamedUploads > 0 ? "yes" : "no");
+	}
+	_UploadChecked = enabled;
+	_UploadCopies.clear();
+	_UploadDifferences = 0;
+	_NamedUploads = 0;
 }
 
 
 static void Check_Upload(Store const & store, unsigned short const * values, int width, int rows, std::vector<Rect> const & sent)
 {
-	static std::unordered_map<Store const *, std::vector<unsigned short>> copies;
-	std::vector<unsigned short> & copy = copies[&store];
 	std::size_t const count = (std::size_t)width * rows;
-	if (copy.size() != count) {
-		copy.assign(count, 0);
+	auto found = _UploadCopies.find(&store);
+	if (found == _UploadCopies.end() || found->second.size() != count) {
+		// The first upload seen is taken to leave the store equal to the values.
+		_UploadCopies[&store].assign(values, values + count);
+		return;
 	}
+	std::vector<unsigned short> & copy = found->second;
 	for (Rect const & rect : sent) {
 		for (int r = 0; r < rect.Height; r++) {
 			std::size_t const at = (std::size_t)(rect.Y + r) * width + rect.X;
@@ -584,6 +599,7 @@ static void Check_Upload(Store const & store, unsigned short const * values, int
 		while (copy[at] == values[at]) {
 			at++;
 		}
+		_UploadDifferences++;
 		DebugString("UPLOAD_CHECK DIFFERENCE store %d row %d column %d of %dx%d\n", (int)(&store - _Stores), (int)(at / width), (int)(at % width), width, rows);
 		std::memcpy(copy.data(), values, count * sizeof(unsigned short));
 	}
@@ -618,6 +634,7 @@ static bool Fill_R16_Watched(Store & store, unsigned short const * values, int w
 	std::size_t const page = WriteWatch_Page_Size();
 	static std::vector<unsigned char> covered;
 	if (named) {
+		_NamedUploads += rects.empty() ? 0 : 1;
 		covered.assign(bytes / page + 1, 0);
 		for (Rect const & rect : rects) {
 			Rect const inside = Intersect(rect, Rect(0, 0, width, rows));

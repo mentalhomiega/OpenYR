@@ -163,6 +163,10 @@ std::uint16_t GpuMap_Mask_Texture(void);
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
 
+// Turns the upload check on or off (the uploadcheck autotest step). Turning it off logs how many uploads
+// left a store different from its values, and whether any upload sent named rectangles.
+void GpuMap_Set_Upload_Check(bool enabled);
+
 // Makes the next pass the GPU draws log a GPU_VOXEL_SHADOW line with the shadow blits of voxel objects it holds
 // and how many of their pixels the finished picture shows darkened (the gpushadowcount autotest step).
 void GpuMap_Count_Shadows(void);
