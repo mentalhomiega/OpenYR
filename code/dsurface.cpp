@@ -54,6 +54,7 @@
 #include "emissive.h"
 #include "emissive_surface.h"
 #include "gpudraw.h"
+#include "gpumap.h"
 #include "misc.h"
 #include "shadowplane.h"
 #include "video.h"
@@ -123,13 +124,20 @@ static unsigned Next_Serial(void)
  * HISTORY:                                                                                    *
  *   02/07/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
+// Where a picture of size bytes starts in a block: the middle, on a whole pixel pair.
+static std::size_t Centre_Offset(std::size_t blocksize, std::size_t size)
+{
+	return(((blocksize - size) / 2) & ~(std::size_t)3);
+}
+
+
 DSurface::DSurface(int width, int height) :
 	DSurface(width, height, false)
 {
 }
 
 
-DSurface::DSurface(int width, int height, bool watched) :
+DSurface::DSurface(int width, int height, bool watched, bool scrolls) :
 	BASECLASS(width, height),
 	BytesPerPixel(2),
 	IsPrimary(false),
@@ -139,14 +147,21 @@ DSurface::DSurface(int width, int height, bool watched) :
 	GDIBuffer(NULL),
 	Pitch(0),
 	IsWatched(watched),
+	Block(NULL),
+	BlockSize(0),
+	IsScrolled(false),
 	Changes(Next_Change()),
 	Serial(Next_Serial())
 {
 	if (watched) {
 		// The same row layout a bitmap would have, so the pixels are addressed the same way.
 		Pitch = (width * 2 + 3) & ~3;
-		GDIBuffer = WriteWatch_Alloc((std::size_t)Pitch * height);
-		std::memset(GDIBuffer, 0, (std::size_t)Pitch * height);
+		std::size_t const size = (std::size_t)Pitch * height;
+		// A block the GPU reads in place has at most GPU_MAP_STORE_ROWS rows.
+		BlockSize = scrolls ? std::max(size, std::min(size * 2, (std::size_t)Pitch * GPU_MAP_STORE_ROWS)) : size;
+		Block = WriteWatch_Alloc(BlockSize);
+		std::memset(Block, 0, BlockSize);
+		GDIBuffer = (char *)Block + Centre_Offset(BlockSize, size);
 		return;
 	}
 
@@ -207,7 +222,63 @@ bool DSurface::Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & r
 		runs.clear();
 		return(false);
 	}
-	return(WriteWatch_Take(GDIBuffer, (std::size_t)Pitch * Get_Height(), runs, steady));
+	std::size_t const size = (std::size_t)Pitch * Get_Height();
+	if (BlockSize == size) {
+		return(WriteWatch_Take(Block, size, runs, steady));
+	}
+	if (!WriteWatch_Take(Block, BlockSize, runs, steady) || IsScrolled) {
+		IsScrolled = false;
+		runs.clear();
+		return(false);
+	}
+	std::size_t const offset = (std::size_t)((char *)GDIBuffer - (char *)Block);
+	std::size_t kept = 0;
+	for (auto const & run : runs) {
+		std::size_t const first = std::max(run.first, offset);
+		std::size_t const end = std::min(run.second, offset + size);
+		if (first < end) {
+			runs[kept++] = std::make_pair(first - offset, end - offset);
+		}
+	}
+	runs.resize(kept);
+	return(true);
+}
+
+
+bool DSurface::Written_Block(std::vector<std::pair<std::size_t, std::size_t>> & runs) const
+{
+	if (!IsWatched) {
+		runs.clear();
+		return(false);
+	}
+	IsScrolled = false;
+	return(WriteWatch_Take(Block, BlockSize, runs, false));
+}
+
+
+bool DSurface::Scroll(int dx, int dy)
+{
+	std::size_t const size = (std::size_t)Pitch * Get_Height();
+	if (Block == NULL || BlockSize == size) {
+		return(false);
+	}
+	char * const block = (char *)Block;
+	char * const moved = (char *)GDIBuffer - ((std::ptrdiff_t)dy * Pitch + (std::ptrdiff_t)dx * 2);
+	if (moved >= block && moved + size <= block + BlockSize) {
+		GDIBuffer = moved;
+	} else {
+		// The picture has reached an end of the block, so the part that stays in view is copied to the middle.
+		char * const centre = block + Centre_Offset(BlockSize, size);
+		char * const first = std::max(moved, block);
+		char * const end = std::min(moved + size, block + BlockSize);
+		if (first < end) {
+			std::memmove(centre + (first - moved), first, (std::size_t)(end - first));
+		}
+		GDIBuffer = centre;
+	}
+	IsScrolled = true;
+	Changes = Next_Change();
+	return(true);
 }
 
 
@@ -250,7 +321,7 @@ DSurface::~DSurface(void)
 	}
 
 	if (IsWatched) {
-		WriteWatch_Free(GDIBuffer);
+		WriteWatch_Free(Block);
 	}
 	GDIBuffer = NULL;
 }

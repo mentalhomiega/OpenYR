@@ -30,6 +30,9 @@ struct GpuRipple
 
 // A depth or alpha ring buffer as it is stored: Width * Height values, the area's top-left value at
 // Start and each next row Width values on, wrapping past the end to the beginning.
+// The most rows or columns a store of the GPU pass can have.
+inline constexpr int GPU_MAP_STORE_ROWS = 16384;
+
 struct GpuRing
 {
 	unsigned short const * Values;
@@ -61,6 +64,10 @@ struct GpuMapPass
 	// With Persistent, the depth and alpha buffers as stored; Depth and Alpha are then unused.
 	GpuRing DepthRing = {};
 	GpuRing AlphaRing = {};
+
+	// With Persistent, the tile layer's memory when the base picture is read from it in place: Values
+	// is watched memory (writewatch.h) and Base and BaseChanged are unused. Values is NULL otherwise.
+	GpuRing BaseRing = {};
 
 	// At most 16 rings drawn over the finished picture, or NULL for none.
 	std::vector<GpuRipple> const * Ripples = NULL;

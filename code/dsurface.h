@@ -72,7 +72,18 @@ class DSurface : public XSurface
 		 * Constructs a working surface whose written pages Written_Runs lists. It has no
 		 * device context, so GetDC yields NULL and a stretched blit from it runs in software.
 		 */
-		DSurface(int width, int height, bool watched);
+		DSurface(int width, int height, bool watched, bool scrolls = false);
+
+		// Moves the picture by dx, dy pixels without copying it when the surface was constructed with
+		// scrolls; false means nothing moved. The pixels the move brings in from outside hold anything.
+		bool Scroll(int dx, int dy);
+
+		// The memory the pixels lie in and its size, which is larger than the picture on a surface that
+		// scrolls; Get_Buffer points into it. Written_Block lists the bytes of the block written since
+		// the last call of it or of Written_Runs, as Written_Runs does for the picture.
+		void * Get_Block(void) const {return(Block);}
+		std::size_t Get_Block_Size(void) const {return(BlockSize);}
+		bool Written_Block(std::vector<std::pair<std::size_t, std::size_t>> & runs) const;
 
 		/*
 		**	Get/Release a windows device context for the surface pixels.
@@ -218,6 +229,13 @@ class DSurface : public XSurface
 
 		// The pixels came from WriteWatch_Alloc instead of a bitmap.
 		bool IsWatched;
+
+		// The watched allocation; GDIBuffer lies BlockSize minus the picture's size or less past its start.
+		void * Block;
+		std::size_t BlockSize;
+
+		// Set by Scroll: the next Written_Runs reports no list, because every pixel moved.
+		mutable bool IsScrolled;
 
 		bool Stretch_Without_GDI(Rect const & dcliprect, Rect const & destrect, DSurface const & source, Rect const & scliprect, Rect const & sourcerect);
 

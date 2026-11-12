@@ -100,6 +100,7 @@
 #include "ramp.hh"
 #include "scrspeed.hh"
 
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <memory>
@@ -1105,6 +1106,25 @@ void Tactical::Render_Outside_Map(Surface & surface)
 /// <param name="surface">The composite surface the foreground objects are drawn onto.</param>
 /// <param name="fullredraw">Redraw the whole view rather than just the scrolled strips?</param>
 /// <param name="drawpass">Which rendering pass to perform. See DrawPassType.</param>
+// Moves the tile layer's picture and planes by the pan without copying the picture, when the layer
+// can scroll; false means nothing moved. The rectangles are the kept part before and after the move.
+static bool Scroll_Tile_Layer(int xoffset, int yoffset, Rect const & destrect, Rect const & sourcerect)
+{
+	DSurface * const tiles = dynamic_cast<DSurface *>(TileSurface);
+	static bool const off = std::getenv("OPENYR_NO_TILE_SCROLL") != NULL;
+	if (off || tiles == NULL || !tiles->Scroll(xoffset, yoffset)) {
+		return(false);
+	}
+	EmissivePlane * const planes[2] = { Emissive_Plane_For(TileSurface), ShadowPlane_For(TileSurface) };
+	for (EmissivePlane * plane : planes) {
+		if (plane != NULL) {
+			Emissive_Copy_Rect(*plane, destrect.X, destrect.Y, *plane, sourcerect.X, sourcerect.Y, sourcerect.Width, sourcerect.Height);
+		}
+	}
+	return(true);
+}
+
+
 void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 {
 	/*
@@ -1197,8 +1217,12 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 					TacticalDimensions.Width - panwidth, TacticalDimensions.Height - panheight);
 
 		if (xoffset != 0 || yoffset != 0) {
+			bool scrolled = false;
 			if (drawpass == DRAW_PASS_PAN || drawpass == DRAW_PASS_FULL) {
-				CompositeSurface->Blit_From(destrect, *TileSurface, sourcerect);
+				scrolled = Scroll_Tile_Layer(xoffset, yoffset, destrect, sourcerect);
+				if (!scrolled) {
+					CompositeSurface->Blit_From(destrect, *TileSurface, sourcerect);
+				}
 			}
 			if (drawpass == DRAW_PASS_PAN || drawpass == DRAW_PASS_FULL) {
 				DepthBuffer->Pan(-xoffset, -yoffset, 0xFFFFu);
@@ -1206,7 +1230,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			if (drawpass == DRAW_PASS_PAN || drawpass == DRAW_PASS_FULL) {
 				AlphaBuffer->Pan(-xoffset, -yoffset, 0x7Fu);
 			}
-			if (drawpass == DRAW_PASS_PAN || drawpass == DRAW_PASS_FULL) {
+			if ((drawpass == DRAW_PASS_PAN || drawpass == DRAW_PASS_FULL) && !scrolled) {
 
 				/*
 				 * Swap the composite and tile surfaces so the freshly-panned image becomes the

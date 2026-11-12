@@ -54,7 +54,7 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 
 // Width of the textures that hold byte arenas; fs_mapdraw.sc uses the same value.
 static int const ARENA_WIDTH = 4096;
-static int const TEXTURE_LIMIT = 16384;
+static int const TEXTURE_LIMIT = GPU_MAP_STORE_ROWS;
 // The most pixels a scaled pass's scene, snapshot and post textures may each have: a little over a 3840x2160 view at
 // scale 4, 536.9 MB a texture in RGBA8.
 static std::int64_t const SCALED_PIXEL_LIMIT = std::int64_t(1) << 27;
@@ -148,6 +148,9 @@ static bool _TargetDrawn = false;
 // Set when the kept pass could not be submitted; the next pass is then drawn in software.
 static bool _SubmitFailed = false;
 static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _BaseRingUniform = BGFX_INVALID_HANDLE;
+// Whether the base store holds the tile layer's memory as it lies, instead of the area's picture.
+static bool _BaseInPlace = false;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
 // The tile layer's shadow plane, kept between passes so only changed rows go up.
 static bgfx::UniformHandle _TileShadowSampler = BGFX_INVALID_HANDLE;
@@ -246,6 +249,7 @@ static bool Start(void)
 	_RippleUniform = bgfx::createUniform("u_ripples", bgfx::UniformType::Vec4, RIPPLE_LIMIT);
 	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
+	_BaseRingUniform = bgfx::createUniform("u_basering", bgfx::UniformType::Vec4);
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
 	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
@@ -714,6 +718,7 @@ static void Bind_Stores(float const * ring)
 		bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 	}
 	bgfx::setUniform(_RingUniform, ring, 2);
+	bgfx::setUniform(_BaseRingUniform, ring + 8);
 }
 
 
@@ -772,6 +777,7 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 			bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
+		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(BGFX_STATE_WRITE_RGB);
 		bgfx::submit(VIEW_MAPSHADOW, _Program);
 	}
@@ -1003,7 +1009,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact) {
 		return(false);
 	}
-	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing }) {
+	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing, &pass.BaseRing }) {
 		if (pass.Persistent && ring->Values != NULL && (ring->Width > TEXTURE_LIMIT || ring->Height > TEXTURE_LIMIT)) {
 			return(false);
 		}
@@ -1063,7 +1069,7 @@ static void Set_Ring(float * ring, int column, int row, int width, int height)
 
 
 // Uploads the translator stacks and the pass's depth, alpha, shape and base stores. ring receives
-// the depth and alpha ring addressing that the shadow and blit shaders read. False means a store
+// the depth, alpha and base ring addressing that the shadow and blit shaders read. False means a store
 // could not take its data.
 static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned short> const & lut, std::vector<unsigned short> const & alut, float * ring)
 {
@@ -1091,7 +1097,9 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference) && valid;
 				Set_Ring(ring + i * 4, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 			} else if (!bgfx::isValid(stores[i]->Handle)) {
-				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true) && valid;
+				// No blit reads this store, so it only has to exist.
+				static unsigned short const unread = 0;
+				valid = Fill_R16(*stores[i], &unread, 1, 1, true) && valid;
 			}
 		}
 	} else {
@@ -1099,7 +1107,17 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 		valid = Fill_R16(_Stores[SLOT_ABUF], pass.Alpha->data(), area.Width, area.Height, true) && valid;
 	}
 	valid = Fill_Arena(_Stores[SLOT_ZSHAPE], list.ZShapeArena.data(), list.ZShapeArena.size()) && valid;
-	if (pass.Persistent && pass.BaseChanged != NULL) {
+	// A store filled one way holds nothing the other way can add to.
+	bool const inplace = pass.Persistent && pass.BaseRing.Values != NULL;
+	if (inplace != _BaseInPlace) {
+		_BaseInPlace = inplace;
+		_Stores[SLOT_BASE].Tracked = false;
+	}
+	if (inplace) {
+		GpuRing const & source = pass.BaseRing;
+		valid = Fill_R16_Watched(_Stores[SLOT_BASE], source.Values, source.Width, source.Height, reference) && valid;
+		Set_Ring(ring + 8, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
+	} else if (pass.Persistent && pass.BaseChanged != NULL) {
 		valid = Fill_R16_Changed(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, *pass.BaseChanged) && valid;
 	} else {
 		valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true) && valid;
@@ -1359,6 +1377,7 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
+		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(state);
 		bgfx::submit(view, _Program);
 	}
@@ -1425,9 +1444,10 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
 	// a ring of the area's size that starts at 0.
-	float ring[8];
+	float ring[12];
 	Set_Ring(ring, 0, 0, area.Width, area.Height);
 	Set_Ring(ring + 4, 0, 0, area.Width, area.Height);
+	Set_Ring(ring + 8, 0, 0, area.Width, area.Height);
 	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
 	int const shadows = Shadow_Mask_On() ? Count_Shadow_Blits(list) : 0;
@@ -1831,7 +1851,7 @@ void GpuMap_Shutdown(void)
 		Release_Handle(*program);
 	}
 	for (bgfx::UniformHandle * uniform : { &_BlurUniform, &_MaskSampler, &_ShadowSampler, &_SceneSampler, &_RippleUniform, &_RippleInfoUniform,
-		&_RingUniform, &_SnapshotSampler, &_TileShadowSampler, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
+		&_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_TileShadowSampler, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
 		&_GlowMaskSampler, &_GlowSampler }) {
 		Release_Handle(*uniform);
 	}
