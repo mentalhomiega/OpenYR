@@ -131,6 +131,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ReloadDelay(0),
 	EmptyReloadDelay(-1),
 	ReloadIncrement(0),
+	ReloadAmount(1),
+	EmptyReloadAmountSetting(INT_MIN),
 	PipWrap(0),
 	Ownable(0),
 	CameoData(NULL),
@@ -138,6 +140,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CameoSortOrder(0),
 	Rotation(0),
 	ROT(0),
+	TurretROT(-1),
 	Points(0),
 	CollateralDamageCoefficient(.33f),
 	WalkRate(1),
@@ -1100,6 +1103,7 @@ void TechnoTypeClass::Read_Movement_INI(CCINIClass const & ini)
 	IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
 	IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
 	ROT = ini.Get_Int(Name(), "ROT", ROT);
+	TurretROT = ini.Get_Int(Name(), "TurretROT", TurretROT);
 	IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
 	IsPushy = ini.Get_Bool(Name(), "Pushy", IsPushy);
 	IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
@@ -1557,6 +1561,8 @@ void TechnoTypeClass::Read_Ammo_INI(CCINIClass const & ini)
 	ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
 	EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
 	ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
+	ReloadAmount = ini.Get_Int(Name(), "ReloadAmount", ReloadAmount);
+	EmptyReloadAmountSetting = ini.Get_Int(Name(), "EmptyReloadAmount", EmptyReloadAmountSetting);
 	PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
 }
 
@@ -2385,6 +2391,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ReloadDelay);
 	stream.Serialize(EmptyReloadDelay);
 	stream.Serialize(ReloadIncrement);
+	stream.Serialize(ReloadAmount);
+	stream.Serialize(EmptyReloadAmountSetting);
 	stream.Serialize(PipWrap);
 	stream.Serialize(Ownable);
 	stream.Serialize(IsAllowedToStartInMultiplayer);
@@ -2393,6 +2401,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CameoSortOrder);
 	stream.Serialize(Rotation);
 	stream.Serialize(ROT);
+	stream.Serialize(TurretROT);
 	stream.Serialize(TurretOffset);
 	stream.Serialize(Points);
 	stream.Serialize(Explosion);
@@ -2593,10 +2602,13 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsSprayAttack);
 	crc(ReadinessReductionMultiplier);
 	crc(ReloadIncrement);
+	crc(ReloadAmount);
+	crc(EmptyReloadAmountSetting);
 	crc(PipWrap);
 	crc((int)Ownable);
 	crc(Rotation);
 	crc(ROT);
+	crc(TurretROT);
 	crc(TurretOffset);
 	crc(Points);
 	crc(Explosion.Count());

@@ -295,7 +295,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 
 	if (Class != NULL) {
 		PrimaryFacing.Set_ROT(Class->ROT);
-		SecondaryFacing.Set_ROT(Class->ROT);
+		SecondaryFacing.Set_ROT(Class->Turret_ROT());
 		Ammo = Class->Initial_Ammo();
 		IsCloakable = Class->IsCloakable;
 		Strength = Class->MaxStrength;
@@ -875,8 +875,15 @@ void UnitClass::Reload_AI(void)
 	if (Class->MaxAmmo == -1 || Class->MaxAmmo <= Ammo || Reload != 0) {
 		return;
 	}
-	Ammo++;
-	Mark(MARK_CHANGE);
+	int const amount = Ammo == 0 ? Class->Empty_Reload_Amount() : Class->ReloadAmount;
+	if (Ammo == 0 && amount <= 0) {
+		return;
+	}
+	int const restored = std::clamp(Ammo + amount, 0, Class->MaxAmmo);
+	if (restored != Ammo) {
+		Ammo = restored;
+		Mark(MARK_CHANGE);
+	}
 	Start_Reloading();
 }
 

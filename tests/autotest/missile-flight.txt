@@ -1,0 +1,179 @@
+; Missile flight keys: the [General] V3Rocket* keys and the Ares per-type Missile.* keys (Missile.Custom=yes makes a type fly on its own values).
+; A V3 launcher at 100,80 strikes a tank 8 cells west and a Dreadnought at 66,62 strikes a Pill Box at 66,80. The rocket lines give each missile's
+; height above the ground every 8 frames. missile-flight.ini (loaded at frame 5) sets V3RocketAltitude=1536 and V3RocketTiltFrames=20 for the V3 rocket
+; (stock 768 and 60), and makes the Dreadnought's DMISL a custom missile with Missile.Altitude=2000, no lazy curve and a TakeOffAnim.
+; Expected (observed on the build that added the keys, rocket lines every 8 frames, first volley): the V3 rocket peaks at 1699 above the ground and is gone by frame 296;
+; without the overlay it peaks at 1105 and is gone by frame 304. The Dreadnought's first missiles peak at 2511 with the overlay and at 937 without it.
+; Per-key reading: V3Rocket*, DMisl* and CMisl* are stock keys (RulesClass::Read_INI), Missile.* are Ares keys (Ares manual, Custom Missiles).
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/missile-flight.txt -Build agentNN -Map XMP08T2.MAP -Seconds 150 -Filter "AUTOTEST   rocket|Rocket: |Exception"
+5 rules missile-flight.ini
+10 command CenterBase
+30 reveal
+40 own V3 100 80
+41 face 192 100 80
+42 neutral HTNK 92 80
+43 own DRED 66 62
+50 spawn GAPILL 66 80
+60 strike DRED 66 80
+100 strike V3 92 80
+64 rocket DMISL
+64 rocket V3ROCKET
+72 rocket DMISL
+72 rocket V3ROCKET
+80 rocket DMISL
+80 rocket V3ROCKET
+88 rocket DMISL
+88 rocket V3ROCKET
+96 rocket DMISL
+96 rocket V3ROCKET
+104 rocket DMISL
+104 rocket V3ROCKET
+112 rocket DMISL
+112 rocket V3ROCKET
+120 rocket DMISL
+120 rocket V3ROCKET
+128 rocket DMISL
+128 rocket V3ROCKET
+136 rocket DMISL
+136 rocket V3ROCKET
+144 rocket DMISL
+144 rocket V3ROCKET
+152 rocket DMISL
+152 rocket V3ROCKET
+160 rocket DMISL
+160 rocket V3ROCKET
+168 rocket DMISL
+168 rocket V3ROCKET
+176 rocket DMISL
+176 rocket V3ROCKET
+184 rocket DMISL
+184 rocket V3ROCKET
+192 rocket DMISL
+192 rocket V3ROCKET
+200 rocket DMISL
+200 rocket V3ROCKET
+208 rocket DMISL
+208 rocket V3ROCKET
+216 rocket DMISL
+216 rocket V3ROCKET
+224 rocket DMISL
+224 rocket V3ROCKET
+232 rocket DMISL
+232 rocket V3ROCKET
+240 rocket DMISL
+240 rocket V3ROCKET
+248 rocket DMISL
+248 rocket V3ROCKET
+256 rocket DMISL
+256 rocket V3ROCKET
+264 rocket DMISL
+264 rocket V3ROCKET
+272 rocket DMISL
+272 rocket V3ROCKET
+280 rocket DMISL
+280 rocket V3ROCKET
+288 rocket DMISL
+288 rocket V3ROCKET
+296 rocket DMISL
+296 rocket V3ROCKET
+304 rocket DMISL
+304 rocket V3ROCKET
+312 rocket DMISL
+312 rocket V3ROCKET
+320 rocket DMISL
+320 rocket V3ROCKET
+328 rocket DMISL
+328 rocket V3ROCKET
+336 rocket DMISL
+336 rocket V3ROCKET
+344 rocket DMISL
+344 rocket V3ROCKET
+352 rocket DMISL
+352 rocket V3ROCKET
+360 rocket DMISL
+360 rocket V3ROCKET
+368 rocket DMISL
+368 rocket V3ROCKET
+376 rocket DMISL
+376 rocket V3ROCKET
+384 rocket DMISL
+384 rocket V3ROCKET
+392 rocket DMISL
+392 rocket V3ROCKET
+400 rocket DMISL
+400 rocket V3ROCKET
+408 rocket DMISL
+408 rocket V3ROCKET
+416 rocket DMISL
+416 rocket V3ROCKET
+424 rocket DMISL
+424 rocket V3ROCKET
+432 rocket DMISL
+432 rocket V3ROCKET
+440 rocket DMISL
+440 rocket V3ROCKET
+448 rocket DMISL
+448 rocket V3ROCKET
+456 rocket DMISL
+456 rocket V3ROCKET
+464 rocket DMISL
+464 rocket V3ROCKET
+472 rocket DMISL
+472 rocket V3ROCKET
+480 rocket DMISL
+480 rocket V3ROCKET
+488 rocket DMISL
+488 rocket V3ROCKET
+496 rocket DMISL
+496 rocket V3ROCKET
+504 rocket DMISL
+504 rocket V3ROCKET
+512 rocket DMISL
+512 rocket V3ROCKET
+520 rocket DMISL
+520 rocket V3ROCKET
+528 rocket DMISL
+528 rocket V3ROCKET
+536 rocket DMISL
+536 rocket V3ROCKET
+544 rocket DMISL
+544 rocket V3ROCKET
+552 rocket DMISL
+552 rocket V3ROCKET
+560 rocket DMISL
+560 rocket V3ROCKET
+568 rocket DMISL
+568 rocket V3ROCKET
+576 rocket DMISL
+576 rocket V3ROCKET
+584 rocket DMISL
+584 rocket V3ROCKET
+592 rocket DMISL
+592 rocket V3ROCKET
+600 rocket DMISL
+600 rocket V3ROCKET
+608 rocket DMISL
+608 rocket V3ROCKET
+616 rocket DMISL
+616 rocket V3ROCKET
+624 rocket DMISL
+624 rocket V3ROCKET
+632 rocket DMISL
+632 rocket V3ROCKET
+640 rocket DMISL
+640 rocket V3ROCKET
+648 rocket DMISL
+648 rocket V3ROCKET
+656 rocket DMISL
+656 rocket V3ROCKET
+664 rocket DMISL
+664 rocket V3ROCKET
+672 rocket DMISL
+672 rocket V3ROCKET
+680 rocket DMISL
+680 rocket V3ROCKET
+688 rocket DMISL
+688 rocket V3ROCKET
+696 rocket DMISL
+696 rocket V3ROCKET
+720 quit

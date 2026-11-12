@@ -439,7 +439,7 @@ void SpawnManagerClass::AI(void)
 				Release_To_Kamikaze(node.Unit);
 				if (node.IsMissile) {
 					// gamemd takes the V3's takeoff times for the V3 and the Dreadnought missile's for every other rocket (0x6B7230).
-					RulesClass::RocketTypeStruct const & rocket = SpawnType == Rule->V3Rocket.Type ? Rule->V3Rocket : Rule->DMisl;
+					RulesClass::RocketTypeStruct const & rocket = SpawnType->IsMissileCustom ? SpawnType->MissileFlight : SpawnType == Rule->V3Rocket.Type ? Rule->V3Rocket : Rule->DMisl;
 					node.Status = NODE_TAKEOFF;
 					node.Start_Timer(rocket.TiltFrames + rocket.PauseFrames);
 				} else {

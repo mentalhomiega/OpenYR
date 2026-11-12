@@ -951,6 +951,12 @@ void BulletClass::Resolve_Impact(Coord & coord, bool forced, bool collided, Impa
 					fuse = FUSE_EXPLODE_CLOSE;
 				}
 			}
+
+			// A Ranged=yes projectile that has flown its weapon's ProjectileRange from where it was fired runs out of fuel (Ares).
+			if (fuse == FUSE_WAIT && Class->IsFueled && Weapon != NULL && SourceCoord != COORD_NONE &&
+				SourceCoord.Gamemd_Distance_To(TPoint2D<int>(coord.X, coord.Y)) >= Weapon->ProjectileRange) {
+				fuse = FUSE_EXPLODE_FAR;
+			}
 			if (!forced && (Class->IsDropping || fuse == FUSE_WAIT)) {
 				/*
 				**	Certain projectiles lose strength when they travel.

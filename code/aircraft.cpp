@@ -3376,7 +3376,7 @@ void AircraftClass::Scatter(Coord const & , bool, bool )
 /// <returns>bool; Is the aircraft flying?</returns>
 bool AircraftClass::In_Air(void) const
 {
-	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type && !Class->IsMissileCustom) {
 		return(ObjectClass::In_Air());
 	}
 	if (IsInLimbo) {
@@ -3397,7 +3397,7 @@ bool AircraftClass::In_Air(void) const
 /// <returns>bool; Is the aircraft on the ground?</returns>
 bool AircraftClass::On_Ground(void) const
 {
-	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type && !Class->IsMissileCustom) {
 		return(ObjectClass::On_Ground());
 	}
 	return(!IsInLimbo && !In_Air());

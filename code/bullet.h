@@ -75,6 +75,7 @@ class BulletClass : public ObjectClass
 		Cell LastCell;
 
 	public:
+		Coord Launch_Coord(void) const { return(SourceCoord); }
 
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.

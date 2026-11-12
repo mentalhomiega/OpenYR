@@ -1302,7 +1302,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 			LimpetSpeedFactor = 0;
 
 			PrimaryFacing.Set_ROT(TClass->ROT);
-			SecondaryFacing.Set_ROT(TClass->ROT);
+			SecondaryFacing.Set_ROT(TClass->Turret_ROT());
 
 			/*
 			**	If it's a mine layer, re-arm him if he's empty. This always takes precedence
@@ -5346,7 +5346,7 @@ bool TechnoClass::Fire_Without_Projectile(AbstractClass * target, WeaponTypeClas
 			techno->LimpetType.Set(House);
 			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
 			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			SecondaryFacing.Set_ROT((int)((double)TClass->Turret_ROT() * techno->LimpetSpeedFactor));
 			if (weapon->Sound.Count() > 0) {
 				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
 			}
@@ -7224,7 +7224,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		LimpetType.Clear();
 		LimpetSpeedFactor = 0.0;
 		PrimaryFacing.Set_ROT(TClass->ROT);
-		SecondaryFacing.Set_ROT(TClass->ROT);
+		SecondaryFacing.Set_ROT(TClass->Turret_ROT());
 	}
 
 	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);

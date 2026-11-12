@@ -1894,9 +1894,11 @@ class RulesClass
 			void Read(CCINIClass const & ini, char const * section, char const * prefix);
 			void Serialize(SaveStreamClass & stream);
 		};
+		// The defaults of each kind are gamemd's (RulesClass::RulesClass, 0x665650): the struct's own are the V3 rocket's.
 		RocketTypeStruct V3Rocket;
-		RocketTypeStruct DMisl;
-		RocketTypeStruct CMisl;
+		RocketTypeStruct DMisl{.PauseFrames = 10, .BodyLength = 128, .IsLazyCurve = false};
+		RocketTypeStruct CMisl{.PauseFrames = 10, .TiltFrames = 30, .PitchInitial = 1.0f, .TurnRate = 1.0f, .Acceleration = 0.6f,
+			.Damage = 500, .EliteDamage = 500, .BodyLength = 128, .IsLazyCurve = false};
 
 		// The rocket settings for a missile type, or nothing when it is none of the three.
 		RocketTypeStruct const * Rocket_Of(AircraftTypeClass const * type) const;

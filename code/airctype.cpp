@@ -61,6 +61,8 @@
 #include "savestream.h"
 #include "sun.h"
 #include "tracker.h"
+#include "warhead.h"
+#include "weapon.h"
 
 
 void const * AircraftTypeClass::LRotorData = NULL;
@@ -83,6 +85,12 @@ void const * AircraftTypeClass::RRotorData = NULL;
  *=============================================================================================*/
 AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	BASECLASS(ininame, SPEED_WINGED),
+	IsMissileCustom(false),
+	MissileWarhead(NULL),
+	MissileEliteWarhead(NULL),
+	MissileWeapon(NULL),
+	MissileEliteWeapon(NULL),
+	MissileTrailerSeparation(3),
 	IsLandable(false),
 	SmokeAnim(NULL),
 	IsSmokeAnimSet(false),
@@ -307,6 +315,20 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
 		Trailer = TGet_Class(ArtINI, Graphic_Name(), "Trailer", Trailer);
 		SpawnDelay = ArtINI.Get_Int(Graphic_Name(), "SpawnDelay", SpawnDelay);
+
+		IsMissileCustom = ini.Get_Bool(Name(), "Missile.Custom", IsMissileCustom);
+		MissileFlight.Read(ini, Name(), "Missile.");
+		MissileWarhead = TGet_Class(ini, Name(), "Missile.Warhead", MissileWarhead);
+		MissileEliteWarhead = TGet_Class(ini, Name(), "Missile.EliteWarhead", MissileEliteWarhead);
+		MissileWeapon = TGet_Class(ini, Name(), "Missile.Weapon", MissileWeapon);
+		MissileEliteWeapon = TGet_Class(ini, Name(), "Missile.EliteWeapon", MissileEliteWeapon);
+		if (ini.Is_Present(Name(), "Missile.TakeOffAnim")) {
+			MissileTakeOffAnim = ini.Get_String(Name(), "Missile.TakeOffAnim");
+		}
+		if (ini.Is_Present(Name(), "Missile.TrailerAnim")) {
+			MissileTrailerAnim = ini.Get_String(Name(), "Missile.TrailerAnim");
+		}
+		MissileTrailerSeparation = ini.Get_Int(Name(), "Missile.TrailerSeparation", MissileTrailerSeparation);
 		return(true);
 	}
 	return(false);
@@ -333,6 +355,15 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsFlyBack);
 	crc(SpawnDelay);
 	crc(HeapID);
+	crc(IsMissileCustom);
+	if (IsMissileCustom) {
+		crc(MissileFlight.PauseFrames);
+		crc(MissileFlight.TiltFrames);
+		crc(MissileFlight.Altitude);
+		crc(MissileFlight.Damage);
+		crc(MissileFlight.EliteDamage);
+		crc(MissileTrailerSeparation);
+	}
 }
 
 
@@ -373,6 +404,15 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFlyBack);
 	stream.Serialize(Trailer);
 	stream.Serialize(SpawnDelay);
+	stream.Serialize(IsMissileCustom);
+	MissileFlight.Serialize(stream);
+	stream.Serialize(MissileWarhead);
+	stream.Serialize(MissileEliteWarhead);
+	stream.Serialize(MissileWeapon);
+	stream.Serialize(MissileEliteWeapon);
+	stream.Serialize(MissileTakeOffAnim);
+	stream.Serialize(MissileTrailerAnim);
+	stream.Serialize(MissileTrailerSeparation);
 }
 
 
