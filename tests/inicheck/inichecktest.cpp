@@ -49,6 +49,8 @@ char const CATALOG[] =
 	"Warhead\trules.ini\t*\tWeaponType\tclass\n"
 	"Arcing\trules.ini\t*\tBulletType\tboolean\n"
 	"Verses\trules.ini\t*\tWarheadType\tstring\n"
+	"Versus.{*}\trules.ini\t*\tWarheadType\tstring\n"
+	"Versus.{*}.ForceFire\trules.ini\t*\tWarheadType\tboolean\n"
 	"Weapon{1-18}\trules.ini\t*\tAircraftType,BuildingType,InfantryType,UnitType\tclass\n"
 	"BurstDelay{0-3}\trules.ini\t*\tWeaponType\tinteger\n"
 	"DockingOffset{0-}\tart.ini\t@image\tBuildingType\tpoint (x,y,z)\n"
@@ -124,7 +126,7 @@ void Test_Catalog(void)
 	Check(good.Find("Speed") != nullptr && good.Find("Speed")->size() == 2, "a key keeps every scope");
 	Check(good.Find("speed") == nullptr && good.Find_Other_Case("speed") == "Speed", "lookups are case sensitive, with a case-blind hint");
 	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "@difficulty"), "only literal sections count as known sections");
-	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 22, "a key holding a range is kept as a pattern");
+	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 24, "a key holding a range is kept as a pattern");
 }
 
 
@@ -145,7 +147,13 @@ void Test_Patterns(void)
 	Check(IniCheck::KeyPattern::Parse("Territory{00-}", pattern) && pattern.Matches("Territory00") && pattern.Matches("Territory07") && !pattern.Matches("Territory0"), "a padded pattern may start at zero");
 	Check(IniCheck::KeyPattern::Parse("Slot{01-12}", pattern) && pattern.Matches("Slot12") && !pattern.Matches("Slot13"), "a padded pattern keeps its upper bound");
 
+	Check(IniCheck::KeyPattern::Parse("Versus.{*}", pattern) && pattern.Any && pattern.Prefix == "Versus." && pattern.Suffix.empty(), "a star pattern splits around its star");
+	Check(pattern.Matches("Versus.heavy") && pattern.Matches("Versus.s_siren2"), "a star pattern matches a name");
+	Check(!pattern.Matches("Versus.") && !pattern.Matches("Versus") && !pattern.Matches("Verses.heavy") && !pattern.Matches("Versus.heavy.ForceFire"), "a star pattern refuses no name, another prefix and a name with a dot");
+	Check(IniCheck::KeyPattern::Parse("Versus.{*}.ForceFire", pattern) && pattern.Matches("Versus.heavy.ForceFire") && !pattern.Matches("Versus.heavy") && !pattern.Matches("Versus..ForceFire"), "a star pattern keeps its suffix");
+
 	IniCheck::Catalog catalog = Load_Catalog();
+	Check(catalog.Find_All("Versus.camo").size() == 1 && catalog.Find_All("Versus.camo.ForceFire").size() == 1 && catalog.Find_All("Versus.camo.Other").empty(), "the catalog finds a key through its star pattern");
 	Check(catalog.Find_All("Weapon3").size() == 1 && catalog.Find_All("Weapon19").empty(), "the catalog finds a key through its pattern");
 	Check(catalog.Find_All("DockingOffset7").size() == 1 && catalog.Find_All("DockingOffset7")[0]->File == "art.ini", "an art pattern keeps its scope");
 }
@@ -470,6 +478,17 @@ void Test_Rules(void)
 	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Power", 15), "a key of another type kind is reported");
 	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Crusher", 21), "a vehicle key in a structure section is reported");
 	Check(report.Findings.size() == 7, "nothing else is reported, including lines the engine skips");
+	std::string section_kinds;
+	std::string literal_kinds = "unset";
+	for (IniCheck::Finding const & finding : report.Findings) {
+		if (finding.Key == "Power" && finding.Line == 15) {
+			section_kinds = finding.Kinds;
+		}
+		if (finding.Key == "Speeed") {
+			literal_kinds = finding.Kinds;
+		}
+	}
+	Check(section_kinds == "UnitType" && literal_kinds.empty(), "a finding names the type kinds of its section, and none for a literal section");
 	Check(report.UncheckedSections.size() == 1 && report.UncheckedSections[0] == "ORPHAN", "a section no list or reference names is left unchecked");
 
 	bool ordered = true;

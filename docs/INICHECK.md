@@ -46,6 +46,7 @@ directory.
 | `--art <file>` | Also checks this art file. Its sections are placed through the rules file, so pass the rules file that goes with it. |
 | `--theater <file>` | Also checks this theater control file. See [Theater control files](#theater-control-files). The rules file may be left out when `--art` is not used. |
 | `--unchecked` | Also lists each section the checker skipped. |
+| `--tsv` | Writes each finding as one tab separated line of file, line, section, type kinds, key and value in place of the sentence. The kinds are those the checker placed the section as, such as `UnitType`, and are empty for a literal section such as `[General]`. Use it to count findings by type. |
 
 Each finding is one line naming the file, line, section, key and value. The
 exit code is 0 when there are no findings, 1 when there are, and 2 when the
@@ -149,13 +150,18 @@ whose names the catalog does not give, such as the land types.
 ## Limits
 
 The catalog holds the keys the manual's extractor finds in the source, plus the
-numbered `art.ini` structure keys `DockingOffset0=` and up and `PowerUp1Anim=`
-and up, the numbered `Tile01Anim=` keys of a theater tile set, and the
-do-string keys of an infantry sequence, which the export script adds. It reads
-the do-string names from the `SequenceName` table in `code/infatype.cpp`.
-Another key the engine builds from a number may be missing
-and is then reported although the engine reads it. Treat a finding as
-something to look at, not as proof of an error.
+keys the engine builds from a number or a name, which the export script adds
+from its `PATTERN_SCOPES` list: the numbered `art.ini` structure keys
+`DockingOffset0=`, `DamageFireOffset0=`, `AddOccupy1=`, `RemoveOccupy1=`,
+`PowerUp1Anim=` and `Foundation.0=` and up, the `Insignia.<rank>` keys, the
+`Versus.<armor>` keys of a warhead with their three switches, the keys of a
+missile's flight settings under the prefixes `V3Rocket`, `DMisl`, `CMisl` and
+`Missile.`, the numbered `Tile01Anim=` keys of a theater tile set, and the
+do-string keys of an infantry sequence. It reads the do-string names from the
+`SequenceName` table in `code/infatype.cpp`. A key the engine builds in code
+that is not in that list is reported although the engine reads it. When a new
+reader builds its key names with `snprintf` or a prefix, add its family to the
+list. Treat a finding as something to look at, not as proof of an error.
 
 ## The catalog format
 
@@ -168,7 +174,10 @@ unchecked. A key holding a range, such as `Weapon{1-18}` or
 `DockingOffset{0-}` with an open end, stands for each key with a number in that
 range written without leading zeros. A lower bound with a leading zero, as in
 `Tile{01-}Anim`, stands for numbers printed with at least that many digits:
-`Tile01Anim` and `Tile12Anim` match, `Tile1Anim` does not. Lines starting with
+`Tile01Anim` and `Tile12Anim` match, `Tile1Anim` does not. A key holding `{*}`,
+such as `Versus.{*}` or `Versus.{*}.ForceFire`, stands for each key whose
+middle part is one or more characters other than a dot, such as an armor name
+that the rules declare. Lines starting with
 `#` are skipped. Do not edit a written catalog; export it again after
 `manual/data/ini-keys.yaml` changes.
 

@@ -94,6 +94,12 @@ ADAPTER_UNITS = [
           "GraphicName": section_selectors.image(),
           "Graphic_Name()": section_selectors.image(),
       }}),
+    # An Ares custom foundation is read from the art section the building draws from.
+    ("builtype.cpp", "BuildingTypeClass", ["Read_Custom_Foundation"],
+     {"file": "art.ini", "group": "BuildingType",
+      "section_vars": {
+          "section": section_selectors.image(),
+      }}),
     ("infatype.cpp", "InfantryTypeClass", ["Read_Sequence_INI"],
      {"file": "art.ini", "group": "InfantryType",
       "section_vars": {

@@ -75,6 +75,13 @@ site_exclusions:
 
   - path: code/techtype.cpp
     function: TechnoTypeClass::Post_Load
+    keys: [AltCameoPCX]
+    classification: duplicate
+    canonical_key: AltCameoPCX
+    reason: Save-game restoration re-reads the same AltCameoPCX art setting already extracted from the type reader.
+
+  - path: code/techtype.cpp
+    function: TechnoTypeClass::Post_Load
     keys: [AltCameo]
     classification: duplicate
     canonical_key: AltCameo
@@ -203,9 +210,42 @@ site_exclusions:
 
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
-    keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, RA2Art, RA2Rules, RA2Eva, RA2Audio, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
+    keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Settings]
     classification: excluded
     reason: Each is a setting of the deployment's own file, documented as that format rather than as game data.
+
+  - path: code/deploymentconfig.cpp
+    function: DeploymentConfigClass::Read_Mod_INI
+    keys: [Rules, RulesExpansion, Art, ArtExpansion, RA2Art, RA2Rules, RA2Eva, RA2Audio, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Mission, MapSelect, TheaterSuffix, Keyboard, Scheme, Game, ExpandPrefix, CachePrefix, FollowMenuButtons]
+    classification: excluded
+    reason: Each is a setting of the deployment's own file or of a mod folder's mod.ini, documented as those formats rather than as game data.
+
+  - path: code/ui/screens/mods/uimodsdlg.cpp
+    function: <file-scope>
+    keys: [ModPicker]
+    classification: excluded
+    reason: A setting of the deployment's own settings file, documented on the Mods page.
+
+  - path: code/session.cpp
+    function: Loose_Map_Info
+    keys: [MultiplayerOnly]
+    classification: duplicate
+    canonical_key: MultiplayerOnly
+    reason: The loose map list reads the map's Basic MultiplayerOnly setting from its head to describe the map before the scenario reader runs; the scenario reader owns the key.
+
+  - path: code/session.cpp
+    function: Loose_Map_Info
+    keys: [Official]
+    classification: duplicate
+    canonical_key: Official
+    reason: The loose map list reads the map's Basic Official setting from its head to describe the map before the scenario reader runs; the scenario reader owns the key.
+
+  - path: code/session.cpp
+    function: Loose_Map_Info
+    keys: [Name]
+    classification: duplicate
+    canonical_key: Name
+    reason: The loose map list reads the map's Basic Name setting from its head to describe the map before the scenario reader runs; the scenario reader owns the key.
 
   - path: code/mods.cpp
     function: Read_Manifest

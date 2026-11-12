@@ -52,7 +52,8 @@ namespace IniCheck
 	};
 
 	// A key name the engine builds from a number, written as "Weapon{1-18}" or "DockingOffset{0-}"
-	// with an open upper end. It matches the number as the engine prints it, so "Weapon01" does
+	// with an open upper end. A key the engine builds from a name it reads elsewhere, such as an
+	// armor type, is written "Versus.{*}": the star stands for one or more characters other than a dot. It matches the number as the engine prints it, so "Weapon01" does
 	// not match "Weapon{1-18}". A lower bound written with leading zeros, as in "Tile{01-}Anim",
 	// stands for a number the engine prints with that many digits at least ("%02d"): it matches
 	// "Tile01Anim" and "Tile12Anim" but not "Tile1Anim".
@@ -62,6 +63,7 @@ namespace IniCheck
 		long Low = 0;
 		long High = -1;
 		int Width = 0;
+		bool Any = false;
 
 		static bool Parse(std::string const & text, KeyPattern & pattern);
 		bool Matches(std::string_view key) const;
@@ -97,6 +99,10 @@ namespace IniCheck
 		std::string Key;
 		std::string Value;
 		std::string Detail;
+
+		// The type kinds the checker placed the section as, such as "UnitType" or "WarheadType", and
+		// empty for a literal section such as [General].
+		std::string Kinds;
 	};
 
 	struct Report {
