@@ -1,0 +1,21 @@
+; AllowParallelAIQueues=no (Ares, [GlobalControls]): a computer house builds in one factory of a kind at a time. The
+; computer house (Africans) is given three more barracks at frame 20, and the census every 300 frames lists each
+; factory it is running. Observed on 2026-11-12: with the ini, no census shows more than one infantry factory line
+; ("factory E2 ..."); with the "rules" line removed, the census at frame 2700 shows four at once, one per barracks.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/ai-parallel-queues-off.txt -Map XMP29U2.MAP -AICountries 5 -Seconds 300 -Uncapped -Filter "AUTOTEST   (census|factory|houseunit)|Exception"
+10 rules ai-parallel-queues-off.ini
+20 houseunit NAPOWR@Africans 46 90
+20 houseunit NAPOWR@Africans 46 94
+20 houseunit NAHAND@Africans 56 90
+20 houseunit NAHAND@Africans 56 95
+20 houseunit NAHAND@Africans 56 100
+600 census
+900 census
+1200 census
+1500 census
+1800 census
+2100 census
+2400 census
+2700 census
+3000 census
+3001 quit

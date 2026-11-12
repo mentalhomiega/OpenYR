@@ -1,0 +1,15 @@
+; AllowBypassBuildLimit=no,no,no (Ares, [GlobalControls]): a computer house creates no team that takes a type past a
+; positive BuildLimit. The ini gives the Soviet conscript (E2) BuildLimit=1, which a team of two or more conscripts
+; breaks. Observed on 2026-11-12: with the ini, every census line shows "teams 0" up to frame 8000; with only the
+; BuildLimit line and no AllowBypassBuildLimit, the computer has created 1 team by frame 3000 and 3 by frame 8000.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/ai-bypass-build-limit.txt -Map XMP29U2.MAP -AICountries 5 -Seconds 600 -Uncapped -Filter "AUTOTEST   census frame|Exception"
+10 rules ai-bypass-build-limit.ini
+1000 census
+2000 census
+3000 census
+4000 census
+5000 census
+6000 census
+7000 census
+8000 census
+8001 quit
