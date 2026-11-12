@@ -2156,7 +2156,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 	if (nukeball == NULL) {
 		return(false);
 	}
-	NextAnim = nukeball;
+	NextAnim = AnimClass::Held(nukeball);
 	SpawnNextAnim = true;
 	AUTOTEST_LOG("nuke blast builds up at frame %d\n", Frame);
 	return(true);
@@ -2169,7 +2169,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 /// <returns>bool; Is the projectile waiting for the animation?</returns>
 bool BulletClass::Start_Pre_Impact_Anim(void)
 {
-	NextAnim = new AnimClass(Warhead->PreImpactAnim, PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord));
+	NextAnim = AnimClass::Held(new AnimClass(Warhead->PreImpactAnim, PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord)));
 	SpawnNextAnim = true;
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST pre-impact %s plays %s at frame %d\n", Warhead->Name(), Warhead->PreImpactAnim->Name(), Frame);

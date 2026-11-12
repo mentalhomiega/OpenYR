@@ -1621,7 +1621,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				AnimTypeClass const * placement = Class->Keys.Animation != NULL ? Class->Keys.Animation : Rule->ChronoPlacement;
 				if (placement != NULL) {
 					Coord const coord = Map[cell].As_Coord();
-					PreClickAnim = new AnimClass(placement, Coord(coord.X, coord.Y, coord.Z + (Class->Keys.Animation != NULL ? Class->Keys.AnimationHeight : 5)));
+					PreClickAnim = AnimClass::Held(new AnimClass(placement, Coord(coord.X, coord.Y, coord.Z + (Class->Keys.Animation != NULL ? Class->Keys.AnimationHeight : 5))));
 				}
 				if (player) {
 					Map.IsTargettingMode = Follow_Up();
