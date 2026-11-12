@@ -93,6 +93,7 @@
 #include "side.h"
 #include "smudtype.h"
 #include "stimer.h"
+#include "strutil.h"
 #include "sun.h"
 #include "suprtype.h"
 #include "taskforc.h"
@@ -1192,6 +1193,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Jumpjet_Controls(ini);
 	MPlayer(ini);
 	AI(ini);
+	Global_Controls(ini);
 	Powerups(ini);
 	Land_Types(ini);
 	IQ(ini);
@@ -1217,6 +1219,30 @@ bool RulesClass::Addition(CCINIClass const & ini)
 
 	BEnd(BENCH_RULES);
 
+	return(true);
+}
+
+
+/// <summary>
+/// Reads the Ares [GlobalControls] keys that change how computer houses produce. A section without a key keeps its value.
+/// </summary>
+/// <returns>bool; Was a [GlobalControls] section found?</returns>
+bool RulesClass::Global_Controls(CCINIClass const & ini)
+{
+	static char const * const GLOBALCONTROLS = "GlobalControls";
+	if (!ini.Is_Present(GLOBALCONTROLS)) {
+		return(false);
+	}
+
+	IsAllowParallelAIQueues = ini.Get_Bool(GLOBALCONTROLS, "AllowParallelAIQueues", IsAllowParallelAIQueues);
+	if (ini.Is_Present(GLOBALCONTROLS, "AllowBypassBuildLimit")) {
+		IsBypassBuildLimitSet = true;
+		std::vector<std::string> const values = Split_List(ini.Get_String(GLOBALCONTROLS, "AllowBypassBuildLimit"), ',', TRIM_SPACE_TAB, false);
+		for (int index = 0; index < DIFF_COUNT; index++) {
+			// Ares names the entries easy, medium and hard; they are taken in the order of the other difficulty lists. A missing entry is no.
+			AllowBypassBuildLimit[index] = index < (int)values.size() && !values[index].empty() && std::strchr("YyTt1", values[index][0]) != nullptr;
+		}
+	}
 	return(true);
 }
 
@@ -2041,6 +2067,10 @@ bool RulesClass::General(CCINIClass const & ini)
 		WaypointAttackFromFirst = ini.Get_Bool(GENERAL, "WaypointAttackFromFirst", WaypointAttackFromFirst);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
+		if (ini.Is_Present(GENERAL, "TeamRetaliate")) {
+			IsTeamRetaliateSet = true;
+			IsTeamRetaliate = ini.Get_Bool(GENERAL, "TeamRetaliate", IsTeamRetaliate);
+		}
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
 		SovietBaseDefenseCounts = ini.Get_IntList(GENERAL, "SovietBaseDefenseCounts", SovietBaseDefenseCounts);
 		ThirdBaseDefenseCounts = ini.Get_IntList(GENERAL, "ThirdBaseDefenseCounts", ThirdBaseDefenseCounts);
@@ -3862,6 +3892,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EngineerCaptureLevel);
 	stream.Serialize(EngineerDamage);
 	stream.Serialize(GenericPrerequisites);
+	stream.Serialize(IsTeamRetaliateSet);
+	stream.Serialize(IsTeamRetaliate);
+	stream.Serialize(IsAllowParallelAIQueues);
+	stream.Serialize(IsBypassBuildLimitSet);
+	stream.Serialize(AllowBypassBuildLimit);
 }
 
 

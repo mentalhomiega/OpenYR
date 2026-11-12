@@ -437,6 +437,13 @@ The unit test `skirmishsetup` (CTest name `skirmishsetup`) restores saved rows o
 start spots and checks the fallbacks for a missing country or start, a kind past the list, and clashing
 colors and starts. It needs no game data.
 
+`tests/autotest/lobby-modes.txt` runs with the test mod in `tests/autotest/lobby-modes`, which declares made-up game
+modes and options in the CnCNet client's files ([LOBBY_MODES.md](LOBBY_MODES.md)). It picks a mode and an option in
+the skirmish lobby, starts the match, and logs that the mode's forced option, its launch key and both overlays took
+effect. `tests/autotest/lobby-modes-mo.txt` takes pictures of the lobby with Mental Omega's own files; its header says
+how to make the mod folder. The unit test `lobbymodes` checks the reading, forced options, launch keys, overlay order
+and merge of declaration text written for it.
+
 `tests/autotest/map-picker.txt` opens the map picker from the skirmish lobby, searches, filters by player count, orders by players, walks the list with the keys and picks a map with Enter, with a `ui shot` after each step. `tests/autotest/cncnet-room-ui.txt` opens the same picker from a hosted CnCNet room; its header gives the stand-in command. `tests/autotest/cncnet-room-screens.txt` walks the CnCNet game list, a guest room and a hosted room with a ready guest bot, picks a player for Kick Player and opens the picker, with a `ui shot` at each step. A `ui set` step with only a text box's id empties the box.
 
 ## Solo skirmish

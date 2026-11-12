@@ -146,7 +146,7 @@ fuzz_add_target(FuzzIni NAME fuzz_ini
 
 fuzz_add_target(FuzzSpawn NAME fuzz_spawn
     SOURCES fuzz_spawn.cpp
-    ENGINE ${FUZZ_INI_ENGINE} spawnerconfig.cpp playercolor.cpp hsv.cpp rgb.cpp
+    ENGINE ${FUZZ_INI_ENGINE} spawnerconfig.cpp lobbymodes.cpp playercolor.cpp hsv.cpp rgb.cpp
 )
 
 fuzz_add_target(FuzzLcw NAME fuzz_lcw

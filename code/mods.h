@@ -48,6 +48,12 @@ class ModClass
 		// The full path of mod.ini; empty when the folder has none.
 		std::string ManifestFile;
 
+		// [Lobby] Maps= and Options=: the mod's game modes and game options in the CnCNet client's files, as full
+		// paths, and CustomMapModes=, the modes that also offer maps those files do not list. Empty when not named.
+		std::string LobbyMapsFile;
+		std::string LobbyOptionsFile;
+		std::string LobbyCustomMapModes;
+
 		std::string const & Overlay(ModOverlayType type) const;
 };
 

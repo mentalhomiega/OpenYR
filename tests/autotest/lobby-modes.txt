@@ -1,0 +1,27 @@
+; Picks a declared game mode and a game option in the skirmish lobby and checks the match plays them. The test mod in
+; tests/autotest/lobby-modes declares Open Field and Power Down; Power Down forces No Refinery on, adds 7777 credits
+; as a launch key, and its overlay sets GAPOWR to TechLevel=11. The script picks Power Down and the Tech Level item
+; Five. The log should show "AUTOTEST checked lobby-optionchk-no-refinery 1" (the forced box), the "[Lobby] Applied"
+; lines for Power Down.ini and No Refinery.ini, "canbuild GAPOWR ... level 11", "canbuild GAREFN ... level 11",
+; houses at tech 5, and the player's 7777 credits in the houses line.
+; Run from the workspace root, in PowerShell:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/lobby-modes.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 240 -Mods src-agent31/tests/autotest/lobby-modes -Filter "AUTOTEST|Lobby|Spawner|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui shot lobby-modes-open
+ui set lobby-mode 1
+ui wait 800
+ui checked lobby-optionchk-no-refinery
+ui set lobby-optioncmb-tech 1
+ui wait 800
+ui shot lobby-modes-chosen
+ui click ok
+ui wait 1000
+30 canbuild GAPOWR
+30 canbuild GAREFN
+30 houses
+40 quit

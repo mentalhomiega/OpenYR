@@ -8653,7 +8653,7 @@ void BuildingClass::Factory_AI(void)
 				**	money available. In cases where there is no practical money left, then
 				**	production can never complete -- don't bother starting it.
 				*/
-				if (House->IsStarted && House->Available_Money() > 10) {
+				if (House->IsStarted && House->Available_Money() > 10 && !Other_Factory_Producing()) {
 					TechnoTypeClass const * techno = House->Suggest_New_Object(Class->ToBuild, false);
 
 					// A naval factory builds only naval units, and any other factory only other units.
@@ -8672,6 +8672,26 @@ void BuildingClass::Factory_AI(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// With AllowParallelAIQueues=no, is another structure of this owner that builds the same kind already producing? Ares
+/// then lets one factory of a kind work at a time, so extra factories no longer build a copy each. Otherwise false.
+/// </summary>
+bool BuildingClass::Other_Factory_Producing(void) const
+{
+	if (Rule->IsAllowParallelAIQueues) {
+		return(false);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * other = Buildings[index];
+		if (other != this && other->House == House && other->Factory != NULL && other->Class->ToBuild == Class->ToBuild
+			&& other->Class->IsNaval == Class->IsNaval) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 

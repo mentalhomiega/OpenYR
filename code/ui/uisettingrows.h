@@ -22,7 +22,9 @@ enum class UISettingRowKind
 {
 	HEADING,
 	SWITCH,
-	SLIDER
+	SLIDER,
+	// A drop-down whose value is the position of the chosen item in Items.
+	CHOICE
 };
 
 
@@ -45,6 +47,10 @@ struct UISettingRow
 	int Max = 0;
 	std::string Unit;
 	std::string ZeroText;
+	std::vector<std::string> Items;
+	// A locked row shows its value greyed and keeps it; Note says why, beside the control.
+	bool Locked = false;
+	std::string Note;
 
 	// Filled by UI_Setting_Rows_Refresh for the page's markup.
 	std::string KindName;

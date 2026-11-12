@@ -99,3 +99,22 @@ A type that a rules overlay adds to a type list, such as `[InfantryTypes]`, is c
 ## Checking overlays
 
 At startup and after each Reload rules, the game checks each mod's rules and art overlays for keys the engine does not read and values it cannot parse, and writes each finding to the debug log as an `INI check:` line under the overlay's path. The check runs only when `inicheck-catalog.tsv` is beside the executable. A type section in a rules overlay is checked when the rules file, an earlier mod's rules overlay or the overlay itself lists the type.
+
+## Game modes and game options
+
+A mod can give the skirmish lobby its own game modes and game options, declared in the files of the CnCNet client the mod is played through. `[Lobby]` names those files, relative to the mod's folder, and the paths inside them are taken from the same folder.
+
+```ini title="mod.ini"
+[Lobby]
+Maps=INI\MentalOmegaMaps.ini
+Options=Resources\GameOptions.ini
+CustomMapModes=Standard,No Bases
+```
+
+| Key | Meaning |
+| --- | --- |
+| `Maps` | The client's map list file: its `[GameModes]`, one section per mode, `[MultiMaps]` and one section per map |
+| `Options` | The client's game options file, whose `[SkirmishLobby]` lists the check boxes and drop-downs the lobby shows |
+| `CustomMapModes` | The modes that also offer maps the map list does not name, such as the game's own maps. Without it, such maps are offered in no mode. |
+
+The skirmish lobby then shows a game mode list and the declared options in place of its own switches and sliders, and lists only the maps the chosen mode offers. When several mods name `Maps`, the last one is used. A game in which no mod names `Maps` keeps the lobby as it was. How the game reads the declarations and applies them to a match is described in `docs/LOBBY_MODES.md` in the source tree.

@@ -15,7 +15,7 @@
 bool UI_Rml_Setting_Rows_Bind(Rml::DataModelConstructor & model, char const * name, std::vector<UISettingRow> & rows)
 {
 	Rml::StructHandle<UISettingRow> row = model.RegisterStruct<UISettingRow>();
-	if (!row || !model.RegisterArray<std::vector<UISettingRow>>()) {
+	if (!row || !model.RegisterArray<std::vector<std::string>>() || !model.RegisterArray<std::vector<UISettingRow>>()) {
 		return(false);
 	}
 	row.RegisterMember("kind", &UISettingRow::KindName);
@@ -31,5 +31,7 @@ bool UI_Rml_Setting_Rows_Bind(Rml::DataModelConstructor & model, char const * na
 	row.RegisterMember("value", &UISettingRow::Value);
 	row.RegisterMember("min", &UISettingRow::Min);
 	row.RegisterMember("max", &UISettingRow::Max);
+	row.RegisterMember("items", &UISettingRow::Items);
+	row.RegisterMember("note", &UISettingRow::Note);
 	return(model.Bind(name, &rows));
 }

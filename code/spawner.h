@@ -12,6 +12,8 @@
 
 #include <string>
 
+struct LobbyChoiceType;
+
 
 void Spawner_Request(void);
 bool Spawner_Is_Requested(void);
@@ -23,6 +25,10 @@ void Spawner_Announce_Master(void);
 // The launch file text that starts the skirmish the session now describes, as a menu committed it;
 // empty when the session holds no such skirmish.
 std::string Spawner_Describe_Session(void);
+
+// Plays the skirmish the menus set up with a mod's lobby choice: its launch keys for the map set the match options and
+// the multiplayer mode as a launch file's would, and the session keeps the choice for the scenario's overlays.
+void Spawner_Commit_Lobby_Choice(LobbyChoiceType const & choice, char const * map);
 
 // Plays the replay file from the menus. Answers false when the replay cannot be played, after the
 // player has been told why, and leaves the menus as they were.

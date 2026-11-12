@@ -32,6 +32,7 @@ opents_add_test(SkirmishSetup
         ui/rml/rmlrendermath.cpp
         ui/rml/rmlsettingpreview.cpp
         ui/rml/rmlsettingrows.cpp
+        lobbymodes.cpp
         ui/uisettingrows.cpp
         ui/rml/rmlsurface.cpp
         ui/rml/rmlsystem.cpp

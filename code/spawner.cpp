@@ -33,6 +33,7 @@
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "loaddlg.h"
+#include "modlobby.h"
 #include "mplayer.h"
 #include "mpmode.h"
 #include "netshare.h"
@@ -47,6 +48,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <set>
 #include <string>
 #include <winsock.h>
 
@@ -225,39 +227,64 @@ static void Spawner_Bind_Machine_Settings(void)
 
 
 /// <summary>
+/// Copies a launch file's options every house plays under into the session, and the tech level.
+/// </summary>
+static void Spawner_Bind_Match_Options(SpawnerConfigClass const & config)
+{
+	Session.Options.Bases = config.Bases;
+	Session.Options.Credits = config.Credits;
+	Session.Options.BridgeDestruction = config.BridgeDestroy;
+	Session.Options.Goodies = config.Crates;
+	Session.Options.ShortGame = config.ShortGame;
+	Session.Options.GameSpeed = config.GameSpeed;
+	Session.Options.CrapEngineers = config.MultiEngineer;
+	Session.Options.UnitCount = config.UnitCount;
+	Session.Options.AlliesAllowed = config.AlliesAllowed;
+	Session.Options.FogOfWar = config.FogOfWar;
+	Session.Options.MCVRedeploy = config.MCVRedeploy;
+	Session.Options.CoachMode = config.CoachMode;
+	Session.Options.BuildOffAlly = config.BuildOffAlly;
+	Session.Options.SWAllowed = config.SuperWeapons;
+	Session.Options.AutoDeployMCV = config.AutoDeployMCV;
+	Session.Options.AttackNeutralUnits = config.AttackNeutralUnits;
+	Session.Options.ScrapMetal = config.ScrapMetal;
+	Session.Options.ParallelPaths = config.ParallelPaths;
+
+	// AutoSurrender=no hands a departing player's base to the computer.
+	Session.Options.AITakeover = !config.AutoSurrender;
+
+	// Only a network match applies the truce; a skirmish records it and ignores it.
+	Session.Options.HarvTruce = config.HarvesterTruce;
+
+	Session.Options.LobbyChoice = config.LobbyChoice;
+	BuildLevel = config.TechLevel;
+}
+
+
+/// <summary>
+/// Logs each launch file entry the game does not read, once a run, so a key a mod's lobby writes is not lost silently.
+/// </summary>
+static void Spawner_Log_Unread(SpawnerConfigClass const & config)
+{
+	static std::set<std::string> logged;
+	for (auto const & entry : config.UnreadSettings) {
+		if (logged.insert(entry.first).second) {
+			DebugString("[Spawner] The game does not read %s=%s; the entry is kept.\n", entry.first.c_str(), entry.second.c_str());
+		}
+	}
+}
+
+
+/// <summary>
 /// Copies the launch file's match options into the session and the game options.
 /// </summary>
 static void Spawner_Bind_Options(void)
 {
-	Session.Options.Bases = SpawnConfig.Bases;
-	Session.Options.Credits = SpawnConfig.Credits;
-	Session.Options.BridgeDestruction = SpawnConfig.BridgeDestroy;
-	Session.Options.Goodies = SpawnConfig.Crates;
-	Session.Options.ShortGame = SpawnConfig.ShortGame;
-	Session.Options.GameSpeed = SpawnConfig.GameSpeed;
-	Session.Options.CrapEngineers = SpawnConfig.MultiEngineer;
-	Session.Options.UnitCount = SpawnConfig.UnitCount;
+	Spawner_Bind_Match_Options(SpawnConfig);
 	Session.Options.AIPlayers = SpawnConfig.AIPlayers;
 	Session.Options.AIDifficulty = (DiffType)SpawnConfig.AIDifficulty;
-	Session.Options.AlliesAllowed = SpawnConfig.AlliesAllowed;
-	Session.Options.FogOfWar = SpawnConfig.FogOfWar;
-	Session.Options.MCVRedeploy = SpawnConfig.MCVRedeploy;
-	Session.Options.CoachMode = SpawnConfig.CoachMode;
-	Session.Options.BuildOffAlly = SpawnConfig.BuildOffAlly;
-	Session.Options.SWAllowed = SpawnConfig.SuperWeapons;
-	Session.Options.AutoDeployMCV = SpawnConfig.AutoDeployMCV;
-	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
-	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;
-	Session.Options.ParallelPaths = SpawnConfig.ParallelPaths;
-
-	// AutoSurrender=no hands a departing player's base to the computer.
-	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
-
-	// Only a network match applies the truce; a skirmish records it and ignores it.
-	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
 	Spawner_Bind_Machine_Settings();
-	BuildLevel = SpawnConfig.TechLevel;
 
 	// Init_Random uses this for a game played alone, and draws its own seed when it is zero.
 	CustomSeed = SpawnConfig.Seed;
@@ -290,12 +317,12 @@ static MPModeType Spawner_Resolve_Mode(char const * playing)
 /// Plays the multiplayer mode this launch resolved to. The mode can clear the file's AlliesAllowed
 /// and can turn Bases on, and RulesClass::Initialize reads the mode's own rules file over the rules.
 /// </summary>
-static void Spawner_Bind_Mode(void)
+static void Spawner_Bind_Mode(MPModeType const & mode)
 {
-	MPMode_Set_Current(SpawnMode);
-	Session.Options.AlliesAllowed = Session.Options.AlliesAllowed && SpawnMode.AlliesAllowed;
+	MPMode_Set_Current(mode);
+	Session.Options.AlliesAllowed = Session.Options.AlliesAllowed && mode.AlliesAllowed;
 
-	if (SpawnMode.Kind == MPModeKind::Unholy) {
+	if (mode.Kind == MPModeKind::Unholy) {
 		Session.Options.Bases = true;
 	}
 }
@@ -533,7 +560,7 @@ static void Spawner_Setup_Session(void)
 	Clear_Vector(&Session.Computers);
 
 	Spawner_Bind_Options();
-	Spawner_Bind_Mode();
+	Spawner_Bind_Mode(SpawnMode);
 
 	if (Session.Type == GAME_INTERNET) {
 		Commit_Session_Specials();
@@ -543,6 +570,46 @@ static void Spawner_Setup_Session(void)
 	Spawner_Seat_Humans();
 	Spawner_Seat_Computers();
 	Spawner_Bind_Scenario();
+}
+
+
+/// <summary>
+/// The launch file a lobby choice writes for a map, read as the game reads one: the client's defaults with the
+/// choice's launch keys in [Settings].
+/// </summary>
+static SpawnerConfigClass Lobby_Launch_Config(LobbyChoiceType const & choice, char const * map)
+{
+	INIClass ini;
+	for (LobbyKeyValueType const & key : Mod_Lobby_Launch_Keys(choice, map)) {
+		ini.Put_String("Settings", key.Key.c_str(), key.Value.c_str());
+	}
+	SpawnerConfigClass config;
+	config.Read_INI(ini);
+	config.LobbyChoice = choice.To_Text();
+	return(config);
+}
+
+
+/// <summary>
+/// Plays the skirmish the menus set up under a mod's lobby choice. The launch keys the choice writes for the map set
+/// the match options and the multiplayer mode as a launch file would, and the session keeps the choice, whose
+/// overlays apply when the scenario is read.
+/// </summary>
+void Spawner_Commit_Lobby_Choice(LobbyChoiceType const & choice, char const * map)
+{
+	SpawnerConfigClass const config = Lobby_Launch_Config(choice, map);
+	Spawner_Log_Unread(config);
+	Spawner_Bind_Match_Options(config);
+	Options.GameSpeed = config.GameSpeed;
+
+	bool found = false;
+	MPMode_Load();
+	MPModeType const mode = MPMode_Resolve(config.GameMode, found);
+	if (!found) {
+		DebugString("[Spawner] GameMode %d is not listed in MPModesMD.ini; the skirmish runs as Battle.\n", config.GameMode);
+	}
+	Spawner_Bind_Mode(mode);
+	DebugString("[Lobby] Skirmish in %s on %s with %s.\n", choice.Mode.c_str(), map, config.LobbyChoice.c_str());
 }
 
 
@@ -586,6 +653,10 @@ std::string Spawner_Describe_Session(void)
 	config.ScrapMetal = Session.Options.ScrapMetal;
 	config.ParallelPaths = Session.Options.ParallelPaths;
 	config.AINamesByDifficulty = true;
+	config.LobbyChoice = Session.Options.LobbyChoice;
+	if (!config.LobbyChoice.empty()) {
+		config.UnreadSettings = Lobby_Launch_Config(LobbyChoiceType::From_Text(config.LobbyChoice), Scen->ScenarioName).UnreadSettings;
+	}
 
 	int const humans = std::min(Session.Players.Count(), SpawnerConfigClass::SLOT_COUNT);
 	int const computers = std::min(Session.Computers.Count(), SpawnerConfigClass::SLOT_COUNT - humans);
@@ -828,6 +899,7 @@ bool Spawner_Prepare(bool & gameloaded)
 	RAMFileClass launch_file(launch_text.data(), static_cast<int>(launch_text.size()));
 	ini.Load(launch_file, false);
 	SpawnConfig.Read_INI(ini);
+	Spawner_Log_Unread(SpawnConfig);
 
 	// A replay has no score to keep, so the match ends on its own when it is decided.
 	if (Replay_Is_Playing()) {

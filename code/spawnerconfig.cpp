@@ -14,6 +14,7 @@
 #include "crc.h"
 #include "diff.hh"
 #include "ini.h"
+#include "lobbymodes.h"
 #include "playercolor.h"
 #include "rgb.h"
 #include "utf8.h"
@@ -34,6 +35,22 @@ namespace {
 
 // The match's options, which also describe this machine's own seat.
 char const * const SETTINGS = "Settings";
+
+// The mod lobby's mode and options: Mode= names the mode and each other entry an option's value.
+char const * const LOBBY_CHOICE = "LobbyChoice";
+
+// Every [Settings] entry Read_INI and Read_Slots read. Any other entry is kept in UnreadSettings.
+char const * const READ_SETTINGS[] = {
+	"IsSinglePlayer", "Host", "CampaignID", "Scenario", "UIMapName", "LoadSaveGame", "SaveGameName", "AutoSaveInterval",
+	"AutoSaveGame", "NextSPAutoSaveId", "NextSkirmishAutoSaveId", "Bases", "Credits", "BridgeDestroy", "Crates", "ShortGame",
+	"BuildOffAlly", "SuperWeapons", "GameSpeed", "MultiEngineer", "UnitCount", "AIPlayers", "AIDifficulty", "AlliesAllowed",
+	"GameMode", "HarvesterTruce", "FogOfWar", "MCVRedeploy", "AutoDeployMCV", "Seed", "TechLevel", "Firestorm",
+	"DifficultyModeHuman", "DifficultyModeComputer", "Port", "BindAddress", "ConnTimeout", "ReconnectTimeout", "TimingPolicy",
+	"FrameSendRate", "MaxAhead", "Protocol", "HostTiming", "QuickMatch", "SkipScoreScreen", "DifficultyBasedAINames",
+	"CoachMode", "AutoSurrender", "AttackNeutralUnits", "ScrapMetal", "ParallelPaths", "PlayMoviesInMultiplayer",
+	"CustomLoadScreen", "DifficultyName", "SyncLog", "CustomLoadScreenPos", "Name", "Color", "ColorRGB", "Side",
+	"IsSpectator", "Ip",
+};
 
 
 /// <summary>
@@ -322,6 +339,11 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(PlayMoviesInMultiplayer);
 
 	crc(AutoSurrender);
+
+	// Only a match with a lobby choice counts it, so the identity of every other match is unchanged.
+	if (!LobbyChoice.empty()) {
+		crc(LobbyChoice.c_str());
+	}
 
 	// ConnTimeout, ReconnectTimeout and TimingPolicy are each machine's own, so they are left out on purpose.
 	// A host's send period and look-ahead are shared: machines that start with different ones would stall.
@@ -621,6 +643,26 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 		GlobalFlags[index] = Spawn_Bool(ini, "GlobalFlags", entry.c_str(), false);
 	}
 
+	UnreadSettings.clear();
+	for (int index = 0; index < ini.Entry_Count(SETTINGS); index++) {
+		char const * entry = ini.Get_Entry(SETTINGS, index);
+		bool const read = std::any_of(std::begin(READ_SETTINGS), std::end(READ_SETTINGS),
+			[entry](char const * known) { return(_stricmp(entry, known) == 0); });
+		if (!read) {
+			UnreadSettings.emplace_back(entry, ini.Get_String(SETTINGS, entry));
+		}
+	}
+
+	LobbyChoiceType choice;
+	choice.Mode = ini.Get_String(LOBBY_CHOICE, "Mode");
+	for (int index = 0; !choice.Mode.empty() && index < ini.Entry_Count(LOBBY_CHOICE); index++) {
+		char const * entry = ini.Get_Entry(LOBBY_CHOICE, index);
+		if (_stricmp(entry, "Mode") != 0) {
+			choice.Set(entry, ini.Get_Int(LOBBY_CHOICE, entry, 0));
+		}
+	}
+	LobbyChoice = choice.Is_Empty() ? std::string() : choice.To_Text();
+
 	Read_Slots(ini);
 }
 
@@ -687,6 +729,9 @@ std::string SpawnerConfigClass::Write_INI(void) const
 	out << "ScrapMetal=" << Yes_No(ScrapMetal) << "\n";
 	out << "ParallelPaths=" << Yes_No(ParallelPaths) << "\n";
 	out << "DifficultyBasedAINames=" << Yes_No(AINamesByDifficulty) << "\n";
+	for (auto const & entry : UnreadSettings) {
+		out << entry.first << "=" << entry.second << "\n";
+	}
 
 	// The local person first: the reader gives [Settings] the first seat, and sorts the people by color.
 	int other = 1;
@@ -739,6 +784,14 @@ std::string SpawnerConfigClass::Write_INI(void) const
 		}
 		if (written > 0) {
 			out << "\n[Multi" << index + 1 << "_Alliances]\n" << allies.str();
+		}
+	}
+	LobbyChoiceType const choice = LobbyChoiceType::From_Text(LobbyChoice);
+	if (!choice.Is_Empty()) {
+		out << "\n[" << LOBBY_CHOICE << "]\n";
+		out << "Mode=" << choice.Mode << "\n";
+		for (auto const & value : choice.Values) {
+			out << value.first << "=" << value.second << "\n";
 		}
 	}
 	return(out.str());

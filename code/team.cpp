@@ -1705,6 +1705,15 @@ void TeamClass::Took_Damage(FootClass * , ResultType result, TechnoClass * sourc
 						Zone = NULL;
 					}
 
+					// TeamRetaliate=no plays gamemd's response, which never takes the attacker as the target (0x6EB380).
+					// TeamRetaliate=yes plays Ares': an aircraft or a parasite is ignored, and a team with a target keeps it.
+					if (Rule->IsTeamRetaliateSet) {
+						if (!Rule->IsTeamRetaliate || Target != NULL || source->Techno_Type_Class()->IsConsideredAircraft
+							|| (source->ParasiteImUsing && source->ParasiteImUsing->Victim != NULL)) {
+							return;
+						}
+					}
+
 					/*
 					**	Don't change target if the team's target is one that can fire as well. There is
 					**	no point in endlessly shuffling between targets that have firepower.

@@ -332,6 +332,19 @@ A game against other machines, new or resumed, is also refused when:
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;
 - the network cannot be opened.
 
+## A mod's game mode and game options
+
+A launch file the game writes for a skirmish under a mod's [declared game modes](/formats/mod-ini/#game-modes-and-game-options) carries the choice in `[LobbyChoice]`: `Mode=` names the mode, and every other entry gives a declared option's value, `0` or `1` for a check box and the item's position for a drop-down. The game applies the overlays of that choice over the scenario as the scenario is read, so a replay or a restart plays the same match. The option values the choice writes as launch keys are in `[Settings]` as well. A file without `Mode=` has no choice, and a file from the CnCNet client has none, since the client has already merged its overlays into the scenario it writes.
+
+```ini title="SPAWN.INI"
+[LobbyChoice]
+Mode=No Bases
+chkStolenTech=1
+cmbOreGrowth=2
+```
+
+A `[Settings]` entry the game does not read, such as a mod option's launch key, is written to the debug log once a run and kept when the game writes the file out again.
+
 ## What the game does not take from a launch file
 
 The game sets how far ahead the machines run and how often they exchange their orders. `TimingPolicy` chooses between its two policies, and the host's `FrameSendRate`, `MaxAhead` and `Protocol` choose the values the default policy keeps. `PreCalcMaxAhead` is not read. Without a choice, the game takes its timing from its own settings and from the timing messages the machines exchange. `MapHash` is not read either; the machines compare the scenarios they loaded instead.

@@ -7,8 +7,8 @@
 
 	See LICENSE.md for applicable additional terms and warranty disclaimers.
 
-	The rows declared for a settings page in code/optionsettings.cpp, under their group headings.
-	A page links this file and injects the template named setting-rows where the rows go, with a
+	The rows declared for a settings page in code/optionsettings.cpp, under their group headings, and
+	the game options a mod declares for the skirmish lobby (docs/LOBBY_MODES.md). A page links this file and injects the template named setting-rows where the rows go, with a
 	template element whose src is that name. Its model binds the rows as settingrows
 	(UI_Rml_Setting_Rows_Bind). RmlUi reads a template's name from the first template tag in the
 	file, so this comment must not hold one.
@@ -23,6 +23,10 @@
 		<input type="checkbox" data-if="row.kind == 'switch'" data-attr-id="row.kind == 'switch' ? row.id : ''" data-attrif-checked="row.on" data-attrif-disabled="row.disabled" data-event-click="queue(row.intent, row.on ? 0 : 1)"/>
 		<input type="range" step="1" data-if="row.kind == 'slider'" data-attr-id="row.kind == 'slider' ? row.id : ''" data-attr-min="row.min" data-attr-max="row.max" data-attr-value="row.value" data-attrif-disabled="row.disabled" data-event-change="queue(row.intent, ev.value)"/>
 		<span class="value" data-if="row.kind == 'slider'">{{row.valuetext}}</span>
+		<select data-if="row.kind == 'choice'" data-attr-id="row.kind == 'choice' ? row.id : ''" data-attrif-disabled="row.disabled" data-event-change="queue(row.intent, ev.value)">
+			<option data-for="item : row.items" data-attr-value="it_index" data-attrif-selected="it_index == row.value">{{item}}</option>
+		</select>
+		<span class="note" data-if="row.note != ''">{{row.note}}</span>
 	</label>
 </body>
 </template>

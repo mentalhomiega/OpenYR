@@ -9,9 +9,11 @@
 
 #pragma once
 
+#include "lobbymodes.h"
 #include "ui/uipreview.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/uiscreen.h"
+#include "ui/uisettingrows.h"
 
 #include <memory>
 #include <string>
@@ -42,6 +44,9 @@ enum UISkirmishSlotKind
 };
 
 int const UI_SKIRMISH_MAX_SLOTS = 8;
+
+// A lobby row's key is this followed by the declared option's name, which keeps its intent apart from the screen's own.
+inline constexpr char UI_SKIRMISH_LOBBY_KEY[] = "LobbyOption";
 int const UI_SKIRMISH_MAX_TEAMS = 4;
 
 
@@ -54,6 +59,8 @@ class UISkirmishServiceClass
 		virtual ~UISkirmishServiceClass(void) = default;
 		virtual void Pick_Map(UISkirmishState & state) = 0;
 		virtual bool Can_Start(UISkirmishState const & state) = 0;
+		// Brings a declared lobby's rows in line with the choice and the map. A new mode first moves to a map it offers.
+		virtual void Settle_Lobby(UISkirmishState &, bool) {}
 };
 
 
@@ -134,6 +141,15 @@ struct UISkirmishState
 	/// The free color picker, open over the lobby when Picker.Open is set.
 	UIColorPickState Picker;
 
+	/// A mod's declared lobby (docs/LOBBY_MODES.md): its game modes, the person's choice, and the game options as
+	/// rows, which take the place of the switches and sliders above. Declared is false, and the rest empty, without one.
+	bool Declared = false;
+	std::vector<UISkirmishOption> Modes;
+	int Mode = 0;
+	std::string ModeTip;
+	LobbyChoiceType Lobby;
+	std::vector<UISettingRow> LobbyRows;
+
 	int Computer_Count(void) const;
 	bool Is_Active(int row) const;
 };
@@ -151,6 +167,7 @@ class UISkirmishPresenterClass : public UIPresenterClass
 
 	private:
 		void Settle_Slots(void);
+		void Take_Lobby_Rows(void);
 		void Choose(int row, int field, int index);
 		void Take_Color(int row, int index);
 		bool Judge_Setup(void);

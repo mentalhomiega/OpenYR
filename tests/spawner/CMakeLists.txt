@@ -7,6 +7,7 @@ opents_add_test(SpawnContract
     SOURCES spawncontract.cpp
     ENGINE
         spawnerconfig.cpp
+        lobbymodes.cpp
         ini.cpp
         utf8.cpp
         dbgprint.cpp
