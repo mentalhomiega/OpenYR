@@ -272,6 +272,7 @@ struct Old_Gpu
 	int Weather = WEATHER_NONE;
 	int WeatherStrength = 100;
 	bool RenderThread = false;
+	bool FastestGpu = true;
 	bool ParallelPaths = false;
 	int PathThreads = 0;
 	int PerfOverlay = PERF_OVERLAY_OFF;
@@ -306,6 +307,7 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.Weather = Enum_From_Name(Names, weathername, WEATHER_NONE);
 	old.WeatherStrength = std::clamp(ini.Get_Int("Video", "WeatherStrength", old.WeatherStrength), 1, 400);
 	old.RenderThread = ini.Get_Bool("Video", "RenderThread", old.RenderThread);
+	old.FastestGpu = ini.Get_Bool("Video", "FastestGpu", old.FastestGpu);
 	old.ParallelPaths = ini.Get_Bool("Options", "ParallelPaths", old.ParallelPaths);
 	old.PathThreads = std::clamp(ini.Get_Int("Options", "PathThreads", old.PathThreads), 0, 32);
 	ini.Get_String("Video", "PerfOverlay", "Off", name, sizeof(name));
@@ -336,6 +338,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_String("Video", "Weather", Enum_Name(Names, std::clamp(old.Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ini.Put_Int("Video", "WeatherStrength", old.WeatherStrength);
 	ini.Put_Bool("Video", "RenderThread", old.RenderThread);
+	ini.Put_Bool("Video", "FastestGpu", old.FastestGpu);
 	ini.Put_Bool("Options", "ParallelPaths", old.ParallelPaths);
 	ini.Put_Int("Options", "PathThreads", old.PathThreads);
 	ini.Put_String("Video", "PerfOverlay", Enum_Name(Overlay_Names, old.PerfOverlay, "Off"));
@@ -399,7 +402,7 @@ void Test_Real_Table(void)
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
 		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
-		"RenderThread", "ParallelPaths", "PathThreads", "PerfOverlay",
+		"RenderThread", "FastestGpu", "ParallelPaths", "PathThreads", "PerfOverlay",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys");
 

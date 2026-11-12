@@ -3745,6 +3745,17 @@ static void View_Step(StepType const & step)
 }
 
 
+// panview <dx> <dy>: moves the view by that many map pixels, as scrolling does.
+static void Panview_Step(StepType const & step)
+{
+	FollowType.clear();
+	Point2D const from = TacticalMap->Get_Tactical_Position();
+	TacticalMap->Set_Tactical_Position(from + Point2D(step.Argument_Int(), step.X));
+	Point2D const actual = TacticalMap->Get_Tactical_Position();
+	DebugString("AUTOTEST   panview from %d,%d to %d,%d\n", from.X, from.Y, actual.X, actual.Y);
+}
+
+
 static void Click_Step(StepType const & step)
 {
 	int x = step.Argument_Int();
@@ -7003,6 +7014,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
 		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
 		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
+		{"uploadcheck", [](StepType const & step) {GpuMap_Set_Upload_Check(step.Argument_Int() != 0);}},
 		{"gpushadowcount", [](StepType const & step) {GpuMap_Count_Shadows(); DebugString("AUTOTEST %s\n", step.Command.c_str());}},
 		{"drawprobe", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Probe);}},
 		{"shield", Shield_Step},
@@ -7126,6 +7138,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"bunkers", Bunkers_Step},
 		{"owners", Owners_Step},
 		{"view", View_Step},
+		{"panview", Panview_Step},
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
 		{"windowresize", Windowresize_Step},

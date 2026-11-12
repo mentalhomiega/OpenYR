@@ -205,6 +205,7 @@ class Tactical : public AbstractClass
 		 * Terrain rendering passes.
 		 */
 		void Wipe_Depth(bool fullredraw, int xoff, int yoff, Rect const & cliprect);
+		void Note_Layer_Writes(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
 		void Render_Tiles(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
 		void Render_Tile_Shadows(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
 		void Render_Overlays(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);

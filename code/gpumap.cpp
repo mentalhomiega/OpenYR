@@ -54,7 +54,7 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 
 // Width of the textures that hold byte arenas; fs_mapdraw.sc uses the same value.
 static int const ARENA_WIDTH = 4096;
-static int const TEXTURE_LIMIT = 16384;
+static int const TEXTURE_LIMIT = GPU_MAP_STORE_ROWS;
 // The most pixels a scaled pass's scene, snapshot and post textures may each have: a little over a 3840x2160 view at
 // scale 4, 536.9 MB a texture in RGBA8.
 static std::int64_t const SCALED_PIXEL_LIMIT = std::int64_t(1) << 27;
@@ -148,6 +148,9 @@ static bool _TargetDrawn = false;
 // Set when the kept pass could not be submitted; the next pass is then drawn in software.
 static bool _SubmitFailed = false;
 static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _BaseRingUniform = BGFX_INVALID_HANDLE;
+// Whether the base store holds the tile layer's memory as it lies, instead of the area's picture.
+static bool _BaseInPlace = false;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
 // The tile layer's shadow plane, kept between passes so only changed rows go up.
 static bgfx::UniformHandle _TileShadowSampler = BGFX_INVALID_HANDLE;
@@ -246,6 +249,7 @@ static bool Start(void)
 	_RippleUniform = bgfx::createUniform("u_ripples", bgfx::UniformType::Vec4, RIPPLE_LIMIT);
 	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
+	_BaseRingUniform = bgfx::createUniform("u_basering", bgfx::UniformType::Vec4);
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
 	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
@@ -533,29 +537,150 @@ static void Update_Rows(Store & store, unsigned short const * values, int width,
 }
 
 
-// Makes the store exactly width by rows values, uploading only the rows on pages written since the
-// last call when the system lists them (writewatch.h). Reference is as for Fill_R16.
-static bool Fill_R16_Watched(Store & store, unsigned short const * values, int width, int rows, bool reference)
+// Uploads one rectangle of the values, which are width values a row.
+static void Update_Rect(Store & store, unsigned short const * values, int width, Rect const & rect)
+{
+	std::size_t const rowbytes = (std::size_t)rect.Width * sizeof(unsigned short);
+	bgfx::Memory const * const memory = bgfx::alloc((uint32_t)(rowbytes * rect.Height));
+	for (int r = 0; r < rect.Height; r++) {
+		std::memcpy(memory->data + r * rowbytes, values + (std::size_t)(rect.Y + r) * width + rect.X, rowbytes);
+	}
+	bgfx::updateTexture2D(store.Handle, 0, 0, (uint16_t)rect.X, (uint16_t)rect.Y, (uint16_t)rect.Width, (uint16_t)rect.Height, memory);
+}
+
+
+// The upload check keeps a copy of what each watched store was sent and logs an UPLOAD_CHECK DIFFERENCE
+// line when the values differ from it after an upload, which means a write was neither named nor listed.
+// OPENYR_UPLOAD_CHECK=1 turns it on from the start, and the uploadcheck autotest step turns it on and off.
+static bool _UploadChecked = [] {
+	char const * const value = std::getenv("OPENYR_UPLOAD_CHECK");
+	return(value != NULL && value[0] == '1');
+}();
+static std::unordered_map<Store const *, std::vector<unsigned short>> _UploadCopies;
+static int _UploadDifferences = 0;
+static int _NamedUploads = 0;
+
+static bool Upload_Is_Checked(void)
+{
+	return(_UploadChecked);
+}
+
+
+void GpuMap_Set_Upload_Check(bool enabled)
+{
+	if (_UploadChecked && !enabled) {
+		DebugString("UPLOAD_CHECK differences %d, uploads of named rectangles %s\n", _UploadDifferences, _NamedUploads > 0 ? "yes" : "no");
+	}
+	_UploadChecked = enabled;
+	_UploadCopies.clear();
+	_UploadDifferences = 0;
+	_NamedUploads = 0;
+}
+
+
+static void Check_Upload(Store const & store, unsigned short const * values, int width, int rows, std::vector<Rect> const & sent)
+{
+	std::size_t const count = (std::size_t)width * rows;
+	auto found = _UploadCopies.find(&store);
+	if (found == _UploadCopies.end() || found->second.size() != count) {
+		// The first upload seen is taken to leave the store equal to the values.
+		_UploadCopies[&store].assign(values, values + count);
+		return;
+	}
+	std::vector<unsigned short> & copy = found->second;
+	for (Rect const & rect : sent) {
+		for (int r = 0; r < rect.Height; r++) {
+			std::size_t const at = (std::size_t)(rect.Y + r) * width + rect.X;
+			std::memcpy(&copy[at], values + at, (std::size_t)rect.Width * sizeof(unsigned short));
+		}
+	}
+	if (std::memcmp(copy.data(), values, count * sizeof(unsigned short)) != 0) {
+		std::size_t at = 0;
+		while (copy[at] == values[at]) {
+			at++;
+		}
+		_UploadDifferences++;
+		DebugString("UPLOAD_CHECK DIFFERENCE store %d row %d column %d of %dx%d\n", (int)(&store - _Stores), (int)(at / width), (int)(at % width), width, rows);
+		std::memcpy(copy.data(), values, count * sizeof(unsigned short));
+	}
+}
+
+
+// Makes the store exactly width by rows values. When the system lists the pages written since the last
+// call (writewatch.h), only those go up: the rectangles named in written, and whole rows for a page that
+// no named rectangle touches. Reference is as for Fill_R16.
+static bool Fill_R16_Watched(Store & store, unsigned short const * values, int width, int rows, bool reference, WrittenRects * written = NULL)
 {
 	std::size_t const bytes = (std::size_t)width * rows * sizeof(unsigned short);
-	std::vector<std::pair<std::size_t, std::size_t>> runs;
+	static std::vector<std::pair<std::size_t, std::size_t>> runs;
+	static std::vector<Rect> rects;
+	static std::vector<Rect> sent;
 	bool const listed = WriteWatch_Take(values, bytes, runs);
+	bool const named = written != NULL && written->Take(rects);
+	sent.clear();
 	if (!listed || !store.Tracked || store.Width != width || store.Height != rows) {
-		if (!Fill_R16(store, values, width, rows, true, reference)) {
+		// The copy the check keeps is made now, so the values must be read now as well.
+		if (!Fill_R16(store, values, width, rows, true, reference && !Upload_Is_Checked())) {
 			return(false);
 		}
 		store.Tracked = listed;
+		if (Upload_Is_Checked()) {
+			sent.push_back(Rect(0, 0, width, rows));
+			Check_Upload(store, values, width, rows, sent);
+		}
 		return(true);
 	}
 	std::size_t const pitch = (std::size_t)width * sizeof(unsigned short);
+	std::size_t const page = WriteWatch_Page_Size();
+	static std::vector<unsigned char> covered;
+	if (named) {
+		_NamedUploads += rects.empty() ? 0 : 1;
+		covered.assign(bytes / page + 1, 0);
+		for (Rect const & rect : rects) {
+			Rect const inside = Intersect(rect, Rect(0, 0, width, rows));
+			if (!inside.Is_Valid()) {
+				continue;
+			}
+			Update_Rect(store, values, width, inside);
+			sent.push_back(inside);
+			for (int r = inside.Y; r < inside.Y + inside.Height; r++) {
+				std::size_t const first = r * pitch + (std::size_t)inside.X * sizeof(unsigned short);
+				std::size_t const last = first + (std::size_t)inside.Width * sizeof(unsigned short) - 1;
+				std::fill(covered.begin() + first / page, covered.begin() + last / page + 1, (unsigned char)1);
+			}
+		}
+	}
 	int done = 0;
-	for (auto const & run : runs) {
-		int const first = std::max(done, (int)(run.first / pitch));
-		int const end = std::min(rows, (int)((run.second + pitch - 1) / pitch));
+	auto send_rows = [&](std::size_t from, std::size_t to) {
+		int const first = std::max(done, (int)(from / pitch));
+		int const end = std::min(rows, (int)((to + pitch - 1) / pitch));
 		if (first < end) {
 			Update_Rows(store, values, width, first, end);
+			sent.push_back(Rect(0, first, width, end - first));
 			done = end;
 		}
+	};
+	for (auto const & run : runs) {
+		if (!named) {
+			send_rows(run.first, run.second);
+			continue;
+		}
+		std::size_t at = run.first / page;
+		std::size_t const end = (run.second + page - 1) / page;
+		while (at < end) {
+			if (covered[at] != 0) {
+				at++;
+				continue;
+			}
+			std::size_t const from = at;
+			while (at < end && covered[at] == 0) {
+				at++;
+			}
+			send_rows(from * page, std::min(at * page, bytes));
+		}
+	}
+	if (Upload_Is_Checked()) {
+		Check_Upload(store, values, width, rows, sent);
 	}
 	return(true);
 }
@@ -714,6 +839,7 @@ static void Bind_Stores(float const * ring)
 		bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 	}
 	bgfx::setUniform(_RingUniform, ring, 2);
+	bgfx::setUniform(_BaseRingUniform, ring + 8);
 }
 
 
@@ -772,6 +898,7 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 			bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
+		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(BGFX_STATE_WRITE_RGB);
 		bgfx::submit(VIEW_MAPSHADOW, _Program);
 	}
@@ -1003,7 +1130,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact) {
 		return(false);
 	}
-	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing }) {
+	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing, &pass.BaseRing }) {
 		if (pass.Persistent && ring->Values != NULL && (ring->Width > TEXTURE_LIMIT || ring->Height > TEXTURE_LIMIT)) {
 			return(false);
 		}
@@ -1063,7 +1190,7 @@ static void Set_Ring(float * ring, int column, int row, int width, int height)
 
 
 // Uploads the translator stacks and the pass's depth, alpha, shape and base stores. ring receives
-// the depth and alpha ring addressing that the shadow and blit shaders read. False means a store
+// the depth, alpha and base ring addressing that the shadow and blit shaders read. False means a store
 // could not take its data.
 static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned short> const & lut, std::vector<unsigned short> const & alut, float * ring)
 {
@@ -1088,10 +1215,12 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 		for (int i = 0; i < 2; i++) {
 			GpuRing const & source = *rings[i];
 			if (source.Values != NULL) {
-				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference) && valid;
+				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference, source.Written) && valid;
 				Set_Ring(ring + i * 4, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 			} else if (!bgfx::isValid(stores[i]->Handle)) {
-				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true) && valid;
+				// No blit reads this store, so it only has to exist.
+				static unsigned short const unread = 0;
+				valid = Fill_R16(*stores[i], &unread, 1, 1, true) && valid;
 			}
 		}
 	} else {
@@ -1099,7 +1228,17 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 		valid = Fill_R16(_Stores[SLOT_ABUF], pass.Alpha->data(), area.Width, area.Height, true) && valid;
 	}
 	valid = Fill_Arena(_Stores[SLOT_ZSHAPE], list.ZShapeArena.data(), list.ZShapeArena.size()) && valid;
-	if (pass.Persistent && pass.BaseChanged != NULL) {
+	// A store filled one way holds nothing the other way can add to.
+	bool const inplace = pass.Persistent && pass.BaseRing.Values != NULL;
+	if (inplace != _BaseInPlace) {
+		_BaseInPlace = inplace;
+		_Stores[SLOT_BASE].Tracked = false;
+	}
+	if (inplace) {
+		GpuRing const & source = pass.BaseRing;
+		valid = Fill_R16_Watched(_Stores[SLOT_BASE], source.Values, source.Width, source.Height, reference, source.Written) && valid;
+		Set_Ring(ring + 8, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
+	} else if (pass.Persistent && pass.BaseChanged != NULL) {
 		valid = Fill_R16_Changed(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, *pass.BaseChanged) && valid;
 	} else {
 		valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true) && valid;
@@ -1359,6 +1498,7 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
+		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(state);
 		bgfx::submit(view, _Program);
 	}
@@ -1425,9 +1565,10 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 
 	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
 	// a ring of the area's size that starts at 0.
-	float ring[8];
+	float ring[12];
 	Set_Ring(ring, 0, 0, area.Width, area.Height);
 	Set_Ring(ring + 4, 0, 0, area.Width, area.Height);
+	Set_Ring(ring + 8, 0, 0, area.Width, area.Height);
 	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
 	int const shadows = Shadow_Mask_On() ? Count_Shadow_Blits(list) : 0;
@@ -1831,7 +1972,7 @@ void GpuMap_Shutdown(void)
 		Release_Handle(*program);
 	}
 	for (bgfx::UniformHandle * uniform : { &_BlurUniform, &_MaskSampler, &_ShadowSampler, &_SceneSampler, &_RippleUniform, &_RippleInfoUniform,
-		&_RingUniform, &_SnapshotSampler, &_TileShadowSampler, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
+		&_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_TileShadowSampler, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
 		&_GlowMaskSampler, &_GlowSampler }) {
 		Release_Handle(*uniform);
 	}

@@ -273,6 +273,29 @@ is sent whole, and so is a picture of which half or more has changed. `uploadver
 script checks every update against the picture and `uploadverify 0` writes the counts of checks and
 mismatches.
 
+## Scrolling a large map view
+
+A scroll used to copy the whole tile layer and send most of the tile layer and the depth buffer to the
+GPU again, because a strip one pixel wide touches every row. The tile layer now scrolls in place and a
+pass sends only the rectangles the map drew ([GPU_MAP.md](GPU_MAP.md#uploads)).
+
+Measured on a large Mental Omega mission map zoomed fully out at 3840x2160, a view of 7680x4320 map
+pixels, with `GpuRender=yes` on a GeForce RTX 4090, scrolling 12 pixels sideways, 8 pixels down, or
+both in every game frame:
+
+| Scroll | Before | After |
+|---|---|---|
+| Sideways | 230 ms a frame | 12.7 ms |
+| Down | 50 ms | 16.8 ms |
+| Diagonal | 245 ms | 16.7 ms |
+
+The same view standing still takes about 10 ms a frame. A full redraw of that view, which each step of
+an ambient light change still causes, takes about 370 ms.
+
+`FastestGpu` ([manual](../manual/content/keys/fastestgpu--client-settings.md)) matters for these numbers:
+on a computer with two graphics cards the game could start on the slower one, where the GPU pass of this
+view alone took about 31 ms.
+
 ## Voxel images
 
 A voxel image is rendered once, kept run-length encoded in `VoxelStaticBuffer` (8,000,000 bytes) and

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "writtenrects.h"
 #include "rect.h"
 
 #include <cstdint>
@@ -30,12 +31,19 @@ struct GpuRipple
 
 // A depth or alpha ring buffer as it is stored: Width * Height values, the area's top-left value at
 // Start and each next row Width values on, wrapping past the end to the beginning.
+// The most rows or columns a store of the GPU pass can have.
+inline constexpr int GPU_MAP_STORE_ROWS = 16384;
+
 struct GpuRing
 {
 	unsigned short const * Values;
 	int Width;
 	int Height;
 	int Start;
+
+	// With watched Values, the rectangles of the rows that the writers named, or NULL when they name none.
+	// A page written outside the named rectangles is still uploaded, as whole rows.
+	WrittenRects * Written = NULL;
 };
 
 
@@ -61,6 +69,10 @@ struct GpuMapPass
 	// With Persistent, the depth and alpha buffers as stored; Depth and Alpha are then unused.
 	GpuRing DepthRing = {};
 	GpuRing AlphaRing = {};
+
+	// With Persistent, the tile layer's memory when the base picture is read from it in place: Values
+	// is watched memory (writewatch.h) and Base and BaseChanged are unused. Values is NULL otherwise.
+	GpuRing BaseRing = {};
 
 	// At most 16 rings drawn over the finished picture, or NULL for none.
 	std::vector<GpuRipple> const * Ripples = NULL;
@@ -150,6 +162,10 @@ std::uint16_t GpuMap_Mask_Texture(void);
 
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
+
+// Turns the upload check on or off (the uploadcheck autotest step). Turning it off logs how many uploads
+// left a store different from its values, and whether any upload sent named rectangles.
+void GpuMap_Set_Upload_Check(bool enabled);
 
 // Makes the next pass the GPU draws log a GPU_VOXEL_SHADOW line with the shadow blits of voxel objects it holds
 // and how many of their pixels the finished picture shows darkened (the gpushadowcount autotest step).

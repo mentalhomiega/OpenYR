@@ -10,6 +10,7 @@
 #pragma once
 
 #include "rect.h"
+#include "writtenrects.h"
 
 class Surface;
 
@@ -46,11 +47,19 @@ class ZBuffer
 		Surface * Get_Surface(void) const { return(SurfacePtr); }
 
 		Rect const & Get_Bounds(void) const { return(Bounds); }
+
+		// Names a rectangle of the covered area, in the coordinates Bounds is in, whose entries a
+		// blitter wrote. Pan, Fill, Update and Set name what they write themselves.
+		void Note_Written(Rect const & rect);
+
+		// The entries named as written since the GPU map pass last took them, as rectangles of the stored rows.
+		WrittenRects Written;
 		unsigned int Get_Buffer_Width(void) const { return(BufferWidth); }
 		unsigned short * Get_Buffer_End(void) const { return(BufferEnd); }
 
 	private:
 		void Release_Surface(void);
+		void Store(unsigned short * dst, int size, unsigned short value);
 
 	public:
 		/*

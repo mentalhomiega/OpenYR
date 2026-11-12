@@ -325,8 +325,104 @@ void Run_Write_Watch(char const * name)
 } // namespace
 
 
+/// Marks the entries the rectangles cover; false when a rectangle reaches outside the buffer.
+bool Mark_Rects(std::vector<Rect> const & rects, std::vector<unsigned char> & covered)
+{
+	covered.assign(BUFFER_W * BUFFER_H, 0);
+	for (Rect const & rect : rects) {
+		if (rect.X < 0 || rect.Y < 0 || rect.Width <= 0 || rect.Height <= 0 || rect.X + rect.Width > BUFFER_W || rect.Y + rect.Height > BUFFER_H) {
+			return(false);
+		}
+		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
+			for (int x = rect.X; x < rect.X + rect.Width; x++) {
+				covered[y * BUFFER_W + x] = 1;
+			}
+		}
+	}
+	return(true);
+}
+
+
+/// Runs one write on a buffer filled with the marker and checks that the rectangles the buffer
+/// names afterwards cover exactly the entries the write changed.
+template<typename BufferT, typename Write>
+void Check_Named(char const * what, Write write)
+{
+	BufferT buffer(Rect(0, 0, BUFFER_W, BUFFER_H));
+	buffer.Pan(7, 5, MARKER);
+	Fill_Marker(buffer);
+	std::vector<Rect> rects;
+	buffer.Written.Take(rects);
+	write(buffer);
+	bool const listed = buffer.Written.Take(rects);
+	std::vector<unsigned char> covered;
+	bool exact = listed && Mark_Rects(rects, covered);
+	unsigned short * entries = Entries(buffer);
+	for (int i = 0; exact && i < BUFFER_W * BUFFER_H; i++) {
+		exact = (covered[i] != 0) == (entries[i] != MARKER);
+	}
+	Check(exact, what);
+}
+
+
+template<typename BufferT>
+void Run_Written(char const * name, unsigned short reset)
+{
+	char what[128];
+
+	std::snprintf(what, sizeof(what), "%s: a new buffer counts as written everywhere", name);
+	{
+		BufferT fresh(Rect(0, 0, BUFFER_W, BUFFER_H));
+		std::vector<Rect> rects;
+		Check(!fresh.Written.Take(rects) && rects.empty() && fresh.Written.Take(rects) && rects.empty(), what);
+	}
+
+	std::snprintf(what, sizeof(what), "%s: a pan to the right names the columns it resets", name);
+	Check_Named<BufferT>(what, [reset](BufferT & buffer) { buffer.Pan(3, 0, reset); });
+	std::snprintf(what, sizeof(what), "%s: a pan to the left across the row end names both column strips", name);
+	Check_Named<BufferT>(what, [reset](BufferT & buffer) { buffer.Pan(-9, 0, reset); });
+	std::snprintf(what, sizeof(what), "%s: a pan down names the rows it resets", name);
+	Check_Named<BufferT>(what, [reset](BufferT & buffer) { buffer.Pan(0, 4, reset); });
+	std::snprintf(what, sizeof(what), "%s: a pan up across the ring end names both row runs", name);
+	Check_Named<BufferT>(what, [reset](BufferT & buffer) { buffer.Pan(0, -8, reset); });
+	std::snprintf(what, sizeof(what), "%s: a diagonal pan names its columns and rows", name);
+	Check_Named<BufferT>(what, [reset](BufferT & buffer) { buffer.Pan(5, 21, reset); });
+	std::snprintf(what, sizeof(what), "%s: an update names the rectangle where it lies in the ring", name);
+	Check_Named<BufferT>(what, [](BufferT & buffer) { buffer.Update(Rect(30, 15, 9, 8)); });
+	std::snprintf(what, sizeof(what), "%s: a named rectangle of the picture lands where an update of it writes", name);
+	{
+		BufferT named(Rect(0, 0, BUFFER_W, BUFFER_H));
+		BufferT updated(Rect(0, 0, BUFFER_W, BUFFER_H));
+		named.Pan(7, 5, MARKER);
+		updated.Pan(7, 5, MARKER);
+		std::vector<Rect> first;
+		std::vector<Rect> second;
+		named.Written.Take(first);
+		updated.Written.Take(second);
+		named.Note_Written(Rect(30, 15, 9, 8));
+		updated.Update(Rect(30, 15, 9, 8));
+		std::vector<unsigned char> a;
+		std::vector<unsigned char> b;
+		Check(named.Written.Take(first) && updated.Written.Take(second) && Mark_Rects(first, a) && Mark_Rects(second, b) && a == b, what);
+	}
+
+	std::snprintf(what, sizeof(what), "%s: more rectangles than the list holds count as the whole buffer", name);
+	{
+		BufferT busy(Rect(0, 0, BUFFER_W, BUFFER_H));
+		std::vector<Rect> rects;
+		busy.Written.Take(rects);
+		for (std::size_t i = 0; i <= WrittenRects::LIMIT; i++) {
+			busy.Written.Note(1, 1, 2, 2);
+		}
+		Check(!busy.Written.Take(rects) && rects.empty(), what);
+	}
+}
+
+
 int main(void)
 {
+	Run_Written<ZBuffer>("depth", 0xFFFF);
+	Run_Written<ABuffer>("alpha", 0x007F);
 	Run<ZBuffer>("depth", 0xFFFF);
 	Run<ABuffer>("alpha", 0x007F);
 	Run_Write_Watch<ZBuffer>("depth");

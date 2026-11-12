@@ -65,6 +65,22 @@ void WriteWatch_Free(void * memory)
 }
 
 
+std::size_t WriteWatch_Page_Size(void)
+{
+#ifdef _WIN32
+	static std::size_t size = 0;
+	if (size == 0) {
+		SYSTEM_INFO info;
+		GetSystemInfo(&info);
+		size = info.dwPageSize;
+	}
+	return(size);
+#else
+	return(4096);
+#endif
+}
+
+
 bool WriteWatch_Take(void const * memory, std::size_t size, std::vector<std::pair<std::size_t, std::size_t>> & runs, bool steady)
 {
 	runs.clear();
