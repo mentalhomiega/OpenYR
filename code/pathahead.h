@@ -28,6 +28,15 @@ void Path_Ahead_Frame(void);
 // has its commands copied to `moves` and stays valid until the next Path_Ahead_Frame.
 bool Path_Ahead_Take(FootClass const * foot, Cell const & from, Cell const & to, int path_offset, int avoidance, FacingType * moves, PathStruct * & path);
 
+// True when the path this unit is about to ask for was not made ahead and has been put on the
+// list for Path_Ahead_Late. The caller then returns without asking; Path_Ahead_Late repeats the
+// step in the same frame with `step_flag`. Always false while Path_Ahead_Late runs.
+bool Path_Ahead_Put_Off(FootClass * foot, Cell const & to, int avoidance, bool step_flag);
+
+// Searches the paths put off during the object loop and lets each unit repeat its movement step.
+// LogicClass::AI calls it once a frame, right after the object loop.
+void Path_Ahead_Late(void);
+
 // Drops what was made for an object that is being deleted.
 void Path_Ahead_Forget(FootClass const * foot);
 

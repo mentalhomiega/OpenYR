@@ -26,6 +26,7 @@
 #include "house.h"
 #include "inline.h"
 #include "overtype.h"
+#include "pathahead.h"
 #include "rules.h"
 #include "saveload.h"
 #include "savestream.h"
@@ -219,6 +220,10 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 					return;
 				}
 
+				if (Path_Ahead_Put_Off(LinkedTo, DestinationCoord.As_Cell(), 0, first_pass)) {
+					return;
+				}
+
 				LinkedTo->PathDelay = Rule->PathDelay * TICKS_PER_MINUTE;
 
 				if (!LinkedTo->Basic_Path(DestinationCoord.As_Cell(), 0, 0)) {
@@ -361,6 +366,9 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 					}
 
 					bool blocked = LinkedTo->IsToPathAroundBlockage && LinkedTo->BlockagePathDelay == 0;
+					if (Path_Ahead_Put_Off(LinkedTo, DestinationCoord.As_Cell(), blocked ? 2 : 1, first_pass)) {
+						return;
+					}
 					bool found = LinkedTo->Basic_Path(DestinationCoord.As_Cell(), 0, blocked ? 2 : 1);
 					LinkedTo->PathDelay = Rule->PathDelay * TICKS_PER_MINUTE;
 
@@ -734,6 +742,14 @@ bool WalkLocomotionClass::Is_Really_Moving_Now(void)
 /// before the frame's object loop shows it.
 /// </summary>
 /// <returns>bool; Is a request expected? `to` and `avoid` are set when it is.</returns>
+void WalkLocomotionClass::Late_Start(bool first_pass)
+{
+	IsProcessingMovement = true;
+	Movement_AI(first_pass);
+	IsProcessingMovement = false;
+}
+
+
 bool WalkLocomotionClass::Predict_Path(Cell & to, int & avoid)
 {
 	if (HeadToCoord != COORD_NONE || DestinationCoord == COORD_NONE || LinkedTo->PathDelay != 0) {

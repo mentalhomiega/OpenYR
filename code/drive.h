@@ -56,6 +56,10 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 	public:
 		bool Predict_Path(Cell & to, int & avoid);
 
+		// Repeats the move start that Path_Ahead_Put_Off cut short; `after_track` tells whether
+		// the unit had finished a track in that step.
+		void Late_Start(bool after_track);
+
 
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.
@@ -263,6 +267,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		**	Member function prototypes.
 		*/
 		bool While_Moving(bool just_started=false);
+		void After_Move_Step(void);
 		bool Start_Of_Move(bool & stop_processing, bool retry = true, bool force_straight = false);
 		void Lay_Track(void);
 		Point2D Smooth_Turn(Point2D const & adj, Dir256 & dir);

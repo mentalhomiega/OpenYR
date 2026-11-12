@@ -76,6 +76,23 @@ std::vector<std::unique_ptr<Worker>> Workers;
 std::unique_ptr<Worker> Checker;
 
 std::vector<Request> Requests;
+
+struct PutOff
+{
+	FootClass * Foot;
+	Cell To;
+	int Avoidance;
+	bool StepFlag;
+};
+
+// In the order the units asked, which is the object loop order on every machine.
+std::vector<PutOff> PutOffs;
+bool IsLatePass = false;
+long long StatPutOff = 0;
+long long StatLateUsed = 0;
+long long StatLateBatchMicros = 0;
+long long StatLargestLate = 0;
+long long StatLargestLateMicros = 0;
 std::unordered_map<FootClass const *, int> RequestOf;
 
 std::mutex BatchLock;
@@ -294,6 +311,22 @@ void Check_Batch(void)
 	}
 }
 
+
+void Add_Request(FootClass * foot, Cell const & to, int avoidance)
+{
+	Request request;
+	request.Foot = foot;
+	request.From = Cell(foot->Destination_Coord());
+	request.To = to;
+	request.Avoidance = avoidance;
+	request.IsFound = false;
+	request.IsUsed = false;
+	request.IsAskedOtherwise = false;
+	request.IsDrive = dynamic_cast<DriveLocomotionClass *>(foot->Locomotion.get()) != NULL;
+	RequestOf[foot] = (int)Requests.size();
+	Requests.push_back(std::move(request));
+}
+
 }
 
 
@@ -356,17 +389,7 @@ void Path_Ahead_Frame(void)
 		if (!wanted || !foot->Is_In_Same_Zone(to)) {
 			continue;
 		}
-		Request request;
-		request.Foot = foot;
-		request.From = Cell(foot->Destination_Coord());
-		request.To = to;
-		request.Avoidance = avoidance;
-		request.IsFound = false;
-		request.IsUsed = false;
-		request.IsAskedOtherwise = false;
-		request.IsDrive = dynamic_cast<DriveLocomotionClass *>(foot->Locomotion.get()) != NULL;
-		RequestOf[foot] = (int)Requests.size();
-		Requests.push_back(std::move(request));
+		Add_Request(foot, to, avoidance);
 	}
 
 	if (Requests.empty()) {
@@ -400,9 +423,10 @@ void Path_Ahead_Frame(void)
 
 	StatMade += (long long)Requests.size();
 	if (IsStatsLogged && Frame % 600 == 0) {
-		DebugString("PATHAHEAD frame %d threads %d asked %lld made %lld used %lld check differences %lld batch ms %lld made ms %lld used ms %lld largest batch %lld in %lld ms; other from %lld to %lld avoidance %lld (%lld ms), asked twice %lld, no path %lld ms\n",
+		DebugString("PATHAHEAD frame %d threads %d asked %lld made %lld used %lld check differences %lld batch ms %lld made ms %lld used ms %lld largest batch %lld in %lld ms; other from %lld to %lld avoidance %lld (%lld ms), asked twice %lld, no path %lld ms; put off %lld used %lld late batch ms %lld largest %lld in %lld ms\n",
 			Frame, ThreadCount, StatAsked, StatMade, StatUsed, StatCheckDifferences, StatBatchMicros / 1000, StatMadeMicros / 1000, StatUsedMicros / 1000, StatLargestBatch, StatLargestBatchMicros / 1000,
-			StatOtherFrom, StatOtherTo, StatOtherAvoidance, StatOtherMicros / 1000, StatTwice, StatNotFoundMicros / 1000);
+			StatOtherFrom, StatOtherTo, StatOtherAvoidance, StatOtherMicros / 1000, StatTwice, StatNotFoundMicros / 1000,
+			StatPutOff, StatLateUsed, StatLateBatchMicros / 1000, StatLargestLate, StatLargestLateMicros / 1000);
 	}
 }
 
@@ -441,6 +465,9 @@ bool Path_Ahead_Take(FootClass const * foot, Cell const & from, Cell const & to,
 	}
 	request.IsUsed = true;
 	StatUsed++;
+	if (IsLatePass) {
+		StatLateUsed++;
+	}
 	StatUsedMicros += request.Micros;
 	if (!request.IsFound) {
 		path = NULL;
@@ -454,10 +481,79 @@ bool Path_Ahead_Take(FootClass const * foot, Cell const & from, Cell const & to,
 }
 
 
+bool Path_Ahead_Put_Off(FootClass * foot, Cell const & to, int avoidance, bool step_flag)
+{
+	if (ThreadCount <= 0 || IsLatePass) {
+		return(false);
+	}
+	auto const found = RequestOf.find(foot);
+	if (found != RequestOf.end()) {
+		Request const & request = Requests[found->second];
+		if (!request.IsUsed && request.To == to && request.Avoidance == avoidance && request.From == Cell(foot->Destination_Coord())) {
+			return(false);
+		}
+	}
+	PutOffs.push_back({foot, to, avoidance, step_flag});
+	StatPutOff++;
+	return(true);
+}
+
+
+void Path_Ahead_Late(void)
+{
+	if (PutOffs.empty()) {
+		return;
+	}
+
+	Requests.clear();
+	RequestOf.clear();
+	for (PutOff const & put_off : PutOffs) {
+		if (put_off.Foot != NULL && put_off.Foot->Is_In_Same_Zone(put_off.To)) {
+			Add_Request(put_off.Foot, put_off.To, put_off.Avoidance);
+		}
+	}
+
+	if (!Requests.empty()) {
+		Perf_Count(PERF_COUNT_PATHS, Requests.size());
+		PerfScope pathfind_scope(PERF_FRAME_PATHFIND);
+		long long const begin = IsStatsLogged ? Micros_Now() : 0;
+		Run_Batch();
+		if (IsStatsLogged) {
+			long long const micros = Micros_Now() - begin;
+			StatLateBatchMicros += micros;
+			if (micros > StatLargestLateMicros) {
+				StatLargestLateMicros = micros;
+				StatLargestLate = (long long)Requests.size();
+			}
+		}
+		if (IsChecked) {
+			Check_Batch();
+		}
+		StatMade += (long long)Requests.size();
+	}
+
+	// A unit deleted during this pass clears its entry, so the list is walked by index.
+	IsLatePass = true;
+	for (size_t index = 0; index < PutOffs.size(); index++) {
+		FootClass * foot = PutOffs[index].Foot;
+		if (foot != NULL) {
+			foot->Late_Move_Start(PutOffs[index].StepFlag);
+		}
+	}
+	IsLatePass = false;
+	PutOffs.clear();
+}
+
+
 void Path_Ahead_Forget(FootClass const * foot)
 {
 	if (!RequestOf.empty()) {
 		RequestOf.erase(foot);
+	}
+	for (PutOff & put_off : PutOffs) {
+		if (put_off.Foot == foot) {
+			put_off.Foot = NULL;
+		}
 	}
 }
 
@@ -466,4 +562,5 @@ void Path_Ahead_Clear(void)
 {
 	Requests.clear();
 	RequestOf.clear();
+	PutOffs.clear();
 }

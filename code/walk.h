@@ -26,6 +26,10 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 	public:
 		bool Predict_Path(Cell & to, int & avoid);
 
+		// Repeats the movement step that Path_Ahead_Put_Off cut short; `first_pass` is the value
+		// that step ran with.
+		void Late_Start(bool first_pass);
+
 
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.

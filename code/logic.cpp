@@ -465,6 +465,7 @@ void LogicClass::AI(void)
 		//	index--;
 		//}
 	}
+	Path_Ahead_Late();
 //	HouseClass::Recalc_Attributes();
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
