@@ -240,6 +240,12 @@
 	margin-top: 4dp;
 }
 
+/* The declared pages share one list of rows, and the rows of the pages not on show are hidden. */
+.page-settings #list .other-page
+{
+	display: none;
+}
+
 /* The description panel. It shows the text of the setting the pointer or the focus is on. */
 .page-settings #side-title
 {

@@ -91,7 +91,7 @@ void UIPresenterClass::Switch_Tab(int tab)
 {
 	// A tab request applies nothing: the host moves to the page and the pending values stay on their pages until
 	// OK or Cancel acts on every page.
-	if (tab < 0 || tab >= UI_TAB_COUNT || (Offered & (1u << tab)) == 0) {
+	if ((Offered & UI_Tab_Bit(tab)) == 0) {
 		return;
 	}
 	Tab_Request = (UISettingsTab)tab;

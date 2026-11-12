@@ -80,6 +80,15 @@ struct Setting
 };
 
 
+// A settings page made only of declared rows: the rows whose Page is Id. docs/SETTINGS.md describes how to add one.
+struct SettingPage
+{
+	char const * Id = nullptr;
+	// The text of the page's tab and of its button in the options menu.
+	char const * Label = nullptr;
+};
+
+
 // Enum names longer than this are not read back whole.
 enum { SETTING_NAME_SIZE = 16 };
 

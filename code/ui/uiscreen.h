@@ -50,9 +50,9 @@ std::string UI_Name_At(std::vector<std::string> const & names, int index);
 
 /// <summary>
 /// The pages of the tabbed Settings screen the modern menu style uses in place of separate
-/// option screens.
+/// option screens. A declared page (Option_Setting_Pages) has the tab UI_TAB_COUNT plus its index.
 /// </summary>
-enum UISettingsTab
+enum UISettingsTab : int
 {
 	UI_TAB_NONE = -1,
 	UI_TAB_GAME,
@@ -63,6 +63,22 @@ enum UISettingsTab
 	UI_TAB_ACCESSIBILITY,
 	UI_TAB_MODS,
 	UI_TAB_COUNT
+};
+
+
+// The bit of a tab in a mask of offered tabs, or 0 for a tab number the mask cannot hold.
+constexpr unsigned UI_Tab_Bit(int tab)
+{
+	return((tab >= 0 && tab < 32) ? (1u << tab) : 0u);
+}
+
+
+// One button of the Settings screen's tab bar. The button's id is tab-Name, and a page shown under it has the class tab-Name.
+struct UISettingsTabEntry
+{
+	int Tab = UI_TAB_NONE;
+	std::string Name;
+	std::string Label;
 };
 
 

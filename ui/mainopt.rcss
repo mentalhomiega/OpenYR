@@ -16,6 +16,13 @@
 	margin-top: -138dp;
 }
 
+/* Each declared settings page adds a button, and the panel grows by one button's place. */
+.count-7 #reveal
+{
+	height: 314dp;
+	margin-top: -157dp;
+}
+
 #content
 {
 	padding: 18dp 0 0 55dp;

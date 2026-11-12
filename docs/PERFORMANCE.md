@@ -156,7 +156,7 @@ The big-map "before" is the cache turned off, before the prefetch; the ALL02 "be
 
 `PathThreads` in `[Options]` of `RA2MD.INI` is the number of threads on this machine, 1 to 32. The default 0 uses one less than the number of processor threads, at most 8. The thread count does not change any path, so players in one match can use different counts.
 
-Both `RA2MD.INI` keys have a row under Performance on the Graphics options page: Parallel path searches and Path search threads.
+Both `RA2MD.INI` keys have a row on the Performance settings page: Parallel path searches and Path search threads.
 
 A frame makes two batches:
 
