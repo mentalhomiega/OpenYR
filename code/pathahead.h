@@ -40,5 +40,5 @@ void Path_Ahead_Late(void);
 // Drops what was made for an object that is being deleted.
 void Path_Ahead_Forget(FootClass const * foot);
 
-// Drops everything made. Call it when the scenario is cleared.
+// Drops everything made and stops the threads. Call it when the scenario is cleared.
 void Path_Ahead_Clear(void);

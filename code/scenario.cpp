@@ -157,6 +157,7 @@
 #include "script.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
+#include "spawner.h"
 #include "smudge.h"
 #include "spawnhouse.h"
 #include "stats.h"
@@ -411,6 +412,11 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	strcpy(Scen->ScenarioName, name);
 	strupr(Scen->ScenarioName);
+
+	// A match from a launch file plays the rule the file gives, and a multiplayer match the host's.
+	if (!Spawner_Is_Active() && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH)) {
+		Session.Options.ParallelPaths = Options.ParallelPaths;
+	}
 
 	Theme.Stop();
 

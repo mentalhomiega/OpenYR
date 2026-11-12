@@ -42,6 +42,7 @@ constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
 constexpr char const * VOXEL_DRAWING = "Voxel drawing";
+constexpr char const * PERFORMANCE = "Performance";
 
 
 // The order is the order of the keys in a saved RA2MD.INI: a save rewrites each key in this order.
@@ -159,6 +160,19 @@ constexpr Setting<OptionsClass> Settings[] = {
 	{
 		.Section = "Video", .Key = "RenderThread",
 		.Flag = &OptionsClass::RenderThread, .Default = false, .BeforeRenderer = true,
+	},
+	{
+		.Section = "Options", .Key = "ParallelPaths",
+		.Flag = &OptionsClass::ParallelPaths, .Default = false,
+		.Page = GRAPHICS, .Group = PERFORMANCE, .Label = "Parallel path searches",
+		.Tip = "Searches the paths of infantry and vehicles on several processor threads, which shortens the longest frames in large battles. Paths can differ slightly from the original game's. Applies to campaign and skirmish games started after the change.",
+	},
+	{
+		.Section = "Options", .Key = "PathThreads",
+		.Number = &OptionsClass::PathThreads, .Default = 0, .Min = 0, .Max = 32,
+		.Page = GRAPHICS, .Group = PERFORMANCE, .Label = "Path search threads",
+		.Tip = "How many processor threads search paths. Auto leaves one thread free and uses at most 8. The number does not change any path.",
+		.Needs = "ParallelPaths", .ZeroText = "Auto",
 	},
 };
 

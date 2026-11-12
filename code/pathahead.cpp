@@ -16,9 +16,12 @@
 #include "drive.h"
 #include "foot.h"
 #include "globals.h"
+#include "goptions.h"
 #include "perfstat.h"
+#include "session.h"
 #include "walk.h"
 
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <cfloat>
@@ -131,17 +134,23 @@ long long Micros_Now(void)
 
 void Read_Settings(void)
 {
-	// Development switches until the setting exists: OPENYR_PATH_AHEAD is the number of threads
-	// that search (0 or unset turns paths ahead off), OPENYR_PATH_AHEAD_CHECK=1 repeats every
-	// batch on one thread and logs any difference, OPENYR_PATH_AHEAD_STATS=1 logs the counts.
+	// The match decides whether paths are made ahead; the thread count is this machine's own and
+	// does not change the paths. Development switches: OPENYR_PATH_AHEAD=<threads> overrides both
+	// (0 turns paths ahead off), OPENYR_PATH_AHEAD_CHECK=1 repeats every batch on one thread and
+	// logs any difference, OPENYR_PATH_AHEAD_STATS=1 logs the counts.
 	char const * threads = std::getenv("OPENYR_PATH_AHEAD");
-	ThreadCount = threads != NULL ? std::atoi(threads) : 0;
-	if (ThreadCount < 0) {
+	if (threads != NULL) {
+		ThreadCount = std::atoi(threads);
+	} else if (!Session.Options.ParallelPaths) {
 		ThreadCount = 0;
+	} else if (Options.PathThreads > 0) {
+		ThreadCount = Options.PathThreads;
+	} else {
+		// One core is left to the renderer and the system.
+		ThreadCount = (int)std::thread::hardware_concurrency() - 1;
+		ThreadCount = std::clamp(ThreadCount, 1, 8);
 	}
-	if (ThreadCount > 32) {
-		ThreadCount = 32;
-	}
+	ThreadCount = std::clamp(ThreadCount, 0, 32);
 	char const * check = std::getenv("OPENYR_PATH_AHEAD_CHECK");
 	IsChecked = check != NULL && check[0] == '1';
 	char const * stats = std::getenv("OPENYR_PATH_AHEAD_STATS");
@@ -563,4 +572,8 @@ void Path_Ahead_Clear(void)
 	Requests.clear();
 	RequestOf.clear();
 	PutOffs.clear();
+	// The next match reads its own rule and thread count.
+	Stop_Threads();
+	Checker.reset();
+	ThreadCount = -1;
 }

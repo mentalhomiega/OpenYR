@@ -188,6 +188,7 @@ SessionClass::SessionClass(void)
 	Options.AutoDeployMCV = false;
 	Options.AttackNeutralUnits = false;
 	Options.ScrapMetal = false;
+	Options.ParallelPaths = false;
 	Options.AIDifficulty = DIFF_NORMAL;
 	Options.SWAllowed = true;
 
@@ -1808,6 +1809,7 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AutoDeployMCV);
 	stream.Serialize(AttackNeutralUnits);
 	stream.Serialize(ScrapMetal);
+	stream.Serialize(ParallelPaths);
 	stream.Serialize(SWAllowed);
 	stream.Serialize(ScenarioDescription);
 }
