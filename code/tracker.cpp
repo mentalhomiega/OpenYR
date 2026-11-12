@@ -132,17 +132,27 @@ static void Count_Detach(AbstractClass const * target)
 	}
 }
 
-// OPENYR_DETACH_CHECK=1 visits the holders of an animation that is not held as well, and logs any
-// holder whose bytes the visit changed. A line in the log means a store of an animation pointer
-// that does not go through AnimClass::Held.
+// OPENYR_DETACH_CHECK=1 visits every holder a removal skips as well, and logs any holder whose
+// bytes the visit changed: a store of an animation pointer that does not go through
+// AnimClass::Held, or a holder kind Holder_Cannot_Name is wrong about. OPENYR_DETACH_CHECK=2 also
+// stops the game there, so that a test run fails.
+static int DetachCheckLevel = -1;
+
 static bool Detach_Is_Checked(void)
 {
-	static int checked = -1;
-	if (checked < 0) {
+	if (DetachCheckLevel < 0) {
 		char const * value = std::getenv("OPENYR_DETACH_CHECK");
-		checked = (value != NULL && value[0] == '1') ? 1 : 0;
+		DetachCheckLevel = (value != NULL && (value[0] == '1' || value[0] == '2')) ? value[0] - '0' : 0;
 	}
-	return(checked == 1);
+	return(DetachCheckLevel > 0);
+}
+
+
+static void Detach_Check_Failed(void)
+{
+	if (DetachCheckLevel == 2) {
+		std::abort();
+	}
 }
 
 
@@ -171,6 +181,7 @@ static void Check_Unheld_Anim(AbstractClass const * target, bool all)
 		if (size == 0 || memcmp(before.data(), holder, size) != 0) {
 			differences++;
 			DebugString("DETACH CHECK DIFFERENCE frame %d holder rtti %d size %d\n", Frame, (int)holder->RTTI, (int)size);
+			Detach_Check_Failed();
 		}
 	}
 	if (checks / 5000000 != (checks - AnimPtrTracker.Count()) / 5000000) {
@@ -235,6 +246,7 @@ static void Check_Skipped_Holder(AbstractClass * holder, AbstractClass const * t
 	if (size == 0 || memcmp(before.data(), holder, size) != 0) {
 		differences++;
 		DebugString("DETACH CHECK DIFFERENCE frame %d holder rtti %d target rtti %d\n", Frame, (int)holder->RTTI, (int)target->RTTI);
+		Detach_Check_Failed();
 	}
 	if (checks % 5000000 == 0) {
 		DebugString("DETACH CHECK objects %lld visits, %lld differences\n", checks, differences);
