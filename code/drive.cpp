@@ -62,6 +62,7 @@
 #include "anim.h"
 #include "cell.h"
 #include "foot.h"
+#include "pathahead.h"
 #include "globals.h"
 #include "house.h"
 #include "infantry.h"
@@ -1410,6 +1411,9 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 		**	navigation target.
 		*/
 		if (LinkedTo->PathDelay != 0) {
+			return(false);
+		}
+		if (Path_Ahead_Should_Wait(LinkedTo)) {
 			return(false);
 		}
 		LinkedTo->PathDelay = Rule->PathDelay * TICKS_PER_MINUTE;

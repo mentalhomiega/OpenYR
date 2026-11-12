@@ -22,6 +22,7 @@
 #include "building.h"
 #include "cell.h"
 #include "foot.h"
+#include "pathahead.h"
 #include "globals.h"
 #include "house.h"
 #include "inline.h"
@@ -216,6 +217,10 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 			if (LinkedTo->Path[0] == FACING_NONE) {
 				if (LinkedTo->PathDelay != 0) {
 					LinkedTo->Stop_Movement_Animation();
+					return;
+				}
+
+				if (Path_Ahead_Should_Wait(LinkedTo)) {
 					return;
 				}
 
