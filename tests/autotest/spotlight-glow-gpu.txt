@@ -1,10 +1,10 @@
 ; A building with HasSpotlight=yes (spotlight-glow-gpu.ini) sweeps a searchlight whose two edge beams are depth glow lines. With GPU drawing
 ; on, a pass that holds them must be drawn on the GPU: before the fix the beams wrote straight to the surface, so every pass with a
 ; searchlight on screen was drawn in software.
-; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/spotlight-glow-gpu.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 120 -Settings "[Video]`nGpuRender=yes" -Filter "GPU_RENDER|Exception|AUTOTEST steps done" -StopAfterSteps
-; Expected: every GPU_RENDER line reads fallback 0 once the building stands (the first line may count passes from before frame 20).
+; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/spotlight-glow-gpu.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 120 -Uncapped -Settings "[Video]`nGpuRender=yes" -Filter "GPU_RENDER.*fallback [1-9]|Exception|AUTOTEST steps done" -StopAfterSteps
+; Expected: only "AUTOTEST steps done". A GPU_RENDER line is logged every 600 passes and the filter shows it only when a pass fell back.
 1 view 50 57
 2 reveal
 10 rules spotlight-glow-gpu.ini
 20 own GAPOWR 50 57
-1300 log spotlight done
+600 log spotlight done
