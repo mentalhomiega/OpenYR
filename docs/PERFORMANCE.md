@@ -143,6 +143,39 @@ Means of three runs, with other load on the machine (ms):
 
 The big-map "before" is the cache turned off, before the prefetch; the ALL02 "before" is a separate single run of the original code.
 
+## Parallel path searches
+
+`ParallelPaths=yes` searches the paths of walking and driving units in batches on several threads. It is off by default. With it on, paths and the order of some first steps differ from the original game's, so it is a rule of the match: every player plays the same value.
+
+| Game | Where the value comes from |
+|---|---|
+| Campaign or skirmish started from the menus | `ParallelPaths` in `[Options]` of `RA2MD.INI` |
+| Any game started from a launch file | `ParallelPaths` in `[Settings]` of the launch file |
+| Multiplayer started from the menus | Always off for now |
+| Saved game | The value the game was started with |
+
+`PathThreads` in `[Options]` of `RA2MD.INI` is the number of threads on this machine, 1 to 32. The default 0 uses one less than the number of processor threads, at most 8. The thread count does not change any path, so players in one match can use different counts.
+
+Both `RA2MD.INI` keys have a row under Performance on the Graphics options page: Parallel path searches and Path search threads.
+
+A frame makes two batches:
+
+- **Before the units move.** Each walking or driving unit that will ask for a path in its turn gets that path searched from the map as it stands at the start of the frame. The unit takes the path when it asks with the same start, goal and avoidance.
+- **After the units move.** A unit that asks for a path with none made for it stops its movement step and goes on a list. The list is searched after the last unit's turn, and each listed unit then repeats its movement step in list order. It starts moving in the same frame; only its place in the frame's order changes.
+
+A player's order reaches its units between frames, so its paths are in the first batch of the next frame, the frame in which the original game searches them. A path a unit asks for during the second batch's repeat steps, and any path of another locomotor, is searched at once on the game thread.
+
+Late-game benchmark, 8 threads, one run each (ms; the two games play out differently, so the figures compare whole runs):
+
+| | `frame.pathfind` mean | worst one-second mean | `frame.logic` mean |
+|---|---:|---:|---:|
+| Off | 3.00 | 88.7 | 6.81 |
+| On | 1.30 | 26.3 | 4.14 |
+
+With it on, 86% of the path requests took a path from a batch. The largest second batch held 370 searches and took 16 ms on 8 threads and 104 ms on 1.
+
+Four environment variables are for development. `OPENYR_PATH_AHEAD=<threads>` overrides the rule and the thread count; 0 turns the batches off. `OPENYR_PATH_THREADS=<threads>` sets the thread count alone; `scripts/run_netsync.ps1 -ParallelPaths -PathThreadsA 1 -PathThreadsB 8` uses it to pair two counts in one match. `OPENYR_PATH_AHEAD_CHECK=1` repeats every batch on one thread with a separate pathfinder and logs `PATHAHEAD CHECK DIFFERENCE` for any path that differs. `OPENYR_PATH_AHEAD_STATS=1` logs a `PATHAHEAD frame` line of counts every 600 frames. On the late-game benchmark the check found no difference, and runs with 1 and 8 threads gave the same 182 game-state hashes.
+
 ## Limits
 
 - Each timer reads a clock twice, so the timed phases run slower than they do with recording off.

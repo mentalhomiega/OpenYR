@@ -216,9 +216,14 @@ void Perf_Set_Enabled(bool enabled)
 }
 
 
+thread_local bool Perf_Thread_Muted = false;
+
+
 void Perf_Add_Count(PerfCounter counter, std::uint64_t amount)
 {
-	Counts[counter] += amount;
+	if (!Perf_Thread_Muted) {
+		Counts[counter] += amount;
+	}
 }
 
 

@@ -77,6 +77,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "pathahead.h"
 #include "perfstat.h"
 
 #include "foot.h"
@@ -128,8 +129,10 @@
 #include "tube.h"
 #include "uicontrol.h"
 #include "dbgprint.h"
+#include "drive.h"
 #include "jumpjet.h"
 #include "unit.h"
+#include "walk.h"
 #include "unittype.h"
 #include "vein.h"
 #include "veteranrules.h"
@@ -247,6 +250,7 @@ FootClass::~FootClass(void)
 
 	Feet.Delete(this);
 	TeamPtrTracker.Delete(this);
+	Path_Ahead_Forget(this);
 };
 
 
@@ -435,6 +439,21 @@ bool FootClass::Is_In_Same_Zone(Coord const & coord) const
 
 	return(Map.Is_Same_Cell_Zone(cell2, cell1, zone, from_bridge, Map[cell1].IsUnderBridge, Is_Allowed_To_Leave_Map()));
 	return(0);
+}
+
+
+void FootClass::Late_Move_Start(bool step_flag)
+{
+	if (!IsActive || IsInLimbo || Locomotion == NULL || IsSinking || IsFalling) {
+		return;
+	}
+	IsLocomotorProcessing = true;
+	if (WalkLocomotionClass * walk = dynamic_cast<WalkLocomotionClass *>(Locomotion.get())) {
+		walk->Late_Start(step_flag);
+	} else if (DriveLocomotionClass * drive = dynamic_cast<DriveLocomotionClass *>(Locomotion.get())) {
+		drive->Late_Start(step_flag);
+	}
+	IsLocomotorProcessing = false;
 }
 
 

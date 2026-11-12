@@ -59,6 +59,7 @@
 
 #include "always.h"
 
+#include "pathahead.h"
 #include "playerdisplay.h"
 #include "scenario.h"
 #include "shellmap.h"
@@ -156,6 +157,7 @@
 #include "script.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
+#include "spawner.h"
 #include "smudge.h"
 #include "spawnhouse.h"
 #include "stats.h"
@@ -410,6 +412,11 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	strcpy(Scen->ScenarioName, name);
 	strupr(Scen->ScenarioName);
+
+	// A match from a launch file plays the rule the file gives, and a multiplayer match the host's.
+	if (!Spawner_Is_Active() && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH)) {
+		Session.Options.ParallelPaths = Options.ParallelPaths;
+	}
 
 	Theme.Stop();
 
@@ -1195,6 +1202,7 @@ void Clear_Scenario(void)
 
 	// A zoom kept for a scripted scene does not outlive the scenario it belongs to.
 	Forget_Player_View_Zoom();
+	Path_Ahead_Clear();
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
 

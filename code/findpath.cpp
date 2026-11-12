@@ -55,6 +55,8 @@
 #include "bench.h"
 #include "foot.h"
 #include "inline.h"
+#include "pathahead.h"
+#include "perfstat.h"
 
 #include "bench.hh"
 
@@ -126,6 +128,14 @@ PathStruct * FootClass::Find_Path(Cell const & dest, FacingType * final_moves, i
 	BStart(BENCH_FINDPATH);
 
 	source = Follow_Path(source, path_offset, Path);
+
+	if (Path_Ahead_Take(this, source, dest, path_offset, avoidance, final_moves, path)) {
+		BEnd(BENCH_FINDPATH);
+		return(path);
+	}
+
+	Perf_Count(PERF_COUNT_PATHS);
+	PerfScope pathfind_scope(PERF_FRAME_PATHFIND);
 	path = Search.Find_Path(source, dest, this, final_moves, -1, MZONE_NONE, (AStarClass::ObstacleAvoidanceType)avoidance);
 
 	BEnd(BENCH_FINDPATH);

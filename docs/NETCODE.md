@@ -210,6 +210,7 @@ The host can fix the send period (FSR), the look-ahead (MA) or both for a match.
 | `FrameSendRate`, `MaxAhead` | The host's send period (1 to 10) and look-ahead (4 to 250). See [Host choice](#host-choice). The CnCNet client's defaults (`FrameSendRate` 2 or 7 with no `MaxAhead`) count as no choice. |
 | `HostTiming` | `yes` takes `FrameSendRate`, `MaxAhead` and `Protocol` literally, including the client's default values. The built-in lobby writes it. |
 | `Protocol` | `0` plays protocol 0, only with `HostTiming=yes`. Any other value plays protocol 2. |
+| `ParallelPaths` | `yes` searches unit paths in batches on several threads ([Parallel path searches](PERFORMANCE.md#parallel-path-searches)). Every player's file must hold the same value. `yes` is part of the session identity; a file without the key, or with `no`, keeps the identity it had. |
 | `PreCalcMaxAhead` | Not read. |
 
 ## Comparison with gamemd

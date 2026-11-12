@@ -314,6 +314,10 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(Firestorm);
 	crc(AttackNeutralUnits);
 	crc(ScrapMetal);
+	// Only a match that turns the rule on counts it, so the identity of every other match is unchanged.
+	if (ParallelPaths) {
+		crc(ParallelPaths);
+	}
 	crc(CoachMode);
 	crc(PlayMoviesInMultiplayer);
 
@@ -596,6 +600,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	AutoSurrender = Spawn_Bool(ini, SETTINGS, "AutoSurrender", AutoSurrender);
 	AttackNeutralUnits = Spawn_Bool(ini, SETTINGS, "AttackNeutralUnits", AttackNeutralUnits);
 	ScrapMetal = Spawn_Bool(ini, SETTINGS, "ScrapMetal", ScrapMetal);
+	ParallelPaths = Spawn_Bool(ini, SETTINGS, "ParallelPaths", ParallelPaths);
 	PlayMoviesInMultiplayer = Spawn_Bool(ini, SETTINGS, "PlayMoviesInMultiplayer", PlayMoviesInMultiplayer);
 	CustomLoadScreen = Read_Text(ini, SETTINGS, "CustomLoadScreen", CustomLoadScreen);
 	DifficultyName = Read_Text(ini, SETTINGS, "DifficultyName", DifficultyName);
@@ -680,6 +685,7 @@ std::string SpawnerConfigClass::Write_INI(void) const
 	out << "AutoSurrender=" << Yes_No(AutoSurrender) << "\n";
 	out << "AttackNeutralUnits=" << Yes_No(AttackNeutralUnits) << "\n";
 	out << "ScrapMetal=" << Yes_No(ScrapMetal) << "\n";
+	out << "ParallelPaths=" << Yes_No(ParallelPaths) << "\n";
 	out << "DifficultyBasedAINames=" << Yes_No(AINamesByDifficulty) << "\n";
 
 	// The local person first: the reader gives [Settings] the first seat, and sorts the people by color.

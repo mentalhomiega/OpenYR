@@ -495,9 +495,8 @@ class CellClass : public AbstractClass
 		unsigned IsAnimAttached:1;
 
 		/*
-		 * Marks a cell lying on a unit's predicted movement path. Toggled by the A*
-		 * pathfinding code so that other units route around cells already claimed by
-		 * a planned path.
+		 * Unused and always false; the saved cell layout keeps the bit. The pathfinder
+		 * holds its predicted path marks itself (AStarClass::PredictedPath).
 		 */
 		unsigned IsPredictedPath:1;
 
