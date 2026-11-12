@@ -23,6 +23,7 @@
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/Types.h>
 #include <map>
+#include <vector>
 
 namespace Rml
 {
@@ -56,7 +57,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual void Reveal_To(float width) override;
 		virtual void Reveal_Done(void) override;
 		virtual void Placed(void) override;
-		virtual void Set_Tab(int tab, unsigned offered) override;
+		virtual void Set_Tab(int tab, std::vector<UISettingsTabEntry> const & bar) override;
 		virtual void Sync(void) override {}
 
 	protected:
@@ -91,9 +92,12 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		// Plays the click and marks the keyboard, as Enter or Space on a button or pressable control does.
 		void Click_From_Key(void);
 		void Apply_Tabs(void);
+		// Fills the frame's tab bar with a button for each tab of ViewBar, unless it holds them already.
+		void Build_Tab_Bar(Rml::Element & tabs);
 		// The tab this view stands for, as Set_Tab gave it; UI_TAB_NONE when the view is not a page.
 		UISettingsTab Tab_Of_View(void) const;
-		unsigned Offered_Of_View(void) const;
+		// The entry of ViewBar for the tab, or nullptr when the bar does not offer it.
+		UISettingsTabEntry const * Bar_Entry(int tab) const;
 		bool Step_Tab(Rml::Event & event, int key);
 		void Place_Wallpaper(void);
 		void Size_Grips(void);
@@ -120,7 +124,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool Anchored = false;
 		// Set by Set_Tab for a view that is one page of a tabbed Settings screen; UI_TAB_NONE otherwise.
 		UISettingsTab ViewTab = UI_TAB_NONE;
-		unsigned ViewOffered = 0;
+		std::vector<UISettingsTabEntry> ViewBar;
 		Rml::String DocumentName;
 		Rml::String ModelName;
 };

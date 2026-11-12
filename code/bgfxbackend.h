@@ -10,6 +10,7 @@
 #pragma once
 
 #include "nativewindow.hh"
+#include "rect.h"
 
 
 enum BackendRenderer {
@@ -31,7 +32,7 @@ enum BackendScaleMode {
 // Drawable sizes are physical pixel dimensions supplied by the application shell.
 // With hdr set the renderer asks for an HDR10 back buffer. A renderer that cannot give one starts
 // with the SDR back buffer instead, and Backend_HDR_Active reports which it has.
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr);
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread);
 void Backend_Shutdown(void);
 bool Backend_Is_Running(void);
 
@@ -123,8 +124,17 @@ char const * Backend_Renderer_Name(void);
 // Logs the live texture and buffer counts from bgfx, tagged with the given label.
 void Backend_Log_Resource_Counts(char const * when);
 
-// Saves what the window shows after the next present as a TGA file.
-void Backend_Request_Window_Capture(char const * filepath);
+// Saves what the window shows after the next present as a TGA file. Returns false when there is no renderer to ask.
+bool Backend_Request_Window_Capture(char const * filepath);
+
+// Asks for the same capture, and logs one `AUTOTEST windowdark` line with the mean and the darkest brightness of the
+// pixels of area (window pixels, counted from the top left) instead of saving a file. With red, the line is an
+// `AUTOTEST windowred` line with the mean of each colour and the count of pixels whose red is 192 or more and
+// exceeds both green and blue by 64 or more. Returns false when there is no renderer to ask.
+bool Backend_Request_Window_Measure(Rect const & area, char const * label, bool red = false);
+
+// Whether a capture or measure that was asked for has not been written or logged yet.
+bool Backend_Window_Capture_Pending(void);
 
 // Turns on a check that the copy kept of each texture matches the picture it was sent from, counting
 // checks and mismatches. Turning it on zeroes the counts.

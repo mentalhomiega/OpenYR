@@ -486,6 +486,9 @@ class FootClass : public TechnoClass
 		**	Member function prototypes.
 		*/
 		bool Basic_Path(Cell cell, int path_offset = 0, int avoidance = 0);
+
+		// Repeats the movement step that Path_Ahead_Put_Off cut short earlier in this frame.
+		void Late_Move_Start(bool step_flag);
 		void Advance_Path(int count);
 
 		virtual void Compute_CRC(CRCEngine &) const override;
@@ -680,13 +683,13 @@ inline void FootClass::Draw_Object(ShapeSet const * shapefile, int shapenum, Poi
 
 inline FootClass * AbstractClass::As_FootClass(void)
 {
-	return(dynamic_cast<FootClass *>(this));
+	return(Rtti_Foot_Cast<FootClass>(this));
 }
 
 
 inline FootClass const * AbstractClass::As_FootClass(void) const
 {
-	return(dynamic_cast<FootClass const *>(this));
+	return(Rtti_Foot_Cast<FootClass const>(this));
 }
 
 

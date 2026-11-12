@@ -8,9 +8,10 @@
  ******************************************************************************/
 
 // Timing and counts for the game frame, the draw and the present. Recording is off
-// unless [Options] PerfLog=yes or the perflog autotest step turns it on; while it is
-// off, a scope costs one flag test. Once a second the log gets Perf lines with the
-// average, 95th percentile and worst time of each phase.
+// unless a user turns it on: the Perf log lines ([Options] PerfLog=yes or the perflog
+// autotest step) or the performance overlay. While it is off, a scope costs one flag
+// test. With the log on, once a second the log gets Perf lines with the average, 95th
+// percentile and worst time of each phase.
 //
 // A frame phase has one sample per game frame, a draw phase one per draw (one call
 // to GScreenClass::Render) and a present phase one per present call that reaches the
@@ -18,7 +19,10 @@
 
 #pragma once
 
+#include "perfring.h"
+
 #include <cstdint>
+#include <vector>
 
 enum PerfPhase : unsigned char {
 	PERF_FRAME_LOGIC,           // Logic.AI() for one game frame
@@ -39,6 +43,7 @@ enum PerfPhase : unsigned char {
 	PERF_FRAME_FACTORIES,       // factory AI
 	PERF_FRAME_HOUSES,          // house AI, including the computer houses
 	PERF_FRAME_QUEUE,           // Queue_AI(): player and network orders
+	PERF_FRAME_DETACH,          // Detach_This_From_All; nested in whatever removed the object
 	PERF_FRAME_WAIT,            // sleeping between game frames in Sync_Delay
 	PERF_DRAW_TOTAL,            // one GScreenClass::Render, including any present it makes
 	PERF_DRAW_TERRAIN,          // rebuild of the cached terrain pass, when the view needs one
@@ -85,14 +90,78 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_OBJECT_EVALS,    // Evaluate_Object calls
 	PERF_COUNT_AREA_MODIFY,     // Area_Modify calls
 	PERF_COUNT_WEAPON_SELECTS,  // What_Weapon_Should_I_Use calls
+	PERF_COUNT_DETACH_CALLS,    // Detach_This_From_All calls
+	PERF_COUNT_DETACH_VISITS,   // Detach calls made by those broadcasts
+	PERF_COUNT_DETACH_BULLET,   // broadcasts for a bullet
+	PERF_COUNT_DETACH_ANIM,     // broadcasts for an animation
+	PERF_COUNT_DETACH_PARTICLE, // broadcasts for a particle or particle system
+	PERF_COUNT_DETACH_TECHNO,   // broadcasts for a unit, infantry, aircraft or building
+	PERF_COUNT_DETACH_OTHER,    // all other broadcasts
 	PERF_COUNT_DRAWS_SKIPPED,   // draw slots in the frame wait that came due with too little time left; once per slot
+	PERF_COUNT_PRESENTS_BUSY,   // presents put off because the render thread had not finished the last frame
+	PERF_COUNT_GPU_VOXEL_PARTS, // voxel parts of the passes the GPU drew
+	PERF_COUNT_GPU_VOXEL_DIRECT, // those parts a blit shows
+	PERF_COUNT_GPU_VOXEL_FACES, // cube faces those parts' draws submitted (a pass scale above 1)
 	PERF_COUNTER_COUNT
+};
+
+enum PerfDomain : unsigned char {
+	PERF_DOMAIN_FRAME,
+	PERF_DOMAIN_DRAW,
+	PERF_DOMAIN_PRESENT,
+	PERF_DOMAIN_COUNT
+};
+
+// What wants recording on. Recording runs while any user is on.
+enum PerfUser : unsigned char {
+	PERF_USER_LOG = 1,          // the once-a-second Perf lines
+	PERF_USER_OVERLAY = 2,      // the performance overlay
+};
+
+// A phase's name in the Perf lines and the phase it runs inside, PERF_PHASE_COUNT for none. A phase
+// with Across set runs inside several rows of its parent, so it is part of whichever one ran it.
+struct PerfPhaseInfo {
+	char const * Name;
+	PerfPhase Parent;
+	bool Across;
+};
+
+// One row of a domain's breakdown: a phase and how many parents it has.
+struct PerfPhaseRow {
+	PerfPhase Phase;
+	int Depth;
 };
 
 extern bool Perf_Enabled;
 
-// Turns recording on or off. Turning it on clears the counts and starts a new second.
-void Perf_Set_Enabled(bool enabled);
+// Set on a thread other than the main one to keep its counts out of the unlocked totals.
+extern thread_local bool Perf_Thread_Muted;
+
+// Turns one user of recording on or off. Recording turned on clears the counts and starts a new
+// second; the log user turned on starts a new second of Perf lines.
+void Perf_Set_User(PerfUser user, bool on);
+bool Perf_Has_User(PerfUser user);
+
+PerfPhaseInfo const & Perf_Phase_Info(PerfPhase phase);
+PerfDomain Perf_Phase_Domain(PerfPhase phase);
+
+// The phases of a domain, each after its parent and its parent's earlier children, in PerfPhase order
+// among siblings.
+std::vector<PerfPhaseRow> Perf_Phase_Rows(PerfDomain domain);
+
+// The recent samples while recording, for the overlay. A phase's ring holds one value per sample of
+// its domain in milliseconds, and the domain's ring of times holds when each sample was taken, as
+// Monotonic_Nanoseconds() / 1e6; the newest entries of the two match.
+PerfRing<float> const & Perf_Phase_History(PerfPhase phase);
+PerfRing<double> const & Perf_Domain_Times(PerfDomain domain);
+
+// Milliseconds from the end of one game frame to the end of the next, and from the start of one
+// present to the start of the next.
+PerfRing<float> const & Perf_Frame_Intervals(void);
+PerfRing<float> const & Perf_Present_Gaps(void);
+
+// A counter's total over the last whole second of recording.
+std::uint64_t Perf_Last_Second_Count(PerfCounter counter);
 
 void Perf_Add_Count(PerfCounter counter, std::uint64_t amount);
 void Perf_Begin(PerfPhase phase);

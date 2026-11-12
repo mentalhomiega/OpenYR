@@ -206,6 +206,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
+#include "shadowplane.h"
 #include "shapeset.h"
 #include "stimer.h"
 #include "sun.h"
@@ -317,6 +318,9 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	AirstrikeReadyFrame(0),
 	AirstrikeMarkedBy(NULL),
 	AirstrikeMarkedTarget(NULL),
+	AirstrikeMarkTimer(),
+	AirstrikeTintTimer(),
+	AirstrikeTintStage(0),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
 	DrainAnim(NULL),
@@ -339,6 +343,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsBeingWarpedOut(false),
 	ParasiteImUsing(),
 	ParasiteEatingMe(NULL),
+	ParasiteLeapFrame(0),
 	OldTeam(NULL),
 	DisguiseType(NULL),
 	DisguiseHouse(NULL),
@@ -584,7 +589,7 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->IsOverpowered && SecondaryWeapon != NULL) {
 		return(1);
 	}
-	BuildingClass const * targetbuilding = dynamic_cast<BuildingClass const *>(target);
+	BuildingClass const * targetbuilding = target->As_BuildingClass();
 	if (targetbuilding != NULL && targetbuilding->Class->IsOverpowerable && (targetbuilding->House == House || House->Is_Ally(targetbuilding->House))) {
 		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
 		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsElectricAssault) {
@@ -889,7 +894,7 @@ Coord TechnoClass::Turret_Coord(int which, TPoint3D<int> base) const
 
 	Matrix3D matrix;
 	double angle = 0;
-	FootClass const * foot = dynamic_cast<FootClass const *>(this);
+	FootClass const * foot = As_FootClass();
 
 	if (foot != NULL) {
 		matrix = foot->Locomotion->Draw_Matrix(NULL);
@@ -1333,6 +1338,12 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 					Strength += step;
 					EstimatedHealth += step;
 
+					// A repair step drives out a parasite eating this object, doomed for 50 frames, so it dies (the radio handler at 0x6F4AB0, 0x6F4DA6).
+					if (Is_Foot() && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+						ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 50;
+						ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+					}
+
 					if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
 						if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE]) {
 							ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
@@ -1528,7 +1539,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 
 	if (IsSelected || sensed_underground) {
 
-		UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
+		UnitClass const * unit = (RTTI == RTTI_UNIT) ? As_UnitClass() : NULL;
 		if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
 
 			int color = WHITE;
@@ -1739,7 +1750,7 @@ bool TechnoClass::Is_Hidden_Behind_Building(void) const
 /// </summary>
 Point2D TechnoClass::Pip_Origin(Point2D const & point) const
 {
-	UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
+	UnitClass const * unit = (RTTI == RTTI_UNIT) ? As_UnitClass() : NULL;
 
 	if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
 		Point3D dim = TClass->Lepton_Dimensions();
@@ -1761,7 +1772,7 @@ Point2D TechnoClass::Pip_Origin(Point2D const & point) const
 /// </summary>
 void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect) const
 {
-	UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
+	UnitClass const * unit = (RTTI == RTTI_UNIT) ? As_UnitClass() : NULL;
 
 	if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
 
@@ -2040,7 +2051,7 @@ bool TechnoClass::Limbo(void)
 		House->Tracking_Active_Remove(this, false);
 		HousesType owner = Owner();
 		if (ThreatPosed > 0) {
-			FootClass * foot = dynamic_cast<FootClass *>(this);
+			FootClass * foot = As_FootClass();
 			if (foot) {
 				Map[foot->LastAdjacencyCell].Adjust_Threat(owner, -ThreatPosed);
 			} else {
@@ -2446,7 +2457,7 @@ double TechnoClass::Area_Modify(Cell const & cell) const
 }
 
 
-bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const
+bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer, std::optional<int> & object_index) const
 {
 	/*
 	**	An object in limbo can never be a valid target.
@@ -2464,16 +2475,21 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);		// Mask failure.
 	}
 
-	// The weapon selection against object is made at most once for the tests below.
-	bool object_index_known = false;
-	int object_index = 0;
+	// The weapon selection against object is made at most once for the tests below, and the caller keeps the answer.
 	auto weapon_index_for_object = [&]() {
-		if (!object_index_known) {
+		if (!object_index) {
 			object_index = What_Weapon_Should_I_Use((AbstractClass *)object);
-			object_index_known = true;
 		}
-		return(object_index);
+		return(*object_index);
 	};
+
+	/*
+	**	If the object is not within the desired zone, then ignore it, but only if
+	**	zone checking is desired. Most candidates of a map-wide scan fail here, so the zone is judged first.
+	*/
+	if (zone != -1 && Map.Get_Cell_Zone(object->Center_Coord().As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
+		return(false);
+	}
 
 	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
 	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
@@ -2503,15 +2519,6 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 	}
 
 	if (object->HeightAGL < -20) {
-		return(false);
-	}
-
-	/*
-	**	If the object is not within the desired zone, then ignore it, but only if
-	**	zone checking is desired.
-	*/
-	Coord objectcoord = object->Center_Coord();
-	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
 		return(false);
 	}
 
@@ -2551,20 +2558,22 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 	/*
 	**	If the object is further away than allowed, bail.
 	*/
-	int dist = Distance_To(object);
-	if (range > 0 && dist > range) {
-		return(false);
-	}
+	if (range >= 0) {
+		int dist = Distance_To(object);
+		if (range > 0 && dist > range) {
+			return(false);
+		}
 
-	if (range == 0) {
-		if (!Is_Weapon_Equipped()) {
-			if (dist > TClass->ThreatRange) {
-				return(false);
-			}
-		} else {
-			int primary = weapon_index_for_object();
-			if (!In_Range((TechnoClass *)object, primary)) {
-				return(false);
+		if (range == 0) {
+			if (!Is_Weapon_Equipped()) {
+				if (dist > TClass->ThreatRange) {
+					return(false);
+				}
+			} else {
+				int primary = weapon_index_for_object();
+				if (!In_Range((TechnoClass *)object, primary)) {
+					return(false);
+				}
 			}
 		}
 	}
@@ -2720,7 +2729,7 @@ bool TechnoClass::Passes_After_Disguise_Roll(ThreatType method, TechnoClass cons
 
 	CellClass * cell_this = &Map[Get_Coord()];
 	CellClass * cell_that = &Map[object->Get_Coord()];
-	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
+	if (IsOnBridge != object->IsOnBridge && cell_this->IsUnderBridge && cell_that->IsUnderBridge) {
 		return(false);
 	}
 
@@ -2815,7 +2824,8 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 
 	bool engineer = Is_Renovator();
 
-	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer)) {
+	std::optional<int> weapon_index;
+	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer, weapon_index)) {
 		return(false);
 	}
 
@@ -2837,7 +2847,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	target value then record this target for possible return as the
 	**	best.
 	*/
-	value = Target_Threat((TechnoClass *)object, coord);
+	value = Target_Threat((TechnoClass *)object, coord, weapon_index);
 
 	/*
 	**	A VHPScan=Normal scan doubles a target at half strength or less, and halves a target whose
@@ -3673,8 +3683,10 @@ void TechnoClass::Start_Airstrike_Recharge(void)
 
 /// <summary>
 /// Marks the structure that this object's airstrike is attacking, so it is drawn with the
-/// LaserTargetColor tint, and lifts the mark from the structure marked before. Only a structure
-/// is marked; any other target leaves the tint off. The mark is lifted by Clear_Airstrike_Designation.
+/// LaserTargetColor tint and its brightness pulse, and lifts the mark from the structure marked
+/// before. Only a structure is marked; any other target leaves the tint off. The mark is lifted
+/// by Clear_Airstrike_Designation. AirstrikeClass::Fire (0x41D860) and ResetTarget (0x41DA20)
+/// start the structure's mark timer at 100000 frames and redraw it.
 /// </summary>
 /// <param name="target">The object the airstrike planes were called onto.</param>
 void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
@@ -3686,25 +3698,49 @@ void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
 	if (structure == NULL || structure->RTTI != RTTI_BUILDING) return;
 
 	structure->AirstrikeMarkedBy = this;
+	structure->AirstrikeMarkTimer = 100000;
+	structure->AirstrikeTintStage = 0;
+	structure->Mark(MARK_CHANGE);
 	AirstrikeMarkedTarget = structure;
 	AUTOTEST_LOG("airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
 }
 
 
 /// <summary>
-/// Lifts the tint from the structure this object's airstrike marked. It runs when this object
-/// changes its target and when either side leaves the map.
+/// Lifts this object's airstrike mark from the structure it marked. It runs when this object
+/// changes its target and when either side leaves the map. Another designator whose airstrike
+/// attacks the same structure takes the mark over; otherwise the structure is redrawn without
+/// the tint (AirstrikeClass::ClearTarget, 0x41DB40).
 /// </summary>
 void TechnoClass::Clear_Airstrike_Designation(void)
 {
 	TechnoClass * structure = AirstrikeMarkedTarget;
 	if (structure == NULL) return;
 
+	AirstrikeMarkedTarget = NULL;
 	if (structure->AirstrikeMarkedBy == this) {
 		structure->AirstrikeMarkedBy = NULL;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * other = Technos[index];
+			if (other != this && other->AirstrikeMarkedTarget == structure) {
+				structure->AirstrikeMarkedBy = other;
+			}
+		}
+		if (structure->AirstrikeMarkedBy == NULL) {
+			structure->Mark(MARK_CHANGE);
+		}
 	}
-	AirstrikeMarkedTarget = NULL;
 	AUTOTEST_LOG("airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
+}
+
+
+/// <summary>
+/// Whether this object is a structure that a designator's airstrike is attacking now, which makes it
+/// pulse (TechnoClass::GetEffectiveFlashIntensity, 0x456FB0).
+/// </summary>
+bool TechnoClass::Is_Airstrike_Tinted(void) const
+{
+	return(RTTI == RTTI_BUILDING && AirstrikeMarkedBy != NULL && AirstrikeMarkedBy->AirstrikeMarkedTarget == this);
 }
 
 
@@ -3852,6 +3888,7 @@ void TechnoClass::AI(void)
 	}
 
 	Iron_Tint_AI();
+	Airstrike_Tint_AI();
 
 	if (CaptureManager) {
 		CaptureManager->Handle_Overload();
@@ -4133,6 +4170,15 @@ void TechnoClass::AI(void)
 					}
 				}
 			}
+		}
+	}
+
+	// Every 16 frames a target this object may never fire at is dropped, such as a vehicle another
+	// terror drone already sits in (TechnoClass::Update, 0x6FA482). Capture and sabotage keep theirs.
+	if (TarCom != NULL && Frame % 16 == 0 && CurrentMission != MISSION_CAPTURE && CurrentMission != MISSION_SABOTAGE) {
+		FireErrorType const error = Can_Fire(TarCom, What_Weapon_Should_I_Use(TarCom));
+		if (error == FIRE_ILLEGAL || error == FIRE_CANT) {
+			Assign_Target(NULL);
 		}
 	}
 
@@ -4601,6 +4647,17 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 		if (!ParasiteImUsing || !ParasiteImUsing->Can_Infect(victim)) {
 			return(FIRE_ILLEGAL);
 		}
+		// A target another parasite leapt at in the last 20 frames is left to that parasite (TechnoClass::GetFireError, 0x6FCAE1).
+		if (Frame < victim->ParasiteLeapFrame) {
+			return(FIRE_ILLEGAL);
+		}
+		// Nor does it leap at an Iron Curtained target, or across more than two levels between a bridge deck and the ground (TechnoClass::GetFireError, 0x6FC0B0).
+		if (victim->Is_Iron_Curtained()) {
+			return(FIRE_ILLEGAL);
+		}
+		if (IsOnBridge != victim->IsOnBridge && std::abs(PositionCoord.Z - victim->PositionCoord.Z) > LEVEL_LEPTON_H * 2) {
+			return(FIRE_ILLEGAL);
+		}
 	}
 
 	// A warhead that does nothing to the target's armor does not fire at it, even when ordered to (TechnoClass::GetFireError, 0x6FC3FE).
@@ -4762,7 +4819,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 
 	check_rearm = true;
 	if (which != 1 && RTTI == RTTI_UNIT) {
-		UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+		UnitClass const * unit = As_UnitClass();
 		if (unit != NULL) {
 			int burst = unit->BurstIndex % weapon->Burst;
 			if (burst < 2) {
@@ -5584,7 +5641,7 @@ void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass con
 	 * Laser zap animation.
 	 */
 	if (weapon->IsLaser) {
-		BuildingClass * building = dynamic_cast<BuildingClass *>(this);
+		BuildingClass * building = As_BuildingClass();
 		// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
 		WeaponTypeClass const * beam_weapon = weapon;
 		if (building != NULL) {
@@ -5600,7 +5657,7 @@ void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass con
 			building->BuildingStage.Set_Rate(0);
 		}
 		if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
-			BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
+			BuildingClass * discharge = As_BuildingClass();
 			if (discharge != NULL) {
 				discharge->Discharge_Turret();
 			}
@@ -5811,8 +5868,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 	// As TechnoClass::Fire (0x6FDD50): a LimboLaunch weapon takes its firer off the map to ride the shot.
 	if (weapon->IsLimboLaunch && Is_Foot()) {
+		// Only a leap at a soldier, which dies at the first bite, selects the firer again when it comes back (TechnoClass::Fire, 0x6FF751).
 		if (ParasiteImUsing) {
-			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed;
+			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed && House->Is_Player_Control() && target != NULL && target->What_Am_I() == RTTI_INFANTRY;
 		}
 
 		// A shot that fails this test leaves OldTeam as it was (TechnoClass::Fire, 0x6FDD50).
@@ -5823,6 +5881,12 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 		// Leaving the map detached the shot from its firer; the firer still rides it.
 		bullet->Set_Payback(this);
+
+		// No other parasite leaps at the same target for 20 frames (TechnoClass::Fire, 0x6FF81F).
+		FootClass * const leap_target = dynamic_cast<FootClass *>(target);
+		if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsParasite && leap_target != NULL) {
+			leap_target->ParasiteLeapFrame = Frame + 20;
+		}
 	}
 
 	// A FireOnce weapon's firer drops its target after the shot (TechnoClass::Fire, 0x6FDD50).
@@ -6023,11 +6087,11 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		}
 
 		if (object == this && CurrentObject.Count() == 1 && House->Is_Ally(PlayerPtr) && Session.Type == GAME_NORMAL) {
-			UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+			UnitClass const * unit = As_UnitClass();
 			if (unit != NULL && unit->Class->Max_Passengers() > 0 && unit->Cargo.How_Many() > 0) {
 				return(ACTION_SELF);
 			}
-			AircraftClass const * airc = dynamic_cast<AircraftClass const *>(this);
+			AircraftClass const * airc = As_AircraftClass();
 			if (airc != NULL && airc->Passenger) {
 				return(ACTION_SELF);
 			}
@@ -6373,7 +6437,7 @@ bool TechnoClass::Can_Player_Move(void) const
 /// <returns>bool; can the object attack right now?</returns>
 bool TechnoClass::Can_Attack_Now(void) const
 {
-	UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+	UnitClass const * unit = As_UnitClass();
 	if (unit != NULL) {
 		if ((unit->CurrentTube >= TUBE_FIRST && unit->Deploy_To_Fire()) || unit->Is_Immobilized()) {
 			return(false);
@@ -6393,13 +6457,17 @@ bool TechnoClass::Can_Attack_Now(void) const
 /// <returns>bool; Can the object deploy now?</returns>
 bool TechnoClass::Can_Deploy_Now(void) const
 {
-	UnitClass const * unit = dynamic_cast<UnitClass const *>(this);
+	UnitClass const * unit = As_UnitClass();
 	bool blocked = false;
 
 	if (unit != NULL) {
 		blocked = unit->Is_Immobilized() || unit->CurrentTube >= TUBE_FIRST;
 		// A DeployFire=yes vehicle fires where it stands, so a vehicle with no seats is not blocked for it.
 		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer && !unit->Class->IsDeployFire) {
+			blocked = true;
+		}
+		// A vehicle that deploys into a structure cannot deploy while a parasite is inside it (TechnoClass::CanDeploySlashUnload, 0x700EB4).
+		if (unit->Class->DeploysInto != NULL && ParasiteEatingMe != NULL) {
 			blocked = true;
 		}
 		if (unit->Class->Max_Passengers() > 0) {
@@ -6434,7 +6502,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 		}
 	}
 
-	BuildingClass const * building = dynamic_cast<BuildingClass const *>(this);
+	BuildingClass const * building = As_BuildingClass();
 	if (building != NULL && !Is_Immobilized() && (building->Occupants.Count() > 0
 		|| building->Holds_Absorbed())) {
 		blocked = false;
@@ -7212,10 +7280,6 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
-	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
-		ParasiteEatingMe->ParasiteImUsing->Victim_Hit(damage, source);
-	}
-
 	/*
 	 * Negative damage (healing) resets the limpet drain effect and restores the
 	 * normal rate of turn for the turret and body.
@@ -7460,7 +7524,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 					}
 				}
 
-				FootClass * foot = dynamic_cast<FootClass *>(this);
+				FootClass * foot = As_FootClass();
 				if (foot != NULL) {
 					if (TarCom == NULL && foot->NavCom == NULL && !warhead->IsPreventScatter) {
 						if (Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
@@ -7471,7 +7535,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 			} else {
 
-				FootClass * foot = dynamic_cast<FootClass *>(this);
+				FootClass * foot = As_FootClass();
 				if (foot != NULL) {
 					if (Current_Mission_Control().IsScatter && !warhead->IsPreventScatter) {
 						if (!IsTethered) {
@@ -8670,7 +8734,7 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 // A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
 static int Shadow_Cache_Key(int key, VoxelIndexClass const * cache, bool disable_cache)
 {
-	if (key != -1 && (cache == NULL || disable_cache)) {
+	if (key != -1 && (cache == NULL || disable_cache || GpuDraw_Voxels_Wanted())) {
 		return(-1);
 	}
 	return(key);
@@ -8736,6 +8800,7 @@ bool TechnoClass::Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeld
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
 		if (entry != NULL) {
+			ShadowOnceScope once;
 			Techno_Blit_Voxel(*entry, point, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), NORMAL_LIGHT);
 			return(true);
 		}
@@ -8761,30 +8826,44 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	VoxelLibrary * voxlib = voxeldata.VoxLib;
 	MotionLibrary * motlib = voxeldata.MotLib;
 
-	Matrix3D viewer_matrix = Rule->VoxelSpecularFromView ? Get_Isometric_View_Matrix() : mtx2;
-	VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, mtx2, viewer_matrix, VoxelLightSource, (float)Rule->VoxelSpecularStrength, (float)Rule->VoxelShadeScale);
-	VoxelDrawSystem::Reset();
-
-	for (unsigned layer = 0; layer < voxlib->Get_Layer_Count(); layer++) {
-		if (motlib != NULL) {
-			Matrix3D mtx3 = motlib->Get_Layer_Matrix(layer, frame);
-			mtx = mtx2 * mtx3;
-		}
-		VoxelDrawSystem::Prep_For_Object(voxlib, layer, 0, VoxelCameraMatrix * mtx);
-	}
-
 	// When the GPU draws this pass, it draws the object from its voxels and the software skips the rendering.
-	bool const gpu = GpuDraw_Voxels_Wanted();
-	bool const gpu_draws = gpu && GpuDraw_Is_Rendering(*LogicalSurface);
-	VoxelScene scene;
-	if (gpu) {
-		scene = VoxelDrawSystem::Capture();
+	// A part composed on the scratch surface goes to the GPU only inside a composite UnitClass::Unit_Draw_Voxel opened.
+	bool const composited = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
+	bool const gpu = GpuDraw_Voxels_Wanted() && (!composited || GpuDraw_Composite_Open());
+	bool const gpu_draws = gpu && (composited ? GpuDraw_Composite_Rendering() : GpuDraw_Is_Rendering(*LogicalSurface));
+
+	GpuVoxelPreparedRef prepared;
+	GpuVoxelPrepKey prep_key;
+	if (gpu_draws) {
+		prep_key = GpuDraw_Prep_Key(*voxlib, motlib, frame, mtx2, VoxelLightSource, (float)Rule->VoxelSpecularStrength, (float)Rule->VoxelShadeScale, Rule->VoxelSpecularFromView ? GPU_VOXEL_PREP_BODY_FROM_VIEW : GPU_VOXEL_PREP_BODY);
+		prepared = GpuDraw_Find_Prepared(prep_key);
 	}
-	SurfaceRegion region = gpu_draws ? scene.Region : VoxelDrawSystem::Render();
+	if (prepared == NULL) {
+		Matrix3D viewer_matrix = Rule->VoxelSpecularFromView ? Get_Isometric_View_Matrix() : mtx2;
+		VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, mtx2, viewer_matrix, VoxelLightSource, (float)Rule->VoxelSpecularStrength, (float)Rule->VoxelShadeScale);
+		VoxelDrawSystem::Reset();
+
+		for (unsigned layer = 0; layer < voxlib->Get_Layer_Count(); layer++) {
+			if (motlib != NULL) {
+				Matrix3D mtx3 = motlib->Get_Layer_Matrix(layer, frame);
+				mtx = mtx2 * mtx3;
+			}
+			VoxelDrawSystem::Prep_For_Object(voxlib, layer, 0, VoxelCameraMatrix * mtx);
+		}
+		if (gpu) {
+			prepared = GpuDraw_Capture_Prepared();
+		}
+		if (gpu_draws) {
+			GpuDraw_Keep_Prepared(prep_key, prepared);
+		}
+	}
+	SurfaceRegion region = gpu_draws ? prepared->Scene.Region : VoxelDrawSystem::Render();
 	if (gpu) {
-		char label[24];
-		std::snprintf(label, sizeof(label), "%s@%d", (char const *)Class_Of()->IniName, int(PrimaryFacing.Current().As_Dir32()));
-		GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+		if (composited) {
+			GpuDraw_Composite_Piece(prepared, region.Point + point);
+		} else {
+			GpuDraw_Voxel_Part(prepared, !gpu_draws);
+		}
 	}
 	Rect cliprect = xcliprect;
 
@@ -8809,8 +8888,12 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 		predoffset = Get_Predator_Offset();
 	}
 
-	Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(flags), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
-	if (gpu) {
+	// The GPU composes the pieces of the scratch surface itself, so the software leaves it empty.
+	if (!(gpu_draws && composited)) {
+		GpuDraw_Voxel_Cloak(Visual_Character() != VISUAL_NORMAL, (flags & SHAPE_PREDATOR) ? predoffset : -1);
+		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+	}
+	if (gpu && !composited) {
 		GpuDraw_Voxel_End();
 	}
 
@@ -8831,19 +8914,36 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 /// <returns>Returns with the surface region the shadow was rendered into.</returns>
 SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int layer_index, ShapeFlags_Type flags, bool cached) const
 {
-	Matrix3D mtx = voxeldata.MotLib->Get_Layer_Matrix(layer_index, 0);
-	Matrix3D mtx2 = matrix * mtx;
-	Matrix3D mtx3;
-	mtx3.Make_Identity();
+	bool const gpu_draws = GpuDraw_Voxels_Wanted() && GpuDraw_Is_Rendering(*LogicalSurface);
+	GpuVoxelPrepKey prep_key;
+	GpuVoxelPreparedRef prepared;
+	if (gpu_draws) {
+		prep_key = GpuDraw_Prep_Key(*voxeldata.VoxLib, voxeldata.MotLib, layer_index, matrix, VoxelShadowLightVector, 0.0f, 0.0f, GPU_VOXEL_PREP_SHADOW);
+		prepared = GpuDraw_Find_Prepared(prep_key);
+	}
 
-	VoxelDrawSystem::Reset();
-	VoxelDrawSystem::Prep_For_Shadow(voxeldata.VoxLib, layer_index, 0, VoxelCameraMatrix * mtx3, mtx2, VoxelShadowLightVector);
-	SurfaceRegion region = VoxelDrawSystem::Render();
+	SurfaceRegion region;
+	if (prepared != NULL) {
+		region = GpuDraw_Show_Prepared(prepared);
+	} else {
+		Matrix3D mtx = voxeldata.MotLib->Get_Layer_Matrix(layer_index, 0);
+		Matrix3D mtx2 = matrix * mtx;
+		Matrix3D mtx3;
+		mtx3.Make_Identity();
+
+		VoxelDrawSystem::Reset();
+		VoxelDrawSystem::Prep_For_Shadow(voxeldata.VoxLib, layer_index, 0, VoxelCameraMatrix * mtx3, mtx2, VoxelShadowLightVector);
+		region = GpuDraw_Render_Prepared(gpu_draws ? &prep_key : NULL);
+	}
 
 	if (!cached) {
 		Rect r = VoxelDrawSystem::Get_Surface()->Get_Rect(); /// The result is unused.
-		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust());
+		// With GpuVoxels the shadow takes the place of the cached blit (Techno_Blit_Voxel) and needs its gradient; the ground gradient's depth equals the ground's, so a shadow on flat ground would fail the depth test everywhere.
+		ZGradientType const gradient = (GpuDraw_Voxels_Wanted() && !TClass->IsDisableShadowCache) ? Get_Z_Gradient() : ZGRAD_GROUND;
+		ShadowOnceScope once;
+		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust(), gradient);
 	}
+	GpuDraw_Voxel_End();
 
 	return(region);
 }
@@ -10030,6 +10130,9 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	**	occur either.
 	*/
 	if (House->Is_Ally(source)) return(false);
+
+	// A victim never fires back at the parasite inside it, which is off the map (TechnoClass::CanRetaliateToAttacker, 0x708ABD).
+	if (source == ParasiteEatingMe) return(false);
 
 	// A Mirage that looks like terrain to this house is not fired back at (TechnoClass::CanRetaliateToAttacker, 0x7087C0).
 	if (source->RTTI == RTTI_UNIT && static_cast<UnitClass const *>(source)->Is_Disguised_As(House)) return(false);
@@ -11504,6 +11607,38 @@ static float Linked_Rocking_Rate(float rate, bool was_positive, bool beyond_righ
 }
 
 
+// An unlinked unit's tilt rate eases back toward level, and beyond 90 degrees it pushes the other way (TechnoClass::vt_entry_41C, 0x70B570).
+static float Unlinked_Rocking_Rate(float rate, bool was_positive, bool beyond_right_angle)
+{
+	if (was_positive) {
+		if (beyond_right_angle) {
+			return((float)(rate + 0.002));
+		}
+		return(rate > 0.0f ? rate - 0.002f : (float)(rate - 0.0050000002374872565));
+	}
+	if (beyond_right_angle) {
+		return((float)(rate - 0.002));
+	}
+	return(rate < 0.0f ? rate + 0.002f : (float)(rate + 0.0050000002374872565));
+}
+
+
+// The tilt stops at the limit only when the previous frame was still inside it; a unit already past the limit or 90 degrees over keeps tipping.
+static void Clamp_Rocking_Tilt(float & angle, float & rate, float previous, float limit, bool beyond_right_angle)
+{
+	if (beyond_right_angle) {
+		return;
+	}
+	if (angle > limit && previous < limit) {
+		angle = limit;
+		rate = 0.0f;
+	} else if (angle < -limit && previous > -limit) {
+		angle = -limit;
+		rate = 0.0f;
+	}
+}
+
+
 /// <summary>
 /// Ends the DirectRocker link on both units, so neither keeps a pointer to the other.
 /// </summary>
@@ -11552,34 +11687,17 @@ void TechnoClass::Rocking_AI(void)
 
 	if (RockingSidewaysPerFrame != 0.0f) {
 
+		float const previous = AngleRotatedSideways;
 		AngleRotatedSideways += RockingSidewaysPerFrame;
 
-		float angle = (float)DEG_TO_RAD(45);
-
 		if (!linked) {
-			if (AngleRotatedSideways > angle) {
-				AngleRotatedSideways = angle;
-				RockingSidewaysPerFrame = 0.0f;
-			} else if (AngleRotatedSideways < -angle) {
-				AngleRotatedSideways = -angle;
-				RockingSidewaysPerFrame = 0.0f;
-			}
+			Clamp_Rocking_Tilt(AngleRotatedSideways, RockingSidewaysPerFrame, previous, (float)DEG_TO_RAD(45), sideways_beyond_right_angle);
 		}
 
 		if (linked) {
 			RockingSidewaysPerFrame = Linked_Rocking_Rate(RockingSidewaysPerFrame, sideways_was_positive, sideways_beyond_right_angle);
-		} else if (sideways_was_positive) {
-			if (RockingSidewaysPerFrame > 0.0f) {
-				RockingSidewaysPerFrame -= 0.002f;
-			} else {
-				RockingSidewaysPerFrame -= 0.0050000002374872565;
-			}
 		} else {
-			if (RockingSidewaysPerFrame < 0.0f) {
-				RockingSidewaysPerFrame += 0.002f;
-			} else {
-				RockingSidewaysPerFrame += 0.0050000002374872565;
-			}
+			RockingSidewaysPerFrame = Unlinked_Rocking_Rate(RockingSidewaysPerFrame, sideways_was_positive, sideways_beyond_right_angle);
 		}
 
 	} else {
@@ -11597,39 +11715,24 @@ void TechnoClass::Rocking_AI(void)
 
 	if (RockingForwardsPerFrame != 0.0f) {
 
+		float const previous = AngleRotatedForwards;
 		AngleRotatedForwards += RockingForwardsPerFrame;
 
 		float angle = (float)DEG_TO_RAD(45);
 
-		FootClass *foot = dynamic_cast<FootClass *>(this);
+		FootClass *foot = As_FootClass();
 		if (foot != NULL && ((FootClass *)this)->IsCrushing) {
 			angle = (float)DEG_TO_RAD(18);
 		}
 
 		if (!linked) {
-			if (AngleRotatedForwards > angle) {
-				AngleRotatedForwards = angle;
-				RockingForwardsPerFrame = 0.0f;
-			} else if (AngleRotatedForwards < -angle) {
-				AngleRotatedForwards = -angle;
-				RockingForwardsPerFrame = 0.0f;
-			}
+			Clamp_Rocking_Tilt(AngleRotatedForwards, RockingForwardsPerFrame, previous, angle, forwards_beyond_right_angle);
 		}
 
 		if (linked) {
 			RockingForwardsPerFrame = Linked_Rocking_Rate(RockingForwardsPerFrame, forwards_was_positive, forwards_beyond_right_angle);
-		} else if (forwards_was_positive) {
-			if (RockingForwardsPerFrame > 0.0f) {
-				RockingForwardsPerFrame -= 0.002f;
-			} else {
-				RockingForwardsPerFrame -= 0.0050000002374872565;
-			}
 		} else {
-			if (RockingForwardsPerFrame < 0.0f) {
-				RockingForwardsPerFrame += 0.002f;
-			} else {
-				RockingForwardsPerFrame += 0.0050000002374872565;
-			}
+			RockingForwardsPerFrame = Unlinked_Rocking_Rate(RockingForwardsPerFrame, forwards_was_positive, forwards_beyond_right_angle);
 		}
 	} else {
 		AngleRotatedForwards = 0.0f;
@@ -11772,6 +11875,9 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AirstrikePlanes);
 	stream.Serialize(AirstrikeMarkedBy);
 	stream.Serialize(AirstrikeMarkedTarget);
+	stream.Serialize(AirstrikeMarkTimer);
+	stream.Serialize(AirstrikeTintTimer);
+	stream.Serialize(AirstrikeTintStage);
 	stream.Serialize(DrainTarget);
 	stream.Serialize(DrainingMe);
 	stream.Serialize(DrainAnim);
@@ -11789,6 +11895,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBeingWarpedOut);
 	stream.Serialize(ParasiteImUsing);
 	stream.Serialize(ParasiteEatingMe);
+	stream.Serialize(ParasiteLeapFrame);
 	stream.Serialize(OldTeam);
 	stream.Serialize(DisguiseType);
 	stream.Serialize(DisguiseHouse);
@@ -12149,9 +12256,11 @@ void TechnoClass::Plot_On_Radar(void) const
 /// <param name="target">The candidate target to weigh up.</param>
 /// <param name="firing_coord">The position the shot would be taken from. Pass COORD_NONE to
 /// measure the range from this object's own center.</param>
+/// <param name="known_weapon_index">The weapon this object would use against the target, when the caller has
+/// already worked it out.</param>
 /// <returns>Returns with the threat score. A target with no type at all scores zero, and
 /// every real target scores above that.</returns>
-double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coord) const
+double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coord, std::optional<int> known_weapon_index) const
 {
 	double target_effectiveness_coefficient;
 	double target_special_threat_coefficient;
@@ -12179,7 +12288,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 		target_distance_coefficient = Rule->DumbTargetDistanceCoefficient;
 	}
 
-	int my_weapon_index = What_Weapon_Should_I_Use(target);
+	int my_weapon_index = known_weapon_index ? *known_weapon_index : What_Weapon_Should_I_Use(target);
 	WeaponTypeClass const * my_weapon = Get_Class_Weapon_Data(my_weapon_index)->Weapon;
 	double threat = 0.0;
 	RTTIType target_rtti = target->RTTI;
@@ -12388,6 +12497,58 @@ int TechnoClass::Iron_Curtain_Brightness(int brightness) const
 
 		case 9:
 			scale = (left + 20) * 256 / 20;
+			break;
+
+		default:
+			return(brightness);
+	}
+	return(std::min((scale * brightness) >> 8, 2000));
+}
+
+
+/// <summary>
+/// Scales the brightness of a structure an airstrike designator marks by the stage of its pulse, as
+/// TechnoClass::GetAirstrikeTintIntensity (0x70E4B0) does: a flash to double brightness as the mark
+/// starts, then a slow swing between normal and double brightness, 64 frames each way. Once the mark
+/// is lifted the brightness is left alone at once, before the next AI resets the stage, as
+/// TechnoClass::DrawObject (0x705E00) applies the scale only to a structure an airstrike attacks.
+/// </summary>
+/// <param name="brightness">The brightness the structure would otherwise be drawn with.</param>
+/// <returns>Returns with the brightness to draw the structure with, no more than 2000.</returns>
+int TechnoClass::Airstrike_Tint_Brightness(int brightness) const
+{
+	if (!Is_Airstrike_Tinted()) {
+		return(brightness);
+	}
+
+	int left = AirstrikeTintTimer;
+	int scale = 256;
+	switch (AirstrikeTintStage) {
+		case 1:
+		case 7:
+			scale = (12 - left) * 256 / 6;
+			break;
+
+		case 2:
+		case 8:
+			scale = 512;
+			break;
+
+		case 3:
+		case 9:
+			scale = (left + 20) * 256 / 20;
+			break;
+
+		case 4:
+			scale = (128 - left) * 4;
+			break;
+
+		case 5:
+			scale = (left + 64) * 4;
+			break;
+
+		case 6:
+			scale = 256;
 			break;
 
 		default:
@@ -12629,6 +12790,97 @@ void TechnoClass::Create_Initial_Payload(void)
 				}
 			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Steps the pulse of a structure an airstrike designator marks (FUN_0070E920): a flash as the mark
+/// starts, then a swing of brightness that repeats while the mark timer has 158 frames or more left,
+/// and a closing flash once it is under 31.
+/// </summary>
+void TechnoClass::Airstrike_Tint_AI(void)
+{
+	if (!Is_Airstrike_Tinted()) {
+		AirstrikeTintStage = 0;
+		return;
+	}
+
+	switch (AirstrikeTintStage) {
+		case 0:
+			AirstrikeTintStage = 1;
+			AirstrikeTintTimer = 6;
+			break;
+
+		case 1:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 2;
+				AirstrikeTintTimer = 4;
+			}
+			break;
+
+		case 2:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 3;
+				AirstrikeTintTimer = Random_Pick(-5, 5) + 20;
+			}
+			break;
+
+		case 3:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 4;
+				AirstrikeTintTimer = 64;
+			}
+			break;
+
+		case 4:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 5;
+				AirstrikeTintTimer = 64;
+			}
+			break;
+
+		case 5:
+			if (AirstrikeTintTimer == 0) {
+				if (AirstrikeMarkTimer < 158) {
+					AirstrikeTintStage = 6;
+				} else {
+					AirstrikeTintStage = 4;
+					AirstrikeTintTimer = 64;
+				}
+			}
+			break;
+
+		case 6:
+			if (AirstrikeMarkTimer < 31) {
+				AirstrikeTintStage = 7;
+				AirstrikeTintTimer = 6;
+			}
+			break;
+
+		case 7:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 8;
+				AirstrikeTintTimer = 4;
+			}
+			break;
+
+		case 8:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 9;
+				AirstrikeTintTimer = 20;
+			}
+			break;
+
+		case 9:
+			if (AirstrikeTintTimer == 0) {
+				AirstrikeTintStage = 10;
+			}
+			break;
+
+		default:
+			AirstrikeTintStage = 10;
+			break;
 	}
 }
 
@@ -12929,7 +13181,9 @@ bool TechnoClass::Enter_Object_Nearby(void)
 
 /// <summary>
 /// Assigns a MISSION_MOVE toward a cell near the cached nearby object.
-/// Clears the nearby object reference if it is no longer active.
+/// Clears the nearby object reference if it is no longer active. When no clear cell is
+/// found near the object, nothing is assigned and the reference is kept, as gamemd's
+/// FUN_0070D8F0 does.
 /// </summary>
 /// <returns>True if a move mission was assigned; false otherwise.</returns>
 bool TechnoClass::Move_To_Object_Nearby(void)
@@ -12938,7 +13192,12 @@ bool TechnoClass::Move_To_Object_Nearby(void)
 		if (NearbyObject->IsActive) {
 			TechnoClass * techno = NearbyObject->As_TechnoClass();
 			if (techno != NULL) {
-				Assign_Destination(&Map[Nearby_Location(techno)]);
+				// Map[CELL_NONE] is the shared off-map cell, whose location drawing the map view can change, so a destination there breaks sync.
+				Cell const nearby = Nearby_Location(techno);
+				if (nearby == CELL_NONE) {
+					return(false);
+				}
+				Assign_Destination(&Map[nearby]);
 				Assign_Mission(MISSION_MOVE);
 				return(true);
 			}

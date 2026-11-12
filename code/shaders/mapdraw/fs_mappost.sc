@@ -8,7 +8,8 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 //   u_world         xy: map position of the area's top left pixel, z: time in seconds, w: how much a cloud
 //                   darkens the picture (0 for no clouds)
 //   u_weather       x: 1 for rain, 2 for snow, 0 for neither, y: how much falls, from 0 to 4,
-//                   z: how bright a lightning flash lights the picture under rain, from 0 to 1
+//                   z: how bright a lightning flash lights the picture under rain, from 0 to 1,
+//                   w: the scale s_scene and the target are drawn at, 1 to 4; the effects work in map pixels
 
 #include "bgfx_shader.sh"
 
@@ -100,7 +101,11 @@ float Rain(vec2 p, vec2 world, float t, float amount)
 
 void main()
 {
+	int scale = int(u_weather.w + 0.5);
+	ivec2 sub = min(ivec2(floor(fract(v_texcoord0.zw) * float(scale))), ivec2(scale - 1, scale - 1));
 	vec2 p = floor(v_texcoord0.zw) + 0.5;
+	// The rain and snow are drawn on the finer pixels.
+	vec2 fine = floor(v_texcoord0.zw) + (vec2(sub) + 0.5) / float(scale);
 	vec2 offset = vec2_splat(0.0);
 	float shade = 0.0;
 	int count = int(u_rippleinfo.x + 0.5);
@@ -121,7 +126,7 @@ void main()
 	ivec2 size = ivec2(u_rippleinfo.yz);
 	ivec2 at = clamp(ivec2(floor(p - offset)), ivec2(0, 0), size - ivec2(1, 1));
 	// The ring's outer slope is lit and its inner slope shaded, so it reads as a raised wave.
-	vec4 colour = texelFetch(s_scene, at, 0);
+	vec4 colour = texelFetch(s_scene, at * scale + sub, 0);
 	vec3 rgb = colour.rgb * (1.0 + 0.2 * shade);
 	if (u_rippleinfo.w > 0.0) {
 		vec2 glowsize = floor((u_rippleinfo.yz + 3.0) / 4.0);
@@ -131,11 +136,11 @@ void main()
 		rgb *= 1.0 - u_world.w * Cloud(p + u_world.xy, u_world.z);
 	}
 	if (u_weather.x > 1.5) {
-		rgb = mix(rgb, vec3(0.94, 0.96, 1.0), Snow(p, u_world.xy, u_world.z, u_weather.y));
+		rgb = mix(rgb, vec3(0.94, 0.96, 1.0), Snow(fine, u_world.xy, u_world.z, u_weather.y));
 	} else if (u_weather.x > 0.5) {
 		// Rain dims the picture a little, as under an overcast sky.
 		rgb *= 1.0 - 0.06 * min(u_weather.y, 2.0);
-		rgb = mix(rgb, vec3(0.72, 0.78, 0.86), Rain(p, u_world.xy, u_world.z, u_weather.y));
+		rgb = mix(rgb, vec3(0.72, 0.78, 0.86), Rain(fine, u_world.xy, u_world.z, u_weather.y));
 		rgb = rgb * (1.0 + 0.7 * u_weather.z) + vec3(0.05, 0.05, 0.07) * u_weather.z;
 	}
 	gl_FragColor = vec4(rgb, colour.a);

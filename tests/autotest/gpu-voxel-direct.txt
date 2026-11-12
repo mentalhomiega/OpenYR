@@ -1,0 +1,54 @@
+; Checks that the GPU keeps drawing a crowd of large voxel objects and their shadows at GpuVoxelScale=4 (docs/GPU_DIRECT_VOXELS.md): 48 Kirovs fill the view, and each GPU_RENDER line, one every 600 passes, counts 0 passes that fell back to the software.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/gpu-voxel-direct.txt -Map XMP08T2.MAP -AIPlayers 0 -Width 800 -Height 600 -Seconds 120 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nGpuVoxelScale=4`nHDRHighlights=Classic`nBloom=no" -Filter "GPU_RENDER|GPU_VOXEL:|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
+1 view 38 40
+2 reveal
+4 grantunit ZEP 30 34
+4 grantunit ZEP 30 36
+4 grantunit ZEP 30 38
+4 grantunit ZEP 30 40
+4 grantunit ZEP 30 42
+4 grantunit ZEP 30 44
+4 grantunit ZEP 32 34
+4 grantunit ZEP 32 36
+4 grantunit ZEP 32 38
+4 grantunit ZEP 32 40
+4 grantunit ZEP 32 42
+4 grantunit ZEP 32 44
+4 grantunit ZEP 34 34
+4 grantunit ZEP 34 36
+4 grantunit ZEP 34 38
+4 grantunit ZEP 34 40
+4 grantunit ZEP 34 42
+4 grantunit ZEP 34 44
+4 grantunit ZEP 36 34
+4 grantunit ZEP 36 36
+4 grantunit ZEP 36 38
+4 grantunit ZEP 36 40
+4 grantunit ZEP 36 42
+4 grantunit ZEP 36 44
+4 grantunit ZEP 38 34
+4 grantunit ZEP 38 36
+4 grantunit ZEP 38 38
+4 grantunit ZEP 38 40
+4 grantunit ZEP 38 42
+4 grantunit ZEP 38 44
+4 grantunit ZEP 40 34
+4 grantunit ZEP 40 36
+4 grantunit ZEP 40 38
+4 grantunit ZEP 40 40
+4 grantunit ZEP 40 42
+4 grantunit ZEP 40 44
+4 grantunit ZEP 42 34
+4 grantunit ZEP 42 36
+4 grantunit ZEP 42 38
+4 grantunit ZEP 42 40
+4 grantunit ZEP 42 42
+4 grantunit ZEP 42 44
+4 grantunit ZEP 44 34
+4 grantunit ZEP 44 36
+4 grantunit ZEP 44 38
+4 grantunit ZEP 44 40
+4 grantunit ZEP 44 42
+4 grantunit ZEP 44 44
+12 view 38 40
+1300 quit

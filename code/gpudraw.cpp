@@ -25,13 +25,17 @@
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "emissive.h"
+#include "fnv.h"
 #include "globals.h"
 #include "gpumap.h"
+#include "gpumapvoxel.h"
 #include "objtype.h"
 #include "ovrlight.h"
 #include "shadowplane.h"
 #include "surface.h"
 #include "tactical.h"
+#include "convert.h"
+#include "unittype.h"
 #include "voxlib.h"
 #include "wave.h"
 #include "xsurface.h"
@@ -47,8 +51,21 @@ static bool _ReplayCheck = false;
 static bool _GpuCheck = false;
 static bool _Render = false;
 static bool _Voxels = false;
-// The part in GpuDrawList::Voxels the next blit from the voxel buffer shows, or -1.
+static bool _VoxelsSmooth = false;
+// The part in GpuDrawList::Voxels the next blit from its source (the voxel buffer, or the scratch surface for
+// a composite) shows, or -1, and whether a blit has shown it yet.
 static int _PendingPart = -1;
+static bool _PendingCloaked = false;
+static int _PendingPredator = -1;
+static bool _PartShown = false;
+// The composite of a turreted vehicle that is being put together, and where the scratch surface's pixels are.
+static int _Composite = -1;
+static bool _CompositeRenders = false;
+// The first blit recorded after the open composite was shown.
+static std::size_t _CompositeFirstBlit = 0;
+static unsigned char const * _ScratchBase = NULL;
+static int _ScratchWidth = 0;
+static int _ScratchHeight = 0;
 static Surface * _Target = NULL;
 static Rect _Area;
 static std::vector<unsigned short> _Before;
@@ -201,6 +218,8 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.VoxelX = 0;
 	blit.VoxelY = 0;
 	blit.NoPixels = false;
+	blit.Cloaked = false;
+	blit.Predator = -1;
 	if (blit.InAtlas) {
 		blit.Pixels = (std::uint32_t)atlas;
 		blit.Pitch = pitch;
@@ -315,17 +334,24 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha);
 	_LockedBlits++;
-	if (_PendingPart >= 0 && pixels >= VoxelDrawBuffer && pixels < VoxelDrawBuffer + VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT) {
-		SurfaceRegion const & region = _List.Voxels[_PendingPart].Scene.Region;
-		blit.Voxel = _PendingPart;
-		blit.VoxelX = (int)(pixels - VoxelDrawBuffer) % VOXEL_BITMAP_WIDTH - region.Bounds.X;
-		blit.VoxelY = (int)(pixels - VoxelDrawBuffer) / VOXEL_BITMAP_WIDTH - region.Bounds.Y;
-		_PendingPart = -1;
-		if (_Render) {
-			// The software did not render the image; the GPU draws it, and the fallback renders it if needed.
-			_List.PixelArena.resize(blit.Pixels);
-			blit.NoPixels = true;
-			return(true);
+	if (_PendingPart >= 0) {
+		GpuVoxelPart const & part = _List.Voxels[_PendingPart];
+		unsigned char const * const base = part.Scratch ? _ScratchBase : VoxelDrawBuffer;
+		int const source_width = part.Scratch ? _ScratchWidth : VOXEL_BITMAP_WIDTH;
+		int const source_size = part.Scratch ? _ScratchWidth * _ScratchHeight : VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT;
+		if (base != NULL && pixels >= base && pixels < base + source_size) {
+			blit.Voxel = _PendingPart;
+			blit.Cloaked = _PendingCloaked;
+			blit.Predator = _PendingPredator;
+			blit.VoxelX = (int)(pixels - base) % source_width - part.Area.X;
+			blit.VoxelY = (int)(pixels - base) / source_width - part.Area.Y;
+			_PartShown = true;
+			if (_Render) {
+				// The software did not render the image; the GPU draws it, and the fallback renders it if needed.
+				_List.PixelArena.resize(blit.Pixels);
+				blit.NoPixels = true;
+				return(true);
+			}
 		}
 	}
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
@@ -891,7 +917,7 @@ static float Flash_Amount(void)
 }
 
 
-// Logs a GPU_RENDER line every 600 passes: how many the GPU drew and how many fell back to software.
+// Logs a GPU_RENDER line every 600 passes: how many the GPU drew, how many fell back to software, and the voxel blits.
 static void Count_Render(bool drawn)
 {
 	static int _Drawn = 0;
@@ -908,30 +934,95 @@ static void Count_Render(bool drawn)
 }
 
 
+// Copies the emissive mask the software drawers just wrote for part into its MaskReference.
+static void Copy_Voxel_Mask(GpuVoxelPart & part)
+{
+	Rect const & area = part.Area;
+	part.MaskReference.resize((std::size_t)area.Width * area.Height);
+	for (int r = 0; r < area.Height; r++) {
+		std::memcpy(&part.MaskReference[(std::size_t)r * area.Width], VoxelMaskBuffer + (area.Y + r) * VOXEL_BITMAP_WIDTH + area.X, area.Width);
+	}
+}
+
+
+// Calls visit(x, y, mask) for each target pixel under the blit of a voxel part that has a MaskReference, with the
+// part's mask value there, latest blit first, so the first visit of a pixel is the part drawn last over it.
+template <class Visit>
+static void For_Each_Voxel_Mask_Pixel(Visit visit)
+{
+	for (auto blit = _List.Blits.rbegin(); blit != _List.Blits.rend(); ++blit) {
+		if (blit->Voxel < 0 || _List.Voxels[blit->Voxel].MaskReference.empty()) {
+			continue;
+		}
+		GpuVoxelPart const & part = _List.Voxels[blit->Voxel];
+		for (int r = 0; r < blit->Height; r++) {
+			unsigned char const * values = &part.MaskReference[(std::size_t)(blit->VoxelY + r) * part.Area.Width + blit->VoxelX];
+			for (int c = 0; c < blit->Width; c++) {
+				visit(blit->X + c, blit->Y + r, values[c]);
+			}
+		}
+	}
+}
+
+
+// The part's pixels as the software composes them: each piece is rendered into the voxel buffer, and its
+// drawn pixels replace those below, through the scratch surface's colour translation for a composite.
+static std::vector<unsigned char> Render_Part(GpuVoxelPart const & part)
+{
+	std::vector<unsigned char> image((std::size_t)part.Area.Width * part.Area.Height, 0);
+	unsigned char const * const translator = part.Scratch && EightBitDrawer != NULL ? (unsigned char const *)EightBitDrawer->Get_Translate_Table() : NULL;
+	for (GpuVoxelPiece const & piece : part.Pieces) {
+		std::memcpy(VoxelNormalTranslateTable, piece.Prepared->Lighting, sizeof(piece.Prepared->Lighting));
+		VoxelDrawSystem::Clear_Buffer();
+		for (VoxelShadowRenderStruct shadow : piece.Prepared->Scene.Shadows) {
+			Vector3 center = piece.Prepared->Scene.Center;
+			shadow.VoxLib->Render_Shadow(shadow, center);
+		}
+		for (VoxelRenderStruct object : piece.Prepared->Scene.Objects) {
+			Vector3 center = piece.Prepared->Scene.Center;
+			object.VoxLib->Render_Object(object, center);
+		}
+		Rect const & bounds = piece.Prepared->Scene.Region.Bounds;
+		Rect const covered = Intersect(Rect(piece.Dest.X, piece.Dest.Y, bounds.Width, bounds.Height), part.Area);
+		for (int y = covered.Y; y < covered.Y + covered.Height; y++) {
+			for (int x = covered.X; x < covered.X + covered.Width; x++) {
+				unsigned char const index = VoxelDrawBuffer[(bounds.Y + y - piece.Dest.Y) * VOXEL_BITMAP_WIDTH + bounds.X + x - piece.Dest.X];
+				if (index != 0) {
+					image[(std::size_t)(y - part.Area.Y) * part.Area.Width + x - part.Area.X] = translator != NULL ? translator[index] : index;
+				}
+			}
+		}
+	}
+	return(image);
+}
+
+
 // Renders in software the images of the voxel blits that were left to the GPU, so a pass the GPU
 // cannot draw can be drawn from the list.
 static void Render_Voxel_Pixels(void)
 {
 	int rendered = -1;
+	std::vector<unsigned char> image;
 	for (GpuBlit & blit : _List.Blits) {
 		if (!blit.NoPixels) {
 			continue;
 		}
 		if (rendered != blit.Voxel) {
-			GpuVoxelPart const & part = _List.Voxels[blit.Voxel];
-			std::memcpy(VoxelNormalTranslateTable, part.Lighting, sizeof(part.Lighting));
-			VoxelDrawSystem::Clear_Buffer();
-			for (VoxelRenderStruct object : part.Scene.Objects) {
-				Vector3 center = part.Scene.Center;
-				object.VoxLib->Render_Object(object, center);
-			}
+			image = Render_Part(_List.Voxels[blit.Voxel]);
 			rendered = blit.Voxel;
+			GpuVoxelPart & part = _List.Voxels[blit.Voxel];
+			if (Emissive_Is_Enabled() && !part.Scratch) {
+				Copy_Voxel_Mask(part);
+			} else if (Emissive_Is_Enabled()) {
+				// The software composite has no highlights, so the marks Mark_Composite_Mask left become 0.
+				part.MaskReference.assign((std::size_t)part.Area.Width * part.Area.Height, 0);
+			}
 		}
-		SurfaceRegion const & region = _List.Voxels[blit.Voxel].Scene.Region;
+		int const width = _List.Voxels[blit.Voxel].Area.Width;
 		blit.Pixels = (std::uint32_t)_List.PixelArena.size();
 		_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)blit.Width * blit.Height);
 		for (int r = 0; r < blit.Height; r++) {
-			std::memcpy(&_List.PixelArena[blit.Pixels + (std::size_t)r * blit.Width], VoxelDrawBuffer + (region.Bounds.Y + blit.VoxelY + r) * VOXEL_BITMAP_WIDTH + region.Bounds.X + blit.VoxelX, blit.Width);
+			std::memcpy(&_List.PixelArena[blit.Pixels + (std::size_t)r * blit.Width], &image[(std::size_t)(blit.VoxelY + r) * width + blit.VoxelX], blit.Width);
 		}
 		blit.NoPixels = false;
 	}
@@ -982,7 +1073,8 @@ static bool Finish_Render(Surface & target)
 	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
 		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged, tileshadowlit);
 	}
-	EmissivePlane const * emissive = GpuMap_Bloom() > 0 ? Emissive_Plane_For(&target) : NULL;
+	bool const voxelmask = _Voxels && Emissive_Is_Enabled();
+	EmissivePlane * emissive = GpuMap_Bloom() > 0 || voxelmask ? Emissive_Plane_For(&target) : NULL;
 	if (emissive != NULL) {
 		Read_Plane(*emissive, _Area, glow, glowchanged, glowlit);
 	}
@@ -1007,6 +1099,7 @@ static bool Finish_Render(Surface & target)
 		pass.TileShadowChanged = plane != NULL ? &tileshadowchanged : NULL;
 		pass.Glow = emissive != NULL ? &glow : NULL;
 		pass.GlowChanged = emissive != NULL ? &glowchanged : NULL;
+		pass.Mask = voxelmask && emissive != NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
 		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
@@ -1027,6 +1120,14 @@ static bool Finish_Render(Surface & target)
 		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask(), !tilesleft);
 	}
 	Render_Voxel_Pixels();
+	if (voxelmask && emissive != NULL) {
+		For_Each_Voxel_Mask_Pixel([&](int x, int y, unsigned char mask) {
+			unsigned char & value = emissive->Pixels[(std::size_t)y * emissive->Pitch + x];
+			if (value == GPU_VOXEL_MASK_MARK) {
+				value = mask;
+			}
+		});
+	}
 	Replay(base);
 	Write_Area(target, _Area, base);
 	std::fill(changed.begin(), changed.end(), 1);
@@ -1037,47 +1138,271 @@ static bool Finish_Render(Surface & target)
 
 bool GpuDraw_Voxels_Wanted(void)
 {
-	return(_Voxels && _Target != NULL && !Emissive_Is_Enabled() && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
+	return(_Voxels && _Target != NULL && VoxelDrawSystem::EnableLighting && !VoxelDrawSystem::EnableZBuffer);
 }
 
 
-void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software)
+bool GpuDraw_Voxels_Smooth(void)
+{
+	return(_VoxelsSmooth && GpuDraw_Voxels_Wanted());
+}
+
+
+double GpuDraw_Facing_Radian(DirType const & facing)
+{
+	return(GpuDraw_Voxels_Smooth() ? facing.As_Radian_Smooth() : facing.As_Radian32());
+}
+
+
+ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags)
+{
+	return(GpuDraw_Voxels_Wanted() ? ShapeFlags_Type(flags & ~SHAPE_PREDATOR) : flags);
+}
+
+
+void GpuDraw_Voxel_Cloak(bool cloaked, int predator)
+{
+	_PendingCloaked = cloaked;
+	_PendingPredator = predator;
+}
+
+
+GpuVoxelPreparedRef GpuDraw_Capture_Prepared(void)
+{
+	std::shared_ptr<GpuVoxelPrepared> prepared = std::make_shared<GpuVoxelPrepared>();
+	prepared->Scene = VoxelDrawSystem::Capture();
+	std::memcpy(prepared->Lighting, VoxelNormalTranslateTable, sizeof(prepared->Lighting));
+	return(prepared);
+}
+
+
+GpuVoxelPrepKey GpuDraw_Prep_Key(VoxelLibrary const & voxlib, MotionLibrary const * motion, int frame, Matrix3D const & matrix, Vector3 const & light, float specular, float shade, GpuVoxelPrepKind kind)
+{
+	GpuVoxelPrepKey key;
+	std::memset(&key, 0, sizeof(key));
+	key.Serial = voxlib.Get_Serial();
+	key.Frame = frame;
+	key.Motion = motion;
+	key.Transform = matrix;
+	key.Camera = VoxelCameraMatrix;
+	key.Light = light;
+	key.Specular = specular;
+	key.Shade = shade;
+	key.Kind = kind;
+	return(key);
+}
+
+
+namespace
+{
+	struct KeptPrepared
+	{
+		GpuVoxelPrepKey Key;
+		GpuVoxelPreparedRef Prepared;
+	};
+
+	// Enough for every type at every facing of a game; a larger set starts again.
+	std::size_t const KEPT_PREPARED_LIMIT = 16384;
+
+	std::unordered_map<std::uint64_t, KeptPrepared> _KeptPrepared;
+	unsigned _KeptPreparedGeneration = 0;
+
+	std::uint64_t Prep_Key_Hash(GpuVoxelPrepKey const & key)
+	{
+		return(Fnv64_Add_Bytes(FNV64_BASIS, &key, sizeof(key)));
+	}
+}
+
+
+GpuVoxelPreparedRef GpuDraw_Find_Prepared(GpuVoxelPrepKey const & key)
+{
+	if (_KeptPreparedGeneration != ObjectTypeClass::VoxelIndexGeneration) {
+		_KeptPrepared.clear();
+		_KeptPreparedGeneration = ObjectTypeClass::VoxelIndexGeneration;
+		return(GpuVoxelPreparedRef());
+	}
+	auto const found = _KeptPrepared.find(Prep_Key_Hash(key));
+	if (found == _KeptPrepared.end() || std::memcmp(&found->second.Key, &key, sizeof(key)) != 0) {
+		return(GpuVoxelPreparedRef());
+	}
+	return(found->second.Prepared);
+}
+
+
+void GpuDraw_Keep_Prepared(GpuVoxelPrepKey const & key, GpuVoxelPreparedRef const & prepared)
+{
+	if (_KeptPrepared.size() >= KEPT_PREPARED_LIMIT) {
+		_KeptPrepared.clear();
+	}
+	_KeptPrepared[Prep_Key_Hash(key)] = KeptPrepared{ key, prepared };
+}
+
+
+void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, bool software)
 {
 	_PendingPart = -1;
-	// A pass that renders on the GPU has nothing to compare a software image with.
+	_PartShown = false;
+	// While the GPU renders the pass, the software draws a part only for another surface.
 	if (!GpuDraw_Voxels_Wanted() || (_Render && software)) {
 		return;
 	}
 	GpuVoxelPart part;
-	part.Scene = scene;
-	std::memcpy(part.Lighting, VoxelNormalTranslateTable, sizeof(part.Lighting));
-	std::strncpy(part.Label, label, sizeof(part.Label) - 1);
-	part.Label[sizeof(part.Label) - 1] = 0;
+	Rect const bounds = prepared->Scene.Region.Bounds;
+	GpuVoxelPiece piece;
+	piece.Prepared = prepared;
+	piece.Dest = Point2D(bounds.X, bounds.Y);
+	part.Pieces.push_back(std::move(piece));
+	part.Area = bounds;
+	part.Scratch = false;
 	if (software) {
-		Rect const bounds = scene.Region.Bounds;
-		part.Reference.resize((std::size_t)bounds.Width * bounds.Height);
-		for (int r = 0; r < bounds.Height; r++) {
-			std::memcpy(&part.Reference[(std::size_t)r * bounds.Width], VoxelDrawBuffer + (bounds.Y + r) * VOXEL_BITMAP_WIDTH + bounds.X, bounds.Width);
+		if (Emissive_Is_Enabled()) {
+			Copy_Voxel_Mask(part);
 		}
+	} else if (Emissive_Is_Enabled()) {
+		// The blit copies these marks into the target's plane, and the GPU replaces each one that survives the pass.
+		VoxelDrawSystem::Fill_Mask(bounds, GPU_VOXEL_MASK_MARK);
 	}
 	_List.Voxels.push_back(std::move(part));
 	_PendingPart = (int)_List.Voxels.size() - 1;
 }
 
 
-void GpuDraw_Voxel_End(void)
+SurfaceRegion GpuDraw_Show_Prepared(GpuVoxelPreparedRef const & prepared)
 {
-	// An image that no blit showed was clipped away; with nothing to compare, the GPU need not draw it.
-	if (_PendingPart >= 0 && _PendingPart == (int)_List.Voxels.size() - 1 && _List.Voxels[_PendingPart].Reference.empty()) {
-		_List.Voxels.pop_back();
-	}
-	_PendingPart = -1;
+	GpuDraw_Voxel_Part(prepared, false);
+	return(prepared->Scene.Region);
 }
 
 
-void GpuDraw_Set_Voxels(bool enabled)
+SurfaceRegion GpuDraw_Render_Prepared(GpuVoxelPrepKey const * keep)
+{
+	if (!GpuDraw_Voxels_Wanted()) {
+		return(VoxelDrawSystem::Render());
+	}
+	GpuVoxelPreparedRef const prepared = GpuDraw_Capture_Prepared();
+	if (GpuDraw_Is_Rendering(*LogicalSurface)) {
+		if (keep != NULL) {
+			GpuDraw_Keep_Prepared(*keep, prepared);
+		}
+		return(GpuDraw_Show_Prepared(prepared));
+	}
+	SurfaceRegion const region = VoxelDrawSystem::Render();
+	GpuDraw_Voxel_Part(prepared, true);
+	return(region);
+}
+
+
+void GpuDraw_Voxel_End(void)
+{
+	// A part no blit showed was clipped away, so the GPU need not draw it.
+	if (_PendingPart >= 0 && !_PartShown && _PendingPart == (int)_List.Voxels.size() - 1) {
+		_List.Voxels.pop_back();
+	}
+	_PendingPart = -1;
+	_PendingCloaked = false;
+	_PendingPredator = -1;
+	_PartShown = false;
+}
+
+
+void GpuDraw_Composite_Begin(Surface const & dest)
+{
+	_Composite = -1;
+	_CompositeRenders = false;
+	// While the GPU renders the pass, a composite blitted to another surface is the software's alone.
+	if (!GpuDraw_Voxels_Wanted() || (_Render && !GpuDraw_Is_Rendering(dest))) {
+		return;
+	}
+	GpuVoxelPart part;
+	part.Area = Rect();
+	part.Scratch = true;
+	_List.Voxels.push_back(std::move(part));
+	_Composite = (int)_List.Voxels.size() - 1;
+	_CompositeRenders = GpuDraw_Is_Rendering(dest);
+}
+
+
+bool GpuDraw_Composite_Open(void)
+{
+	return(_Composite >= 0);
+}
+
+
+bool GpuDraw_Composite_Rendering(void)
+{
+	return(_Composite >= 0 && _CompositeRenders);
+}
+
+
+void GpuDraw_Composite_Piece(GpuVoxelPreparedRef const & prepared, Point2D const & dest)
+{
+	if (_Composite < 0) {
+		return;
+	}
+	GpuVoxelPiece piece;
+	piece.Prepared = prepared;
+	piece.Dest = dest;
+	_List.Voxels[_Composite].Pieces.push_back(std::move(piece));
+}
+
+
+void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty)
+{
+	if (_Composite < 0) {
+		return;
+	}
+	GpuVoxelPart & part = _List.Voxels[_Composite];
+	part.Area = Intersect(dirty, scratch.Get_Rect());
+	if (part.Area.Width <= 0 || part.Area.Height <= 0 || part.Pieces.empty()) {
+		return;
+	}
+	_ScratchBase = (unsigned char const *)scratch.Lock();
+	scratch.Unlock();
+	_ScratchWidth = scratch.Get_Width();
+	_ScratchHeight = scratch.Get_Height();
+	_PendingPart = _Composite;
+	_PartShown = false;
+	_CompositeFirstBlit = _List.Blits.size();
+}
+
+
+// The scratch surface has no emissive plane, so a composite's blit zeroes the target's plane under it. The GPU gives a
+// composite highlights (docs/GPU_DIRECT_VOXELS.md, stage 5), so the blits of one it draws leave the mark instead.
+static void Mark_Composite_Mask(void)
+{
+	if (!_CompositeRenders || !Emissive_Is_Enabled()) {
+		return;
+	}
+	EmissivePlane * plane = Emissive_Plane_For(_Target);
+	if (plane == NULL) {
+		return;
+	}
+	for (std::size_t i = _CompositeFirstBlit; i < _List.Blits.size(); i++) {
+		GpuBlit const & blit = _List.Blits[i];
+		if (blit.Voxel == _Composite) {
+			Emissive_Fill_Rect(*plane, blit.X, blit.Y, blit.Width, blit.Height, GPU_VOXEL_MASK_MARK);
+		}
+	}
+}
+
+
+void GpuDraw_Composite_End(void)
+{
+	if (_Composite >= 0 && _PendingPart == _Composite) {
+		Mark_Composite_Mask();
+	}
+	if (_Composite >= 0 && _PendingPart != _Composite && _Composite == (int)_List.Voxels.size() - 1) {
+		_List.Voxels.pop_back();
+	}
+	GpuDraw_Voxel_End();
+	_Composite = -1;
+}
+
+
+void GpuDraw_Set_Voxels(bool enabled, bool smooth)
 {
 	_Voxels = enabled;
+	_VoxelsSmooth = smooth;
 }
 
 
@@ -1169,6 +1494,8 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	_List.Unsupported = 0;
 	_List.Voxels.clear();
 	_PendingPart = -1;
+	_PartShown = false;
+	_Composite = -1;
 	_Render = render;
 	_Area = Intersect(area, target.Get_Rect());
 	if (!_Render || target.Bytes_Per_Pixel() != 2 || _Area.Width <= 0 || _Area.Height <= 0 || TileSurface == NULL) {
@@ -1236,7 +1563,31 @@ bool GpuDraw_End(void)
 		// Compared with the software replay, so draws the record does not hold do not count.
 		std::vector<unsigned short> replayed = _Before;
 		Replay(replayed);
-		GpuMap_Check(pass, replayed);
+		// The software mask is compared with the GPU's, whose plane marks the pixels the voxel parts left.
+		std::vector<unsigned char> softwaremask;
+		std::vector<unsigned char> maskchanged;
+		std::vector<unsigned char> masklit;
+		EmissivePlane const * emissive = _Voxels && Emissive_Is_Enabled() ? Emissive_Plane_For(&target) : NULL;
+		std::vector<unsigned char> marked;
+		if (emissive != NULL) {
+			Read_Plane(*emissive, _Area, softwaremask, maskchanged, masklit);
+			marked = softwaremask;
+			std::vector<unsigned char> seen(softwaremask.size(), 0);
+			For_Each_Voxel_Mask_Pixel([&](int x, int y, unsigned char mask) {
+				if (x < _Area.X || y < _Area.Y || x >= _Area.X + _Area.Width || y >= _Area.Y + _Area.Height) {
+					return;
+				}
+				std::size_t const at = (std::size_t)(y - _Area.Y) * _Area.Width + (x - _Area.X);
+				if (seen[at] == 0) {
+					seen[at] = 1;
+					marked[at] = softwaremask[at] == mask ? GPU_VOXEL_MASK_MARK : softwaremask[at];
+				}
+			});
+			pass.Glow = &marked;
+			pass.GlowChanged = &maskchanged;
+			pass.Mask = true;
+		}
+		GpuMap_Check(pass, replayed, emissive != NULL ? &softwaremask : NULL);
 	}
 	if (!_ReplayCheck) {
 		return(false);

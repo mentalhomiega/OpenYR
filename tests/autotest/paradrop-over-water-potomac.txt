@@ -1,0 +1,13 @@
+; A paradrop aimed at open water drops its soldiers only over cells they can enter. gamemd's ObjectClass::SpawnParachuted
+; (0x5F5940) refuses a drop outside the usable map area or onto a cell that is not clear to move for the object's speed
+; type; ObjectClass::Paradrop has neither test, so the plane's drop step (AircraftClass::Drop_Paratrooper) makes both.
+; On Potomac the player's paradrop is fired at 84,56, in the river south of the north bridge.
+; Expected: all six GIs of the drop land on the east bank at z 624 (cells around 89-90,55-59) at strength 125; none lands
+; in the river (z 208) or is lost. The count of E1 at the last frame is 6.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/paradrop-over-water-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 200 -Filter "AUTOTEST( +bridgeobj| fire)|Exception"
+5 view 84 56
+6 reveal
+20 grant ParaDropSpecial
+25 fire ParaDropSpecial 84 56
+1200 bridgeobj E1
+1201 quit

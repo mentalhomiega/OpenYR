@@ -17,6 +17,7 @@
 #include "ebolt.h"
 #include "laser.h"
 #include "perfstat.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "replay.h"
 #include "spawner.h"
@@ -56,6 +57,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "gpudraw.h"
+#include "gpumap.h"
 #include "hangwatch.h"
 #include "house.h"
 #include "houstype.h"
@@ -139,6 +141,7 @@
 #include "pcx.h"
 #include "planning.h"
 #include "preview.h"
+#include "ui/dev/uiperfoverlay.h"
 #include "ui/rml/rmlimage.h"
 #include "unittype.h"
 #include "light.h"
@@ -152,6 +155,7 @@
 #include "mapgen.h"
 #include "strutil.h"
 #include "surface.h"
+#include "dsurface.h"
 #include "truecolour.h"
 #include "weapon.h"
 #include "waypoint.h"
@@ -163,6 +167,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <deque>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -1101,13 +1106,13 @@ void Log_Ore(void)
 
 
 /// <summary>
-/// Writes the tiberium cells nearest the player's first building, nearest first.
+/// Writes the tiberium cells nearest the player's first building, or nearest the given cell, nearest first.
 /// </summary>
-void Log_Ore_Cells(int limit)
+void Log_Ore_Cells(int limit, Cell const * from)
 {
 	if (limit > 32) limit = 32;
-	Cell origin(-1, -1);
-	for (int index = 0; index < Buildings.Count(); index++) {
+	Cell origin = from != NULL ? *from : Cell(-1, -1);
+	for (int index = 0; from == NULL && index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo) {
 			origin = building->Get_Cell();
@@ -2299,6 +2304,30 @@ static void Bridge_Unit_Step(StepType const & step)
 
 
 /// <summary>
+/// Logs each live object of the type, whoever owns it, with its cell, whether it is on a bridge, its height above sea
+/// level and above the ground, its layer, whether it is falling, its strength, its mission and its destination.
+/// </summary>
+/// <param name="step">A step whose argument is the type name.</param>
+static void Bridge_Object_Step(StepType const & step)
+{
+	int count = 0;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
+			Cell const cell = techno->Get_Cell();
+			FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
+			Cell const nav = foot != NULL && foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+			DebugString("AUTOTEST   bridgeobj %s of %s cell %d,%d onbridge %d z %d agl %d layer %d falling %d strength %d mission %s nav %d,%d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), cell.X, cell.Y, (int)techno->IsOnBridge, techno->Center_Coord().Z,
+				(int)techno->HeightAGL, (int)techno->In_Which_Layer(), (int)techno->IsFalling, (int)techno->Strength,
+				MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y);
+			count++;
+		});
+	DebugString("AUTOTEST   bridgeobj %s count %d\n", step.Argument.c_str(), count);
+}
+
+
+/// <summary>
 /// Logs the bridge tile, overlay and flags of every on-map cell within four cells of a cell.
 /// </summary>
 /// <param name="step">A step whose argument is the centre's X and whose X field is its Y.</param>
@@ -2382,6 +2411,18 @@ static void Concrete_Hit_Step(StepType const & step)
 	int const x = step.Argument_Int();
 	bool const destroyed = Map.Damage_Concrete_Bridge(step.Argument_Cell());
 	DebugString("AUTOTEST   concretehit %d,%d %d\n", x, step.X, (int)destroyed);
+}
+
+
+/// <summary>
+/// Repairs the bridge near a cell as an engineer at a repair hut does (MapClass::Repair_Concrete_Bridge, which falls
+/// back to Repair_Bridge for a wood or high bridge).
+/// </summary>
+/// <param name="step">The x in the argument and the y in X.</param>
+static void Bridge_Fix_Step(StepType const & step)
+{
+	Map.Repair_Concrete_Bridge(step.Argument_Cell());
+	DebugString("AUTOTEST   bridgefix %d,%d\n", step.Argument_Int(), step.X);
 }
 
 
@@ -3723,6 +3764,13 @@ static void Windowmove_Step(StepType const & step)
 }
 
 
+// windowresize w h: gives the game window a client area of that size, as dragging its frame does.
+static void Windowresize_Step(StepType const & step)
+{
+	Main_Window_Resize(step.Argument_Int(), step.X);
+}
+
+
 // windowclick x y: a left click at that window pixel, taken from the window the way the mouse gives it,
 // so it is converted to the frame as a player's click is. windowdouble x y is the same click as the second
 // of a quick pair, whose press SDL reports with Clicks 2.
@@ -3808,8 +3856,50 @@ static void Cell_Step(StepType const & step)
 	TechnoClass const * techno = dynamic_cast<TechnoClass const *>(occupier);
 	DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d gap %d land %d sensed %d cloak %d\n",
 		step.Argument_Int(), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
-		(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), cell.GapCount, (int)cell.Land_Type(),
+		(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), (int)cell.GapShrouded[PlayerPtr], (int)cell.Land_Type(),
 		(int)cell.Is_Sensed(PlayerPtr), techno != NULL ? (int)techno->Cloak : -1);
+}
+
+
+// shroudhash [cells]: logs, for each house a player sees through, how many cells it has mapped and fog-mapped and a
+// checksum of its shroud and fog over the whole map. Every copy of a network game must log the same lines. With
+// cells, it also logs each cell the house has any shroud or fog bit of, with the mapped, visible, fog-mapped and
+// fog-visible bits.
+static void Shroudhash_Step(StepType const & step)
+{
+	bool const cells = (step.Argument == "cells");
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		if (!house->Is_Player_View()) continue;
+		CRCEngine crc;
+		int mapped = 0;
+		int fogmapped = 0;
+		for (int y = 0; y < MAP_CELL_H; y++) {
+			for (int x = 0; x < MAP_CELL_W; x++) {
+				Cell const cell(x, y);
+				if (!Map.In_Radar(cell) || !Map.Is_Valid(cell)) continue;
+				CellClass const & cellptr = Map[cell];
+				mapped += cellptr.IsMapped[house] ? 1 : 0;
+				fogmapped += cellptr.IsFogMapped[house] ? 1 : 0;
+				crc(cellptr.IsMapped[house]);
+				crc(cellptr.IsVisible[house]);
+				crc(cellptr.IsFogMapped[house]);
+				crc(cellptr.IsFogVisible[house]);
+				if (cells && (cellptr.IsMapped[house] || cellptr.IsVisible[house] || cellptr.IsFogMapped[house] || cellptr.IsFogVisible[house])) {
+					DebugString("AUTOTEST shroudcell frame %d house %d cell %d,%d bits %d%d%d%d\n", Frame, index, x, y, (int)cellptr.IsMapped[house], (int)cellptr.IsVisible[house], (int)cellptr.IsFogMapped[house], (int)cellptr.IsFogVisible[house]);
+				}
+			}
+		}
+		DebugString("AUTOTEST shroudhash frame %d house %d %s mapped %d fogmapped %d visionary %d crc %08X\n", Frame, index, house->Class->Name(), mapped, fogmapped, (int)house->IsVisionary, (unsigned int)crc());
+	}
+}
+
+
+// offmapcell: logs the location game logic has left the shared off-map cell at, which a destination or target on it points to.
+static void Offmapcell_Step(StepType const &)
+{
+	Cell const location = Off_Map_Cell_Logic_Location();
+	DebugString("AUTOTEST offmapcell frame %d location %d,%d\n", Frame, (int)location.X, (int)location.Y);
 }
 
 
@@ -4097,6 +4187,20 @@ static void Face_Step(StepType const & step)
 			techno->PrimaryFacing.Set(DirType(facing));
 			techno->SecondaryFacing.Set(DirType(facing));
 			DebugString("AUTOTEST   face %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)facing);
+		});
+}
+
+
+// turretface <dir256> x y: turns only the turret of the player's objects on that cell to the 256-step facing.
+static void Turretface_Step(StepType const & step)
+{
+	Cell const cell(step.X, step.Y);
+	Dir256 const facing = static_cast<Dir256>(step.Argument_Int() & 255);
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_At(techno, cell));},
+		[&](TechnoClass * techno) {
+			techno->SecondaryFacing.Set(DirType(facing));
+			DebugString("AUTOTEST   turretface %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)facing);
 		});
 }
 
@@ -4860,8 +4964,19 @@ static void Blast_Step(StepType const & step)
 	int const blast_damage = colon == std::string::npos ? 1000 : std::atoi(step.Argument.c_str() + colon + 1);
 	WarheadTypeClass const * warhead = stricmp(warhead_name.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(warhead_name.c_str());
 	if (warhead != NULL) {
-		DebugString("AUTOTEST   blast %s at %d,%d damage %d\n", warhead->Name(), step.X, step.Y, blast_damage);
-		Explosion_Damage(Map[Cell(step.X, step.Y)].Center_Coord(), blast_damage, NULL, warhead, false, NULL);
+		// "deck" as a last word explodes it at deck height instead of floor height on a bridge cell.
+		Coord coord = Map[Cell(step.X, step.Y)].Center_Coord();
+		if (Word(step.Words, 5) == "deck" && Map[Cell(step.X, step.Y)].IsUnderBridge) {
+			coord.Z += BRIDGE_LEPTON_HEIGHT;
+		}
+		if (Word(step.Words, 5) == "deck") {
+			DebugString("AUTOTEST   blast %s at %d,%d z %d\n", warhead->Name(), step.X, step.Y, coord.Z);
+		} else if (colon != std::string::npos) {
+			DebugString("AUTOTEST   blast %s at %d,%d damage %d\n", warhead->Name(), step.X, step.Y, blast_damage);
+		} else {
+			DebugString("AUTOTEST   blast %s at %d,%d\n", warhead->Name(), step.X, step.Y);
+		}
+		Explosion_Damage(coord, blast_damage, NULL, warhead, false, NULL);
 	} else {
 		DebugString("AUTOTEST   blast %s: no such warhead\n", step.Argument.c_str());
 	}
@@ -5521,13 +5636,17 @@ static void Spots_Step(StepType const & step)
 
 
 // airstrike <TypeID>: each object of that type, whoever owns it, with the frame its next strike is ready, and each
-// plane that strike still has out, with its cell, mission, ammunition and target.
+// plane that strike still has out, with its cell, mission, ammunition and target. A structure a strike attacks also
+// gets the stage of its brightness pulse and the brightness 1000 is drawn at.
 static void Airstrike_Step(StepType const & step)
 {
 	For_Technos(
 		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
 		[&](TechnoClass const * techno) {
 			DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d marked by %s\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size(), techno->AirstrikeMarkedBy != NULL ? techno->AirstrikeMarkedBy->TClass->Name() : "-");
+			if (techno->Is_Airstrike_Tinted()) {
+				DebugString("AUTOTEST   airstrike tint stage %d light %d\n", techno->AirstrikeTintStage, techno->Apparent_Brightness(1000));
+			}
 			{
 				// The weapon chosen for the target, its range, and whether it reaches and can fire at the target now.
 				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
@@ -5676,6 +5795,18 @@ static void Rock_Step(StepType const & step)
 }
 
 
+// settilt <TypeID> <degrees> <thousandths>: tips each object of that type sideways by that angle with that rocking rate per frame, as a blast that rocked it past the limit would leave it.
+static void Settilt_Step(StepType const & step)
+{
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
+			techno->AngleRotatedSideways = (float)DEG_TO_RAD(step.X);
+			techno->RockingSidewaysPerFrame = step.Y / 1000.0f;
+		});
+}
+
+
 // statics: how many positioned sounds a trigger started are still going.
 static void Statics_Step(StepType const &)
 {
@@ -5801,7 +5932,13 @@ static void Census_Step(StepType const & step)
 		return;
 	}
 	if (step.Argument == "cells") {
-		Log_Ore_Cells(8);
+		// "census cells <x> <y>" lists the 32 nearest to that cell instead.
+		Cell const from(std::atoi(Word(step.Words, 3).c_str()), std::atoi(Word(step.Words, 4).c_str()));
+		if (step.Words.size() > 4) {
+			Log_Ore_Cells(32, &from);
+		} else {
+			Log_Ore_Cells(8, NULL);
+		}
 		return;
 	}
 	DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());
@@ -6619,12 +6756,64 @@ static void Options_Step(StepType const &)
 }
 
 
+// A window capture a step asked for. The script holds still until each one is written: AutoTest_Capture_Hold
+// draws the game frame the step ran on, asks for the capture then, and runs no game frame until it arrives.
+struct PendingCapture
+{
+	// A measure logs a windowdark line for Area; a shot saves Path.
+	bool Measure;
+	Rect Area;
+	std::string Label;
+	std::string Path;
+	// The time the hold on this capture began, in milliseconds, or zero before its first hold frame.
+	unsigned int Started;
+	// A red measure logs a windowred line instead, from the view as the last frames left it, without a full redraw.
+	bool Red = false;
+};
+static std::deque<PendingCapture> PendingCaptures;
+
+// How long a capture may take to arrive once it is asked for, in milliseconds.
+static unsigned int const Capture_Timeout = 10000;
+
+
 // windowshot <name>: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
+// The script holds until the file is written.
 static void Windowshot_Step(StepType const & step)
 {
-	static std::string path;
-	path = Screenshot_Name((step.Argument + ".tga").c_str());
-	Backend_Request_Window_Capture(path.c_str());
+	PendingCaptures.push_back({false, Rect(), step.Argument, Screenshot_Name((step.Argument + ".tga").c_str()), 0});
+}
+
+
+// windowdark <name> <x> <y> <w> <h>: logs one `AUTOTEST windowdark` line with the mean and the darkest brightness (0 to 255) of
+// that window rectangle, as a windowshot would show it. The script holds until the line is logged.
+static void Windowdark_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
+	PendingCaptures.push_back({true, area, step.Argument, "", 0});
+}
+
+
+// windowred <name> <x> <y> <w> <h>: logs one `AUTOTEST windowred` line with the mean red, green and blue of that window
+// rectangle and the number of its pixels whose red is 192 or more and exceeds both green and blue by 64 or more. The
+// view is not redrawn whole first, so the line shows what the player sees, stale parts of the cached map layer included.
+static void Windowred_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
+	PendingCaptures.push_back({true, area, step.Argument, "", 0, true});
+}
+
+
+static int LaserPinTick = -1;
+static int LaserPinBrightness = 0;
+
+
+// laserpin <tick> <brightness>: draws every airstrike laser line at that wall-clock tick (milliseconds / 128) and
+// brightness (190 to 270) instead of the live ones, so a measurement of the line repeats; a negative tick ends the pin.
+static void Laserpin_Step(StepType const & step)
+{
+	LaserPinTick = Number(step.Words, 2, -1);
+	LaserPinBrightness = Number(step.Words, 3, 255);
+	DebugString("AUTOTEST laserpin tick %d brightness %d\n", LaserPinTick, LaserPinBrightness);
 }
 
 
@@ -6679,8 +6868,60 @@ static void Statedump_Step(StepType const & step)
 // perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
 static void Perflog_Step(StepType const & step)
 {
-	Perf_Set_Enabled(step.Argument_Int() != 0);
-	DebugString("AUTOTEST perflog %d\n", (int)Perf_Enabled);
+	Perf_Set_User(PERF_USER_LOG, step.Argument_Int() != 0);
+	DebugString("AUTOTEST perflog %d\n", (int)Perf_Has_User(PERF_USER_LOG));
+}
+
+
+// perfoverlay <0|1|2|report>: sets the performance overlay's level as its key does, or logs the numbers it shows.
+static void Perfoverlay_Step(StepType const & step)
+{
+	if (step.Argument == "report") {
+		UIPerf_Overlay_Report();
+		return;
+	}
+	Perf_Overlay_Set_Level(step.Argument_Int());
+	DebugString("AUTOTEST perfoverlay %d recording %d\n", Options.PerfOverlay, (int)Perf_Enabled);
+}
+
+
+// keyrect <x> <y> <w> <h>: logs how many pixels of the last presented frame in that screen rectangle hold the map layer key.
+static void Keyrect_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 2, 0), Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0));
+	DebugString("AUTOTEST keyrect %d,%d %dx%d keyed %llu of %d\n", area.X, area.Y, area.Width, area.Height, Video_Count_Keyed_Pixels(area), area.Width * area.Height);
+}
+
+
+// stretchprobe: stretches a 2x2 block pattern to 8x8 and shrinks it back for each pairing of ordinary and watched
+// surfaces, and logs which pairings put every pixel where the sampling puts it. Each should read ok.
+static void Stretchprobe_Step(StepType const &)
+{
+	for (int pairing = 0; pairing < 4; pairing++) {
+		bool const watched_source = (pairing & 1) != 0;
+		bool const watched_dest = (pairing & 2) != 0;
+		DSurface source(16, 16, watched_source);
+		DSurface dest(32, 32, watched_dest);
+		for (int y = 0; y < 16; y++) {
+			unsigned short * row = (unsigned short *)((char *)source.Get_Buffer() + y * source.Stride());
+			for (int x = 0; x < 16; x++) {
+				row[x] = (unsigned short)(1 + y * 16 + x);
+			}
+		}
+		dest.Fill_Rect(dest.Get_Rect(), 0);
+		// Source 4..11 (8 wide) to destination 10..25 (16 wide): each source pixel covers two destination pixels.
+		bool const drawn = dest.Blit_From(Rect(10, 10, 16, 16), source, Rect(4, 4, 8, 8));
+		int wrong = 0;
+		for (int y = 0; y < 32; y++) {
+			unsigned short const * row = (unsigned short const *)((char const *)dest.Get_Buffer() + y * dest.Stride());
+			for (int x = 0; x < 32; x++) {
+				bool const inside = x >= 10 && x < 26 && y >= 10 && y < 26;
+				unsigned short const wanted = inside ? (unsigned short)(1 + (4 + (y - 10) / 2) * 16 + 4 + (x - 10) / 2) : 0;
+				wrong += (row[x] != wanted);
+			}
+		}
+		DebugString("AUTOTEST stretchprobe source %s dest %s drawn %d wrong %d %s\n", watched_source ? "watched" : "plain", watched_dest ? "watched" : "plain", drawn ? 1 : 0, wrong, (drawn && wrong == 0) ? "ok" : "FAIL");
+	}
 }
 
 
@@ -6969,6 +7210,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
 		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
 		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
+		{"gpushadowcount", [](StepType const & step) {GpuMap_Count_Shadows(); DebugString("AUTOTEST %s\n", step.Command.c_str());}},
 		{"drawprobe", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Probe);}},
 		{"shield", Shield_Step},
 		{"bridge", Bridge_Cell_Step},
@@ -6976,11 +7218,13 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wallcensus", Wall_Census_Step},
 		{"bridgearea", Bridge_Area_Step},
 		{"bridgeunit", Bridge_Unit_Step},
+		{"bridgeobj", Bridge_Object_Step},
 		{"repairbridge", Repair_Bridge_Step},
 		{"bridgehit", Bridge_Hit_Step},
 		{"bridgehut", Bridge_Hut_Step},
 		{"bridgedecks", Bridge_Decks_Step},
 		{"concretehit", Concrete_Hit_Step},
+		{"bridgefix", Bridge_Fix_Step},
 		{"passable", Passable_Step},
 		{"targetaction", Target_Action_Step},
 		{"enemystrike", Enemy_Strike_Step},
@@ -7091,6 +7335,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"view", View_Step},
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
+		{"windowresize", Windowresize_Step},
 		{"windowclick", [](StepType const & step) {Window_Click(step, 1);}},
 		{"commandbutton", Commandbutton_Step},
 		{"beams", Beams_Step},
@@ -7100,6 +7345,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"xbutton", Xbutton_Step},
 		{"mapclick", Mapclick_Step},
 		{"cell", Cell_Step},
+		{"shroudhash", Shroudhash_Step},
+		{"offmapcell", Offmapcell_Step},
 		{"water", Water_Step},
 		{"terrain", Terrain_Step},
 		{"raise", Raise_Step},
@@ -7119,6 +7366,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"neutral", [](StepType const & step) {Own_Step(step, Civilian_House(), "no civilian house");}},
 		{"enemy", [](StepType const & step) {Own_Step(step, First_Computer_House(true), "no enemy house");}},
 		{"face", Face_Step},
+		{"turretface", Turretface_Step},
 		{"pitch", Pitch_Step},
 		{"barrelpitch", Barrelpitch_Step},
 		{"voxelshade", Voxelshade_Step},
@@ -7212,6 +7460,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"recoil", Recoil_Step},
 		{"unitrecoil", Unitrecoil_Step},
 		{"rock", Rock_Step},
+		{"settilt", Settilt_Step},
 		{"statics", Statics_Step},
 		{"enterprobe", Enterprobe_Step},
 		{"supers", Supers_Step},
@@ -7274,6 +7523,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wheel", Wheel_Step},
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
+		{"windowdark", Windowdark_Step},
+		{"windowred", Windowred_Step},
+		{"laserpin", Laserpin_Step},
 		{"glideclock", Glideclock_Step},
 		{"overlaypresent", Overlay_Present_Step},
 		{"scriptedzoom", Scriptedzoom_Step},
@@ -7282,7 +7534,10 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"statedump", Statedump_Step},
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
+		{"perfoverlay", Perfoverlay_Step},
 		{"uploadverify", Uploadverify_Step},
+		{"keyrect", Keyrect_Step},
+		{"stretchprobe", Stretchprobe_Step},
 		{"hash", Hash_Step},
 		{"statecrc", Statecrc_Step},
 		{"syncrec", Syncrec_Step},
@@ -7311,6 +7566,17 @@ void Run(StepType const & step)
 	DebugString("AUTOTEST unknown command %s\n", step.Command.c_str());
 }
 
+}
+
+
+bool AutoTest_Airstrike_Line_Pin(unsigned & tick, int & brightness)
+{
+	if (LaserPinTick < 0) {
+		return(false);
+	}
+	tick = (unsigned)LaserPinTick;
+	brightness = LaserPinBrightness;
+	return(true);
 }
 
 
@@ -7497,6 +7763,48 @@ T * First_Followed(DynamicVectorClass<T *> & list)
 
 
 /// <summary>
+/// Holds the game while a capture a step asked for is on its way. The first call draws the frame the step ran on
+/// and asks for the capture, and the calls after it present until the capture is written. A capture that takes more
+/// than Capture_Timeout milliseconds is logged as failed and dropped.
+/// </summary>
+/// <returns>bool; Is a capture pending? The main loop runs no game frame then.</returns>
+bool AutoTest_Capture_Hold(void)
+{
+	if (!Active || PendingCaptures.empty()) {
+		return(false);
+	}
+	PendingCapture & capture = PendingCaptures.front();
+	char const * const name = capture.Red ? "windowred" : (capture.Measure ? "windowdark" : "windowshot");
+	if (capture.Started == 0) {
+		capture.Started = std::max<unsigned int>(timeGetTime(), 1);
+		RenderBlend = 1.0;
+		if (!capture.Red) {
+			Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		}
+		Map.Render();
+		bool const asked = capture.Measure ? Backend_Request_Window_Measure(capture.Area, capture.Label.c_str(), capture.Red)
+			: Backend_Request_Window_Capture(capture.Path.c_str());
+		if (!asked) {
+			DebugString("AUTOTEST %s %s FAILED no renderer\n", name, capture.Label.c_str());
+			PendingCaptures.pop_front();
+			return(!PendingCaptures.empty());
+		}
+	} else if (!Backend_Window_Capture_Pending()) {
+		PendingCaptures.pop_front();
+		return(!PendingCaptures.empty());
+	} else if (timeGetTime() - capture.Started > Capture_Timeout) {
+		DebugString("AUTOTEST %s %s FAILED no capture in %u ms\n", name, capture.Label.c_str(), Capture_Timeout);
+		PendingCaptures.pop_front();
+		return(!PendingCaptures.empty());
+	}
+	Video_Present();
+	Call_Back();
+	Sleep(1);
+	return(true);
+}
+
+
+/// <summary>
 /// Plays every step whose frame has been reached. Call once per game logic frame.
 /// </summary>
 void AutoTest_Frame(void)
@@ -7525,6 +7833,10 @@ void AutoTest_Frame(void)
 			Run(step);
 		}
 		Next++;
+		// A capture step ends the frame's steps, so the capture shows the game as that step left it.
+		if (!PendingCaptures.empty()) {
+			break;
+		}
 	}
 
 	C4_Watch_Frame();

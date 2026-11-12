@@ -74,6 +74,7 @@
 #include "tube.h"
 #include "unit.h"
 #include "unittype.h"
+#include "pathahead.h"
 #include "wave.h"
 
 #include "layer.hh"
@@ -512,6 +513,11 @@ void DriveLocomotionClass::Unlimbo(void)
  *   09/26/1993 JLB : Created.                                                                 *
  *   04/15/1994 JLB : Converted to member function.                                            *
  *=============================================================================================*/
+// True while Start_Of_Move runs for a unit that finished a track in the same step. Moves start
+// on the game thread only.
+static bool IsStartAfterTrack = false;
+
+
 bool DriveLocomotionClass::Process(void)
 {
 	Set_Slope(LinkedTo->Get_Cell_Ptr()->Ramp);
@@ -534,7 +540,9 @@ bool DriveLocomotionClass::Process(void)
 		if (!LinkedTo->IsActive) return(false);
 		if (TrackNumber == -1 && (Is_Moving() || LinkedTo->Path[0] != FACING_NONE) && (LinkedTo->RTTI != RTTI_UNIT || !((UnitClass*)LinkedTo)->IsDumping)) {
 			bool res = false;
+			IsStartAfterTrack = true;
 			Start_Of_Move(res);
+			IsStartAfterTrack = false;
 			if (res) return(false);
 			if (!LinkedTo->IsActive) return(false);
 			While_Moving(true);
@@ -605,6 +613,13 @@ bool DriveLocomotionClass::Process(void)
 		}
 	}
 
+	After_Move_Step();
+	return(Is_Moving());
+}
+
+
+void DriveLocomotionClass::After_Move_Step(void)
+{
 	if (Is_Moving_Now() && (Frame % 10) == 0) {
 		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER) {
 			Spawn_Wake(LinkedTo->PositionCoord);
@@ -616,8 +631,26 @@ bool DriveLocomotionClass::Process(void)
 			LinkedTo->Set_Speed(0);
 		}
 	}
+}
 
-	return(Is_Moving());
+
+void DriveLocomotionClass::Late_Start(bool after_track)
+{
+	if (TrackNumber != -1 && IsDriving) {
+		return;
+	}
+	bool stop = false;
+	IsStartAfterTrack = after_track;
+	Start_Of_Move(stop);
+	IsStartAfterTrack = false;
+	if (stop || !LinkedTo->IsActive) {
+		return;
+	}
+	While_Moving(after_track);
+	if (!LinkedTo->IsActive) {
+		return;
+	}
+	After_Move_Step();
 }
 
 
@@ -1412,6 +1445,10 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 		if (LinkedTo->PathDelay != 0) {
 			return(false);
 		}
+		if (Path_Ahead_Put_Off(LinkedTo, DestinationCoord.As_Cell(), 0, IsStartAfterTrack)) {
+			stop_processing = true;
+			return(false);
+		}
 		LinkedTo->PathDelay = Rule->PathDelay * TICKS_PER_MINUTE;
 
 		if (!LinkedTo->Basic_Path(DestinationCoord.As_Cell())) {
@@ -1635,6 +1672,10 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				}
 				if (LinkedTo->PathDelay == 0) {
 					bool around_blockage = LinkedTo->IsToPathAroundBlockage && LinkedTo->BlockagePathDelay == 0;
+					if (Path_Ahead_Put_Off(LinkedTo, DestinationCoord.As_Cell(), (around_blockage != 0) + 1, IsStartAfterTrack)) {
+						stop_processing = true;
+						return(false);
+					}
 					bool ok = LinkedTo->Basic_Path(DestinationCoord.As_Cell(), 0, (around_blockage != 0) + 1);
 					if (LinkedTo == NULL) {
 						stop_processing = true;
@@ -2947,3 +2988,55 @@ DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[71]
 	{14,	14,	DIR_SW,	F_T},                                                           // Drive onto the middle of a tank bunker, heading southwest.
 	{14,	14,	DIR_NW,	F_X}                                                            // Drive onto the middle of a tank bunker, heading northwest.
 };
+
+
+/// <summary>
+/// Names the path this object will ask for in the coming Process call, as far as its state
+/// before the frame's object loop shows it.
+/// </summary>
+/// <returns>bool; Is a request expected? `to` and `avoid` are set when it is.</returns>
+bool DriveLocomotionClass::Predict_Path(Cell & to, int & avoid)
+{
+	if (DestinationCoord == COORD_NONE || LinkedTo->PathDelay != 0 || (TrackNumber != -1 && IsDriving)) {
+		return(false);
+	}
+
+	// The states in which Process returns or waits before Start_Of_Move asks for a path.
+	if (Rule->IsMissileLaunchHoldsMove && LinkedTo->SpawnManager && LinkedTo->SpawnManager->Launching_Count() > 0) {
+		return(false);
+	}
+	if (LinkedTo->NavCom != NULL && LinkedTo->NavCom->RTTI == RTTI_CELL && LinkedTo->PositionCell == ((CellClass *)LinkedTo->NavCom)->CellID) {
+		return(false);
+	}
+	if (LinkedTo->CurrentMission == MISSION_GUARD && !IsDriving && LinkedTo->PositionCoord == DestinationCoord) {
+		return(false);
+	}
+	if (LinkedTo->PrimaryFacing.Is_Rotating() || IsRotating || LinkedTo->Mission == MISSION_UNLOAD) {
+		return(false);
+	}
+	if (LinkedTo->IsLocked && LinkedTo->Mission != MISSION_ENTER && !LinkedTo->Is_In_Same_Zone(DestinationCoord)) {
+		return(false);
+	}
+	if (LinkedTo->StunDuration > 0 || LinkedTo->ParalysisTimer != 0) {
+		return(false);
+	}
+	to = DestinationCoord.As_Cell();
+	FacingType facing = LinkedTo->Path[0];
+	if (facing == FACING_NONE) {
+		avoid = 0;
+		return(Is_Moving());
+	}
+	if (facing == FACING_COUNT) {
+		return(false);
+	}
+	if (DIR_MIN < LinkedTo->PrimaryFacing.Current() - DirType(facing)) {
+		return(false);
+	}
+	Coord dest = Adjacent_Cell(LinkedTo->PositionCoord, facing);
+	int cell_height = Map[(Coord const &)LinkedTo->PositionCoord].Height + (LinkedTo->IsOnBridge ? BRIDGE_CELL_HEIGHT : 0);
+	if (LinkedTo->Can_Enter_Cell(&Map[dest.As_Cell()], facing, cell_height) != MOVE_MOVING_BLOCK) {
+		return(false);
+	}
+	avoid = (LinkedTo->IsToPathAroundBlockage && LinkedTo->BlockagePathDelay == 0) ? 2 : 1;
+	return(true);
+}

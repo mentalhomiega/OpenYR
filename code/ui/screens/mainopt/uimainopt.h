@@ -12,6 +12,8 @@
 #include "ui/uiscreen.h"
 
 #include <memory>
+#include <string>
+#include <vector>
 
 class UIViewClass;
 
@@ -24,6 +26,8 @@ enum UIMainOptionsChoice
 	UI_MAIN_OPTIONS_SOUND,
 	UI_MAIN_OPTIONS_KEYBOARD,
 	UI_MAIN_OPTIONS_MODS,
+	// A declared settings page; Page names it.
+	UI_MAIN_OPTIONS_PAGE,
 };
 
 
@@ -31,6 +35,8 @@ struct UIMainOptionsState
 {
 	bool SoundEnabled = false;
 	int Top = -1;
+	// A button for each declared settings page, between Mods and Main Menu. Name is the page's id.
+	std::vector<UISettingsTabEntry> Pages;
 };
 
 
@@ -43,6 +49,8 @@ class UIMainOptionsPresenterClass : public UIPresenterClass
 
 		UIMainOptionsState State;
 		UIMainOptionsChoice Choice = UI_MAIN_OPTIONS_LEAVE;
+		// The id of the declared page picked, with UI_MAIN_OPTIONS_PAGE.
+		std::string Page;
 };
 
 
@@ -50,4 +58,5 @@ std::unique_ptr<UIViewClass> UI_Main_Options_View(UIMainOptionsPresenterClass & 
 
 void UI_Main_Options_State(UIMainOptionsState & state);
 
-UIMainOptionsChoice UI_Main_Options_Dialog(void);
+// Returns the player's choice, and with UI_MAIN_OPTIONS_PAGE sets page to the id of the declared page picked.
+UIMainOptionsChoice UI_Main_Options_Dialog(std::string & page);

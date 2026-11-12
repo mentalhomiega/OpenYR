@@ -1,0 +1,44 @@
+; A north-south high bridge span on Kaliforn: deck overlay 25 down column 80 on rows 67-71 (banks at height 6, deck cells
+; at height 2 plus the bridge height). gamemd treats both axes with the same deck flags and the same span state machine
+; (0x576BA0, 0x576770). A Grizzly tank and a GI cross from 80,62 to 80,76. A Rhino tank and a Conscript are then ordered
+; onto the deck at 80,69 and 80,68, and the deck at 80,69 takes two weapon hits (bridgehit, Map.Damage_Bridge).
+; Expected: the crossing units read onbridge 1 at z 624 on the deck rows and onbridge 0 on the banks, and reach the far
+; bank. A north-south deck starts at overlay data 9, so the state values read 9 higher than on an east-west span: the
+; first hit marks 80,69 (od 15), the second removes it (overlay -1) and marks 80,68 and 80,70 with 16 and 17. Right after
+; the removal the Rhino reads falling 1 with onbridge 0 and is gone later; the Conscript on 80,68 stays on the deck
+; beside the gap.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-high-ns-kaliforn.txt -Build agent30 -Map Kaliforn.mmx -Seconds 250 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridge [0-9])| wait)|Exception"
+30 reveal
+31 view 80 69
+40 grantunit MTNK 80 62
+41 grantunit E1 81 62
+60 move MTNK 80 76
+61 move E1 80 77
+145 bridgeobj MTNK
+160 bridgeobj MTNK
+175 bridgeobj MTNK
+230 bridgeobj E1
+260 bridgeobj E1
+300 waitcell MTNK 80 76 1 1500
+301 bridgeobj MTNK
+302 waitcell E1 80 77 1 1500
+303 bridgeobj E1
+310 grantunit HTNK 80 62
+311 grantunit E2 81 62
+320 move HTNK 80 69
+321 move E2 80 68
+330 waitcell HTNK 80 69 0 1500
+331 waitcell E2 80 68 0 1500
+340 bridgeobj HTNK
+341 bridgeobj E2
+350 bridgehit 80 69
+351 bridge 80 69
+352 bridgehit 80 69
+353 bridge 80 69
+354 bridge 80 68
+355 bridge 80 70
+356 bridgeobj HTNK
+357 bridgeobj E2
+500 bridgeobj HTNK
+501 bridgeobj E2
+502 quit

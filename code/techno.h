@@ -40,6 +40,7 @@ bool Attack_Move_Key_Held(void);
 bool Attack_Move_Pending(void);
 bool All_Selected_Can_Attack_Move(void);
 
+#include "_rtti.h"
 #include "_voxel.h"
 #include "audio/audiohandle.h"
 #include "attacheffect.h"
@@ -277,6 +278,11 @@ class TechnoClass :	public RadioClass,
 		// The airstrike designator that marks this structure, and the structure this object's airstrike marked (both NULL when none).
 		TechnoClass * AirstrikeMarkedBy;
 		TechnoClass * AirstrikeMarkedTarget;
+
+		// While a structure is marked, the mark timer runs and the tint stage and its timer step the structure's brightness pulse.
+		CDTimerClass<FrameTimerClass> AirstrikeMarkTimer;
+		CDTimerClass<FrameTimerClass> AirstrikeTintTimer;
+		int AirstrikeTintStage;
 		void Mark_Airstrike_Target(AbstractClass * target);
 		void Clear_Airstrike_Designation(void);
 
@@ -322,6 +328,9 @@ class TechnoClass :	public RadioClass,
 		// Parasites: the one this object is when its primary warhead is Parasite, and the one inside this object.
 		std::optional<ParasiteClass> ParasiteImUsing;
 		TechnoClass * ParasiteEatingMe;
+
+		// Until this frame no parasite weapon fires at this foot object, because a parasite has just leapt at it.
+		int ParasiteLeapFrame;
 
 		// The team this object was on when a LimboLaunch shot took it off the map (RejoinTeamIfLimboed). Cleared when that team is deleted.
 		TeamClass * OldTeam;
@@ -953,12 +962,12 @@ class TechnoClass :	public RadioClass,
 		bool Is_Immune_To_Psionic_Weapons(void) const;
 		bool Is_Immune_To_Psionics(void) const;
 		bool Should_Use_High_Arc(int which) const;
-		double Target_Threat(TechnoClass * target, Coord const & firing_coord = COORD_NONE) const;
+		double Target_Threat(TechnoClass * target, Coord const & firing_coord = COORD_NONE, std::optional<int> known_weapon_index = std::nullopt) const;
 
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		bool Evaluate_Cell(ThreatType method, int mask, Cell const & cell, int range, TechnoClass const ** object, int & value, int zone=0) const;
 		bool Evaluate_Object(ThreatType method, int mask, int range, TechnoClass const * object, int & value, int zone=-1, Coord const & coord=COORD_NONE) const;
-		bool Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const;
+		bool Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer, std::optional<int> & object_index) const;
 		bool Passes_Mirage_Roll(TechnoClass const * object) const;
 		bool Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const;
 		int Evaluate_Just_Cell(Cell const & cell) const;
@@ -1045,8 +1054,11 @@ class TechnoClass :	public RadioClass,
 		*/
 		virtual int Apparent_Brightness(int brightness = 1000) const;
 		int Iron_Curtain_Brightness(int brightness) const;
+		int Airstrike_Tint_Brightness(int brightness) const;
+		bool Is_Airstrike_Tinted(void) const;
 		ConvertClass * Effect_Converter(ColorScheme * scheme) const;
 		void Iron_Tint_AI(void);
+		void Airstrike_Tint_AI(void);
 		void Start_Turret_Recoil(void);
 		void Turret_Recoil_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
@@ -1176,13 +1188,17 @@ inline bool TechnoClass::Is_In_Same_Zone_As(ObjectClass const * object) const
 
 inline TechnoClass * AbstractClass::As_TechnoClass(void)
 {
-	return(dynamic_cast<TechnoClass *>(this));
+	TechnoClass * techno = ::Dynamic_Cast<TechnoClass *>(this);
+	RTTI_CROSSCHECK(techno == dynamic_cast<TechnoClass *>(this));
+	return(techno);
 }
 
 
 inline TechnoClass const * AbstractClass::As_TechnoClass(void) const
 {
-	return(dynamic_cast<TechnoClass const *>(this));
+	TechnoClass const * techno = ::Dynamic_Cast<TechnoClass const *>(this);
+	RTTI_CROSSCHECK(techno == dynamic_cast<TechnoClass const *>(this));
+	return(techno);
 }
 
 

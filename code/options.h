@@ -57,6 +57,29 @@ enum WeatherMode {
 	WEATHER_SNOW
 };
 
+// What the performance overlay shows (docs/PERFORMANCE.md): Basic the frame rates and graphs, Detailed
+// also the time of each phase and the counts.
+enum PerfOverlayLevel {
+	PERF_OVERLAY_OFF,
+	PERF_OVERLAY_BASIC,
+	PERF_OVERLAY_DETAILED,
+	PERF_OVERLAY_LEVEL_COUNT
+};
+
+// How GpuVoxels orders the layers of one object: Shared by their depth, Ordered as the software draws them, each
+// over the ones before it (docs/GPU_DIRECT_VOXELS.md).
+enum GpuVoxelLayerDepthMode {
+	GPU_VOXEL_LAYER_DEPTH_SHARED,
+	GPU_VOXEL_LAYER_DEPTH_ORDERED
+};
+
+// How GpuVoxels draws a cloaked object: as a plain translucent blend, or with the predator ripple the software
+// applies to a cached voxel picture.
+enum GpuVoxelCloakMode {
+	GPU_VOXEL_CLOAK_TRANSLUCENT,
+	GPU_VOXEL_CLOAK_RIPPLE
+};
+
 // The faction tint of the modern menus. Random picks one of the three when the game starts.
 enum MenuThemeType {
 	MENU_THEME_RANDOM,
@@ -331,9 +354,37 @@ class OptionsClass {
 		bool CloudShadows;
 		int CloudShadowStrength;
 
-		// With GpuRender, vehicles and aircraft that are not composed from a turret are drawn from their
-		// voxels on the GPU (docs/GPU_VOXELS.md). Experimental; the software look is the reference.
+		// With GpuRender, voxel objects are drawn from their voxels on the GPU (docs/GPU_DIRECT_VOXELS.md).
+		// Experimental; the software look is the reference.
 		bool GpuVoxels;
+
+		// With GpuVoxels, an object the GPU draws from its voxels turns to its exact facing, not the nearest of 32.
+		bool GpuVoxelSmooth;
+
+		// With GpuVoxels, how many times finer than the map pixels the GPU draws the map, 1 to 4, or 0 to follow the zoom
+		// (Gpu_Voxel_Pass_Scale).
+		int GpuVoxelScale;
+
+		// With GpuVoxels, a GpuVoxelLayerDepthMode and a GpuVoxelCloakMode.
+		int GpuVoxelLayerDepth;
+		int GpuVoxelCloak;
+		// Places a voxel object's picture on a whole pixel, so a turning object does not wobble by a pixel.
+		// Off places it as the original game does, with the fraction of the scene centre cut off (docs/GPU_VOXELS.md).
+		bool SteadyVoxelPlacement;
+
+		// Off makes overlapping voxel shadows darken the ground once; on darkens it again under each, as the original game does (docs/GPU_VOXELS.md).
+		bool ShadowStacking;
+
+		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
+		bool RenderThread;
+
+		// Campaign and skirmish games started from the menus search unit paths in batches on
+		// PathThreads threads; 0 threads picks a number for this machine (docs/PERFORMANCE.md).
+		bool ParallelPaths;
+		int PathThreads;
+
+		// A PerfOverlayLevel: how much the performance overlay over the map view shows.
+		int PerfOverlay;
 
 		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
 		int Weather;

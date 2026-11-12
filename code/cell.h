@@ -78,8 +78,8 @@ class CellClass : public AbstractClass
 		// The radiation the sites around this cell give it.
 		double RadLevel;
 
-		// The number of gap generators shrouding this cell for the local player.
-		int GapCount;
+		// The human houses a working gap generator keeps this cell shrouded for.
+		HouseSet GapShrouded;
 
 		// The destroyed structure whose rubble this cell draws, set on the structure's top left cell only.
 		BuildingTypeClass * Rubble;
@@ -495,9 +495,8 @@ class CellClass : public AbstractClass
 		unsigned IsAnimAttached:1;
 
 		/*
-		 * Marks a cell lying on a unit's predicted movement path. Toggled by the A*
-		 * pathfinding code so that other units route around cells already claimed by
-		 * a planned path.
+		 * Unused and always false; the saved cell layout keeps the bit. The pathfinder
+		 * holds its predicted path marks itself (AStarClass::PredictedPath).
 		 */
 		unsigned IsPredictedPath:1;
 
@@ -697,7 +696,7 @@ class CellClass : public AbstractClass
 		void Incoming(Coord const & threat=COORD_NONE, bool forced=false, bool nokidding=false, bool bridge=false);
 		void Adjust_Threat(HousesType house, int threat_value);
 		void Force_New_Slope_For_Occupiers(void) const;
-		void Kill_Illegal_Occupiers(void);
+		void Kill_Illegal_Occupiers(bool kill_jumpjets);
 
 		Cell Get_Bridge_Deck_Cell(void) const
 		{

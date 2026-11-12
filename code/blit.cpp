@@ -387,8 +387,9 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 				}
 			}
 		} else {
+			ShadowOnceRows once(height > 0 ? &dest : NULL, dcliprect.X + drect.X, dcliprect.Y + drect.Y);
 			for (int y = 0; y < height; y++) {
-				blitter.BlitForward(dbuffer, sbuffer, srect.Width, current_z, zbuffer_offset, abuffer_offset, alpha);
+				once.Row(dbuffer, srect.Width, [&]() { blitter.BlitForward(dbuffer, sbuffer, srect.Width, current_z, zbuffer_offset, abuffer_offset, alpha); });
 				dbuffer = (void*)(((char*)dbuffer) + dstride);
 				sbuffer = (void*)(((char*)sbuffer) + sstride);
 				if (DepthBuffer != NULL) {
@@ -685,6 +686,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 			height = 0;
 		}
 	}
+	ShadowOnceRows once(consumed ? NULL : &dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y);
 	for (int y = 0; y < height; y++) {
 
 		/*
@@ -701,7 +703,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 			shadow += shadow_pitch;
 		}
 		if (!consumed) {
-			blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock);
+			once.Row(dbuffer, srect.Width, [&]() { blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock); });
 		}
 
 		/*

@@ -1319,6 +1319,8 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 		case RADIO_CAN_LOAD:
 			if (Class->Max_Passengers() == 0 || from == NULL || !House->Is_Ally(from)) return(RADIO_STATIC);
 			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
+			// A vehicle with a parasite inside it may not board (UnitClass radio handler, 0x737602).
+			if (from->Is_Foot() && ((FootClass *)from)->ParasiteEatingMe != NULL) return(RADIO_STATIC);
 			if (Can_Fit_Passenger(from)) {
 				return(RADIO_ROGER);
 			}
@@ -2869,6 +2871,13 @@ bool UnitClass::Is_Composite_Fudged(void) const
 }
 
 
+// Where a rectangle of the scratch surface lands on the destination. The unit is composed at (80, 80) there.
+static Rect Composite_Screen_Rect(Rect const & dirty, Point2D drawpoint)
+{
+	return(Rect(drawpoint.X + dirty.X - 80, drawpoint.Y + dirty.Y - 80, dirty.Width, dirty.Height));
+}
+
+
 /// <summary>
 /// Transfers the composed unit image to the destination surface.
 /// This routine is the last step of drawing a turreted vehicle. The image built up on the
@@ -2883,9 +2892,6 @@ bool UnitClass::Is_Composite_Fudged(void) const
 void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness) const
 {
 	bool const fudge = Is_Composite_Fudged();
-	Point2D pt;
-	pt.Y = (2 * (80 - UnitCompositeDirtyRect.Y) - UnitCompositeDirtyRect.Height) / 2;
-	pt.X = (2 * (80 - UnitCompositeDirtyRect.X) - UnitCompositeDirtyRect.Width) / 2;
 
 	Blitter const * blitter = NULL;
 	int predoffset = 0;
@@ -2908,11 +2914,11 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	case VISUAL_RIPPLE: {
 		int stage = CloakingDevice.Fetch_Stage();
 		if (stage == 0) {
-			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD)));
 		} else if (stage == 1) {
-			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD)));
 		} else {
-			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD)));
 		}
 
 		predoffset = Get_Predator_Offset();
@@ -2933,11 +2939,9 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	}
 	}
 
-	int width = UnitCompositeDirtyRect.Width;
-	Rect rect(drawpoint.X - width / 2 - pt.X,
-		drawpoint.Y - UnitCompositeDirtyRect.Height / 2 - pt.Y,
-		width,
-		UnitCompositeDirtyRect.Height);
+	GpuDraw_Voxel_Cloak(Visual_Character() != VISUAL_NORMAL, Visual_Character() == VISUAL_RIPPLE ? predoffset : -1);
+
+	Rect rect = Composite_Screen_Rect(UnitCompositeDirtyRect, drawpoint);
 
 	if (IsSinking && SinkingYOffset == 0) {
 		((UnitClass *)this)->Calculate_Sinking_Offset(rect.Y + cliprect.Y, UnitCompositeDirtyRect.Height);
@@ -2985,12 +2989,8 @@ bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect c
 		return(false);
 	}
 
-	// The scratch route centres the dirty rectangle, which is the entry's rectangle, on the drawpoint.
 	Rect const dirty(Point2D(entry.X + 80, entry.Y + 80), entry.Width, entry.Height);
-	Point2D pt;
-	pt.Y = (2 * (80 - dirty.Y) - dirty.Height) / 2;
-	pt.X = (2 * (80 - dirty.X) - dirty.Width) / 2;
-	Rect const rect(drawpoint.X - dirty.Width / 2 - pt.X, drawpoint.Y - dirty.Height / 2 - pt.Y, dirty.Width, dirty.Height);
+	Rect const rect = Composite_Screen_Rect(dirty, drawpoint);
 
 	// A composite wholly outside the clip draws nothing in the scratch route either. A clipped one takes
 	// a different depth start there, so it goes that way.
@@ -3118,6 +3118,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
 		cliprect = LogicalSurface->Get_Rect();
 		IsCompositingToEightBitSurface = true;
+		GpuDraw_Composite_Begin(*old_surface);
 	}
 
 	int const key_seed = UseVoxelCache ? 0 : -1;
@@ -3234,7 +3235,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 		if (turret_drawn) {
 			main_matrix.Translate_X(float(Class->TurretOffset * VOXEL_UNITS_PER_LEPTON));
-			main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
+			main_matrix.Rotate_Z(GpuDraw_Facing_Radian(SecondaryFacing.Current()) - GpuDraw_Facing_Radian(PrimaryFacing.Current()));
 
 			// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
 			// The barrel pitches about the turret origin, not FireFLH, as DrawAsVXL does (0x73BB6E-0x73BBBD).
@@ -3287,9 +3288,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			rect = Intersect(rect, Rect(0, 0, TacticalRect.Width, SinkingYOffset - TacticalMap->TacPixelY));
 		}
 		if (!composite_drawn) {
+			GpuDraw_Composite_Show(*LogicalSurface, UnitCompositeDirtyRect);
 			Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
 			LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
 		}
+		GpuDraw_Composite_End();
 		LogicalSurface = old_surface;
 		IsCompositingToEightBitSurface = false;
 	}
@@ -4680,6 +4683,11 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 
 		if (const_cast<UnitClass *>(this) != obj) {
 
+			// A parasite whose victim shares this cell may enter it (UnitClass::CanReach, 0x73F0A0, at 0x73F530).
+			if (ParasiteImUsing.has_value() && ParasiteImUsing->Victim != NULL && ParasiteImUsing->Victim->Get_Cell() == obj->Get_Cell()) {
+				return(MOVE_OK);
+			}
+
 			// A structure in radio contact with this vehicle does not stop it on a cell outside the structure's
 			// NumberImpassableRows (UnitClass::CanReach, 0x73F0A0).
 			if (obj->RTTI == RTTI_BUILDING && obj == Contact_With_Whom() && !((BuildingClass *)obj)->Blocks_Cell(cellptr)) {
@@ -4970,7 +4978,7 @@ std::optional<MoveType> UnitClass::Occupant_Verdict(ObjectClass * obj, MoveType 
 		return(MOVE_NO);
 	}
 
-	FootClass *foot = dynamic_cast<FootClass *>(obj);
+	FootClass *foot = obj->As_FootClass();
 
 	bool is_moving = foot != NULL &&
 			(foot->NavCom || foot->PrimaryFacing.Is_Rotating() || foot->Locomotion->Is_Moving());

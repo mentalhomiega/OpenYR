@@ -1,0 +1,27 @@
+; Units re-route when the high bridge they are heading for is cut. On Potomac a Rhino tank and two GIs are ordered from
+; the west bank across the north bridge (row 49) to the east bank. While they approach, the deck at 84,49 takes two
+; weapon hits and falls, leaving a one-cell gap. The only other crossing is the south bridge on row 129.
+; Expected: the tank, already on the deck at 83,49, turns back; all three units reach the east bank by the south
+; bridge (the three waits are done) and end on Guard there. None stops at the gap.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-high-reroute-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 300 -Filter "AUTOTEST( +(bridgeobj|bridgedecks)| wait)|Exception"
+30 reveal
+31 view 84 49
+40 grantunit HTNK 76 49
+41 grantunit E1 76 50
+42 grantunit E2 76 48
+100 move HTNK 92 49
+101 move E1 92 50
+102 move E2 92 48
+130 bridgehit 84 49
+140 bridgehit 84 49
+141 bridgedecks 79 88 49
+200 bridgeobj HTNK
+201 bridgeobj E1
+202 bridgeobj E2
+600 bridgeobj HTNK
+610 waitcell HTNK 92 49 1 4000
+611 waitcell E1 92 50 1 4000
+612 waitcell E2 92 48 1 4000
+700 bridgeobj HTNK
+701 bridgeobj E1
+702 quit

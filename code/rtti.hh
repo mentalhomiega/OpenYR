@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 
 /**********************************************************************
 **	These enumerations are used to implement RTTI. The target system
@@ -88,3 +90,45 @@ enum RTTIType {
 
 	RTTI_COUNT
 };
+
+
+// Debug builds, and builds configured with OPENTS_RTTI_CROSSCHECK, compare each RTTI-based type test with
+// the dynamic_cast it replaced: RTTI_CROSSCHECK(agrees) counts the call for its source line and logs a
+// disagreement. Other builds drop the argument unevaluated.
+#if defined(_DEBUG) || defined(OPENTS_RTTI_CROSSCHECK)
+void Rtti_Crosscheck(char const * file, int line, bool agrees);
+#define RTTI_CROSSCHECK(agrees) Rtti_Crosscheck(__FILE__, __LINE__, (agrees))
+#else
+#define RTTI_CROSSCHECK(agrees) ((void)0)
+#endif
+
+
+// True for the RTTI values of the FootClass types. UnitClass, InfantryClass and AircraftClass are its only
+// subclasses and the only classes whose Fetch_RTTI returns these values.
+inline bool RTTI_Is_Foot(RTTIType rtti)
+{
+	return(rtti == RTTI_UNIT || rtti == RTTI_INFANTRY || rtti == RTTI_AIRCRAFT);
+}
+
+
+// Casts an object to T when its Fetch_RTTI is the value of T; NULL for anything else, including a NULL
+// object. T must have no subclasses, as UnitClass, InfantryClass, AircraftClass and BuildingClass have none.
+// (Marking them final breaks the link: the compiler then calls AbstractClass::Fetch_RTTI directly.)
+// This is dynamic_cast without the walk up the class hierarchy.
+template <class T, class A>
+inline T * Rtti_Leaf_Cast(A * object, RTTIType rtti)
+{
+	T * leaf = (object != NULL && object->Fetch_RTTI() == rtti) ? static_cast<T *>(object) : NULL;
+	RTTI_CROSSCHECK(leaf == dynamic_cast<T *>(object));
+	return(leaf);
+}
+
+
+// Casts an object to FootClass (T) when it is a unit, infantry or aircraft; NULL for anything else.
+template <class T, class A>
+inline T * Rtti_Foot_Cast(A * object)
+{
+	T * foot = (object != NULL && RTTI_Is_Foot(object->Fetch_RTTI())) ? static_cast<T *>(object) : NULL;
+	RTTI_CROSSCHECK(foot == dynamic_cast<T *>(object));
+	return(foot);
+}

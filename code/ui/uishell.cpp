@@ -829,7 +829,7 @@ void UIShellClass::Tick(void)
 			UIReentryGuardClass updating(InContext);
 			numparse_detail::Nearest_Rounding_Scope const nearest;
 			Context->Update();
-			UIDev_Tick();
+			UIDev_Tick(*Render);
 		}
 
 		for (UIViewClass * view : Modals) {
@@ -848,7 +848,7 @@ void UIShellClass::Tick(void)
 
 		Apply_Cursor_Request();
 
-		bool devactive = UIDev_Active();
+		bool devactive = UIDev_Drawing();
 		if (Documents_Visible() || devactive || DevWasActive) {
 			Host.Mark_Overlay_Dirty();
 		}
@@ -875,7 +875,7 @@ void UIShellClass::Render_Overlay(void)
 	Render->Begin_Frame(frame.X, frame.Y, frame.Width, frame.Height);
 
 	bool documents = Documents_Visible();
-	bool overlays = UIDev_Active();
+	bool overlays = UIDev_Drawing();
 
 	if (documents) {
 		UIReentryGuardClass rendering(InContext);

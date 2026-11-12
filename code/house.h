@@ -951,6 +951,7 @@ class HouseClass : public AbstractClass
 		bool Is_Watching(void) const;
 		HouseClass * Player_View(void) const;
 		bool Is_Player_View(void) const;
+		bool Is_Ally_Of_Player_View(void) const;
 		bool Has_Powered_Unit_Source(TechnoTypeClass const * type) const;
 #ifdef _DEBUG
 		void Debug_Dump(MonoClass *mono) const;

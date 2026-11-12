@@ -162,6 +162,7 @@ set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
 set(OPENTS_BGFX_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/gpumap.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderthread.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp"
 )
 set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
@@ -207,6 +208,9 @@ target_compile_definitions(OpenTS PRIVATE
     _WINDOWS
     NOMINMAX
 )
+if(OPENTS_RTTI_CROSSCHECK)
+    target_compile_definitions(OpenTS PRIVATE OPENTS_RTTI_CROSSCHECK)
+endif()
 
 #
 # ---------------------------------------------------------

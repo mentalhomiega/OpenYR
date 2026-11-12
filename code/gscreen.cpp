@@ -49,6 +49,10 @@
 
 #include "gpudraw.h"
 #include "gpumap.h"
+#include "gpumapvoxel.h"
+#include "gpuvoxel.h"
+#include "objtype.h"
+#include "voxdrsys.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -85,6 +89,7 @@
 #include "dsurface.h"
 #include "video.h"
 #include "shellmap.h"
+#include "vidscale.h"
 #include "viewzoom.h"
 
 #include <algorithm>
@@ -683,7 +688,13 @@ void GScreenClass::Render(void)
 		TacticalMap->IsToRedraw = true;
 	}
 	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
+	ShadowOnce_Set_Enabled(!Options.ShadowStacking);
 	GpuDraw_Plan(gpu_render);
+	// Pictures cached under the old placement are dropped before this frame draws any.
+	if (VoxelDrawSystem::SteadyCenter != Options.SteadyVoxelPlacement) {
+		VoxelDrawSystem::SteadyCenter = Options.SteadyVoxelPlacement;
+		ObjectTypeClass::Clear_Voxel_Indexes();
+	}
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
@@ -701,7 +712,7 @@ void GScreenClass::Render(void)
 	Video_Draw_Probe_Target(CompositeSurface);
 	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
 	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
-	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
+	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0, !Options.ShadowStacking);
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
 	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);
@@ -712,7 +723,10 @@ void GScreenClass::Render(void)
 		weather = GPU_WEATHER_SNOW;
 	}
 	GpuMap_Set_Weather(weather, Options.WeatherStrength);
-	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported());
+	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
+	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Gpu_Voxel_Pass_Scale(Options.GpuVoxelScale, DisplayZoom * InterfaceScale) : 1);
+	GpuVoxel_Set_Shared_Depth(Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);
+	GpuVoxel_Set_Cloak_Ripple(Options.GpuVoxelCloak == GPU_VOXEL_CLOAK_RIPPLE);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

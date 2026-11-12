@@ -1,0 +1,19 @@
+; Boris marks a civilian house that stands half outside the right edge of the view, and the view then pans so the house
+; is in full view. Only the strip the pan uncovers is drawn afresh; the rest of the view comes from the cached map layer.
+; The marked house is tinted whole at P1 (several thousand bright red pixels in its rectangle, as boris-airstrike-tint.txt
+; counts them), and after Boris walks away and the mark lifts it is clear at P2 (a few hundred, the brick around it).
+; Before the mark redrew the structure, the house was tinted at P1 only on the part the pan uncovered, with a straight
+; edge where the strip ended, and that part stayed red at P2 after the mark lifted.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/boris-airstrike-tint-pan.txt -Country 8 -Width 800 -Height 600 -Seconds 120 -Settings "[Video]`nGpuRender=yes" -Filter "AUTOTEST windowred|AUTOTEST airstrike (mark|unmark)|AUTOTEST   cellpixel|Exception" -Uncapped -StopAfterSteps
+30 view 39 44
+35 reveal
+40 grantunit BORIS 44 36
+50 neutral CAHSE02 47 39
+60 cellpixel 47 39
+80 strike BORIS 47 39
+140 view 45 38
+141 cellpixel 47 39
+150 windowred P1 375 265 110 105
+160 move BORIS 40 36
+200 windowred P2 375 265 110 105
+210 quit

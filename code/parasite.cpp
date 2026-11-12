@@ -94,6 +94,23 @@ bool Return_To_Map(TechnoClass * unit, Coord const & at, Dir256 facing)
 
 
 /// <summary>
+/// Is ground water, beach or rock with no bridge spanning bridge_cell? A parasite that is not naval cannot come out
+/// there (ParasiteClass::CanExistOnVictimCell, 0x62AB40). Low bridge overlays count, except the last two of each set.
+/// </summary>
+bool Is_Bridgeless_Ground(CellClass const & ground, CellClass const & bridge_cell)
+{
+	LandType const land = ground.Land_Type();
+	if (land != LAND_WATER && land != LAND_BEACH && land != LAND_ROCK) {
+		return(false);
+	}
+	int const overlay = bridge_cell.Overlay;
+	bool const low_bridge = (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_26)
+		|| (overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && overlay < OVERLAY_CONCRETE_BRIDGE_END1);
+	return(!bridge_cell.IsUnderBridge && !low_bridge);
+}
+
+
+/// <summary>
 /// Returns the point a bite rolls its victim from, side leptons from the victim's center. The point lies a quarter turn from the facing, so the roll tilts the victim sideways.
 /// </summary>
 Coord Bite_Jolt_Point(Coord const & where, short facing, int side)
@@ -168,7 +185,8 @@ bool ParasiteClass::Can_Infect(TechnoClass const * target) const
 
 /// <summary>
 /// Gets into the target when the leap lands (ParasiteClass::TryInfect, 0x62A980). A parasite
-/// that cannot get in comes back onto the map where it leapt from, or is lost if it cannot.
+/// that cannot get in comes back onto the map where it leapt from and enters its idle mission,
+/// or is lost if the map refuses it.
 /// </summary>
 void ParasiteClass::Try_Infect(TechnoClass * target)
 {
@@ -182,8 +200,12 @@ void ParasiteClass::Try_Infect(TechnoClass * target)
 		}
 		Owner->Assign_Target(NULL);
 		Owner->Assign_Destination(NULL);
-		Owner->Assign_Mission(MISSION_GUARD);
+		Owner->Enter_Idle_Mode(false, true);
 		return;
+	}
+	// The owner's drive ends its track here, so it does not carry the owner back along the leap's track when it comes out (ParasiteClass::TryInfect, 0x62AB24).
+	if (Owner->Is_Foot()) {
+		((FootClass *)Owner)->Locomotion->Force_Track(-1, target->PositionCoord);
 	}
 	target->ParasiteEatingMe = Owner;
 	Victim = target;
@@ -453,76 +475,181 @@ void ParasiteClass::Victim_Hit(int damage, TechnoClass const * source)
 
 
 /// <summary>
-/// Brings the parasite out of its victim (ParasiteClass::ExitUnit, 0x62A4A0) onto the
-/// victim's cell, or the nearest cell it can stand on, paralyzed for three rearm delays. A
-/// doomed parasite, or one with no room to come out, is lost.
+/// Brings the parasite out of its victim (ParasiteClass::ExitUnit, 0x62A4A0), paralyzed for
+/// three rearm delays and turned a quarter turn from the victim's facing. It comes out on the
+/// victim's cell, or on the nearest free cell around the victim when that cell is taken; a
+/// naval parasite comes out on the cell beside the victim in that turned direction instead. A
+/// doomed parasite that is not naval, or one that has no cell or cannot stand where the victim
+/// is (see Can_Exist_On_Victim_Cell), is lost.
 /// </summary>
 void ParasiteClass::Exit_Unit(void)
 {
-	Release(Frame < SuppressedUntil, true);
+	TechnoClass * const victim = Victim;
+	if (victim == nullptr || Owner == nullptr) {
+		return;
+	}
+	DirType const facing = victim->PrimaryFacing.Current();
+	DirType const turned((short)(facing.Facing + (facing.As_Facing() < FACING_SE ? 0x3FFF : -0x3FFF)));
+
+	Cell cell = victim->Get_Cell();
+	if (Owner->TClass->IsNaval) {
+		cell = Map[cell].Adjacent_Cell(turned.As_Facing()).Fetch_CellID();
+	} else if (Frame < SuppressedUntil) {
+		Free_Victim();
+		Owner->Delete_Me();
+		return;
+	}
+
+	TechnoTypeClass const * const type = Owner->TClass;
+	int const zone = type->MZone != MZONE_NONE ? Map.Get_Cell_Zone(cell, type->MZone, false) : -1;
+	if (!Map[cell].Is_Clear_To_Move(type->Speed, false, false, zone, type->MZone, -1, true)) {
+		cell = victim->Nearby_Location(nullptr);
+	}
+
+	bool const placed = (cell.X != 0 || cell.Y != 0) && Can_Exist_On_Victim_Cell() && Owner->Unlimbo(Map[cell].Center_Coord(), turned.As_Dir256());
+	Free_Victim();
+	if (!placed) {
+		Owner->Delete_Me();
+		return;
+	}
+	Resume_After_Exit();
+	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
+	if (weapon != nullptr) {
+		Set_Paralysis(Owner, weapon->ROF * 3);
+	}
+	Reset_Grapple();
 }
 
 
 /// <summary>
 /// Lets the parasite out when its victim dies or leaves the map (ParasiteClass::PointerExpired,
-/// 0x62A260), and ends any grapple it held. Unlike Exit_Unit, the parasite is not paralyzed, so
-/// it takes move orders at once. Does nothing when there is no victim.
+/// 0x62A260), facing as the victim faces, at the point Victim_Removed_Exit_Coord gives, and ends
+/// any grapple it held. Unlike Exit_Unit, the parasite is not paralyzed, so it takes orders at
+/// once. A doomed parasite is lost unless the Iron Curtain protects it, and so is one with no
+/// exit point or one the map refuses. Does nothing when there is no victim.
 /// </summary>
 void ParasiteClass::Victim_Removed(void)
 {
-	if (Victim == nullptr || Owner == nullptr) {
+	TechnoClass * const victim = Victim;
+	if (victim == nullptr || Owner == nullptr) {
 		return;
 	}
-	Release(Frame < SuppressedUntil, false);
-	Reset_Grapple();
-}
-
-
-void ParasiteClass::Release(bool doomed, bool from_exit)
-{
-	TechnoClass * victim = Victim;
-	if (victim == nullptr) {
-		return;
-	}
-	victim->ParasiteEatingMe = nullptr;
-	Victim = nullptr;
-	Set_Paralysis(victim, 0);
-
-	if (doomed) {
+	if (Frame < SuppressedUntil && !Owner->Is_Iron_Curtained()) {
+		Free_Victim();
 		Owner->Delete_Me();
 		return;
 	}
-	victim->AngleRotatedSideways = 0.0f;
 
-	Cell cell = victim->Center_Coord().As_Cell();
-	if (Owner->Is_Foot() && ((FootClass *)Owner)->Can_Enter_Cell(&Map[cell]) != MOVE_OK) {
-		cell = victim->Nearby_Location(Owner);
-	}
-	bool const placed = (cell.X != 0 || cell.Y != 0) && Return_To_Map(Owner, Map[cell].Center_Coord(), victim->PrimaryFacing.Current().As_Dir256());
+	Coord const at = Victim_Removed_Exit_Coord();
+	bool const placed = at != COORD_NONE && Return_To_Map(Owner, at, victim->PrimaryFacing.Current().As_Dir256());
+	Free_Victim();
 	if (!placed) {
 		Owner->Delete_Me();
 		return;
 	}
-	// Only an exit through ExitUnit (0x62A4A0) paralyzes the parasite for three rearm delays; PointerExpired (0x62A260) does not.
-	if (from_exit) {
-		Reset_Grapple();
-		WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
-		if (weapon != nullptr) {
-			Set_Paralysis(Owner, weapon->ROF * 3);
+	Resume_After_Exit();
+	Reset_Grapple();
+}
+
+
+/// <summary>
+/// Can the parasite stand where its victim is (ParasiteClass::CanExistOnVictimCell, 0x62AB40)?
+/// Not when the victim is in the air or its cell holds a structure. A parasite that is not naval
+/// also needs a cell that is not water, beach or rock unless a bridge spans it, and a vehicle
+/// parasite needs a cell without a tree or other terrain object.
+/// </summary>
+bool ParasiteClass::Can_Exist_On_Victim_Cell(void) const
+{
+	if (Victim == nullptr || Victim->In_Air()) {
+		return(false);
+	}
+	CellClass const & cell = Map[Victim->Center_Coord()];
+	if (!Owner->TClass->IsNaval) {
+		if (Owner->RTTI == RTTI_UNIT && cell.Cell_Terrain() != nullptr) {
+			return(false);
+		}
+		if (Is_Bridgeless_Ground(cell, cell)) {
+			return(false);
 		}
 	}
+	return(cell.Cell_Building() == nullptr);
+}
+
+
+/// <summary>
+/// Returns where the parasite comes out when its victim is removed (0x62AC30), and sets whether
+/// the parasite stands on a bridge. Where it can stand on the victim's cell, that is the victim's
+/// position, or for a vehicle parasite the center of that cell. Otherwise it is a free spot on
+/// the cell the victim faces, which a parasite that is not naval cannot use when that cell is
+/// water, beach or rock and no bridge spans the victim's cell; COORD_NONE is returned then.
+/// </summary>
+Coord ParasiteClass::Victim_Removed_Exit_Coord(void)
+{
+	TechnoClass const * const victim = Victim;
+	bool const vehicle = Owner->RTTI == RTTI_UNIT;
+	if (Can_Exist_On_Victim_Cell()) {
+		Coord at = victim->PositionCoord;
+		if (vehicle) {
+			at = Map[at].Center_Coord();
+			if (victim->IsOnBridge) {
+				at.Z += BRIDGE_LEPTON_HEIGHT;
+			}
+		}
+		Owner->IsOnBridge = victim->IsOnBridge;
+		return(at);
+	}
+
+	CellClass const & here = Map[victim->Center_Coord()];
+	CellClass const & next = here.Adjacent_Cell(victim->PrimaryFacing.Current().As_Facing());
+	if (!Owner->TClass->IsNaval && Is_Bridgeless_Ground(next, here)) {
+		return(COORD_NONE);
+	}
+	Coord at = next.Closest_Free_Spot(next.Center_Coord());
+	if (vehicle) {
+		at = Map[at].Center_Coord();
+	}
+	bool const raise = Map[at].IsUnderBridge && (victim->IsOnBridge || here.Center_Coord().Z > at.Z);
+	if (raise) {
+		at.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+	Owner->IsOnBridge = raise;
+	return(at);
+}
+
+
+/// <summary>
+/// Clears the link between the parasite and its victim, and ends the victim's paralysis and roll.
+/// </summary>
+void ParasiteClass::Free_Victim(void)
+{
+	TechnoClass * const victim = Victim;
+	victim->AngleRotatedSideways = 0.0f;
+	Set_Paralysis(victim, 0);
+	victim->ParasiteEatingMe = nullptr;
+	Victim = nullptr;
+}
+
+
+/// <summary>
+/// Sets the parasite that has just come back onto the map to idle (ParasiteClass::ExitUnit,
+/// 0x62A4A0, and ParasiteClass::PointerExpired, 0x62A260): it is selected again if it should
+/// be, rejoins the team a LimboLaunch shot took it from when the team takes it, drops its
+/// target and destination, and enters its idle mission, which is Area Guard for a type with
+/// DefaultToGuardArea.
+/// </summary>
+void ParasiteClass::Resume_After_Exit(void)
+{
 	if (IsReselect && Owner->House->Is_Player_Control()) {
+		IsReselect = false;
 		Owner->Select();
 	}
-	IsReselect = false;
-
-	// A unit a LimboLaunch shot took off its team is added back to it here; the team may refuse (ParasiteClass::ExitUnit, 0x62A4A0).
 	if (Owner->OldTeam != nullptr && Owner->Is_Foot()) {
 		Owner->OldTeam->Add((FootClass *)Owner);
 	}
+	Owner->ArchiveTarget = NULL;
 	Owner->Assign_Target(NULL);
 	Owner->Assign_Destination(NULL);
-	Owner->Assign_Mission(MISSION_GUARD);
+	Owner->Enter_Idle_Mode(false, true);
 }
 
 
@@ -536,9 +663,8 @@ void ParasiteClass::Detach(AbstractClass const * target)
 		Set_Grapple_Anim(nullptr);
 		return;
 	}
-	// A victim leaving the map or dying lets the parasite out where it stood, without the exit paralysis (ParasiteClass::PointerExpired, 0x62A260).
-	if (target == Victim && Owner != nullptr) {
-		Release(Frame < SuppressedUntil, false);
+	if (target == Victim) {
+		Victim_Removed();
 	}
 }
 

@@ -39,6 +39,7 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mods/uimods.h"
+#include "ui/screens/settingspage/uisettingspage.h"
 #include "ui/uisettings.h"
 #include "video.h"
 #include "viewzoom.h"
@@ -47,6 +48,7 @@
 #include "color.hh"
 
 #include <optional>
+#include <string>
 
 
 bool Change_Display_Mode(int width, int height);
@@ -95,7 +97,7 @@ static bool Classic_Options_Page(void)
 
 /// <summary>
 /// Brings up the main options dialog.
-/// Opens the sound, display, keyboard, mods and game settings screens on request until the
+/// Opens the sound, display, keyboard, mods, game settings and declared settings pages on request until the
 /// player backs out. A resolution change is offered as a trial first, and the settings are
 /// written out when the player leaves.
 /// </summary>
@@ -120,7 +122,8 @@ void Main_Options_Dialog(void)
 	}
 
 	while (true) {
-		switch (UI_Main_Options_Dialog()) {
+		std::string page;
+		switch (UI_Main_Options_Dialog(page)) {
 			case UI_MAIN_OPTIONS_SOUND:
 				SoundControlsClass().Dialog();
 				break;
@@ -139,6 +142,10 @@ void Main_Options_Dialog(void)
 
 			case UI_MAIN_OPTIONS_SETTINGS:
 				GameControlsClass().Dialog();
+				break;
+
+			case UI_MAIN_OPTIONS_PAGE:
+				UI_Settings_Page_Dialog(page);
 				break;
 
 			default:

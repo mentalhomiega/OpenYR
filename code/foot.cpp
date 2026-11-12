@@ -77,6 +77,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "pathahead.h"
 #include "perfstat.h"
 
 #include "foot.h"
@@ -129,8 +130,10 @@
 #include "tube.h"
 #include "uicontrol.h"
 #include "dbgprint.h"
+#include "drive.h"
 #include "jumpjet.h"
 #include "unit.h"
+#include "walk.h"
 #include "unittype.h"
 #include "vein.h"
 #include "veteranrules.h"
@@ -250,6 +253,7 @@ FootClass::~FootClass(void)
 
 	Feet.Delete(this);
 	TeamPtrTracker.Delete(this);
+	Path_Ahead_Forget(this);
 };
 
 
@@ -438,6 +442,21 @@ bool FootClass::Is_In_Same_Zone(Coord const & coord) const
 
 	return(Map.Is_Same_Cell_Zone(cell2, cell1, zone, from_bridge, Map[cell1].IsUnderBridge, Is_Allowed_To_Leave_Map()));
 	return(0);
+}
+
+
+void FootClass::Late_Move_Start(bool step_flag)
+{
+	if (!IsActive || IsInLimbo || Locomotion == NULL || IsSinking || IsFalling) {
+		return;
+	}
+	IsLocomotorProcessing = true;
+	if (WalkLocomotionClass * walk = dynamic_cast<WalkLocomotionClass *>(Locomotion.get())) {
+		walk->Late_Start(step_flag);
+	} else if (DriveLocomotionClass * drive = dynamic_cast<DriveLocomotionClass *>(Locomotion.get())) {
+		drive->Late_Start(step_flag);
+	}
+	IsLocomotorProcessing = false;
 }
 
 
@@ -975,7 +994,7 @@ int FootClass::Do_MISSION_PATROL(void)
  *=============================================================================================*/
 int FootClass::Do_MISSION_CAPTURE(void)
 {
-	InfantryClass * inf = dynamic_cast<InfantryClass *>(this);
+	InfantryClass * inf = As_InfantryClass();
 
 	/*
 	**	If there is a valid TarCom but the NavCom isn't set, then set the NavCom accordingly.
@@ -1099,7 +1118,7 @@ int FootClass::Do_MISSION_GUARD(void)
 
 	int dtime = Current_Mission_Control().Normal_Delay();
 
-	InfantryClass * inf = dynamic_cast<InfantryClass *>(this);
+	InfantryClass * inf = As_InfantryClass();
 	if (inf != NULL) {
 
 		/*
@@ -1197,7 +1216,7 @@ int FootClass::Do_MISSION_HUNT(void)
 /// <returns>bool; True while the teleport is waiting to jump or holding the object after it.</returns>
 bool FootClass::Is_Chrono_Warping(void) const
 {
-	TeleportLocomotionClass const * teleport = dynamic_cast<TeleportLocomotionClass const *>(Locomotion.get());
+	TeleportLocomotionClass const * teleport = Locomotor_As<TeleportLocomotionClass const>(Locomotion.get());
 	return(teleport != NULL && teleport->Is_Warping());
 }
 
@@ -1215,7 +1234,7 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 	Stop_Driver();
 	Assign_Destination(NULL);
 
-	if (dynamic_cast<TeleportLocomotionClass *>(Locomotion.get()) == NULL) {
+	if (Locomotor_As<TeleportLocomotionClass>(Locomotion.get()) == NULL) {
 		std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
 		carried->Mark_All_Occupation_Bits(0);
 		carried->Stop_Movement_Animation();
@@ -1349,7 +1368,7 @@ void FootClass::Stun(void)
 bool FootClass::Crash(TechnoClass * source)
 {
 	// Nothing else can carry an object down, so one that cannot fall is destroyed where it is.
-	if (HeightAGL <= 0 || IsAttackedByLocomotor || dynamic_cast<JumpjetLocomotionClass const *>(Locomotion.get()) == NULL) {
+	if (HeightAGL <= 0 || IsAttackedByLocomotor || Locomotor_As<JumpjetLocomotionClass const>(Locomotion.get()) == NULL) {
 		return(false);
 	}
 
@@ -2002,6 +2021,11 @@ ResultType FootClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 		if (source != NULL) {
 			source->Assign_Target(NULL);
 		}
+	}
+
+	// The parasite inside reacts to the hit as dealt, before armor or other modifiers change it (FootClass::ReceiveDamage, 0x4D7330).
+	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Victim_Hit(damage, source);
 	}
 
 	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
@@ -4059,8 +4083,7 @@ int FootClass::Do_MISSION_RETREAT(void)
 					cell = Map.Calculated_Cell(House->Starting_Edge(), CELL_NONE, Center_Coord().As_Cell(), TClass->Speed);
 				}
 
-				assert(cell == Cell(0,0));		// An edge cell must be found!
-
+				// With no edge cell found this is the off-map cell, as in gamemd's FootClass::Mission_Retreat (0x4DA2C0).
 				Assign_Destination(&Map[cell]);
 				Status = TRAVELLING;
 			}
@@ -5726,13 +5749,14 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 
 /// <summary>
 /// Looks around once each time SightTimer expires, while this object is in the air, moving now (a hovering
-/// jump jet is not), and owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
-/// aircraft and vehicles. The timer runs whether or not the object qualifies. Infantry keep their
+/// jump jet is not), and owned by an ally of a human player. gamemd's FootClass::Update (0x4DA530) does the same for
+/// aircraft and vehicles of an ally of the local player; asking about every human player instead gives every copy of
+/// a network game the same looks. The timer runs whether or not the object qualifies. Infantry keep their
 /// own once-a-second look in InfantryClass::AI.
 /// </summary>
 void FootClass::Airborne_Look(void)
 {
-	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving_Now() || !House->Is_Ally(PlayerPtr)) {
+	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving_Now() || !House->Is_Ally_Of_Player_View()) {
 		return;
 	}
 	if (SightTimer == 0) {

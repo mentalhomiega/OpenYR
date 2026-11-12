@@ -1,0 +1,20 @@
+; A landed jumpjet on a concrete low bridge section of the east-west family dies with the first hit. On SOV04DMD the
+; span at 95-97,46-56 is made of east-west family pieces (overlays 214 to 232). Rocketeers (JUMPJET) stand on 97,50, in
+; the section of the piece at 96,50 (an east-west section is three cells across, 95 to 97), and on 96,54 in another section; the piece at 96,50 takes two weapon hits
+; (concretehit, Map.Damage_Concrete_Bridge). gamemd's east-west section routine (0x57D530) calls 0x487A10 with its
+; jumpjet argument set after every hit, and 0x487A10 destroys each jumpjet in the section's cells, whether or not it
+; could cross the new ground (0x57D4C3 to 0x57DA97).
+; Expected: the Rocketeer on 97,50 is gone after the first hit (count 1 left, the one on 96,54, full strength). Before
+; the fix it survived both hits.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-concrete-fall-jumpjet-sov04.txt -Build agent30 -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST( +(bridgeobj|concretehit|passable)| wait)|Exception"
+30 reveal
+31 view 96 50
+40 grantunit JUMPJET 97 50
+41 grantunit JUMPJET 96 54
+70 bridgeobj JUMPJET
+80 concretehit 96 50
+85 bridgeobj JUMPJET
+90 concretehit 96 50
+95 bridgeobj JUMPJET
+150 bridgeobj JUMPJET
+151 quit

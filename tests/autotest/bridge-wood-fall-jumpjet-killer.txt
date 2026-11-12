@@ -1,0 +1,22 @@
+; A landed jumpjet on a wood low bridge span dies when the span falls, not before. On Killer the wood bridge runs
+; east-west on rows 66 to 68. A Rocketeer (JUMPJET) stands on 66,67 and another on 72,67; the piece at 66,67 takes two
+; weapon hits (bridgehit, Map.Damage_Bridge). gamemd's wood span routine (0x57BCF0) passes the jumpjet argument to
+; 0x487A10 set only in the stage that brings the span down, and the piece routine (0x57DD50) only when the piece
+; becomes the fallen overlay; 0x487A10 destroys jumpjets in the three cells when it is set.
+; Expected: the Rocketeer on 66,67 is alive after the first hit (66,67 is overlay 80) and gone after the second (overlay
+; 100). The one on 72,67 lives. Before the fix the first survived the second hit.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-wood-fall-jumpjet-killer.txt -Build agent30 -Map Killer.mmx -Seconds 100 -Filter "AUTOTEST( +(bridgeobj|bridgehit|bridge|passable)| wait)|Exception"
+30 reveal
+31 view 66 67
+40 grantunit JUMPJET 66 67
+41 grantunit JUMPJET 72 67
+70 bridgeobj JUMPJET
+72 bridge 66 67
+80 bridgehit 66 67
+85 bridgeobj JUMPJET
+86 bridge 66 67
+90 bridgehit 66 67
+95 bridgeobj JUMPJET
+96 bridge 66 67
+150 bridgeobj JUMPJET
+151 quit

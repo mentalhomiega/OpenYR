@@ -179,7 +179,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 |---|---|---|
 | `SurfaceLock` | `surface.h` | Locks a surface until the end of scope. `As<T>()` is the pixel pointer, `Is_Valid()` is false when the lock failed, and a failed lock is not unlocked. |
 | `ScenarioInitScope` | `globals.h` | Raises `ScenarioInit` until the scope ends, on every path out. |
-| `PerfScope(phase)` | `perfstat.h` | Times a phase. Costs one flag test when `PerfLog` is off, and a phase already running in an outer scope adds nothing. |
+| `PerfScope(phase)` | `perfstat.h` | Times a phase. Costs one flag test while recording is off (neither `PerfLog` nor the performance overlay is on), and a phase already running in an outer scope adds nothing. |
 | `HangWatchDialogScope`, `HangWatchLoadScope`, `HangWatchCounterScope<Counter>` | `hangwatch.h` | Hold the hang watchdog back during a native dialog or a scenario load. |
 | `EmissiveDrawScope(strength)` | `emissive.h` | Sets the emissive draw strength and restores the previous one. |
 | `PlanningRecordScope(recording)` | `planning.h` | While alive with `recording` true, the player's orders become planned orders. |
@@ -199,7 +199,9 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `AUTOTEST_LOG(...)` | `autotest.h` | `DebugString` with an `AUTOTEST ` prefix, only in an unattended run. Its arguments are not evaluated otherwise, so they may follow pointers that exist only in a test. |
 | `AutoTest_Active()` | `autotest.h` | True in an `-AUTOTEST` run. |
 | `Perf_Count(counter, amount)` | `perfstat.h` | Adds to a performance counter while recording is on. |
+| `PerfRing<T>`, `Perf_Summarise`, `Perf_Average_Worst`, `Perf_Newest_Since` | `perfring.h` | A fixed-size ring of the newest values, and the average, nearest-rank 99th percentile and worst of its newest part. |
 | `Hang_Watchdog_Beat()` | `hangwatch.h` | Call from a message pump; only beats from the main thread count. |
+| `Pe_Debug_Id(image, text, size)`, `Pe_Debug_Key(image, text, size)` | `stallcapture.h` | The GUID and age of a loaded image's pdb, as report text or as a symbol store folder name. |
 
 ## INI reading
 
@@ -308,6 +310,15 @@ a default and returns it when the section or entry is missing.
 | `Opposite_Difficulty(d)`, `Computer_Difficulty_Name(d)` | `diff.hh` | The computer difficulty paired with a human one, and its lobby name. |
 | `Key_Bits(shift, ctrl, alt)`, `Key_Bits_From_Window(mods)` | `keyboard.h` | The `WWKEY_*_BIT` modifier bits. |
 
+## Type tests and casts
+
+| Helper | Header | Use |
+|---|---|---|
+| `RTTI_Is_Foot(rtti)` | `rtti.hh` | True for `RTTI_UNIT`, `RTTI_INFANTRY` and `RTTI_AIRCRAFT`, the only `FootClass` types. `Is_Foot()` is this test on `Fetch_RTTI()`. |
+| `As_FootClass()`, `As_UnitClass()`, `As_InfantryClass()`, `As_AircraftClass()`, `As_BuildingClass()`, `As_TechnoClass()` | `abstract.h` | The checked cast from an `AbstractClass`, through `Fetch_RTTI()` instead of `dynamic_cast`. They return NULL for anything else. Use them for a type test on a hot path. |
+| `Locomotor_As<T>(locomotion)` | `loco.h` | The locomotor as `T` when its exact type is `T`, for a final locomotor class such as `JumpjetLocomotionClass`. |
+| `RTTI_CROSSCHECK(agrees)` | `rtti.hh` | In a Debug build, or with `OPENTS_RTTI_CROSSCHECK`, counts a call and logs a disagreement between a fast type test and the `dynamic_cast` it replaced. Counts go to `rtti_crosscheck.txt`. |
+
 ## Mode and state queries
 
 | Helper | Header | Use |
@@ -318,6 +329,20 @@ a default and returns it when the section or entry is missing.
 | `Shellmap_Running()`, `Shellmap_In_Scope()`, `Shellmap_Silent()` | `shellmap.h` | The menu battle is loaded, its session state is swapped in, and its sounds are off. |
 | `Modern_Interface()` | `hud.h` | The modern panel interface is on. |
 | `MPMode_Is_Cooperative()` | `mpmode.h` | The running match is Cooperative. |
+| `house->Player_View()`, `house->Is_Player_View()`, `house->Is_Ally_Of_Player_View()` | `house.h` | The human seat whose view a house feeds, and whether it is one or is allied with one. Every copy of a network game gives the same answers, unlike `PlayerPtr` or `Is_Player_Control()`, so use these in game logic that changes a house's shroud. |
+
+## Client settings
+
+| Helper | File | Use |
+|---|---|---|
+| `Setting<Owner>`, `Settings_Load`, `Settings_Save`, `Settings_Reset` | `settingregistry.h` | One declaration per `RA2MD.INI` key. [SETTINGS.md](SETTINGS.md) describes how to add one. |
+| `Option_Settings()` | `optionsettings.h` | The declared settings of `OptionsClass`. |
+| `Option_Setting_Pages()`, `SettingPage` | `optionsettings.h`, `settingregistry.h` | The settings pages made only of declared rows, in tab order. |
+| `UI_Declared_Page(settings, page, owner)` | `ui/screens/settingspage/uisettingspage.h` | Builds one declared page's rows with the owner's values, for the generic page's presenter. |
+| `UI_Settings_Tab_Bar(pages, offered)`, `UI_Settings_Declared_Tab(index)`, `UI_Tab_Bit(tab)` | `ui/uisettingshost.h`, `ui/uiscreen.h` | The Settings tab bar (built-in tabs, then declared pages), a declared page's tab number, and a tab's bit in an offered mask. |
+| `UI_Setting_Rows`, `UI_Setting_Rows_Refresh`, `UI_Setting_Row_Execute`, `UI_Setting_Rows_Reset`, `UI_Setting_Rows_Changed`, `UI_Setting_Rows_Apply` | `ui/uisettingrows.h` | The rows a page builds from declarations, with their greying and pending values. |
+| `UI_Rml_Setting_Rows_Bind(model, name, rows)` | `ui/rml/rmlsettingrows.h` | Binds the rows for a page's markup. |
+| `Enum_Name(table, value, fallback)`, `Enum_From_Name(table, text, fallback)` | `nametable.h` | Name of an enum value from a table of file names, and the reverse. Each also takes a `std::span`. |
 
 ## Local to one file
 
@@ -329,7 +354,6 @@ to a header when a second file needs it.
 | `For_Technos(filter, action)` | `autotest.cpp` | Runs an action on every techno a filter accepts, re-reading the count each pass. |
 | `Run_Start_Cell(cell, step, part_of_run)` | `map.cpp` | First cell of a bridge run. |
 | `For_Each_Ring_Offset(ring, visit)` | `slaveman.cpp` | Visits the offsets of one square ring. |
-| `Enum_Name(table, value, fallback)` | `options.cpp` | Name of an enum value from a table. |
 | `Find_Type_In(types, name)`, `Type_Name_At(types, id, none)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type by name or ID, or a house by name (including "player"). |
 | `Map.Cross_Bridge_Deck(old, new, bridge_height)` | `map.cpp` | Whether one step dropped onto or rose into a bridge deck. |
 | `Mount_If_Available(name)`, `Add_CC_Expansion_Mix(name)`, `Add_Disk_Expansion_Mix(name)` | `init.cpp` | Mount a mixfile only when the game can find it. |

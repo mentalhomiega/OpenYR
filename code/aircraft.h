@@ -259,13 +259,13 @@ class AircraftClass : public FootClass, public IFlyControl
 
 inline AircraftClass * AbstractClass::As_AircraftClass(void)
 {
-	return(dynamic_cast<AircraftClass *>(this));
+	return(Rtti_Leaf_Cast<AircraftClass>(this, RTTI_AIRCRAFT));
 }
 
 
 inline AircraftClass const * AbstractClass::As_AircraftClass(void) const
 {
-	return(dynamic_cast<AircraftClass const *>(this));
+	return(Rtti_Leaf_Cast<AircraftClass const>(this, RTTI_AIRCRAFT));
 }
 
 

@@ -2578,6 +2578,22 @@ bool HouseClass::Is_Player_View(void) const
 
 
 /// <summary>
+/// Is this house an ally of some house that is a player's view? In a campaign or a skirmish that is
+/// the local player; in a network game it is any human seat, so every copy gives the same answer.
+/// </summary>
+bool HouseClass::Is_Ally_Of_Player_View(void) const
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		if (house->Is_Player_View() && Is_Ally(house)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Does this house have a working structure whose PowersUnit names this type?
 /// </summary>
 bool HouseClass::Has_Powered_Unit_Source(TechnoTypeClass const * type) const

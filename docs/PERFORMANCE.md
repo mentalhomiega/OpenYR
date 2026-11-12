@@ -2,13 +2,16 @@
 
 `[Options] PerfLog=yes` in `RA2MD.INI`, or the `perflog 1` autotest step, makes the game write
 timing and count lines to the debug log once a second. They show where a game frame, a draw and a
-present spend their time. The code is in `code/perfstat.h` and `code/perfstat.cpp`.
+present spend their time. The [performance overlay](#performance-overlay) shows the same timings on
+screen. The code is in `code/perfstat.h` and `code/perfstat.cpp`.
 
 ## Recording
 
-Recording is off by default. While it is off, each timed scope costs one flag test. Turning it on
-clears the counts and starts a new second. Turning it off stops the lines; the timers it had
-started finish without a sample.
+Recording is off by default. It runs while the Perf lines or the performance overlay are on. While
+it is off, each timed scope costs one flag test. Turning recording on clears the counts and the
+overlay's history and starts a new second; turning the Perf lines on while the overlay already
+records starts a new second of lines and keeps the history. Turning recording off stops the lines;
+the timers it had started finish without a sample. The overlay alone writes no Perf lines.
 
 The three kinds of sample:
 
@@ -20,6 +23,10 @@ The three kinds of sample:
 
 A phase nested in another phase also adds to the outer one. `frame.objects` contains
 `frame.pathfind` and `frame.threat`, and `draw.objects` contains `draw.voxels` and `draw.particles`.
+The phase table in `code/perfstat.cpp` names each phase's parent; the overlay builds its breakdown
+from it. `frame.objects` covers the object AI loop alone. Before 2026-11-12 its scope ran to the end
+of `LogicClass::AI`, so older `frame.objects` numbers also hold `map`, `tactical`, `factories` and
+`houses`.
 `frame.threat` contains `frame.ring` (the cell ring walk of an area or range scan) and `frame.eval`
 (the `Evaluate_Object` calls that the ring walk makes for the occupant of a cell). Those calls are the only
 ones in `frame.eval`; the full-map scan's calls are in `frame.threat` alone. The ring walk's own cost,
@@ -58,6 +65,79 @@ not as part of `present.total`. A present whose renderer gives no GPU timer adds
 The gap line has one sample per present that reaches the presenter: the time from that present's start
 to the start of the next one. Its worst value is the longest interval between two presents in the second.
 
+## Performance overlay
+
+The performance overlay shows the frame rates, two frame-time graphs and the time of each phase over
+the top left of the map view. It is for testers: turn it on where the game runs badly and take a
+screenshot for the report. The code is in `code/ui/dev/uiperfoverlay.cpp`.
+
+- The `PerfOverlay` command cycles it through Basic, Detailed and off. Its default key is Ctrl+Shift+P
+  in both control schemes, and the keyboard page rebinds it like any other command.
+- `PerfOverlay=Off|Basic|Detailed` under `[Video]` sets the level at start. The Graphics page shows it as
+  the Performance overlay switch, which picks Basic. The key changes the same setting, so the next save
+  of the settings keeps the level the key left.
+
+It is drawn with Dear ImGui at the window's own resolution, after the frame, so it shows with
+`GpuRender` on and off, in both interfaces and with the render thread. Its text is about 13 pixels high
+when the frame is shown at its own size and is enlarged with the frame, to twice that at 3840x2160
+with the automatic interface scale. It shows only while a game runs,
+not over the menu battle or an open menu. It stays inside the map view, left of the modern build panel
+and above the command bar; where the Detailed level is taller than that space, its last lines are cut.
+
+| Level | Shows |
+|---|---|
+| Basic | The game and drawn frame rates with their frame times, the two graphs, the build and the overlay's own cost |
+| Detailed | Also the time of each phase, the counts, and the window, zoom, renderer, `GpuRender`, interface and render thread |
+
+### What the numbers are
+
+Every number covers the samples of the last 5 seconds, at most 2,048 of each kind.
+
+| Number | How it is computed |
+|---|---|
+| Game fps | 1000 divided by the average time from the end of one game frame to the end of the next, the interval the `Pacing` line measures |
+| Game now, avg, worst | The newest, average and largest of those intervals |
+| 1% low | 1000 divided by the nearest-rank 99th percentile of the intervals: the rate the slowest 1% of frames ran at |
+| logic avg, max | `frame.logic` per game frame |
+| Drawn fps, now, avg, worst, 1% low | The same, from the time between the starts of two presents, as on the `Perf gap` line |
+| draw avg, max | `draw.total` per draw; it includes the present the draw starts |
+
+The graphs show the last 300 frames, the newest at the right, one column each, on a fixed scale of 0
+to 50 ms with dashed lines labelled 16.7 ms (60 frames a second) and 33.3 ms (30 a second). A column
+over 50 ms is cut at the top and marked with a triangle above it. In the game graph the grey column is
+the interval and the white part of it is the logic. The drawn graph shows the time between presents.
+
+The breakdown has one row per phase of the phase table, the game frame on the left and the draw and
+present on the right. A row shows the average and worst time per sample of its kind and a bar of the
+average, full width at 16.7 ms. An indented row is part of the row above it, so a row and its indented
+rows do not add up. Rows marked `~` (`pathfind`, `threat`, `detach`) run inside several rows: the path
+search mostly in `objects`, the target scans in `objects`, `teams` and `houses`, and `detach` in whatever
+removed the object. `gputime` is not part of the present's `total`. A row whose average is under
+0.005 ms and whose worst is under 0.05 ms is left out.
+
+The counts are the totals of the last whole second, as on the `Perf count` line, and the number of
+objects and of units and structures in the game.
+
+A game frame interval includes any time no game frame ran, such as a held window capture or a
+paused game, so the frame after it shows as one long interval.
+
+### Cost
+
+While the overlay is off, it costs the flag test of each timed scope and one test of the level each
+interface pass. While it is on, recording is on, so the timed scopes read the clock as they do with
+`PerfLog=yes`. Building the overlay took 0.07 to 0.19 ms at Basic and 0.17 to 0.37 ms at Detailed per
+game frame, and drawing it 0.004 to 0.023 ms per present, at 3840x2160 and 800x600, with other work
+on the machine. The drawing is part
+of `present.total`. The overlay's last line shows both times. In two alternating pairs of the first
+1,600 frames of the large battle at 3840x2160 with `GpuRender` and `RenderFrameRate=240`, Detailed
+against off with the Perf lines on in both, the process used 582 and 629 ms of processor time a second
+against 565 and 589, and the phase averages differed by less than the noise between the pairs.
+
+The overlay reads the timings and counts and changes nothing the simulation reads.
+
+The `perfoverlay <0|1|2|report>` autotest step sets the level or logs the overlay's numbers
+([AUTOTEST.md](AUTOTEST.md)).
+
 ## Skipped draws
 
 With `RenderFrameRate` above zero, the wait between two game frames redraws the view each
@@ -85,6 +165,8 @@ between two redraws that happen, so a due redraw that is skipped again and again
 | `area modify` | `Area_Modify` calls, including the calls that return 1 at once for a weapon that is not suppressive |
 | `weapon selects` | `What_Weapon_Should_I_Use` calls |
 | `draws skipped` | Redraws that were due in the wait between game frames but had too little time left. See [Skipped draws](#skipped-draws) |
+| `presents busy` | Presents put off because the render thread had not finished the last frame. It stays at zero without `RenderThread`. See [RENDER_THREAD.md](RENDER_THREAD.md) |
+| `gpu voxel parts`, `gpu voxel direct`, `gpu voxel faces` | With `GpuVoxels=yes`, the voxel parts of the passes the GPU drew, those of them a blit shows, and the cube faces their draws submitted, counted only at a voxel scale above 1 and `GpuVoxelLayerDepth=Shared`. See [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) |
 
 The `ring cells` counter is taken only when the cell walk runs. Each radar-map ring cell the walk visits adds one
 counter increment while recording.
@@ -96,7 +178,8 @@ quits. It places 336 objects on frame 10: the player and three computer houses e
 vehicles, 40 infantry and two aircraft, and eight destroyers sit on the lake. The houses are named
 with `houseunit` by their position in the house list (`#1` to `#3`). From frame 600 on, the computer
 houses hunt, the player moves its forces across the map, and focus-fire orders go out.
-`bench-large-battle-zoomed-out.txt` is the same battle with the view set to `zoom 0.5`.
+`bench-large-battle-zoomed-out.txt` is the same battle with the view set to `zoom 0.5`; on XMP08T2 that is zoom 1.00 at 3840x2160, because the map is small.
+`bench-large-battle-xmp04-zoomed-out.txt` is a battle of the same size on XMP04T8, the largest stock map, with the map revealed, for 3840x2160 at the furthest zoom (0.50, a 7546x4245 view); run it with `-Map XMP04T8.MAP -Width 3840 -Height 2160` and three computer players.
 `bench-large-battle-revealed.txt` and `bench-large-battle-revealed-zoomed-out.txt` reveal the map first, and `bench-large-battle-scrolling.txt` moves the view around the middle of the map every four game frames; these three stop at frame 3600.
 
 ```text
@@ -139,6 +222,39 @@ Means of three runs, with other load on the machine (ms):
 | Large battle | 0.008 | 0.006 | 0.99 | 0.97 | 1.9 | 13 |
 
 The big-map "before" is the cache turned off, before the prefetch; the ALL02 "before" is a separate single run of the original code.
+
+## Parallel path searches
+
+`ParallelPaths=yes` searches the paths of walking and driving units in batches on several threads. It is off by default. With it on, paths and the order of some first steps differ from the original game's, so it is a rule of the match: every player plays the same value.
+
+| Game | Where the value comes from |
+|---|---|
+| Campaign or skirmish started from the menus | `ParallelPaths` in `[Options]` of `RA2MD.INI` |
+| Any game started from a launch file | `ParallelPaths` in `[Settings]` of the launch file |
+| Multiplayer started from the menus | Always off for now |
+| Saved game | The value the game was started with |
+
+`PathThreads` in `[Options]` of `RA2MD.INI` is the number of threads on this machine, 1 to 32. The default 0 uses one less than the number of processor threads, at most 8. The thread count does not change any path, so players in one match can use different counts.
+
+Both `RA2MD.INI` keys have a row on the Performance settings page: Parallel path searches and Path search threads.
+
+A frame makes two batches:
+
+- **Before the units move.** Each walking or driving unit that will ask for a path in its turn gets that path searched from the map as it stands at the start of the frame. The unit takes the path when it asks with the same start, goal and avoidance.
+- **After the units move.** A unit that asks for a path with none made for it stops its movement step and goes on a list. The list is searched after the last unit's turn, and each listed unit then repeats its movement step in list order. It starts moving in the same frame; only its place in the frame's order changes.
+
+A player's order reaches its units between frames, so its paths are in the first batch of the next frame, the frame in which the original game searches them. A path a unit asks for during the second batch's repeat steps, and any path of another locomotor, is searched at once on the game thread.
+
+Late-game benchmark, 8 threads, one run each (ms; the two games play out differently, so the figures compare whole runs):
+
+| | `frame.pathfind` mean | worst one-second mean | `frame.logic` mean |
+|---|---:|---:|---:|
+| Off | 3.00 | 88.7 | 6.81 |
+| On | 1.30 | 26.3 | 4.14 |
+
+With it on, 86% of the path requests took a path from a batch. The largest second batch held 370 searches and took 16 ms on 8 threads and 104 ms on 1.
+
+Four environment variables are for development. `OPENYR_PATH_AHEAD=<threads>` overrides the rule and the thread count; 0 turns the batches off. `OPENYR_PATH_THREADS=<threads>` sets the thread count alone; `scripts/run_netsync.ps1 -ParallelPaths -PathThreadsA 1 -PathThreadsB 8` uses it to pair two counts in one match. `OPENYR_PATH_AHEAD_CHECK=1` repeats every batch on one thread with a separate pathfinder and logs `PATHAHEAD CHECK DIFFERENCE` for any path that differs. `OPENYR_PATH_AHEAD_STATS=1` logs a `PATHAHEAD frame` line of counts every 600 frames. On the late-game benchmark the check found no difference, and runs with 1 and 8 threads gave the same 182 game-state hashes.
 
 ## Limits
 
@@ -194,6 +310,13 @@ The modern build panel is drawn eight pixels at a time. At 3840x2160 the `ui` ph
 
 The frame surface's write watch (`WriteWatch_Take` with `steady`) stops resetting a page that two takes in a row found written, because the next write to a reset page is a page fault of about 1,700 cycles. Such a page is reported as written in every take until a full reset, every 32 takes, so the areas redrawn every frame, such as the build panel, cost no faults, and a page that stops being written is still refilled and copied for up to 32 pictures. Only the frame surface uses it. In four alternating pairs of the 4K benchmark the draw phase fell from about 1.45 ms to about 1.1 ms per picture in quiet pairs.
 
+Type tests on the simulation's hot paths use `Fetch_RTTI()` or the exact locomotor type instead of `dynamic_cast`: `Is_Foot`, the `As_...Class` casts, the occupier loop of the jumpjet cloak shimmer, the jumpjet and teleport locomotor tests, and the building test in `What_Weapon_Should_I_Use`. The C++ cast helpers took about 14.6% of the late-game benchmark's samples before and about 0.2% after. In three runs of each benchmark, `frame.logic` went from a mean of 7.08 ms (p95 22.2, worst 429) to 5.62 ms (p95 17.3, worst 333) in the late game, and from 1.03 ms (p95 2.26, worst 18.6) to 0.72 ms (p95 1.47, worst 10.7) in the large battle. A build configured with `-DOPENTS_RTTI_CROSSCHECK=ON` (and every Debug build) compares each replaced test with the `dynamic_cast` and counts the calls in `rtti_crosscheck.txt`. Over one late-game and one large-battle run it made about 330 million and 82 million comparisons, with no disagreement.
+
+## Object removal broadcast
+
+`Detach_This_From_All` has a `detach` frame phase and `detach calls`, `detach visits` and per-kind `detach` counters in the Perf lines. In `bench-mission-all02.txt` (ALL02UMD) a second holds about 260 broadcasts (121 animations, 64 bullets, 51 particles, 18 units, infantry, aircraft or buildings) and 394,000 `Detach` visits, which cost 0.17 ms per frame on average (p95 0.91 ms), 7% of logic. In `bench-bigmap-crossing.txt` (XMP22S8, one computer player) a second holds about 170 broadcasts and 201,000 visits, 0.035 ms per frame, 1% of logic. Bullets and particles cause most of the visits, because only animations have a short tracker of their own. A skip of visits is exact only if every `Detach` override is shown unable to hold a pointer to the removed kind; none has been done.
 ## Target scans
 
 `TechnoClass::Passes_Before_Disguise_Roll` ran the weapon selection and `Can_Fire` first for every candidate, 111,000 times a second in the large battle, although most candidates fail a cheap test such as the type mask or the owner. The fire test now runs after every other rejection in that function, and the type mask test runs right after the limbo and strength test. Every test involved only reads (the fire test, the weapon choice, the line of fire, the range and the capture and parasite checks draw no random number and assign nothing), so the targets chosen and the random draws are the same. A shadow build that ran the old order beside the new one on every candidate and compared the result and the random draw count checked 12.6 million candidates of the 7200-frame large battle with no mismatch; it is not kept in the tree. In the large battle `frame.threat` fell from about 0.82 to about 0.08 ms a game frame and weapon selects from 111,000 to about 600 a second.
+
+A map-wide scan (a hunt order) visits every object on the ground. In the late-game benchmark (7 computer houses, 1,519 objects) 30,588 such scans visited 29.3 million objects in three minutes. About 68% failed the movement zone test, 16% passed every test and cost about 3,000 cycles each (the fire test about 1,400, the weapon choice twice, the threat score), and the rest failed a cheaper test. The zone test now runs right after the limbo and type tests, so most rejected objects are not read any further. The distance to a candidate is measured only when the scan has a range limit, which a map-wide scan does not. The weapon choice made against a candidate by the rejection tests is handed to `Target_Threat` and not made again, and the bridge test in `Passes_After_Disguise_Roll` reads the two cells only when the two objects differ on a bridge. Every moved test only reads, so the targets chosen and the random draws are the same. A shadow build that ran the old rejection tests beside the new ones checked 44.4 million candidates in the late-game benchmark (30,588 full scans, 4.6 million handed-over weapon choices) and 12.8 million in the large battle (57,516 full scans) with no mismatch; it is not kept in the tree. In the late-game benchmark, mean `frame.threat` fell from about 0.95 to 0.85 ms, the worst frame from 207 to 180 ms, and weapon selects from 163,000 to 136,000 a second (two runs each).

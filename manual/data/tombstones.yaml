@@ -274,3 +274,12 @@
   replacement:
     type: key
     id: FiringSyncFrame1
+- type: key
+  id: GpuVoxelPath
+  route: /keys/gpuvoxelpath/
+  search_aliases:
+    - GpuVoxelPath
+  summary: Chose between drawing GPU voxel objects into a shared voxel image and straight into the map view. GpuVoxels now always draws them straight into the map view.
+  replacement:
+    type: key
+    id: GpuVoxels

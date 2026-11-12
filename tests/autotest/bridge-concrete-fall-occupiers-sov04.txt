@@ -1,0 +1,29 @@
+; Units on a concrete low bridge piece that falls die with it. On SOV04DMD the north-south concrete span runs at 95-97,
+; 46-56. A GI is ordered onto the piece at 96,50 and a Rhino tank onto 96,53, then the piece at 96,50 takes weapon hits
+; (concretehit, Map.Damage_Concrete_Bridge) until it falls. gamemd's concrete section hit (0x57CF60 north-south,
+; 0x57D530 east-west) ends every hit with 0x487A10 on the section's three cells, which destroys each object there that
+; can no longer enter its cell.
+; Expected: after the second hit, 96,50 is overlay 232 (fallen, water) with no occupier and the GI's strength is 0, then
+; the GI is gone (count 0). The tank on the intact piece at 96,53 keeps its strength. Before the fix the GI kept standing
+; on the fallen piece over the water with strength 125, its cell still listing it as the occupier.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-concrete-fall-occupiers-sov04.txt -Build agent30 -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST( +(bridgeobj|concretehit|cell [0-9]|passable)| wait)|Exception"
+30 reveal
+31 view 96 50
+40 grantunit E1 98 46
+41 grantunit HTNK 96 47
+50 move E1 96 50
+51 move HTNK 96 53
+60 waitcell E1 96 50 0 1500
+61 waitcell HTNK 96 53 0 1500
+70 bridgeobj E1
+71 bridgeobj HTNK
+72 passable 96 50
+80 concretehit 96 50
+81 concretehit 96 50
+82 passable 96 50
+83 bridgeobj E1
+84 bridgeobj HTNK
+150 bridgeobj E1
+151 bridgeobj HTNK
+152 cell 96 50
+153 quit

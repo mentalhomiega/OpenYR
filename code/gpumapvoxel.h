@@ -9,42 +9,64 @@
 
 #pragma once
 
+#include "rect.h"
+
 #include <cstdint>
-#include <vector>
+#include <functional>
 
 
 struct GpuDrawList;
 
 
-// The voxel image, where the GPU draws the voxel parts of a map pass before the pass shows them. Each
-// part has a tile of the size of its Scene.Region.Bounds; a blit reads its pixels from the tile.
-inline constexpr int GPU_VOXEL_IMAGE_SIZE = 2048;
+// The value a voxel part leaves in the target's emissive plane under its blit while the GPU draws it. A pixel still
+// holding it at the end of the pass takes the part's highlight strength from the part's layers (fs_mapmask.sc and
+// fs_voxelscene.sc use the same value).
+inline constexpr unsigned char GPU_VOXEL_MASK_MARK = 1;
 
-// A blit whose colour index offset is at least this reads the voxel image: the offset minus this is
-// the tile pixel's row times GPU_VOXEL_IMAGE_SIZE plus its column.
-inline constexpr std::uint32_t GPU_VOXEL_BASE = 8388608;
+// With shared (GpuVoxelLayerDepth=Shared), the layers of a part hide each other by depth rather than by drawing order
+// in the passes that follow (docs/GPU_DIRECT_VOXELS.md).
+void GpuVoxel_Set_Shared_Depth(bool shared);
 
-struct GpuVoxelTile
+// With ripple (GpuVoxelCloak=Ripple), a cloaked object is drawn with the predator ripple instead of the plain
+// translucent blend.
+void GpuVoxel_Set_Cloak_Ripple(bool ripple);
+bool GpuVoxel_Cloak_Ripple(void);
+
+// The stencil values a pass has for the blits that blend once a pixel, hard shadows and translucent blits: each such
+// blit passes through its own value from 1 to this, and the pass empties the stencil when the values run out.
+inline constexpr int GPU_VOXEL_STENCILS = 255;
+
+// True when the GPU can draw every voxel part the list's blits show. It draws a part without shadow layers that copy
+// or translucent blits show, whether one prepared object or a composite of hull, turret and barrel, and a part of one
+// prepared shadow that shadow blits show. False also when the voxel programs or textures could not be made.
+bool GpuVoxel_Fits(GpuDrawList const & list);
+
+// Loads the layers of the parts the list's blits show, for GpuVoxel_Draw_Direct to draw at scale. False when the voxel
+// programs are unavailable or the layers do not fit the model store or the lighting rows; GpuVoxel_Draw_Direct then
+// draws nothing of the list.
+bool GpuVoxel_Submit(GpuDrawList const & list, int scale);
+
+// One blit of a voxel part, in area pixels: where the part's Area lands, the blit's rectangle clipped to the area,
+// its depth slice (GPU_VOXEL_SLICES), the values fs_voxelscene.sc reads as u_vblit, and the bgfx render state, without
+// the primitive type, and stencil state its draws take.
+struct GpuVoxelDirectBlit
 {
-	int X = 0;
-	int Y = 0;
+	int Part = 0;
+	int OriginX = 0;
+	int OriginY = 0;
+	Rect Clip;
+	int Slice = 0;
+	float Values[16] = {};
+	std::uint64_t State = 0;
+	std::uint32_t Stencil = 0;
+	// Draws the layers and their voxels last first, so a draw that passes each pixel once takes the voxel the walk
+	// draws last among those at the nearest depth, the one a LEQUAL draw in walk order leaves.
+	bool LastFirst = false;
 };
 
-// Places a tile for each part of the list, in the list's order. False when they do not fit the image.
-bool GpuVoxel_Pack(GpuDrawList const & list, std::vector<GpuVoxelTile> & tiles);
-
-// Draws the parts into the voxel image, in the tiles GpuVoxel_Pack placed. Must be called before the
-// draws that read the image are submitted in the same frame. False when the voxel shaders are
-// unavailable or the layers do not fit the GPU's model store.
-bool GpuVoxel_Submit(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles);
-
-// The bgfx handle index of the voxel image, or bgfx::kInvalidHandle before the first submit.
-std::uint16_t GpuVoxel_Image(void);
-
-// With the check on, copies the voxel image back and keeps what the parts' software results are
-// compared with; GpuVoxel_Compare logs GPU_VOXEL lines once the copy has arrived. Returns the frame
-// the copy arrives in, or 0 when no part has a software result.
-std::uint32_t GpuVoxel_Begin_Check(GpuDrawList const & list, std::vector<GpuVoxelTile> const & tiles, int frame);
-void GpuVoxel_Compare(std::uint32_t frame);
+// Submits the layers of a voxel part into view, which draws into a target at scale times the area; the target needs a
+// depth and stencil attachment when the blit's state or stencil uses one. bind is called before each draw to set the
+// map pass's stores (mapcommon.sh). Call it after GpuVoxel_Submit in the same pass.
+void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & blit, int scale, std::uint16_t view, std::function<void(void)> const & bind);
 
 void GpuVoxel_Shutdown(void);

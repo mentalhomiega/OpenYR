@@ -83,6 +83,7 @@
 #include "msgbox.h"
 #include "nametable.h"
 #include "numparse.h"
+#include "optionsettings.h"
 #include "playerdisplay.h"
 #include "rules.h"
 #include "session.h"
@@ -248,19 +249,6 @@ OptionsClass::OptionsClass(void) :
 	ShowFrameGraph(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
-	GpuRender(true),
-	SoftShadows(false),
-	SoftShadowRadius(3),
-	Shockwaves(false),
-	Bloom(false),
-	BloomStrength(100),
-	WaterRipples(false),
-	WaterRippleStrength(100),
-	CloudShadows(false),
-	CloudShadowStrength(100),
-	GpuVoxels(false),
-	Weather(WEATHER_NONE),
-	WeatherStrength(100),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -288,6 +276,7 @@ OptionsClass::OptionsClass(void) :
 	LastSovietMovie(-1),
 	LastAlliedMovie(-1)
 {
+	Settings_Reset(Option_Settings(), *this);
 }
 
 
@@ -507,13 +496,6 @@ static NameEntry const ColorBlind_Mode_Names[] = {
 	{ "Tritanopia", COLORBLIND_TRITANOPIA },
 };
 
-static NameEntry const Weather_Names[] = {
-	{ "None", WEATHER_NONE },
-	{ "Map", WEATHER_MAP },
-	{ "Rain", WEATHER_RAIN },
-	{ "Snow", WEATHER_SNOW },
-};
-
 static NameEntry const Menu_Theme_Names[] = {
 	{ "Allied", MENU_THEME_ALLIED },
 	{ "Soviet", MENU_THEME_SOVIET },
@@ -719,9 +701,9 @@ void OptionsClass::Load_Settings(void)
 
 	// Turns on the once-a-second Perf lines, as the perflog autotest step does.
 	if (ConfigINI.Get_Bool("Options", "PerfLog", false)) {
-		Perf_Set_Enabled(true);
+		Perf_Set_User(PERF_USER_LOG, true);
 	}
-	DebugString("PerfLog is %s\n", On_Off(Perf_Enabled));
+	DebugString("PerfLog is %s\n", On_Off(Perf_Has_User(PERF_USER_LOG)));
 
 	// Records each skirmish started from a launch file to the Replays folder.
 	if (ConfigINI.Get_Bool("Options", "RecordReplays", false)) {
@@ -758,21 +740,7 @@ void OptionsClass::Load_Settings(void)
 	ShowFrameGraph = ConfigINI.Get_Bool("Video", "ShowFrameGraph", ShowFrameGraph);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
-	GpuRender = ConfigINI.Get_Bool("Video", "GpuRender", GpuRender);
-	SoftShadows = ConfigINI.Get_Bool("Video", "SoftShadows", SoftShadows);
-	SoftShadowRadius = std::clamp(ConfigINI.Get_Int("Video", "SoftShadowRadius", SoftShadowRadius), 1, 16);
-	Shockwaves = ConfigINI.Get_Bool("Video", "Shockwaves", Shockwaves);
-	Bloom = ConfigINI.Get_Bool("Video", "Bloom", Bloom);
-	BloomStrength = std::clamp(ConfigINI.Get_Int("Video", "BloomStrength", BloomStrength), 1, 400);
-	WaterRipples = ConfigINI.Get_Bool("Video", "WaterRipples", WaterRipples);
-	WaterRippleStrength = std::clamp(ConfigINI.Get_Int("Video", "WaterRippleStrength", WaterRippleStrength), 1, 400);
-	CloudShadows = ConfigINI.Get_Bool("Video", "CloudShadows", CloudShadows);
-	CloudShadowStrength = std::clamp(ConfigINI.Get_Int("Video", "CloudShadowStrength", CloudShadowStrength), 1, 400);
-	GpuVoxels = ConfigINI.Get_Bool("Video", "GpuVoxels", GpuVoxels);
-	char weathername[16];
-	ConfigINI.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
-	Weather = Enum_From_Name(Weather_Names, weathername, WEATHER_NONE);
-	WeatherStrength = std::clamp(ConfigINI.Get_Int("Video", "WeatherStrength", WeatherStrength), 1, 400);
+	Settings_Load(Option_Settings(), ConfigINI, *this);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
@@ -973,19 +941,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
-	ConfigINI.Put_Bool("Video", "GpuRender", GpuRender);
-	ConfigINI.Put_Bool("Video", "SoftShadows", SoftShadows);
-	ConfigINI.Put_Int("Video", "SoftShadowRadius", SoftShadowRadius);
-	ConfigINI.Put_Bool("Video", "Shockwaves", Shockwaves);
-	ConfigINI.Put_Bool("Video", "Bloom", Bloom);
-	ConfigINI.Put_Int("Video", "BloomStrength", BloomStrength);
-	ConfigINI.Put_Bool("Video", "WaterRipples", WaterRipples);
-	ConfigINI.Put_Int("Video", "WaterRippleStrength", WaterRippleStrength);
-	ConfigINI.Put_Bool("Video", "CloudShadows", CloudShadows);
-	ConfigINI.Put_Int("Video", "CloudShadowStrength", CloudShadowStrength);
-	ConfigINI.Put_Bool("Video", "GpuVoxels", GpuVoxels);
-	ConfigINI.Put_String("Video", "Weather", Enum_Name(Weather_Names, std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
-	ConfigINI.Put_Int("Video", "WeatherStrength", WeatherStrength);
+	Settings_Save(Option_Settings(), ConfigINI, *this);
 	ConfigINI.Put_String("Video", "HDRHighlights", Enum_Name(HDR_Highlights_Names, HDRHighlights, "Enhanced"));
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));

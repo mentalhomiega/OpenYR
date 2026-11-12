@@ -1,0 +1,20 @@
+; Rocking tilt past the limit: a computer Rhino (HTNK) is tipped 60 degrees sideways, past the 45 degree limit, rocking on at 0.010 rad a frame at frame 160.
+; gamemd's rocking step (TechnoClass 0x70B570) clamps the tilt only when the previous frame was inside the limit, so the Rhino keeps tipping a little further
+; and then eases back; it is not snapped to 45 degrees.
+; Expected: the sideways tilt on the rock lines rises above 1.0472 (60 degrees) to about 1.077 and then falls back to 0; before the fix it dropped to 0.78540 on the first frame.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/rock-tilt-past-limit.txt -Seconds 60 -Filter "AUTOTEST   rock|Exception"
+1 view 62 62
+2 zoom 2.5
+3 reveal
+150 spawn HTNK 64 62
+160 settilt HTNK 60 10
+161 rock HTNK
+162 rock HTNK
+164 rock HTNK
+166 rock HTNK
+170 rock HTNK
+180 rock HTNK
+190 rock HTNK
+200 rock HTNK
+210 rock HTNK
+220 quit

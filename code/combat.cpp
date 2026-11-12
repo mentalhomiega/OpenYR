@@ -384,7 +384,8 @@ static void Rock_Blast_Cells(Coord const & coord, Cell const & cell, int strengt
 
 							tcoord += Coord(rockdirf.X, rockdirf.Y, rockdirf.Z);
 							techno->Rock(tcoord, rocking_force);
-						} else {
+						} else if (warhead->CellSpread > 0.0f) {
+							// A zero-spread warhead rocks only what stands on ground zero and has a firer (0x48A2A0).
 							techno->Rock(coord, rocking_force);
 						}
 					}

@@ -259,7 +259,7 @@ static double RenderCost = 0.0;
 
 
 /// <summary>
-/// With performance recording on, logs once a second how evenly the game frames ended and how much processor time
+/// With the Perf lines on, logs once a second how evenly the game frames ended and how much processor time
 /// the process used. Call it as each game frame ends.
 /// </summary>
 static void Log_Tick_Intervals(void)
@@ -269,7 +269,7 @@ static void Log_Tick_Intervals(void)
 	static std::int64_t window_start = 0;
 	static std::uint64_t window_cpu = 0;
 
-	if (!Perf_Enabled) {
+	if (!Perf_Has_User(PERF_USER_LOG)) {
 		last_tick = 0;
 		return;
 	}
@@ -445,6 +445,13 @@ bool Main_Loop(void)
 	}
 
 	/*
+	**	A script waiting for a window capture runs no frame until the capture is written.
+	*/
+	if (AutoTest_Capture_Hold()) {
+		return(!GameActive);
+	}
+
+	/*
 	**	A paused replay keeps the view drawn and answers the keys and the mouse, so that it can be
 	**	resumed, but runs no frame.
 	*/
@@ -569,6 +576,7 @@ bool Main_Loop(void)
 	{
 		PerfScope logic_scope(PERF_FRAME_LOGIC);
 		Sync_Enter_Frame_Logic();
+		Restore_Off_Map_Cell_Location();
 		Logic.AI();
 	}
 	AutoTest_Frame();
@@ -592,6 +600,7 @@ bool Main_Loop(void)
 		PerfScope queue_scope(PERF_FRAME_QUEUE);
 		Queue_AI();
 	}
+	Remember_Off_Map_Cell_Location();
 	Sync_Leave_Frame_Logic();
 
 	Call_Back();

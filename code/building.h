@@ -406,7 +406,8 @@ class BuildingClass : public TechnoClass
 		bool IsRequiresDamageFires;
 		void Create_Damage_Fires(void);
 		void Remove_Damage_Fires(void);
-		bool IsGapCounted;
+		// The human houses this gap generator's working gap shrouds, fixed when the gap goes up.
+		HouseSet GapShroudedHouses;
 
 		void Create_Gap(void);
 		void Destroy_Gap(void);
@@ -831,13 +832,13 @@ void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 inline BuildingClass * AbstractClass::As_BuildingClass(void)
 {
-	return(dynamic_cast<BuildingClass *>(this));
+	return(Rtti_Leaf_Cast<BuildingClass>(this, RTTI_BUILDING));
 }
 
 
 inline BuildingClass const * AbstractClass::As_BuildingClass(void) const
 {
-	return(dynamic_cast<BuildingClass const *>(this));
+	return(Rtti_Leaf_Cast<BuildingClass const>(this, RTTI_BUILDING));
 }
 
 

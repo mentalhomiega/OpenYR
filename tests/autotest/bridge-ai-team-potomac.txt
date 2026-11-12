@@ -1,0 +1,22 @@
+; A computer team crossing a high bridge on its script. On Potomac a team of two tanks starts on the west bank (75,49
+; and 75,50) and runs "Move to cell" (script line 4, argument y*1000+x) to 92,49 on the east bank, the way a mission's
+; attack waves are sent over a span; the team and its members use the same path code as one ordered unit. The team is
+; started with the autotest's team step, the same way the other team scripts are tested.
+; Expected: both tanks pass over the deck (onbridge 1 at z 624 on deck cells) and finish on the east bank beside 92,49
+; with onbridge 0 and Guard; the team script ends at frame 506 (TEAMTRACE).
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-ai-team-potomac.txt -Build agent30 -Map Potomac.mmx -Seconds 200 -AICountries 1 -Filter "AUTOTEST( +bridgeobj| team)|TEAMTRACE|Exception"
+1 teamtrace 1
+30 reveal
+31 view 84 49
+300 spawn MTNK 75 49
+301 spawn MTNK 75 50
+310 teamini bridge-ai-team-potomac.ini
+320 team TSTBRGT
+400 bridgeobj MTNK
+450 bridgeobj MTNK
+500 bridgeobj MTNK
+600 bridgeobj MTNK
+800 bridgeobj MTNK
+1000 bridgeobj MTNK
+1200 bridgeobj MTNK
+1201 quit

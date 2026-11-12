@@ -10,6 +10,7 @@
 #pragma once
 
 #include "blitter.h"
+#include "draw.hh"
 #include "point.h"
 #include "rect.h"
 #include "voxdrsys.h"
@@ -19,6 +20,11 @@
 #include <new>
 #include <utility>
 #include <vector>
+
+class DirType;
+class MotionLibrary;
+class VoxelLibrary;
+struct GpuVoxelPrepKey;
 
 
 class Coord;
@@ -114,6 +120,11 @@ struct GpuBlit
 	int VoxelY;
 	bool NoPixels;
 
+	// For a voxel blit of a cloaked object, Cloaked; and Predator, the object's predator offset (0 to 399), while the
+	// software would draw it with the ripple, else -1.
+	bool Cloaked;
+	int Predator;
+
 	GpuBlitClass Class() const
 	{
 		if (Colour >= 0) {
@@ -142,19 +153,45 @@ struct GpuAtlas
 };
 
 
-// One voxel object the GPU draws from its voxels instead of from a picture the software rendered.
-struct GpuVoxelPart
+// A voxel object prepared for the GPU, which identical objects can share.
+struct GpuVoxelPrepared
 {
 	// The prepared layers, the point they are projected about and the part of the 256 by 256 voxel buffer drawn.
 	VoxelScene Scene;
 
 	// VoxelNormalTranslateTable as it stood when the object was prepared.
 	unsigned char Lighting[VOXEL_PALETTE_SIZE];
+};
 
-	// The software result for Scene.Region.Bounds, one index per pixel, or empty when the software did not render it.
-	std::vector<unsigned char> Reference;
+using GpuVoxelPreparedRef = std::shared_ptr<GpuVoxelPrepared const>;
 
-	char Label[24];
+
+// One prepared voxel object inside a part.
+struct GpuVoxelPiece
+{
+	GpuVoxelPreparedRef Prepared;
+
+	// Where Scene.Region.Bounds lands in the source the part's blits read, which is the voxel buffer itself
+	// for one object and the scratch surface for a composite.
+	Point2D Dest;
+};
+
+
+// What the GPU draws from voxels instead of from a picture the software rendered: one voxel object blitted
+// straight to the map, or the hull, turret and barrel of a vehicle composed on the scratch surface, whose
+// pieces are listed in the order they are drawn.
+struct GpuVoxelPart
+{
+	std::vector<GpuVoxelPiece> Pieces;
+
+	// The pixels of the source (the voxel buffer or the scratch surface) the part's blits read.
+	Rect Area;
+
+	// Set for a composite: its pixels take the scratch surface's colour translation.
+	bool Scratch;
+
+	// The emissive mask the software gives Area, or empty while the mask is off or the software did not render the part.
+	std::vector<unsigned char> MaskReference;
 };
 
 
@@ -183,7 +220,7 @@ struct GpuDrawList
 	std::vector<unsigned char, GpuArenaAllocator<unsigned char>> PixelArena;
 	std::vector<signed char> ZShapeArena;
 
-	// The voxel objects of the pass. A part no blit shows is drawn only so the check can compare it.
+	// The voxel objects of the pass; the GPU draws those a blit shows.
 	std::vector<GpuVoxelPart> Voxels;
 
 	// Draws into the target this pass that the list does not hold: blits of other kinds and
@@ -222,15 +259,84 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable);
 
 // True while a pass records and GpuVoxels is on: a voxel object prepared now should be handed to
-// GpuDraw_Voxel_Part. False while the emissive mask is on, which the GPU voxel drawing does not write.
+// GpuDraw_Voxel_Part.
 bool GpuDraw_Voxels_Wanted(void);
 
+// True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a voxel object turns to its exact facing.
+bool GpuDraw_Voxels_Smooth(void);
+
+// The angle to draw a voxel object's body or turret at: the nearest of the 32 facings the voxel art is drawn at,
+// or the exact facing while GpuDraw_Voxels_Smooth.
+double GpuDraw_Facing_Radian(DirType const & facing);
+
+// The flags to blit a voxel object through while GpuDraw_Voxels_Wanted: without SHAPE_PREDATOR, because Bit_Blit
+// passes no warp offset, so a predator blend is the plain translucent one, which the GPU can draw.
+ShapeFlags_Type GpuDraw_Voxel_Blit_Flags(ShapeFlags_Type flags);
+
+// Marks the voxel blits recorded from now until GpuDraw_Voxel_End as those of a cloaked object. predator is its
+// predator offset when the software draws it with SHAPE_PREDATOR, which GpuDraw_Voxel_Blit_Flags drops, else -1.
+void GpuDraw_Voxel_Cloak(bool cloaked, int predator);
+
 // Hands the pass the voxel object VoxelDrawSystem prepared, drawn with the lighting table now in
-// VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer, which
-// the check compares with the GPU's drawing. The next blit from the voxel buffer shows the part;
-// GpuDraw_Voxel_End closes the offer.
-void GpuDraw_Voxel_Part(VoxelScene const & scene, char const * label, bool software);
+// VoxelNormalTranslateTable. software says VoxelDrawSystem::Render drew it into the voxel buffer. The next blit
+// from the voxel buffer shows the part; GpuDraw_Voxel_End closes the offer.
+void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, bool software);
 void GpuDraw_Voxel_End(void);
+
+// Finishes the scene VoxelDrawSystem prepared for a blit straight to the logical surface: renders it into the voxel
+// buffer, unless the GPU draws this pass, and offers it as a part. The caller blits the returned region from the
+// voxel buffer and then calls GpuDraw_Voxel_End. With keep, a pass the GPU draws keeps the preparation under that
+// key for GpuDraw_Show_Prepared.
+SurfaceRegion GpuDraw_Render_Prepared(GpuVoxelPrepKey const * keep = NULL);
+
+// Offers a preparation kept from an earlier GpuDraw_Render_Prepared as a part, for a pass the GPU draws; the caller
+// goes on as it does after GpuDraw_Render_Prepared.
+SurfaceRegion GpuDraw_Show_Prepared(GpuVoxelPreparedRef const & prepared);
+
+// A turreted vehicle composes its hull, turret and barrel on the scratch surface and blits that once to dest.
+// Begin opens such a composite when GpuDraw_Voxels_Wanted; GpuDraw_Composite_Rendering says whether the GPU
+// draws the pieces, so the software neither renders them nor writes them to the scratch surface. Each
+// piece the software would blit into the scratch surface at dest is offered with GpuDraw_Composite_Piece.
+// Show is called with the scratch surface and its dirty rectangle just before the blit to dest, and End after it.
+void GpuDraw_Composite_Begin(Surface const & dest);
+bool GpuDraw_Composite_Open(void);
+bool GpuDraw_Composite_Rendering(void);
+void GpuDraw_Composite_Piece(GpuVoxelPreparedRef const & prepared, Point2D const & dest);
+void GpuDraw_Composite_Show(Surface const & scratch, Rect const & dirty);
+void GpuDraw_Composite_End(void);
+
+// What VoxelDrawSystem prepared, with VoxelNormalTranslateTable as it stands.
+GpuVoxelPreparedRef GpuDraw_Capture_Prepared(void);
+
+// Everything an object's preparation and lighting table are made from. Two objects with equal keys prepare the same.
+struct GpuVoxelPrepKey
+{
+	unsigned Serial;
+	int Frame;
+	MotionLibrary const * Motion;
+	Matrix3D Transform;
+	Matrix3D Camera;
+	Vector3 Light;
+	float Specular;
+	float Shade;
+	int Kind;
+};
+
+// What a prepared object is, for its key: a shadow, or a body lit from the object's own axis or from the view.
+enum GpuVoxelPrepKind
+{
+	GPU_VOXEL_PREP_BODY,
+	GPU_VOXEL_PREP_BODY_FROM_VIEW,
+	GPU_VOXEL_PREP_SHADOW
+};
+
+// A key for preparing voxlib with motion at frame through matrix. Unused bytes are zero, so two keys compare by bytes.
+GpuVoxelPrepKey GpuDraw_Prep_Key(VoxelLibrary const & voxlib, MotionLibrary const * motion, int frame, Matrix3D const & matrix, Vector3 const & light, float specular, float shade, GpuVoxelPrepKind kind);
+
+// The objects prepared while the GPU drew, kept so that one drawn again with the same inputs is not prepared afresh.
+// They are forgotten when the voxel data changes.
+GpuVoxelPreparedRef GpuDraw_Find_Prepared(GpuVoxelPrepKey const & key);
+void GpuDraw_Keep_Prepared(GpuVoxelPrepKey const & key, GpuVoxelPreparedRef const & prepared);
 
 // True while the GPU draws the object pass into surface.
 bool GpuDraw_Is_Rendering(Surface const & surface);
@@ -259,7 +365,8 @@ void GpuDraw_Set_Replay_Check(bool enabled);
 // The gpucheck autotest step: each pass is also drawn on the GPU and compared (code/gpumap.h).
 void GpuDraw_Set_Gpu_Check(bool enabled);
 
-// Turns the GPU drawing of voxel objects (GpuVoxels) on or off for the passes that follow.
-void GpuDraw_Set_Voxels(bool enabled);
+// Turns the GPU drawing of voxel objects (GpuVoxels) on or off for the passes that follow, and with
+// smooth (GpuVoxelSmooth) the turning of hull-only objects to their exact facing.
+void GpuDraw_Set_Voxels(bool enabled, bool smooth = false);
 
 GpuAtlas const & GpuDraw_Atlas(void);

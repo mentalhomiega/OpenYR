@@ -161,6 +161,10 @@ int const MapClass::RadiusCount[] = {
 
 
 CellClass BlubCell;
+thread_local CellClass * OffMapCellOverride = NULL;
+
+static Cell BlubCellLogicLocation;
+static bool BlubCellInFrameLogic = false;
 
 /*
  * This is what each movement class makes of each kind of terrain. A cell is only ever joined
@@ -456,8 +460,9 @@ CellClass & MapClass::operator[](Coord const & coord) const
 		return(*Array[cellnum]);
 	}
 
-	BlubCell.CellID = Cell(x, y);
-	return(BlubCell);
+	CellClass & off_map = OffMapCellOverride != NULL ? *OffMapCellOverride : BlubCell;
+	off_map.CellID = Cell(x, y);
+	return(off_map);
 };
 
 
@@ -476,9 +481,69 @@ CellClass & MapClass::operator[](Cell const & cell) const
 		return(*Array[cellnum]);
 	}
 
-	BlubCell.CellID = cell;
-	return(BlubCell);
+	CellClass & off_map = OffMapCellOverride != NULL ? *OffMapCellOverride : BlubCell;
+	off_map.CellID = cell;
+	return(off_map);
 };
+
+
+/// <summary>
+/// Puts back the off-map cell's location as game logic last left it. Call it at the start of
+/// each frame's logic: the view's lookups between frames move that cell, and logic that keeps
+/// it as a destination or target would otherwise follow what each player's screen drew.
+/// </summary>
+void Restore_Off_Map_Cell_Location(void)
+{
+	BlubCell.CellID = BlubCellLogicLocation;
+	BlubCellInFrameLogic = true;
+}
+
+
+/// <summary>
+/// Records the off-map cell's location for Restore_Off_Map_Cell_Location. Call it at the end
+/// of each frame's logic.
+/// </summary>
+void Remember_Off_Map_Cell_Location(void)
+{
+	BlubCellLogicLocation = BlubCell.CellID;
+	BlubCellInFrameLogic = false;
+}
+
+
+/// <summary>
+/// Makes the next frame's logic start with the off-map cell at CELL_NONE. Call it when a
+/// scenario starts, since the view may have looked up cells before the first frame.
+/// </summary>
+void Reset_Off_Map_Cell_Location(void)
+{
+	BlubCellLogicLocation = CELL_NONE;
+	BlubCellInFrameLogic = false;
+}
+
+
+/// <summary>
+/// Saves or loads the off-map cell's location as game logic left it, so a destination or target
+/// saved on that cell points at the same place after a load. A save made during a frame's logic
+/// keeps the location logic has reached so far.
+/// </summary>
+void Serialize_Off_Map_Cell_Location(SaveStreamClass & stream)
+{
+	Cell location = Off_Map_Cell_Logic_Location();
+	stream.Serialize(location);
+	if (stream.Is_Loading()) {
+		BlubCellLogicLocation = location;
+		BlubCellInFrameLogic = false;
+	}
+}
+
+
+/// <summary>
+/// The off-map cell's location that game logic last left.
+/// </summary>
+Cell Off_Map_Cell_Logic_Location(void)
+{
+	return(BlubCellInFrameLogic ? BlubCell.CellID : BlubCellLogicLocation);
+}
 
 
 /// <summary>
@@ -1018,8 +1083,9 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
 		TechnoClass * t = Technos[i];
 		bool was = t->IsLocked;
 		t->IsLocked = In_Local_Radar(t->PositionCell);
-		// As MapClass::SetVisibleRect (0x567230): only a player-controlled house's object takes a fresh look.
-		if (!was && t->IsLocked && t->House->Is_Player_Control() && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
+		// As MapClass::SetVisibleRect (0x567230): only a player-controlled house's object takes a fresh look. gamemd asks
+		// about the local player; any human seat's object looks here, so every copy of a network game looks alike.
+		if (!was && t->IsLocked && t->House->Player_View() != NULL && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
 			t->Look();
 		}
 	}
@@ -8419,6 +8485,26 @@ bool MapClass::Damage_Low_Bridge(Cell const & cell)
 }
 
 
+void MapClass::Low_Bridge_Span_Damaged(Cell const & cell, CellClass * cellptr1, CellClass * cellptr2, CellClass * cellptr3, Rect draw_rect, bool destroyed)
+{
+	draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+	TacticalMap->Register_Dirty_Area(draw_rect);
+
+	cellptr1->Recalc_Attributes(-1);
+	cellptr2->Recalc_Attributes(-1);
+	cellptr3->Recalc_Attributes(-1);
+	// gamemd 0x57BCF0 and 0x57C2B0 pass the flag only for the stage that brings the span down.
+	cellptr1->Kill_Illegal_Occupiers(destroyed);
+	cellptr2->Kill_Illegal_Occupiers(destroyed);
+	cellptr3->Kill_Illegal_Occupiers(destroyed);
+
+	if (destroyed) {
+		Zone_Reset();
+		Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
+	}
+}
+
+
 /// <summary>
 /// Damages the center span of an east-west low bridge.
 /// The span degrades a stage at a time and drags its flanking pieces down with it. Past the
@@ -8437,7 +8523,6 @@ bool MapClass::Damage_Low_Bridge_EW(Cell const & cell)
 	bool didwork = false;
 
 	Rect draw_rect = Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect());
-	Rect recalc_rect(0, 0, 0, 0);
 
 	do {
 		if (otype == OVERLAY_LOWBRIDGE_19) {
@@ -8467,28 +8552,11 @@ bool MapClass::Damage_Low_Bridge_EW(Cell const & cell)
 			Damage_Low_Bridge_Piece_EW(cell + Cell(1, 0));
 			Spring_Low_Bridge_Destroyed_EW(cell);
 			didwork = true;
-			recalc_rect = Rect(cell.X - 1, cell.Y - 1, 3, 3);
 		} else {
 			break;
 		}
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
-		TacticalMap->Register_Dirty_Area(draw_rect);
-
-		cellptr1->Recalc_Attributes(-1);
-		cellptr2->Recalc_Attributes(-1);
-		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
-
-		if (didwork) {
-			Zone_Reset();
-		}
-
-		if (recalc_rect.Is_Valid()) {
-			Recalc_Cells_In_Rect(recalc_rect);
-		}
+		Low_Bridge_Span_Damaged(cell, cellptr1, cellptr2, cellptr3, draw_rect, didwork);
 	} while (false);
 
 	return(didwork);
@@ -8513,7 +8581,6 @@ bool MapClass::Damage_Low_Bridge_NS(Cell const & cell)
 	bool didwork = false;
 
 	Rect draw_rect = Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect());
-	Rect recalc_rect(0, 0, 0, 0);
 
 	do {
 		if (otype == OVERLAY_LOWBRIDGE_23) {
@@ -8543,28 +8610,11 @@ bool MapClass::Damage_Low_Bridge_NS(Cell const & cell)
 			Damage_Low_Bridge_Piece_NS(cell + Cell(0, 1));
 			Spring_Low_Bridge_Destroyed_NS(cell);
 			didwork = true;
-			recalc_rect = Rect(cell.X - 1, cell.Y - 1, 3, 3);
 		} else {
 			break;
 		}
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
-		TacticalMap->Register_Dirty_Area(draw_rect);
-
-		cellptr1->Recalc_Attributes(-1);
-		cellptr2->Recalc_Attributes(-1);
-		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
-
-		if (didwork) {
-			Zone_Reset();
-		}
-
-		if (recalc_rect.Is_Valid()) {
-			Recalc_Cells_In_Rect(recalc_rect);
-		}
+		Low_Bridge_Span_Damaged(cell, cellptr1, cellptr2, cellptr3, draw_rect, didwork);
 	} while (false);
 
 	return(didwork);
@@ -8696,9 +8746,11 @@ void MapClass::Damage_Low_Bridge_Piece_EW(Cell const & cell)
 		cellptr1->Recalc_Attributes(-1);
 		cellptr2->Recalc_Attributes(-1);
 		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
+		// gamemd 0x57DD50: jumpjets die only when the piece falls.
+		bool const fallen = newoverlay == OVERLAY_LOWBRIDGE_27;
+		cellptr1->Kill_Illegal_Occupiers(fallen);
+		cellptr2->Kill_Illegal_Occupiers(fallen);
+		cellptr3->Kill_Illegal_Occupiers(fallen);
 	}
 }
 
@@ -8775,9 +8827,11 @@ void MapClass::Damage_Low_Bridge_Piece_NS(Cell const & cell)
 		cellptr1->Recalc_Attributes(-1);
 		cellptr2->Recalc_Attributes(-1);
 		cellptr3->Recalc_Attributes(-1);
-		cellptr1->Kill_Illegal_Occupiers();
-		cellptr2->Kill_Illegal_Occupiers();
-		cellptr3->Kill_Illegal_Occupiers();
+		// gamemd 0x57E2A0: jumpjets die only when the piece falls.
+		bool const fallen = newoverlay == OVERLAY_LOWBRIDGE_28;
+		cellptr1->Kill_Illegal_Occupiers(fallen);
+		cellptr2->Kill_Illegal_Occupiers(fallen);
+		cellptr3->Kill_Illegal_Occupiers(fallen);
 	}
 }
 
@@ -8887,6 +8941,10 @@ void MapClass::Repair_Low_Bridge_EW(Cell const & cell)
 			cellptr1->Recalc_Attributes(-1);
 			cellptr2->Recalc_Attributes(-1);
 			cellptr3->Recalc_Attributes(-1);
+			// gamemd 0x57F6A0 and 0x57FBC0: a repair still destroys landed aircraft.
+			cellptr1->Kill_Illegal_Occupiers(false);
+			cellptr2->Kill_Illegal_Occupiers(false);
+			cellptr3->Kill_Illegal_Occupiers(false);
 		}
 
 		cellnum.X++;
@@ -8972,6 +9030,9 @@ void MapClass::Repair_Low_Bridge_NS(Cell const & cell)
 			cellptr1->Recalc_Attributes(-1);
 			cellptr2->Recalc_Attributes(-1);
 			cellptr3->Recalc_Attributes(-1);
+			cellptr1->Kill_Illegal_Occupiers(false);
+			cellptr2->Kill_Illegal_Occupiers(false);
+			cellptr3->Kill_Illegal_Occupiers(false);
 		}
 
 		cellnum.Y++;
@@ -10027,13 +10088,13 @@ Cell MapClass::Find_Bridge_End_Cell_For_Subzone(Cell const & cell, int subzone_l
 bool MapClass::Build_Reachable_Subzones(CellClass * cptr, int subzone_level, DynamicVectorClass<int> & connections, FootClass const * foot)
 {
 	/*
-	 * The flood is bounded by one coarse block, so the scratch it needs is a fixed size and
-	 * is kept here rather than built up per call. _subzone_flood_stack is the depth first
-	 * stack of cells still to be flooded, and _subzone_flood_visited is the visited grid,
-	 * of stride 8 and indexed by the low bits of the cell coordinates.
+	 * The flood is bounded by one coarse block, so the scratch it needs is a fixed size.
+	 * _subzone_flood_stack is the depth first stack of cells still to be flooded, and
+	 * _subzone_flood_visited is the visited grid, of stride 8 and indexed by the low bits
+	 * of the cell coordinates.
 	 */
-	static CellClass * _subzone_flood_stack[64];
-	static char _subzone_flood_visited[8][8];
+	CellClass * _subzone_flood_stack[64];
+	char _subzone_flood_visited[8][8];
 
 	int dim = 1 << (subzone_level + 1);
 
@@ -11671,14 +11732,15 @@ struct ConcreteFamily
 	int First;
 	int Cap;
 	int Fallen;
+	bool JumpjetsDieOnAnyHit;   // gamemd's east-west section routine (0x57D530) always passes the jumpjet flag.
 };
 
 
 // The north-south family: 205 to 213, caps 223 and 225, fallen 231.
-static ConcreteFamily const CONCRETE_NS = {Cell(1, 0), Cell(0, 1), Cell(1, 0), OVERLAY_CONCRETE_BRIDGE_FIRST, OVERLAY_CONCRETE_BRIDGE_FIRST + 18, OVERLAY_CONCRETE_BRIDGE_END1};
+static ConcreteFamily const CONCRETE_NS = {Cell(1, 0), Cell(0, 1), Cell(1, 0), OVERLAY_CONCRETE_BRIDGE_FIRST, OVERLAY_CONCRETE_BRIDGE_FIRST + 18, OVERLAY_CONCRETE_BRIDGE_END1, false};
 
 // The east-west family: 214 to 222, caps 227 and 229, fallen 232.
-static ConcreteFamily const CONCRETE_EW = {Cell(0, 1), Cell(1, 0), Cell(0, -1), OVERLAY_CONCRETE_BRIDGE_FIRST + 9, OVERLAY_CONCRETE_BRIDGE_FIRST + 22, OVERLAY_CONCRETE_BRIDGE_END2};
+static ConcreteFamily const CONCRETE_EW = {Cell(0, 1), Cell(1, 0), Cell(0, -1), OVERLAY_CONCRETE_BRIDGE_FIRST + 9, OVERLAY_CONCRETE_BRIDGE_FIRST + 22, OVERLAY_CONCRETE_BRIDGE_END2, true};
 
 
 static bool Is_Concrete_Family_Overlay(ConcreteFamily const & family, int overlay)
@@ -11741,6 +11803,20 @@ static int Concrete_Side_Shape(ConcreteFamily const & family, int mask)
 			return(family.Fallen);
 		default:
 			return(-1);
+	}
+}
+
+
+/*
+ * Destroys the illegal occupiers of a section's three cells (gamemd 0x487A10 on each).
+ */
+static void Kill_Concrete_Section_Occupiers(Cell const & cell, Cell const & across, bool kill_jumpjets)
+{
+	for (Cell const piece : {Cell(cell - across), cell, Cell(cell + across)}) {
+		CellClass * cptr = Bridge_Cell_At(piece);
+		if (cptr != NULL) {
+			cptr->Kill_Illegal_Occupiers(kill_jumpjets);
+		}
 	}
 }
 
@@ -11819,6 +11895,8 @@ void MapClass::Update_Concrete_Side(ConcreteFamily const & family, Cell const & 
 	}
 
 	Set_Concrete_Section(cell, family.Across, next);
+	// gamemd 0x57E7A0 and 0x57ED00: jumpjets die only when the section falls.
+	Kill_Concrete_Section_Occupiers(cell, family.Across, next == family.Fallen);
 }
 
 
@@ -11860,15 +11938,23 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 	int const overlay = Concrete_Overlay_At(cell);
 	int const cracked = family.First + 6;
 
+	// After a hit, objects that can no longer enter a cell of the section, or are moving onto one, are destroyed (0x487A10).
+	// Jumpjets die in the stage that brings the section down, and in every stage for the east-west family.
+	auto kill_section_occupiers = [&](bool fell) {
+		Kill_Concrete_Section_Occupiers(cell, family.Across, fell || family.JumpjetsDieOnAnyHit);
+	};
+
 	if (overlay == family.Cap) {
 		Set_Concrete_Section(cell, family.Across, family.Cap + 1);
 		Update_Concrete_Side(family, cell - family.ToCap);
+		kill_section_occupiers(false);
 		return(false);
 	}
 
 	if (overlay == family.Cap + 2) {
 		Set_Concrete_Section(cell, family.Across, family.Cap + 3);
 		Update_Concrete_Side(family, cell + family.ToCap);
+		kill_section_occupiers(false);
 		return(false);
 	}
 
@@ -11876,6 +11962,7 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 		Set_Concrete_Section(cell, family.Across, cracked);
 		Update_Concrete_Side(family, cell - family.Run);
 		Update_Concrete_Side(family, cell + family.Run);
+		kill_section_occupiers(false);
 		return(false);
 	}
 
@@ -11887,6 +11974,7 @@ bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const
 	Update_Concrete_Side(family, cell - family.Run);
 	Update_Concrete_Side(family, cell + family.Run);
 	Spring_Concrete_Bridge_Destroyed(family, cell);
+	kill_section_occupiers(true);
 	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
 	Zone_Reset();
 	return(true);
@@ -12059,6 +12147,8 @@ void MapClass::Repair_Concrete_Run(ConcreteFamily const & family, Cell const & c
 
 		if (next != overlay) {
 			Set_Concrete_Section(cur, family.Across, next);
+			// gamemd 0x5800D0 and 0x580600: a repair still destroys landed aircraft.
+			Kill_Concrete_Section_Occupiers(cur, family.Across, false);
 		}
 	}
 

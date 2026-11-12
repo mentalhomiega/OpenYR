@@ -11,6 +11,7 @@
 
 #include "hdrcolour.h"
 #include "ui/rml/rmlsettingpreview.h"
+#include "ui/rml/rmlsettingrows.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uiclamp.h"
 #include "ui/uisettingpreview.h"
@@ -35,6 +36,7 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	PreviewedBrightness = Start.Brightness;
 	PreviewedGamma = Start.Gamma;
 	Refresh_Preview();
+	Refresh_Setting_Rows();
 }
 
 
@@ -166,13 +168,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		// A frame rate of -1 is match the display, and highlights 1 is Enhanced.
 		State.Filter = Index_Of(State.Filters, VIDEO_SCALE_PIXELART, State.Filter);
 		State.IntegerScaling = false;
-		State.GpuRender = true;
-		State.SoftShadows = false;
-		State.Shockwaves = false;
-		State.Bloom = false;
-		State.WaterRipples = false;
-		State.CloudShadows = false;
-		State.Weather = false;
+		UI_Setting_Rows_Reset(State.SettingRows);
 		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
 		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
 		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
@@ -245,11 +241,11 @@ void UIDisplayPresenterClass::Restore_Preview(void)
 }
 
 
-void UIDisplayPresenterClass::Set_Gpu_Switch(bool & field, int value, bool needs_gpu)
+void UIDisplayPresenterClass::Refresh_Setting_Rows(void)
 {
-	if (State.ModernInterface && (!needs_gpu || State.GpuRender)) {
-		field = (value != 0);
-	}
+	UI_Setting_Rows_Refresh(State.SettingRows, [this](SettingCondition condition) {
+		return(condition != SettingCondition::MODERN_INTERFACE || State.ModernInterface);
+	});
 }
 
 
@@ -289,10 +285,8 @@ void UIDisplayPresenterClass::Apply_Settings(void)
 	if (State.IntegerScaling != Start.IntegerScaling) {
 		Service.Set_Integer_Scaling(State.IntegerScaling);
 	}
-	if (State.GpuRender != Start.GpuRender || State.SoftShadows != Start.SoftShadows || State.Shockwaves != Start.Shockwaves || State.Bloom != Start.Bloom || State.WaterRipples != Start.WaterRipples
-		|| State.CloudShadows != Start.CloudShadows
-		|| State.Weather != Start.Weather) {
-		Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves, State.Bloom, State.WaterRipples, State.CloudShadows, State.Weather);
+	if (UI_Setting_Rows_Changed(State.SettingRows)) {
+		Service.Set_Declared_Settings(State.SettingRows);
 	}
 	if (Choice_Changed(State.Filters, State.Filter, Start.Filter)) {
 		Service.Set_Filter(State.Filters[State.Filter].Value);
@@ -398,6 +392,17 @@ const UIDisplayFlagIntentClass Flag_Intents[] = {
 
 void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 {
+	Execute_Intent(intent);
+	Refresh_Setting_Rows();
+}
+
+
+void UIDisplayPresenterClass::Execute_Intent(UIIntent const & intent)
+{
+	if (UI_Setting_Row_Execute(State.SettingRows, intent.Name, intent.Value)) {
+		return;
+	}
+
 	for (UIDisplayFlagIntentClass const & flag : Flag_Intents) {
 		if (intent.Name == flag.Name) {
 			State.*flag.Field = (intent.Value != 0);
@@ -423,27 +428,6 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "scale") {
 		State.Scale = Index_In_Range(intent.Value, State.Scales.size()) ? intent.Value : Start.Scale;
 		Refresh_Rows();
-
-	} else if (intent.Name == "gpurender") {
-		Set_Gpu_Switch(State.GpuRender, intent.Value, false);
-
-	} else if (intent.Name == "softshadows") {
-		Set_Gpu_Switch(State.SoftShadows, intent.Value, true);
-
-	} else if (intent.Name == "shockwaves") {
-		Set_Gpu_Switch(State.Shockwaves, intent.Value, true);
-
-	} else if (intent.Name == "bloom") {
-		Set_Gpu_Switch(State.Bloom, intent.Value, true);
-
-	} else if (intent.Name == "waterripples") {
-		Set_Gpu_Switch(State.WaterRipples, intent.Value, true);
-
-	} else if (intent.Name == "cloudshadows") {
-		Set_Gpu_Switch(State.CloudShadows, intent.Value, true);
-
-	} else if (intent.Name == "weather") {
-		Set_Gpu_Switch(State.Weather, intent.Value, true);
 
 	} else if (intent.Name == "filter") {
 		State.Filter = Pick_Choice(State.Filters, intent.Value, Start.Filter);
@@ -650,13 +634,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
 			Model.DirtyVariable("integerscaling");
-			Model.DirtyVariable("gpurender");
-			Model.DirtyVariable("softshadows");
-			Model.DirtyVariable("shockwaves");
-			Model.DirtyVariable("bloom");
-			Model.DirtyVariable("waterripples");
-			Model.DirtyVariable("cloudshadows");
-			Model.DirtyVariable("weather");
+			Model.DirtyVariable("settingrows");
 			Model.DirtyVariable("filter");
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
@@ -729,13 +707,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)
-				&& model.Bind("gpurender", &state.GpuRender)
-				&& model.Bind("softshadows", &state.SoftShadows)
-				&& model.Bind("shockwaves", &state.Shockwaves)
-				&& model.Bind("bloom", &state.Bloom)
-				&& model.Bind("waterripples", &state.WaterRipples)
-				&& model.Bind("cloudshadows", &state.CloudShadows)
-				&& model.Bind("weather", &state.Weather)
+				&& UI_Rml_Setting_Rows_Bind(model, "settingrows", state.SettingRows)
 				&& model.Bind("filters", &state.Filters)
 				&& model.Bind("filter", &state.Filter)
 				&& model.Bind("framerates", &state.FrameRates)

@@ -124,6 +124,7 @@ class SpawnerConfigClass
 		bool AutoSurrender = true;
 		bool AttackNeutralUnits = false;
 		bool ScrapMetal = false;
+		bool ParallelPaths = false;
 		bool PlayMoviesInMultiplayer = false;
 		std::array<bool, GLOBAL_FLAG_COUNT> GlobalFlags = {};
 

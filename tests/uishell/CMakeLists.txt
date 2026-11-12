@@ -31,6 +31,9 @@ opents_add_test(UIShell
         ui/rml/rmlrenderbase.cpp
         ui/rml/rmlrendermath.cpp
         ui/rml/rmlsettingpreview.cpp
+        ui/rml/rmlsettingrows.cpp
+        ui/uisettingrows.cpp
+        optionsettings.cpp
         ui/rml/rmlsurface.cpp
         ui/rml/rmlsystem.cpp
         ui/rml/rmlview.cpp
@@ -57,6 +60,7 @@ opents_add_test(UIShell
         ui/screens/savegame/uisavegame.cpp
         ui/screens/scenario/uiscenario.cpp
         ui/screens/skirmish/uiskirmish.cpp
+        ui/screens/settingspage/uisettingspage.cpp
         ui/screens/sound/uisound.cpp
         ui/screens/version/uiversion.cpp
         ui/screens/waitbox/uiwaitbox.cpp

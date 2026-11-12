@@ -18,10 +18,12 @@
 #include "gpumap.h"
 
 #include "hdrcolour.h"
+#include "renderthread.h"
 #include "rgb565.h"
 #include "tilediff.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
@@ -30,7 +32,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <iterator>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <fs_ocornut_imgui.bin.h>
@@ -155,6 +159,8 @@ static bool _KeyedMaskMasked = false;
 static bool _VerifyUploads = false;
 static unsigned int _VerifyChecks = 0;
 static unsigned int _VerifyMismatches = 0;
+// The keyed mask texture as the sent rectangles build it. It is empty until checking has seen a full upload.
+static std::vector<unsigned int> _VerifyMaskMirror;
 
 // HDR output and the colour adjustment. Frames are routed through the scene target when HDR10 output
 // is on or the colour adjustment is not the identity; the composite pass then draws them to the window.
@@ -231,6 +237,73 @@ static void Write_Tga_Header(FILE * file, uint32_t width, uint32_t height, bool 
 }
 
 
+// A window capture can measure a rectangle instead of being saved: the request names it with this path, and the
+// captures arrive in the order they were asked for.
+static char const MeasurePath[] = "window-measure";
+struct MeasureRequest
+{
+	Rect Area;
+	std::string Label;
+	bool Red;
+};
+static std::deque<MeasureRequest> _Measures;
+static std::mutex _MeasuresLock;
+
+// Captures asked for whose result has not been written or logged yet.
+static std::atomic<int> _CapturesPending{0};
+
+
+// Logs the mean and the darkest value of the red, green and blue average of the pixels of a 32-bit BGRA capture
+// inside the oldest request's area, counted from the top of the window. A red request logs each colour's mean and
+// the count of pixels whose red is 192 or more and exceeds both green and blue by 64 or more instead.
+static void Log_Measure(unsigned char const * data, uint32_t width, uint32_t height, uint32_t pitch, bool yflip)
+{
+	MeasureRequest request;
+	{
+		std::lock_guard<std::mutex> lock(_MeasuresLock);
+		if (_Measures.empty()) {
+			return;
+		}
+		request = _Measures.front();
+		_Measures.pop_front();
+	}
+	char const * const name = request.Red ? "windowred" : "windowdark";
+	Rect const area = Intersect(request.Area, Rect(0, 0, (int)width, (int)height));
+	if (!area.Is_Valid()) {
+		DebugString("AUTOTEST %s %s outside the %ux%u window\n", name, request.Label.c_str(), width, height);
+		return;
+	}
+	unsigned long long total = 0;
+	unsigned long long channel[3] = {0, 0, 0};
+	int darkest = 255;
+	int reddish = 0;
+	for (int y = area.Y; y < area.Y + area.Height; y++) {
+		unsigned char const * row = data + (size_t)(yflip ? height - 1 - y : y) * pitch;
+		for (int x = area.X; x < area.X + area.Width; x++) {
+			int const blue = row[x * 4];
+			int const green = row[x * 4 + 1];
+			int const red = row[x * 4 + 2];
+			int const value = (red + green + blue) / 3;
+			total += value;
+			darkest = std::min(darkest, value);
+			channel[0] += red;
+			channel[1] += green;
+			channel[2] += blue;
+			if (red >= 192 && red >= green + 64 && red >= blue + 64) {
+				reddish++;
+			}
+		}
+	}
+	double const pixels = (double)area.Width * area.Height;
+	if (request.Red) {
+		DebugString("AUTOTEST windowred %s %d,%d %dx%d red %.2f green %.2f blue %.2f reddish %d\n", request.Label.c_str(), area.X, area.Y, area.Width, area.Height,
+			(double)channel[0] / pixels, (double)channel[1] / pixels, (double)channel[2] / pixels, reddish);
+		return;
+	}
+	DebugString("AUTOTEST windowdark %s %d,%d %dx%d mean %.2f darkest %d\n", request.Label.c_str(), area.X, area.Y, area.Width, area.Height, (double)total / pixels, darkest);
+}
+
+
 // bgfx reports lost devices and shader failures through this rather than a return code,
 // so the engine would otherwise present to a black window with no explanation.
 class BackendCallback : public bgfx::CallbackI
@@ -270,8 +343,14 @@ class BackendCallback : public bgfx::CallbackI
 		// Writes a capture of the window as a 32-bit TGA file.
 		virtual void screenShot(const char * filepath, uint32_t width, uint32_t height, uint32_t pitch, bgfx::TextureFormat::Enum, const void * data, uint32_t, bool yflip) override
 		{
+			if (std::strcmp(filepath, MeasurePath) == 0) {
+				Log_Measure((unsigned char const *)data, width, height, pitch, yflip);
+				_CapturesPending--;
+				return;
+			}
 			FILE * file = std::fopen(filepath, "wb");
 			if (file == NULL) {
+				_CapturesPending--;
 				return;
 			}
 			Write_Tga_Header(file, width, height, yflip);
@@ -279,6 +358,7 @@ class BackendCallback : public bgfx::CallbackI
 				std::fwrite((unsigned char const *)data + y * pitch, 4, width, file);
 			}
 			std::fclose(file);
+			_CapturesPending--;
 		}
 		virtual void captureBegin(uint32_t, uint32_t, uint32_t, bgfx::TextureFormat::Enum, bool) override {}
 		virtual void captureEnd(void) override {}
@@ -856,8 +936,11 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 	// With checking on, the sent rectangles are also applied to a copy of the texture, which must equal the whole
 	// picture's conversion.
 	if (_VerifyUploads) {
-		static std::vector<unsigned int> mirror;
-		if (mirror.size() != (size_t)_FrameWidth * _FrameHeight || !wascurrent) {
+		std::vector<unsigned int> & mirror = _VerifyMaskMirror;
+		// A texture that was already current when checking began cannot be rebuilt from the rectangles, so the
+		// first check after that has no copy to compare and starts one.
+		bool const unseeded = mirror.size() != (size_t)_FrameWidth * _FrameHeight;
+		if (unseeded || !wascurrent) {
 			mirror.assign((size_t)_FrameWidth * _FrameHeight, 0);
 		}
 		for (TileRect const & rect : _Rects) {
@@ -866,6 +949,9 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 		TileRect const whole = {0, 0, _FrameWidth, _FrameHeight};
 		std::vector<unsigned int> expected((size_t)_FrameWidth * _FrameHeight);
 		fill((unsigned char *)expected.data(), _FrameWidth * 4, whole);
+		if (unseeded && wascurrent) {
+			mirror = expected;
+		}
 		_VerifyChecks++;
 		if (std::memcmp(mirror.data(), expected.data(), expected.size() * 4) != 0) {
 			_VerifyMismatches++;
@@ -1037,13 +1123,18 @@ static void Submit_Composite(bgfx::ViewId view, bgfx::FrameBufferHandle target, 
 static void Write_Capture(void)
 {
 	_ReadbackPending = false;
-	FILE * file = std::fopen(_ReadbackPath.c_str(), "wb");
-	if (file == NULL) {
+	if (_ReadbackPath == MeasurePath) {
+		Log_Measure(_ReadbackPixels.data(), (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, (uint32_t)_DrawableWidth * 4, false);
+		_CapturesPending--;
 		return;
 	}
-	Write_Tga_Header(file, (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, false);
-	std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
-	std::fclose(file);
+	FILE * file = std::fopen(_ReadbackPath.c_str(), "wb");
+	if (file != NULL) {
+		Write_Tga_Header(file, (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, false);
+		std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
+		std::fclose(file);
+	}
+	_CapturesPending--;
 }
 
 
@@ -1065,13 +1156,21 @@ static void Start_Capture(void)
 }
 
 
+static uint32_t Submit_Frame(void)
+{
+	uint32_t const frame = bgfx::frame();
+	RenderThread_Note_Frame();
+	return(frame);
+}
+
+
 /// <summary>
 /// Waits for a pending capture to finish reading and writes it, so its buffer is free before the targets change size.
 /// </summary>
 static void Finish_Capture(void)
 {
 	for (int attempt = 0; attempt < 4 && _ReadbackPending; attempt++) {
-		_LastFrame = bgfx::frame();
+		_LastFrame = Submit_Frame();
 		if (_LastFrame >= _ReadbackFrame) {
 			Write_Capture();
 		}
@@ -1079,11 +1178,18 @@ static void Finish_Capture(void)
 }
 
 
+static void Stop_Renderer(void)
+{
+	bgfx::shutdown();
+	RenderThread_Stop();
+}
+
+
 /// <summary>
 /// Starts the renderer on the window, with an HDR10 back buffer when hdr is set.
 /// </summary>
 /// <returns>bool; Did the renderer start with the back buffer asked for? Nothing is left running on false.</returns>
-static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread)
 {
 	_HdrActive = false;
 	_Routed = false;
@@ -1126,15 +1232,20 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 			break;
 	}
 
+	if (renderthread) {
+		RenderThread_Start();
+	}
 	if (!bgfx::init(init)) {
+		RenderThread_Stop();
 		if (hdr) {
 			DebugString("HDR: the renderer did not start with an RGB10A2 back buffer\n");
 		}
 		return(false);
 	}
+	RenderThread_After_Init();
 
 	if (hdr && !HDR_Caps_Available()) {
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
@@ -1142,14 +1253,14 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 
 	_Program = Create_Embedded_Program(_EmbeddedShaders, "vs_ocornut_imgui", _EmbeddedShaders, "fs_ocornut_imgui");
 	if (!bgfx::isValid(_Program)) {
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
 	_TextureSampler = bgfx::createUniform("s_tex", bgfx::UniformType::Sampler);
 
 	if (!bgfx::isValid(_Program) || !bgfx::isValid(_TextureSampler)) {
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
@@ -1163,7 +1274,7 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 
 	if (hdr && !bgfx::isValid(_CompositeProgram)) {
 		DebugString("HDR: the composite shader is not available for this renderer\n");
-		bgfx::shutdown();
+		Stop_Renderer();
 		return(false);
 	}
 
@@ -1188,25 +1299,28 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 /// <param name="renderer">Which graphics API to ask for, or auto to let bgfx decide.</param>
 /// <param name="vsync">Should presents wait for the display's refresh?</param>
 /// <param name="hdr">Should the back buffer be HDR10?</param>
+/// <param name="renderthread">Should the graphics device run on its own thread (docs/RENDER_THREAD.md)?</param>
 /// <returns>bool; Did the renderer start?</returns>
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread)
 {
 	if (_Initialized) {
 		return(true);
 	}
 
-	bgfx::renderFrame();
+	if (!renderthread) {
+		bgfx::renderFrame();
+	}
 
 	_DrawableWidth = drawablewidth;
 	_DrawableHeight = drawableheight;
 
-	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true)) {
+	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true, renderthread)) {
 		return(true);
 	}
 	if (hdr) {
 		DebugString("HDR: starting the SDR back buffer instead\n");
 	}
-	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false));
+	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false, renderthread));
 }
 
 
@@ -1236,7 +1350,7 @@ void Backend_Shutdown(void)
 	Release_Handle(_MaskSampler);
 	Release_Handle(_MaskLevels);
 
-	bgfx::shutdown();
+	Stop_Renderer();
 
 	_FrameWidth = 0;
 	_FrameHeight = 0;
@@ -1246,6 +1360,7 @@ void Backend_Shutdown(void)
 	_Routed = false;
 	_ShotRequested = false;
 	_ReadbackPending = false;
+	_CapturesPending = 0;
 	// bgfx::shutdown frees the readback texture, so a later Backend_Init must not reuse its handle.
 	_ReadbackTexture = BGFX_INVALID_HANDLE;
 	_ReadbackPixels.clear();
@@ -1346,8 +1461,9 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		if (!bgfx::isValid(layertexture)) {
 			return(false);
 		}
-		layerwidth = layer.Width;
-		layerheight = layer.Height;
+		// A pass drawn at a finer scale is smoothed when it is shown smaller than its own size.
+		layerwidth = layer.Width * GpuMap_Scale();
+		layerheight = layer.Height * GpuMap_Scale();
 		_LayerMask.Uploaded = false;
 	} else if (layer.Pixels != NULL) {
 		if (!Upload_Layer(layer)) {
@@ -1391,17 +1507,21 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	// Masks follow the colour in the same order: the layer's mask, or zero, over the layer, then the
 	// keyed mask over the frame, which blends so that keyed pixels keep the layer's mask.
 	bool const masks = _HdrActive && emissive != NULL;
+	bgfx::TextureHandle layermask = _LayerMask.Uploaded ? _LayerMask.Handle : bgfx::TextureHandle{ bgfx::kInvalidHandle };
+	if (layer.Gpu) {
+		layermask.idx = GpuMap_Mask_Texture();
+	}
 	if (masks) {
 		Begin_Mask_View();
-		if (_LayerMask.Uploaded) {
-			Submit_Mask(_LayerMask.Handle, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false);
+		if (bgfx::isValid(layermask)) {
+			Submit_Mask(layermask, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false);
 		} else {
 			Submit_Mask(_FrameTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, true);
 		}
 	}
 
-	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
-	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT))) {
+	bool const layer_masked = _MaskView && bgfx::isValid(layermask);
+	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? layermask : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
 	}
 	if (layer_masked) {
@@ -1622,7 +1742,7 @@ void Backend_End_Frame(void)
 		Start_Capture();
 	}
 	_MaskDrawn = false;
-	_LastFrame = bgfx::frame();
+	_LastFrame = Submit_Frame();
 	GpuMap_After_Frame(_LastFrame);
 	if (Perf_Enabled) {
 		bgfx::Stats const * stats = bgfx::getStats();
@@ -1674,19 +1794,40 @@ void Backend_Set_View_Target(unsigned short view)
 }
 
 
-void Backend_Request_Window_Capture(char const * filepath)
+bool Backend_Request_Window_Capture(char const * filepath)
 {
 	if (!_Initialized) {
-		return;
+		return(false);
 	}
+	_CapturesPending++;
 
 	// Under HDR10 the window holds PQ values, so the capture reads the SDR picture back instead of the window.
 	if (!_HdrActive) {
 		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
-		return;
+		return(true);
 	}
 	_ReadbackPath = filepath;
 	_ShotRequested = true;
+	return(true);
+}
+
+
+bool Backend_Request_Window_Measure(Rect const & area, char const * label, bool red)
+{
+	if (!_Initialized) {
+		return(false);
+	}
+	{
+		std::lock_guard<std::mutex> lock(_MeasuresLock);
+		_Measures.push_back({ area, label, red });
+	}
+	return(Backend_Request_Window_Capture(MeasurePath));
+}
+
+
+bool Backend_Window_Capture_Pending(void)
+{
+	return(_CapturesPending > 0);
 }
 
 
@@ -1728,6 +1869,7 @@ void Backend_Note_Changed_Rows(unsigned char const * rows, int count)
 void Backend_Verify_Uploads(bool on)
 {
 	_VerifyUploads = on;
+	_VerifyMaskMirror.clear();
 	if (on) {
 		_VerifyChecks = 0;
 		_VerifyMismatches = 0;

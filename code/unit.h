@@ -362,13 +362,13 @@ class UnitClass : public FootClass
 
 inline UnitClass * AbstractClass::As_UnitClass(void)
 {
-	return(dynamic_cast<UnitClass *>(this));
+	return(Rtti_Leaf_Cast<UnitClass>(this, RTTI_UNIT));
 }
 
 
 inline UnitClass const * AbstractClass::As_UnitClass(void) const
 {
-	return(dynamic_cast<UnitClass const *>(this));
+	return(Rtti_Leaf_Cast<UnitClass const>(this, RTTI_UNIT));
 }
 
 

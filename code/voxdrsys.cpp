@@ -19,10 +19,13 @@
 #include "wwfile.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstring>
 #include <iterator>
 
 BOOL VoxelDrawSystem::EnableLighting;
 BOOL VoxelDrawSystem::EnableZBuffer;
+bool VoxelDrawSystem::SteadyCenter = false;
 
 unsigned char VoxelDrawBuffer[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT * VOXEL_BITMAP_BPP];
 BSurface VoxelSurface(VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT, VOXEL_BITMAP_BPP, VoxelDrawBuffer);
@@ -329,6 +332,13 @@ static void Sort_Render_Data(VoxelRenderStruct * (&render_data)[64])
 }
 
 
+// The point the prepared scene is projected about; Region_Of drops its fraction of a pixel.
+static Vector3 Prepared_Center(void)
+{
+	return(VoxelDrawSystem::Scene_Center(MinVoxelBounds, MaxVoxelBounds, VoxelDrawSystem::SteadyCenter));
+}
+
+
 // The part of the voxel buffer a scene centered on center covers, and where on the screen it belongs.
 static SurfaceRegion Region_Of(Vector3 const & center)
 {
@@ -354,7 +364,7 @@ static Vector3 Draw_Prepared(void)
 
 	int index;
 
-	Vector3 center((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
+	Vector3 center = Prepared_Center();
 
 	for (index = 0; index < VoxelShadowRenderDataCount; index++) {
 		VoxelShadowRenderData[index].VoxLib->Render_Shadow(VoxelShadowRenderData[index], center);
@@ -379,35 +389,6 @@ static Vector3 Draw_Prepared(void)
 /// <summary>
 /// Draws every prepared voxel object into the drawing buffer.
 /// This routine finishes the voxel drawing sequence. The shadows go down first, then the
-/// objects in depth order, and the caller blits the result out of the voxel surface. This
-/// overload serves the voxel animation drawer, which wants the drawn rectangle and the
-/// screen offset as loose values rather than as a surface region.
-/// </summary>
-/// <param name="rect">Filled in with the rectangle of the voxel buffer that was drawn.</param>
-/// <param name="x">Filled in with the horizontal screen offset to blit that rectangle at.</param>
-/// <param name="y">Filled in with the vertical screen offset to blit that rectangle at.</param>
-/// <remarks>Reset must be called, and the objects prepared, before this routine.</remarks>
-void VoxelDrawSystem::Render(Rect & rect, int & x, int & y)
-{
-	Vector3 const center = Draw_Prepared();
-
-	rect.Width = MaxVoxelBounds.X - MinVoxelBounds.X;
-
-	rect.Height = MaxVoxelBounds.Y - MinVoxelBounds.Y;
-
-	rect.Set(VOXEL_BITMAP_WIDTH / 2 - rect.Width / 2, VOXEL_BITMAP_HEIGHT / 2 - rect.Height / 2, rect.Width + 8, rect.Height + 8);
-
-	rect.X -= 4;
-	rect.Y -= 4;
-
-	x = (int)center.X - rect.Width / 2;
-	y = (int)center.Y - rect.Height / 2;
-}
-
-
-/// <summary>
-/// Draws every prepared voxel object into the drawing buffer.
-/// This routine finishes the voxel drawing sequence. The shadows go down first, then the
 /// objects in depth order, and the caller blits the result out of the voxel surface.
 /// </summary>
 /// <returns>Returns with the region drawn -- the rectangle within the voxel buffer, and the
@@ -424,16 +405,17 @@ SurfaceRegion VoxelDrawSystem::Render(void)
 /// <summary>
 /// Describes the prepared objects without drawing them, for a renderer that draws them itself.
 /// </summary>
-/// <returns>Returns with the objects in the order Render would draw them (the shadows are left
-/// out), the point the projection is centered about, and the region Render would return.</returns>
+/// <returns>Returns with the shadows and objects in the order Render would draw them, the point
+/// the projection is centered about, and the region Render would return.</returns>
 /// <remarks>The objects are copies, so the scene stays valid after the next Reset.</remarks>
 VoxelScene VoxelDrawSystem::Capture(void)
 {
 	static VoxelRenderStruct * render_data[64];
 
 	VoxelScene scene;
-	scene.Center = Vector3((MaxVoxelBounds.X + MinVoxelBounds.X) * 0.5f, (MaxVoxelBounds.Y + MinVoxelBounds.Y) * 0.5f, (MaxVoxelBounds.Z + MinVoxelBounds.Z) * 0.5f);
+	scene.Center = Prepared_Center();
 	Sort_Render_Data(render_data);
+	scene.Shadows.assign(VoxelShadowRenderData, VoxelShadowRenderData + VoxelShadowRenderDataCount);
 	for (int index = 0; index < VoxelRenderDataCount; index++) {
 		scene.Objects.push_back(*render_data[index]);
 	}
@@ -454,6 +436,15 @@ void VoxelDrawSystem::Clear_Buffer(void)
 	Emissive_Bind_Fixed(&VoxelSurface, VoxelMaskBuffer, VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT);
 	if (VoxelMaskActive) {
 		std::fill(std::begin(VoxelMaskBuffer), std::end(VoxelMaskBuffer), 0);
+	}
+}
+
+
+void VoxelDrawSystem::Fill_Mask(Rect const & bounds, unsigned char value)
+{
+	Emissive_Bind_Fixed(&VoxelSurface, VoxelMaskBuffer, VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT);
+	for (int y = bounds.Y; y < bounds.Y + bounds.Height; y++) {
+		std::memset(VoxelMaskBuffer + y * VOXEL_BITMAP_WIDTH + bounds.X, value, bounds.Width);
 	}
 }
 

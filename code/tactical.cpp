@@ -33,6 +33,7 @@
 #include "_zbuffer.h"
 #include "alphashp.h"
 #include "anim.h"
+#include "autotest.h"
 #include "beacon.h"
 #include "animtype.h"
 #include "building.h"
@@ -40,6 +41,7 @@
 #include "actionline.h"
 #include "_uicontrol.h"
 #include "uicontrol.h"
+#include "ccrand.h"
 #include "cell.h"
 #include "convert.h"
 #include "coord.h"
@@ -1342,6 +1344,8 @@ void Tactical::Render_Foreground(Surface & composite)
 {
 	int i;
 
+	ShadowOnce_Next_Frame();
+
 	Add_Buildings_To_Selectable(TacticalRect);
 	composite.Lock();
 	Surface * savedlogical = LogicalSurface;
@@ -1376,6 +1380,7 @@ void Tactical::Render_Foreground(Surface & composite)
 		RadBeamClass::Draw_All();
 		Draw_Mind_Control_Links();
 		Draw_Psychic_Lines();
+		Draw_Airstrike_Lines();
 		Draw_Hidden_Markers();
 		Draw_Beacons();
 	}
@@ -4857,6 +4862,84 @@ void Tactical::Draw_Chrono_Screen_Effect(void)
 			}
 		}
 		Draw_Chrono_Swirl(*LogicalSurface, *ChronoPicture, fade - (t - fade - CHRONO_EFFECT_HOLD), fade);
+	}
+}
+
+
+/// <summary>
+/// Draws the laser line from each airstrike designator to the structure its airstrike marks
+/// (TacticalClass::Render, 0x6D47FB). Every player sees every line, whatever the shroud, fog or
+/// owner, except in planning mode. The structure's end moves up to 15 leptons in X and Z on the
+/// wall clock, to a new place every 128 ms, and each line takes its brightness from the
+/// non-critical generator every time it is drawn, so drawing never touches the game's random numbers.
+/// </summary>
+void Tactical::Draw_Airstrike_Lines(void)
+{
+	if (Map.IsPlanningMode) {
+		return;
+	}
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		TechnoClass const * target = techno->AirstrikeMarkedTarget;
+		if (target == NULL) {
+			continue;
+		}
+		unsigned tick = timeGetTime() >> 7;
+		int brightness = 0;
+		if (!AutoTest_Airstrike_Line_Pin(tick, brightness)) {
+			brightness = Sim_Random_Pick(190, 270);
+		}
+		Coord to = target->Center_Coord();
+		to.X = int(Gamemd_Cosine(tick * 0.37) * 15.0 + to.X);
+		to.Z = int(Gamemd_Sine(double(tick)) * 15.0 + to.Z);
+		Draw_Airstrike_Line(techno->Turret_Coord(0), to, brightness);
+	}
+}
+
+
+/// <summary>
+/// Draws one airstrike laser line (0x705860): three pixels wide, in four quarters that fade from
+/// the designator toward the target. A small solid red dot marks the target end when
+/// it is higher on the screen than the designator's end. The line is hidden where the depth buffer
+/// holds something nearer; the dot is not.
+/// </summary>
+/// <param name="from">The designator's firing point for weapon 0, in leptons.</param>
+/// <param name="to">The point on the target the line ends at, in leptons.</param>
+/// <param name="brightness">190 to 255 draws the line in red at that brightness; 256 to 270 turns it orange.</param>
+void Tactical::Draw_Airstrike_Line(Coord const & from, Coord const & to, int brightness)
+{
+	Point2D start;
+	Point2D end;
+	Coord_To_Pixel(from, start);
+	Coord_To_Pixel(to, end);
+
+	int const over = brightness - 256;
+	RGBClass const rgb = over < 0 ? RGBClass(brightness, 0, 0) : RGBClass(255, 110 * over / 14, 30 * over / 14);
+
+	if (end.Y < start.Y) {
+		int const red = DSurface::Build_Hicolor_Pixel(255, 0, 0);
+		LogicalSurface->Fill_Rect(TacticalRect, Rect(end.X - 2, end.Y, 4, 2), red);
+		LogicalSurface->Fill_Rect(TacticalRect, Rect(end.X - 1, end.Y - 1, 2, 4), red);
+	}
+
+	unsigned const color = DSurface::Build_Hicolor_Pixel(rgb);
+	Point2D const delta = end - start;
+	Point2D const side = std::abs(delta.X) > std::abs(delta.Y) ? Point2D(0, 1) : Point2D(1, 0);
+	int const start_depth = -32 - Z_Lepton_To_Pixel(from.Z);
+	int const depth_delta = (-32 - Z_Lepton_To_Pixel(to.Z)) - start_depth;
+	Point2D previous = start;
+	int previous_depth = start_depth;
+	for (int quarter = 1; quarter <= 4; quarter++) {
+		Point2D const next = start + Point2D(delta.X * quarter / 4, delta.Y * quarter / 4);
+		// gamemd adds each quarter's whole depth offset to the last quarter's end, so the depth runs on to 2.5 times the span.
+		int const next_depth = previous_depth + depth_delta * quarter / 4;
+		int const core_fade = 255 - (255 * (quarter - 1)) / 4;
+		int const side_fade = 125 - 25 * quarter;
+		LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, previous, next, color, previous_depth, next_depth, false, true, core_fade);
+		LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, previous + side, next + side, color, previous_depth, next_depth, false, true, side_fade);
+		LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, previous - side, next - side, color, previous_depth, next_depth, false, true, side_fade);
+		previous = next;
+		previous_depth = next_depth;
 	}
 }
 

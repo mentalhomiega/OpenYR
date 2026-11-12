@@ -1,0 +1,37 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+
+	Every settings page made only of declared rows (Option_Setting_Pages in code/optionsettings.cpp)
+	shows in this one document, one page at a time.
+-->
+<rml>
+<head>
+	<title>Settings</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/template" href="setting-rows.rml"/>
+	<link type="text/rcss" href="settings.rcss"/>
+</head>
+<body template="dialog" class="page-settings settings-backdrop" data-model="settingspage">
+	<div id="page">
+		<div id="list">
+			<template src="setting-rows"/>
+		</div>
+		<div id="side">
+			<p id="side-title">Description</p>
+			<p id="description">Point at a setting or select it to read what it does.</p>
+		</div>
+	</div>
+	<div id="footer">
+		<button id="footer-reset" class="big" data-event-click="queue('reset')">Reset to defaults</button>
+		<span id="footer-spacer"></span>
+		<button id="footer-cancel" class="big" data-event-click="queue('cancel')">Back</button>
+		<button id="footer-ok" class="big primary" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	</div>
+</body>
+</rml>

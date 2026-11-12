@@ -1,0 +1,23 @@
+; A landed jumpjet on a concrete low bridge section of the north-south family dies when the section falls, not
+; before. On XMP18DU the span at 122-133,95-97 is made of north-south family pieces (overlays 205 to 232). A Rocketeer
+; (JUMPJET) stands on 128,97, in the section of the piece at 128,96, and another on 131,96 in a different section; the
+; piece at 128,96 takes two weapon hits (concretehit). gamemd's north-south section routine (0x57CF60) passes its
+; jumpjet argument set only on the hit that brings the section down (the east-west family's 0x57D530 passes it set
+; every time), and 0x487A10 destroys the jumpjets in the section's cells when it is set.
+; Expected: the Rocketeer on 128,97 is alive after the first hit (the section is only cracked) and gone after the
+; second, when the piece falls (overlay 231). The Rocketeer on 131,96 lives. Before the fix the one on 128,97 survived
+; the fall.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bridge-concrete-ns-jumpjet-xmp18.txt -Build agent30 -Map XMP18DU.MAP -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST( +(bridgeobj|concretehit|passable)| wait)|Exception"
+30 reveal
+31 view 128 96
+40 grantunit JUMPJET 128 97
+41 grantunit JUMPJET 131 96
+70 bridgeobj JUMPJET
+72 passable 128 96
+80 concretehit 128 96
+85 bridgeobj JUMPJET
+90 concretehit 128 96
+92 passable 128 96
+95 bridgeobj JUMPJET
+150 bridgeobj JUMPJET
+151 quit

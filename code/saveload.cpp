@@ -1164,6 +1164,8 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	// The scenario's own tutorial lines travel here, since a load never re-reads the map.
 	stream.Serialize(TutorialText);
 
+	Serialize_Off_Map_Cell_Location(stream);
+
 	// Placed sounds and the sounds attached to objects come back on the next
 	// sound tick; the playing sounds themselves are not saved.
 	Static_Sounds_Serialize(stream);

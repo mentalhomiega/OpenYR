@@ -1,0 +1,423 @@
+; Large battle for the performance benchmark, zoomed out at 3840x2160 on the stock skirmish map XMP04T8 (145x137 local cells,
+; the largest stock map, so the zoom limit stays at 0.50: a 7546x4245 view of the map). The same forces as
+; bench-large-battle.txt, with the map revealed and the view over the fighting: four sides of 40 vehicles, 40 infantry
+; and 2 aircraft in the middle of the map, 8 destroyers on the river east of them, everything placed on frame 10. The computer
+; houses (#1 north-west, #2 south-east, #3 north-east of the player's side, which is #0 in the south-west) hunt, and the
+; player moves its forces across the middle and calls focus-fire orders at the frames below. The run stops at frame 7200,
+; which is 120 s at game speed 1. Perf lines (docs/PERFORMANCE.md) are written once a second.
+; Run: scripts/perf_bench.ps1 -Build agent14 -Map XMP04T8.MAP -Width 3840 -Height 2160 -Script src-agent14/tests/autotest/bench-large-battle-xmp04-zoomed-out.txt
+0 perflog 1
+1 view 68 72
+2 zoom 0.5
+3 view 68 72
+3 log BENCH_START
+4 reveal
+10 grantunit MTNK 40 78
+10 grantunit HTNK 42 78
+10 grantunit MTNK 44 78
+10 grantunit HTNK 46 78
+10 grantunit MTNK 48 78
+10 grantunit HTNK 50 78
+10 grantunit MTNK 52 78
+10 grantunit HTNK 54 78
+10 grantunit MTNK 56 78
+10 grantunit HTNK 58 78
+10 grantunit E1 40 80
+10 grantunit E2 42 80
+10 grantunit E1 44 80
+10 grantunit E2 46 80
+10 grantunit E1 48 80
+10 grantunit E2 50 80
+10 grantunit E1 52 80
+10 grantunit E2 54 80
+10 grantunit E1 56 80
+10 grantunit E2 58 80
+10 grantunit MTNK 40 82
+10 grantunit HTNK 42 82
+10 grantunit MTNK 44 82
+10 grantunit HTNK 46 82
+10 grantunit MTNK 48 82
+10 grantunit HTNK 50 82
+10 grantunit MTNK 52 82
+10 grantunit HTNK 54 82
+10 grantunit MTNK 56 82
+10 grantunit HTNK 58 82
+10 grantunit E1 40 84
+10 grantunit E2 42 84
+10 grantunit E1 44 84
+10 grantunit E2 46 84
+10 grantunit E1 48 84
+10 grantunit E2 50 84
+10 grantunit E1 52 84
+10 grantunit E2 54 84
+10 grantunit E1 56 84
+10 grantunit E2 58 84
+10 grantunit MTNK 40 86
+10 grantunit HTNK 42 86
+10 grantunit MTNK 44 86
+10 grantunit HTNK 46 86
+10 grantunit MTNK 48 86
+10 grantunit HTNK 50 86
+10 grantunit MTNK 52 86
+10 grantunit HTNK 54 86
+10 grantunit MTNK 56 86
+10 grantunit HTNK 58 86
+10 grantunit E1 40 88
+10 grantunit E2 42 88
+10 grantunit E1 44 88
+10 grantunit E2 46 88
+10 grantunit E1 48 88
+10 grantunit E2 50 88
+10 grantunit E1 52 88
+10 grantunit E2 54 88
+10 grantunit E1 56 88
+10 grantunit E2 58 88
+10 grantunit MTNK 40 90
+10 grantunit HTNK 42 90
+10 grantunit MTNK 44 90
+10 grantunit HTNK 46 90
+10 grantunit MTNK 48 90
+10 grantunit HTNK 50 90
+10 grantunit MTNK 52 90
+10 grantunit HTNK 54 90
+10 grantunit MTNK 56 90
+10 grantunit HTNK 58 90
+10 grantunit E1 40 92
+10 grantunit E2 42 92
+10 grantunit E1 44 92
+10 grantunit E2 46 92
+10 grantunit E1 48 92
+10 grantunit E2 50 92
+10 grantunit E1 52 92
+10 grantunit E2 54 92
+10 grantunit E1 56 92
+10 grantunit E2 58 92
+10 grantunit HIND 40 76
+10 grantunit ZEP 44 76
+10 houseunit MTNK@#1 40 50
+10 houseunit HTNK@#1 42 50
+10 houseunit MTNK@#1 44 50
+10 houseunit HTNK@#1 46 50
+10 houseunit MTNK@#1 48 50
+10 houseunit HTNK@#1 50 50
+10 houseunit MTNK@#1 52 50
+10 houseunit HTNK@#1 54 50
+10 houseunit MTNK@#1 56 50
+10 houseunit HTNK@#1 58 50
+10 houseunit E1@#1 40 52
+10 houseunit E2@#1 42 52
+10 houseunit E1@#1 44 52
+10 houseunit E2@#1 46 52
+10 houseunit E1@#1 48 52
+10 houseunit E2@#1 50 52
+10 houseunit E1@#1 52 52
+10 houseunit E2@#1 54 52
+10 houseunit E1@#1 56 52
+10 houseunit E2@#1 58 52
+10 houseunit MTNK@#1 40 54
+10 houseunit HTNK@#1 42 54
+10 houseunit MTNK@#1 44 54
+10 houseunit HTNK@#1 46 54
+10 houseunit MTNK@#1 48 54
+10 houseunit HTNK@#1 50 54
+10 houseunit MTNK@#1 52 54
+10 houseunit HTNK@#1 54 54
+10 houseunit MTNK@#1 56 54
+10 houseunit HTNK@#1 58 54
+10 houseunit E1@#1 40 56
+10 houseunit E2@#1 42 56
+10 houseunit E1@#1 44 56
+10 houseunit E2@#1 46 56
+10 houseunit E1@#1 48 56
+10 houseunit E2@#1 50 56
+10 houseunit E1@#1 52 56
+10 houseunit E2@#1 54 56
+10 houseunit E1@#1 56 56
+10 houseunit E2@#1 58 56
+10 houseunit MTNK@#1 40 58
+10 houseunit HTNK@#1 42 58
+10 houseunit MTNK@#1 44 58
+10 houseunit HTNK@#1 46 58
+10 houseunit MTNK@#1 48 58
+10 houseunit HTNK@#1 50 58
+10 houseunit MTNK@#1 52 58
+10 houseunit HTNK@#1 54 58
+10 houseunit MTNK@#1 56 58
+10 houseunit HTNK@#1 58 58
+10 houseunit E1@#1 40 60
+10 houseunit E2@#1 42 60
+10 houseunit E1@#1 44 60
+10 houseunit E2@#1 46 60
+10 houseunit E1@#1 48 60
+10 houseunit E2@#1 50 60
+10 houseunit E1@#1 52 60
+10 houseunit E2@#1 54 60
+10 houseunit E1@#1 56 60
+10 houseunit E2@#1 58 60
+10 houseunit MTNK@#1 40 62
+10 houseunit HTNK@#1 42 62
+10 houseunit MTNK@#1 44 62
+10 houseunit HTNK@#1 46 62
+10 houseunit MTNK@#1 48 62
+10 houseunit HTNK@#1 50 62
+10 houseunit MTNK@#1 52 62
+10 houseunit HTNK@#1 54 62
+10 houseunit MTNK@#1 56 62
+10 houseunit HTNK@#1 58 62
+10 houseunit E1@#1 40 64
+10 houseunit E2@#1 42 64
+10 houseunit E1@#1 44 64
+10 houseunit E2@#1 46 64
+10 houseunit E1@#1 48 64
+10 houseunit E2@#1 50 64
+10 houseunit E1@#1 52 64
+10 houseunit E2@#1 54 64
+10 houseunit E1@#1 56 64
+10 houseunit E2@#1 58 64
+10 houseunit HIND@#1 40 48
+10 houseunit ZEP@#1 44 48
+10 houseunit MTNK@#2 76 78
+10 houseunit HTNK@#2 78 78
+10 houseunit MTNK@#2 80 78
+10 houseunit HTNK@#2 82 78
+10 houseunit MTNK@#2 84 78
+10 houseunit HTNK@#2 86 78
+10 houseunit MTNK@#2 88 78
+10 houseunit HTNK@#2 90 78
+10 houseunit MTNK@#2 92 78
+10 houseunit HTNK@#2 94 78
+10 houseunit E1@#2 76 80
+10 houseunit E2@#2 78 80
+10 houseunit E1@#2 80 80
+10 houseunit E2@#2 82 80
+10 houseunit E1@#2 84 80
+10 houseunit E2@#2 86 80
+10 houseunit E1@#2 88 80
+10 houseunit E2@#2 90 80
+10 houseunit E1@#2 92 80
+10 houseunit E2@#2 94 80
+10 houseunit MTNK@#2 76 82
+10 houseunit HTNK@#2 78 82
+10 houseunit MTNK@#2 80 82
+10 houseunit HTNK@#2 82 82
+10 houseunit MTNK@#2 84 82
+10 houseunit HTNK@#2 86 82
+10 houseunit MTNK@#2 88 82
+10 houseunit HTNK@#2 90 82
+10 houseunit MTNK@#2 92 82
+10 houseunit HTNK@#2 94 82
+10 houseunit E1@#2 76 84
+10 houseunit E2@#2 78 84
+10 houseunit E1@#2 80 84
+10 houseunit E2@#2 82 84
+10 houseunit E1@#2 84 84
+10 houseunit E2@#2 86 84
+10 houseunit E1@#2 88 84
+10 houseunit E2@#2 90 84
+10 houseunit E1@#2 92 84
+10 houseunit E2@#2 94 84
+10 houseunit MTNK@#2 76 86
+10 houseunit HTNK@#2 78 86
+10 houseunit MTNK@#2 80 86
+10 houseunit HTNK@#2 82 86
+10 houseunit MTNK@#2 84 86
+10 houseunit HTNK@#2 86 86
+10 houseunit MTNK@#2 88 86
+10 houseunit HTNK@#2 90 86
+10 houseunit MTNK@#2 92 86
+10 houseunit HTNK@#2 94 86
+10 houseunit E1@#2 76 88
+10 houseunit E2@#2 78 88
+10 houseunit E1@#2 80 88
+10 houseunit E2@#2 82 88
+10 houseunit E1@#2 84 88
+10 houseunit E2@#2 86 88
+10 houseunit E1@#2 88 88
+10 houseunit E2@#2 90 88
+10 houseunit E1@#2 92 88
+10 houseunit E2@#2 94 88
+10 houseunit MTNK@#2 76 90
+10 houseunit HTNK@#2 78 90
+10 houseunit MTNK@#2 80 90
+10 houseunit HTNK@#2 82 90
+10 houseunit MTNK@#2 84 90
+10 houseunit HTNK@#2 86 90
+10 houseunit MTNK@#2 88 90
+10 houseunit HTNK@#2 90 90
+10 houseunit MTNK@#2 92 90
+10 houseunit HTNK@#2 94 90
+10 houseunit E1@#2 76 92
+10 houseunit E2@#2 78 92
+10 houseunit E1@#2 80 92
+10 houseunit E2@#2 82 92
+10 houseunit E1@#2 84 92
+10 houseunit E2@#2 86 92
+10 houseunit E1@#2 88 92
+10 houseunit E2@#2 90 92
+10 houseunit E1@#2 92 92
+10 houseunit E2@#2 94 92
+10 houseunit HIND@#2 76 76
+10 houseunit ZEP@#2 80 76
+10 houseunit MTNK@#3 76 50
+10 houseunit HTNK@#3 78 50
+10 houseunit MTNK@#3 80 50
+10 houseunit HTNK@#3 82 50
+10 houseunit MTNK@#3 84 50
+10 houseunit HTNK@#3 86 50
+10 houseunit MTNK@#3 88 50
+10 houseunit HTNK@#3 90 50
+10 houseunit MTNK@#3 92 50
+10 houseunit HTNK@#3 94 50
+10 houseunit E1@#3 76 52
+10 houseunit E2@#3 78 52
+10 houseunit E1@#3 80 52
+10 houseunit E2@#3 82 52
+10 houseunit E1@#3 84 52
+10 houseunit E2@#3 86 52
+10 houseunit E1@#3 88 52
+10 houseunit E2@#3 90 52
+10 houseunit E1@#3 92 52
+10 houseunit E2@#3 94 52
+10 houseunit MTNK@#3 76 54
+10 houseunit HTNK@#3 78 54
+10 houseunit MTNK@#3 80 54
+10 houseunit HTNK@#3 82 54
+10 houseunit MTNK@#3 84 54
+10 houseunit HTNK@#3 86 54
+10 houseunit MTNK@#3 88 54
+10 houseunit HTNK@#3 90 54
+10 houseunit MTNK@#3 92 54
+10 houseunit HTNK@#3 94 54
+10 houseunit E1@#3 76 56
+10 houseunit E2@#3 78 56
+10 houseunit E1@#3 80 56
+10 houseunit E2@#3 82 56
+10 houseunit E1@#3 84 56
+10 houseunit E2@#3 86 56
+10 houseunit E1@#3 88 56
+10 houseunit E2@#3 90 56
+10 houseunit E1@#3 92 56
+10 houseunit E2@#3 94 56
+10 houseunit MTNK@#3 76 58
+10 houseunit HTNK@#3 78 58
+10 houseunit MTNK@#3 80 58
+10 houseunit HTNK@#3 82 58
+10 houseunit MTNK@#3 84 58
+10 houseunit HTNK@#3 86 58
+10 houseunit MTNK@#3 88 58
+10 houseunit HTNK@#3 90 58
+10 houseunit MTNK@#3 92 58
+10 houseunit HTNK@#3 94 58
+10 houseunit E1@#3 76 60
+10 houseunit E2@#3 78 60
+10 houseunit E1@#3 80 60
+10 houseunit E2@#3 82 60
+10 houseunit E1@#3 84 60
+10 houseunit E2@#3 86 60
+10 houseunit E1@#3 88 60
+10 houseunit E2@#3 90 60
+10 houseunit E1@#3 92 60
+10 houseunit E2@#3 94 60
+10 houseunit MTNK@#3 76 62
+10 houseunit HTNK@#3 78 62
+10 houseunit MTNK@#3 80 62
+10 houseunit HTNK@#3 82 62
+10 houseunit MTNK@#3 84 62
+10 houseunit HTNK@#3 86 62
+10 houseunit MTNK@#3 88 62
+10 houseunit HTNK@#3 90 62
+10 houseunit MTNK@#3 92 62
+10 houseunit HTNK@#3 94 62
+10 houseunit E1@#3 76 64
+10 houseunit E2@#3 78 64
+10 houseunit E1@#3 80 64
+10 houseunit E2@#3 82 64
+10 houseunit E1@#3 84 64
+10 houseunit E2@#3 86 64
+10 houseunit E1@#3 88 64
+10 houseunit E2@#3 90 64
+10 houseunit E1@#3 92 64
+10 houseunit E2@#3 94 64
+10 houseunit HIND@#3 76 48
+10 houseunit ZEP@#3 80 48
+10 grantunit DEST 111 70
+10 grantunit DEST 111 73
+10 grantunit DEST 111 76
+10 houseunit DEST@#2 114 70
+10 houseunit DEST@#2 114 73
+10 houseunit DEST@#3 114 76
+10 houseunit DEST@#3 114 79
+10 houseunit DEST@#1 111 79
+600 hunt MTNK
+600 hunt HTNK
+600 hunt E1
+600 hunt E2
+600 hunt HIND
+600 hunt ZEP
+600 hunt DEST
+600 move MTNK 86 98
+600 move HTNK 86 98
+600 move E1 86 98
+600 move E2 86 98
+600 move HIND 86 98
+600 move ZEP 86 98
+1200 log BENCH_FOCUS 1200
+1200 strikeobj HTNK 90 80 40 land
+1200 strikeobj E2 90 52 40 land
+2400 log BENCH_FOCUS 2400
+2400 strikeobj HTNK 90 80 40 land
+2400 strikeobj E2 90 52 40 land
+4800 log BENCH_FOCUS 4800
+4800 strikeobj HTNK 90 80 40 land
+4800 strikeobj E2 90 52 40 land
+6000 log BENCH_FOCUS 6000
+6000 strikeobj HTNK 90 80 40 land
+6000 strikeobj E2 90 52 40 land
+1800 hunt MTNK
+1800 hunt HTNK
+1800 hunt E1
+1800 hunt E2
+1800 hunt HIND
+1800 hunt ZEP
+1800 hunt DEST
+1800 move MTNK 58 56
+1800 move HTNK 58 56
+1800 move E1 58 56
+1800 move E2 58 56
+1800 move HIND 58 56
+1800 move ZEP 58 56
+3000 hunt MTNK
+3000 hunt HTNK
+3000 hunt E1
+3000 hunt E2
+3000 hunt HIND
+3000 hunt ZEP
+3000 hunt DEST
+3600 move MTNK 46 72
+3600 move HTNK 46 72
+3600 move E1 46 72
+3600 move E2 46 72
+3600 move HIND 46 72
+3600 move ZEP 46 72
+4200 hunt MTNK
+4200 hunt HTNK
+4200 hunt E1
+4200 hunt E2
+4200 hunt HIND
+4200 hunt ZEP
+4200 hunt DEST
+5400 move MTNK 86 56
+5400 move HTNK 86 56
+5400 move E1 86 56
+5400 move E2 86 56
+5400 move HIND 86 56
+5400 move ZEP 86 56
+6600 hunt MTNK
+6600 hunt HTNK
+6600 hunt E1
+6600 hunt E2
+6600 hunt HIND
+6600 hunt ZEP
+6600 hunt DEST
+7200 log BENCH_END
+7200 quit

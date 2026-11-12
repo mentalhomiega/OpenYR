@@ -31,6 +31,7 @@
 #include "hdrdisplay.h"
 #include "misc.h"
 #include "options.h"
+#include "renderthread.h"
 #include "sdl/sdlwindow.h"
 #include "surface.h"
 #include "ui/uishell.h"
@@ -273,11 +274,15 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 
 	BackendRenderer renderer = (BackendRenderer)Options.Renderer;
 	bool const hdr = HDR_Output_Wanted(renderer);
-	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync, hdr)) {
+	bool const renderthread = Options.RenderThread && (renderer == BACKEND_RENDERER_AUTO || renderer == BACKEND_RENDERER_D3D11);
+	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync, hdr, renderthread)) {
 		return(false);
 	}
 
 	DebugString("Video: renderer is %s, HDR output %s\n", Backend_Renderer_Name(), Backend_HDR_Active() ? "on" : "off");
+	if (RenderThread_Running()) {
+		DebugString("Video: the renderer runs on its own thread\n");
+	}
 	Push_HDR_Levels();
 
 	_Initialized = true;
@@ -765,6 +770,10 @@ void Video_Present_If_Dirty(void)
 		return;
 	}
 	if (_AwaitingMapDraw && (now - _MapDropTime) < VIDEO_MAP_DROP_HOLD_MS) {
+		return;
+	}
+	if (RenderThread_Busy()) {
+		Perf_Count(PERF_COUNT_PRESENTS_BUSY);
 		return;
 	}
 

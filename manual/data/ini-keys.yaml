@@ -5146,7 +5146,7 @@ Bloom:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: Bloom
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 BloomStrength:
@@ -5161,10 +5161,10 @@ BloomStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: BloomStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 BlowupSound:
@@ -8753,10 +8753,10 @@ CloudShadowStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: CloudShadowStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 CloudShadows:
@@ -8774,7 +8774,7 @@ CloudShadows:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: CloudShadows
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 Cluster:
@@ -17380,7 +17380,79 @@ GpuRender:
       default_candidate: 'yes'
       declared_in: OptionsClass
       member: GpuRender
-      source: code/options.cpp
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
+GpuVoxelCloak:
+  key: GpuVoxelCloak
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Translucent
+      declared_in: OptionsClass
+      member: null
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
+GpuVoxelLayerDepth:
+  key: GpuVoxelLayerDepth
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Shared
+      declared_in: OptionsClass
+      member: null
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
+GpuVoxelScale:
+  key: GpuVoxelScale
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: OptionsClass
+      member: GpuVoxelScale
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
+GpuVoxelSmooth:
+  key: GpuVoxelSmooth
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: GpuVoxelSmooth
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 GpuVoxels:
@@ -17398,7 +17470,7 @@ GpuVoxels:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: GpuVoxels
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 Gravity:
@@ -28071,6 +28143,24 @@ ParadropRadius:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ParallelPaths:
+  key: ParallelPaths
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: ParallelPaths
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
 Paralyzed:
   key: Paralyzed
   scopes:
@@ -28296,6 +28386,24 @@ PathDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+PathThreads:
+  key: PathThreads
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: OptionsClass
+      member: PathThreads
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
 PatrolScan:
   key: PatrolScan
   scopes:
@@ -28472,6 +28580,24 @@ PerfLog:
       declared_in: OptionsClass
       member: null
       source: code/options.cpp
+      guard: null
+    level: OptionsClass
+PerfOverlay:
+  key: PerfOverlay
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: 'Off'
+      declared_in: OptionsClass
+      member: null
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 PermaControlledAnimationType:
@@ -32156,6 +32282,24 @@ RenderFrameRate:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+RenderThread:
+  key: RenderThread
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: RenderThread
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
 Renderer:
   key: Renderer
   scopes:
@@ -34304,6 +34448,24 @@ ShadowIndex:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ShadowStacking:
+  key: ShadowStacking
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: ShadowStacking
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
 ShadowTiles:
   key: ShadowTiles
   scopes:
@@ -34579,7 +34741,7 @@ Shockwaves:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: Shockwaves
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 ShorePieces:
@@ -35665,10 +35827,10 @@ SoftShadowRadius:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '3'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: SoftShadowRadius
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 SoftShadows:
@@ -35686,7 +35848,7 @@ SoftShadows:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: SoftShadows
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 SoloCrateMoney:
@@ -38120,6 +38282,24 @@ StateAIAdvance:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+SteadyVoxelPlacement:
+  key: SteadyVoxelPlacement
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: SteadyVoxelPlacement
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
 Sticky:
   key: Sticky
   scopes:
@@ -45049,10 +45229,10 @@ WaterRippleStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: WaterRippleStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WaterRipples:
@@ -45070,7 +45250,7 @@ WaterRipples:
       default_candidate: 'no'
       declared_in: OptionsClass
       member: WaterRipples
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WaterSet:
@@ -45947,7 +46127,7 @@ Weather:
       default_candidate: None
       declared_in: OptionsClass
       member: null
-      source: code/options.cpp
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WeatherConBoltExplosion:
@@ -46016,10 +46196,10 @@ WeatherStrength:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: '100'
       declared_in: OptionsClass
-      member: null
-      source: code/options.cpp
+      member: WeatherStrength
+      source: code/optionsettings.cpp
       guard: null
     level: OptionsClass
 WebDuration:

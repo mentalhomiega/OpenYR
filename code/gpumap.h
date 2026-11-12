@@ -76,6 +76,10 @@ struct GpuMapPass
 	std::vector<unsigned char> const * Glow = NULL;
 	std::vector<unsigned char> * GlowChanged = NULL;
 
+	// Set when GpuVoxels is on and the emissive mask is kept: Glow holds the mark GPU_VOXEL_MASK_MARK under
+	// the voxel parts, and the GPU builds the finished mask from Glow and the parts' layers.
+	bool Mask = false;
+
 	// The map position of Area's top left pixel, in pixels, which keeps water ripples and cloud
 	// shadows fixed to the ground as the view moves.
 	int WorldX = 0;
@@ -87,9 +91,10 @@ struct GpuMapPass
 
 
 // Draws the pass on the GPU and keeps expected, the software result, until the GPU picture has been
-// read back; GpuMap_After_Frame then logs a GPU_DIFF line comparing them. Returns false, drawing
+// read back; GpuMap_After_Frame then logs a GPU_DIFF line comparing them, and with expected_mask, the
+// software emissive mask, a GPU_MASK line comparing it with the mask the GPU built. Returns false, drawing
 // nothing, when the renderer is not Direct3D 11 or an earlier check is still being read back.
-bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected);
+bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected, std::vector<unsigned char> const * expected_mask = NULL);
 
 // Keeps the pass for GpuMap_Texture to draw, replacing any pass kept earlier; false means it cannot
 // be drawn. Its list and buffers must stay unchanged until it is drawn or dropped.
@@ -99,8 +104,9 @@ bool GpuMap_Draw(GpuMapPass const & pass);
 void GpuMap_Drop(void);
 
 // Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
-// 0 draws each shadow as the software does.
-void GpuMap_Set_Soft_Shadows(int radius);
+// 0 draws each shadow as the software does. With union_shadows the mask is used at radius 0 too, unblurred,
+// so overlapping shadows darken the ground once with hard edges.
+void GpuMap_Set_Soft_Shadows(int radius, bool union_shadows = false);
 
 // True when the renderer is running and can draw map passes.
 bool GpuMap_Supported(void);
@@ -125,13 +131,29 @@ enum GpuWeather {
 // Draws weather falling over the map, with strength percent (at most 400) of the usual amount.
 void GpuMap_Set_Weather(GpuWeather weather, int strength);
 
+// Draws the map pass, and the voxel objects in it, at scale times the map's own pixels (1 to 4). A pass whose picture
+// at that scale would be over 16384 pixels a side or 2^27 pixels is drawn at the largest scale under both. Only the
+// presenter shows the finer picture; the software result and the GPU_DIFF check stay at scale 1.
+void GpuMap_Set_Voxel_Scale(int scale);
+
+// How many times finer than the map the picture GpuMap_Texture returned is drawn.
+int GpuMap_Scale(void);
+
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass
 // does not fit the GPU limits.
 std::uint16_t GpuMap_Texture(void);
 
+// The bgfx handle index of the emissive mask the GPU built for the pass GpuMap_Texture last drew, one byte a
+// map pixel, or bgfx::kInvalidHandle when that pass built none.
+std::uint16_t GpuMap_Mask_Texture(void);
+
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
+
+// Makes the next pass the GPU draws log a GPU_VOXEL_SHADOW line with the shadow blits of voxel objects it holds
+// and how many of their pixels the finished picture shows darkened (the gpushadowcount autotest step).
+void GpuMap_Count_Shadows(void);
 
 // Forgets the kept pass and ends a bgfx frame early when the last drawn pass's buffers have not
 // been read yet; call it before freeing the depth or alpha buffer.

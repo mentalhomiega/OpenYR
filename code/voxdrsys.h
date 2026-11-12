@@ -19,6 +19,7 @@
 
 #include "voxel.hh"
 
+#include <cmath>
 #include <vector>
 
 class Surface;
@@ -43,6 +44,21 @@ namespace VoxelDrawSystem
 	extern BOOL EnableLighting;
 	extern BOOL EnableZBuffer;
 
+	// While set, a scene is projected about a whole pixel, so its picture is placed without a rounding error.
+	extern bool SteadyCenter;
+
+	// The point a scene with these bounds is projected about. Steady rounds it to a whole pixel, because the
+	// picture is placed at the whole pixel below the centre and would otherwise sit up to a pixel off its model.
+	inline Vector3 Scene_Center(Vector3 const & min, Vector3 const & max, bool steady)
+	{
+		Vector3 center((max.X + min.X) * 0.5f, (max.Y + min.Y) * 0.5f, (max.Z + min.Z) * 0.5f);
+		if (steady) {
+			center.X = std::floor(center.X + 0.5f);
+			center.Y = std::floor(center.Y + 0.5f);
+		}
+		return(center);
+	}
+
 	int Load_VPL_File(FileClass & file);
 
 	inline void Enable_Lighting(void) { EnableLighting = true; }
@@ -64,11 +80,13 @@ namespace VoxelDrawSystem
 	void Prep_For_Shadow(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & camera, Matrix3D const & motion, Vector3 const & light);
 	void Prep_For_Object(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & transform);
 
-	void Render(Rect & rect, int & x, int & y);
 	SurfaceRegion Render(void);
 	VoxelScene Capture(void);
 
 	void Clear_Buffer(void);
+
+	// Writes value into the emissive mask buffer over a rectangle of the voxel buffer.
+	void Fill_Mask(Rect const & bounds, unsigned char value);
 
 	void Clear_Z_Buffer(void);
 };
@@ -85,14 +103,6 @@ struct VoxelRenderStruct {
 	Vector3 MinBounds;						/// The minimum bounds of the voxel model.
 	Vector3 MaxBounds;						/// The maximum bounds of the voxel model.
 	Vector3 BoxCorner[VOXEL_BOUNDS_COUNT];	/// The 8 corners of the voxel model.
-};
-
-
-// The prepared objects of a scene in drawing order (VoxelDrawSystem::Capture).
-struct VoxelScene {
-	std::vector<VoxelRenderStruct> Objects;
-	Vector3 Center;
-	SurfaceRegion Region;
 };
 
 
@@ -114,6 +124,15 @@ struct VoxelShadowRenderStruct {
 	 * layer's silhouette is smeared across to make the shadow.
 	 */
 	Vector3 ShadowCorner[4];
+};
+
+
+// The prepared shadows and objects of a scene, each in drawing order (VoxelDrawSystem::Capture).
+struct VoxelScene {
+	std::vector<VoxelShadowRenderStruct> Shadows;
+	std::vector<VoxelRenderStruct> Objects;
+	Vector3 Center;
+	SurfaceRegion Region;
 };
 
 

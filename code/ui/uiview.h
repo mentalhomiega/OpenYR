@@ -9,6 +9,10 @@
 
 #pragma once
 
+#include "ui/uiscreen.h"
+
+#include <vector>
+
 class UIPresenterClass;
 class UIShellClass;
 
@@ -31,8 +35,8 @@ class UIViewClass
 		virtual void Reveal_Done(void) {}
 
 		virtual UIPresenterClass & Presenter(void) const = 0;
-		// Makes the view one page of a tabbed Settings screen: the tab bar lights the tab (a UISettingsTab value)
-		// and hides the tabs not in the offered mask. Views that are not tab pages ignore it.
-		virtual void Set_Tab(int tab, unsigned offered) { (void)tab; (void)offered; }
+		// Makes the view one page of a tabbed Settings screen: the tab bar holds the offered tabs given, in their order,
+		// and lights the tab (a UISettingsTab value). Views that are not tab pages ignore it.
+		virtual void Set_Tab(int tab, std::vector<UISettingsTabEntry> const & bar) { (void)tab; (void)bar; }
 		virtual char const * Name(void) const = 0;
 };

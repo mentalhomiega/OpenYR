@@ -248,6 +248,7 @@ static void Spawner_Bind_Options(void)
 	Session.Options.AutoDeployMCV = SpawnConfig.AutoDeployMCV;
 	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
 	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;
+	Session.Options.ParallelPaths = SpawnConfig.ParallelPaths;
 
 	// AutoSurrender=no hands a departing player's base to the computer.
 	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
@@ -583,6 +584,7 @@ std::string Spawner_Describe_Session(void)
 	config.AutoSurrender = !Session.Options.AITakeover;
 	config.AttackNeutralUnits = Session.Options.AttackNeutralUnits;
 	config.ScrapMetal = Session.Options.ScrapMetal;
+	config.ParallelPaths = Session.Options.ParallelPaths;
 	config.AINamesByDifficulty = true;
 
 	int const humans = std::min(Session.Players.Count(), SpawnerConfigClass::SLOT_COUNT);

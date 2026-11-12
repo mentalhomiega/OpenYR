@@ -1,0 +1,8 @@
+; The performance overlay is turned to Basic, then Detailed, then off, as its key does. Each level logs whether recording
+; is on, and the overlay logs once that it drew each level it was shown at. The report step logs the overlay's numbers,
+; which depend on the machine, so the filter leaves that line out of the compared log.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/perf-overlay.txt -Width 800 -Height 600 -Seconds 120 -Settings "[Video]`nGpuRender=yes" -Filter "AUTOTEST (frame \d+:|perfoverlay [0-9]|perfoverlay drew)|Exception|game over" -Uncapped -StopAfterSteps
+30 perfoverlay 1
+90 perfoverlay 2
+150 perfoverlay report
+160 perfoverlay 0

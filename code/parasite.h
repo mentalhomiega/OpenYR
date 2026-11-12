@@ -73,7 +73,10 @@ class ParasiteClass
 		void Reset_Grapple(void);
 
 	private:
-		void Release(bool doomed, bool from_exit);
+		bool Can_Exist_On_Victim_Cell(void) const;
+		Coord Victim_Removed_Exit_Coord(void);
+		void Free_Victim(void);
+		void Resume_After_Exit(void);
 		void Update_Squid(void);
 		bool Update_Grapple(void);
 		void Enter_Grapple_Stage(GrappleStage stage);

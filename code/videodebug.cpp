@@ -69,15 +69,15 @@ static std::uint64_t Digest_Rows(std::uint64_t hash, char const * base, int pitc
 }
 
 
-// Counts the 16-bit frame pixels in the map area that hold VIDEO_LAYER_KEY.
-static unsigned long long Count_Keyed_Map_Pixels(DSurface const * surface)
+// Counts the 16-bit frame pixels in the area that hold VIDEO_LAYER_KEY.
+static unsigned long long Count_Keyed_Pixels(DSurface const * surface, Rect const & wanted)
 {
 	unsigned long long keyed = 0;
 	char const * base = (char const *)surface->Get_Buffer();
 	if (base == NULL || surface->Bytes_Per_Pixel() != 2) {
 		return(keyed);
 	}
-	Rect const area = Intersect(ScreenTacticalRect, surface->Get_Rect());
+	Rect const area = Intersect(wanted, surface->Get_Rect());
 	for (int y = area.Y; y < area.Y + area.Height; y++) {
 		unsigned short const * row = (unsigned short const *)(base + (std::ptrdiff_t)y * surface->Stride());
 		for (int x = area.X; x < area.X + area.Width; x++) {
@@ -110,7 +110,7 @@ void Video_Log_Present_Digest(DSurface const * surface, BackendLayer const * lay
 
 	DebugString("PRESENT_DIGEST frame %d present %llu hash %016llx layer %s\n", Frame, (unsigned long long)_PresentDigestCount, frame_hash, layer_text);
 	if (layer == NULL) {
-		unsigned long long const keyed = Count_Keyed_Map_Pixels(surface);
+		unsigned long long const keyed = Count_Keyed_Pixels(surface, ScreenTacticalRect);
 		if (keyed > 0) {
 			AUTOTEST_LOG("present keyed %llu pixels without map layer\n", keyed);
 		}
@@ -126,6 +126,15 @@ void Video_Set_Present_Digest(bool enabled)
 {
 	_PresentDigest = enabled;
 	_PresentDigestCount = 0;
+}
+
+
+/// <summary>
+/// Counts the pixels of the last presented frame inside the rectangle that hold the map layer key.
+/// </summary>
+unsigned long long Video_Count_Keyed_Pixels(Rect const & area)
+{
+	return(VisibleSurface != NULL ? Count_Keyed_Pixels((DSurface const *)VisibleSurface, area) : 0);
 }
 
 

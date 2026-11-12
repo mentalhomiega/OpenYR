@@ -11,6 +11,7 @@
 
 #include "voxdrsys.h"
 
+#include <cstdint>
 #include <vector>
 
 
@@ -25,9 +26,19 @@ struct GpuVoxelInstance
 	unsigned char Normal;
 };
 
+enum { GPU_VOXEL_SCALE_MAX = 4 };
+
+// The scale a map pass draws at for a GpuVoxelScale setting, 1 to GPU_VOXEL_SCALE_MAX: the setting itself, or for a
+// setting of 0 the whole number nearest screen_zoom, the screen pixels one map pixel covers.
+int Gpu_Voxel_Pass_Scale(int setting, double screen_zoom);
+
 // Lists the voxels of the layer the drawer would lay down for arg, in drawing order. A later voxel
 // overwrites an earlier one that lands on the same pixel. Lit layers carry a normal byte per voxel.
 void Gpu_Voxel_Walk(VoxelFuncArgumentStruct const & arg, bool reversed, bool lit, std::vector<GpuVoxelInstance> & out);
+
+// Lists one voxel for each occupied column of a shadow's layer, with K 0, colour 1 and normal 0, in the order
+// VoxelLibrary::Render_Shadow stamps them.
+void Gpu_Voxel_Walk_Shadow(VoxelFuncArgumentStruct const & arg, std::vector<GpuVoxelInstance> & out);
 
 // The index into the 256 by 256 voxel buffer of the first pixel the software drawer writes for a
 // voxel, from the drawer's projection (VoxelFuncArgumentStruct::TransformMatrix). Pixels past the end
@@ -42,3 +53,72 @@ inline int Gpu_Voxel_Buffer_Index(Vector3i16 const (&projection)[4], GpuVoxelIns
 // Draws the walked voxels into a 256 by 256 buffer exactly as the GPU shader does: one pixel for an
 // unlit layer, two for a lit one, colours through the lighting row of each voxel's normal.
 void Gpu_Voxel_Draw_Reference(std::vector<GpuVoxelInstance> const & voxels, Vector3i16 const (&projection)[4], bool lit, unsigned char const (&lighting)[VOXEL_PALETTE_SIZE], unsigned char (&buffer)[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT]);
+
+
+// The depth slices of a map pass's voxel blits (docs/GPU_DIRECT_VOXELS.md): the n-th voxel blit since the pass last
+// emptied its depth writes its depths in slice n, and no depth of slice n + 1 is farther than any depth of slice n, so
+// a later blit passes a LEQUAL test over an earlier one.
+inline constexpr int GPU_VOXEL_SLICES = 4096;
+
+// Where a layer puts a voxel inside its slice: d = Origin + voxel * PerVoxel + dot(cell, Step), 0 nearest and 1
+// farthest, where voxel is its place in the layer's walk and cell its position along the walk's three axes in voxels.
+struct GpuVoxelLayerDepth
+{
+	float Origin = 0.0f;
+	float PerVoxel = 0.0f;
+	float Step[3] = { 0.0f, 0.0f, 0.0f };
+};
+
+// The depth a fragment of slice at place d writes, as vs_voxelscene.sc computes it; d is clamped to 0 to 1.
+float Gpu_Voxel_Slice_Depth(int slice, float d);
+
+// GpuVoxelLayerDepth=Ordered: a layer whose walk starts at voxel first of a part of total voxels. Each voxel is at
+// the depth of the voxel walked before it or nearer, so the part draws as it does without depth.
+GpuVoxelLayerDepth Gpu_Voxel_Ordered_Depth(int first, int total);
+
+// GpuVoxelLayerDepth=Shared: the layer's view depth from its prepared corners (VoxelLibrary::Setup_Object's walk
+// axes), scaled so that nearest, the largest view Z of the part, is 0 and farthest is 1.
+GpuVoxelLayerDepth Gpu_Voxel_Shared_Depth(VoxelRenderStruct const & object, VoxelFuncArgumentStruct const & arg, float nearest, float farthest);
+
+// Widens nearest and farthest to the view Z of the prepared layer's box. Start them at -FLT_MAX and FLT_MAX; every
+// layer of a part, hull, turret and barrel alike, widens the same pair, because their corners share one view space.
+void Gpu_Voxel_Widen_Depth_Range(VoxelRenderStruct const & object, float & nearest, float & farthest);
+
+
+inline constexpr int GPU_VOXEL_DIRECTIONS = 6;
+
+// One face of a voxel that has no voxel beside it, at the voxel's position on the layer's own axes, which no
+// orientation changes. Direction 2 * axis is the face toward the axis's start and 2 * axis + 1 the one toward its end.
+struct GpuVoxelFace
+{
+	unsigned char X;
+	unsigned char Y;
+	unsigned char Z;
+	unsigned char Direction;
+	unsigned char Colour;
+	unsigned char Normal;
+};
+
+// A layer's exposed faces sorted by direction: those of direction d are Faces[First[d]] up to Faces[First[d + 1]].
+struct GpuVoxelFaceList
+{
+	std::vector<GpuVoxelFace> Faces;
+	int First[GPU_VOXEL_DIRECTIONS + 1] = {};
+};
+
+// Lists the exposed faces of the layer arg names, whatever orientation arg was set up for. A layer with normals
+// carries a normal byte per voxel.
+void Gpu_Voxel_Faces(VoxelFuncArgumentStruct const & arg, bool normals, GpuVoxelFaceList & out);
+
+// A walk's projection and depth for voxel positions on the layer's own axes, and the three directions whose faces
+// are turned toward the viewer, one an axis.
+struct GpuVoxelModelView
+{
+	Vector3i16 Projection[4];
+	GpuVoxelLayerDepth Depth;
+	int Visible[3];
+};
+
+// Restates the walk of arg: a voxel at (x, y, z) on the layer's axes gets the pixel and the depth the walk gives it.
+// The depth's PerVoxel has no meaning off the walk and is left out.
+GpuVoxelModelView Gpu_Voxel_Model_View(VoxelFuncArgumentStruct const & arg, bool reversed, GpuVoxelLayerDepth const & depth);

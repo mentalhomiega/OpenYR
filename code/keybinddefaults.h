@@ -40,9 +40,9 @@ struct HotkeyEntry
 // version 1, the version the builds before it wrote. Version 2 files hold the bindings of the
 // version 2 builds. Version 3 adds the slots, the triggers, the control scheme and the timings.
 // Version 4 adds the grid build modifier of the Modern scheme. Version 5 adds the Classic attack-move
-// binding, Ctrl with Shift held. Version 6 adds the replay pause and fast keys. A key of modifier bits
-// alone is written as their number, such as 768.
-int const KEYBOARD_DEFAULTS_VERSION = 6;
+// binding, Ctrl with Shift held. Version 6 adds the replay pause and fast keys, and version 7 the
+// performance overlay key. A key of modifier bits alone is written as their number, such as 768.
+int const KEYBOARD_DEFAULTS_VERSION = 7;
 
 // The control schemes a keyboard file can name. Classic is Yuri's Revenge's keys; Modern is the
 // set of current RTS conventions. A file with no scheme is Classic.

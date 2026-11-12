@@ -11,11 +11,12 @@ page of the settings, to draw in software everywhere.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), and `vs_mapvoxel.sc` with `fs_mapvoxel.sc` (voxel parts), each compiled into a `.bin.h` header. |
-| Voxel renderer | `code/gpumapvoxel.cpp` | Draws the voxel parts of a pass into the voxel image that the pass's blits read ([GPU_VOXELS.md](GPU_VOXELS.md)). |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), `vs_mapclear.sc` with `fs_mapclear.sc` (emptying depth and stencil in the middle of a pass), and `vs_voxelscene.sc` and `vs_voxelface.sc` with `fs_voxelscene.sc` (voxel parts drawn straight into the pass as lines, cube outlines and faces, [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)), each compiled into a `.bin.h` header. `mapcommon.sh`, `voxelwalk.sh` and `voxelshade.sh` hold the code those shaders share. |
+| Voxel renderer | `code/gpumapvoxel.cpp` | Draws the voxel parts of a pass straight into it, at the place of their blits ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)). |
 
 Voxel objects that are blitted straight into the map view can be drawn on the GPU from their voxels with
-`GpuVoxels`; [GPU_VOXELS.md](GPU_VOXELS.md) describes it.
+`GpuVoxels`; [GPU_VOXELS.md](GPU_VOXELS.md) describes it. `RenderThread` moves the GPU's submission and the present to
+their own thread; [RENDER_THREAD.md](RENDER_THREAD.md) describes it.
 
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
@@ -40,10 +41,12 @@ result; [AUTOTEST.md](AUTOTEST.md) documents them.
 
 All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
 Graphics page of the settings set `GpuRender`, `SoftShadows`, `Shockwaves`, `Bloom` (the **Glow**
-switch), `WaterRipples`, `CloudShadows` and `Weather` when the page is accepted, and the game writes
-every key in the table back to `RA2MD.INI`. The effect switches are greyed out until GPU drawing is
+switch), `WaterRipples`, `CloudShadows` and `Weather` when the page is accepted. The **GPU voxels**
+group sets `GpuVoxels`, `GpuVoxelSmooth` and `GpuVoxelScale`. The game writes every key in the table
+back to `RA2MD.INI`. The effect switches and the voxel rows are greyed out until GPU drawing is
 ticked, and GPU drawing is greyed out without the modern interface. Ticking **Weather** sets
 `Weather=Map` unless `RA2MD.INI` already chose `Rain` or `Snow`, and clearing it sets `None`.
+The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTINGS.md) describes it.
 `SoftShadowRadius`, `BloomStrength`, `WaterRippleStrength`, `CloudShadowStrength` and
 `WeatherStrength` have no switch.
 
@@ -52,6 +55,7 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
 | `GpuRender` | `yes` | Draws the object pass on the GPU. A pass holding a draw the recorder does not support is drawn in software instead and shows no soft shadows or shockwaves. |
 | `SoftShadows` | `no` | With `GpuRender`, the shadows of objects drawn in the pass and the shadows of buildings and trees in the tile layer go into one mask that is blurred and darkens the ground once, so overlapping shadows do not darken twice. A pass drawn in software shows the same shadows hard. Changing the switch redraws the whole tile layer. |
 | `SoftShadowRadius` | `3` | The blur radius of `SoftShadows` in pixels, from 1 to 16. |
+| `ShadowStacking` | `yes` | `no` puts the shadows of the pass into the same mask without the blur, so overlapping shadows darken the ground once with hard edges; it also applies in software ([GPU_VOXELS.md](GPU_VOXELS.md#stacked-shadows)). |
 | `Shockwaves` | `no` | With `GpuRender`, each weapon impact that shows a blast animation sends a ring across the ground that bends the picture under it for 40 game frames. Up to 16 rings run at once; a newer one replaces the oldest. |
 | `Bloom` | `no` | With `GpuRender`, the parts of the map marked in the emissive mask, such as lasers, electric bolts, lamps and fire, glow onto the picture around them, about 24 pixels out. It turns the emissive mask on, which [EMISSIVE_MASK.md](EMISSIVE_MASK.md) describes, so an object or animation glows only when the mask marks it. The mask does not change HDR highlights: `HDRHighlights=Classic` still shows classic highlights. A pass drawn in software has no glow. |
 | `BloomStrength` | `100` | The brightness of the `Bloom` glow in percent, from 1 to 400. |
@@ -61,7 +65,9 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
 | `CloudShadowStrength` | `100` | How much a cloud darkens the map in percent, from 1 to 400; 400 darkens it completely. |
 | `Weather` | `None` | With `GpuRender`, `Map` makes rain fall over the whole map while a lightning storm rages and otherwise makes snow fall on maps whose theater sets `IsArctic=yes`, which in Yuri's Revenge is the snow theater; other maps show no weather. `Snow` and `Rain` fall on every map; rain also dims the picture, by 6% at the usual amount and at most 12%. Under rain, each lightning storm bolt brightens the picture for 8 game frames, at most once every 45 game frames. The flakes and drops are drawn over everything in the pass, fall in two or three layers at different speeds, and move with the ground as the view scrolls. A pass drawn in software shows no weather. |
 | `WeatherStrength` | `100` | How much snow or rain falls, in percent, from 1 to 400. |
-| `GpuVoxels` | `no` | With `GpuRender`, hull-only vehicles and aircraft are drawn from their voxels on the GPU. It has no switch on the Graphics page yet, and it draws nothing while the emissive mask is on. See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuVoxels` | `no` | With `GpuRender`, vehicles, aircraft, their shadows, voxel animations and bullets are drawn from their voxels on the GPU, and vehicles and aircraft with no turret feed their highlights to `Bloom` and HDR Enhanced. The Graphics page sets it. See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuVoxelSmooth` | `no` | With `GpuVoxels`, an object the GPU draws from its voxels turns to its exact facing instead of the nearest of 32. See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuVoxelScale` | `0` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube, so voxel objects stay sharp in a zoomed map view. 0, shown as **Auto**, takes the scale from the zoom: the screen pixels a map pixel covers, rounded to the nearest whole number from 1 to 4. A very large map view draws at a lower scale (Limits). See [GPU_VOXELS.md](GPU_VOXELS.md). |
 
 ## Limits
 
@@ -83,11 +89,18 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
 - A sonic or magnetron wave lifts each shifted pixel from the picture as it stood before the wave.
   The software lifts some pixels from ones the wave has already shifted, so the ripple can differ by
   a pixel. A pass with more than 8 waves is drawn in software.
-- A pass that would not fit the GPU's limits (more than 8 waves, an area or arena past the texture
-  size, too many vertices for the frame) is drawn in software. So is a map view of more than
-  16,777,216 pixels, such as 7680x4320, because the shader reads positions as 32-bit floats. If the GPU still cannot take the kept
-  pass when the frame is presented, that frame shows the last GPU picture and the next pass is drawn
-  in software.
+- A pass that would not fit the GPU's limits is drawn in software: more than 8 waves, a map view, depth buffer or alpha
+  buffer wider or taller than 16,384 pixels, an arena past the texture size, too many vertices for the frame, or more
+  than 12,582,912 bytes of blit pixels outside the shape atlas or 16,777,216 bytes of depth shapes, whose offsets the
+  shader reads as 32-bit floats. If the GPU still cannot take the kept pass when the frame is presented, that frame
+  shows the last GPU picture and the next pass is drawn in software.
+- The map view's pixel count has no limit of its own, because the shader finds a pixel of the depth and alpha buffers
+  by row and column. Zoomed fully out on a 3840x2160 screen, a 7546x4245 view (32 million pixels) is drawn on the GPU
+  (times in [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), Performance budget), and `tests/autotest/gpu-map-zoomed-out.txt`
+  checks that no such pass is drawn in software.
+- At a voxel scale above 1, a pass whose picture at that scale would be wider or taller than 16,384 pixels or
+  larger than 134,217,728 pixels (536.9 MB in RGBA8, a little over a 3840x2160 view at scale 4) is drawn at the
+  largest scale within both limits, down to 1. Zoomed fully out at 3840x2160, scales 3 and 4 draw at 2.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
   picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 254 pictures per second
@@ -129,10 +142,11 @@ file, rebuild its header from the repository root with a `shaderc` built from
 shaderc -f code/shaders/mapdraw/fs_mapdraw.sc -o fs_mapdraw.bin --type fragment --platform windows -p s_5_0 -O 3 --varyingdef code/shaders/mapdraw/varying.def.sc -i thirdparty/bgfx.cmake/bgfx/src
 ```
 
-Use `--type vertex` for `vs_mapdraw.sc`. Then write each `.bin` into its header as a
+Use `--type vertex` for the `vs_` files. After editing `mapcommon.sh`, `voxelwalk.sh` or `voxelshade.sh` (which `voxelwalk.sh` includes), rebuild every shader that
+includes it. Then write each `.bin` into its header as a
 `static const uint8_t <name>_dxbc[]` array, keeping the comment line at the top. `shaderc` rejects
 the `vs_5_0` and `ps_5_0` profile names; use `s_5_0` for both.
 
-Every fragment shader must declare the same `$input` list as `vs_mapdraw.sc` outputs, even inputs
+A fragment shader must declare the same `$input` list as its vertex shader outputs (`vs_mapdraw.sc` for most of them), even inputs
 it does not read. bgfx refuses to build a program whose fragment inputs differ, and the effect that
 uses it then draws nothing.

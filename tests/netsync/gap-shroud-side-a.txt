@@ -1,0 +1,337 @@
+; Shroud determinism, side A (Americans, Side 0) for scripts/run_netsync.ps1 on XMP29U2.MAP, with side B running gap-shroud-side-b.txt.
+; Each copy keeps the shroud and fog of every human house, and the sides must keep the same copy of each. This is xmp29u2-side-a.txt with a
+; Gap Generator in place of the Chronosphere, camera steps that differ from side B's, and a shroudhash line on the same frames as side B's.
+; Side B's spy plane, fired at frame 11500, photographs side A's base while the gap is up. The shroudhash lines of the two logs must be the same.
+; Before the fix, only side B's copy kept the gap's cells shrouded for side B, so the lines for house 1 differed from frame 11900. With the
+; spy plane fired at frame 14000 they also differed from 14250, because drawing the plane on one screen revealed it to side A on that copy only.
+; Run: scripts/run_netsync.ps1 -Build agent28 -Map XMP29U2.MAP -ScriptA src-agent28/tests/netsync/gap-shroud-side-a.txt -ScriptB src-agent28/tests/netsync/gap-shroud-side-b.txt -Seconds 400 -KeepDir <dir>
+;   then compare the "AUTOTEST shroudhash" lines of the two kept logs.
+1 log netsync side A: gap generator and shroud
+40 select AMCV
+60 command DeployObject
+100 shroudhash
+300 produce GAPOWR
+500 zoom 0.5
+501 view 2 40
+600 place GAPOWR
+700 place GAPOWR
+750 zoom 1.0
+751 view 100 50
+800 place GAPOWR
+900 place GAPOWR
+1000 place GAPOWR
+1000 zoom 0.5
+1001 view 60 2
+1050 produce GAPILE
+1250 zoom 1.0
+1251 view 60 100
+1350 place GAPILE
+1450 place GAPILE
+1500 zoom 0.5
+1501 view 30 30
+1550 place GAPILE
+1650 place GAPILE
+1700 produce GAREFN
+1750 zoom 1.0
+1751 view 2 40
+2000 zoom 0.5
+2001 view 100 50
+2250 zoom 1.0
+2251 view 60 2
+2500 zoom 0.5
+2501 view 60 100
+2750 zoom 1.0
+2751 view 30 30
+2800 place GAREFN
+2900 place GAREFN
+3000 place GAREFN
+3000 zoom 0.5
+3001 view 2 40
+3100 place GAREFN
+3200 place GAREFN
+3250 produce AMRADR
+3250 zoom 1.0
+3251 view 100 50
+3500 zoom 0.5
+3501 view 60 2
+3650 place AMRADR
+3750 place AMRADR
+3750 zoom 1.0
+3751 view 60 100
+3850 place AMRADR
+3950 place AMRADR
+4000 zoom 0.5
+4001 view 30 30
+4050 place AMRADR
+4150 place AMRADR
+4250 place AMRADR
+4250 zoom 1.0
+4251 view 2 40
+4350 place AMRADR
+4450 place AMRADR
+4500 produce GAWEAP
+4500 zoom 0.5
+4501 view 100 50
+4750 zoom 1.0
+4751 view 60 2
+5000 zoom 0.5
+5001 view 60 100
+5100 place GAWEAP
+5200 place GAWEAP
+5250 zoom 1.0
+5251 view 30 30
+5300 place GAWEAP
+5400 place GAWEAP
+5500 place GAWEAP
+5500 zoom 0.5
+5501 view 2 40
+5600 place GAWEAP
+5700 place GAWEAP
+5750 zoom 1.0
+5751 view 100 50
+5800 place GAWEAP
+5900 place GAWEAP
+5950 produce E1
+5960 produce MTNK
+6000 zoom 0.5
+6000 shroudhash
+6001 view 60 2
+6050 place E1
+6100 place MTNK
+6150 place E1
+6200 place MTNK
+6250 place E1
+6250 zoom 1.0
+6251 view 60 100
+6300 place MTNK
+6350 place E1
+6400 place MTNK
+6450 place E1
+6500 place MTNK
+6500 zoom 0.5
+6501 view 30 30
+6550 place E1
+6600 place MTNK
+6650 place E1
+6700 place MTNK
+6750 place E1
+6750 zoom 1.0
+6751 view 2 40
+6800 place MTNK
+6850 place E1
+6900 rally GAWEAP 48 92
+6910 primary GAWEAP
+6920 move E1 48 92
+6950 stop E1
+7000 clickcell E1 46 90
+7000 zoom 0.5
+7001 view 100 50
+7050 planning 1
+7070 move E1 44 88
+7090 move MTNK 44 88
+7110 planstate E1
+7150 planning 0
+7200 produce GAPOWR
+7250 zoom 1.0
+7251 view 60 2
+7500 zoom 0.5
+7501 view 60 100
+7600 place GAPOWR
+7700 place GAPOWR
+7750 zoom 1.0
+7751 view 30 30
+7800 place GAPOWR
+7900 place GAPOWR
+8000 produce GATECH
+8000 zoom 0.5
+8001 view 2 40
+8250 zoom 1.0
+8251 view 100 50
+8500 zoom 0.5
+8501 view 60 2
+8750 zoom 1.0
+8751 view 60 100
+9000 zoom 0.5
+9001 view 30 30
+9200 place GATECH
+9250 zoom 1.0
+9251 view 2 40
+9300 place GATECH
+9400 place GATECH
+9500 place GATECH
+9500 zoom 0.5
+9501 view 100 50
+9600 place GATECH
+9700 place GATECH
+9750 zoom 1.0
+9751 view 60 2
+9800 place GATECH
+9900 attack MTNK
+9950 strikeobj GAPILE 69 74 6 all
+10000 strike E1 69 74
+10000 zoom 0.5
+10000 shroudhash
+10001 view 60 100
+10050 rally GAPILE 47 91
+10100 produce GAGAP
+10200 dump
+10250 zoom 1.0
+10251 view 30 30
+10300 where MTNK
+10400 supers
+10500 zoom 0.5
+10501 view 2 40
+10750 zoom 1.0
+10751 view 100 50
+11000 sell 51 94
+11000 zoom 0.5
+11000 shroudhash
+11001 view 60 2
+11250 zoom 1.0
+11251 view 60 100
+11420 place GAGAP
+11470 place GAGAP
+11500 attack MTNK
+11500 zoom 0.5
+11500 shroudhash
+11501 view 30 30
+11520 place GAGAP
+11570 place GAGAP
+11600 shroudhash
+11620 place GAGAP
+11670 place GAGAP
+11700 shroudhash
+11720 place GAGAP
+11750 zoom 1.0
+11751 view 2 40
+11770 place GAGAP
+11800 shroudhash
+11820 place GAGAP
+11870 place GAGAP
+11900 shroudhash
+12000 dump
+12000 zoom 0.5
+12000 shroudhash
+12001 view 100 50
+12100 shroudhash
+12200 shroudhash
+12250 zoom 1.0
+12251 view 60 2
+12300 shroudhash
+12400 shroudhash
+12500 zoom 0.5
+12500 shroudhash
+12501 view 60 100
+12600 shroudhash
+12750 zoom 1.0
+12751 view 30 30
+13000 supers
+13000 zoom 0.5
+13000 shroudhash
+13001 view 2 40
+13250 zoom 1.0
+13251 view 100 50
+13500 zoom 0.5
+13501 view 60 2
+13750 zoom 1.0
+13751 view 60 100
+14000 zoom 0.5
+14000 shroudhash
+14001 view 30 30
+14100 shroudhash
+14250 zoom 1.0
+14250 shroudhash
+14251 view 2 40
+14500 zoom 0.5
+14500 shroudhash
+14501 view 100 50
+14750 zoom 1.0
+14751 view 60 2
+15000 zoom 0.5
+15000 shroudhash
+15001 view 60 100
+15250 zoom 1.0
+15251 view 30 30
+15500 dump
+15500 zoom 0.5
+15500 shroudhash
+15501 view 2 40
+15600 winkey 13
+15610 wintype HELLO FROM SIDE A
+15620 command ScreenCapture
+15640 winkey 13
+15750 zoom 1.0
+15751 view 100 50
+15800 alliance 1
+15900 winkey 08
+15910 wintype TEAM LINE FROM SIDE A
+15940 winkey 13
+16000 command ScreenCapture
+16000 zoom 0.5
+16000 shroudhash
+16001 view 60 2
+16250 zoom 1.0
+16251 view 60 100
+16500 zoom 0.5
+16501 view 30 30
+16750 zoom 1.0
+16751 view 2 40
+17000 zoom 0.5
+17001 view 100 50
+17250 zoom 1.0
+17251 view 60 2
+17500 zoom 0.5
+17501 view 60 100
+17750 zoom 1.0
+17751 view 30 30
+18000 zoom 0.5
+18000 shroudhash
+18001 view 2 40
+18250 zoom 1.0
+18251 view 100 50
+18500 zoom 0.5
+18501 view 60 2
+18750 zoom 1.0
+18751 view 60 100
+19000 zoom 0.5
+19001 view 30 30
+19250 zoom 1.0
+19251 view 2 40
+19500 zoom 0.5
+19501 view 100 50
+19750 zoom 1.0
+19751 view 60 2
+20000 zoom 0.5
+20000 shroudhash
+20001 view 60 100
+20250 zoom 1.0
+20251 view 30 30
+20500 zoom 0.5
+20501 view 2 40
+20750 zoom 1.0
+20751 view 100 50
+21000 zoom 0.5
+21001 view 60 2
+21250 zoom 1.0
+21251 view 60 100
+21500 zoom 0.5
+21501 view 30 30
+21750 zoom 1.0
+21751 view 2 40
+22000 zoom 0.5
+22001 view 100 50
+22250 zoom 1.0
+22251 view 60 2
+22500 zoom 0.5
+22501 view 60 100
+22750 zoom 1.0
+22751 view 30 30
+23000 zoom 0.5
+23000 shroudhash
+23001 view 2 40
+23250 zoom 1.0
+23251 view 100 50
+23500 zoom 0.5
+23501 view 60 2
+23750 zoom 1.0
+23751 view 60 100

@@ -16,12 +16,12 @@ enum BgfxViewType : unsigned short
 	VIEW_MAPSHADOW,
 	VIEW_MAPBLURX,
 	VIEW_MAPBLURY,
-	// Draws the voxel parts of a map pass into the voxel image the draws below read.
-	VIEW_MAPVOXEL,
 	VIEW_MAPDRAW,
 	// Each sonic wave in a map pass continues the drawing in the next of these views.
 	VIEW_MAPWAVE,
 	VIEW_MAPWAVE_LAST = VIEW_MAPWAVE + 7,
+	// Builds the emissive mask of a pass with GPU voxels from the CPU plane and the voxel parts.
+	VIEW_MAPMASK,
 	VIEW_MAPGLOW,
 	VIEW_MAPGLOWX,
 	VIEW_MAPGLOWY,

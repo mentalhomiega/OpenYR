@@ -1,7 +1,7 @@
-; Compares the GPU voxel drawing with the software drawing: vehicles of several types turn through 16 facings while gpucheck draws each
-; voxel part on the GPU and logs a GPU_VOXEL line per part (docs/GPU_VOXELS.md). The numbers vary with when a pass is read back, so the
-; regress log keeps only the crash lines. Needs GpuRender=no, because gpucheck compares a pass the software drew.
-; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/gpu-voxel-compare.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 120 -Settings "[Video]`nGpuRender=no`nGpuVoxels=yes" -Filter "GPU_VOXEL|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
+; Compares the GPU voxel drawing with the software drawing: vehicles of several types turn through 16 facings, then turreted ones with the turret at a facing other than the body's and a turret that turns while the tank drives, while gpucheck draws each pass on the GPU as well
+; and logs a GPU_DIFF line for the pixels that differ (docs/GPU_DIRECT_VOXELS.md). The numbers vary with when a pass is read back, so
+; regress compares only the crash lines. Needs GpuRender=no, because gpucheck compares a pass the software drew. With EmissiveDebugView=yes in [Video] it also logs a GPU_MASK line for each pass, comparing the highlight strengths with the software emissive mask.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/gpu-voxel-compare.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 240 -Settings "[Video]`nGpuRender=no`nGpuVoxels=yes`nHDRHighlights=Classic`nBloom=no" -Filter "GPU_DIFF|GPU_MASK|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
 0 gpucheck 1
 1 view 50 57
 2 reveal
@@ -143,5 +143,49 @@
 220 face 240 54 56
 220 face 240 44 58
 220 face 240 46 58
-242 gpucheck 0
-244 quit
+232 face 32 44 56
+232 face 32 46 56
+232 face 32 48 56
+232 face 32 50 56
+232 face 32 52 56
+234 turretface 160 44 56
+234 turretface 160 46 56
+234 turretface 160 48 56
+234 turretface 160 50 56
+234 turretface 160 52 56
+244 face 96 44 56
+244 face 96 46 56
+244 face 96 48 56
+244 face 96 50 56
+244 face 96 52 56
+246 turretface 0 44 56
+246 turretface 0 46 56
+246 turretface 0 48 56
+246 turretface 0 50 56
+246 turretface 0 52 56
+256 face 192 44 56
+256 face 192 46 56
+256 face 192 48 56
+256 face 192 50 56
+256 face 192 52 56
+258 turretface 64 44 56
+258 turretface 64 46 56
+258 turretface 64 48 56
+258 turretface 64 50 56
+258 turretface 64 52 56
+268 face 224 44 56
+268 face 224 46 56
+268 face 224 48 56
+268 face 224 50 56
+268 face 224 52 56
+270 turretface 96 44 56
+270 turretface 96 46 56
+270 turretface 96 48 56
+270 turretface 96 50 56
+270 turretface 96 52 56
+279 turretface 128 44 56
+279 turretface 160 46 56
+280 move MTNK 44 52
+280 move HTNK 46 52
+330 gpucheck 0
+332 quit

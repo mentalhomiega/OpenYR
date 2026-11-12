@@ -63,8 +63,6 @@
 /* Define a couple of variables which are private to the module they are   */
 /*      declared in.                                                       */
 /*=========================================================================*/
-static unsigned int CellHeights[PATH_LENGTH_MAX + 1];
-
 unsigned int MapCellStride;
 
 int AStarFacingToOffset[FACING_COUNT];
@@ -208,7 +206,7 @@ double AStarClass::Get_Movement_Cost(CellClass **from, CellClass **to, bool brid
 		}
 	}
 
-	if (to_cell->IsPredictedPath) {
+	if (Is_Predicted_Path(to_cell)) {
 		cost = cost * 4.0f;
 	}
 
@@ -687,7 +685,15 @@ AStarClass::AStarClass(void) :
 	HierCacheLookups(0),
 	HierCacheHits(0),
 	HierCacheCompared(0),
-	HierCacheDifferences(0)
+	HierCacheDifferences(0),
+	PredictedPath(MAP_CELL_TOTAL + 1, 0),
+	PredictedPathCount(0),
+	IsQuiet(false),
+	DimensionSerial(0),
+	ResetSerial(0),
+	FollowedDimensionSerial(0),
+	FollowedResetSerial(0),
+	FollowedCacheGeneration(0)
 {
 	// Debug switches: OPENYR_ASTAR_CACHE=0 turns the corridor cache off, OPENYR_ASTAR_CHECK=1 runs
 	// the full search beside every cache hit and logs any difference.
@@ -695,6 +701,8 @@ AStarClass::AStarClass(void) :
 	IsHierCacheEnabled = cache_env == NULL || cache_env[0] != '0';
 	char const * check_env = std::getenv("OPENYR_ASTAR_CHECK");
 	IsHierCacheChecked = check_env != NULL && check_env[0] == '1';
+
+	FinalPath = PathStruct();
 
 	RegularQueue = new PriorityQueueClass<RegularOpenNode>(65536);
 	HierQueue = new PriorityQueueClass<AStarHierarchicalNode>(10000);
@@ -803,11 +811,11 @@ FacingType Facing_Between(Cell const & cell1, Cell const & cell2)
 /// <param name="final_node">The search node the destination was reached on.</param>
 /// <param name="moves">Buffer that receives the facing commands.</param>
 /// <returns>Returns with a pointer to the completed path control structure.</returns>
-/// <remarks>There is only one path control structure, so building a new path invalidates
-/// the last one this routine handed out.</remarks>
+/// <remarks>Each pathfinder has one path control structure, so building a new path with it
+/// invalidates the last one this routine handed out.</remarks>
 PathStruct * AStarClass::Build_Final_Path(RegularOpenNode const & final_node, FacingType * moves)
 {
-	static PathStruct path; // Main path control.
+	PathStruct & path = FinalPath;
 
 	path.Cost			= int(final_node.Score);
 	path.Length 		= final_node.PathLength;
@@ -815,14 +823,14 @@ PathStruct * AStarClass::Build_Final_Path(RegularOpenNode const & final_node, Fa
 	path.LastOverlap.X	= 0;
 	path.LastOverlap.Y	= 0;
 	path.Command 		= moves;
-	path.Height			= CellHeights;
+	path.Height			= FinalHeights;
 
 	RegularNode * current = final_node.Node;
 	RegularNode * parent = current->Parent;
 
 	for (int i = (final_node.PathLength - 2); i >= 0; i--) {
 		if (parent != NULL) {
-			CellHeights[i] = parent->CellHeight;
+			FinalHeights[i] = parent->CellHeight;
 			moves[i] = Facing_Between((*current->CellSlot)->CellID, (*parent->CellSlot)->CellID);
 		}
 		current = current->Parent;
@@ -850,6 +858,24 @@ PathStruct * AStarClass::Build_Final_Path(RegularOpenNode const & final_node, Fa
 /// requested.</remarks>
 void AStarClass::Update_Map_Dimensions(Rect const & dimensions)
 {
+	MapCellStride = dimensions.Height + dimensions.Width + 1;
+
+	AStarFacingToOffset[FACING_N]	= -MapCellStride;
+	AStarFacingToOffset[FACING_NE]	= 1 - MapCellStride;
+	AStarFacingToOffset[FACING_E]	= +1;
+	AStarFacingToOffset[FACING_SE]	= MapCellStride + 1;
+	AStarFacingToOffset[FACING_S]	= +MapCellStride;
+	AStarFacingToOffset[FACING_SW]	= MapCellStride - 1;
+	AStarFacingToOffset[FACING_W]	= -1;
+	AStarFacingToOffset[FACING_NW]	= -1 - MapCellStride;
+
+	DimensionSerial++;
+	Size_Search_Tables();
+}
+
+
+void AStarClass::Size_Search_Tables(void)
+{
 	Invalidate_Hierarchical_Cache();
 
 	if (RegularVisited != NULL) {
@@ -869,7 +895,6 @@ void AStarClass::Update_Map_Dimensions(Rect const & dimensions)
 		RegularBridgeMovementCosts = NULL;
 	}
 
-	MapCellStride = dimensions.Height + dimensions.Width + 1;
 	int count = MapCellStride * MapCellStride;
 
 	/*
@@ -880,15 +905,51 @@ void AStarClass::Update_Map_Dimensions(Rect const & dimensions)
 	RegularVisited = new int[count]();
 	RegularMovementCosts = new float[count]();
 	RegularBridgeMovementCosts = new float[count]();
+}
 
-	AStarFacingToOffset[FACING_N]	= -MapCellStride;
-	AStarFacingToOffset[FACING_NE]	= 1 - MapCellStride;
-	AStarFacingToOffset[FACING_E]	= +1;
-	AStarFacingToOffset[FACING_SE]	= MapCellStride + 1;
-	AStarFacingToOffset[FACING_S]	= +MapCellStride;
-	AStarFacingToOffset[FACING_SW]	= MapCellStride - 1;
-	AStarFacingToOffset[FACING_W]	= -1;
-	AStarFacingToOffset[FACING_NW]	= -1 - MapCellStride;
+
+void AStarClass::Follow(AStarClass const & main)
+{
+	if (FollowedDimensionSerial != main.DimensionSerial) {
+		FollowedDimensionSerial = main.DimensionSerial;
+		Size_Search_Tables();
+	}
+	if (FollowedResetSerial != main.ResetSerial) {
+		FollowedResetSerial = main.ResetSerial;
+		Reset();
+	}
+	if (FollowedCacheGeneration != main.HierCacheGeneration) {
+		FollowedCacheGeneration = main.HierCacheGeneration;
+		Invalidate_Hierarchical_Cache();
+	}
+}
+
+
+/// <summary>
+/// Fetches the slot in PredictedPath that stands for a cell. Every cell that is not in the map
+/// array shares the last slot, as every off-map lookup shares one cell object.
+/// </summary>
+static int Predicted_Path_Slot(CellClass const * cell)
+{
+	int cellnum = cell->CellID.X + cell->CellID.Y * MAP_CELL_H;
+	if (cellnum >= 0 && cellnum < MAP_CELL_TOTAL && Map.Array[cellnum] == cell) {
+		return(cellnum);
+	}
+	return(MAP_CELL_TOTAL);
+}
+
+
+bool AStarClass::Is_Predicted_Path(CellClass const * cell) const
+{
+	return(PredictedPathCount != 0 && PredictedPath[Predicted_Path_Slot(cell)] != 0);
+}
+
+
+void AStarClass::Toggle_Predicted_Path(CellClass const * cell)
+{
+	unsigned char & mark = PredictedPath[Predicted_Path_Slot(cell)];
+	mark ^= 1;
+	PredictedPathCount += mark ? 1 : -1;
 }
 
 
@@ -900,8 +961,8 @@ void AStarClass::Update_Map_Dimensions(Rect const & dimensions)
 /// marks the first put up.
 /// </summary>
 /// <param name="foot">The object about to be pathed.</param>
-/// <remarks>Every call flips the marks, so calls must come in pairs or the map is left
-/// with stale predicted path flags on it.</remarks>
+/// <remarks>Every call flips the marks, so calls must come in pairs or this pathfinder's
+/// next search starts with stale marks.</remarks>
 void AStarClass::Apply_Path_Collision_Avoidance(FootClass * foot)
 {
 	if (IsAvoidPathCollision) {
@@ -952,7 +1013,7 @@ void AStarClass::Apply_Path_Collision_Avoidance(FootClass * foot)
 				marked_path = true;
 				while (index < ARRAY_SIZE(blocker->Path) && blocker->Path[index] != FACING_NONE) {
 					blocker_cell = Next_Cell(blocker_cell, blocker->Path[index]);
-					Map[blocker_cell].IsPredictedPath = !Map[blocker_cell].IsPredictedPath;
+					Toggle_Predicted_Path(&Map[blocker_cell]);
 					index++;
 				}
 			}
@@ -968,12 +1029,12 @@ void AStarClass::Apply_Path_Collision_Avoidance(FootClass * foot)
 			for (int y = -2; y < 3; y++) {
 				CellClass * cellptr = &Map[next_cell_ptr->Fetch_CellID() + Cell(x, y)];
 				if (cellptr->Flag.Composite && cellptr->Fetch_CellID() != current_cell) {
-					cellptr->IsPredictedPath = !cellptr->IsPredictedPath;
+					Toggle_Predicted_Path(cellptr);
 				}
 			}
 		}
 
-		next_cell_ptr->IsPredictedPath = !next_cell_ptr->IsPredictedPath;
+		Toggle_Predicted_Path(next_cell_ptr);
 	}
 }
 
@@ -1201,7 +1262,7 @@ int AStarClass::Try_Diagonal_Shortcut(FootClass * foot, FacingType * moves, unsi
 
 		while (!is_blocked && moves_remaining > 0) {
 			is_blocked = foot->Can_Enter_Cell(scan_cell_ptr, diagonal_direction, scan_height) != MOVE_OK
-			|| scan_cell_ptr->IsPredictedPath
+			|| Is_Predicted_Path(scan_cell_ptr)
 			|| Map.Cell_Threat(diagonal_start_cell, *house) * threat_avoidance >= 1.0;
 
 			moves_remaining--;
@@ -1514,53 +1575,33 @@ bool AStarClass::Plot_Straight_Line(FacingType * moves, int move_count, Cell con
 			int count1 = first_dist;
 			int count2 = second_dist;
 
-			while (count1 > 0 && !blocked) {
+			auto walk_steps = [&](int count, FacingType dir) {
+				while (count > 0 && !blocked) {
 
-				current = ::Adjacent_Cell(current, first_dir);
-				CellClass * cellptr = &Map[current];
+					current = ::Adjacent_Cell(current, dir);
+					CellClass * cellptr = &Map[current];
 
-				if (avoid_threats && Map.Cell_Threat(current, *house) * avoidance >= 0.01) {
-					threats++;
-				}
-
-				blocked = foot->Can_Enter_Cell(cellptr, first_dir, height) != MOVE_OK || cellptr->IsPredictedPath || threats > 3 || (!fearless && threats > 0);
-				count1--;
-
-				int step_height = cellptr->Height;
-
-				if (height - step_height == BRIDGE_CELL_HEIGHT) {
-					height = step_height + BRIDGE_CELL_HEIGHT;
-					if (cellptr->IsUnderBridge) {
-						continue;
+					if (avoid_threats && Map.Cell_Threat(current, *house) * avoidance >= 0.01) {
+						threats++;
 					}
-				}
 
-				height = step_height;
-			}
+					blocked = foot->Can_Enter_Cell(cellptr, dir, height) != MOVE_OK || Is_Predicted_Path(cellptr) || threats > 3 || (!fearless && threats > 0);
+					count--;
 
-			while (count2 > 0 && !blocked) {
+					int step_height = cellptr->Height;
 
-				current = Adjacent_Cell(current, second_dir);
-				CellClass * cellptr = &Map[current];
-
-				if (avoid_threats && Map.Cell_Threat(current, *house) * avoidance >= 0.01) {
-					threats++;
-				}
-
-				blocked = foot->Can_Enter_Cell(cellptr, second_dir, height) != MOVE_OK || cellptr->IsPredictedPath || threats > 3 || (!fearless && threats > 0);
-				count2--;
-
-				int step_height = cellptr->Height;
-
-				if (height - step_height == BRIDGE_CELL_HEIGHT) {
-					height = step_height + BRIDGE_CELL_HEIGHT;
-					if (cellptr->IsUnderBridge) {
-						continue;
+					if (height - step_height == BRIDGE_CELL_HEIGHT) {
+						height = step_height + BRIDGE_CELL_HEIGHT;
+						if (cellptr->IsUnderBridge) {
+							continue;
+						}
 					}
-				}
 
-				height = step_height;
-			}
+					height = step_height;
+				}
+			};
+			walk_steps(count1, first_dir);
+			walk_steps(count2, second_dir);
 		}
 
 		if (first_dist == 0 || blocked) {
@@ -1596,6 +1637,7 @@ void AStarClass::Reset(void)
 {
 	int j;
 
+	ResetSerial++;
 	Invalidate_Hierarchical_Cache();
 
 	for (int i = 0; i < ARRAY_SIZE(HierOnPath); i++) {
@@ -1932,8 +1974,6 @@ bool AStarClass::Search_Hierarchical(Cell const & from, Cell const & to, MZoneTy
 /// <returns>Returns with a pointer to the path found, or NULL if there is no route.</returns>
 PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass * foot, FacingType * moves, int max_loops, MZoneType mzone, ObstacleAvoidanceType avoidance)
 {
-	Perf_Count(PERF_COUNT_PATHS);
-	PerfScope pathfind_scope(PERF_FRAME_PATHFIND);
 	int i;
 
 	IsHSEnabled = true;
@@ -2000,7 +2040,7 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 
 	while (true) {
 
-		if (!with_hs) {
+		if (!with_hs && !IsQuiet) {
 			DebugString("Warning.  A* without HS: (%d,%d) to (%d, %d)\n", hs_from.X, hs_from.Y, hs_to.X, hs_to.Y);
 		}
 
@@ -2020,7 +2060,7 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 			dx = dy;
 		}
 
-		if (dx > 1) {
+		if (dx > 1 && !IsQuiet) {
 			DebugString("Regular findpath failure: (%d,%d) to (%d, %d) %s %s %s zones %d %d\n", hs_from.X, hs_from.Y, hs_to.X, hs_to.Y, foot->TClass->Name(), (char const *)foot->House->IniName, MissionClass::Mission_Name(foot->Get_Mission()), from_zone, to_zone);
 		}
 

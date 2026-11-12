@@ -1,0 +1,17 @@
+; Zero-spread rocker: an ARTYHE blast (Rocker=yes, CellSpread forced to 0 by the ini overlay) lands 3 cells west of a computer Rhino (HTNK) at frame 160.
+; gamemd's Explosion_Damage (0x48A2A0) rocks the cells around ground zero only when the warhead's CellSpread is above 0, so the Rhino must stay level.
+; Expected: every rock line from frame 160 on shows sideways 0.00000 and forwards 0.00000; before the fix the Rhino rolled to about 0.245 rad sideways.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/rock-blast-zero-spread.txt -Seconds 60 -Filter "AUTOTEST   rock|AUTOTEST   blast|Exception"
+1 view 62 62
+2 zoom 2.5
+3 reveal
+10 rules rock-blast-zero-spread.ini
+150 spawn HTNK 64 62
+160 blast ARTYHE 61 62
+162 rock HTNK
+166 rock HTNK
+170 rock HTNK
+176 rock HTNK
+184 rock HTNK
+194 rock HTNK
+202 quit

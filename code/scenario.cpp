@@ -60,7 +60,7 @@
 #include "always.h"
 
 #include "lobbycolor.h"
-
+#include "pathahead.h"
 #include "playerdisplay.h"
 #include "scenario.h"
 #include "shellmap.h"
@@ -413,6 +413,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	strcpy(Scen->ScenarioName, name);
 	strupr(Scen->ScenarioName);
 
+	Path_Ahead_Choose_Rule();
+
 	Theme.Stop();
 
 	if ((briefing == true) && (campaign != CAMPAIGN_NONE) && (Scen->Scenario == 1) && (Campaigns[Scen->Campaign]->CDNumber < 2)) {
@@ -513,6 +515,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 			int(Rule->MessageDelay * TICKS_PER_MINUTE));
 	}
 
+	Reset_Off_Map_Cell_Location();
 	ScenarioActive = true;
 	TacticalActive = true;
 
@@ -1196,6 +1199,7 @@ void Clear_Scenario(void)
 
 	// A zoom kept for a scripted scene does not outlive the scenario it belongs to.
 	Forget_Player_View_Zoom();
+	Path_Ahead_Clear();
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
 
