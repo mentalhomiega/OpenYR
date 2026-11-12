@@ -43,6 +43,8 @@ struct Request
 	int Avoidance;
 	bool IsFound;
 	bool IsUsed;
+	bool IsAskedOtherwise;
+	bool IsDrive;
 	int Micros;
 	PathStruct Path;
 	std::vector<FacingType> Moves;
@@ -90,6 +92,8 @@ long long StatUsed = 0;
 long long StatAsked = 0;
 long long StatCheckDifferences = 0;
 long long StatBatchMicros = 0;
+long long StatIdle[2][3][2] = {};
+long long StatIdleMicros[2][3][2] = {};
 long long StatOtherFrom = 0;
 long long StatOtherTo = 0;
 long long StatOtherAvoidance = 0;
@@ -311,6 +315,23 @@ void Path_Ahead_Frame(void)
 		Start_Threads();
 	}
 
+	if (IsStatsLogged) {
+		for (Request const & request : Requests) {
+			if (!request.IsUsed && !request.IsAskedOtherwise) {
+				StatIdle[request.IsDrive][request.Avoidance][request.IsFound]++;
+				StatIdleMicros[request.IsDrive][request.Avoidance][request.IsFound] += request.Micros;
+			}
+		}
+		if (Frame % 600 == 0) {
+			for (int drive = 0; drive < 2; drive++) {
+				for (int avoidance = 0; avoidance < 3; avoidance++) {
+					DebugString("PATHAHEAD idle %s avoidance %d: no path %lld (%lld ms), path %lld (%lld ms)\n", drive ? "drive" : "walk", avoidance,
+						StatIdle[drive][avoidance][0], StatIdleMicros[drive][avoidance][0] / 1000, StatIdle[drive][avoidance][1], StatIdleMicros[drive][avoidance][1] / 1000);
+				}
+			}
+		}
+	}
+
 	Requests.clear();
 	RequestOf.clear();
 
@@ -342,6 +363,8 @@ void Path_Ahead_Frame(void)
 		request.Avoidance = avoidance;
 		request.IsFound = false;
 		request.IsUsed = false;
+		request.IsAskedOtherwise = false;
+		request.IsDrive = dynamic_cast<DriveLocomotionClass *>(foot->Locomotion.get()) != NULL;
 		RequestOf[foot] = (int)Requests.size();
 		Requests.push_back(std::move(request));
 	}
@@ -403,6 +426,7 @@ bool Path_Ahead_Take(FootClass const * foot, Cell const & from, Cell const & to,
 			if (request.IsUsed) {
 				StatTwice++;
 			} else {
+				request.IsAskedOtherwise = true;
 				StatOtherMicros += request.Micros;
 				if (request.From != from) {
 					StatOtherFrom++;

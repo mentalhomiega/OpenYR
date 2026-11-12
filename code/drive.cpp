@@ -2959,6 +2959,26 @@ bool DriveLocomotionClass::Predict_Path(Cell & to, int & avoid)
 	if (DestinationCoord == COORD_NONE || LinkedTo->PathDelay != 0 || (TrackNumber != -1 && IsDriving)) {
 		return(false);
 	}
+
+	// The states in which Process returns or waits before Start_Of_Move asks for a path.
+	if (Rule->IsMissileLaunchHoldsMove && LinkedTo->SpawnManager && LinkedTo->SpawnManager->Launching_Count() > 0) {
+		return(false);
+	}
+	if (LinkedTo->NavCom != NULL && LinkedTo->NavCom->RTTI == RTTI_CELL && LinkedTo->PositionCell == ((CellClass *)LinkedTo->NavCom)->CellID) {
+		return(false);
+	}
+	if (LinkedTo->CurrentMission == MISSION_GUARD && !IsDriving && LinkedTo->PositionCoord == DestinationCoord) {
+		return(false);
+	}
+	if (LinkedTo->PrimaryFacing.Is_Rotating() || IsRotating || LinkedTo->Mission == MISSION_UNLOAD) {
+		return(false);
+	}
+	if (LinkedTo->IsLocked && LinkedTo->Mission != MISSION_ENTER && !LinkedTo->Is_In_Same_Zone(DestinationCoord)) {
+		return(false);
+	}
+	if (LinkedTo->StunDuration > 0 || LinkedTo->ParalysisTimer != 0) {
+		return(false);
+	}
 	to = DestinationCoord.As_Cell();
 	FacingType facing = LinkedTo->Path[0];
 	if (facing == FACING_NONE) {
