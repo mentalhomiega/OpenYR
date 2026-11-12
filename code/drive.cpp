@@ -2947,3 +2947,35 @@ DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[71]
 	{14,	14,	DIR_SW,	F_T},                                                           // Drive onto the middle of a tank bunker, heading southwest.
 	{14,	14,	DIR_NW,	F_X}                                                            // Drive onto the middle of a tank bunker, heading northwest.
 };
+
+
+/// <summary>
+/// Names the path this object will ask for in the coming Process call, as far as its state
+/// before the frame's object loop shows it.
+/// </summary>
+/// <returns>bool; Is a request expected? `to` and `avoid` are set when it is.</returns>
+bool DriveLocomotionClass::Predict_Path(Cell & to, int & avoid)
+{
+	if (DestinationCoord == COORD_NONE || LinkedTo->PathDelay != 0 || (TrackNumber != -1 && IsDriving)) {
+		return(false);
+	}
+	to = DestinationCoord.As_Cell();
+	FacingType facing = LinkedTo->Path[0];
+	if (facing == FACING_NONE) {
+		avoid = 0;
+		return(Is_Moving());
+	}
+	if (facing == FACING_COUNT) {
+		return(false);
+	}
+	if (DIR_MIN < LinkedTo->PrimaryFacing.Current() - DirType(facing)) {
+		return(false);
+	}
+	Coord dest = Adjacent_Cell(LinkedTo->PositionCoord, facing);
+	int cell_height = Map[(Coord const &)LinkedTo->PositionCoord].Height + (LinkedTo->IsOnBridge ? BRIDGE_CELL_HEIGHT : 0);
+	if (LinkedTo->Can_Enter_Cell(&Map[dest.As_Cell()], facing, cell_height) != MOVE_MOVING_BLOCK) {
+		return(false);
+	}
+	avoid = (LinkedTo->IsToPathAroundBlockage && LinkedTo->BlockagePathDelay == 0) ? 2 : 1;
+	return(true);
+}

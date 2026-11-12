@@ -727,3 +727,31 @@ bool WalkLocomotionClass::Is_Really_Moving_Now(void)
 {
 	return(IsReallyMoving);
 }
+
+
+/// <summary>
+/// Names the path this object will ask for in the coming Process call, as far as its state
+/// before the frame's object loop shows it.
+/// </summary>
+/// <returns>bool; Is a request expected? `to` and `avoid` are set when it is.</returns>
+bool WalkLocomotionClass::Predict_Path(Cell & to, int & avoid)
+{
+	if (HeadToCoord != COORD_NONE || DestinationCoord == COORD_NONE || LinkedTo->PathDelay != 0) {
+		return(false);
+	}
+	to = DestinationCoord.As_Cell();
+	FacingType dir = (FacingType)LinkedTo->Path[0];
+	if (dir == FACING_NONE) {
+		avoid = 0;
+		return(true);
+	}
+	if (dir == FACING_COUNT) {
+		return(false);
+	}
+	Cell cell = Adjacent_Cell(LinkedTo->Get_Coord(), dir);
+	if (LinkedTo->Can_Enter_Cell(&Map[cell], dir, LinkedTo->Get_Cell_Height(), NULL, true) != MOVE_MOVING_BLOCK) {
+		return(false);
+	}
+	avoid = (LinkedTo->IsToPathAroundBlockage && LinkedTo->BlockagePathDelay == 0) ? 2 : 1;
+	return(true);
+}

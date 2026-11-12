@@ -67,6 +67,13 @@ class AStarClass
 		// Call after any change to the subzone graph; remembered corridors are then discarded.
 		void Invalidate_Hierarchical_Cache(void) { HierCacheGeneration++; }
 
+		// Brings this pathfinder's tables in line with every map change `main` has been told of, so that
+		// its next search gives the result `main` would. Call it on the main thread before each use.
+		void Follow(AStarClass const & main);
+
+		// A quiet pathfinder writes no log lines from a search.
+		void Set_Quiet(bool quiet) { IsQuiet = quiet; }
+
 		/* -----------------------------------------------------------------------------------
 		 * Query / estimation (non-path-building)
 		 */
@@ -383,6 +390,33 @@ class AStarClass
 		unsigned int HierCacheHits;
 		unsigned int HierCacheCompared;
 		unsigned int HierCacheDifferences;
+
+		/* -----------------------------------------------------------------------------------
+		 * State a search once kept on the map or in statics, held here so that two
+		 * pathfinders can search at once.
+		 */
+
+		// The path control structure and cell heights Build_Final_Path hands out.
+		PathStruct FinalPath;
+		unsigned int FinalHeights[PATH_LENGTH_MAX + 1];
+
+		// The cells an avoidance search prices up, one byte a map cell and one for the off-map cell.
+		std::vector<unsigned char> PredictedPath;
+		int PredictedPathCount;
+
+		bool IsQuiet;
+
+		// Counts of the map changes this pathfinder was told of, and of those it last followed.
+		unsigned int DimensionSerial;
+		unsigned int ResetSerial;
+		unsigned int FollowedDimensionSerial;
+		unsigned int FollowedResetSerial;
+		unsigned int FollowedCacheGeneration;
+
+		void Size_Search_Tables(void);
+
+		bool Is_Predicted_Path(CellClass const * cell) const;
+		void Toggle_Predicted_Path(CellClass const * cell);
 };
 
 /* -----------------------------------------------------------------------------------

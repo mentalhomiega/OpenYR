@@ -161,6 +161,7 @@ int const MapClass::RadiusCount[] = {
 
 
 CellClass BlubCell;
+thread_local CellClass * OffMapCellOverride = NULL;
 
 static Cell BlubCellLogicLocation;
 static bool BlubCellInFrameLogic = false;
@@ -459,8 +460,9 @@ CellClass & MapClass::operator[](Coord const & coord) const
 		return(*Array[cellnum]);
 	}
 
-	BlubCell.CellID = Cell(x, y);
-	return(BlubCell);
+	CellClass & off_map = OffMapCellOverride != NULL ? *OffMapCellOverride : BlubCell;
+	off_map.CellID = Cell(x, y);
+	return(off_map);
 };
 
 
@@ -479,8 +481,9 @@ CellClass & MapClass::operator[](Cell const & cell) const
 		return(*Array[cellnum]);
 	}
 
-	BlubCell.CellID = cell;
-	return(BlubCell);
+	CellClass & off_map = OffMapCellOverride != NULL ? *OffMapCellOverride : BlubCell;
+	off_map.CellID = cell;
+	return(off_map);
 };
 
 
@@ -10085,13 +10088,13 @@ Cell MapClass::Find_Bridge_End_Cell_For_Subzone(Cell const & cell, int subzone_l
 bool MapClass::Build_Reachable_Subzones(CellClass * cptr, int subzone_level, DynamicVectorClass<int> & connections, FootClass const * foot)
 {
 	/*
-	 * The flood is bounded by one coarse block, so the scratch it needs is a fixed size and
-	 * is kept here rather than built up per call. _subzone_flood_stack is the depth first
-	 * stack of cells still to be flooded, and _subzone_flood_visited is the visited grid,
-	 * of stride 8 and indexed by the low bits of the cell coordinates.
+	 * The flood is bounded by one coarse block, so the scratch it needs is a fixed size.
+	 * _subzone_flood_stack is the depth first stack of cells still to be flooded, and
+	 * _subzone_flood_visited is the visited grid, of stride 8 and indexed by the low bits
+	 * of the cell coordinates.
 	 */
-	static CellClass * _subzone_flood_stack[64];
-	static char _subzone_flood_visited[8][8];
+	CellClass * _subzone_flood_stack[64];
+	char _subzone_flood_visited[8][8];
 
 	int dim = 1 << (subzone_level + 1);
 

@@ -24,6 +24,8 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		typedef LocomotionClass BASECLASS;
 
 	public:
+		bool Predict_Path(Cell & to, int & avoid);
+
 
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.

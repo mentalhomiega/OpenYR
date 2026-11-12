@@ -103,6 +103,9 @@ enum PerfCounter : unsigned char {
 
 extern bool Perf_Enabled;
 
+// Set on a thread other than the main one to keep its counts out of the unlocked totals.
+extern thread_local bool Perf_Thread_Muted;
+
 // Turns recording on or off. Turning it on clears the counts and starts a new second.
 void Perf_Set_Enabled(bool enabled);
 

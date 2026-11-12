@@ -77,6 +77,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "pathahead.h"
 #include "perfstat.h"
 
 #include "foot.h"
@@ -247,6 +248,7 @@ FootClass::~FootClass(void)
 
 	Feet.Delete(this);
 	TeamPtrTracker.Delete(this);
+	Path_Ahead_Forget(this);
 };
 
 

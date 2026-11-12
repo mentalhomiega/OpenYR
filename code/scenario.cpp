@@ -59,6 +59,7 @@
 
 #include "always.h"
 
+#include "pathahead.h"
 #include "playerdisplay.h"
 #include "scenario.h"
 #include "shellmap.h"
@@ -1195,6 +1196,7 @@ void Clear_Scenario(void)
 
 	// A zoom kept for a scripted scene does not outlive the scenario it belongs to.
 	Forget_Player_View_Zoom();
+	Path_Ahead_Clear();
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
 
