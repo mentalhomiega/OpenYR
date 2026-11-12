@@ -1952,7 +1952,7 @@ void BuildingClass::AI(void)
 		if (House->FirestormDefenseActivated) {
 			// Yuri's Revenge has no idle animation for a wall, so rules that name none draw nothing and take no random number (BuildingClass::Update, 0x43FB20).
 			if (Rule->FirestormIdleAnim != NULL && frame != 10 && frame != 5 && Anims[BANIM_SPECIAL_TWO] == NULL && (Scen->RandomNumber() & MAX_FIRESTORM_WALL_FRAMES) == 0) {
-				Anims[BANIM_SPECIAL_TWO] = new AnimClass(Rule->FirestormIdleAnim, PositionCoord - Coord(740,740,0), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_TRANSLUCENT50), -10);
+				Anims[BANIM_SPECIAL_TWO] = AnimClass::Held(new AnimClass(Rule->FirestormIdleAnim, PositionCoord - Coord(740,740,0), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_TRANSLUCENT50), -10));
 			}
 		}
 	}
@@ -7052,7 +7052,7 @@ void BuildingClass::Start_Psi_Warning(void)
 		return;
 	}
 
-	PsiWarnAnim = new AnimClass(AnimTypes[type], Map[House->NukeDest].Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
+	PsiWarnAnim = AnimClass::Held(new AnimClass(AnimTypes[type], Map[House->NukeDest].Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0));
 	PsiWarnAnim->OwnerHouse = (HousesType)House->HeapID;
 }
 
@@ -9351,7 +9351,7 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 			oldanim->Delete_Me_Silently();
 		}
 
-		Anims[anim] = animptr;
+		Anims[anim] = AnimClass::Held(animptr);
 
 		// A new animation starts paused, as BuildingClass::PlayAnim (0x451890) does, and faded like the others while a beam holds the structure.
 		animptr->Set_Paused(IsBeingWarpedOut);
@@ -9402,7 +9402,7 @@ void BuildingClass::Create_Damage_Fires(void)
 		coord.Y += lepton.Y;
 		AnimClass * fire = new AnimClass(Rule->DamageFireTypes[pick], coord, 0, 1);
 		if (fire != NULL) {
-			DamageFireAnims[index] = fire;
+			DamageFireAnims[index] = AnimClass::Held(fire);
 			int const zadjust = ((offset.Y - (Class->Height() + Class->Width()) * 15) * 3 >> 1) - 10;
 			fire->ZAdjust = std::min(zadjust, 0);
 			int const end = fire->Class->Stages;
@@ -12042,7 +12042,7 @@ void BuildingClass::Update_FS_Wall_State(void)
 			Anims[BANIM_SPECIAL_ONE] = NULL;
 		}
 	} else if (Rule->FirestormActiveAnim != NULL) {
-		Anims[BANIM_SPECIAL_ONE] = new AnimClass(Rule->FirestormActiveAnim, PositionCoord - Coord(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2, 0), 1, 0, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
+		Anims[BANIM_SPECIAL_ONE] = AnimClass::Held(new AnimClass(Rule->FirestormActiveAnim, PositionCoord - Coord(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2, 0), 1, 0, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10));
 		Anims[BANIM_SPECIAL_ONE]->IsFogged = IsFogged;
 	}
 

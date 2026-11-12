@@ -2106,7 +2106,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 	if (nukeball == NULL) {
 		return(false);
 	}
-	NextAnim = nukeball;
+	NextAnim = AnimClass::Held(nukeball);
 	SpawnNextAnim = true;
 	AUTOTEST_LOG("nuke blast builds up at frame %d\n", Frame);
 	return(true);

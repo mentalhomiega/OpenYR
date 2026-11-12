@@ -811,9 +811,13 @@ void GpuDraw_Line_End(void)
 			bottom = std::max(bottom, _LinePixels[i].Y);
 		}
 		GpuBlit & blit = Add_Special_Blit(left, top, right - left + 1, bottom - top + 1, true);
-		blit.Line = _LineColour;
-		blit.LineKind = _LineKind;
-		blit.Fade = _LineFade;
+		if (_LineKind == GPU_LINE_GLOW) {
+			blit.Brighten = 0;
+		} else {
+			blit.Line = _LineColour;
+			blit.LineKind = _LineKind;
+			blit.Fade = _LineFade;
+		}
 		unsigned char * out = &_List.PixelArena[blit.Pixels];
 		std::memset(out, 0, (std::size_t)blit.Width * blit.Height);
 		for (std::size_t i = first; i < last; i++) {
