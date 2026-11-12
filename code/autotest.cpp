@@ -573,6 +573,9 @@ bool Footprint_Free(char const * command, TechnoTypeClass const * type, Cell con
 	if (type->Fetch_RTTI() != RTTI_BUILDINGTYPE) return(true);
 	BuildingTypeClass const * building = (BuildingTypeClass const *)type;
 	if (building->Legal_Placement(cell, house)) return(true);
+	// An upgrade goes onto the structure it powers up, which Unlimbo then installs it in.
+	BuildingClass const * host = Map[cell].Cell_Building();
+	if (!building->PowersUpBuilding.empty() && host != NULL && stricmp(building->PowersUpBuilding, host->Class->IniName) == 0) return(true);
 	for (Cell const * offset = building->Occupy_List(true); *offset != REFRESH_EOL; offset++) {
 		Cell const covered = cell + *offset;
 		BuildingClass const * other = Map[covered].Cell_Building();
