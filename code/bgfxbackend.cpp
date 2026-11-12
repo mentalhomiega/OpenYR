@@ -22,6 +22,12 @@
 #include "rgb565.h"
 #include "tilediff.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#include <dxgi1_6.h>
+#pragma comment(lib, "dxgi.lib")
+#endif
+
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -1185,11 +1191,44 @@ static void Stop_Renderer(void)
 }
 
 
+// The vendor and device numbers and the name of the graphics card Windows ranks fastest. False means
+// the system does not rank its cards, and the numbers are left as they were.
+static bool Fastest_Graphics_Card(uint16_t & vendor, uint16_t & device, char * name, int namesize)
+{
+#ifdef _WIN32
+	IDXGIFactory6 * factory = NULL;
+	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory6), (void **)&factory))) {
+		return(false);
+	}
+	bool found = false;
+	IDXGIAdapter1 * adapter = NULL;
+	if (SUCCEEDED(factory->EnumAdapterByGpuPreference(0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter1), (void **)&adapter))) {
+		DXGI_ADAPTER_DESC1 desc;
+		if (SUCCEEDED(adapter->GetDesc1(&desc)) && (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0) {
+			vendor = (uint16_t)desc.VendorId;
+			device = (uint16_t)desc.DeviceId;
+			WideCharToMultiByte(CP_UTF8, 0, desc.Description, -1, name, namesize, NULL, NULL);
+			found = true;
+		}
+		adapter->Release();
+	}
+	factory->Release();
+	return(found);
+#else
+	(void)vendor;
+	(void)device;
+	(void)name;
+	(void)namesize;
+	return(false);
+#endif
+}
+
+
 /// <summary>
 /// Starts the renderer on the window, with an HDR10 back buffer when hdr is set.
 /// </summary>
 /// <returns>bool; Did the renderer start with the back buffer asked for? Nothing is left running on false.</returns>
-static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread)
+static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread, bool fastestgpu)
 {
 	_HdrActive = false;
 	_Routed = false;
@@ -1230,6 +1269,13 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 		default:
 			init.type = bgfx::RendererType::Count;
 			break;
+	}
+
+	// Left alone, the renderer takes the first graphics card the system lists, which on a machine with
+	// two is often the slower one built into the processor.
+	char card[128] = "";
+	if (fastestgpu && Fastest_Graphics_Card(init.vendorId, init.deviceId, card, sizeof(card))) {
+		DebugString("Video: asking for the graphics card %s\n", card);
 	}
 
 	if (renderthread) {
@@ -1300,8 +1346,9 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 /// <param name="vsync">Should presents wait for the display's refresh?</param>
 /// <param name="hdr">Should the back buffer be HDR10?</param>
 /// <param name="renderthread">Should the graphics device run on its own thread (docs/RENDER_THREAD.md)?</param>
+/// <param name="fastestgpu">Should the renderer run on the graphics card Windows ranks fastest, instead of the first one listed?</param>
 /// <returns>bool; Did the renderer start?</returns>
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread)
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread, bool fastestgpu)
 {
 	if (_Initialized) {
 		return(true);
@@ -1314,13 +1361,13 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 	_DrawableWidth = drawablewidth;
 	_DrawableHeight = drawableheight;
 
-	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true, renderthread)) {
+	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true, renderthread, fastestgpu)) {
 		return(true);
 	}
 	if (hdr) {
 		DebugString("HDR: starting the SDR back buffer instead\n");
 	}
-	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false, renderthread));
+	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false, renderthread, fastestgpu));
 }
 
 

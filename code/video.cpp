@@ -275,7 +275,7 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 	BackendRenderer renderer = (BackendRenderer)Options.Renderer;
 	bool const hdr = HDR_Output_Wanted(renderer);
 	bool const renderthread = Options.RenderThread && (renderer == BACKEND_RENDERER_AUTO || renderer == BACKEND_RENDERER_D3D11);
-	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync, hdr, renderthread)) {
+	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync, hdr, renderthread, Options.FastestGpu)) {
 		return(false);
 	}
 

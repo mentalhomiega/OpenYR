@@ -179,6 +179,13 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.NeedsRestart = true, .BeforeRenderer = true,
 	},
 	{
+		.Section = "Video", .Key = "FastestGpu",
+		.Flag = &OptionsClass::FastestGpu, .Default = true,
+		.Page = PERFORMANCE, .Group = RENDERING, .Label = "Use the fastest graphics card",
+		.Tip = "On a computer with two graphics cards, draws on the one Windows ranks fastest. Off draws on the first one Windows lists, which is often the slower one built into the processor.",
+		.NeedsRestart = true, .BeforeRenderer = true,
+	},
+	{
 		.Section = "Options", .Key = "ParallelPaths",
 		.Flag = &OptionsClass::ParallelPaths, .Default = false,
 		.Page = PERFORMANCE, .Group = PATH_SEARCHES, .Label = "Parallel path searches",
