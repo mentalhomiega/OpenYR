@@ -336,6 +336,9 @@ a default and returns it when the section or entry is missing.
 |---|---|---|
 | `Setting<Owner>`, `Settings_Load`, `Settings_Save`, `Settings_Reset` | `settingregistry.h` | One declaration per `RA2MD.INI` key. [SETTINGS.md](SETTINGS.md) describes how to add one. |
 | `Option_Settings()` | `optionsettings.h` | The declared settings of `OptionsClass`. |
+| `Option_Setting_Pages()`, `SettingPage` | `optionsettings.h`, `settingregistry.h` | The settings pages made only of declared rows, in tab order. |
+| `UI_Declared_Page(settings, page, owner)` | `ui/screens/settingspage/uisettingspage.h` | Builds one declared page's rows with the owner's values, for the generic page's presenter. |
+| `UI_Settings_Tab_Bar(pages, offered)`, `UI_Settings_Declared_Tab(index)`, `UI_Tab_Bit(tab)` | `ui/uisettingshost.h`, `ui/uiscreen.h` | The Settings tab bar (built-in tabs, then declared pages), a declared page's tab number, and a tab's bit in an offered mask. |
 | `UI_Setting_Rows`, `UI_Setting_Rows_Refresh`, `UI_Setting_Row_Execute`, `UI_Setting_Rows_Reset`, `UI_Setting_Rows_Changed`, `UI_Setting_Rows_Apply` | `ui/uisettingrows.h` | The rows a page builds from declarations, with their greying and pending values. |
 | `UI_Rml_Setting_Rows_Bind(model, name, rows)` | `ui/rml/rmlsettingrows.h` | Binds the rows for a page's markup. |
 | `Enum_Name(table, value, fallback)`, `Enum_From_Name(table, text, fallback)` | `nametable.h` | Name of an enum value from a table of file names, and the reverse. Each also takes a `std::span`. |

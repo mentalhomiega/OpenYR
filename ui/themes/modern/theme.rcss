@@ -1066,11 +1066,6 @@ body.netgame #go, body.netgame #accept { left: 892dp; }
 	decorator: vertical-gradient(var(--t-tab-top, #2a2238) var(--t-face-bottom, #18131f));
 }
 
-#tabs button.tab.gone
-{
-	display: none;
-}
-
 #tabs button.tab:hover
 {
 	border-color: var(--t-accent, #b46bff);

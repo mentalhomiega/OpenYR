@@ -10,6 +10,7 @@
 #include "ui/screens/mainopt/uimainopt.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Element.h>
@@ -48,6 +49,13 @@ void UIMainOptionsPresenterClass::Execute(UIIntent const & intent)
 		Choice = UI_MAIN_OPTIONS_MODS;
 		Result = UI_RESULT_ACCEPTED;
 
+	} else if (intent.Name == "page") {
+		if (Index_In_Range(intent.Value, State.Pages.size())) {
+			Choice = UI_MAIN_OPTIONS_PAGE;
+			Page = State.Pages[intent.Value].Name;
+			Result = UI_RESULT_ACCEPTED;
+		}
+
 	} else if (intent.Name == "ok") {
 		Choice = UI_MAIN_OPTIONS_LEAVE;
 		Result = UI_RESULT_ACCEPTED;
@@ -79,7 +87,15 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
-			return(model.Bind("soundenabled", &Data.State.SoundEnabled));
+			Rml::StructHandle<UISettingsTabEntry> page = model.RegisterStruct<UISettingsTabEntry>();
+			if (!page) {
+				return(false);
+			}
+			page.RegisterMember("name", &UISettingsTabEntry::Name);
+			page.RegisterMember("label", &UISettingsTabEntry::Label);
+			return(model.RegisterArray<std::vector<UISettingsTabEntry>>()
+				&& model.Bind("soundenabled", &Data.State.SoundEnabled)
+				&& model.Bind("pages", &Data.State.Pages));
 		}
 
 		virtual void Loaded(void) override
@@ -87,6 +103,8 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 			// The options menu stands where the title screen menus do in each menu style.
 			Document()->SetClass("titlemenu", true);
 			Document()->SetClass("options", true);
+			// The modern menu style sizes the panel by its button count, as on the other title menus.
+			Document()->SetClass("count-" + std::to_string(BUTTONS + Data.State.Pages.size()), true);
 
 			Rml::Element * dialog = Document()->GetElementById("reveal");
 			if (dialog == nullptr || Data.State.Top < 0) {
@@ -98,6 +116,9 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 		}
 
 	private:
+		// The buttons the document holds besides those of the declared pages.
+		enum { BUTTONS = 6 };
+
 		UIMainOptionsPresenterClass & Data;
 };
 

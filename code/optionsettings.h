@@ -17,3 +17,6 @@
 
 // The RA2MD.INI settings declared in optionsettings.cpp, in the order they are read and written.
 std::span<Setting<OptionsClass> const> Option_Settings(void);
+
+// The settings pages built from those rows alone, in the order of their tabs. The Graphics page is not one: its own screen shows its rows.
+std::span<SettingPage const> Option_Setting_Pages(void);

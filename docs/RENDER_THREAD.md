@@ -1,6 +1,6 @@
 # Render thread
 
-`RenderThread=yes` in the `[Video]` section of `RA2MD.INI` moves Direct3D 11 submission and the present to a thread of their own. The default is `no`, and with it the game draws and presents on the main thread as before. The key is read at startup, has no row in the settings, and is ignored unless `Renderer` is automatic or Direct3D 11.
+`RenderThread=yes` in the `[Video]` section of `RA2MD.INI` moves Direct3D 11 submission and the present to a thread of their own. The default is `no`, and with it the game draws and presents on the main thread as before. The key is read at startup and is ignored unless `Renderer` is automatic or Direct3D 11. The Performance page of the settings sets it with the switch Render on a separate thread, and the change applies at the next start.
 
 The thread is in `code/renderthread.cpp`. The key is declared in `code/optionsettings.cpp` with `.BeforeRenderer`, because the renderer starts before the other settings are read.
 

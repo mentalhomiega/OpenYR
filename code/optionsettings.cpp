@@ -43,6 +43,15 @@ constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
 constexpr char const * VOXEL_DRAWING = "Voxel drawing";
 
+constexpr char const * PERFORMANCE = "performance";
+constexpr char const * RENDERING = "Rendering";
+
+
+// To add a page, add an entry here and name its Id in the .Page of its rows.
+constexpr SettingPage Pages[] = {
+	{ .Id = PERFORMANCE, .Label = "Performance" },
+};
+
 
 // The order is the order of the keys in a saved RA2MD.INI: a save rewrites each key in this order.
 constexpr Setting<OptionsClass> Settings[] = {
@@ -158,7 +167,10 @@ constexpr Setting<OptionsClass> Settings[] = {
 	},
 	{
 		.Section = "Video", .Key = "RenderThread",
-		.Flag = &OptionsClass::RenderThread, .Default = false, .BeforeRenderer = true,
+		.Flag = &OptionsClass::RenderThread, .Default = false,
+		.Page = PERFORMANCE, .Group = RENDERING, .Label = "Render on a separate thread",
+		.Tip = "Hands the graphics card's work and the showing of each picture to a thread of their own, so a slow picture holds up the game less. Works with the automatic or Direct3D 11 graphics API; others ignore it.",
+		.NeedsRestart = true, .BeforeRenderer = true,
 	},
 };
 
@@ -168,4 +180,10 @@ constexpr Setting<OptionsClass> Settings[] = {
 std::span<Setting<OptionsClass> const> Option_Settings(void)
 {
 	return(Settings);
+}
+
+
+std::span<SettingPage const> Option_Setting_Pages(void)
+{
+	return(Pages);
 }

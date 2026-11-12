@@ -11,11 +11,48 @@
 
 #include "ui/uisettingshost.h"
 
+#include "settingregistry.h"
 
-UISettingsHostPresenterClass::UISettingsHostPresenterClass(std::vector<UISettingsPageClass> pages, std::vector<UIPresenterClass *> presenters, unsigned offered, UISettingsTab first) :
-	Pages(std::move(pages)),
-	Presenters(std::move(presenters))
+#include <algorithm>
+
+
+std::vector<UISettingsTabEntry> UI_Settings_Tab_Bar(std::span<SettingPage const> pages, unsigned offered)
 {
+	std::vector<UISettingsTabEntry> const all = {
+		{ UI_TAB_GAME, "game", "Game" },
+		{ UI_TAB_DISPLAY, "display", "Display" },
+		{ UI_TAB_GRAPHICS, "graphics", "Graphics" },
+		{ UI_TAB_AUDIO, "audio", "Audio" },
+		{ UI_TAB_KEYBOARD, "keyboard", "Keyboard" },
+		{ UI_TAB_ACCESSIBILITY, "accessibility", "Accessibility" },
+		{ UI_TAB_MODS, "mods", "Mods" },
+	};
+
+	std::vector<UISettingsTabEntry> bar;
+	for (UISettingsTabEntry const & entry : all) {
+		if ((offered & UI_Tab_Bit(entry.Tab)) != 0) {
+			bar.push_back(entry);
+		}
+	}
+	for (int index = 0; index < (int)pages.size(); index++) {
+		int const tab = UI_Settings_Declared_Tab(index);
+		if ((offered & UI_Tab_Bit(tab)) != 0) {
+			bar.push_back({ tab, pages[index].Id, pages[index].Label });
+		}
+	}
+	return(bar);
+}
+
+
+UISettingsHostPresenterClass::UISettingsHostPresenterClass(std::vector<UISettingsPageClass> pages, std::vector<UIPresenterClass *> presenters, std::vector<UISettingsTabEntry> bar, UISettingsTab first) :
+	Pages(std::move(pages)),
+	Presenters(std::move(presenters)),
+	Bar(std::move(bar))
+{
+	unsigned offered = 0;
+	for (UISettingsTabEntry const & entry : Bar) {
+		offered |= UI_Tab_Bit(entry.Tab);
+	}
 	Offer_Tabs(offered);
 	for (UIPresenterClass * presenter : Presenters) {
 		presenter->Offer_Tabs(offered);
@@ -106,7 +143,7 @@ int UISettingsHostPresenterClass::Index_Of(UISettingsTab tab) const
 void UISettingsHostPresenterClass::Retab_Pages(UISettingsTab tab)
 {
 	for (UISettingsPageClass const & page : Pages) {
-		page.View->Set_Tab((int)tab, Settings_Tabs_Offered());
+		page.View->Set_Tab((int)tab, Bar);
 	}
 }
 
@@ -126,6 +163,18 @@ void UISettingsHostPresenterClass::Finish(UIPresenterClass * source)
 }
 
 
+std::vector<UIViewClass *> UISettingsHostPresenterClass::Views_Of_Host(void) const
+{
+	std::vector<UIViewClass *> views;
+	for (UISettingsPageClass const & page : Pages) {
+		if (std::find(views.begin(), views.end(), page.View) == views.end()) {
+			views.push_back(page.View);
+		}
+	}
+	return(views);
+}
+
+
 UISettingsHostViewClass::UISettingsHostViewClass(UISettingsHostPresenterClass & presenter) :
 	Host(presenter)
 {
@@ -134,8 +183,8 @@ UISettingsHostViewClass::UISettingsHostViewClass(UISettingsHostPresenterClass & 
 
 bool UISettingsHostViewClass::Prepare(UIShellClass & shell)
 {
-	for (UISettingsPageClass const & page : Host.Pages_Of_Host()) {
-		if (!page.View->Prepare(shell)) {
+	for (UIViewClass * view : Host.Views_Of_Host()) {
+		if (!view->Prepare(shell)) {
 			return(false);
 		}
 	}
@@ -158,8 +207,8 @@ void UISettingsHostViewClass::Hide(void)
 
 void UISettingsHostViewClass::Release(void)
 {
-	for (UISettingsPageClass const & page : Host.Pages_Of_Host()) {
-		page.View->Release();
+	for (UIViewClass * view : Host.Views_Of_Host()) {
+		view->Release();
 	}
 }
 

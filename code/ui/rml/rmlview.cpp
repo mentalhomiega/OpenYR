@@ -116,33 +116,60 @@ UISettingsTab UIRmlViewClass::Tab_Of_View(void) const
 }
 
 
-unsigned UIRmlViewClass::Offered_Of_View(void) const
+UISettingsTabEntry const * UIRmlViewClass::Bar_Entry(int tab) const
 {
-	return(ViewOffered);
+	for (UISettingsTabEntry const & entry : ViewBar) {
+		if (entry.Tab == tab) {
+			return(&entry);
+		}
+	}
+	return(nullptr);
 }
 
 
 /// <summary>
-/// Makes this view a page of the tabbed Settings: the tab bar of the page lights the tab given and hides the tabs not offered.
+/// Makes this view a page of the tabbed Settings: the tab bar of the page holds the tabs given and lights the tab given.
 /// The host calls this on every page at once, so the tab bars of pages that are not shown agree with the one on show.
 /// </summary>
-void UIRmlViewClass::Set_Tab(int tab, unsigned offered)
+void UIRmlViewClass::Set_Tab(int tab, std::vector<UISettingsTabEntry> const & bar)
 {
 	ViewTab = (UISettingsTab)tab;
-	ViewOffered = offered;
+	ViewBar = bar;
 	Apply_Tabs();
 }
 
-
-static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
 
 // A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
 static bool UI_Tab_Keyboard = false;
 
 
+void UIRmlViewClass::Build_Tab_Bar(Rml::Element & tabs)
+{
+	bool same = tabs.GetNumChildren() == (int)ViewBar.size();
+	for (int index = 0; same && index < (int)ViewBar.size(); index++) {
+		same = tabs.GetChild(index)->GetId() == "tab-" + ViewBar[index].Name;
+	}
+	if (same) {
+		return;
+	}
+
+	while (tabs.GetNumChildren() > 0) {
+		tabs.RemoveChild(tabs.GetChild(0));
+	}
+	for (UISettingsTabEntry const & entry : ViewBar) {
+		Rml::ElementPtr button = Doc->CreateElement("button");
+		button->SetId("tab-" + entry.Name);
+		button->SetClass("tab", true);
+		button->SetAttribute("data-event-click", "queue('tab', " + std::to_string(entry.Tab) + ")");
+		button->AppendChild(Doc->CreateTextNode(entry.Label));
+		tabs.AppendChild(std::move(button));
+	}
+}
+
+
 /// <summary>
 /// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
-/// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
+/// frame holds, fills it with the offered tabs and lights the tab this page stands for.
 /// </summary>
 void UIRmlViewClass::Apply_Tabs(void)
 {
@@ -152,30 +179,33 @@ void UIRmlViewClass::Apply_Tabs(void)
 	}
 
 	Doc->SetClass("settings", true);
-	Doc->SetClass(Rml::String("tab-") + UI_TAB_NAMES[tab], true);
+	// One view can stand for several tabs, so only the class of the tab on show is set.
+	for (UISettingsTabEntry const & entry : ViewBar) {
+		Doc->SetClass("tab-" + entry.Name, entry.Tab == tab);
+	}
 
 	// Pages replace each other in place, so the slide-open of a first screen would only flicker.
 	Doc->SetAttribute("reveal", Rml::String("none"));
 
-	for (int index = 0; index < UI_TAB_COUNT; index++) {
-		Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[index]);
-		if (button != nullptr) {
-			button->SetClass("active", index == tab);
-			button->SetClass("gone", (Offered_Of_View() & (1u << index)) == 0);
-		}
+	Rml::Element * tabs = Doc->GetElementById("tabs");
+	if (tabs == nullptr) {
+		return;
 	}
-
+	Build_Tab_Bar(*tabs);
+	for (int index = 0; index < tabs->GetNumChildren(); index++) {
+		tabs->GetChild(index)->SetClass("active", ViewBar[index].Tab == tab);
+	}
 }
 
 
 /// <summary>
 /// Moves between the Settings tabs from the keyboard: Ctrl+Tab and Ctrl+Page Up/Down anywhere
-/// on the page, and the arrow keys while a tab has the focus.
+/// on the page, and the arrow keys while a tab has the focus. The tabs follow the order of the bar.
 /// </summary>
 /// <returns>bool; Was the key a tab change?</returns>
 bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
 {
-	if (Tab_Of_View() == UI_TAB_NONE) {
+	if (Tab_Of_View() == UI_TAB_NONE || ViewBar.empty()) {
 		return(false);
 	}
 
@@ -202,19 +232,18 @@ bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
 		return(false);
 	}
 
-	int tab = Tab_Of_View();
-	for (int tries = 0; tries < UI_TAB_COUNT; tries++) {
-		tab = (tab + step + UI_TAB_COUNT) % UI_TAB_COUNT;
-		if ((Offered_Of_View() & (1u << tab)) != 0) {
-			UI_Tab_Keyboard = true;
-			Mark_Keyboard();
-			Queue("tab", tab);
-			return(true);
-		}
+	int const count = (int)ViewBar.size();
+	int at = 0;
+	while (at < count && ViewBar[at].Tab != Tab_Of_View()) {
+		at++;
 	}
-	return(false);
+	// A page whose tab the bar lacks steps from the bar's first tab.
+	at = (at == count) ? 0 : (at + step + count) % count;
+	UI_Tab_Keyboard = true;
+	Mark_Keyboard();
+	Queue("tab", ViewBar[at].Tab);
+	return(true);
 }
-
 
 bool UIRmlViewClass::Prepare(UIShellClass & shell)
 {
@@ -265,8 +294,9 @@ void UIRmlViewClass::Show(bool modal)
 		// The keyboard flag belongs to the page on show, so only that page takes it.
 		bool const keyboard_tab = UI_Tab_Keyboard;
 		UI_Tab_Keyboard = false;
-		if (keyboard_tab && Tab_Of_View() != UI_TAB_NONE) {
-			Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[Tab_Of_View()]);
+		UISettingsTabEntry const * entry = Bar_Entry(Tab_Of_View());
+		if (keyboard_tab && entry != nullptr) {
+			Rml::Element * button = Doc->GetElementById("tab-" + entry->Name);
 			if (button != nullptr) {
 				button->Focus();
 				Mark_Keyboard();

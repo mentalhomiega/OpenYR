@@ -38,6 +38,7 @@
 #include "ui/screens/savegame/uisavegame.h"
 #include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/screens/settingspage/uisettingspage.h"
 #include "ui/screens/sound/uisound.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
@@ -4123,6 +4124,222 @@ void Test_Menu_Screen(Rml::Context & context, CountingSystemInterfaceClass & sys
 }
 
 
+/*
+ * The declared pages, against a table made for the test: a switch, a slider that shows 0 as Auto and needs
+ * the switch, and a row on a second page, as the path settings and the render thread are laid out.
+ */
+struct DeclaredOwnerType
+{
+	bool Parallel = false;
+	int Threads = 0;
+	bool Thread = false;
+};
+
+
+constexpr Setting<DeclaredOwnerType> Declared_Settings[] = {
+	{
+		.Section = "Options", .Key = "ParallelPaths",
+		.Flag = &DeclaredOwnerType::Parallel, .Default = false,
+		.Page = "paths", .Group = "Path finding", .Label = "Find paths in parallel", .Tip = "Uses several threads.",
+	},
+	{
+		.Section = "Options", .Key = "PathThreads",
+		.Number = &DeclaredOwnerType::Threads, .Default = 0, .Min = 0, .Max = 8,
+		.Page = "paths", .Group = "Path finding", .Label = "Path threads", .Tip = "How many threads.",
+		.Needs = "ParallelPaths", .ZeroText = "Auto",
+	},
+	{
+		.Section = "Video", .Key = "RenderThread",
+		.Flag = &DeclaredOwnerType::Thread, .Default = false,
+		.Page = "drawing", .Group = "Rendering", .Label = "Render thread", .Tip = "Draws on a thread.",
+		.NeedsRestart = true,
+	},
+};
+
+
+constexpr SettingPage Declared_Pages[] = {
+	{ .Id = "paths", .Label = "Paths" },
+	{ .Id = "drawing", .Label = "Drawing" },
+};
+
+
+class RecordingSettingsPageServiceClass : public UISettingsPageServiceClass
+{
+	public:
+		virtual void Set_Declared_Settings(std::vector<UISettingRow> const & rows) override
+		{
+			Applied++;
+			UI_Setting_Rows_Apply(std::span<Setting<DeclaredOwnerType> const>(Declared_Settings), rows, Owner);
+		}
+
+		virtual bool Condition_Met(SettingCondition condition) override
+		{
+			(void)condition;
+			return(true);
+		}
+
+		DeclaredOwnerType Owner;
+		int Applied = 0;
+};
+
+
+UISettingsPageState Declared_Fixture(DeclaredOwnerType const & owner)
+{
+	UISettingsPageState state;
+	for (SettingPage const & page : Declared_Pages) {
+		state.Pages.push_back(UI_Declared_Page(std::span<Setting<DeclaredOwnerType> const>(Declared_Settings), page, owner));
+	}
+	return(state);
+}
+
+
+static UISettingRow const * Declared_Row(std::vector<UISettingRow> const & rows, char const * key)
+{
+	for (UISettingRow const & row : rows) {
+		if (row.Kind != UISettingRowKind::HEADING && row.Key == key) {
+			return(&row);
+		}
+	}
+	return(nullptr);
+}
+
+
+void Test_Declared_Pages_Presenter(void)
+{
+	{
+		std::vector<UISettingRow> const rows = UI_Setting_Rows(Option_Settings(), "performance", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
+		UISettingRow const * thread = Declared_Row(rows, "RenderThread");
+		Check(Option_Setting_Pages().size() >= 1 && std::string(Option_Setting_Pages()[0].Id) == "performance" && std::string(Option_Setting_Pages()[0].Label) == "Performance", "the first declared page is Performance");
+		Check(rows.size() == 2 && rows[0].Kind == UISettingRowKind::HEADING && rows[0].Label == "Rendering" && thread != nullptr && thread->Kind == UISettingRowKind::SWITCH
+			&& thread->Label == "Render on a separate thread" && thread->Tip.ends_with(" Applies at the next start."), "the Performance page shows the render thread switch, which applies at the next start");
+		bool before = false;
+		for (Setting<OptionsClass> const & setting : Option_Settings()) {
+			before = before || (std::string(setting.Key) == "RenderThread" && setting.BeforeRenderer);
+		}
+		Check(before, "the render thread is still read before the renderer starts");
+	}
+
+	RecordingSettingsPageServiceClass service;
+	{
+		UISettingsPagePresenterClass presenter(service, Declared_Fixture(service.Owner));
+		std::vector<UISettingRow> const & rows = presenter.State.Rows;
+		Check(presenter.Rows_Of(0).size() == 3 && rows.size() == 5 && rows[0].Label == "Path finding" && Declared_Row(rows, "ParallelPaths")->Kind == UISettingRowKind::SWITCH
+			&& Declared_Row(rows, "PathThreads")->Kind == UISettingRowKind::SLIDER && Declared_Row(rows, "RenderThread")->Classes.find("other-page") != std::string::npos,
+			"a declared page builds its heading, switch and slider, and the rows of the other page are hidden");
+		Check(Declared_Row(rows, "PathThreads")->Disabled && Declared_Row(rows, "PathThreads")->ValueText == "Auto", "the slider is greyed while the switch it needs is off, and shows 0 as Auto");
+
+		Drive(presenter, "paththreads", 3);
+		Check(Declared_Row(rows, "PathThreads")->Value == 0, "a greyed slider keeps its value");
+
+		Drive(presenter, "parallelpaths", 1);
+		Drive(presenter, "paththreads", 3);
+		Check(Declared_Row(rows, "ParallelPaths")->On && !Declared_Row(rows, "PathThreads")->Disabled && Declared_Row(rows, "PathThreads")->Value == 3
+			&& Declared_Row(rows, "PathThreads")->ValueText == "3", "the switch turns on and frees the slider, which then moves");
+		Drive(presenter, "paththreads", 99);
+		Check(Declared_Row(rows, "PathThreads")->Value == 8, "the slider is held to its range");
+
+		presenter.Show_Page(1);
+		Drive(presenter, "renderthread", 1);
+		Check(Declared_Row(presenter.Rows_Of(1), "RenderThread")->On && Declared_Row(rows, "PathThreads")->Classes.find("other-page") != std::string::npos && Declared_Row(presenter.Rows_Of(0), "PathThreads")->Value == 8, "another page shows its own rows and the first keeps its pending values");
+
+		presenter.Show_Page(0);
+		Check(Declared_Row(rows, "PathThreads")->Value == 8 && Declared_Row(presenter.Rows_Of(1), "RenderThread")->On, "returning to a page shows the values pending on it");
+
+		Drive(presenter, "reset");
+		Check(!Declared_Row(rows, "ParallelPaths")->On && Declared_Row(rows, "PathThreads")->Value == 0 && Declared_Row(presenter.Rows_Of(1), "RenderThread")->On,
+			"Reset to defaults puts back the defaults of the page on show only");
+
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Applied == 0 && !service.Owner.Thread, "Cancel drops every change");
+	}
+
+	{
+		service.Owner.Thread = true;
+		UISettingsPagePresenterClass presenter(service, Declared_Fixture(service.Owner));
+		Drive(presenter, "parallelpaths", 1);
+		Drive(presenter, "paththreads", 4);
+		Check(service.Applied == 0 && !service.Owner.Parallel, "nothing reaches the settings before OK");
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Owner.Parallel && service.Owner.Threads == 4 && service.Owner.Thread,
+			"OK writes the changed page's rows to the settings");
+		Check(service.Applied == 1, "OK writes the rows once");
+
+		service.Applied = 0;
+		UISettingsPagePresenterClass same(service, Declared_Fixture(service.Owner));
+		Drive(same, "ok");
+		Check(same.Result.has_value() && service.Applied == 0, "OK with nothing changed writes nothing");
+
+		service.Applied = 0;
+		UISettingsPagePresenterClass both(service, Declared_Fixture(service.Owner));
+		Drive(both, "paththreads", 0);
+		both.Show_Page(1);
+		Drive(both, "renderthread", 0);
+		Drive(both, "ok");
+		Check(service.Applied == 1 && service.Owner.Threads == 0 && !service.Owner.Thread, "OK applies the changes of every page, the one on show and the others");
+	}
+}
+
+
+void Test_Settings_Page_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int const problems = system.Problems;
+
+	RecordingSettingsPageServiceClass service;
+	UISettingsPagePresenterClass presenter(service, Declared_Fixture(service.Owner));
+	std::unique_ptr<UIViewClass> view = UI_Settings_Page_View(presenter);
+	Check(Rml(*view).Prepare(context), "the declared settings page prepares");
+	view->Show(true);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the declared settings page raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * parallel = document->GetElementById("parallel-paths");
+	Rml::Element * threads = document->GetElementById("path-threads");
+	Rml::Element * row = document->GetElementById("path-threads-row");
+	Check(parallel != nullptr && document->GetElementById("switch-parallel-paths") != nullptr && threads != nullptr && row != nullptr, "the page lists its declared switch and slider from the shared row markup");
+	Check(threads != nullptr && threads->HasAttribute("disabled") && row != nullptr && row->IsClassSet("disabled") && row->GetInnerRML().find("Auto") != std::string::npos,
+		"the slider shows Auto and is greyed while its switch is off");
+
+	if (parallel != nullptr) {
+		Click(context, parallel);
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+	}
+	Check(Declared_Row(presenter.State.Rows, "ParallelPaths")->On && threads != nullptr && !threads->HasAttribute("disabled") && row != nullptr && !row->IsClassSet("disabled"), "ticking the switch frees its slider live");
+
+	Rml::Element * description = document->GetElementById("description");
+	if (row != nullptr) {
+		row->DispatchEvent(Rml::EventId::Mousemove, Rml::Dictionary());
+	}
+	Check(description != nullptr && description->GetInnerRML().find("How many threads.") != std::string::npos, "pointing at a row shows its tip in the description panel");
+
+	presenter.Show_Page(1);
+	view->Sync();
+	context.Update();
+	Rml::Element * thread_row = document->GetElementById("switch-render-thread");
+	Rml::Element * parallel_row = document->GetElementById("switch-parallel-paths");
+	Check(thread_row != nullptr && !thread_row->IsClassSet("other-page") && thread_row->GetComputedValues().display() != Rml::Style::Display::None
+		&& parallel_row != nullptr && parallel_row->IsClassSet("other-page") && parallel_row->GetComputedValues().display() == Rml::Style::Display::None,
+		"the document shows the rows of the page the host moves to and hides the others");
+	Check(system.Problems == problems, "moving between the declared pages raises no RmlUi warning or error");
+	Check(description != nullptr && description->GetInnerRML().find("How many threads.") == std::string::npos, "the description of the page left behind is cleared");
+
+	Rml::Element * reset = document->GetElementById("footer-reset");
+	Rml::Element * ok = document->GetElementById("footer-ok");
+	Check(reset != nullptr && ok != nullptr && document->GetElementById("footer-cancel") != nullptr, "the page has Reset to defaults, Back and OK");
+	if (ok != nullptr) {
+		Click(context, ok);
+		presenter.Drain();
+	}
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Owner.Parallel, "OK on the page applies the pages' changes");
+
+	view->Release();
+	context.Update();
+}
+
 void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system, RecordingRenderInterfaceClass & render)
 {
 	int problems = system.Problems;
@@ -4229,6 +4446,43 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		Check(keyboard.Choice == UI_MAIN_OPTIONS_KEYBOARD && settings.Choice == UI_MAIN_OPTIONS_SETTINGS && leave.Choice == UI_MAIN_OPTIONS_LEAVE && leave.Result.has_value() && *leave.Result == UI_RESULT_ACCEPTED, "Keyboard, Game Settings and Main Menu each answer with their choice");
 		Check(mods.Result.has_value() && *mods.Result == UI_RESULT_ACCEPTED && mods.Choice == UI_MAIN_OPTIONS_MODS, "Mods answers with the mods choice");
 	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		for (SettingPage const & page : Option_Setting_Pages()) {
+			state.Pages.push_back({ UI_TAB_NONE, page.Id, page.Label });
+		}
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "an options menu with the declared pages prepares");
+		view->Show(true);
+		context.Update();
+		Check(system.Problems == problems, "the declared pages' buttons raise no RmlUi warning or error");
+
+		std::vector<Rml::Element *> buttons = Buttons_Top_Down(Rml(*view).Document());
+		bool const listed = buttons.size() == 7 && buttons[5]->GetId() == "page-performance" && buttons[5]->GetInnerRML() == "Performance" && buttons[6]->GetId() == "mainmenu";
+		Check(listed, "the options menu lists each declared page between Mods and Main Menu");
+
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+		bool const inside = listed && dialog != nullptr && buttons[6]->GetAbsoluteOffset(Rml::BoxArea::Border).y + buttons[6]->GetBox().GetSize(Rml::BoxArea::Border).y
+			<= dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize(Rml::BoxArea::Border).y;
+		Check(inside, "the menu grows to hold the extra button");
+
+		if (listed) {
+			Click(context, buttons[5]);
+			presenter.Drain();
+		}
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == UI_MAIN_OPTIONS_PAGE && presenter.Page == "performance", "a declared page's button answers with its page");
+
+		UIMainOptionsPresenterClass stray(state);
+		Drive(stray, "page", 5);
+		Check(!stray.Result.has_value(), "a page number the menu does not list does nothing");
+
+		view->Release();
+		context.Update();
+	}
 }
 
 
@@ -4295,34 +4549,41 @@ void Test_Settings_Tabs_Presenter(void)
 
 
 /*
- * Every tab button a menu style's frame holds asks for the tab it names, so a new tab in the list
- * cannot leave the buttons sending the old numbers.
+ * The tab bar is built from one list: the built-in tabs in their order, then a tab for each declared page,
+ * each button asking for its own tab. No menu style's frame holds buttons of its own.
  */
 void Test_Settings_Tab_Buttons(void)
 {
-	struct { char const * Name; UISettingsTab Tab; } const tabs[] = {
+	struct { char const * Name; int Tab; } const builtin[] = {
 		{ "game", UI_TAB_GAME }, { "display", UI_TAB_DISPLAY }, { "graphics", UI_TAB_GRAPHICS }, { "audio", UI_TAB_AUDIO },
 		{ "keyboard", UI_TAB_KEYBOARD }, { "accessibility", UI_TAB_ACCESSIBILITY }, { "mods", UI_TAB_MODS },
 	};
+
+	std::vector<UISettingsTabEntry> const bar = UI_Settings_Tab_Bar(Option_Setting_Pages(), ~0u);
+	bool listed = bar.size() == std::size(builtin) + Option_Setting_Pages().size();
+	for (std::size_t index = 0; listed && index < std::size(builtin); index++) {
+		listed = bar[index].Name == builtin[index].Name && bar[index].Tab == builtin[index].Tab;
+	}
+	Check(listed, "the tab bar lists the built-in tabs first, in their order, with their own numbers");
+
+	bool const performance = bar.size() > std::size(builtin) && bar[std::size(builtin)].Name == "performance"
+		&& bar[std::size(builtin)].Label == "Performance" && bar[std::size(builtin)].Tab == UI_Settings_Declared_Tab(0);
+	Check(performance, "the declared Performance page follows them as a tab of its own");
+
+	unsigned const offered = UI_Tab_Bit(UI_TAB_GAME) | UI_Tab_Bit(UI_TAB_AUDIO) | UI_Tab_Bit(UI_Settings_Declared_Tab(0));
+	std::vector<UISettingsTabEntry> const some = UI_Settings_Tab_Bar(Option_Setting_Pages(), offered);
+	Check(some.size() == 3 && some[0].Tab == UI_TAB_GAME && some[1].Tab == UI_TAB_AUDIO && some[2].Name == "performance", "a bar holds only the tabs offered");
+
+	std::vector<SettingPage> const many(40, SettingPage{ "page", "Page" });
+	Check(UI_Settings_Tab_Bar(many, ~0u).size() == 32, "a declared page past the 32 tabs a mask holds is left out");
 
 	std::filesystem::path const shipped(OPENTS_UI_DIR);
 	for (char const * style : { "modern", "classic" }) {
 		std::ifstream file(shipped / "themes" / style / "dialog.rml");
 		std::string const text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-		if (text.find("class=\"tab\"") == std::string::npos) {
-			continue;
-		}
-		for (auto const & tab : tabs) {
-			std::string const id = std::string("id=\"tab-") + tab.Name + "\"";
-			size_t const at = text.find(id);
-			size_t const end = (at == std::string::npos) ? at : text.find('>', at);
-			std::string const want = "queue('tab', " + std::to_string((int)tab.Tab) + ")";
-			bool const right = at != std::string::npos && text.substr(at, end - at).find(want) != std::string::npos;
-			Check(right, (std::string("the ") + style + " tab bar's " + tab.Name + " button asks for its own tab").c_str());
-		}
+		Check(text.find("class=\"tab\"") == std::string::npos, (std::string("the ") + style + " frame holds no tab buttons of its own").c_str());
 	}
 }
-
 
 /*
  * A page joined to the Settings marks its document, opens without the slide, and moves between
@@ -4333,11 +4594,13 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	int const problems = system.Problems;
 
 	RecordingGameControlsServiceClass service;
-	unsigned const settings_tabs = (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD);
+	int const declared = UI_Settings_Declared_Tab(0);
+	unsigned const settings_tabs = UI_Tab_Bit(UI_TAB_GAME) | UI_Tab_Bit(UI_TAB_AUDIO) | UI_Tab_Bit(UI_TAB_KEYBOARD) | UI_Tab_Bit(declared);
+	std::vector<UISettingsTabEntry> const bar = UI_Settings_Tab_Bar(Option_Setting_Pages(), settings_tabs);
 	UIGameControlsPresenterClass presenter(service, Game_Controls_Fixture());
 	presenter.Offer_Tabs(settings_tabs);
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
-	view->Set_Tab(UI_TAB_GAME, settings_tabs);
+	view->Set_Tab(UI_TAB_GAME, bar);
 
 	Check(Rml(*view).Prepare(context), "a Settings page prepares");
 	view->Show(true);
@@ -4356,14 +4619,40 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	UIGameControlsPresenterClass back(service, Game_Controls_Fixture());
 	back.Offer_Tabs(settings_tabs);
 	std::unique_ptr<UIViewClass> second = UI_Game_Controls_View(back);
-	second->Set_Tab(UI_TAB_GAME, settings_tabs);
+	second->Set_Tab(UI_TAB_GAME, bar);
 	Check(Rml(*second).Prepare(context), "a second Settings page prepares");
 	second->Show(true);
 	context.Update();
 
 	Press(context, Rml::Input::KI_PRIOR, Rml::Input::KM_CTRL);
 	back.Drain();
-	Check(!back.Result.has_value() && back.Tab_Request == UI_TAB_KEYBOARD, "Ctrl+Page Up wraps round to the last tab");
+	Check(!back.Result.has_value() && back.Tab_Request == declared, "Ctrl+Page Up wraps round to the last tab, a declared page's");
+
+	// The shared frame has no tab bar, so the test gives the page one; the host fills it on the next Set_Tab.
+	Rml::ElementDocument * page = Rml(*second).Document();
+	Rml::ElementPtr holder = page->CreateElement("div");
+	holder->SetId("tabs");
+	Rml::Element * tabs = page->AppendChild(std::move(holder));
+	second->Set_Tab(UI_TAB_AUDIO, bar);
+	context.Update();
+	bool built = tabs->GetNumChildren() == 4;
+	for (int index = 0; built && index < 4; index++) {
+		built = tabs->GetChild(index)->GetId() == "tab-" + bar[index].Name && tabs->GetChild(index)->GetInnerRML() == bar[index].Label
+			&& tabs->GetChild(index)->IsClassSet("active") == (bar[index].Tab == UI_TAB_AUDIO);
+	}
+	Check(built, "the tab bar has a button for each offered tab, in order, and lights the tab on show");
+	Check(page->IsClassSet("tab-audio") && !page->IsClassSet("tab-game"), "a page moved to another tab carries only that tab's class");
+
+	Rml::Element * performance = page->GetElementById("tab-performance");
+	if (performance != nullptr) {
+		performance->DispatchEvent(Rml::EventId::Click, Rml::Dictionary());
+		back.Tab_Request = UI_TAB_NONE;
+		back.Drain();
+	}
+	Check(performance != nullptr && back.Tab_Request == declared, "the declared page's tab button asks for its tab");
+
+	second->Set_Tab(UI_TAB_GAME, bar);
+	Check(tabs->GetNumChildren() == 4 && tabs->GetChild(0)->IsClassSet("active"), "a later tab change keeps the buttons and moves the light");
 	second->Release();
 	context.Update();
 
@@ -6660,7 +6949,7 @@ void Test_Documents(void)
 			Check(References_Are_Bare(Read_Text(path)), what.c_str());
 		}
 
-		if (extension == ".rml" && Read_Text(path).find("<template") != std::string::npos) {
+		if (extension == ".rml" && Read_Text(path).find("<template name=") != std::string::npos) {
 			templates++;
 			continue;
 		}
@@ -6750,6 +7039,7 @@ void Test_Documents(void)
 		Test_List_Scrolling(*context, system);
 		Test_Menu_Screen(*context, system);
 		Test_Main_Options_Screen(*context, system, render);
+		Test_Settings_Page_Screen(*context, system);
 		Test_Mods_Screen(*context, system);
 		Test_Movies_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
@@ -8008,17 +8298,17 @@ class FakeTabViewClass : public UIViewClass
 		virtual bool Is_Shown(void) const override { return(Shown); }
 		virtual UIPresenterClass & Presenter(void) const override { return(Presenter_); }
 		virtual char const * Name(void) const override { return(Name_); }
-		virtual void Set_Tab(int tab, unsigned offered) override
+		virtual void Set_Tab(int tab, std::vector<UISettingsTabEntry> const & bar) override
 		{
 			LastTab = tab;
-			LastOffered = offered;
+			LastBar = bar.size();
 		}
 
 		bool Shown = false;
 		int Shows = 0;
 		int Prepared = 0;
 		int LastTab = -1;
-		unsigned LastOffered = 0;
+		std::size_t LastBar = 0;
 
 	private:
 		UIPresenterClass & Presenter_;
@@ -8060,8 +8350,19 @@ void Test_Settings_Host(void)
 	page.View = &audio_view;
 	pages.push_back(page);
 
-	unsigned const offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_GRAPHICS) | (1u << UI_TAB_AUDIO);
-	UISettingsHostPresenterClass host(pages, { &game, &display, &audio }, offered, UI_TAB_GAME);
+	// The two declared pages share one presenter and one view, as the declared pages do in the game.
+	FakeTabPresenterClass declared;
+	FakeTabViewClass declared_view(declared, "settingspage");
+	page.Tab = (UISettingsTab)UI_Settings_Declared_Tab(0);
+	page.View = &declared_view;
+	pages.push_back(page);
+	page.Tab = (UISettingsTab)UI_Settings_Declared_Tab(1);
+	pages.push_back(page);
+
+	std::vector<SettingPage> const declared_pages = { { "first", "First" }, { "second", "Second" } };
+	unsigned const offered = UI_Tab_Bit(UI_TAB_GAME) | UI_Tab_Bit(UI_TAB_DISPLAY) | UI_Tab_Bit(UI_TAB_GRAPHICS) | UI_Tab_Bit(UI_TAB_AUDIO)
+		| UI_Tab_Bit(UI_Settings_Declared_Tab(0)) | UI_Tab_Bit(UI_Settings_Declared_Tab(1));
+	UISettingsHostPresenterClass host(pages, { &game, &display, &audio, &declared }, UI_Settings_Tab_Bar(declared_pages, offered), UI_TAB_GAME);
 	UISettingsHostViewClass view(host);
 
 	view.Show(true);
@@ -8084,13 +8385,25 @@ void Test_Settings_Host(void)
 	Check(host.Shown_Tab() == UI_TAB_GRAPHICS && graphics_view.Shown && !audio_view.Shown && !display_view.Shown, "a request from a shared presenter shows its other tab");
 	Check(view.Is_Shown() && view.Presenter().Result.has_value() == false, "the screen stays open across tab changes");
 
+	Check(game_view.LastBar == 6, "every page's tab bar holds the six offered tabs");
+
+	// A view that stands for two tabs is prepared and released once, and the host moves between its tabs.
+	std::vector<UIViewClass *> const views = host.Views_Of_Host();
+	Check(views.size() == 5 && std::count(views.begin(), views.end(), &declared_view) == 1, "a view shared by two tabs is listed once");
+	Queue_Tab(display, UI_Settings_Declared_Tab(1));
+	host.Drain();
+	Check(host.Shown_Tab() == UI_Settings_Declared_Tab(1) && declared_view.Shown && !graphics_view.Shown && declared_view.LastTab == UI_Settings_Declared_Tab(1), "a declared page's tab shows the shared view");
+	Queue_Tab(declared, UI_Settings_Declared_Tab(0));
+	host.Drain();
+	Check(host.Shown_Tab() == UI_Settings_Declared_Tab(0) && declared_view.Shown && declared.Calls.empty(), "moving between the declared tabs keeps the shared view shown and applies nothing");
+
 	// OK on one page applies every page; Cancel does the same for the others.
 	UIIntent ok;
 	ok.Name = "ok";
 	audio.Queue(ok);
 	host.Drain();
 	Check(host.Result.has_value() && *host.Result == UI_RESULT_ACCEPTED, "OK on one page closes the screen accepted");
-	Check(display.Calls == std::vector<std::string>{ "ok" } && game.Calls == std::vector<std::string>{ "ok" }, "OK applies the pages the player did not end on, once each");
+	Check(display.Calls == std::vector<std::string>{ "ok" } && game.Calls == std::vector<std::string>{ "ok" } && declared.Calls == std::vector<std::string>{ "ok" }, "OK applies the pages the player did not end on, once each");
 	Check(audio.Calls == std::vector<std::string>{ "ok" }, "the page that ended the screen applies once");
 
 	view.Release();
@@ -8112,6 +8425,7 @@ int main(void)
 	Test_Mods_Presenter();
 	Test_Settings_Tabs_Presenter();
 	Test_Settings_Host();
+	Test_Declared_Pages_Presenter();
 	Test_Classic_Options_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();
