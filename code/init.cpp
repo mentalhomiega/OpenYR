@@ -209,6 +209,7 @@
 #include "trigger.h"
 #include "tube.h"
 #include "tutorial.h"
+#include "ui/dev/uiperfoverlay.h"
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/screens/cncnet/uicncnet.h"
@@ -6090,6 +6091,28 @@ class ReplayFastCommandClass : public CommandClass
 };
 
 
+class PerfOverlayCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("PerfOverlay");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Performance overlay");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Shows the performance overlay with the frame rates and frame-time graphs, then also the time of each part of a frame, then hides it.");
+		}
+
+		virtual void Execute(void) const {
+			Perf_Overlay_Cycle();
+		}
+};
+
+
 class ChatToAllCommandClass : public CommandClass
 {
 	public:
@@ -7154,6 +7177,8 @@ static void Init_Commands(void)
 
 	AllCommands.Add(new ReplayPauseCommandClass);
 	AllCommands.Add(new ReplayFastCommandClass);
+
+	AllCommands.Add(new PerfOverlayCommandClass);
 
 	const CommandClass * chatallcmd = new ChatToAllCommandClass;
 	AllCommands.Add(chatallcmd);

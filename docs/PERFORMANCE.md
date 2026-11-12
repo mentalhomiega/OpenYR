@@ -2,13 +2,16 @@
 
 `[Options] PerfLog=yes` in `RA2MD.INI`, or the `perflog 1` autotest step, makes the game write
 timing and count lines to the debug log once a second. They show where a game frame, a draw and a
-present spend their time. The code is in `code/perfstat.h` and `code/perfstat.cpp`.
+present spend their time. The [performance overlay](#performance-overlay) shows the same timings on
+screen. The code is in `code/perfstat.h` and `code/perfstat.cpp`.
 
 ## Recording
 
-Recording is off by default. While it is off, each timed scope costs one flag test. Turning it on
-clears the counts and starts a new second. Turning it off stops the lines; the timers it had
-started finish without a sample.
+Recording is off by default. It runs while the Perf lines or the performance overlay are on. While
+it is off, each timed scope costs one flag test. Turning recording on clears the counts and the
+overlay's history and starts a new second; turning the Perf lines on while the overlay already
+records starts a new second of lines and keeps the history. Turning recording off stops the lines;
+the timers it had started finish without a sample. The overlay alone writes no Perf lines.
 
 The three kinds of sample:
 
@@ -20,6 +23,10 @@ The three kinds of sample:
 
 A phase nested in another phase also adds to the outer one. `frame.objects` contains
 `frame.pathfind` and `frame.threat`, and `draw.objects` contains `draw.voxels` and `draw.particles`.
+The phase table in `code/perfstat.cpp` names each phase's parent; the overlay builds its breakdown
+from it. `frame.objects` covers the object AI loop alone. Before 2026-11-12 its scope ran to the end
+of `LogicClass::AI`, so older `frame.objects` numbers also hold `map`, `tactical`, `factories` and
+`houses`.
 `frame.threat` contains `frame.ring` (the cell ring walk of an area or range scan) and `frame.eval`
 (the `Evaluate_Object` calls that the ring walk makes for the occupant of a cell). Those calls are the only
 ones in `frame.eval`; the full-map scan's calls are in `frame.threat` alone. The ring walk's own cost,
@@ -57,6 +64,79 @@ not as part of `present.total`. A present whose renderer gives no GPU timer adds
 
 The gap line has one sample per present that reaches the presenter: the time from that present's start
 to the start of the next one. Its worst value is the longest interval between two presents in the second.
+
+## Performance overlay
+
+The performance overlay shows the frame rates, two frame-time graphs and the time of each phase over
+the top left of the map view. It is for testers: turn it on where the game runs badly and take a
+screenshot for the report. The code is in `code/ui/dev/uiperfoverlay.cpp`.
+
+- The `PerfOverlay` command cycles it through Basic, Detailed and off. Its default key is Ctrl+Shift+P
+  in both control schemes, and the keyboard page rebinds it like any other command.
+- `PerfOverlay=Off|Basic|Detailed` under `[Video]` sets the level at start. The Graphics page shows it as
+  the Performance overlay switch, which picks Basic. The key changes the same setting, so the next save
+  of the settings keeps the level the key left.
+
+It is drawn with Dear ImGui at the window's own resolution, after the frame, so it shows with
+`GpuRender` on and off, in both interfaces and with the render thread. Its text is about 13 pixels high
+when the frame is shown at its own size and is enlarged with the frame, to twice that at 3840x2160
+with the automatic interface scale. It shows only while a game runs,
+not over the menu battle or an open menu. It stays inside the map view, left of the modern build panel
+and above the command bar; where the Detailed level is taller than that space, its last lines are cut.
+
+| Level | Shows |
+|---|---|
+| Basic | The game and drawn frame rates with their frame times, the two graphs, the build and the overlay's own cost |
+| Detailed | Also the time of each phase, the counts, and the window, zoom, renderer, `GpuRender`, interface and render thread |
+
+### What the numbers are
+
+Every number covers the samples of the last 5 seconds, at most 2,048 of each kind.
+
+| Number | How it is computed |
+|---|---|
+| Game fps | 1000 divided by the average time from the end of one game frame to the end of the next, the interval the `Pacing` line measures |
+| Game now, avg, worst | The newest, average and largest of those intervals |
+| 1% low | 1000 divided by the nearest-rank 99th percentile of the intervals: the rate the slowest 1% of frames ran at |
+| logic avg, max | `frame.logic` per game frame |
+| Drawn fps, now, avg, worst, 1% low | The same, from the time between the starts of two presents, as on the `Perf gap` line |
+| draw avg, max | `draw.total` per draw; it includes the present the draw starts |
+
+The graphs show the last 300 frames, the newest at the right, one column each, on a fixed scale of 0
+to 50 ms with dashed lines labelled 16.7 ms (60 frames a second) and 33.3 ms (30 a second). A column
+over 50 ms is cut at the top and marked with a triangle above it. In the game graph the grey column is
+the interval and the white part of it is the logic. The drawn graph shows the time between presents.
+
+The breakdown has one row per phase of the phase table, the game frame on the left and the draw and
+present on the right. A row shows the average and worst time per sample of its kind and a bar of the
+average, full width at 16.7 ms. An indented row is part of the row above it, so a row and its indented
+rows do not add up. Rows marked `~` (`pathfind`, `threat`, `detach`) run inside several rows: the path
+search mostly in `objects`, the target scans in `objects`, `teams` and `houses`, and `detach` in whatever
+removed the object. `gputime` is not part of the present's `total`. A row whose average is under
+0.005 ms and whose worst is under 0.05 ms is left out.
+
+The counts are the totals of the last whole second, as on the `Perf count` line, and the number of
+objects and of units and structures in the game.
+
+A game frame interval includes any time no game frame ran, such as a held window capture or a
+paused game, so the frame after it shows as one long interval.
+
+### Cost
+
+While the overlay is off, it costs the flag test of each timed scope and one test of the level each
+interface pass. While it is on, recording is on, so the timed scopes read the clock as they do with
+`PerfLog=yes`. Building the overlay took 0.07 to 0.19 ms at Basic and 0.17 to 0.37 ms at Detailed per
+game frame, and drawing it 0.004 to 0.023 ms per present, at 3840x2160 and 800x600, with other work
+on the machine. The drawing is part
+of `present.total`. The overlay's last line shows both times. In two alternating pairs of the first
+1,600 frames of the large battle at 3840x2160 with `GpuRender` and `RenderFrameRate=240`, Detailed
+against off with the Perf lines on in both, the process used 582 and 629 ms of processor time a second
+against 565 and 589, and the phase averages differed by less than the noise between the pairs.
+
+The overlay reads the timings and counts and changes nothing the simulation reads.
+
+The `perfoverlay <0|1|2|report>` autotest step sets the level or logs the overlay's numbers
+([AUTOTEST.md](AUTOTEST.md)).
 
 ## Skipped draws
 

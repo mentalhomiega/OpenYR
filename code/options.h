@@ -57,6 +57,15 @@ enum WeatherMode {
 	WEATHER_SNOW
 };
 
+// What the performance overlay shows (docs/PERFORMANCE.md): Basic the frame rates and graphs, Detailed
+// also the time of each phase and the counts.
+enum PerfOverlayLevel {
+	PERF_OVERLAY_OFF,
+	PERF_OVERLAY_BASIC,
+	PERF_OVERLAY_DETAILED,
+	PERF_OVERLAY_LEVEL_COUNT
+};
+
 // How GpuVoxels orders the layers of one object: Shared by their depth, Ordered as the software draws them, each
 // over the ones before it (docs/GPU_DIRECT_VOXELS.md).
 enum GpuVoxelLayerDepthMode {
@@ -365,6 +374,9 @@ class OptionsClass {
 
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;
+
+		// A PerfOverlayLevel: how much the performance overlay over the map view shows.
+		int PerfOverlay;
 
 		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
 		int Weather;

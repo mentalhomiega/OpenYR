@@ -14,9 +14,14 @@
 class UIRmlRenderClass;
 
 
+// The developer window is shown; it takes the mouse and keys it wants.
 bool UIDev_Active(void);
+
+// The developer window or the performance overlay is in the frame UIDev_Render draws.
+bool UIDev_Drawing(void);
+
 void UIDev_Toggle(UIRmlRenderClass const & render);
-void UIDev_Tick(void);
+void UIDev_Tick(UIRmlRenderClass const & render);
 void UIDev_Render(UIRmlRenderClass & render);
 void UIDev_Shutdown(UIRmlRenderClass & render);
 

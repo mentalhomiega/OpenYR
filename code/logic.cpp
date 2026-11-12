@@ -442,25 +442,27 @@ void LogicClass::AI(void)
 	/*
 	**	AI for all sentient objects is processed.
 	*/
-	PerfScope objects_scope(PERF_FRAME_OBJECTS);
-	for (index = 0; index < Count(); index++) {
-		ObjectClass * obj = (*this)[index];
+	{
+		PerfScope objects_scope(PERF_FRAME_OBJECTS);
+		for (index = 0; index < Count(); index++) {
+			ObjectClass * obj = (*this)[index];
 
-		BStart(BENCH_AI);
-		{
-			PerfScope kind_scope(Perf_Object_AI_Phase(obj->RTTI));
-			Perf_Count(PERF_COUNT_OBJECT_AI);
-			obj->AI();
+			BStart(BENCH_AI);
+			{
+				PerfScope kind_scope(Perf_Object_AI_Phase(obj->RTTI));
+				Perf_Count(PERF_COUNT_OBJECT_AI);
+				obj->AI();
+			}
+			BEnd(BENCH_AI);
+
+			/*
+			**	If the object was destroyed in the process of performing its AI, then
+			**	adjust the index so that no object gets skipped.
+			*/
+			//if (obj != (*this)[index]) {
+			//	index--;
+			//}
 		}
-		BEnd(BENCH_AI);
-
-		/*
-		**	If the object was destroyed in the process of performing its AI, then
-		**	adjust the index so that no object gets skipped.
-		*/
-		//if (obj != (*this)[index]) {
-		//	index--;
-		//}
 	}
 //	HouseClass::Recalc_Attributes();
 

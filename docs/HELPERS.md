@@ -179,7 +179,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 |---|---|---|
 | `SurfaceLock` | `surface.h` | Locks a surface until the end of scope. `As<T>()` is the pixel pointer, `Is_Valid()` is false when the lock failed, and a failed lock is not unlocked. |
 | `ScenarioInitScope` | `globals.h` | Raises `ScenarioInit` until the scope ends, on every path out. |
-| `PerfScope(phase)` | `perfstat.h` | Times a phase. Costs one flag test when `PerfLog` is off, and a phase already running in an outer scope adds nothing. |
+| `PerfScope(phase)` | `perfstat.h` | Times a phase. Costs one flag test while recording is off (neither `PerfLog` nor the performance overlay is on), and a phase already running in an outer scope adds nothing. |
 | `HangWatchDialogScope`, `HangWatchLoadScope`, `HangWatchCounterScope<Counter>` | `hangwatch.h` | Hold the hang watchdog back during a native dialog or a scenario load. |
 | `EmissiveDrawScope(strength)` | `emissive.h` | Sets the emissive draw strength and restores the previous one. |
 | `PlanningRecordScope(recording)` | `planning.h` | While alive with `recording` true, the player's orders become planned orders. |
@@ -199,6 +199,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `AUTOTEST_LOG(...)` | `autotest.h` | `DebugString` with an `AUTOTEST ` prefix, only in an unattended run. Its arguments are not evaluated otherwise, so they may follow pointers that exist only in a test. |
 | `AutoTest_Active()` | `autotest.h` | True in an `-AUTOTEST` run. |
 | `Perf_Count(counter, amount)` | `perfstat.h` | Adds to a performance counter while recording is on. |
+| `PerfRing<T>`, `Perf_Summarise`, `Perf_Average_Worst`, `Perf_Newest_Since` | `perfring.h` | A fixed-size ring of the newest values, and the average, nearest-rank 99th percentile and worst of its newest part. |
 | `Hang_Watchdog_Beat()` | `hangwatch.h` | Call from a message pump; only beats from the main thread count. |
 | `Pe_Debug_Id(image, text, size)`, `Pe_Debug_Key(image, text, size)` | `stallcapture.h` | The GUID and age of a loaded image's pdb, as report text or as a symbol store folder name. |
 

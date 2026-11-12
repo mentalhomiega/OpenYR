@@ -700,9 +700,9 @@ void OptionsClass::Load_Settings(void)
 
 	// Turns on the once-a-second Perf lines, as the perflog autotest step does.
 	if (ConfigINI.Get_Bool("Options", "PerfLog", false)) {
-		Perf_Set_Enabled(true);
+		Perf_Set_User(PERF_USER_LOG, true);
 	}
-	DebugString("PerfLog is %s\n", On_Off(Perf_Enabled));
+	DebugString("PerfLog is %s\n", On_Off(Perf_Has_User(PERF_USER_LOG)));
 
 	// Records each skirmish started from a launch file to the Replays folder.
 	if (ConfigINI.Get_Bool("Options", "RecordReplays", false)) {

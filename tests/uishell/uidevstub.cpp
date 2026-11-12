@@ -16,12 +16,18 @@ bool UIDev_Active(void)
 }
 
 
+bool UIDev_Drawing(void)
+{
+	return(false);
+}
+
+
 void UIDev_Toggle(UIRmlRenderClass const &)
 {
 }
 
 
-void UIDev_Tick(void)
+void UIDev_Tick(UIRmlRenderClass const &)
 {
 }
 
