@@ -1,0 +1,168 @@
+; Parallel path searches: two armies are placed at frames 200 and 1000 and sent to hunt on a match played with
+; ParallelPaths=yes (parallel-paths-spawn.ini). Their first paths are asked for by their own hunt logic, so they are searched in the batch
+; after the object loop. The state hash is logged every 30 frames; the log must be the same with any number of path threads.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script tests/autotest/parallel-paths-hunt.txt -Map XMP08T2.MAP -AIPlayers 3 -SpawnIni tests/autotest/parallel-paths-spawn.ini -Seconds 300 -Uncapped -Filter "AUTOTEST hash|Parallel path|AUTOTEST frame 1201|Exception"
+; Expected: a "Parallel path searches on" line, hash lines every 30 frames from frame 200 to 1190, and no Exception.
+1 reveal
+200 hash 30
+200 houseunit APOC@Russians 62 93
+200 houseunit APOC@Russians 64 91
+200 houseunit APOC@Russians 66 89
+200 houseunit APOC@Russians 68 87
+200 houseunit APOC@Russians 70 85
+200 houseunit APOC@Russians 72 83
+200 houseunit APOC@Russians 60 91
+200 houseunit APOC@Russians 62 89
+200 houseunit APOC@Russians 64 87
+200 houseunit APOC@Russians 66 85
+200 houseunit APOC@Russians 68 83
+200 houseunit APOC@Russians 70 81
+200 houseunit APOC@Russians 58 89
+200 houseunit APOC@Russians 60 87
+200 houseunit APOC@Russians 62 85
+200 houseunit APOC@Russians 64 83
+200 houseunit APOC@Russians 66 81
+200 houseunit APOC@Russians 68 79
+200 houseunit HTNK@Russians 56 87
+200 houseunit HTNK@Russians 58 85
+200 houseunit HTNK@Russians 60 83
+200 houseunit HTNK@Russians 62 81
+200 houseunit HTNK@Russians 64 79
+200 houseunit HTNK@Russians 66 77
+200 houseunit HTNK@Russians 54 85
+200 houseunit HTNK@Russians 56 83
+200 houseunit HTNK@Russians 60 79
+200 houseunit HTNK@Russians 62 77
+200 houseunit HTNK@Russians 64 75
+200 houseunit HTNK@Russians 52 83
+200 houseunit HTNK@Russians 54 81
+200 houseunit HTNK@Russians 56 79
+200 houseunit HTNK@Russians 58 77
+200 houseunit HTNK@Russians 60 75
+200 houseunit MTNK@French 74 105
+200 houseunit MTNK@French 76 103
+200 houseunit MTNK@French 78 101
+200 houseunit MTNK@French 80 99
+200 houseunit MTNK@French 82 97
+200 houseunit MTNK@French 84 95
+200 houseunit MTNK@French 76 107
+200 houseunit MTNK@French 78 105
+200 houseunit MTNK@French 80 103
+200 houseunit MTNK@French 82 101
+200 houseunit MTNK@French 84 99
+200 houseunit MTNK@French 86 97
+200 houseunit MTNK@French 78 109
+200 houseunit MTNK@French 80 107
+200 houseunit MTNK@French 82 105
+200 houseunit MTNK@French 84 103
+200 houseunit MTNK@French 86 101
+200 houseunit MTNK@French 88 99
+200 houseunit MTNK@French 80 111
+200 houseunit MTNK@French 82 109
+200 houseunit MTNK@French 84 107
+200 houseunit MTNK@French 86 105
+200 houseunit MTNK@French 88 103
+200 houseunit MTNK@French 90 101
+200 houseunit MTNK@French 82 113
+200 houseunit MTNK@French 84 111
+200 houseunit MTNK@French 86 109
+200 houseunit MTNK@French 88 107
+200 houseunit MTNK@French 90 105
+200 houseunit MTNK@French 92 103
+200 houseunit SREF@French 84 115
+200 houseunit SREF@French 86 113
+200 houseunit SREF@French 88 111
+200 houseunit SREF@French 90 109
+200 houseunit SREF@French 92 107
+200 houseunit SREF@French 94 105
+200 houseunit SREF@French 86 117
+200 houseunit SREF@French 88 115
+200 houseunit SREF@French 90 113
+200 houseunit SREF@French 92 111
+200 houseunit SREF@French 94 109
+200 houseunit SREF@French 96 107
+200 houseunit ZEP@Russians 66 87
+200 houseunit ZEP@Russians 74 92
+260 hunt APOC
+260 hunt HTNK
+260 hunt MTNK
+260 hunt SREF
+260 hunt ZEP
+500 houseunit MTNK@French 76 107
+500 houseunit MTNK@French 78 105
+500 houseunit MTNK@French 80 103
+500 houseunit MTNK@French 82 101
+500 houseunit MTNK@French 84 99
+500 houseunit MTNK@French 86 97
+500 houseunit MTNK@French 78 109
+500 houseunit MTNK@French 80 107
+500 houseunit MTNK@French 82 105
+500 houseunit MTNK@French 84 103
+500 houseunit MTNK@French 86 101
+500 houseunit MTNK@French 88 99
+500 houseunit MTNK@French 80 111
+500 houseunit MTNK@French 82 109
+500 houseunit MTNK@French 84 107
+500 houseunit MTNK@French 86 105
+500 houseunit MTNK@French 88 103
+500 houseunit MTNK@French 90 101
+500 houseunit SREF@French 82 113
+500 houseunit SREF@French 84 111
+500 houseunit SREF@French 86 109
+500 houseunit SREF@French 88 107
+500 houseunit SREF@French 90 105
+500 houseunit SREF@French 92 103
+530 hunt MTNK
+530 hunt SREF
+750 houseunit HTNK@Russians 58 89
+750 houseunit HTNK@Russians 60 87
+750 houseunit HTNK@Russians 62 85
+750 houseunit HTNK@Russians 64 83
+750 houseunit HTNK@Russians 66 81
+750 houseunit HTNK@Russians 68 79
+750 houseunit HTNK@Russians 56 87
+750 houseunit HTNK@Russians 58 85
+750 houseunit HTNK@Russians 60 83
+750 houseunit HTNK@Russians 62 81
+750 houseunit HTNK@Russians 64 79
+750 houseunit HTNK@Russians 66 77
+750 houseunit HTNK@Russians 54 85
+750 houseunit HTNK@Russians 56 83
+750 houseunit HTNK@Russians 60 79
+750 houseunit HTNK@Russians 62 77
+750 houseunit HTNK@Russians 64 75
+750 houseunit APOC@Russians 60 91
+750 houseunit APOC@Russians 62 89
+750 houseunit APOC@Russians 64 87
+750 houseunit APOC@Russians 66 85
+750 houseunit APOC@Russians 68 83
+750 houseunit APOC@Russians 70 81
+780 hunt APOC
+780 hunt HTNK
+1000 houseunit MTNK@French 76 107
+1000 houseunit MTNK@French 78 105
+1000 houseunit MTNK@French 80 103
+1000 houseunit MTNK@French 82 101
+1000 houseunit MTNK@French 84 99
+1000 houseunit MTNK@French 86 97
+1000 houseunit MTNK@French 78 109
+1000 houseunit MTNK@French 80 107
+1000 houseunit MTNK@French 82 105
+1000 houseunit MTNK@French 84 103
+1000 houseunit MTNK@French 86 101
+1000 houseunit MTNK@French 88 99
+1000 houseunit MTNK@French 80 111
+1000 houseunit MTNK@French 82 109
+1000 houseunit MTNK@French 84 107
+1000 houseunit MTNK@French 86 105
+1000 houseunit MTNK@French 88 103
+1000 houseunit MTNK@French 90 101
+1000 houseunit SREF@French 82 113
+1000 houseunit SREF@French 84 111
+1000 houseunit SREF@French 86 109
+1000 houseunit SREF@French 88 107
+1000 houseunit SREF@French 90 105
+1000 houseunit SREF@French 92 103
+1030 hunt MTNK
+1030 hunt SREF
+1201 quit

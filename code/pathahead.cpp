@@ -248,6 +248,8 @@ struct ThreadStopper
 
 void Start_Threads(void)
 {
+	// The thread count is left out so that logs match across machines.
+	DebugString("Parallel path searches on\n");
 	for (int index = 0; index < ThreadCount; index++) {
 		Workers.push_back(std::make_unique<Worker>());
 		Workers.back()->Finder.Set_Quiet(true);
