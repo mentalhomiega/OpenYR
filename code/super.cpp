@@ -1495,7 +1495,10 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 
 void SuperClass::Finish_Placement(bool player)
 {
-	Finish_Placement(player);
+	if (player) {
+		Map.IsTargettingMode = SUPER_NONE;
+	}
+	House->IsRecalcNeeded = true;
 }
 
 
