@@ -42,6 +42,8 @@
 #include "_rules.h"
 #include "_tactica.h"
 #include "abstract.h"
+#include "particle.h"
+#include "terrain.h"
 #include "globals.h"
 #include "dbgprint.h"
 #include "super.h"
@@ -103,13 +105,19 @@ DynamicVectorClass<AbstractClass *> ObjectsToDelete;
  * HISTORY:                                                                                    *
  *   05/08/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
+static bool Holder_Cannot_Name(AbstractClass const * holder, RTTIType removed);
+
 static void Count_Detach(AbstractClass const * target)
 {
 	Perf_Count(PERF_COUNT_DETACH_CALLS);
 	int visits = 0;
 	if (target->RTTI == RTTI_HOUSE) visits = HousePtrTracker.Count();
-	else if (target->RTTI == RTTI_ANIM) visits = AnimPtrTracker.Count();
-	else if (target->As_ObjectClass() != NULL) visits = ObjectPtrTracker.Count();
+	else if (target->RTTI == RTTI_ANIM) visits = ((AnimClass const *)target)->IsHeld ? AnimPtrTracker.Count() : 0;
+	else if (target->As_ObjectClass() != NULL) {
+		for (int index = 0; index < ObjectPtrTracker.Count(); index++) {
+			visits += !Holder_Cannot_Name(ObjectPtrTracker[index], (RTTIType)target->RTTI);
+		}
+	}
 	Perf_Count(PERF_COUNT_DETACH_VISITS, visits);
 	switch ((RTTIType)target->RTTI) {
 		case RTTI_BULLET: Perf_Count(PERF_COUNT_DETACH_BULLET); break;
@@ -167,6 +175,69 @@ static void Check_Unheld_Anim(AbstractClass const * target, bool all)
 	}
 	if (checks / 5000000 != (checks - AnimPtrTracker.Count()) / 5000000) {
 		DebugString("DETACH CHECK %lld visits, %lld differences\n", checks, differences);
+	}
+}
+
+
+// True for a holder whose kind has no member that can point at a bullet or a particle being
+// removed, so its Detach would change nothing. A particle is named only by its particle system.
+// A bullet is named by an animation attached to it, by a particle system, a wave or an alpha
+// shape. Units, infantry, aircraft and buildings only name what they can target, follow or carry,
+// which is never a bullet or a particle.
+static bool Holder_Cannot_Name(AbstractClass const * holder, RTTIType removed)
+{
+	if (removed != RTTI_BULLET && removed != RTTI_PARTICLE) {
+		return(false);
+	}
+	switch ((RTTIType)holder->RTTI) {
+		case RTTI_UNIT:
+		case RTTI_INFANTRY:
+		case RTTI_AIRCRAFT:
+		case RTTI_BUILDING:
+		case RTTI_TERRAIN:
+		case RTTI_PARTICLE:
+		case RTTI_BULLET:
+			return(true);
+		case RTTI_ANIM:
+			return(removed == RTTI_PARTICLE);
+		default:
+			return(false);
+	}
+}
+
+
+static size_t Skipped_Holder_Size(AbstractClass const * holder)
+{
+	switch ((RTTIType)holder->RTTI) {
+		case RTTI_UNIT: return(sizeof(UnitClass));
+		case RTTI_INFANTRY: return(sizeof(InfantryClass));
+		case RTTI_AIRCRAFT: return(sizeof(AircraftClass));
+		case RTTI_BUILDING: return(sizeof(BuildingClass));
+		case RTTI_TERRAIN: return(sizeof(TerrainClass));
+		case RTTI_PARTICLE: return(sizeof(ParticleClass));
+		case RTTI_BULLET: return(sizeof(BulletClass));
+		case RTTI_ANIM: return(sizeof(AnimClass));
+		default: return(0);
+	}
+}
+
+
+// The check for a holder Holder_Cannot_Name skipped: visits it after all and logs it if the visit changed its bytes.
+static void Check_Skipped_Holder(AbstractClass * holder, AbstractClass const * target, bool all)
+{
+	static long long checks = 0;
+	static long long differences = 0;
+	static std::vector<unsigned char> before;
+	size_t const size = Skipped_Holder_Size(holder);
+	before.assign((unsigned char const *)holder, (unsigned char const *)holder + size);
+	holder->Detach(target, all);
+	checks++;
+	if (size == 0 || memcmp(before.data(), holder, size) != 0) {
+		differences++;
+		DebugString("DETACH CHECK DIFFERENCE frame %d holder rtti %d target rtti %d\n", Frame, (int)holder->RTTI, (int)target->RTTI);
+	}
+	if (checks % 5000000 == 0) {
+		DebugString("DETACH CHECK objects %lld visits, %lld differences\n", checks, differences);
 	}
 }
 
@@ -230,8 +301,15 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	}
 
 	if (target->As_ObjectClass() != NULL) {
+		RTTIType const removed = (RTTIType)target->RTTI;
+		bool const checked = Detach_Is_Checked();
 		for (index = 0; index < ObjectPtrTracker.Count(); index++) {
-			ObjectPtrTracker[index]->Detach(target, all);
+			AbstractClass * holder = ObjectPtrTracker[index];
+			if (!Holder_Cannot_Name(holder, removed)) {
+				holder->Detach(target, all);
+			} else if (checked) {
+				Check_Skipped_Holder(holder, target, all);
+			}
 		}
 		if (TacticalMap != NULL) {
 			TacticalMap->Detach(target, true);
