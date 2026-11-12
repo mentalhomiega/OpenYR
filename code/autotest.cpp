@@ -6233,6 +6233,42 @@ static void Plan_Step(StepType const &)
 }
 
 
+// aisummary: one line per computer house with its base, power, harvesters, army, kills, losses and the structure it builds.
+static void Aisummary_Step(StepType const &)
+{
+	for (int house = 0; house < Houses.Count(); house++) {
+		HouseClass * owner = Houses[house];
+		if (owner->Is_Human_Player() || owner->Class->IsMultiplayPassive || owner->Base.Nodes.Count() == 0) {
+			continue;
+		}
+		int buildings = 0, harvesters = 0, army = 0;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != owner || techno->IsInLimbo || techno->Strength <= 0) {
+				continue;
+			}
+			if (techno->What_Am_I() == RTTI_BUILDING) {
+				buildings++;
+			} else if (techno->TClass->IsResourceGatherer) {
+				harvesters++;
+			} else {
+				army++;
+			}
+		}
+		int kills = 0;
+		for (int victim = 0; victim < ARRAY_SIZE(owner->UnitsKilled); victim++) {
+			kills += owner->UnitsKilled[victim] + owner->BuildingsKilled[victim];
+		}
+		int const next = owner->Base.Next_Buildable_Index(STRUCT_NONE);
+		int const nexttype = next >= 0 ? owner->Base.Nodes[next].Type : STRUCT_NONE;
+		DebugString("AUTOTEST   aisummary %s defeated %d buildings %d power %d/%d harvesters %d army %d kills %d lost %d builds %s next %s of %d nodes\n",
+			owner->Class->Name(), (int)owner->IsDefeated, buildings, owner->Power, owner->Drain, harvesters, army, kills, owner->UnitsLost + owner->BuildingsLost,
+			owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-",
+			nexttype >= STRUCT_FIRST ? BuildingTypes[nexttype]->Name() : (next >= 0 ? std::to_string(nexttype).c_str() : "-"), owner->Base.Nodes.Count());
+	}
+}
+
+
 // team <TeamTypeID>: makes a team of that type for the first computer house and puts in every unit of that house no team holds.
 static void Team_Step(StepType const & step)
 {
@@ -7555,6 +7591,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"schemes", Schemes_Step},
 		{"seq", Seq_Step},
 		{"plan", Plan_Step},
+		{"aisummary", Aisummary_Step},
 		{"team", Team_Step},
 		{"teamtrace", Teamtrace_Step},
 		{"buildtrace", Buildtrace_Step},

@@ -1,0 +1,10 @@
+; Needs the Mental Omega files in game\Mods\MentalOmega. An Allied computer player on i_depthcharge.map, whose country lists
+; the Power Turbine upgrade in AI.PowerPlants, keeps building after its only power plant has its turbine. Expected: BUILDTRACE
+; places the turbine on the power plant once (frame 4037), the next power shortage starts the power plant, the log has no
+; repeated "Abandoning production of Power Turbine" lines, and aisummary shows more than 10 structures at frame 10000. Before the
+; slot check the computer abandoned the turbine every 165 frames from frame 6476 on and stayed at 9 structures.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/mo-ai-power-turbine.txt -Mods MentalOmega -Map i_depthcharge.map -Country 0 -AICountries 0 -AIPlayers 1 -Uncapped -Seconds 900 -Filter "BUILDTRACE.*GAPOWR|Abandoning|aisummary|Exception"
+10 buildtrace 1
+5000 aisummary
+10000 aisummary
+10001 quit
