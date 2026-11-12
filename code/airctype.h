@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include "rules.h"
 #include "techtype.h"
 
 #include "aircraft.hh"
@@ -32,6 +33,26 @@ class AircraftTypeClass : public TechnoTypeClass
 		**	This is the kind of aircraft identifier number.
 		*/
 		AircraftType HeapID;
+
+		// Missile.Custom (Ares): the type flies as a launched missile with the Missile.* settings below instead of the
+		// [General] ones. Every setting starts at 0, false or none, as the Ares manual gives, so a custom missile
+		// never falls back to V3Rocket, DMisl or CMisl values.
+		bool IsMissileCustom;
+		RulesClass::RocketTypeStruct MissileFlight{.PauseFrames = 0, .TiltFrames = 0, .PitchInitial = 0.0f, .PitchFinal = 0.0f, .TurnRate = 0.0f,
+			.RaiseRate = 0, .Acceleration = 0.0f, .Altitude = 0, .Damage = 0, .EliteDamage = 0, .BodyLength = 0, .IsLazyCurve = false};
+		WarheadTypeClass const * MissileWarhead;
+		WarheadTypeClass const * MissileEliteWarhead;
+
+		// Missile.Weapon and Missile.EliteWeapon (Ares): the weapon whose bullet makes the blast in place of the
+		// damage and warhead pair.
+		WeaponTypeClass const * MissileWeapon;
+		WeaponTypeClass const * MissileEliteWeapon;
+
+		// Missile.TakeOffAnim, Missile.TrailerAnim and Missile.TrailerSeparation (Ares), for any missile type: the
+		// animations by name (empty for V3TAKOFF and V3TRAIL) and the frames between trailer animations.
+		std::string MissileTakeOffAnim;
+		std::string MissileTrailerAnim;
+		int MissileTrailerSeparation;
 
 		/*
 		 * Can this aircraft lift a vehicle and ferry it elsewhere? A carryall offers the

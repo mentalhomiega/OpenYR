@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <climits>
 #include <string>
 #include <vector>
 
@@ -924,6 +925,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		int ReloadIncrement;
 		int PipWrap;
 
+		// ReloadAmount and EmptyReloadAmount (Ares): the shots a ground unit regains each time its reload timer runs out,
+		// and the number it regains when it holds none. A type that sets no EmptyReloadAmount uses ReloadAmount for both,
+		// and an empty unit whose amount is 0 or less never reloads.
+		int ReloadAmount;
+		int EmptyReloadAmountSetting;
+		int Empty_Reload_Amount(void) const { return(EmptyReloadAmountSetting == INT_MIN ? ReloadAmount : EmptyReloadAmountSetting); }
+
 		/*
 		**	This is a bit field representing the houses that are allowed to
 		**	own (by normal means) this particular object type. This value is
@@ -978,6 +986,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	game tick.
 		*/
 		int ROT;
+
+		// TurretROT (Ares): the turret's own rate of turn; -1 when the type sets none, and the turret then turns at ROT.
+		int TurretROT;
+		int Turret_ROT(void) const { return(TurretROT < 0 ? ROT : TurretROT); }
 
 		/*
 		**	This is the distance along the centerline heading in the direction the body

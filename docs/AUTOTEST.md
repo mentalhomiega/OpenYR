@@ -275,6 +275,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `load <TypeID>` | fills the player's objects of that type, a harvester for one, with ore to capacity |
 | `partsys` | writes each live particle system with its type, the frames it has left and the object it rides on |
 | `bullets` | writes each live projectile with its type, the house whose color scheme it uses and its type's trail delays |
+| `bulletrange` | writes each live projectile that has a weapon with its position, the horizontal distance it has flown from where it was fired and its weapon's `ProjectileRange`, in leptons |
 | `radbeams` | writes how many radiation beams of each kind are live and how many eruption beams are visible |
 | `radlevel x y` | writes the radiation level of a cell on a line of its own |
 | `effects <TypeID>` | writes the AttachEffect count and multipliers, speed, strength and reload countdown of every live object of that type |

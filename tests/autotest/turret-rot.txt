@@ -1,0 +1,119 @@
+; Turret rate (Ares TurretROT, from the Ares manual page: the turret turns at its own rate, ROT when the key is absent).
+; Three tanks with body ROT=5 face north, with their turrets also at 0: a Grizzly (MTNK) with TurretROT=3, a Rhino (HTNK) with
+; TurretROT=12 and an Apocalypse (APOC) with no TurretROT. Each has a Pill Box (GAPILL) four cells due south, so its turret has
+; to turn 128 steps (180 degrees) while the body stays put. The turretcoord lines give each turret's facing every 4 frames.
+; Expected (observed on the build that added the key): the turrets start turning at frame 148 and sit at 128 from frame 188 (Grizzly, about 12 steps
+; per 4 frames), frame 156 (Rhino, TurretROT=12) and frame 172 (Apocalypse, no key, about 20 steps per 4 frames, the body rate of 5). Without the key all three turn at 5.
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/turret-rot.txt -Build agentNN -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   turretcoord [A-Z0-9]+ of|Exception"
+5 rules turret-rot.ini
+30 command CenterBase
+60 reveal
+100 own MTNK 60 36
+101 own HTNK 70 36
+102 own APOC 80 36
+120 spawn GAPILL 60 40
+121 spawn GAPILL 70 40
+122 spawn GAPILL 80 40
+124 turretcoord MTNK
+124 turretcoord HTNK
+124 turretcoord APOC
+128 turretcoord MTNK
+128 turretcoord HTNK
+128 turretcoord APOC
+132 turretcoord MTNK
+132 turretcoord HTNK
+132 turretcoord APOC
+136 turretcoord MTNK
+136 turretcoord HTNK
+136 turretcoord APOC
+140 turretcoord MTNK
+140 turretcoord HTNK
+140 turretcoord APOC
+144 turretcoord MTNK
+144 turretcoord HTNK
+144 turretcoord APOC
+148 turretcoord MTNK
+148 turretcoord HTNK
+148 turretcoord APOC
+152 turretcoord MTNK
+152 turretcoord HTNK
+152 turretcoord APOC
+156 turretcoord MTNK
+156 turretcoord HTNK
+156 turretcoord APOC
+160 turretcoord MTNK
+160 turretcoord HTNK
+160 turretcoord APOC
+164 turretcoord MTNK
+164 turretcoord HTNK
+164 turretcoord APOC
+168 turretcoord MTNK
+168 turretcoord HTNK
+168 turretcoord APOC
+172 turretcoord MTNK
+172 turretcoord HTNK
+172 turretcoord APOC
+176 turretcoord MTNK
+176 turretcoord HTNK
+176 turretcoord APOC
+180 turretcoord MTNK
+180 turretcoord HTNK
+180 turretcoord APOC
+184 turretcoord MTNK
+184 turretcoord HTNK
+184 turretcoord APOC
+188 turretcoord MTNK
+188 turretcoord HTNK
+188 turretcoord APOC
+192 turretcoord MTNK
+192 turretcoord HTNK
+192 turretcoord APOC
+196 turretcoord MTNK
+196 turretcoord HTNK
+196 turretcoord APOC
+200 turretcoord MTNK
+200 turretcoord HTNK
+200 turretcoord APOC
+204 turretcoord MTNK
+204 turretcoord HTNK
+204 turretcoord APOC
+208 turretcoord MTNK
+208 turretcoord HTNK
+208 turretcoord APOC
+212 turretcoord MTNK
+212 turretcoord HTNK
+212 turretcoord APOC
+216 turretcoord MTNK
+216 turretcoord HTNK
+216 turretcoord APOC
+220 turretcoord MTNK
+220 turretcoord HTNK
+220 turretcoord APOC
+224 turretcoord MTNK
+224 turretcoord HTNK
+224 turretcoord APOC
+228 turretcoord MTNK
+228 turretcoord HTNK
+228 turretcoord APOC
+232 turretcoord MTNK
+232 turretcoord HTNK
+232 turretcoord APOC
+236 turretcoord MTNK
+236 turretcoord HTNK
+236 turretcoord APOC
+240 turretcoord MTNK
+240 turretcoord HTNK
+240 turretcoord APOC
+244 turretcoord MTNK
+244 turretcoord HTNK
+244 turretcoord APOC
+248 turretcoord MTNK
+248 turretcoord HTNK
+248 turretcoord APOC
+252 turretcoord MTNK
+252 turretcoord HTNK
+252 turretcoord APOC
+256 turretcoord MTNK
+256 turretcoord HTNK
+256 turretcoord APOC
+270 quit

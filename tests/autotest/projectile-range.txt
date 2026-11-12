@@ -1,0 +1,47 @@
+; Projectile fuel (Ares ProjectileRange, from the Ares manual: how far a Ranged=yes projectile flies before it detonates; default 390 cells).
+; The Cannon shell is made Ranged. A Grizzly (MTNK, 105mm, ProjectileRange=2 cells) at 60,36 is ordered to shoot a Power Plant (GAPOWR) four cells east, and a Rhino (HTNK,
+; 120mm, no key) at 70,36 one four cells east. Both shoot the Cannon shell. The bulletrange lines give each shell's distance flown from its gun in leptons.
+; Expected (observed on the build that added the key): the Grizzly's shell is last listed at frame 150 with 549 leptons flown, the first sample past its 512, and the
+; Power Plant it shot at keeps its full 750 strength. The Rhino's shell flies on past 698 leptons and its Power Plant ends at 656. Without the key both Power Plants are hit.
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/projectile-range.txt -Build agentNN -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   (bulletrange|where GAPOWR)|Exception"
+5 rules projectile-range.ini
+30 command CenterBase
+60 reveal
+100 own MTNK 60 36
+101 own HTNK 70 36
+120 spawn GAPOWR 64 36
+121 spawn GAPOWR 74 36
+130 forceattack MTNK 64 36
+131 forceattack HTNK 74 36
+140 bulletrange
+142 bulletrange
+144 bulletrange
+146 bulletrange
+148 bulletrange
+150 bulletrange
+152 bulletrange
+154 bulletrange
+156 bulletrange
+158 bulletrange
+160 bulletrange
+162 bulletrange
+164 bulletrange
+166 bulletrange
+168 bulletrange
+170 bulletrange
+172 bulletrange
+174 bulletrange
+176 bulletrange
+178 bulletrange
+180 bulletrange
+182 bulletrange
+184 bulletrange
+186 bulletrange
+188 bulletrange
+190 bulletrange
+192 bulletrange
+194 bulletrange
+196 bulletrange
+198 bulletrange
+300 where GAPOWR
+310 quit

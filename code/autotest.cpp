@@ -6066,6 +6066,19 @@ static void Bullets_Step(StepType const &)
 }
 
 
+// bulletrange: each live projectile with its position, how far it has flown from where it was fired and its weapon's ProjectileRange, all in leptons.
+static void Bulletrange_Step(StepType const &)
+{
+	for (int index = 0; index < Bullets.Count(); index++) {
+		BulletClass const * bullet = Bullets[index];
+		if (bullet->Class == NULL || bullet->Weapon == NULL) continue;
+		Coord const here = bullet->Center_Coord();
+		DebugString("AUTOTEST   bulletrange frame %d %s at %d,%d,%d flown %d range %d\n", Frame, bullet->Class->Name(), here.X, here.Y, here.Z,
+			(int)bullet->Launch_Coord().Gamemd_Distance_To(TPoint2D<int>(here.X, here.Y)), (int)bullet->Weapon->ProjectileRange);
+	}
+}
+
+
 // radbeams: how many beams of each kind are live.
 static void Radbeams_Step(StepType const &)
 {
@@ -7474,6 +7487,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"sensors", Sensors_Step},
 		{"partsys", Partsys_Step},
 		{"bullets", Bullets_Step},
+		{"bulletrange", Bulletrange_Step},
 		{"radbeams", Radbeams_Step},
 		{"radlevel", Radlevel_Step},
 		{"quantity", Quantity_Step},
