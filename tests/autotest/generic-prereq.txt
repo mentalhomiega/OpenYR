@@ -1,0 +1,54 @@
+; Ares prerequisite groups, alternative and negative lists, theater limits and a group in PrerequisiteOverride.
+; Americans against a Libyan (Soviet) computer player on the skirmish map, with the generic-prereq-rules mod (see its rules.ini).
+; Expected canbuild lines for the player (house Americans):
+;   frame 60:  MTNK 0 (no ANYLAB member), FV 0, E1 1, GGI 1, ADOG 0 (LUNAR only), ENGINEER 1, JUMPJET 0 (no RADAR), SPY 0
+;   frame 80:  JUMPJET 1 (the service depot GADEPT is in the redefined RADAR group)
+;   frame 95:  MTNK 1 (a Rhino tank stands in for ANYLAB); frame 140: MTNK 0 after the Rhino is destroyed
+;   frame 160: MTNK 1, GGI 0 (ANYLAB owned is a negative prerequisite), SPY 1 (ANYLAB in PrerequisiteOverride), FV 0
+;   frame 220: MTNK 0, GGI 1, SPY 0 after NATECH is destroyed
+;   frame 260: MTNK 1, FV 1 with GATECH; frame 700: MTNK 0, FV 0 after GATECH is sold
+;   frame 720: FV 1 through Prerequisite.List1 (GAWEAP and GAAIRC); frame 740: E1 0 with GAOREP owned
+; The computer's base plan (plan line) holds the shipyard NAYARD after NATECH, as ANYLAB needs, and no NAINDP, whose
+; ALLIEDONLY group it cannot plan. With stock rules the plan has NAYARD before NATECH and NAINDP after NAIRON.
+; Run (with -Mods tests/autotest/generic-prereq-rules): scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/generic-prereq.txt -Mods src-agent30/tests/autotest/generic-prereq-rules -Seconds 90 -Filter "AUTOTEST +(canbuild (MTNK|FV|E1|GGI|ADOG|ENGINEER|JUMPJET|SPY) house Americans|own |plan |quantity|sell|kill)|Exception"
+1 log generic prerequisites: groups, alternate objects, lists, negatives and theaters
+40 own GAPOWR 46 92
+45 own GAPILE 44 98
+50 own GAWEAP 56 92
+60 canbuild MTNK
+60 canbuild FV
+60 canbuild E1
+60 canbuild GGI
+60 canbuild ADOG
+60 canbuild ENGINEER
+60 canbuild JUMPJET
+60 canbuild SPY
+70 own GADEPT 62 96
+80 canbuild JUMPJET
+90 grantunit HTNK 48 103
+95 canbuild MTNK
+100 kill HTNK 1
+140 canbuild MTNK
+150 own NATECH 56 100
+160 canbuild MTNK
+160 canbuild GGI
+160 canbuild SPY
+160 canbuild FV
+200 kill NATECH 1
+220 canbuild MTNK
+220 canbuild GGI
+220 canbuild SPY
+240 own GATECH 56 100
+250 quantity GATECH
+260 canbuild MTNK
+260 canbuild FV
+300 sell 57 101
+700 quantity GATECH
+700 canbuild MTNK
+700 canbuild FV
+710 own GAAIRC 40 96
+720 canbuild FV
+730 own GAOREP 62 101
+740 canbuild E1
+750 plan
+800 quit

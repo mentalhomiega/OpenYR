@@ -1648,6 +1648,16 @@ void TechnoTypeClass::Read_Production_INI(CCINIClass const & ini)
 	BuildLimit = ini.Get_Int(Name(), "BuildLimit", BuildLimit);
 	CameoSortOrder = ini.Get_Int(Name(), "CameoSortOrder", CameoSortOrder);
 	Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
+	Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite.List0", Prerequisite);
+	PrerequisiteLists.resize(std::max(0, ini.Get_Int(Name(), "Prerequisite.Lists", (int)PrerequisiteLists.size())));
+	for (std::size_t index = 0; index < PrerequisiteLists.size(); index++) {
+		std::string const key = "Prerequisite.List" + std::to_string(index + 1);
+		PrerequisiteLists[index] = ini.Get_BuildingType_List(ini, IniName, key.c_str(), PrerequisiteLists[index]);
+	}
+	PrerequisiteNegative = ini.Get_BuildingType_List(ini, IniName, "Prerequisite.Negative", PrerequisiteNegative);
+	if (ini.Is_Present(Name(), "Prerequisite.RequiredTheaters")) {
+		PrerequisiteTheaters = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.RequiredTheaters"));
+	}
 	if (ini.Is_Present(Name(), "Prerequisite.StolenTechs")) {
 		PrerequisiteStolenTechs.clear();
 		for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.StolenTechs"))) {
@@ -2376,6 +2386,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FlightLevel);
 	stream.Serialize(Level);
 	stream.Serialize(Prerequisite);
+	stream.Serialize(PrerequisiteLists);
+	stream.Serialize(PrerequisiteNegative);
+	stream.Serialize(PrerequisiteTheaters);
 	stream.Serialize(PrerequisiteOverride);
 	stream.Serialize(Risk);
 	stream.Serialize(Reward);

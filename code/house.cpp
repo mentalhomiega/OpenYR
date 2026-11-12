@@ -193,6 +193,7 @@
 #include "taskforc.h"
 #include "team.h"
 #include "techtype.h"
+#include "theater.h"
 #include "tiberium.h"
 #include "tracker.h"
 #include "trigger.h"
@@ -1052,14 +1053,17 @@ bool HouseClass::Is_Secret_Item(ObjectTypeClass const * type) const
 }
 
 
+static bool Owns_Prerequisite(HouseClass const & house, int pre);
+
+
 /// <summary>
 /// Whether this house has a structure of the type's PrerequisiteOverride list in service.
-/// The count is the one the Prerequisite entries read, and a group code never counts.
+/// An entry counts as it does in a Prerequisite list.
 /// </summary>
 bool HouseClass::Owns_Prerequisite_Override(TechnoTypeClass const * type) const
 {
 	for (int index = 0; index < type->PrerequisiteOverride.Count(); index++) {
-		if (ABQuantity.Value(type->PrerequisiteOverride[index]) > 0) {
+		if (Owns_Prerequisite(*this, type->PrerequisiteOverride[index])) {
 			return(true);
 		}
 	}
@@ -1096,14 +1100,16 @@ bool HouseClass::Add_Reversed(TechnoTypeClass const * type)
 }
 
 
-static bool Owns_Any_Id(CounterClass const & tally, TypeList<int> const & ids)
+int HouseClass::Active_Count(TechnoTypeClass const * type) const
 {
-	for (int index = 0; index < ids.Count(); index++) {
-		if (tally.Value(ids[index]) > 0) {
-			return(true);
-		}
+	int const id = type->Fetch_Heap_ID();
+	switch (type->RTTI) {
+		case RTTI_BUILDINGTYPE: return(ABQuantity.Value(id));
+		case RTTI_UNITTYPE: return(AUQuantity.Value(id));
+		case RTTI_INFANTRYTYPE: return(AIQuantity.Value(id));
+		case RTTI_AIRCRAFTTYPE: return(AAQuantity.Value(id));
+		default: return(0);
 	}
-	return(false);
 }
 
 
@@ -1118,23 +1124,75 @@ static bool Owns_Any_Unit_Id(CounterClass const & tally, TypeList<UnitTypeClass 
 }
 
 
-// Whether the house's last working, non-deconstructing building in the building list carries the upgrade.
-// Only that one building is checked.
-static bool Has_Installed_Upgrade(HouseClass const & house, BuildingTypeClass const * upgrade)
+// Whether the house has the building in service, for a prerequisite list. An upgrade counts when any of the
+// house's buildings carries it (Ares; gamemd checked only the most recent building, and stock rules have no upgrades).
+static bool Owns_Building_Prerequisite(HouseClass const & house, int id)
 {
-	BuildingClass * host = NULL;
-	for (int index = Buildings.Count() - 1; index >= 0; index--) {
-		BuildingClass * bptr = Buildings[index];
-		if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn &&
-				bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
-			host = bptr;
-			break;
+	BuildingTypeClass const * type = BuildingTypes[id];
+	if (type->PowersUpBuilding.empty()) {
+		return(house.ABQuantity.Value(id) > 0);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * bptr = Buildings[index];
+		if (bptr->House != &house || bptr->IsInLimbo || bptr->Strength <= 0) continue;
+		for (int slot = 0; slot < ARRAY_SIZE(bptr->Upgrades); slot++) {
+			if (bptr->Upgrades[slot] == type) {
+				return(true);
+			}
 		}
 	}
-	if (host == NULL) return(false);
+	return(false);
+}
 
-	for (int slot = 0; slot < ARRAY_SIZE(host->Upgrades); slot++) {
-		if (host->Upgrades[slot] == upgrade) {
+
+// Whether the house owns a building of the group, or an object the group accepts in place of one.
+static bool Owns_Prerequisite_Group(HouseClass const & house, int group)
+{
+	TypeList<int> const * buildings = Rule->Prerequisite_Group_Buildings(group);
+	for (int index = 0; buildings != NULL && index < buildings->Count(); index++) {
+		if (Owns_Building_Prerequisite(house, (*buildings)[index])) {
+			return(true);
+		}
+	}
+	if (group == STRUCT_G_PROC) {
+		return(Owns_Any_Unit_Id(house.AUQuantity, Rule->PrerequisiteProcAlternate));
+	}
+	GenericPrerequisiteClass const * custom = Rule->Custom_Prerequisite_Group(group);
+	if (custom != NULL) {
+		for (int index = 0; index < custom->Alternates.Count(); index++) {
+			if (house.Active_Count(custom->Alternates[index]) > 0) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+// A prerequisite entry is a building heap ID or a group code.
+static bool Owns_Prerequisite(HouseClass const & house, int pre)
+{
+	return(pre < 0 ? Owns_Prerequisite_Group(house, pre) : Owns_Building_Prerequisite(house, pre));
+}
+
+
+static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
+{
+	for (int i = 0; i < pre.Count(); i++) {
+		if (!Owns_Prerequisite(house, pre[i])) return(false);
+	}
+	return(true);
+}
+
+
+// Prerequisite or any one of the Ares Prerequisite.List# lists; an empty list is met.
+static bool Any_Prerequisite_List_Met(HouseClass const & house, TechnoTypeClass const & type)
+{
+	if (Prerequisites_Met(house, type.Prerequisite)) {
+		return(true);
+	}
+	for (TypeList<int> const & list : type.PrerequisiteLists) {
+		if (Prerequisites_Met(house, list)) {
 			return(true);
 		}
 	}
@@ -1142,37 +1200,19 @@ static bool Has_Installed_Upgrade(HouseClass const & house, BuildingTypeClass co
 }
 
 
-static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
+// Whether the Ares Prerequisite.RequiredTheaters list allows the type on the current map's theater.
+static bool Theater_Allows(TechnoTypeClass const & type)
 {
-	for (int i = 0; i < pre.Count(); i++) {
-		bool met;
-		switch (pre[i]) {
-			case STRUCT_G_POWER:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower); break;
-			case STRUCT_G_FACTORY:    met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory); break;
-			case STRUCT_G_BARRACKS:   met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks); break;
-			case STRUCT_G_RADAR:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar); break;
-			case STRUCT_G_TECH:       met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech); break;
-			case STRUCT_G_GDIFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory); break;
-			case STRUCT_G_NODFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory); break;
-
-			case STRUCT_G_PROC:
-				met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc) ||
-					Owns_Any_Unit_Id(house.AUQuantity, Rule->PrerequisiteProcAlternate);
-				break;
-
-			default: {
-				BuildingTypeClass * btype = BuildingTypes[pre[i]];
-				if (!btype->PowersUpBuilding.empty()) {
-					met = Has_Installed_Upgrade(house, btype);
-				} else {
-					met = house.ABQuantity.Value(pre[i]) != 0;
-				}
-				break;
-			}
-		}
-		if (!met) return(false);
+	if (type.PrerequisiteTheaters.empty()) {
+		return(true);
 	}
-	return(true);
+	char const * theater = TheaterClass::As_Reference(Scen->Theater).Name();
+	for (std::string const & name : type.PrerequisiteTheaters) {
+		if (stricmp(name.c_str(), theater) == 0) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -1289,6 +1329,15 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 {
 	assert(type != NULL);
 
+	// Ares: PrerequisiteOverride does not lift these two gates; we apply them to every house and shortcut.
+	if (!forced && !Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, this)) {
+		TechnoTypeClass const & gated = *(TechnoTypeClass const *)type;
+		if (!Theater_Allows(gated)) return(0);
+		for (int index = 0; index < gated.PrerequisiteNegative.Count(); index++) {
+			if (Owns_Prerequisite(*this, gated.PrerequisiteNegative[index])) return(0);
+		}
+	}
+
 	if (!forced && type->RTTI != RTTI_BUILDINGTYPE && !ReversedTypes.empty() && Is_Reversed(type)) {
 		if (((TechnoTypeClass const *)type)->IsUnbuildable) return(0);
 		forced = true;
@@ -1340,14 +1389,13 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (!unlocked && techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
 		if (!unlocked && !ObjectKeyRules::Stolen_Techs_Satisfied(StolenTechs, techno->PrerequisiteStolenTechs)) return(0);
 
-		TypeList<int> pre = ((TechnoTypeClass const *)type)->Prerequisite;
-		if (unlocked) pre.Clear();
+		bool ignore_prerequisites = unlocked;
 
 		int level = Control.TechLevel;
 #ifdef _DEBUG
 		if (Debug_Cheat) {
 			level = 98;
-			pre.Clear();
+			ignore_prerequisites = true;
 		}
 #endif
 
@@ -1366,7 +1414,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		/*
 		**	See if the prerequisite requirements have been met.
 		*/
-		if (!Prerequisites_Met(*this, pre)) return(0);
+		if (!ignore_prerequisites && !Any_Prerequisite_List_Met(*this, *techno)) return(0);
 
 		/*
 		**	A structure that no side owns is never buildable. Which factory builds it is decided by
@@ -8318,11 +8366,100 @@ static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
 }
 
 
+static bool Is_In_Plan(BuildingTypeClass const * building, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount)
+{
+	for (int index = 0; index < ownedcount; index++) {
+		if (owned[index] == building) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+static bool Any_In_Plan(TypeList<int> const & buildings, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount)
+{
+	for (int index = 0; index < buildings.Count(); index++) {
+		if (Is_In_Plan(BuildingTypes[buildings[index]], owned, ownedcount)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Whether one prerequisite entry is met by the structures the computer plans to own.
+/// A stock group is met by whichever structure of that kind this house builds; a [GenericPrerequisites]
+/// group by any of its buildings in the plan. A construction yard of BuildConst always counts.
+/// </summary>
+bool HouseClass::AI_Prerequisite_Planned(int pre, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const
+{
+	if (pre >= 0) {
+		BuildingTypeClass const * building = BuildingTypes[pre];
+		return(Rule->BuildConst.Is_In_List(building) || Is_In_Plan(building, owned, ownedcount));
+	}
+
+	switch (pre) {
+		// A power plant is always in the plan.
+		case STRUCT_G_POWER:
+			return(true);
+
+		case STRUCT_G_FACTORY:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildWeapons), owned, ownedcount));
+
+		case STRUCT_G_BARRACKS:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildBarracks), owned, ownedcount));
+
+		case STRUCT_G_RADAR:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildRadar), owned, ownedcount));
+
+		case STRUCT_G_TECH:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildTech), owned, ownedcount));
+
+		case STRUCT_G_PROC:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildRefinery), owned, ownedcount));
+
+		// Any type of the group already queued satisfies it, as one owned does for a house playing.
+		case STRUCT_G_GDIFACTORY:
+			return(Any_In_Plan(Rule->PrerequisiteGDIFactory, owned, ownedcount));
+
+		case STRUCT_G_NODFACTORY:
+			return(Any_In_Plan(Rule->PrerequisiteNodFactory, owned, ownedcount));
+
+		default: {
+			GenericPrerequisiteClass const * group = Rule->Custom_Prerequisite_Group(pre);
+			if (group == NULL) {
+				return(false);
+			}
+			for (int index = 0; index < group->Buildings.Count(); index++) {
+				if (Rule->BuildConst.Is_In_List(BuildingTypes[group->Buildings[index]])) {
+					return(true);
+				}
+			}
+			return(Any_In_Plan(group->Buildings, owned, ownedcount));
+		}
+	}
+}
+
+
+bool HouseClass::AI_Prerequisite_List_Planned(TypeList<int> const & list, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const
+{
+	for (int index = 0; index < list.Count(); index++) {
+		if (!AI_Prerequisite_Planned(list[index], owned, ownedcount)) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
 /// <summary>
 /// Are the prerequisites for this object accounted for?
 /// This routine is used while the computer plans its base, where the question must be asked
 /// of the structures the house intends to own rather than of those it owns at this moment.
-/// A generic prerequisite is resolved to whichever structure of that kind this house builds.
+/// The type's theater list applies, a planned structure of its Prerequisite.Negative list
+/// fails it, and Prerequisite or any one of its Prerequisite.List# lists must be met.
 /// </summary>
 /// <param name="type">The object whose prerequisites are being tested.</param>
 /// <param name="owned">The structures to be counted as owned for the purposes of the test.</param>
@@ -8330,92 +8467,25 @@ static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
 /// <returns>bool; Are all of the prerequisites satisfied?</returns>
 bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const
 {
-	BuildingTypeClass const * own_building;
-
-	for (int i = 0; i < type->Prerequisite.Count(); i++) {
-
-		if (type->Prerequisite[i] >= 0) {
-
-			BuildingTypeClass const * b = BuildingTypes[type->Prerequisite[i]];
-			if (!Rule->BuildConst.Is_In_List(b)) {
-
-				bool found = false;
-				for (int j = 0; j < ownedcount; j++) {
-					if (owned[j] == b) {
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					return(false);
-				}
-			}
-
-		} else {
-
-			if (type->Prerequisite[i] == -1) {
-				continue;
-			}
-
-			own_building = NULL;
-
-			switch (type->Prerequisite[i]) {
-
-				case STRUCT_G_FACTORY:
-					own_building = Get_First_Acted(Rule->BuildWeapons);
-					break;
-
-				case STRUCT_G_BARRACKS:
-					own_building = Get_First_Acted(Rule->BuildBarracks);
-					break;
-
-				case STRUCT_G_RADAR:
-					own_building = Get_First_Acted(Rule->BuildRadar);
-					break;
-
-				case STRUCT_G_TECH:
-					own_building = Get_First_Acted(Rule->BuildTech);
-					break;
-
-				case STRUCT_G_PROC:
-					own_building = Get_First_Acted(Rule->BuildRefinery);
-					break;
-
-				// Any type of the group already queued satisfies it, as one owned does for a house playing.
-				case STRUCT_G_GDIFACTORY:
-				case STRUCT_G_NODFACTORY: {
-					TypeList<int> const & group = type->Prerequisite[i] == STRUCT_G_GDIFACTORY ? Rule->PrerequisiteGDIFactory : Rule->PrerequisiteNodFactory;
-					for (int j = 0; j < group.Count() && own_building == NULL; j++) {
-						for (int k = 0; k < ownedcount; k++) {
-							if (owned[k] == BuildingTypes[group[j]]) {
-								own_building = owned[k];
-								break;
-							}
-						}
-					}
-					break;
-				}
-
-				default:
-					break;
-			}
-
-			bool found = false;
-			for (int j = 0; j < ownedcount; j++) {
-				if (owned[j] == own_building) {
-					found = true;
-					break;
-				}
-			}
-
-			if (!found) {
-				return(false);
-			}
+	if (!Theater_Allows(*type)) {
+		return(false);
+	}
+	for (int index = 0; index < type->PrerequisiteNegative.Count(); index++) {
+		int const pre = type->PrerequisiteNegative[index];
+		TypeList<int> const * group = pre < 0 ? Rule->Prerequisite_Group_Buildings(pre) : NULL;
+		if (pre >= 0 ? Is_In_Plan(BuildingTypes[pre], owned, ownedcount) : group != NULL && Any_In_Plan(*group, owned, ownedcount)) {
+			return(false);
 		}
 	}
-
-	return(true);
+	if (AI_Prerequisite_List_Planned(type->Prerequisite, owned, ownedcount)) {
+		return(true);
+	}
+	for (TypeList<int> const & list : type->PrerequisiteLists) {
+		if (AI_Prerequisite_List_Planned(list, owned, ownedcount)) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
