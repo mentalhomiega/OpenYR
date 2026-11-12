@@ -160,6 +160,8 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	IsFlamingGuyEnd(false),
 	AttachedBullet(NULL),
 	IsHeld(false),
+	IsHeldByMany(false),
+	HeldBy(NULL),
 	IsToDelete(false),
 	TimeToDie(false),
 	IsBrandNew(true),
@@ -279,6 +281,8 @@ AnimClass::AnimClass(void) :
 	Loops(1),
 	AttachedBullet(NULL),
 	IsHeld(false),
+	IsHeldByMany(false),
+	HeldBy(NULL),
 	IsToDelete(false),
 	TimeToDie(false),
 	IsBrandNew(true),
@@ -1532,9 +1536,11 @@ void AnimClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 	StageClass::Serialize(stream);
 
-	// A loaded animation counts as held: the pointers to it are restored without Held().
+	// A loaded animation counts as held by many: the pointers to it are restored without Held().
 	if (stream.Is_Loading()) {
 		IsHeld = true;
+		IsHeldByMany = true;
+		HeldBy = NULL;
 	}
 
 	stream.Serialize(Class);

@@ -160,7 +160,7 @@ SuperClass::SuperClass(SuperWeaponTypeClass * type, HouseClass * owner) :
 	SuperWeapons.Add(this);
 	AbstractTypePtrTracker.Add(this);
 	HousePtrTracker.Add(this);
-	AnimPtrTracker.Add(this);
+	Track_Anim_Holder(this);
 }
 
 
@@ -174,7 +174,7 @@ SuperClass::~SuperClass(void)
 	SuperWeapons.Delete(this);
 	AbstractTypePtrTracker.Delete(this);
 	HousePtrTracker.Delete(this);
-	AnimPtrTracker.Delete(this);
+	Untrack_Anim_Holder(this);
 }
 
 
@@ -1189,7 +1189,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				Stop_Pre_Click_Anim();
 				if (Rule->ChronoPlacement != NULL) {
 					Coord const coord = Map[cell].As_Coord();
-					PreClickAnim = AnimClass::Held(new AnimClass(Rule->ChronoPlacement, Coord(coord.X, coord.Y, coord.Z + 5)));
+					PreClickAnim = AnimClass::Held(new AnimClass(Rule->ChronoPlacement, Coord(coord.X, coord.Y, coord.Z + 5)), this);
 				}
 				if (player) {
 					Map.IsTargettingMode = Follow_Up();

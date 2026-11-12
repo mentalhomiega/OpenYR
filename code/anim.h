@@ -285,15 +285,23 @@ class AnimClass : public ObjectClass, public StageClass
 		 */
 		BulletClass * AttachedBullet;
 
-		// True once a building, a bullet or a super weapon has stored a pointer to this animation.
-		// Detach_This_From_All visits those holders only for an animation with this set, so every
-		// store of an animation pointer in them goes through Held(). It is never cleared.
+		// IsHeld is true once a building, a bullet or a super weapon has stored a pointer to this
+		// animation, HeldBy is the last object that did, and IsHeldByMany is true once two different
+		// objects have. Detach_This_From_All visits no holder for an animation that is not held and
+		// only HeldBy for one with a single holder, so every store of an animation pointer in those
+		// classes goes through Held(). The marks are never cleared, and HeldBy may outlive its object.
 		bool IsHeld;
+		bool IsHeldByMany;
+		AbstractClass const * HeldBy;
 
-		static AnimClass * Held(AnimClass * anim)
+		static AnimClass * Held(AnimClass * anim, AbstractClass const * holder)
 		{
 			if (anim != NULL) {
+				if (anim->IsHeld && anim->HeldBy != holder) {
+					anim->IsHeldByMany = true;
+				}
 				anim->IsHeld = true;
+				anim->HeldBy = holder;
 			}
 			return(anim);
 		}
