@@ -12977,7 +12977,7 @@ void TechnoClass::Start_Drain(TechnoClass * target)
 		target->CaptureManager->Free_All();
 	}
 	if (Rule->DrainAnimationType != NULL) {
-		DrainAnim = AnimClass::Held(new AnimClass(Rule->DrainAnimationType, Center_Coord()));
+		DrainAnim = AnimClass::Held(new AnimClass(Rule->DrainAnimationType, Center_Coord()), this);
 		if (DrainAnim != NULL) {
 			DrainAnim->Attach_To(this);
 		}

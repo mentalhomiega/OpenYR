@@ -158,7 +158,7 @@ BulletClass::BulletClass(void) :
 {
 	Create_ID();
 	Bullets.Add(this);
-	AnimPtrTracker.Add(this);
+	Track_Anim_Holder(this);
 }
 
 
@@ -220,7 +220,7 @@ void BulletClass::Init_Scalable(void)
 BulletClass::~BulletClass(void)
 {
 	ScalableBullets.Delete(this);
-	AnimPtrTracker.Delete(this);
+	Untrack_Anim_Holder(this);
 	Detach_This_From_All(this, true);
 
 	if (GameActive) {
@@ -2106,7 +2106,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 	if (nukeball == NULL) {
 		return(false);
 	}
-	NextAnim = AnimClass::Held(nukeball);
+	NextAnim = AnimClass::Held(nukeball, this);
 	SpawnNextAnim = true;
 	AUTOTEST_LOG("nuke blast builds up at frame %d\n", Frame);
 	return(true);
