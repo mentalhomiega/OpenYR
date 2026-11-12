@@ -109,6 +109,13 @@ class RLEBlitTransXlat : public RLEBlitter {
 			}
 		}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, false, (unsigned short const *)TranslateTable, NULL, (unsigned short)0};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 };

@@ -41,6 +41,10 @@
 #include "xsurface.h"
 #include "zbuffer.h"
 
+#include <typeinfo>
+#include <cstdlib>
+#include <cstdio>
+#include <windows.h>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -183,10 +187,94 @@ static std::int64_t Atlas_Image(void)
 }
 
 
+struct LockTrace
+{
+	void * Frames[12];
+	int Count;
+	int Kind;
+};
+static std::vector<LockTrace> _LockTraces;
+
+// OPENYR_GPU_WHY=1 logs, for some of the passes the GPU could not draw, the call stacks of the
+// surface locks no recorded blit accounts for (kind 0) and of the blits no blitter could describe
+// (kind 1), as addresses relative to the module base for the linker map.
+static bool Why_Is_On(void)
+{
+	static int on = -1;
+	if (on < 0) {
+		char const * value = std::getenv("OPENYR_GPU_WHY");
+		on = (value != NULL && value[0] == '1') ? 1 : 0;
+	}
+	return(on == 1);
+}
+
+static void Trace_Lock(int kind)
+{
+	if (Why_Is_On() && _LockTraces.size() < 4000) {
+		LockTrace trace;
+		trace.Count = CaptureStackBackTrace(1, 12, trace.Frames, NULL);
+		trace.Kind = kind;
+		_LockTraces.push_back(trace);
+	}
+}
+
+static void Mark_Lock_Recorded(void)
+{
+	if (!_LockTraces.empty() && _LockTraces.back().Kind == 0) {
+		_LockTraces.back().Kind = 2;
+	}
+}
+
+static void Log_Why(bool drawfailed)
+{
+	static int fallbacks = 0;
+	if (!Why_Is_On() || fallbacks++ % 150 != 3) {
+		return;
+	}
+	int unrecorded = 0;
+	int describe = 0;
+	for (LockTrace const & trace : _LockTraces) {
+		unrecorded += trace.Kind == 0;
+		describe += trace.Kind == 1;
+	}
+	DebugString("GPU_WHY frame %d locks %d lockedblits %d unsupported %d backend %d drawfailed %d blits %d unrecorded %d describe %d area %dx%d\n", Frame, _Locks, _LockedBlits, _List.Unsupported, (int)Backend_Is_Running(), (int)drawfailed, (int)_List.Blits.size(), unrecorded, describe, _Area.Width, _Area.Height);
+	char const * const base = (char const *)GetModuleHandleA(NULL);
+	int shown = 0;
+	bool first = true;
+	for (LockTrace const & trace : _LockTraces) {
+		if (trace.Kind == 2) {
+			continue;
+		}
+		// The first unrecorded lock is the one around the whole pass.
+		if (trace.Kind == 0 && first) {
+			first = false;
+			continue;
+		}
+		char text[400];
+		int at = 0;
+		for (int index = 0; index < trace.Count && at < 360; index++) {
+			at += snprintf(text + at, sizeof(text) - at, " %X", (unsigned)((char const *)trace.Frames[index] - base));
+		}
+		DebugString("GPU_WHY kind %d rva%s\n", trace.Kind, text);
+		if (++shown >= 12) {
+			break;
+		}
+	}
+}
+
+static void Log_Undescribed(char const * name)
+{
+	static int shown = 0;
+	if (Why_Is_On() && shown++ < 12) {
+		DebugString("GPU_WHY blitter %s\n", name);
+	}
+}
+
 static void Count_Lock(Surface const * surface)
 {
 	if (surface == _Target) {
 		_Locks++;
+		Trace_Lock(0);
 	}
 }
 
@@ -299,6 +387,8 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 	BlitDesc desc;
 	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
 		_List.Unsupported++;
+		Trace_Lock(1);
+		Log_Undescribed(typeid(blitter).name());
 		return(false);
 	}
 	// A cached image is read from the atlas at the clipped corner, so no colour indices are copied.
@@ -312,6 +402,7 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha, atlas, pitch);
 	_LockedBlits++;
+	Mark_Lock_Recorded();
 	if (image < 0) {
 		Decode_RLE_Rows(&_List.PixelArena[blit.Pixels], rows, leftmargin, width, height);
 	}
@@ -330,10 +421,13 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 	BlitDesc desc;
 	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
 		_List.Unsupported++;
+		Trace_Lock(1);
+		Log_Undescribed(typeid(blitter).name());
 		return(false);
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha);
 	_LockedBlits++;
+	Mark_Lock_Recorded();
 	if (_PendingPart >= 0) {
 		GpuVoxelPart const & part = _List.Voxels[_PendingPart];
 		unsigned char const * const base = part.Scratch ? _ScratchBase : VoxelDrawBuffer;
@@ -773,6 +867,7 @@ bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, i
 		return(false);
 	}
 	_Locks--;
+	Mark_Lock_Recorded();
 	_LinePixels.clear();
 	_LineKind = kind;
 	_LineColour = colour;
@@ -1114,6 +1209,9 @@ static bool Finish_Render(Surface & target)
 			_CleanPasses++;
 			return(true);
 		}
+		Log_Why(true);
+	} else {
+		Log_Why(false);
 	}
 	Count_Render(false);
 	_CleanPasses = 0;
@@ -1518,6 +1616,7 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	_Target = &target;
 	_Locks = 0;
 	_LockedBlits = 0;
+	_LockTraces.clear();
 	Surface_Lock_Hook = Count_Lock;
 	Blit_Record_RLE = Record_RLE;
 	Blit_Record_Bit = Record_Bit;
