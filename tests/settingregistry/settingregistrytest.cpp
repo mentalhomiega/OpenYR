@@ -271,6 +271,8 @@ struct Old_Gpu
 	int Weather = WEATHER_NONE;
 	int WeatherStrength = 100;
 	bool RenderThread = false;
+	bool ParallelPaths = false;
+	int PathThreads = 0;
 };
 
 
@@ -302,6 +304,8 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.Weather = Enum_From_Name(Names, weathername, WEATHER_NONE);
 	old.WeatherStrength = std::clamp(ini.Get_Int("Video", "WeatherStrength", old.WeatherStrength), 1, 400);
 	old.RenderThread = ini.Get_Bool("Video", "RenderThread", old.RenderThread);
+	old.ParallelPaths = ini.Get_Bool("Options", "ParallelPaths", old.ParallelPaths);
+	old.PathThreads = std::clamp(ini.Get_Int("Options", "PathThreads", old.PathThreads), 0, 32);
 }
 
 
@@ -328,6 +332,8 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_String("Video", "Weather", Enum_Name(Names, std::clamp(old.Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ini.Put_Int("Video", "WeatherStrength", old.WeatherStrength);
 	ini.Put_Bool("Video", "RenderThread", old.RenderThread);
+	ini.Put_Bool("Options", "ParallelPaths", old.ParallelPaths);
+	ini.Put_Int("Options", "PathThreads", old.PathThreads);
 }
 
 
@@ -388,9 +394,9 @@ void Test_Real_Table(void)
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
 		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
-		"RenderThread",
+		"RenderThread", "ParallelPaths", "PathThreads",
 	};
-	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them");
+	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys");
 
 	std::vector<UISettingRow> rows = UI_Setting_Rows(settings, "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
 	std::vector<std::string> labels;

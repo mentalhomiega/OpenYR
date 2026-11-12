@@ -4210,7 +4210,7 @@ void Test_Declared_Pages_Presenter(void)
 		std::vector<UISettingRow> const rows = UI_Setting_Rows(Option_Settings(), "performance", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
 		UISettingRow const * thread = Declared_Row(rows, "RenderThread");
 		Check(Option_Setting_Pages().size() >= 1 && std::string(Option_Setting_Pages()[0].Id) == "performance" && std::string(Option_Setting_Pages()[0].Label) == "Performance", "the first declared page is Performance");
-		Check(rows.size() == 2 && rows[0].Kind == UISettingRowKind::HEADING && rows[0].Label == "Rendering" && thread != nullptr && thread->Kind == UISettingRowKind::SWITCH
+		Check(rows.size() == 5 && rows[0].Kind == UISettingRowKind::HEADING && rows[0].Label == "Rendering" && thread != nullptr && thread->Kind == UISettingRowKind::SWITCH
 			&& thread->Label == "Render on a separate thread" && thread->Tip.ends_with(" Applies at the next start."), "the Performance page shows the render thread switch, which applies at the next start");
 		bool before = false;
 		for (Setting<OptionsClass> const & setting : Option_Settings()) {
