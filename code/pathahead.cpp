@@ -29,7 +29,6 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 extern thread_local CellClass * OffMapCellOverride;
@@ -72,12 +71,6 @@ const unsigned int FP_MASK = _MCW_RC | _MCW_DN
 int ThreadCount = -1;
 bool IsChecked = false;
 bool IsStatsLogged = false;
-bool IsWaitOn = false;
-
-// Membership only; never walked, so the order of the addresses does not reach the game.
-std::unordered_set<FootClass const *> WaitingNow;
-std::unordered_set<FootClass const *> WaitedLast;
-long long StatWaits = 0;
 
 std::vector<std::unique_ptr<Worker>> Workers;
 std::unique_ptr<Worker> Checker;
@@ -136,8 +129,6 @@ void Read_Settings(void)
 	IsChecked = check != NULL && check[0] == '1';
 	char const * stats = std::getenv("OPENYR_PATH_AHEAD_STATS");
 	IsStatsLogged = stats != NULL && stats[0] == '1';
-	char const * wait = std::getenv("OPENYR_PATH_AHEAD_WAIT");
-	IsWaitOn = wait != NULL && wait[0] == '1';
 }
 
 
@@ -343,8 +334,6 @@ void Path_Ahead_Frame(void)
 
 	Requests.clear();
 	RequestOf.clear();
-	WaitedLast.swap(WaitingNow);
-	WaitingNow.clear();
 
 	// Every machine asks the same units in the same order, whatever its thread count.
 	for (int index = 0; index < Feet.Count(); index++) {
@@ -411,9 +400,9 @@ void Path_Ahead_Frame(void)
 
 	StatMade += (long long)Requests.size();
 	if (IsStatsLogged && Frame % 600 == 0) {
-		DebugString("PATHAHEAD frame %d threads %d asked %lld made %lld used %lld check differences %lld batch ms %lld made ms %lld used ms %lld largest batch %lld in %lld ms; other from %lld to %lld avoidance %lld (%lld ms), asked twice %lld, no path %lld ms, waits %lld\n",
+		DebugString("PATHAHEAD frame %d threads %d asked %lld made %lld used %lld check differences %lld batch ms %lld made ms %lld used ms %lld largest batch %lld in %lld ms; other from %lld to %lld avoidance %lld (%lld ms), asked twice %lld, no path %lld ms\n",
 			Frame, ThreadCount, StatAsked, StatMade, StatUsed, StatCheckDifferences, StatBatchMicros / 1000, StatMadeMicros / 1000, StatUsedMicros / 1000, StatLargestBatch, StatLargestBatchMicros / 1000,
-			StatOtherFrom, StatOtherTo, StatOtherAvoidance, StatOtherMicros / 1000, StatTwice, StatNotFoundMicros / 1000, StatWaits);
+			StatOtherFrom, StatOtherTo, StatOtherAvoidance, StatOtherMicros / 1000, StatTwice, StatNotFoundMicros / 1000);
 	}
 }
 
@@ -465,27 +454,11 @@ bool Path_Ahead_Take(FootClass const * foot, Cell const & from, Cell const & to,
 }
 
 
-bool Path_Ahead_Should_Wait(FootClass const * foot)
-{
-	if (ThreadCount <= 0 || !IsWaitOn) {
-		return(false);
-	}
-	if (RequestOf.find(foot) != RequestOf.end() || WaitedLast.find(foot) != WaitedLast.end()) {
-		return(false);
-	}
-	WaitingNow.insert(foot);
-	StatWaits++;
-	return(true);
-}
-
-
 void Path_Ahead_Forget(FootClass const * foot)
 {
 	if (!RequestOf.empty()) {
 		RequestOf.erase(foot);
 	}
-	WaitingNow.erase(foot);
-	WaitedLast.erase(foot);
 }
 
 
@@ -493,6 +466,4 @@ void Path_Ahead_Clear(void)
 {
 	Requests.clear();
 	RequestOf.clear();
-	WaitingNow.clear();
-	WaitedLast.clear();
 }

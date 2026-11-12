@@ -28,11 +28,6 @@ void Path_Ahead_Frame(void);
 // has its commands copied to `moves` and stays valid until the next Path_Ahead_Frame.
 bool Path_Ahead_Take(FootClass const * foot, Cell const & from, Cell const & to, int path_offset, int avoidance, FacingType * moves, PathStruct * & path);
 
-// True when this unit should put off the path request it is about to make until the next frame,
-// whose batch will hold it. A unit is never put off two frames running. Experimental: only with
-// OPENYR_PATH_AHEAD_WAIT=1.
-bool Path_Ahead_Should_Wait(FootClass const * foot);
-
 // Drops what was made for an object that is being deleted.
 void Path_Ahead_Forget(FootClass const * foot);
 
