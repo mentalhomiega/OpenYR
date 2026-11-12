@@ -52,6 +52,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `stop <TypeID>` | Sends the Stop command's idle event to the player's objects of that type that can move or fire. It logs how many it sent |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
 | `view <x> <y>` | Centres the view on the cell |
+| `panview <dx> <dy>` | Moves the view by that many map pixels, as scrolling does, and writes the view position before and after |
 | `follow <TypeID>` | Keeps the view centred on one of the player's objects of that type, until the next `view` |
 | `record <frames>` | Saves a screenshot every that many frames; `record 0` stops |
 | `dump` | Writes the player's credits, structures and units, with their missions and movement, to the debug log |
