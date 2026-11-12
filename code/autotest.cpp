@@ -12,6 +12,8 @@
 #include "always.h"
 
 #include "autotest.h"
+#include "isotype.h"
+#include "theater.h"
 #include "mainloop.h"
 #include "combat.h"
 #include "ebolt.h"
@@ -5532,6 +5534,59 @@ static void Cellpixel_Step(StepType const & step)
 }
 
 
+// tilecheck [tile ...]: logs how the map's tiles stand once it is loaded: the cells the playing area holds, how many of
+// them hold a tile type with no artwork, how many the map lets ice grow on, and whether the theater's ice behavior is
+// on. Each tile number after the command also gets the count of cells that hold it. A map tile that was rewritten
+// during the load shows as a change in those counts.
+static void Tilecheck_Step(StepType const & step)
+{
+	std::map<int, int> counts;
+	int cells = 0;
+	int imageless = 0;
+	int ice_flagged = 0;
+	Map.Reset_Iterator();
+	for (CellClass const * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+		cells++;
+		counts[(int)cell->ITType]++;
+		if (cell->ITType != ISOTILE_NONE && cell->ITType < IsometricTileTypes.Count() && IsometricTileTypes[cell->ITType]->Get_Image_Data() == NULL) {
+			imageless++;
+		}
+		if (cell->IsIceGrowthAllowed) {
+			ice_flagged++;
+		}
+	}
+	DebugString("AUTOTEST   tilecheck cells %d imageless %d ice-flagged %d ice-behavior %d tile-types %d\n", cells, imageless, ice_flagged,
+		(int)TheaterClass::As_Reference(Scen->Theater).IsIceGrowth, IsometricTileTypes.Count());
+	for (std::size_t word = 2; word < step.Words.size(); word++) {
+		int const tile = std::atoi(step.Words[word].c_str());
+		DebugString("AUTOTEST   tilecheck tile %d cells %d\n", tile, counts[tile]);
+	}
+}
+
+
+// settile <x> <y> <tile> [ice]: gives the cell that tile, sub-tile 0, and works out the cell's attributes again. With ice,
+// the cell is also one the map lets ice grow on.
+static void Settile_Step(StepType const & step)
+{
+	CellClass & cell = Map[step.Argument_Cell()];
+	std::vector<std::string> const & words = step.Words;
+	if (words.size() < 5) {
+		DebugString("AUTOTEST   settile needs x y tile\n");
+		return;
+	}
+	int const tile = std::atoi(words[4].c_str());
+	if (tile < 0 || tile >= IsometricTileTypes.Count()) {
+		DebugString("AUTOTEST   settile %d: no such tile\n", tile);
+		return;
+	}
+	cell.ITType = (IsometricTileType)tile;
+	cell.SubTile = 0;
+	cell.IsIceGrowthAllowed = words.size() > 5 && words[5] == "ice";
+	cell.Recalc_Attributes();
+	DebugString("AUTOTEST   settile %d,%d tile %d ice %d\n", step.Argument_Int(), step.X, tile, (int)cell.IsIceGrowthAllowed);
+}
+
+
 // hoverat x y: moves the pointer to the centre pixel of that cell, as windowmove does, so the object there hovers from the next frame.
 static void Hoverat_Step(StepType const & step)
 {
@@ -7461,6 +7516,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"pickable", Pickable_Step},
 		{"helptext", Helptext_Step},
 		{"cellpixel", Cellpixel_Step},
+		{"tilecheck", Tilecheck_Step},
+		{"settile", Settile_Step},
 		{"hoverat", Hoverat_Step},
 		{"pips", Pips_Step},
 		{"pickat", Pickat_Step},

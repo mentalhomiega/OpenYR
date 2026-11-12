@@ -65,7 +65,23 @@ class TheaterClass
 		 */
 		bool IsArctic;
 
+		/*
+		 * Ice behavior is on while this is set: ice grows, refreezes, cracks and breaks, and the
+		 * theater's ice tile sets are treated as water at their edges. It starts from the theater's
+		 * IsIceGrowthEnabled and goes off when the tile reader finds ice sets that hold no tiles.
+		 */
 		bool IsIceGrowth;
+
+		/*
+		 * What the rules ask for, kept apart from IsIceGrowth so that a theater whose tile sets are
+		 * read again decides afresh.
+		 */
+		bool IsIceGrowthWanted;
+
+		void Resolve_Ice_Growth(bool ice_sets_hold_tiles)
+		{
+			IsIceGrowth = IsIceGrowthWanted && ice_sets_hold_tiles;
+		}
 
 		/*
 		 * How far a cell's two terrain colors are scaled on the radar, at ground level and at
