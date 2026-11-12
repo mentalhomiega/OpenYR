@@ -1008,6 +1008,19 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 	Bytes_Per_Pixel();
 	void * buffer = Lock(start);
 
+	// While the GPU draws the object pass, the pixels that pass the depth test here are recorded as a light of this strength.
+	bool const record = buffer != NULL && glow_strength > 0 && glow_strength < 256 && GpuDraw_Line_Begin(*this, GPU_LINE_GLOW, 0, 0);
+	char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * 2;
+	auto plot = [&](unsigned short * pixel, unsigned short colour) {
+		if (record) {
+			std::ptrdiff_t const position = (char const *)pixel - origin;
+			if (GpuDraw_Line_Pixel((int)(position % Stride()) / 2, (int)(position / Stride()), glow_strength)) {
+				return;
+			}
+		}
+		*pixel = colour;
+	};
+
 	if (DepthBuffer != NULL) {
 
 	Point2D point = start;
@@ -1073,7 +1086,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 					if (red > 255) {
 						red = 255;
 					}
-					*(unsigned short *)((char *)buffer + offset) = (unsigned short)Build_Hicolor_Pixel(red, green, blue);
+					plot((unsigned short *)((char *)buffer + offset), (unsigned short)Build_Hicolor_Pixel(red, green, blue));
 					if (write_depth) {
 						*zbuffer = (unsigned short)z;
 					}
@@ -1129,7 +1142,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 					if (red > 255) {
 						red = 255;
 					}
-					*((unsigned short *)buffer + offset) = (unsigned short)Build_Hicolor_Pixel(red, green, blue);
+					plot((unsigned short *)buffer + offset, (unsigned short)Build_Hicolor_Pixel(red, green, blue));
 					if (write_depth) {
 						*zbuffer = (unsigned short)z;
 					}
@@ -1184,7 +1197,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 					if (red > 255) {
 						red = 255;
 					}
-					*(unsigned short *)((char *)buffer + offset) = (unsigned short)Build_Hicolor_Pixel(red, green, blue);
+					plot((unsigned short *)((char *)buffer + offset), (unsigned short)Build_Hicolor_Pixel(red, green, blue));
 					if (write_depth) {
 						*zbuffer = (unsigned short)z;
 					}
@@ -1217,6 +1230,9 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 
 	}
 
+	if (record) {
+		GpuDraw_Line_End();
+	}
 	Unlock();
 	return(true);
 

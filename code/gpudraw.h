@@ -37,7 +37,9 @@ enum GpuLineKind
 	GPU_LINE_SHADED,
 	GPU_LINE_ADDITIVE,
 	GPU_LINE_ANTIALIASED,
-	GPU_LINE_SONIC
+	GPU_LINE_SONIC,
+	// A depth glow line. Its pixels are added to the list as a light blit of the line's strength, not as a line.
+	GPU_LINE_GLOW
 };
 
 // The channels an antialiased line blends.
