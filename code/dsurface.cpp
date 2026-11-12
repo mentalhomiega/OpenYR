@@ -1011,14 +1011,19 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 	// While the GPU draws the object pass, the pixels that pass the depth test here are recorded as a light of this strength.
 	bool const record = buffer != NULL && glow_strength > 0 && glow_strength < 256 && GpuDraw_Line_Begin(*this, GPU_LINE_GLOW, 0, 0);
 	char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * 2;
-	auto plot = [&](unsigned short * pixel, unsigned short colour) {
+	// Brightens one pixel that passed the depth test: each channel gains glow_strength 256ths of itself.
+	auto plot = [&](unsigned short * pixel) {
 		if (record) {
 			std::ptrdiff_t const position = (char const *)pixel - origin;
 			if (GpuDraw_Line_Pixel((int)(position % Stride()) / 2, (int)(position / Stride()), glow_strength)) {
 				return;
 			}
 		}
-		*pixel = colour;
+		RGBClass const rgb = Deconstruct_Hicolor_Pixel(*pixel);
+		int const red = std::min(255, ((glow_strength * rgb.Get_Red()) >> 8) + rgb.Get_Red());
+		int const green = std::min(255, ((glow_strength * rgb.Get_Green()) >> 8) + rgb.Get_Green());
+		int const blue = std::min(255, ((glow_strength * rgb.Get_Blue()) >> 8) + rgb.Get_Blue());
+		*pixel = (unsigned short)Build_Hicolor_Pixel(red, green, blue);
 	};
 
 	if (DepthBuffer != NULL) {
@@ -1073,20 +1078,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 			for (int i = abs_dz; i != 0; i--) {
 
 				if ((unsigned short)z < *zbuffer) {
-					RGBClass rgb = Deconstruct_Hicolor_Pixel(*(unsigned short *)((char *)buffer + offset));
-					int blue = ((glow_strength * rgb.Get_Blue()) >> 8) + rgb.Get_Blue();
-					int red = ((glow_strength * rgb.Get_Red()) >> 8) + rgb.Get_Red();
-					int green = ((glow_strength * rgb.Get_Green()) >> 8) + rgb.Get_Green();
-					if (blue > 255) {
-						blue = 255;
-					}
-					if (green > 255) {
-						green = 255;
-					}
-					if (red > 255) {
-						red = 255;
-					}
-					plot((unsigned short *)((char *)buffer + offset), (unsigned short)Build_Hicolor_Pixel(red, green, blue));
+					plot((unsigned short *)((char *)buffer + offset));
 					if (write_depth) {
 						*zbuffer = (unsigned short)z;
 					}
@@ -1129,20 +1121,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 			do {
 
 				if ((unsigned short)z < *zbuffer) {
-					RGBClass rgb = Deconstruct_Hicolor_Pixel(*((unsigned short *)buffer + offset));
-					int blue = ((glow_strength * rgb.Get_Blue()) >> 8) + rgb.Get_Blue();
-					int red = ((glow_strength * rgb.Get_Red()) >> 8) + rgb.Get_Red();
-					int green = ((glow_strength * rgb.Get_Green()) >> 8) + rgb.Get_Green();
-					if (blue > 255) {
-						blue = 255;
-					}
-					if (green > 255) {
-						green = 255;
-					}
-					if (red > 255) {
-						red = 255;
-					}
-					plot((unsigned short *)buffer + offset, (unsigned short)Build_Hicolor_Pixel(red, green, blue));
+					plot((unsigned short *)buffer + offset);
 					if (write_depth) {
 						*zbuffer = (unsigned short)z;
 					}
@@ -1184,20 +1163,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 			for (int i = abs_dy; i != 0; i--) {
 
 				if ((unsigned short)z < *zbuffer) {
-					RGBClass rgb = Deconstruct_Hicolor_Pixel(*(unsigned short *)((char *)buffer + offset));
-					int blue = ((glow_strength * rgb.Get_Blue()) >> 8) + rgb.Get_Blue();
-					int red = ((glow_strength * rgb.Get_Red()) >> 8) + rgb.Get_Red();
-					int green = ((glow_strength * rgb.Get_Green()) >> 8) + rgb.Get_Green();
-					if (blue > 255) {
-						blue = 255;
-					}
-					if (green > 255) {
-						green = 255;
-					}
-					if (red > 255) {
-						red = 255;
-					}
-					plot((unsigned short *)((char *)buffer + offset), (unsigned short)Build_Hicolor_Pixel(red, green, blue));
+					plot((unsigned short *)((char *)buffer + offset));
 					if (write_depth) {
 						*zbuffer = (unsigned short)z;
 					}
