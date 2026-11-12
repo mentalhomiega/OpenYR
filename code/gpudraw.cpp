@@ -686,7 +686,7 @@ static GpuRing Ring_Of(T * buffer, std::vector<unsigned short> & fallback)
 	int const height = buffer->Get_Bounds().Height;
 	unsigned short const * start = buffer->Get_Buffer_End() - (std::size_t)width * height;
 	unsigned short const * first = buffer->Get_Buffer_Offset(Point2D(_Area.X, _Area.Y - buffer->Get_Bounds().Y));
-	return(GpuRing{ start, width, height, (int)(first - start) });
+	return(GpuRing{ start, width, height, (int)(first - start), &buffer->Written });
 }
 
 
@@ -1197,7 +1197,7 @@ static bool Finish_Render(Surface & target)
 		if (inplace) {
 			int const stride = tiles->Stride() / (int)sizeof(unsigned short);
 			unsigned short const * const block = (unsigned short const *)tiles->Get_Block();
-			pass.BaseRing = GpuRing{ block, stride, (int)(tiles->Get_Block_Size() / tiles->Stride()), (int)((unsigned short const *)tiles->Get_Buffer() - block) + _Area.Y * stride + _Area.X };
+			pass.BaseRing = GpuRing{ block, stride, (int)(tiles->Get_Block_Size() / tiles->Stride()), (int)((unsigned short const *)tiles->Get_Buffer() - block) + _Area.Y * stride + _Area.X, &tiles->Written_Rects() };
 		}
 		pass.DepthRing = Ring_Of(DepthBuffer, upload[1]);
 		pass.AlphaRing = alpharead ? Ring_Of(AlphaBuffer, upload[2]) : GpuRing{};

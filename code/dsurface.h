@@ -33,6 +33,7 @@
 
 #include "palette.h"
 #include "win.h"
+#include "writtenrects.h"
 #include "xsurface.h"
 
 #include <cstddef>
@@ -84,6 +85,11 @@ class DSurface : public XSurface
 		void * Get_Block(void) const {return(Block);}
 		std::size_t Get_Block_Size(void) const {return(BlockSize);}
 		bool Written_Block(std::vector<std::pair<std::size_t, std::size_t>> & runs) const;
+
+		// Names a rectangle of the picture that a draw wrote, for a reader of the block that takes
+		// Written_Rects: the pixels named since it last took them, as rectangles of the block's rows.
+		void Note_Written(Rect const & rect);
+		WrittenRects & Written_Rects(void) const {return(Written);}
 
 		/*
 		**	Get/Release a windows device context for the surface pixels.
@@ -236,6 +242,8 @@ class DSurface : public XSurface
 
 		// Set by Scroll: the next Written_Runs reports no list, because every pixel moved.
 		mutable bool IsScrolled;
+
+		mutable WrittenRects Written;
 
 		bool Stretch_Without_GDI(Rect const & dcliprect, Rect const & destrect, DSurface const & source, Rect const & scliprect, Rect const & sourcerect);
 

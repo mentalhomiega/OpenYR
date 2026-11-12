@@ -256,6 +256,16 @@ bool DSurface::Written_Block(std::vector<std::pair<std::size_t, std::size_t>> & 
 }
 
 
+void DSurface::Note_Written(Rect const & rect)
+{
+	Rect const inside = Intersect(rect, Get_Rect());
+	if (Block != NULL && inside.Is_Valid()) {
+		std::size_t const start = (std::size_t)((char *)GDIBuffer - (char *)Block) / 2 + (std::size_t)inside.Y * (Pitch / 2) + inside.X;
+		Written.Note_Picture(start, Pitch / 2, (int)(BlockSize / Pitch), inside.Width, inside.Height);
+	}
+}
+
+
 bool DSurface::Scroll(int dx, int dy)
 {
 	std::size_t const size = (std::size_t)Pitch * Get_Height();
@@ -268,6 +278,7 @@ bool DSurface::Scroll(int dx, int dy)
 		GDIBuffer = moved;
 	} else {
 		// The picture has reached an end of the block, so the part that stays in view is copied to the middle.
+		Written.Note_All();
 		char * const centre = block + Centre_Offset(BlockSize, size);
 		char * const first = std::max(moved, block);
 		char * const end = std::min(moved + size, block + BlockSize);

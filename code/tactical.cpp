@@ -1106,6 +1106,21 @@ void Tactical::Render_Outside_Map(Surface & surface)
 /// <param name="surface">The composite surface the foreground objects are drawn onto.</param>
 /// <param name="fullredraw">Redraw the whole view rather than just the scrolled strips?</param>
 /// <param name="drawpass">Which rendering pass to perform. See DrawPassType.</param>
+// Names a rectangle of the tile layer that the background pass draws into, for the GPU pass's uploads.
+static void Note_Layer_Write(Rect const & rect)
+{
+	Rect const inside = Intersect(TacticalRect, rect);
+	if (!inside.Is_Valid()) {
+		return;
+	}
+	if (DSurface * const tiles = dynamic_cast<DSurface *>(TileSurface)) {
+		tiles->Note_Written(inside);
+	}
+	DepthBuffer->Note_Written(inside);
+	AlphaBuffer->Note_Written(inside);
+}
+
+
 // Moves the tile layer's picture and planes by the pan without copying the picture, when the layer
 // can scroll; false means nothing moved. The rectangles are the kept part before and after the move.
 static bool Scroll_Tile_Layer(int xoffset, int yoffset, Rect const & destrect, Rect const & sourcerect)
@@ -1122,6 +1137,28 @@ static bool Scroll_Tile_Layer(int xoffset, int yoffset, Rect const & destrect, R
 		}
 	}
 	return(true);
+}
+
+
+// Names the rectangles the layer renderers of the background pass clip their draws to.
+void Tactical::Note_Layer_Writes(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw)
+{
+	if (fullredraw) {
+		Note_Layer_Write(TacticalRect);
+		return;
+	}
+	Note_Layer_Write(xpanrect);
+	Note_Layer_Write(ypanrect);
+	for (CellClass * cell : CellRedraw) {
+		Point2D pixel;
+		Coord_To_Pixel(Coord_Whole(Coord(cell->Fetch_CellID())), pixel);
+		Note_Layer_Write(Rect(pixel.X - ISO_TILE_PIXEL_W / 2, pixel.Y + TacticalRect.Y, ISO_TILE_PIXEL_W, ISO_TILE_PIXEL_H));
+	}
+	for (int index = 0; index < DirtyAreas.Count(); index++) {
+		Rect area = DirtyAreas[index].Area;
+		area.Y += TacticalRect.Y;
+		Note_Layer_Write(area);
+	}
 }
 
 
@@ -1316,6 +1353,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			ShadowPlane_After_Fill(*LogicalSurface, fullredraw ? TacticalRect : xpanrect);
 			ShadowPlane_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
+			Note_Layer_Writes(xpanrect, ypanrect, fullredraw);
 			{
 				PerfScope shroud_scope(PERF_DRAW_SHROUD);
 				Render_Shroud(xpanrect, ypanrect, bounds, fullredraw);

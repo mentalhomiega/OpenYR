@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "writtenrects.h"
 #include "rect.h"
 
 #include <cstdint>
@@ -39,6 +40,10 @@ struct GpuRing
 	int Width;
 	int Height;
 	int Start;
+
+	// With watched Values, the rectangles of the rows that the writers named, or NULL when they name none.
+	// A page written outside the named rectangles is still uploaded, as whole rows.
+	WrittenRects * Written = NULL;
 };
 
 

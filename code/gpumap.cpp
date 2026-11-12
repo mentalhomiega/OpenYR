@@ -537,29 +537,133 @@ static void Update_Rows(Store & store, unsigned short const * values, int width,
 }
 
 
-// Makes the store exactly width by rows values, uploading only the rows on pages written since the
-// last call when the system lists them (writewatch.h). Reference is as for Fill_R16.
-static bool Fill_R16_Watched(Store & store, unsigned short const * values, int width, int rows, bool reference)
+// Uploads one rectangle of the values, which are width values a row.
+static void Update_Rect(Store & store, unsigned short const * values, int width, Rect const & rect)
+{
+	std::size_t const rowbytes = (std::size_t)rect.Width * sizeof(unsigned short);
+	bgfx::Memory const * const memory = bgfx::alloc((uint32_t)(rowbytes * rect.Height));
+	for (int r = 0; r < rect.Height; r++) {
+		std::memcpy(memory->data + r * rowbytes, values + (std::size_t)(rect.Y + r) * width + rect.X, rowbytes);
+	}
+	bgfx::updateTexture2D(store.Handle, 0, 0, (uint16_t)rect.X, (uint16_t)rect.Y, (uint16_t)rect.Width, (uint16_t)rect.Height, memory);
+}
+
+
+// OPENYR_UPLOAD_CHECK=1 keeps a copy of what each watched store was sent and logs an UPLOAD_CHECK DIFFERENCE
+// line when the values differ from it after an upload, which means a write was neither named nor listed.
+static bool Upload_Is_Checked(void)
+{
+	static bool const checked = [] {
+		char const * const value = std::getenv("OPENYR_UPLOAD_CHECK");
+		bool const on = value != NULL && value[0] == '1';
+		if (on) {
+			DebugString("UPLOAD_CHECK on\n");
+		}
+		return(on);
+	}();
+	return(checked);
+}
+
+
+static void Check_Upload(Store const & store, unsigned short const * values, int width, int rows, std::vector<Rect> const & sent)
+{
+	static std::unordered_map<Store const *, std::vector<unsigned short>> copies;
+	std::vector<unsigned short> & copy = copies[&store];
+	std::size_t const count = (std::size_t)width * rows;
+	if (copy.size() != count) {
+		copy.assign(count, 0);
+	}
+	for (Rect const & rect : sent) {
+		for (int r = 0; r < rect.Height; r++) {
+			std::size_t const at = (std::size_t)(rect.Y + r) * width + rect.X;
+			std::memcpy(&copy[at], values + at, (std::size_t)rect.Width * sizeof(unsigned short));
+		}
+	}
+	if (std::memcmp(copy.data(), values, count * sizeof(unsigned short)) != 0) {
+		std::size_t at = 0;
+		while (copy[at] == values[at]) {
+			at++;
+		}
+		DebugString("UPLOAD_CHECK DIFFERENCE store %d row %d column %d of %dx%d\n", (int)(&store - _Stores), (int)(at / width), (int)(at % width), width, rows);
+		std::memcpy(copy.data(), values, count * sizeof(unsigned short));
+	}
+}
+
+
+// Makes the store exactly width by rows values. When the system lists the pages written since the last
+// call (writewatch.h), only those go up: the rectangles named in written, and whole rows for a page that
+// no named rectangle touches. Reference is as for Fill_R16.
+static bool Fill_R16_Watched(Store & store, unsigned short const * values, int width, int rows, bool reference, WrittenRects * written = NULL)
 {
 	std::size_t const bytes = (std::size_t)width * rows * sizeof(unsigned short);
-	std::vector<std::pair<std::size_t, std::size_t>> runs;
+	static std::vector<std::pair<std::size_t, std::size_t>> runs;
+	static std::vector<Rect> rects;
+	static std::vector<Rect> sent;
 	bool const listed = WriteWatch_Take(values, bytes, runs);
+	bool const named = written != NULL && written->Take(rects);
+	sent.clear();
 	if (!listed || !store.Tracked || store.Width != width || store.Height != rows) {
-		if (!Fill_R16(store, values, width, rows, true, reference)) {
+		// The copy the check keeps is made now, so the values must be read now as well.
+		if (!Fill_R16(store, values, width, rows, true, reference && !Upload_Is_Checked())) {
 			return(false);
 		}
 		store.Tracked = listed;
+		if (Upload_Is_Checked()) {
+			sent.push_back(Rect(0, 0, width, rows));
+			Check_Upload(store, values, width, rows, sent);
+		}
 		return(true);
 	}
 	std::size_t const pitch = (std::size_t)width * sizeof(unsigned short);
+	std::size_t const page = WriteWatch_Page_Size();
+	static std::vector<unsigned char> covered;
+	if (named) {
+		covered.assign(bytes / page + 1, 0);
+		for (Rect const & rect : rects) {
+			Rect const inside = Intersect(rect, Rect(0, 0, width, rows));
+			if (!inside.Is_Valid()) {
+				continue;
+			}
+			Update_Rect(store, values, width, inside);
+			sent.push_back(inside);
+			for (int r = inside.Y; r < inside.Y + inside.Height; r++) {
+				std::size_t const first = r * pitch + (std::size_t)inside.X * sizeof(unsigned short);
+				std::size_t const last = first + (std::size_t)inside.Width * sizeof(unsigned short) - 1;
+				std::fill(covered.begin() + first / page, covered.begin() + last / page + 1, (unsigned char)1);
+			}
+		}
+	}
 	int done = 0;
-	for (auto const & run : runs) {
-		int const first = std::max(done, (int)(run.first / pitch));
-		int const end = std::min(rows, (int)((run.second + pitch - 1) / pitch));
+	auto send_rows = [&](std::size_t from, std::size_t to) {
+		int const first = std::max(done, (int)(from / pitch));
+		int const end = std::min(rows, (int)((to + pitch - 1) / pitch));
 		if (first < end) {
 			Update_Rows(store, values, width, first, end);
+			sent.push_back(Rect(0, first, width, end - first));
 			done = end;
 		}
+	};
+	for (auto const & run : runs) {
+		if (!named) {
+			send_rows(run.first, run.second);
+			continue;
+		}
+		std::size_t at = run.first / page;
+		std::size_t const end = (run.second + page - 1) / page;
+		while (at < end) {
+			if (covered[at] != 0) {
+				at++;
+				continue;
+			}
+			std::size_t const from = at;
+			while (at < end && covered[at] == 0) {
+				at++;
+			}
+			send_rows(from * page, std::min(at * page, bytes));
+		}
+	}
+	if (Upload_Is_Checked()) {
+		Check_Upload(store, values, width, rows, sent);
 	}
 	return(true);
 }
@@ -1094,7 +1198,7 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 		for (int i = 0; i < 2; i++) {
 			GpuRing const & source = *rings[i];
 			if (source.Values != NULL) {
-				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference) && valid;
+				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference, source.Written) && valid;
 				Set_Ring(ring + i * 4, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 			} else if (!bgfx::isValid(stores[i]->Handle)) {
 				// No blit reads this store, so it only has to exist.
@@ -1115,7 +1219,7 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 	}
 	if (inplace) {
 		GpuRing const & source = pass.BaseRing;
-		valid = Fill_R16_Watched(_Stores[SLOT_BASE], source.Values, source.Width, source.Height, reference) && valid;
+		valid = Fill_R16_Watched(_Stores[SLOT_BASE], source.Values, source.Width, source.Height, reference, source.Written) && valid;
 		Set_Ring(ring + 8, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 	} else if (pass.Persistent && pass.BaseChanged != NULL) {
 		valid = Fill_R16_Changed(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, *pass.BaseChanged) && valid;
