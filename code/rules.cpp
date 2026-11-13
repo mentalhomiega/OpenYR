@@ -323,6 +323,7 @@ RulesClass::RulesClass(void) :
 	HarvesterTooFarDistance(5),
 	ChronoHarvTooFarDistance(50),
 	ChronoDelay(60),
+	ChronoReinfDelay(60),
 	ChronoTrigger(true),
 	ChronoDistanceFactor(32),
 	ChronoMinimumDelay(0),
@@ -2235,6 +2236,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		HarvesterTooFarDistance = ini.Get_Int(GENERAL, "HarvesterTooFarDistance", HarvesterTooFarDistance);
 		ChronoHarvTooFarDistance = ini.Get_Int(GENERAL, "ChronoHarvTooFarDistance", ChronoHarvTooFarDistance);
 		ChronoDelay = ini.Get_Int(GENERAL, "ChronoDelay", ChronoDelay);
+		ChronoReinfDelay = ini.Get_Int(GENERAL, "ChronoReinfDelay", ChronoReinfDelay);
 		ChronoTrigger = ini.Get_Bool(GENERAL, "ChronoTrigger", ChronoTrigger);
 		ChronoDistanceFactor = ini.Get_Int(GENERAL, "ChronoDistanceFactor", ChronoDistanceFactor);
 		ChronoMinimumDelay = ini.Get_Int(GENERAL, "ChronoMinimumDelay", ChronoMinimumDelay);
@@ -3831,6 +3833,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HarvesterTooFarDistance);
 	stream.Serialize(ChronoHarvTooFarDistance);
 	stream.Serialize(ChronoDelay);
+	stream.Serialize(ChronoReinfDelay);
 	stream.Serialize(ChronoTrigger);
 	stream.Serialize(ChronoDistanceFactor);
 	stream.Serialize(ChronoMinimumDelay);

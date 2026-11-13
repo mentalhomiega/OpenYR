@@ -2777,9 +2777,12 @@ class RulesClass
 		 * The chrono warp of a teleporting object. Unless ChronoTrigger is off, the object waits
 		 * its distance in leptons divided by ChronoDistanceFactor before it jumps, never less than
 		 * ChronoMinimumDelay, and less than ChronoRangeMinimum leptons away it waits ChronoMinimumDelay.
-		 * After the jump it holds ChronoDelay frames where it landed.
+		 * After the jump it holds ChronoDelay frames where it landed. ChronoReinfDelay is the hold
+		 * a chrono reinforcement (trigger action 107) is given when it is placed; its landing then
+		 * sets the hold to ChronoDelay (gamemd 0x719983), so the two only differ before that.
 		 */
 		int ChronoDelay;
+		int ChronoReinfDelay;
 		bool ChronoTrigger;
 		int ChronoDistanceFactor;
 		int ChronoMinimumDelay;

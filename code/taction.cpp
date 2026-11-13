@@ -3397,15 +3397,14 @@ bool TActionClass::TAction_CREATE_CRATE(HouseClass * , ObjectClass * , TriggerCl
 
 
 /// <summary>
-/// Delivers the trigger's team as reinforcements at the action's waypoint. Yuri's Revenge brings
-/// the team in by chronoshift; this engine delivers it the way the team type says and leaves out
-/// the chronoshift effect.
+/// Delivers the trigger's team as reinforcements at the action's waypoint, brought in by chronoshift
+/// (gamemd 0x65EC30): the members are placed near the waypoint and warp in with the chrono arrival.
 /// </summary>
 /// <returns>bool; Were the reinforcements delivered?</returns>
 bool TActionClass::TAction_REINFORCEMENTS_CHRONO(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	if (Team != NULL && EffectLocation != -1) {
-		return(Do_Reinforcements(Team, EffectLocation));
+		return(Do_Chrono_Reinforcements(Team, EffectLocation));
 	}
 	return(false);
 }

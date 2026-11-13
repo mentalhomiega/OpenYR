@@ -1,0 +1,24 @@
+; Trigger action 107 (Reinforcement by Chrono, gamemd 0x65EC30) brings a team of two Grizzly Battle Tanks and four GIs
+; to a waypoint (made at cell 62,38 by the script) by chronoshift. Expected log lines, with the team made at frame 50:
+;   Each member is placed first, the first tank on cell 62,38, the second on the nearest free cell (61,39), and the
+;   GIs on spots of cell 63,40: a soldier is moved by its own Ammo (-1) by one cell in X and two in Y before the cell
+;   search (0x65ED90). Each gets a teleport order to the cell it stands on (warp order, warp destination, frame 50).
+;   The members stay on the map. At frame 52 each clears its cell (chrono clear, stage 3, result 2), at 53 each is set
+;   down (chrono landed), at 54 each arrives and holds for ChronoDelay, 60 frames, until 114 (chrono arrived), and at
+;   114 each is released (warp released). No warp-out wait comes before frame 52 and no landing check follows the
+;   arrival. Frame 150 brings the same team by the plain action to cell 70,40: it logs no chrono lines.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/chrono-reinforce.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (reinforce|warp (order|released)|chrono|where|count)|Exception"
+30 command CenterBase
+40 teamini chrono-reinforce.ini
+50 reinforce TSTCRFT 62 38 chrono
+51 where MTNK
+51 where E1
+53 where MTNK
+100 where E1
+115 where MTNK
+115 where E1
+150 reinforce TSTCRFT 70 40
+155 count MTNK
+155 count E1
+220 quit
