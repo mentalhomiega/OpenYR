@@ -62,6 +62,7 @@
 #include "pathahead.h"
 #include "playerdisplay.h"
 #include "scenario.h"
+#include "layerfade.h"
 #include "shellmap.h"
 
 #include "autotest.h"
@@ -1198,6 +1199,7 @@ void Clear_Scenario(void)
 
 	// A zoom kept for a scripted scene does not outlive the scenario it belongs to.
 	Forget_Player_View_Zoom();
+	LayerFade_Clear();
 	Path_Ahead_Clear();
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();

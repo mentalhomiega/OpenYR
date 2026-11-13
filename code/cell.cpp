@@ -4852,6 +4852,16 @@ void CellClass::Init_Light(int & intensity, int & ambient, int & brightness, int
 /// scripted lighting change -- so that the cell's brightness follows along without having
 /// to go looking for a new drawer.
 /// </summary>
+int CellClass::Tile_Brightness_At(int ambient) const
+{
+	int brightness = Ambient + (NORMAL_LIGHT * ambient) / 100 + Height * IonStormClass::Level_Light() - IonStormClass::Ground_Light();
+	return(std::clamp((brightness * Intensity) >> 16, 0, 2000));
+}
+
+
+/// <summary>
+/// Recomputes this cell's lighting from the current scenario conditions.
+/// </summary>
 void CellClass::Recalc_Light(void)
 {
 	Brightness = Ambient + (NORMAL_LIGHT * Scen->CurrentAmbientLight) / 100;

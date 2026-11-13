@@ -1,0 +1,21 @@
+; The ambient light fades from 100 to 60 in 40 steps of one unit, about one step every frame or two, with the view zoomed out, then back up to 100 a little later.
+; (Actions 71 and 72 take the step 0.02, which is one unit of light, and the rate 0.002 as the bits of a float, as a map writes them; action 73 sets the target.)
+; Expected with the GPU map pass drawing: the tile layer keeps its picture from the first step (one "layer fade ... keeps its picture of ambient 100" line), the cell
+; lines show the brightness moving as before, and one "redraw at ambient 60, the fade is over" line follows 30 frames after the light settles. The way back up
+; brightens the picture of ambient 60 by more than half, so the layer is redrawn once on the way ("redraw at ambient 91, too far from 60"), kept again from 91 and
+; redrawn at 100 when the fade is over. Before this, every step redrew the whole tile layer. A windowshot redraws the whole layer, so the script takes none.
+; With OPENYR_NO_FADE_DEFER=1 in the environment no layer fade line is written.
+; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/ambient-fade-deferred.txt -Seconds 120 -Country 8 -Filter "AUTOTEST layer fade|AUTOTEST   cell 65|Exception"
+10 zoom 0.5
+30 command CenterBase
+35 reveal
+100 trigaction 71 1017370378 0
+101 trigaction 72 990057071 0
+110 trigaction 73 60 0
+112 cell 65 20
+140 cell 65 20
+260 cell 65 20
+300 trigaction 73 100 0
+330 cell 65 20
+460 cell 65 20
+480 quit

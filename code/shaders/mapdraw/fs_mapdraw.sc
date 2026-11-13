@@ -37,6 +37,10 @@ SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
 uniform vec4 u_world;
 uniform vec4 u_water;
+// A deferred light fade (code/layerfade.h): x is 1 while s_fade holds the scales of the base picture, yz the size in
+// map pixels that s_fade covers, w the scale a full texel stands for.
+SAMPLER2D(s_fade, 10);
+uniform vec4 u_fade;
 
 // The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
 int Plane(ivec2 p)
@@ -90,6 +94,9 @@ void main()
 		vec3 base = Rgb565(Fetch16(s_base, Ring(area, u_basering)));
 		if (u_water.y > 0.0 && Water(area)) {
 			base = Water_Base(area, base);
+		}
+		if (u_fade.x > 0.0) {
+			base = min(base * (texture2D(s_fade, (vec2(area) + vec2(0.5, 0.5)) / u_fade.yz).x * u_fade.w), vec3_splat(1.0));
 		}
 		if (kind == 9) {
 			base *= 1.0 - 0.5 * texelFetch(s_shadow, area, 0).x;

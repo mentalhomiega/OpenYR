@@ -18,6 +18,7 @@
 #include "gpudraw.h"
 #include "shadowplane.h"
 #include "tactical.h"
+#include "layerfade.h"
 #include "flyingtext.h"
 #include "utf16.h"
 
@@ -1294,6 +1295,8 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			Register_Dirty_Buildings(Rect(TacticalRect.X - 64, TacticalRect.Y - 64, TacticalRect.Width + 128, TacticalRect.Height + 128));
 		}
 
+		// Whatever is drawn into the tile layer while a light fade is deferred takes the light the layer's picture has.
+		LayerFadeDrawScope fade_scope(fullredraw);
 		Surface * prevlogical = LogicalSurface;
 		LogicalSurface = TileSurface;
 		LogicalSurface->Lock();
