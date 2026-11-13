@@ -513,6 +513,9 @@ bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 			**	is played as the Soviets. As in Yuri's Revenge such a trigger still runs, with no house
 			**	to look at, so it is kept.
 			*/
+			if (stricmp(token, "<none>") != 0) {
+				Log_Unresolved_House(INI_NAME, (std::string((char const *)IniName) + " owner").c_str(), token);
+			}
 			if (Session.Type != GAME_NORMAL) {
 				DebugString("Trigger %s is dropped: no house in this game is called %s\n", (char const *)IniName, token);
 				return(false);
