@@ -4,6 +4,8 @@
 ; lines show the brightness moving as before, and one "redraw at ambient 60, the fade is over" line follows 30 frames after the light settles. The way back up
 ; brightens the picture of ambient 60 by more than half, so the layer is redrawn once on the way ("redraw at ambient 91, too far from 60"), kept again from 91 and
 ; redrawn at 100 when the fade is over. Before this, every step redrew the whole tile layer. A windowshot redraws the whole layer, so the script takes none.
+; A dip from 100 to 30 that lifts again 120 frames later costs no redraw: the layer keeps the picture of ambient 100 (one more "keeps its picture" line), a
+; picture darkened to under half waits 450 frames instead of 30 for its redraw, and the light is back at 100 before that.
 ; With OPENYR_NO_FADE_DEFER=1 in the environment no layer fade line is written.
 ; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/ambient-fade-deferred.txt -Seconds 120 -Country 8 -Filter "AUTOTEST layer fade|AUTOTEST   cell 65|Exception"
 10 zoom 0.5
@@ -18,4 +20,8 @@
 300 trigaction 73 100 0
 330 cell 65 20
 460 cell 65 20
-480 quit
+500 trigaction 73 30 0
+610 cell 65 20
+620 trigaction 73 100 0
+740 cell 65 20
+760 quit
