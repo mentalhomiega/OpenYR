@@ -115,8 +115,8 @@ test('release registry and legacy scripting aliases use stable structured identi
 	assert.equal(scriptingAliases.actions['41'], 'TACTION_PLAY_ANIM');
 	assert.equal(scriptingAliases.events['34'], 'TEVENT_NEAR_WAYPOINT');
 	assert.equal(scriptingAliases.missions['6'], 'TMISSION_LOOP');
-	// An entity whose serialized index shifted keeps its old route beside the route at its current
-	// index, so an entity has one route, or two when one of them is its current index.
+	// An entity whose serialized index shifted keeps each old route beside the route at its current
+	// index, so an entity has one route, or several when one of them is its current index.
 	for (const [plural, rows] of [
 		['actions', scripting.trigger_actions],
 		['events', scripting.trigger_events],
@@ -128,7 +128,7 @@ test('release registry and legacy scripting aliases use stable structured identi
 		}
 		const current = new Map(rows.map((row) => [row.id, String(row.index)]));
 		for (const [id, list] of routes) {
-			assert.ok(list.length === 1 || (list.length === 2 && list.includes(current.get(id))),
+			assert.ok(list.length === 1 || list.includes(current.get(id)),
 				`${plural} ${id} has routes ${list.join(', ')}`);
 		}
 	}

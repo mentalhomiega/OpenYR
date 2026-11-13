@@ -2,9 +2,6 @@
 key: Palette
 summary: "Names a palette that a structure, and the parachute, grapple and deploying animations of other objects, are drawn through."
 see_also: [CustomPalette, AltPalette, ShouldUseCellDrawer, TerrainPalette, Parachute, DeployingAnim]
-when_omitted:
-  kind: value
-  value: "none; the object and its animations are drawn in their house's colors"
 ---
 
 The value is a palette name without an extension, such as `lib`. The game adds the current map's theater suffix and `.pal`, so `lib` reads `libtem.pal` on a temperate map. The name is not case sensitive.

@@ -83,7 +83,7 @@ ADAPTER_UNITS = [
       "section_vars": {
           "section": section_selectors.identifier("difficulty"),
       }}),
-    ("rules.cpp", "RulesClass", ["Special_Weapons", "Land_Types"],
+    ("rules.cpp", "RulesClass", ["Special_Weapons", "Land_Types", "Global_Controls"],
      {"file": "rules.ini", "group": "global rules",
       "section_vars": {
           "_lands[land]": section_selectors.identifier("land-type"),

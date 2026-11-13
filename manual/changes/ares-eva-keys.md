@@ -25,4 +25,4 @@ credit:
 - MentalHomiega
 ---
 
-An object type can name the EVA line announced when its object is promoted to veteran or elite (`EVA.VeteranPromoted`, `EVA.ElitePromoted`) or lost (`EVA.Lost`). A structure that needs an engineer can show text to the player who captures it (`Message.Capture`) or loses it (`Message.Lost`), and speak a line to the loser (`LostEvaEvent`). The keys follow the Ares documentation, except that `LostEvaEvent` speaks by default only for a type that sets `Message.Lost`. A type that sets none of them behaves as before.
+An object type can name the EVA line announced when its object is promoted to veteran or elite (`EVA.VeteranPromoted`, `EVA.ElitePromoted`) or lost (`EVA.Lost`). A structure that needs an engineer can show text to the player who captures it (`Message.Capture`) or loses it (`Message.Lost`), and speak a line to the loser (`LostEvaEvent`). The keys follow the Ares documentation. A type that sets none of them behaves as before.

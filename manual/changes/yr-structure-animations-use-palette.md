@@ -5,7 +5,7 @@ release: 0.2.0
 targets:
 - type: key
   id: Palette
-  effect: added
+  effect: changed
 credit: [MentalHomiega]
 ---
 

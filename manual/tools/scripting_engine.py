@@ -198,6 +198,7 @@ EVENT_EXAMPLE_LAYOUTS = {
     "NEED_NONE": (0, None),
     "NEED_NUMBER": (0, "Number"),
     "NEED_STRUCTURE": (0, "Building type"),
+    "NEED_SPECIAL": (0, "Superweapon"),
     "NEED_TEAM": (1, "Team"),
     "NEED_UNIT": (0, "Unit type"),
     "NEED_WAYPOINT": (0, "Waypoint"),
