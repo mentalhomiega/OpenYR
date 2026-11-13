@@ -297,6 +297,18 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 	void *ptr = Lock(start);
 
 	if (ptr != NULL) {
+
+		// The pixels of a 16-bit line go to the recorder first, as Draw_Line's do, so the GPU map pass can draw them.
+		bool const collect = bpp == 2 && Draw_Line_Record != NULL;
+		char const * const origin = (char const *)ptr - start.Y * Stride() - start.X * bpp;
+		std::vector<unsigned short *> collected;
+		auto const put = [&](unsigned short * pixel) {
+			if (collect) {
+				collected.push_back(pixel);
+			} else {
+				*pixel = (unsigned short)color;
+			}
+		};
 		if (start.Y == end.Y) {
 			/*
 			 * Simplest of the blits, straight horizontal line.
@@ -312,7 +324,7 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 					//if (bpp == 1) {
 						//*((unsigned char *)ptr + i) = color;
 					//} else {
-						*((unsigned short *)ptr + i) = color;
+						put((unsigned short *)ptr + i);
 					//}
 				}
 			}
@@ -334,7 +346,7 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 					if (bpp == 1) {
 						*(unsigned char *)ptr = color;
 					} else {
-						*(unsigned short *)ptr = color;
+						put((unsigned short *)ptr);
 					}
 				}
 				ptr = (unsigned char *)ptr + pitch;
@@ -380,7 +392,7 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 						if (bpp == 1) {
 							*((unsigned char *)ptr + i) = color;
 						} else {
-							*((unsigned short *)ptr + i) = color;
+							put((unsigned short *)ptr + i);
 						}
 					}
 
@@ -415,7 +427,7 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 						if (bpp == 1) {
 							*((unsigned char *)ptr + k) = color;
 						} else {
-							*((unsigned short *)ptr + k) = color;
+							put((unsigned short *)ptr + k);
 						}
 					}
 
@@ -426,6 +438,20 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 
 					delta += dx2;
 					ptr = (unsigned char *)ptr + pitch;
+				}
+			}
+		}
+
+		if (collect) {
+			std::vector<Point2D> pixels;
+			pixels.reserve(collected.size());
+			for (unsigned short * pixel : collected) {
+				std::ptrdiff_t const at = (char const *)pixel - origin;
+				pixels.push_back(Point2D((int)(at % Stride()) / 2, (int)(at / Stride())));
+			}
+			if (!Draw_Line_Record(*this, color, pixels)) {
+				for (unsigned short * pixel : collected) {
+					*pixel = (unsigned short)color;
 				}
 			}
 		}

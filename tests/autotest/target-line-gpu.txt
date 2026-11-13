@@ -1,0 +1,15 @@
+; Two tanks force-fire at the ground with the GPU check on. A unit that attacks draws a dashed line to its target, and those pixels are recorded for the
+; GPU map pass as a plain line's are.
+; Expected: no GPU_DIFF line reports an unsupported draw, and the differing pixels stay at a difference of 1 or 2 of the 5-bit channels (the blasts). Before
+; this the dashed line was drawn into the picture behind the recorder's back, so every frame that showed one fell back to software drawing.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/target-line-gpu.txt -Seconds 120 -Country 8 -Settings "[Video]`nGpuRender=no" -Filter "GPU_DIFF|Exception"
+30 command CenterBase
+35 reveal
+40 own MTNK 50 40
+41 own APOC 50 44
+45 view 52 42
+90 gpucheck 1
+100 forceattack MTNK 54 40
+120 forceattack APOC 54 44
+200 gpucheck 0
+210 quit
