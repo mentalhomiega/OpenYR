@@ -106,6 +106,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SelfHealingStep(-1),
 	SelfHealingRate(-1),
 	SelfHealingCap(-1),
+	SelfHealingCombatDelay(0),
 	IsMechanic(false),
 	IsOmniHealer(false),
 	IsExploding(false),
@@ -755,9 +756,17 @@ TypeList<AnimTypeClass const *> const & TechnoTypeClass::Explosion_Set(void) con
 /// <summary>
 /// Fetches the strength one self-healing tick restores to an object of this type.
 /// </summary>
-/// <returns>Returns with the type's step, else the game-wide one, never below one.</returns>
-int TechnoTypeClass::Self_Heal_Step(void) const
+/// <param name="rank">0 rookie, 1 veteran, 2 elite.</param>
+/// <returns>Returns with the Ares SelfHealing.Amount, else its rank form (either may be zero), else the
+/// type's step, else the game-wide one, never below one.</returns>
+int TechnoTypeClass::Self_Heal_Step(int rank) const
 {
+	if (SelfHealingAmount[0] >= 0) {
+		return(SelfHealingAmount[0]);
+	}
+	if (SelfHealingAmount[1 + std::clamp(rank, 0, 2)] >= 0) {
+		return(SelfHealingAmount[1 + std::clamp(rank, 0, 2)]);
+	}
 	return(std::max(SelfHealingStep >= 0 ? SelfHealingStep : Rule->SelfHealStep, 1));
 }
 
@@ -778,9 +787,17 @@ double TechnoTypeClass::Self_Heal_Rate(void) const
 /// <summary>
 /// Fetches the health ratio at which an object of this type stops healing itself.
 /// </summary>
-/// <returns>Returns with the type's ceiling, else the game-wide one, else full strength.</returns>
-double TechnoTypeClass::Self_Heal_Cap(void) const
+/// <param name="rank">0 rookie, 1 veteran, 2 elite.</param>
+/// <returns>Returns with the Ares SelfHealing.Max, else its rank form, else the type's ceiling, else the
+/// game-wide one, else full strength.</returns>
+double TechnoTypeClass::Self_Heal_Cap(int rank) const
 {
+	if (SelfHealingMax[0] >= 0) {
+		return(SelfHealingMax[0]);
+	}
+	if (SelfHealingMax[1 + std::clamp(rank, 0, 2)] >= 0) {
+		return(SelfHealingMax[1 + std::clamp(rank, 0, 2)]);
+	}
 	if (SelfHealingCap >= 0) {
 		return(SelfHealingCap);
 	}
@@ -1216,6 +1233,15 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	SelfHealingRate = ini.Get_Float(Name(), "SelfHealingRate", SelfHealingRate);
 	SelfHealingRate = ini.Get_Float(Name(), "SelfHealing.Rate", SelfHealingRate);
 	SelfHealingCap = ini.Get_Float(Name(), "SelfHealingCap", SelfHealingCap);
+	SelfHealingAmount[0] = std::max(ini.Get_Int(Name(), "SelfHealing.Amount", SelfHealingAmount[0]), -1);
+	SelfHealingAmount[1] = std::max(ini.Get_Int(Name(), "SelfHealing.RookieAmount", SelfHealingAmount[1]), -1);
+	SelfHealingAmount[2] = std::max(ini.Get_Int(Name(), "SelfHealing.VeteranAmount", SelfHealingAmount[2]), -1);
+	SelfHealingAmount[3] = std::max(ini.Get_Int(Name(), "SelfHealing.EliteAmount", SelfHealingAmount[3]), -1);
+	SelfHealingMax[0] = ini.Get_Float(Name(), "SelfHealing.Max", SelfHealingMax[0]);
+	SelfHealingMax[1] = ini.Get_Float(Name(), "SelfHealing.RookieMax", SelfHealingMax[1]);
+	SelfHealingMax[2] = ini.Get_Float(Name(), "SelfHealing.VeteranMax", SelfHealingMax[2]);
+	SelfHealingMax[3] = ini.Get_Float(Name(), "SelfHealing.EliteMax", SelfHealingMax[3]);
+	SelfHealingCombatDelay = std::max(ini.Get_Int(Name(), "SelfHealing.CombatDelay", SelfHealingCombatDelay), 0);
 	IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
 	IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
 	IsDisableable = ini.Get_Bool(Name(), "Disableable", IsDisableable);
@@ -2492,6 +2518,11 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SelfHealingStep);
 	stream.Serialize(SelfHealingRate);
 	stream.Serialize(SelfHealingCap);
+	for (int slot = 0; slot < SELF_HEAL_SLOTS; slot++) {
+		stream.Serialize(SelfHealingAmount[slot]);
+		stream.Serialize(SelfHealingMax[slot]);
+	}
+	stream.Serialize(SelfHealingCombatDelay);
 	stream.Serialize(IsMechanic);
 	stream.Serialize(IsOmniHealer);
 	stream.Serialize(IsExploding);
@@ -2664,6 +2695,11 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(SelfHealingStep);
 	crc(SelfHealingRate);
 	crc(SelfHealingCap);
+	for (int slot = 0; slot < SELF_HEAL_SLOTS; slot++) {
+		crc(SelfHealingAmount[slot]);
+		crc(SelfHealingMax[slot]);
+	}
+	crc(SelfHealingCombatDelay);
 	crc(IsMechanic);
 	crc(IsOmniHealer);
 	crc(IsExploding);

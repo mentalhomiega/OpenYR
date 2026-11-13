@@ -1362,6 +1362,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		double SelfHealingCap;
 
 		/*
+		 * Ares SelfHealing.Amount and SelfHealing.Max, then the Rookie, Veteran and Elite forms of each,
+		 * in that order. A value below zero is unset. A set generic value wins over the rank ones.
+		 * SelfHealing.CombatDelay is the number of frames after a damaging hit during which no self healing happens.
+		 */
+		static constexpr int SELF_HEAL_SLOTS = 4;
+		int SelfHealingAmount[SELF_HEAL_SLOTS] = {-1, -1, -1, -1};
+		double SelfHealingMax[SELF_HEAL_SLOTS] = {-1, -1, -1, -1};
+		int SelfHealingCombatDelay;
+
+		/*
 		 * These redirect a healing weapon away from the kind of object its owner would
 		 * otherwise mend. OmniHealer overrides Mechanic where both are set, and neither
 		 * means anything without a weapon that deals negative damage.
@@ -1495,9 +1505,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		TypeList<AnimTypeClass const *> const & Explosion_Set(void) const;
 		virtual int Repair_Cost(void) const;
 		virtual int Repair_Step(void) const;
-		int Self_Heal_Step(void) const;
+		int Self_Heal_Step(int rank = 0) const;
 		double Self_Heal_Rate(void) const;
-		double Self_Heal_Cap(void) const;
+		double Self_Heal_Cap(int rank = 0) const;
 		virtual int Flight_Level(void) const;
 		virtual void const * Get_Cameo_Data(void) const override;
 		std::string const & Get_Cameo_PCX(void) const;

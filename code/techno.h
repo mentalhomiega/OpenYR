@@ -163,6 +163,9 @@ class TechnoClass :	public RadioClass,
 		 */
 		CDTimerClass<FrameTimerClass> RadarFlashTimer;
 
+		// Counts down the Ares SelfHealing.CombatDelay frames after a damaging hit, during which this object does not self heal.
+		CDTimerClass<FrameTimerClass> SelfHealDelayTimer;
+
 		/*
 		 * The targeting timer holds back the area scan. It starts at 45 frames, and each area scan
 		 * restarts it with GuardAreaTargetingDelay plus a random 0 to 2 frames. Losing a target while

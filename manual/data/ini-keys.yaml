@@ -8217,6 +8217,42 @@ CameraRange:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CampaignMoneyDeltaEasy:
+  key: CampaignMoneyDeltaEasy
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5000'
+      declared_in: RulesClass
+      member: CampaignMoneyDeltaEasy
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CampaignMoneyDeltaHard:
+  key: CampaignMoneyDeltaHard
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-5000'
+      declared_in: RulesClass
+      member: CampaignMoneyDeltaHard
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CampaignScore.Animation:
   key: CampaignScore.Animation
   scopes:
@@ -9225,6 +9261,24 @@ ChronoRangeMinimum:
       default_candidate: '0'
       declared_in: RulesClass
       member: ChronoRangeMinimum
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoReinfDelay:
+  key: ChronoReinfDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '60'
+      declared_in: RulesClass
+      member: ChronoReinfDelay
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -40840,6 +40894,91 @@ SelfHealing:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SelfHealing.Amount:
+  key: SelfHealing.Amount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.CombatDelay:
+  key: SelfHealing.CombatDelay
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SelfHealingCombatDelay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.EliteAmount:
+  key: SelfHealing.EliteAmount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.EliteMax:
+  key: SelfHealing.EliteMax
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SelfHealingMax
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.Max:
+  key: SelfHealing.Max
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SelfHealingMax
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SelfHealing.Rate:
   key: SelfHealing.Rate
   scopes:
@@ -40854,6 +40993,74 @@ SelfHealing.Rate:
       default_candidate: '-1'
       declared_in: TechnoTypeClass
       member: SelfHealingRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.RookieAmount:
+  key: SelfHealing.RookieAmount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.RookieMax:
+  key: SelfHealing.RookieMax
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SelfHealingMax
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.VeteranAmount:
+  key: SelfHealing.VeteranAmount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealing.VeteranMax:
+  key: SelfHealing.VeteranMax
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SelfHealingMax
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
