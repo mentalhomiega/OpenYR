@@ -293,14 +293,21 @@ unsigned short WaveClass::Sonic_Tint(unsigned short color, int amplitude, bool m
 /// <param name="mult">The strength of the wave at the pixel, out of 256.</param>
 bool WaveClass::Tint_Pixel(unsigned short * buffer, int mult) const
 {
-	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(*buffer);
+	int const tint[6] = {ColorScale[0], ColorScale[1], ColorScale[2], ColorAdd[0], ColorAdd[1], ColorAdd[2]};
+	*buffer = Custom_Tint(*buffer, mult, tint);
+	return(true);
+}
+
+
+unsigned short WaveClass::Custom_Tint(unsigned short color, int mult, int const * tint)
+{
+	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(color);
 	int channel[3] = {rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue()};
 	for (int index = 0; index < 3; index++) {
-		int value = channel[index] + ((channel[index] * mult * ColorScale[index]) >> 16) + ((ColorAdd[index] * mult) >> 8);
+		int value = channel[index] + ((channel[index] * mult * tint[index]) >> 16) + ((tint[3 + index] * mult) >> 8);
 		channel[index] = std::max(0, std::min(255, value));
 	}
-	*buffer = DSurface::Build_Hicolor_Pixel(channel[0], channel[1], channel[2]);
-	return(true);
+	return((unsigned short)DSurface::Build_Hicolor_Pixel(channel[0], channel[1], channel[2]));
 }
 
 
@@ -726,7 +733,8 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 
 			Init_Offset_Tables();
 			// A wave with its own color is drawn by this code, which the GPU line has no way to colour.
-			_sonic_recording = !HasCustomColor && GpuDraw_Line_Begin(*LogicalSurface, GPU_LINE_SONIC, Direction + (Type == WAVE_MAGNETRON ? 8 : 0), IntensityTable[0]);
+			int const tint[6] = {ColorScale[0], ColorScale[1], ColorScale[2], ColorAdd[0], ColorAdd[1], ColorAdd[2]};
+			_sonic_recording = GpuDraw_Line_Begin(*LogicalSurface, GPU_LINE_SONIC, Direction + (Type == WAVE_MAGNETRON ? 8 : 0), IntensityTable[0], HasCustomColor ? tint : NULL);
 
 			if (Direction > FACING_NE && Direction < FACING_W) {
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);

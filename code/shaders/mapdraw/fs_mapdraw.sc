@@ -17,7 +17,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 12 additive line pixels whose index is the alpha buffer value (v_texcoord1.z holds 0xRRGGBB), 13 antialiased line
 // pixels whose index is the colour weight plus 1 (v_texcoord1.z holds 0xRRGGBB; the target's weight goes out in alpha),
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
-// the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
+// the facing plus 8 for a magnetron beam or 16 for a custom colour, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
 // u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
 // u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
@@ -163,7 +163,12 @@ void main()
 		vec3 under = texelFetch(s_snapshot, source * scale + sub, 0).xyz;
 		ivec3 c8 = ivec3(floor(under * vec3(31.0, 63.0, 31.0) + 0.5)) * ivec3(8, 4, 8);
 		int mult = int(v_texcoord1.w + 0.5) + amplitude * 8;
-		if (wave >= 8) {
+		if (wave >= 16) {
+			// WaveClass::Custom_Tint: v_texcoord2.xyz the channel scales, v_texcoord2.w and v_texcoord3.xy the constants.
+			ivec3 tintscale = ivec3(floor(v_texcoord2.xyz + 0.5));
+			ivec3 tintadd = ivec3(floor(vec3(v_texcoord2.w, v_texcoord3.x, v_texcoord3.y) + 0.5));
+			c8 = clamp(c8 + ((c8 * mult * tintscale) >> 16) + ((tintadd * mult) >> 8), ivec3(0, 0, 0), ivec3(255, 255, 255));
+		} else if (wave >= 8) {
 			c8.x = min(255, c8.x + ((mult / 2) * c8.x) / 256);
 			c8.z = min(255, c8.z + (c8.z * mult * 4) / 256);
 		} else {

@@ -32,6 +32,9 @@ class Surface;
 
 
 // One blit of the map view's object pass, in the form a GPU renderer draws it.
+// Added to the facing in GpuBlit::Line of a sonic wave that takes its tint from GpuBlit::Tint.
+inline constexpr int GPU_WAVE_CUSTOM = 16;
+
 enum GpuLineKind
 {
 	GPU_LINE_SHADED,
@@ -107,6 +110,10 @@ struct GpuBlit
 	// A shaded line's fade (256 for none), an antialiased line's GPU_LINE_* channel flags, or a sonic
 	// wave's tint at amplitude 0.
 	int Fade;
+
+	// For a sonic wave with a custom colour, which adds GPU_WAVE_CUSTOM to Line: the three channel scales and
+	// the three channel constants of WaveClass::Custom_Tint.
+	int Tint[6];
 
 	// The row length of the colour indices: Width in the arena, the source image's width in the atlas.
 	int Pitch;
@@ -349,7 +356,8 @@ bool GpuDraw_Is_Rendering(Surface const & surface);
 // Starts recording a line drawn into surface after its lock, with the colour and extra GpuBlit::Line
 // and GpuBlit::Fade describe; true means each pixel the line plots goes to GpuDraw_Line_Pixel, until
 // GpuDraw_Line_End.
-bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, int extra);
+// tint, for a sonic wave with a custom colour, holds the six values of GpuBlit::Tint.
+bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, int extra, int const * tint = NULL);
 
 // Records a pixel the line plots with its GpuBlit::Pixels value; a value of 0 or less records
 // nothing. True means the GPU draws it and the caller must not.

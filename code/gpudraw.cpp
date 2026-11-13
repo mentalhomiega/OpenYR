@@ -544,7 +544,12 @@ static void Replay_Line(GpuBlit const & blit, std::vector<unsigned short> & pict
 					source = Point2D(x + shift.X, y + shift.Y);
 				}
 				unsigned short const color = before[(source.Y - _Area.Y) * _Area.Width + (source.X - _Area.X)];
-				picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)] = WaveClass::Sonic_Tint(color, value - 1, blit.Line >= 8);
+				unsigned short & out = picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)];
+				if (blit.Line >= GPU_WAVE_CUSTOM) {
+					out = WaveClass::Custom_Tint(color, blit.Fade + (value - 1) * 8, blit.Tint);
+				} else {
+					out = WaveClass::Sonic_Tint(color, value - 1, blit.Line >= 8);
+				}
 			}
 		}
 		return;
@@ -850,6 +855,7 @@ static std::vector<LinePixel> _LinePixels;
 static GpuLineKind _LineKind = GPU_LINE_SHADED;
 static int _LineColour = -1;
 static int _LineFade = 256;
+static int _LineTint[6] = {};
 
 
 bool GpuDraw_Is_Rendering(Surface const & surface)
@@ -862,7 +868,7 @@ bool GpuDraw_Is_Rendering(Surface const & surface)
 /// Starts recording a line that surface has just been locked for; the lock is not counted as an
 /// unsupported draw. Returns false when surface is not the recorded target.
 /// </summary>
-bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, int extra)
+bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, int extra, int const * tint)
 {
 	if (&surface != _Target) {
 		return(false);
@@ -871,8 +877,12 @@ bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, i
 	Mark_Lock_Recorded();
 	_LinePixels.clear();
 	_LineKind = kind;
-	_LineColour = colour;
+	_LineColour = colour + (tint != NULL ? GPU_WAVE_CUSTOM : 0);
 	_LineFade = extra;
+	std::fill(_LineTint, _LineTint + 6, 0);
+	if (tint != NULL) {
+		std::copy(tint, tint + 6, _LineTint);
+	}
 	return(true);
 }
 
@@ -928,6 +938,7 @@ void GpuDraw_Line_End(void)
 			blit.Line = _LineColour;
 			blit.LineKind = _LineKind;
 			blit.Fade = _LineFade;
+			std::copy(_LineTint, _LineTint + 6, blit.Tint);
 		}
 		unsigned char * out = &_List.PixelArena[blit.Pixels];
 		std::memset(out, 0, (std::size_t)blit.Width * blit.Height);

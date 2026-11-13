@@ -51,6 +51,10 @@ class WaveClass : public ObjectClass
 		static Point2D Sonic_Shift(int amplitude, FacingType facing);
 		static unsigned short Sonic_Tint(unsigned short color, int amplitude, bool magnetron);
 
+		// Returns color with a custom wave colour applied at strength mult out of 256: tint holds the three channel
+		// scales (Wave.Intensity) and then the three channel constants (Wave.Color).
+		static unsigned short Custom_Tint(unsigned short color, int mult, int const * tint);
+
 	private:
 		void Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned short * buffer, Rect const & cliprect) const;
 		void Set_Laser_Pixel(unsigned short * buffer, int mult) const;
