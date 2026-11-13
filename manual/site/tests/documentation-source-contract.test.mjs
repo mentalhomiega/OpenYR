@@ -1011,7 +1011,7 @@ test('A lobby side entry carries its country', () => {
 	);
 });
 
-test('A side is declared in the side list alone', () => {
+test('A side is declared in the side list and a country can move to another', () => {
 	const ccini = source('code/ccini.cpp');
 
 	assert.doesNotMatch(
@@ -1026,8 +1026,8 @@ test('A side is declared in the side list alone', () => {
 	);
 	assert.match(
 		functionBody(source('code/houstype.cpp'), 'bool HouseTypeClass::Read_INI(CCINIClass const & ini)'),
-		/Sides\[oldside\]->Houses\.Is_In_List\(\(int\)House\)/,
-		'a country the side list placed keeps that side',
+		/Sides\[oldside\]->Houses\.Delete\(\(int\)House\)/,
+		'a country whose section names another side leaves the side the list placed it under',
 	);
 });
 
