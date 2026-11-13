@@ -73,7 +73,7 @@ class TriggerClass : public AbstractClass
 		**	Processing routines
 		*/
 		bool Spring(ObjectClass * object=0, Cell cell=CELL_NONE);
-		bool Should_Spring(TEventType event=TEVENT_ANY, ObjectClass * object=0, bool forced = false, bool persistent = false, TechnoClass * source=NULL);
+		bool Should_Spring(TEventType event=TEVENT_ANY, ObjectClass * object=0, bool forced = false, bool persistent = false, TechnoClass * source=NULL, HouseClass const * source_house=NULL);
 		virtual void Detach(AbstractClass const * target, bool all=true) override;
 
 

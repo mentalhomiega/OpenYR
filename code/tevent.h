@@ -33,6 +33,7 @@
 #pragma once
 
 #include "abstract.h"
+#include "coord.h"
 #include "ftimer.h"
 #include "timer.h"
 #include "types.h"
@@ -49,8 +50,10 @@
 #include <cstddef>
 
 template<class T> class DynamicVectorClass;
+class SuperClass;
 class TeamTypeClass;
 class TechnoClass;
+class TechnoTypeClass;
 
 TEventType Event_From_Name(char const * name);
 NeedType Event_Needs(TEventType event);
@@ -95,10 +98,15 @@ class TEventClass : public AbstractClass
 		TeamTypeClass const * Team;
 
 		/*
-		 * The ID of the object type a TechType event looks for, as the rules name it. A map gives
-		 * it as the third field of the event, so the ID is kept as text.
+		 * The ID a type-naming event looks for, as the rules name it: an object type for the TechType
+		 * and house-owns events, a super weapon for event 77. A map gives it as the fourth field of
+		 * the event, so the ID is kept as text.
 		 */
 		char TechnoName[32];
+
+		// The object type TechnoName names, looked up on first use; not saved, so a load looks it up again.
+		TechnoTypeClass const * TechnoType;
+		bool IsTechnoTypeResolved;
 
 		union {
 			StructType				Structure;	// Used for structure type checking.
@@ -126,8 +134,9 @@ class TEventClass : public AbstractClass
 
 		bool Is_Time_Based(void) const;
 		bool Is_To_Flag_As_Tripped(void) const;
+		TechnoTypeClass const * Named_Techno_Type(void);
 
-		bool operator () (TEventType event, HouseClass const * house, ObjectClass const * object, CDTimerClass<FrameTimerClass> & timer, bool & tripped, TechnoClass * source);
+		bool operator () (TEventType event, HouseClass const * house, ObjectClass const * object, CDTimerClass<FrameTimerClass> & timer, bool & tripped, TechnoClass * source, HouseClass const * source_house=NULL);
 
 		bool operator == (TEventClass const & rvalue) const {return(memcmp(this, &rvalue, sizeof(*this)) == 0);}
 		bool operator != (TEventClass const & rvalue) const {return(!(*this == rvalue));}
@@ -136,4 +145,6 @@ class TEventClass : public AbstractClass
 extern DynamicVectorClass<TEventClass *> Events;
 
 AttachType Attaches_To(TEventType event);
+bool Event_Is_Supported(TEventType event);
+void Spring_Super_Weapon_Events(SuperClass const * super, Cell const & cell);
 

@@ -43,8 +43,11 @@
 
 #include "tevent.h"
 
+#include "_map.h"
+#include "_rules.h"
 #include "building.h"
 #include "builtype.h"
+#include "cell.h"
 #include "globals.h"
 #include "house.h"
 #include "houstype.h"
@@ -52,8 +55,12 @@
 #include "infatype.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "rules.h"
 #include "sun.h"
+#include "super.h"
+#include "suprtype.h"
 #include "swizzle.h"
+#include "tag.h"
 #include "team.h"
 #include "techno.h"
 #include "tracker.h"
@@ -62,6 +69,8 @@
 #include "unittype.h"
 #include "dbgprint.h"
 #include "vector.h"
+
+#include <vector>
 
 DynamicVectorClass<TEventClass *> Events;
 
@@ -83,6 +92,25 @@ static int Count_Of_Techno_Type(char const * name)
 	}
 	return(count);
 }
+
+// How many objects of the type every house owns together.
+static int Count_Owned_By_All(TechnoTypeClass const * type)
+{
+	int count = 0;
+	for (int index = 0; index < Houses.Count(); index++) {
+		count += Houses[index]->Owned_Count(type);
+	}
+	return(count);
+}
+
+
+/*
+ * The super weapon being fired and its target while Spring_Super_Weapon_Events offers events 75
+ * and 77; NULL at every other time.
+ */
+static SuperClass const * FiredSuper = NULL;
+static Cell FiredCell;
+
 
 /// <summary>
 /// Counts the vehicles a house owns that are, or are not, naval. A naval vehicle that carries
@@ -177,7 +205,32 @@ static const struct {
 	{"TechType exists...", "Triggers when at least the number given of objects of the type named exist, whoever owns them."},
 	{"TechType does not exist...", "Triggers when no object of the type named exists, whoever owns it."},
 	{"Paralyzed", "Triggers when a object is paralyzed under EMP effect or web."},
+	{"Under EMP by house... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Removed EMP (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Removed EMP by house... (unsupported)", "Ares event this engine does not run; it never fires."},
 	{"Enemy In Spotlight... (repeating)", "Triggers when an enemy unit enters the spotlight cast by the attached building. Unlike the other spotlight event, this one is re-tested every time the trigger is polled instead of staying satisfied once it has fired."},
+	{"Driver killed (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Driver killed by house... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Vehicle taken (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Vehicle taken by house... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Abducted", "Triggers when the attached object is abducted."},
+	{"Abducted by house...", "Triggers when a unit of the specified house abducts the attached object."},
+	{"Abducts something", "Triggers when the attached object abducts anything."},
+	{"Abducts something of house... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Super weapon activated...", "Triggers when the trigger's house fires the specified super weapon."},
+	{"Super weapon deactivated... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Super weapon near waypoint...", "Triggers when any house fires the super weapon named near the specified waypoint."},
+	{"Reverse engineered... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Reverse engineers anything (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"Reverse engineers type... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"House owns TechType...", "Triggers while the trigger's house owns at least the number given of objects of the type named."},
+	{"House does not own TechType...", "Triggers while the trigger's house owns no more than the number given of objects of the type named, or fewer than it when HouseDoesNotOwnAtMost=no."},
+	{"Attacked or destroyed by any", "Triggers when the attached object is hit by anything, the fatal hit included."},
+	{"Attacked or destroyed by house...", "Triggers when a unit of the specified house hits the attached object, the fatal hit included."},
+	{"Destroyed by house...", "Triggers when the specified house destroys the attached object."},
+	{"TechType does not exist more than...", "Triggers while no more than the number given of objects of the type named exist, whoever owns them."},
+	{"All KeepAlives destroyed... (unsupported)", "Ares event this engine does not run; it never fires."},
+	{"All KeepAlive buildings destroyed... (unsupported)", "Ares event this engine does not run; it never fires."},
 	{"Limped", "Triggers when a object has been limped by a limpet drone."}
 };
 #endif
@@ -193,7 +246,9 @@ TEventClass::TEventClass(void) :
 	HeapID(-1),
 	Next(NULL),
 	Event(TEVENT_NONE),
-	Team(NULL)
+	Team(NULL),
+	TechnoType(NULL),
+	IsTechnoTypeResolved(false)
 {
 	TechnoName[0] = '\0';
 	Events.Add(this);
@@ -248,7 +303,7 @@ TEventClass::~TEventClass(void)
  * HISTORY:                                                                                    *
  *   11/28/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool TEventClass::operator () (TEventType event, HouseClass const * house, ObjectClass const * object, CDTimerClass<FrameTimerClass> & timer, bool & tripped, TechnoClass * source)
+bool TEventClass::operator () (TEventType event, HouseClass const * house, ObjectClass const * object, CDTimerClass<FrameTimerClass> & timer, bool & tripped, TechnoClass * source, HouseClass const * source_house)
 {
 	/*
 	**	Triggers based on the game's global environment such as time or
@@ -315,6 +370,27 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
 			return(Count_Of_Techno_Type(TechnoName) == 0);
 
+		/*
+		**	Ares's counting events take the type named as 60 and 61 do, and a name that matches no type
+		**	never satisfies them. The counts are kept per house as objects are made, destroyed and change hands.
+		*/
+		case TEVENT_TECHTYPE_AT_MOST: {
+			TechnoTypeClass const * type = Named_Techno_Type();
+			return(type != NULL && Count_Owned_By_All(type) <= Data.Value);
+		}
+
+		case TEVENT_HOUSE_OWNS_TECHTYPE: {
+			TechnoTypeClass const * type = Named_Techno_Type();
+			return(type != NULL && house != NULL && house->Owned_Count(type) >= Data.Value);
+		}
+
+		case TEVENT_HOUSE_DOES_NOT_OWN_TECHTYPE: {
+			TechnoTypeClass const * type = Named_Techno_Type();
+			if (type == NULL || house == NULL) return(false);
+			int const owned = house->Owned_Count(type);
+			return(Rule->IsHouseDoesNotOwnAtMost ? owned <= Data.Value : owned < Data.Value);
+		}
+
 	}
 
 	/*
@@ -376,6 +452,22 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 		if (source == NULL || House_From_HousesType(Data.House) != source->House) {
 			return(false);
 		}
+	}
+	else if (Event == TEVENT_ABDUCTED || Event == TEVENT_ABDUCTS_SOMETHING || Event == TEVENT_ATTACKED_OR_DESTROYED_ANY) {
+		return(true);
+	}
+	else if (Event == TEVENT_ABDUCTED_BY_HOUSE || Event == TEVENT_ATTACKED_OR_DESTROYED_BY || Event == TEVENT_DESTROYED_BY_HOUSE) {
+		HouseClass const * attacker = source_house != NULL ? source_house : (source != NULL ? source->House : NULL);
+		return(attacker != NULL && attacker == House_From_HousesType(Data.House));
+	}
+	else if (Event == TEVENT_SUPER_ACTIVATED) {
+		return(FiredSuper != NULL && FiredSuper->House == house && FiredSuper->Class->HeapID == Data.Value);
+	}
+	else if (Event == TEVENT_SUPER_NEAR_WAYPOINT) {
+		if (FiredSuper == NULL || stricmp(FiredSuper->Class->IniName, TechnoName) != 0 || !Scen->Is_Valid_Waypoint(Data.Value)) {
+			return(false);
+		}
+		return(Scen->Get_Waypoint_Coord(Data.Value).Gamemd_Distance_To(Map[FiredCell].Center_Coord()) <= CELL_LEPTON_W*5);
 	}
 	else if (Event == TEVENT_SPY_ENTERING_AS_HOUSE || Event == TEVENT_SPY_ENTERING_AS_INFANTRY) {
 		// The soldier that entered must still be disguised as the house or infantry type the event names.
@@ -645,10 +737,12 @@ void TEventClass::Read_INI(void)
 
 	Data.Value = 0;
 	TechnoName[0] = '\0';
+	TechnoType = NULL;
+	IsTechnoTypeResolved = false;
 	int event = atoi(strtok(NULL, ","));
 	Event = TEventType(event);
-	if (event < TEVENT_NONE || event >= TEVENT_COUNT) {
-		DebugString("TEvent: map uses event %d, which this engine does not know; it never fires\n", event);
+	if (event < TEVENT_NONE || event >= TEVENT_COUNT || !Event_Is_Supported(Event)) {
+		DebugString("TEvent: map uses event %d, which this engine does not run; it never fires\n", event);
 		Event = TEVENT_NONE;
 	}
 	int code = atoi(strtok(NULL, ","));
@@ -719,10 +813,19 @@ NeedType Event_Needs(TEventType event)
 		case TEVENT_LAND_UNITS_DESTROYED:
 		case TEVENT_POWER_FULL:
 		case TEVENT_ENTERED_OR_OVERFLOWN:
+		case TEVENT_ABDUCTED_BY_HOUSE:
+		case TEVENT_ATTACKED_OR_DESTROYED_BY:
+		case TEVENT_DESTROYED_BY_HOUSE:
 			return(NEED_HOUSE);
+
+		case TEVENT_SUPER_ACTIVATED:
+			return(NEED_SPECIAL);
 
 		case TEVENT_TECHTYPE_EXISTS:
 		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
+		case TEVENT_TECHTYPE_AT_MOST:
+		case TEVENT_HOUSE_OWNS_TECHTYPE:
+		case TEVENT_HOUSE_DOES_NOT_OWN_TECHTYPE:
 		case TEVENT_NUNITS_DESTROYED:
 		case TEVENT_NBUILDINGS_DESTROYED:
 		case TEVENT_CREDITS:
@@ -761,6 +864,7 @@ NeedType Event_Needs(TEventType event)
 			return(NEED_TEAM);
 
 		case TEVENT_NEAR_WAYPOINT:
+		case TEVENT_SUPER_NEAR_WAYPOINT:
 			return(NEED_WAYPOINT);
 
 		default:
@@ -888,6 +992,12 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_PARALYZED:
 		case TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING:
 		case TEVENT_LIMPED:
+		case TEVENT_ABDUCTED:
+		case TEVENT_ABDUCTED_BY_HOUSE:
+		case TEVENT_ABDUCTS_SOMETHING:
+		case TEVENT_ATTACKED_OR_DESTROYED_ANY:
+		case TEVENT_ATTACKED_OR_DESTROYED_BY:
+		case TEVENT_DESTROYED_BY_HOUSE:
 			attach = AttachType(attach | ATTACH_OBJECT);
 			break;
 
@@ -951,6 +1061,11 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_PICKUP_CRATE_ANY:
 		case TEVENT_TECHTYPE_EXISTS:
 		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
+		case TEVENT_TECHTYPE_AT_MOST:
+		case TEVENT_HOUSE_OWNS_TECHTYPE:
+		case TEVENT_HOUSE_DOES_NOT_OWN_TECHTYPE:
+		case TEVENT_SUPER_ACTIVATED:
+		case TEVENT_SUPER_NEAR_WAYPOINT:
 			attach = AttachType(attach | ATTACH_GENERAL);
 			break;
 
@@ -1025,6 +1140,8 @@ void TEventClass::Serialize(SaveStreamClass & stream)
 	 */
 	stream.Serialize_Bytes(&Data, sizeof(Data));
 	stream.Serialize_Bytes(TechnoName, sizeof(TechnoName));
+	TechnoType = NULL;
+	IsTechnoTypeResolved = false;
 }
 
 
@@ -1074,6 +1191,14 @@ bool TEventClass::Is_Time_Based(void) const
 		case TEVENT_PARALYZED:
 		case TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING:
 		case TEVENT_LIMPED:
+		case TEVENT_ABDUCTED:
+		case TEVENT_ABDUCTED_BY_HOUSE:
+		case TEVENT_ABDUCTS_SOMETHING:
+		case TEVENT_SUPER_ACTIVATED:
+		case TEVENT_SUPER_NEAR_WAYPOINT:
+		case TEVENT_ATTACKED_OR_DESTROYED_ANY:
+		case TEVENT_ATTACKED_OR_DESTROYED_BY:
+		case TEVENT_DESTROYED_BY_HOUSE:
 			return(true);
 
 	}
@@ -1098,7 +1223,83 @@ bool TEventClass::Is_To_Flag_As_Tripped(void) const
 		case TEVENT_BRIDGE_DESTROYED:
 		case TEVENT_PARALYZED:
 		case TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING:
+		case TEVENT_ABDUCTED:
+		case TEVENT_ABDUCTED_BY_HOUSE:
+		case TEVENT_ABDUCTS_SOMETHING:
+		case TEVENT_ATTACKED_OR_DESTROYED_ANY:
+		case TEVENT_ATTACKED_OR_DESTROYED_BY:
 			return(false);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Finds the object type this event names, as TechType Exists (60) does by ID, ignoring case.
+/// </summary>
+/// <returns>TechnoTypeClass const *; The type, or NULL when no type has the ID.</returns>
+TechnoTypeClass const * TEventClass::Named_Techno_Type(void)
+{
+	if (!IsTechnoTypeResolved) {
+		TechnoType = TechnoName[0] != '\0' ? TechnoTypeClass::From_Name(TechnoName) : NULL;
+		IsTechnoTypeResolved = true;
+	}
+	return(TechnoType);
+}
+
+
+/// <summary>
+/// Whether this engine runs the event. A map event of a number Ares documents but this engine does
+/// not run is read as an event that never fires.
+/// </summary>
+bool Event_Is_Supported(TEventType event)
+{
+	switch (event) {
+		case TEVENT_UNDER_EMP_BY_HOUSE:
+		case TEVENT_REMOVED_EMP:
+		case TEVENT_REMOVED_EMP_BY_HOUSE:
+		case TEVENT_DRIVER_KILLED:
+		case TEVENT_DRIVER_KILLED_BY_HOUSE:
+		case TEVENT_VEHICLE_TAKEN:
+		case TEVENT_VEHICLE_TAKEN_BY_HOUSE:
+		case TEVENT_ABDUCTS_SOMETHING_OF_HOUSE:
+		case TEVENT_SUPER_DEACTIVATED:
+		case TEVENT_REVERSE_ENGINEERED:
+		case TEVENT_REVERSE_ENGINEERS_ANYTHING:
+		case TEVENT_REVERSE_ENGINEERS_TYPE:
+		case TEVENT_ALL_KEEPALIVES_DESTROYED:
+		case TEVENT_ALL_KEEPALIVE_BUILDINGS_DESTROYED:
+			return(false);
+
+		default:
+			return(true);
+	}
+}
+
+
+/// <summary>
+/// Offers Super Weapon Activated (75) and Super Weapon Activated Near Waypoint (77) to every general
+/// tag that waits on them, as a house fires a super weapon. Tags that wait on neither are not offered
+/// anything, so their triggers spring exactly as before.
+/// </summary>
+/// <param name="super">The super weapon being fired.</param>
+/// <param name="cell">The cell it is fired at.</param>
+void Spring_Super_Weapon_Events(SuperClass const * super, Cell const & cell)
+{
+	std::vector<TagClass *> waiting;
+	for (int index = 0; index < LogicTags.Count(); index++) {
+		TagClass * tag = LogicTags[index];
+		if (tag->Has_Event(TEVENT_SUPER_ACTIVATED) || tag->Has_Event(TEVENT_SUPER_NEAR_WAYPOINT)) {
+			waiting.push_back(tag);
+		}
+	}
+	if (waiting.empty()) return;
+
+	FiredSuper = super;
+	FiredCell = cell;
+	for (TagClass * tag : waiting) {
+		if (tag->Has_Event(TEVENT_SUPER_ACTIVATED)) tag->Spring(TEVENT_SUPER_ACTIVATED);
+		if (tag->Has_Event(TEVENT_SUPER_NEAR_WAYPOINT)) tag->Spring(TEVENT_SUPER_NEAR_WAYPOINT);
+	}
+	FiredSuper = NULL;
 }

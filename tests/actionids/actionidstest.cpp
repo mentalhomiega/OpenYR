@@ -75,8 +75,18 @@ static_assert(TEVENT_POWER_FULL == 58, "Power Full is 58");
 static_assert(TEVENT_ENTERED_OR_OVERFLOWN == 59, "Entered or Overflown By is 59");
 static_assert(TEVENT_TECHTYPE_EXISTS == 60, "TechType Exists is 60");
 static_assert(TEVENT_TECHTYPE_DOES_NOT_EXIST == 61, "TechType does not Exist is 61");
-static_assert(TEVENT_PARALYZED == 62, "the first OpenTS event follows Yuri's Revenge's last");
-static_assert(TEVENT_COUNT == 65, "the event count is Yuri's Revenge's 62 plus OpenTS's 3");
+// 62 to 88 are Ares's, and the OpenTS events that Ares does not number come after.
+static_assert(TEVENT_PARALYZED == 62, "Ares's Under EMP is 62");
+static_assert(TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING == 66, "Ares's Enemy In Spotlight Now is 66");
+static_assert(TEVENT_ABDUCTED == 71, "Ares's Abducted is 71");
+static_assert(TEVENT_SUPER_ACTIVATED == 75, "Ares's Super Weapon Activated is 75");
+static_assert(TEVENT_SUPER_NEAR_WAYPOINT == 77, "Ares's Super Weapon Activated Near Waypoint is 77");
+static_assert(TEVENT_HOUSE_OWNS_TECHTYPE == 81, "Ares's House Owns Techno Type is 81");
+static_assert(TEVENT_ATTACKED_OR_DESTROYED_ANY == 83, "Ares's Attacked Or Destroyed By Anybody is 83");
+static_assert(TEVENT_TECHTYPE_AT_MOST == 86, "Ares's Techno Type Doesn't Exist More Than is 86");
+static_assert(TEVENT_ALL_KEEPALIVE_BUILDINGS_DESTROYED == 88, "Ares's last event is 88");
+static_assert(TEVENT_LIMPED == 89, "the first OpenTS-only event follows Ares's last");
+static_assert(TEVENT_COUNT == 90, "the event count is Ares's 89 plus OpenTS's 1");
 
 static_assert(NEED_HOUSE_AND_CREDITS > NEED_TALK_BUBBLE && NEED_STRUCTURE_PLACEMENT > NEED_HOUSE_AND_CREDITS,
 	"the payload types the new actions need follow the stock ones");

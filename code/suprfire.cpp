@@ -43,6 +43,7 @@
 #include "swrules.h"
 #include "techno.h"
 #include "techtype.h"
+#include "tevent.h"
 #include "unit.h"
 #include "voc.h"
 #include "warhead.h"
@@ -486,6 +487,7 @@ void SuperClass::Begin_Launch(Cell const & cell, bool player)
 	ShotsFired++;
 	Show_Message(keys.MessageLaunch);
 	DebugString("SUPER %s fired by %s at %d,%d type %d\n", Class->Name(), House->Class->Name(), (int)cell.X, (int)cell.Y, (int)Class->Type);
+	Spring_Super_Weapon_Events(this, cell);
 
 	int const deferment = Effective_Deferment(keys.Deferment, Default_Deferment(Class->Type));
 	if (deferment > 0 && Behavior_Defers(Class->Type) && !Class->IsPreClick) {

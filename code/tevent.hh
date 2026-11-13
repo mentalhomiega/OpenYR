@@ -88,11 +88,38 @@ enum TEventType {
 	TEVENT_TECHTYPE_EXISTS,					/// When at least a number of objects of a type exist.
 	TEVENT_TECHTYPE_DOES_NOT_EXIST,			/// When no object of a type exists.
 
-	/// OpenTS additions that Yuri's Revenge has no event for. They follow its range so that its numbers
-	/// stay put.
-	TEVENT_PARALYZED,						/// When paralyzed by EMP or web.
-	TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING,	/// As enemy-in-spotlight, but re-tested each poll, not latched.
-	TEVENT_LIMPED,							/// When limped by a limpet drone.
+	/// Ares's events, 62 to 88, at Ares's numbers. Two of them are OpenTS events that Ares numbers the
+	/// same way. A map that names an event marked unsupported gets an event that never fires.
+	TEVENT_PARALYZED,						/// 62: When paralyzed by EMP or web (Ares: Under EMP).
+	TEVENT_UNDER_EMP_BY_HOUSE,				/// 63: Unsupported.
+	TEVENT_REMOVED_EMP,						/// 64: Unsupported.
+	TEVENT_REMOVED_EMP_BY_HOUSE,			/// 65: Unsupported.
+	TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING,	/// 66: As enemy-in-spotlight, but re-tested each poll, not latched.
+	TEVENT_DRIVER_KILLED,					/// 67: Unsupported.
+	TEVENT_DRIVER_KILLED_BY_HOUSE,			/// 68: Unsupported.
+	TEVENT_VEHICLE_TAKEN,					/// 69: Unsupported.
+	TEVENT_VEHICLE_TAKEN_BY_HOUSE,			/// 70: Unsupported.
+	TEVENT_ABDUCTED,						/// 71: When the object is abducted.
+	TEVENT_ABDUCTED_BY_HOUSE,				/// 72: When a house abducts the object.
+	TEVENT_ABDUCTS_SOMETHING,				/// 73: When the object abducts something.
+	TEVENT_ABDUCTS_SOMETHING_OF_HOUSE,		/// 74: Unsupported.
+	TEVENT_SUPER_ACTIVATED,					/// 75: When the owning house fires a super weapon.
+	TEVENT_SUPER_DEACTIVATED,				/// 76: Unsupported.
+	TEVENT_SUPER_NEAR_WAYPOINT,				/// 77: When a super weapon is fired near a waypoint.
+	TEVENT_REVERSE_ENGINEERED,				/// 78: Unsupported.
+	TEVENT_REVERSE_ENGINEERS_ANYTHING,		/// 79: Unsupported.
+	TEVENT_REVERSE_ENGINEERS_TYPE,			/// 80: Unsupported.
+	TEVENT_HOUSE_OWNS_TECHTYPE,				/// 81: While the owning house has at least a number of a type.
+	TEVENT_HOUSE_DOES_NOT_OWN_TECHTYPE,		/// 82: While the owning house has no more than (or fewer than) a number of a type.
+	TEVENT_ATTACKED_OR_DESTROYED_ANY,		/// 83: When hit by anything, the fatal hit included.
+	TEVENT_ATTACKED_OR_DESTROYED_BY,		/// 84: When hit by a house, the fatal hit included.
+	TEVENT_DESTROYED_BY_HOUSE,				/// 85: When destroyed by a house.
+	TEVENT_TECHTYPE_AT_MOST,				/// 86: While no more than a number of a type exist.
+	TEVENT_ALL_KEEPALIVES_DESTROYED,		/// 87: Unsupported.
+	TEVENT_ALL_KEEPALIVE_BUILDINGS_DESTROYED,	/// 88: Unsupported.
+
+	/// OpenTS additions that neither Yuri's Revenge nor Ares has an event for. They follow both ranges.
+	TEVENT_LIMPED,							/// 89: When limped by a limpet drone.
 
 	TEVENT_COUNT,
 	TEVENT_FIRST=0

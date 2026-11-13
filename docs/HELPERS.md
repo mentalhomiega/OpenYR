@@ -335,6 +335,8 @@ a default and returns it when the section or entry is missing.
 | `Modern_Interface()` | `hud.h` | The modern panel interface is on. |
 | `MPMode_Is_Cooperative()` | `mpmode.h` | The running match is Cooperative. |
 | `house->Player_View()`, `house->Is_Player_View()`, `house->Is_Ally_Of_Player_View()` | `house.h` | The human seat whose view a house feeds, and whether it is one or is allied with one. Every copy of a network game gives the same answers, unlike `PlayerPtr` or `Is_Player_Control()`, so use these in game logic that changes a house's shroud. |
+| `house->Owned_Count(type)`, `house->Active_Count(type)` | `house.h` | How many objects of a type the house owns, in limbo or not and Insignificant ones included, or how many it has out of limbo. Each is one counter read, so use them instead of walking `Technos`. |
+| `tag->Has_Event(event)` | `tag.h` | Whether a trigger on the tag waits on the event. Offer a new event only to tags that wait on it, so other triggers spring as before. |
 
 ## Client settings
 

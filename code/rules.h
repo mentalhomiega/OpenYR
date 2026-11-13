@@ -2789,6 +2789,12 @@ class RulesClass
 		bool UndeployScattersInfantry;
 
 		/*
+		 * Whether trigger event 82 holds while the trigger's house owns no more than the count it names.
+		 * When it is false the event holds only while the house owns fewer than that count.
+		 */
+		bool IsHouseDoesNotOwnAtMost;
+
+		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
 		 * in 1000 per game frame.
 		 */
