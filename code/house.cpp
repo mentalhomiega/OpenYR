@@ -6484,6 +6484,12 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	Control.Edge = ini.Get_SourceType(hname, "Edge", SOURCE_NONE);
 	IsPlayerControl = ini.Get_Bool(hname, "PlayerControl", false);
 
+	// A campaign house the player controls starts with the difficulty's money delta, never below zero (HouseClass::Read_INI, 0x500B40).
+	if (IsPlayerControl && Session.Type == GAME_NORMAL) {
+		int delta = Scen->Difficulty == DIFF_EASY ? Rule->CampaignMoneyDeltaEasy : Scen->Difficulty == DIFF_HARD ? Rule->CampaignMoneyDeltaHard : 0;
+		Credits = std::max(Control.InitialCredits + delta, 0);
+	}
+
 	// Allies are named by house, since a map may list more houses than a bit mask has places.
 	HouseSet allied;
 	std::string owners = ini.Get_String(hname, "Allies");
