@@ -5276,14 +5276,22 @@ static void Teamini_Step(StepType const & step)
 }
 
 
-// reinforce <TeamType>: brings that team type on as a reinforcement for the player, as the trigger action does.
+// reinforce <TeamType> [<x> <y> [chrono]]: brings that team type on as a reinforcement for the player, as the trigger action does.
+// With a cell it makes waypoint 90 that cell and brings the team there, by chronoshift when the word chrono follows (action 107).
 static void Reinforce_Step(StepType const & step)
 {
 	TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
 	if (type != NULL) {
 		type->House = PlayerPtr;
 	}
-	DebugString("AUTOTEST   reinforce %s: %d\n", step.Argument.c_str(), type != NULL ? (int)Do_Reinforcements(type) : -1);
+	WAYPOINT waypoint = -1;
+	if (step.Words.size() > 4) {
+		waypoint = 90;
+		Scen->Set_Waypoint(waypoint, Cell(step.X, step.Y));
+	}
+	bool const chrono = Word(step.Words, 5) == "chrono";
+	bool const done = type != NULL && (chrono ? Do_Chrono_Reinforcements(type, waypoint) : Do_Reinforcements(type, waypoint));
+	DebugString("AUTOTEST   reinforce %s%s: %d\n", step.Argument.c_str(), chrono ? " by chrono" : "", type != NULL ? (int)done : -1);
 }
 
 

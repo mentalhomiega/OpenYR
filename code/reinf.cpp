@@ -533,6 +533,89 @@ bool Do_Reinforcements(TeamTypeClass * teamtype, WAYPOINT wp)
 
 
 /// <summary>
+/// Delivers a team as a chrono reinforcement at a waypoint (trigger action 107, gamemd 0x65EC30).
+/// Each member is put on the cell nearest the waypoint that it can stand on, a soldier on a free spot of that
+/// cell, and a member that cannot be placed is destroyed. A soldier is first moved by an offset taken from its
+/// own Ammo (0x65ED90; the Ammo -1 that most soldiers have moves them one cell in X and two in Y), and the
+/// placement lowers the Ammo of every vehicle and soldier by one (0x65EDC8). Once all are placed, each member
+/// is given a teleport locomotor (Begin_Chrono_Arrival) and set going (Start_Chrono_Arrival, the last member
+/// placed first), and lands again where it stands with the chrono arrival effects. The team then runs its
+/// script as usual.
+/// </summary>
+/// <param name="teamtype">The team type to bring in.</param>
+/// <param name="wp">The waypoint to bring the team to; -1 takes the team type's own.</param>
+/// <returns>bool; Was a team created? It is true even when no member could be placed.</returns>
+bool Do_Chrono_Reinforcements(TeamTypeClass * teamtype, WAYPOINT wp)
+{
+	if (teamtype == NULL || teamtype->TaskForce->ClassCount == 0 || teamtype->House == NULL) {
+		return(false);
+	}
+	teamtype->Ensure_Script();
+
+	FootClass * member = _Create_Group(teamtype);
+	if (member == NULL) {
+		return(false);
+	}
+	member->Team->IsDeleteTypeWhenDone = false;
+
+	Cell const origin = wp != -1 ? Scen->Get_Waypoint_Cell(wp) : teamtype->Get_Origin();
+
+	FootClass * placed = NULL;
+	while (member != NULL) {
+		FootClass * const next = (FootClass *)member->Next;
+		member->Next = NULL;
+
+		Coord coord = Map[origin].Cell_Coord();
+		bool const is_aircraft = member->RTTI == RTTI_AIRCRAFT;
+		if (!is_aircraft) {
+			if (member->RTTI != RTTI_UNIT) {
+				coord.X += ((member->Ammo & 3) - 2) * CELL_LEPTON_W;
+				coord.Y += ((member->Ammo & 0xC) - 4) * (CELL_LEPTON_H / 4);
+			}
+			member->Ammo--;
+		}
+
+		Cell wanted = Map.In_Radar(coord) ? coord.As_Cell() : origin;
+		Cell cell = Map.Nearby_Location(wanted, is_aircraft ? SPEED_TRACK : member->TClass->Speed);
+		bool is_placed = false;
+		if (cell != CELL_NONE) {
+			coord = Map[cell].Cell_Coord();
+			if (member->RTTI == RTTI_INFANTRY) {
+				Coord const spot = Map[cell].Closest_Free_Spot(coord);
+				if (spot != COORD_NONE) {
+					coord = spot;
+				}
+			}
+			ScenarioInitScope const scope;
+			is_placed = member->Unlimbo(coord);
+		}
+
+		if (is_placed) {
+			member->Begin_Chrono_Arrival(coord);
+			member->Next = placed;
+			placed = member;
+		} else {
+			delete member;
+		}
+		member = next;
+	}
+
+	while (placed != NULL) {
+		FootClass * const next = (FootClass *)placed->Next;
+		placed->Next = NULL;
+		placed->Start_Chrono_Arrival();
+		placed->Commence();
+		placed = next;
+	}
+
+	if (teamtype->House->Is_Ally(PlayerPtr)) {
+		Push_Radar_Event_Cell(origin);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Can the whole reinforcement chain travel by tunnel?
 /// This routine is used by the reinforcement handler to decide whether a group should
 /// burrow into the map rather than arrive above ground. A single member that lacks the

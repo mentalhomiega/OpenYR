@@ -135,4 +135,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Maps gain Yuri's Revenge's trigger actions 101 to 145. Make house cheer, Destroy all of and the other Destroy all actions, Create Building At, Center (Jump) Camera at Waypoint, Set Object's Tech Level, Create Crate and Reinforcement by Chrono are carried out; Reinforcement by Chrono brings the team in without the chronoshift effect. The rest are skipped, with a line in the log the first time one runs.
+Maps gain Yuri's Revenge's trigger actions 101 to 145. Make house cheer, Destroy all of and the other Destroy all actions, Create Building At, Center (Jump) Camera at Waypoint, Set Object's Tech Level, Create Crate and Reinforcement by Chrono are carried out; Reinforcement by Chrono brings the team in by chronoshift. The rest are skipped, with a line in the log the first time one runs.

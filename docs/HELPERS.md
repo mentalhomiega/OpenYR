@@ -364,3 +364,4 @@ to a header when a second file needs it.
 | `Find_Type_In(types, name)`, `Type_Name_At(types, id, none)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type by name or ID, or a house by name (including "player"). |
 | `Map.Cross_Bridge_Deck(old, new, bridge_height)` | `map.cpp` | Whether one step dropped onto or rose into a bridge deck. |
 | `Mount_If_Available(name)`, `Add_CC_Expansion_Mix(name)`, `Add_Disk_Expansion_Mix(name)` | `init.cpp` | Mount a mixfile only when the game can find it. |
+| `foot->Carry_Locomotor_In_Teleport()` | `foot.cpp` | Gives a foot a teleport locomotor that carries its own, as a chrono warp or a chrono arrival needs; `Begin_Chrono_Warp` and `Begin_Chrono_Arrival` both use it. |

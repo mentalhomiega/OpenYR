@@ -74,25 +74,6 @@
 
 DynamicVectorClass<TEventClass *> Events;
 
-/// <summary>
-/// Counts the live objects of every house whose type has the given ID.
-/// </summary>
-/// <param name="name">The ID of the object type, as the rules name it.</param>
-/// <returns>int; How many objects of that type exist.</returns>
-static int Count_Of_Techno_Type(char const * name)
-{
-	if (name == NULL || name[0] == '\0') return(0);
-
-	int count = 0;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno != NULL && techno->IsActive && stricmp(techno->Techno_Type_Class()->Name(), name) == 0) {
-			count++;
-		}
-	}
-	return(count);
-}
-
 // How many objects of the type every house owns together.
 static int Count_Owned_By_All(TechnoTypeClass const * type)
 {
@@ -362,13 +343,18 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 
 		/*
 		**	These two look at the objects of every house, so they do not depend on the
-		**	trigger's own house or on who the event names.
+		**	trigger's own house or on who the event names. A name that matches no type
+		**	makes both false (0x71E9CD and 0x71EA92 fall out of the switch to false).
 		*/
-		case TEVENT_TECHTYPE_EXISTS:
-			return(Count_Of_Techno_Type(TechnoName) >= Data.Value);
+		case TEVENT_TECHTYPE_EXISTS: {
+			TechnoTypeClass const * type = Named_Techno_Type();
+			return(type != NULL && Count_Owned_By_All(type) >= Data.Value);
+		}
 
-		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
-			return(Count_Of_Techno_Type(TechnoName) == 0);
+		case TEVENT_TECHTYPE_DOES_NOT_EXIST: {
+			TechnoTypeClass const * type = Named_Techno_Type();
+			return(type != NULL && Count_Owned_By_All(type) == 0);
+		}
 
 		/*
 		**	Ares's counting events take the type named as 60 and 61 do, and a name that matches no type

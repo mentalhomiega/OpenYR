@@ -44,7 +44,10 @@ TeleportLocomotionClass::TeleportLocomotionClass(void) :
 	BASECLASS(),
 	DestinationCoord(COORD_NONE),
 	WarpPhase(TELEPORT_IDLE),
-	WarpEnd(0)
+	WarpEnd(0),
+	IsArrival(false),
+	IsArrivalPending(false),
+	ArrivalCoord(COORD_NONE)
 {
 }
 
@@ -85,7 +88,7 @@ bool TeleportLocomotionClass::Is_Stationary(void)
 /// <returns>bool; True while the teleport holds the object at its destination.</returns>
 bool TeleportLocomotionClass::Is_Warping(void) const
 {
-	return(WarpPhase != TELEPORT_IDLE);
+	return(WarpPhase != TELEPORT_IDLE || IsArrival);
 }
 
 
@@ -152,8 +155,8 @@ Coord TeleportLocomotionClass::Destination(void)
 /// <param name="to">The coordinate to teleport the object to.</param>
 void TeleportLocomotionClass::Move_To(Coord to)
 {
-	// An order given during a chronosphere warp or a hold is refused.
-	if (WarpPhase != TELEPORT_IDLE) {
+	// An order given during a chronosphere warp, a hold or a chrono arrival is refused.
+	if (WarpPhase != TELEPORT_IDLE || IsArrival) {
 		return;
 	}
 	// A soldier ordered to jump while it is being set down on the map moves everything off the cell it jumps to first (0x71816F).
@@ -321,6 +324,7 @@ bool TeleportLocomotionClass::Process(void)
 					break;
 				}
 				WarpPhase = TELEPORT_IDLE;
+				IsArrival = false;
 				AUTOTEST_LOG("  warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
 			}
 			break;
@@ -352,7 +356,12 @@ bool TeleportLocomotionClass::Process(void)
 			break;
 
 		default:
-			if (DestinationCoord != COORD_NONE) {
+			// A chrono reinforcement takes its first step to stage 3 and lands on the next (gamemd 0x719342).
+			if (IsArrivalPending) {
+				IsArrivalPending = false;
+				DestinationCoord = ArrivalCoord;
+				WarpPhase = TELEPORT_RECLEAR;
+			} else if (DestinationCoord != COORD_NONE) {
 				Start_Warp();
 			}
 			break;
@@ -423,6 +432,22 @@ void TeleportLocomotionClass::Begin_Chrono_Warp(Coord to, int countdown)
 		DebugString("AUTOTEST   chrono warp out %s cell %d,%d to %d,%d frame %d countdown %d land at %d\n",
 			LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, to_cell.X, to_cell.Y, Frame, countdown, WarpEnd);
 	}
+}
+
+
+/// <summary>
+/// Prepares a chrono reinforcement that has been placed at to (trigger action 107, gamemd 0x65F1BB). The landing is
+/// chosen as for any teleport order, and the object counts as warping in from now on (unit+0x271).
+/// </summary>
+/// <param name="to">The coordinate the object stands at and lands on.</param>
+void TeleportLocomotionClass::Begin_Chrono_Arrival(Coord to)
+{
+	Move_To(to);
+	if (DestinationCoord == COORD_NONE) {
+		DestinationCoord = to;
+	}
+	ArrivalCoord = DestinationCoord;
+	IsArrival = true;
 }
 
 
@@ -654,7 +679,8 @@ void TeleportLocomotionClass::Chrono_Arrive_Stage(void)
 	DestinationCoord = COORD_NONE;
 	WarpPhase = TELEPORT_HOLD;
 	WarpEnd = Frame + foot->ChronoArrivalHold;
-	if (!Check_Landing()) {
+	// A chrono reinforcement is not checked (gamemd 0x719AA3 skips 0x7187A0 while unit+0x280 is set).
+	if (!IsArrival && !Check_Landing()) {
 		return;
 	}
 	foot->Assign_Destination(NULL);
@@ -756,6 +782,9 @@ void TeleportLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DestinationCoord);
 	stream.Serialize(WarpPhase);
 	stream.Serialize(WarpEnd);
+	stream.Serialize(IsArrival);
+	stream.Serialize(IsArrivalPending);
+	stream.Serialize(ArrivalCoord);
 
 	Piggybackee.Serialize(stream);
 }

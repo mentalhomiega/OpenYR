@@ -1222,6 +1222,53 @@ bool FootClass::Is_Chrono_Warping(void) const
 
 
 /// <summary>
+/// Gives the object a teleport locomotor that carries its own locomotor until a chrono warp or arrival has run
+/// out (gamemd 0x65F03C and the chronosphere start). An object that already has a teleport locomotor keeps it.
+/// </summary>
+void FootClass::Carry_Locomotor_In_Teleport(void)
+{
+	if (Locomotor_As<TeleportLocomotionClass>(Locomotion.get()) != NULL) {
+		return;
+	}
+	std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
+	carried->Mark_All_Occupation_Bits(0);
+	carried->Stop_Movement_Animation();
+	carried->Stop_Moving();
+	Locomotion = Create_Locomotor(ClassID_TeleportLocomotion);
+	Locomotion->Link_To_Object(this);
+	Locomotion->Unlimbo();
+	IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+	piggy->Begin_Piggyback(carried);
+}
+
+
+/// <summary>
+/// Prepares a chrono reinforcement that has just been placed at landing (trigger action 107, gamemd 0x65F017):
+/// the object is given a teleport locomotor that carries its own, told to land where it stands, and flagged as
+/// warping in with the hold ChronoReinfDelay. Start_Chrono_Arrival then sets the arrival going.
+/// </summary>
+/// <param name="landing">The coordinate the object was placed at.</param>
+void FootClass::Begin_Chrono_Arrival(Coord landing)
+{
+	Carry_Locomotor_In_Teleport();
+	static_cast<TeleportLocomotionClass *>(Locomotion.get())->Begin_Chrono_Arrival(landing);
+	ChronoArrivalHold = Rule->ChronoReinfDelay;
+}
+
+
+/// <summary>
+/// Sets a prepared chrono reinforcement going (gamemd 0x65F27B): it is taken off the map and its teleport
+/// locomotor starts at the landing stages, the cell clearing, on its next step. The object lands again
+/// where it was placed and the hold runs from there.
+/// </summary>
+void FootClass::Start_Chrono_Arrival(void)
+{
+	Mark(MARK_UP);
+	static_cast<TeleportLocomotionClass *>(Locomotion.get())->Start_Chrono_Arrival();
+}
+
+
+/// <summary>
 /// Starts a chronosphere warp that lands the object at dest. The object stays on its cell for 60 frames
 /// (gamemd 0x7197E4), then its teleport locomotor clears the landing cell and sets it down at dest. A
 /// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
@@ -1234,17 +1281,7 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 	Stop_Driver();
 	Assign_Destination(NULL);
 
-	if (Locomotor_As<TeleportLocomotionClass>(Locomotion.get()) == NULL) {
-		std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
-		carried->Mark_All_Occupation_Bits(0);
-		carried->Stop_Movement_Animation();
-		carried->Stop_Moving();
-		Locomotion = Create_Locomotor(ClassID_TeleportLocomotion);
-		Locomotion->Link_To_Object(this);
-		Locomotion->Unlimbo();
-		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
-		piggy->Begin_Piggyback(carried);
-	}
+	Carry_Locomotor_In_Teleport();
 	if (IonStormClass::Is_Ion_Storm_Active() && Locomotion->Is_Ion_Sensitive()) {
 		Locomotion->Power_Off();
 	} else {
