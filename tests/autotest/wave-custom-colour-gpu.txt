@@ -7,6 +7,7 @@
 30 command CenterBase
 35 reveal
 40 own TELE 50 40
+45 view 52 40
 90 gpucheck 1
 100 forceattack TELE 55 41
 160 gpucheck 0
