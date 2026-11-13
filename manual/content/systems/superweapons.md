@@ -660,7 +660,7 @@ An EM pulse granted by the [Add 1-time special weapon](/mapping/actions/taction-
 
 ## Scripting
 
-Two trigger actions grant a weapon, and [becoming available](#becoming-available) covers what each one does. Two more toggle the firestorm defense. [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) and [Deactivate Firestorm Defense](/mapping/actions/taction-deactivate-firestorm/) each fire the house's first `Type=Firestorm` weapon at cell 0,0. Each does nothing when the wall is already in the state it asks for.
+Two trigger actions grant a weapon, and [becoming available](#becoming-available) covers what each one does. Two more raise and lower a computer house's firestorm defense directly, without the weapon: [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) and [Deactivate Firestorm Defense](/mapping/actions/taction-deactivate-firestorm/). Neither changes the weapon's charge, and each does nothing when the wall is already in the state it asks for.
 
 Three strike actions do not use superweapons at all: [Ion-cannon strike](/mapping/actions/taction-ion-cannon/), [Nuke strike](/mapping/actions/taction-multi-missile/) and [Chem-missile strike](/mapping/actions/taction-chem-missile/). They create the effect directly at the waypoint, so they need no weapon, no charge, no silo and no house that owns one.
 

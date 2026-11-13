@@ -353,6 +353,12 @@ class HouseClass : public AbstractClass
 		bool FirestormDefenseActivated;
 
 		/*
+		 * The defense was raised by a trigger action rather than by the super weapon. It drops when the
+		 * house runs out of power, and the Deactivate Firestorm action may lower it.
+		 */
+		bool IsFirestormFromTrigger;
+
+		/*
 		 * If this house owns a threat rating structure, then this flag will be true. Its units
 		 * then weigh targets by their own coefficients instead of by the blunt default rules.
 		 */
@@ -593,6 +599,12 @@ class HouseClass : public AbstractClass
 		*/
 		int Power;					// Current power output.
 		int Drain;					// Power consumption.
+
+		/*
+		**	Power the house always has, whatever its buildings make. The Auxiliary Power trigger action
+		**	adds to it, and a negative total is a standing drain.
+		*/
+		int AuxiliaryPower;
 
 		/*
 		**	For human controlled houses, only one type of unit can be produced

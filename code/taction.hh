@@ -174,11 +174,16 @@ enum TActionType {
 	TACTION_RETINT_BLUE,					/// Change the blue screen tint.
 	TACTION_JUMP_CAMERA_HOME,				/// Move the view to the player's construction yard at once.
 
-	/// OpenTS additions that Yuri's Revenge has no action for. They follow its range so that its numbers
-	/// stay put.
+	/// 146 to 149 are Ares's actions, which Mental Omega maps use. Ares documents no number above 149, so
+	/// OpenTS's own actions follow from 150.
+	TACTION_AUXILIARY_POWER,				/// Add to a house's permanent auxiliary power (Ares 146).
+	TACTION_KILL_DRIVERS_OF,				/// Kill the drivers of the attached vehicles (Ares 147).
+	TACTION_SET_EVA_VOICE,					/// Change the player's EVA voice, or switch EVA off (Ares 148).
+	TACTION_SET_GROUP_ID,					/// Set group ID of attached object (Ares 149, Set Group).
+
+	/// OpenTS additions that neither Yuri's Revenge nor Ares has an action for.
 	TACTION_DISABLE_SPEECH,					/// Disable EVA speech.
 	TACTION_ENABLE_SPEECH,					/// Enable EVA speech.
-	TACTION_SET_GROUP_ID,					/// Set group ID of attached object.
 	TACTION_GIVE_CREDITS,					// Give or take credits from a house.
 	TACTION_ENABLE_SHORT_GAME,				// Turn the short game rule on.
 	TACTION_DISABLE_SHORT_GAME,				// Turn the short game rule off.

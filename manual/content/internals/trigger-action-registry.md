@@ -44,7 +44,7 @@ The line is split on commas and empty fields are skipped, so nothing marks where
 
 ## Numbers are serialized identities
 
-Maps and saves store action numbers, and a Yuri's Revenge map stores that game's numbers. Numbers `0` through `100` are the Tiberian Sun set, `101` through `145` are Yuri's Revenge's own, ending at `TACTION_JUMP_CAMERA_HOME`, and OpenTS adds actions from `146`. Append new OpenTS enumerators before `TACTION_COUNT`, and never reorder or reuse existing values. `tests/actionids` pins the numbers of both ranges.
+Maps and saves store action numbers, and a Yuri's Revenge map stores that game's numbers. Numbers `0` through `100` are the Tiberian Sun set, `101` through `145` are Yuri's Revenge's own, ending at `TACTION_JUMP_CAMERA_HOME`, `146` through `149` are the Ares actions Mental Omega maps use (Auxiliary Power, Kill Drivers Of, Set EVA Voice and Set Group), and OpenTS adds actions from `150`. Ares documents no action above `149`, so a number Ares takes later would need our extras to move again. Append new OpenTS enumerators before `TACTION_COUNT`, and never reorder or reuse existing values. `tests/actionids` pins the numbers of every range.
 
 An action without a handler does nothing when the trigger springs and still counts as having run. A number outside the enumeration is logged and does nothing.
 

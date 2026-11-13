@@ -312,6 +312,8 @@ class UnitClass : public FootClass
 		static void Write_INI(CCINIClass & ini);
 
 		bool Kill_Driver(WarheadTypeClass const * warhead);
+		bool Can_Lose_Driver(double below_percent) const;
+		bool Take_Driver(HouseClass * owner, bool remove_veterancy);
 
 	private:
 

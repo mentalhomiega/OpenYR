@@ -1583,10 +1583,7 @@ void UnitClass::Eject_Passengers(void)
 /// <returns>bool; Was the driver taken? When false, the vehicle is left as it was and takes the hit's damage.</returns>
 bool UnitClass::Kill_Driver(WarheadTypeClass const * warhead)
 {
-	if (warhead == NULL || Class->IsOrganic || Class->IsNatural || Has_Ability(ABILITY_PROTECTED_DRIVER)) {
-		return(false);
-	}
-	if (!WarheadRules::Kills_Driver_At(HealthRatio, warhead->KillDriverBelowPercent, Class->ProtectedDriverMinHealth)) {
+	if (warhead == NULL || !Can_Lose_Driver(warhead->KillDriverBelowPercent)) {
 		return(false);
 	}
 
@@ -1616,11 +1613,42 @@ bool UnitClass::Kill_Driver(WarheadTypeClass const * warhead)
 		return(false);
 	}
 
+	return(Take_Driver(owner, warhead->IsKillDriverRemoveVeterancy));
+}
+
+
+/// <summary>
+/// Does this vehicle give up its driver when something kills it? An Organic or Natural type, a type with the
+/// PROTECTED_DRIVER ability, and a vehicle healthier than the lower of the threshold given and the type's
+/// ProtectedDriver.MinHealth keep their driver, as does one under the Iron Curtain or a force shield.
+/// </summary>
+/// <param name="below_percent">The health ratio at or below which the driver may be taken, 1.0 for any health.</param>
+/// <returns>bool; May the driver be taken?</returns>
+bool UnitClass::Can_Lose_Driver(double below_percent) const
+{
+	if (Class->IsOrganic || Class->IsNatural || Has_Ability(ABILITY_PROTECTED_DRIVER)) {
+		return(false);
+	}
+	if (Is_Iron_Curtained() || IsForceShielded) {
+		return(false);
+	}
+	return(WarheadRules::Kills_Driver_At(HealthRatio, below_percent, Class->ProtectedDriverMinHealth));
+}
+
+
+/// <summary>
+/// Takes the driver: the passengers climb out and the vehicle goes to another house, dropping its rank when asked.
+/// </summary>
+/// <param name="owner">The house that now owns the empty vehicle.</param>
+/// <param name="remove_veterancy">Does the vehicle go back to rookie?</param>
+/// <returns>bool; Did the vehicle change hands? When false, the passengers are out all the same.</returns>
+bool UnitClass::Take_Driver(HouseClass * owner, bool remove_veterancy)
+{
 	Eject_Passengers();
 	if (!Set_Owning_House(owner, false)) {
 		return(false);
 	}
-	if (warhead->IsKillDriverRemoveVeterancy) {
+	if (remove_veterancy) {
 		Veterancy.Set_Rookie(true);
 	}
 	return(true);

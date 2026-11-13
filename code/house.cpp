@@ -285,6 +285,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsToWin(false),
 	IsCivEvacuated(false),
 	FirestormDefenseActivated(false),
+	IsFirestormFromTrigger(false),
 	IsThreatRatingNodeActive(false),
 	IsRecalcNeeded(true),
 	IPAddress(0),
@@ -338,6 +339,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	BuildingFactories(0),
 	Power(0),
 	Drain(0),
+	AuxiliaryPower(0),
 	AircraftFactory(NULL),
 	InfantryFactory(NULL),
 	UnitFactory(NULL),
@@ -7925,6 +7927,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsToLose);
 	stream.Serialize(IsCivEvacuated);
 	stream.Serialize(FirestormDefenseActivated);
+	stream.Serialize(IsFirestormFromTrigger);
 	stream.Serialize(IsThreatRatingNodeActive);
 	stream.Serialize(IsRecalcNeeded);
 	stream.Serialize(IPAddress);
@@ -7983,6 +7986,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingFactories);
 	stream.Serialize(Power);
 	stream.Serialize(Drain);
+	stream.Serialize(AuxiliaryPower);
 	stream.Serialize(AircraftFactory);
 	stream.Serialize(InfantryFactory);
 	stream.Serialize(UnitFactory);
@@ -8124,6 +8128,7 @@ int HouseClass::First_Super_Index(SuperWeaponType type) const
 /// </summary>
 void HouseClass::Activate_Firestorm(void)
 {
+	IsFirestormFromTrigger = false;
 	if (!FirestormDefenseActivated) {
 		DynamicVectorClass<Cell> cells;
 		FirestormDefenseActivated = true;
@@ -8148,6 +8153,7 @@ void HouseClass::Activate_Firestorm(void)
 /// </summary>
 void HouseClass::Deactivate_Firestorm(void)
 {
+	IsFirestormFromTrigger = false;
 	if (FirestormDefenseActivated) {
 		FirestormDefenseActivated = false;
 		DynamicVectorClass<Cell> cells;
@@ -9800,8 +9806,17 @@ void HouseClass::Recalc_Power_Drain(void)
 	// A running Battery superweapon adds its power whatever the base is doing.
 	Power += Battery_Power();
 
+	// Auxiliary power from the trigger action comes the same way.
+	Power += AuxiliaryPower;
+
 	Adjust_House_Power(this);
 	Recalc_House_Factories(this);
+
+	// A firestorm defense a trigger raised does not outlast the power it needs.
+	if (IsFirestormFromTrigger && Power_Fraction() < 1.0) {
+		AUTOTEST_LOG("  firestorm of %s dropped for lack of power\n", Class->Name());
+		Deactivate_Firestorm();
+	}
 
 	if (was_low_power != (Power_Fraction() < 1.0)) {
 		Update_Present_Super_Weapons();

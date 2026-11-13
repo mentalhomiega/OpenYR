@@ -50,14 +50,23 @@ static_assert(TACTION_BLACKOUT_RADAR == 139, "Blackout Radar is 139");
 static_assert(TACTION_RETINT_BLUE == 144, "Retint Blue is 144");
 static_assert(TACTION_JUMP_CAMERA_HOME == 145, "Jump camera home is 145");
 
-// OpenTS's own actions follow Yuri's Revenge's range.
-static_assert(TACTION_DISABLE_SPEECH == 146, "the first OpenTS action follows Yuri's Revenge's last");
-static_assert(TACTION_GIVE_CREDITS == 149, "Give Credits is 149");
-static_assert(TACTION_CREATE_BUILDING_AT == 152, "Create Building For is 152");
-static_assert(TACTION_HOUSE_DESTROY_ALL == 153, "Destroy all of (and defeat) is 153");
-static_assert(TACTION_MAKE_ELITE == 154, "Make Elite is 154");
-static_assert(TACTION_MAKE_ENEMY_ONE_WAY == 161, "Make Enemy (One-Way) is 163");
-static_assert(TACTION_COUNT == 162, "the action count is Yuri's Revenge's 146 plus OpenTS's 16");
+// Ares's actions, which Mental Omega maps use, follow Yuri's Revenge's range.
+static_assert(TACTION_ACTIVATE_FIRESTORM == 92, "Activate Firestorm is 92 (Ares)");
+static_assert(TACTION_DEACTIVATE_FIRESTORM == 93, "Deactivate Firestorm is 93 (Ares)");
+static_assert(TACTION_AUXILIARY_POWER == 146, "Auxiliary Power is 146 (Ares)");
+static_assert(TACTION_KILL_DRIVERS_OF == 147, "Kill Drivers Of is 147 (Ares)");
+static_assert(TACTION_SET_EVA_VOICE == 148, "Set EVA Voice is 148 (Ares)");
+static_assert(TACTION_SET_GROUP_ID == 149, "Set Group is 149 (Ares)");
+
+// OpenTS's own actions come after Ares's, from 150.
+static_assert(TACTION_DISABLE_SPEECH == 150, "the first OpenTS action follows Ares's last");
+static_assert(TACTION_ENABLE_SPEECH == 151, "Enable Speech is 151");
+static_assert(TACTION_GIVE_CREDITS == 152, "Give Credits is 152");
+static_assert(TACTION_CREATE_BUILDING_AT == 155, "Create Building For is 155");
+static_assert(TACTION_HOUSE_DESTROY_ALL == 156, "Destroy all of (and defeat) is 156");
+static_assert(TACTION_MAKE_ELITE == 157, "Make Elite is 157");
+static_assert(TACTION_MAKE_ENEMY_ONE_WAY == 164, "Make Enemy (One-Way) is 164");
+static_assert(TACTION_COUNT == 165, "the action count is Ares's 150 plus OpenTS's 15");
 
 // The same goes for events: 0 to 61 are Yuri's Revenge's, and OpenTS's own come after.
 static_assert(TEVENT_PLAYER_ENTERED == 1, "Entered by is 1");
