@@ -38,9 +38,6 @@ static constexpr int DARK_PERCENT = 50;
 static constexpr int MOST_BRIGHTENING_PERCENT = 150;
 
 static bool _Active = false;
-
-// Every cell of the map, for the OPENYR_FADE_KEEP redraw of a whole layer.
-static std::vector<CellClass *> _Every;
 static int _FrozenAmbient = 0;
 static int _Settled = 0;
 
@@ -196,23 +193,10 @@ LayerFadeDrawScope::LayerFadeDrawScope(bool whole_layer, std::vector<CellClass *
 	Saved(Scen->CurrentAmbientLight),
 	Swapped(_Active && !whole_layer)
 {
-	// OPENYR_FADE_KEEP=1 draws even a whole layer at the frozen light, so that a screenshot, which redraws the
-	// layer, shows the scaled picture.
-	static bool const _keep = std::getenv("OPENYR_FADE_KEEP") != NULL;
-	bool const keep = _keep && _Active && whole_layer;
-	if (_Active && whole_layer && !keep && _FrozenAmbient != Scen->CurrentAmbientLight) {
+	if (_Active && whole_layer && _FrozenAmbient != Scen->CurrentAmbientLight) {
 		AUTOTEST_LOG("layer fade frame %d: the whole layer is redrawn at ambient %d\n", Frame, Scen->CurrentAmbientLight);
 		_FrozenAmbient = Scen->CurrentAmbientLight;
 	}
-	if (keep) {
-		_Every.clear();
-		Map.Reset_Iterator();
-		for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
-			_Every.push_back(cell);
-		}
-		Swapped = true;
-	}
-	Every = keep;
 	if (Swapped) {
 		Relight(_FrozenAmbient);
 	}
@@ -230,7 +214,7 @@ LayerFadeDrawScope::~LayerFadeDrawScope(void)
 void LayerFadeDrawScope::Relight(int ambient)
 {
 	Scen->CurrentAmbientLight = ambient;
-	for (CellClass * cell : (Every ? _Every : Cells)) {
+	for (CellClass * cell : Cells) {
 		cell->Recalc_Light();
 	}
 	Scen->CurrentAmbientLight = Saved;

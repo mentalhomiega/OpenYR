@@ -90,8 +90,8 @@ now leaves the layer alone (`code/layerfade.h`):
 During the fade the terrain is therefore close to, but not exactly, what the software would draw: a cell's
 scale is exact for its ground, the scale of a pixel near a cell's edge is blended with its neighbour's, and
 colours the software clamps at full brightness scale from the clamped value. A frame the GPU cannot draw ends
-the deferral with a full redraw. `OPENYR_NO_FADE_DEFER=1` in the environment turns the deferral off. `OPENYR_FADE_KEEP=1` draws even a whole
-layer at the frozen light, so that a screenshot, which redraws the layer, shows the scaled picture.
+the deferral with a full redraw. `OPENYR_NO_FADE_DEFER=1` in the environment turns the deferral off. A `windowshot` step with `asis`
+([AUTOTEST.md](AUTOTEST.md)) shows the scaled picture; a plain one redraws the layer first.
 `tests/autotest/ambient-fade-deferred.txt` runs two fades.
 
 ## Settings

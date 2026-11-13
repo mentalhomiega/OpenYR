@@ -68,5 +68,4 @@ class LayerFadeDrawScope
 		std::vector<CellClass *> const & Cells;
 		int Saved;
 		bool Swapped;
-		bool Every;
 };
