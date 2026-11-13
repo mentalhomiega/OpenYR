@@ -1,0 +1,14 @@
+; A Magnetron (TELE) whose range the overlay sonic-wave-long.ini raises to 30 cells force-fires at bare ground 12 cells to the right of it on the screen, with the view zoomed out so
+; the whole beam is drawn.
+; Expected: the beam is about 720 pixels long, more than the 300 entries of the wave radius table and the 500 of the sine table, and the game draws it for 150 frames without an
+; exception. Before the fix a pixel past the tables took its strength from whatever lay behind them and the game could read far outside the picture (two Mental Omega missions
+; crashed in WaveClass::Set_Sonic_Pixel).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/sonic-wave-long.txt -Seconds 120 -Country 8 -Filter "AUTOTEST wave|AUTOTEST   cell|AUTOTEST own|Exception"
+10 rules sonic-wave-long.ini
+20 zoom 0.5
+30 command CenterBase
+35 reveal
+40 own TELE 50 40
+45 cell 62 28
+100 forceattack TELE 62 28
+250 quit
