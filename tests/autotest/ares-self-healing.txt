@@ -1,0 +1,47 @@
+; Ares SelfHealing.Amount, .Max, per-rank Amount and .CombatDelay on top of stock self healing (+1 every RepairRate
+; minutes, TechnoClass::ShouldSelfHealOneStep 0x70BE80 and its caller TechnoClass::Update 0x6F9E50). All units are
+; hurt to 20% on frame 120 and heal every 8 frames. Expected strength (percent hurt of Strength):
+;   MTNK  Amount=5, Max=60%: climbs by 5 and stops at 60% of its Strength, never above.
+;   HTNK  no Ares key: climbs by 1 per tick, as stock.
+;   FV    Amount=3, CombatDelay=100: climbs by 3; after 'damage FV 10' on frame 200 it does not heal until frame 300.
+;   APOC  made veteran: VeteranAmount=4 per tick (rookie would be 2).
+;   TTNK  Amount=0: never heals.
+;   SREF  veteran with Amount=1 and VeteranAmount=9: the generic Amount wins, so +1.
+; Observed 2026-11-13, frame 600: MTNK 180, HTNK 140, APOC 400, TTNK 60, SREF 90; FV 60 on frames 201 to 290, then 69 on frame 320.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/ares-self-healing.txt -Map XMP29U2.MAP -Seconds 120 -Uncapped -Filter "AUTOTEST   where|AUTOTEST frame|Exception"
+10 rules ares-self-healing.ini
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 own MTNK 56 30
+100 own HTNK 56 32
+100 own FV 56 34
+100 own APOC 56 36
+100 own TTNK 58 30
+100 own SREF 58 32
+105 rank APOC 1
+105 rank SREF 1
+120 hurt MTNK 20
+120 hurt HTNK 20
+120 hurt FV 20
+120 hurt APOC 20
+120 hurt TTNK 20
+120 hurt SREF 20
+129 log tick1
+130 where MTNK
+130 where HTNK
+130 where FV
+130 where APOC
+130 where TTNK
+130 where SREF
+200 damage FV 10
+201 where FV
+250 where FV
+290 where FV
+320 where FV
+600 where MTNK
+600 where HTNK
+600 where APOC
+600 where TTNK
+600 where SREF
+610 quit

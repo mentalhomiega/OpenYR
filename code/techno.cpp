@@ -296,6 +296,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	Cargo(),
 	Veterancy(),
 	RadarFlashTimer(),
+	SelfHealDelayTimer(),
 	TargetingTimer(45),
 	IronCurtainTimer(),
 	IronTintTimer(),
@@ -4080,7 +4081,9 @@ void TechnoClass::AI(void)
 	**	the heal logic here.
 	*/
 	if (Should_Self_Heal_Now()) {
-		Strength = std::min(Strength + TClass->Self_Heal_Step(), TClass->MaxStrength);
+		int rank = Veterancy.Is_Elite() ? 2 : Veterancy.Is_Veteran() ? 1 : 0;
+		int ceiling = std::max((int)(TClass->Self_Heal_Cap(rank) * TClass->MaxStrength + 0.5), (int)Strength);
+		Strength = std::min(Strength + TClass->Self_Heal_Step(rank), std::min(ceiling, (int)TClass->MaxStrength));
 		if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
 			if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
 				ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
@@ -7292,6 +7295,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
+
+	// A damaging hit holds back self healing for the type's SelfHealing.CombatDelay frames (Ares). Healing does not.
+	if (!negative && damage > 0 && TClass->SelfHealingCombatDelay > 0) {
+		SelfHealDelayTimer = TClass->SelfHealingCombatDelay;
+	}
 
 	// An IronCurtain.Duration warhead acts once the conventional damage has landed, on an object that survived it (Ares).
 	if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && result != RESULT_DESTROYED && result != RESULT_ALREADY_DESTROYED && effects_apply) {
@@ -11847,10 +11855,14 @@ bool TechnoClass::Should_Self_Heal_Now(void) const
 	if (Strength >= TClass->MaxStrength) {
 		return(false);
 	}
+	if (SelfHealDelayTimer > 0) {
+		return(false);
+	}
 	if ((Frame % std::max((int)(TClass->Self_Heal_Rate() * TICKS_PER_MINUTE), 1)) != 0) {
 		return(false);
 	}
-	return(HealthRatio > TClass->Self_Heal_Cap() ? false : true);
+	int rank = Veterancy.Is_Elite() ? 2 : Veterancy.Is_Veteran() ? 1 : 0;
+	return(HealthRatio > TClass->Self_Heal_Cap(rank) ? false : true);
 }
 
 
@@ -11871,6 +11883,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirepowerBias);
 	stream.Serialize(IdleTimer);
 	stream.Serialize(RadarFlashTimer);
+	stream.Serialize(SelfHealDelayTimer);
 	stream.Serialize(TargetingTimer);
 	stream.Serialize(IronCurtainTimer);
 	stream.Serialize(IronTintTimer);
