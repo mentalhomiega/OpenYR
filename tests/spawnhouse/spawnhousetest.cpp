@@ -39,6 +39,10 @@ constexpr char const * const PlayerAtSpelling[SPAWN_HOUSE_COUNT] = {
 	"<Player @ E>", "<Player @ F>", "<Player @ G>", "<Player @ H>"
 };
 
+// A stock game's house type count, and that of a mod that registers 66 house types.
+constexpr int StockTypes = 12;
+constexpr int ModTypes = 66;
+
 }
 
 
@@ -53,17 +57,17 @@ int main(void)
 		for (int spawn_waypoint = 0; spawn_waypoint < SPAWN_HOUSE_COUNT; spawn_waypoint++) {
 			names = names && Spawn_House_Waypoint(SpawnSpelling[spawn_waypoint]) == spawn_waypoint;
 			names = names && Spawn_House_Waypoint(PlayerAtSpelling[spawn_waypoint]) == spawn_waypoint;
-			numbers = numbers && Spawn_House_Waypoint(static_cast<HousesType>(50 + spawn_waypoint)) == spawn_waypoint;
-			numbers = numbers && Spawn_House_Waypoint(static_cast<HousesType>(4475 + spawn_waypoint)) == spawn_waypoint;
+			numbers = numbers && Spawn_House_Waypoint(static_cast<HousesType>(50 + spawn_waypoint), StockTypes) == spawn_waypoint;
+			numbers = numbers && Spawn_House_Waypoint(static_cast<HousesType>(4475 + spawn_waypoint), StockTypes) == spawn_waypoint;
 		}
 		Check(names, "Spawn1..Spawn8 and <Player @ A>..<Player @ H> name positions 0..7");
 		Check(numbers, "50..57 and 4475..4482 number positions 0..7");
 		Check(Spawn_House_Waypoint("SPAWN3") == 2 && Spawn_House_Waypoint("<player @ c>") == 2,
 			"either spelling is matched without regard to case");
-		Check(Spawn_House_Waypoint(HOUSE_SPAWN_FIRST) == 0 &&
-			Spawn_House_Waypoint(HOUSE_SPAWN_LAST) == SPAWN_HOUSE_COUNT - 1 &&
-			Spawn_House_Waypoint(HOUSE_PLAYER_AT_FIRST) == 0 &&
-			Spawn_House_Waypoint(HOUSE_PLAYER_AT_LAST) == SPAWN_HOUSE_COUNT - 1,
+		Check(Spawn_House_Waypoint(HOUSE_SPAWN_FIRST, StockTypes) == 0 &&
+			Spawn_House_Waypoint(HOUSE_SPAWN_LAST, StockTypes) == SPAWN_HOUSE_COUNT - 1 &&
+			Spawn_House_Waypoint(HOUSE_PLAYER_AT_FIRST, StockTypes) == 0 &&
+			Spawn_House_Waypoint(HOUSE_PLAYER_AT_LAST, StockTypes) == SPAWN_HOUSE_COUNT - 1,
 			"the ends of both numeric ranges are spawn houses");
 	}
 
@@ -85,9 +89,18 @@ int main(void)
 		bool outside = true;
 		int const numbers[] = { -1, 0, 1, 3, 49, 58, 59, 60, 4474, 4483 };
 		for (int number : numbers) {
-			outside = outside && Spawn_House_Waypoint(static_cast<HousesType>(number)) == -1;
+			outside = outside && Spawn_House_Waypoint(static_cast<HousesType>(number), StockTypes) == -1;
 		}
 		Check(outside, "49, 58..60, 4474 and 4483 name nothing, as does a country");
+
+		bool owned = true;
+		for (int spawn_waypoint = 0; spawn_waypoint < SPAWN_HOUSE_COUNT; spawn_waypoint++) {
+			owned = owned && Spawn_House_Waypoint(static_cast<HousesType>(50 + spawn_waypoint), ModTypes) == -1;
+			owned = owned && Spawn_House_Waypoint(static_cast<HousesType>(4475 + spawn_waypoint), ModTypes) == spawn_waypoint;
+		}
+		Check(owned, "with 66 house types, 50..57 are those types and 4475..4482 stay positions");
+		Check(Spawn_House_Waypoint(static_cast<HousesType>(57), 57) == 7 && Spawn_House_Waypoint(static_cast<HousesType>(57), 58) == -1,
+			"a number is a position only while no house type has it");
 	}
 
 	/*
@@ -96,11 +109,11 @@ int main(void)
 	{
 		bool round = true;
 		for (int spawn_waypoint = 0; spawn_waypoint < SPAWN_HOUSE_COUNT; spawn_waypoint++) {
-			round = round && Spawn_House_Type(spawn_waypoint) == static_cast<HousesType>(50 + spawn_waypoint);
-			round = round && Spawn_House_Waypoint(Spawn_House_Type(spawn_waypoint)) == spawn_waypoint;
+			round = round && Spawn_House_Type(spawn_waypoint) == static_cast<HousesType>(4475 + spawn_waypoint);
+			round = round && Spawn_House_Waypoint(Spawn_House_Type(spawn_waypoint), ModTypes) == spawn_waypoint;
 			round = round && Spawn_House_Waypoint(Spawn_House_Name(spawn_waypoint)) == spawn_waypoint;
 		}
-		Check(round, "a position round trips through 50 + spawn_waypoint and its Spawn name");
+		Check(round, "a position round trips through 4475 + spawn_waypoint and its Spawn name");
 		Check(std::strcmp(Spawn_House_Name(0), "Spawn1") == 0 && std::strcmp(Spawn_House_Name(7), "Spawn8") == 0,
 			"the written name is Spawn<spawn_waypoint + 1>");
 		Check(Spawn_House_Type(-1) == HOUSE_NONE && Spawn_House_Type(SPAWN_HOUSE_COUNT) == HOUSE_NONE &&
