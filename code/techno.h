@@ -915,6 +915,7 @@ class TechnoClass :	public RadioClass,
 		void Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self);
 		void Release_Warp(void);
 		void Powered_Unit_AI(void);
+		bool Has_Operator(void) const;
 		void Spring_Kill_Events(bool credited);
 		void Spring_Destroyed_By_House(TechnoClass * source, HouseClass const * house);
 		void Count_The_Kill(HouseClass * killer_house);

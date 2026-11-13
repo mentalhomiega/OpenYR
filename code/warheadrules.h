@@ -163,6 +163,16 @@ namespace WarheadRules
 		return(threshold != 0 && counter > limit && (threshold > 0 || in_air));
 	}
 
+	// The radius of an explosion's light flash, as gamemd's Combat_Lighting (0x48A620) works it out. A CombatLightSize
+	// above zero, capped at 100%, gives that share of 63 cut to a whole number; otherwise the damage sets it, from 21 to 63.
+	inline int Combat_Light_Size(int damage, float size)
+	{
+		if (size > 0.0f) {
+			return((int)((double)std::min(size, 1.0f) * 63.0));
+		}
+		return(std::clamp((damage * 64) >> 8, 21, 63));
+	}
+
 	// Whether a KillDriver hit takes the driver of a vehicle at this health ratio (strength over maximum strength).
 	// The driver goes at or below the lower of the warhead's KillDriver.KillBelowPercent and the type's
 	// ProtectedDriver.MinHealth.

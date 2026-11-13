@@ -121,7 +121,8 @@ void TemporalClass::Fire(TechnoClass * target)
 		if (AutoTest_Active()) {
 			DebugString("AUTOTEST warp start %s strength %d warp %d\n", target->TClass->Name(), target->Strength, WarpRemaining);
 		}
-		if (target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->House == PlayerPtr) {
+		bool const malicious = fired == nullptr || fired->WarheadPtr == nullptr || fired->WarheadPtr->IsMalicious;
+		if (malicious && target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->House == PlayerPtr) {
 			if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, ((UnitClass *)target)->Destination_Coord().As_Cell())) {
 				Speak(VOX_HARVESTER_UNDER_ATTACK);
 			}

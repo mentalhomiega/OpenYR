@@ -2001,7 +2001,7 @@ void BuildingClass::AI(void)
 void BuildingClass::Update_Service_State(void)
 {
 	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
-	bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+	bool const online = Is_Online();
 	if (Class->PowersUnit != NULL) {
 		Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
 	}
@@ -2828,7 +2828,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	house, it might announce this fact.
 			*/
 			if (!Class->IsInsignificant && !Considered_Vehicle()) {
-				House->Attacked(this);
+				House->Attacked(this, warhead == NULL || warhead->IsMalicious);
 			}
 
 			/*
@@ -3459,7 +3459,11 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 	base->ArchiveTarget = Rally_Point_For(base);
 
 	if (Class->IsNaval) {
-		return(Exit_Naval_Object(base));
+		int const result = Exit_Naval_Object(base);
+		if (result == 2) {
+			Release_Vehicle_Clones(base);
+		}
+		return(result);
 	}
 
 	if (Mission == MISSION_UNLOAD) {
@@ -3485,9 +3489,35 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 		Transmit_Message(RADIO_HELLO, base);
 		Transmit_Message(RADIO_TETHER, base);
 		Assign_Mission(MISSION_UNLOAD);
+		Release_Vehicle_Clones(base);
 		return(2);
 	}
 	return(0);
+}
+
+
+/// <summary>
+/// Has every CloningFacility=yes structure of the owner release a copy of a vehicle this factory just produced (Ares).
+/// A copy that cannot get out is discarded, with no refund.
+/// </summary>
+void BuildingClass::Release_Vehicle_Clones(TechnoClass const * vehicle)
+{
+	if (Class->ToBuild != RTTI_UNITTYPE || vehicle->RTTI != RTTI_UNIT || Factory == NULL || Factory->Get_Object() != vehicle) {
+		return;
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * vat = Buildings[index];
+		if (vat == this || vat->House != House || vat->IsInLimbo || vat->Strength <= 0) {
+			continue;
+		}
+		bool const ignored_factory = Rule->IsCloningFacilityIgnoresFactories && vat->Class->ToBuild != RTTI_NONE;
+		if (ObjectKeyRules::Cloning_Facility_Copies(vat->Class->IsCloningFacility, ignored_factory, vat->Class->IsNaval, vehicle->TClass->IsNaval, vehicle->TClass->IsCloneable)) {
+			TechnoClass * clone = static_cast<TechnoClass *>(vehicle->TClass->Create_One_Of(vat->House));
+			if (clone != NULL && vat->Exit_Object(clone) != 2) {
+				delete clone;
+			}
+		}
+	}
 }
 
 
@@ -3534,6 +3564,7 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 			Send_Computer_Unit_To_Guard(base);
 		}
 
+		Release_Vehicle_Clones(base);
 		return(2);
 	}
 	return(0);

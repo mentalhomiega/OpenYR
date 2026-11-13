@@ -161,6 +161,46 @@ void Test_Selection_And_Triplets(void)
 	Check(!ObjectKeyRules::Parse_Triplet("1,2", values) && values[0] == -5, "a short list reports failure and leaves the result");
 }
 
+
+void Test_EMP_Recover_Mission(void)
+{
+	Check(ObjectKeyRules::Takes_EMP_Recover_Mission(true, false, false, false), "a computer player's object takes the mission");
+	Check(!ObjectKeyRules::Takes_EMP_Recover_Mission(false, false, false, false), "without the key the mission stays, as stock");
+	Check(!ObjectKeyRules::Takes_EMP_Recover_Mission(true, true, false, false), "a human player's object keeps its mission");
+	Check(!ObjectKeyRules::Takes_EMP_Recover_Mission(true, false, true, false), "a harvester goes back to harvesting");
+	Check(!ObjectKeyRules::Takes_EMP_Recover_Mission(true, false, false, true), "an unloading object keeps unloading");
+}
+
+
+void Test_Shut_Down(void)
+{
+	Check(!ObjectKeyRules::Shut_Down(false, false, false, false, false, false, false), "an object with none of the keys works");
+	Check(ObjectKeyRules::Shut_Down(true, false, false, false, false, false, false), "a PoweredUnit vehicle without its structure stops");
+	Check(!ObjectKeyRules::Shut_Down(true, false, true, false, false, false, false), "a PoweredUnit vehicle in a structure keeps working");
+	Check(!ObjectKeyRules::Shut_Down(true, true, false, false, false, false, false), "a PoweredUnit vehicle with its structure works");
+	Check(ObjectKeyRules::Shut_Down(false, false, false, true, false, false, false), "a PoweredBy vehicle without a listed structure stops");
+	Check(!ObjectKeyRules::Shut_Down(false, false, false, true, true, false, false), "a PoweredBy vehicle with one listed structure works");
+	Check(ObjectKeyRules::Shut_Down(false, false, false, false, false, true, false), "an object without its operator stops");
+	Check(!ObjectKeyRules::Shut_Down(false, false, false, false, false, true, true), "an object with its operator works");
+	Check(ObjectKeyRules::Shut_Down(false, false, false, true, true, true, false), "power alone does not replace the operator");
+
+	Check(ObjectKeyRules::Operator_Present(true, 1, 0), "_ANY_ takes any passenger");
+	Check(!ObjectKeyRules::Operator_Present(true, 0, 0), "_ANY_ still needs a passenger");
+	Check(!ObjectKeyRules::Operator_Present(false, 2, 0), "a list needs a passenger of a listed type");
+	Check(ObjectKeyRules::Operator_Present(false, 2, 1), "one listed passenger is enough");
+}
+
+
+void Test_Cloning_Facility(void)
+{
+	Check(ObjectKeyRules::Cloning_Facility_Copies(true, false, false, false, true), "a land facility copies a land vehicle");
+	Check(ObjectKeyRules::Cloning_Facility_Copies(true, false, true, true, true), "a naval facility copies a ship");
+	Check(!ObjectKeyRules::Cloning_Facility_Copies(true, false, true, false, true), "a naval facility skips a land vehicle");
+	Check(!ObjectKeyRules::Cloning_Facility_Copies(true, true, false, false, true), "a structure with Factory set copies nothing");
+	Check(!ObjectKeyRules::Cloning_Facility_Copies(true, false, false, false, false), "Cloneable=no is never copied");
+	Check(!ObjectKeyRules::Cloning_Facility_Copies(false, false, false, false, true), "a structure without the key copies nothing");
+}
+
 }
 
 
@@ -174,6 +214,9 @@ int main(void)
 	Test_Passengers();
 	Test_Payload_And_Ammo();
 	Test_Selection_And_Triplets();
+	Test_EMP_Recover_Mission();
+	Test_Shut_Down();
+	Test_Cloning_Facility();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

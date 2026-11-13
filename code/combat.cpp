@@ -713,14 +713,7 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 {
 	bool const detailed = Options.DetailLevel != 0 && Detail_Min_Frame_Rate() <= LastFramesPerSecond;
 	if ((detailed || (disabled_channels & 0xf) != 0) && (forced || warhead != NULL && warhead->IsBright)) {
-		damage *= 64;
-		int size = damage >> 8;
-		if (size >= 63) {
-			size = 63;
-		} else if (size <= 21) {
-			size = 21;
-		}
-
+		int const size = WarheadRules::Combat_Light_Size(damage, warhead != NULL ? warhead->CombatLightSize : 0.0f);
 		SpotLightClass * light = new SpotLightClass(coord, size);
 		light->Set_Disabled_Channels(disabled_channels);
 	}

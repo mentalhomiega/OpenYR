@@ -726,6 +726,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType DeactivateSound;
 		UnitTypeClass * PowersUnit;
 
+		// A vehicle with PoweredBy (Ares) shuts down while its owner has no working structure of these types.
+		TypeList<BuildingTypeClass const *> PoweredBy;
+
+		// An object with an Operator (Ares) shuts down until a passenger of one of these types is aboard, or any
+		// passenger when IsOperatorAny (Operator=_ANY_) is set.
+		TypeList<TechnoTypeClass const *> Operators;
+		bool IsOperatorAny;
+		bool Needs_Operator(void) const {return(IsOperatorAny || Operators.Count() > 0);}
+
 		// Played as the object starts to crash, the voice only for the player's own.
 		VocType CrashingSound;
 		VocType VoiceCrashing;

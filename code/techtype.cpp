@@ -27,6 +27,7 @@
 #include "cell.h"
 #include "classids.h"
 #include "combat.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
 #include "infatype.h"
@@ -348,6 +349,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ActivateSound(VOC_NONE),
 	DeactivateSound(VOC_NONE),
 	PowersUnit(NULL),
+	IsOperatorAny(false),
 	CrashingSound(VOC_NONE),
 	VoiceCrashing(VOC_NONE),
 	SinkingSound(VOC_NONE),
@@ -1339,6 +1341,22 @@ void TechnoTypeClass::Read_Spawns_INI(CCINIClass const & ini)
 	SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
 	IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 	PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
+	PoweredBy = TGet_TypeList<BuildingTypeClass>(ini, Name(), "PoweredBy", PoweredBy);
+
+	std::string const operators = ini.Get_String(Name(), "Operator");
+	if (!operators.empty()) {
+		Operators.Clear();
+		IsOperatorAny = false;
+		for (std::string const & name : Split_List(operators, ',', " \t", true)) {
+			if (stricmp(name.c_str(), "_ANY_") == 0) {
+				IsOperatorAny = true;
+			} else if (TechnoTypeClass const * type = TechnoTypeClass::From_Name(name.c_str())) {
+				Operators.Add(type);
+			} else if (stricmp(name.c_str(), "none") != 0) {
+				DebugString("%s: Operator names no such object type: %s; skipped.\n", Name(), name.c_str());
+			}
+		}
+	}
 }
 
 
@@ -2336,6 +2354,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ActivateSound);
 	stream.Serialize(DeactivateSound);
 	stream.Serialize(PowersUnit);
+	stream.Serialize(PoweredBy);
+	stream.Serialize(Operators);
+	stream.Serialize(IsOperatorAny);
 	stream.Serialize(CrashingSound);
 	stream.Serialize(VoiceCrashing);
 	stream.Serialize(SinkingSound);

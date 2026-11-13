@@ -277,6 +277,12 @@ class WarheadTypeClass : public AbstractTypeClass
 		int DelayKillFrames;
 		float DelayKillAtMax;
 
+		// Above zero, the light flash of a Bright blast takes this share of the largest flash, whatever the damage.
+		float CombatLightSize;
+
+		// Malicious=no (Ares) keeps a hit on an ore miner from raising the miner-under-attack alert.
+		bool IsMalicious;
+
 		// A disguise warhead makes its firer look like the soldier it hits.
 		bool IsMakesDisguise;
 

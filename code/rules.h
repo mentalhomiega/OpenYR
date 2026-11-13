@@ -34,6 +34,7 @@
 
 #include "ccini.h"
 #include "face.h"
+#include "mission.hh"
 
 #include "diff.hh"
 
@@ -222,6 +223,10 @@ class RulesClass
 		// A temporal weapon fired from an open-topped transport lets go beyond this many cells.
 		int OpenToppedWarpDistance;
 
+		// The mission a computer player's vehicle or soldier takes when its EMP wears off (Ares EMPAIRecoverMission).
+		// MISSION_NONE, the default here, keeps the mission it had, as stock Yuri's Revenge does.
+		MissionType EMPAIRecoverMission;
+
 		/*
 		 * Ivan bombs go off IvanTimedDelay frames after they are planted, doing IvanDamage through
 		 * IvanWarhead; their icon flickers every IvanIconFlickerRate frames.
@@ -235,6 +240,10 @@ class RulesClass
 
 		// Whether chronoshifted infantry destroys a vehicle it lands on; when not, the infantry dies (Ares ChronoInfantryCrush).
 		bool IsChronoInfantryCrush;
+
+		// Whether a CloningFacility=yes structure that also has Factory set copies nothing, as the Ares manual says
+		// (ours: [General] CloningFacilityIgnoresFactories).
+		bool IsCloningFacilityIgnoresFactories;
 
 		// The weapon an exploding object without a weapon of its own sets off as it dies.
 		WeaponTypeClass * DeathWeapon;

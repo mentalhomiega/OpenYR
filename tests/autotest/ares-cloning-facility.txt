@@ -1,0 +1,15 @@
+; Ares CloningFacility. With CloningFacility=yes on the Allied Power Plant (GAPOWR), each Grizzly (MTNK) the War Factory
+; releases is copied once by each such plant the player owns: one built tank and one plant give two tanks at 900 (where
+; lists two MTNK, one of them by the plant). A plant without the key copies nothing (the test's stock half: before the
+; rules file loads, the first tank is not copied, so where at 400 lists one MTNK).
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-cloning-facility.txt -Country 1 -Seconds 150 -Filter "AUTOTEST   where MTNK|AUTOTEST (produce|place)|Exception"
+20 own GAPOWR 50 46
+21 own GAWEAP 56 40
+30 produce MTNK
+300 place MTNK
+400 where MTNK
+410 rules ares-cloning-facility.ini
+420 produce MTNK
+700 place MTNK
+900 where MTNK
+990 quit
