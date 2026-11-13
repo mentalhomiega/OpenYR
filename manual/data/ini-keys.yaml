@@ -7282,6 +7282,42 @@ CameraRange:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CampaignMoneyDeltaEasy:
+  key: CampaignMoneyDeltaEasy
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5000'
+      declared_in: RulesClass
+      member: CampaignMoneyDeltaEasy
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CampaignMoneyDeltaHard:
+  key: CampaignMoneyDeltaHard
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-5000'
+      declared_in: RulesClass
+      member: CampaignMoneyDeltaHard
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CanApproachTarget:
   key: CanApproachTarget
   scopes:
