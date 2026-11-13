@@ -1,0 +1,22 @@
+; Paradrop planes that read ParaDrop.<Country>.Plane<N>.* keys, in the order the Ares manual gives: the weapon's country, side and
+; plain keys for plane N, then the same for plane 1. Both weapons send two planes. TestParaPlain gives plane 1 a Spy and plane 2
+; a Navy SEAL by the plain keys. TestParaCountry adds ParaDrop.Americans.Plane2.* (two Tanya), which wins on plane 2 for an
+; American player and leaves plane 1 alone. Each shot is granted fresh and the paratroopers are removed before the next.
+; Expected: after the plain shot, "landed SPY count 1", "landed GHOST count 1" and "landed TANY count 0"; after the country
+; shot, "landed SPY count 1", "landed GHOST count 0" and "landed TANY count 2" (the player must be American).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Mods src-agent31/tests/autotest/paradrop-country-planes-rules -Script src-agent31/tests/autotest/paradrop-country-planes.txt -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST   landed|Exception"
+30 command CenterBase
+100 grant TestParaPlain
+110 fire TestParaPlain 30 39
+900 landed SPY
+900 landed GHOST
+900 landed TANY
+901 kill SPY 1
+901 kill GHOST 1
+901 kill TANY 1
+950 grant TestParaCountry
+960 fire TestParaCountry 30 39
+1750 landed SPY
+1750 landed GHOST
+1750 landed TANY
+1800 quit

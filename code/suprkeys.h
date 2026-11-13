@@ -280,14 +280,16 @@ struct SuperWeaponKeys
 	int SpyPlaneMission;
 
 	/*
-	 * ParaDrop and AmerParaDrop. A group holds the types, counts and plane for one country or
-	 * side; Default holds the plain ParaDrop.* keys.
+	 * ParaDrop and AmerParaDrop. A group holds the types, counts and aircraft one country or side
+	 * names for one plane (Plane 1 has no Plane<N> segment in its keys); ParaDefault holds the
+	 * plain ParaDrop.* keys, and a group with no owner holds the plain ParaDrop.Plane<N>.* keys.
 	 */
 	struct ParaGroup
 	{
 		void Serialize(SaveStreamClass & stream);
 
 		std::string Owner;
+		int Plane = 1;
 		TypeList<TechnoTypeClass const *> Types;
 		TypeList<int> Num;
 		AircraftTypeClass const * Aircraft = nullptr;
@@ -296,6 +298,24 @@ struct SuperWeaponKeys
 	ParaGroup ParaDefault;
 	std::vector<ParaGroup> ParaByOwner;
 	int ParaDropCount;
+
+	// The most planes whose Plane<N> keys are read.
+	static constexpr int MAX_PARA_PLANES = 32;
+
+	ParaGroup const * Find_Para(char const * owner, int plane) const;
+
+	// What one plane of a paradrop carries: any of the three may be missing, and the rules supply it then.
+	struct ParaPlan
+	{
+		TypeList<TechnoTypeClass const *> const * Types = nullptr;
+		TypeList<int> const * Num = nullptr;
+		AircraftTypeClass const * Aircraft = nullptr;
+	};
+
+	// Looks a plane up in the order the Ares manual gives: the weapon's keys for the country, the side and no owner
+	// on the plane, then the same on plane 1. Types with Num come from the first place that sets either of them,
+	// the aircraft from the first that sets it. Returns whether any weapon key applied.
+	bool Para_Plan(int plane, char const * country, char const * side, ParaPlan & plan) const;
 
 	// May this building fire the EMPulse weapon? Every cannon may when the weapon lists none.
 	bool Allows_Cannon(BuildingTypeClass const * type) const;

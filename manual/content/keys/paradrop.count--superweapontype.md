@@ -8,7 +8,7 @@ when_omitted:
   value: "1"
 ---
 
-Each plane carries the whole [`ParaDrop.Types=`](/keys/paradrop.types/) load. The key has no effect on a weapon that uses the side's lists.
+Each plane carries the whole [`ParaDrop.Types=`](/keys/paradrop.types/) load, unless the weapon gives a plane after the first its own with the `ParaDrop.Plane2.Types=` form described there. The key has no effect on a weapon that uses the side's lists.
 
 ```ini title="rulesmd.ini"
 [MySpecial] ; example SuperWeaponType
