@@ -7612,6 +7612,9 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 	/*
 	**	Handle any trigger event associated with this object.
 	*/
+	if (RTTI != RTTI_UNIT) {
+		Spring_Destroyed_By_House(source, NULL);
+	}
 	Spring_Kill_Events(source != NULL);
 
 	// A victim of a DontScore=yes type gives its killer nothing, so none of the credit below applies.
@@ -7723,6 +7726,20 @@ void TechnoClass::Spring_Kill_Events(bool credited)
 
 
 /// <summary>
+/// Offers Ares's Destroyed By House (85) to this object's tag when a trigger on it waits on that
+/// event. It comes before the destroyed event (7), as Ares orders them.
+/// </summary>
+/// <param name="source">The object credited with the kill, or NULL.</param>
+/// <param name="house">The house credited with the kill when no object is, or NULL.</param>
+void TechnoClass::Spring_Destroyed_By_House(TechnoClass * source, HouseClass const * house)
+{
+	if (IsActive && Tag != NULL && Tag->Has_Event(TEVENT_DESTROYED_BY_HOUSE)) {
+		Tag->Spring(TEVENT_DESTROYED_BY_HOUSE, this, CELL_NONE, false, source, house);
+	}
+}
+
+
+/// <summary>
 /// Adds the death of this object to the casualty counts of its own house and to the kill counts of
 /// the house that destroyed it (the second half of TechnoClass::RegisterDestruction and
 /// TechnoClass::RegisterKill). A structure that is Insignificant is not counted at all.
@@ -7813,6 +7830,7 @@ void TechnoClass::Record_The_Kill_By_House(HouseClass * house)
 {
 	int const points = TClass->Cost_Of(House);
 
+	Spring_Destroyed_By_House(NULL, house);
 	Spring_Kill_Events(house != NULL);
 
 	if (house != NULL) {
@@ -9633,6 +9651,17 @@ bool TechnoClass::Abduct(AbstractClass * target, WeaponTypeClass const * weapon)
 	victim->Hidden();
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST abducted %s into %s, owner %s, %d of %d room used\n", victim->TClass->Name(), TClass->Name(), victim->House->Class->Name(), Cargo.Total_Size(), TClass->Max_Passengers());
+	}
+
+	// Ares's abduction events: 72 before 71 on the victim, then 73 on the abductor.
+	if (victim->IsActive && victim->Tag != NULL && victim->Tag->Has_Event(TEVENT_ABDUCTED_BY_HOUSE)) {
+		victim->Tag->Spring(TEVENT_ABDUCTED_BY_HOUSE, victim, CELL_NONE, false, this);
+	}
+	if (victim->IsActive && victim->Tag != NULL && victim->Tag->Has_Event(TEVENT_ABDUCTED)) {
+		victim->Tag->Spring(TEVENT_ABDUCTED, victim, CELL_NONE, false, this);
+	}
+	if (IsActive && Tag != NULL && Tag->Has_Event(TEVENT_ABDUCTS_SOMETHING)) {
+		Tag->Spring(TEVENT_ABDUCTS_SOMETHING, this, CELL_NONE, false, this);
 	}
 	return(true);
 }

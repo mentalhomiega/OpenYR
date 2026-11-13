@@ -774,6 +774,15 @@ class HouseClass : public AbstractClass
 		CounterClass PAQuantity;
 
 		/*
+		 * These track every object of each type the house owns, in limbo or not. Unlike the
+		 * BQuantity totals, they count Insignificant and DontScore types too.
+		 */
+		CounterClass OwnedBQuantity;
+		CounterClass OwnedUQuantity;
+		CounterClass OwnedIQuantity;
+		CounterClass OwnedAQuantity;
+
+		/*
 		**	This timer keeps track of when an all out attack should be performed.
 		**	When this timer expires, send most of this house's units in an
 		**	attack.
@@ -1048,6 +1057,8 @@ class HouseClass : public AbstractClass
 		bool Owns_Prerequisite_Override(TechnoTypeClass const * type) const;
 		// How many objects of the type the house has in service, as the A*Quantity counts hold them.
 		int Active_Count(TechnoTypeClass const * type) const;
+		// How many objects of the type the house owns, as the Owned*Quantity counts hold them.
+		int Owned_Count(TechnoTypeClass const * type) const;
 		bool Has_Keep_Alive(void) const;
 		bool Add_Reversed(TechnoTypeClass const * type);
 

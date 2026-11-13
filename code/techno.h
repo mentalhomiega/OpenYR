@@ -916,6 +916,7 @@ class TechnoClass :	public RadioClass,
 		void Release_Warp(void);
 		void Powered_Unit_AI(void);
 		void Spring_Kill_Events(bool credited);
+		void Spring_Destroyed_By_House(TechnoClass * source, HouseClass const * house);
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
 		virtual void Reduce_Ammunition(void);

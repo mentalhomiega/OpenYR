@@ -1299,6 +1299,66 @@ static void Trigger_Action_Step(StepType const & step)
 }
 
 
+// tagevent <TypeID|general>[@<House>] <event fields> [<persistence> [x y]]: makes a trigger owned by the house (the
+// player's when none is named) that waits on the one event, written as a map's [Events] line writes it after the
+// count, such as 81,2,1,GAPOWR. Its tag rides on every object of the type, only the one on cell x,y when a cell is
+// given, or with "general" joins the general tags that are polled every frame. The persistence is 0 (volatile, the
+// default), 1 or 2, as a map's [Tags] gives it. The trigger has no actions; the log gets an AUTOTEST sprung line
+// each time it springs.
+std::string Word(std::vector<std::string> const & words, std::size_t index);
+
+static void Tag_Event_Step(StepType const & step)
+{
+	static int made = 0;
+	std::string target = Word(step.Words, 2);
+	std::string const fields = Word(step.Words, 3);
+	std::string const persistence = Word(step.Words, 4).empty() ? "0" : Word(step.Words, 4);
+	bool const on_cell = !Word(step.Words, 6).empty();
+	Cell const cell(std::atoi(Word(step.Words, 5).c_str()), std::atoi(Word(step.Words, 6).c_str()));
+
+	HouseClass * house = PlayerPtr;
+	std::size_t const at = target.find('@');
+	if (at != std::string::npos) {
+		house = Named_House(target.substr(at + 1));
+		target = target.substr(0, at);
+	}
+	if (house == NULL || fields.empty()) {
+		DebugString("AUTOTEST   tagevent %s: no such house or no event\n", step.Line.c_str());
+		return;
+	}
+
+	made++;
+	std::string const name = "ATEV" + std::to_string(made);
+	CCINIClass ini;
+	ini.Put_String("Triggers", name.c_str(), (std::string(house->Class->Name()) + ",<none>," + name + ",0,1,1,1,0").c_str());
+	ini.Put_String("Events", name.c_str(), ("1," + fields).c_str());
+	ini.Put_String("Actions", name.c_str(), "0");
+	ini.Put_String("Tags", name.c_str(), (persistence + "," + name + "," + name).c_str());
+
+	TriggerTypeClass * trigtype = TriggerTypeClass::Find_Or_Make(name.c_str());
+	TagTypeClass * tagtype = TagTypeClass::Find_Or_Make(name.c_str());
+	if (trigtype == NULL || tagtype == NULL || !trigtype->Read_INI(ini) || !tagtype->Read_INI(ini)) {
+		DebugString("AUTOTEST   tagevent %s: the trigger could not be made\n", step.Line.c_str());
+		return;
+	}
+
+	int attached = 0;
+	if (stricmp(target.c_str(), "general") == 0) {
+		LogicTags.Add(Find_Or_Make(tagtype));
+		attached = 1;
+	} else {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->IsActive && stricmp(techno->TClass->Name(), target.c_str()) == 0 && (!on_cell || Cell_Or_None(techno) == cell)) {
+				techno->Attach_Tag(Find_Or_Make(tagtype));
+				attached++;
+			}
+		}
+	}
+	DebugString("AUTOTEST   tagevent %s event %s house %s on %s: %d attached\n", name.c_str(), fields.c_str(), house->Class->Name(), target.c_str(), attached);
+}
+
+
 // How many times the trigger type has sprung this run, or 0 for NULL or a type that has not sprung.
 int Trigger_Springs(TriggerTypeClass const * type)
 {
@@ -7405,6 +7465,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"triggerlog", [](StepType const & step) {TriggerLog = step.Argument_Int() != 0;}},
 		{"triggercoverage", Trigger_Coverage_Step},
 		{"trigaction", Trigger_Action_Step},
+		{"tagevent", Tag_Event_Step},
 		{"dumpfile", Dumpfile_Step},
 		{"mixof", Mixof_Step},
 		{"spyon", Spyon_Step},

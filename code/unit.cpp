@@ -7325,7 +7325,8 @@ void UnitClass::Record_The_Kill(TechnoClass * source)
 {
 	if (Tag != NULL) {
 		if (EnteredByInfType == INFANTRY_NONE || !Tag->Is_To_Inherit()) {
-			if (source != NULL) {
+			Spring_Destroyed_By_House(source, NULL);
+			if (source != NULL && Tag != NULL) {
 				Tag->Spring(TEVENT_DESTROYED, this);
 			}
 			if (Tag != NULL) {

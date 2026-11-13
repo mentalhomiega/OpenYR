@@ -284,7 +284,7 @@ void TriggerClass::Reset_All_Timed_Events(void)
  *   05/31/1996 JLB : Created.                                                                 *
  *   08/13/1996 JLB : Linked triggers supported.                                               *
  *=============================================================================================*/
-bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool forced, bool persistent, TechnoClass * source)
+bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool forced, bool persistent, TechnoClass * source, HouseClass const * source_house)
 {
 	if (!IsEnabled || Is_Marked_To_Delete()) {
 		return(false);
@@ -299,7 +299,7 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 		TEventClass * tevent = Class->FirstEvent;
 		int index = 0;
 		while (tevent != NULL) {
-			if (Is_Event_Tripped(index) || tevent->operator()(event, Class->House, object, Timer, persistent, source)) {
+			if (Is_Event_Tripped(index) || tevent->operator()(event, Class->House, object, Timer, persistent, source, source_house)) {
 				if (persistent) {
 					if (tevent->Is_Time_Based() && tevent->Is_To_Flag_As_Tripped()) {
 						Flag_Event_Tripped(index);

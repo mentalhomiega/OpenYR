@@ -1826,6 +1826,17 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 		if (IsActive && (pretag_strength <= 0 || Strength > 0)) {
 
+			// Ares's 84 and then 83 are offered for every hit, the fatal one too, with or without an attacker.
+			if (Tag != NULL && Tag->Has_Event(TEVENT_ATTACKED_OR_DESTROYED_BY)) {
+				Tag->Spring(TEVENT_ATTACKED_OR_DESTROYED_BY, this, CELL_NONE, false, source, source != NULL ? NULL : sourcehouse);
+			}
+			if (IsActive && Tag != NULL && Tag->Has_Event(TEVENT_ATTACKED_OR_DESTROYED_ANY)) {
+				Tag->Spring(TEVENT_ATTACKED_OR_DESTROYED_ANY, this, CELL_NONE, false, source);
+			}
+			if (!IsActive) {
+				return(RESULT_ALREADY_DESTROYED);
+			}
+
 			/*
 			**	Check to see if the object is majorly damaged or destroyed.
 			*/

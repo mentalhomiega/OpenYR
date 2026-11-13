@@ -1113,6 +1113,32 @@ int HouseClass::Active_Count(TechnoTypeClass const * type) const
 }
 
 
+int HouseClass::Owned_Count(TechnoTypeClass const * type) const
+{
+	int const id = type->Fetch_Heap_ID();
+	switch (type->RTTI) {
+		case RTTI_BUILDINGTYPE: return(OwnedBQuantity.Value(id));
+		case RTTI_UNITTYPE: return(OwnedUQuantity.Value(id));
+		case RTTI_INFANTRYTYPE: return(OwnedIQuantity.Value(id));
+		case RTTI_AIRCRAFTTYPE: return(OwnedAQuantity.Value(id));
+		default: return(0);
+	}
+}
+
+
+// The tally of every owned object of each type, whatever Is_Scored says, for the given object's kind.
+static CounterClass * Owned_Tally(HouseClass & house, TechnoClass const * techno)
+{
+	switch ((RTTIType)techno->RTTI) {
+		case RTTI_BUILDING: return(&house.OwnedBQuantity);
+		case RTTI_UNIT: return(&house.OwnedUQuantity);
+		case RTTI_INFANTRY: return(&house.OwnedIQuantity);
+		case RTTI_AIRCRAFT: return(&house.OwnedAQuantity);
+		default: return(NULL);
+	}
+}
+
+
 static bool Owns_Any_Unit_Id(CounterClass const & tally, TypeList<UnitTypeClass const *> const & types)
 {
 	for (int index = 0; index < types.Count(); index++) {
@@ -5902,6 +5928,11 @@ static bool Is_Scored(TechnoClass const * techno)
  *=============================================================================================*/
 void HouseClass::Tracking_Remove(TechnoClass * techno)
 {
+	CounterClass * const owned = Owned_Tally(*this, techno);
+	if (owned != NULL && techno->TClass != NULL) {
+		owned->Decrement(techno->TClass->Fetch_Heap_ID());
+	}
+
 	// Insignificant and DontScore types are not counted as owned (HouseClass::RemoveTracking, 0x4FF550).
 	if (!Is_Scored(techno)) return;
 
@@ -5958,6 +5989,11 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
 	AircraftType aircraft;
 	InfantryType infantry;
 	UnitType unit;
+
+	CounterClass * const owned = Owned_Tally(*this, techno);
+	if (owned != NULL && techno->TClass != NULL) {
+		owned->Increment(techno->TClass->Fetch_Heap_ID());
+	}
 
 	// Insignificant and DontScore types are not counted as owned (HouseClass::AddTracking, 0x4FF700).
 	if (!Is_Scored(techno)) return;
@@ -8025,6 +8061,10 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PUQuantity);
 	stream.Serialize(PIQuantity);
 	stream.Serialize(PAQuantity);
+	stream.Serialize(OwnedBQuantity);
+	stream.Serialize(OwnedUQuantity);
+	stream.Serialize(OwnedIQuantity);
+	stream.Serialize(OwnedAQuantity);
 	stream.Serialize(Attack);
 	stream.Serialize(Enemy);
 	stream.Serialize(AngerNodes);
