@@ -56,6 +56,7 @@
 #include "goptions.h"
 #include "incdec.h"
 #include "infantry.h"
+#include "ionblast.h"
 #include "infatype.h"
 #include "inline.h"
 #include "isotype.h"
@@ -604,6 +605,8 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	} const scope(projectile);
 
 	if (Scen->Special.IsInert || warhead == NULL) return(false);
+
+	IonBlastClass::Ripple(coord, warhead->IonRipple);
 
 	if (!strength && !warhead->IsWebby && !warhead->IsAllowZeroDamage) return(false);
 

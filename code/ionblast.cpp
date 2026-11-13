@@ -10,6 +10,9 @@
 #include "always.h"
 
 #include "ionblast.h"
+#include "autotest.h"
+#include "dbgprint.h"
+#include "gpudraw.h"
 
 #include "_rect.h"
 #include "_rules.h"
@@ -33,6 +36,8 @@
 #include "zbuffer.h"
 
 #include <algorithm>
+#include <utility>
+#include <vector>
 
 int SpiralIndexToSurfaceLUT[289];
 Point2D SpiralIndexToScreenLUT[289];
@@ -80,12 +85,42 @@ Point2D Spiral_Index_To_Point(int index);
 /// there until its shockwave has expired. The ion cannon superweapon and the trigger
 /// action of the same name are the two things that set one off.
 /// </summary>
-IonBlastClass::IonBlastClass(Coord coord, bool wave_only) :
+IonBlastClass::IonBlastClass(Coord coord, bool wave_only, int frames) :
 	Lifetime(0),
 	Position(coord)
 {
 	IsWaveOnly = wave_only;
+	LastFrame = std::clamp(frames, 1, (int)WAVE_FRAMES);
 	IonBlasts.Add(this);
+}
+
+
+void IonBlastClass::Ripple(Coord const & coord, int frames)
+{
+	int const RIPPLE_GAP = 15;
+	if (frames <= 0) {
+		return;
+	}
+	// The places of the last ripples and the frames they began on. It is not saved: a loaded game only forgets a gap.
+	static std::vector<std::pair<Cell, int>> _recent;
+	std::erase_if(_recent, [&](std::pair<Cell, int> const & entry) { return(entry.second > Frame || Frame - entry.second >= RIPPLE_GAP); });
+	for (std::pair<Cell, int> const & entry : _recent) {
+		if (entry.first == coord.As_Cell()) {
+			return;
+		}
+	}
+	_recent.push_back({ coord.As_Cell(), Frame });
+
+	AUTOTEST_LOG("ripple frame %d at %d,%d for %d frames\n", Frame, coord.X, coord.Y, frames);
+
+	// While the GPU draws the map view its own ring stands in for the wave: the software wave would take every
+	// frame it shows away from the GPU. The ring travels as far as the wave gets in that many frames.
+	if (GpuDraw_Steady()) {
+		int const RING_STRENGTH = 80;
+		GpuDraw_Add_Shockwave(coord, RING_STRENGTH, (int)(WaveReach * std::min(frames, (int)WAVE_FRAMES) / WAVE_FRAMES));
+		return;
+	}
+	new IonBlastClass(coord, true, frames);
 }
 
 
@@ -107,7 +142,7 @@ IonBlastClass::~IonBlastClass(void)
 /// </summary>
 void IonBlastClass::AI(void)
 {
-	if (Lifetime >= 79) {
+	if (Lifetime >= LastFrame) {
 		delete this;
 		return;
 	}

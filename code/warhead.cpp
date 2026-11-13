@@ -40,6 +40,7 @@
 #include "armortypes.h"
 #include <cstdio>
 #include "warhead.h"
+#include "ionblast.h"
 
 #include "_warhead.h"
 #include "animtype.h"
@@ -139,6 +140,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	DelayKillAtMax(1.0f),
 	CombatLightSize(0.0f),
 	IsMalicious(true),
+	IonRipple(0),
 	IsMakesDisguise(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
@@ -296,6 +298,9 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		DelayKillAtMax = (float)ini.Get_Float(Name(), "DelayKillAtMax", DelayKillAtMax);
 		CombatLightSize = (float)ini.Get_Float(Name(), "CombatLightSize", CombatLightSize);
 		IsMalicious = ini.Get_Bool(Name(), "Malicious", IsMalicious);
+		// Ripple.Radius is the name older Ares rules use for IonCannon.Ripple; the newer name wins.
+		IonRipple = ini.Get_Int(Name(), "Ripple.Radius", IonRipple);
+		IonRipple = std::clamp(ini.Get_Int(Name(), "IonCannon.Ripple", IonRipple), 0, (int)IonBlastClass::WAVE_FRAMES);
 		IsMakesDisguise = ini.Get_Bool(Name(), "MakesDisguise", IsMakesDisguise);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
@@ -627,6 +632,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DelayKillAtMax);
 	stream.Serialize(CombatLightSize);
 	stream.Serialize(IsMalicious);
+	stream.Serialize(IonRipple);
 	stream.Serialize(IsMakesDisguise);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);

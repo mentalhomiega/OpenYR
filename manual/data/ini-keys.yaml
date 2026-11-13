@@ -24349,6 +24349,23 @@ IonBlue:
       source: code/mapgen.cpp
       guard: null
     level: MapGeneratorClass
+IonCannon.Ripple:
+  key: IonCannon.Ripple
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: IonRipple
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 IonCannonDamage:
   key: IonCannonDamage
   scopes:
@@ -39120,6 +39137,23 @@ Ring1Glow:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Ripple.Radius:
+  key: Ripple.Radius
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: IonRipple
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Rocker:
   key: Rocker
   scopes:

@@ -968,6 +968,7 @@ struct Shockwave
 	Coord Where;
 	int Start;
 	float Strength;
+	float Reach;
 };
 
 static std::vector<Shockwave> _Shockwaves;
@@ -994,7 +995,7 @@ static std::vector<GpuRipple> Shockwave_Ripples(void)
 		GpuRipple ripple;
 		ripple.X = (float)(pixel.X + TacticalRect.X - _Area.X);
 		ripple.Y = (float)(pixel.Y + TacticalRect.Y - _Area.Y);
-		ripple.Radius = 6.0f + 170.0f * ease;
+		ripple.Radius = 6.0f + wave.Reach * ease;
 		ripple.Strength = wave.Strength * (1.0f - t);
 		ripples.push_back(ripple);
 	}
@@ -1006,13 +1007,13 @@ static std::vector<GpuRipple> Shockwave_Ripples(void)
 /// Starts a shockwave ring at coord that the GPU map pass draws for two thirds of a second; a
 /// stronger blast bends the picture further. Only the GPU-drawn map shows it.
 /// </summary>
-void GpuDraw_Add_Shockwave(Coord const & coord, int strength)
+void GpuDraw_Add_Shockwave(Coord const & coord, int strength, int reach)
 {
 	std::erase_if(_Shockwaves, Shockwave_Done);
 	if (_Shockwaves.size() >= SHOCKWAVE_LIMIT) {
 		_Shockwaves.erase(_Shockwaves.begin());
 	}
-	_Shockwaves.push_back({ coord, Frame, std::clamp((float)strength / 8.0f, 6.0f, 16.0f) });
+	_Shockwaves.push_back({ coord, Frame, std::clamp((float)strength / 8.0f, 6.0f, 16.0f), (float)reach });
 }
 
 

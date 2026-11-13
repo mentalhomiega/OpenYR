@@ -369,7 +369,8 @@ void GpuDraw_Line_End(void);
 bool GpuDraw_Text_Begin(Surface const & surface);
 
 // Starts a shockwave ring at the world point for the GPU-drawn map; strength is the blast's damage.
-void GpuDraw_Add_Shockwave(Coord const & coord, int strength);
+// reach is how far the ring travels, in map pixels.
+void GpuDraw_Add_Shockwave(Coord const & coord, int strength, int reach = 170);
 
 // Lights the sky of the GPU-drawn map for a moment, as a lightning bolt does, unless the last flash was
 // under 45 frames ago; only rain shows it.

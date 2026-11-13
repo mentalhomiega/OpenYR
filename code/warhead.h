@@ -283,6 +283,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// Malicious=no (Ares) keeps a hit on an ore miner from raising the miner-under-attack alert.
 		bool IsMalicious;
 
+		// Frames of the ion cannon's shockwave that a detonation shows, 0 for none (Ares IonCannon.Ripple, once Ripple.Radius).
+		int IonRipple;
+
 		// A disguise warhead makes its firer look like the soldier it hits.
 		bool IsMakesDisguise;
 

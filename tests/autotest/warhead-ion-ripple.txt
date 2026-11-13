@@ -1,0 +1,15 @@
+; A warhead with IonCannon.Ripple (Ares; older rules call it Ripple.Radius) shows the ion cannon's shockwave where it goes off, for that many frames of the
+; wave's 79. The overlay warhead-ion-ripple.ini gives the Grizzly tank's warhead 40 frames and the Apocalypse tank's 20 under the older name.
+; Expected: each shell that lands writes one `AUTOTEST ripple` line with its frame count, 40 for the Grizzly (MTNK) and 20 for the Apocalypse (APOC), and a
+; place that got a ripple in the last 15 frames gets no second one, so the Apocalypse's double shot writes one line. A warhead without the key writes none.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/warhead-ion-ripple.txt -Seconds 120 -Country 8 -Filter "AUTOTEST ripple|AUTOTEST own|Exception"
+10 rules warhead-ion-ripple.ini
+30 command CenterBase
+35 reveal
+40 own MTNK 50 40
+41 own APOC 50 44
+45 view 52 42
+100 forceattack MTNK 54 40
+160 stop MTNK
+200 forceattack APOC 54 44
+280 quit
