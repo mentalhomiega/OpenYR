@@ -286,11 +286,11 @@ void Debug_Cheat_Run(DebugCheat cheat)
 	// The scenario's win and lose actions call these for the player's house, so the game ends the same way.
 	switch (cheat) {
 		case DebugCheat::WIN_MISSION:
-			PlayerPtr->Flag_To_Win();
+			PlayerPtr->Flag_To_Win("debug cheat");
 			break;
 
 		case DebugCheat::LOSE_MISSION:
-			PlayerPtr->Flag_To_Lose();
+			PlayerPtr->Flag_To_Lose("debug cheat");
 			break;
 
 		case DebugCheat::CHARGE_SUPERWEAPONS:

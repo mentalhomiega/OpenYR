@@ -623,9 +623,9 @@ bool Main_Loop(void)
 	if (!done) {
 		if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && TournamentTime > 0 && TournamentTimer == 0) {
 			if (Single_Score_Presentation(PlayerPtr)) {
-				PlayerPtr->Flag_To_Win();
+				PlayerPtr->Flag_To_Win("tournament time ran out");
 			} else {
-				PlayerPtr->Flag_To_Lose();
+				PlayerPtr->Flag_To_Lose("tournament time ran out");
 			}
 		}
 
@@ -816,7 +816,7 @@ void Keyboard_Process(KeyNumType & input)
 
 		if (Debug_Playtest && input == (KN_W|KN_ALT_BIT)) {
 			PlayerPtr->Blockage = false;
-			PlayerPtr->Flag_To_Win();
+			PlayerPtr->Flag_To_Win("debug key");
 		}
 
 		if ((Debug_Flag || Debug_Playtest) && plain == KN_F4) {

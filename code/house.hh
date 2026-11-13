@@ -32,7 +32,7 @@ enum HousesType {
 	HOUSE_FIRST=0,
 
 	// Whoever starts at a numbered position, as Tiberian Sun patches and Yuri's Revenge each
-	// number it; no house type is ever registered under these values.
+	// number it. A mod with more than 50 house types has real types at 50..57, which then win.
 	HOUSE_SPAWN_FIRST=50,
 	HOUSE_SPAWN_LAST=57,
 	HOUSE_PLAYER_AT_FIRST=4475,

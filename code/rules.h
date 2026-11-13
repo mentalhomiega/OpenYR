@@ -2564,6 +2564,10 @@ class RulesClass
 		double RepairPercent;
 		int IRepairStep;
 
+		// Credits a campaign house with PlayerControl=yes gains (or loses) on Easy and on Hard, at the scenario's start.
+		int CampaignMoneyDeltaEasy;
+		int CampaignMoneyDeltaHard;
+
 		/*
 		**	This is the rate that objects with self healing will heal. They will repair a bit
 		**	every 'this' number of minutes.

@@ -1,0 +1,20 @@
+; A reinforcement made only of soldiers comes out of a living structure next to its waypoint when one of the cells
+; around that structure is free, and never boards a transport vehicle that stands there (gamemd 0x65D8E0, with the free
+; cell check at 0x459CA0). Expected log lines:
+;   Frame 51: both GIs of the team brought next to the player's IFV at 62,38 stand on cell 63,38 with `limbo 0`. Before
+;   the fix they rode inside the IFV (`cell 0,0`, `limbo 1`).
+;   Frame 111: the two GIs of the team brought next to the player's Allied Barracks at 70,40 have walked out of it, so
+;   `count E1` reports 4.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/reinforce-popout.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (reinforce|where (E1|FV)|count)|Exception"
+30 command CenterBase
+40 teamini reinforce-popout.ini
+45 own FV 62 38
+50 reinforce TSTPOPT 63 38
+51 where E1
+51 where FV
+100 own GAPILE 70 40
+110 reinforce TSTPOPT 69 40
+111 count E1
+160 count E1
+200 quit

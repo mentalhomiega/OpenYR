@@ -91,6 +91,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. Kind 3 destroys only the vehicles, soldiers and aircraft on cells the player can see. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
+| `allies <House>` | Writes one line for each house the named house counts as an ally. An underscore in the name stands for a space, and `#<n>` names the house at position `n` in the house list |
 | `counts <House>` | Writes the house's owned unit, building, infantry and aircraft counts (`CurUnits` and so on), then its active unit and soldier counts, which the Destroyed all units and Destroyed all events read and which leave out soldiers held inside a building; an underscore in the name stands for a space |
 | `listhouse <House>` | Writes each object the house has in the technos list, limbo'd ones included, with its cell (`-` in limbo), limbo and active state, strength, transporter, cargo, team, a building's occupant count and whether the player can see its cell (`visible`); then the active land, naval and infantry counts and the owned counts. An underscore in the name stands for a space |
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
@@ -395,7 +396,7 @@ movies are skipped in an unattended run. The older scripts still begin with `ui 
 and does nothing.
 
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
-`setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
+`setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in. Every win, loss or defeat a house is flagged for also writes a `Game end: <house> <win|lose|die|defeated> at frame N: <reason>` line, in every game and not only in autotests; the reason names the trigger or team script that called it, or the rule, such as a house that owns nothing.
 
 `win-all04-remote-refineries.txt` plays Allied 4 the way a player does: it destroys the Yuri base and every unit by type and leaves the two Slave Miners that deployed far from the base. The mission is won with those refineries still standing.
 

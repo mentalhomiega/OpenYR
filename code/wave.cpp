@@ -190,8 +190,11 @@ WaveClass::~WaveClass(void)
 /// <param name="cliprect">The clipping rectangle the replacement may be lifted from.</param>
 void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned short * buffer, Rect const & cliprect) const
 {
-	int radius = RadiusTable[y][abs(x - WaveStartMiddle.X - xoff)];
-	int amplitude = abs(SineTable[WaveEC + radius]);
+	// A wave longer or wider than the tables, which a long weapon range or a large view allows,
+	// takes the last entry rather than whatever lies past the table.
+	int across = std::min(abs(x - WaveStartMiddle.X - xoff), _RADIUS_TABLE_SIZE - 1);
+	int radius = RadiusTable[std::min(y, _RADIUS_TABLE_SIZE - 1)][across];
+	int amplitude = abs(SineTable[std::clamp(WaveEC + radius, 0, _SINE_TABLE_SIZE - 1)]);
 
 	if (_sonic_recording && GpuDraw_Line_Pixel(x, yscreen, amplitude + 1)) {
 		return;

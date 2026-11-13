@@ -12,6 +12,7 @@
 #include "bitfont.h"
 
 #include "convert.h"
+#include "gpudraw.h"
 #include "surface.h"
 #include "utf8.h"
 
@@ -115,15 +116,25 @@ void BitFontClass::Draw_Glyph(unsigned char const * glyph, void * buffer, Surfac
 
 		unsigned char const * bits = rows + row * Data->Stride;
 		char * line = static_cast<char *>(buffer) + py * surface.Stride();
-		for (int column = 0; column < width; column++) {
+		int runstart = -1;
+		for (int column = 0; column <= width; column++) {
 			int const px = x + column;
-			if (px < cliprect.X || px >= cliprect.X + cliprect.Width) continue;
-			if ((bits[column >> 3] & (0x80 >> (column & 7))) == 0) continue;
-
-			if (bbp == 2) {
-				*(short *)(line + px * 2) = (short)pixel;
-			} else {
-				*(line + px) = (char)pixel;
+			bool const set = column < width && px >= cliprect.X && px < cliprect.X + cliprect.Width
+				&& (bits[column >> 3] & (0x80 >> (column & 7))) != 0;
+			if (set) {
+				if (runstart < 0) runstart = px;
+			} else if (runstart >= 0) {
+				// A recorded map pass takes each run as a fill; the GPU draws it when it renders the pass.
+				if (bbp != 2 || !GpuDraw_Fill(surface, Rect(runstart, py, px - runstart, 1), (unsigned short)pixel)) {
+					for (int at = runstart; at < px; at++) {
+						if (bbp == 2) {
+							*(short *)(line + at * 2) = (short)pixel;
+						} else {
+							*(line + at) = (char)pixel;
+						}
+					}
+				}
+				runstart = -1;
 			}
 		}
 	}
@@ -155,6 +166,7 @@ Point2D BitFontClass::Print(char const * string, Surface & surface, Rect const &
 	if (buffer == NULL) {
 		return(drawpoint);
 	}
+	GpuDraw_Text_Begin(surface);
 
 	int const foreground = converter.Convert_Pixel(remap[1]);
 	int const shadow = converter.Convert_Pixel(remap[2]);

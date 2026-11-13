@@ -122,7 +122,14 @@ bool Is_Number(char const * text)
 }
 
 
-unsigned Parse_Flags(char const * text, unsigned fallback, std::span<FlagName const> names, char const * what)
+bool Names_Flag(std::span<FlagName const> names, std::string const & token)
+{
+	return(std::any_of(names.begin(), names.end(), [&token](FlagName const & name) { return(_stricmp(token.c_str(), name.Name) == 0); }));
+}
+
+
+// A word that is not in the key's own list is skipped, as gamemd does (0x406820 for Control=, 0x406870 for Type=).
+unsigned Parse_Flags(char const * text, unsigned fallback, std::span<FlagName const> names, char const * what, std::span<FlagName const> other = {}, char const * otherwhat = "")
 {
 	std::vector<std::string> tokens = Tokenize(text);
 	if (tokens.empty()) {
@@ -134,7 +141,13 @@ unsigned Parse_Flags(char const * text, unsigned fallback, std::span<FlagName co
 		if (match != names.end()) {
 			flags |= match->Value;
 		} else {
-			DebugString("SOUND.INI: unknown %s flag '%s'\n", what, token.c_str());
+			if (Names_Flag(other, token)) {
+				DebugString("SOUND.INI: '%s' is a %s flag, not a %s flag; it is skipped\n", token.c_str(), otherwhat, what);
+			} else if (_stricmp(what, "Type") == 0 && std::any_of(std::begin(PRIORITY_NAMES), std::end(PRIORITY_NAMES), [&token](PriorityName const & name) { return(_stricmp(token.c_str(), name.Name) == 0); })) {
+				DebugString("SOUND.INI: '%s' is a Priority value, not a Type flag; it is skipped\n", token.c_str());
+			} else {
+				DebugString("SOUND.INI: unknown %s flag '%s'\n", what, token.c_str());
+			}
 		}
 	}
 	return(flags);
@@ -297,7 +310,7 @@ float Sound_Parse_Volume(char const * text, float fallback)
 
 unsigned Sound_Parse_Type(char const * text, unsigned fallback)
 {
-	return(Parse_Flags(text, fallback, TYPE_NAMES, "Type"));
+	return(Parse_Flags(text, fallback, TYPE_NAMES, "Type", CONTROL_NAMES, "Control"));
 }
 
 

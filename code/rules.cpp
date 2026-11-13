@@ -288,6 +288,8 @@ RulesClass::RulesClass(void) :
 	RepairStep(5),
 	RepairPercent(.25),
 	IRepairStep(1),
+	CampaignMoneyDeltaEasy(5000),
+	CampaignMoneyDeltaHard(-5000),
 	RepairRate(.016),
 	URepairRate(.016),
 	IRepairRate(.016),
@@ -1970,6 +1972,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		RepairPercent = ini.Get_Float(GENERAL, "RepairPercent", RepairPercent);
 		RepairStep = ini.Get_Int(GENERAL, "RepairStep", RepairStep);
 		IRepairStep = ini.Get_Int(GENERAL, "IRepairStep", IRepairStep);
+		CampaignMoneyDeltaEasy = ini.Get_Int(GENERAL, "CampaignMoneyDeltaEasy", CampaignMoneyDeltaEasy);
+		CampaignMoneyDeltaHard = ini.Get_Int(GENERAL, "CampaignMoneyDeltaHard", CampaignMoneyDeltaHard);
 		RepairRate = ini.Get_Float(GENERAL, "RepairRate", RepairRate);
 		URepairRate = ini.Get_Float(GENERAL, "URepairRate", URepairRate);
 		IRepairRate = ini.Get_Float(GENERAL, "IRepairRate", IRepairRate);
@@ -3610,6 +3614,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RepairStep);
 	stream.Serialize(RepairPercent);
 	stream.Serialize(IRepairStep);
+	stream.Serialize(CampaignMoneyDeltaEasy);
+	stream.Serialize(CampaignMoneyDeltaHard);
 	stream.Serialize(RepairRate);
 	stream.Serialize(URepairRate);
 	stream.Serialize(IRepairRate);

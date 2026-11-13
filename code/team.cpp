@@ -129,6 +129,7 @@
 
 #include <map>
 #include <set>
+#include <string>
 
 
 BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *house, FootClass *unit, TargetPropertyType prop, bool only_enemy);
@@ -3411,13 +3412,19 @@ void TeamClass::TMission_LOOP(TeamMissionClass * mission, bool)
 }
 
 
+static std::string Team_Reason(char const * what, TeamClass const * team)
+{
+	return(std::string(what) + " of team " + (char const *)team->Class->IniName + " '" + (char const *)team->Class->GivenName + "'");
+}
+
+
 /// <summary>
 /// Handles the win team mission.
 /// This routine flags the human player as having won the scenario.
 /// </summary>
 void TeamClass::TMission_WIN(TeamMissionClass * mission, bool)
 {
-	PlayerPtr->Flag_To_Win();
+	PlayerPtr->Flag_To_Win(Team_Reason("Win script action", this).c_str());
 	IsNextMission = true;
 }
 
@@ -3428,7 +3435,7 @@ void TeamClass::TMission_WIN(TeamMissionClass * mission, bool)
 /// </summary>
 void TeamClass::TMission_LOSE(TeamMissionClass * mission, bool)
 {
-	PlayerPtr->Flag_To_Lose();
+	PlayerPtr->Flag_To_Lose(Team_Reason("Lose script action", this).c_str());
 	IsNextMission = true;
 }
 
@@ -3540,7 +3547,8 @@ void TeamClass::TMission_SELF_DESTRUCT(TeamMissionClass * mission, bool)
 			if (unit->Strength > 0 && unit->IsActive && unit->IsDown && !unit->IsInLimbo) {
 				int damage = unit->Strength;
 				unit->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-				doit = true;
+				// A member the damage cannot hurt, such as an invulnerable one, would otherwise keep this loop going forever.
+				doit = doit || unit->Strength < damage;
 			}
 			unit = unit->Member;
 		}
