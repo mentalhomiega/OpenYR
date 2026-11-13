@@ -289,8 +289,25 @@ both in every game frame:
 | Down | 50 ms | 16.8 ms |
 | Diagonal | 245 ms | 16.7 ms |
 
-The same view standing still takes about 10 ms a frame. A full redraw of that view, which each step of
-an ambient light change still causes, takes about 370 ms.
+The same view standing still takes about 10 ms a frame. A full redraw of that view takes about 370 ms.
+
+## Ambient light fades in a large map view
+
+Each step of an ambient light change used to redraw the whole tile layer. The layer now keeps its picture
+through the fade and the GPU scales it ([GPU_MAP.md](GPU_MAP.md#light-fades)), with one full redraw when the
+light has settled and one whenever the picture would have to be brightened by more than half.
+
+Measured on the same mission and view, with the light stepping one unit about every frame, as game time
+per frame over the whole fade:
+
+| Fade | Before | After |
+|---|---|---|
+| From 85 down to 55 | 103 ms a frame | 12 ms |
+| From 55 up to 90 | 94 ms | 16 ms |
+| The mission's opening fade from 0 to 85 | 200 ms | 45 ms |
+
+The opening fade starts from black, where each step is a large change, so it still redraws the layer ten
+times on the way up. A later fade to black and back keeps the bright picture and redraws nothing.
 
 `FastestGpu` ([manual](../manual/content/keys/fastestgpu--client-settings.md)) matters for these numbers:
 on a computer with two graphics cards the game could start on the slower one, where the GPU pass of this

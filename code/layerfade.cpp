@@ -14,6 +14,7 @@
 #include "dbgprint.h"
 #include "gpudraw.h"
 #include "gscreen.h"
+#include "ion.h"
 #include "_map.h"
 #include "_rect.h"
 #include "_tactica.h"
@@ -25,13 +26,16 @@
 #include <cstdlib>
 
 
-// Game frames the light must stay at its target before the exact redraw.
+// Game frames the light must stay at its target before the exact redraw. A picture darkened to under half is
+// kept much longer: a dip into darkness that soon lifts again then costs no redraw at all, since the brighter
+// picture is the better one to scale from.
 static constexpr int SETTLE_FRAMES = 30;
+static constexpr int DARK_SETTLE_FRAMES = 450;
+static constexpr int DARK_PERCENT = 50;
 
-// The frozen picture is redrawn when the flat ground's scale leaves this range: brightening a dark picture
-// far shows its coarse steps, darkening a bright one does not.
+// The frozen picture is redrawn when the flat ground would be brightened past this: a dark picture scaled far
+// up shows its coarse steps. Darkening a bright picture has no such limit.
 static constexpr int MOST_BRIGHTENING_PERCENT = 150;
-static constexpr int MOST_DARKENING_PERCENT = 30;
 
 static bool _Active = false;
 static int _FrozenAmbient = 0;
@@ -74,7 +78,7 @@ bool LayerFade_Defer(int ambient_before)
 		return(true);
 	}
 	int const percent = _FrozenAmbient > 0 ? 100 * Scen->CurrentAmbientLight / _FrozenAmbient : MOST_BRIGHTENING_PERCENT + 1;
-	if (percent > MOST_BRIGHTENING_PERCENT || percent < MOST_DARKENING_PERCENT) {
+	if (percent > MOST_BRIGHTENING_PERCENT) {
 		// The redraw the caller now asks for draws the layer at the current light, and the next step freezes that.
 		AUTOTEST_LOG("layer fade frame %d: redraw at ambient %d, too far from %d\n", Frame, Scen->CurrentAmbientLight, _FrozenAmbient);
 		_Active = false;
@@ -100,8 +104,11 @@ void LayerFade_AI(void)
 		LayerFade_Resolve();
 		return;
 	}
-	if (Scen->DesiredAmbientLight == Scen->CurrentAmbientLight && ++_Settled >= SETTLE_FRAMES) {
-		LayerFade_Resolve();
+	if (Scen->DesiredAmbientLight == Scen->CurrentAmbientLight) {
+		bool const dark = 100 * Scen->CurrentAmbientLight < DARK_PERCENT * _FrozenAmbient;
+		if (++_Settled >= (dark ? DARK_SETTLE_FRAMES : SETTLE_FRAMES)) {
+			LayerFade_Resolve();
+		}
 	}
 }
 
@@ -123,13 +130,25 @@ void LayerFade_Clear(void)
 }
 
 
-bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area)
+bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area, bool & changed)
 {
 	if (!_Active || TacticalMap == NULL || area.Width <= 0 || area.Height <= 0) {
 		return(false);
 	}
 	width = (area.Width + LAYER_FADE_DIVISOR - 1) / LAYER_FADE_DIVISOR;
 	height = (area.Height + LAYER_FADE_DIVISOR - 1) / LAYER_FADE_DIVISOR;
+
+	// The scales change with the view and the two light levels. A light source that changes a cell's own light
+	// moves its scale a little as well, which the refill every REFILL_FRAMES frames picks up.
+	static constexpr int REFILL_FRAMES = 15;
+	static int _filled[10] = {};
+	int const now_filled[10] = { TacticalMap->TacPixelX, TacticalMap->TacPixelY, area.X, area.Y, area.Width, area.Height,
+		_FrozenAmbient, Scen->CurrentAmbientLight, IonStormClass::Level_Light() * 4096 + IonStormClass::Ground_Light(), Frame / REFILL_FRAMES };
+	changed = plane.size() != (std::size_t)width * height || !std::equal(now_filled, now_filled + 10, _filled);
+	if (!changed) {
+		return(true);
+	}
+	std::copy(now_filled, now_filled + 10, _filled);
 	plane.assign((std::size_t)width * height, (unsigned short)LAYER_FADE_UNIT);
 
 	// A cell covers a block a little larger than its diamond, so that neighbours leave no gaps.

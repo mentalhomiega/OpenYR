@@ -761,7 +761,8 @@ static bool Upload_Fade(GpuMapPass const & pass)
 	if (pass.Fade == NULL || pass.FadeWidth <= 0 || pass.FadeHeight <= 0 || pass.Fade->size() != (std::size_t)pass.FadeWidth * pass.FadeHeight) {
 		return(false);
 	}
-	if (!bgfx::isValid(_Fade) || _FadeWidth != pass.FadeWidth || _FadeHeight != pass.FadeHeight) {
+	bool const fresh = !bgfx::isValid(_Fade) || _FadeWidth != pass.FadeWidth || _FadeHeight != pass.FadeHeight;
+	if (fresh) {
 		Release_Handle(_Fade);
 		_Fade = bgfx::createTexture2D((uint16_t)pass.FadeWidth, (uint16_t)pass.FadeHeight, false, 1, bgfx::TextureFormat::R16);
 		_FadeWidth = pass.FadeWidth;
@@ -770,7 +771,9 @@ static bool Upload_Fade(GpuMapPass const & pass)
 			return(false);
 		}
 	}
-	bgfx::updateTexture2D(_Fade, 0, 0, 0, 0, (uint16_t)_FadeWidth, (uint16_t)_FadeHeight, bgfx::copy(pass.Fade->data(), (uint32_t)(pass.Fade->size() * sizeof(unsigned short))));
+	if (fresh || pass.FadeChanged) {
+		bgfx::updateTexture2D(_Fade, 0, 0, 0, 0, (uint16_t)_FadeWidth, (uint16_t)_FadeHeight, bgfx::copy(pass.Fade->data(), (uint32_t)(pass.Fade->size() * sizeof(unsigned short))));
+	}
 	return(true);
 }
 
