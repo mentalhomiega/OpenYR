@@ -2,8 +2,7 @@
 ; them immune to damage. The damage cannot hurt them, so the line ends with the units alive, the team goes on to its next
 ; line and ends, and the game keeps running to the last frame. The stock loop (gamemd 0x6E945B, case 0x1f) would apply the
 ; damage to the members again and again.
-; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/team-self-destruct-curtain.txt -Map XMP29U2.MAP -AICountries 1 -Seconds 90 -Settings "[Options]
-; DebugMode=yes" -Filter "AUTOTEST   where|AUTOTEST team|TEAMTRACE|AUTOTEST quit|Exception"
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/team-self-destruct-curtain.txt -Map XMP29U2.MAP -AICountries 1 -Seconds 90 -Settings "[Options]<newline>DebugMode=yes" -Filter "AUTOTEST   where|AUTOTEST team|TEAMTRACE|AUTOTEST quit|Exception"
 ; Expected: where AMCV shows the same strength before the team starts and at 400; TEAMTRACE shows the team's two lines; the run reaches quit at 600.
 5 command DebugInvulnerable
 1 teamtrace 1

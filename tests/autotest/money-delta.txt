@@ -4,7 +4,8 @@
 ; The map sets Easy 7000 and Hard -500. Americans (PlayerControl=no, Credits 2000), Russians (PlayerControl=yes, 2000) and
 ; Germans (PlayerControl=yes, 100) should start with, per -Difficulty: Easy 2000 9000 7100; Normal 2000 2000 100;
 ; Hard 2000 1500 0. Observed 2026-11-13 with all three, as listed. A skirmish or multiplayer game never applies the delta.
-; Run (three runs, -Difficulty 0, 1 and 2): scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/money-delta.txt -Mods src-agent28/tests/autotest/money-delta -Campaign -Map MONEYDELTA.MAP -Width 800 -Height 600 -Difficulty 0 -Seconds 90 -Uncapped -Filter "AUTOTEST   house|Exception|census"
+; The same run with -Difficulty 1 and 2 gives the other two rows.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/money-delta.txt -Mods src-agent28/tests/autotest/money-delta -Campaign -Map MONEYDELTA.MAP -Width 800 -Height 600 -Difficulty 0 -Seconds 90 -Uncapped -Filter "AUTOTEST   house|Exception|census"
 ui click more
 ui wait 300
 ui click more
