@@ -6810,6 +6810,8 @@ struct PendingCapture
 	unsigned int Started;
 	// A red measure logs a windowred line instead, from the view as the last frames left it, without a full redraw.
 	bool Red = false;
+	// A shot as the view stands is taken without a full redraw too.
+	bool AsIs = false;
 };
 static std::deque<PendingCapture> PendingCaptures;
 
@@ -6817,11 +6819,14 @@ static std::deque<PendingCapture> PendingCaptures;
 static unsigned int const Capture_Timeout = 10000;
 
 
-// windowshot <name>: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
-// The script holds until the file is written.
+// windowshot <name> [asis]: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
+// The view is drawn afresh first; with asis it is shown as the last frames left it, so a part of the tile layer
+// that should have been redrawn and was not shows in the picture. The script holds until the file is written.
 static void Windowshot_Step(StepType const & step)
 {
-	PendingCaptures.push_back({false, Rect(), step.Argument, Screenshot_Name((step.Argument + ".tga").c_str()), 0});
+	std::string const name = step.Words.size() > 2 ? step.Words[2] : step.Argument;
+	bool const asis = step.Words.size() > 3 && step.Words[3] == "asis";
+	PendingCaptures.push_back({false, Rect(), name, Screenshot_Name((name + ".tga").c_str()), 0, false, asis});
 }
 
 
@@ -7625,7 +7630,7 @@ bool AutoTest_Capture_Hold(void)
 	if (capture.Started == 0) {
 		capture.Started = std::max<unsigned int>(timeGetTime(), 1);
 		RenderBlend = 1.0;
-		if (!capture.Red) {
+		if (!capture.Red && !capture.AsIs) {
 			Map.Flag_To_Redraw(GS_REDRAW_ALL);
 		}
 		Map.Render();
