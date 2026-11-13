@@ -975,6 +975,7 @@ class HouseClass : public AbstractClass
 		bool Is_Player_View(void) const;
 		bool Is_Ally_Of_Player_View(void) const;
 		bool Has_Powered_Unit_Source(TechnoTypeClass const * type) const;
+		bool Has_Working_Building(TypeList<BuildingTypeClass const *> const & types) const;
 #ifdef _DEBUG
 		void Debug_Dump(MonoClass *mono) const;
 		void Print_Zone_Stats(int x, int y, ZoneType zone, MonoClass * mono) const;
@@ -1097,7 +1098,8 @@ class HouseClass : public AbstractClass
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
 		void Refund_Money(int money);
-		void Attacked(BuildingClass * source);
+		// With miner_alert false, a hit on a deployed ore miner raises no alert (a Malicious=no warhead, Ares).
+		void Attacked(BuildingClass * source, bool miner_alert = true);
 		void Adjust_Power(int adjust);
 		void Adjust_Drain(int adjust);
 		void Update_Spied_Radar(HouseClass * house);

@@ -197,6 +197,17 @@ void Test_Hits_Kept(void)
 }
 
 
+void Test_Combat_Light_Size(void)
+{
+	Check(WarheadRules::Combat_Light_Size(100, 0.0f) == 25, "without CombatLightSize the damage sets the flash");
+	Check(WarheadRules::Combat_Light_Size(10, 0.0f) == 21, "a small blast gets the smallest flash");
+	Check(WarheadRules::Combat_Light_Size(1000, 0.0f) == 63, "a large blast gets the largest flash");
+	Check(WarheadRules::Combat_Light_Size(1000, 0.4f) == 25, "40% of 63 is cut to 25 whatever the damage");
+	Check(WarheadRules::Combat_Light_Size(10, 0.5f) == 31, "50% of 63 is cut to 31, below the damage minimum");
+	Check(WarheadRules::Combat_Light_Size(10, 4.0f) == 63, "a size above 100% is capped at the largest flash");
+}
+
+
 }
 
 
@@ -214,6 +225,7 @@ int main(void)
 	Test_Iron_Curtain_Counter();
 	Test_House_Spare();
 	Test_Hits_Kept();
+	Test_Combat_Light_Size();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

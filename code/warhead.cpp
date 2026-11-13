@@ -137,6 +137,8 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCausesDelayKill(false),
 	DelayKillFrames(0),
 	DelayKillAtMax(1.0f),
+	CombatLightSize(0.0f),
+	IsMalicious(true),
 	IsMakesDisguise(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
@@ -292,6 +294,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsCausesDelayKill = ini.Get_Bool(Name(), "CausesDelayKill", IsCausesDelayKill);
 		DelayKillFrames = ini.Get_Int(Name(), "DelayKillFrames", DelayKillFrames);
 		DelayKillAtMax = (float)ini.Get_Float(Name(), "DelayKillAtMax", DelayKillAtMax);
+		CombatLightSize = (float)ini.Get_Float(Name(), "CombatLightSize", CombatLightSize);
+		IsMalicious = ini.Get_Bool(Name(), "Malicious", IsMalicious);
 		IsMakesDisguise = ini.Get_Bool(Name(), "MakesDisguise", IsMakesDisguise);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
@@ -621,6 +625,8 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCausesDelayKill);
 	stream.Serialize(DelayKillFrames);
 	stream.Serialize(DelayKillAtMax);
+	stream.Serialize(CombatLightSize);
+	stream.Serialize(IsMalicious);
 	stream.Serialize(IsMakesDisguise);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);

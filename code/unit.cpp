@@ -1981,7 +1981,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 	} else {
 
 		if (res != RESULT_NONE) {
-			if (Class->IsToHarvest && House == PlayerPtr) {
+			if (Class->IsToHarvest && House == PlayerPtr && (warhead == NULL || warhead->IsMalicious)) {
 				if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, Destination_Coord().As_Cell())) {
 					Speak(VOX_HARVESTER_UNDER_ATTACK);
 				}

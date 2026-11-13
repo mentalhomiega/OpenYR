@@ -2099,15 +2099,16 @@ void HouseClass::Super_Weapon_Handler(void)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-void HouseClass::Attacked(BuildingClass * source)
+void HouseClass::Attacked(BuildingClass * source, bool miner_alert)
 {
 	if (source != NULL && source->Considered_Vehicle()) return;
 
-	if (SpeakAttackDelay == 0) {
+	bool const miner = source != NULL && source->Class->UndeploysInto != NULL && source->Class->IsResourceGatherer;
+	if (SpeakAttackDelay == 0 && !(miner && !miner_alert && Is_Player_Control())) {
 		// Gamemd (HouseClass::BuildingUnderAttack, 0x4F93E0) plays the line only when its radar event is created.
 		if (Is_Player_Control()) {
 			// A gatherer that can undeploy raises the harvester event and line instead of the base one.
-			if (source != NULL && source->Class->UndeploysInto != NULL && source->Class->IsResourceGatherer) {
+			if (miner) {
 				if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, source->Center_Coord().As_Cell())) {
 					Speak(VOX_HARVESTER_UNDER_ATTACK);
 				}
@@ -2682,6 +2683,21 @@ bool HouseClass::Has_Powered_Unit_Source(TechnoTypeClass const * type) const
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
 		if (building->PoweredUnitHouse == this && building->Class->PowersUnit == type) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Does this house own a structure of one of these types that is built, powered and not being sold?
+/// </summary>
+bool HouseClass::Has_Working_Building(TypeList<BuildingTypeClass const *> const & types) const
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this && !building->IsInLimbo && building->Strength > 0 && types.Is_In_List(building->Class) && building->Is_Online()) {
 			return(true);
 		}
 	}
@@ -3419,6 +3435,9 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						*/
 						if (Is_Player_Control()) {
 							Submit_Radar_Event(RADAREVENT_FACTORY_OUTPUT, builder->Get_Coord().As_Cell());
+						}
+						if (exit == 2 && builder->RTTI == RTTI_BUILDING) {
+							((BuildingClass *)builder)->Release_Vehicle_Clones(tech);
 						}
 						factory->Completed();
 						Abandon_Production(type, -1, buildcat, naval);

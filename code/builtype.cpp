@@ -324,6 +324,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	UnitsGainSelfHeal(0),
 	IsSpySat(false),
 	IsCloning(false),
+	IsCloningFacility(false),
 	IsGrinding(false),
 	IsReverseEngineersVictims(false),
 	IsInfantryAbsorb(false),
@@ -1466,6 +1467,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		UnitsGainSelfHeal = ini.Get_Int(Name(), "UnitsGainSelfHeal", UnitsGainSelfHeal);
 		IsSpySat = ini.Get_Bool(Name(), "SpySat", IsSpySat);
 		IsCloning = ini.Get_Bool(Name(), "Cloning", IsCloning);
+		IsCloningFacility = ini.Get_Bool(Name(), "CloningFacility", IsCloningFacility);
 		IsGrinding = ini.Get_Bool(Name(), "Grinding", IsGrinding);
 		IsReverseEngineersVictims = ini.Get_Bool(Name(), "ReverseEngineersVictims", IsReverseEngineersVictims);
 		IsInfantryAbsorb = ini.Get_Bool(Name(), "InfantryAbsorb", IsInfantryAbsorb);
@@ -2657,6 +2659,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnitsGainSelfHeal);
 	stream.Serialize(IsSpySat);
 	stream.Serialize(IsCloning);
+	stream.Serialize(IsCloningFacility);
 	stream.Serialize(IsGrinding);
 	stream.Serialize(IsReverseEngineersVictims);
 	stream.Serialize(IsInfantryAbsorb);

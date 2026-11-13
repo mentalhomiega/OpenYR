@@ -1,0 +1,12 @@
+; Ares SelfHealing.Amount and SelfHealing.Max. A Grizzly (MTNK, 300 strength) cut to 20% (60) heals 30 points a tick
+; while it is at or below half strength, so it climbs 60, 90, 120, 150 and takes one last tick to 180: where reports a
+; multiple of 30 above 60 at 120, and 180 at 200, 400 and 500.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-selfheal-amount.txt -Country 1 -Seconds 60 -Filter "AUTOTEST   where MTNK|Exception"
+10 rules ares-selfheal-amount.ini
+20 own MTNK 60 40
+110 hurt MTNK 20
+120 where MTNK
+200 where MTNK
+400 where MTNK
+500 where MTNK
+520 quit

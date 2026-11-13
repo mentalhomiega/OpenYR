@@ -110,6 +110,11 @@ class InfantryTypeClass : public TechnoTypeClass
 		*/
 		bool IsFraidyCat;
 
+		// IsCow (Ares): the soldier idles like the cow and wanders more often. IsDesolator (Ares): its AreaFire deploy
+		// weapon does not aim at its own cell. Each defaults to whether the type is named COW or DESO.
+		bool IsCow;
+		bool IsDesolator;
+
 		/*
 		 * If this infantry type can stand in tiberium unharmed, then this flag will be true.
 		 * Everyone else is poisoned for as long as they remain in the field.

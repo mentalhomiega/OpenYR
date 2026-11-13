@@ -286,4 +286,34 @@ namespace ObjectKeyRules
 		}
 		return(kept);
 	}
+
+	// Whether an object whose EMP wears off takes [CombatDamage] EMPAIRecoverMission (Ares): the key names a mission, a
+	// computer player owns the object, and it is neither a harvester, which goes back to harvesting, nor unloading.
+	inline bool Takes_EMP_Recover_Mission(bool mission_set, bool human, bool harvester, bool unloading)
+	{
+		return(mission_set && !human && !harvester && !unloading);
+	}
+
+	// Whether an object that names an operator has one aboard (Ares Operator): with _ANY_ any passenger counts, otherwise
+	// only a passenger of a listed type.
+	inline bool Operator_Present(bool any, int passengers, int listed_passengers)
+	{
+		return(any ? passengers > 0 : listed_passengers > 0);
+	}
+
+	// Whether an object is shut down: it cannot move or fire. A PoweredUnit vehicle (stock) needs a working structure whose
+	// PowersUnit names its type unless it stands in a structure; a vehicle with PoweredBy (Ares) needs one working
+	// structure of a listed type; an object with an Operator (Ares) needs its operator aboard.
+	inline bool Shut_Down(bool powered_unit, bool powers_unit_source, bool on_structure, bool powered_by, bool powered_by_source, bool needs_operator, bool operator_present)
+	{
+		bool const stock = powered_unit && !powers_unit_source && !on_structure;
+		return(stock || (powered_by && !powered_by_source) || (needs_operator && !operator_present));
+	}
+
+	// Whether a CloningFacility=yes structure (Ares) copies a vehicle its owner's factory released: the structure is not
+	// a factory that cloning ignores, has the vehicle's Naval setting, and the vehicle is Cloneable.
+	inline bool Cloning_Facility_Copies(bool facility, bool ignored_factory, bool facility_naval, bool vehicle_naval, bool cloneable)
+	{
+		return(facility && !ignored_factory && facility_naval == vehicle_naval && cloneable);
+	}
 }

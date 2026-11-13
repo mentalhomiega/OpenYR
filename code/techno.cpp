@@ -3821,27 +3821,51 @@ void TechnoClass::Turret_Recoil_AI(void)
 }
 
 
+/// <summary>
+/// Does this object carry a passenger its type's Operator accepts (Ares)?
+/// </summary>
+bool TechnoClass::Has_Operator(void) const
+{
+	int listed = 0;
+	Cargo.For_Each_Attached([&](FootClass const * passenger) {
+		if (TClass->Operators.Is_In_List(passenger->TClass)) {
+			listed++;
+		}
+	});
+	return(ObjectKeyRules::Operator_Present(TClass->IsOperatorAny, Cargo.How_Many(), listed));
+}
+
+
 void TechnoClass::Powered_Unit_AI(void)
 {
 	// A PoweredUnit object shuts down while its owner has no working control structure for its
 	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
-	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
+	// A vehicle with PoweredBy (Ares) needs one working structure of a listed type, and an object with an Operator
+	// (Ares) needs its operator aboard.
+	bool const stock = TClass->IsPoweredUnit && Is_Foot();
+	bool const powered_by = TClass->PoweredBy.Count() > 0 && RTTI == RTTI_UNIT;
+	bool const operated = TClass->Needs_Operator();
+	if ((stock || powered_by || operated) && !IsInLimbo) {
+		bool const off = ObjectKeyRules::Shut_Down(stock, stock && House->Has_Powered_Unit_Source(TClass), stock && Map[Get_Cell()].Cell_Building() != NULL,
+			powered_by, powered_by && House->Has_Working_Building(TClass->PoweredBy),
+			operated, operated && Has_Operator());
 		if (off != IsDeactivated) {
 			IsDeactivated = off;
-			FootClass * foot = (FootClass *)this;
+			FootClass * foot = Is_Foot() ? (FootClass *)this : NULL;
 			if (off) {
 				DebugString("Powered unit: %s shuts down\n", TClass->Name());
 				Sound_Effect(TClass->DeactivateSound, Center_Coord());
 				Assign_Target(NULL);
-				foot->Assign_Destination(NULL);
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_Off();
+				if (foot != NULL) {
+					foot->Assign_Destination(NULL);
+					if (foot->Locomotion != NULL) {
+						foot->Locomotion->Power_Off();
+					}
 				}
 			} else {
 				DebugString("Powered unit: %s starts up\n", TClass->Name());
 				Sound_Effect(TClass->ActivateSound, Center_Coord());
-				if (foot->Locomotion != NULL) {
+				if (foot != NULL && foot->Locomotion != NULL) {
 					foot->Locomotion->Power_On();
 				}
 			}
@@ -4258,11 +4282,15 @@ void TechnoClass::AI(void)
 					((FootClass *)foot)->Locomotion->Power_On();
 				}
 				UnitClass * unit = dynamic_cast<UnitClass *>(foot);
+				bool const harvester = unit != NULL && Rule->HarvesterUnit.Is_In_List(unit->Class);
 				if (unit != NULL && unit->Mission != MISSION_UNLOAD) {
-					if (Rule->HarvesterUnit.Is_In_List(unit->Class)) {
+					if (harvester) {
 						unit->Assign_Destination(NULL);
 						unit->Assign_Mission(MISSION_HARVEST);
 					}
+				}
+				if (ObjectKeyRules::Takes_EMP_Recover_Mission(Rule->EMPAIRecoverMission != MISSION_NONE, House->Is_Human_Player(), harvester, Mission == MISSION_UNLOAD)) {
+					Assign_Mission(Rule->EMPAIRecoverMission);
 				}
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];

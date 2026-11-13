@@ -397,11 +397,13 @@ RulesClass::RulesClass(void) :
 	EnterBioReactorSound(VOC_NONE),
 	LeaveBioReactorSound(VOC_NONE),
 	OpenToppedWarpDistance(5),
+	EMPAIRecoverMission(MISSION_NONE),
 	IvanWarhead(NULL),
 	IvanDamage(0),
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
 	IsChronoInfantryCrush(true),
+	IsCloningFacilityIgnoresFactories(true),
 	DisplayCreditsDelay(0.02),
 	IsBountyDisplay(false),
 	IsEnemyInsignia(true),
@@ -1530,6 +1532,7 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 		UnitCrateType = TGet_Class(ini, CRATERULES, "UnitCrateType", UnitCrateType);
 		SoloCrateMoney = ini.Get_Int(CRATERULES, "SoloCrateMoney", SoloCrateMoney);
 		CrateMoneyBonus = ini.Get_Int(CRATERULES, "CrateMoneyBonus", CrateMoneyBonus);
+		CrateMoneyBonus = ini.Get_Int(CRATERULES, "RandomCrateMoney", CrateMoneyBonus);
 		IsArmorCrateStacking = ini.Get_Bool(CRATERULES, "ArmorCrateStacks", IsArmorCrateStacking);
 		IsFirepowerCrateStacking = ini.Get_Bool(CRATERULES, "FirepowerCrateStacks", IsFirepowerCrateStacking);
 		SilverCrate = ini.Get_CrateType(CRATERULES, "SilverCrate", SilverCrate);
@@ -1604,6 +1607,10 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		BunkerROFMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerROFMultiplier", BunkerROFMultiplier);
 		BunkerWeaponRangeBonus = ini.Get_Int(COMBATDAMAGE, "BunkerWeaponRangeBonus", BunkerWeaponRangeBonus);
 		OpenToppedWarpDistance = ini.Get_Int(COMBATDAMAGE, "OpenToppedWarpDistance", OpenToppedWarpDistance);
+		std::string const recover = ini.Get_String(COMBATDAMAGE, "EMPAIRecoverMission");
+		if (!recover.empty()) {
+			EMPAIRecoverMission = MissionClass::Mission_From_Name(recover.c_str());
+		}
 		IvanWarhead = TGet_Class(ini, COMBATDAMAGE, "IvanWarhead", IvanWarhead);
 		IvanDamage = ini.Get_Int(COMBATDAMAGE, "IvanDamage", IvanDamage);
 		IvanTimedDelay = ini.Get_Int(COMBATDAMAGE, "IvanTimedDelay", IvanTimedDelay);
@@ -1860,6 +1867,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		IsChronoInfantryCrush = ini.Get_Bool(GENERAL, "ChronoInfantryCrush", IsChronoInfantryCrush);
+		IsCloningFacilityIgnoresFactories = ini.Get_Bool(GENERAL, "CloningFacilityIgnoresFactories", IsCloningFacilityIgnoresFactories);
 		BountyEnablers = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "BountyEnablers", BountyEnablers);
 		IsEnemyInsignia = ini.Get_Bool(GENERAL, "EnemyInsignia", IsEnemyInsignia);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
@@ -3171,11 +3179,13 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EnterBioReactorSound);
 	stream.Serialize(LeaveBioReactorSound);
 	stream.Serialize(OpenToppedWarpDistance);
+	stream.Serialize(EMPAIRecoverMission);
 	stream.Serialize(IvanWarhead);
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
 	stream.Serialize(IsCanDetonateTimeBomb);
 	stream.Serialize(IsChronoInfantryCrush);
+	stream.Serialize(IsCloningFacilityIgnoresFactories);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);

@@ -582,6 +582,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Cloning=yes structure releases a copy of every soldier its owner's barracks release.
 		bool IsCloning;
 
+		// A CloningFacility=yes structure (Ares) releases a copy of every Cloneable vehicle with its Naval setting that its
+		// owner's factories release.
+		bool IsCloningFacility;
+
 		// A Grinding=yes structure takes in its owner's infantry and vehicles and pays their refund.
 		bool IsGrinding;
 
