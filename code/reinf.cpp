@@ -377,6 +377,21 @@ static bool _Consists_Only_Of_Infantry(FootClass const * first)
  * HISTORY:                                                                                    *
  *   06/25/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
+static bool _Has_Clear_Exit_Cell(BuildingClass const * building)
+{
+	Cell const origin = building->Get_Cell();
+	for (Cell const * offset = building->Class->Exit_List(); offset != NULL && *offset != REFRESH_EOL; offset++) {
+		Cell const cell = origin + *offset;
+		if (Map.In_Radar(cell) && Map[cell].Cell_Occupier() == NULL && Map[cell].Is_Clear_To_Move(SPEED_FOOT, false, false)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+// Only a living structure with a free cell around it hosts the group, as in gamemd's
+// CreateTeamAndAttemptTransport (0x65D8E0, the check at 0x459CA0); a transport vehicle nearby never does.
 static TechnoClass * _Who_Can_Pop_Out_Of(Cell origin)
 {
 	CellClass * cellptr = &Map[origin];
@@ -389,13 +404,8 @@ static TechnoClass * _Who_Can_Pop_Out_Of(Cell origin)
 		}
 
 		BuildingClass * building = ptr->Cell_Building();
-		if (building && building->Strength > 0) {
+		if (building && building->Strength > 0 && _Has_Clear_Exit_Cell(building)) {
 			candidate = building;
-		}
-
-		UnitClass * unit = ptr->Cell_Unit();
-		if (unit && unit->Strength && unit->Class->Max_Passengers() > 0) {
-			return(unit);
 		}
 	}
 	return(candidate);
