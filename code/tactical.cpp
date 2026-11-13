@@ -1297,8 +1297,6 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			Register_Dirty_Buildings(Rect(TacticalRect.X - 64, TacticalRect.Y - 64, TacticalRect.Width + 128, TacticalRect.Height + 128));
 		}
 
-		// Whatever is drawn into the tile layer while a light fade is deferred takes the light the layer's picture has.
-		LayerFadeDrawScope fade_scope(fullredraw);
 		Surface * prevlogical = LogicalSurface;
 		LogicalSurface = TileSurface;
 		LogicalSurface->Lock();
@@ -1353,6 +1351,30 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			}
 
 			// The strip draws repaint colour without touching the emissive mask, so the mask in each strip starts clear.
+			// Whatever is drawn into the tile layer while a light fade is deferred takes the light the layer's picture has.
+			static std::vector<CellClass *> fade_cells;
+			fade_cells.clear();
+			if (LayerFade_Active() && !fullredraw) {
+				if (xpanrect.Is_Valid()) {
+					Cells_Under(xpanrect, fade_cells);
+				}
+				if (ypanrect.Is_Valid()) {
+					Cells_Under(ypanrect, fade_cells);
+				}
+				for (int index = 0; index < DirtyAreas.Count(); index++) {
+					Rect redraw = DirtyAreas[index].Area;
+					redraw.Y += TacticalRect.Y;
+					redraw = Intersect(TacticalRect, redraw);
+					if (redraw.Is_Valid()) {
+						Cells_Under(redraw, fade_cells);
+					}
+				}
+				for (CellClass * cell : CellRedraw) {
+					Cells_Under(cell->Cell_Render_Rect(), fade_cells);
+				}
+			}
+			LayerFadeDrawScope fade_scope(fullredraw, fade_cells);
+
 			Emissive_After_Fill(*LogicalSurface, xpanrect);
 			Emissive_After_Fill(*LogicalSurface, ypanrect);
 			ShadowPlane_After_Fill(*LogicalSurface, fullredraw ? TacticalRect : xpanrect);
@@ -2591,6 +2613,29 @@ void Tactical::Draw_Tiles(Rect const & area, Rect const & cliprect)
 				if (render.Is_Valid() && inter.Is_Valid()) {
 					cellptr->Draw_It(pixel, cliprect, 0);
 				}
+			}
+			cell += Cell(1, -1);
+		}
+	}
+}
+
+
+void Tactical::Cells_Under(Rect const & area, std::vector<CellClass *> & cells)
+{
+	// Draw_Tiles starts two cells to the left and walks 17 rows past the rectangle for high ground. The margin
+	// here is wider on every side, for a building whose picture reaches into the rectangle from outside it.
+	int const MARGIN = 8;
+	Coord lepton = Coord(Pixel_To_Lepton(Point2D(TacPixelX, TacPixelY) + area.Top_Left() - TacticalRect.Top_Left()), 0);
+	Cell origin = lepton.As_Cell();
+	Cell base(origin.X - 2 - 2 * MARGIN, origin.Y - MARGIN);
+
+	int const ycount = area.Height / (ISO_TILE_PIXEL_H / 2) + 17 + 4 * MARGIN;
+	int const xcount = area.Width / ISO_TILE_PIXEL_W + 4 + 2 * MARGIN;
+	for (int iy = 0; iy < ycount; iy++) {
+		Cell cell = base + Cell(iy / 2, (iy + 1) / 2);
+		for (int ix = xcount; ix > 0; ix--) {
+			if (Map.In_Radar(cell)) {
+				cells.push_back(&Map[cell]);
 			}
 			cell += Cell(1, -1);
 		}

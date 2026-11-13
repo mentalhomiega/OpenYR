@@ -13,6 +13,8 @@
 
 #include <vector>
 
+class CellClass;
+
 
 // While the ambient light fades and the GPU draws the map view, the tile layer keeps the picture it drew at the
 // light level the fade started from, and the GPU map pass scales that picture to the current level cell by cell.
@@ -20,7 +22,7 @@
 // redraws the whole tile layer. OPENYR_NO_FADE_DEFER=1 in the environment turns it off.
 
 // How finely the scale plane divides the map view: one value for each block of this many pixels a side.
-inline constexpr int LAYER_FADE_DIVISOR = 4;
+inline constexpr int LAYER_FADE_DIVISOR = 8;
 
 // The scale a plane value of 1 stands for is 1 / LAYER_FADE_UNIT.
 inline constexpr int LAYER_FADE_UNIT = 4096;
@@ -44,22 +46,27 @@ void LayerFade_Resolve(void);
 void LayerFade_Clear(void);
 
 // Fills plane, width by height values in rows, with the scale each block of the map view under area takes from the
-// frozen picture to the current light. False, with plane untouched, when nothing is deferred. changed is set
-// when the plane holds other values than the last call left in it.
-bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area, bool & changed);
+// frozen picture to the current light. False, with plane untouched, when nothing is deferred. version gets a
+// number that changes whenever the plane is given other values than the last call left in it.
+bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area, int & version);
 
-// Gives every cell the lighting of the frozen light level for as long as it lives, so that a draw into the tile
-// layer matches the picture already there. It does nothing when nothing is deferred. A redraw of the whole layer
-// needs no match: it is drawn at the current light, which becomes the frozen level.
+// Gives the cells the lighting of the frozen light level for as long as it lives, so that a draw into the tile
+// layer matches the picture already there. cells must hold every cell the draws read the lighting of, and stay
+// unchanged meanwhile. It does nothing when nothing is deferred. A redraw of the whole layer needs no match: it
+// is drawn at the current light, which becomes the frozen level.
 class LayerFadeDrawScope
 {
 	public:
-		explicit LayerFadeDrawScope(bool whole_layer);
+		LayerFadeDrawScope(bool whole_layer, std::vector<CellClass *> const & cells);
 		~LayerFadeDrawScope(void);
 		LayerFadeDrawScope(LayerFadeDrawScope const &) = delete;
 		LayerFadeDrawScope & operator=(LayerFadeDrawScope const &) = delete;
 
 	private:
+		void Relight(int ambient);
+
+		std::vector<CellClass *> const & Cells;
 		int Saved;
 		bool Swapped;
+		bool Every;
 };

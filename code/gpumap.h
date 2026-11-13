@@ -94,9 +94,9 @@ struct GpuMapPass
 
 	// While an ambient light fade is deferred (code/layerfade.h), FadeWidth by FadeHeight scales, each for a block
 	// of LAYER_FADE_DIVISOR pixels a side of Area, that the base picture is multiplied by; NULL for none.
-	// FadeChanged is false when they are the values the last pass had.
+	// FadeVersion changes whenever they hold other values than before.
 	std::vector<unsigned short> const * Fade = NULL;
-	bool FadeChanged = true;
+	int FadeVersion = 0;
 	int FadeWidth = 0;
 	int FadeHeight = 0;
 
