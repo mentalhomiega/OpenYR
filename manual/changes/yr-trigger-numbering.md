@@ -63,4 +63,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A Yuri's Revenge map now runs the trigger action and event it names: actions 101 to 145 and events 53 to 61 are Yuri's Revenge's own. The extra OpenTS actions that stood at 101 to 118 now follow Yuri's Revenge's range at 146 to 161, and the extra events that stood at 53 to 55 follow at 62 to 64. Maps that use an extra action by its old number must use the new one.
+A Yuri's Revenge map now runs the trigger action and event it names: actions 101 to 145 and events 53 to 61 are Yuri's Revenge's own. The extra OpenTS actions that stood at 101 to 118 now follow Yuri's Revenge's range and Ares's from 150, and the extra events that stood at 53 to 55 follow at 62 to 64. Maps that use an extra action by its old number must use the new one.

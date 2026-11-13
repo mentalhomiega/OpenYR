@@ -275,6 +275,9 @@ class TActionClass : public AbstractClass
 		bool TAction_PLAY_SOUND_AT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_PLAY_INGAME_MOVIE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_FLASH_TEAM(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_AUXILIARY_POWER(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_KILL_DRIVERS_OF(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_SET_EVA_VOICE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_DISABLE_SPEECH(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_ENABLE_SPEECH(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_SET_GROUP_ID(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);

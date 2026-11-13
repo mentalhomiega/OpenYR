@@ -24,6 +24,11 @@ void Speak_Eva_Index(int index, bool now=false);
 int Eva_Line(char const * name);
 void Load_Eva(void);
 void Set_Eva_Side(int side);
+// Switches the announcer to the voice at the position in the declared voices (Allied, Russian, Yuri, then [EVATypes]),
+// or off with -1. False when the position names no voice.
+bool Set_Eva_Voice(int index);
+// The position Set_Eva_Voice last chose, or -1 while the side's own voice speaks.
+int Get_Eva_Voice_Choice(void);
 bool Is_Eva_Loaded(void);
 std::string Eva_Sample_File(char const * name);
 void Speak_AI(void);

@@ -1147,8 +1147,13 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	 * so it travels through a local either way.
 	 */
 	int state = Get_Speech_State();
+	int voice = Get_Eva_Voice_Choice();
 	stream.Serialize(state);
+	stream.Serialize(voice);
 	if (stream.Is_Loading()) {
+		if (voice >= 0) {
+			Set_Eva_Voice(voice);
+		}
 		Set_Speech_State(state != 0);
 	}
 

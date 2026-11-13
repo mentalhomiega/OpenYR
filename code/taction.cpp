@@ -103,6 +103,7 @@
 #include "tutorial.h"
 #include "vanim.h"
 #include "vector.h"
+#include "unit.h"
 #include "velocity.h"
 #include "viewzoom.h"
 #include "voc.h"
@@ -114,6 +115,8 @@
 #include "draw.hh"
 #include "need.hh"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <limits>
 
@@ -271,9 +274,12 @@ static const struct {
 	{"Retint Green...", "Changes the green screen tint to the specified percent."},
 	{"Retint Blue...", "Changes the blue screen tint to the specified percent."},
 	{"Jump camera home", "Moves the tactical view to the player's construction yard at once."},
+	{"Auxiliary Power...", "Adds to the power the house always has, whatever its buildings make. A negative amount takes it away again."},
+	{"Kill Drivers Of...", "Kills the drivers of the attached vehicles, which then change to the house named."},
+	{"Set EVA Voice...", "Changes the player's EVA voice to the voice at the index given, or switches EVA off with -1."},
+	{"Set Group ID...", "Sets the group ID of the attached object."},
 	{"Disable Speech", "Disables EVA speech."},
 	{"Enable Speech", "Enables EVA speech."},
-	{"Set Group ID...", "Sets the group ID of the attached object."},
 	{"Give Credits...", "Gives or removes credits from the specified house. A positive amount gives money, a negative amount subtracts it."},
 	{"Enable Short Game", "Turns the short game rule on: a house is defeated once it has no structures and no base unit left."},
 	{"Disable Short Game", "Turns the short game rule off: a house is defeated only once it has nothing left."},
@@ -448,7 +454,12 @@ void TActionClass::Build_INI_Entry(char * ptr) const
 	}
 
 	ptr += strlen(ptr);
-	if (code == PARAM_CODE_TEAM_AND_TIME) {
+	if (Action == TACTION_AUXILIARY_POWER) {
+		// Ares writes this one with code 11 and the amount where other actions write a waypoint.
+		sprintf(ptr, "%d,%d,%d,%d,%d,%d,%d,%d", Action, PARAM_CODE_SUPER, val, TriggerRect.X, TriggerRect.Y,
+			TriggerRect.Width, TriggerRect.Height, Extra);
+	}
+	else if (code == PARAM_CODE_TEAM_AND_TIME) {
 		sprintf(ptr, "%d,%d,%s,%d,%d,%d,%d,%d",
 			Action,
 			code,
@@ -618,7 +629,7 @@ void TActionClass::Read_INI(void)
 		if (code == PARAM_CODE_TEAM_AND_TIME) {
 			Data.Value = atoi(temp);
 		}
-		else if (code == PARAM_CODE_TECHNO || code == PARAM_CODE_SUPER) {
+		else if (code == PARAM_CODE_TECHNO || code == PARAM_CODE_SUPER || Action == TACTION_AUXILIARY_POWER) {
 			Extra = atoi(temp);
 		}
 		else {
@@ -837,9 +848,12 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(ION_LIGHTNING_STRIKE);
 		INVOKE(PLAY_INGAME_MOVIE);
 		INVOKE(FLASH_TEAM);
+		INVOKE(AUXILIARY_POWER);
+		INVOKE(KILL_DRIVERS_OF);
+		INVOKE(SET_EVA_VOICE);
+		INVOKE(SET_GROUP_ID);
 		INVOKE(DISABLE_SPEECH);
 		INVOKE(ENABLE_SPEECH);
-		INVOKE(SET_GROUP_ID);
 		INVOKE(TALK_BUBBLE);
 		INVOKE(GIVE_CREDITS);
 		INVOKE(ENABLE_SHORT_GAME);
@@ -918,38 +932,51 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 
 
 /// <summary>
-/// Switches the house's firestorm defense off.
-/// The defense is toggled by firing the house's firestorm super weapon, so this
-/// action does nothing when the wall is already down.
+/// Does the Firestorm action work on this house? Ares supports them for computer houses only, and
+/// FirestormTriggerHumans=yes extends them to the houses a player controls.
 /// </summary>
+static bool Firestorm_Action_Applies(HouseClass const * house)
+{
+	return(!house->Is_Human_Player() || Rule->IsFirestormTriggerHumans);
+}
+
+
+/// <summary>
+/// Switches the house's firestorm defense off. Yuri's Revenge does nothing for this action (gamemd's
+/// 0x6DD8D0 dispatcher breaks out of cases 0x5C and 0x5D); this is Ares's Deactivate Firestorm, meant for
+/// a defense Activate Firestorm raised, and it lowers any defense of a computer house.
+/// </summary>
+/// <returns>bool; Was the action applicable to the house?</returns>
 bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
-	if (house->FirestormDefenseActivated) {
-		int index = house->First_Super_Index(SUPER_FIRESTORM);
-
-		if (index != -1) {
-			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
-		}
+	if (!Firestorm_Action_Applies(house)) {
+		return(false);
 	}
+	house->Deactivate_Firestorm();
+	AUTOTEST_LOG("  firestorm of %s lowered\n", house->Class->Name());
 	return(true);
 }
 
 
 /// <summary>
-/// Switches the house's firestorm defense on.
-/// The defense is toggled by firing the house's firestorm super weapon, so this
-/// action does nothing when the wall is already up.
+/// Raises the house's firestorm defense whatever the super weapon's charge, without draining the charge. Ares's
+/// Activate Firestorm, for computer houses. The defense drops when the house runs short of power, and a house that
+/// is already short of power is left alone.
 /// </summary>
+/// <returns>bool; Is the defense up?</returns>
 bool TActionClass::TAction_ACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
-	if (!house->FirestormDefenseActivated) {
-		int index = house->First_Super_Index(SUPER_FIRESTORM);
-
-		if (index != -1) {
-			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
-		}
+	if (!Firestorm_Action_Applies(house) || house->Power_Fraction() < 1.0) {
+		return(false);
 	}
-	return(true);
+	house->Activate_Firestorm();
+	house->IsFirestormFromTrigger = house->FirestormDefenseActivated;
+	AUTOTEST_LOG("  firestorm of %s raised: %d\n", house->Class->Name(), (int)house->FirestormDefenseActivated);
+	if (house == PlayerPtr) {
+		house->IsRecalcNeeded = true;
+		Map.Flag_Strips_To_Redraw();
+	}
+	return(house->FirestormDefenseActivated);
 }
 
 
@@ -1327,6 +1354,7 @@ bool TActionClass::TAction_SET_GROUP_ID(HouseClass * , ObjectClass * object, Tri
 {
 	if (object && object->Is_Techno()) {
 		((TechnoClass *)object)->Group = Data.Value;
+		AUTOTEST_LOG("  group %d set on %s\n", Data.Value, ((TechnoClass *)object)->TClass->Name());
 	}
 	return(true);
 }
@@ -1953,6 +1981,64 @@ bool TActionClass::TAction_FLASH_TEAM(HouseClass * , ObjectClass * , TriggerClas
 		Team->Flash(Data.Value);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Adds to the power the house always has (Ares's Auxiliary Power). Applying it again adds again, and a negative
+/// amount takes power away. The house is the first number and the amount is the one where other actions put a waypoint.
+/// </summary>
+/// <returns>bool; Was the house found?</returns>
+bool TActionClass::TAction_AUXILIARY_POWER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * target = House_From_HousesType(Data.House);
+	if (target == NULL) {
+		return(false);
+	}
+
+	int64_t const total = (int64_t)target->AuxiliaryPower + Extra;
+	target->AuxiliaryPower = (int)std::clamp<int64_t>(total, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+	target->RecalcPower = true;
+	AUTOTEST_LOG("  auxiliary power %+d for %s, now %d\n", Extra, target->Class->Name(), target->AuxiliaryPower);
+	return(true);
+}
+
+
+/// <summary>
+/// Takes the drivers of the vehicles attached to the trigger (Ares's Kill Drivers Of). The vehicles go to the house
+/// the action names, or to Special for -1. A vehicle whose driver is protected, or that stands under the Iron Curtain
+/// or a force shield, is left as it was.
+/// </summary>
+/// <returns>bool; Was any driver taken?</returns>
+bool TActionClass::TAction_KILL_DRIVERS_OF(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
+{
+	HouseClass * owner = Data.Value == -1 ? House_From_Name("Special") : House_From_HousesType(Data.House);
+	if (owner == NULL) {
+		return(false);
+	}
+
+	bool success = false;
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass * unit = Units[index];
+		if (unit->Is_Tagged_By(trig) && unit->Can_Lose_Driver(1.0) && unit->Take_Driver(owner, false)) {
+			AUTOTEST_LOG("  killed the driver of %s, now %s's\n", unit->TClass->Name(), owner->Class->Name());
+			success = true;
+		}
+	}
+	return(success);
+}
+
+
+/// <summary>
+/// Changes the player's EVA voice to the declared voice at the index, or switches EVA off with -1 (Ares's Set EVA
+/// Voice).
+/// </summary>
+/// <returns>bool; Did the index name a voice?</returns>
+bool TActionClass::TAction_SET_EVA_VOICE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	bool const done = Set_Eva_Voice(Data.Value);
+	AUTOTEST_LOG("  set eva voice %d: %s, speech %s\n", Data.Value, done ? "done" : "no such voice", Get_Speech_State() ? "on" : "off");
+	return(done);
 }
 
 
@@ -3904,6 +3990,9 @@ NeedType Action_Needs(TActionType action)
 		case TACTION_SET_TEAM_INFANTRY_RATIO:
 		case TACTION_SET_TEAM_UNIT_RATIO:
 		case TACTION_SET_GROUP_ID:
+		case TACTION_AUXILIARY_POWER:
+		case TACTION_KILL_DRIVERS_OF:
+		case TACTION_SET_EVA_VOICE:
 			return(NEED_NUMBER);
 
 		case TACTION_SET_GLOBAL:
@@ -4080,6 +4169,7 @@ AttachType Attaches_To(TActionType event)
 		case TACTION_CHANGE_HOUSE:
 		case TACTION_GO_BERZERK:
 		case TACTION_SET_GROUP_ID:
+		case TACTION_KILL_DRIVERS_OF:
 		case TACTION_MAKE_ELITE:
 		case TACTION_DELETE_OBJECT:
 		case TACTION_EVICT_OCCUPIERS:

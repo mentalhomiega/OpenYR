@@ -1273,14 +1273,65 @@ static HouseClass * Named_House(std::string name)
 }
 
 
-// trigaction <number> <value> <waypoint>: carries out that trigger action for the player's house, as a
-// trigger would. The value fills the action's number, house or time field.
+// The trigger and the first object a tagtype step attached its tag to, which trigaction hands to the action.
+static TriggerClass * TaggedTrigger = NULL;
+static TechnoClass * TaggedObject = NULL;
+
+// tagtype <TypeID>: attaches one test tag, with one test trigger, to every object of the type whoever owns it, so that
+// an action that works on the objects attached to its trigger has some. The trigger belongs to no map; trigaction
+// passes it to the action along with the first object tagged.
+static void Tag_Type_Step(StepType const & step)
+{
+	TagTypeClass * tagtype = TagTypeClass::Find_Or_Make("AUTOTAG");
+	TriggerTypeClass * trigtype = TriggerTypeClass::Find_Or_Make("AUTOTRIG");
+	if (tagtype == NULL || trigtype == NULL) {
+		DebugString("AUTOTEST   tagtype %s: no tag type\n", step.Argument.c_str());
+		return;
+	}
+	if (!tagtype->Is_Linked(trigtype)) {
+		tagtype->Link(trigtype);
+	}
+	TagClass * tag = new TagClass(tagtype);
+	TaggedTrigger = tag->Trigger;
+	TaggedObject = NULL;
+	int tagged = 0;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (!techno->IsInLimbo && Is_Techno_Named(techno, step.Argument) && techno->Attach_Tag(tag)) {
+			TaggedObject = TaggedObject != NULL ? TaggedObject : techno;
+			tagged++;
+		}
+	}
+	DebugString("AUTOTEST   tagtype %s: %d objects\n", step.Argument.c_str(), tagged);
+}
+
+
+// trigactionline <fields>: reads an action as a map writes it, "<count>,<action>,<fields from the second on>" with no
+// spaces, and carries it out for the player's house with the objects of the last tagtype step.
+static void Trigger_Action_Line_Step(StepType const & step)
+{
+	std::vector<char> text(step.Argument.begin(), step.Argument.end());
+	text.push_back('\0');
+	std::strtok(text.data(), ",");
+	TActionClass * action = new TActionClass;
+	action->Read_INI();
+	bool const done = (*action)(PlayerPtr, TaggedObject, TaggedTrigger, Cell(0, 0));
+	DebugString("AUTOTEST   trigactionline %s: action %d, value %d, extra %d, %s\n", step.Argument.c_str(), (int)action->Action, action->Data.Value, action->Extra, done ? "done" : "failed");
+	delete action;
+}
+
+
+// trigaction <number> <value> <waypoint> [extra]: carries out that trigger action for the player's house, as a
+// trigger would. The value fills the action's number, house or time field. The extra number fills the field some
+// actions read where others put a waypoint, such as the amount of Auxiliary Power. After a tagtype step, the action
+// has that step's trigger and first object.
 static void Trigger_Action_Step(StepType const & step)
 {
 	TActionClass * action = new TActionClass;
 	action->Action = (TActionType)step.Argument_Int();
 	action->Data.Value = step.X;
 	action->EffectLocation = step.Y;
+	action->Extra = step.Words.size() > 5 ? std::atoi(step.Words[5].c_str()) : 0;
 
 	// "<number>@<House>" runs the action for that house, with underscores for spaces, instead of the player's.
 	HouseClass * house = PlayerPtr;
@@ -1288,7 +1339,7 @@ static void Trigger_Action_Step(StepType const & step)
 	if (at != std::string::npos) {
 		house = Named_House(step.Argument.substr(at + 1));
 	}
-	bool const done = house != NULL && (*action)(house, NULL, NULL, Cell(0, 0));
+	bool const done = house != NULL && (*action)(house, TaggedObject, TaggedTrigger, Cell(0, 0));
 	Point2D const view = TacticalMap->Get_Tactical_Position();
 	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d, scenario tint %d,%d,%d, first tile tint %d,%d,%d, waypoint cell %d,%d, lightning storm active %d pending %d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y,
 		Scen->RedTint, Scen->GreenTint, Scen->BlueTint,
@@ -7466,6 +7517,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"triggercoverage", Trigger_Coverage_Step},
 		{"trigaction", Trigger_Action_Step},
 		{"tagevent", Tag_Event_Step},
+		{"tagtype", Tag_Type_Step},
+		{"trigactionline", Trigger_Action_Line_Step},
 		{"dumpfile", Dumpfile_Step},
 		{"mixof", Mixof_Step},
 		{"spyon", Spyon_Step},

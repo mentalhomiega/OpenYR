@@ -647,6 +647,8 @@ int EvaSide = 0;
 // asked for is kept by name so that it can be found again when the file is read after the side is set.
 std::vector<std::string> EvaTypes;
 std::string EvaVoiceName = "Allied";
+// The voice a trigger chose with Set_Eva_Voice, kept so that a saved game speaks in it again.
+static int EvaVoiceChoice = -1;
 
 // Does the line have a sample in the voice the player's side speaks in?
 static bool Has_Eva_Sample(EvaLineType const & line)
@@ -1151,6 +1153,7 @@ void Load_Eva(void)
 /// </summary>
 void Set_Eva_Side(int side)
 {
+	EvaVoiceChoice = -1;
 	EvaVoiceName = "Allied";
 	if (side >= 0 && side < Sides.Count()) {
 		EvaVoiceName = Sides[side]->Eva_Voice_Name();
@@ -1158,6 +1161,35 @@ void Set_Eva_Side(int side)
 		EvaVoiceName = "Russian";
 	}
 	Select_Eva_Voice();
+}
+
+
+/// <summary>
+/// Switches the announcer to the voice at a position in the declared voices, or silences EVA with -1. The choice lasts
+/// until the scenario ends or the side's voice is picked again.
+/// </summary>
+/// <param name="index">The position in EvaTypes, or -1 to switch EVA off.</param>
+/// <returns>bool; Was the index a voice, or -1?</returns>
+bool Set_Eva_Voice(int index)
+{
+	if (index == -1) {
+		Set_Speech_State(false);
+		return(true);
+	}
+	if (index < 0 || index >= (int)EvaTypes.size()) {
+		return(false);
+	}
+	EvaVoiceChoice = index;
+	EvaVoiceName = EvaTypes[index];
+	Select_Eva_Voice();
+	Set_Speech_State(true);
+	return(true);
+}
+
+
+int Get_Eva_Voice_Choice(void)
+{
+	return(EvaVoiceChoice);
 }
 
 

@@ -2206,6 +2206,10 @@ class RulesClass
 		bool IsTeamRetaliateSet = false;
 		bool IsTeamRetaliate = false;
 
+		// [General] FirestormTriggerHumans (ours): the Activate and Deactivate Firestorm trigger actions also work on a
+		// house a player controls. Ares supports them for computer houses only, which is the default.
+		bool IsFirestormTriggerHumans = false;
+
 		// [GlobalControls] AllowParallelAIQueues (Ares): no lets a computer house build in one factory of a kind at a time.
 		bool IsAllowParallelAIQueues = true;
 

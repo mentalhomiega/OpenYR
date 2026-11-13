@@ -2068,6 +2068,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		WaypointAttackFromFirst = ini.Get_Bool(GENERAL, "WaypointAttackFromFirst", WaypointAttackFromFirst);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
+		IsFirestormTriggerHumans = ini.Get_Bool(GENERAL, "FirestormTriggerHumans", IsFirestormTriggerHumans);
 		if (ini.Is_Present(GENERAL, "TeamRetaliate")) {
 			IsTeamRetaliateSet = true;
 			IsTeamRetaliate = ini.Get_Bool(GENERAL, "TeamRetaliate", IsTeamRetaliate);
@@ -3897,6 +3898,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GenericPrerequisites);
 	stream.Serialize(IsTeamRetaliateSet);
 	stream.Serialize(IsTeamRetaliate);
+	stream.Serialize(IsFirestormTriggerHumans);
 	stream.Serialize(IsAllowParallelAIQueues);
 	stream.Serialize(IsBypassBuildLimitSet);
 	stream.Serialize(AllowBypassBuildLimit);
