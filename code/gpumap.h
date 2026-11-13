@@ -92,6 +92,12 @@ struct GpuMapPass
 	// the voxel parts, and the GPU builds the finished mask from Glow and the parts' layers.
 	bool Mask = false;
 
+	// While an ambient light fade is deferred (code/layerfade.h), FadeWidth by FadeHeight scales, each for a block
+	// of LAYER_FADE_DIVISOR pixels a side of Area, that the base picture is multiplied by; NULL for none.
+	std::vector<unsigned short> const * Fade = NULL;
+	int FadeWidth = 0;
+	int FadeHeight = 0;
+
 	// The map position of Area's top left pixel, in pixels, which keeps water ripples and cloud
 	// shadows fixed to the ground as the view moves.
 	int WorldX = 0;

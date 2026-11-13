@@ -66,6 +66,30 @@ compare each upload with the buffer it came from and log an `UPLOAD_CHECK DIFFER
 that left a value out. `tests/autotest/tile-scroll-uploads.txt` scrolls a zoomed-out view in every
 direction under the check.
 
+## Light fades
+
+A change of the ambient light used to redraw the whole tile layer at every step, because each cell's
+brightness goes into the colours the software draws. While the GPU reads the tile layer in place, a step
+now leaves the layer alone (`code/layerfade.h`):
+
+- The layer keeps the picture it drew at the light level the fade started from. Anything drawn into the
+  layer during the fade, such as a strip a scroll brings in or a building that changes, is drawn with the
+  lighting of that level, so the layer stays one consistent picture.
+- For each pass the map view gets a plane of scales, one for each block of 4 by 4 pixels: the brightness
+  the cell there has now divided by the brightness it had at the frozen level. The shader multiplies the
+  base picture by it. Objects drawn over the layer take the current light as before.
+- When the light has stayed at its target for 30 game frames the layer is redrawn once at the current
+  light, and the picture is exact again. A redraw of the whole layer for any other reason does the same.
+- The layer is also redrawn when the flat ground would have to be brightened to more than 1.5 times or
+  darkened to less than 0.3 times the frozen picture, since a dark picture scaled far up shows coarse steps.
+
+During the fade the terrain is therefore close to, but not exactly, what the software would draw: a cell's
+scale is exact for its ground, the scale of a pixel near a cell's edge is blended with its neighbour's, and
+colours the software clamps at full brightness scale from the clamped value. A frame the GPU cannot draw ends
+the deferral with a full redraw. `OPENYR_NO_FADE_DEFER=1` in the environment turns the deferral off. `OPENYR_FADE_KEEP=1` draws even a whole
+layer at the frozen light, so that a screenshot, which redraws the layer, shows the scaled picture.
+`tests/autotest/ambient-fade-deferred.txt` runs two fades.
+
 ## Settings
 
 All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
