@@ -3436,6 +3436,9 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						if (Is_Player_Control()) {
 							Submit_Radar_Event(RADAREVENT_FACTORY_OUTPUT, builder->Get_Coord().As_Cell());
 						}
+						if (exit == 2 && builder->RTTI == RTTI_BUILDING) {
+							((BuildingClass *)builder)->Release_Vehicle_Clones(tech);
+						}
 						factory->Completed();
 						Abandon_Production(type, -1, buildcat, naval);
 						placed = true;

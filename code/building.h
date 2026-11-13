@@ -537,6 +537,7 @@ class BuildingClass : public TechnoClass
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
 		bool Is_Powered_On(void) const;
+		void Release_Vehicle_Clones(TechnoClass const * vehicle);
 		// Powered on and neither being built nor sold.
 		bool Is_Online(void) const {return(Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION);}
 		bool Is_Radar_Jammed(void) const;
@@ -794,7 +795,6 @@ class BuildingClass : public TechnoClass
 		int Exit_Foot(TechnoClass * base);
 		int Exit_Weapons_Factory(TechnoClass * base);
 		int Exit_Vehicle_Door(TechnoClass * base);
-		void Release_Vehicle_Clones(TechnoClass const * vehicle);
 		int Exit_Infantry(TechnoClass * base);
 		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);

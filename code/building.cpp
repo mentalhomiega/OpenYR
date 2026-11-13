@@ -3459,11 +3459,7 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 	base->ArchiveTarget = Rally_Point_For(base);
 
 	if (Class->IsNaval) {
-		int const result = Exit_Naval_Object(base);
-		if (result == 2) {
-			Release_Vehicle_Clones(base);
-		}
-		return(result);
+		return(Exit_Naval_Object(base));
 	}
 
 	if (Mission == MISSION_UNLOAD) {
@@ -3489,7 +3485,6 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 		Transmit_Message(RADIO_HELLO, base);
 		Transmit_Message(RADIO_TETHER, base);
 		Assign_Mission(MISSION_UNLOAD);
-		Release_Vehicle_Clones(base);
 		return(2);
 	}
 	return(0);
@@ -3497,12 +3492,12 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 
 
 /// <summary>
-/// Has every CloningFacility=yes structure of the owner release a copy of a vehicle this factory just produced (Ares).
-/// A copy that cannot get out is discarded, with no refund.
+/// Has every CloningFacility=yes structure of the owner release a copy of a vehicle this factory has just produced and
+/// released (Ares). A copy that cannot get out is discarded, with no refund.
 /// </summary>
 void BuildingClass::Release_Vehicle_Clones(TechnoClass const * vehicle)
 {
-	if (Class->ToBuild != RTTI_UNITTYPE || vehicle->RTTI != RTTI_UNIT || Factory == NULL || Factory->Get_Object() != vehicle) {
+	if (Class->ToBuild != RTTI_UNITTYPE || vehicle->RTTI != RTTI_UNIT) {
 		return;
 	}
 	for (int index = 0; index < Buildings.Count(); index++) {
@@ -3564,7 +3559,6 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 			Send_Computer_Unit_To_Guard(base);
 		}
 
-		Release_Vehicle_Clones(base);
 		return(2);
 	}
 	return(0);
@@ -8644,6 +8638,7 @@ void BuildingClass::Factory_AI(void)
 					Sound_Effect(Class->CreateUnitSound, PositionCoord);
 				}
 				House->Just_Built(product);
+				Release_Vehicle_Clones(product);
 //				fact->Completed();
 				Factory->Completed();
 //				delete fact;
