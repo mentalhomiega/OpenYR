@@ -876,6 +876,21 @@ bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, i
 }
 
 
+/// <summary>
+/// Accounts for the lock a text print has just taken on surface, whose glyph runs go to GpuDraw_Fill; the lock is not
+/// counted as an unsupported draw. Returns false when surface is not the recorded target.
+/// </summary>
+bool GpuDraw_Text_Begin(Surface const & surface)
+{
+	if (&surface != _Target) {
+		return(false);
+	}
+	_Locks--;
+	Mark_Lock_Recorded();
+	return(true);
+}
+
+
 bool GpuDraw_Line_Pixel(int x, int y, int value)
 {
 	if (value > 0) {

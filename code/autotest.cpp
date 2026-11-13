@@ -5905,6 +5905,27 @@ static void Ammo_Step(StepType const & step)
 }
 
 
+// country <Name>: the country's side, the sides whose list holds it, and the country it is based on.
+static void Country_Step(StepType const & step)
+{
+	HousesType const house = HouseTypeClass::From_Name(step.Argument.c_str());
+	if (house == HOUSE_NONE) {
+		DebugString("AUTOTEST   country %s: no such country\n", step.Argument.c_str());
+		return;
+	}
+	HouseTypeClass const * type = HouseTypes[house];
+	std::string listed;
+	for (int side = 0; side < Sides.Count(); side++) {
+		if (Sides[side]->Houses.Is_In_List((int)house)) {
+			listed += std::string(listed.empty() ? "" : ",") + (char const *)Sides[side]->IniName;
+		}
+	}
+	DebugString("AUTOTEST   country %s side %s listed %s parent %s\n", type->Name(),
+		type->Side != SIDE_NONE ? (char const *)Sides[type->Side]->IniName : "<none>", listed.empty() ? "<none>" : listed.c_str(),
+		type->ParentCountry != HOUSE_NONE ? HouseTypes[type->ParentCountry]->Name() : "<none>");
+}
+
+
 // houses: each house's money, power and spy effects, then a "seat" line for who plays it. The
 // "who" line names the country the house acts as and counts the objects it owns.
 // Each tech secret lab follows, with its owner, the item it offers and whether the owner lists it.
@@ -6181,9 +6202,11 @@ static void Plan_Step(StepType const &)
 
 
 // team <TeamTypeID>: makes a team of that type for the first computer house and puts in every unit of that house no team holds.
+// With "player" last, the team is the player's house's instead.
 static void Team_Step(StepType const & step)
 {
-	HouseClass * enemy = First_Computer_House(false);
+	bool const for_player = step.Line.size() > 7 && step.Line.compare(step.Line.size() - 7, 7, " player") == 0;
+	HouseClass * enemy = for_player ? PlayerPtr : First_Computer_House(false);
 	TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
 	TeamClass * team = enemy != NULL && type != NULL ? type->Create_One_Of(enemy) : NULL;
 	int added = 0;
@@ -7292,6 +7315,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"trails", Trails_Step},
 		{"ammo", Ammo_Step},
 		{"houses", Houses_Step},
+		{"country", Country_Step},
 		{"census", Census_Step},
 		{"count", Count_Step},
 		{"sensors", Sensors_Step},

@@ -15,7 +15,7 @@ Side=Nod
 
 The value names a side declared in `[Sides]`. A side groups countries: several countries can share one, and a country with no side is valid.
 
-`[Sides]` is read before this key and wins over it. A country that already has a side keeps it, and a `Side=` naming a different side is ignored. The key therefore only places a country that no `[Sides]` entry lists.
+`Side=` wins over `[Sides]`. A country that a `[Sides]` entry lists and whose section, in the rules or in a scenario map, names a different side moves to the named side and leaves the side it was listed under.
 
 A value naming no side that `[Sides]` declares is ignored, and the country keeps the side it had.
 

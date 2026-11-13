@@ -204,10 +204,10 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		std::string parentname = ini.Get_String(Name(), "ParentCountry");
 		if (!parentname.empty()) {
 			HousesType parenthouse = From_Name(parentname.c_str());
-			if (parenthouse != HOUSE_NONE && parenthouse != House) {
+			if (parenthouse == HOUSE_NONE) {
+				DebugString("[%s] ParentCountry=%s names no country; ignored.\n", Name(), parentname.c_str());
+			} else if (parenthouse != House) {
 				parent = HouseTypes[parenthouse];
-			} else {
-				DebugString("[%s] ParentCountry=%s names no other country; ignored.\n", Name(), parentname.c_str());
 			}
 		}
 		if (parent != NULL && parent->House != ParentCountry) {
@@ -264,15 +264,13 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		SideType oldside = Side;
 		Side = ini.Get_Side(Name(), "Side", Side);
 
-		// The side list is the roster of record, so a country it places is not moved by its own key.
+		// As in gamemd (0x511850), a Side= that differs from the [Sides] placement moves the country to the named side.
 		if (Side != oldside) {
-			if (oldside != SIDE_NONE && Sides[oldside]->Houses.Is_In_List((int)House)) {
-				DebugString("%s: Side=%s ignored; [Sides] places it under %s.\n", Name(), Side != SIDE_NONE ? (char const *)Sides[Side]->IniName : "<none>", (char const *)Sides[oldside]->IniName);
-				Side = oldside;
-			} else {
-				if (Side != SIDE_NONE) {
-					Sides[Side]->Houses.Add((int)House);
-				}
+			if (oldside != SIDE_NONE) {
+				Sides[oldside]->Houses.Delete((int)House);
+			}
+			if (Side != SIDE_NONE && !Sides[Side]->Houses.Is_In_List((int)House)) {
+				Sides[Side]->Houses.Add((int)House);
 			}
 		}
 		if (parent != NULL) {

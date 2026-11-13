@@ -474,6 +474,15 @@ static char const * const UI_PRINT_FONT_FAMILY = "fullfnt";
 static char const * const UI_PRINT_FONT_FILE = "arial.ttf";
 static char const * const UI_SHIPPED_FONT_FILE = "Arimo.ttf";
 
+// Adds the shipped font's weights to a family one at a time: loading them all in one call fails
+// with a FreeType error for every weight after one the family already holds.
+static void UI_Add_Shipped_Weights(char const * family)
+{
+	for (int weight : {400, 500, 600, 700}) {
+		Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, family, Rml::Style::FontStyle::Normal, (Rml::Style::FontWeight)weight);
+	}
+}
+
 static char const * const UI_REVEAL_SOUND = "EMBLEM.AUD";
 static const float UI_REVEAL_VOLUME = 64.0f / 255.0f;
 
@@ -555,11 +564,11 @@ void UIShellClass::Register_Fonts(void)
 			UI_SANS_RASTER_FILES[0], UI_SANS_FONT_FILE, UI_SANS_FONT_FAMILY);
 	}
 
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	UI_Add_Shipped_Weights(UI_SANS_FONT_FAMILY);
 
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_PRINT_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	UI_Add_Shipped_Weights(UI_PRINT_FONT_FAMILY);
 
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	UI_Add_Shipped_Weights(UI_SHEET_FONT_FAMILY);
 }
 
 

@@ -231,6 +231,8 @@ void Test_Values(void)
 	Check(Sound_Parse_Type("NORMAL", 99) == 0, "NORMAL type is no flags");
 	Check(Sound_Parse_Type("SCREEN SHROUD", 99) == (SOUND_TYPE_SCREEN | SOUND_TYPE_SHROUD), "type flags combine");
 	Check(Sound_Parse_Type("SCREEN WIBBLE", 99) == SOUND_TYPE_SCREEN, "unknown type flags are ignored");
+	Check(Sound_Parse_Type("GLOBAL RANDOM", 99) == SOUND_TYPE_GLOBAL, "a Control word in Type is skipped");
+	Check(Sound_Parse_Type("high ", 99) == 0, "a Priority word in Type is skipped");
 	Check(Sound_Parse_Type("", 99) == 99, "empty type keeps the fallback");
 	Check(Sound_Parse_Type("VIOLENT MOVEMENT QUIET LOUD PLAYER NOISE_SHY GUN_SHY UNSHROUD AMBIENT", 0)
 		== (SOUND_TYPE_VIOLENT | SOUND_TYPE_MOVEMENT | SOUND_TYPE_QUIET | SOUND_TYPE_LOUD | SOUND_TYPE_PLAYER | SOUND_TYPE_NOISE_SHY | SOUND_TYPE_GUN_SHY | SOUND_TYPE_UNSHROUD | SOUND_TYPE_AMBIENT), "reserved type flags are kept");
