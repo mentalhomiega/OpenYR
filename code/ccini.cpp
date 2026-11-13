@@ -1303,7 +1303,7 @@ HousesType CCINIClass::Get_HousesType(char const * section, char const * entry, 
 bool CCINIClass::Put_HousesType(char const * section, char const * entry, HousesType value)
 {
 	char const * name = "<none>";
-	int spawn_waypoint = Spawn_House_Waypoint(value);
+	int spawn_waypoint = Spawn_House_Waypoint(value, HouseTypes.Count());
 	if (spawn_waypoint != -1) {
 		name = Spawn_House_Name(spawn_waypoint);
 	} else if (value != HOUSE_NONE) {

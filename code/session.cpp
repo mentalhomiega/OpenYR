@@ -800,7 +800,7 @@ void SessionClass::Read_MultiPlayer_Settings(void)
 	if (!Session.IsWDT) {
 		int previous = House;
 		House = (int)ConfigINI.Get_HousesType("MultiPlayer", "Side", (HousesType)House);
-		if (Spawn_House_Waypoint((HousesType)House) != -1) {
+		if (Spawn_House_Waypoint((HousesType)House, HouseTypes.Count()) != -1) {
 			House = previous;
 		}
 	}
