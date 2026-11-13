@@ -1218,6 +1218,11 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	SelfHealingRate = ini.Get_Float(Name(), "SelfHealingRate", SelfHealingRate);
 	SelfHealingRate = ini.Get_Float(Name(), "SelfHealing.Rate", SelfHealingRate);
 	SelfHealingCap = ini.Get_Float(Name(), "SelfHealingCap", SelfHealingCap);
+	// Ares names the step and the ceiling SelfHealing.Amount (no lower than 0) and SelfHealing.Max.
+	if (ini.Is_Present(Name(), "SelfHealing.Amount")) {
+		SelfHealingStep = std::max(ini.Get_Int(Name(), "SelfHealing.Amount", 0), 0);
+	}
+	SelfHealingCap = ini.Get_Float(Name(), "SelfHealing.Max", SelfHealingCap);
 	IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
 	IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
 	IsDisableable = ini.Get_Bool(Name(), "Disableable", IsDisableable);
