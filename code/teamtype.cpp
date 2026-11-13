@@ -658,7 +658,8 @@ bool TeamTypeClass::Read_INI(CCINIClass const & ini)
 		house = ini.Get_HousesType(IniName, "House", house);
 		if (house != HOUSE_NONE) {
 			House = House_From_HousesType(house);
-			if (House == NULL && stricmp(HouseTypes[house]->Name(), "<none>") != 0) {
+			// A start position (Spawn1 and the like) is a house number past the house types and names no type.
+			if (House == NULL && house >= 0 && house < HouseTypes.Count() && stricmp(HouseTypes[house]->Name(), "<none>") != 0) {
 				Log_Unresolved_House(IniName, "House", HouseTypes[house]->Name());
 			}
 		}
