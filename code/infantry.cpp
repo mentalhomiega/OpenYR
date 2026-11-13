@@ -2541,8 +2541,7 @@ bool InfantryClass::Random_Animate(void)
 
 		int idle = Random_Pick(0, 10);
 		// gamemd's UpdateIdleAction (0x51CDB0) draws again for a COW, and a low roll there makes the idle the wander case.
-		bool const is_cow = stricmp(Class->Name(), "COW") == 0;
-		if (is_cow && Random_Pick(0, 10) < 5) {
+		if (Class->IsCow && Random_Pick(0, 10) < 5) {
 			idle = 8;
 		}
 		switch (idle) {
@@ -2575,7 +2574,7 @@ bool InfantryClass::Random_Animate(void)
 			case 8:
 				PrimaryFacing.Set(Facing_Dir(Random_Pick(FACING_N, FACING_NW)));
 				// A COW scatters even under human control, as gamemd's case 8 does.
-				if (is_cow || (!House->Is_Human_Player() && Class->IsFraidyCat)) {
+				if (Class->IsCow || (!House->Is_Human_Player() && Class->IsFraidyCat)) {
 					Scatter(COORD_NONE, true);
 				}
 				break;
@@ -2790,7 +2789,7 @@ int InfantryClass::Do_MISSION_UNLOAD(void)
 
 		// An AreaFire deploy weapon aims at the soldier's own cell. The Desolator's does not (InfantryClass::Mission_Unload, 0x51F76D).
 		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon;
-		if (weapon != NULL && weapon->IsAreaFire && stricmp(Class->Name(), "DESO") != 0) {
+		if (weapon != NULL && weapon->IsAreaFire && !Class->IsDesolator) {
 			Assign_Target(&Map[Get_Cell()]);
 		}
 		if (Class->UndeployDelay >= 0) {

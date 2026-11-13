@@ -90,6 +90,8 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsCapture(false),
 	IsFearless(false),
 	IsFraidyCat(false),
+	IsCow(ininame != NULL && stricmp(ininame, "COW") == 0),
+	IsDesolator(ininame != NULL && stricmp(ininame, "DESO") == 0),
 	IsCivilian(false),
 	IsBomber(false),
 	IsIvan(false),
@@ -439,6 +441,8 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		if (IsCyborg) IsDamageSparks = true;
 		IsFearless = ini.Get_Bool(Name(), "Fearless", IsFearless);
 		IsFraidyCat = ini.Get_Bool(Name(), "Fraidycat", IsFraidyCat);
+		IsCow = ini.Get_Bool(Name(), "IsCow", IsCow);
+		IsDesolator = ini.Get_Bool(Name(), "IsDesolator", IsDesolator);
 		IsCapture = ini.Get_Bool(Name(), "Infiltrate", IsCapture);
 		IsBomber = ini.Get_Bool(Name(), "C4", IsBomber);
 		IsIvan = ini.Get_Bool(Name(), "Ivan", IsIvan);
@@ -609,6 +613,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrawling);
 	stream.Serialize(IsCapture);
 	stream.Serialize(IsFraidyCat);
+	stream.Serialize(IsCow);
+	stream.Serialize(IsDesolator);
 	stream.Serialize(IsTiberiumProof);
 	stream.Serialize(IsCivilian);
 	stream.Serialize(IsBomber);
