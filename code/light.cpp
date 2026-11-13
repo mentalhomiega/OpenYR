@@ -28,6 +28,7 @@
 #include "vector.h"
 
 #include <algorithm>
+#include <climits>
 
 
 DynamicVectorClass<LightSourceClass *> LightSources;
@@ -170,9 +171,9 @@ void LightSourceClass::Disable(bool defer)
 }
 
 
-// Asks for a redraw of the part of the map view that shows the cells within radius cells of a place,
-// with room for the tallest ground and for the buildings and trees that stand on those cells.
-static void Register_Lit_Area(Coord const & place, int radius)
+// Asks for a redraw of the part of the map view between two pixels of it, with room for the tallest ground and
+// for the buildings and trees that stand on the cells there.
+static void Register_Lit_Pixels(Point2D const & low, Point2D const & high)
 {
 	if (TacticalMap == NULL) {
 		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
@@ -181,12 +182,21 @@ static void Register_Lit_Area(Coord const & place, int radius)
 	int const SIDE_MARGIN = 4 * ISO_TILE_PIXEL_W;
 	int const TOP_MARGIN = 14 * LEVEL_PIXEL_H_1 + 8 * ISO_TILE_PIXEL_H;
 	int const BOTTOM_MARGIN = 4 * ISO_TILE_PIXEL_H;
-	Point2D centre;
-	TacticalMap->Coord_To_Pixel(Coord(place.X, place.Y, 0), centre);
-	Rect const area(centre.X - radius * ISO_TILE_PIXEL_W - SIDE_MARGIN, centre.Y - radius * ISO_TILE_PIXEL_H - TOP_MARGIN,
-		2 * radius * ISO_TILE_PIXEL_W + 2 * SIDE_MARGIN, 2 * radius * ISO_TILE_PIXEL_H + TOP_MARGIN + BOTTOM_MARGIN);
+	Rect const area(low.X - SIDE_MARGIN, low.Y - TOP_MARGIN, high.X - low.X + 2 * SIDE_MARGIN, high.Y - low.Y + TOP_MARGIN + BOTTOM_MARGIN);
 	TacticalMap->Register_Dirty_Area(area, false);
 	Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
+}
+
+
+// Asks for a redraw of the part of the map view that shows the cells within radius cells of a place.
+static void Register_Lit_Area(Coord const & place, int radius)
+{
+	Point2D centre;
+	if (TacticalMap != NULL) {
+		TacticalMap->Coord_To_Pixel(Coord(place.X, place.Y, 0), centre);
+	}
+	Register_Lit_Pixels(Point2D(centre.X - radius * ISO_TILE_PIXEL_W, centre.Y - radius * ISO_TILE_PIXEL_H),
+		Point2D(centre.X + radius * ISO_TILE_PIXEL_W, centre.Y + radius * ISO_TILE_PIXEL_H));
 }
 
 
@@ -227,10 +237,8 @@ void LightSourceClass::Recalculate_Affected_Cells(bool defer)
 			}
 		}
 
-		if (defer) {
-			// The queued cells take their new lighting later, in Process_Lighting, which redraws the view.
-			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
-		} else {
+		// Queued cells take their new lighting later, in Process_Lighting, which asks for their redraw then.
+		if (!defer) {
 			Register_Lit_Area(Position, radius);
 		}
 	}
@@ -292,14 +300,26 @@ void LightSourceClass::Process_Lighting(int time_budget_ms, bool force)
 
 	if (_commit_ready) {
 		if (force || time_left >= time_budget_ms - 1) {
+			// The redraw covers the cells that took new lighting, not the whole view.
+			Point2D low(INT_MAX, INT_MAX);
+			Point2D high(INT_MIN, INT_MIN);
 			for (int i = 0; i < PendingCells.Count(); i++) {
 				PendingCellClass * pending = PendingCells[i];
 				Map[pending->CellID].Init_Drawer(pending->Converter, pending->Intensity, pending->Ambient, pending->Brightness, pending->TileBrightness, pending->AltBrightness);
+				if (TacticalMap != NULL) {
+					Point2D pixel;
+					TacticalMap->Coord_To_Pixel(pending->CellID.As_Coord(), pixel);
+					low = Point2D(std::min(low.X, pixel.X), std::min(low.Y, pixel.Y));
+					high = Point2D(std::max(high.X, pixel.X), std::max(high.Y, pixel.Y));
+				}
 				delete pending;
 			}
+			bool const any = PendingCells.Count() > 0;
 			PendingCells.Clear();
 			_commit_ready = false;
-			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+			if (any) {
+				Register_Lit_Pixels(low, high);
+			}
 		}
 	}
 
