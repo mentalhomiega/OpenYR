@@ -13,6 +13,7 @@
 
 #include "_map.h"
 #include "_milsectmr.h"
+#include "_tactica.h"
 #include "cell.h"
 #include "crc.h"
 #include "globals.h"
@@ -22,6 +23,7 @@
 #include "milsectmr.h"
 #include "savestream.h"
 #include "sun.h"
+#include "tactical.h"
 #include "tracker.h"
 #include "vector.h"
 
@@ -168,6 +170,26 @@ void LightSourceClass::Disable(bool defer)
 }
 
 
+// Asks for a redraw of the part of the map view that shows the cells within radius cells of a place,
+// with room for the tallest ground and for the buildings and trees that stand on those cells.
+static void Register_Lit_Area(Coord const & place, int radius)
+{
+	if (TacticalMap == NULL) {
+		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		return;
+	}
+	int const SIDE_MARGIN = 4 * ISO_TILE_PIXEL_W;
+	int const TOP_MARGIN = 14 * LEVEL_PIXEL_H_1 + 8 * ISO_TILE_PIXEL_H;
+	int const BOTTOM_MARGIN = 4 * ISO_TILE_PIXEL_H;
+	Point2D centre;
+	TacticalMap->Coord_To_Pixel(Coord(place.X, place.Y, 0), centre);
+	Rect const area(centre.X - radius * ISO_TILE_PIXEL_W - SIDE_MARGIN, centre.Y - radius * ISO_TILE_PIXEL_H - TOP_MARGIN,
+		2 * radius * ISO_TILE_PIXEL_W + 2 * SIDE_MARGIN, 2 * radius * ISO_TILE_PIXEL_H + TOP_MARGIN + BOTTOM_MARGIN);
+	TacticalMap->Register_Dirty_Area(area, false);
+	Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
+}
+
+
 /// <summary>
 /// Rebuilds the drawers of the cells this light reaches.
 /// Every cell within the light's visibility is given a fresh drawer so that this
@@ -205,7 +227,12 @@ void LightSourceClass::Recalculate_Affected_Cells(bool defer)
 			}
 		}
 
-		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		if (defer) {
+			// The queued cells take their new lighting later, in Process_Lighting, which redraws the view.
+			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		} else {
+			Register_Lit_Area(Position, radius);
+		}
 	}
 }
 
