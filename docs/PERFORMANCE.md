@@ -307,7 +307,7 @@ per frame over the whole fade:
 | The mission's opening fade from 0 to 85 | 200 ms | 45 ms |
 
 The opening fade starts from black, where each step is a large change, so it still redraws the layer ten
-times on the way up.
+times on the way up. A later fade to black and back keeps the bright picture and redraws nothing.
 
 `FastestGpu` ([manual](../manual/content/keys/fastestgpu--client-settings.md)) matters for these numbers:
 on a computer with two graphics cards the game could start on the slower one, where the GPU pass of this

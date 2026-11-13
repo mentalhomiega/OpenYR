@@ -80,8 +80,12 @@ now leaves the layer alone (`code/layerfade.h`):
   base picture by it. Objects drawn over the layer take the current light as before.
 - When the light has stayed at its target for 30 game frames the layer is redrawn once at the current
   light, and the picture is exact again. A redraw of the whole layer for any other reason does the same.
-- The layer is also redrawn when the flat ground would have to be brightened to more than 1.5 times or
-  darkened to less than 0.3 times the frozen picture, since a dark picture scaled far up shows coarse steps.
+- A picture darkened to under half its light waits 450 game frames instead. A dip into darkness that lifts
+  again within that time costs no redraw at all: the layer still holds the brighter picture, which is exact
+  again when the light is back.
+- The layer is also redrawn when the flat ground would have to be brightened to more than 1.5 times the
+  frozen picture, since a dark picture scaled far up shows coarse steps. Darkening has no such limit.
+- The plane of scales is filled again only when the view, a light level or 15 game frames have passed.
 
 During the fade the terrain is therefore close to, but not exactly, what the software would draw: a cell's
 scale is exact for its ground, the scale of a pixel near a cell's edge is blended with its neighbour's, and

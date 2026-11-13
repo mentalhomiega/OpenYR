@@ -44,8 +44,9 @@ void LayerFade_Resolve(void);
 void LayerFade_Clear(void);
 
 // Fills plane, width by height values in rows, with the scale each block of the map view under area takes from the
-// frozen picture to the current light. False, with plane untouched, when nothing is deferred.
-bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area);
+// frozen picture to the current light. False, with plane untouched, when nothing is deferred. changed is set
+// when the plane holds other values than the last call left in it.
+bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area, bool & changed);
 
 // Gives every cell the lighting of the frozen light level for as long as it lives, so that a draw into the tile
 // layer matches the picture already there. It does nothing when nothing is deferred. A redraw of the whole layer
