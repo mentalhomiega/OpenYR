@@ -37,6 +37,7 @@
 
 #include "diff.hh"
 
+#include <climits>
 #include <optional>
 #include <string>
 #include <vector>
@@ -1607,6 +1608,12 @@ class RulesClass
 
 		// How many cells from a base center a team gathers before an attack or after one.
 		int AISafeDistance;
+
+		// How many cells from its own base center a team gathers on a Gather at Base line (Ares AIFriendlyDistance).
+		// NO_FRIENDLY_DISTANCE while unset, which means AISafeDistance.
+		static constexpr int NO_FRIENDLY_DISTANCE = INT_MIN;
+		int AIFriendlyDistance;
+		int Friendly_Distance(void) const {return(AIFriendlyDistance == NO_FRIENDLY_DISTANCE ? AISafeDistance : AIFriendlyDistance);}
 
 		// The share of delivered ore each ore purifier adds, and the purifiers each skirmish
 		// computer house counts as having, per difficulty slot.

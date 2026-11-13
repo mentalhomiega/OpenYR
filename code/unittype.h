@@ -75,6 +75,9 @@ class UnitTypeClass : public TechnoTypeClass
 		UnitTypeClass const * ConvertWater;
 		UnitTypeClass const * ConvertLand;
 
+		// The vehicle type a vehicle of this type becomes on a Convert type team script line, or NULL for none (Ares Convert.Script).
+		UnitTypeClass const * ConvertScript;
+
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
 		AnimTypeClass * DeployingAnim;

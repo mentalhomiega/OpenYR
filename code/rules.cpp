@@ -782,6 +782,7 @@ RulesClass::RulesClass(void) :
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
 	AISafeDistance(8),
+	AIFriendlyDistance(NO_FRIENDLY_DISTANCE),
 	PurifierBonus(0.25),
 	AIVirtualPurifiers(),
 	SpyPowerBlackout(0),
@@ -2242,6 +2243,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		UndeployScattersInfantry = ini.Get_Bool(GENERAL, "UndeployScattersInfantry", UndeployScattersInfantry);
 		IsHouseDoesNotOwnAtMost = ini.Get_Bool(GENERAL, "HouseDoesNotOwnAtMost", IsHouseDoesNotOwnAtMost);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
+		AIFriendlyDistance = ini.Get_Int(GENERAL, "AIFriendlyDistance", AIFriendlyDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
 		SpyPowerBlackout = ini.Get_Int(GENERAL, "SpyPowerBlackout", SpyPowerBlackout);
@@ -3541,6 +3543,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SovietBaseDefenses);
 	stream.Serialize(ThirdBaseDefenses);
 	stream.Serialize(AISafeDistance);
+	stream.Serialize(AIFriendlyDistance);
 	stream.Serialize(PurifierBonus);
 	stream.Serialize(AIVirtualPurifiers);
 	stream.Serialize(SpyPowerBlackout);
