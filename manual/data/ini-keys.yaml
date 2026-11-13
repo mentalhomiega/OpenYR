@@ -10097,6 +10097,41 @@ Cloning:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CloningFacility:
+  key: CloningFacility
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsCloningFacility
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+CloningFacilityIgnoresFactories:
+  key: CloningFacilityIgnoresFactories
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsCloningFacilityIgnoresFactories
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CloseEnough:
   key: CloseEnough
   scopes:
@@ -10367,6 +10402,23 @@ ColorSpeed:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+CombatLightSize:
+  key: CombatLightSize
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: WarheadTypeClass
+      member: CombatLightSize
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 CompEasyBonus:
   key: CompEasyBonus
   scopes:
@@ -15983,6 +16035,24 @@ EMP.Threshold:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EMPAIRecoverMission:
+  key: EMPAIRecoverMission
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: recover
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 EMPulse.Cannons:
   key: EMPulse.Cannons
   scopes:
@@ -24893,6 +24963,40 @@ IsCoreDefender:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+IsCow:
+  key: IsCow
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: ininame != NULL && stricmp(ininame, "COW") == 0
+      declared_in: InfantryTypeClass
+      member: IsCow
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+IsDesolator:
+  key: IsDesolator
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: ininame != NULL && stricmp(ininame, "DESO") == 0
+      declared_in: InfantryTypeClass
+      member: IsDesolator
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 IsDetachedRailgun:
   key: IsDetachedRailgun
   scopes:
@@ -28476,6 +28580,23 @@ MakesDisguise:
       default_candidate: 'no'
       declared_in: WarheadTypeClass
       member: IsMakesDisguise
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+Malicious:
+  key: Malicious
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WarheadTypeClass
+      member: IsMalicious
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
@@ -33171,6 +33292,23 @@ OpenTransportWeapon:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Operator:
+  key: Operator
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: operators
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 OpportunityFire:
   key: OpportunityFire
   scopes:
@@ -34921,6 +35059,23 @@ Powered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+PoweredBy:
+  key: PoweredBy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PoweredBy
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PoweredSpecial:
   key: PoweredSpecial
   scopes:
@@ -37423,6 +37578,24 @@ RampSmooth:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+RandomCrateMoney:
+  key: RandomCrateMoney
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CrateRules
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '900'
+      declared_in: RulesClass
+      member: CrateMoneyBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 RandomLoopDelay:
   key: RandomLoopDelay
   scopes:
