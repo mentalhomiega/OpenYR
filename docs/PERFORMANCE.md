@@ -309,6 +309,12 @@ per frame over the whole fade:
 The opening fade starts from black, where each step is a large change, so it still redraws the layer ten
 times on the way up. A later fade to black and back keeps the bright picture and redraws nothing.
 
+A light source that appears, moves, changes or goes, and radiation that lights the ground, used to redraw
+the whole tile layer as well. They now redraw the part of the layer that shows the cells whose lighting
+changed. An 800-frame stretch of the same mission with two fades to black and back and 137 light source
+changes took 31 ms a game frame with the fades deferred alone and 14 ms with both, of which drawing the
+tile layer takes 1 ms.
+
 `FastestGpu` ([manual](../manual/content/keys/fastestgpu--client-settings.md)) matters for these numbers:
 on a computer with two graphics cards the game could start on the slower one, where the GPU pass of this
 view alone took about 31 ms.
