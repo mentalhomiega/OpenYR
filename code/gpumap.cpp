@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "gpumap.h"
+#include "layerfade.h"
 
 #include "alphalighting.h"
 #include "bgfxbackend.h"
@@ -149,6 +150,12 @@ static bool _TargetDrawn = false;
 static bool _SubmitFailed = false;
 static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _BaseRingUniform = BGFX_INVALID_HANDLE;
+// The scales of a deferred light fade (GpuMapPass::Fade) and the size they were last uploaded at.
+static bgfx::UniformHandle _FadeSampler = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _FadeUniform = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _Fade = BGFX_INVALID_HANDLE;
+static int _FadeWidth = 0;
+static int _FadeHeight = 0;
 // Whether the base store holds the tile layer's memory as it lies, instead of the area's picture.
 static bool _BaseInPlace = false;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
@@ -250,6 +257,8 @@ static bool Start(void)
 	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
 	_BaseRingUniform = bgfx::createUniform("u_basering", bgfx::UniformType::Vec4);
+	_FadeSampler = bgfx::createUniform("s_fade", bgfx::UniformType::Sampler);
+	_FadeUniform = bgfx::createUniform("u_fade", bgfx::UniformType::Vec4);
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
 	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
@@ -332,6 +341,9 @@ static void Destroy_Target(void)
 	Release_Handle(_Snapshot);
 	Release_Handle(_TileShadow);
 	_TileShadowTracked = false;
+	Release_Handle(_Fade);
+	_FadeWidth = 0;
+	_FadeHeight = 0;
 	_TargetWidth = 0;
 	_TargetHeight = 0;
 	_TargetScale = 1;
@@ -740,6 +752,26 @@ static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vecto
 	For_Each_Changed_Run(changed, rows, [&](int first, int end) {
 		bgfx::updateTexture2D(texture, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
 	});
+}
+
+
+// Sends the scales of a deferred light fade, if the pass has any. False means the base is drawn as it is.
+static bool Upload_Fade(GpuMapPass const & pass)
+{
+	if (pass.Fade == NULL || pass.FadeWidth <= 0 || pass.FadeHeight <= 0 || pass.Fade->size() != (std::size_t)pass.FadeWidth * pass.FadeHeight) {
+		return(false);
+	}
+	if (!bgfx::isValid(_Fade) || _FadeWidth != pass.FadeWidth || _FadeHeight != pass.FadeHeight) {
+		Release_Handle(_Fade);
+		_Fade = bgfx::createTexture2D((uint16_t)pass.FadeWidth, (uint16_t)pass.FadeHeight, false, 1, bgfx::TextureFormat::R16);
+		_FadeWidth = pass.FadeWidth;
+		_FadeHeight = pass.FadeHeight;
+		if (!bgfx::isValid(_Fade)) {
+			return(false);
+		}
+	}
+	bgfx::updateTexture2D(_Fade, 0, 0, 0, 0, (uint16_t)_FadeWidth, (uint16_t)_FadeHeight, bgfx::copy(pass.Fade->data(), (uint32_t)(pass.Fade->size() * sizeof(unsigned short))));
+	return(true);
 }
 
 
@@ -1421,7 +1453,7 @@ static GpuVoxelDirectBlit Depth_Pre_Pass(GpuVoxelDirectBlit const & blended)
 
 // Draws the base quad and then each blit's quad into the target, in blit order; a voxel blit submits its part's layers
 // instead. A sonic wave copies the target first, so it reads everything drawn before it.
-static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water)
+static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water, bool faded)
 {
 	int const quads = (int)list.Blits.size() + 1;
 	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection, scale);
@@ -1492,6 +1524,11 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 			}
 			bgfx::setUniform(_WaterUniform, water_params);
 			bgfx::setUniform(_WorldUniform, world);
+			float const fade_params[4] = { faded ? 1.0f : 0.0f, (float)LAYER_FADE_DIVISOR * _FadeWidth, (float)LAYER_FADE_DIVISOR * _FadeHeight, 65535.0f / LAYER_FADE_UNIT };
+			bgfx::setUniform(_FadeUniform, fade_params);
+			if (faded) {
+				bgfx::setTexture(SLOT_COUNT + 3, _FadeSampler, _Fade, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+			}
 		}
 		if (kind == KIND_SONIC) {
 			view = Begin_Snapshot_View(view, area, projection, scale);
@@ -1583,6 +1620,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	if (tileshadow || water) {
 		Upload_Plane(_TileShadow, _TileShadowTracked, *pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
 	}
+	bool const faded = Upload_Fade(pass);
 	bool const shadowed = shadows > 0 || tileshadow;
 	bool const clouds = _CloudStrength > 0;
 	bool const weather = _Weather != GPU_WEATHER_NONE && _WeatherStrength > 0;
@@ -1612,7 +1650,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	if (shadowed) {
 		Submit_Shadows(list, scale, area, projection, ring, shadowquads, tileshadow);
 	}
-	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water);
+	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water, faded);
 
 	bool const planed = pass.Glow != NULL && pass.GlowChanged != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
 	if (planed) {
@@ -1972,7 +2010,7 @@ void GpuMap_Shutdown(void)
 		Release_Handle(*program);
 	}
 	for (bgfx::UniformHandle * uniform : { &_BlurUniform, &_MaskSampler, &_ShadowSampler, &_SceneSampler, &_RippleUniform, &_RippleInfoUniform,
-		&_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_TileShadowSampler, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
+		&_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_TileShadowSampler, &_FadeSampler, &_FadeUniform, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
 		&_GlowMaskSampler, &_GlowSampler }) {
 		Release_Handle(*uniform);
 	}

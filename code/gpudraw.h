@@ -237,6 +237,9 @@ struct GpuDrawList
 void GpuDraw_Plan(bool render);
 bool GpuDraw_Tiles_Left(void);
 
+// True between frames while the GPU has drawn the last 30 map passes, which is when a pass leaves the terrain in the tile layer.
+bool GpuDraw_Steady(void);
+
 // The render flag last given to GpuDraw_Plan. While it is false, the background pass darkens the
 // copied terrain through the shadow plane itself (shadowplane.h).
 bool GpuDraw_Planned(void);

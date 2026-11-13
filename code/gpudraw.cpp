@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "gpudraw.h"
+#include "layerfade.h"
 
 #include "_alpha.h"
 #include "_rect.h"
@@ -1151,6 +1152,7 @@ static bool Finish_Render(Surface & target)
 	static std::vector<unsigned char> changed;
 	static std::vector<unsigned char> tileshadow;
 	static std::vector<unsigned char> tileshadowchanged;
+	static std::vector<unsigned short> fade;
 	static std::vector<unsigned char> tileshadowlit;
 	static std::vector<unsigned char> glow;
 	static std::vector<unsigned char> glowchanged;
@@ -1229,6 +1231,9 @@ static bool Finish_Render(Surface & target)
 		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
 		pass.WorldY = TacticalMap->TacPixelY + _Area.Y - TacticalRect.Y;
 		pass.Flash = Flash_Amount();
+		if (LayerFade_Fill(fade, pass.FadeWidth, pass.FadeHeight, _Area)) {
+			pass.Fade = &fade;
+		}
 		if (GpuMap_Draw(pass)) {
 			Count_Render(true);
 			_CleanPasses++;
@@ -1552,6 +1557,12 @@ bool GpuDraw_Planned(void)
 bool GpuDraw_Tiles_Left(void)
 {
 	return(_TilesLeft);
+}
+
+
+bool GpuDraw_Steady(void)
+{
+	return(_CleanPasses >= 30 && Backend_Is_Running());
 }
 
 

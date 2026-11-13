@@ -79,6 +79,7 @@
 #include "vanim.h"
 #include "vein.h"
 #include "wave.h"
+#include "layerfade.h"
 
 #include "bench.hh"
 #include "perfstat.h"
@@ -384,6 +385,7 @@ void LogicClass::AI(void)
 
 		Scen->DesiredAmbientLight = std::max(Scen->DesiredAmbientLight, 0);
 
+		int const before = Scen->CurrentAmbientLight;
 		int value = 100.0 * Rule->AmbientLightChangeStep;
 
 		if (Scen->DesiredAmbientLight < Scen->CurrentAmbientLight) {
@@ -395,9 +397,11 @@ void LogicClass::AI(void)
 		}
 		Scen->IsAmbientLightChanged = true;
 		Map.Update_Cell_Colors();
-		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
-
+		if (!LayerFade_Defer(before)) {
+			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		}
 	}
+	LayerFade_AI();
 
 	if (TheaterClass::As_Reference(Scen->Theater).IsIceGrowth && Rule->IceGrowthRate != 0 && Scen->IceGrowthTimer == 0) {
 		Scen->IceGrowthTimer = TICKS_PER_MINUTE * Rule->IceGrowthRate;
