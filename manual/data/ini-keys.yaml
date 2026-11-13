@@ -14818,6 +14818,23 @@ DistributedFire:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DistributedWeaponFire:
+  key: DistributedWeaponFire
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsDistributedFire
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Dock:
   key: Dock
   scopes:

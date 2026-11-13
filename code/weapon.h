@@ -307,6 +307,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// Can a vehicle fire this weapon without first turning its body or turret to the target?
 		bool IsOmniFire;
 
+		// DistributedWeaponFire: read and saved as Yuri's Revenge does, but nothing in the game acts on it.
+		bool IsDistributedFire;
+
 		// With RevealOnFire=no, firing this weapon does not reveal the firer to the target's owner.
 		bool IsRevealOnFire;
 

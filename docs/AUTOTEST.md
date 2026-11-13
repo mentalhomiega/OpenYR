@@ -341,6 +341,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `teams` | writes each team with its house, member count, current script mission, flags and script line. A team below full strength also gets lines with the members it lacks and why, and its recruiting values |
 | `teamtrace <0\|1>` | `1` writes a `TEAMTRACE` line for each team script line a team starts. `0` stops them |
 | `threatscan <TypeID> <ThreatType flags>` | writes the target that the first object of that type, owned by a house that is no ally of the player, picks anywhere on the map for those flags, or `-` for none |
+| `weaponkeys [Name]` | writes `weaponkeys <Weapon> distributed <0\|1>` for the weapon with that name, or every weapon: whether it read `DistributedWeaponFire=yes` |
 | `typedump [Name]` | writes the main fields of every weapon, projectile and warhead type, or only those with that name, one line each |
 | `water x y` | writes the open water cell nearest to that cell |
 | `wheel <step> [x y]` | glides the zoom by that step around a screen point, as the mouse wheel does. Without a point the zoom centres on the middle of the map view |

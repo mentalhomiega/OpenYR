@@ -175,6 +175,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsNeverUse(false),
 	IsCellRangefinding(false),
 	IsOmniFire(false),
+	IsDistributedFire(false),
 	IsRevealOnFire(true),
 	IsTerrainFire(false),
 	DisguiseFakeBlinkTime(0),
@@ -246,6 +247,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsNeverUse = ini.Get_Bool(IniName, "NeverUse", IsNeverUse);
 		IsCellRangefinding = ini.Get_Bool(IniName, "CellRangefinding", IsCellRangefinding);
 		IsOmniFire = ini.Get_Bool(IniName, "OmniFire", IsOmniFire);
+		IsDistributedFire = ini.Get_Bool(IniName, "DistributedWeaponFire", IsDistributedFire);
 		IsRevealOnFire = ini.Get_Bool(IniName, "RevealOnFire", IsRevealOnFire);
 		IsTerrainFire = ini.Get_Bool(IniName, "TerrainFire", IsTerrainFire);
 		DisguiseFakeBlinkTime = ini.Get_Int(IniName, "DisguiseFakeBlinkTime", DisguiseFakeBlinkTime);
@@ -635,6 +637,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNeverUse);
 	stream.Serialize(IsCellRangefinding);
 	stream.Serialize(IsOmniFire);
+	stream.Serialize(IsDistributedFire);
 	stream.Serialize(IsRevealOnFire);
 	stream.Serialize(IsTerrainFire);
 	stream.Serialize(DisguiseFakeBlinkTime);

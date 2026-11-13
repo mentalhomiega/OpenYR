@@ -2128,6 +2128,17 @@ static void Type_Dump_Step(StepType const & step)
 }
 
 
+// weaponkeys <Name>: whether the weapon read DistributedWeaponFire, for each weapon with that name (every weapon without one).
+static void Weapon_Keys_Step(StepType const & step)
+{
+	for (int index = 0; index < Weapons.Count(); index++) {
+		WeaponTypeClass const * weapon = Weapons[index];
+		if (!step.Argument.empty() && stricmp(weapon->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   weaponkeys %s distributed %d\n", weapon->Name(), (int)weapon->IsDistributedFire);
+	}
+}
+
+
 // weapons <TypeID>: each weapon slot of the type with its bullet's AA and AG flags and its range in leptons.
 static void Weapons_Step(StepType const & step)
 {
@@ -7519,6 +7530,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"hutc4", Hut_C4_Step},
 		{"c4watch", C4_Watch_Start},
 		{"weapons", Weapons_Step},
+		{"weaponkeys", Weapon_Keys_Step},
 		{"airborne", Airborne_Step},
 		{"rocket", Rocket_Step},
 		{"typedump", Type_Dump_Step},
