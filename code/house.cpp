@@ -7470,7 +7470,7 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
  *=============================================================================================*/
 HouseClass * House_From_HousesType(HousesType house)
 {
-	int spawn_waypoint = Spawn_House_Waypoint(house);
+	int spawn_waypoint = Spawn_House_Waypoint(house, HouseTypes.Count());
 	if (spawn_waypoint != -1) {
 		return(House_At(spawn_waypoint));
 	}
@@ -7578,7 +7578,7 @@ bool House_Matches(HouseClass const * house, HousesType selector)
 	if (house == NULL) {
 		return(false);
 	}
-	int spawn_waypoint = Spawn_House_Waypoint(selector);
+	int spawn_waypoint = Spawn_House_Waypoint(selector, HouseTypes.Count());
 	if (spawn_waypoint != -1) {
 		return(House_At(spawn_waypoint) == house);
 	}

@@ -44,9 +44,9 @@ int Spawn_House_Waypoint(char const * name)
 }
 
 
-int Spawn_House_Waypoint(HousesType house)
+int Spawn_House_Waypoint(HousesType house, int house_type_count)
 {
-	if (house >= HOUSE_SPAWN_FIRST && house <= HOUSE_SPAWN_LAST) {
+	if (house >= HOUSE_SPAWN_FIRST && house <= HOUSE_SPAWN_LAST && house >= house_type_count) {
 		return house - HOUSE_SPAWN_FIRST;
 	}
 	if (house >= HOUSE_PLAYER_AT_FIRST && house <= HOUSE_PLAYER_AT_LAST) {
@@ -61,7 +61,7 @@ HousesType Spawn_House_Type(int spawn_waypoint)
 	if (spawn_waypoint < 0 || spawn_waypoint >= SPAWN_HOUSE_COUNT) {
 		return HOUSE_NONE;
 	}
-	return static_cast<HousesType>(HOUSE_SPAWN_FIRST + spawn_waypoint);
+	return static_cast<HousesType>(HOUSE_PLAYER_AT_FIRST + spawn_waypoint);
 }
 
 

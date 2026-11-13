@@ -155,7 +155,7 @@ fixed-point class.
 | `Cell::As_Coord(z)`, `Coord::As_Cell()` | `coord.h` | Between a cell and its centre coordinate. |
 | `Map_Cell_Index(cell)`, `Map_Cell_Count()` | `astar.h` | Flat index of a cell and the cell total. |
 | `Follow_Path(cell, count, path)` | `astar.h` | The cell reached by following a move list. Tunnel moves are followed to their far mouth. |
-| `Spawn_House_Waypoint(name_or_house)` | `spawnhouse.h` | Start waypoint 0 to 7 of a `Spawn1`..`Spawn8` house, or -1. |
+| `Spawn_House_Waypoint(name)`, `Spawn_House_Waypoint(house, house_type_count)` | `spawnhouse.h` | Start waypoint 0 to 7 of a `Spawn1`..`Spawn8` house, or -1. A number 50 to 57 is a house type, not a position, when that many types exist. |
 | `Screen_To_View_Point`, `View_To_Screen_Point`, `Screen_To_View_Offset`, `View_To_Screen_Offset` | `viewzoom.h` | Between screen pixels and the zoomed tactical view. Do not scale by hand. |
 
 ## Iteration over game objects
