@@ -3540,7 +3540,8 @@ void TeamClass::TMission_SELF_DESTRUCT(TeamMissionClass * mission, bool)
 			if (unit->Strength > 0 && unit->IsActive && unit->IsDown && !unit->IsInLimbo) {
 				int damage = unit->Strength;
 				unit->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-				doit = true;
+				// A member the damage cannot hurt, such as an invulnerable one, would otherwise keep this loop going forever.
+				doit = doit || unit->Strength < damage;
 			}
 			unit = unit->Member;
 		}
