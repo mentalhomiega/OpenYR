@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstdio>
 #include <cmath>
 #include <cstdlib>
 #include <cstdint>
@@ -250,6 +251,28 @@ bool Read_File(std::string const & name, std::vector<unsigned char> & bytes)
 }
 
 
+// True for a shape file stored under a PNG name: its header starts with two zero bytes, which no PNG does. Such a
+// file is skipped without a log line, since the shape it stands for loads from the shape file itself.
+bool Is_Shape_Header(std::vector<unsigned char> const & bytes)
+{
+	return(bytes.size() >= 8 && bytes[0] == 0 && bytes[1] == 0);
+}
+
+
+// The size and first bytes of a file, for the log line of a file that is not an image.
+std::string Describe_Start(std::vector<unsigned char> const & bytes)
+{
+	char text[64];
+	std::snprintf(text, sizeof(text), "%zu bytes, starts", bytes.size());
+	std::string result = text;
+	for (size_t index = 0; index < bytes.size() && index < 8; index++) {
+		std::snprintf(text, sizeof(text), " %02X", bytes[index]);
+		result += text;
+	}
+	return(result);
+}
+
+
 std::uint32_t const * Decode(std::vector<unsigned char> const & bytes, int & width, int & height)
 {
 	int channels = 0;
@@ -284,7 +307,10 @@ void Load(SheetRecord & entry, std::string const & name)
 	int height = 0;
 	std::uint32_t const * pixels = Decode(bytes, width, height);
 	if (pixels == NULL) {
-		DebugString("TRUECOLOUR: %s did not decode: %s\n", entry.PngName.c_str(), stbi_failure_reason());
+		if (Is_Shape_Header(bytes)) {
+			return;
+		}
+		DebugString("TRUECOLOUR: %s did not decode: %s (%s)\n", entry.PngName.c_str(), stbi_failure_reason(), Describe_Start(bytes).c_str());
 		return;
 	}
 
@@ -487,7 +513,10 @@ void Make_Shape(MadeShapeType & made, std::string const & name)
 	int height = 0;
 	int channels = 0;
 	if (!stbi_info_from_memory(bytes.data(), (int)bytes.size(), &width, &height, &channels) || width <= 0 || height <= 0) {
-		DebugString("TRUECOLOUR: %s did not decode: %s\n", pngname.c_str(), stbi_failure_reason());
+		if (Is_Shape_Header(bytes)) {
+			return;
+		}
+		DebugString("TRUECOLOUR: %s did not decode: %s (%s)\n", pngname.c_str(), stbi_failure_reason(), Describe_Start(bytes).c_str());
 		return;
 	}
 

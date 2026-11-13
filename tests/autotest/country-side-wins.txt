@@ -1,0 +1,12 @@
+; A country's Side= wins over the [Sides] list (gamemd HouseTypeClass 0x511850 moves the country between the side lists), and a
+; ParentCountry= that names the country itself is its default and logs nothing. Stock rules list the Russians under Nod.
+; Expected: before the overlay Russians are on Nod and listed under Nod; after it they are on GDI and listed only under GDI; the
+; Americans and Russians have no parent and no "names no country" line is logged for them; the Germans log one such line.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/country-side-wins.txt -Map XMP29U2.MAP -AICountries 1 -Seconds 60 -Filter "AUTOTEST   country|ParentCountry|ignored|Exception"
+10 country Russians
+11 country Americans
+20 rules country-side-wins.ini
+30 country Russians
+31 country Americans
+32 country Germans
+50 quit

@@ -354,6 +354,9 @@ bool GpuDraw_Line_Pixel(int x, int y, int value);
 
 void GpuDraw_Line_End(void);
 
+// Accounts for the lock a text print has just taken on surface, whose glyph runs it records with GpuDraw_Fill.
+bool GpuDraw_Text_Begin(Surface const & surface);
+
 // Starts a shockwave ring at the world point for the GPU-drawn map; strength is the blast's damage.
 void GpuDraw_Add_Shockwave(Coord const & coord, int strength);
 
