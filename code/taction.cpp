@@ -119,6 +119,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <string>
 
 DynamicVectorClass<TActionClass *> Actions;
 
@@ -1125,12 +1126,21 @@ bool TActionClass::TAction_WAKEUP_GROUP(HouseClass * , ObjectClass * , TriggerCl
 }
 
 
+static std::string Trigger_Reason(char const * what, TriggerClass const * trig)
+{
+	if (trig == NULL) {
+		return(what);
+	}
+	return(std::string(what) + " of trigger " + (char const *)trig->Class->IniName + " '" + (char const *)trig->Class->GivenName + "'");
+}
+
+
 /// <summary>
 /// Flags the player as having won the scenario.
 /// </summary>
-bool TActionClass::TAction_ANNOUNCE_WIN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_ANNOUNCE_WIN(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	PlayerPtr->Flag_To_Win(true);
+	PlayerPtr->Flag_To_Win(Trigger_Reason("Announce Win", trig).c_str(), true);
 	return(true);
 }
 
@@ -1138,9 +1148,9 @@ bool TActionClass::TAction_ANNOUNCE_WIN(HouseClass * , ObjectClass * , TriggerCl
 /// <summary>
 /// Flags the player as having lost the scenario.
 /// </summary>
-bool TActionClass::TAction_ANNOUNCE_LOSE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_ANNOUNCE_LOSE(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	PlayerPtr->Flag_To_Lose(true);
+	PlayerPtr->Flag_To_Lose(Trigger_Reason("Announce Lose", trig).c_str(), true);
 	return(true);
 }
 
@@ -1866,13 +1876,14 @@ bool TActionClass::TAction_DZ(HouseClass * , ObjectClass * , TriggerClass * , Ce
 /// The player wins if the action names their own house, and loses if it names
 /// somebody else's.
 /// </summary>
-bool TActionClass::TAction_WIN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_WIN(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
 	AUTOTEST_LOG("  win for house %d, the player is %s (%d)\n", (int)Data.House, PlayerPtr->Class->Name(), (int)PlayerPtr->Class->House);
+	std::string const reason = Trigger_Reason("Win action", trig);
 	if (House_Matches(PlayerPtr, Data.House)) {
-		PlayerPtr->Flag_To_Win();
+		PlayerPtr->Flag_To_Win(reason.c_str());
 	} else {
-		PlayerPtr->Flag_To_Lose();
+		PlayerPtr->Flag_To_Lose(reason.c_str());
 	}
 	return(true);
 }
@@ -1883,12 +1894,13 @@ bool TActionClass::TAction_WIN(HouseClass * , ObjectClass * , TriggerClass * , C
 /// The player loses if the action names their own house, and wins if it names
 /// somebody else's.
 /// </summary>
-bool TActionClass::TAction_LOSE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_LOSE(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
+	std::string const reason = Trigger_Reason("Lose action", trig);
 	if (!House_Matches(PlayerPtr, Data.House)) {
-		PlayerPtr->Flag_To_Win();
+		PlayerPtr->Flag_To_Win(reason.c_str());
 	} else {
-		PlayerPtr->Flag_To_Lose();
+		PlayerPtr->Flag_To_Lose(reason.c_str());
 	}
 	return(true);
 }
@@ -2925,14 +2937,14 @@ bool TActionClass::TAction_CREATE_BUILDING_AT(HouseClass * , ObjectClass * , Tri
 /// Destroys everything the named house owns and marks it defeated.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_HOUSE_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_HOUSE_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
 	HouseClass * hptr = House_From_HousesType(Data.House);
 	if (hptr == NULL) {
 		return(false);
 	}
 
-	hptr->Defeat_Now();
+	hptr->Defeat_Now(Trigger_Reason("Destroy All action", trig).c_str());
 	return(true);
 }
 

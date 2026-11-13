@@ -320,7 +320,7 @@ void Ingame_Menu_Dialog(void)
 				case SDLG_SURRENDER:
 					if (!PlayerPtr->IsDefeated && !PlayerPtr->IsToWin && !PlayerPtr->IsToLose && !PlayerPtr->IsToDie && Surrender_Dialog(TXT_SURRENDER)) {
 						if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-							PlayerPtr->Flag_To_Lose();
+							PlayerPtr->Flag_To_Lose("surrendered");
 						} else {
 							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::DESTRUCT));
 							_special_dialog_flag = false;
