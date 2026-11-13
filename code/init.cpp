@@ -7833,7 +7833,7 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 	}
 
 	if (tile_rect.Is_Valid()) {
-		TileSurface = new DSurface(tile_rect.Width, tile_rect.Height, true);
+		TileSurface = new DSurface(tile_rect.Width, tile_rect.Height, true, true);
 		TileSurface->Fill(0);
 
 		DebugString("TileSurface (%dx%d)\n", tile_rect.Width, tile_rect.Height);

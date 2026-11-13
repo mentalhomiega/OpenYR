@@ -30,6 +30,8 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 
 SAMPLER2D(s_index, 0);
 SAMPLER2D(s_base, 6);
+// The base store's ring addressing, as a u_ring entry: the store is the area's picture or the tile layer's memory.
+uniform vec4 u_basering;
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
@@ -60,11 +62,11 @@ vec3 Water_Base(ivec2 p, vec3 still)
 	vec2 q = at + shift;
 	ivec2 q0 = ivec2(floor(q));
 	vec2 f = q - floor(q);
-	ivec2 last = textureSize(s_base, 0) - ivec2(1, 1);
+	ivec2 last = textureSize(s_tileshadow, 0) - ivec2(1, 1);
 	vec3 c[4];
 	for (int i = 0; i < 4; i++) {
 		ivec2 t = clamp(q0 + ivec2(i % 2, i / 2), ivec2(0, 0), last);
-		c[i] = Water(t) ? Rgb565(Fetch16(s_base, t)) : still;
+		c[i] = Water(t) ? Rgb565(Fetch16(s_base, Ring(t, u_basering))) : still;
 	}
 	vec3 colour = mix(mix(c[0], c[1], f.x), mix(c[2], c[3], f.x), f.y);
 	colour *= 1.0 + u_water.z * (cos(a) + 0.6 * cos(b));
@@ -85,7 +87,7 @@ void main()
 	ivec2 area = ivec2(floor(v_texcoord0.zw));
 
 	if (kind == 5 || kind == 9) {
-		vec3 base = Rgb565(Fetch16(s_base, area));
+		vec3 base = Rgb565(Fetch16(s_base, Ring(area, u_basering)));
 		if (u_water.y > 0.0 && Water(area)) {
 			base = Water_Base(area, base);
 		}

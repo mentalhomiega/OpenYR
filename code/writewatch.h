@@ -28,4 +28,7 @@ void WriteWatch_Free(void * memory);
 // With steady set, a page written in two takes in a row is reported by every take until a full reset
 // that happens every STICKY_FULL_RESET_EVERY takes, whether or not it is written again, and its writes stop costing a page fault.
 // Set it for a block that many of the same pages are written in every frame.
+// The size in bytes of the pages WriteWatch_Take lists.
+std::size_t WriteWatch_Page_Size(void);
+
 bool WriteWatch_Take(void const * memory, std::size_t size, std::vector<std::pair<std::size_t, std::size_t>> & runs, bool steady = false);

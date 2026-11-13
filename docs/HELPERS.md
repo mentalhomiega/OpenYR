@@ -242,6 +242,9 @@ a default and returns it when the section or entry is missing.
 | `Allocate_Tactical_Surfaces()` | `init.h` | Allocates the hidden, composite, tile and sidebar surfaces for the current interface, and returns the tactical view rectangle. Call it after a display mode change or a save load, then set the map's view size. |
 | `Allocate_Surfaces(hidden, composite, tile, sidebar, hidden_first)` | `init.h` | The same with explicit rectangles. |
 | `Allocate_Map_Surfaces()` | `viewzoom.h` | Rebuilds the map's own surfaces to match the view and zoom. |
+| `WrittenRects` | `writtenrects.h` | The rectangles of a buffer that its writers named since a reader last took them: `Note`, `Note_Run` and `Note_Picture` add, `Take` moves them out. The GPU map pass uploads from these lists. |
+| `DSurface::Scroll(dx, dy)` | `dsurface.h` | Moves the picture of a surface constructed with `scrolls` without copying it. False means nothing moved and the caller must copy. |
+| `DSurface::Note_Written(rect)`, `ZBuffer::Note_Written(rect)`, `ABuffer::Note_Written(rect)` | `dsurface.h`, `zbuffer.h`, `abuffer.h` | Names a rectangle of the picture a draw wrote, so the GPU map pass uploads it ([GPU_MAP.md](GPU_MAP.md#uploads)). |
 | `Draw_Shape(...)`, `Blit_Block(...)` | `draw.h` | Draw a shape or surface block with a convert table and clip window. |
 | `Video_Mark_Dirty()` | `video.h` | Records that the visible surface was drawn to since the last present. |
 | `Release_Handle(handle)` | `bgfxviews.hh` | Destroys a valid bgfx handle and resets it to invalid; an invalid handle is left alone. |

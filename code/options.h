@@ -377,6 +377,7 @@ class OptionsClass {
 
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;
+		bool FastestGpu;
 
 		// Campaign and skirmish games started from the menus search unit paths in batches on
 		// PathThreads threads; 0 threads picks a number for this machine (docs/PERFORMANCE.md).

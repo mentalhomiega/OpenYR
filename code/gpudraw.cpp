@@ -686,7 +686,7 @@ static GpuRing Ring_Of(T * buffer, std::vector<unsigned short> & fallback)
 	int const height = buffer->Get_Bounds().Height;
 	unsigned short const * start = buffer->Get_Buffer_End() - (std::size_t)width * height;
 	unsigned short const * first = buffer->Get_Buffer_Offset(Point2D(_Area.X, _Area.Y - buffer->Get_Bounds().Y));
-	return(GpuRing{ start, width, height, (int)(first - start) });
+	return(GpuRing{ start, width, height, (int)(first - start), &buffer->Written });
 }
 
 
@@ -1152,9 +1152,14 @@ static bool Finish_Render(Surface & target)
 	bool const tilesleft = _TilesLeft;
 	_TilesLeft = false;
 	DSurface const * tiles = tilesleft ? dynamic_cast<DSurface const *>(TileSurface) : NULL;
+	// A watched tile layer left for the GPU is read in place, so no copy of it is kept.
+	bool const inplace = tiles != NULL && tiles->Get_Block() != NULL;
 	bool const same = tiles != NULL && tiles == _BaseTiles && tiles->Change_Count() == _BaseTilesCount
-		&& base.size() == (std::size_t)_Area.Width * _Area.Height && (int)changed.size() == _Area.Height;
-	if (!same) {
+		&& (inplace || (base.size() == (std::size_t)_Area.Width * _Area.Height && (int)changed.size() == _Area.Height));
+	if (inplace) {
+		_BaseTiles = tiles;
+		_BaseTilesCount = tiles->Change_Count();
+	} else if (!same) {
 		// Base matches the watched tile layer as of the last read, so only what was written since needs comparing.
 		static std::vector<std::pair<std::size_t, std::size_t>> written;
 		bool const listed = tiles != NULL && tiles->Written_Runs(written) && tiles == _BaseTiles;
@@ -1189,6 +1194,11 @@ static bool Finish_Render(Surface & target)
 		pass.Area = _Area;
 		pass.Frame = Frame;
 		pass.Base = &base;
+		if (inplace) {
+			int const stride = tiles->Stride() / (int)sizeof(unsigned short);
+			unsigned short const * const block = (unsigned short const *)tiles->Get_Block();
+			pass.BaseRing = GpuRing{ block, stride, (int)(tiles->Get_Block_Size() / tiles->Stride()), (int)((unsigned short const *)tiles->Get_Buffer() - block) + _Area.Y * stride + _Area.X, &tiles->Written_Rects() };
+		}
 		pass.DepthRing = Ring_Of(DepthBuffer, upload[1]);
 		pass.AlphaRing = alpharead ? Ring_Of(AlphaBuffer, upload[2]) : GpuRing{};
 		pass.List = &_List;
@@ -1215,6 +1225,9 @@ static bool Finish_Render(Surface & target)
 	}
 	Count_Render(false);
 	_CleanPasses = 0;
+	if (inplace && !Read_Area(*TileSurface, _Area, base)) {
+		return(false);
+	}
 	// The recorded draws land over the ones the record does not hold, which drew in order. Without
 	// the terrain copy, those draws went to a target the base no longer comes from, and are lost.
 	// A base read from the target holds those draws over unshaded terrain, so only terrain is shaded.

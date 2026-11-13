@@ -106,6 +106,14 @@ void ZBuffer::Release_Surface(void)
 /// run off the end of the buffer.</remarks>
 void ZBuffer::Set(unsigned short * dst, int size, unsigned short value)
 {
+	Written.Note_Run((std::size_t)(dst - BufferStart), (std::size_t)size, BufferWidth);
+	Store(dst, size, value);
+}
+
+
+// Set without naming the entries as written.
+void ZBuffer::Store(unsigned short * dst, int size, unsigned short value)
+{
 	/// Write a single entry to bring the address up to an int boundary.
 	if ((uintptr_t)dst & 2) {
 		if (size != 0) {
@@ -247,6 +255,7 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 /// <returns>bool; Was the buffer filled?</returns>
 bool ZBuffer::Fill(unsigned short value)
 {
+	Written.Note_All();
 	return(SurfacePtr->Fill_Rect(Rect(0, 0, BufferWidth, BufferHeight), value));
 }
 
@@ -259,6 +268,8 @@ bool ZBuffer::Fill(unsigned short value)
 /// <returns>bool; Was the region filled?</returns>
 bool ZBuffer::Fill(unsigned short value, Rect rect)
 {
+	Rect const stored = Intersect(rect, Rect(0, 0, BufferWidth, BufferHeight));
+	Written.Note(stored.X, stored.Y, stored.Width, stored.Height);
 	return(SurfacePtr->Fill_Rect(rect, value));
 }
 
@@ -270,18 +281,29 @@ bool ZBuffer::Fill(unsigned short value, Rect rect)
 /// through the current pan offset and is allowed to straddle the wrap point.
 /// </summary>
 /// <param name="rect">The region of the buffer to reset.</param>
+void ZBuffer::Note_Written(Rect const & rect)
+{
+	Rect const covered = Intersect(rect, Bounds);
+	if (covered.Is_Valid()) {
+		std::size_t const start = (std::size_t)(Get_Buffer_Offset(Point2D(covered.X, covered.Y - Bounds.Y)) - BufferStart);
+		Written.Note_Picture(start, BufferWidth, BufferHeight, covered.Width, covered.Height);
+	}
+}
+
+
 void ZBuffer::Update(Rect rect)
 {
 	unsigned short * buffptr = Get_Buffer_Offset(Point2D(rect.X, rect.Y));
+	Written.Note_Picture((std::size_t)(buffptr - BufferStart), BufferWidth, BufferHeight, rect.Width, rect.Height);
 
 	for (int i = 0; i < rect.Height; ++i) {
 
 		if ((buffptr + rect.Width) >= BufferEnd) {
 			int size = (int)(BufferEnd - buffptr);
-			Set(buffptr, size, ZBUFFER_COLOR);
-			Set(BufferStart, rect.Width - size, ZBUFFER_COLOR);
+			Store(buffptr, size, ZBUFFER_COLOR);
+			Store(BufferStart, rect.Width - size, ZBUFFER_COLOR);
 		} else {
-			Set(buffptr, rect.Width, ZBUFFER_COLOR);
+			Store(buffptr, rect.Width, ZBUFFER_COLOR);
 		}
 
 		buffptr += BufferWidth;
