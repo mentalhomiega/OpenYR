@@ -910,7 +910,7 @@ void EventClass::Execute(void)
 		**	Special self destruct action requested. This is active in the multiplayer mode.
 		*/
 		case DESTRUCT:
-			house->Flag_To_Die();
+			house->Flag_To_Die("self-destruct event");
 			break;
 
 		/*
@@ -1549,7 +1549,7 @@ void EventClass::Execute(void)
 				break;
 			}
 			if ((Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) || !Session.Options.AITakeover) {
-				house->Flag_To_Die();
+				house->Flag_To_Die("player left the game");
 			} else {
 				if (house->Is_Human_Player()) {
 					house->AI_Takeover();

@@ -1811,7 +1811,7 @@ void HouseClass::Check_Multiplayer_Defeat(void)
 		}
 
 		if (defeated) {
-			Defeat_Now();
+			Defeat_Now(Session.Options.ShortGame ? "short game: no structure or base unit left" : "owns no structures, units, soldiers or aircraft");
 		}
 	}
 }
@@ -3871,6 +3871,12 @@ static void Destroy_Selected(HouseClass * house, DestroyScope scope)
 }
 
 
+static void Log_Game_End(HouseClass const * house, char const * verdict, char const * reason)
+{
+	DebugString("Game end: %s %s at frame %d: %s\n", house->Class->Name(), verdict, (int)Frame, reason != NULL ? reason : "no reason given");
+}
+
+
 /***************************************************************************
  * HouseClass::MPlayer_Defeated -- multiplayer; house is defeated          *
  *                                                                         *
@@ -3886,7 +3892,7 @@ static void Destroy_Selected(HouseClass * house, DestroyScope scope)
  * HISTORY:                                                                *
  *   05/25/1995 BRR : Created.                                             *
  *=========================================================================*/
-void HouseClass::MPlayer_Defeated(void)
+void HouseClass::MPlayer_Defeated(char const * reason)
 {
 	char txt[80];
 	int i,j;
@@ -3900,6 +3906,7 @@ void HouseClass::MPlayer_Defeated(void)
 	**	Set the defeat flag for this house
 	*/
 	IsDefeated = true;
+	Log_Game_End(this, "defeated", reason);
 
 	/*
 	**	If this is a computer controlled house, then all computer controlled
@@ -4061,10 +4068,10 @@ void HouseClass::MPlayer_Defeated(void)
 
 		if (PlayerPtr->IsDefeated && !allies_win) {
 			DebugString("MPlayer_Defeated() - Flag_To_Lose\n");
-			PlayerPtr->Flag_To_Lose(false);
+			PlayerPtr->Flag_To_Lose("no hostile house or no person left alive", false);
 		} else {
 			DebugString("MPlayer_Defeated() - Flag_To_Win\n");
-			PlayerPtr->Flag_To_Win(false);
+			PlayerPtr->Flag_To_Win("no hostile house or no person left alive", false);
 		}
 	}
 }
@@ -4111,10 +4118,10 @@ void HouseClass::Destroy_All_Non_Buildings_Naval(void)
 /// <summary>
 /// Defeats this house: destroys every object it still owns, then runs MPlayer_Defeated.
 /// </summary>
-void HouseClass::Defeat_Now(void)
+void HouseClass::Defeat_Now(char const * reason)
 {
 	Destroy_All();
-	MPlayer_Defeated();
+	MPlayer_Defeated(reason);
 }
 
 
@@ -4146,10 +4153,11 @@ void HouseClass::Start_Borrowed_Time(void)
  * HISTORY:                                                                                    *
  *   06/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool HouseClass::Flag_To_Die(void)
+bool HouseClass::Flag_To_Die(char const * reason)
 {
 	if (!IsToWin && !IsToDie && !IsToLose) {
 		IsToDie = true;
+		Log_Game_End(this, "die", reason);
 		Start_Borrowed_Time();
 	}
 	return(IsToDie);
@@ -4171,10 +4179,11 @@ bool HouseClass::Flag_To_Die(void)
  * HISTORY:                                                                                    *
  *   06/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool HouseClass::Flag_To_Win(bool silent)
+bool HouseClass::Flag_To_Win(char const * reason, bool silent)
 {
 	if (!IsToWin && !IsToDie && !IsToLose) {
 		IsToWin = true;
+		Log_Game_End(this, "win", reason);
 		if (!silent) {
 			Start_Borrowed_Time();
 		}
@@ -4210,11 +4219,12 @@ bool HouseClass::Flag_To_Win(bool silent)
  * HISTORY:                                                                                    *
  *   06/12/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool HouseClass::Flag_To_Lose(bool silent)
+bool HouseClass::Flag_To_Lose(char const * reason, bool silent)
 {
 	IsToWin = false;
 	if (!IsToDie && !IsToLose) {
 		IsToLose = true;
+		Log_Game_End(this, "lose", reason);
 		if (!silent) {
 			Start_Borrowed_Time();
 		}
@@ -4246,7 +4256,7 @@ bool HouseClass::Flag_To_Lose(bool silent)
 void HouseClass::Flag_To_End(void)
 {
 	if (!IsToLose && !IsToWin) {
-		Flag_To_Win();
+		Flag_To_Win("game ended");
 	} else {
 		BorrowedTime.Start();
 	}
@@ -6481,6 +6491,8 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 		HouseClass * allyhouse = House_From_Name(ally);
 		if (allyhouse != NULL) {
 			allied.Set(allyhouse);
+		} else {
+			DebugString("[%s] Allies names %s, which is no house of this scenario\n", hname, ally);
 		}
 	}
 	Make_Ally(Houses[HeapID]);

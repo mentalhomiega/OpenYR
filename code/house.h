@@ -924,9 +924,10 @@ class HouseClass : public AbstractClass
 		int Expert_AI(void);
 		void Production_Begun(TechnoClass const * rtti);
 		void Sell_Wall(Cell const & cell, bool quiet = true);
-		bool Flag_To_Die(void);
-		bool Flag_To_Win(bool silent = false);
-		bool Flag_To_Lose(bool silent = false);
+		// Each reason goes into the debug log with the house and frame.
+		bool Flag_To_Die(char const * reason);
+		bool Flag_To_Win(char const * reason, bool silent = false);
+		bool Flag_To_Lose(char const * reason, bool silent = false);
 		void Flag_To_End(void);
 		void Make_Ally(HouseClass * house);
 		void Make_Ally(HousesType house);
@@ -1186,8 +1187,8 @@ class HouseClass : public AbstractClass
 		**	This routine gets called in multiplayer games when every unit, building,
 		**	and infantry for a house is destroyed.
 		*/
-		void MPlayer_Defeated(void);
-		void Defeat_Now(void);
+		void MPlayer_Defeated(char const * reason);
+		void Defeat_Now(char const * reason);
 
 		/*
 		**	When the game's over, this routine assigns everyone their score.

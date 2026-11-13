@@ -3640,6 +3640,22 @@ static void Counts_Step(StepType const & step)
 }
 
 
+// allies <House>: writes each house the named house counts as an ally (Is_Ally), one line per house.
+static void Allies_Step(StepType const & step)
+{
+	HouseClass * owner = Named_House(step.Argument);
+	if (owner == NULL) {
+		DebugString("AUTOTEST   allies %s: no such house\n", step.Argument.c_str());
+		return;
+	}
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index] != owner && owner->Is_Ally(Houses[index])) {
+			DebugString("AUTOTEST   allies %s: %s\n", owner->Class->Name(), Houses[index]->Class->Name());
+		}
+	}
+}
+
+
 // listhouse <House>: writes every object the house has in the object list, limbo'd or not, with what holds it,
 // then the land, naval and infantry counts the land-units event reads and the ones the objects add up to.
 static void Listhouse_Step(StepType const & step)
@@ -6534,7 +6550,7 @@ static void Defeat_Step(StepType const & step)
 	if (house == NULL || house->IsDefeated) {
 		DebugString("AUTOTEST defeat %s: %s\n", step.Argument.c_str(), house == NULL ? "no such house" : "already defeated");
 	} else {
-		house->Defeat_Now();
+		house->Defeat_Now("autotest step");
 		DebugString("AUTOTEST defeat %s: defeated frame %d, local %d\n", house->Class->Name(), Frame, (int)(house == PlayerPtr));
 	}
 }
@@ -7132,6 +7148,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"planguard", Planguard_Step},
 		{"forceattack", Forceattack_Step},
 		{"counts", Counts_Step},
+		{"allies", Allies_Step},
 		{"listhouse", Listhouse_Step},
 		{"enemies", Enemies_Step},
 		{"threatscan", Threatscan_Step},
