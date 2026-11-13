@@ -1231,7 +1231,7 @@ static bool Finish_Render(Surface & target)
 		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
 		pass.WorldY = TacticalMap->TacPixelY + _Area.Y - TacticalRect.Y;
 		pass.Flash = Flash_Amount();
-		if (LayerFade_Fill(fade, pass.FadeWidth, pass.FadeHeight, _Area, pass.FadeChanged)) {
+		if (LayerFade_Fill(fade, pass.FadeWidth, pass.FadeHeight, _Area, pass.FadeVersion)) {
 			pass.Fade = &fade;
 		}
 		if (GpuMap_Draw(pass)) {

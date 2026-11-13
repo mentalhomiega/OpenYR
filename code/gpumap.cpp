@@ -156,6 +156,7 @@ static bgfx::UniformHandle _FadeUniform = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _Fade = BGFX_INVALID_HANDLE;
 static int _FadeWidth = 0;
 static int _FadeHeight = 0;
+static int _FadeVersion = 0;
 // Whether the base store holds the tile layer's memory as it lies, instead of the area's picture.
 static bool _BaseInPlace = false;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
@@ -771,7 +772,8 @@ static bool Upload_Fade(GpuMapPass const & pass)
 			return(false);
 		}
 	}
-	if (fresh || pass.FadeChanged) {
+	if (fresh || pass.FadeVersion != _FadeVersion) {
+		_FadeVersion = pass.FadeVersion;
 		bgfx::updateTexture2D(_Fade, 0, 0, 0, 0, (uint16_t)_FadeWidth, (uint16_t)_FadeHeight, bgfx::copy(pass.Fade->data(), (uint32_t)(pass.Fade->size() * sizeof(unsigned short))));
 	}
 	return(true);
