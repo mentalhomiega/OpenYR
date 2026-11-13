@@ -9,7 +9,7 @@ when_omitted:
   note: The country stands alone and has only its own settings.
 ---
 
-`ParentCountry` makes a country start from the settings of another. The value is another country's section name, ignoring letter case. The country takes the parent's color, price and strength factors, [`Suffix=`](/keys/suffix/#scope-housetype), [`Prefix=`](/keys/prefix/), side, and whether it takes part in the multiplayer contest, and its own section then replaces whichever of these it sets. A value that names no other country is ignored and written to the debug log.
+`ParentCountry` makes a country start from the settings of another. The value is another country's section name, ignoring letter case. The country takes the parent's color, price and strength factors, [`Suffix=`](/keys/suffix/#scope-housetype), [`Prefix=`](/keys/prefix/), side, and whether it takes part in the multiplayer contest, and its own section then replaces whichever of these it sets. A country that names itself, which is the default, has no parent. A value that names no country is ignored and written to the debug log.
 
 ```ini title="scenario map file"
 [Countries]

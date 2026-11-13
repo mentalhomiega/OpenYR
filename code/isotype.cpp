@@ -1215,10 +1215,12 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 		setid++;
 	}
 
+	int invalid_references[2] = {0, 0};
+	int first_invalid[2] = {0, 0};
 	for (j = 0; j < IsometricTileTypes.Count(); ++j) {
 		IsometricTileTypeClass * isotype = IsometricTileTypes[j];
 		int offset = isotype->HeapID - isotype->TileSetBaseID;
-		auto remap = [&](IsometricTileType & reference, char const * field) {
+		auto remap = [&](IsometricTileType & reference, int field) {
 			if (reference == ISOTILE_NONE) {
 				return;
 			}
@@ -1236,14 +1238,23 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 				}
 			}
 			if (!valid) {
-				DebugString("Tile type %d has invalid %s reference %d at offset %d; using ISOTILE_NONE.\n",
-					static_cast<int>(isotype->HeapID), field, referenced_set, offset);
+				if (invalid_references[field] == 0) {
+					first_invalid[field] = static_cast<int>(isotype->HeapID);
+				}
+				invalid_references[field]++;
 				reference = ISOTILE_NONE;
 			}
 		};
 
-		remap(isotype->MarbleMadness, "MarbleMadness");
-		remap(isotype->NonMarbleMadness, "NonMarbleMadness");
+		remap(isotype->MarbleMadness, 0);
+		remap(isotype->NonMarbleMadness, 1);
+	}
+	// Only gamemd's Marble Madness toggle reads these tiles; this engine does not use them.
+	for (int field = 0; field < 2; field++) {
+		if (invalid_references[field] > 0) {
+			DebugString("%d tile types have a %s reference outside the named tile set (first is tile type %d); they use ISOTILE_NONE.\n",
+				invalid_references[field], field == 0 ? "MarbleMadness" : "NonMarbleMadness", first_invalid[field]);
+		}
 	}
 
 	// Ice behavior needs ice tiles. A theater whose ice sets are unresolved or hold no tiles, such as a
