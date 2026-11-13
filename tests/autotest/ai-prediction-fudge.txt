@@ -1,0 +1,6 @@
+; [AI] AIForcePredictionFudge is read as a list of numbers, as gamemd's RulesClass::Read_AI (0x672AE0) reads it into the list at
+; RulesClass + 0x9A8. Nothing in gamemd uses the list (no function reads its items or count apart from the save and load), so
+; it changes no behaviour.
+; Expected: one line "[AI] AIForcePredictionFudge read 3 numbers; nothing uses them", "AUTOTEST frame 5: quit", no Exception line.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ai-prediction-fudge.txt -Mods src-agent30/tests/autotest/ai-prediction-fudge -Map XMP29U2.MAP -Seconds 60 -Uncapped -Filter "AIForcePredictionFudge|AUTOTEST frame|Exception"
+5 quit

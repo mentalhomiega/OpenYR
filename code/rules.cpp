@@ -2791,6 +2791,14 @@ bool RulesClass::AI(CCINIClass const & ini)
 		AlliedBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "AlliedBaseDefenses", AlliedBaseDefenses);
 		SovietBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "SovietBaseDefenses", SovietBaseDefenses);
 		ThirdBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "ThirdBaseDefenses", ThirdBaseDefenses);
+		std::string fudge = ini.Get_String(AI, "AIForcePredictionFudge");
+		if (!fudge.empty()) {
+			AIForcePredictionFudge.clear();
+			for (std::string const & number : Split_List(fudge, ',', " \t", true)) {
+				AIForcePredictionFudge.push_back(atoi(number.c_str()));
+			}
+			DebugString("[AI] AIForcePredictionFudge read %d numbers; nothing uses them, as in Yuri's Revenge\n", (int)AIForcePredictionFudge.size());
+		}
 		BuildHelipad = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildHelipad", BuildHelipad);
 		BuildRadar = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildRadar", BuildRadar);
 		ConcreteWalls = TGet_TypeList<BuildingTypeClass>(ini, AI, "ConcreteWalls", ConcreteWalls);
@@ -3558,6 +3566,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AlliedBaseDefenses);
 	stream.Serialize(SovietBaseDefenses);
 	stream.Serialize(ThirdBaseDefenses);
+	stream.Serialize(AIForcePredictionFudge);
 	stream.Serialize(AISafeDistance);
 	stream.Serialize(AIFriendlyDistance);
 	stream.Serialize(PurifierBonus);

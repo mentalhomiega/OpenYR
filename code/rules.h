@@ -1590,6 +1590,9 @@ class RulesClass
 		TypeList<BuildingTypeClass const *> SovietBaseDefenses;
 		TypeList<BuildingTypeClass const *> ThirdBaseDefenses;
 
+		// [AI] AIForcePredictionFudge: Yuri's Revenge reads and saves these numbers and nothing uses them.
+		std::vector<int> AIForcePredictionFudge;
+
 		// Base defenses a computer house of each side plans, per difficulty slot. A side with no
 		// list plans its defenses by cost instead.
 		TypeList<int> AlliedBaseDefenseCounts;
