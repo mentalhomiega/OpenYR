@@ -7035,15 +7035,22 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 	 * to one point even when it is zero (TechnoClass::ReceiveDamage, 0x701900); a Webby hit
 	 * carries no damage and stays at zero.
 	 */
-	if (!forced && !negative && !(damage == 0 && warhead != NULL && (warhead->IsWebby || warhead->IsAllowZeroDamage))) {
-		damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * AttachedEffects.Armor_Multiplier()));
+	if (!forced && !negative && !(damage == 0 && warhead != NULL && (warhead->IsWebby || warhead->IsAllowZeroDamage || warhead->AttachEffect.Is_Defined()))) {
+		// An attached effect with an armor multiplier of zero or less takes all the damage away, which is how a mod
+		// makes an object invulnerable for the effect's time; dividing by it would give no number at all.
+		double const effect_armor = AttachedEffects.Armor_Multiplier();
+		if (effect_armor <= 0.0) {
+			damage = 0;
+		} else {
+			damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * effect_armor));
 
-		if (Has_Ability(ABILITY_STRONGER)) {
-			damage = VeteranRules::Divided(damage, Rule->VeteranArmor);
-		}
+			if (Has_Ability(ABILITY_STRONGER)) {
+				damage = VeteranRules::Divided(damage, Rule->VeteranArmor);
+			}
 
-		if (damage < 1) {
-			damage = 1;
+			if (damage < 1) {
+				damage = 1;
+			}
 		}
 
 		/*

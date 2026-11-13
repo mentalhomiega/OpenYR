@@ -608,7 +608,9 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 	IonBlastClass::Ripple(coord, warhead->IonRipple);
 
-	if (!strength && !warhead->IsWebby && !warhead->IsAllowZeroDamage) return(false);
+	// A warhead that attaches an effect reaches the objects in its spread even with no damage to deal: Ares applies
+	// the effect where the warhead goes off, whatever the damage is.
+	if (!strength && !warhead->IsWebby && !warhead->IsAllowZeroDamage && !warhead->AttachEffect.Is_Defined()) return(false);
 
 	/*
 	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance
