@@ -341,12 +341,16 @@ void SuperWeaponKeys::Set_Pulse_Ball(std::string const & value)
 /// </summary>
 void SuperWeaponKeys::Read_Para_Owners(CCINIClass const & ini, char const * section)
 {
-	auto read_owner = [&](char const * name) {
-		std::string const prefix = std::string("ParaDrop.") + name + ".";
+	auto read_owner = [&](char const * name, int plane_number) {
+		std::string prefix = std::string("ParaDrop.") + name + ".";
+		if (name[0] == '\0') prefix = "ParaDrop.";
+		if (plane_number > 1) prefix += "Plane" + std::to_string(plane_number) + ".";
+		else if (name[0] == '\0') return;
 		ParaGroup group;
 		group.Owner = name;
+		group.Plane = plane_number;
 		for (ParaGroup const & old : ParaByOwner) {
-			if (Same(old.Owner, name)) group = old;
+			if (Same(old.Owner, name) && old.Plane == plane_number) group = old;
 		}
 		std::string const types = ini.Get_String(section, (prefix + "Types").c_str());
 		if (!Trim(types).empty()) {
@@ -365,22 +369,59 @@ void SuperWeaponKeys::Read_Para_Owners(CCINIClass const & ini, char const * sect
 		}
 		if (!group.IsSet) return;
 		for (ParaGroup & old : ParaByOwner) {
-			if (Same(old.Owner, name)) { old = group; return; }
+			if (Same(old.Owner, name) && old.Plane == plane_number) { old = group; return; }
 		}
 		ParaByOwner.push_back(group);
 	};
-	for (int index = 0; index < HouseTypes.Count(); index++) {
-		read_owner(HouseTypes[index]->Name());
+	for (int plane_number = 1; plane_number <= ParaDropCount && plane_number <= MAX_PARA_PLANES; plane_number++) {
+		for (int index = 0; index < HouseTypes.Count(); index++) {
+			read_owner(HouseTypes[index]->Name(), plane_number);
+		}
+		for (int index = 0; index < Sides.Count(); index++) {
+			read_owner(Sides[index]->Name(), plane_number);
+		}
+		read_owner("", plane_number);
 	}
-	for (int index = 0; index < Sides.Count(); index++) {
-		read_owner(Sides[index]->Name());
+}
+
+
+SuperWeaponKeys::ParaGroup const * SuperWeaponKeys::Find_Para(char const * owner, int plane) const
+{
+	if (owner[0] == '\0' && plane == 1) {
+		return ParaDefault.IsSet ? &ParaDefault : nullptr;
 	}
+	for (ParaGroup const & group : ParaByOwner) {
+		if (group.Plane == plane && Same(group.Owner, owner)) return &group;
+	}
+	return nullptr;
+}
+
+
+bool SuperWeaponKeys::Para_Plan(int plane, char const * country, char const * side, ParaPlan & plan) const
+{
+	char const * const owners[] = {country, side, ""};
+	bool found = false;
+	// Plane 1 has only the second three places; a later plane tries its own three first.
+	for (int pass = plane > 1 ? 0 : 1; pass < 2; pass++) {
+		for (char const * owner : owners) {
+			ParaGroup const * group = Find_Para(owner, pass == 0 ? plane : 1);
+			if (group == nullptr) continue;
+			found = true;
+			if (plan.Types == nullptr && (group->Types.Count() > 0 || group->Num.Count() > 0)) {
+				plan.Types = &group->Types;
+				plan.Num = &group->Num;
+			}
+			if (plan.Aircraft == nullptr) plan.Aircraft = group->Aircraft;
+		}
+	}
+	return found;
 }
 
 
 void SuperWeaponKeys::ParaGroup::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Owner);
+	stream.Serialize(Plane);
 	stream.Serialize(Types);
 	stream.Serialize(Num);
 	stream.Serialize(Aircraft);

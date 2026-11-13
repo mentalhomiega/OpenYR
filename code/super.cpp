@@ -1066,56 +1066,7 @@ void SuperClass::Paradrop(Cell const & cell) const
 		}
 	}
 
-	// ParaDrop.* keys from the weapon take over: the country's own set first, then the side's, then the plain one.
-	{
-		SuperWeaponKeys::ParaGroup const * group = NULL;
-		int const planning = House->Planning_Side();
-		SideClass const * side = (planning >= 0 && planning < Sides.Count()) ? Sides[planning] : NULL;
-		for (SuperWeaponKeys::ParaGroup const & candidate : keys.ParaByOwner) {
-			if (SuperRules::Same(candidate.Owner, House->Class->Name())) {
-				group = &candidate;
-				break;
-			}
-		}
-		for (size_t pass = 0; group == NULL && side != NULL && pass < keys.ParaByOwner.size(); pass++) {
-			if (SuperRules::Same(keys.ParaByOwner[pass].Owner, side->Name())) {
-				group = &keys.ParaByOwner[pass];
-			}
-		}
-		if (group == NULL && keys.ParaDefault.IsSet) {
-			group = &keys.ParaDefault;
-		}
-		if (group != NULL && group->Types.Count() > 0 && group->Types.Count() == group->Num.Count()) {
-			AircraftTypeClass const * aircraft = group->Aircraft != NULL ? group->Aircraft : keys.ParaDefault.Aircraft;
-			if (aircraft == NULL) {
-				AircraftType const stock = AircraftTypeClass::From_Name("PDPLANE");
-				aircraft = stock != AIRCRAFT_NONE ? AircraftTypes[stock] : NULL;
-			}
-			for (int plane_number = 0; aircraft != NULL && plane_number < keys.ParaDropCount; plane_number++) {
-				AircraftClass * plane = NULL;
-				for (int index = 0; index < group->Types.Count(); index++) {
-					TechnoTypeClass const * type = group->Types[index];
-					if (type == NULL || type->Fetch_RTTI() != RTTI_INFANTRYTYPE) {
-						continue;
-					}
-					InfantryTypeClass const * trooper_type = static_cast<InfantryTypeClass const *>(type);
-					if (plane == NULL) {
-						plane = House->Send_Plane(aircraft, MISSION_PARADROP_APPROACH, target, trooper_type, group->Num[index]);
-					} else {
-						for (int count = 0; count < group->Num[index]; count++) {
-							FootClass * trooper = static_cast<FootClass *>(trooper_type->Create_One_Of(House));
-							if (trooper == NULL) {
-								break;
-							}
-							plane->Cargo.Attach(trooper);
-						}
-					}
-				}
-			}
-			return;
-		}
-	}
-
+	// The rules' lists for the owner's side: the last place a plane looks, and the whole drop when no weapon key applies.
 	TypeList<InfantryTypeClass const *> const * infantry = &Rule->AmerParaDropInf;
 	TypeList<int> const * counts = &Rule->AmerParaDropNum;
 	if (Class->Type == SUPER_PARA_DROP) {
@@ -1134,6 +1085,51 @@ void SuperClass::Paradrop(Cell const & cell) const
 				infantry = &Rule->SovParaDropInf;
 				counts = &Rule->SovParaDropNum;
 				break;
+		}
+	}
+
+	// ParaDrop.* keys on the weapon take over for every plane they reach (see SuperWeaponKeys::Para_Plan).
+	{
+		int const planning = House->Planning_Side();
+		SideClass const * side = (planning >= 0 && planning < Sides.Count()) ? Sides[planning] : NULL;
+		char const * const side_name = side != NULL ? side->Name() : "";
+		int const plane_count = std::min(keys.ParaDropCount, (int)SuperWeaponKeys::MAX_PARA_PLANES);
+		std::vector<SuperWeaponKeys::ParaPlan> plans(plane_count > 0 ? plane_count : 0);
+		bool weapon_keys = false;
+		for (int number = 1; number <= plane_count; number++) {
+			weapon_keys |= keys.Para_Plan(number, House->Class->Name(), side_name, plans[number - 1]);
+		}
+		if (weapon_keys) {
+			AircraftTypeClass const * const stock_aircraft = Paradrop_Plane_Type();
+			for (SuperWeaponKeys::ParaPlan const & plan : plans) {
+				AircraftTypeClass const * aircraft = plan.Aircraft != NULL ? plan.Aircraft : stock_aircraft;
+				int const entries = plan.Types != NULL ? plan.Types->Count() : infantry->Count();
+				int const counted = plan.Types != NULL ? plan.Num->Count() : counts->Count();
+				if (aircraft == NULL || entries != counted) {
+					continue;
+				}
+				AircraftClass * carrier = NULL;
+				for (int index = 0; index < entries; index++) {
+					TechnoTypeClass const * type = plan.Types != NULL ? (*plan.Types)[index] : (*infantry)[index];
+					int const number = plan.Types != NULL ? (*plan.Num)[index] : (*counts)[index];
+					if (type == NULL || type->Fetch_RTTI() != RTTI_INFANTRYTYPE) {
+						continue;
+					}
+					InfantryTypeClass const * trooper_type = static_cast<InfantryTypeClass const *>(type);
+					if (carrier == NULL) {
+						carrier = House->Send_Plane(aircraft, MISSION_PARADROP_APPROACH, target, trooper_type, number);
+					} else {
+						for (int count = 0; count < number; count++) {
+							FootClass * trooper = static_cast<FootClass *>(trooper_type->Create_One_Of(House));
+							if (trooper == NULL) {
+								break;
+							}
+							carrier->Cargo.Attach(trooper);
+						}
+					}
+				}
+			}
+			return;
 		}
 	}
 
