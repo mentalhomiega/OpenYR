@@ -38,6 +38,9 @@ static constexpr int DARK_PERCENT = 50;
 static constexpr int MOST_BRIGHTENING_PERCENT = 150;
 
 static bool _Active = false;
+
+// Every cell of the map, for the OPENYR_FADE_KEEP redraw of a whole layer.
+static std::vector<CellClass *> _Every;
 static int _FrozenAmbient = 0;
 static int _Settled = 0;
 
@@ -130,7 +133,7 @@ void LayerFade_Clear(void)
 }
 
 
-bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area, bool & changed)
+bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & height, Rect const & area, int & version)
 {
 	if (!_Active || TacticalMap == NULL || area.Width <= 0 || area.Height <= 0) {
 		return(false);
@@ -144,10 +147,12 @@ bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & heig
 	static int _filled[10] = {};
 	int const now_filled[10] = { TacticalMap->TacPixelX, TacticalMap->TacPixelY, area.X, area.Y, area.Width, area.Height,
 		_FrozenAmbient, Scen->CurrentAmbientLight, IonStormClass::Level_Light() * 4096 + IonStormClass::Ground_Light(), Frame / REFILL_FRAMES };
-	changed = plane.size() != (std::size_t)width * height || !std::equal(now_filled, now_filled + 10, _filled);
-	if (!changed) {
+	static int _version = 0;
+	if (plane.size() == (std::size_t)width * height && std::equal(now_filled, now_filled + 10, _filled)) {
+		version = _version;
 		return(true);
 	}
+	version = ++_version;
 	std::copy(now_filled, now_filled + 10, _filled);
 	plane.assign((std::size_t)width * height, (unsigned short)LAYER_FADE_UNIT);
 
@@ -155,8 +160,10 @@ bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & heig
 	int const half_width = ISO_TILE_PIXEL_W / 2 / LAYER_FADE_DIVISOR + 1;
 	int const half_height = ISO_TILE_PIXEL_H / 2 / LAYER_FADE_DIVISOR + 1;
 
-	Map.Reset_Iterator();
-	for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+	static std::vector<CellClass *> cells;
+	cells.clear();
+	TacticalMap->Cells_Under(area, cells);
+	for (CellClass * cell : cells) {
 		Point2D pixel;
 		if (!TacticalMap->Coord_To_Pixel(cell->Cell_Coord(), pixel)) {
 			continue;
@@ -184,24 +191,30 @@ bool LayerFade_Fill(std::vector<unsigned short> & plane, int & width, int & heig
 }
 
 
-LayerFadeDrawScope::LayerFadeDrawScope(bool whole_layer) :
+LayerFadeDrawScope::LayerFadeDrawScope(bool whole_layer, std::vector<CellClass *> const & cells) :
+	Cells(cells),
 	Saved(Scen->CurrentAmbientLight),
 	Swapped(_Active && !whole_layer)
 {
 	// OPENYR_FADE_KEEP=1 draws even a whole layer at the frozen light, so that a screenshot, which redraws the
 	// layer, shows the scaled picture.
 	static bool const _keep = std::getenv("OPENYR_FADE_KEEP") != NULL;
-	if (_keep && _Active) {
-		whole_layer = false;
-		Swapped = true;
-	}
-	if (_Active && whole_layer && _FrozenAmbient != Scen->CurrentAmbientLight) {
+	bool const keep = _keep && _Active && whole_layer;
+	if (_Active && whole_layer && !keep && _FrozenAmbient != Scen->CurrentAmbientLight) {
 		AUTOTEST_LOG("layer fade frame %d: the whole layer is redrawn at ambient %d\n", Frame, Scen->CurrentAmbientLight);
 		_FrozenAmbient = Scen->CurrentAmbientLight;
 	}
+	if (keep) {
+		_Every.clear();
+		Map.Reset_Iterator();
+		for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+			_Every.push_back(cell);
+		}
+		Swapped = true;
+	}
+	Every = keep;
 	if (Swapped) {
-		Scen->CurrentAmbientLight = _FrozenAmbient;
-		Map.Update_Cell_Colors();
+		Relight(_FrozenAmbient);
 	}
 }
 
@@ -209,7 +222,16 @@ LayerFadeDrawScope::LayerFadeDrawScope(bool whole_layer) :
 LayerFadeDrawScope::~LayerFadeDrawScope(void)
 {
 	if (Swapped) {
-		Scen->CurrentAmbientLight = Saved;
-		Map.Update_Cell_Colors();
+		Relight(Saved);
 	}
+}
+
+
+void LayerFadeDrawScope::Relight(int ambient)
+{
+	Scen->CurrentAmbientLight = ambient;
+	for (CellClass * cell : (Every ? _Every : Cells)) {
+		cell->Recalc_Light();
+	}
+	Scen->CurrentAmbientLight = Saved;
 }

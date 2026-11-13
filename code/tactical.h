@@ -259,6 +259,10 @@ class Tactical : public AbstractClass
 		bool Is_Cell_Visible (Cell const & cell);
 		void Update_Visible_Cells(void);
 
+		// Adds to cells every map cell that can show in the rectangle of the map view, or whose buildings and
+		// overlays can: the cells Draw_Tiles walks for it and a margin around them.
+		void Cells_Under(Rect const & area, std::vector<CellClass *> & cells);
+
 		/*
 		 * Caption text and map overlays.
 		 */
