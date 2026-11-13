@@ -2164,6 +2164,10 @@ bool TActionClass::TAction_DESTROY_OBJECT(HouseClass * , ObjectClass * , Trigger
 			if (techno->Strength > 0 && techno->Is_Tagged_By(trig)) {
 				int damage = techno->Strength;
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, 0, true);
+				// An object the damage cannot hurt, such as an invulnerable one, is passed over; trying again would never end.
+				if (index < Technos.Count() && Technos[index] == techno && techno->Strength >= damage) {
+					continue;
+				}
 				any = true;
 				process = true;
 				index--;
