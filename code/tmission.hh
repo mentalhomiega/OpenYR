@@ -86,6 +86,10 @@ enum TeamMissionType {
 	TMISSION_ENTER_BIO_REACTOR,
 	TMISSION_ENTER_BATTLE_BUNKER,
 	TMISSION_GARRISON_STRUCTURE,
+	TMISSION_AUXILIARY_POWER,				/// Ares 65, not implemented: the team stays on the line.
+	TMISSION_KILL_DRIVERS,					/// Ares 66, not implemented.
+	TMISSION_TAKE_VEHICLES,					/// Ares 67, not implemented.
+	TMISSION_CONVERT_TYPE,					/// Ares 68: team members convert to their Convert.Script type.
 
 	TMISSION_COUNT,
 	TMISSION_FIRST=0

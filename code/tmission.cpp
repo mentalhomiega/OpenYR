@@ -98,6 +98,10 @@ char const * const TMissions[TMISSION_COUNT] = {
 	"Enter bio reactor",
 	"Enter battle bunker",
 	"Garrison structure",
+	"Auxiliary power",
+	"Kill drivers",
+	"Take vehicles",
+	"Convert type",
 };
 
 char const * const TMissionsHelp[TMISSION_COUNT] = {
@@ -166,6 +170,10 @@ char const * const TMissionsHelp[TMISSION_COUNT] = {
 	"Members enter a bio reactor.",
 	"Members enter a battle bunker.",
 	"Members garrison a structure.",
+	"Ares action, not implemented.",
+	"Ares action, not implemented.",
+	"Ares action, not implemented.",
+	"Team members convert to the type their Convert.Script names.",
 };
 
 char const * const TargetProperties[TPROPERTY_COUNT] = {

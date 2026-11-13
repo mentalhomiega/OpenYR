@@ -1,0 +1,22 @@
+; Iron Curtain me (55) fires an Iron Curtain whose SW.Group equals the line's parameter (Ares scripts page); stock files leave SW.Group at 0
+; and use parameter 0, which is the stock behaviour (FUN_006EFC70). Here the computer's Iron Curtain is charged, then given SW.Group=3.
+; The team with parameter 0 finds no curtain of group 0 and ends the line without firing: the curtain is still ready. The team with
+; parameter 3 fires it: the curtain is no longer ready. The "super house ... ready" lines show it.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/teams-ironcurtain-group.txt -AICountries 1 -Seconds 90 -Filter "AUTOTEST   (grantai|super house)|TEAMTRACE|Exception"
+; Expected: ready 1 at 320 and at 330 (after the group 0 team), no "fires" line for that team, and a "fires IronCurtainSpecial of group 3" line for the second; the curtain is no longer ready at 350.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 teamtrace 1
+300 spawn MTNK 52 92
+310 teamini teams-ironcurtain-group.ini
+315 rules teams-ironcurtain-group-rules.ini
+318 grantai IronCurtainSpecial
+320 supers
+321 team TSTIC0T
+330 supers
+340 spawn MTNK 52 92
+341 team TSTIC3T
+350 supers
+360 quit

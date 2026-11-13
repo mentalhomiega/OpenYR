@@ -149,6 +149,19 @@ static bool Worth_Waiting_For(SuperClass const * super)
 }
 
 
+/// Is this super weapon an Iron Curtain of the given SW.Group for the Iron Curtain script line? An Iron
+/// Curtain type counts unless its SW.AITargeting names another mode; any other type counts when it names IronCurtain.
+static bool Is_Iron_Curtain_Candidate(SuperClass const * super, int group)
+{
+	SuperWeaponKeys const & keys = super->Class->Keys;
+	SuperRules::AITarget const mode = (SuperRules::AITarget)keys.AITargeting;
+	bool const curtain = super->Class->Type == SUPER_IRON_CURTAIN
+		? (mode == SuperRules::AITarget::Default || mode == SuperRules::AITarget::IronCurtain)
+		: mode == SuperRules::AITarget::IronCurtain;
+	return(curtain && keys.Group == group);
+}
+
+
 /***********************************************************************************************
  * _Is_It_Breathing -- Checks to see if unit is an active team member.                         *
  *                                                                                             *
@@ -756,6 +769,7 @@ void TeamClass::AI(void)
 			INVOKE(ENTER_TANK_BUNKER);
 			INVOKE(ENTER_BIO_REACTOR);
 			INVOKE(ENTER_BATTLE_BUNKER);
+			INVOKE(CONVERT_TYPE);
 
 			// A line with a number the engine does not know does nothing, and the team stays on it, as in gamemd.
 			// A script that has just been replaced sits before its first line, which also lands here.
@@ -2492,11 +2506,12 @@ void TeamClass::TMission_MOVECELL(TeamMissionClass * mission, bool first_time)
 
 
 /// <summary>
-/// Sends the team to a spot AISafeDistance cells from a base center, in the direction of a
-/// second point, as gamemd's gather missions (FUN_006EF700 and FUN_006EFA10) do. The spot is
+/// Sends the team to a spot the given number of cells from a base center, in the direction of a
+/// second point, as gamemd's gather missions (FUN_006EF700 and FUN_006EFA10) do. A negative count puts
+/// the spot on the far side of the base center. The spot is
 /// moved to the nearest clear 3x3 area the leader can stand in.
 /// </summary>
-void TeamClass::Gather_Near(FootClass * leader, Coord const & base, Coord const & toward)
+void TeamClass::Gather_Near(FootClass * leader, Coord const & base, Coord const & toward, int cells)
 {
 	double dx = toward.X - base.X;
 	double dy = toward.Y - base.Y;
@@ -2508,9 +2523,10 @@ void TeamClass::Gather_Near(FootClass * leader, Coord const & base, Coord const 
 		length = 1.0;
 	}
 
-	double distance = Rule->AISafeDistance * CELL_LEPTON_W;
-	Coord spot(base.X + (int)(dx / length * distance), base.Y + (int)(dy / length * distance), 0);
+	double distance = cells * CELL_LEPTON_W;
+	Coord spot(std::max(0, base.X + (int)(dx / length * distance)), std::max(0, base.Y + (int)(dy / length * distance)), 0);
 	Cell cell = Map.Nearby_Location(spot.As_Cell(), leader->TClass->Speed, -1, MZONE_NORMAL, false, Point2D(3, 3));
+	DebugString("Team %s gathers at %d,%d, %d cells from the base center\n", Class->Name(), (int)cell.X, (int)cell.Y, cells);
 	if (cell != CELL_NONE) {
 		Assign_Mission_Target(&Map[cell]);
 	} else {
@@ -2520,10 +2536,11 @@ void TeamClass::Gather_Near(FootClass * leader, Coord const & base, Coord const 
 
 
 /// <summary>
-/// Gathers the team short of its house's enemy's base, on the side facing its own base.
+/// Gathers the team short of its house's enemy's base, on the side facing its own base, AISafeDistance plus the
+/// line's parameter cells from the base center.
 /// A house with no enemy, or an enemy with no base, ends the step at once.
 /// </summary>
-void TeamClass::TMission_GATHER_AT_ENEMY(TeamMissionClass *, bool first_time)
+void TeamClass::TMission_GATHER_AT_ENEMY(TeamMissionClass * mission, bool first_time)
 {
 	if (first_time) {
 		FootClass * leader = Fetch_A_Leader();
@@ -2536,17 +2553,17 @@ void TeamClass::TMission_GATHER_AT_ENEMY(TeamMissionClass *, bool first_time)
 		if (home == Coord(0, 0, 0)) {
 			home = leader->Center_Coord();
 		}
-		Gather_Near(leader, enemy->Center, home);
+		Gather_Near(leader, enemy->Center, home, Rule->AISafeDistance + mission->Data.Value);
 	}
 	Coordinate_Move();
 }
 
 
 /// <summary>
-/// Gathers the team just outside its own base, on the side facing its house's enemy, or in a
-/// random direction when the house has no enemy.
+/// Gathers the team outside its own base, on the side facing its house's enemy, or in a random direction
+/// when the house has no enemy. The distance from the base center is AIFriendlyDistance plus the line's parameter cells.
 /// </summary>
-void TeamClass::TMission_GATHER_AT_BASE(TeamMissionClass *, bool first_time)
+void TeamClass::TMission_GATHER_AT_BASE(TeamMissionClass * mission, bool first_time)
 {
 	if (first_time) {
 		FootClass * leader = Fetch_A_Leader();
@@ -2557,19 +2574,21 @@ void TeamClass::TMission_GATHER_AT_BASE(TeamMissionClass *, bool first_time)
 		Coord home = leader->House->Center;
 		HouseClass * enemy = House_From_HousesType(leader->House->Enemy);
 		Coord toward = enemy != NULL ? enemy->Center : home;
-		Gather_Near(leader, home, toward);
+		Gather_Near(leader, home, toward, Rule->Friendly_Distance() + mission->Data.Value);
 	}
 	Coordinate_Move();
 }
 
 
 /// <summary>
-/// Fires the house's Iron Curtain at the team, as FUN_006EFC70 does. The house is taken from
-/// the member with the highest LeadershipRating. The step ends once the curtain is fired,
-/// when the house has none, or when it is not yet AIMinorSuperReadyPercent charged;
-/// otherwise the team waits for it.
+/// Fires one of the house's Iron Curtains at the team, as FUN_006EFC70 does for the stock one. The
+/// house is taken from the member with the highest LeadershipRating. A candidate is a super weapon
+/// that is an Iron Curtain (Type=IronCurtain or SW.AITargeting=IronCurtain) whose SW.Group equals
+/// the line's parameter (Ares). The step ends once the first fully charged candidate is fired or
+/// when the house has none; otherwise the team waits while any candidate is within
+/// AIMinorSuperReadyPercent of charged, and the step ends when none is.
 /// </summary>
-void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
+void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass * mission, bool)
 {
 	FootClass * chosen = Fetch_A_Leader();
 	if (chosen == NULL) {
@@ -2578,22 +2597,43 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 	}
 
 	HouseClass * house = chosen->House;
-	SuperClass * super = house->Find_Super(SUPER_IRON_CURTAIN);
-	if (super == NULL) {
-		IsNextMission = true;
-		return;
+	SuperClass * waiting = NULL;
+	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
+		SuperClass * super = house->SuperWeapon[index];
+		if (super == NULL || !Is_Iron_Curtain_Candidate(super, mission->Data.Value)) {
+			continue;
+		}
+		if (super->Is_Ready() && house->Power_Fraction() >= 1.0) {
+			DebugString("Team %s fires %s of group %d\n", Class->Name(), super->Class->Name(), super->Class->Keys.Group);
+			Cell cell = Zone != NULL ? Zone->Center_Coord().As_Cell() : chosen->Get_Cell();
+			house->Place_Special_Blast(super->Class->HeapID, cell);
+			IsNextMission = true;
+			return;
+		}
+		if (waiting == NULL && Worth_Waiting_For(super)) {
+			waiting = super;
+		}
 	}
 
-	if (super->Is_Ready() && house->Power_Fraction() >= 1.0) {
-		Cell cell = Zone != NULL ? Zone->Center_Coord().As_Cell() : chosen->Get_Cell();
-		house->Place_Special_Blast(super->Class->HeapID, cell);
+	if (waiting == NULL) {
 		IsNextMission = true;
-		return;
 	}
+}
 
-	if (!Worth_Waiting_For(super)) {
-		IsNextMission = true;
+
+/// <summary>
+/// Converts every vehicle of the team to the type its Convert.Script names (Ares script line 68). Vehicles
+/// without that key, and members that are not vehicles, are unchanged. The step ends at once.
+/// </summary>
+void TeamClass::TMission_CONVERT_TYPE(TeamMissionClass *, bool)
+{
+	for (FootClass * unit = Member; unit != NULL; unit = unit->Member) {
+		if (unit->What_Am_I() == RTTI_UNIT) {
+			UnitClass * vehicle = (UnitClass *)unit;
+			vehicle->Convert_To(vehicle->Class->ConvertScript);
+		}
 	}
+	IsNextMission = true;
 }
 
 
