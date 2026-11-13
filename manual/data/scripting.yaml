@@ -2008,33 +2008,53 @@ trigger_actions:
     line: <TriggerID>=1,145,0,0,0,0,0,0,
   attaches_to: null
   status: generated
-- id: TACTION_DISABLE_SPEECH
+- id: TACTION_AUXILIARY_POWER
   kind: trigger-action
   index: 146
-  editor_name: Disable Speech
-  editor_description: Disables EVA speech.
-  need: NEED_NONE
-  parameters: []
+  editor_name: Auxiliary Power...
+  editor_description: Adds to the power the house always has, whatever its buildings make. A negative
+    amount takes it away again.
+  need: NEED_NUMBER
+  parameters:
+  - name: Number
+    type: integer
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,146,0,0,0,0,0,0,
+    line: <TriggerID>=1,146,0,<Number>,0,0,0,0,
   attaches_to: null
   status: generated
-- id: TACTION_ENABLE_SPEECH
+- id: TACTION_KILL_DRIVERS_OF
   kind: trigger-action
   index: 147
-  editor_name: Enable Speech
-  editor_description: Enables EVA speech.
-  need: NEED_NONE
-  parameters: []
+  editor_name: Kill Drivers Of...
+  editor_description: Kills the drivers of the attached vehicles, which then change to the house named.
+  need: NEED_NUMBER
+  parameters:
+  - name: Number
+    type: integer
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,147,0,0,0,0,0,0,
+    line: <TriggerID>=1,147,0,<Number>,0,0,0,0,
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TACTION_SET_EVA_VOICE
+  kind: trigger-action
+  index: 148
+  editor_name: Set EVA Voice...
+  editor_description: Changes the player's EVA voice to the voice at the index given, or switches EVA
+    off with -1.
+  need: NEED_NUMBER
+  parameters:
+  - name: Number
+    type: integer
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,148,0,<Number>,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_SET_GROUP_ID
   kind: trigger-action
-  index: 148
+  index: 149
   editor_name: Set Group ID...
   editor_description: Sets the group ID of the attached object.
   need: NEED_NUMBER
@@ -2043,12 +2063,36 @@ trigger_actions:
     type: integer
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,148,0,<Number>,0,0,0,0,
+    line: <TriggerID>=1,149,0,<Number>,0,0,0,0,
   attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TACTION_DISABLE_SPEECH
+  kind: trigger-action
+  index: 150
+  editor_name: Disable Speech
+  editor_description: Disables EVA speech.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,150,0,0,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_ENABLE_SPEECH
+  kind: trigger-action
+  index: 151
+  editor_name: Enable Speech
+  editor_description: Enables EVA speech.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,151,0,0,0,0,0,0,
+  attaches_to: null
   status: generated
 - id: TACTION_GIVE_CREDITS
   kind: trigger-action
-  index: 149
+  index: 152
   editor_name: Give Credits...
   editor_description: Gives or removes credits from the specified house. A positive amount gives money,
     a negative amount subtracts it.
@@ -2060,12 +2104,12 @@ trigger_actions:
     type: integer
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,149,0,<House>,<Credits>,0,0,0,
+    line: <TriggerID>=1,152,0,<House>,<Credits>,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_ENABLE_SHORT_GAME
   kind: trigger-action
-  index: 150
+  index: 153
   editor_name: Enable Short Game
   editor_description: 'Turns the short game rule on: a house is defeated once it has no structures and
     no base unit left.'
@@ -2073,24 +2117,24 @@ trigger_actions:
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,150,0,0,0,0,0,0,
+    line: <TriggerID>=1,153,0,0,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_DISABLE_SHORT_GAME
   kind: trigger-action
-  index: 151
+  index: 154
   editor_name: Disable Short Game
   editor_description: 'Turns the short game rule off: a house is defeated only once it has nothing left.'
   need: NEED_NONE
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,151,0,0,0,0,0,0,
+    line: <TriggerID>=1,154,0,0,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_CREATE_BUILDING_AT
   kind: trigger-action
-  index: 152
+  index: 155
   editor_name: Create Building For...
   editor_description: Places a building of the specified type for the specified house at the waypoint.
     Forced placement ignores the placement rules.
@@ -2106,12 +2150,12 @@ trigger_actions:
     type: waypoint
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,152,0,<House>,<Building type>,<Force placement>,0,0,<Waypoint>
+    line: <TriggerID>=1,155,0,<House>,<Building type>,<Force placement>,0,0,<Waypoint>
   attaches_to: null
   status: generated
 - id: TACTION_HOUSE_DESTROY_ALL
   kind: trigger-action
-  index: 153
+  index: 156
   editor_name: Destroy all of (and defeat)...
   editor_description: Kills everything of the specified house and marks it as defeated.
   need: NEED_HOUSE
@@ -2120,60 +2164,60 @@ trigger_actions:
     type: house
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,153,0,<House>,0,0,0,0,
+    line: <TriggerID>=1,156,0,<House>,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_MAKE_ELITE
   kind: trigger-action
-  index: 154
+  index: 157
   editor_name: Make Elite
   editor_description: All objects attached to this trigger are promoted to elite status.
   need: NEED_NONE
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,154,0,0,0,0,0,0,
+    line: <TriggerID>=1,157,0,0,0,0,0,0,
   attaches_to: ATTACH_OBJECT
   status: generated
 - id: TACTION_ENABLE_ALLY_REVEAL
   kind: trigger-action
-  index: 155
+  index: 158
   editor_name: Enable Ally Reveal
   editor_description: Turns ally reveal on, so allied players see the terrain each other reveals.
   need: NEED_NONE
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,155,0,0,0,0,0,0,
+    line: <TriggerID>=1,158,0,0,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_DISABLE_ALLY_REVEAL
   kind: trigger-action
-  index: 156
+  index: 159
   editor_name: Disable Ally Reveal
   editor_description: Turns ally reveal off, so allied players no longer see the terrain each other reveals.
   need: NEED_NONE
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,156,0,0,0,0,0,0,
+    line: <TriggerID>=1,159,0,0,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_CREATE_AUTOSAVE
   kind: trigger-action
-  index: 157
+  index: 160
   editor_name: Create Autosave
   editor_description: Saves the game once the current frame has finished.
   need: NEED_NONE
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,157,0,0,0,0,0,0,
+    line: <TriggerID>=1,160,0,0,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_DELETE_OBJECT
   kind: trigger-action
-  index: 158
+  index: 161
   editor_name: Delete Attached Objects
   editor_description: Removes every object attached to this trigger from the map silently, without destroying
     it.
@@ -2181,12 +2225,12 @@ trigger_actions:
   parameters: []
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,158,0,0,0,0,0,0,
+    line: <TriggerID>=1,161,0,0,0,0,0,0,
   attaches_to: ATTACH_OBJECT
   status: generated
 - id: TACTION_ALL_ASSIGN_MISSION
   kind: trigger-action
-  index: 159
+  index: 162
   editor_name: All Assign Mission...
   editor_description: Gives every infantry, vehicle and aircraft of the trigger's house the specified
     mission.
@@ -2196,12 +2240,12 @@ trigger_actions:
     type: mission
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,159,0,<Mission>,0,0,0,0,
+    line: <TriggerID>=1,162,0,<Mission>,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_MAKE_ALLY_ONE_WAY
   kind: trigger-action
-  index: 160
+  index: 163
   editor_name: Make Ally (One-Way)...
   editor_description: Cause this trigger's house to ally with the specified house, without the reverse
     alliance.
@@ -2211,12 +2255,12 @@ trigger_actions:
     type: house
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,160,0,<House>,0,0,0,0,
+    line: <TriggerID>=1,163,0,<House>,0,0,0,0,
   attaches_to: null
   status: generated
 - id: TACTION_MAKE_ENEMY_ONE_WAY
   kind: trigger-action
-  index: 161
+  index: 164
   editor_name: Make Enemy (One-Way)...
   editor_description: Cause this trigger's house to declare war on the specified house.
   need: NEED_HOUSE
@@ -2225,7 +2269,7 @@ trigger_actions:
     type: house
   ini_example:
     section: '[Actions]'
-    line: <TriggerID>=1,161,0,<House>,0,0,0,0,
+    line: <TriggerID>=1,164,0,<House>,0,0,0,0,
   attaches_to: null
   status: generated
 trigger_action_orphan_texts: []
@@ -3097,9 +3141,45 @@ trigger_events:
     line: <TriggerID>=1,62,0,0
   attaches_to: ATTACH_OBJECT
   status: generated
-- id: TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING
+- id: TEVENT_UNDER_EMP_BY_HOUSE
   kind: trigger-event
   index: 63
+  editor_name: Under EMP by house... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,63,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_REMOVED_EMP
+  kind: trigger-event
+  index: 64
+  editor_name: Removed EMP (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,64,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_REMOVED_EMP_BY_HOUSE
+  kind: trigger-event
+  index: 65
+  editor_name: Removed EMP by house... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,65,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING
+  kind: trigger-event
+  index: 66
   editor_name: Enemy In Spotlight... (repeating)
   editor_description: Triggers when an enemy unit enters the spotlight cast by the attached building.
     Unlike the other spotlight event, this one is re-tested every time the trigger is polled instead of
@@ -3108,19 +3188,303 @@ trigger_events:
   parameters: []
   ini_example:
     section: '[Events]'
-    line: <TriggerID>=1,63,0,0
+    line: <TriggerID>=1,66,0,0
   attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_DRIVER_KILLED
+  kind: trigger-event
+  index: 67
+  editor_name: Driver killed (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,67,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_DRIVER_KILLED_BY_HOUSE
+  kind: trigger-event
+  index: 68
+  editor_name: Driver killed by house... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,68,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_VEHICLE_TAKEN
+  kind: trigger-event
+  index: 69
+  editor_name: Vehicle taken (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,69,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_VEHICLE_TAKEN_BY_HOUSE
+  kind: trigger-event
+  index: 70
+  editor_name: Vehicle taken by house... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,70,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_ABDUCTED
+  kind: trigger-event
+  index: 71
+  editor_name: Abducted
+  editor_description: Triggers when the attached object is abducted.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,71,0,0
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_ABDUCTED_BY_HOUSE
+  kind: trigger-event
+  index: 72
+  editor_name: Abducted by house...
+  editor_description: Triggers when a unit of the specified house abducts the attached object.
+  need: NEED_HOUSE
+  parameters:
+  - name: House
+    type: house
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,72,0,<House>
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_ABDUCTS_SOMETHING
+  kind: trigger-event
+  index: 73
+  editor_name: Abducts something
+  editor_description: Triggers when the attached object abducts anything.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,73,0,0
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_ABDUCTS_SOMETHING_OF_HOUSE
+  kind: trigger-event
+  index: 74
+  editor_name: Abducts something of house... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,74,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_SUPER_ACTIVATED
+  kind: trigger-event
+  index: 75
+  editor_name: Super weapon activated...
+  editor_description: Triggers when the trigger's house fires the specified super weapon.
+  need: NEED_SPECIAL
+  parameters:
+  - name: Superweapon
+    type: superweapon
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,75,0,<Superweapon>
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_SUPER_DEACTIVATED
+  kind: trigger-event
+  index: 76
+  editor_name: Super weapon deactivated... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,76,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_SUPER_NEAR_WAYPOINT
+  kind: trigger-event
+  index: 77
+  editor_name: Super weapon near waypoint...
+  editor_description: Triggers when any house fires the super weapon named near the specified waypoint.
+  need: NEED_WAYPOINT
+  parameters:
+  - name: Waypoint
+    type: waypoint
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,77,0,<Waypoint>
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_REVERSE_ENGINEERED
+  kind: trigger-event
+  index: 78
+  editor_name: Reverse engineered... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,78,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_REVERSE_ENGINEERS_ANYTHING
+  kind: trigger-event
+  index: 79
+  editor_name: Reverse engineers anything (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,79,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_REVERSE_ENGINEERS_TYPE
+  kind: trigger-event
+  index: 80
+  editor_name: Reverse engineers type... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,80,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_HOUSE_OWNS_TECHTYPE
+  kind: trigger-event
+  index: 81
+  editor_name: House owns TechType...
+  editor_description: Triggers while the trigger's house owns at least the number given of objects of
+    the type named.
+  need: NEED_NUMBER
+  parameters:
+  - name: Number
+    type: integer
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,81,0,<Number>
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_HOUSE_DOES_NOT_OWN_TECHTYPE
+  kind: trigger-event
+  index: 82
+  editor_name: House does not own TechType...
+  editor_description: Triggers while the trigger's house owns no more than the number given of objects
+    of the type named, or fewer than it when HouseDoesNotOwnAtMost=no.
+  need: NEED_NUMBER
+  parameters:
+  - name: Number
+    type: integer
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,82,0,<Number>
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_ATTACKED_OR_DESTROYED_ANY
+  kind: trigger-event
+  index: 83
+  editor_name: Attacked or destroyed by any
+  editor_description: Triggers when the attached object is hit by anything, the fatal hit included.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,83,0,0
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_ATTACKED_OR_DESTROYED_BY
+  kind: trigger-event
+  index: 84
+  editor_name: Attacked or destroyed by house...
+  editor_description: Triggers when a unit of the specified house hits the attached object, the fatal
+    hit included.
+  need: NEED_HOUSE
+  parameters:
+  - name: House
+    type: house
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,84,0,<House>
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_DESTROYED_BY_HOUSE
+  kind: trigger-event
+  index: 85
+  editor_name: Destroyed by house...
+  editor_description: Triggers when the specified house destroys the attached object.
+  need: NEED_HOUSE
+  parameters:
+  - name: House
+    type: house
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,85,0,<House>
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TEVENT_TECHTYPE_AT_MOST
+  kind: trigger-event
+  index: 86
+  editor_name: TechType does not exist more than...
+  editor_description: Triggers while no more than the number given of objects of the type named exist,
+    whoever owns them.
+  need: NEED_NUMBER
+  parameters:
+  - name: Number
+    type: integer
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,86,0,<Number>
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_ALL_KEEPALIVES_DESTROYED
+  kind: trigger-event
+  index: 87
+  editor_name: All KeepAlives destroyed... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,87,0,0
+  attaches_to: ATTACH_GENERAL
+  status: generated
+- id: TEVENT_ALL_KEEPALIVE_BUILDINGS_DESTROYED
+  kind: trigger-event
+  index: 88
+  editor_name: All KeepAlive buildings destroyed... (unsupported)
+  editor_description: Ares event this engine does not run; it never fires.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Events]'
+    line: <TriggerID>=1,88,0,0
+  attaches_to: ATTACH_GENERAL
   status: generated
 - id: TEVENT_LIMPED
   kind: trigger-event
-  index: 64
+  index: 89
   editor_name: Limped
   editor_description: Triggers when a object has been limped by a limpet drone.
   need: NEED_NONE
   parameters: []
   ini_example:
     section: '[Events]'
-    line: <TriggerID>=1,64,0,0
+    line: <TriggerID>=1,89,0,0
   attaches_to: ATTACH_OBJECT
   status: generated
 team_missions:
@@ -3709,6 +4073,38 @@ team_missions:
   index: 64
   editor_name: Garrison structure
   editor_description: Members garrison a structure.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_AUXILIARY_POWER
+  kind: team-mission
+  index: 65
+  editor_name: Auxiliary power
+  editor_description: Ares action, not implemented.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_KILL_DRIVERS
+  kind: team-mission
+  index: 66
+  editor_name: Kill drivers
+  editor_description: Ares action, not implemented.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_TAKE_VEHICLES
+  kind: team-mission
+  index: 67
+  editor_name: Take vehicles
+  editor_description: Ares action, not implemented.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_CONVERT_TYPE
+  kind: team-mission
+  index: 68
+  editor_name: Convert type
+  editor_description: Team members convert to the type their Convert.Script names.
   need: NEED_NONE
   parameters: []
   status: generated

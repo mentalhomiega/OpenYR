@@ -173,6 +173,14 @@ Harvester:
   "UnitTypeClass::IsToHarvest": {verdict: distinct}
   "RulesClass::IQHarvester": {verdict: distinct}
 
+HasTurretTooltips:
+  "TechnoTypeClass::IsHasTurretTooltips":
+    verdict: distinct
+    absorbs: ["TechnoTypeClass::false"]
+    note: >-
+      read twice from the same rules section: once into the stored flag and
+      once more with a fixed default whose result is discarded
+
 Height:
   "BuildingTypeClass::ZHeight": {verdict: distinct}
   "SmudgeTypeClass::Height": {verdict: distinct}
@@ -243,6 +251,16 @@ Normalized:
   "AnimTypeClass::IsNormalized": {verdict: distinct}
   "ParticleTypeClass::IsNormalized": {verdict: distinct}
   "VoxelAnimTypeClass::IsNormalized": {verdict: distinct}
+
+Palette:
+  "TechnoTypeClass::PaletteName":
+    verdict: distinct
+    absorbs: ["TechnoTypeClass::palette"]
+    note: >-
+      read twice from the same art section: once to take the name only when
+      the key is present and once more into the fixed-size palette file name
+  "TerrainTypeClass::PaletteName": {verdict: distinct}
+  "ParticleTypeClass::PaletteName": {verdict: distinct}
 
 Power:
   "BuildingTypeClass::Power": {verdict: distinct}

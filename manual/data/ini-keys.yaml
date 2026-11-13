@@ -495,6 +495,24 @@ AIExtraRefineries:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIFriendlyDistance:
+  key: AIFriendlyDistance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: AIFriendlyDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIHateDelays:
   key: AIHateDelays
   scopes:
@@ -2943,6 +2961,42 @@ AllowBurrowing:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+AllowBypassBuildLimit:
+  key: AllowBypassBuildLimit
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: GlobalControls
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: null
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AllowParallelAIQueues:
+  key: AllowParallelAIQueues
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: GlobalControls
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: IsAllowParallelAIQueues
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AllowShroudedSubteranneanMoves:
   key: AllowShroudedSubteranneanMoves
   scopes:
@@ -7793,6 +7847,96 @@ CLDisableRed:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+CMislAcceleration:
+  key: CMislAcceleration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.Acceleration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislAltitude:
+  key: CMislAltitude
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.Altitude
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislBodyLength:
+  key: CMislBodyLength
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.BodyLength
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislDamage:
+  key: CMislDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.Damage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislEliteDamage:
+  key: CMislEliteDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.EliteDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CMislEliteWarhead:
   key: CMislEliteWarhead
   scopes:
@@ -7808,6 +7952,150 @@ CMislEliteWarhead:
       default_candidate: none
       declared_in: RulesClass
       member: CMislEliteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislLazyCurve:
+  key: CMislLazyCurve
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.IsLazyCurve
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislPauseFrames:
+  key: CMislPauseFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.PauseFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislPitchFinal:
+  key: CMislPitchFinal
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.PitchFinal
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislPitchInitial:
+  key: CMislPitchInitial
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.PitchInitial
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislRaiseRate:
+  key: CMislRaiseRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.RaiseRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislTiltFrames:
+  key: CMislTiltFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.TiltFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislTurnRate:
+  key: CMislTurnRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.TurnRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislType:
+  key: CMislType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: CMisl.Type
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -10340,6 +10628,23 @@ Convert.Land:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Convert.Script:
+  key: Convert.Script
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: ConvertScript
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 Convert.Water:
   key: Convert.Water
   scopes:
@@ -11818,6 +12123,96 @@ Cyborg:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+DMislAcceleration:
+  key: DMislAcceleration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.Acceleration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislAltitude:
+  key: DMislAltitude
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.Altitude
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislBodyLength:
+  key: DMislBodyLength
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.BodyLength
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislDamage:
+  key: DMislDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.Damage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislEliteDamage:
+  key: DMislEliteDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.EliteDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DMislEliteWarhead:
   key: DMislEliteWarhead
   scopes:
@@ -11833,6 +12228,150 @@ DMislEliteWarhead:
       default_candidate: none
       declared_in: RulesClass
       member: DMislEliteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislLazyCurve:
+  key: DMislLazyCurve
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.IsLazyCurve
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislPauseFrames:
+  key: DMislPauseFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.PauseFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislPitchFinal:
+  key: DMislPitchFinal
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.PitchFinal
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislPitchInitial:
+  key: DMislPitchInitial
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.PitchInitial
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislRaiseRate:
+  key: DMislRaiseRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.RaiseRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislTiltFrames:
+  key: DMislTiltFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.TiltFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislTurnRate:
+  key: DMislTurnRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.TurnRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislType:
+  key: DMislType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DMisl.Type
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -18700,6 +19239,24 @@ FirestormIdleAnim:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+FirestormTriggerHumans:
+  key: FirestormTriggerHumans
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: IsFirestormTriggerHumans
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 FirestormWall:
   key: FirestormWall
   scopes:
@@ -21087,27 +21644,15 @@ HasTurretTooltips:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: needs_review
+    status: reviewed
     _provenance:
       default_candidate: 'no'
       declared_in: TechnoTypeClass
       member: IsHasTurretTooltips
       source: code/techtype.cpp
       guard: null
-    level: TechnoTypeClass
-  - applies_to: *id005
-    file: rules.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: boolean
-    status: needs_review
-    _provenance:
-      default_candidate: 'no'
-      declared_in: TechnoTypeClass
-      member: 'false'
-      source: code/techtype.cpp
-      guard: null
+    note: 'read twice from the same rules section: once into the stored flag and once more with a fixed
+      default whose result is discarded'
     level: TechnoTypeClass
 HealCrateSound:
   key: HealCrateSound
@@ -21414,6 +21959,24 @@ House:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+HouseDoesNotOwnAtMost:
+  key: HouseDoesNotOwnAtMost
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsHouseDoesNotOwnAtMost
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 HoverAcceleration:
   key: HoverAcceleration
   scopes:
@@ -29227,6 +29790,57 @@ MiscPaveTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+Missile.Acceleration:
+  key: Missile.Acceleration
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.Acceleration
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.Altitude:
+  key: Missile.Altitude
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.Altitude
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.BodyLength:
+  key: Missile.BodyLength
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.BodyLength
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Missile.Custom:
   key: Missile.Custom
   scopes:
@@ -29241,6 +29855,40 @@ Missile.Custom:
       default_candidate: 'no'
       declared_in: AircraftTypeClass
       member: IsMissileCustom
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.Damage:
+  key: Missile.Damage
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.Damage
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.EliteDamage:
+  key: Missile.EliteDamage
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.EliteDamage
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -29278,6 +29926,91 @@ Missile.EliteWeapon:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
+Missile.LazyCurve:
+  key: Missile.LazyCurve
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.IsLazyCurve
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.PauseFrames:
+  key: Missile.PauseFrames
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.PauseFrames
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.PitchFinal:
+  key: Missile.PitchFinal
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.PitchFinal
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.PitchInitial:
+  key: Missile.PitchInitial
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.PitchInitial
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.RaiseRate:
+  key: Missile.RaiseRate
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.RaiseRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Missile.TakeOffAnim:
   key: Missile.TakeOffAnim
   scopes:
@@ -29292,6 +30025,23 @@ Missile.TakeOffAnim:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: MissileTakeOffAnim
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.TiltFrames:
+  key: Missile.TiltFrames
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.TiltFrames
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -29326,6 +30076,40 @@ Missile.TrailerSeparation:
       default_candidate: '3'
       declared_in: AircraftTypeClass
       member: MissileTrailerSeparation
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.TurnRate:
+  key: Missile.TurnRate
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.TurnRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Missile.Type:
+  key: Missile.Type
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: MissileFlight.Type
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -32675,27 +33459,15 @@ Palette:
       kind: image
       fallback: object-type
     value_type: string
-    status: needs_review
+    status: reviewed
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: PaletteName
       source: code/techtype.cpp
       guard: null
-    level: TechnoTypeClass
-  - applies_to: *id005
-    file: art.ini
-    section:
-      kind: image
-      fallback: object-type
-    value_type: string
-    status: needs_review
-    _provenance:
-      default_candidate: null
-      declared_in: TechnoTypeClass
-      member: palette
-      source: code/techtype.cpp
-      guard: null
+    note: 'read twice from the same art section: once to take the name only when the key is present and
+      once more into the fixed-size palette file name'
     level: TechnoTypeClass
   - applies_to: *id011
     file: art.ini
@@ -32703,7 +33475,7 @@ Palette:
       kind: image
       fallback: object-type
     value_type: string
-    status: needs_review
+    status: reviewed
     _provenance:
       default_candidate: null
       declared_in: TerrainTypeClass
@@ -32717,7 +33489,7 @@ Palette:
       kind: identifier
       source: object-type
     value_type: string
-    status: needs_review
+    status: reviewed
     _provenance:
       default_candidate: null
       declared_in: ParticleTypeClass
@@ -34484,6 +35256,74 @@ Prerequisite:
       default_candidate: ''
       declared_in: TechnoTypeClass
       member: Prerequisite
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Prerequisite.List0:
+  key: Prerequisite.List0
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: Prerequisite
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Prerequisite.Lists:
+  key: Prerequisite.Lists
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Prerequisite.Negative:
+  key: Prerequisite.Negative
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PrerequisiteNegative
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Prerequisite.RequiredTheaters:
+  key: Prerequisite.RequiredTheaters
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -46878,6 +47718,24 @@ TeamDelays:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+TeamRetaliate:
+  key: TeamRetaliate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: IsTeamRetaliate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 TechLevel:
   key: TechLevel
   scopes:
@@ -50248,6 +51106,240 @@ V3EliteWarhead:
       default_candidate: none
       declared_in: RulesClass
       member: V3EliteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketAcceleration:
+  key: V3RocketAcceleration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.Acceleration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketAltitude:
+  key: V3RocketAltitude
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.Altitude
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketBodyLength:
+  key: V3RocketBodyLength
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.BodyLength
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketDamage:
+  key: V3RocketDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.Damage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketEliteDamage:
+  key: V3RocketEliteDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.EliteDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketLazyCurve:
+  key: V3RocketLazyCurve
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.IsLazyCurve
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketPauseFrames:
+  key: V3RocketPauseFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.PauseFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketPitchFinal:
+  key: V3RocketPitchFinal
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.PitchFinal
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketPitchInitial:
+  key: V3RocketPitchInitial
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.PitchInitial
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketRaiseRate:
+  key: V3RocketRaiseRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.RaiseRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketTiltFrames:
+  key: V3RocketTiltFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.TiltFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketTurnRate:
+  key: V3RocketTurnRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.TurnRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3RocketType:
+  key: V3RocketType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: V3Rocket.Type
       source: code/rules.cpp
       guard: null
     level: RulesClass

@@ -8,7 +8,7 @@ valid_values:
 caveats:
   - This is an Ares action, number 148. A number that names no voice does nothing.
   - A voice stays until the scenario ends or another voice is chosen. A saved game keeps it.
-  - `-1` has the effect of [Disable Speech](/mapping/actions/taction-disable-speech/), and a voice number switches EVA on again, as [Enable Speech](/mapping/actions/taction-enable-speech/) does.
+  - "`-1` has the effect of [Disable Speech](/mapping/actions/taction-disable-speech/), and a voice number switches EVA on again, as [Enable Speech](/mapping/actions/taction-enable-speech/) does."
 related:
   - type: action
     id: TACTION_DISABLE_SPEECH

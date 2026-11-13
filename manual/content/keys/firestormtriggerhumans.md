@@ -1,7 +1,6 @@
 ---
 key: FirestormTriggerHumans
 summary: Whether the Activate and Deactivate Firestorm Defense trigger actions work on a house a player controls.
-see_also: [TACTION_ACTIVATE_FIRESTORM, TACTION_DEACTIVATE_FIRESTORM]
 when_omitted:
   kind: value
   value: "no"

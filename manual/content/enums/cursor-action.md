@@ -79,6 +79,8 @@ values:
   - { constant: ACTION_DISARM_BOMB, value: 67, input: "DisarmBomb", meaning: "Send an engineer to disarm the bomb on the object." }
   - { constant: ACTION_DETONATE, value: 68, input: "Detonate", meaning: "Set off the Ivan bomb the selected unit carries." }
   - { constant: ACTION_DEMOLISH, value: 69, input: "Demolish", meaning: "Attack the target under the cursor, shown with the demolition cursor. An infantryman gets it over a target for which the selected weapon sets SabotageCursor=yes." }
+  - { constant: ACTION_CUSTOM, value: 70, input: "Custom", meaning: "Target a custom superweapon, shown with its Cursor, or the attack cursor when it names none.", note: "Only a superweapon uses this action. It is an Ares name." }
+  - { constant: ACTION_NO_CUSTOM, value: 71, input: "NoCustom", meaning: "Indicate that a custom superweapon cannot fire at the cell, shown with the weapon's NoCursor, or the disallowed cursor when it names none.", note: "Only a superweapon uses this action. The game picks it over a cell the weapon refuses; no rules setting names it." }
 ---
 
 These are the actions a left click on the map can carry. The action under the cursor picks the mouse shape and decides what a click does. The trigger actions that a map's triggers run are a separate list.
