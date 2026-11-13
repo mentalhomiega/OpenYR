@@ -658,6 +658,9 @@ bool TeamTypeClass::Read_INI(CCINIClass const & ini)
 		house = ini.Get_HousesType(IniName, "House", house);
 		if (house != HOUSE_NONE) {
 			House = House_From_HousesType(house);
+			if (House == NULL && stricmp(HouseTypes[house]->Name(), "<none>") != 0) {
+				Log_Unresolved_House(IniName, "House", HouseTypes[house]->Name());
+			}
 		}
 
 		VeteranLevel = ini.Get_Int(IniName, "VeteranLevel", VeteranLevel);

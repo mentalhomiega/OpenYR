@@ -6741,7 +6741,7 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 		if (allyhouse != NULL) {
 			allied.Set(allyhouse);
 		} else {
-			DebugString("[%s] Allies names %s, which is no house of this scenario\n", hname, ally);
+			Log_Unresolved_House(hname, "Allies", ally);
 		}
 	}
 	Make_Ally(Houses[HeapID]);
@@ -7796,6 +7796,19 @@ HouseClass * House_At(int spawn_waypoint)
 		}
 	}
 	return(NULL);
+}
+
+
+/// <summary>
+/// Writes one log line for a scenario house name that resolves to no live house. The scenario
+/// keeps loading and treats the name as before; the line shows where the map names it.
+/// </summary>
+/// <param name="section">The scenario section that holds the key.</param>
+/// <param name="key">The key, or the key and its role, that names the house.</param>
+/// <param name="name">The name that resolved to nothing.</param>
+void Log_Unresolved_House(char const * section, char const * key, char const * name)
+{
+	DebugString("[%s] %s names %s, which is no house of this scenario\n", section, key, name);
 }
 
 

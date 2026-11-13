@@ -1438,6 +1438,7 @@ inline T const * HouseClass::Get_Preferred(DynamicVectorClass<T const *> const &
 HouseClass * House_From_HousesType(HousesType house);
 HouseClass * House_At(int spawn_waypoint);
 HouseClass * House_From_Name(char const * name);
+void Log_Unresolved_House(char const * section, char const * key, char const * name);
 HouseClass * Placed_Object_House(char const * name);
 bool House_Matches(HouseClass const * house, HousesType selector);
 AircraftTypeClass const * Paradrop_Plane_Type(void);

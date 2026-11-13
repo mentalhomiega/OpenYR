@@ -495,6 +495,24 @@ AIExtraRefineries:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIForcePredictionFudge:
+  key: AIForcePredictionFudge
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AI
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: fudge
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIFriendlyDistance:
   key: AIFriendlyDistance
   scopes:
