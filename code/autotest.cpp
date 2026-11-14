@@ -6090,9 +6090,14 @@ static void Trails_Step(StepType const &)
 }
 
 
-// ammo <TypeID>: each unit of that type with its ammunition and the frames left before it regains a shot.
+// ammo <TypeID>: each vehicle or soldier of that type with its ammunition and the frames left before it regains a shot.
 static void Ammo_Step(StepType const & step)
 {
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass const * infantry = Infantry[index];
+		if (stricmp(infantry->Class->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   ammo %s of %s ammo %d of %d reload %d frame %d\n", infantry->Class->Name(), infantry->House->Class->Name(), infantry->Ammo, infantry->Class->MaxAmmo, (int)infantry->Reload, Frame);
+	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass const * unit = Units[index];
 		if (stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;

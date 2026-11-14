@@ -58,12 +58,6 @@ class UnitClass : public FootClass
 		int FiringSyncDelay;
 
 		/*
-		**	This is the timer that controls the reload rate: the frames left until the unit
-		**	regains one shot of ammunition (Reload=, EmptyReload= and ReloadIncrement=).
-		*/
-		CDTimerClass<FrameTimerClass> Reload;
-
-		/*
 		**	This points to the static control data that gives 'this' unit its characteristics.
 		*/
 		UnitTypeClass * Class;
@@ -281,7 +275,6 @@ class UnitClass : public FootClass
 		void Rotation_AI(void);
 		void Firing_AI(void);
 		void Reload_AI(void);
-		void Start_Reloading(void);
 		bool Edge_Of_World_AI(void);
 		void Tunnel_AI(void);
 		void Visceroid_AI(void);

@@ -1788,6 +1788,9 @@ void InfantryClass::AI(void)
 		return;
 	}
 
+	// Soldiers regain ammunition as vehicles do, which stock gamemd never lets them (Ares bug fix).
+	Reload_Ammunition();
+
 	if (Mission == MISSION_GUARD) {
 		BuildingClass *building = Map[(Coord const &)PositionCoord].Cell_Building();
 		if (building != NULL) {
@@ -3192,6 +3195,9 @@ BulletClass * InfantryClass::Fire_At(AbstractClass * target, int which)
 	IsFiring = false;
 
 	BulletClass * bullet = BASECLASS::Fire_At(target, which);
+	if (bullet != NULL && TClass->MaxAmmo > 0 && Ammo < TClass->MaxAmmo && !TClass->IsManualReload) {
+		Start_Reloading();
+	}
 	if (bullet != NULL && !IsInLimbo) {
 
 		/*

@@ -266,7 +266,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `tabflash` | writes which tabs of the modern sidebar panel flash, one bit per tab |
 | `ambient <TypeID>` | writes the ambient sound each object of that type has attached |
 | `trails` | writes how many line trails exist and how many of their places still show |
-| `ammo <TypeID>` | writes the ammunition and reload countdown of each vehicle of that type |
+| `ammo <TypeID>` | writes the ammunition and reload countdown of each vehicle or soldier of that type |
 | `enable <SuperWeaponTypeID>` | gives the player that super weapon to charge from empty, as a structure does |
 | `houses` | writes each house's money, power, spy effects, resource gatherers and powered unit centres |
 | `houseobjects <house>` | writes the units, infantry, aircraft and buildings the house owns outside limbo, its objects in limbo, the objects it originally owns, and the living vehicles it owns |
