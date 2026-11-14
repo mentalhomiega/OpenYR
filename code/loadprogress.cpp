@@ -12,12 +12,10 @@
 #include "loadprogress.h"
 
 #include "autotest.h"
-#include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 
-#include <cmath>
 #include <memory>
 
 
@@ -55,9 +53,8 @@ void Load_Progress_Step(char const * text, double fraction)
 		return;
 	}
 
-	AUTOTEST_LOG("loadstep %d%% %s\n", (int)std::lround(fraction * 100.0), text);
 	Notice->Set_Step(text, fraction);
-	AutoTest_Load_Progress_Shown();
+	AutoTest_Load_Progress_Shown(text, fraction);
 }
 
 

@@ -105,9 +105,8 @@ Other code uses `code/loadprogress.h`:
   another whose steps would mislead, such as the menu battle loading under the start-up notice.
 
 Set each step's fraction to the share of the load's time that the steps before it take for a large
-mod, so the bar moves at an even pace. Each step logs `AUTOTEST loadstep <percent>% <text>` in a
-test run, and the autotest command `stepshot` saves a picture at each step
-([AUTOTEST.md](AUTOTEST.md)).
+mod, so the bar moves at an even pace. The autotest command `loadsteps` logs each step and can save
+a picture of each ([AUTOTEST.md](AUTOTEST.md)).
 
 ## Steps
 

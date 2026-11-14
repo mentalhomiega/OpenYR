@@ -167,6 +167,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <deque>
@@ -297,7 +298,8 @@ std::string FollowType;
 std::string LoadShotName;
 int LoadShotCount = 0;
 
-// The name loading notice captures are saved under, one per step, or empty when none are taken.
+// Set by loadsteps: each step of the loading notice is logged, and saved as a picture under StepShotName unless it is empty.
+bool LogLoadSteps = false;
 std::string StepShotName;
 int StepShotCount = 0;
 
@@ -7276,7 +7278,7 @@ static void Syncrec_Step(StepType const & step)
 
 
 // log writes nothing more than the step line every step writes. searchdir <path>, loadshot <name> and
-// stepshot <name> take effect when the script is read (AutoTest_Load).
+// loadsteps [name] take effect when the script is read (AutoTest_Load).
 static void No_Action_Step(StepType const &)
 {
 }
@@ -7857,7 +7859,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"log", No_Action_Step},
 		{"searchdir", No_Action_Step},
 		{"loadshot", No_Action_Step},
-		{"stepshot", No_Action_Step},
+		{"loadsteps", No_Action_Step},
 		{"stall", Stall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
@@ -7962,12 +7964,16 @@ void AutoTest_Loading_Screen_Shown(void)
 
 
 /// <summary>
-/// Saves the window as the script's next loading notice capture, when it asked for them.
-/// Call once a step of the notice is shown.
+/// Logs a step of the loading notice, and saves the window as the script's next loading notice capture,
+/// when the script asked for them. Call once the step is shown.
 /// </summary>
-void AutoTest_Load_Progress_Shown(void)
+void AutoTest_Load_Progress_Shown(char const * text, double fraction)
 {
-	if (Active && !StepShotName.empty()) {
+	if (!Active || !LogLoadSteps) {
+		return;
+	}
+	DebugString("AUTOTEST loadstep %d%% %s\n", (int)std::lround(fraction * 100.0), text);
+	if (!StepShotName.empty()) {
 		Capture_Load_Shot("stepshot", StepShotName, StepShotCount);
 	}
 }
@@ -8007,7 +8013,8 @@ static bool Apply_Load_Time_Command(char const * command, std::string const & te
 	if (std::strcmp(command, "loadshot") == 0) {
 		LoadShotName = text;
 	}
-	if (std::strcmp(command, "stepshot") == 0) {
+	if (std::strcmp(command, "loadsteps") == 0) {
+		LogLoadSteps = true;
 		StepShotName = text;
 	}
 	// recordreplay and playreplay take effect when the script is read, before the game starts.
