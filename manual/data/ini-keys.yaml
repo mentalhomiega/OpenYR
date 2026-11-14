@@ -52305,6 +52305,23 @@ VehicleThief.Allowed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VehicleThief.BreakMindControl:
+  key: VehicleThief.BreakMindControl
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: InfantryTypeClass
+      member: IsVehicleThiefBreakMindControl
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 VehicleThief.EnterSound:
   key: VehicleThief.EnterSound
   scopes:
@@ -52319,6 +52336,40 @@ VehicleThief.EnterSound:
       default_candidate: none
       declared_in: InfantryTypeClass
       member: VehicleThiefEnterSound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+VehicleThief.LeaveSound:
+  key: VehicleThief.LeaveSound
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: VehicleThiefLeaveSound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+VehicleThief.OneTime:
+  key: VehicleThief.OneTime
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsVehicleThiefOneTime
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass

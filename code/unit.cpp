@@ -1770,6 +1770,9 @@ void UnitClass::Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select)
 			Coord const where = index == 0 ? PositionCoord : Map[PositionCoord].Closest_Free_Spot(PositionCoord);
 			if (where != COORD_NONE && i->Unlimbo(where, DIR_N)) {
 				i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
+				if (make_infiltrator && i->Class->VehicleThiefLeaveSound != VOC_NONE) {
+					Sound_Effect(i->Class->VehicleThiefLeaveSound, i->PositionCoord);
+				}
 				i->Scatter(COORD_NONE, true);
 				if (!House->Is_Human_Player()) {
 					i->Assign_Mission(MISSION_HUNT);
@@ -6104,10 +6107,11 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 					**	If we're running over infantry, let's see if the infantry we're
 					**	squashing is a thief trying to capture us.  If so, let him succeed.
 					*/
-					if (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsVehicleThief && ((InfantryClass *)object)->NavCom == this && !Class->IsTrain) {
+					if (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsVehicleThief && ((InfantryClass *)object)->NavCom == this && !Class->IsTrain && !((InfantryClass *)object)->Is_Theft_Refused(this)) {
 						ObjectClass * next = object->Next;
 						IsOwnedByPlayer = ((InfantryClass *)object)->IsOwnedByPlayer;
 						Detach_All(false);
+						((InfantryClass *)object)->Break_Mind_Control_For_Theft(this);
 						Captured(((InfantryClass *)object)->House);
 						object->Delete_Me();
 						object = next;

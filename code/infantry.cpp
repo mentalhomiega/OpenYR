@@ -1128,6 +1128,11 @@ bool InfantryClass::Capture_Arrival(CellClass * cellptr)
 			TechnoClass * tech = (TechnoClass *)NavCom;
 			if (tech != NULL) {
 				if (PositionCell == tech->PositionCell) {
+					if (Is_Theft_Refused(tech)) {
+						Assign_Destination(NULL);
+						Enter_Idle_Mode();
+						return(true);
+					}
 					if (tech->Tag) {
 						tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 					}
@@ -1135,8 +1140,11 @@ bool InfantryClass::Capture_Arrival(CellClass * cellptr)
 					if (Class->VehicleThiefEnterSound != VOC_NONE && Is_Vehicle_Captor(tech)) {
 						Sound_Effect(Class->VehicleThiefEnterSound, tech->PositionCoord);
 					}
+					Break_Mind_Control_For_Theft(tech);
 					tech->Captured(House);
-					tech->EnteredByInfType = Class->HeapID;
+					if (!Class->IsVehicleThief || !Class->IsVehicleThiefOneTime) {
+						tech->EnteredByInfType = Class->HeapID;
+					}
 					tech->Scatter_Incoming_Infantry();
 					if (Tag && Tag->Is_To_Inherit()) {
 						tech->Attach_Tag(Tag);
@@ -3309,7 +3317,7 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	}
 
 	if (Class->IsVehicleThief) {
-		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && ((TechnoClass *)NavCom)->TClass->IsVehicleThiefAllowed && Distance(NavCom) < 15 * CELL_LEPTON) {
+		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && ((TechnoClass *)NavCom)->TClass->IsVehicleThiefAllowed && !Is_Theft_Refused((TechnoClass *)NavCom) && Distance(NavCom) < 15 * CELL_LEPTON) {
 			return(NavCom);
 		}
 	}
@@ -3475,7 +3483,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	**	See if it's a thief attacking an enemy vehicle, let him CAPTURE it.
 	*/
 	if (House->Is_Player_Control() && Class->IsVehicleThief && object->RTTI != RTTI_BUILDING && object->Considered_Vehicle()) {
-		if (object->TClass->IsTrain || !object->TClass->IsVehicleThiefAllowed) {
+		if (object->TClass->IsTrain || !object->TClass->IsVehicleThiefAllowed || Is_Theft_Refused((TechnoClass const *)object)) {
 			return(ACTION_SELECT);
 		}
 		if (((UnitClass *)object)->House != House) {
@@ -4306,6 +4314,28 @@ bool InfantryClass::Can_Drive(AbstractClass const * object) const
 bool InfantryClass::Is_Vehicle_Captor(AbstractClass const * object) const
 {
 	return(Class->IsVehicleThief || Can_Drive(object));
+}
+
+
+/// <summary>
+/// Tells whether this vehicle thief may not take the vehicle because a mind controller holds it and the thief's type
+/// has VehicleThief.BreakMindControl=no (Ares).
+/// </summary>
+bool InfantryClass::Is_Theft_Refused(TechnoClass const * vehicle) const
+{
+	return(Class->IsVehicleThief && !Class->IsVehicleThiefBreakMindControl && vehicle != NULL && vehicle->MindControlledBy != NULL);
+}
+
+
+/// <summary>
+/// Frees a vehicle this thief is about to take from the mind controller that holds it, so the controller keeps no link
+/// to it (Ares VehicleThief.BreakMindControl). The vehicle first returns to the house it was taken from.
+/// </summary>
+void InfantryClass::Break_Mind_Control_For_Theft(TechnoClass * vehicle) const
+{
+	if (Class->IsVehicleThief && vehicle->MindControlledBy != NULL && vehicle->MindControlledBy->CaptureManager) {
+		vehicle->MindControlledBy->CaptureManager->Free_Unit(vehicle);
+	}
 }
 
 
