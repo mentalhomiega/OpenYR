@@ -27,7 +27,7 @@ A type with [`TurretCount`](/keys/turretcount/) above `0` reads its weapons from
 
 ## Numbered weapon lists
 
-A type with `TurretCount` above `0` ignores `Primary`, `Secondary`, `ElitePrimary`, `EliteSecondary` and their art offsets. It reads [`WeaponCount`](/keys/weaponcount/) positions instead, up to 64. The table shows the positions that have a page of their own; positions 19 to 64 are named the same way:
+A type with `TurretCount` above `0` ignores `Primary`, `Secondary`, `ElitePrimary`, `EliteSecondary` and their art offsets. It reads [`WeaponCount`](/keys/weaponcount/) positions instead, up to 127. The table shows the positions that have a page of their own; positions 19 to 127 are named the same way:
 
 | Position | Weapon | Elite weapon | Firing offset in the art section | Elite firing offset |
 | --- | --- | --- | --- | --- |
