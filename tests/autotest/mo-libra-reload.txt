@@ -1,0 +1,13 @@
+; Needs the Mental Omega files in game\Mods\MentalOmega. Libra (LIBRA), the hero soldier of the Epsilon mission EREALITY, has Ammo=3
+; and Reload=30, and she fights the first Allied attack waves from frame 1074 with no orders. Expected: her ammo is back to 3 of 3
+; between bursts (2 of 3 with a reload countdown at frame 1700, 3 of 3 at 1800 to 2000), and the mission is not lost before frame
+; 2000. Before soldiers reloaded she kept 0 after her first burst, stood unarmed, and the mission was lost at frame 1738.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/mo-libra-reload.txt -Mods MentalOmega -Map EREALITY.MAP -Campaign -Width 1920 -Height 1080 -Seconds 300 -Uncapped -Filter "AUTOTEST   ammo|Game end|Exception"
+1300 ammo LIBRA
+1500 ammo LIBRA
+1600 ammo LIBRA
+1700 ammo LIBRA
+1800 ammo LIBRA
+1900 ammo LIBRA
+2000 ammo LIBRA
+2010 quit
