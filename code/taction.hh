@@ -120,7 +120,7 @@ enum TActionType {
 	TACTION_ACTIVATE_FIRESTORM,				/// Turn on house's firestorm defense.
 	TACTION_DEACTIVATE_FIRESTORM,			/// Turn off house's firestorm defense.
 	TACTION_ION_CANNON,						/// Fire Ion Cannon at waypoint.
-	TACTION_MULTI_MISSILE,					/// Fire nuke at waypoint from nearest edge.
+	TACTION_MULTI_MISSILE,					/// Drop a nuke onto the waypoint from above.
 	TACTION_CHEM_MISSILE,					/// Fire chemical missile at waypoint.
 	TACTION_TOGGLE_TRAIN_CARGO,				/// Toggle cargo train dropping crate.
 	TACTION_PLAY_SOUND_RANDOM,				/// Play sound effect at random waypoint.
