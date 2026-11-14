@@ -101,6 +101,7 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	IsAirportBound(false),
 	IsFlyBy(false),
 	IsFlyBack(false),
+	IsCrashSpin(true),
 	Trailer(NULL),
 	SpawnDelay(3),
 	IsRotorEquipped(false),
@@ -312,6 +313,7 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 		IsAirportBound = ini.Get_Bool(Name(), "AirportBound", IsAirportBound);
 		IsFlyBy = ini.Get_Bool(Name(), "FlyBy", IsFlyBy);
 		IsFlyBack = ini.Get_Bool(Name(), "FlyBack", IsFlyBack);
+		IsCrashSpin = ini.Get_Bool(Name(), "CrashSpin", IsCrashSpin);
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
 		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
@@ -406,6 +408,7 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAirportBound);
 	stream.Serialize(IsFlyBy);
 	stream.Serialize(IsFlyBack);
+	stream.Serialize(IsCrashSpin);
 	stream.Serialize(Trailer);
 	stream.Serialize(SpawnDelay);
 	stream.Serialize(IsMissileCustom);

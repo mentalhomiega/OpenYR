@@ -4521,6 +4521,11 @@ bool AircraftClass::Crash(TechnoClass * source)
 			RockingSidewaysPerFrame = -RockingSidewaysPerFrame;
 		}
 		RockingForwardsPerFrame = Random_Double(0.0, 0.1);
+		// The rates are still drawn with CrashSpin=no so the random sequence does not depend on the key.
+		if (!Class->IsCrashSpin) {
+			RockingSidewaysPerFrame = 0.0f;
+			RockingForwardsPerFrame = 0.0f;
+		}
 
 		Detach_This_From_All(this, false);
 		return(true);

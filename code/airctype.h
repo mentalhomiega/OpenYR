@@ -110,6 +110,9 @@ class AircraftTypeClass : public TechnoTypeClass
 		bool IsFlyBy;
 		bool IsFlyBack;
 
+		// CrashSpin= (Ares): when false, a crashing aircraft falls without rolling or pitching.
+		bool IsCrashSpin;
+
 		/*
 		 * The animation this aircraft leaves behind it, such as a missile's smoke, and the
 		 * number of frames between one puff and the next. (Art keys Trailer and SpawnDelay.)
