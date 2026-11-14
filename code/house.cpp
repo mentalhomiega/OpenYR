@@ -10657,6 +10657,23 @@ AircraftTypeClass const * Paradrop_Plane_Type(void)
 
 
 /// <summary>
+/// Fetches the aircraft that carries the paratroopers of a house: the ParaDrop.Aircraft of its country, else of its side
+/// (Ares), else PDPLANE.
+/// </summary>
+AircraftTypeClass const * Paradrop_Plane_Type(HouseClass const * house)
+{
+	if (house->Class->ParaDrop.Aircraft != NULL) {
+		return(house->Class->ParaDrop.Aircraft);
+	}
+	int const side = house->Planning_Side();
+	if (side >= 0 && side < Sides.Count() && Sides[side]->ParaDrop.Aircraft != NULL) {
+		return(Sides[side]->ParaDrop.Aircraft);
+	}
+	return(Paradrop_Plane_Type());
+}
+
+
+/// <summary>
 /// Picks where a computer house drops paratroopers or reveals the map (HouseClass::Fire_ParaDrop).
 /// When the house's preferred target is Anything, the drop lands near the starting cell of its
 /// enemy's base, or of its own base when it has no enemy, on clear ground for a five by five group,

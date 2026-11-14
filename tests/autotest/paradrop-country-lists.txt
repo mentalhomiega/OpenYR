@@ -1,0 +1,20 @@
+; ParaDrop.Types and ParaDrop.Num on a country (Ares): an American player's weapon with no ParaDrop keys of its own drops what [Americans]
+; names, one GI, and not what the GDI side names, one Navy SEAL. TestParaOwnerPlane2 sends two planes and sets plane 2 itself (two
+; Tanya); plane 1 still takes the country's GI. Each shot is granted fresh and the paratroopers are removed before the next.
+; Expected: after the first shot "landed E1 count 1", "landed GHOST count 0" and "landed TANY count 0"; after the second shot
+; "landed E1 count 1", "landed GHOST count 0" and "landed TANY count 2".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Mods src-agent28/tests/autotest/paradrop-owner-lists-rules -Script src-agent28/tests/autotest/paradrop-country-lists.txt -Country 0 -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST   landed|Exception"
+30 command CenterBase
+100 grant TestParaOwner
+110 fire TestParaOwner 30 39
+900 landed E1
+900 landed GHOST
+900 landed TANY
+901 kill E1 1
+901 kill GHOST 1
+950 grant TestParaOwnerPlane2
+960 fire TestParaOwnerPlane2 30 39
+2000 landed E1
+2000 landed GHOST
+2000 landed TANY
+2050 quit

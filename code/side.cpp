@@ -276,6 +276,7 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(SidebarYuriFileNames);
 	crc(SurvivorDivisor);
 	crc(Crew != NULL ? Crew->Name() : "");
+	crc(ParaDrop.Types.Count());
 	crc(Engineer != NULL ? Engineer->Name() : "");
 	crc(Technician != NULL ? Technician->Name() : "");
 	crc(DefaultDisguise != NULL ? DefaultDisguise->Name() : "");
@@ -323,6 +324,11 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 		EvaTag = buffer;
 	}
 	Crew = TGet_Class(ini, Name(), "Crew", Crew);
+	ParaDrop.Take_Types(ini.Get_String(Name(), "ParaDrop.Types"));
+	if (ini.Is_Present(Name(), "ParaDrop.Num")) {
+		ParaDrop.Take_Num(ini.Get_IntList(Name(), "ParaDrop.Num", ParaDrop.Num));
+	}
+	ParaDrop.Take_Aircraft(ini.Get_String(Name(), "ParaDrop.Aircraft"));
 	Engineer = TGet_Class(ini, Name(), "Engineer", Engineer);
 	Technician = TGet_Class(ini, Name(), "Technician", Technician);
 	DefaultDisguise = TGet_Class(ini, Name(), "DefaultDisguise", DefaultDisguise);
@@ -381,6 +387,7 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MessageTextColor);
 	stream.Serialize(EvaTag);
 	stream.Serialize(Crew);
+	ParaDrop.Serialize(stream);
 	stream.Serialize(Engineer);
 	stream.Serialize(Technician);
 	stream.Serialize(DefaultDisguise);

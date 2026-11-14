@@ -499,7 +499,7 @@ bool Do_Reinforcements(TeamTypeClass * teamtype, WAYPOINT wp)
 	// (Do_Reinforcements, 0x65D8E0). The plane enters from the house's map edge, or starts at the
 	// team's TransportWaypoint when UseTransportOrigin is set.
 	if (teamtype->IsDroppod) {
-		AircraftTypeClass const * plane = Paradrop_Plane_Type();
+		AircraftTypeClass const * plane = Paradrop_Plane_Type(teamtype->House);
 		Cell const start = (teamtype->UseTransportOrigin && teamtype->TransportWaypoint != -1) ? Scen->Get_Waypoint_Cell(teamtype->TransportWaypoint) : CELL_NONE;
 		if (plane != NULL && teamtype->House->Send_Plane(plane, MISSION_PARADROP_APPROACH, origin, NULL, 0, NULL, object, start) != NULL && teamtype->House->Is_Ally(PlayerPtr)) {
 			Push_Radar_Event_Cell(origin);

@@ -1,0 +1,13 @@
+; An airborne object beyond the 11 cells Yuri's Revenge lets a blast reach is hit when the warhead's CellSpread is larger (Ares has no limit). The overlay
+; gives HE a CellSpread of 20. A player Kirov (ZEP) flies at 50,24 and the HE warhead explodes 13 cells away, at 64,24, with 300 damage at ground zero.
+; Expected: the Kirov's strength after the blast is lower than before, and the log shows "blast HE" hitting ZEP at a distance of 3411 leptons (13 cells) away; its strength falls from 2000 to 1863.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Mods src-agent28/tests/autotest/flying-blast-reach-rules -Script src-agent28/tests/autotest/flying-blast-reach.txt -Seconds 120 -Filter "AUTOTEST   where|hits ZEP|Exception"
+30 command CenterBase
+35 reveal
+40 own ZEP 50 24
+50 move ZEP 51 24
+250 airborne ZEP
+440 where ZEP
+450 blast HE:300 64 24
+480 where ZEP
+520 quit
