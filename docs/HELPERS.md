@@ -218,6 +218,7 @@ a default and returns it when the section or entry is missing.
 | `Read_Numbers` | Reads a fixed count of ints or floats and reports `Absent`, `Malformed` or `Parsed`. |
 | `Get_Lepton`, `Get_Angle`, `Get_Cell`, `Get_RGBClass`, `Get_IntList`, `Get_Vector`, `Get_Offset` | Typed reads. `Get_Lepton` converts cells to leptons and `Get_Angle` converts degrees to 0 to 255. |
 | `Is_Present(section, entry)`, `Section_Present` | Test for a key or section without reading it. |
+| `Entry_Names_With_Prefix(section, prefix)` | The names of the section's keys that start with the prefix, with the prefix taken off, in file order and matched with case as lookups are. Lets a reader of a family of keys, such as `Versus.<armor>`, ask only for the members a section names. |
 | `TGet_TypeList(ini, section, entry, default, size)` | `findmake.h`. Reads a list of type names into a `TypeList`. |
 | `LobbyIniClass` | `lobbymodes.h`. INI text in file order that keeps empty values, which `INIClass` drops; names match without regard to case. For files written for the CnCNet client. |
 

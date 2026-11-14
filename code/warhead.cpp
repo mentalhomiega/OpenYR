@@ -38,7 +38,11 @@
 #include "always.h"
 
 #include "armortypes.h"
+#include <algorithm>
 #include <cstdio>
+#include <cstring>
+#include <string_view>
+#include <vector>
 #include "warhead.h"
 #include "ionblast.h"
 
@@ -406,9 +410,17 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		// Versus.<armor> and its targeting switches, for declared armor types and the original eleven alike (Ares).
-		for (int armor = ARMOR_FIRST; armor < Armor_Type_Count(); armor++) {
+		// An armor type that no Versus key of this section starts with is passed over, since none of its keys is
+		// present; a name too long for every key to fit the buffer below is looked up as before.
+		std::vector<std::string_view> const versus = ini.Entry_Names_With_Prefix(Name(), "Versus.");
+		for (int armor = ARMOR_FIRST; !versus.empty() && armor < Armor_Type_Count(); armor++) {
 			char key[96];
 			char const * armorname = Armor_Type_Name(ArmorType(armor));
+
+			if (std::strlen(armorname) < sizeof(key) - sizeof("Versus..PassiveAcquire")
+				&& std::none_of(versus.begin(), versus.end(), [armorname](std::string_view rest) {return(rest.starts_with(armorname));})) {
+				continue;
+			}
 
 			snprintf(key, sizeof(key), "Versus.%s", armorname);
 			if (ini.Get_String(Name(), key, "", buffer, sizeof(buffer)) && buffer[0] != '\0') {

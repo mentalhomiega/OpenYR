@@ -683,6 +683,27 @@ int INIClass::Entry_Count(char const * section) const
 }
 
 
+/// <summary>
+/// Lists the names of the section's entries that start with the prefix, with the prefix taken off, in file
+/// order. The test is case sensitive, as lookups are; an absent section gives none. Each name stays valid until
+/// the database changes.
+/// </summary>
+std::vector<std::string_view> INIClass::Entry_Names_With_Prefix(char const * section, std::string_view prefix) const
+{
+	std::vector<std::string_view> names;
+	INISection const * secptr = Find_Section(section);
+	if (secptr == NULL) {
+		return(names);
+	}
+	for (std::unique_ptr<INIEntry> const & entry : secptr->EntryList) {
+		if (entry->Entry.starts_with(prefix)) {
+			names.push_back(std::string_view(entry->Entry).substr(prefix.size()));
+		}
+	}
+	return(names);
+}
+
+
 /***********************************************************************************************
  * INIClass::Find_Entry -- Find specified entry within section.                                *
  *                                                                                             *
