@@ -12997,6 +12997,57 @@ DeathWeapon:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DeathWeapon.Suppress:
+  key: DeathWeapon.Suppress
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: technotype list
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: DeathWeaponSuppress
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+DeathWeapon.SuppressInfantry:
+  key: DeathWeapon.SuppressInfantry
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsDeathWeaponSuppressInfantry
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+DeathWeapon.SuppressVehicles:
+  key: DeathWeapon.SuppressVehicles
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsDeathWeaponSuppressVehicles
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 DeathWeaponDamageModifier:
   key: DeathWeaponDamageModifier
   scopes:

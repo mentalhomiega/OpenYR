@@ -13506,6 +13506,11 @@ bool TechnoClass::Is_Bomb_Visible(void) const
 /// </summary>
 void TechnoClass::Fire_Death_Weapon(void)
 {
+	// The warhead that killed the object can suppress the blast (Ares DeathWeapon.Suppress).
+	if (DamageWarhead != NULL && DamageWarhead->Is_Death_Weapon_Suppressed(TClass)) {
+		return;
+	}
+
 	// A type with turrets uses its current weapon position; any other type uses position 0 (0x70E1A0, 0x717880).
 	int const which = TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
 	WeaponTypeClass * weapon = TClass->DeathWeapon;
