@@ -229,6 +229,7 @@
 #include "voxdrsys.h"
 #include "ivanrules.h"
 #include "projectilerules.h"
+#include "armortypes.h"
 #include "warhead.h"
 #include "warheadrules.h"
 #include "wave.h"
@@ -245,6 +246,7 @@
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;
+TechnoTypeClass const * TechnoClass::TraceDamageType = NULL;
 
 TalkType TechnoClass::TalkBubbleType = TALK_NONE;
 TechnoClass * TechnoClass::TalkBubbleOwner = NULL;
@@ -7327,8 +7329,23 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 {
 	bool negative = damage < 0;
 
+	int const raw_damage = damage;
+	int const strength_before = Strength;
+	bool const traced = TraceDamageType != NULL && TClass == TraceDamageType;
+	double const armor_before = traced ? AttachedEffects.Armor_Multiplier() : 1.0;
+	auto trace = [&](char const * outcome) {
+		if (traced) {
+			HouseClass const * attacker = source != NULL ? source->House : (sourcehouse != NULL ? sourcehouse : Blast_Attacking_House());
+			DebugString("DAMAGETRACE frame %d %s cell %d,%d by %s of %s warhead %s raw %d distance %d forced %d armor %s effects %d x%.3f damage %d strength %d->%d %s\n",
+				Frame, TClass->Name(), Get_Cell().X, Get_Cell().Y, source != NULL ? source->TClass->Name() : "-", attacker != NULL ? attacker->Class->Name() : "-",
+				warhead != NULL ? warhead->Name() : "-", raw_damage, distance, (int)forced, Armor_Type_Name(TClass->Armor), AttachedEffects.Count(), armor_before,
+				damage, strength_before, (int)Strength, outcome);
+		}
+	};
+
 	bool effects_apply = false;
 	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative, sourcehouse, effects_apply)) {
+		trace("refused");
 		return(RESULT_NONE);
 	}
 
@@ -7344,6 +7361,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
+	trace("taken");
 
 	// A damaging hit holds back self healing for the type's SelfHealing.CombatDelay frames (Ares). Healing does not.
 	if (!negative && damage > 0 && TClass->SelfHealingCombatDelay > 0) {

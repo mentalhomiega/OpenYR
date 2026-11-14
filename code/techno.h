@@ -1117,6 +1117,9 @@ class TechnoClass :	public RadioClass,
 		 */
 		static bool ActionLines;
 
+		// Objects of this type log each hit they take as DAMAGETRACE lines (autotest `damagetrace`); NULL logs none.
+		static TechnoTypeClass const * TraceDamageType;
+
 		static void Reset_Action_Line_Timer(void);
 
 		/*
