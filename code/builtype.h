@@ -1272,6 +1272,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool Can_Plant_C4(void) const {return(IsCanC4 && !IsInvisibleInGame);}
 		// gamemd's IsStrange for a structure: it undeploys into a vehicle and covers one cell (BuildingTypeClass::IsVehicle, 0x465D40).
 		bool Is_Single_Cell_Vehicle(void) const {return(UndeploysInto != NULL && Width() == 1 && Height(false) == 1);}
+		// A vehicle deploying into this type stands on its top-left cell when the foundation is at most 2x2, else on the cell
+		// south-east of it (UnitClass::TryToDeploy, 0x7393C0; BuildingClass::Mission_Selling, 0x449C30).
+		bool Vehicle_On_Corner(void) const {return(Width() <= 2 && Height(false) <= 2);}
 		bool Is_Absorber(void) const {return(IsInfantryAbsorb || IsUnitAbsorb);}
 		bool Is_Walk_In_Facility(void) const {return(IsGrinding || Is_Absorber());}
 		virtual int Raw_Cost(void) const override;

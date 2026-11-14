@@ -3,9 +3,9 @@
 ; target is a cell with land type Tiberium; BuildingClass::Mission_Selling (0x449C30) queues the voice as the sale starts.
 ; The mod refinery-voice-rules gives YAREFN VoiceHarvest=ChronoLegionSelect and VoiceDeploy=TyphoonSubSelect.
 ; The miner deploys by itself near the ore at 62,38 (as slave-undeploy-follow.txt does), at 61,39. It is sold first with its rally
-; point on bare ground (62,41), which should log "Voice: TyphoonSubSelect". The new miner deploys again at 66,38 and is sold with
+; point on bare ground (62,41), which should log "Voice: TyphoonSubSelect". The new miner deploys again at 66,39 and is sold with
 ; its rally point on the ore at 62,34, which should log "Voice: ChronoLegionSelect". "rallyof" writes each rally point.
-; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/slave-miner-deploy-voice.txt -Mods src-agent24/tests/autotest/refinery-voice-rules -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|Voice:|Exception"
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/slave-miner-deploy-voice.txt -Mods src-agent27/tests/autotest/refinery-voice-rules -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|Voice:|Exception"
 10 command CenterBase
 20 command DebugInfiniteMoney
 21 reveal
@@ -19,6 +19,6 @@
 650 waitowns Americans YAREFN 1 2000
 660 rally YAREFN 62 34
 662 rallyof YAREFN
-664 sell 66 38
+664 sell 66 39
 700 waitowns Americans SMIN 1 900
 750 quit
