@@ -47,6 +47,7 @@
 #include "always.h"
 
 #include "session.h"
+#include "mapgen.h"
 #include "lobbycolor.h"
 
 #include "_deploymentconfig.h"
@@ -86,6 +87,10 @@
 #include <algorithm>
 #include <ctime> // for station ID computation
 #include <dos.h> // for station ID computation
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <system_error>
 #include <map>
 #include <string>
 #include <vector>
@@ -986,8 +991,84 @@ struct LooseMapInfo {
 };
 
 
+// The answers Loose_Map_Info found in earlier runs, kept in a file in the player's folder so that a list of
+// hundreds of loose maps is not read again at every start. A line holds the file's name, size and time of last
+// change, the two flags and the map's name, with tabs between them; a file that changed is read again.
+static char const * const MAP_INFO_FILE = "mapinfo.cache";
+
+struct KeptMapInfo {
+	long long Size = 0;
+	long long Changed = 0;
+	LooseMapInfo Info;
+};
+
+static std::map<std::string, KeptMapInfo> KeptMapInfos;
+static bool KeptMapInfosRead = false;
+static bool KeptMapInfosChanged = false;
+
+
+static std::string Map_Info_File_Path(void)
+{
+	char const * const user = CDFileClass::User_Path();
+	return(user != NULL ? std::string(user) + MAP_INFO_FILE : std::string());
+}
+
+
+static void Read_Kept_Map_Infos(void)
+{
+	if (KeptMapInfosRead) {
+		return;
+	}
+	KeptMapInfosRead = true;
+	std::string const path = Map_Info_File_Path();
+	if (path.empty()) {
+		return;
+	}
+	std::ifstream in(path);
+	std::string line;
+	while (std::getline(in, line)) {
+		std::vector<std::string> fields;
+		std::size_t start = 0;
+		for (std::size_t tab = line.find('\t'); tab != std::string::npos; tab = line.find('\t', start)) {
+			fields.push_back(line.substr(start, tab - start));
+			start = tab + 1;
+		}
+		fields.push_back(line.substr(start));
+		if (fields.size() != 6) {
+			continue;
+		}
+		KeptMapInfo kept;
+		kept.Size = std::atoll(fields[1].c_str());
+		kept.Changed = std::atoll(fields[2].c_str());
+		kept.Info.IsMultiplayer = fields[3] == "1";
+		kept.Info.IsOfficial = fields[4] == "1";
+		kept.Info.Name = fields[5];
+		KeptMapInfos[fields[0]] = kept;
+	}
+}
+
+
+// Writes the kept answers back when a map was read that the file did not hold.
+static void Write_Kept_Map_Infos(void)
+{
+	if (!KeptMapInfosChanged) {
+		return;
+	}
+	KeptMapInfosChanged = false;
+	std::string const path = Map_Info_File_Path();
+	if (path.empty()) {
+		return;
+	}
+	std::ofstream out(path, std::ios::trunc);
+	for (auto const & entry : KeptMapInfos) {
+		out << entry.first << '\t' << entry.second.Size << '\t' << entry.second.Changed << '\t' << (entry.second.Info.IsMultiplayer ? 1 : 0) << '\t'
+			<< (entry.second.Info.IsOfficial ? 1 : 0) << '\t' << entry.second.Info.Name << '\n';
+	}
+}
+
+
 // Reads a loose .MAP file's Basic section. Only the start of the file is read, from where the Basic section
-// begins, which keeps a list of hundreds of maps quick to build; the answer is kept for the rest of the session.
+// begins; the answer is kept for the rest of the session, and in the player's folder for the next ones.
 static LooseMapInfo const & Loose_Map_Info(std::string const & file_name)
 {
 	static std::map<std::string, LooseMapInfo> cache;
@@ -997,8 +1078,31 @@ static LooseMapInfo const & Loose_Map_Info(std::string const & file_name)
 	}
 
 	LooseMapInfo & info = cache[file_name];
-	static std::vector<char> head(MAP_HEAD_BYTES + 1);
 	CCFileClass file(file_name.c_str());
+
+	// The file on disk is known by its size and the time it last changed.
+	long long size = -1;
+	long long changed = 0;
+	std::error_code failed;
+	std::filesystem::path const on_disk(file.File_Name());
+	std::uintmax_t const bytes = std::filesystem::file_size(on_disk, failed);
+	if (!failed) {
+		auto const time = std::filesystem::last_write_time(on_disk, failed);
+		if (!failed) {
+			size = (long long)bytes;
+			changed = (long long)time.time_since_epoch().count();
+		}
+	}
+	Read_Kept_Map_Infos();
+	if (size >= 0) {
+		auto const kept = KeptMapInfos.find(file_name);
+		if (kept != KeptMapInfos.end() && kept->second.Size == size && kept->second.Changed == changed) {
+			info = kept->second.Info;
+			return(info);
+		}
+	}
+
+	static std::vector<char> head(MAP_HEAD_BYTES + 1);
 	int length = 0;
 	if (file.Open()) {
 		length = file.Read(head.data(), MAP_HEAD_BYTES);
@@ -1021,6 +1125,10 @@ static LooseMapInfo const & Loose_Map_Info(std::string const & file_name)
 	char name[128];
 	section.Get_String("Basic", "Name", "No Name", name, sizeof(name));
 	info.Name = name;
+	if (size >= 0 && info.Name.find('\t') == std::string::npos) {
+		KeptMapInfos[file_name] = KeptMapInfo{ size, changed, info };
+		KeptMapInfosChanged = true;
+	}
 	return(info);
 }
 
@@ -1188,6 +1296,15 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	}
 
 	ini.Clear();
+	Write_Kept_Map_Infos();
+
+	// A listed map whose file no archive or folder holds cannot be started; the log names each one.
+	for (int index = 0; index < Scenarios.Count(); index++) {
+		char const * const name = Scenarios[index]->Get_Filename();
+		if (stricmp(name, RANDOM_MAP_FILE_NAME) != 0 && !CCFileClass(name).Is_Available()) {
+			DebugString("Scenario %s (%s) is listed but its file is not found\n", name, Scenarios[index]->Description());
+		}
+	}
 	Options.ScenarioIndex = 0;
 }
 
