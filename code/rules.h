@@ -198,6 +198,9 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport multiplies its damage by this.
 		double OpenToppedDamageMultiplier;
 
+		// BerserkROFMultiplier (Ares): a berserk object's reload time is multiplied by this.
+		double BerserkROFMultiplier;
+
 		// A passenger firing from inside an open-topped transport reaches this many cells farther.
 		int OpenToppedRangeBonus;
 

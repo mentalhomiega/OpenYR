@@ -5652,6 +5652,24 @@ BerserkFriendly:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+BerserkROFMultiplier:
+  key: BerserkROFMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: null
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BerzerkAllowed:
   key: BerzerkAllowed
   scopes:

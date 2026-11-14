@@ -5871,7 +5871,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 	LastFireFrame = Frame;
 	BurstIndex++;
-	Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+	Arm = IsBerzerk ? (int)(Rearm_Delay(which) * Rule->BerserkROFMultiplier) : Rearm_Delay(which);
 	ChargeTurretDelay = (int)Arm;
 	BurstIndex %= weapon->Burst;
 

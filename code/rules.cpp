@@ -389,6 +389,7 @@ RulesClass::RulesClass(void) :
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
+	BerserkROFMultiplier(0.5),
 	OpenToppedRangeBonus(0),
 	OpenTransportRangeBonus(0),
 	OpenTransportDamageMultiplier(1.0),
@@ -1603,6 +1604,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		// gamemd keeps these multipliers as float32 truncated from the INI value (RulesClass reader, (float) stores).
 		OccupyDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier));
 		OpenToppedDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier));
+		BerserkROFMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "BerserkROFMultiplier", BerserkROFMultiplier));
 		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
 		OpenTransportRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenTransport.RangeBonus", OpenTransportRangeBonus);
 		OpenTransportDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenTransport.DamageMultiplier", OpenTransportDamageMultiplier);
@@ -3182,6 +3184,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(BerserkROFMultiplier);
 	stream.Serialize(OpenToppedRangeBonus);
 	stream.Serialize(OpenTransportRangeBonus);
 	stream.Serialize(OpenTransportDamageMultiplier);
