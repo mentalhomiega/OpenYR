@@ -7080,8 +7080,10 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 	}
 
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not
-	// (TechnoClass::ReceiveDamage, 0x701900). An object of the firer's own house follows AffectsOwner instead (Ares).
-	if (warhead != NULL && source != NULL && WarheadRules::Warhead_Spares_House(House == source->House, House->Is_Ally(source->House), warhead->IsAffectsOwner, warhead->IsAffectsAllies)) {
+	// (TechnoClass::ReceiveDamage, 0x701900). An object of the firer's own house follows AffectsOwner instead, and an
+	// owned animation's damage counts its owner as the firer (Ares).
+	HouseClass const * const attacking_house = source != NULL ? source->House : Blast_Attacking_House();
+	if (warhead != NULL && attacking_house != NULL && WarheadRules::Warhead_Spares_House(House == attacking_house, House->Is_Ally(attacking_house), warhead->IsAffectsOwner, warhead->IsAffectsAllies)) {
 		damage = 0;
 		return(true);
 	}

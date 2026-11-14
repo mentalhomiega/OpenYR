@@ -875,7 +875,7 @@ void AnimClass::AI(void)
 	}
 
 	if (Class->IsPsiWarning) {
-		HouseClass const * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+		HouseClass const * owner = Owner_House();
 		IsPsychicHidden = !Psychic_Warning_Seen(Map[Center_Coord()], owner);
 	}
 
@@ -1067,7 +1067,7 @@ void AnimClass::AI(void)
 					}
 					if (Class->Weapon != NULL && Class->Weapon->Bullet != NULL) {
 						// A Weapon makes the animation's projectile detonate where it is, owned by the animation's house (Phobos).
-						HouseClass * const owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+						HouseClass * const owner = Owner_House();
 						BulletClass * const bullet = Create_Bullet(Class->Weapon->Bullet, &Map[Center_Coord().As_Cell()], NULL, Class->Weapon->Attack, Class->Weapon->WarheadPtr, 0, Class->Weapon->IsBright);
 						if (bullet != NULL) {
 							bullet->Weapon = Class->Weapon;
@@ -1075,10 +1075,14 @@ void AnimClass::AI(void)
 							bullet->Detonate(Center_Coord());
 							delete bullet;
 						}
-					} else if (strcmp(Class->IniName, "INVISO") == 0) {
-						Explosion_Damage(Center_Coord(), damage, NULL, Rule->C4Warhead);
 					} else {
-						Explosion_Damage(Center_Coord(), damage, NULL, Rule->FlameDamage2);
+						// The type's Warhead deals the damage, credited to the animation's owner, whom an AffectsAllies=no or
+						// AffectsOwner=no warhead spares (Ares). Gamemd always used FlameDamage2, or C4Warhead for INVISO (AnimClass::AI, 0x424604).
+						WarheadTypeClass const * warhead = Class->Warhead;
+						if (warhead == NULL) {
+							warhead = strcmp(Class->IniName, "INVISO") == 0 ? Rule->C4Warhead : Rule->FlameDamage2;
+						}
+						Explosion_Damage(Center_Coord(), damage, NULL, warhead, true, Owner_House(), NULL, NULL, true);
 					}
 					if (!IsActive) {
 						return;
@@ -2009,6 +2013,12 @@ RTTIType AnimClass::Fetch_RTTI(void) const
 }
 
 
+HouseClass * AnimClass::Owner_House(void) const
+{
+	return((OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL);
+}
+
+
 /// <summary>
 /// The house that owns the soldier an animation type with MakeInfantry makes, as its MakeInfantryOwner says: the invoker (the
 /// house passed as invoker), the killer, the victim, the Civilian, Special or Neutral house, or any house at random (Ares).
@@ -2065,7 +2075,7 @@ bool AnimClass::Make_Infantry(void)
 		return(true);
 	}
 
-	HouseClass * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+	HouseClass * owner = Owner_House();
 	if (owner == NULL || owner->IsDefeated) {
 		owner = NULL;
 		SideType civilian = SideClass::From_Name("Civilian");
