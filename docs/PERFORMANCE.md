@@ -319,6 +319,30 @@ tile layer takes 1 ms.
 on a computer with two graphics cards the game could start on the slower one, where the GPU pass of this
 view alone took about 31 ms.
 
+## Start-up with a large mod
+
+Measured with Mental Omega (790 loose maps, rules of about 2 MB) to the title menu with the menu battle on, on
+a computer that had read the files before:
+
+| Step | Before | After |
+|---|---|---|
+| To the title menu | 6.2 s | 4.6 s |
+
+On a first start after the computer was switched on the same build took about 20 seconds, most of it reading
+the head of every loose map from the disk; that reading is what the first item below removes.
+
+- The name and flags of each loose `.MAP` file are kept in `mapinfo.cache` in the player's folder, with the
+  file's size and time of last change. A file that changed, or a new one, is read as before.
+- The outcome of each INI check is kept in `inicheck.cache` there, with a signature of the catalog and of every
+  text the check read. An unchanged file gets one line in the log with its counts and its findings are not
+  listed again; delete the file to have them listed. A test run always lists them, unless `[IniCheck]
+  KeepInTests=yes` is set.
+- The menu battle picks its map by trying maps in a shuffled order and reading each as it is tried, where it
+  used to read the start positions of every listed map first; the count of each map is kept for the session.
+- The loading notice names the part of the start-up in progress and shows a bar.
+
+What remains is reading the rules for the menu battle (about 1.6 s) and its tile sets (0.7 s).
+
 ## Voxel images
 
 A voxel image is rendered once, kept run-length encoded in `VoxelStaticBuffer` (8,000,000 bytes) and

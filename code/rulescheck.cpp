@@ -11,7 +11,10 @@
 
 #include "rulescheck.h"
 
+#include "_rules.h"
+#include "autotest.h"
 #include "ccfile.h"
+#include "ccini.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
@@ -23,6 +26,8 @@
 #include <windows.h>
 
 #include <fstream>
+#include <iterator>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -105,6 +110,125 @@ static void Log_Report(char const * filename, IniCheck::Report const & report)
 }
 
 
+// The outcome of each check is kept in a file in the player's folder, with a signature of everything the check
+// read: the catalog and the texts. A file whose signature has not changed is not checked again, since the check
+// of a large mod's rules takes a second or more at every start; its line in the log then gives the counts alone.
+// Delete the file, or change the checked file, to have the findings listed again.
+static char const * const KEPT_CHECKS_FILE = "inicheck.cache";
+
+struct KeptCheck {
+	unsigned long long Signature = 0;
+	int Findings = 0;
+	int Unchecked = 0;
+};
+
+static std::map<std::string, KeptCheck> KeptChecks;
+static bool KeptChecksRead = false;
+
+
+static unsigned long long Signature_Of(std::string_view text, unsigned long long signature = 14695981039346656037ull)
+{
+	for (unsigned char byte : text) {
+		signature = (signature ^ byte) * 1099511628211ull;
+	}
+	return(signature);
+}
+
+
+static std::string Kept_Checks_Path(void)
+{
+	char const * const user = CDFileClass::User_Path();
+	return(user != NULL ? std::string(user) + KEPT_CHECKS_FILE : std::string());
+}
+
+
+static void Read_Kept_Checks(void)
+{
+	if (KeptChecksRead) {
+		return;
+	}
+	KeptChecksRead = true;
+	std::ifstream in(Kept_Checks_Path());
+	std::string name;
+	KeptCheck kept;
+	while (std::getline(in, name, '\t') && (in >> kept.Signature >> kept.Findings >> kept.Unchecked)) {
+		KeptChecks[name] = kept;
+		in.ignore(1, '\n');
+	}
+}
+
+
+static void Write_Kept_Checks(void)
+{
+	std::string const path = Kept_Checks_Path();
+	if (path.empty()) {
+		return;
+	}
+	std::ofstream out(path, std::ios::trunc);
+	for (auto const & entry : KeptChecks) {
+		out << entry.first << '\t' << entry.second.Signature << ' ' << entry.second.Findings << ' ' << entry.second.Unchecked << '\n';
+	}
+}
+
+
+// The signature of the catalog file's bytes, read once.
+static unsigned long long Catalog_Signature(void)
+{
+	static unsigned long long _signature = 0;
+	static bool _read = false;
+	if (!_read) {
+		_read = true;
+		std::ifstream catalog_stream(Catalog_Path(), std::ios::binary);
+		std::string const bytes((std::istreambuf_iterator<char>(catalog_stream)), std::istreambuf_iterator<char>());
+		_signature = Signature_Of(bytes);
+	}
+	return(_signature);
+}
+
+
+// Logs the report check makes for filename, or, when the kept outcome for filename has this signature of the
+// texts the check reads, the kept counts alone without running the check.
+template<class Check>
+static void Log_Report_Or_Kept(char const * filename, unsigned long long signature, Check check)
+{
+	// A test run lists its findings every time, since tests read them; [IniCheck] KeepInTests=yes lifts that.
+	if (AutoTest_Active() && !ConfigINI.Get_Bool("IniCheck", "KeepInTests", false)) {
+		Log_Report(filename, check());
+		return;
+	}
+	signature = Signature_Of(std::to_string(Catalog_Signature()), signature);
+	Read_Kept_Checks();
+	auto const kept = KeptChecks.find(filename);
+	if (kept != KeptChecks.end() && kept->second.Signature == signature) {
+		DebugString("INI check: %s: %d findings, %d sections not checked; unchanged since its last check, so not listed again.\n", filename, kept->second.Findings, kept->second.Unchecked);
+		return;
+	}
+	IniCheck::Report const report = check();
+	Log_Report(filename, report);
+	if (std::string_view(filename).find('\t') == std::string_view::npos) {
+		KeptChecks[filename] = KeptCheck{ signature, (int)report.Findings.size(), (int)report.UncheckedSections.size() };
+		Write_Kept_Checks();
+	}
+}
+
+
+// The catalog, read when the first check that has to run asks for it.
+struct LazyCatalog {
+	IniCheck::Catalog Catalog;
+	bool Tried = false;
+	bool Loaded = false;
+
+	IniCheck::Catalog const * Get(char const * filename)
+	{
+		if (!Tried) {
+			Tried = true;
+			Loaded = Load_Catalog(Catalog, filename);
+		}
+		return(Loaded ? &Catalog : NULL);
+	}
+};
+
+
 /// <summary>
 /// Checks the rules file and the art file, and each active mod's rules and art overlays,
 /// against the engine's key catalog and logs what the engine will not read. Each overlay's
@@ -115,19 +239,25 @@ static void Log_Report(char const * filename, IniCheck::Report const & report)
 /// mods' rules overlays.</param>
 void Check_Rules_File(char const * rulesname, char const * artname)
 {
-	IniCheck::Catalog catalog;
+	LazyCatalog catalog;
 	std::string rules;
-	if (!Load_Catalog(catalog, rulesname) || !Read_Game_File(rulesname, rules)) {
+	if (!Read_Game_File(rulesname, rules)) {
 		return;
 	}
-	Log_Report(rulesname, IniCheck::Check_Rules(catalog, rules, "rules.ini"));
+	Log_Report_Or_Kept(rulesname, Signature_Of(rules), [&]() {
+		IniCheck::Catalog const * const loaded = catalog.Get(rulesname);
+		return(loaded != NULL ? IniCheck::Check_Rules(*loaded, rules, "rules.ini") : IniCheck::Report());
+	});
 
 	// Each overlay's type sections are placed through the lists of everything read before it.
 	std::string combined = rules;
 	for (ModClass const & mod : Active_Mods()) {
 		std::string overlay;
 		if (!mod.RulesFile.empty() && Read_Overlay_File(mod.RulesFile, overlay)) {
-			Log_Report(mod.RulesFile.c_str(), IniCheck::Check_Rules_Overlay(catalog, overlay, combined));
+			Log_Report_Or_Kept(mod.RulesFile.c_str(), Signature_Of(overlay, Signature_Of(combined)), [&]() {
+				IniCheck::Catalog const * const loaded = catalog.Get(mod.RulesFile.c_str());
+				return(loaded != NULL ? IniCheck::Check_Rules_Overlay(*loaded, overlay, combined) : IniCheck::Report());
+			});
 			combined += '\n';
 			combined += overlay;
 		}
@@ -139,13 +269,19 @@ void Check_Rules_File(char const * rulesname, char const * artname)
 
 	std::string art;
 	if (Read_Game_File(artname, art)) {
-		Log_Report(artname, IniCheck::Check_Art(catalog, art, combined));
+		Log_Report_Or_Kept(artname, Signature_Of(art, Signature_Of(combined)), [&]() {
+			IniCheck::Catalog const * const loaded = catalog.Get(artname);
+			return(loaded != NULL ? IniCheck::Check_Art(*loaded, art, combined) : IniCheck::Report());
+		});
 	}
 
 	for (ModClass const & mod : Active_Mods()) {
 		std::string overlay;
 		if (!mod.ArtFile.empty() && Read_Overlay_File(mod.ArtFile, overlay)) {
-			Log_Report(mod.ArtFile.c_str(), IniCheck::Check_Art(catalog, overlay, combined));
+			Log_Report_Or_Kept(mod.ArtFile.c_str(), Signature_Of(overlay, Signature_Of(combined)), [&]() {
+				IniCheck::Catalog const * const loaded = catalog.Get(mod.ArtFile.c_str());
+				return(loaded != NULL ? IniCheck::Check_Art(*loaded, overlay, combined) : IniCheck::Report());
+			});
 		}
 	}
 }
@@ -158,10 +294,10 @@ void Check_Rules_File(char const * rulesname, char const * artname)
 /// </summary>
 void Check_Map_Rules(char const * mapname, std::string_view maptext, char const * rulesname)
 {
-	IniCheck::Catalog catalog;
+	LazyCatalog catalog;
 	std::string rules;
 	std::string mapfile;
-	if (!Load_Catalog(catalog, mapname) || !Read_Game_File(rulesname, rules)) {
+	if (!Read_Game_File(rulesname, rules)) {
 		return;
 	}
 	if (maptext.empty()) {
@@ -170,5 +306,8 @@ void Check_Map_Rules(char const * mapname, std::string_view maptext, char const 
 		}
 		maptext = mapfile;
 	}
-	Log_Report(mapname, IniCheck::Check_Map(catalog, maptext, rules));
+	Log_Report_Or_Kept(mapname, Signature_Of(maptext, Signature_Of(rules)), [&]() {
+		IniCheck::Catalog const * const loaded = catalog.Get(mapname);
+		return(loaded != NULL ? IniCheck::Check_Map(*loaded, maptext, rules) : IniCheck::Report());
+	});
 }
