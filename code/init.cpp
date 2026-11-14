@@ -8027,8 +8027,11 @@ void Delete_All_Objects(void)
 	LineTrailClass::All_Clear();
 	RadBeamClass::All_Clear();
 
-	while (AbstractTypes.Count()) {
-		delete AbstractTypes[0];
+	{
+		TypeTeardown const teardown;
+		while (AbstractTypes.Count()) {
+			delete AbstractTypes[0];
+		}
 	}
 	Process_Deferred_Deletion();
 

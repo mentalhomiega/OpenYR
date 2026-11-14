@@ -109,7 +109,7 @@ TriggerTypeClass::TriggerTypeClass(char const * name) :
 	FirstAction(NULL)
 {
 	EventActionPtrTracker.Add(this);
-	AbstractTypePtrTracker.Add(this);
+	TriggerTypePtrTracker.Add(this);
 	HousePtrTracker.Add(this);
 
 	HeapID = TriggerTypes.Count();
@@ -137,21 +137,25 @@ TriggerTypeClass::~TriggerTypeClass(void)
 	Detach_This_From_All(this, true);
 	TriggerTypes.Delete(this);
 
-	TActionClass * action = FirstAction;
-	while (action != NULL) {
-		TActionClass * next = action->Next;
-		delete action;
-		action = next;
+	{
+		TriggerListTeardown const teardown(this);
+
+		TActionClass * action = FirstAction;
+		while (action != NULL) {
+			TActionClass * next = action->Next;
+			delete action;
+			action = next;
+		}
+
+		TEventClass * event = FirstEvent;
+		while (event != NULL) {
+			TEventClass * next = event->Next;
+			delete event;
+			event = next;
+		}
 	}
 
-	TEventClass * event = FirstEvent;
-	while (event != NULL) {
-		TEventClass * next = event->Next;
-		delete event;
-		event = next;
-	}
-
-	AbstractTypePtrTracker.Delete(this);
+	TriggerTypePtrTracker.Delete(this);
 	EventActionPtrTracker.Delete(this);
 	HousePtrTracker.Delete(this);
 }
@@ -336,20 +340,11 @@ void TriggerTypeClass::Detach(AbstractClass const * target, bool all)
 		LinkedTo = LinkedTo->LinkedTo;
 	}
 
-	TActionClass * taction = FirstAction;
-	while (taction != NULL) {
-		taction->Detach(target);
-		taction = taction->Next;
-	}
+	// The events and actions in the lists are visited by Detach_This_From_All themselves.
 	if (FirstAction == target) {
 		FirstAction = FirstAction->Next;
 	}
 
-	TEventClass * tevent = FirstEvent;
-	while (tevent != NULL) {
-		tevent->Detach(target);
-		tevent = tevent->Next;
-	}
 	if (FirstEvent == target) {
 		FirstEvent = FirstEvent->Next;
 	}

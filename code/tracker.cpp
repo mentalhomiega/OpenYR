@@ -49,9 +49,11 @@
 #include "super.h"
 #include "bullet.h"
 #include "anim.h"
+#include "animtype.h"
 #include "aircraft.h"
 #include "building.h"
 #include "infantry.h"
+#include "isotype.h"
 #include "lstorm.h"
 #include "object.h"
 #include "parasite.h"
@@ -60,6 +62,10 @@
 #include "radsite.h"
 #include "rules.h"
 #include "tactical.h"
+#include "tagtype.h"
+#include "taction.h"
+#include "tevent.h"
+#include "trigtype.h"
 #include "unit.h"
 #include "vector.h"
 
@@ -72,6 +78,10 @@
 
 DynamicVectorClass<AbstractClass *> ObjectPtrTracker;
 DynamicVectorClass<AbstractClass *> AbstractTypePtrTracker;
+DynamicVectorClass<AbstractClass *> TagTypePtrTracker;
+DynamicVectorClass<AbstractClass *> TriggerTypePtrTracker;
+DynamicVectorClass<AbstractClass *> AnimTypePtrTracker;
+DynamicVectorClass<AbstractClass *> TileSetPtrTracker;
 DynamicVectorClass<AbstractClass *> TagPtrTracker;
 DynamicVectorClass<AbstractClass *> TriggerPtrTracker;
 DynamicVectorClass<AbstractClass *> AnimPtrTracker;
@@ -251,12 +261,95 @@ static size_t Skipped_Holder_Size(AbstractClass const * holder)
 		case RTTI_PARTICLE: return(sizeof(ParticleClass));
 		case RTTI_BULLET: return(sizeof(BulletClass));
 		case RTTI_ANIM: return(sizeof(AnimClass));
+		case RTTI_EVENT: return(sizeof(TEventClass));
+		case RTTI_ACTION: return(sizeof(TActionClass));
+		case RTTI_TRIGGERTYPE: return(sizeof(TriggerTypeClass));
+		case RTTI_TAGTYPE: return(sizeof(TagTypeClass));
+		case RTTI_ANIMTYPE: return(sizeof(AnimTypeClass));
+		case RTTI_ISOTILETYPE: return(sizeof(IsometricTileTypeClass));
 		default: return(0);
 	}
 }
 
 
-// The check for a holder Holder_Cannot_Name skipped: visits it after all and logs it if the visit changed its bytes.
+// The types kept out of AbstractTypePtrTracker, each list with the kinds of removed type for which its members'
+// Detach can change anything. They are the most numerous types on a large mission.
+struct NarrowTypeList
+{
+	DynamicVectorClass<AbstractClass *> * Holders;
+	RTTIType Names[2];
+};
+
+static NarrowTypeList const NarrowTypeLists[] = {
+	{&TagTypePtrTracker, {RTTI_TRIGGERTYPE, RTTI_TRIGGERTYPE}},
+	{&TriggerTypePtrTracker, {RTTI_TRIGGERTYPE, RTTI_TRIGGERTYPE}},
+	{&AnimTypePtrTracker, {RTTI_ANIMTYPE, RTTI_WEAPONTYPE}},
+	{&TileSetPtrTracker, {RTTI_ISOTILETYPE, RTTI_ANIMTYPE}},
+};
+
+
+// While a TypeTeardown exists: the team, trigger and tag types that some trigger event or action named when it began.
+static std::unordered_set<AbstractClass const *> const * TypesNamedByTriggerParts = NULL;
+
+// Each teardown owns its set: a function-local static set is already destroyed when Prog_End runs at exit.
+TypeTeardown::TypeTeardown(void)
+{
+	std::unordered_set<AbstractClass const *> * named = new std::unordered_set<AbstractClass const *>;
+	for (int index = 0; index < EventActionPtrTracker.Count(); index++) {
+		AbstractClass const * holder = EventActionPtrTracker[index];
+		if (holder->RTTI == RTTI_EVENT) {
+			named->insert(((TEventClass const *)holder)->Team);
+		} else if (holder->RTTI == RTTI_ACTION) {
+			TActionClass const * action = (TActionClass const *)holder;
+			named->insert(action->Team);
+			named->insert(action->Trigger);
+			named->insert(action->Tag);
+		}
+	}
+	TypesNamedByTriggerParts = named;
+}
+
+
+TypeTeardown::~TypeTeardown(void)
+{
+	delete TypesNamedByTriggerParts;
+	TypesNamedByTriggerParts = NULL;
+}
+
+
+static bool Trigger_Parts_May_Name(AbstractClass const * target)
+{
+	return(TypesNamedByTriggerParts == NULL || TypesNamedByTriggerParts->count(target) != 0);
+}
+
+
+// True for a trigger event or action that can point at a removed type of this kind: an event names a team type,
+// an action a team, trigger or tag type.
+static bool Trigger_Part_Can_Name(AbstractClass const * holder, RTTIType removed)
+{
+	if (removed == RTTI_TEAMTYPE) {
+		return(true);
+	}
+	return(holder->RTTI == RTTI_ACTION && (removed == RTTI_TRIGGERTYPE || removed == RTTI_TAGTYPE));
+}
+
+
+static AbstractClass const * TriggerListOwner = NULL;
+
+TriggerListTeardown::TriggerListTeardown(AbstractClass const * owner) :
+	Previous(TriggerListOwner)
+{
+	TriggerListOwner = owner;
+}
+
+
+TriggerListTeardown::~TriggerListTeardown(void)
+{
+	TriggerListOwner = Previous;
+}
+
+
+// The check for a holder a removal skipped: visits it after all and logs it if the visit changed its bytes.
 static void Check_Skipped_Holder(AbstractClass * holder, AbstractClass const * target, bool all)
 {
 	static long long checks = 0;
@@ -273,6 +366,18 @@ static void Check_Skipped_Holder(AbstractClass * holder, AbstractClass const * t
 	}
 	if (checks % 5000000 == 0) {
 		DebugString("DETACH CHECK objects %lld visits, %lld differences\n", checks, differences);
+	}
+}
+
+
+// The check for an event or action that a trigger type deletes with its lists: visits every other holder.
+static void Check_Trigger_List_Teardown(AbstractClass const * target, bool all)
+{
+	for (int index = 0; index < EventActionPtrTracker.Count(); index++) {
+		AbstractClass * holder = EventActionPtrTracker[index];
+		if (holder != TriggerListOwner) {
+			Check_Skipped_Holder(holder, target, all);
+		}
 	}
 }
 
@@ -367,8 +472,38 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	}
 
 	if (target->As_AbstractTypeClass() != NULL) {
+		RTTIType const removed = (RTTIType)target->RTTI;
+		bool const checked = Detach_Is_Checked();
 		for (index = 0; index < AbstractTypePtrTracker.Count(); index++) {
 			AbstractTypePtrTracker[index]->Detach(target, all);
+		}
+		for (NarrowTypeList const & list : NarrowTypeLists) {
+			bool const names = removed == list.Names[0] || removed == list.Names[1];
+			if (!names && !checked) {
+				continue;
+			}
+			for (index = 0; index < list.Holders->Count(); index++) {
+				AbstractClass * holder = (*list.Holders)[index];
+				if (names) {
+					holder->Detach(target, all);
+				} else {
+					Check_Skipped_Holder(holder, target, all);
+				}
+			}
+		}
+		bool const parts_name = (removed == RTTI_TEAMTYPE || removed == RTTI_TRIGGERTYPE || removed == RTTI_TAGTYPE) && Trigger_Parts_May_Name(target);
+		if (parts_name || checked) {
+			for (index = 0; index < EventActionPtrTracker.Count(); index++) {
+				AbstractClass * holder = EventActionPtrTracker[index];
+				if (holder->RTTI == RTTI_TRIGGERTYPE) {
+					continue;
+				}
+				if (parts_name && Trigger_Part_Can_Name(holder, removed)) {
+					holder->Detach(target, all);
+				} else if (checked) {
+					Check_Skipped_Holder(holder, target, all);
+				}
+			}
 		}
 		Rule->Detach(target, all);
 		/*
@@ -402,6 +537,12 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 
 		case RTTI_EVENT:
 		case RTTI_ACTION:
+			if (TriggerListOwner != NULL) {
+				if (Detach_Is_Checked()) {
+					Check_Trigger_List_Teardown(target, all);
+				}
+				break;
+			}
 			for (index = 0; index < EventActionPtrTracker.Count(); index++) {
 				EventActionPtrTracker[index]->Detach(target, all);
 			}
