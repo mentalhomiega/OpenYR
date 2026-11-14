@@ -102,6 +102,7 @@ class INIClass {
 		**	Fetch the number of entries in a section or get a particular entry in a section.
 		*/
 		int Entry_Count(char const * section) const;
+		std::vector<std::string_view> Entry_Names_With_Prefix(char const * section, std::string_view prefix) const;
 		char const * Get_Entry(char const * section, int index) const;
 
 		/*

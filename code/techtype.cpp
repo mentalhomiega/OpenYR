@@ -146,6 +146,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	TurretROT(-1),
 	Points(0),
 	CollateralDamageCoefficient(.33f),
+	Unused1(0.0f),
 	WalkRate(1),
 	IdleRate(0),
 	AirRate(0),

@@ -444,6 +444,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsBarrelAnimAVoxel(false),
 	BarrelAnimZAdjust(-21),
 	IsTurretAnimExclusive(false),
+	UnusedBTypeBool1(false),
 	IsDamagedDoor(false),
 	IsInvisibleInGame(false),
 	IsTerrainPalette(false),

@@ -343,6 +343,36 @@ the head of every loose map from the disk; that reading is what the first item b
 
 What remains is reading the rules for the menu battle (about 1.6 s) and its tile sets (0.7 s).
 
+## Reading the rules
+
+The "Reading the rules..." step of a scenario load builds every type again from the rules, the art and the
+map. Measured on the step alone in test runs, while other test games ran on the same computer:
+
+| Load | Before | After |
+|---|---|---|
+| Mental Omega, FCAPSULE, first load of the run | 2.91 s | 1.42 s |
+| Mental Omega, FCAPSULE, restarted | 1.63 s | 0.99 s |
+| Stock campaign ALL01UMD, first load | 0.60 s | 0.26 s |
+| Stock campaign ALL01UMD, restarted | 0.27 s | 0.19 s |
+| Stock skirmish | 0.50 s | 0.22 s |
+
+- Most of the art names the types ask for (voxel turrets and barrels, cameos) are in no folder, and each probe
+  of a folder used to try to open the file. While the step runs, a probe for a name a folder does not hold is
+  answered from one listing of that folder (`FileProbeScope`). The saved-game load does the same in its rules
+  step. With Mental Omega this took the probes of a restarted mission (about 24,000) from 0.36 s to 0.08 s, and
+  those of a first load (about 70,000) from 1.17 s to 0.23 s.
+- A warhead used to look up four `Versus.` keys for every armor type, which with Mental Omega's armor types is
+  most of the time spent on warheads, and the warheads are read twice. A warhead now looks up only the armor
+  types its own `Versus.` keys name: 0.20 s and 0.19 s became 0.03 s each.
+
+Every type comes out the same. The `typesread` test command checksums the rules and every type list after the
+step, both as a save holds them and as the multiplayer checksum covers them. For each load above the multiplayer
+checksum was the same before and after, and the saved form of every type was the same byte for byte except for
+members no code sets: the wave colour of a weapon without one (now zero) and a few bytes of the projectile types
+and the rules, which also differ between two runs of one build. In the test runs the INI check of the map lists its findings on every load,
+about 0.2 s of the Mental Omega step that a normal game skips for a map it checked before. Building the voxel
+models of the vehicle types (0.2 s with Mental Omega) is now the largest part left.
+
 ## Voxel images
 
 A voxel image is rendered once, kept run-length encoded in `VoxelStaticBuffer` (8,000,000 bytes) and

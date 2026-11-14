@@ -71,6 +71,151 @@
 #include <windows.h>
 #endif
 
+#include <atomic>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
+
+
+namespace {
+
+// The listings a FileProbeScope keeps, keyed by the directory part of a name as it was asked for.
+struct ProbeListings
+{
+	// Read by every thread that probes a file; only the owner's probes use the listings.
+	std::atomic<int> Depth{0};
+	std::atomic<std::thread::id> Owner;
+	// A write on another thread drops the listings, so they are guarded.
+	std::mutex Guard;
+	// A directory that could not be listed maps to nothing, and its names are opened.
+	std::unordered_map<std::string, std::unordered_set<std::string>> Directories;
+	std::unordered_set<std::string> Unlisted;
+};
+
+ProbeListings Listings;
+
+
+std::string Upper_Ascii(std::string_view text)
+{
+	std::string upper(text);
+	for (char & c : upper) {
+		if (c >= 'a' && c <= 'z') {
+			c = (char)(c - 'a' + 'A');
+		}
+	}
+	return(upper);
+}
+
+
+// Names a directory listing cannot rule out: a name with a wildcard, a stream, a short-name tilde or a
+// byte outside ASCII, one Windows trims (a trailing dot or space), and the device names.
+bool Listing_Can_Answer(std::string_view name)
+{
+	if (name.empty() || name.back() == '.' || name.back() == ' ') {
+		return(false);
+	}
+	for (char c : name) {
+		if ((unsigned char)c >= 0x80 || c == '*' || c == '?' || c == ':' || c == '~') {
+			return(false);
+		}
+	}
+	std::string const stem = Upper_Ascii(name.substr(0, name.find('.')));
+	static char const * const DEVICES[] = {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"};
+	for (char const * device : DEVICES) {
+		if (stem == device) {
+			return(false);
+		}
+	}
+	if (stem.size() == 4 && (stem.starts_with("COM") || stem.starts_with("LPT"))) {
+		return(false);
+	}
+	return(true);
+}
+
+
+#ifdef _WIN32
+// The names in the directory, upper cased, or false when it could not be listed. A directory that does not
+// exist lists as empty.
+bool List_Directory(std::string const & directory, std::unordered_set<std::string> & names)
+{
+	std::string const pattern = directory + "*";
+	WIN32_FIND_DATAA found;
+	HANDLE const handle = FindFirstFileExA(pattern.c_str(), FindExInfoBasic, &found, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
+	if (handle == INVALID_HANDLE_VALUE) {
+		DWORD const error = GetLastError();
+		return(error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND);
+	}
+	do {
+		names.insert(Upper_Ascii(found.cFileName));
+	} while (FindNextFileA(handle, &found));
+	bool const complete = GetLastError() == ERROR_NO_MORE_FILES;
+	FindClose(handle);
+	return(complete);
+}
+#endif
+
+
+// True when the active scope's listing shows that nothing by this name can be opened.
+bool Listed_As_Missing(char const * filename)
+{
+#ifdef _WIN32
+	if (Listings.Depth == 0 || std::this_thread::get_id() != Listings.Owner) {
+		return(false);
+	}
+	std::string_view const path(filename);
+	std::size_t const slash = path.find_last_of("\\/");
+	std::string_view const name = slash == std::string_view::npos ? path : path.substr(slash + 1);
+	std::string const directory(slash == std::string_view::npos ? std::string_view() : path.substr(0, slash + 1));
+	std::lock_guard<std::mutex> const lock(Listings.Guard);
+	if (!Listing_Can_Answer(name) || Listings.Unlisted.contains(directory)) {
+		return(false);
+	}
+	auto listed = Listings.Directories.find(directory);
+	if (listed == Listings.Directories.end()) {
+		std::unordered_set<std::string> names;
+		if (!List_Directory(directory, names)) {
+			Listings.Unlisted.insert(directory);
+			return(false);
+		}
+		listed = Listings.Directories.emplace(directory, std::move(names)).first;
+	}
+	return(!listed->second.contains(Upper_Ascii(name)));
+#else
+	(void)filename;
+	return(false);
+#endif
+}
+
+
+void Drop_Listings(void)
+{
+	std::lock_guard<std::mutex> const lock(Listings.Guard);
+	Listings.Directories.clear();
+	Listings.Unlisted.clear();
+}
+
+}
+
+
+FileProbeScope::FileProbeScope(void)
+{
+	if (Listings.Depth == 0) {
+		Listings.Owner = std::this_thread::get_id();
+	}
+	Listings.Depth++;
+}
+
+
+FileProbeScope::~FileProbeScope(void)
+{
+	if (--Listings.Depth == 0) {
+		Drop_Listings();
+	}
+}
+
 
 /***********************************************************************************************
  * RawFileClass::~RawFileClass -- Default deconstructor for a file object.                     *
@@ -277,6 +422,9 @@ int RawFileClass::Open(int rights)
 	**	file object is duplicated.
 	*/
 	Rights = rights;
+	if (rights & WRITE) {
+		Drop_Listings();
+	}
 
 	/*
 	**	Repetitively try to open the file. Abort if a fatal error condition occurs.
@@ -381,6 +529,9 @@ bool RawFileClass::Is_Available(int forced)
 	**	CD-ROM, this routine will return a failure condition. In all but the missing file
 	**	condition, go through the normal error recover channels.
 	*/
+	if (Listed_As_Missing(Filename)) {
+		return(false);
+	}
 	Handle = fopen(Filename, "r");
 	if (Handle == nullptr) {
 		return(false);
@@ -839,6 +990,7 @@ int RawFileClass::Delete(void)
 			return(false);
 		}
 
+		Drop_Listings();
 		if (_unlink(Filename) < 0) {
 			Error(errno, false, Filename);
 			return(false);

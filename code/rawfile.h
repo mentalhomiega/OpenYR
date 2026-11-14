@@ -218,3 +218,22 @@ inline bool RawFileClass::Is_Open(void) const
 {
 	return(Handle != nullptr);
 }
+
+
+/*
+ * While one of these lives, RawFileClass::Is_Available on the thread that made it answers a name its
+ * directory does not hold from one listing of that directory, read when the directory is first asked
+ * about, instead of trying to open the file. A name the listing holds is opened as before. Opening a
+ * file for writing or deleting one through RawFileClass drops every listing. Scopes nest, and the
+ * listings are dropped when the outermost one ends. Without a scope, and outside Windows, every
+ * probe opens the file.
+ */
+class FileProbeScope
+{
+	public:
+		FileProbeScope(void);
+		~FileProbeScope(void);
+
+		FileProbeScope(FileProbeScope const &) = delete;
+		FileProbeScope & operator = (FileProbeScope const &) = delete;
+};

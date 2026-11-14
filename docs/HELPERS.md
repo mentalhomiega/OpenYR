@@ -180,6 +180,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `SurfaceLock` | `surface.h` | Locks a surface until the end of scope. `As<T>()` is the pixel pointer, `Is_Valid()` is false when the lock failed, and a failed lock is not unlocked. |
 | `ScenarioInitScope` | `globals.h` | Raises `ScenarioInit` until the scope ends, on every path out. |
 | `PerfScope(phase)` | `perfstat.h` | Times a phase. Costs one flag test while recording is off (neither `PerfLog` nor the performance overlay is on), and a phase already running in an outer scope adds nothing. |
+| `FileProbeScope` | `rawfile.h` | While alive, `RawFileClass::Is_Available` on this thread answers a name its folder lacks from one listing of the folder instead of opening the file. A write or delete through `RawFileClass` drops the listings. For a step that probes thousands of art names. |
 | `HangWatchDialogScope`, `HangWatchLoadScope`, `HangWatchCounterScope<Counter>` | `hangwatch.h` | Hold the hang watchdog back during a native dialog or a scenario load. |
 | `EmissiveDrawScope(strength)` | `emissive.h` | Sets the emissive draw strength and restores the previous one. |
 | `PlanningRecordScope(recording)` | `planning.h` | While alive with `recording` true, the player's orders become planned orders. |
@@ -218,6 +219,7 @@ a default and returns it when the section or entry is missing.
 | `Read_Numbers` | Reads a fixed count of ints or floats and reports `Absent`, `Malformed` or `Parsed`. |
 | `Get_Lepton`, `Get_Angle`, `Get_Cell`, `Get_RGBClass`, `Get_IntList`, `Get_Vector`, `Get_Offset` | Typed reads. `Get_Lepton` converts cells to leptons and `Get_Angle` converts degrees to 0 to 255. |
 | `Is_Present(section, entry)`, `Section_Present` | Test for a key or section without reading it. |
+| `Entry_Names_With_Prefix(section, prefix)` | The names of the section's keys that start with the prefix, with the prefix taken off, in file order and matched with case as lookups are. Lets a reader of a family of keys, such as `Versus.<armor>`, ask only for the members a section names. |
 | `TGet_TypeList(ini, section, entry, default, size)` | `findmake.h`. Reads a list of type names into a `TypeList`. |
 | `LobbyIniClass` | `lobbymodes.h`. INI text in file order that keeps empty values, which `INIClass` drops; names match without regard to case. For files written for the CnCNet client. |
 

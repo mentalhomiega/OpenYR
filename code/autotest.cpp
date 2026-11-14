@@ -301,6 +301,8 @@ int LoadShotCount = 0;
 
 // Set by loadsteps: each step of the loading notice is logged, and saved as a picture under StepShotName unless it is empty.
 bool LogLoadSteps = false;
+// Set by typesread: log the type checksums after each scenario's rules are read.
+static bool LogTypesRead = false;
 std::string StepShotName;
 int StepShotCount = 0;
 
@@ -7241,6 +7243,43 @@ static void Statedump_Step(StepType const & step)
 }
 
 
+// Logs the checksums of the rules and of each type list under the label, and with a reference, the lists
+// whose checksum differs from it. Returns the checksums, or none when they could not be made.
+static std::vector<std::pair<char const *, unsigned>> Log_Type_Checksums(char const * label, std::vector<std::pair<char const *, unsigned>> const * reference)
+{
+	std::vector<std::pair<char const *, unsigned>> const sums = Type_State_Checksums();
+	if (sums.empty()) {
+		DebugString("AUTOTEST %s failed\n", label);
+		return(sums);
+	}
+	for (auto const & sum : sums) {
+		DebugString("AUTOTEST %s %s %08x\n", label, sum.first, sum.second);
+	}
+	if (reference != nullptr) {
+		std::string differ;
+		bool syncsame = false;
+		for (std::size_t index = 0; index < sums.size(); index++) {
+			bool const same = index < reference->size() && (*reference)[index].second == sums[index].second;
+			if (std::strcmp(sums[index].first, "Sync") == 0) {
+				syncsame = same;
+			} else if (!same) {
+				differ += std::string(" ") + sums[index].first;
+			}
+		}
+		DebugString("AUTOTEST %s sync %s\n", label, syncsame ? "same as the first" : "differs from the first");
+		DebugString("AUTOTEST %s image %s%s\n", label, differ.empty() ? "same as the first" : "differs:", differ.c_str());
+	}
+	return(sums);
+}
+
+
+// typecrc: the checksum of the rules and of each type list as a save would hold them.
+static void Typecrc_Step(StepType const &)
+{
+	Log_Type_Checksums("typecrc", nullptr);
+}
+
+
 // perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
 static void Perflog_Step(StepType const & step)
 {
@@ -7925,6 +7964,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"defencerange", Defencerange_Step},
 		{"scriptzoom", Scriptzoom_Step},
 		{"statedump", Statedump_Step},
+		{"typecrc", Typecrc_Step},
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
 		{"perfoverlay", Perfoverlay_Step},
@@ -7938,6 +7978,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"searchdir", No_Action_Step},
 		{"loadshot", No_Action_Step},
 		{"loadsteps", No_Action_Step},
+		{"typesread", No_Action_Step},
 		{"stall", Stall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
@@ -8057,6 +8098,26 @@ void AutoTest_Load_Progress_Shown(char const * text, double fraction)
 }
 
 
+/// <summary>
+/// Logs the checksums of the rules and of each type list once a scenario's rules are read, when the script
+/// asked for them with typesread, and compares each later scenario's with the first one's.
+/// </summary>
+void AutoTest_Rules_Read(void)
+{
+	static std::vector<std::pair<char const *, unsigned>> first;
+	static int loads = 0;
+	if (!Active || !LogTypesRead) {
+		return;
+	}
+	loads++;
+	std::string const label = "typesread " + std::to_string(loads);
+	std::vector<std::pair<char const *, unsigned>> sums = Log_Type_Checksums(label.c_str(), loads > 1 ? &first : nullptr);
+	if (loads == 1) {
+		first = std::move(sums);
+	}
+}
+
+
 // Adds a "ui " line, which has no frame, to the menu script.
 static void Add_UI_Script_Line(char const * line)
 {
@@ -8094,6 +8155,10 @@ static bool Apply_Load_Time_Command(char const * command, std::string const & te
 	if (std::strcmp(command, "loadsteps") == 0) {
 		LogLoadSteps = true;
 		StepShotName = text;
+	}
+	if (std::strcmp(command, "typesread") == 0) {
+		LogTypesRead = true;
+		return(true);
 	}
 	// recordreplay and playreplay take effect when the script is read, before the game starts.
 	if (std::strcmp(command, "recordreplay") == 0) {
