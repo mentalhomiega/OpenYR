@@ -236,7 +236,6 @@ TEventClass::TEventClass(void) :
 	HeapID = Events.ID(this);
 
 	EventActionPtrTracker.Add(this);
-	AbstractTypePtrTracker.Add(this);
 
 	Data.Value = 0;
 }
@@ -251,7 +250,6 @@ TEventClass::~TEventClass(void)
 {
 	Detach_This_From_All(this, true);
 	EventActionPtrTracker.Delete(this);
-	AbstractTypePtrTracker.Delete(this);
 	Events.Delete(this);
 }
 

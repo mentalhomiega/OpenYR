@@ -309,7 +309,7 @@ IsometricTileTypeClass::IsometricTileTypeClass(IsometricTileType type, int unkno
 	IsAllowTiberium(false),
 	UseCount(0)
 {
-	AbstractTypePtrTracker.Add(this);
+	TileSetPtrTracker.Add(this);
 	if (!skip_registration) {
 		IsometricTileTypes.Add(this);
 	}
@@ -349,7 +349,7 @@ IsometricTileTypeClass::~IsometricTileTypeClass(void)
 	ImageData = NULL;
 
 	IsometricTileTypes.Delete(this);
-	AbstractTypePtrTracker.Delete(this);
+	TileSetPtrTracker.Delete(this);
 
 	for (int i = PreviewTiles.Count() - 1; i >= 0; i--) {
 		if (PreviewTiles[i] != NULL) {

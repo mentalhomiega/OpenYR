@@ -1,0 +1,8 @@
+; Needs the Mental Omega files in game\Mods\MentalOmega. The Epsilon mission EMIGDAL has about 3,000 triggers with about 5,000
+; events and 15,000 actions. Expected: both trackers lines read exact with the same counts, before and after a mission restart,
+; and the game quits without an exception.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/mo-emigdal-restart-trackers.txt -Mods MentalOmega -Map EMIGDAL.MAP -Campaign -Width 1920 -Height 1080 -Seconds 300 -Uncapped -Filter "AUTOTEST   trackers|AUTOTEST quit|Exception"
+100 trackers
+101 restart
+300 trackers
+301 quit

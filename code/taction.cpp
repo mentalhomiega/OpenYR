@@ -337,7 +337,6 @@ TActionClass::TActionClass(void) :
 	Actions.Add(this);
 	HeapID = Actions.ID(this);
 
-	AbstractTypePtrTracker.Add(this);
 	EventActionPtrTracker.Add(this);
 	Data.Value = 0;
 }
@@ -352,7 +351,6 @@ TActionClass::~TActionClass(void)
 {
 	Detach_This_From_All(this, true);
 
-	AbstractTypePtrTracker.Delete(this);
 	EventActionPtrTracker.Delete(this);
 	Actions.Delete(this);
 }

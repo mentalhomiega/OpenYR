@@ -229,7 +229,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsFootprint = false;
 
 	AnimTypes.Add(this);
-	AbstractTypePtrTracker.Add(this);
+	AnimTypePtrTracker.Add(this);
 
 	if (ininame != NULL) {
 		Load_Image(THEATER_NONE);
@@ -250,7 +250,7 @@ AnimTypeClass::~AnimTypeClass(void)
 		Free_Demand_Loaded_Shape(ImageData);
 	}
 
-	AbstractTypePtrTracker.Delete(this);
+	AnimTypePtrTracker.Delete(this);
 	AnimTypes.Delete(this);
 }
 

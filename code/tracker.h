@@ -38,7 +38,43 @@ extern DynamicVectorClass<AbstractClass *> AnimPtrTracker;
 void Track_Anim_Holder(AbstractClass * holder);
 void Untrack_Anim_Holder(AbstractClass * holder);
 extern DynamicVectorClass<AbstractClass *> FactoryPtrTracker;
+
+// Trigger types, events and actions. Events and actions are not in AbstractTypePtrTracker: the removal of a type
+// visits them only for the kinds of type they can name.
 extern DynamicVectorClass<AbstractClass *> EventActionPtrTracker;
+
+// Tag types, trigger types, animation types and tile sets. They are not in AbstractTypePtrTracker: the removal of a
+// type visits each list only for the kinds of type its members can name.
+extern DynamicVectorClass<AbstractClass *> TagTypePtrTracker;
+extern DynamicVectorClass<AbstractClass *> TriggerTypePtrTracker;
+extern DynamicVectorClass<AbstractClass *> AnimTypePtrTracker;
+extern DynamicVectorClass<AbstractClass *> TileSetPtrTracker;
+
+// While one exists, the removal of a team, trigger or tag type visits trigger events and actions only when one of
+// them named that type when it was made. Make one only where no event or action can come to name another type
+// meanwhile, as Delete_All_Objects does around deleting every type.
+class TypeTeardown
+{
+	public:
+		TypeTeardown(void);
+		~TypeTeardown(void);
+		TypeTeardown(TypeTeardown const &) = delete;
+		TypeTeardown & operator=(TypeTeardown const &) = delete;
+};
+
+// While one exists, removing a trigger event or action visits no holder, because the trigger type deleting its own
+// lists is the only object that still names them. Only that trigger type's destructor makes one.
+class TriggerListTeardown
+{
+	public:
+		explicit TriggerListTeardown(AbstractClass const * owner);
+		~TriggerListTeardown(void);
+		TriggerListTeardown(TriggerListTeardown const &) = delete;
+		TriggerListTeardown & operator=(TriggerListTeardown const &) = delete;
+
+	private:
+		AbstractClass const * Previous;
+};
 extern DynamicVectorClass<AbstractClass *> WaypointPathPtrTracker;
 extern DynamicVectorClass<AbstractClass *> TeamPtrTracker;
 extern DynamicVectorClass<AbstractClass *> HousePtrTracker;

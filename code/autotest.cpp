@@ -105,6 +105,7 @@
 #include "tag.h"
 #include "tagtype.h"
 #include "tevent.h"
+#include "tracker.h"
 #include "need.hh"
 #include "reinf.h"
 #include "team.h"
@@ -5410,6 +5411,25 @@ static void Restart_Step(StepType const &)
 }
 
 
+// trackers: the counts of trigger types, tag types, events and actions, and whether the removal trackers list exactly them.
+static void Trackers_Step(StepType const &)
+{
+	int listed = 0;
+	for (int index = 0; index < EventActionPtrTracker.Count(); index++) {
+		RTTIType const rtti = (RTTIType)EventActionPtrTracker[index]->RTTI;
+		listed += (rtti == RTTI_TRIGGERTYPE || rtti == RTTI_EVENT || rtti == RTTI_ACTION);
+	}
+	int in_types = 0;
+	for (int index = 0; index < AbstractTypePtrTracker.Count(); index++) {
+		RTTIType const rtti = (RTTIType)AbstractTypePtrTracker[index]->RTTI;
+		in_types += (rtti == RTTI_EVENT || rtti == RTTI_ACTION);
+	}
+	bool const exact = listed == EventActionPtrTracker.Count() && listed == TriggerTypes.Count() + Events.Count() + Actions.Count() && in_types == 0
+		&& TriggerTypePtrTracker.Count() == TriggerTypes.Count() && TagTypePtrTracker.Count() == TagTypes.Count();
+	DebugString("AUTOTEST   trackers trigger types %d tag types %d events %d actions %d, event and action tracker %d, events and actions in the type tracker %d: %s\n", TriggerTypes.Count(), TagTypes.Count(), Events.Count(), Actions.Count(), EventActionPtrTracker.Count(), in_types, exact ? "exact" : "WRONG");
+}
+
+
 // The name of the type at heap ID id, or none when the ID is outside the list.
 template<class T>
 static char const * Type_Name_At(DynamicVectorClass<T *> const & types, int id, char const * none)
@@ -7801,6 +7821,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"reinforce", Reinforce_Step},
 		{"runtrigger", Runtrigger_Step},
 		{"restart", Restart_Step},
+		{"trackers", Trackers_Step},
 		{"triggers", Triggers_Step},
 		{"planes", Planes_Step},
 		{"inrange", Inrange_Step},
