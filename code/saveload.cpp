@@ -151,10 +151,12 @@
 #include "objheaps.hh"
 #include "psydom.h"
 #include "radsite.h"
+#include "rawfile.h"
 
 #include <cstdio>
 #include <memory>
 #include <new>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -627,6 +629,8 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	Init_Theater(Scen->Theater);
 
 	Load_Progress_Step("Reading the rules...", SAVE_STEP_RULES);
+	// Reading the types probes for thousands of art files, most of which no folder holds.
+	std::optional<FileProbeScope> probes(std::in_place);
 
 	RulesClass::Load_Art_INI();
 
@@ -649,6 +653,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
+	probes.reset();
 	Load_Progress_Step("Reading the map...", SAVE_STEP_MAP);
 	if (!Map.Load(stream)) {
 		return(false);

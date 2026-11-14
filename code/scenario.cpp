@@ -199,6 +199,7 @@
 #include "bench.hh"
 #include "psydom.h"
 #include "radsite.h"
+#include "rawfile.h"
 #include "rulescheck.h"
 
 #include <algorithm>
@@ -2247,6 +2248,8 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	Session.Update_Progress(30);
 	Load_Progress_Step("Reading the rules...", LOAD_STEP_RULES);
+	// Reading the types probes for thousands of art files, most of which no folder holds.
+	std::optional<FileProbeScope> probes(std::in_place);
 
 	// Clearing the scenario emptied the countries, and the rules are read only after the
 	// side's archives are mounted, so the roster is rebuilt before the side is chosen.
@@ -2339,6 +2342,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	}
 #endif
 
+	probes.reset();
 	Load_Progress_Step("Reading the map...", LOAD_STEP_MAP);
 
 	/*
