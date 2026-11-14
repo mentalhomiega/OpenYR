@@ -84,6 +84,10 @@ class AircraftTypeClass : public TechnoTypeClass
 		int SmokeChanceRed;
 		int SmokeChanceDead;
 
+		// Minutes between the rounds a UnitReload pad gives an aircraft of this type, on the aircraft's own timer, or below 0 to
+		// share the pad's [General] ReloadRate passes (Ares ReloadRate).
+		double ReloadRate;
+
 		/*
 		 * Is this aircraft a fighter? A fighter that attacks with a guided weapon fires as it
 		 * passes the target and flies on, where other aircraft stop and hover to fire.

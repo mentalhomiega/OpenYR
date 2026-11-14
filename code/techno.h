@@ -926,7 +926,8 @@ class TechnoClass :	public RadioClass,
 		void Spring_Destroyed_By_House(TechnoClass * source, HouseClass const * house);
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
-		virtual void Reduce_Ammunition(void);
+		virtual void Reduce_Ammunition(int rounds);
+		int Rounds_Per_Shot(WeaponTypeClass const * weapon) const;
 		void Reload_Ammunition(void);
 		void Start_Reloading(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL, bool estimate=false);

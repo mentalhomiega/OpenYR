@@ -211,6 +211,7 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	BASECLASS(house),
 	IsToSpendAmmo(false),
 	Class((AircraftTypeClass *)type),
+	PadReloadFrame(-1),
 	Passenger(false),
 	IsKamikaze(false),
 	field_35B(false),
@@ -4070,6 +4071,7 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DockNowHeadingTo);
 	stream.Serialize(AttacksRemaining);
 	stream.Serialize(IsReadyToCommence);
+	stream.Serialize(PadReloadFrame);
 }
 
 
@@ -4458,7 +4460,7 @@ bool AircraftClass::Should_Delete_Off_Map(void)
 /// Aircraft do not lose ammunition through the normal firing sequence -- their supply is
 /// accounted for by the mission code instead -- so this override does nothing at all.
 /// </summary>
-void AircraftClass::Reduce_Ammunition(void)
+void AircraftClass::Reduce_Ammunition(int)
 {
 	//nothing
 }

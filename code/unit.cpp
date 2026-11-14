@@ -5907,9 +5907,10 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 		if (bullet != NULL) {
 
 			/*
-			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340).
+			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340),
+			**	except a shot that used no rounds (Ares weapon Ammo=0).
 			*/
-			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload) {
+			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload && Rounds_Per_Shot(weap) != 0) {
 				Start_Reloading();
 			}
 
@@ -7958,40 +7959,14 @@ int UnitClass::Sort_Y(void) const
 
 
 /// <summary>
-/// Turns this vehicle into another vehicle type where it stands. It keeps its owner, rank and place, and the same
-/// share of its health. A type with another locomotor is refused, because the locomotor of a vehicle is built with it.
+/// Turns this vehicle into another vehicle type where it stands, as FootClass::Convert_Class describes.
 /// </summary>
 /// <returns>bool; Did the vehicle change type?</returns>
 bool UnitClass::Convert_To(UnitTypeClass const * type)
 {
-	if (type == NULL || type == Class) {
-		return(false);
-	}
-	if (std::memcmp(&type->Locomotor, &Class->Locomotor, sizeof(type->Locomotor)) != 0) {
-		DebugString("Convert: %s cannot become %s, which has another locomotor\n", Class->Name(), type->Name());
-		return(false);
-	}
-
-	DebugString("Convert: %s becomes %s\n", Class->Name(), type->Name());
-	int const old_maximum = Class->MaxStrength;
-	if (House != NULL) {
-		House->Tracking_Remove(this);
-	}
-	Class = const_cast<UnitTypeClass *>(type);
-	if (House != NULL) {
-		House->Tracking_Add(this);
-	}
-	Strength = ObjectKeyRules::Converted_Strength(Strength, old_maximum, Class->MaxStrength);
-	EstimatedHealth = Strength;
-	if (Class->MaxAmmo >= 0 && Ammo > Class->MaxAmmo) {
-		Ammo = Class->MaxAmmo;
-	}
-	IsCloakable = Class->IsCloakable || IsCloakable;
-	Mark(MARK_CHANGE);
-	if (IsSelected && House != NULL && House->Is_Player_Control()) {
-		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
-	}
-	return(true);
+	return(Convert_Class(type, [](FootClass & self, TechnoTypeClass const * to) {
+		static_cast<UnitClass &>(self).Class = const_cast<UnitTypeClass *>(static_cast<UnitTypeClass const *>(to));
+	}));
 }
 
 

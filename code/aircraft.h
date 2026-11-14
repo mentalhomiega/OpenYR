@@ -55,6 +55,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		*/
 		AircraftTypeClass * Class;
 
+		// The frame a rearming pad gives this aircraft its next round when its type sets its own ReloadRate, or -1 before it docks.
+		int PadReloadFrame;
+
 		//-----------------------------------------------------------------------------
 		AircraftClass(AircraftTypeClass const * type = NULL, HouseClass * house = NULL);
 		virtual ~AircraftClass(void) override;
@@ -163,7 +166,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		*/
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		virtual BulletClass * Fire_At(AbstractClass * target, int which) override;
-		virtual void Reduce_Ammunition(void) override;
+		virtual void Reduce_Ammunition(int rounds) override;
 		bool Crash(TechnoClass * source);
 
 		/*

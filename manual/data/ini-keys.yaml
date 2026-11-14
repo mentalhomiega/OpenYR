@@ -3577,7 +3577,7 @@ Ammo:
       kind: identifier
       source: object-type
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '-1'
       declared_in: TechnoTypeClass
@@ -3585,6 +3585,20 @@ Ammo:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '1'
+      declared_in: WeaponTypeClass
+      member: AmmoUse
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 AmmoCrateDamage:
   key: AmmoCrateDamage
   scopes:
@@ -10755,13 +10769,27 @@ Convert.Land:
 Convert.Script:
   key: Convert.Script
   scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: ConvertScript
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
   - applies_to: *id025
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: class
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: UnitTypeClass
@@ -38782,6 +38810,20 @@ ReloadIncrement:
 ReloadRate:
   key: ReloadRate
   scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: '-1.0'
+      declared_in: AircraftTypeClass
+      member: ReloadRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -38789,7 +38831,7 @@ ReloadRate:
       kind: literal
       name: General
     value_type: floating point
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '.05'
       declared_in: RulesClass

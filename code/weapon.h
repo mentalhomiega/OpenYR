@@ -104,6 +104,8 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Strafing.Shots (Phobos): shots an aircraft fires in one strafing run with this weapon, at least 1.
 		int StrafingShots;
+		// The rounds of its firer's ammunition one shot uses (Ares Ammo=). With 0 a shot uses none and does not restart the reload timer.
+		int AmmoUse;
 
 		/*
 		**	This is the unit class of the projectile fired. A subset of the unit types

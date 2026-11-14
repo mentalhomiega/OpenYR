@@ -1,0 +1,19 @@
+; Convert type (script line 68) also turns each soldier of the team into the infantry type its Convert.Script names (Ares type
+; conversion page). A GI (E1) with Convert.Script=GGI becomes a Guardian GI at frame 320 with the same share of its health
+; (strength 125 of 125 becomes 100 of 100 with the stock values).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/teams-convert-type-infantry.txt -AICountries 1 -Seconds 90 -Filter "AUTOTEST   where (E1|GGI)|Convert:|Exception"
+; Expected: "where E1" at 315, a "Convert: E1 becomes GGI" line after 320, then "where GGI" at 330 and 400 with strength 100, and no E1 left at 330.
+; Before the infantry case the engine read Convert.Script for vehicles only, so the GI stayed an E1 and "where GGI" printed nothing.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 teamtrace 1
+300 spawn E1 52 92
+305 rules teams-convert-type-infantry-rules.ini
+310 teamini teams-convert-type-infantry.ini
+315 where E1
+320 team TSTCVIT
+330 where GGI
+330 where E1
+400 where GGI
+450 quit

@@ -403,6 +403,9 @@ class BuildingClass : public TechnoClass
 
 		// The psychic warning this silo put on its target when the launch began. It is cleared when the missile bullet takes it over.
 		AnimClass * PsiWarnAnim;
+
+		// The frame of this rearming pad's next [General] ReloadRate pass while an aircraft with its own ReloadRate is docked.
+		int PadPassFrame;
 		bool IsRequiresDamageFires;
 		void Create_Damage_Fires(void);
 		void Remove_Damage_Fires(void);

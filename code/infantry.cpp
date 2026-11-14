@@ -3203,7 +3203,7 @@ BulletClass * InfantryClass::Fire_At(AbstractClass * target, int which)
 	IsFiring = false;
 
 	BulletClass * bullet = BASECLASS::Fire_At(target, which);
-	if (bullet != NULL && TClass->MaxAmmo > 0 && Ammo < TClass->MaxAmmo && !TClass->IsManualReload) {
+	if (bullet != NULL && TClass->MaxAmmo > 0 && Ammo < TClass->MaxAmmo && !TClass->IsManualReload && Rounds_Per_Shot(Get_Class_Weapon_Data(which)->Weapon) != 0) {
 		Start_Reloading();
 	}
 	if (bullet != NULL && !IsInLimbo) {
@@ -3954,6 +3954,18 @@ ActionType InfantryClass::What_Action(Cell const & cell, bool check_fog, bool di
 ObjectTypeClass const * InfantryClass::Class_Of(void) const
 {
 	return(Class);
+}
+
+
+/// <summary>
+/// Turns this soldier into another infantry type where it stands, as FootClass::Convert_Class describes.
+/// </summary>
+/// <returns>bool; Did the soldier change type?</returns>
+bool InfantryClass::Convert_To(InfantryTypeClass const * type)
+{
+	return(Convert_Class(type, [](FootClass & self, TechnoTypeClass const * to) {
+		static_cast<InfantryClass &>(self).Class = const_cast<InfantryTypeClass *>(static_cast<InfantryTypeClass const *>(to));
+	}));
 }
 
 

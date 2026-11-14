@@ -126,6 +126,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	DeadBodies(),
 	DeathAnims(),
 	IsWebImmune(false),
+	ConvertScript(NULL),
 	HeapID(INFANTRY_NONE),
 	Pip(PIP_GREEN),
 	DoControls(NULL),
@@ -482,6 +483,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		if (IsEngineer) IsCapture = true;
 		if (IsAgent) IsCapture = true;
 		IsWebImmune = ini.Get_Bool(Name(), "IsWebImmune", IsWebImmune);
+		ConvertScript = TGet_Class(ini, Name(), "Convert.Script", ConvertScript);
 		IsCrawling = ArtINI.Get_Bool(Graphic_Name(), "Crawls", IsCrawling);
 		FireLaunch = ArtINI.Get_Int(Graphic_Name(), "FireUp", FireLaunch);
 		ProneLaunch = ArtINI.Get_Int(Graphic_Name(), "FireProne", ProneLaunch);
@@ -579,6 +581,7 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsDeployedCrushable);
 	crc(IsJumpJetTurn);
 	crc(DeathAnims.Count());
+	crc(ConvertScript != NULL);
 }
 
 
@@ -656,6 +659,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DeadBodies);
 	stream.Serialize(DeathAnims);
 	stream.Serialize(IsWebImmune);
+	stream.Serialize(ConvertScript);
 	stream.Serialize_Bytes((void *)DoSounds, sizeof(DoSounds));
 }
 
