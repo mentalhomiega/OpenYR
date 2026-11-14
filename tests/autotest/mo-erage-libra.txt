@@ -1,0 +1,14 @@
+; Needs the Mental Omega files in game\Mods\MentalOmega. In the Epsilon mission ERAGE the hero Libra (LIBRA) stands at 97,144 under
+; fire from Chinese and Yunru tanks and Foxtrot jets. The jets' missiles split (Splits=yes, Ares) into bomblets whose weapon has
+; Damage=70. Expected (observed 2026-11-14): every "explode ... warhead FoxBurnAP" line says damage 70, and her strength in the where lines is
+; about 2600 at frame 300 and 1300 at frame 600. Before bomblets used the weapon's own Damage each carried 700, six of them took
+; 1,152 off her, and she had 217 left at frame 600 and died at frame 628 (mission lost at 779).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/mo-erage-libra.txt -Mods MentalOmega -Map ERAGE.MAP -Campaign -Width 1280 -Height 720 -Seconds 300 -Uncapped -Filter "AUTOTEST   where LIBRA|FoxBurnAP|Game end|Exception"
+100 where LIBRA
+200 where LIBRA
+300 where LIBRA
+400 where LIBRA
+500 where LIBRA
+600 where LIBRA
+700 where LIBRA
+710 quit

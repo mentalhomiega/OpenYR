@@ -1,0 +1,12 @@
+; A Splits=yes projectile (Ares) splits into Cluster bomblets of its AirburstWeapon. Ares gives each bomblet the weapon's own
+; Damage, where Tiberian Sun multiplied it by ten (Ares manual, Splits). The overlay ares-splits-damage.ini gives a Rhino tank a
+; shell that splits into two bomblets of SplitBomblet (Damage=70); the tank fires at a power plant.
+; Expected: "AUTOTEST split SplitShellP ..." and then two "explode ... Cannon warhead AP ... damage 70" lines. Before the fix
+; the bomblets carried damage 700, so a Mental Omega Foxtrot (FoxMissileSplit, Damage=70) took 384 off Libra per bomblet.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/ares-splits-damage.txt -Seconds 60 -Filter "AUTOTEST split|Cannon warhead|Exception"
+5 rules ares-splits-damage.ini
+30 command CenterBase
+100 own HTNK 60 36
+101 spawn GAPOWR 66 36
+200 strike HTNK 66 36
+400 quit
