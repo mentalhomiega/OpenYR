@@ -390,6 +390,30 @@ Type tests on the simulation's hot paths use `Fetch_RTTI()` or the exact locomot
 - **A bullet or a particle.** Units, infantry, aircraft, buildings, terrain objects, particles and bullets have no member that can point at one, so their `Detach` is not called for it; an animation is skipped for a particle only. Particle systems, waves, alpha shapes, houses, teams and factories are still visited.
 
 `OPENYR_DETACH_CHECK=1` visits every skipped holder as well, compares its bytes before and after, and logs `DETACH CHECK DIFFERENCE` for a holder the visit changed; `2` also stops the game there. With the check on, the late-game benchmark made 130 million skipped visits and the full regress ran, with no difference, and the benchmark's game-state hashes are the same as before the skips.
+
+## Leaving a large mission
+
+`Delete_All_Objects` deletes every object and type when the game exits, when a mission restarts, and before the next mission or a saved game loads. Each deletion goes through the [object removal broadcast](#object-removal-broadcast), so the cost grows with the square of the number of types. The Mental Omega Epsilon mission EMIGDAL has 2,966 triggers with 5,047 events and 14,792 actions, and 21,498 types in all. Of the 4.75 s from the quit line to the end of `Prog_End`, deleting the types took 4.46 s, most of it in visits to and from the trigger events and actions.
+
+Measured from the `AUTOTEST quit` line at frame 1500 (`-Uncapped`, 1920x1080) to the end of the process, two runs of each:
+
+| Map | Before | After |
+|---|---|---|
+| EMIGDAL (Mental Omega campaign) | 4.91 s, 4.90 s | 0.78 s, 0.79 s |
+| XMP29U2 (stock skirmish) | 0.11 s, 0.11 s | 0.12 s, 0.10 s |
+
+What the removal of a type or a trigger part visits now:
+
+- Trigger events and actions are not in `AbstractTypePtrTracker`. The removal of a team type visits events and actions, and that of a trigger or tag type visits actions; no other type can be named by them.
+- A trigger type no longer passes each removal on to its own events and actions, because they are visited from `EventActionPtrTracker` themselves.
+- A trigger type deletes its own events and actions without a broadcast: only it and its own lists name them.
+- Tag types, trigger types, animation types and tile sets have trackers of their own, visited only for the kinds of type their `Detach` can change anything for: a trigger type for the first two, an animation or weapon type for animation types, and a tile set or animation type for tile sets.
+- While `Delete_All_Objects` deletes the types, the removal of a team, trigger or tag type visits the events and actions only if one of them named that type when the deletion of the types began.
+
+What is deleted and the order of the deletions are the same as before. `OPENYR_DETACH_CHECK=2` visits every holder these rules skip and compares its bytes: on EMIGDAL, through a mission restart and the exit, it checked about 1.2 billion skipped visits and found no difference. The `trackers` autotest step checks that the trackers hold exactly the trigger types, tag types, events and actions, in `tests/campaign/restart-trackers.txt` and, with Mental Omega, `tests/autotest/mo-emigdal-restart-trackers.txt`, before and after a restart.
+
+Of the 0.78 s left on EMIGDAL, deleting the types takes about 0.47 s, most of it for the trigger types (0.25 s) and the 2,392 team types (0.15 s), and deleting the units, buildings and bullets about 0.1 s.
+
 ## GPU pass fallbacks
 
 A map pass that holds a draw the GPU record cannot replay is drawn in software, and the `GPU_RENDER` line counts it under `fallback`. `OPENYR_GPU_WHY=1` logs, for one such pass in 150, a `GPU_WHY frame` line with the counts and up to 12 `GPU_WHY kind` lines: the call stack of a surface lock no recorded blit accounts for (kind 0) or of a blit whose blitter has no `Describe` (kind 1), as addresses relative to the module base, to look up in `Game.map` at base 0x400000. `GPU_WHY blitter` names the blitter class. Two such draws were found this way on a large Mental Omega mission and now go to the GPU: the searchlight's depth glow lines, recorded as a light of the line's strength, and the rank insignia, drawn with `RLEBlitTransXlat`, which lacked `Describe`. A third was the flying text (the credits and damage numbers over objects), printed with `BitFontClass::Print` straight into the surface: on the Mental Omega mission STROPH three of four passes fell back for it. Each run of set glyph pixels is now recorded as a fill, and `GPU_RENDER` shows no fallback there.
