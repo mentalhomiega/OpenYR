@@ -471,6 +471,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		TypeList<TechnoTypeClass *> DeathWeaponSuppress;
 		bool IsDeathWeaponSuppressVehicles;
 		bool IsDeathWeaponSuppressInfantry;
+
+		// MindControl.Permanent (Ares): a MindControl=yes warhead takes its target for good, as the psychic dominator does.
+		bool IsMindControlPermanent;
 		bool Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const;
 
 		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration?

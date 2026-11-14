@@ -29963,6 +29963,23 @@ MindControl:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+MindControl.Permanent:
+  key: MindControl.Permanent
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsMindControlPermanent
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 MindControlAttackLineFrames:
   key: MindControlAttackLineFrames
   scopes:

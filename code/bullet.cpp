@@ -1674,7 +1674,8 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 	 */
 	if (warhead->IsMindControl) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (Payback != NULL && Payback->CaptureManager && target != NULL) {
+		bool const permanent = warhead->IsMindControlPermanent;
+		if (Payback != NULL && (permanent || Payback->CaptureManager) && target != NULL) {
 			// The hit offers the target's tag the attacked events before the capture is tried (BulletClass::Detonate, 0x469210).
 			if (target->IsActive && target->Tag != NULL) {
 				target->Tag->Spring(TEVENT_ATTACKED, target, CELL_NONE, false, Payback);
@@ -1683,7 +1684,8 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 				}
 			}
 			bool const players = Payback->House->Is_Player_Control() || target->House->Is_Player_Control();
-			if (target->IsActive && Payback->CaptureManager->Capture_Unit(target) && players) {
+			bool const taken = target->IsActive && (permanent ? Capture_Permanently(Payback, target) : Payback->CaptureManager->Capture_Unit(target));
+			if (taken && players) {
 				Sound_Effect(Rule->YuriMindControlSound, target->PositionCoord);
 			}
 		}

@@ -4669,8 +4669,11 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 	}
 
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
-	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
-		return(FIRE_ILLEGAL);
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl) {
+		bool const can = weapon->WarheadPtr->IsMindControlPermanent ? Can_Capture_Permanently(this, techno) : (CaptureManager && CaptureManager->Can_Capture(techno));
+		if (!can) {
+			return(FIRE_ILLEGAL);
+		}
 	}
 
 	// A parasite weapon fires only at a foot object its parasite can get into; a structure or a cell is never one (TechnoClass::GetFireError, 0x6FC0B0).

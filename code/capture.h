@@ -70,3 +70,5 @@ class CaptureManagerClass
 };
 
 void Attach_Control_Ring(TechnoClass * techno, AnimTypeClass const * type);
+bool Can_Capture_Permanently(TechnoClass const * firer, TechnoClass const * target);
+bool Capture_Permanently(TechnoClass * firer, TechnoClass * target);

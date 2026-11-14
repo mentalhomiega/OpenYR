@@ -189,6 +189,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsAffectsOwnerSet(false),
 	IsDeathWeaponSuppressVehicles(false),
 	IsDeathWeaponSuppressInfantry(false),
+	IsMindControlPermanent(false),
 	DamageAirThreshold(0),
 	SonarDuration(0),
 	IsPreventScatter(false),
@@ -273,6 +274,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsWallAbsoluteDestroyer = ini.Get_Bool(Name(), "WallAbsoluteDestroyer", IsWallAbsoluteDestroyer);
 		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		IsMindControl = ini.Get_Bool(Name(), "MindControl", IsMindControl);
+		IsMindControlPermanent = ini.Get_Bool(Name(), "MindControl.Permanent", IsMindControlPermanent);
 		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
 		TemporalHealthFactor = std::clamp(ini.Get_Float(Name(), "Temporal.HealthFactor", TemporalHealthFactor), 0.0, 1.0);
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
@@ -488,6 +490,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(DeathWeaponSuppress.Count());
 	crc(IsDeathWeaponSuppressVehicles);
 	crc(IsDeathWeaponSuppressInfantry);
+	crc(IsMindControlPermanent);
 	crc(InfDeathAnim != NULL);
 	crc(PreImpactAnim != NULL);
 	crc(MaxDebris);
@@ -700,6 +703,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DeathWeaponSuppress);
 	stream.Serialize(IsDeathWeaponSuppressVehicles);
 	stream.Serialize(IsDeathWeaponSuppressInfantry);
+	stream.Serialize(IsMindControlPermanent);
 }
 
 
