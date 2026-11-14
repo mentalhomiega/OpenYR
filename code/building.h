@@ -540,7 +540,8 @@ class BuildingClass : public TechnoClass
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
 		bool Is_Powered_On(void) const;
-		void Release_Vehicle_Clones(TechnoClass const * vehicle);
+		void Release_Clones(TechnoClass const * base);
+		void Release_Vehicle_Clones(TechnoClass const * product);
 		// Powered on and neither being built nor sold.
 		bool Is_Online(void) const {return(Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION);}
 		bool Is_Radar_Jammed(void) const;

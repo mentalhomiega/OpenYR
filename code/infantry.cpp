@@ -3456,7 +3456,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	}
 
 	// Force-move outranks a healer's offer over a transport, and is the only way to board one.
-	if (Combat_Damage() < 0 && House->Is_Player_Control()) {
+	if (Combat_Damage() < 0 && House->Is_Player_Control() && (object != this || !Class->IsNoSelfGuardArea)) {
 		if (House->Is_Ally(object)) {
 			if (object == this) {
 				return(ACTION_GUARD_AREA);

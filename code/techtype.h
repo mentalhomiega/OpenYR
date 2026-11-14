@@ -583,6 +583,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether a cloning vat copies this soldier (Ares Cloneable).
 		bool IsCloneable;
 
+		// The structures that each release a free copy of this object when a factory releases it; when set, cloning vats and
+		// CloningFacility structures do not copy it (Ares ClonedAt).
+		TypeList<BuildingTypeClass const *> ClonedAt;
+
 		// The countries whose factories may, and may not, build this type; empty for any (Ares FactoryOwners, FactoryOwners.Forbidden).
 		std::vector<std::string> FactoryOwners;
 		std::vector<std::string> FactoryOwnersForbidden;

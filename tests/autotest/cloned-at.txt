@@ -1,0 +1,17 @@
+; Ares ClonedAt. The overlay lists the Allied Power Plant (GAPOWR) and the War Factory (GAWEAP) in the GI's ClonedAt. The player owns
+; two power plants, a War Factory, a Battle Lab that the overlay makes a cloning vat (GATECH, Cloning=yes) and a barracks that produces one GI.
+; Expected: count E1 shows 3: the barracks' GI and one copy from each power plant. The War Factory has Factory set, so it
+; copies nothing, and the cloning vat does not copy a type with ClonedAt. Without the ClonedAt line the count is 2 (the vat's copy).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/cloned-at.txt -Seconds 120 -Filter "AUTOTEST   count|AUTOTEST   where E1|Exception"
+10 rules cloned-at.ini
+30 command CenterBase
+35 reveal
+40 own GAPOWR 60 20
+41 own GAPILE 64 20
+42 own GAPOWR 60 26
+43 own GAWEAP 66 28
+44 own GATECH 54 20
+60 produce E1
+400 count E1
+401 where E1
+500 quit

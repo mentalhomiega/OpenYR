@@ -3493,26 +3493,53 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 
 
 /// <summary>
-/// Has every CloningFacility=yes structure of the owner release a copy of a vehicle this factory has just produced and
-/// released (Ares). A copy that cannot get out is discarded, with no refund.
+/// Has each of the owner's structures that clones a vehicle or soldier this factory has just produced release a copy
+/// of it. A copy that cannot get out is discarded, with no refund. The structures are those in the type's ClonedAt list
+/// (Ares) when it has one, and otherwise the cloning vats for a soldier and the CloningFacility=yes structures (Ares)
+/// for a vehicle.
 /// </summary>
-void BuildingClass::Release_Vehicle_Clones(TechnoClass const * vehicle)
+void BuildingClass::Release_Clones(TechnoClass const * base)
 {
-	if (Class->ToBuild != RTTI_UNITTYPE || vehicle->RTTI != RTTI_UNIT) {
+	RTTIType const product = base->Fetch_RTTI();
+	bool const vehicle = Class->ToBuild == RTTI_UNITTYPE && product == RTTI_UNIT;
+	bool const soldier = Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && product == RTTI_INFANTRY;
+	TechnoTypeClass const * type = base->TClass;
+	if ((!vehicle && !soldier) || !type->IsCloneable) {
 		return;
 	}
+	bool const listed = type->ClonedAt.Count() > 0;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * vat = Buildings[index];
 		if (vat == this || vat->House != House || vat->IsInLimbo || vat->Strength <= 0) {
 			continue;
 		}
 		bool const ignored_factory = Rule->IsCloningFacilityIgnoresFactories && vat->Class->ToBuild != RTTI_NONE;
-		if (ObjectKeyRules::Cloning_Facility_Copies(vat->Class->IsCloningFacility, ignored_factory, vat->Class->IsNaval, vehicle->TClass->IsNaval, vehicle->TClass->IsCloneable)) {
-			TechnoClass * clone = static_cast<TechnoClass *>(vehicle->TClass->Create_One_Of(vat->House));
+		bool copies;
+		if (listed) {
+			copies = !ignored_factory && type->ClonedAt.Is_In_List(vat->Class);
+		} else if (soldier) {
+			copies = vat->Class->IsCloning;
+		} else {
+			copies = ObjectKeyRules::Cloning_Facility_Copies(vat->Class->IsCloningFacility, ignored_factory, vat->Class->IsNaval, type->IsNaval, true);
+		}
+		if (copies) {
+			TechnoClass * clone = static_cast<TechnoClass *>(type->Create_One_Of(vat->House));
 			if (clone != NULL && vat->Exit_Object(clone) != 2) {
 				delete clone;
 			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Releases the clones of a product this factory has just released, when it is a vehicle; a soldier's clones leave as
+/// the soldier exits the barracks.
+/// </summary>
+void BuildingClass::Release_Vehicle_Clones(TechnoClass const * product)
+{
+	if (product->Fetch_RTTI() == RTTI_UNIT) {
+		Release_Clones(product);
 	}
 }
 
@@ -3579,22 +3606,8 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 		return(0);
 	}
 
-	/*
-	 * Every cloning vat of the owner releases a copy of a soldier this barracks
-	 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
-	 * get out is discarded.
-	 */
-	if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY && base->TClass->IsCloneable) {
-		for (int index = 0; index < Buildings.Count(); index++) {
-			BuildingClass * vat = Buildings[index];
-			if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
-				TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
-				if (clone != NULL && vat->Exit_Object(clone) != 2) {
-					delete clone;
-				}
-			}
-		}
-	}
+	// Every cloning vat of the owner releases a copy of a soldier this barracks releases (BuildingClass::KickOutUnit, 0x443C60).
+	Release_Clones(base);
 
 	Coord exitcellcoord(exitcell);
 	Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();

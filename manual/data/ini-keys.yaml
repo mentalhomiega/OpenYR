@@ -10112,6 +10112,23 @@ Cloneable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ClonedAt:
+  key: ClonedAt
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: ClonedAt
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Cloning:
   key: Cloning
   scopes:
@@ -11050,6 +11067,23 @@ CowTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+CrashSpin:
+  key: CrashSpin
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: AircraftTypeClass
+      member: IsCrashSpin
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Crashable:
   key: Crashable
   scopes:
@@ -32279,6 +32313,23 @@ NoParachuteMaxFallRate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+NoSelfGuardArea:
+  key: NoSelfGuardArea
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsNoSelfGuardArea
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 NoShadow:
   key: NoShadow
   scopes:
@@ -41125,10 +41176,10 @@ SecondSpawnOffset:
   key: SecondSpawnOffset
   scopes:
   - applies_to: *id005
-    file: rules.ini
+    file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: point (x,y,z)
     status: generated
     _provenance:
