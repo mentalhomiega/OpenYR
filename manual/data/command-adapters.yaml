@@ -679,6 +679,17 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-MULTIINSTANCE' }
+  - id: launch:wait-for-process
+    title: Wait for a process
+    syntax: -WAITPID=<process id>
+    description: >-
+      Makes this copy wait, for up to 30 seconds, until the process with that id has gone before
+      it starts. The game passes it to the copy it starts when the player chooses Restart now
+      after changing the mod list, so the new copy does not meet the old one still running.
+    audience: developer
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-WAITPID=' }
   - id: launch:exception-test
     title: Exception reporting test
     syntax: -EXCEPTIONTEST=<fault>
