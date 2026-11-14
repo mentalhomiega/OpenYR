@@ -55,6 +55,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		*/
 		AircraftTypeClass * Class;
 
+		// The frame a rearming pad gives this aircraft its next round when its type sets its own ReloadRate, or -1 before it docks.
+		int PadReloadFrame;
+
 		//-----------------------------------------------------------------------------
 		AircraftClass(AircraftTypeClass const * type = NULL, HouseClass * house = NULL);
 		virtual ~AircraftClass(void) override;

@@ -96,6 +96,7 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	IsSmokeAnimSet(false),
 	SmokeChanceRed(10),
 	SmokeChanceDead(80),
+	ReloadRate(-1.0),
 	IsFighter(false),
 	IsAirportBound(false),
 	IsFlyBy(false),
@@ -306,6 +307,7 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		SmokeChanceRed = ini.Get_Int(Name(), "Smoke.ChanceRed", SmokeChanceRed);
 		SmokeChanceDead = ini.Get_Int(Name(), "Smoke.ChanceDead", SmokeChanceDead);
+		ReloadRate = ini.Get_Float(Name(), "ReloadRate", ReloadRate);
 		IsFighter = ini.Get_Bool(Name(), "Fighter", IsFighter);
 		IsAirportBound = ini.Get_Bool(Name(), "AirportBound", IsAirportBound);
 		IsFlyBy = ini.Get_Bool(Name(), "FlyBy", IsFlyBy);
@@ -355,6 +357,7 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsFlyBack);
 	crc(SpawnDelay);
 	crc(HeapID);
+	crc(ReloadRate >= 0.0);
 	crc(IsMissileCustom);
 	if (IsMissileCustom) {
 		crc(MissileFlight.PauseFrames);
@@ -398,6 +401,7 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSmokeAnimSet);
 	stream.Serialize(SmokeChanceRed);
 	stream.Serialize(SmokeChanceDead);
+	stream.Serialize(ReloadRate);
 	stream.Serialize(IsFighter);
 	stream.Serialize(IsAirportBound);
 	stream.Serialize(IsFlyBy);

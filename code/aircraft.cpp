@@ -211,6 +211,7 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	BASECLASS(house),
 	IsToSpendAmmo(false),
 	Class((AircraftTypeClass *)type),
+	PadReloadFrame(-1),
 	Passenger(false),
 	IsKamikaze(false),
 	field_35B(false),
@@ -4058,6 +4059,7 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DockNowHeadingTo);
 	stream.Serialize(AttacksRemaining);
 	stream.Serialize(IsReadyToCommence);
+	stream.Serialize(PadReloadFrame);
 }
 
 

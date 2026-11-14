@@ -295,6 +295,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	HasExtraPowerDrain(false),
 	DamageFireAnims{},
 	PsiWarnAnim(NULL),
+	PadPassFrame(0),
 	IsRequiresDamageFires(false),
 	GapShroudedHouses(),
 	IsSensing(false),
@@ -6526,6 +6527,20 @@ int BuildingClass::Do_MISSION_HARVEST(void)
 }
 
 
+// The docked aircraft, when its type sets its own ReloadRate (Ares); NULL for anything else.
+static AircraftClass * Own_Rate_Aircraft(TechnoClass * docked)
+{
+	AircraftClass * aircraft = docked != NULL ? docked->As_AircraftClass() : NULL;
+	return(aircraft != NULL && aircraft->Class->ReloadRate >= 0.0 ? aircraft : NULL);
+}
+
+
+static int Own_Reload_Delay(AircraftClass const * aircraft)
+{
+	return(std::max(int(aircraft->Class->ReloadRate * TICKS_PER_MINUTE), 1));
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Mission_Repair -- Handles the repair (active) state for building.            *
  *                                                                                             *
@@ -6892,21 +6907,50 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	**	A rearming pad serves every docked object each pass (BuildingClass::Mission_Repair,
 	**	0x44B780): one that is ready and undamaged is released to guard, a sleeping one is
 	**	reloaded or else repaired, and any other one still on its dock is put to sleep first.
+	**	An aircraft whose type sets its own ReloadRate (Ares) gets its rounds on its own timer
+	**	between the passes, and is repaired on the passes once it is full.
 	*/
 	if (Class->IsCanUnitReload) {
+		int const pass_delay = int(Rule->ReloadRate * TICKS_PER_MINUTE);
+		bool own_rate_docked = false;
+		for (int slot = 0; slot < Link_Count(); slot++) {
+			if (Own_Rate_Aircraft(Link(slot)) != NULL) {
+				own_rate_docked = true;
+			}
+		}
+		bool const pass = !own_rate_docked || Frame >= PadPassFrame;
+		int next_reload = std::numeric_limits<int>::max();
 		bool serving = false;
 		for (int slot = 0; slot < Link_Count(); slot++) {
 			TechnoClass * docked = Link(slot);
 			if (docked == NULL) {
 				continue;
 			}
+			AircraftClass * own_rate = Own_Rate_Aircraft(docked);
+			if (own_rate == NULL && !pass) {
+				serving = true;
+				continue;
+			}
 			bool release = Transmit_Message(RADIO_PREPARED, docked) == RADIO_ROGER && docked->Strength == docked->TClass->MaxStrength;
 			if (!release && docked->Get_Mission() != MISSION_ENTER && Transmit_Message(RADIO_NEED_TO_MOVE, docked) == RADIO_ROGER) {
 				serving = true;
-				if (docked->Get_Mission() == MISSION_SLEEP) {
-					release = Transmit_Message(RADIO_RELOAD, docked) != RADIO_ROGER && Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
-				} else {
+				if (docked->Get_Mission() != MISSION_SLEEP) {
 					docked->Assign_Mission(MISSION_SLEEP);
+					if (own_rate != NULL) {
+						own_rate->PadReloadFrame = Frame + Own_Reload_Delay(own_rate);
+					}
+				} else if (own_rate == NULL) {
+					release = Transmit_Message(RADIO_RELOAD, docked) != RADIO_ROGER && Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
+				} else if (own_rate->Ammo < own_rate->Class->MaxAmmo) {
+					if (Frame >= own_rate->PadReloadFrame) {
+						Transmit_Message(RADIO_RELOAD, docked);
+						own_rate->PadReloadFrame = Frame + Own_Reload_Delay(own_rate);
+					}
+				} else if (pass) {
+					release = Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
+				}
+				if (own_rate != NULL && own_rate->Ammo < own_rate->Class->MaxAmmo) {
+					next_reload = std::min(next_reload, own_rate->PadReloadFrame - Frame);
 				}
 			}
 			if (release) {
@@ -6916,7 +6960,13 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 			}
 		}
 		if (serving) {
-			return(int(Rule->ReloadRate * TICKS_PER_MINUTE));
+			if (pass) {
+				PadPassFrame = Frame + pass_delay;
+			}
+			if (!own_rate_docked) {
+				return(pass_delay);
+			}
+			return(std::max(std::min(next_reload, PadPassFrame - Frame), 1));
 		}
 		Assign_Mission(MISSION_GUARD);
 		return(3);
@@ -11539,6 +11589,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HasEngineer);
 	stream.Serialize(SecretProduct);
 	stream.Serialize(PsiWarnAnim);
+	stream.Serialize(PadPassFrame);
 	if (stream.Is_Loading()) {
 		IsShieldTinted = false;
 	}
