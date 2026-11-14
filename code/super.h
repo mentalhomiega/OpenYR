@@ -95,6 +95,7 @@ class SuperClass : public AbstractClass
 		bool Is_Charged(void) const {return(IsReady);}
 		bool Is_Suspended(void) const {return(IsSuspended);}
 		bool Should_Flash_Tab(void) const;
+		bool Is_Timer_Visible_To(HouseClass const * viewer) const;
 		bool Is_One_Time(void) const {return(IsOneTime && IsPresent);}
 
 		char const * State_String(void) const;

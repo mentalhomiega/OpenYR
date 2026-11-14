@@ -123,6 +123,16 @@ void Test_AI(void)
 	unsigned const flags = Parse_Constraints("enemy,Attacked,lowpower,bogus");
 	Check(flags == (CONSTRAINT_ENEMY | CONSTRAINT_ATTACKED | CONSTRAINT_LOW_POWER), "constraints combine and skip unknown names");
 	Check(Parse_Constraints("") == 0, "no constraints");
+
+	Check(Parse_AI_Preference("Defensive", AIPreference::Default) == AIPreference::Defensive, "defensive preference");
+	Check(Parse_AI_Preference("none", AIPreference::Offensive) == AIPreference::None, "none replaces a preference");
+	Check(Parse_AI_Preference("", AIPreference::Offensive) == AIPreference::Offensive, "an empty preference keeps the old one");
+	Check(Parse_AI_Preference("bogus", AIPreference::Default) == AIPreference::Default, "an unknown preference keeps the old one");
+	Check(Default_AI_Preference(AITarget::Nuke) == AIPreference::Offensive, "a nuke prefers the offensive cell");
+	Check(Default_AI_Preference(AITarget::ParaDrop) == AIPreference::Offensive, "a paradrop prefers the offensive cell");
+	Check(Default_AI_Preference(AITarget::ForceShield) == AIPreference::Defensive, "a force shield prefers the defensive cell");
+	Check(Default_AI_Preference(AITarget::LightningRandom) == AIPreference::None, "random lightning has no preference");
+	Check(Default_AI_Preference(AITarget::PsychicDominator) == AIPreference::None, "a dominator has no preference");
 }
 
 

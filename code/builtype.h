@@ -85,6 +85,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		int LightVisibility;
 
+		// The facing a unit turns to before it deploys into this building, and that it takes when the building undeploys (DeployFacing).
+		Dir256 DeployFacing;
+
 		/*
 		 * This is the brightness of the light this building casts, as a fixed point value
 		 * scaled by 1000. If zero, then the building carries no light source at all.

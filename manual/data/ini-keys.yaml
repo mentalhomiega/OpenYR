@@ -13782,6 +13782,23 @@ DeployDir:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DeployFacing:
+  key: DeployFacing
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 DeployFire:
   key: DeployFire
   scopes:
@@ -32576,6 +32593,23 @@ NukeDown:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+NukeFlash.Duration:
+  key: NukeFlash.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: NukeFlashDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 NukeMaker:
   key: NukeMaker
   scopes:
@@ -39499,6 +39533,23 @@ SW.AITargeting.Constraints:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SW.AITargeting.Preference:
+  key: SW.AITargeting.Preference
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SW.ActivationSound:
   key: SW.ActivationSound
   scopes:
@@ -40091,6 +40142,23 @@ SW.Sound:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.Sound
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.TimerVisibility:
+  key: SW.TimerVisibility
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass

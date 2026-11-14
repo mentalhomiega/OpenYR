@@ -27,7 +27,7 @@ class NukeFlashClass
 {
 	public:
 		static void Clear(void);
-		static void Start(SuperWeaponTypeClass const * type = nullptr);
+		static void Start(SuperWeaponTypeClass const * type = nullptr, int duration = 30);
 		static void AI(void);
 		static bool Is_Fading_In(void) {return(Status == FADE_IN);}
 		static SuperWeaponTypeClass const * Active_Type(void);

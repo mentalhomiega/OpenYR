@@ -78,6 +78,14 @@ namespace SuperRules
 		LightningRandom
 	};
 
+	// SW.AITargeting.Preference: the trigger-set cell the computer aims at in place of its own pick, while that cell is set.
+	enum class AIPreference {
+		Default = -1,
+		None,
+		Offensive,
+		Defensive
+	};
+
 	// SW.AITargeting.Constraints: conditions that must hold before the computer fires.
 	enum ConstraintFlags : unsigned {
 		CONSTRAINT_ENEMY = 1,
@@ -349,6 +357,34 @@ namespace SuperRules
 	inline unsigned Parse_Constraints_Or(std::string_view text, unsigned old)
 	{
 		return(Trim(text).empty() ? old : Parse_Constraints(text));
+	}
+
+
+	// SW.AITargeting.Preference. An unknown or empty value keeps the old one.
+	inline AIPreference Parse_AI_Preference(std::string_view text, AIPreference old)
+	{
+		text = Trim(text);
+		if (Same(text, "none")) return(AIPreference::None);
+		if (Same(text, "offensive")) return(AIPreference::Offensive);
+		if (Same(text, "defensive")) return(AIPreference::Defensive);
+		return(old);
+	}
+
+
+	// The preference a targeting mode has when SW.AITargeting.Preference is not set (the Ares targeting table).
+	inline AIPreference Default_AI_Preference(AITarget mode)
+	{
+		switch (mode) {
+			case AITarget::Nuke:
+			case AITarget::LightningStorm:
+			case AITarget::ParaDrop:
+			case AITarget::MultiMissile:
+				return(AIPreference::Offensive);
+			case AITarget::ForceShield:
+				return(AIPreference::Defensive);
+			default:
+				return(AIPreference::None);
+		}
 	}
 
 

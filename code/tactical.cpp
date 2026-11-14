@@ -4717,7 +4717,7 @@ static void Format_Timer_Line(char * buffer, std::size_t size, char const * labe
 
 
 /// <summary>
-/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
+/// Lists the countdown of every ShowTimer superweapon a house holds, where SW.TimerVisibility lets the player see it, in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
 /// of passive houses are left out, as is a suspended weapon that is still fully uncharged in a
 /// campaign.
@@ -4761,6 +4761,7 @@ void Tactical::Draw_Super_Timers(void)
 		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 			SuperClass const * super = house->SuperWeapon[s];
 			if (super == NULL || !super->Is_Present() || super->Class == NULL || !super->Class->IsShowTimer) continue;
+			if (!super->Is_Timer_Visible_To(PlayerPtr)) continue;
 			int const left = super->Control;
 			if (super->Is_Suspended() && Session.Type == GAME_NORMAL && left == super->Get_Recharge_Time()) continue;
 

@@ -141,6 +141,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	CombatLightSize(0.0f),
 	IsMalicious(true),
 	IonRipple(0),
+	NukeFlashDuration(-1),
 	IsMakesDisguise(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
@@ -298,6 +299,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		DelayKillAtMax = (float)ini.Get_Float(Name(), "DelayKillAtMax", DelayKillAtMax);
 		CombatLightSize = (float)ini.Get_Float(Name(), "CombatLightSize", CombatLightSize);
 		IsMalicious = ini.Get_Bool(Name(), "Malicious", IsMalicious);
+		NukeFlashDuration = ini.Get_Int(Name(), "NukeFlash.Duration", NukeFlashDuration);
 		// Ripple.Radius is the name older Ares rules use for IonCannon.Ripple; the newer name wins.
 		IonRipple = ini.Get_Int(Name(), "Ripple.Radius", IonRipple);
 		IonRipple = std::clamp(ini.Get_Int(Name(), "IonCannon.Ripple", IonRipple), 0, (int)IonBlastClass::WAVE_FRAMES);
@@ -550,6 +552,19 @@ static int Table_Entry(std::vector<signed char> const & table, ArmorType armor)
 }
 
 
+/// <summary>
+/// Frames the map-wide nuclear flash fades in when this warhead goes off, 0 for no flash. Without
+/// NukeFlash.Duration only the warhead named NUKE flashes, for the 30 frames Yuri's Revenge uses.
+/// </summary>
+int WarheadTypeClass::Nuke_Flash_Duration(void) const
+{
+	if (NukeFlashDuration >= 0) {
+		return(NukeFlashDuration);
+	}
+	return(stricmp(Name(), "NUKE") == 0 ? 30 : 0);
+}
+
+
 // Yuri's Revenge refuses to fire at an armor its warhead does nothing to (TechnoClass::GetFireError, 0x6FC3FE).
 bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
 {
@@ -633,6 +648,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CombatLightSize);
 	stream.Serialize(IsMalicious);
 	stream.Serialize(IonRipple);
+	stream.Serialize(NukeFlashDuration);
 	stream.Serialize(IsMakesDisguise);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);

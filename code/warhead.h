@@ -283,6 +283,10 @@ class WarheadTypeClass : public AbstractTypeClass
 		// Malicious=no (Ares) keeps a hit on an ore miner from raising the miner-under-attack alert.
 		bool IsMalicious;
 
+		// NukeFlash.Duration (Ares): frames the map-wide flash fades in, -1 until set; see Nuke_Flash_Duration.
+		int NukeFlashDuration;
+		int Nuke_Flash_Duration(void) const;
+
 		// Frames of the ion cannon's shockwave that a detonation shows, 0 for none (Ares IonCannon.Ripple, once Ripple.Radius).
 		int IonRipple;
 

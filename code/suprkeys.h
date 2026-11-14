@@ -117,10 +117,14 @@ struct SuperWeaponKeys
 	unsigned AIRequiresTarget;
 	unsigned AIRequiresHouse;
 	unsigned AIConstraints;
+	// An SuperRules::AIPreference; Default until SW.AITargeting.Preference is set.
+	int AIPreference;
 	bool UseAITargeting;
 	bool AutoFire;
 	bool ManualFire;
 	bool ShowCameo;
+	// Who sees a ShowTimer countdown, as Parse_Houses flags relative to the owner (SW.TimerVisibility).
+	unsigned TimerVisibility;
 
 	// The effect: a warhead and damage, an animation and sounds at the target.
 	WarheadTypeClass const * Warhead;

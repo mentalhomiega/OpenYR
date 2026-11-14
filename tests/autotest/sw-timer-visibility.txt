@@ -1,0 +1,17 @@
+; SW.TimerVisibility chooses which houses see a ShowTimer super weapon's countdown. The overlay sw-timer-visibility.ini turns on
+; the timer of the Nuke, the Lightning Storm and the Iron Curtain, and limits the Nuke's to its owner and the Storm's to the owner's enemies.
+; The Iron Curtain keeps the default, all. The player and the first computer house each get all three weapons.
+; Expected: `timer NukeSpecial` seen 1 for the player's and seen 0 for the computer's; `timer LightningStormSpecial` seen 0 for the
+; player's and seen 1 for the computer's; `timer IronCurtainSpecial` seen 1 for both. Before the key was read every line showed seen 1.
+; The check follows the grants at once because the computer fires its weapons a few frames later.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/sw-timer-visibility.txt -Seconds 60 -Filter "AUTOTEST   (timer|grant)|Exception"
+10 rules sw-timer-visibility.ini
+30 command CenterBase
+40 grant NukeSpecial
+41 grant LightningStormSpecial
+42 grant IronCurtainSpecial
+50 grantai NukeSpecial
+51 grantai LightningStormSpecial
+52 grantai IronCurtainSpecial
+53 timers
+70 quit
