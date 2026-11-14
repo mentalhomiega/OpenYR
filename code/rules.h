@@ -198,6 +198,9 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport multiplies its damage by this.
 		double OpenToppedDamageMultiplier;
 
+		// BerserkROFMultiplier (Ares): a berserk object's reload time is multiplied by this.
+		double BerserkROFMultiplier;
+
 		// A passenger firing from inside an open-topped transport reaches this many cells farther.
 		int OpenToppedRangeBonus;
 
@@ -3098,4 +3101,13 @@ class RulesClass
 
 		/// Unused
 		float EngineerDamage;
+
+		// EngineerAlwaysCaptureTech (Ares): a tech structure gets the capture cursor whatever its health.
+		bool IsEngineerAlwaysCaptureTech;
+
+		// RepairStopOnInsufficientFunds (Ares): with false, a human player's structure out of money keeps repair on and resumes once paid.
+		bool IsRepairStopOnInsufficientFunds;
+
+		// TogglePowerAllowed (Ares): whether the player can enter power mode. Ares defaults it to no; we keep yes, as before the key was read.
+		bool IsTogglePowerAllowed;
 };

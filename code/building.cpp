@@ -312,6 +312,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsShieldTinted(false),
 	IsCurtainDrawn(false),
 	HasEngineer(false),
+	IsTechStructure(house != NULL && house->Class != NULL && house->Class->IsMultiplayPassive),
 	SecretProduct(NULL)
 {
 	Create_ID();
@@ -342,6 +343,9 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 		Veterancy.Set_Veteran(true);
 	}
 	if (House != NULL && House->IsBuildingSpied && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
+	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranBuildings.Is_In_List(Class)) {
 		Veterancy.Set_Veteran(true);
 	}
 
@@ -8941,7 +8945,7 @@ void BuildingClass::Repair_AI(void)
 			if (Shape_Number() != shapenum) {
 				IsToDisplay = true;
 			}
-		} else {
+		} else if (Rule->IsRepairStopOnInsufficientFunds || !House->Is_Human_Player()) {
 			IsRepairing = false;
 		}
 	}
@@ -11600,6 +11604,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
 	stream.Serialize(HasEngineer);
+	stream.Serialize(IsTechStructure);
 	stream.Serialize(SecretProduct);
 	stream.Serialize(PsiWarnAnim);
 	stream.Serialize(PadPassFrame);

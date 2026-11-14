@@ -1,0 +1,9 @@
+; Without TogglePowerAllowed in the rules, the Power Mode command enters power mode, as it did before the key was read (Ares defaults the key to no).
+; The player owns a power plant and gives the TogglePower command at frame 100.
+; Expected: `modes` at frame 110 writes "power 1".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/toggle-power-default.txt -Seconds 40 -Country 0 -Filter "AUTOTEST modes|Exception"
+30 command CenterBase
+40 own GAPOWR 64 36
+100 command TogglePower
+110 modes
+120 quit

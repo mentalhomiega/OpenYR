@@ -188,6 +188,9 @@ class HouseTypeClass : public AbstractTypeClass
 		TypeList<UnitTypeClass const *> VeteranUnits;
 		TypeList<AircraftTypeClass const *> VeteranAircraft;
 
+		// VeteranBuildings (Ares): a house of this country makes each new structure of a listed type a veteran.
+		TypeList<BuildingTypeClass const *> VeteranBuildings;
+
 		// The power plants the computer builds for a house of this country (Ares AI.PowerPlants). Empty follows the side.
 		TypeList<BuildingTypeClass const *> AIPowerPlants;
 

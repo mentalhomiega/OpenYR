@@ -3444,7 +3444,8 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 				} else {
 
 					if (bldg->Class->IsCaptureable) {
-						if (bldg->HealthRatio > Rule->EngineerCaptureLevel) {
+						bool const always = Rule->IsEngineerAlwaysCaptureTech && bldg->IsTechStructure;
+						if (!always && bldg->HealthRatio > Rule->EngineerCaptureLevel) {
 							return(ACTION_DAMAGE);
 						}
 						return(ACTION_CAPTURE);

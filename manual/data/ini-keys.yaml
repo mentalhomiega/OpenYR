@@ -5652,6 +5652,24 @@ BerserkFriendly:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+BerserkROFMultiplier:
+  key: BerserkROFMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: null
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BerzerkAllowed:
   key: BerzerkAllowed
   scopes:
@@ -18133,6 +18151,24 @@ Engineer:
       default_candidate: none
       declared_in: RulesClass
       member: Engineer
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+EngineerAlwaysCaptureTech:
+  key: EngineerAlwaysCaptureTech
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsEngineerAlwaysCaptureTech
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -39087,6 +39123,24 @@ RepairStep:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+RepairStopOnInsufficientFunds:
+  key: RepairStopOnInsufficientFunds
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsRepairStopOnInsufficientFunds
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 RepairTurretIndex:
   key: RepairTurretIndex
   scopes:
@@ -50078,6 +50132,24 @@ TogglePower:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+TogglePowerAllowed:
+  key: TogglePowerAllowed
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsTogglePowerAllowed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 TooBigToFitUnderBridge:
   key: TooBigToFitUnderBridge
   scopes:
@@ -52817,6 +52889,23 @@ VeteranArmor:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+VeteranBuildings:
+  key: VeteranBuildings
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: VeteranBuildings
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 VeteranCap:
   key: VeteranCap
   scopes:

@@ -3454,6 +3454,14 @@ static void Repairon_Step(StepType const & step)
 }
 
 
+// credits <amount>: sets the player's credits to that amount, taking stored ore out of the count.
+static void Credits_Step(StepType const & step)
+{
+	PlayerPtr->Credits = std::max(0, step.Argument_Int() - PlayerPtr->Tiberium.Get_Total_Value());
+	DebugString("AUTOTEST credits %d available %d\n", PlayerPtr->Credits, PlayerPtr->Available_Money());
+}
+
+
 // poweroff <TypeID>: turns off the player's structures of that type, as a click with the power cursor does.
 static void Poweroff_Step(StepType const & step)
 {
@@ -7725,6 +7733,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"veterancy", Veterancy_Step},
 		{"sell", Sell_Step},
 		{"repairon", Repairon_Step},
+		{"credits", Credits_Step},
 		{"poweroff", Poweroff_Step},
 		{"rally", Rally_Step},
 		{"rallyclick", Rallyclick_Step},

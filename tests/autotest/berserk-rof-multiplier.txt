@@ -1,0 +1,12 @@
+; BerserkROFMultiplier (Ares, [CombatDamage], default .5) multiplies the reload time of a berserk object. The overlay berserk-rof-multiplier.ini sets it to 1.0.
+; A computer Grizzly tank is driven berserk by a PsychGas hit from the player and turns on a player MCV beside it, which has no weapon.
+; Expected: the DAMAGETRACE lines for that MCV come at the Grizzly's full reload time apart, about 61 frames (ROF=60). Without the key, as berserk-rof-default.txt shows, they come about 30 frames apart.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/berserk-rof-multiplier.txt -Seconds 60 -Country 0 -Filter "DAMAGETRACE|AUTOTEST   hit|Exception"
+10 rules berserk-rof-multiplier.ini
+30 command CenterBase
+35 reveal
+40 enemy MTNK 62 42
+41 own AMCV 60 42
+50 damagetrace AMCV
+60 hit MTNK:PsychGas 3000
+600 quit

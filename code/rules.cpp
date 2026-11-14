@@ -383,9 +383,13 @@ RulesClass::RulesClass(void) :
 	PrerequisiteNodFactory(),
 	EngineerCaptureLevel(1),
 	EngineerDamage(0),
+	IsEngineerAlwaysCaptureTech(true),
+	IsRepairStopOnInsufficientFunds(true),
+	IsTogglePowerAllowed(true),
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
+	BerserkROFMultiplier(0.5),
 	OpenToppedRangeBonus(0),
 	OpenTransportRangeBonus(0),
 	OpenTransportDamageMultiplier(1.0),
@@ -1600,6 +1604,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		// gamemd keeps these multipliers as float32 truncated from the INI value (RulesClass reader, (float) stores).
 		OccupyDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier));
 		OpenToppedDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier));
+		BerserkROFMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "BerserkROFMultiplier", BerserkROFMultiplier));
 		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
 		OpenTransportRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenTransport.RangeBonus", OpenTransportRangeBonus);
 		OpenTransportDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenTransport.DamageMultiplier", OpenTransportDamageMultiplier);
@@ -2242,6 +2247,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		LevitateLocomotionClass::Read_INI(ini);
 		EngineerCaptureLevel = (float)ini.Get_Float(GENERAL, "EngineerCaptureLevel", EngineerCaptureLevel);
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
+		IsEngineerAlwaysCaptureTech = ini.Get_Bool(GENERAL, "EngineerAlwaysCaptureTech", IsEngineerAlwaysCaptureTech);
+		IsRepairStopOnInsufficientFunds = ini.Get_Bool(GENERAL, "RepairStopOnInsufficientFunds", IsRepairStopOnInsufficientFunds);
+		IsTogglePowerAllowed = ini.Get_Bool(GENERAL, "TogglePowerAllowed", IsTogglePowerAllowed);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
@@ -3176,6 +3184,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(BerserkROFMultiplier);
 	stream.Serialize(OpenToppedRangeBonus);
 	stream.Serialize(OpenTransportRangeBonus);
 	stream.Serialize(OpenTransportDamageMultiplier);
@@ -3926,6 +3935,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrerequisiteNodFactory);
 	stream.Serialize(EngineerCaptureLevel);
 	stream.Serialize(EngineerDamage);
+	stream.Serialize(IsEngineerAlwaysCaptureTech);
+	stream.Serialize(IsRepairStopOnInsufficientFunds);
+	stream.Serialize(IsTogglePowerAllowed);
 	stream.Serialize(GenericPrerequisites);
 	stream.Serialize(IsTeamRetaliateSet);
 	stream.Serialize(IsTeamRetaliate);
