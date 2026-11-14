@@ -21,7 +21,7 @@ The structure is placed at a fixed spot relative to the vehicle, chosen by the k
 
 If the structure cannot be placed there, the vehicle does not deploy. The local player hears the "cannot deploy here" speech for their own vehicle. A computer house's vehicle orders its house's and allies' units off the site, so a later attempt can succeed. The vehicle then switches to guard; outside a campaign, a computer house's vehicle switches to hunt instead.
 
-If the structure can be placed, the vehicle first turns to the structure's deploy facing. It then disappears, and the structure appears in its place and plays its buildup.
+If the structure can be placed, the vehicle first turns to the structure's [`DeployFacing`](/keys/deployfacing/). It then disappears, and the structure appears in its place and plays its buildup.
 
 The structure belongs to the vehicle's house and takes over the vehicle's selection group, experience, current target, any limpet drone attached to it, and the country the vehicle was built for. That country does not limit what a deployed construction yard can build.
 

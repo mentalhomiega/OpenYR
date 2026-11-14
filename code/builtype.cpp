@@ -242,6 +242,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	HalfDamageSmokeLocation2(COORD_NONE),
 	GateCloseDelay(0.0),
 	LightVisibility(5000),
+	DeployFacing(DIR_S),
 	LightIntensity(0),
 	LightRedTint(1000000),
 	LightGreenTint(1000000),
@@ -1606,6 +1607,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		CloakRadiusInCells = ini.Get_Int(Name(), "CloakRadiusInCells", CloakRadiusInCells);
 
 		LightVisibility = ini.Get_Int(Name(), "LightVisibility", LightVisibility);
+		// Eight compass steps from 0 (north) clockwise; gamemd keeps step * 32 (BuildingTypeClass::Read_INI, 0x45FE50).
+		DeployFacing = Dir256((ini.Get_Int(Name(), "DeployFacing", DeployFacing >> 5) << 5) & DIR_MAX);
 		LightIntensity = (ini.Get_Float(Name(), "LightIntensity", LightIntensity / NORMAL_LIGHT) * (double)NORMAL_LIGHT) + 0.1;
 		LightRedTint = (ini.Get_Float(Name(), "LightRedTint", LightRedTint / NORMAL_LIGHT) * (double)NORMAL_LIGHT) + 0.1;
 		LightGreenTint = (ini.Get_Float(Name(), "LightGreenTint", LightGreenTint / NORMAL_LIGHT) * (double)NORMAL_LIGHT) + 0.1;
@@ -2419,6 +2422,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(NumberOfDocks);
 	crc(GateCloseDelay);
 	crc(LightVisibility);
+	crc((int)DeployFacing);
 	crc(LightIntensity);
 	crc(LightRedTint);
 	crc(LightGreenTint);
@@ -2572,6 +2576,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HalfDamageSmokeLocation2);
 	stream.Serialize(GateCloseDelay);
 	stream.Serialize(LightVisibility);
+	stream.Serialize(DeployFacing);
 	stream.Serialize(LightIntensity);
 	stream.Serialize(LightRedTint);
 	stream.Serialize(LightGreenTint);
@@ -3156,23 +3161,13 @@ bool BuildingTypeClass::Is_Immune_To_EMP(void) const
 
 
 /// <summary>
-/// Fetches the facing this building takes when it deploys.
-/// This routine is used when a mobile deployer converts between its unit and building
-/// forms so that the two share a sensible orientation.
+/// The facing a unit must reach before it deploys into this building, and the facing the unit
+/// takes when the building undeploys: DeployFacing, south unless set (read at 0x465D70 by
+/// UnitClass::TryToDeploy, 0x7393C0, and BuildingClass::Mission_Selling, 0x449C30).
 /// </summary>
-/// <returns>Returns with the direction the building faces once deployed.</returns>
 Dir256 BuildingTypeClass::Deploy_Facing(void) const
 {
-	if (!Is_Mobile_Deployer()) {
-		return(DIR_S);
-	}
-	if (IsArtillary) {
-		return(DIR_N);
-	}
-	if (IsSensorArray || IsTickTank || IsICBMLauncher) {
-		return(DIR_E);
-	}
-	return(DIR_S);
+	return(DeployFacing);
 }
 
 

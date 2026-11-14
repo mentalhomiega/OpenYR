@@ -13782,6 +13782,23 @@ DeployDir:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DeployFacing:
+  key: DeployFacing
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 DeployFire:
   key: DeployFire
   scopes:
