@@ -121,6 +121,8 @@ struct SuperWeaponKeys
 	bool AutoFire;
 	bool ManualFire;
 	bool ShowCameo;
+	// Who sees a ShowTimer countdown, as Parse_Houses flags relative to the owner (SW.TimerVisibility).
+	unsigned TimerVisibility;
 
 	// The effect: a warhead and damage, an animation and sounds at the target.
 	WarheadTypeClass const * Warhead;

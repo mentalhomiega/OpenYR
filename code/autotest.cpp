@@ -4718,6 +4718,20 @@ static void Chargeai_Step(StepType const & step)
 }
 
 
+// timers: writes each present ShowTimer super weapon of every house and whether the player sees its countdown.
+static void Timers_Step(StepType const &)
+{
+	for (int h = 0; h < Houses.Count(); h++) {
+		HouseClass * house = Houses[h];
+		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
+			SuperClass const * super = house->SuperWeapon[s];
+			if (super == NULL || !super->Is_Present() || !super->Class->IsShowTimer) continue;
+			DebugString("AUTOTEST   timer %s of %s player %d ally %d seen %d\n", super->Class->Name(), house->Class->Name(), (int)(house == PlayerPtr), (int)house->Is_Ally(PlayerPtr), (int)super->Is_Timer_Visible_To(PlayerPtr));
+		}
+	}
+}
+
+
 // fire <SuperWeaponTypeID> x y: the player fires that super weapon at the cell.
 static void Fire_Step(StepType const & step)
 {
@@ -7699,6 +7713,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"enable", Enable_Step},
 		{"grantai", Grantai_Step},
 		{"chargeai", Chargeai_Step},
+		{"timers", Timers_Step},
 		{"fire", Fire_Step},
 		{"rules", Rules_Step},
 		{"reload", Reload_Step},

@@ -93,6 +93,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	AutoFire(false),
 	ManualFire(true),
 	ShowCameo(true),
+	TimerVisibility(SuperRules::HOUSE_ALL),
 	Warhead(NULL),
 	Damage(-1),
 	Animation(NULL),
@@ -476,6 +477,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AutoFire);
 	stream.Serialize(ManualFire);
 	stream.Serialize(ShowCameo);
+	stream.Serialize(TimerVisibility);
 	stream.Serialize(Warhead);
 	stream.Serialize(Damage);
 	stream.Serialize(Animation);

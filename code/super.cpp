@@ -1850,6 +1850,21 @@ bool SuperClass::Should_Flash_Tab(void) const
 
 
 /// <summary>
+/// Does this house see the weapon's ShowTimer countdown? SW.TimerVisibility names the houses, relative
+/// to the owner; an observer counts as allied to every house. With no viewer, everyone sees it.
+/// </summary>
+bool SuperClass::Is_Timer_Visible_To(HouseClass const * viewer) const
+{
+	if (viewer == NULL || House == NULL) {
+		return(true);
+	}
+	bool const owner = viewer == House;
+	bool const ally = viewer->IsObserver || House->Is_Ally(viewer);
+	return(SuperRules::House_Passes(Class->Keys.TimerVisibility, owner, ally));
+}
+
+
+/// <summary>
 /// Lists the members this super weapon carries.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>

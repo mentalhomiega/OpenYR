@@ -340,6 +340,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.AutoFire = ini.Get_Bool(IniName, "SW.AutoFire", Keys.AutoFire);
 		Keys.ManualFire = ini.Get_Bool(IniName, "SW.ManualFire", Keys.ManualFire);
 		Keys.ShowCameo = ini.Get_Bool(IniName, "SW.ShowCameo", Keys.ShowCameo);
+		Keys.TimerVisibility = SuperRules::Parse_Houses(ini.Get_String(IniName, "SW.TimerVisibility"), Keys.TimerVisibility);
 
 		Keys.Warhead = SuperKeyParse::Warhead_Named(ini.Get_String(IniName, "SW.Warhead"), Keys.Warhead);
 		Keys.Damage = ini.Get_Int(IniName, "SW.Damage", Keys.Damage);
