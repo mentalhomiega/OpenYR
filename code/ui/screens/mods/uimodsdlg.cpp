@@ -7,6 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "restart.h"
 #include "always.h"
 
 #include "_deploymentconfig.h"
@@ -66,6 +67,15 @@ UIModsServiceClass & UI_Mods_Service(void)
 }
 
 
+// Tells the player the saved mod list needs a restart and offers to do it now.
+static void Offer_Restart(void)
+{
+	if (WWMessageBox()._Process("The new mod list takes effect when the game restarts.", 0, "Restart now", "Later") == 0 && Restart_Game_Start()) {
+		Restart_Game_Leave();
+	}
+}
+
+
 std::unique_ptr<UIModsPresenterClass> UI_Mods_New_Presenter(void)
 {
 	return(std::make_unique<UIModsPresenterClass>(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory())));
@@ -78,7 +88,7 @@ void UI_Mods_Settled(UIModsPresenterClass & presenter)
 		return;
 	}
 
-	WWMessageBox().Process("The new mod list takes effect when you restart the game.", TXT_OK);
+	Offer_Restart();
 }
 
 
@@ -98,5 +108,5 @@ void UI_Mods_Dialog(void)
 		return;
 	}
 
-	WWMessageBox().Process("The new mod list takes effect when you restart the game.", TXT_OK);
+	Offer_Restart();
 }

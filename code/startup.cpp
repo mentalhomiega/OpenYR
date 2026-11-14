@@ -32,6 +32,7 @@
  *   main -- Initial startup routine (preps library systems).                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
+#include "restart.h"
 #include "always.h"
 
 #include "_alpha.h"
@@ -549,6 +550,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	}
 
 	if (command_line_ok && Apply_Game_Directories()) {
+
+		if (Debug_WaitForProcess != 0) {
+			Restart_Wait_For_Parent(Debug_WaitForProcess);
+		}
 
 		if (!Debug_MultipleInstances && !Claim_Single_Instance()) {
 			return(EXIT_SUCCESS);
