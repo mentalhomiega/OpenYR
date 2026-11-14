@@ -1,0 +1,18 @@
+; A guarding soldier takes no target that a wall keeps its shots from. gamemd's threat scan (TechnoClass::EvaluateObject, 0x6F7CA0) tests
+; the range of each candidate through IsCloseEnough (0x6F77B0), whose range test (0x6F7220) also needs a line free of walls and cliffs
+; (TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310). A player rifleman (E1, rifle SubjectToWalls) guards at 60 40. An enemy
+; pillbox (GAPILL) stands at 63 40 behind a wall at 62 40, and an enemy rifleman at 60 44 has a clear line. The test mod gives the pillbox
+; ThreatPosed=100, so it outranks the rifleman as a target, and a gun whose warhead does 0% to every armor, so it never fires.
+; Expected: at frames 360 and 400 the guarding E1 has the enemy rifleman's cell (60,44) as its target, never the pillbox (63,40), and the
+; enemy rifleman loses strength. Before the scan tested the line of fire, the E1 took the pillbox, kept it, and was shot without firing back.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/guard-target-behind-wall.txt -Mods src-agent31/tests/autotest/guard-target-behind-wall-rules -Seconds 90 -Filter "AUTOTEST   where E1|Exception"
+30 command CenterBase
+300 own E1 60 40
+301 enemy GAPILL 63 40
+302 wall GAWALL 62 40
+303 enemy E1 60 44
+304 reveal
+330 where E1
+360 where E1
+400 where E1
+420 quit
