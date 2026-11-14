@@ -14,6 +14,7 @@
 #pragma once
 
 #include "abstype.h"
+#include "paragroup.h"
 #include "typelist.h"
 
 #include "rgb.h"
@@ -140,6 +141,9 @@ class SideClass : public AbstractTypeClass
 		std::string MessageTextColor;
 		std::string EvaTag;
 		InfantryTypeClass const * Crew;
+
+		// The side's own ParaDrop.Types, ParaDrop.Num and ParaDrop.Aircraft (Ares); what is left out follows the rules.
+		ParaDropList ParaDrop;
 		InfantryTypeClass const * Engineer;
 		InfantryTypeClass const * Technician;
 		InfantryTypeClass const * DefaultDisguise;

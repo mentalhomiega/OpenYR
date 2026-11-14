@@ -305,6 +305,11 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		VeteranUnits = TGet_TypeList<UnitTypeClass>(ini, Name(), "VeteranUnits", VeteranUnits, 128);
 		VeteranAircraft = TGet_TypeList<AircraftTypeClass>(ini, Name(), "VeteranAircraft", VeteranAircraft, 128);
 		AIPowerPlants = TGet_TypeList<BuildingTypeClass>(ini, Name(), "AI.PowerPlants", AIPowerPlants);
+		ParaDrop.Take_Types(ini.Get_String(Name(), "ParaDrop.Types"));
+		if (ini.Is_Present(Name(), "ParaDrop.Num")) {
+			ParaDrop.Take_Num(ini.Get_IntList(Name(), "ParaDrop.Num", ParaDrop.Num));
+		}
+		ParaDrop.Take_Aircraft(ini.Get_String(Name(), "ParaDrop.Aircraft"));
 		return(true);
 	}
 	return(false);
@@ -461,6 +466,7 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(VeteranUnits.Count());
 	crc(VeteranAircraft.Count());
 	crc(AIPowerPlants.Count());
+	crc(ParaDrop.Types.Count());
 }
 
 
@@ -516,6 +522,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranUnits);
 	stream.Serialize(VeteranAircraft);
 	stream.Serialize(AIPowerPlants);
+	ParaDrop.Serialize(stream);
 }
 
 

@@ -316,6 +316,7 @@ a default and returns it when the section or entry is missing.
 | `Aim_Coord(target)`, `Beam_Coord(target)` | `object.h` | The point a projectile homes on, and the point a beam is drawn to. They differ for a cell on a bridge. |
 | `Find_Armor_Type(name, armor)` | `armortypes.h` | Case-insensitive armor lookup; leaves `armor` alone and returns false for an unknown name. |
 | `Paradrop_Plane_Type()` | `house.h` | The PDPLANE type, or `NULL` when the rules have none. |
+| `Paradrop_Plane_Type(house)` | `house.h` | The paradrop aircraft of a house: its country's ParaDrop.Aircraft, else its side's, else PDPLANE. |
 | `Opposite_Difficulty(d)`, `Computer_Difficulty_Name(d)` | `diff.hh` | The computer difficulty paired with a human one, and its lobby name. |
 | `Key_Bits(shift, ctrl, alt)`, `Key_Bits_From_Window(mods)` | `keyboard.h` | The `WWKEY_*_BIT` modifier bits. |
 

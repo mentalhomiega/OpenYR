@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "paragroup.h"
 #include "swrules.h"
 #include "typelist.h"
 #include "voc.hh"
@@ -288,16 +289,12 @@ struct SuperWeaponKeys
 	 * names for one plane (Plane 1 has no Plane<N> segment in its keys); ParaDefault holds the
 	 * plain ParaDrop.* keys, and a group with no owner holds the plain ParaDrop.Plane<N>.* keys.
 	 */
-	struct ParaGroup
+	struct ParaGroup : ParaDropList
 	{
 		void Serialize(SaveStreamClass & stream);
 
 		std::string Owner;
 		int Plane = 1;
-		TypeList<TechnoTypeClass const *> Types;
-		TypeList<int> Num;
-		AircraftTypeClass const * Aircraft = nullptr;
-		bool IsSet = false;
 	};
 	ParaGroup ParaDefault;
 	std::vector<ParaGroup> ParaByOwner;
@@ -314,6 +311,9 @@ struct SuperWeaponKeys
 		TypeList<TechnoTypeClass const *> const * Types = nullptr;
 		TypeList<int> const * Num = nullptr;
 		AircraftTypeClass const * Aircraft = nullptr;
+
+		// Takes from the list what the plan still lacks: its types with their numbers if the list sets either, and its aircraft.
+		void Fill_From(ParaDropList const & list);
 	};
 
 	// Looks a plane up in the order the Ares manual gives: the weapon's keys for the country, the side and no owner

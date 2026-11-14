@@ -33965,13 +33965,27 @@ Palette:
 ParaDrop.Aircraft:
   key: ParaDrop.Aircraft
   scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: null
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
   - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: string
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
@@ -33979,6 +33993,20 @@ ParaDrop.Aircraft:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: null
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 ParaDrop.Count:
   key: ParaDrop.Count
   scopes:
@@ -33999,13 +34027,27 @@ ParaDrop.Count:
 ParaDrop.Num:
   key: ParaDrop.Num
   scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of integers
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: null
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
   - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: list of integers
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
@@ -34013,16 +34055,44 @@ ParaDrop.Num:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of integers
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: null
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 ParaDrop.Types:
   key: ParaDrop.Types
   scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: null
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
   - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: string
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
@@ -34030,6 +34100,20 @@ ParaDrop.Types:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: null
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 Parachute:
   key: Parachute
   scopes:

@@ -1088,16 +1088,24 @@ void SuperClass::Paradrop(Cell const & cell) const
 		}
 	}
 
-	// ParaDrop.* keys on the weapon take over for every plane they reach (see SuperWeaponKeys::Para_Plan).
+	// ParaDrop.* keys on the weapon take over for every plane they reach (see SuperWeaponKeys::Para_Plan). What a plane
+	// still lacks comes from the ParaDrop.* keys of the owner's country, then of its side, and then from the rules.
 	{
 		int const planning = House->Planning_Side();
 		SideClass const * side = (planning >= 0 && planning < Sides.Count()) ? Sides[planning] : NULL;
 		char const * const side_name = side != NULL ? side->Name() : "";
 		int const plane_count = std::min(keys.ParaDropCount, (int)SuperWeaponKeys::MAX_PARA_PLANES);
 		std::vector<SuperWeaponKeys::ParaPlan> plans(plane_count > 0 ? plane_count : 0);
+		ParaDropList const * const owner_lists[] = {&House->Class->ParaDrop, side != NULL ? &side->ParaDrop : NULL};
 		bool weapon_keys = false;
 		for (int number = 1; number <= plane_count; number++) {
 			weapon_keys |= keys.Para_Plan(number, House->Class->Name(), side_name, plans[number - 1]);
+			for (ParaDropList const * list : owner_lists) {
+				if (list != NULL && list->IsSet) {
+					plans[number - 1].Fill_From(*list);
+					weapon_keys = true;
+				}
+			}
 		}
 		if (weapon_keys) {
 			AircraftTypeClass const * const stock_aircraft = Paradrop_Plane_Type();

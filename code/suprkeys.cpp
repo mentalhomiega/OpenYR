@@ -354,21 +354,7 @@ void SuperWeaponKeys::Read_Para_Owners(CCINIClass const & ini, char const * sect
 		for (ParaGroup const & old : ParaByOwner) {
 			if (Same(old.Owner, name) && old.Plane == plane_number) group = old;
 		}
-		std::string const types = ini.Get_String(section, (prefix + "Types").c_str());
-		if (!Trim(types).empty()) {
-			SuperKeyParse::Techno_List(types, group.Types);
-			group.IsSet = true;
-		}
-		std::string const nums = prefix + "Num";
-		if (ini.Is_Present(section, nums.c_str())) {
-			group.Num = ini.Get_IntList(section, nums.c_str(), group.Num);
-			group.IsSet = true;
-		}
-		std::string const plane = ini.Get_String(section, (prefix + "Aircraft").c_str());
-		if (!Trim(plane).empty()) {
-			group.Aircraft = SuperKeyParse::Aircraft_Named(plane, group.Aircraft);
-			group.IsSet = true;
-		}
+		group.Read(ini, section, prefix);
 		if (!group.IsSet) return;
 		for (ParaGroup & old : ParaByOwner) {
 			if (Same(old.Owner, name) && old.Plane == plane_number) { old = group; return; }
@@ -399,6 +385,16 @@ SuperWeaponKeys::ParaGroup const * SuperWeaponKeys::Find_Para(char const * owner
 }
 
 
+void SuperWeaponKeys::ParaPlan::Fill_From(ParaDropList const & list)
+{
+	if (Types == nullptr && (list.Types.Count() > 0 || list.Num.Count() > 0)) {
+		Types = &list.Types;
+		Num = &list.Num;
+	}
+	if (Aircraft == nullptr) Aircraft = list.Aircraft;
+}
+
+
 bool SuperWeaponKeys::Para_Plan(int plane, char const * country, char const * side, ParaPlan & plan) const
 {
 	char const * const owners[] = {country, side, ""};
@@ -409,11 +405,7 @@ bool SuperWeaponKeys::Para_Plan(int plane, char const * country, char const * si
 			ParaGroup const * group = Find_Para(owner, pass == 0 ? plane : 1);
 			if (group == nullptr) continue;
 			found = true;
-			if (plan.Types == nullptr && (group->Types.Count() > 0 || group->Num.Count() > 0)) {
-				plan.Types = &group->Types;
-				plan.Num = &group->Num;
-			}
-			if (plan.Aircraft == nullptr) plan.Aircraft = group->Aircraft;
+			plan.Fill_From(*group);
 		}
 	}
 	return found;
@@ -424,10 +416,7 @@ void SuperWeaponKeys::ParaGroup::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Owner);
 	stream.Serialize(Plane);
-	stream.Serialize(Types);
-	stream.Serialize(Num);
-	stream.Serialize(Aircraft);
-	stream.Serialize(IsSet);
+	ParaDropList::Serialize(stream);
 }
 
 

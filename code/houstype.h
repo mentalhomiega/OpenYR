@@ -14,6 +14,7 @@
 #pragma once
 
 #include "abstype.h"
+#include "paragroup.h"
 
 #include "house.hh"
 #include "side.hh"
@@ -189,6 +190,9 @@ class HouseTypeClass : public AbstractTypeClass
 
 		// The power plants the computer builds for a house of this country (Ares AI.PowerPlants). Empty follows the side.
 		TypeList<BuildingTypeClass const *> AIPowerPlants;
+
+		// The country's own ParaDrop.Types, ParaDrop.Num and ParaDrop.Aircraft (Ares); what is left out follows the side.
+		ParaDropList ParaDrop;
 
 		//------------------------------------------------------------------------
 		HouseTypeClass(char const * ininame = NULL);

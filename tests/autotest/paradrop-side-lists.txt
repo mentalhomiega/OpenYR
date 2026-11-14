@@ -1,0 +1,12 @@
+; ParaDrop.Types, ParaDrop.Num and ParaDrop.Aircraft on a side (Ares): a French player's country names no ParaDrop keys, so a weapon with
+; none of its own drops what the GDI side names, one Navy SEAL, from the side's SPYP instead of a PDPLANE.
+; Expected: "landed GHOST count 1", "landed SPY count 0", and "count SPYP house French: 1" shortly after the shot; "count PDPLANE" prints no line, as it does for zero.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Mods src-agent28/tests/autotest/paradrop-side-lists-rules -Script src-agent28/tests/autotest/paradrop-side-lists.txt -Country 2 -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST   landed|AUTOTEST   count|Exception"
+30 command CenterBase
+100 grant TestParaOwner
+110 fire TestParaOwner 30 39
+200 count SPYP
+200 count PDPLANE
+900 landed SPY
+900 landed GHOST
+1000 quit

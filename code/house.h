@@ -1447,3 +1447,4 @@ void Log_Unresolved_House(char const * section, char const * key, char const * n
 HouseClass * Placed_Object_House(char const * name);
 bool House_Matches(HouseClass const * house, HousesType selector);
 AircraftTypeClass const * Paradrop_Plane_Type(void);
+AircraftTypeClass const * Paradrop_Plane_Type(HouseClass const * house);
