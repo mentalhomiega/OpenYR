@@ -1657,6 +1657,14 @@ static bool Parse_Debug_Option(char const * string)
 	}
 
 	/*
+	 * A copy the game started to restart itself waits for the copy that started it to go.
+	 */
+	if (strnicmp(string, "-WAITPID=", strlen("-WAITPID=")) == 0) {
+		Debug_WaitForProcess = (unsigned)strtoul(string + strlen("-WAITPID="), NULL, 10);
+		return(true);
+	}
+
+	/*
 	 * Writes the frame check value to the debug log on every game frame, for comparing two copies.
 	 */
 	if (stricmp(string, "-SYNCLOG") == 0) {
