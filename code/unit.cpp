@@ -6096,6 +6096,7 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 			ObjectClass * object = cellptr->Cell_Occupier(isbridge);
 			int crushed = false;
 			bool crushed_vehicle = false;
+			std::vector<std::pair<int, WarheadTypeClass const *>> crush_damages;
 			while (object != NULL) {
 				if (Can_Crush(object) && (!House->Is_Ally(object) || Class->IsTrain) && !object->IsFalling && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
 
@@ -6116,6 +6117,14 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 						crushed = true;
 						if (object->RTTI == RTTI_UNIT) {
 							crushed_vehicle = true;
+						}
+
+						if (object->Is_Techno()) {
+							TechnoClass const * victim = (TechnoClass const *)object;
+							int const damage = victim->TClass->CrushDamage[victim->Veterancy.Rank()];
+							if (damage != 0) {
+								crush_damages.emplace_back(damage, victim->TClass->CrushDamageWarhead);
+							}
 						}
 
 						/*
@@ -6140,6 +6149,15 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 				if (crushed_vehicle && RockingForwardsPerFrame == 0.0f) {
 					RockingForwardsPerFrame = -0.05f;
 				}
+			}
+
+			// Each crushed object with a CrushDamage hurts the crusher after the crushed objects are gone (Ares).
+			for (auto [damage, warhead] : crush_damages) {
+				if (!IsActive || Strength <= 0) {
+					break;
+				}
+				DebugString("Crush damage: %s takes %d\n", Class->Name(), damage);
+				Take_Damage(damage, 0, warhead != NULL ? warhead : Rule->C4Warhead, NULL, false);
 			}
 		}
 	}

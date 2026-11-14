@@ -39,6 +39,7 @@ class UnitTypeClass;
 class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WeaponTypeClass;
+class WarheadTypeClass;
 class AircraftTypeClass;
 class InfantryTypeClass;
 
@@ -420,6 +421,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The weapon an exploding object of this type sets off as it dies, and the share of that weapon's Damage it does.
 		WeaponTypeClass * DeathWeapon;
 		double DeathWeaponDamageModifier;
+
+		// CrushDamage.Rookie, .Veteran and .Elite (Ares): damage a vehicle that crushes an object of this type takes, by the
+		// crushed object's rank, through CrushDamageWarhead or the rules' C4Warhead when that is NULL.
+		int CrushDamage[3];
+		WarheadTypeClass const * CrushDamageWarhead;
 
 		// The ammunition a new object of this type starts with, or -1 to start full.
 		int InitialAmmo;

@@ -44,6 +44,7 @@
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
+#include "warhead.h"
 #include "warheadrules.h"
 #include "weapon.h"
 
@@ -232,6 +233,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
+	CrushDamage{0, 0, 0},
+	CrushDamageWarhead(NULL),
 	InitialAmmo(-1),
 	IsParasiteable(true),
 	SuppressionThreshold(0),
@@ -1204,6 +1207,15 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
 	DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
 	DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
+	// CrushDamage sets all three ranks; a rank's own key in the same file then overrides it.
+	if (ini.Is_Present(Name(), "CrushDamage")) {
+		int const all = ini.Get_Int(Name(), "CrushDamage", 0);
+		CrushDamage[0] = CrushDamage[1] = CrushDamage[2] = all;
+	}
+	CrushDamage[0] = ini.Get_Int(Name(), "CrushDamage.Rookie", CrushDamage[0]);
+	CrushDamage[1] = ini.Get_Int(Name(), "CrushDamage.Veteran", CrushDamage[1]);
+	CrushDamage[2] = ini.Get_Int(Name(), "CrushDamage.Elite", CrushDamage[2]);
+	CrushDamageWarhead = TGet_Class(ini, Name(), "CrushDamage.Warhead", CrushDamageWarhead);
 	IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 	SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 	IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
@@ -2227,6 +2239,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);
+	stream.Serialize(CrushDamage[0]);
+	stream.Serialize(CrushDamage[1]);
+	stream.Serialize(CrushDamage[2]);
+	stream.Serialize(CrushDamageWarhead);
 	stream.Serialize(InitialAmmo);
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
