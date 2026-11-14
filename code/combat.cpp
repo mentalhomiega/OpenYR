@@ -590,6 +590,9 @@ static void Keep_Nearest_Hits(WarheadTypeClass const * warhead, std::vector<Blas
  *                      no attacker does. It goes to every victim as the house argument of     *
  *                      Take_Damage (Explosion_Damage, 0x489280).                              *
  *                                                                                             *
+ *          house_attacks -- The sourcehouse also counts as the attacker for AffectsAllies     *
+ *                      and AffectsOwner, as for an owned animation's damage (Ares).           *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   This routine can consume some time and will affect the AI                       *
@@ -607,6 +610,7 @@ static void Keep_Nearest_Hits(WarheadTypeClass const * warhead, std::vector<Blas
  *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
  *=============================================================================================*/
 static BulletTypeClass const * ExplodingProjectile = NULL;
+static HouseClass const * BlastAttackingHouse = NULL;
 
 
 BulletTypeClass const * Exploding_Projectile(void)
@@ -615,13 +619,20 @@ BulletTypeClass const * Exploding_Projectile(void)
 }
 
 
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of, BulletTypeClass const * projectile)
+HouseClass const * Blast_Attacking_House(void)
 {
-	struct ProjectileScope {
+	return(BlastAttackingHouse);
+}
+
+
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of, BulletTypeClass const * projectile, bool house_attacks)
+{
+	struct BlastScope {
 		BulletTypeClass const * Saved;
-		explicit ProjectileScope(BulletTypeClass const * now) : Saved(ExplodingProjectile) { ExplodingProjectile = now; }
-		~ProjectileScope() { ExplodingProjectile = Saved; }
-	} const scope(projectile);
+		HouseClass const * SavedHouse;
+		BlastScope(BulletTypeClass const * now, HouseClass const * house) : Saved(ExplodingProjectile), SavedHouse(BlastAttackingHouse) { ExplodingProjectile = now; BlastAttackingHouse = house; }
+		~BlastScope() { ExplodingProjectile = Saved; BlastAttackingHouse = SavedHouse; }
+	} const scope(projectile, house_attacks ? sourcehouse : NULL);
 
 	if (Scen->Special.IsInert || warhead == NULL) return(false);
 

@@ -138,6 +138,9 @@ class AnimClass : public ObjectClass, public StageClass
 		*/
 		HousesType OwnerHouse;
 
+		// The house OwnerHouse names, or null for an animation with no owner.
+		HouseClass * Owner_House(void) const;
+
 		// The house the MakeInfantry soldier of an animation type belongs to under its MakeInfantryOwner setting (Ares); the invoker's house stands when the type names no other.
 		static HousesType Make_Infantry_Owner(AnimTypeClass const * type, HouseClass const * invoker, HouseClass const * killer, HouseClass const * victim);
 

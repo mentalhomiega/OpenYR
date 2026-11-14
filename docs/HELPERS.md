@@ -309,6 +309,7 @@ a default and returns it when the section or entry is missing.
 | `Do_Reinforcements(team, waypoint)` | `reinf.h` | Brings in a team. |
 | `Spawn_Named_Anim(name, coord, ...)`, `Spawn_Wake(where)` | `anim.h` | Create an animation by name, or a wake. |
 | `Attach_Control_Ring(techno, type)` | `capture.h` | Attaches the mind control ring animation. |
+| `AnimClass::Owner_House()` | `anim.h` | The house that owns an animation, or null. |
 | `Cloak_Cell_Occupiers(cell)` | `building.h` | Asks the mobile occupants of a cell to reconsider cloaking. |
 | `Linked_Building_Underfoot(unit)` | `building.h` | The building a unit stands on while radio-linked to it, or `NULL`. |
 | `Team_Has_Members(team)` | `init.h` | True when a player-controlled, non-limbo object belongs to the team. |

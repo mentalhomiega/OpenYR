@@ -1,0 +1,10 @@
+; Needs the Mental Omega files in game\Mods\MentalOmega. In the Epsilon mission EMIGDAL the hero Libra (LIBRA) plays a
+; damaging dust animation through her own AttachEffect, and its warhead spares allies. Her protective effect ends near
+; frame 2000, after control passes to the player. Expected: Libra is listed at frames 2100, 2300 and 2500 with a strength
+; above 0, and the mission is not lost before frame 2500. Before animation damage used the animation's own warhead and
+; owner, the dust burned her through FlameDamage2 from frame 2000 and the mission was lost near frame 2160.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mo-libra-dust.txt -Mods MentalOmega -Map EMIGDAL.MAP -Campaign -Width 1920 -Height 1080 -Seconds 400 -Uncapped -Filter "AUTOTEST   where LIBRA|Game end|Exception"
+2100 where LIBRA
+2300 where LIBRA
+2500 where LIBRA
+2510 quit
