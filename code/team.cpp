@@ -2623,8 +2623,8 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass * mission, bool)
 
 
 /// <summary>
-/// Converts every vehicle of the team to the type its Convert.Script names (Ares script line 68). Vehicles
-/// without that key, and members that are not vehicles, are unchanged. The step ends at once.
+/// Converts every vehicle and soldier of the team to the type its Convert.Script names (Ares script line 68).
+/// Members without that key, and aircraft, are unchanged. The step ends at once.
 /// </summary>
 void TeamClass::TMission_CONVERT_TYPE(TeamMissionClass *, bool)
 {
@@ -2632,6 +2632,10 @@ void TeamClass::TMission_CONVERT_TYPE(TeamMissionClass *, bool)
 		if (unit->What_Am_I() == RTTI_UNIT) {
 			UnitClass * vehicle = (UnitClass *)unit;
 			vehicle->Convert_To(vehicle->Class->ConvertScript);
+		}
+		if (unit->What_Am_I() == RTTI_INFANTRY) {
+			InfantryClass * soldier = (InfantryClass *)unit;
+			soldier->Convert_To(soldier->Class->ConvertScript);
 		}
 	}
 	IsNextMission = true;

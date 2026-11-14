@@ -1293,6 +1293,47 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 
 
 /// <summary>
+/// Turns this object into another type of its own kind where it stands. It keeps its owner, rank, mission, team,
+/// selection and place, and the same share of its health; ammo above the new type's maximum is cut. A type with
+/// another locomotor is refused, because the locomotor of an object is built with it.
+/// </summary>
+/// <param name="type">The new type, which the caller has checked is of this object's kind.</param>
+/// <param name="set_class">Stores the new type in the object's own type member.</param>
+/// <returns>bool; Did the object change type?</returns>
+bool FootClass::Convert_Class(TechnoTypeClass const * type, void (* set_class)(FootClass &, TechnoTypeClass const *))
+{
+	TechnoTypeClass const * old_type = Techno_Type_Class();
+	if (type == NULL || type == old_type) {
+		return(false);
+	}
+	if (std::memcmp(&type->Locomotor, &old_type->Locomotor, sizeof(type->Locomotor)) != 0) {
+		DebugString("Convert: %s cannot become %s, which has another locomotor\n", old_type->Name(), type->Name());
+		return(false);
+	}
+
+	DebugString("Convert: %s becomes %s\n", old_type->Name(), type->Name());
+	if (House != NULL) {
+		House->Tracking_Remove(this);
+	}
+	set_class(*this, type);
+	if (House != NULL) {
+		House->Tracking_Add(this);
+	}
+	Strength = ObjectKeyRules::Converted_Strength(Strength, old_type->MaxStrength, type->MaxStrength);
+	EstimatedHealth = Strength;
+	if (type->MaxAmmo >= 0 && Ammo > type->MaxAmmo) {
+		Ammo = type->MaxAmmo;
+	}
+	IsCloakable = type->IsCloakable || IsCloakable;
+	Mark(MARK_CHANGE);
+	if (IsSelected && House != NULL && House->Is_Player_Control()) {
+		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
 /// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
 /// way through. The place is not checked: the caller sees to what stands there.

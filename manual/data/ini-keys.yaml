@@ -10755,13 +10755,27 @@ Convert.Land:
 Convert.Script:
   key: Convert.Script
   scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: ConvertScript
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
   - applies_to: *id025
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: class
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: UnitTypeClass

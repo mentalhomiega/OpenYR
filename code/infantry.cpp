@@ -3949,6 +3949,18 @@ ObjectTypeClass const * InfantryClass::Class_Of(void) const
 }
 
 
+/// <summary>
+/// Turns this soldier into another infantry type where it stands, as FootClass::Convert_Class describes.
+/// </summary>
+/// <returns>bool; Did the soldier change type?</returns>
+bool InfantryClass::Convert_To(InfantryTypeClass const * type)
+{
+	return(Convert_Class(type, [](FootClass & self, TechnoTypeClass const * to) {
+		static_cast<InfantryClass &>(self).Class = const_cast<InfantryTypeClass *>(static_cast<InfantryTypeClass const *>(to));
+	}));
+}
+
+
 /***********************************************************************************************
  * InfantryClass::Read_INI -- Reads units from scenario INI file.                              *
  *                                                                                             *

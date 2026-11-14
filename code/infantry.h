@@ -166,6 +166,7 @@ class InfantryClass : public FootClass
 		virtual void const * Get_Image_Data(void) const override;
 		int Shape_Number(void) const;
 		virtual ObjectTypeClass const * Class_Of(void) const override;
+		bool Convert_To(InfantryTypeClass const * type);
 		virtual const char * Full_Name(void) const override;
 
 		/*

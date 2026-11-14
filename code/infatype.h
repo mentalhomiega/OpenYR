@@ -239,6 +239,9 @@ class InfantryTypeClass : public TechnoTypeClass
 		 */
 		bool IsWebImmune;
 
+		// The infantry type a soldier of this type becomes on a Convert type team script line, or NULL for none (Ares Convert.Script).
+		InfantryTypeClass const * ConvertScript;
+
 		/*
 		**	This is the explicit infantry type class constructor.
 		*/
