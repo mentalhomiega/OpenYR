@@ -2324,6 +2324,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	AutoTest_Require_RA2_Numbering(HouseTypeClass::RA2_Numbering_Loaded());
 	Check_Map_Rules(Scen->ScenarioName, std::string_view(Scen->SourceFile.Data(), Scen->SourceFile.Size()), DeploymentConfig.RulesFile.c_str());
 	TutorialText.Read_Overrides(ini);
+	AutoTest_Rules_Read();
 	Session.Update_Progress(45);
 
 	/*

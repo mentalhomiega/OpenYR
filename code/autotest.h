@@ -56,6 +56,7 @@ bool AutoTest_Post_Win(void);
 
 void AutoTest_Loading_Screen_Shown(void);
 void AutoTest_Load_Progress_Shown(char const * text, double fraction);
+void AutoTest_Rules_Read(void);
 
 // Saves the window once the multiplayer score screen is drawn in full, when a script is running.
 void AutoTest_Score_Shown(void);

@@ -17,6 +17,8 @@
 
 #include <cstdio>
 #include <memory>
+#include <utility>
+#include <vector>
 
 class SaveStreamClass;
 class SaveVersionInfo;
@@ -60,6 +62,7 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info);
 bool Save_Game(const char *file_name, char const * descr);
 bool Load_Game(const char *file_name);
 bool Dump_Game_State(char const * path);
+std::vector<std::pair<char const *, unsigned>> Type_State_Checksums(void);
 void Dump_Mark(SaveStreamClass const & stream, char const * name);
 bool Reconcile_Players(void);
 void Print_Heap_CRCs(FILE * fp);
