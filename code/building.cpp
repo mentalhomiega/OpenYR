@@ -345,6 +345,9 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->IsBuildingSpied && Class != NULL && Class->IsTrainable) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranBuildings.Is_In_List(Class)) {
+		Veterancy.Set_Veteran(true);
+	}
 
 	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
 	if (House != NULL) {

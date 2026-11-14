@@ -30,6 +30,7 @@
 #include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
+#include "houstype.h"
 #include "infatype.h"
 #include "mixfile.h"
 #include "objectkeyrules.h"
@@ -696,6 +697,10 @@ bool TechnoTypeClass::Is_Alt_Cameo_Shown(void) const
 		bool const barracks = PlayerPtr->IsBarracksInfiltrated && rtti == RTTI_INFANTRYTYPE;
 		bool const factory = PlayerPtr->IsWarFactoryInfiltrated && (rtti == RTTI_UNITTYPE || (rtti == RTTI_BUILDINGTYPE && UndeploysInto != NULL));
 		return(barracks || factory);
+	}
+	// A country's VeteranBuildings show their alternate cameo whether or not they are trainable (Ares).
+	if (PlayerPtr != NULL && PlayerPtr->Class != NULL && Fetch_RTTI() == RTTI_BUILDINGTYPE && PlayerPtr->Class->VeteranBuildings.Is_In_List((BuildingTypeClass const *)this)) {
+		return(true);
 	}
 	return(false);
 }
