@@ -288,8 +288,27 @@ static void Collect_Cell_Hits(Coord const & coord, int strength, TechnoClass * s
 {
 	int const radius = CellSpread::Radius_For(warhead->CellSpread);
 	int const count = Cell_Spread_Count(radius);
-	for (int index = 0; index < count; index++) {
-		Cell const where = cell + Cell_Spread_Offset(index);
+
+	// The table ends at CELL_SPREAD_MAX cells, which is as far as Yuri's Revenge lets a blast reach. Ares has no
+	// such limit, so a larger CellSpread goes on over the cells past the table, ring by ring.
+	std::vector<Cell> beyond;
+	int const reach = (int)(warhead->CellSpread + 0.99f);
+	if (reach > CELL_SPREAD_MAX) {
+		for (int ring = CELL_SPREAD_MAX; ring <= reach; ring++) {
+			for (int y = -ring; y <= ring; y++) {
+				int const step = (y == -ring || y == ring) ? 1 : 2 * ring;
+				for (int x = -ring; x <= ring; x += step) {
+					int const square = x * x + y * y;
+					if (square > CELL_SPREAD_MAX * CELL_SPREAD_MAX && square <= reach * reach && Map.In_Radar(cell + Cell(x, y))) {
+						beyond.push_back(Cell(x, y));
+					}
+				}
+			}
+		}
+	}
+
+	for (int index = 0; index < count + (int)beyond.size(); index++) {
+		Cell const where = cell + (index < count ? Cell_Spread_Offset(index) : beyond[index - count]);
 		if (!Map.In_Radar(where)) continue;
 		CellClass * cptr = &Map[where];
 
