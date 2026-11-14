@@ -41125,10 +41125,10 @@ SecondSpawnOffset:
   key: SecondSpawnOffset
   scopes:
   - applies_to: *id005
-    file: rules.ini
+    file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: point (x,y,z)
     status: generated
     _provenance:

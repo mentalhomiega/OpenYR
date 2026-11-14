@@ -1376,7 +1376,6 @@ void TechnoTypeClass::Read_Spawns_INI(CCINIClass const & ini)
 	SpawnsNumber = ini.Get_Int(Name(), "SpawnsNumber", SpawnsNumber);
 	SpawnRegenRate = ini.Get_Int(Name(), "SpawnRegenRate", SpawnRegenRate);
 	SpawnReloadRate = ini.Get_Int(Name(), "SpawnReloadRate", SpawnReloadRate);
-	SecondSpawnOffset = ini.Get_Point(Name(), "SecondSpawnOffset", SecondSpawnOffset);
 	IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
 	IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
 	Enslaves = TGet_Class(ini, Name(), "Enslaves", Enslaves);
@@ -1861,6 +1860,8 @@ void TechnoTypeClass::Read_Art_INI(void)
 	}
 
 	TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
+	// gamemd reads the second launch point from the art section only (TechnoTypeClass::LoadFromINI, 0x712170).
+	SecondSpawnOffset = ArtINI.Get_Point(Graphic_Name(), "SecondSpawnOffset", SecondSpawnOffset);
 }
 
 
