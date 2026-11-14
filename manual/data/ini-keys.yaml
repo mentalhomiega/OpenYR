@@ -3628,7 +3628,7 @@ Anim:
     value_type: list of AnimTypes
     status: generated
     _provenance:
-      default_candidate: ''
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: Anim
       source: code/weapon.cpp
@@ -3933,7 +3933,7 @@ ApplyDamage:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: ApplyDamage
       source: code/weapon.cpp
@@ -4002,7 +4002,7 @@ AreaFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsAreaFire
       source: code/weapon.cpp
@@ -6729,7 +6729,7 @@ Bright:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsBright
       source: code/weapon.cpp
@@ -8855,7 +8855,7 @@ CellRangefinding:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsCellRangefinding
       source: code/weapon.cpp
@@ -13422,7 +13422,7 @@ DecloakToFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsDecloakToFire
       source: code/weapon.cpp
@@ -14941,7 +14941,7 @@ DisguiseFakeBlinkTime:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: DisguiseFakeBlinkTime
       source: code/weapon.cpp
@@ -15080,7 +15080,7 @@ DistributedWeaponFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsDistributedFire
       source: code/weapon.cpp
@@ -18687,7 +18687,7 @@ ExtendedAnimFacings:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsExtendedAnimFacings
       source: code/weapon.cpp
@@ -25246,7 +25246,7 @@ IsBigLaser:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsBigLaser
       source: code/weapon.cpp
@@ -25447,7 +25447,7 @@ IsHouseColor:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsHouseColor
       source: code/weapon.cpp
@@ -25566,7 +25566,7 @@ IsMagBeam:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsMagBeam
       source: code/weapon.cpp
@@ -25854,7 +25854,7 @@ IsSonic:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsSonic
       source: code/weapon.cpp
@@ -26821,7 +26821,7 @@ LaserDuration:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '10'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: LaserDuration
       source: code/weapon.cpp
@@ -28319,7 +28319,7 @@ Lobber:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsLobber
       source: code/weapon.cpp
@@ -32059,7 +32059,7 @@ NeverUse:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsNeverUse
       source: code/weapon.cpp
@@ -33350,7 +33350,7 @@ OmniFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsOmniFire
       source: code/weapon.cpp
@@ -39235,7 +39235,7 @@ Report:
     value_type: list of sounds
     status: reviewed
     _provenance:
-      default_candidate: ''
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: Sound
       source: code/weapon.cpp
@@ -39496,7 +39496,7 @@ RevealOnFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsRevealOnFire
       source: code/weapon.cpp
@@ -48979,7 +48979,7 @@ TerrainFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsTerrainFire
       source: code/weapon.cpp
@@ -50706,7 +50706,7 @@ TurboBoost:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsTurboBoosted
       source: code/weapon.cpp
@@ -54458,7 +54458,7 @@ Wave.IsBigLaser:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: WeaponTypeClass
       member: IsBigLaser
       source: code/weapon.cpp
@@ -54475,7 +54475,7 @@ Wave.ReverseAgainstAircraft:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: WaveReverseAircraft
       source: code/weapon.cpp
@@ -54492,7 +54492,7 @@ Wave.ReverseAgainstBuildings:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: WaveReverseBuildings
       source: code/weapon.cpp
@@ -54509,7 +54509,7 @@ Wave.ReverseAgainstInfantry:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: WaveReverseInfantry
       source: code/weapon.cpp
@@ -54526,7 +54526,7 @@ Wave.ReverseAgainstOthers:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: WaveReverseOthers
       source: code/weapon.cpp
@@ -54543,7 +54543,7 @@ Wave.ReverseAgainstVehicles:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: WaveReverseVehicles
       source: code/weapon.cpp
