@@ -4732,6 +4732,38 @@ static void Timers_Step(StepType const &)
 }
 
 
+// aimcell <offensive|defensive|clear> x y: sets the first computer house's offensive or defensive super weapon cell, as trigger
+// actions 135 and 140 do, or clears both.
+static void Aimcell_Step(StepType const & step)
+{
+	HouseClass * house = First_Computer_House(false);
+	if (house == NULL) return;
+	Cell const cell(step.X, step.Y);
+	if (stricmp(step.Argument.c_str(), "offensive") == 0) {
+		house->PreferredTargetCell = cell;
+	} else if (stricmp(step.Argument.c_str(), "defensive") == 0) {
+		house->PreferredDefensiveCell = cell;
+		house->PreferredDefensiveCellStartTime = Frame;
+	} else {
+		house->PreferredTargetCell = CELL_NONE;
+		house->PreferredDefensiveCell = CELL_NONE;
+	}
+	DebugString("AUTOTEST   aimcell %s of %s offensive %d,%d defensive %d,%d\n", step.Argument.c_str(), house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->PreferredDefensiveCell.X, (int)house->PreferredDefensiveCell.Y);
+}
+
+
+// aimpick <SuperWeaponTypeID>: writes whether the first computer house would fire that super weapon by its SW.AITargeting rules now, and at which cell.
+static void Aimpick_Step(StepType const & step)
+{
+	HouseClass * house = First_Computer_House(false);
+	SuperClass * super = house != NULL ? Super_Of(house, step.Argument) : NULL;
+	if (super == NULL) return;
+	Cell cell = CELL_NONE;
+	bool const fire = house->Pick_Super_Target(super, cell);
+	DebugString("AUTOTEST   aimpick %s of %s fire %d cell %d,%d\n", step.Argument.c_str(), house->Class->Name(), (int)fire, (int)cell.X, (int)cell.Y);
+}
+
+
 // nukeflash: writes whether the map-wide nuclear flash is fading in or fading out.
 static void Nukeflash_Step(StepType const &)
 {
@@ -7722,6 +7754,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"chargeai", Chargeai_Step},
 		{"timers", Timers_Step},
 		{"nukeflash", Nukeflash_Step},
+		{"aimcell", Aimcell_Step},
+		{"aimpick", Aimpick_Step},
 		{"fire", Fire_Step},
 		{"rules", Rules_Step},
 		{"reload", Reload_Step},

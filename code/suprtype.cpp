@@ -336,6 +336,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.AIRequiresTarget = SuperRules::Parse_Targets(ini.Get_String(IniName, "SW.AIRequiresTarget"), Keys.AIRequiresTarget);
 		Keys.Set_AI_Requires_House(ini.Get_String(IniName, "SW.AIRequiresHouse"));
 		Keys.AIConstraints = SuperRules::Parse_Constraints_Or(ini.Get_String(IniName, "SW.AITargeting.Constraints"), Keys.AIConstraints);
+		Keys.AIPreference = int(SuperRules::Parse_AI_Preference(ini.Get_String(IniName, "SW.AITargeting.Preference"), SuperRules::AIPreference(Keys.AIPreference)));
 		Keys.UseAITargeting = ini.Get_Bool(IniName, "SW.UseAITargeting", Keys.UseAITargeting);
 		Keys.AutoFire = ini.Get_Bool(IniName, "SW.AutoFire", Keys.AutoFire);
 		Keys.ManualFire = ini.Get_Bool(IniName, "SW.ManualFire", Keys.ManualFire);

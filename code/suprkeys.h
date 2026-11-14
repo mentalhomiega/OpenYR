@@ -117,6 +117,8 @@ struct SuperWeaponKeys
 	unsigned AIRequiresTarget;
 	unsigned AIRequiresHouse;
 	unsigned AIConstraints;
+	// An SuperRules::AIPreference; Default until SW.AITargeting.Preference is set.
+	int AIPreference;
 	bool UseAITargeting;
 	bool AutoFire;
 	bool ManualFire;

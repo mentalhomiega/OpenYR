@@ -39533,6 +39533,23 @@ SW.AITargeting.Constraints:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SW.AITargeting.Preference:
+  key: SW.AITargeting.Preference
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SW.ActivationSound:
   key: SW.ActivationSound
   scopes:

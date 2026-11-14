@@ -10316,7 +10316,8 @@ void HouseClass::AI_Super_Weapons(void)
 				**	its own, with no need for the computer to find a target. The missile and the storm
 				**	still need an enemy.
 				*/
-				if (PreferredTargetCell != CELL_NONE) {
+				Cell const preferred = Preferred_Super_Cell(super, SuperRules::AIPreference::Offensive);
+				if (preferred != CELL_NONE) {
 					bool aimed = false;
 					switch (super->Class->Type) {
 						case SUPER_PARA_DROP:
@@ -10342,7 +10343,7 @@ void HouseClass::AI_Super_Weapons(void)
 							break;
 					}
 					if (aimed) {
-						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), PreferredTargetCell);
+						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), preferred);
 						continue;
 					}
 				}
@@ -11866,8 +11867,33 @@ bool HouseClass::Pick_Super_Target(SuperClass const * super, Cell & cell)
 	if (!needs_cell) {
 		return(true);
 	}
+	Cell const preferred = Preferred_Super_Cell(super, Default_AI_Preference(mode));
+	if (preferred != CELL_NONE) {
+		cell = preferred;
+	}
 	if (cell == CELL_NONE || !Map.In_Radar(cell)) {
 		return(false);
 	}
 	return(super->Class->Fits_AI_Target(this, cell));
+}
+
+
+/// <summary>
+/// The cell a trigger action set that this superweapon aims at in place of the computer's own pick
+/// (SW.AITargeting.Preference, or the given default when the key is not set): the offensive cell
+/// (action 135), the defensive cell (action 140), or CELL_NONE when that cell is clear or the
+/// preference is None.
+/// </summary>
+Cell HouseClass::Preferred_Super_Cell(SuperClass const * super, SuperRules::AIPreference fallback) const
+{
+	using SuperRules::AIPreference;
+	AIPreference preference = AIPreference(super->Class->Keys.AIPreference);
+	if (preference == AIPreference::Default) {
+		preference = fallback;
+	}
+	switch (preference) {
+		case AIPreference::Offensive: return(PreferredTargetCell);
+		case AIPreference::Defensive: return(PreferredDefensiveCell);
+		default: return(CELL_NONE);
+	}
 }

@@ -89,6 +89,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	AIRequiresTarget(UNSET_MASK),
 	AIRequiresHouse(UNSET_MASK),
 	AIConstraints(0),
+	AIPreference(int(SuperRules::AIPreference::Default)),
 	UseAITargeting(false),
 	AutoFire(false),
 	ManualFire(true),
@@ -473,6 +474,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AIRequiresTarget);
 	stream.Serialize(AIRequiresHouse);
 	stream.Serialize(AIConstraints);
+	stream.Serialize(AIPreference);
 	stream.Serialize(UseAITargeting);
 	stream.Serialize(AutoFire);
 	stream.Serialize(ManualFire);
@@ -620,6 +622,7 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(Damage);
 	crc(AITargeting);
 	crc((int)AIConstraints);
+	crc(AIPreference);
 	crc(UseAITargeting);
 	crc(AutoFire);
 	crc(DeliverOwnerMode);

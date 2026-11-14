@@ -144,6 +144,9 @@ class HouseStaticClass {
 };
 
 
+namespace SuperRules { enum class AIPreference; }
+
+
 /****************************************************************************
 **	Player control structure. Each player (computer or human) has one of
 **	these structures associated. These are located in a global array.
@@ -1031,6 +1034,7 @@ class HouseClass : public AbstractClass
 		bool Super_Weapon_Allowed(SuperClass const * super) const;
 		bool Super_Weapon_Uses_Chosen_Target(SuperClass const * super) const;
 		bool Pick_Super_Target(SuperClass const * super, Cell & cell);
+		Cell Preferred_Super_Cell(SuperClass const * super, SuperRules::AIPreference fallback) const;
 		int Battery_Power(void) const;
 		bool Battery_Affects(BuildingTypeClass const * type, bool overpower) const;
 		void Enable_Available_Super_Weapons(void);
