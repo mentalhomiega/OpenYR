@@ -18102,6 +18102,24 @@ Engineer:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EngineerAlwaysCaptureTech:
+  key: EngineerAlwaysCaptureTech
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsEngineerAlwaysCaptureTech
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 EngineerCaptureLevel:
   key: EngineerCaptureLevel
   scopes:

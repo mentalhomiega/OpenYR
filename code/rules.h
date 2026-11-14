@@ -3098,4 +3098,7 @@ class RulesClass
 
 		/// Unused
 		float EngineerDamage;
+
+		// EngineerAlwaysCaptureTech (Ares): a tech structure gets the capture cursor whatever its health.
+		bool IsEngineerAlwaysCaptureTech;
 };

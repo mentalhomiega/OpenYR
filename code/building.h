@@ -478,6 +478,9 @@ class BuildingClass : public TechnoClass
 		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
 		bool HasEngineer;
 
+		// Whether the structure's first owner was a MultiplayPassive country, which makes it a tech structure (Ares).
+		bool IsTechStructure;
+
 		// The item a tech secret lab drew when the game started; null for a lab placed later.
 		TechnoTypeClass const * SecretProduct;
 

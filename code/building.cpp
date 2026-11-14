@@ -312,6 +312,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsShieldTinted(false),
 	IsCurtainDrawn(false),
 	HasEngineer(false),
+	IsTechStructure(house != NULL && house->Class != NULL && house->Class->IsMultiplayPassive),
 	SecretProduct(NULL)
 {
 	Create_ID();
@@ -11587,6 +11588,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
 	stream.Serialize(HasEngineer);
+	stream.Serialize(IsTechStructure);
 	stream.Serialize(SecretProduct);
 	stream.Serialize(PsiWarnAnim);
 	stream.Serialize(PadPassFrame);
