@@ -453,6 +453,9 @@ class TechnoClass :	public RadioClass,
 		*/
 		int Ammo;
 
+		// Frames left until the object regains one shot of ammunition (Reload=, EmptyReload= and ReloadIncrement=).
+		CDTimerClass<FrameTimerClass> Reload;
+
 		/*
 		**	This is the amount of money spent to produce this object. This value really
 		**	only comes into play for the case of buildings that have special "free"
@@ -924,6 +927,8 @@ class TechnoClass :	public RadioClass,
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
 		virtual void Reduce_Ammunition(void);
+		void Reload_Ammunition(void);
+		void Start_Reloading(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL, bool estimate=false);
 		bool Target_And_Estimate_Damage(Coord const & coord, ThreatType threat);
 		bool Targeting_Timer_Finished(void) const { return(TargetingTimer.Value() == 0); }

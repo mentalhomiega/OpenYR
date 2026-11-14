@@ -273,7 +273,6 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	MirageBlockedUntil(0),
 	MirageCreationFrame(0),
 	MirageBlinkUntil(0),
-	Reload(0),
 	FiringSyncDelay(-1),
 	VisceroidFacing(FACING_NONE),
 	DeathCounter(-1),
@@ -871,39 +870,7 @@ void UnitClass::Reload_AI(void)
 		Reload = Reload + 1;
 	}
 
-	// A shot of ammunition returns once the timer runs out, and the timer starts again (TechnoClass::Reload, 0x6FB010).
-	if (Class->MaxAmmo == -1 || Class->MaxAmmo <= Ammo || Reload != 0) {
-		return;
-	}
-	int const amount = Ammo == 0 ? Class->Empty_Reload_Amount() : Class->ReloadAmount;
-	if (Ammo == 0 && amount <= 0) {
-		return;
-	}
-	int const restored = std::clamp(Ammo + amount, 0, Class->MaxAmmo);
-	if (restored != Ammo) {
-		Ammo = restored;
-		Mark(MARK_CHANGE);
-	}
-	Start_Reloading();
-}
-
-
-/// <summary>
-/// Starts the countdown to the next shot of ammunition. A unit with no ammunition left uses EmptyReload when
-/// the type sets it. Otherwise the delay is Reload plus ReloadIncrement for each PipWrap shots held, squared
-/// (TechnoClass::StartReloading, 0x6FB080). A unit already full is left alone.
-/// </summary>
-void UnitClass::Start_Reloading(void)
-{
-	if (Ammo >= Class->MaxAmmo) {
-		return;
-	}
-	if (Ammo == 0 && Class->EmptyReloadDelay != -1) {
-		Reload = Class->EmptyReloadDelay;
-		return;
-	}
-	int const steps = Class->PipWrap == 0 ? 1 : Ammo / Class->PipWrap;
-	Reload = Class->ReloadDelay + Class->ReloadIncrement * steps * steps;
+	Reload_Ammunition();
 }
 
 
@@ -7264,7 +7231,6 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(FiringSyncDelay);
-	stream.Serialize(Reload);
 	stream.Serialize(Class);
 	stream.Serialize(FollowingMe);
 	stream.Serialize(Flagged);
@@ -7308,7 +7274,6 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc((int)Reload);
 	crc(Class->Fetch_RTTI());
 	crc(Class->Fetch_ID());
 	if (FollowingMe != NULL) {

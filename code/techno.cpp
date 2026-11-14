@@ -291,6 +291,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	SecondaryFacing(),
 	Arm(0),
 	Ammo(-1),
+	Reload(0),
 	PurchasePrice(0),
 	ActLike(HOUSE_NONE),
 	Cargo(),
@@ -7170,9 +7171,7 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 		if (Ammo < 0) {
 			Ammo = 0;
 		}
-		if (RTTI == RTTI_UNIT) {
-			((UnitClass *)this)->Start_Reloading();
-		}
+		Start_Reloading();
 	}
 
 	// A CausesDelayKill warhead sets a fuse on an EligibleForDelayKill structure, later the farther it is from the blast (TechnoClass::ReceiveDamage, 0x701E92).
@@ -11998,6 +11997,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PitchAngle);
 	stream.Serialize(Arm);
 	stream.Serialize(Ammo);
+	stream.Serialize(Reload);
 	stream.Serialize(PurchasePrice);
 	stream.Serialize(ParticleSystems);
 	stream.Serialize(Wave);
@@ -12081,6 +12081,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(PitchAngle);
 	crc((int)Arm);
 	crc(Ammo);
+	crc((int)Reload);
 	crc(PurchasePrice);
 	crc(BurstIndex);
 	crc(RadialFireIndex);
@@ -13191,6 +13192,48 @@ void TechnoClass::Reduce_Ammunition(void)
 	if (Ammo > 0) {
 		Ammo--;
 	}
+}
+
+
+/// <summary>
+/// Gives back ReloadAmount shots, or EmptyReloadAmount when none are left, once the reload timer has run out, and
+/// starts it again (TechnoClass::Reload, 0x6FB010). Nothing happens to a full object or one with unlimited ammunition.
+/// </summary>
+void TechnoClass::Reload_Ammunition(void)
+{
+	if (TClass->MaxAmmo == -1 || TClass->MaxAmmo <= Ammo || Reload != 0) {
+		return;
+	}
+	int const amount = Ammo == 0 ? TClass->Empty_Reload_Amount() : TClass->ReloadAmount;
+	if (Ammo == 0 && amount <= 0) {
+		return;
+	}
+	int const restored = std::clamp(Ammo + amount, 0, TClass->MaxAmmo);
+	if (restored != Ammo) {
+		Ammo = restored;
+		Mark(MARK_CHANGE);
+	}
+	Start_Reloading();
+}
+
+
+/// <summary>
+/// Starts the countdown to the next shot of ammunition. With no ammunition left the delay is EmptyReload when the
+/// type sets it. Otherwise it is Reload plus ReloadIncrement for each PipWrap shots held, squared
+/// (TechnoClass::StartReloading, 0x6FB080). A full object is left alone. A Reload of -1 lets the shot back on the
+/// next frame, as gamemd's timer does.
+/// </summary>
+void TechnoClass::Start_Reloading(void)
+{
+	if (Ammo >= TClass->MaxAmmo) {
+		return;
+	}
+	if (Ammo == 0 && TClass->EmptyReloadDelay != -1) {
+		Reload = TClass->EmptyReloadDelay;
+		return;
+	}
+	int const steps = TClass->PipWrap == 0 ? 1 : Ammo / TClass->PipWrap;
+	Reload = TClass->ReloadDelay + TClass->ReloadIncrement * steps * steps;
 }
 
 
