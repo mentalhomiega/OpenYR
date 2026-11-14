@@ -1933,7 +1933,9 @@ void BulletClass::Airburst(void)
 
 /// <summary>
 /// Splits this projectile into Cluster bomblets of its AirburstWeapon. Each goes to the target, or, when there is none
-/// or the RetargetAccuracy roll fails, to a locked object within five cells or a random cell within three.
+/// or the RetargetAccuracy roll fails, to a locked object within five cells or a random cell within three. Each
+/// bomblet carries the AirburstWeapon's own Damage, Speed and Bright, which Ares uses in place of Tiberian Sun's
+/// ten times the Damage, fixed speed and no flash (Ares manual, Splits).
 /// </summary>
 void BulletClass::Split(void)
 {
@@ -1992,7 +1994,7 @@ void BulletClass::Split(void)
 
 		if (target != NULL) {
 			const BulletTypeClass * btype = weapon->Bullet;
-			BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
+			BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);
 			if (bullet != NULL) {
 				TVelocity3D<double> velocity = Random_Bomblet_Velocity(weapon);
 				bullet->Unlimbo(PositionCoord, velocity);
