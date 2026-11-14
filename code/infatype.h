@@ -232,6 +232,9 @@ class InfantryTypeClass : public TechnoTypeClass
 		// A NotHuman= type leaves no body from the shared DeadBodies list when it dies.
 		bool IsNotHuman;
 
+		// NoSelfGuardArea= (Ares): a healer clicked on itself gets its ordinary self click, such as deploy, instead of guard area.
+		bool IsNoSelfGuardArea;
+
 		// UseOwnName= is read and kept. gamemd uses it to name a gunner vehicle's tooltip after its passenger; that label is not built here.
 		bool IsUseOwnName;
 
