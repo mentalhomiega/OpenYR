@@ -89,6 +89,7 @@
 #include "lstorm.h"
 #include "language/language.h"
 #include "loaddlg.h"
+#include "loadprogress.h"
 #include "light.h"
 #include "logic.h"
 #include "mods.h"
@@ -167,6 +168,15 @@
 ********************************** Defines **********************************
 */
 unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
+
+// Where the loading notice's bar stands as each part of a saved game load starts, in step with the share
+// of the time each part takes for a large mod's mission.
+static double const SAVE_STEP_FILE = 0.0;
+static double const SAVE_STEP_TERRAIN = 0.05;
+static double const SAVE_STEP_RULES = 0.06;
+static double const SAVE_STEP_MAP = 0.37;
+static double const SAVE_STEP_OBJECTS = 0.68;
+static double const SAVE_STEP_BATTLEFIELD = 0.99;
 
 // While Dump_Game_State runs, the offset and class of each object record it writes.
 static std::vector<std::pair<unsigned int, std::string>> * DumpRecords = nullptr;
@@ -613,7 +623,10 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 
 	Environment.Load(stream);
 
+	Load_Progress_Step("Preparing the terrain...", SAVE_STEP_TERRAIN);
 	Init_Theater(Scen->Theater);
+
+	Load_Progress_Step("Reading the rules...", SAVE_STEP_RULES);
 
 	RulesClass::Load_Art_INI();
 
@@ -636,6 +649,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
+	Load_Progress_Step("Reading the map...", SAVE_STEP_MAP);
 	if (!Map.Load(stream)) {
 		return(false);
 	}
@@ -665,6 +679,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	// what deletes it from here on.
 	tactical.release();
 
+	Load_Progress_Step("Placing objects...", SAVE_STEP_OBJECTS);
 	if (!Load_Vector<HouseTypeClass>(stream)) {	/// HouseTypes
 		return(false);
 	}
@@ -1009,6 +1024,8 @@ bool Dump_Game_State(char const * path)
  *=========================================================================*/
 bool Load_Game(const char *file_name)
 {
+	LoadProgressScopeClass const notice("Loading...");
+	Load_Progress_Step("Reading the saved game...", SAVE_STEP_FILE);
 	DebugString("\nLOADING GAME [%s]\n", file_name);
 
 	// The whole file is checked before the running game is torn down, so a damaged
@@ -1064,6 +1081,7 @@ bool Load_Game(const char *file_name)
 		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
+	Load_Progress_Step("Preparing the battlefield...", SAVE_STEP_BATTLEFIELD);
 	Swizzler.Resolve();
 
 	/*

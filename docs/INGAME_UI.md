@@ -80,6 +80,35 @@ build once it is complete, and to Classic until then. The options screen gets a 
 A change from the main menu applies when the settings close; one made in a game applies on the
 way back to the main menu.
 
+## Loading notice
+
+With the modern menus, a long load shows the loading notice: the wait box at the centre of the
+screen, with a line of text naming the part of the load under way and a bar below it whose filled
+length shows how far the load has come, against an outlined track. During a scenario load it stands
+over the loading picture, whose own bar along the bottom still moves; at start-up it stands on the
+menu backdrop. With the classic menus nothing is shown, and the loading screens keep only their own
+bars.
+
+Start-up, scenario loading (missions, skirmish and network games) and saved game loading use it.
+Other code uses `code/loadprogress.h`:
+
+- `Load_Progress_Begin(text, backdrop)` and `Load_Progress_End()` show and hide the notice, or
+  `LoadProgressScopeClass` does both for its lifetime. Pairs nest: the outermost pair shows and
+  hides the notice, and an inner pair shares it, so a saved game loaded from a dialog that already
+  shows the notice keeps one box. The notice leaves the screen under it in view; with `backdrop`
+  set, as at start-up, the menu backdrop is drawn behind it instead.
+- `Load_Progress_Step(text, fraction)` names the part that starts now and moves the bar to
+  `fraction`, from 0 to 1. It does nothing while no notice is shown. It redraws the notice and
+  presents it once; it runs no game logic and handles no window messages, so it is cheap enough to
+  call between any two parts of a load.
+- `LoadProgressMuteClass` leaves the notice as it stands for its lifetime, for a load nested in
+  another whose steps would mislead, such as the menu battle loading under the start-up notice.
+
+Set each step's fraction to the share of the load's time that the steps before it take for a large
+mod, so the bar moves at an even pace. Each step logs `AUTOTEST loadstep <percent>% <text>` in a
+test run, and the autotest command `stepshot` saves a picture at each step
+([AUTOTEST.md](AUTOTEST.md)).
+
 ## Steps
 
 1. **Full-screen map with the classic sidebar floating over it.** The view takes the whole screen;
