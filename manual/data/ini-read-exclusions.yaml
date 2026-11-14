@@ -342,6 +342,11 @@ site_exclusions:
     keys: [InTests]
     classification: excluded
     reason: A switch the menu battle test scripts write with -Settings so the battle runs during a test; the manual does not document it.
+  - path: code/rulescheck.cpp
+    function: Log_Report_Or_Kept
+    keys: [KeepInTests]
+    classification: excluded
+    reason: A switch a timing script writes with -Settings so a test run keeps INI check outcomes as a normal run does; the manual does not document it.
 
   # Campaign mission labels and palettes that the mission browser shows as menu text.
   - path: code/scenario.cpp

@@ -3169,6 +3169,19 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:wait-for-process
+  route_id: wait-for-process
+  kind: launch
+  title: Wait for a process
+  description: Makes this copy wait, for up to 30 seconds, until the process with that id has gone before
+    it starts. The game passes it to the copy it starts when the player chooses Restart now after changing
+    the mod list, so the new copy does not meet the old one still running.
+  audience: developer
+  availability: *id001
+  syntax: -WAITPID=<process id>
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:exception-test
   route_id: exception-test
   kind: launch
