@@ -4446,7 +4446,7 @@ bool AircraftClass::Should_Delete_Off_Map(void)
 /// Aircraft do not lose ammunition through the normal firing sequence -- their supply is
 /// accounted for by the mission code instead -- so this override does nothing at all.
 /// </summary>
-void AircraftClass::Reduce_Ammunition(void)
+void AircraftClass::Reduce_Ammunition(int)
 {
 	//nothing
 }

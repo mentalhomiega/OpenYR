@@ -4885,14 +4885,14 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	if (weapon->IsSonic && Wave) return(FIRE_REARM);
 
 	/*
-	**	If there is no ammo left, then it can't fire. A type with a NoAmmoWeapon fires that weapon
-	**	once its ammunition is low, and no other (Ares).
+	**	Without the rounds a shot uses it can't fire, and waits for them to reload (Ares weapon Ammo). A type
+	**	with a NoAmmoWeapon fires that weapon once its ammunition is low, and no other (Ares).
 	*/
 	if (Uses_No_Ammo_Weapon()) {
 		if (which != TClass->NoAmmoWeapon) {
 			return(FIRE_AMMO);
 		}
-	} else if (!Ammo) {
+	} else if (Ammo >= 0 && Ammo < Rounds_Per_Shot(weapon)) {
 		return(FIRE_AMMO);
 	}
 
@@ -5890,7 +5890,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	/*
 	**	Reduce ammunition for this object.
 	*/
-	Reduce_Ammunition();
+	Reduce_Ammunition(Rounds_Per_Shot(weapon));
 
 	/*
 	**	Firing will in all likelihood, require the unit to be redrawn. Flag it to be
@@ -13194,13 +13194,26 @@ bool TechnoClass::Should_Use_High_Arc(int which) const
 
 
 /// <summary>
-/// Decrements the ammunition counter by one if any ammo remains.
+/// Takes the rounds one shot used from the ammunition, stopping at none left.
 /// </summary>
-void TechnoClass::Reduce_Ammunition(void)
+void TechnoClass::Reduce_Ammunition(int rounds)
 {
 	if (Ammo > 0) {
-		Ammo--;
+		Ammo = std::max(Ammo - rounds, 0);
 	}
+}
+
+
+/// <summary>
+/// Fetches the rounds of ammunition one shot of the weapon uses: the weapon's Ammo (Ares), except that aircraft use one
+/// round a shot, as Ares does not support the key on aircraft.
+/// </summary>
+int TechnoClass::Rounds_Per_Shot(WeaponTypeClass const * weapon) const
+{
+	if (weapon == NULL || RTTI == RTTI_AIRCRAFT) {
+		return(1);
+	}
+	return(weapon->AmmoUse);
 }
 
 

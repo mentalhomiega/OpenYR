@@ -3577,7 +3577,7 @@ Ammo:
       kind: identifier
       source: object-type
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '-1'
       declared_in: TechnoTypeClass
@@ -3585,6 +3585,20 @@ Ammo:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '1'
+      declared_in: WeaponTypeClass
+      member: AmmoUse
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 AmmoCrateDamage:
   key: AmmoCrateDamage
   scopes:

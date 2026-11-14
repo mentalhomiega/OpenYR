@@ -5904,9 +5904,10 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 		if (bullet != NULL) {
 
 			/*
-			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340).
+			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340),
+			**	except a shot that used no rounds (Ares weapon Ammo=0).
 			*/
-			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload) {
+			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload && Rounds_Per_Shot(weap) != 0) {
 				Start_Reloading();
 			}
 

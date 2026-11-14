@@ -3195,7 +3195,7 @@ BulletClass * InfantryClass::Fire_At(AbstractClass * target, int which)
 	IsFiring = false;
 
 	BulletClass * bullet = BASECLASS::Fire_At(target, which);
-	if (bullet != NULL && TClass->MaxAmmo > 0 && Ammo < TClass->MaxAmmo && !TClass->IsManualReload) {
+	if (bullet != NULL && TClass->MaxAmmo > 0 && Ammo < TClass->MaxAmmo && !TClass->IsManualReload && Rounds_Per_Shot(Get_Class_Weapon_Data(which)->Weapon) != 0) {
 		Start_Reloading();
 	}
 	if (bullet != NULL && !IsInLimbo) {
