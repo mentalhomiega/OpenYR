@@ -2937,7 +2937,7 @@ void DisplayClass::Power_Mode_Control(int control)
 		IsSellMode = false;
 		IsWaypointMode = false;
 		IsPlaceBeaconMode = false;
-		if (mode && PlayerPtr->CurBuildings > 0) {
+		if (mode && PlayerPtr->CurBuildings > 0 && Rule->IsTogglePowerAllowed) {
 			IsPowerMode = true;
 			Unselect_All();
 		} else {

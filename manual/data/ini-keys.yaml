@@ -50063,6 +50063,24 @@ TogglePower:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+TogglePowerAllowed:
+  key: TogglePowerAllowed
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsTogglePowerAllowed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 TooBigToFitUnderBridge:
   key: TooBigToFitUnderBridge
   scopes:

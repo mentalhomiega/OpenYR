@@ -3104,4 +3104,7 @@ class RulesClass
 
 		// RepairStopOnInsufficientFunds (Ares): with false, a human player's structure out of money keeps repair on and resumes once paid.
 		bool IsRepairStopOnInsufficientFunds;
+
+		// TogglePowerAllowed (Ares): whether the player can enter power mode. Ares defaults it to no; we keep yes, as before the key was read.
+		bool IsTogglePowerAllowed;
 };

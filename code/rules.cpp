@@ -385,6 +385,7 @@ RulesClass::RulesClass(void) :
 	EngineerDamage(0),
 	IsEngineerAlwaysCaptureTech(true),
 	IsRepairStopOnInsufficientFunds(true),
+	IsTogglePowerAllowed(true),
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
@@ -2246,6 +2247,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
 		IsEngineerAlwaysCaptureTech = ini.Get_Bool(GENERAL, "EngineerAlwaysCaptureTech", IsEngineerAlwaysCaptureTech);
 		IsRepairStopOnInsufficientFunds = ini.Get_Bool(GENERAL, "RepairStopOnInsufficientFunds", IsRepairStopOnInsufficientFunds);
+		IsTogglePowerAllowed = ini.Get_Bool(GENERAL, "TogglePowerAllowed", IsTogglePowerAllowed);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
@@ -3932,6 +3934,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EngineerDamage);
 	stream.Serialize(IsEngineerAlwaysCaptureTech);
 	stream.Serialize(IsRepairStopOnInsufficientFunds);
+	stream.Serialize(IsTogglePowerAllowed);
 	stream.Serialize(GenericPrerequisites);
 	stream.Serialize(IsTeamRetaliateSet);
 	stream.Serialize(IsTeamRetaliate);
