@@ -430,8 +430,8 @@ static bool Foundation_Is_Flat(BuildingTypeClass const * type, Cell const & corn
 
 /// <summary>
 /// The cell the mobile miner stops on to deploy beside the ore: the structure's top-left cell is
-/// the nearest place the miner can reach where its footprint fits, and the miner deploys from one
-/// cell inside that corner.
+/// the nearest place the miner can reach where its footprint fits, moved one cell east when the
+/// foundation is wider than 2 and one cell south when it is taller than 2 (0x6B0300).
 /// </summary>
 Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 {
@@ -447,8 +447,12 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 	Cell const from = Dock_Cell();
 	int const zone = Map.Get_Cell_Zone(from, MZONE_NORMAL);
 	Cell corner = Map.Nearby_Location(ore, SPEED_TRACK, zone, MZONE_NORMAL, false, Point2D(type->Width(), type->Height()), true);
-	if (corner == CELL_NONE || type->Is_Mobile_Deployer()) {
+	Cell const stand(type->Width() > 2 ? 1 : 0, type->Height() > 2 ? 1 : 0);
+	if (corner == CELL_NONE) {
 		return(corner);
+	}
+	if (type->Is_Mobile_Deployer()) {
+		return(corner + stand);
 	}
 
 	// The nearest reachable corner may lie on a slope; look outward from the ore for the nearest flat one instead.
@@ -458,12 +462,12 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 		for (int ring = 0; ring < 16 && best == CELL_NONE; ring++) {
 			For_Each_Ring_Offset(ring, [&](int x, int y) {
 				Cell const candidate = ore + Cell(x, y);
-				if (!Map.In_Radar(candidate) || !Map.In_Radar(candidate + Cell(1, 1)) || x * x + y * y >= bestdistance) {
+				if (!Map.In_Radar(candidate) || !Map.In_Radar(candidate + stand) || x * x + y * y >= bestdistance) {
 					return;
 				}
 				if (Foundation_Is_Flat(type, candidate)
 					&& Map.Is_Clear_To_Move(candidate, type->Width(), type->Height(), SPEED_TRACK, zone, MZONE_NORMAL, -1, false, true)
-					&& Map.Is_Clear_To_Move(candidate + Cell(1, 1), 1, 1, SPEED_TRACK, zone, MZONE_NORMAL, -1, false, false)) {
+					&& Map.Is_Clear_To_Move(candidate + stand, 1, 1, SPEED_TRACK, zone, MZONE_NORMAL, -1, false, false)) {
 					best = candidate;
 					bestdistance = x * x + y * y;
 				}
@@ -473,7 +477,7 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 			corner = best;
 		}
 	}
-	return(corner + Cell(1, 1));
+	return(corner + stand);
 }
 
 
@@ -594,7 +598,7 @@ void SlaveManagerClass::Miner_Moving(void)
 	BuildingTypeClass const * type = unit->Class->DeploysInto;
 	unit->Mark(MARK_UP);
 	unit->Locomotion->Mark_All_Occupation_Bits(MARK_UP);
-	Cell const place = type->Is_Mobile_Deployer() ? unit->Get_Cell() : Adjacent_Cell(unit->Get_Cell(), FACING_NW);
+	Cell const place = type->Vehicle_On_Corner() ? unit->Get_Cell() : Adjacent_Cell(unit->Get_Cell(), FACING_NW);
 	bool const legal = type->Legal_Placement(place);
 	// A computer player's miner clears friendly units off the foundation, as a failed deploy does in the original.
 	if (!legal && !unit->House->Is_Human_Player()) {

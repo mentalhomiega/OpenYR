@@ -6098,7 +6098,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						return(1);
 					}
 
-					Coord const place = Class->Is_Mobile_Deployer() ? PositionCoord : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE));
+					Coord const place = Class->Vehicle_On_Corner() ? PositionCoord : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE));
 					if (!Undeploy_Cell_Ready(place.As_Cell())) {
 						return(1);
 					}

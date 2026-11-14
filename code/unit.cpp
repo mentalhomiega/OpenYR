@@ -2312,7 +2312,7 @@ bool UnitClass::Try_To_Deploy(void)
 			Locomotion->Mark_All_Occupation_Bits(MARK_UP);
 			Cell cell;
 			Cell ncell = PositionCell;
-			if (Class->DeploysInto->Is_Mobile_Deployer()) {
+			if (Class->DeploysInto->Vehicle_On_Corner()) {
 				cell = ncell;
 			} else {
 				cell = Adjacent_Cell(ncell, FACING_NW);

@@ -14,10 +14,10 @@ DeploysInto=GACNST ; GDI Construction Yard
 
 Naming a structure lets the vehicle deploy into it. When the vehicle is the only object selected, pointing at it shows the deploy cursor, or the no-deploy cursor when the vehicle cannot deploy. This also holds for a vehicle whose weapon repairs friendly units.
 
-The structure is placed at a fixed spot relative to the vehicle, chosen by the kind of structure:
+The structure is placed at a fixed spot relative to the vehicle, chosen by the size of its [`Foundation`](/keys/foundation/#scope-buildingtype):
 
-- A deployed-vehicle structure is placed on the vehicle's own cell. These are the structures flagged [`SensorArray=`](/keys/sensorarray/), [`TickTank=`](/keys/ticktank/), [`ICBMLauncher=`](/keys/icbmlauncher/), [`Artillary=`](/keys/artillary/), [`IsMobileStealth=`](/keys/ismobilestealth/), [`IsJuggernaut=`](/keys/isjuggernaut/), [`IsCoreDefender=`](/keys/iscoredefender/) or [`IsLimpetMine=`](/keys/islimpetmine/).
-- Every other structure is placed one cell to the north-west of the vehicle.
+- A structure at most 2 cells wide and 2 cells long, such as the Slave Miner's refinery, has its top-left cell on the vehicle's own cell.
+- A larger structure, such as a construction yard, has its top-left cell one cell to the north-west of the vehicle.
 
 If the structure cannot be placed there, the vehicle does not deploy. The local player hears the "cannot deploy here" speech for their own vehicle. A computer house's vehicle orders its house's and allies' units off the site, so a later attempt can succeed. The vehicle then switches to guard; outside a campaign, a computer house's vehicle switches to hunt instead.
 
