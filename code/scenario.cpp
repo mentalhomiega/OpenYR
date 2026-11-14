@@ -917,13 +917,15 @@ bool Read_Scenario(char const * fname)
 		}
 
 		if (text == NULL) {
-			text = Fetch_String(TXT_UNABLE_READ_SCENARIO);
+			snprintf(message, sizeof(message), "%s\n\n%s", Fetch_String(TXT_UNABLE_READ_SCENARIO), name);
+			text = message;
 		}
 
 		DebugString("Error - %s\n", text);
 		LoadScreen.End();
 		notice.reset();
-		if (!Shellmap_In_Scope()) {
+		// An unattended test has nobody to dismiss the box; the log line above carries the message.
+		if (!Shellmap_In_Scope() && !AutoTest_Active()) {
 			WWMessageBox().Process(text, TXT_OK);
 		}
 

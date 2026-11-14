@@ -1,0 +1,8 @@
+; Nuclear Missile (action 95) drops the NukePayload projectile 20000 leptons above waypoint 1 (cell 65,20 on the default map), straight down at
+; 100 leptons a frame (TActionClass action 95, 0x6E3410), so the NUKE warhead goes off at the waypoint about 200 frames later. Chemical Missile
+; (action 96, 0x6E38F0) flies ChemLauncher in from the nearest map edge. Before the fix action 95 looked up a weapon named MultiLauncher, which
+; the rules do not define, and the game crashed at the first missile; a Mental Omega challenge map fires it on frame 0.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/trigaction-nuke-drop.txt -Seconds 120 -Filter "AUTOTEST nuke|AUTOTEST detonate|trigaction|fires nothing|Exception"
+30 trigaction 95 0 1
+32 trigaction 96 0 1
+400 quit

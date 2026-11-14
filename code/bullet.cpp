@@ -2062,9 +2062,12 @@ bool BulletClass::Is_Homing(void) const
 /// <param name="strength">The damage the projectile will inflict when it detonates.</param>
 /// <param name="bright">Should the impact throw off a lighting flash?</param>
 /// <returns>Returns with a pointer to the projectile created, or NULL if one could not be
-/// made.</returns>
+/// made, as when no projectile type is given.</returns>
 BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright)
 {
+	if (type == NULL) {
+		return(NULL);
+	}
 	BulletClass * bullet = new BulletClass;
 	bullet->Set_Bullet_Data(type, target, payback, strength, warhead, max_speed, bright);
 	return(bullet);

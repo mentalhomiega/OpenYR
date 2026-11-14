@@ -1,0 +1,5 @@
+; A map that cannot be read stops the start with the "Unable to read scenario!" message followed by the map's file name, so the player can tell
+; which map failed. A game started from the menus then returns to the menus; a launched game (-SPAWN, as here) ends after the message. An
+; unattended test shows no message box, only the "Error -" log line, and exits at once.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/scenario-unreadable-name.txt -Map NOSUCHMAP.MAP -Seconds 60 -Filter "Error -|NOSUCHMAP|Exception"
+60 quit

@@ -2791,9 +2791,8 @@ bool TActionClass::TAction_ION_CANNON(HouseClass * , ObjectClass * , TriggerClas
 }
 
 
-// Flies a missile of the super weapon `launcher_name` in from the nearest map edge onto `location`. Returns
-// false when the bullet could not be created.
-static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_name, int max_speed)
+// The ground point of `location`, raised onto a bridge deck when the cell is under one.
+static Coord Missile_Target_Coord(WAYPOINT location)
 {
 	Cell waypoint = Scen->Get_Waypoint_Cell(location);
 	Coord coord = Coord (waypoint);
@@ -2801,12 +2800,35 @@ static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_
 	if (Map[waypoint].IsUnderBridge) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
+	return(coord);
+}
 
+
+// The weapon a missile action fires, or NULL after logging when the rules give no weapon of that name with a
+// projectile; the action then fires nothing.
+static WeaponTypeClass const * Missile_Weapon(TActionType action, char const * weapon_name)
+{
+	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Declared(weapon_name);
+	if (weapon == NULL || weapon->Bullet == NULL) {
+		DebugString("Trigger action %d fires nothing: the rules have no weapon %s with a Projectile.\n", (int)action, weapon_name);
+		return(NULL);
+	}
+	return(weapon);
+}
+
+
+// Flies a missile of the super weapon `launcher_name` in from the nearest map edge onto `location`. Returns
+// false when the bullet could not be created.
+static bool Launch_Missile_At_Waypoint(TActionType action, WAYPOINT location, char const * launcher_name, int max_speed)
+{
+	Coord const coord = Missile_Target_Coord(location);
 	Cell closest = Map.Closest_Edge_Cell(coord.As_Cell());
 
-	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name(launcher_name)];
-	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, max_speed, false);
+	WeaponTypeClass const * weapon_type = Missile_Weapon(action, launcher_name);
+	if (weapon_type == NULL) {
+		return(false);
+	}
+	BulletClass * bullet = Create_Bullet(weapon_type->Bullet, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, max_speed, false);
 
 	if (bullet != NULL) {
 		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
@@ -2819,14 +2841,30 @@ static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_
 
 
 /// <summary>
-/// Launches a cluster missile at the action's waypoint.
-/// The missile is flown in from the nearest map edge just as the multi missile super
-/// weapon does, so the player sees the usual approach before the impact.
+/// Drops a nuclear missile onto the action's waypoint.
+/// As gamemd's action 95 (0x6E3410) does, the NukePayload weapon's projectile appears 20000 leptons above the
+/// waypoint and falls straight down at 100 leptons a frame, with the weapon's damage and warhead. Rules without
+/// a NukePayload weapon that has a projectile make the action fire nothing.
 /// </summary>
 /// <returns>bool; Was the missile launched?</returns>
 bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	return(Launch_Missile_At_Waypoint(EffectLocation, "MultiLauncher", 50));
+	Coord const coord = Missile_Target_Coord(EffectLocation);
+	WeaponTypeClass const * weapon = Missile_Weapon(Action, "NukePayload");
+	if (weapon == NULL) {
+		return(false);
+	}
+
+	BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[coord], NULL, weapon->Attack, weapon->WarheadPtr, 50, false);
+	if (bullet == NULL) {
+		return(false);
+	}
+	bullet->Weapon = weapon;
+	Coord const above(coord.X, coord.Y, coord.Z + 20000);
+	if (!bullet->Unlimbo(above, TVelocity3D<double>(0.0, 0.0, -100.0))) {
+		delete bullet;
+	}
+	return(true);
 }
 
 
@@ -2838,7 +2876,7 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 /// <returns>bool; Was the missile launched?</returns>
 bool TActionClass::TAction_CHEM_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	return(Launch_Missile_At_Waypoint(EffectLocation, "ChemLauncher", 20));
+	return(Launch_Missile_At_Waypoint(Action, EffectLocation, "ChemLauncher", 20));
 }
 
 

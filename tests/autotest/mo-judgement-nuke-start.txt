@@ -1,0 +1,5 @@
+; Needs Mental Omega in game\Mods\MentalOmega. The Judgement challenge map fires two Nuke strike actions (95) on frame 0. Before the fix
+; the game crashed on that frame; now two NukePayload missiles land near frame 221 and the map plays on to the quit.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mo-judgement-nuke-start.txt -Mods MentalOmega -Map c_judgement.map -Seconds 240 -Filter "AUTOTEST nuke detonates|AUTOTEST quit|fires nothing|Exception"
+1 view 0 0
+600 quit
