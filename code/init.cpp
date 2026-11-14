@@ -322,6 +322,7 @@ static void Cheat_Version_Suffix(char * string);
 static std::string Version_Text(void);
 static void Startup_Notice_Show(void);
 static void Startup_Notice_Hide(void);
+void Startup_Notice_Step(char const * text, double fraction);
 
 
 
@@ -547,6 +548,7 @@ int Init_Game(int , char * [])
 	**	Initialize the bulk data. This takes the longest time and must be performed once
 	**	before the regular game starts.
 	*/
+	Startup_Notice_Step("Loading game data...", 0.05);
 	DebugString("Init Bulk Data\n");
 
 	if (!Init_Bulk_Data()) {
@@ -576,6 +578,7 @@ int Init_Game(int , char * [])
 	/*
 	**	Find and process any rules for this game.
 	*/
+	Startup_Notice_Step("Reading the rules...", 0.2);
 	DebugString("Init Rules\n");
 
 	if (!Init_Rules()) {
@@ -589,6 +592,7 @@ int Init_Game(int , char * [])
 	// A score's Side= names a side the rules declare, so the roster is built before the scores are read.
 	Prepare_Side_Roster();
 
+	Startup_Notice_Step("Reading sounds and music...", 0.4);
 	DebugString("Reading %s\n", DeploymentConfig.ThemeFile.c_str());
 
 	CCINIClass theme_ini;
@@ -640,6 +644,7 @@ int Init_Game(int , char * [])
 	// The briefing and the credits draw with the owner-draw art, colors and blend masks.
 	OwnerDraw::Prepare_Resources();
 
+	Startup_Notice_Step("Preparing the menus...", 0.5);
 	DebugString("Game Init Completed.\n");
 
 	return(0);
@@ -3464,9 +3469,21 @@ static void Startup_Notice_Show(void)
 	}
 
 	StartupNotice = new UIWaitBoxClass;
-	if (!StartupNotice->Show("Loading...")) {
+	if (!StartupNotice->Show("Loading...", true)) {
 		delete StartupNotice;
 		StartupNotice = NULL;
+	}
+}
+
+
+// Names the part of the start-up now beginning on the loading notice and moves its bar to fraction, from 0 to 1.
+// It does nothing when no notice is shown.
+void Startup_Notice_Step(char const * text, double fraction)
+{
+	if (StartupNotice != NULL) {
+		StartupNotice->Set_Text(text);
+		StartupNotice->Set_Fraction(fraction);
+		Call_Back();
 	}
 }
 
