@@ -221,6 +221,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		 */
 		bool IsLockedStraight;
 
+		// The shots fired so far in the current strafing run.
+		int StrafeShotsFired;
+
 		// How many more times a paradrop plane may come back over its target without dropping anyone.
 		int ParadropPasses;
 

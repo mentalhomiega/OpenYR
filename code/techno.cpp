@@ -2636,6 +2636,11 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);
 	}
 
+	// An unarmed thief that may not break mind control has no use for a controlled vehicle.
+	if (RTTI == RTTI_INFANTRY && !Is_Weapon_Equipped() && ((InfantryClass const *)this)->Is_Theft_Refused(object)) {
+		return(false);
+	}
+
 	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
 	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
 	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {

@@ -237,6 +237,8 @@ class InfantryClass : public FootClass
 		bool Theft_AI(void);
 		bool Can_Drive(AbstractClass const * object) const;
 		bool Is_Vehicle_Captor(AbstractClass const * object) const;
+		bool Is_Theft_Refused(TechnoClass const * vehicle) const;
+		void Break_Mind_Control_For_Theft(TechnoClass * vehicle) const;
 
 		/*
 		**	Scenario and debug support.

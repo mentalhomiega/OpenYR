@@ -179,6 +179,15 @@ class InfantryTypeClass : public TechnoTypeClass
 		// VehicleThief.EnterSound (Ares): played where this soldier takes a vehicle over.
 		VocType VehicleThiefEnterSound;
 
+		// VehicleThief.LeaveSound (Ares): played where this soldier steps out of a destroyed vehicle it took.
+		VocType VehicleThiefLeaveSound;
+
+		// VehicleThief.BreakMindControl (Ares): may take a mind-controlled vehicle, freeing it from its controller.
+		bool IsVehicleThiefBreakMindControl;
+
+		// VehicleThief.OneTime (Ares): the soldier is used up by the theft and does not step out when the vehicle dies.
+		bool IsVehicleThiefOneTime;
+
 		// An Occupier=yes soldier can garrison a CanBeOccupied structure and fires OccupyWeapon,
 		// or EliteOccupyWeapon at elite rank, from inside it.
 		bool IsOccupier;

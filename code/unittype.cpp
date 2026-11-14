@@ -56,6 +56,7 @@
 #include "animtype.h"
 #include "bsurface.h"
 #include "convert.h"
+#include "dbgprint.h"
 #include "face.h"
 #include "findmake.h"
 #include "globals.h"
@@ -446,6 +447,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 			Map_Turret_Weapon(ini.Get_Int(Name(), "YuriPrimeTurretIndex", 0), ini.Get_Int(Name(), "YuriPrimeTurretWeapon", -1));
 			Map_Turret_Weapon(ini.Get_Int(Name(), "GuardianTurretIndex", 0), ini.Get_Int(Name(), "GuardianTurretWeapon", -1));
 		}
+		Read_Weapon_Turret_Indices(ini);
 
 		if (IsSmallVisceroid || IsLargeVisceroid) {
 			IsNonVehicle = true;
@@ -516,6 +518,29 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Reads WeaponTurretIndex1 onward (Ares): the turret each weapon position shows, overriding the FV position keys.
+/// An index of -1 leaves the position as it was; one outside the type's turrets is logged and ignored.
+/// </summary>
+void UnitTypeClass::Read_Weapon_Turret_Indices(CCINIClass const & ini)
+{
+	int const turrets = std::max<int>(TurretCount, 1);
+	for (int position = 0; position < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); position++) {
+		char key[32];
+		sprintf(key, "WeaponTurretIndex%d", position + 1);
+		int const turret = ini.Get_Int(Name(), key, -1);
+		if (turret == -1) {
+			continue;
+		}
+		if (turret < 0 || turret >= turrets) {
+			DebugString("[%s] %s=%d names no turret of its %d.\n", Name(), key, turret, turrets);
+			continue;
+		}
+		Map_Turret_Weapon(turret, position);
+	}
 }
 
 

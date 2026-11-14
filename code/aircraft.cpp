@@ -215,6 +215,7 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	IsKamikaze(false),
 	field_35B(false),
 	IsLockedStraight(false),
+	StrafeShotsFired(0),
 	ParadropPasses(5),
 	DockNowHeadingTo(NULL),
 	AttacksRemaining(1),
@@ -2217,8 +2218,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		FIRE_AT_TARGET2,
 
 		/*
-		 * A strafing run is five shots -- the first is fired by FIRE_AT_TARGET, then one
-		 * by each of these states, spaced by the weapon's rate of fire.
+		 * A strafing run fires the weapon's Strafing.Shots, five by default, spaced by its rate
+		 * of fire: FIRE_AT_TARGET fires the first, these states the middle ones and
+		 * STRAFE_LAST_SHOT the last. A run of more than five shots repeats STRAFE_SHOT4.
 		 */
 		STRAFE_SHOT2,
 		STRAFE_SHOT3,
@@ -2228,8 +2230,15 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		RETURN_TO_BASE
 	};
 
-	// Fires one middle shot of a strafing run, moves on to next_status and returns the mission delay.
-	auto strafe_shot = [&](int next_status) -> int {
+	int const strafe_shots = PrimaryWeapon != NULL ? PrimaryWeapon->StrafingShots : 5;
+
+	// The delay after a run's last shot before the next run or the return to base.
+	auto strafe_end_delay = [&]() -> int {
+		return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
+	};
+
+	// Fires one middle shot of a strafing run, moves on to the next state and returns the mission delay.
+	auto strafe_shot = [&]() -> int {
 		if (TarCom == NULL) {
 			Status = RETURN_TO_BASE;
 			return(1);
@@ -2256,7 +2265,8 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		}
 		Announce_Incoming();
 		Assign_Destination(TarCom);
-		Status = next_status;
+		StrafeShotsFired++;
+		Status = StrafeShotsFired >= strafe_shots - 1 ? STRAFE_LAST_SHOT : std::min(Status + 1, (int)STRAFE_SHOT4);
 		return(PrimaryWeapon->ROF);
 	};
 
@@ -2449,8 +2459,13 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					}
 					Announce_Incoming();
 					if (Is_Strafe()) {
-						Status = STRAFE_SHOT2;
+						StrafeShotsFired = 1;
 						IsLockedStraight = true;
+						if (strafe_shots <= 1) {
+							Status = FLY_TO_POSITION;
+							return(strafe_end_delay());
+						}
+						Status = strafe_shots == 2 ? STRAFE_LAST_SHOT : STRAFE_SHOT2;
 					} else if (Is_Fighter()) {
 
 						/*
@@ -2539,13 +2554,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case STRAFE_SHOT2:
-			return(strafe_shot(STRAFE_SHOT3));
-
 		case STRAFE_SHOT3:
-			return(strafe_shot(STRAFE_SHOT4));
-
 		case STRAFE_SHOT4:
-			return(strafe_shot(STRAFE_LAST_SHOT));
+			return(strafe_shot());
 
 		case STRAFE_LAST_SHOT:
 			if (TarCom == NULL) {
@@ -2562,7 +2573,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					}
 					Announce_Incoming();
 					Status = FLY_TO_POSITION;
-					return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
+					return(strafe_end_delay());
 
 				default:
 					if (!Ammo) {
@@ -4054,6 +4065,7 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsKamikaze);
 	stream.Serialize(field_35B);
 	stream.Serialize(IsLockedStraight);
+	stream.Serialize(StrafeShotsFired);
 	stream.Serialize(ParadropPasses);
 	stream.Serialize(DockNowHeadingTo);
 	stream.Serialize(AttacksRemaining);

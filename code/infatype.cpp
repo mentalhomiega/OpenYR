@@ -104,6 +104,9 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsVehicleThief(false),
 	IsCanDrive(false),
 	VehicleThiefEnterSound(VOC_NONE),
+	VehicleThiefLeaveSound(VOC_NONE),
+	IsVehicleThiefBreakMindControl(true),
+	IsVehicleThiefOneTime(false),
 	IsOccupier(false),
 	IsAssaulter(false),
 	OccupyWeapon(),
@@ -455,6 +458,9 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsVehicleThief = ini.Get_Bool(Name(), "VehicleThief", IsVehicleThief);
 		IsCanDrive = ini.Get_Bool(Name(), "CanDrive", IsCanDrive);
 		VehicleThiefEnterSound = ini.Get_VocType(Name(), "VehicleThief.EnterSound", VehicleThiefEnterSound);
+		VehicleThiefLeaveSound = ini.Get_VocType(Name(), "VehicleThief.LeaveSound", VehicleThiefLeaveSound);
+		IsVehicleThiefBreakMindControl = ini.Get_Bool(Name(), "VehicleThief.BreakMindControl", IsVehicleThiefBreakMindControl);
+		IsVehicleThiefOneTime = ini.Get_Bool(Name(), "VehicleThief.OneTime", IsVehicleThiefOneTime);
 		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
 		IsAssaulter = ini.Get_Bool(Name(), "Assaulter", IsAssaulter);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
@@ -566,6 +572,8 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsThief);
 	crc(IsVehicleThief);
 	crc(IsCanDrive);
+	crc(IsVehicleThiefBreakMindControl);
+	crc(IsVehicleThiefOneTime);
 	crc(IsAssaulter);
 	crc(UndeployDelay);
 	crc(IsDeployedCrushable);
@@ -626,6 +634,9 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsVehicleThief);
 	stream.Serialize(IsCanDrive);
 	stream.Serialize(VehicleThiefEnterSound);
+	stream.Serialize(VehicleThiefLeaveSound);
+	stream.Serialize(IsVehicleThiefBreakMindControl);
+	stream.Serialize(IsVehicleThiefOneTime);
 	stream.Serialize(IsOccupier);
 	stream.Serialize(IsAssaulter);
 	stream.Serialize(IsDeployer);

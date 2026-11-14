@@ -61,10 +61,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 	public:
 
-		// A type carries up to sixty-four weapons, each with an elite counterpart, and a gattling
-		// type up to six stages.
+		// A type carries up to 127 weapons and turrets, the most Ares allows for TurretCount, each weapon
+		// with an elite counterpart, and a gattling type up to six stages.
 		enum {
-			WEAPON_SLOT_COUNT = 64,
+			WEAPON_SLOT_COUNT = 127,
 			WEAPON_STAGE_COUNT = 6
 		};
 

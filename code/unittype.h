@@ -367,6 +367,7 @@ class UnitTypeClass : public TechnoTypeClass
 		static UnitTypeClass * Find_Or_Make(char const * name);
 
 		virtual bool Read_INI(CCINIClass const & ini) override;
+		void Read_Weapon_Turret_Indices(CCINIClass const & ini);
 		virtual Coord const Coord_Fixup(Coord const & coord) const override;
 		virtual Point3D Pixel_Dimensions(void) const override;
 		virtual Point3D Lepton_Dimensions(void) const override;

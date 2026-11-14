@@ -1,0 +1,38 @@
+; VehicleThief.BreakMindControl, VehicleThief.OneTime and VehicleThief.LeaveSound (Ares). The overlay vehicle-thief-keys.ini makes CIV1, CIV2 and
+; CIV3 unarmed vehicle thieves. The player's Mastermind takes two enemy civilian trucks, walks away and the trucks go back to the enemy while it
+; still holds them. CIV2 steals one held truck, CIV3 (BreakMindControl=no) is sent at the other, and CIV1 (OneTime=yes) steals a third truck
+; nobody holds. The Mastermind is then killed, and after that the player's trucks.
+; Expected: "action CIV2" is Capture and "action CIV3" is not; one "mind control released TRUCKA" line comes before the Mastermind dies, and
+; at frame 1200 `where TRUCKA` shows the trucks at 64,40 and 64,36 with the player and the one at 64,44 with the enemy. After the trucks die
+; the log has "Sound: SellBuilding" once, `where CIV2` lists one soldier and `where CIV1` none.
+; Before the keys were read CIV3 also took its truck, the truck CIV2 stole went back to the enemy when the Mastermind died, CIV1 stepped out
+; of its wreck and no SellBuilding sound played.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/vehicle-thief-keys.txt -Seconds 120 -Country 8 -Filter "AUTOTEST   (action|where)|mind control|Sound: SellBuilding|Exception"
+10 rules vehicle-thief-keys.ini
+30 command CenterBase
+35 reveal
+40 own MIND 60 42
+41 enemy TRUCKA 64 40
+42 enemy TRUCKA 64 44
+43 enemy TRUCKA 64 36
+60 sounds 1
+100 strike MIND 64 40
+250 strike MIND 64 44
+400 move MIND 45 42
+600 lose TRUCKA
+601 lose TRUCKA
+610 own CIV1 62 36
+611 own CIV2 62 40
+612 own CIV3 62 44
+620 action CIV2 64 40
+621 action CIV3 64 44
+622 clickon CIV1 64 36
+623 clickon CIV2 64 40
+624 clickon CIV3 64 44
+900 where TRUCKA
+1000 kill MIND 1
+1200 where TRUCKA
+1210 kill TRUCKA 1
+1400 where CIV1
+1401 where CIV2
+1450 quit

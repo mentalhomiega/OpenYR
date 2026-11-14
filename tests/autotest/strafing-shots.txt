@@ -1,0 +1,12 @@
+; Strafing.Shots (Phobos) sets how many shots an aircraft fires in one strafing run. The overlay strafing-shots.ini gives the Harrier one round
+; of a 10-damage weapon with a visible, unguided shell, so it strafes, and Strafing.Shots=3. The Harrier is granted in the air and sent at an
+; enemy power plant once. The run ends before frame 320; the script quits then, before the Harrier, which has nowhere to land, comes down.
+; Expected: three "explode frame ... TestStrafeShell" lines, 10 to 14 frames apart. Before the key was read a run was five shots, so five lines.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/strafing-shots.txt -Seconds 60 -Country 8 -Filter "AUTOTEST explode|Exception"
+10 rules strafing-shots.ini
+30 command CenterBase
+35 reveal
+40 grantunit ORCA 60 30
+41 enemy GAPOWR 64 44
+110 strike ORCA 64 44
+320 quit

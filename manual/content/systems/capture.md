@@ -324,6 +324,8 @@ A structure destroyed by its charge produces no survivors, because forced damage
 
 A `VehicleThief=yes` soldier is the one with a cursor. It takes the vehicle through [the vehicle branch](#the-vehicle-branch). A victim type with [`VehicleThief.Allowed=no`](/keys/vehiclethief.allowed/) is refused: the soldier gets the select cursor over it, cannot step into its cell and does not keep it as a target. `Thief=yes` soldiers ignore that key.
 
+A `VehicleThief=yes` soldier that takes a vehicle a mind controller holds frees it from the controller first, so the controller cannot take it back later. A thief type with [`VehicleThief.BreakMindControl=no`](/keys/vehiclethief.breakmindcontrol/) is refused such a vehicle instead. A thief type with [`VehicleThief.OneTime=yes`](/keys/vehiclethief.onetime/) does not record its type, so no thief steps out of the wreck; [`VehicleThief.LeaveSound`](/keys/vehiclethief.leavesound/) plays when one does.
+
 A hunting vehicle thief turns its target into a capture order. An idle computer-owned one outside a team goes on area guard once its house's IQ reaches [`GuardArea`](/keys/guardarea/).
 
 While the house owns a vehicle stolen by a `VehicleThief=yes` type, that vehicle counts against the type's positive [`BuildLimit`](/keys/buildlimit/). A hijacker limited to one cannot be rebuilt while its stolen vehicle survives. A stolen aircraft does not count.
