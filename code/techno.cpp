@@ -2572,8 +2572,9 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 					return(false);
 				}
 			} else {
+				// The weapon must also have a clear line past walls and cliffs (TechnoClass::IsCloseEnough through 0x6F7220).
 				int primary = weapon_index_for_object();
-				if (!In_Range((TechnoClass *)object, primary)) {
+				if (!Is_Close_Enough((TechnoClass *)object, primary)) {
 					return(false);
 				}
 			}
