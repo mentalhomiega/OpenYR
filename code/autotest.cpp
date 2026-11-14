@@ -4732,6 +4732,13 @@ static void Timers_Step(StepType const &)
 }
 
 
+// nukeflash: writes whether the map-wide nuclear flash is fading in or fading out.
+static void Nukeflash_Step(StepType const &)
+{
+	DebugString("AUTOTEST   nukeflash frame %d in %d out %d\n", Frame, (int)NukeFlashClass::Is_Fading_In(), (int)NukeFlashClass::Is_Fading_Out());
+}
+
+
 // fire <SuperWeaponTypeID> x y: the player fires that super weapon at the cell.
 static void Fire_Step(StepType const & step)
 {
@@ -7714,6 +7721,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"grantai", Grantai_Step},
 		{"chargeai", Chargeai_Step},
 		{"timers", Timers_Step},
+		{"nukeflash", Nukeflash_Step},
 		{"fire", Fire_Step},
 		{"rules", Rules_Step},
 		{"reload", Reload_Step},

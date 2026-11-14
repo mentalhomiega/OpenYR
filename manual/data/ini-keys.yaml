@@ -32576,6 +32576,23 @@ NukeDown:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+NukeFlash.Duration:
+  key: NukeFlash.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: NukeFlashDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 NukeMaker:
   key: NukeMaker
   scopes:

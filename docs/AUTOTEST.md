@@ -35,6 +35,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
 | `chargeai <SuperWeaponTypeID> <percent>` | Sets the charge of the first computer house's super weapon that has a construction yard, as a SetSuperCharge trigger action does (`SuperClass::Set_Charge`). The log gets `ready` and `suspended` |
 | `timers` | Writes each present `ShowTimer=yes` super weapon of every house as `timer <type> of <country> player <0/1> ally <0/1> seen <0/1>`; `seen` tells whether the player sees its countdown under `SW.TimerVisibility` |
+| `nukeflash` | Writes `nukeflash frame <n> in <0/1> out <0/1>`: whether the map-wide nuclear flash is fading in or fading out |
 | `houseunit <TypeID>@<House> x y` | Like `spawn`, but the object belongs to the named house, on Guard. `<House>` is a spawn name such as `Spawn2` (an underscore stands for a space), or `#<n>` for the house at position `n` in the house list, which reaches a computer house with no spawn name. The log says `no such house` or `no such type` when a name does not resolve |
 | `drawdigest <0\|1>` | `1` logs one `DRAW_DIGEST` line each time the map view is drawn, with the game frame, the draw index and a hash of the map view. `0` stops the lines. See [Comparing map draws](#comparing-map-draws) |
 | `drawprobe <0\|1>` | `1` starts counting what draws into the map view during its object pass; `0` logs the counts and stops. See [Listing map draws](#listing-map-draws) |

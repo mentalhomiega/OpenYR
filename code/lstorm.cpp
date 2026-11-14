@@ -95,16 +95,17 @@ SuperWeaponTypeClass const * NukeFlashClass::Active_Type(void)
 
 /// <summary>
 /// Lights the map up for a nuclear blast, as the NukeFlash start (0x53AB70) does: the light fades
-/// in for 30 frames, then back out for 15. A superweapon with Light.Enabled=no raises no flash.
+/// in for the given frames (30 in gamemd), then back out for 15. A superweapon with Light.Enabled=no
+/// and a duration below 1 raise no flash.
 /// </summary>
-void NukeFlashClass::Start(SuperWeaponTypeClass const * type)
+void NukeFlashClass::Start(SuperWeaponTypeClass const * type, int duration)
 {
-	if (type != nullptr && !type->Keys.LightEnabled) {
+	if ((type != nullptr && !type->Keys.LightEnabled) || duration <= 0) {
 		return;
 	}
 	Type = type != nullptr ? (int)type->HeapID : -1;
 	Status = FADE_IN;
-	Duration = 30;
+	Duration = duration;
 	StartTime = Frame;
 	Scen->AmbientChangeTimer = 1;
 	IonStormClass::Update_Special_Lighting();

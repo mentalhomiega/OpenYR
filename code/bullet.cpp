@@ -1547,6 +1547,11 @@ void BulletClass::Detonate(Coord const & coord)
 		DebugString("AUTOTEST nuke detonates at frame %d at %d,%d,%d\n", Frame, coord.X, coord.Y, coord.Z);
 	}
 
+	// The NUKE warhead flashed when its build-up started (Start_Nuke_Blast); any other warhead flashes as it goes off.
+	if (stricmp(warhead->Name(), "NUKE") != 0 && warhead->Nuke_Flash_Duration() > 0) {
+		NukeFlashClass::Start(nullptr, warhead->Nuke_Flash_Duration());
+	}
+
 	// A DirectRocker warhead that strikes a unit rocks it instead of blasting it (BulletClass::Detonate, 0x46978E).
 	bool const direct_rocks = warhead->IsDirectRocker && !warhead->IsAirstrike && Is_Target_Unit(TarCom);
 
@@ -2147,7 +2152,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 		PositionCoord = settled;
 	}
 
-	NukeFlashClass::Start(NukeSuper >= 0 && NukeSuper < SuperWeaponTypes.Count() ? SuperWeaponTypes[NukeSuper] : nullptr);
+	NukeFlashClass::Start(NukeSuper >= 0 && NukeSuper < SuperWeaponTypes.Count() ? SuperWeaponTypes[NukeSuper] : nullptr, Warhead->Nuke_Flash_Duration());
 
 	ShapeFlags_Type const flags = ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER);
 	AnimClass * const nukeball = Warhead->PreImpactAnim != NULL
