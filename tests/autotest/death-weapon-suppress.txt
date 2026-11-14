@@ -1,0 +1,15 @@
+; DeathWeapon.Suppress, DeathWeapon.SuppressInfantry and DeathWeapon.SuppressVehicles (Ares) stop the death weapon of an object the warhead kills.
+; The overlay death-weapon-suppress.ini makes the C4 warhead, which `kill` uses, suppress the death weapons of all infantry and of the
+; Grizzly tank by name. A GI, a Grizzly and a Rhino each explode with the same death weapon.
+; Expected: after the three kills the log has "Death weapon: HTNK" and no death weapon line for E1 or MTNK. Before the keys were read all three set it off.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/death-weapon-suppress.txt -Seconds 60 -Country 8 -Filter "AUTOTEST   kill|Death weapon|Exception"
+10 rules death-weapon-suppress.ini
+30 command CenterBase
+35 reveal
+40 own E1 50 40
+41 own MTNK 56 40
+42 own HTNK 62 40
+100 kill E1 1
+110 kill MTNK 1
+120 kill HTNK 1
+200 quit

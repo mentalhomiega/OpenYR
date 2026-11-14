@@ -42,6 +42,7 @@
 #include <vector>
 
 class AnimTypeClass;
+class TechnoTypeClass;
 class ParticleSystemTypeClass;
 class VoxelAnimTypeClass;
 
@@ -468,6 +469,16 @@ class WarheadTypeClass : public AbstractTypeClass
 		// AffectsOwner (Ares): whether the warhead affects objects of the house that fired it. Without the key it follows AffectsAllies.
 		bool IsAffectsOwner;
 		bool IsAffectsOwnerSet;
+
+		// DeathWeapon.Suppress, .SuppressVehicles and .SuppressInfantry (Ares): an object this warhead kills sets off no death
+		// weapon when its type is listed, or when it is a vehicle or infantry and the matching switch is on.
+		TypeList<TechnoTypeClass *> DeathWeaponSuppress;
+		bool IsDeathWeaponSuppressVehicles;
+		bool IsDeathWeaponSuppressInfantry;
+
+		// MindControl.Permanent (Ares): a MindControl=yes warhead takes its target for good, as the psychic dominator does.
+		bool IsMindControlPermanent;
+		bool Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const;
 
 		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration?
 		bool Is_EM_Pulse(void) const {return(IsEMEffect && EMPDuration == 0);}

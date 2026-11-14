@@ -39,6 +39,7 @@ class UnitTypeClass;
 class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WeaponTypeClass;
+class WarheadTypeClass;
 class AircraftTypeClass;
 class InfantryTypeClass;
 
@@ -421,6 +422,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		WeaponTypeClass * DeathWeapon;
 		double DeathWeaponDamageModifier;
 
+		// CrushDamage.Rookie, .Veteran and .Elite (Ares): damage a vehicle that crushes an object of this type takes, by the
+		// crushed object's rank, through CrushDamageWarhead or the rules' C4Warhead when that is NULL.
+		int CrushDamage[3];
+		WarheadTypeClass const * CrushDamageWarhead;
+
 		// The ammunition a new object of this type starts with, or -1 to start full.
 		int InitialAmmo;
 
@@ -694,6 +700,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A DrainWeapon can drain this object.
 		bool IsDrainable;
 
+		// Drain.Local and Drain.Amount (Ares): when the drainer or the drained power plant sets Drain.Local, the drain takes only
+		// that plant's power, limited by each one's Drain.Amount (above zero a most, below zero a least), from the owner's total.
+		bool IsDrainLocal;
+		int DrainAmount;
+
 		// The slaves an Enslaves object keeps, the frames to replace a lost one and to rest one that has unloaded.
 		InfantryTypeClass * Enslaves;
 		int SlavesNumber;
@@ -793,6 +804,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A charge turret (such as the Prism Tank) shows the turret matching how much of its rearm is left.
 		bool IsChargeTurret;
+
+		// PassengerTurret (Ares): a multi-turret object shows the turret numbered by its passenger count, the last one when it
+		// carries more passengers than it has turrets. Its weapon does not change.
+		bool IsPassengerTurret;
 		int WeaponStages;
 		int WeaponStage[WEAPON_STAGE_COUNT];
 		int EliteStage[WEAPON_STAGE_COUNT];

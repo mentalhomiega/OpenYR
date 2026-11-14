@@ -4796,6 +4796,10 @@ void BuildingClass::Begin_Mode(BStateType bstate)
 		if (Class->IsRegulated && bstate != BSTATE_CONSTRUCTION) {
 			rate = Options.Normalize_Delay(rate);
 		}
+		// SellTime spreads the sell animation over its minutes, giving each step at least one frame.
+		if (bstate == BSTATE_CONSTRUCTION && Mission == MISSION_DECONSTRUCTION && Class->SellTime >= 0.0 && ctrl->Count > 0) {
+			rate = std::max(1, (int)(Class->SellTime * TICKS_PER_MINUTE / ctrl->Count));
+		}
 		Set_Rate(rate);
 		Set_Stage(ctrl->Start);
 	}

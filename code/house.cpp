@@ -9824,19 +9824,57 @@ void HouseClass::AI_Build_Wall(void)
 }
 
 
+static bool Is_Drained_Plant(HouseClass const * house, BuildingClass const * b)
+{
+	return(b != NULL && b->House == house && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0);
+}
+
+
+static bool Is_Local_Drain(BuildingClass const * b)
+{
+	return(b->DrainingMe->TClass->IsDrainLocal || b->TClass->IsDrainLocal);
+}
+
+
 /// <summary>
-/// Tells whether an enemy is draining one of this house's power plants, as HouseClass::UpdatePower
-/// (0x508C30) finds: a structure of the house that makes power has something draining it.
+/// Tells whether an enemy is draining one of this house's power plants of all the house's power, as
+/// HouseClass::UpdatePower (0x508C30) finds: a structure of the house that makes power has something
+/// draining it, and neither sets Drain.Local.
 /// </summary>
 bool HouseClass::Is_Being_Drained(void) const
 {
 	for (int i = 0; i < Buildings.Count(); i++) {
-		BuildingClass * b = Buildings[i];
-		if (b != NULL && b->House == this && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0) {
+		BuildingClass const * b = Buildings[i];
+		if (Is_Drained_Plant(this, b) && !Is_Local_Drain(b)) {
 			return(true);
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Returns the power that Drain.Local drains take from this house (Ares): each drained plant's power, limited
+/// first by the drainer's Drain.Amount and then by the plant's, where above zero is a most and below zero a least.
+/// </summary>
+int HouseClass::Local_Drain(void) const
+{
+	int total = 0;
+	for (int i = 0; i < Buildings.Count(); i++) {
+		BuildingClass const * b = Buildings[i];
+		if (Is_Drained_Plant(this, b) && Is_Local_Drain(b)) {
+			int amount = b->Power_Output();
+			for (int limit : {b->DrainingMe->TClass->DrainAmount, b->TClass->DrainAmount}) {
+				if (limit > 0) {
+					amount = std::min(amount, limit);
+				} else if (limit < 0) {
+					amount = std::max(amount, -limit);
+				}
+			}
+			total += amount;
+		}
+	}
+	return(total);
 }
 
 
@@ -9891,6 +9929,9 @@ void HouseClass::Recalc_Power_Drain(void)
 	// making nothing, as HouseClass::UpdatePower (0x508C30) and BuildingClass::IsPowerOnline do.
 	if (IsPowerBlackout || Is_Being_Drained()) {
 		Power = 0;
+	} else if (int const local = Local_Drain(); local > 0) {
+		AUTOTEST_LOG("local drain %s power %d less %d\n", Class->Name(), Power, local);
+		Power = std::max(Power - local, 0);
 	}
 
 	// A running Battery superweapon adds its power whatever the base is doing.

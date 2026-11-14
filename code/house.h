@@ -1111,6 +1111,7 @@ class HouseClass : public AbstractClass
 		void Update_Factories(RTTIType rtti, bool naval);
 		double Power_Fraction(void) const;
 		bool Is_Being_Drained(void) const;
+		int Local_Drain(void) const;
 		bool Is_Power_Blackout(void) const {return IsPowerBlackout && PowerBlackout > 0;}
 		double Tiberium_Fraction(void) const;
 		double Weed_Fraction(void) const;

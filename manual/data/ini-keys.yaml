@@ -5097,7 +5097,7 @@ BalloonHover:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsBalloonHover
       source: code/techtype.cpp
@@ -6196,7 +6196,7 @@ Bounty:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsBounty
       source: code/techtype.cpp
@@ -6213,7 +6213,7 @@ Bounty.Display:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: 'no'
       declared_in: TechnoTypeClass
       member: BountyDisplay
       source: code/techtype.cpp
@@ -8467,7 +8467,7 @@ CanDisguise:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsCanDisguise
       source: code/techtype.cpp
@@ -9381,7 +9381,7 @@ Chronoshift.Allow:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsChronoshiftAllowed
       source: code/techtype.cpp
@@ -9398,7 +9398,7 @@ Chronoshift.Crushable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsChronoshiftCrushable
       source: code/techtype.cpp
@@ -11786,6 +11786,91 @@ Crush:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CrushDamage:
+  key: CrushDamage
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: all
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CrushDamage.Elite:
+  key: CrushDamage.Elite
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CrushDamage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CrushDamage.Rookie:
+  key: CrushDamage.Rookie
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CrushDamage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CrushDamage.Veteran:
+  key: CrushDamage.Veteran
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CrushDamage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CrushDamage.Warhead:
+  key: CrushDamage.Warhead
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CrushDamageWarhead
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CrushSound:
   key: CrushSound
   scopes:
@@ -12997,6 +13082,57 @@ DeathWeapon:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DeathWeapon.Suppress:
+  key: DeathWeapon.Suppress
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: technotype list
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: DeathWeaponSuppress
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+DeathWeapon.SuppressInfantry:
+  key: DeathWeapon.SuppressInfantry
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsDeathWeaponSuppressInfantry
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+DeathWeapon.SuppressVehicles:
+  key: DeathWeapon.SuppressVehicles
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsDeathWeaponSuppressVehicles
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 DeathWeaponDamageModifier:
   key: DeathWeaponDamageModifier
   scopes:
@@ -15463,6 +15599,40 @@ Drag:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+Drain.Amount:
+  key: Drain.Amount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: DrainAmount
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Drain.Local:
+  key: Drain.Local
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsDrainLocal
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DrainAnimationType:
   key: DrainAnimationType
   scopes:
@@ -23872,7 +24042,7 @@ InitialAmmo:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: InitialAmmo
       source: code/techtype.cpp
@@ -26924,7 +27094,7 @@ LeptonMindControlOffset:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '70'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: LeptonMindControlOffset
       source: code/techtype.cpp
@@ -29891,7 +30061,7 @@ MindClearedSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: MindClearedSound
       source: code/techtype.cpp
@@ -29926,6 +30096,23 @@ MindControl:
       default_candidate: 'no'
       declared_in: WarheadTypeClass
       member: IsMindControl
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+MindControl.Permanent:
+  key: MindControl.Permanent
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsMindControlPermanent
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
@@ -29975,7 +30162,7 @@ MindControlRingOffset:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '140'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: MindControlRingOffset
       source: code/techtype.cpp
@@ -34043,7 +34230,7 @@ Parasiteable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsParasiteable
       source: code/techtype.cpp
@@ -34135,6 +34322,23 @@ ParticlesPerCoord:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+PassengerTurret:
+  key: PassengerTurret
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsPassengerTurret
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Passengers:
   key: Passengers
   scopes:
@@ -34481,7 +34685,7 @@ PermaDisguise:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsPermaDisguise
       source: code/techtype.cpp
@@ -38331,7 +38535,7 @@ RejoinTeamIfLimboed:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRejoinTeamIfLimboed
       source: code/techtype.cpp
@@ -38957,7 +39161,7 @@ ReselectIfLimboed:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsReselectIfLimboed
       source: code/techtype.cpp
@@ -41461,6 +41665,23 @@ SellSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SellTime:
+  key: SellTime
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SellTime
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SensorArray:
   key: SensorArray
   scopes:
@@ -47406,7 +47627,7 @@ SuppressionThreshold:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SuppressionThreshold
       source: code/techtype.cpp
@@ -48370,7 +48591,7 @@ Teleporter:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTeleporter
       source: code/techtype.cpp

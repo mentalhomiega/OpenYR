@@ -73,6 +73,55 @@ void Attach_Control_Ring(TechnoClass * techno, AnimTypeClass const * type)
 
 
 /// <summary>
+/// Can a MindControl.Permanent warhead fired by the firer take the target over (Ares)? The checks of
+/// CanCapture apply, except that an object already under mind control, conventional or permanent, can
+/// be taken and the firer has no limit. A structure taken for its house by a trigger cannot.
+/// </summary>
+bool Can_Capture_Permanently(TechnoClass const * firer, TechnoClass const * target)
+{
+	if (target == NULL || firer == NULL || target->House == firer->House) {
+		return(false);
+	}
+	if (target->Is_Immune_To_Psionics() || (target->RTTI == RTTI_UNIT && target->BunkerLinkedItem != NULL)) {
+		return(false);
+	}
+	if (target->MindControlledByHouse != NULL || target->Is_Iron_Curtained()) {
+		return(false);
+	}
+	return(!Is_Being_Built_Or_Sold(target));
+}
+
+
+/// <summary>
+/// Takes the target over for good for the firer's house, as the psychic dominator does (Ares
+/// MindControl.Permanent): a controller holding it lets it go first, it shows PermaControlledAnimationType,
+/// and a foot unit taken by a computer house hunts. The firer holds no link to it.
+/// </summary>
+/// <returns>bool; Was the target taken over?</returns>
+bool Capture_Permanently(TechnoClass * firer, TechnoClass * target)
+{
+	if (!Can_Capture_Permanently(firer, target)) {
+		return(false);
+	}
+	if (target->MindControlledBy != NULL && target->MindControlledBy->CaptureManager) {
+		target->MindControlledBy->CaptureManager->Free_Unit(target);
+	}
+	if (target->House != firer->House && !target->Set_Owning_House(firer->House, true)) {
+		return(false);
+	}
+	target->IsPermaControlled = true;
+	AUTOTEST_LOG("mind control %s taken for good by %s\n", target->TClass->Name(), firer->House->Class->Name());
+	if (Rule->PermaControlledAnimationType != NULL) {
+		Attach_Control_Ring(target, Rule->PermaControlledAnimationType);
+	}
+	if (target->Is_Foot() && !firer->House->Is_Human_Player()) {
+		target->Assign_Mission(MISSION_HUNT);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Can this manager take the target over (CaptureManagerClass::CanCapture, 0x471C90)? Not an
 /// object of the firer's own house, an ImmuneToPsionics type, a vehicle linked to a bunker, an
 /// object already under mind control or taken for good by the psychic dominator, one under the

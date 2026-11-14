@@ -3948,6 +3948,10 @@ void TechnoClass::AI(void)
 		CurrentTurretNumber = turret;
 	}
 
+	if (TClass->IsPassengerTurret && TClass->TurretCount > 0 && !TClass->IsGattling) {
+		CurrentTurretNumber = std::min(Cargo.How_Many(), TClass->TurretCount - 1);
+	}
+
 	Powered_Unit_AI();
 
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
@@ -4669,8 +4673,11 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 	}
 
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
-	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
-		return(FIRE_ILLEGAL);
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl) {
+		bool const can = weapon->WarheadPtr->IsMindControlPermanent ? Can_Capture_Permanently(this, techno) : (CaptureManager && CaptureManager->Can_Capture(techno));
+		if (!can) {
+			return(FIRE_ILLEGAL);
+		}
 	}
 
 	// A parasite weapon fires only at a foot object its parasite can get into; a structure or a cell is never one (TechnoClass::GetFireError, 0x6FC0B0).
@@ -13506,6 +13513,11 @@ bool TechnoClass::Is_Bomb_Visible(void) const
 /// </summary>
 void TechnoClass::Fire_Death_Weapon(void)
 {
+	// The warhead that killed the object can suppress the blast (Ares DeathWeapon.Suppress).
+	if (DamageWarhead != NULL && DamageWarhead->Is_Death_Weapon_Suppressed(TClass)) {
+		return;
+	}
+
 	// A type with turrets uses its current weapon position; any other type uses position 0 (0x70E1A0, 0x717880).
 	int const which = TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
 	WeaponTypeClass * weapon = TClass->DeathWeapon;

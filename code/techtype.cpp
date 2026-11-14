@@ -44,6 +44,7 @@
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
+#include "warhead.h"
 #include "warheadrules.h"
 #include "weapon.h"
 
@@ -232,6 +233,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
+	CrushDamage{0, 0, 0},
+	CrushDamageWarhead(NULL),
 	InitialAmmo(-1),
 	IsParasiteable(true),
 	SuppressionThreshold(0),
@@ -336,6 +339,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsSpawned(false),
 	IsMissileSpawn(false),
 	IsDrainable(false),
+	IsDrainLocal(false),
+	DrainAmount(0),
 	Enslaves(NULL),
 	SlavesNumber(0),
 	SlaveRegenRate(0),
@@ -379,6 +384,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsPreventAttackMove(false),
 	IsGattling(false),
 	IsChargeTurret(false),
+	IsPassengerTurret(false),
 	WeaponStages(0),
 	WeaponStage{},
 	EliteStage{},
@@ -1204,6 +1210,15 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
 	DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
 	DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
+	// CrushDamage sets all three ranks; a rank's own key in the same file then overrides it.
+	if (ini.Is_Present(Name(), "CrushDamage")) {
+		int const all = ini.Get_Int(Name(), "CrushDamage", 0);
+		CrushDamage[0] = CrushDamage[1] = CrushDamage[2] = all;
+	}
+	CrushDamage[0] = ini.Get_Int(Name(), "CrushDamage.Rookie", CrushDamage[0]);
+	CrushDamage[1] = ini.Get_Int(Name(), "CrushDamage.Veteran", CrushDamage[1]);
+	CrushDamage[2] = ini.Get_Int(Name(), "CrushDamage.Elite", CrushDamage[2]);
+	CrushDamageWarhead = TGet_Class(ini, Name(), "CrushDamage.Warhead", CrushDamageWarhead);
 	IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 	SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 	IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
@@ -1225,6 +1240,8 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	}
 
 	IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
+	IsDrainLocal = ini.Get_Bool(Name(), "Drain.Local", IsDrainLocal);
+	DrainAmount = ini.Get_Int(Name(), "Drain.Amount", DrainAmount);
 	IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
 	IsLightningRod = ini.Get_Bool(Name(), "LightningRod", IsLightningRod);
 	IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
@@ -1514,6 +1531,7 @@ void TechnoTypeClass::Read_Gattling_INI(CCINIClass const & ini)
 {
 	IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
 	IsChargeTurret = ini.Get_Bool(Name(), "IsChargeTurret", IsChargeTurret);
+	IsPassengerTurret = ini.Get_Bool(Name(), "PassengerTurret", IsPassengerTurret);
 	WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
 	RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
 	RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
@@ -2227,6 +2245,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);
+	stream.Serialize(CrushDamage[0]);
+	stream.Serialize(CrushDamage[1]);
+	stream.Serialize(CrushDamage[2]);
+	stream.Serialize(CrushDamageWarhead);
 	stream.Serialize(InitialAmmo);
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
@@ -2366,6 +2388,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpawned);
 	stream.Serialize(IsMissileSpawn);
 	stream.Serialize(IsDrainable);
+	stream.Serialize(IsDrainLocal);
+	stream.Serialize(DrainAmount);
 	stream.Serialize(Enslaves);
 	stream.Serialize(SlavesNumber);
 	stream.Serialize(SlaveRegenRate);
@@ -2410,6 +2434,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPreventAttackMove);
 	stream.Serialize(IsGattling);
 	stream.Serialize(IsChargeTurret);
+	stream.Serialize(IsPassengerTurret);
 	stream.Serialize(WeaponStages);
 	stream.Serialize(WeaponStage);
 	stream.Serialize(EliteStage);
@@ -2743,6 +2768,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsMobileFire);
 	crc(IsPreventAttackMove);
 	crc(IsChargeTurret);
+	crc(IsPassengerTurret);
 	crc(RadialFireSegments);
 	crc(IsOmniCrusher);
 	crc(IsOmniCrushResistant);

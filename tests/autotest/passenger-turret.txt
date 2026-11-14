@@ -1,0 +1,20 @@
+; PassengerTurret (Ares) makes a multi-turret transport show the turret numbered by how many passengers it carries. The overlay passenger-turret.ini
+; gives the IFV PassengerTurret=yes, room for three passengers and TurretCount=2. A GI, an engineer and a Guardian GI board it one after another.
+; Expected: the dump lines "gunner weapon ... turret T passengers P" read turret 0 with no passengers, turret 1 with one, and turret 1 with two and
+; three, the last turret. Before the key was read the turret followed the gunner's weapon instead.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/passenger-turret.txt -Seconds 90 -Country 8 -Filter "gunner weapon|AUTOTEST enter|Exception"
+10 rules passenger-turret.ini
+30 command CenterBase
+35 reveal
+40 own FV 60 40
+41 own E1 58 42
+42 own ENGINEER 60 43
+43 own GGI 62 42
+100 dump
+110 enter E1 60 40
+250 dump
+260 enter ENGINEER 60 40
+400 dump
+410 enter GGI 60 40
+550 dump
+560 quit

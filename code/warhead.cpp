@@ -54,6 +54,7 @@
 #include "stimer.h"
 #include "sun.h"
 #include "swizzle.h"
+#include "techtype.h"
 #include "tracker.h"
 #include "vanimtype.h"
 #include "vector.h"
@@ -187,6 +188,9 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	VoiceDieOverride(VOC_NONE),
 	IsAffectsOwner(true),
 	IsAffectsOwnerSet(false),
+	IsDeathWeaponSuppressVehicles(false),
+	IsDeathWeaponSuppressInfantry(false),
+	IsMindControlPermanent(false),
 	DamageAirThreshold(0),
 	SonarDuration(0),
 	IsPreventScatter(false),
@@ -271,6 +275,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsWallAbsoluteDestroyer = ini.Get_Bool(Name(), "WallAbsoluteDestroyer", IsWallAbsoluteDestroyer);
 		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		IsMindControl = ini.Get_Bool(Name(), "MindControl", IsMindControl);
+		IsMindControlPermanent = ini.Get_Bool(Name(), "MindControl.Permanent", IsMindControlPermanent);
 		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
 		TemporalHealthFactor = std::clamp(ini.Get_Float(Name(), "Temporal.HealthFactor", TemporalHealthFactor), 0.0, 1.0);
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
@@ -343,6 +348,9 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		IsAffectsOwnerSet = ini.Is_Present(Name(), "AffectsOwner");
 		IsAffectsOwner = IsAffectsOwnerSet ? ini.Get_Bool(Name(), "AffectsOwner", IsAffectsOwner) : IsAffectsAllies;
+		DeathWeaponSuppress = ini.Get_TechnoType_List(Name(), "DeathWeapon.Suppress", DeathWeaponSuppress);
+		IsDeathWeaponSuppressVehicles = ini.Get_Bool(Name(), "DeathWeapon.SuppressVehicles", IsDeathWeaponSuppressVehicles);
+		IsDeathWeaponSuppressInfantry = ini.Get_Bool(Name(), "DeathWeapon.SuppressInfantry", IsDeathWeaponSuppressInfantry);
 		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
 		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
 		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
@@ -481,6 +489,10 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(RelativeDamageVehicles);
 	crc(IsUnitLostSuppress);
 	crc(IsAffectsOwner);
+	crc(DeathWeaponSuppress.Count());
+	crc(IsDeathWeaponSuppressVehicles);
+	crc(IsDeathWeaponSuppressInfantry);
+	crc(IsMindControlPermanent);
 	crc(InfDeathAnim != NULL);
 	crc(PreImpactAnim != NULL);
 	crc(MaxDebris);
@@ -704,6 +716,20 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoiceDieOverride);
 	stream.Serialize(IsAffectsOwner);
 	stream.Serialize(IsAffectsOwnerSet);
+	stream.Serialize(DeathWeaponSuppress);
+	stream.Serialize(IsDeathWeaponSuppressVehicles);
+	stream.Serialize(IsDeathWeaponSuppressInfantry);
+	stream.Serialize(IsMindControlPermanent);
+}
+
+
+bool WarheadTypeClass::Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const
+{
+	RTTIType const kind = type->Fetch_RTTI();
+	if ((kind == RTTI_UNITTYPE && IsDeathWeaponSuppressVehicles) || (kind == RTTI_INFANTRYTYPE && IsDeathWeaponSuppressInfantry)) {
+		return(true);
+	}
+	return(DeathWeaponSuppress.Is_In_List(const_cast<TechnoTypeClass *>(type)));
 }
 
 

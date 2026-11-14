@@ -667,6 +667,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsGate;
 
+		// SellTime (Ares): minutes the sell animation takes, or below zero to play it at the construction animation's rate.
+		double SellTime;
+
 		// GateUpSound and GateDownSound (Ares): the sound this gate makes as it closes and as it opens. Without the key the gate
 		// plays the [AudioVisual] GateUp or GateDown sound.
 		bool IsGateUpSoundSet;
