@@ -15582,6 +15582,40 @@ Drag:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+Drain.Amount:
+  key: Drain.Amount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: DrainAmount
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Drain.Local:
+  key: Drain.Local
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsDrainLocal
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DrainAnimationType:
   key: DrainAnimationType
   scopes:

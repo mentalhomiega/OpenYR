@@ -339,6 +339,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsSpawned(false),
 	IsMissileSpawn(false),
 	IsDrainable(false),
+	IsDrainLocal(false),
+	DrainAmount(0),
 	Enslaves(NULL),
 	SlavesNumber(0),
 	SlaveRegenRate(0),
@@ -1238,6 +1240,8 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	}
 
 	IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
+	IsDrainLocal = ini.Get_Bool(Name(), "Drain.Local", IsDrainLocal);
+	DrainAmount = ini.Get_Int(Name(), "Drain.Amount", DrainAmount);
 	IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
 	IsLightningRod = ini.Get_Bool(Name(), "LightningRod", IsLightningRod);
 	IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
@@ -2384,6 +2388,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpawned);
 	stream.Serialize(IsMissileSpawn);
 	stream.Serialize(IsDrainable);
+	stream.Serialize(IsDrainLocal);
+	stream.Serialize(DrainAmount);
 	stream.Serialize(Enslaves);
 	stream.Serialize(SlavesNumber);
 	stream.Serialize(SlaveRegenRate);

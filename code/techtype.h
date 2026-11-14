@@ -700,6 +700,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A DrainWeapon can drain this object.
 		bool IsDrainable;
 
+		// Drain.Local and Drain.Amount (Ares): when the drainer or the drained power plant sets Drain.Local, the drain takes only
+		// that plant's power, limited by each one's Drain.Amount (above zero a most, below zero a least), from the owner's total.
+		bool IsDrainLocal;
+		int DrainAmount;
+
 		// The slaves an Enslaves object keeps, the frames to replace a lost one and to rest one that has unloaded.
 		InfantryTypeClass * Enslaves;
 		int SlavesNumber;
