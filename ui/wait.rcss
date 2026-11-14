@@ -47,3 +47,9 @@ body.clear #screen-art, body.clear #screen-shade, body.clear #screen-vignette, b
 {
 	display: none;
 }
+
+/* Over a loading picture the notice sits in the lower part of the screen, clear of the picture's middle. */
+body.clear #reveal
+{
+	top: 80%;
+}
