@@ -967,7 +967,7 @@ static void Dump_Step(StepType const &)
 		if (object->ParasiteEatingMe != NULL) {
 			DebugString("AUTOTEST     parasite %s inside\n", object->ParasiteEatingMe->TClass->Name());
 		}
-		if (object->Class->IsGunner) {
+		if (object->Class->IsGunner || object->Class->IsPassengerTurret) {
 			WeaponTypeClass const * weapon = object->Get_Class_Weapon_Data(object->CurrentWeaponNumber)->Weapon;
 			DebugString("AUTOTEST     gunner weapon %d (%s) turret %d passengers %d\n", object->CurrentWeaponNumber, weapon != NULL ? weapon->Name() : "none", object->CurrentTurretNumber, object->Cargo.How_Many());
 		}

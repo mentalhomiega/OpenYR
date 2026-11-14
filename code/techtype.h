@@ -799,6 +799,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A charge turret (such as the Prism Tank) shows the turret matching how much of its rearm is left.
 		bool IsChargeTurret;
+
+		// PassengerTurret (Ares): a multi-turret object shows the turret numbered by its passenger count, the last one when it
+		// carries more passengers than it has turrets. Its weapon does not change.
+		bool IsPassengerTurret;
 		int WeaponStages;
 		int WeaponStage[WEAPON_STAGE_COUNT];
 		int EliteStage[WEAPON_STAGE_COUNT];

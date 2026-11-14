@@ -34254,6 +34254,23 @@ ParticlesPerCoord:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+PassengerTurret:
+  key: PassengerTurret
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsPassengerTurret
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Passengers:
   key: Passengers
   scopes:

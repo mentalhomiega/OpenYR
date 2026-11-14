@@ -382,6 +382,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsPreventAttackMove(false),
 	IsGattling(false),
 	IsChargeTurret(false),
+	IsPassengerTurret(false),
 	WeaponStages(0),
 	WeaponStage{},
 	EliteStage{},
@@ -1526,6 +1527,7 @@ void TechnoTypeClass::Read_Gattling_INI(CCINIClass const & ini)
 {
 	IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
 	IsChargeTurret = ini.Get_Bool(Name(), "IsChargeTurret", IsChargeTurret);
+	IsPassengerTurret = ini.Get_Bool(Name(), "PassengerTurret", IsPassengerTurret);
 	WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
 	RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
 	RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
@@ -2426,6 +2428,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPreventAttackMove);
 	stream.Serialize(IsGattling);
 	stream.Serialize(IsChargeTurret);
+	stream.Serialize(IsPassengerTurret);
 	stream.Serialize(WeaponStages);
 	stream.Serialize(WeaponStage);
 	stream.Serialize(EliteStage);
@@ -2759,6 +2762,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsMobileFire);
 	crc(IsPreventAttackMove);
 	crc(IsChargeTurret);
+	crc(IsPassengerTurret);
 	crc(RadialFireSegments);
 	crc(IsOmniCrusher);
 	crc(IsOmniCrushResistant);

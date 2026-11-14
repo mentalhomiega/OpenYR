@@ -3948,6 +3948,10 @@ void TechnoClass::AI(void)
 		CurrentTurretNumber = turret;
 	}
 
+	if (TClass->IsPassengerTurret && TClass->TurretCount > 0 && !TClass->IsGattling) {
+		CurrentTurretNumber = std::min(Cargo.How_Many(), TClass->TurretCount - 1);
+	}
+
 	Powered_Unit_AI();
 
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
