@@ -102,6 +102,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		*/
 		int Burst;
 
+		// Strafing.Shots (Phobos): shots an aircraft fires in one strafing run with this weapon, at least 1.
+		int StrafingShots;
+
 		/*
 		**	This is the unit class of the projectile fired. A subset of the unit types
 		**	represent projectiles. It is one of these classes that is specified here.

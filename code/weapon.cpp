@@ -134,6 +134,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsAlternateColor(false),
 	IsIonSensitive(false),
 	Burst(1),
+	StrafingShots(5),
 	Bullet(NULL),
 	Attack(0),
 	MaxSpeed(MPH_IMMOBILE),
@@ -257,6 +258,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		if (Burst < 1) {
 			Burst = 1;
 		}
+		StrafingShots = std::max(1, ini.Get_Int(IniName, "Strafing.Shots", StrafingShots));
 		Attack = ini.Get_Int(IniName, "Damage", Attack);
 		MaxSpeed = ini.Get_MPHType(IniName, "Speed", MaxSpeed);
 		ROF = ini.Get_Int(IniName, "ROF", ROF);
@@ -607,6 +609,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(AmbientDamage);
 	stream.Serialize(Burst);
+	stream.Serialize(StrafingShots);
 	stream.Serialize(Bullet);
 	stream.Serialize(Attack);
 	stream.Serialize(MaxSpeed);

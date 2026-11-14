@@ -46396,6 +46396,23 @@ StormSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Strafing.Shots:
+  key: Strafing.Shots
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: WeaponTypeClass
+      member: StrafingShots
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Stray:
   key: Stray
   scopes:
