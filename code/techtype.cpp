@@ -285,6 +285,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	RadialIndicatorRadius(0.0),
 	WaterImage(NULL),
 	IsCloneable(true),
+	ClonedAt(),
 	FactoryOwners(),
 	FactoryOwnersForbidden(),
 	CursorMove(),
@@ -1666,6 +1667,7 @@ void TechnoTypeClass::Read_Production_INI(CCINIClass const & ini)
 	RadialIndicatorRadius = ini.Get_Float(Name(), "RadialIndicatorRadius", RadialIndicatorRadius);
 	WaterImage = TGet_Class(ini, Name(), "WaterImage", WaterImage);
 	IsCloneable = ini.Get_Bool(Name(), "Cloneable", IsCloneable);
+	ClonedAt = TGet_TypeList<BuildingTypeClass>(ini, Name(), "ClonedAt", ClonedAt);
 	if (ini.Is_Present(Name(), "FactoryOwners")) {
 		FactoryOwners = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners"));
 	}
@@ -2334,6 +2336,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadialIndicatorRadius);
 	stream.Serialize(WaterImage);
 	stream.Serialize(IsCloneable);
+	stream.Serialize(ClonedAt);
 	stream.Serialize(FactoryOwners);
 	stream.Serialize(FactoryOwnersForbidden);
 	stream.Serialize(CursorMove);

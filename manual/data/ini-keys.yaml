@@ -10112,6 +10112,23 @@ Cloneable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ClonedAt:
+  key: ClonedAt
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: ClonedAt
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Cloning:
   key: Cloning
   scopes:
