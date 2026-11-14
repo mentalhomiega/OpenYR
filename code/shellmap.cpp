@@ -29,6 +29,7 @@
 #include "house.h"
 #include "hud.h"
 #include "houstype.h"
+#include "loadprogress.h"
 #include "logic.h"
 #include "mainloop.h"
 #include "mapgen.h"
@@ -55,8 +56,6 @@
 void Init_Random(void);
 void Process_Deferred_Deletion(void);
 
-
-void Startup_Notice_Step(char const * text, double fraction);
 
 namespace
 {
@@ -301,11 +300,11 @@ NodeNameType * New_Node(char const * name, int house, int color)
 bool Prepare_Battle(char * file, int file_size)
 {
 	if (Session.Scenarios.Count() == 0) {
-		Startup_Notice_Step("Listing maps...", 0.6);
+		Load_Progress_Step("Listing maps...", 0.6);
 		Session.Read_Scenario_Descriptions();
 	}
 
-	Startup_Notice_Step("Loading the menu battle...", 0.75);
+	Load_Progress_Step("Loading the menu battle...", 0.75);
 	int starts = 0;
 	int const index = Pick_Map(starts);
 	if (index < 0) {

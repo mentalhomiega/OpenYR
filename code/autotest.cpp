@@ -297,6 +297,10 @@ std::string FollowType;
 std::string LoadShotName;
 int LoadShotCount = 0;
 
+// The name loading notice captures are saved under, one per step, or empty when none are taken.
+std::string StepShotName;
+int StepShotCount = 0;
+
 // Set by a continuewin step; a won mission then carries on instead of ending the run.
 bool ContinueAfterWin = false;
 // Set by a continuelose line; a lost game then carries on to its score screen instead of ending the run.
@@ -7271,8 +7275,8 @@ static void Syncrec_Step(StepType const & step)
 }
 
 
-// log writes nothing more than the step line every step writes. searchdir <path> and loadshot <name>
-// take effect when the script is read (AutoTest_Load).
+// log writes nothing more than the step line every step writes. searchdir <path>, loadshot <name> and
+// stepshot <name> take effect when the script is read (AutoTest_Load).
 static void No_Action_Step(StepType const &)
 {
 }
@@ -7853,6 +7857,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"log", No_Action_Step},
 		{"searchdir", No_Action_Step},
 		{"loadshot", No_Action_Step},
+		{"stepshot", No_Action_Step},
 		{"stall", Stall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
@@ -7930,19 +7935,41 @@ bool AutoTest_Key_Held(int virtualkey)
 /// Saves the window as the script's next loading screen capture, when it asked for them.
 /// Call once the loading screen is drawn as it should be seen.
 /// </summary>
-void AutoTest_Loading_Screen_Shown(void)
+static void Capture_Load_Shot(char const * command, std::string const & name, int & count)
 {
-	if (!Active || LoadShotName.empty()) {
-		return;
-	}
-
 	// The capture request keeps the path's address until a frame is shown.
 	static std::string path;
-	path = Screenshot_Name((LoadShotName + "-" + std::to_string(++LoadShotCount) + ".tga").c_str());
-	DebugString("AUTOTEST loadshot %s\n", path.c_str());
-	Backend_Request_Window_Capture(path.c_str());
-	Video_Present();
-	Video_Present();
+	path = Screenshot_Name((name + "-" + std::to_string(++count) + ".tga").c_str());
+	DebugString("AUTOTEST %s %s\n", command, path.c_str());
+	if (!Backend_Request_Window_Capture(path.c_str())) {
+		return;
+	}
+	// The renderer takes one capture at a time, so a request sent before this one is written would replace it.
+	unsigned int const started = timeGetTime();
+	do {
+		Video_Present();
+		Sleep(1);
+	} while (Backend_Window_Capture_Pending() && timeGetTime() - started <= Capture_Timeout);
+}
+
+
+void AutoTest_Loading_Screen_Shown(void)
+{
+	if (Active && !LoadShotName.empty()) {
+		Capture_Load_Shot("loadshot", LoadShotName, LoadShotCount);
+	}
+}
+
+
+/// <summary>
+/// Saves the window as the script's next loading notice capture, when it asked for them.
+/// Call once a step of the notice is shown.
+/// </summary>
+void AutoTest_Load_Progress_Shown(void)
+{
+	if (Active && !StepShotName.empty()) {
+		Capture_Load_Shot("stepshot", StepShotName, StepShotCount);
+	}
 }
 
 
@@ -7979,6 +8006,9 @@ static bool Apply_Load_Time_Command(char const * command, std::string const & te
 	// The first loading screen comes before any game frame.
 	if (std::strcmp(command, "loadshot") == 0) {
 		LoadShotName = text;
+	}
+	if (std::strcmp(command, "stepshot") == 0) {
+		StepShotName = text;
 	}
 	// recordreplay and playreplay take effect when the script is read, before the game starts.
 	if (std::strcmp(command, "recordreplay") == 0) {

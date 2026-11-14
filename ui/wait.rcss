@@ -35,3 +35,15 @@
 	height: 24dp;
 	margin: 4dp auto 0 auto;
 }
+
+
+/* The loading notice leaves the loading picture or the menu backdrop under it in view. */
+body.clear #screen-bg
+{
+	background-color: transparent;
+}
+
+body.clear #screen-art, body.clear #screen-shade, body.clear #screen-vignette, body.clear #frame
+{
+	display: none;
+}
