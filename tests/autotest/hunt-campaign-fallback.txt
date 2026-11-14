@@ -1,0 +1,25 @@
+; A computer object on Hunt in a campaign game (ALL01UMD), about 35 cells north of the player's base and under shroud.
+; The scan a hunter makes is map-wide (TechnoClass::GreatestThreat, 0x6F8DF0, scans every techno with no range limit when
+; neither the Range nor the Area bit is set), so the E1 at 110,60 picks one of the player's objects about 35 cells away and
+; walks to it. The threat line shows the pick.
+; An unarmed soldier finds nothing (InfantryClass::GreatestThreat, 0x51E140, returns no target for an unarmed type that
+; cannot capture or steal), and a StupidHunt=yes spy skips the scan. In a campaign game both then walk to the human
+; player's starting cell (FootClass::Mission_Hunt, 0x4D54EE, reads the cell from HouseClass::CurrentPlayer at 0x4D5514).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/hunt-campaign-fallback.txt -Map ALL01UMD.MAP -Campaign -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   (where|threat) (E1|CIV1|SPY) |AUTOTEST houseunit|Exception"
+; Expected: at 60 the threat line gives the E1 at 110,60 a target in the player's base (GAPILL at 103,94). At 100 and 400, E1 is on
+; Hunt with that target; CIV1 and SPY are on Move with a nav cell in the player's base near 94,105, not on Hunt with
+; nav -1,-1 as before the fix.
+30 houseunit E1@YuriCountry 110 60
+31 houseunit CIV1@YuriCountry 112 60
+32 houseunit SPY@YuriCountry 112 62
+40 hunt E1
+41 hunt CIV1
+42 hunt SPY
+60 threat E1 computer
+100 where E1
+101 where CIV1
+102 where SPY
+400 where E1
+401 where CIV1
+402 where SPY
+410 quit

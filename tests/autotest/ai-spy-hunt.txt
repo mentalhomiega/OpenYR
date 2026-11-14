@@ -1,6 +1,6 @@
 ; A computer's SPY (StupidHunt=yes, Infiltrate=yes, Agent=yes) and the player's buildings. Run with -AICountries 1.
-; Hunt with no target (FootClass::Mission_Hunt, 0x4D5350): a StupidHunt=yes type skips the target scan. In a campaign game it walks to its
-; house's starting cell; in a skirmish it idles, so the spy stays on Hunt with no target and no destination however long it hunts.
+; Hunt with no target (FootClass::Mission_Hunt, 0x4D5350): a StupidHunt=yes type skips the target scan. In a campaign game it walks to the
+; human player's starting cell; in a skirmish it idles, so the spy stays on Hunt with no target and no destination however long it hunts.
 ; Hunt with a building as its target (InfantryClass::Mission_Hunt, 0x51F540): a computer's Infiltrate=yes soldier sets the building as its
 ; destination and takes the Capture mission, then walks in and infiltrates it.
 ; Capture with the building as destination only (settarget ... capturedest, the way a team's garrison mission orders): FootClass::Mission_Capture
