@@ -1,0 +1,12 @@
+; With loadsteps, the loading notice of the modern menus logs one "AUTOTEST loadstep" line per step. Start-up logs Loading game
+; data..., Reading the rules..., Reading sounds and music... and Preparing the menus.... The stock skirmish load then
+; logs, with the bar's percentage rising: Preparing the terrain..., Reading the rules..., Reading the map...,
+; Placing objects..., Preparing the battlefield.... No step repeats. The quick save at frame 30 is loaded at frame
+; 60, which logs the saved game load's steps the same way, once each: Reading the saved game..., Preparing the
+; terrain..., Reading the rules..., Reading the map..., Placing objects..., Preparing the battlefield....
+; Run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/load-progress-steps.txt -Seconds 120 -Filter "AUTOTEST loadstep|LOADING GAME|Exception"
+1 loadsteps
+30 command QuickSave
+60 command QuickLoad
+90 quit

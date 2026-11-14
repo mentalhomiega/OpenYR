@@ -64,7 +64,8 @@ class UIWaitBoxViewClass : public UIRmlViewClass
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
-			return(model.Bind("text", &Data.Text) && model.Bind("bar", &Data.Bar) && model.Bind("percent", &Data.Percent));
+			return(model.Bind("text", &Data.Text) && model.Bind("bar", &Data.Bar) && model.Bind("clear", &Data.Clear)
+				&& model.Bind("percent", &Data.Percent));
 		}
 
 	private:

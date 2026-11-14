@@ -153,6 +153,7 @@
 #include "light.h"
 #include "lightcon.h"
 #include "loaddlg.h"
+#include "loadprogress.h"
 #include "logic.h"
 #include "mainopt.h"
 #include "misc.h"
@@ -219,7 +220,6 @@
 #include "ui/screens/movies/uimovies.h"
 #include "ui/screens/replays/uireplays.h"
 #include "ui/screens/version/uiversion.h"
-#include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -322,7 +322,6 @@ static void Cheat_Version_Suffix(char * string);
 static std::string Version_Text(void);
 static void Startup_Notice_Show(void);
 static void Startup_Notice_Hide(void);
-void Startup_Notice_Step(char const * text, double fraction);
 
 
 
@@ -548,7 +547,7 @@ int Init_Game(int , char * [])
 	**	Initialize the bulk data. This takes the longest time and must be performed once
 	**	before the regular game starts.
 	*/
-	Startup_Notice_Step("Loading game data...", 0.05);
+	Load_Progress_Step("Loading game data...", 0.05);
 	DebugString("Init Bulk Data\n");
 
 	if (!Init_Bulk_Data()) {
@@ -578,7 +577,7 @@ int Init_Game(int , char * [])
 	/*
 	**	Find and process any rules for this game.
 	*/
-	Startup_Notice_Step("Reading the rules...", 0.2);
+	Load_Progress_Step("Reading the rules...", 0.2);
 	DebugString("Init Rules\n");
 
 	if (!Init_Rules()) {
@@ -592,7 +591,7 @@ int Init_Game(int , char * [])
 	// A score's Side= names a side the rules declare, so the roster is built before the scores are read.
 	Prepare_Side_Roster();
 
-	Startup_Notice_Step("Reading sounds and music...", 0.4);
+	Load_Progress_Step("Reading sounds and music...", 0.4);
 	DebugString("Reading %s\n", DeploymentConfig.ThemeFile.c_str());
 
 	CCINIClass theme_ini;
@@ -644,7 +643,7 @@ int Init_Game(int , char * [])
 	// The briefing and the credits draw with the owner-draw art, colors and blend masks.
 	OwnerDraw::Prepare_Resources();
 
-	Startup_Notice_Step("Preparing the menus...", 0.5);
+	Load_Progress_Step("Preparing the menus...", 0.5);
 	DebugString("Game Init Completed.\n");
 
 	return(0);
@@ -3464,44 +3463,25 @@ void Title_Screen_Restore(bool force)
 }
 
 
-// The modern menus show a loading notice over their backdrop from the start of the data load until the
-// title menu stands, so the wait is not a bare screen. Startup_Notice_Hide frees the notice; a notice
-// still shown at exit is not freed.
-static UIWaitBoxClass * StartupNotice = NULL;
+// The modern menus show the loading notice over their backdrop from the start of the data load until the
+// title menu stands, so the wait is not a bare screen.
+static bool StartupNoticeShown = false;
 
 
 static void Startup_Notice_Show(void)
 {
-	if (Options.IsClassicMenus || StartupNotice != NULL) {
-		return;
-	}
-
-	StartupNotice = new UIWaitBoxClass;
-	if (!StartupNotice->Show("Loading...", true)) {
-		delete StartupNotice;
-		StartupNotice = NULL;
-	}
-}
-
-
-// Names the part of the start-up now beginning on the loading notice and moves its bar to fraction, from 0 to 1.
-// It does nothing when no notice is shown.
-void Startup_Notice_Step(char const * text, double fraction)
-{
-	if (StartupNotice != NULL) {
-		StartupNotice->Set_Text(text);
-		StartupNotice->Set_Fraction(fraction);
-		Call_Back();
+	if (!StartupNoticeShown) {
+		StartupNoticeShown = true;
+		Load_Progress_Begin("Loading...", true);
 	}
 }
 
 
 static void Startup_Notice_Hide(void)
 {
-	if (StartupNotice != NULL) {
-		StartupNotice->Hide();
-		delete StartupNotice;
-		StartupNotice = NULL;
+	if (StartupNoticeShown) {
+		StartupNoticeShown = false;
+		Load_Progress_End();
 	}
 }
 
