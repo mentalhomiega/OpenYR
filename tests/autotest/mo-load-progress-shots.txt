@@ -5,7 +5,6 @@
 ; notice box at the centre of the screen, the step's text above a bar whose filled part grows from step to step.
 ; The mission locks the player's input from its start, so a quick save writes nothing here; load-progress-steps.txt
 ; covers the saved game load.
-; Run from the workspace root (also at -Width 1280 -Height 720):
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/mo-load-progress-shots.txt -Mods MentalOmega -Map FCAPSULE.MAP -Campaign -Width 1920 -Height 1080 -Seconds 300 -Filter "AUTOTEST loadstep|AUTOTEST stepshot|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/mo-load-progress-shots.txt -Mods MentalOmega -Map FCAPSULE.MAP -Campaign -Width 1920 -Height 1080 -Seconds 300 -Filter "AUTOTEST loadstep|AUTOTEST stepshot|Exception"
 1 loadsteps load-progress
 10 quit
