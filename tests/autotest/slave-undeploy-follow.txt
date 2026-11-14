@@ -6,7 +6,7 @@
 ; "sell 61 39" starts the sale of the refinery (YAREFN at 61,39). "where" prints each slave's house and mission, and
 ; after the undeploy the slaves should still be Americans (the player's house) on Move or Guard as they walk home,
 ; not Civilian (the Neutral house Free_All uses) or Guard after being freed.
-; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/slave-undeploy-follow.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST|Slave: |Exception"
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/slave-undeploy-follow.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST|Slave: |Exception"
 10 command CenterBase
 20 command DebugInfiniteMoney
 21 reveal
