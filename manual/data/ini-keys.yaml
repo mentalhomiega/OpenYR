@@ -41597,6 +41597,23 @@ SellSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SellTime:
+  key: SellTime
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SellTime
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SensorArray:
   key: SensorArray
   scopes:

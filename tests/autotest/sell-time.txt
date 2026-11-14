@@ -1,0 +1,15 @@
+; SellTime (Ares) sets how long a structure's sell animation takes. The overlay sell-time.ini gives the Allied power plant SellTime=.5, 450 frames,
+; where BuildupTime gives about 54. The player sells one at frame 100.
+; Expected: "counts Player" shows the power plant's building still there at frames 200 and 450 and gone at frame 700. Before the key was read it was
+; gone by frame 200.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/sell-time.txt -Seconds 90 -Country 8 -Filter "AUTOTEST   counts|AUTOTEST sell|Exception"
+10 rules sell-time.ini
+30 command CenterBase
+35 reveal
+40 own GAPOWR 64 36
+90 counts Player
+100 sell 64 36
+200 counts Player
+450 counts Player
+700 counts Player
+710 quit
