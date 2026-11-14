@@ -6575,6 +6575,14 @@ static void Teamtrace_Step(StepType const & step)
 }
 
 
+// damagetrace <TypeID|->: logs each hit an object of that type takes, as DAMAGETRACE lines; `-` stops them.
+static void Damagetrace_Step(StepType const & step)
+{
+	TechnoClass::TraceDamageType = step.Argument == "-" ? NULL : Find_Type(step.Argument);
+	DebugString("AUTOTEST damagetrace %s\n", TechnoClass::TraceDamageType != NULL ? TechnoClass::TraceDamageType->Name() : "off");
+}
+
+
 // buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
 static void Buildtrace_Step(StepType const & step)
 {
@@ -7876,6 +7884,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"aisummary", Aisummary_Step},
 		{"team", Team_Step},
 		{"teamtrace", Teamtrace_Step},
+		{"damagetrace", Damagetrace_Step},
 		{"buildtrace", Buildtrace_Step},
 		{"teams", Teams_Step},
 		{"banims", Banims_Step},
