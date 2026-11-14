@@ -3101,4 +3101,7 @@ class RulesClass
 
 		// EngineerAlwaysCaptureTech (Ares): a tech structure gets the capture cursor whatever its health.
 		bool IsEngineerAlwaysCaptureTech;
+
+		// RepairStopOnInsufficientFunds (Ares): with false, a human player's structure out of money keeps repair on and resumes once paid.
+		bool IsRepairStopOnInsufficientFunds;
 };

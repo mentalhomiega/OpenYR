@@ -8929,7 +8929,7 @@ void BuildingClass::Repair_AI(void)
 			if (Shape_Number() != shapenum) {
 				IsToDisplay = true;
 			}
-		} else {
+		} else if (Rule->IsRepairStopOnInsufficientFunds || !House->Is_Human_Player()) {
 			IsRepairing = false;
 		}
 	}
