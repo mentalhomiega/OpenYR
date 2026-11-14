@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <ctime>
+#include <map>
 #include <string>
 
 
@@ -709,12 +710,27 @@ static bool Read_Scenario_Waypoints(int index, std::vector<int> & numbers, int &
 /// scenario could not be read.</returns>
 int RandomMapWaypointCount(int index)
 {
+	// A scenario file does not change while the game runs, and reading a large one takes a while, so the count
+	// of each file is kept. The random map's file is written anew for every game and is read each time.
+	static std::map<std::string, int> _known;
+	bool const keep = index >= 0 && index < Session.Scenarios.Count() && stricmp(Session.Scenarios[index]->Get_Filename(), RANDOM_MAP_FILE_NAME) != 0;
+	if (keep) {
+		auto const found = _known.find(Session.Scenarios[index]->Get_Filename());
+		if (found != _known.end()) {
+			return(found->second);
+		}
+	}
+
 	std::vector<int> numbers;
 	int declared_players = 0;
 	if (!Read_Scenario_Waypoints(index, numbers, declared_players)) {
 		return(0);
 	}
-	return(numbers.empty() ? declared_players : static_cast<int>(numbers.size()));
+	int const count = numbers.empty() ? declared_players : static_cast<int>(numbers.size());
+	if (keep) {
+		_known[Session.Scenarios[index]->Get_Filename()] = count;
+	}
+	return(count);
 }
 
 
@@ -938,6 +954,7 @@ bool Set_Scenario_Info_From_Index(int index)
 	bool unavailable = CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available() == false;
 
 	if (unavailable) {
+		DebugString("Error - the file of scenario %s is not found\n", Session.Scenarios[index]->Get_Filename());
 		WWMessageBox().Process(TXT_UNABLE_READ_SCENARIO, TXT_OK);
 		return(false);
 	}

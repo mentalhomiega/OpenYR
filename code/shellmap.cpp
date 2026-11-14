@@ -54,6 +54,8 @@ void Init_Random(void);
 void Process_Deferred_Deletion(void);
 
 
+void Startup_Notice_Step(char const * text, double fraction);
+
 namespace
 {
 
@@ -216,15 +218,20 @@ Point2D Visible_Map_Size(char const * file)
 }
 
 
-// Takes a map whose visible area covers the screen, so no black edge shows; failing that, the largest.
+// Takes a map with four start positions or more whose visible area covers the screen, so no black edge shows;
+// failing that, the largest such map, or -1 when no map has the positions. The maps are tried in a shuffled
+// order and each is read only as it is tried, so a long map list costs the reading of a few maps, not of all.
 int Pick_Fitting(std::vector<int> & choices)
 {
 	Rect const shown = Shown_Map_Rect();
 	std::shuffle(choices.begin(), choices.end(), Dice);
 
-	int best = choices.front();
+	int best = -1;
 	long long best_area = -1;
 	for (int index : choices) {
+		if (RandomMapWaypointCount(index) < 4) {
+			continue;
+		}
 		Point2D const size = Visible_Map_Size(Session.Scenarios[index]->Get_Filename());
 		if (size.X >= shown.Width && size.Y >= shown.Height) {
 			return(index);
@@ -258,7 +265,7 @@ int Pick_Map(int & starts)
 			}
 			continue;
 		}
-		if (!mission->Get_Official() || RandomMapWaypointCount(index) < 4) {
+		if (!mission->Get_Official()) {
 			continue;
 		}
 		choices.push_back(index);
@@ -268,7 +275,10 @@ int Pick_Map(int & starts)
 		return(-1);
 	}
 
-	int const index = choices.size() == 1 ? choices.front() : Pick_Fitting(choices);
+	int const index = forced[0] != '\0' ? choices.front() : Pick_Fitting(choices);
+	if (index < 0) {
+		return(-1);
+	}
 	starts = RandomMapWaypointCount(index);
 	return(CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available() ? index : -1);
 }
@@ -289,9 +299,11 @@ NodeNameType * New_Node(char const * name, int house, int color)
 bool Prepare_Battle(char * file, int file_size)
 {
 	if (Session.Scenarios.Count() == 0) {
+		Startup_Notice_Step("Listing maps...", 0.6);
 		Session.Read_Scenario_Descriptions();
 	}
 
+	Startup_Notice_Step("Loading the menu battle...", 0.75);
 	int starts = 0;
 	int const index = Pick_Map(starts);
 	if (index < 0) {
