@@ -13,7 +13,7 @@ Each job is sized for one session and ends at a stated point. Sessions started t
 ## Shared opening
 
 ```text
-You are working on the GitHub repository mentalhomiega/OpenYR, a fork of OpenTS that rebuilds the Red Alert 2: Yuri's Revenge engine. Run `git fetch origin` and `git checkout modern`, then read CLOUD_BRIEFING.md at the repository root and follow its hard rules, its session-log section and its report section. You cannot run the game and there are no game files; never add game assets, binaries or decompiled code. Never write the owner's real name anywhere; the owner is MentalHomiega, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>` (set it with git config before committing). Commit in small commits with imperative subjects of at most 72 characters and no AI-attribution or Co-authored-by lines. Begin your branch from `origin/modern` unless the job says otherwise, and push only to the new branch named in the job (add today's UTC date where it says YYYY-MM-DD), with `git push origin HEAD:refs/heads/<that branch>`; never push to `modern`, `yr` or `main`, never force-push, delete branches or open pull requests, issues or comments anywhere. Before finishing, add your log as `cloud-log/YYYY-MM-DD-<job>.md` on your branch, then end with the briefing's report.
+You are working on the GitHub repository mentalhomiega/OpenYR, a fork of OpenTS that rebuilds the Red Alert 2: Yuri's Revenge engine. Run `git fetch origin` and `git checkout modern`, then read docs/cloud/CLOUD_BRIEFING.md at the repository root and follow its hard rules, its session-log section and its report section. You cannot run the game and there are no game files; never add game assets, binaries or decompiled code. Never write the owner's real name anywhere; the owner is MentalHomiega, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>` (set it with git config before committing). Commit in small commits with imperative subjects of at most 72 characters and no AI-attribution or Co-authored-by lines. Begin your branch from `origin/modern` unless the job says otherwise, and push only to the new branch named in the job (add today's UTC date where it says YYYY-MM-DD), with `git push origin HEAD:refs/heads/<that branch>`; never push to `modern`, `yr` or `main`, never force-push, delete branches or open pull requests, issues or comments anywhere. Before finishing, add your log as `docs/cloud/log/YYYY-MM-DD-<job>.md` on your branch, then end with the briefing's report.
 
 Your job:
 ```
@@ -25,19 +25,19 @@ These jobs build on the 2026-10-15 cloud branches, which are now merged into `mo
 ### A. Fix the findings the reviews listed
 
 ```text
-Read the "Open" or "Not fixed" lists in `cloud-log/2026-10-15-review-ai.md`, `cloud-log/2026-10-15-review-units.md` and `cloud-log/2026-10-15-review-buildings.md` on `origin/modern`. They include reinforcement edge cases, the dead test in `Pick_Drop_Target`, the `Stop_Drain` takeover case, a dangling spawn node pointer and the jumpjet turn wrap. For each, re-read the code on `modern` (it may have changed since), and fix it when the code itself proves it wrong, one fix per commit with a unit test where one fits and its manual update. Where the right behaviour depends on what gamemd does, list it for us with file, line and the case instead of guessing. Stop when every listed finding has a verdict. Branch: `cloud/review-fixes-YYYY-MM-DD`.
+Read the "Open" or "Not fixed" lists in `docs/cloud/log/2026-10-15-review-ai.md`, `docs/cloud/log/2026-10-15-review-units.md` and `docs/cloud/log/2026-10-15-review-buildings.md` on `origin/modern`. They include reinforcement edge cases, the dead test in `Pick_Drop_Target`, the `Stop_Drain` takeover case, a dangling spawn node pointer and the jumpjet turn wrap. For each, re-read the code on `modern` (it may have changed since), and fix it when the code itself proves it wrong, one fix per commit with a unit test where one fits and its manual update. Where the right behaviour depends on what gamemd does, list it for us with file, line and the case instead of guessing. Stop when every listed finding has a verdict. Branch: `cloud/review-fixes-YYYY-MM-DD`.
 ```
 
 ### B. Finish the file-reader hardening
 
 ```text
-Read `cloud-log/2026-10-15-fuzz.md` and `cloud-log/2026-10-15-custom-maps.md` on `origin/modern`. Do the follow-ups they left: structure validation for SHP and VXL frames (offsets and sizes inside the file), the `strtrim` trailing-space case, and every caller of `LCW_Uncomp` that does not check its result or pass an output limit. Each new check must still accept every well-formed file, including unusual ones gamemd loads; when unsure, log and accept rather than reject. Add a regression seed for each fix to the fuzz harness, one commit per reader. Also make the standalone Linux fuzz build compile again with the engine sources the harnesses now need. Branch: `cloud/fuzz-followup-YYYY-MM-DD`.
+Read `docs/cloud/log/2026-10-15-fuzz.md` and `docs/cloud/log/2026-10-15-custom-maps.md` on `origin/modern`. Do the follow-ups they left: structure validation for SHP and VXL frames (offsets and sizes inside the file), the `strtrim` trailing-space case, and every caller of `LCW_Uncomp` that does not check its result or pass an output limit. Each new check must still accept every well-formed file, including unusual ones gamemd loads; when unsure, log and accept rather than reject. Add a regression seed for each fix to the fuzz harness, one commit per reader. Also make the standalone Linux fuzz build compile again with the engine sources the harnesses now need. Branch: `cloud/fuzz-followup-YYYY-MM-DD`.
 ```
 
 ### C. Security follow-ups: setup and launcher
 
 ```text
-Read `cloud-log/2026-10-15-security-setup.md` on `origin/modern`. Fix the residual hardening findings it lists that can be fixed and tested without Windows, one commit per finding with a test in `tests/setup` or `tests/launcher`. For the rest, and for code signing, write a short plan in your log: what to change, how to test it on Windows, and the risk if we leave it. Branch: `cloud/security-followup-YYYY-MM-DD`.
+Read `docs/cloud/log/2026-10-15-security-setup.md` on `origin/modern`. Fix the residual hardening findings it lists that can be fixed and tested without Windows, one commit per finding with a test in `tests/setup` or `tests/launcher`. For the rest, and for code signing, write a short plan in your log: what to change, how to test it on Windows, and the risk if we leave it. Branch: `cloud/security-followup-YYYY-MM-DD`.
 ```
 
 ### D. Review: the Beta 24 changes
@@ -49,7 +49,7 @@ Review the commits in `d375ab28..origin/modern` that touch `code/`, skipping mer
 ### E. Save-game audit since revision 69
 
 ```text
-`code/savever.h` went from 69 to 73 since the last save audit (`cloud-log/2026-10-15-save-audit.md`). Repeat that audit for data members added to saved classes since then: `git log -p 4d36e67d..origin/modern -- 'code/*.h'`. For each field, check it is initialised in every constructor, saved and loaded in order, and in the CRC if it affects the simulation. The audit also asked whether the plan queue and beacons should be saved: say what gamemd does from the decompiled class layouts in public sources (YRpp headers are fine to read; copy nothing), and implement it if it is a clear gap, bumping `REVISION` once. Branch: `cloud/save-audit-2-YYYY-MM-DD`.
+`code/savever.h` went from 69 to 73 since the last save audit (`docs/cloud/log/2026-10-15-save-audit.md`). Repeat that audit for data members added to saved classes since then: `git log -p 4d36e67d..origin/modern -- 'code/*.h'`. For each field, check it is initialised in every constructor, saved and loaded in order, and in the CRC if it affects the simulation. The audit also asked whether the plan queue and beacons should be saved: say what gamemd does from the decompiled class layouts in public sources (YRpp headers are fine to read; copy nothing), and implement it if it is a clear gap, bumping `REVISION` once. Branch: `cloud/save-audit-2-YYYY-MM-DD`.
 ```
 
 ### F. Research: check the tables

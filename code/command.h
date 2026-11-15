@@ -21,4 +21,6 @@ class CommandClass
 		virtual void Execute(void) const = 0;
 		// Called when the key bound to the command is released. Commands that act on the press alone ignore it.
 		virtual void Release(void) const {}
+		// Whether the keyboard settings list the command; one the active rules switch off is left out.
+		virtual bool Is_Listed(void) const { return(true); }
 };

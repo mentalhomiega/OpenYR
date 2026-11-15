@@ -17,6 +17,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "anim.h"
+#include "armortypes.h"
 #include "building.h"
 #include "builtype.h"
 #include "animtype.h"
@@ -439,11 +440,12 @@ bool LightningStormClass::Rods_Ignored(void)
 
 /// <summary>
 /// The cell a randomly placed cloud forms over: the cell of the nearest structure with LightningRod=yes within
-/// LightningRodRange cells of it, or the cell itself when no rod is that close or the storm ignores rods.
+/// LightningRodRange cells of it, or the cell itself when no rod is that close or the storm ignores rods. Rods pull
+/// clouds only in Ares rules: gamemd reads LightningRod but its storm (LightningStorm::Update, 0x53A6C0) ignores it.
 /// </summary>
 Cell LightningStormClass::Rod_Target(Cell const & cell)
 {
-	if (Rule->LightningRodRange <= 0 || Rods_Ignored()) {
+	if (!Are_Ares_Rules() || Rule->LightningRodRange <= 0 || Rods_Ignored()) {
 		return(cell);
 	}
 	Cell best = cell;

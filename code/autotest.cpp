@@ -2044,6 +2044,24 @@ static void Note_Gated_Types(DynamicVectorClass<T *> const & types, int id, char
 }
 
 
+// sidebarbuttons: writes, for the sidebar's repair, sell, power, beacon and options buttons, whether each is on the
+// screen's button list and where it is.
+static void Sidebar_Buttons_Step(StepType const &)
+{
+	struct { char const * Name; GadgetClass const * Button; } const buttons[] = {
+		{"repair", &SidebarClass::Repair}, {"sell", &SidebarClass::Upgrade}, {"power", &SidebarClass::Power},
+		{"beacon", &SidebarClass::BeaconButton}, {"options", &SidebarClass::OptionsButton},
+	};
+	for (auto const & entry : buttons) {
+		bool listed = false;
+		for (GadgetClass const * gadget = GScreenClass::Buttons; gadget != NULL; gadget = (GadgetClass const *)gadget->Get_Next()) {
+			listed = listed || gadget == entry.Button;
+		}
+		DebugString("AUTOTEST   sidebarbutton %s listed %d at %d,%d\n", entry.Name, (int)listed, entry.Button->X, entry.Button->Y);
+	}
+}
+
+
 // Writes which special cursor mode the player is in, so a script can check that one mode ended when another began.
 static void Modes_Step(StepType const &)
 {
@@ -3894,6 +3912,9 @@ static void Listhouse_Step(StepType const & step)
 				(int)techno->TClass->IsInsignificant, (int)techno->TClass->IsDontScore, (int)techno->CountedAsOwnedInfantry,
 				techno->Transporter != NULL ? techno->Transporter->TClass->Name() : "-", (int)techno->IsInTransport, techno->Cargo.How_Many(),
 				(foot != NULL && foot->Team != NULL) ? foot->Team->Class->Name() : "-", building != NULL ? building->Occupants.Count() : 0, visible);
+			if (techno->DisguiseType != NULL) {
+				DebugString("AUTOTEST   listhouse %s obj %d disguised as %s\n", owner->Class->Name(), index, techno->DisguiseType->Name());
+			}
 		}
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
@@ -7811,6 +7832,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"alliance", Alliance_Step},
 		{"tab", Tab_Step},
 		{"modes", Modes_Step},
+		{"sidebarbuttons", Sidebar_Buttons_Step},
 		{"placement", Placement_Step},
 		{"modsig", Mod_Signature_Step},
 		{"stockcheck", Stock_Check_Step},

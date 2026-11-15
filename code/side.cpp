@@ -177,10 +177,9 @@ InfantryTypeClass const * SideClass::Disguise_Type(void) const
 			return(Rule->AlliedDisguise);
 		case 1:
 			return(Rule->SovietDisguise);
-		case 2:
-			return(Rule->ThirdDisguise);
 		default:
-			return(NULL);
+			// Any side past the second disguises as the third does, as gamemd's TechnoClass::Init (0x6F3F40) has it.
+			return(Rule->ThirdDisguise);
 	}
 }
 
@@ -237,7 +236,8 @@ std::string SideClass::Eva_Voice_Name(void) const
 	if (id == SIDE_NOD) {
 		return("Russian");
 	}
-	return(id == SIDE_THIRD ? "Yuri" : "Allied");
+	// Every side past the second speaks in the Yuri voice (VoxClass::GetFilename, 0x753380).
+	return(id >= SIDE_THIRD ? "Yuri" : "Allied");
 }
 
 

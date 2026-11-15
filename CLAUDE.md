@@ -23,3 +23,8 @@ its report too. No hook blocks. Edit results are context for the agent, and
 the end-of-turn scan is a message to the user. Codex uses the same script
 through `.codex/hooks.json` with the per-edit subset; the `AGENTS.md` files
 remain the only source of the rules.
+
+## Cloud sessions
+
+The briefing for cloud sessions is `docs/cloud/CLOUD_BRIEFING.md`, the job list is
+`docs/cloud/CLOUD_JOBS.md`, and earlier session logs are in `docs/cloud/log/`.

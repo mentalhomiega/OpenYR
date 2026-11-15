@@ -50399,7 +50399,7 @@ TogglePowerAllowed:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: 'no'
       declared_in: RulesClass
       member: IsTogglePowerAllowed
       source: code/rules.cpp

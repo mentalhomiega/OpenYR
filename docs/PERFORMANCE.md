@@ -331,7 +331,7 @@ a computer that had read the files before:
 On a first start after the computer was switched on the same build took about 20 seconds, most of it reading
 the head of every loose map from the disk; that reading is what the first item below removes.
 
-- The name and flags of each loose `.MAP` file are kept in `mapinfo.cache` in the player's folder, with the
+- With a mod active, the only time loose `.MAP` files are listed, the name and flags of each are kept in `mapinfo.cache` in the player's folder, with the
   file's size and time of last change. A file that changed, or a new one, is read as before.
 - The outcome of each INI check is kept in `inicheck.cache` there, with a signature of the catalog and of every
   text the check read. An unchanged file gets one line in the log with its counts and its findings are not

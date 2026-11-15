@@ -3918,7 +3918,7 @@ void TechnoClass::AI(void)
 	// A PermaDisguise object always looks like its side's default soldier when it has no other disguise (TechnoClass::Init, 0x6F3F40).
 	if (DisguiseType == NULL && TClass->IsCanDisguise && TClass->IsPermaDisguise) {
 		SideType const side = House->Class->Side;
-		DisguiseType = side != SIDE_NONE && side < Sides.Count() ? Sides[side]->Disguise_Type() : NULL;
+		DisguiseType = side >= 0 && side < Sides.Count() ? Sides[side]->Disguise_Type() : Rule->ThirdDisguise;
 		DisguiseHouse = House;
 	}
 

@@ -1,0 +1,17 @@
+; Animation damage in stock rules, as gamemd deals it (AnimClass::AI, 0x424604): FlameDamage2 (Fire2), or C4Warhead for
+; INVISO, with no attacker and no house, whatever Warhead the animation's art names (stock art gives METLARGE and the debris
+; one). The overlay anim-damage-warhead.ini gives the player's Apocalypse tank (HTNK) an endless AttachEffect playing RING1,
+; owned by the tank's house, and gives RING1 Damage=2 with the warhead TestDustWH (AffectsAllies=no). The rules declare no
+; Ares armor type, so they are not Ares rules. Expected: the DAMAGETRACE lines for the tank name the warhead Fire2 and no
+; attacking house ("by - of -"), as at frames 60 to 79 on 2026-11-15 (Fire2 does 2 x 0.049, rounded to 0, to the heavy
+; armor). anim-damage-warhead.txt runs the same in Ares rules, where the tank is spared. Before the gate the stock game
+; used TestDustWH, credited to the tank's house, and so spared the tank.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/anim-damage-stock.txt -Seconds 120 -Filter "AUTOTEST   where|DAMAGETRACE frame (6|7)[0-9] |Exception"
+10 art anim-damage-warhead.ini
+30 command CenterBase
+35 reveal
+40 own HTNK 70 40
+55 damagetrace HTNK
+100 where HTNK
+200 where HTNK
+210 quit

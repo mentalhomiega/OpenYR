@@ -1,0 +1,11 @@
+; Trigger actions 92 (Activate Firestorm) and 93 (Deactivate Firestorm) in rules that are not Ares rules: Yuri's Revenge
+; does nothing for either and counts it a success (TActionClass::Execute, 0x6DD8B0, cases 0x5C and 0x5D). Expected: each
+; trigaction line says done, and no "firestorm of" line follows. trigaction-ares-numbers.txt runs Ares's actions in Ares
+; rules, where the computer house's defense is raised and lowered.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/trigaction-firestorm-stock.txt -Map XMP29U2.MAP -AICountries 5 -Seconds 60 -Uncapped -StopAfterSteps -Filter "AUTOTEST   (trigaction 9|firestorm)|Exception"
+30 command CenterBase
+390 houseunit NAHAND@#1 56 100
+400 trigaction 92 0 0
+410 trigaction 92@#1 0 0
+420 trigaction 93@#1 0 0
+470 quit

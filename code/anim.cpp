@@ -66,6 +66,7 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "animtype.h"
+#include "armortypes.h"
 #include "bench.h"
 #include "building.h"
 #include "bullet.h"
@@ -1074,13 +1075,15 @@ void AnimClass::AI(void)
 							delete bullet;
 						}
 					} else {
-						// The type's Warhead deals the damage, credited to the animation's owner, whom an AffectsAllies=no or
-						// AffectsOwner=no warhead spares (Ares). Gamemd always used FlameDamage2, or C4Warhead for INVISO (AnimClass::AI, 0x424604).
-						WarheadTypeClass const * warhead = Class->Warhead;
+						// Gamemd deals FlameDamage2, or C4Warhead for INVISO, with no attacker or house (AnimClass::AI, 0x424604), although
+						// stock art gives METLARGE and the debris a Warhead. In Ares rules the type's Warhead deals it, credited to the
+						// animation's owner, whom an AffectsAllies=no or AffectsOwner=no warhead spares.
+						bool const ares = Are_Ares_Rules();
+						WarheadTypeClass const * warhead = ares ? Class->Warhead : NULL;
 						if (warhead == NULL) {
 							warhead = strcmp(Class->IniName, "INVISO") == 0 ? Rule->C4Warhead : Rule->FlameDamage2;
 						}
-						Explosion_Damage(Center_Coord(), damage, NULL, warhead, true, Owner_House(), NULL, NULL, true);
+						Explosion_Damage(Center_Coord(), damage, NULL, warhead, true, ares ? Owner_House() : NULL, NULL, NULL, ares);
 					}
 					if (!IsActive) {
 						return;
