@@ -58,6 +58,7 @@
 #include "always.h"
 
 #include "builtype.h"
+#include "foundation.h"
 #include "vox.h"
 
 #include "_map.h"
@@ -79,6 +80,7 @@
 #include "infatype.h"
 #include "isotype.h"
 #include "mixfile.h"
+#include "objectkeyrules.h"
 #include "overtype.h"
 #include "rules.h"
 #include "savestream.h"
@@ -88,6 +90,8 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "truecolour.h"
+#include "suprtype.h"
+#include "swrules.h"
 #include "unittype.h"
 #include "warhead.h"
 #include "weapon.h"
@@ -238,6 +242,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	HalfDamageSmokeLocation2(COORD_NONE),
 	GateCloseDelay(0.0),
 	LightVisibility(5000),
+	DeployFacing(DIR_S),
 	LightIntensity(0),
 	LightRedTint(1000000),
 	LightGreenTint(1000000),
@@ -260,6 +265,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Power(0),
 	Drain(0),
 	Size(BSIZE_11),
+	IsCustomFoundation(false),
+	CustomWidth(0),
+	CustomHeight(0),
 	ZHeight(1),
 	MidPoint(0),
 	DoorStages(0),
@@ -283,6 +291,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ExtraLight(0),
 	IsCanTogglePower(true),
 	HasSpotlight(false),
+	SpotlightStartHeight(430),
+	SpotlightDistance(-1),
 	IsTemple(false),
 	IsPlug(false),
 	IsHoverPad(false),
@@ -298,6 +308,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCanOccupyFire(false),
 	IsShowOccupantPips(true),
 	MaxNumberOccupants(0),
+	UCPassThrough(0.0),
+	UCFatalRate(0.0),
+	UCDamageMultiplier(1.0),
 	MuzzleFlash(),
 	IsPowered(false),
 	IsPoweredSpecial(false),
@@ -312,6 +325,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	UnitsGainSelfHeal(0),
 	IsSpySat(false),
 	IsCloning(false),
+	IsCloningFacility(false),
 	IsGrinding(false),
 	IsReverseEngineersVictims(false),
 	IsInfantryAbsorb(false),
@@ -337,6 +351,12 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsHasStupidGuardMode(true),
 	IsBridgeRepairHut(false),
 	IsGate(false),
+	SellTime(-1.0),
+	BuildupTime(-1.0),
+	IsGateUpSoundSet(false),
+	GateUpSound(VOC_NONE),
+	IsGateDownSoundSet(false),
+	GateDownSound(VOC_NONE),
 	IsSAM(false),
 	IsConstructionYard(false),
 	IsNukeSilo(false),
@@ -349,6 +369,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsHospital(false),
 	IsArmory(false),
 	IsEMPulseCannon(false),
+	IsChronoshiftVehicle(false),
+	LightningRodModifier(1.0f),
 	IsTickTank(false),
 	IsTurretAnimAVoxel(false),
 	IsCloakGenerator(false),
@@ -380,6 +402,33 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsNODBarracks(false),
 	IsYuriBarracks(false),
 	RefinerySmokeFrames(25),
+	LostEvaEvent(-1),
+	MessageCapture(),
+	MessageLost(),
+	CursorSpy(),
+	IsEngineerRepairable(true),
+	MassSelectable(-1),
+	IsUnitSell(false),
+	IsPassable(false),
+	IsSpyEffectCustom(false),
+	IsSpyResetRadar(false),
+	IsSpyRevealRadar(false),
+	SpyPowerOutage(0),
+	SpyStolenMoneyPercentage(0.0),
+	SpyStolenMoneyAmount(0),
+	IsSpyResetSuperweapons(false),
+	SpyStolenTechIndex(),
+	IsSpyUndoReverseEngineer(false),
+	IsSpyInfantryVeterancy(false),
+	IsSpyVehicleVeterancy(false),
+	IsSpyNavalVeterancy(false),
+	IsSpyAircraftVeterancy(false),
+	IsSpyBuildingVeterancy(false),
+	IsSpyRevealProduction(false),
+	AcademyInfantryVeterancy(0.0),
+	AcademyAircraftVeterancy(0.0),
+	AcademyVehicleVeterancy(0.0),
+	AcademyBuildingVeterancy(0.0),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -393,15 +442,21 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsMobileStealth(false),
 	IsJuggernaut(false),
 	IsCoreDefender(false),
+	SolidHeight(0),
 	IsBarrelAnimAVoxel(false),
 	BarrelAnimZAdjust(-21),
 	IsTurretAnimExclusive(false),
+	UnusedBTypeBool1(false),
 	IsDamagedDoor(false),
 	IsInvisibleInGame(false),
 	IsTerrainPalette(false),
 	IsCanPlaceAnywhere(false),
 	IsExtraDamageStage(true),
 	CanAIBuildThis(false),
+	AIBuildCounts(),
+	AIExtraCounts(),
+	AIBaseNormal(-1),
+	IsAIInnerBase(false),
 	IsBaseDefense(false),
 	IsSortCameoAsBaseDefense(false),
 	CloakRadiusInCells(20),
@@ -415,6 +470,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ProduceCashDelay(0),
 	ProduceCashBudget(0),
 	IsProduceCashResetOnCapture(false),
+	IsProduceCashDisplay(false),
 	IsSecretLab(false),
 	SecretInfantry(NULL),
 	SecretUnit(NULL),
@@ -827,6 +883,9 @@ Cell const * BuildingTypeClass::Occupy_List(bool placement) const
  *=============================================================================================*/
 int BuildingTypeClass::Width(void) const
 {
+	if (IsCustomFoundation) {
+		return(CustomWidth);
+	}
 	return(SizeWidth[Size]);
 }
 
@@ -847,7 +906,8 @@ int BuildingTypeClass::Width(void) const
  *=============================================================================================*/
 int BuildingTypeClass::Height(bool bib) const
 {
-	return(SizeHeight[Size] + ((bib && IsBibbed) ? 1 : 0));
+	int height = IsCustomFoundation ? CustomHeight : SizeHeight[Size];
+	return(height + ((bib && IsBibbed) ? 1 : 0));
 }
 
 
@@ -1329,6 +1389,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			}
 		}
 		HasSpotlight = ini.Get_Bool(Name(), "HasSpotlight", HasSpotlight);
+		SpotlightStartHeight = std::max(0, ini.Get_Int(Name(), "Spotlight.StartHeight", SpotlightStartHeight));
+		SpotlightDistance = ini.Get_Int(Name(), "Spotlight.Distance", SpotlightDistance);
 		HalfDamageSmokeLocation1 = ini.Get_Point(Name(), "HalfDamageSmokeLocation1", HalfDamageSmokeLocation1);
 		HalfDamageSmokeLocation2 = ini.Get_Point(Name(), "HalfDamageSmokeLocation2", HalfDamageSmokeLocation2);
 		IsRadar = ini.Get_Bool(Name(), "Radar", IsRadar);
@@ -1340,6 +1402,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanOccupyFire = ini.Get_Bool(Name(), "CanOccupyFire", IsCanOccupyFire);
 		IsShowOccupantPips = ini.Get_Bool(Name(), "ShowOccupantPips", IsShowOccupantPips);
 		MaxNumberOccupants = ini.Get_Int(Name(), "MaxNumberOccupants", MaxNumberOccupants);
+		UCPassThrough = ini.Get_Float(Name(), "UC.PassThrough", UCPassThrough);
+		UCFatalRate = ini.Get_Float(Name(), "UC.FatalRate", UCFatalRate);
+		UCDamageMultiplier = ini.Get_Float(Name(), "UC.DamageMultiplier", UCDamageMultiplier);
 		IsPowered = ini.Get_Bool(Name(), "Powered", IsPowered);
 		IsPoweredSpecial = ini.Get_Bool(Name(), "PoweredSpecial", IsPoweredSpecial);
 		IsBibbed = ini.Get_Bool(Name(), "Bib", IsBibbed);
@@ -1359,6 +1424,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsMobileStealth = ini.Get_Bool(Name(), "IsMobileStealth", IsMobileStealth);
 		IsJuggernaut = ini.Get_Bool(Name(), "IsJuggernaut", IsJuggernaut);
 		IsCoreDefender = ini.Get_Bool(Name(), "IsCoreDefender", IsCoreDefender);
+		SolidHeight = ini.Get_Int(Name(), "SolidHeight", SolidHeight);
 
 		IsBarrelAnimAVoxel = ini.Get_Bool(Name(), "BarrelAnimIsVoxel", IsBarrelAnimAVoxel);
 		BarrelAnimZAdjust = ini.Get_Int(Name(), "BarrelAnimZAdjust", BarrelAnimZAdjust);
@@ -1394,12 +1460,19 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsPlug = ini.Get_Bool(Name(), "IsPlug", IsPlug);
 		IsCanTogglePower = ini.Get_Bool(Name(), "TogglePower", IsCanTogglePower);
 		IsCanUnitRepair = ini.Get_Bool(Name(), "UnitRepair", IsCanUnitRepair);
+		IsUnitSell = ini.Get_Bool(Name(), "UnitSell", IsCanUnitRepair);
+		IsEngineerRepairable = ini.Get_Bool(Name(), "EngineerRepairable", IsRepairable);
+		if (ini.Is_Present(Name(), "MassSelectable")) {
+			MassSelectable = ini.Get_Bool(Name(), "MassSelectable", false) ? 1 : 0;
+		}
+		IsPassable = ini.Get_Bool(Name(), "IsPassable", IsPassable);
 		IsCanUnitReload = ini.Get_Bool(Name(), "UnitReload", IsCanUnitReload);
 		IsOrePurifier = ini.Get_Bool(Name(), "OrePurifier", IsOrePurifier);
 		InfantryGainSelfHeal = ini.Get_Int(Name(), "InfantryGainSelfHeal", InfantryGainSelfHeal);
 		UnitsGainSelfHeal = ini.Get_Int(Name(), "UnitsGainSelfHeal", UnitsGainSelfHeal);
 		IsSpySat = ini.Get_Bool(Name(), "SpySat", IsSpySat);
 		IsCloning = ini.Get_Bool(Name(), "Cloning", IsCloning);
+		IsCloningFacility = ini.Get_Bool(Name(), "CloningFacility", IsCloningFacility);
 		IsGrinding = ini.Get_Bool(Name(), "Grinding", IsGrinding);
 		IsReverseEngineersVictims = ini.Get_Bool(Name(), "ReverseEngineersVictims", IsReverseEngineersVictims);
 		IsInfantryAbsorb = ini.Get_Bool(Name(), "InfantryAbsorb", IsInfantryAbsorb);
@@ -1438,6 +1511,16 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		DefensesCostBonus = ini.Get_Float(Name(), "DefensesCostBonus", DefensesCostBonus);
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
+		SellTime = ini.Get_Double(Name(), "SellTime", SellTime);
+		BuildupTime = ini.Get_Double(Name(), "BuildupTime", BuildupTime);
+		if (ini.Is_Present(Name(), "GateUpSound")) {
+			IsGateUpSoundSet = true;
+			GateUpSound = ini.Get_VocType(Name(), "GateUpSound", GateUpSound);
+		}
+		if (ini.Is_Present(Name(), "GateDownSound")) {
+			IsGateDownSoundSet = true;
+			GateDownSound = ini.Get_VocType(Name(), "GateDownSound", GateDownSound);
+		}
 		IsSAM = ini.Get_Bool(Name(), "SAM", IsSAM);
 		IsConstructionYard = ini.Get_Bool(Name(), "ConstructionYard", IsConstructionYard);
 		IsNukeSilo = ini.Get_Bool(Name(), "NukeSilo", IsNukeSilo);
@@ -1446,16 +1529,74 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsLaserFencePost = ini.Get_Bool(Name(), "LaserFencePost", IsLaserFencePost);
 		IsLaserFence = ini.Get_Bool(Name(), "LaserFence", IsLaserFence);
 		IsFirestormWall = ini.Get_Bool(Name(), "FirestormWall", IsFirestormWall);
+		IsFirestormWall = ini.Get_Bool(Name(), "Firestorm.Wall", IsFirestormWall);
 		IsHospital = ini.Get_Bool(Name(), "Hospital", IsHospital);
 		IsArmory = ini.Get_Bool(Name(), "Armory", IsArmory);
 		IsGDIBarracks = ini.Get_Bool(Name(), "GDIBarracks", IsGDIBarracks);
 		IsNODBarracks = ini.Get_Bool(Name(), "NODBarracks", IsNODBarracks);
 		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
 		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
+		{
+			char text[128];
+			// A line the announcer file does not list reads as none, as CaptureEvaEvent does.
+			if (ini.Get_String(Name(), "LostEvaEvent", "", text, sizeof(text)) > 0) {
+				LostEvaEvent = Eva_Line(text);
+			}
+			if (ini.Get_String(Name(), "Message.Capture", "", text, sizeof(text)) > 0) {
+				MessageCapture = text;
+			}
+			if (ini.Get_String(Name(), "Message.Lost", "", text, sizeof(text)) > 0) {
+				MessageLost = text;
+			}
+			if (ini.Get_String(Name(), "Cursor.Spy", "", text, sizeof(text)) > 0) {
+				CursorSpy = text;
+			}
+			IsSpyEffectCustom = ini.Get_Bool(Name(), "SpyEffect.Custom", IsSpyEffectCustom);
+			IsSpyResetRadar = ini.Get_Bool(Name(), "SpyEffect.ResetRadar", IsSpyResetRadar);
+			IsSpyRevealRadar = ini.Get_Bool(Name(), "SpyEffect.RevealRadar", IsSpyRevealRadar);
+			SpyPowerOutage = ini.Get_Int(Name(), "SpyEffect.PowerOutageDuration", SpyPowerOutage);
+			SpyStolenMoneyPercentage = ini.Get_Float(Name(), "SpyEffect.StolenMoneyPercentage", SpyStolenMoneyPercentage);
+			SpyStolenMoneyAmount = ini.Get_Int(Name(), "SpyEffect.StolenMoneyAmount", SpyStolenMoneyAmount);
+			IsSpyResetSuperweapons = ini.Get_Bool(Name(), "SpyEffect.ResetSuperweapons", IsSpyResetSuperweapons);
+			if (ini.Is_Present(Name(), "SpyEffect.StolenTechIndex")) {
+				SpyStolenTechIndex.clear();
+				for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "SpyEffect.StolenTechIndex"))) {
+					SpyStolenTechIndex.push_back(atoi(index.c_str()));
+				}
+			}
+			IsSpyUndoReverseEngineer = ini.Get_Bool(Name(), "SpyEffect.UndoReverseEngineer", IsSpyUndoReverseEngineer);
+			IsSpyInfantryVeterancy = ini.Get_Bool(Name(), "SpyEffect.InfantryVeterancy", IsSpyInfantryVeterancy);
+			IsSpyVehicleVeterancy = ini.Get_Bool(Name(), "SpyEffect.VehicleVeterancy", IsSpyVehicleVeterancy) || ini.Get_Bool(Name(), "SpyEffect.UnitVeterancy", false);
+			IsSpyNavalVeterancy = ini.Get_Bool(Name(), "SpyEffect.NavalVeterancy", IsSpyNavalVeterancy);
+			IsSpyAircraftVeterancy = ini.Get_Bool(Name(), "SpyEffect.AircraftVeterancy", IsSpyAircraftVeterancy);
+			IsSpyBuildingVeterancy = ini.Get_Bool(Name(), "SpyEffect.BuildingVeterancy", IsSpyBuildingVeterancy);
+			IsSpyRevealProduction = ini.Get_Bool(Name(), "SpyEffect.RevealProduction", IsSpyRevealProduction);
+		}
+		AcademyInfantryVeterancy = ini.Get_Float(Name(), "Academy.InfantryVeterancy", AcademyInfantryVeterancy);
+		AcademyAircraftVeterancy = ini.Get_Float(Name(), "Academy.AircraftVeterancy", AcademyAircraftVeterancy);
+		AcademyVehicleVeterancy = ini.Get_Float(Name(), "Academy.VehicleVeterancy", AcademyVehicleVeterancy);
+		AcademyBuildingVeterancy = ini.Get_Float(Name(), "Academy.BuildingVeterancy", AcademyBuildingVeterancy);
+		if (ini.Is_Present(Name(), "Academy.Types")) {
+			AcademyTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Academy.Types"));
+		}
+		if (ini.Is_Present(Name(), "Academy.Ignore")) {
+			AcademyIgnore = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Academy.Ignore"));
+		}
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
+		IsChronoshiftVehicle = ini.Get_Bool(Name(), "Chronoshift.IsVehicle", IsChronoshiftVehicle);
+		LightningRodModifier = (float)ini.Get_Float(Name(), "LightningRod.Modifier", LightningRodModifier);
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
 		SuperWeapon = ini.Get_SuperWeaponType(Name(), "SuperWeapon", SuperWeapon);
 		SuperWeapon2 = ini.Get_SuperWeaponType(Name(), "SuperWeapon2", SuperWeapon2);
+		if (ini.Is_Present(Name(), "SuperWeapons")) {
+			SuperWeaponList.Clear();
+			for (std::string const & entry : SuperRules::Split_List(ini.Get_String(Name(), "SuperWeapons"))) {
+				SuperWeaponType const found = SuperWeaponTypeClass::From_Name(entry.c_str());
+				if (found != SUPER_NONE) {
+					SuperWeaponList.Add(found);
+				}
+			}
+		}
 		IsCloakGenerator = ini.Get_Bool(Name(), "CloakGenerator", IsCloakGenerator);
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
 		IsBunker = ini.Get_Bool(Name(), "Bunker", IsBunker);
@@ -1473,6 +1614,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		CloakRadiusInCells = ini.Get_Int(Name(), "CloakRadiusInCells", CloakRadiusInCells);
 
 		LightVisibility = ini.Get_Int(Name(), "LightVisibility", LightVisibility);
+		// Eight compass steps from 0 (north) clockwise; gamemd keeps step * 32 (BuildingTypeClass::Read_INI, 0x45FE50).
+		DeployFacing = Dir256((ini.Get_Int(Name(), "DeployFacing", DeployFacing >> 5) << 5) & DIR_MAX);
 		LightIntensity = (ini.Get_Float(Name(), "LightIntensity", LightIntensity / NORMAL_LIGHT) * (double)NORMAL_LIGHT) + 0.1;
 		LightRedTint = (ini.Get_Float(Name(), "LightRedTint", LightRedTint / NORMAL_LIGHT) * (double)NORMAL_LIGHT) + 0.1;
 		LightGreenTint = (ini.Get_Float(Name(), "LightGreenTint", LightGreenTint / NORMAL_LIGHT) * (double)NORMAL_LIGHT) + 0.1;
@@ -1501,6 +1644,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
+		AIBuildCounts = ini.Get_IntList(Name(), "AIBuildCounts", AIBuildCounts);
+		AIExtraCounts = ini.Get_IntList(Name(), "AIExtraCounts", AIExtraCounts);
+		IsAIInnerBase = ini.Get_Bool(Name(), "AIInnerBase", IsCloakGenerator);
+		if (ini.Is_Present(Name(), "AIBaseNormal")) {
+			AIBaseNormal = ini.Get_Bool(Name(), "AIBaseNormal", false) ? 1 : 0;
+		}
 		IsBaseDefense = ini.Get_Bool(Name(), "IsBaseDefense", IsBaseDefense);
 		IsSortCameoAsBaseDefense = ini.Get_Bool(Name(), "SortCameoAsBaseDefense", IsBaseDefense);
 		IsThreatRatingNode = ini.Get_Bool(Name(), "IsThreatRatingNode", IsThreatRatingNode);
@@ -1511,6 +1660,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		ProduceCashDelay = ini.Get_Int(Name(), "ProduceCashDelay", ProduceCashDelay);
 		ProduceCashBudget = ini.Get_Int(Name(), "ProduceCashBudget", ProduceCashBudget);
 		IsProduceCashResetOnCapture = ini.Get_Bool(Name(), "ProduceCashResetOnCapture", IsProduceCashResetOnCapture);
+		IsProduceCashDisplay = ini.Get_Bool(Name(), "ProduceCashDisplay", IsProduceCashDisplay);
 		IsSecretLab = ini.Get_Bool(Name(), "SecretLab", IsSecretLab);
 		SecretInfantry = TGet_Class(ini, Name(), "SecretInfantry", SecretInfantry);
 		SecretUnit = TGet_Class(ini, Name(), "SecretUnit", SecretUnit);
@@ -1559,6 +1709,13 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		if (size != BSIZE_FIRST) {
 			Size = size;
 		}
+		if (Is_Custom_Foundation_Text(ArtINI.Get_String(Name(), "Foundation"))) {
+			Read_Custom_Foundation(ArtINI, Name());
+		} else if (Is_Custom_Foundation_Text(ArtINI.Get_String(Graphic_Name(), "Foundation"))) {
+			Read_Custom_Foundation(ArtINI, Graphic_Name());
+		} else if (ArtINI.Is_Present(Graphic_Name(), "Foundation") || ArtINI.Is_Present(Name(), "Foundation")) {
+			Clear_Custom_Foundation();
+		}
 
 		// A weapons factory with no ExitCoord from any INI releases at the offset gamemd's GetCoords gives (0x447AC0), as GetExitCoords (0x44F640) falls back to it.
 		if (IsWeaponsFactory && !IsExitCoordSet) {
@@ -1599,8 +1756,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			BuildupData = NULL;
 		}
 
-		OccupyList = OccupyLists[Size];
-		ExitList = ExitLists[Size];
+		Attach_Foundation_Lists();
 
 		/*
 		 * Graphics.
@@ -2273,6 +2429,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(NumberOfDocks);
 	crc(GateCloseDelay);
 	crc(LightVisibility);
+	crc((int)DeployFacing);
 	crc(LightIntensity);
 	crc(LightRedTint);
 	crc(LightGreenTint);
@@ -2321,10 +2478,13 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsRecoilless);
 	crc(IsBridgeRepairHut);
 	crc(IsGate);
+	crc(SellTime);
+	crc(BuildupTime);
 	crc(IsSAM);
 	crc(IsConstructionYard);
 	crc(IsNukeSilo);
 	crc(IsRefinery);
+	crc(IsAIInnerBase);
 	crc(IsWeaponsFactory);
 	crc(IsLaserFencePost);
 	crc(IsLaserFence);
@@ -2342,6 +2502,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsMobileStealth);
 	crc(IsJuggernaut);
 	crc(IsCoreDefender);
+	crc(SolidHeight);
 	crc(IsBarrelAnimAVoxel);
 	crc(BarrelAnimZAdjust);
 	crc(TurretChargeAnimRate);
@@ -2402,8 +2563,7 @@ void BuildingTypeClass::Post_Load(void)
 	}
 
 	ToTile = NULL;
-	OccupyList = OccupyLists[Size];
-	ExitList = ExitLists[Size];
+	Attach_Foundation_Lists();
 
 	Fetch_Building_Voxel_Image();
 	Fetch_Building_Normal_Image(Scen->Theater);
@@ -2425,6 +2585,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HalfDamageSmokeLocation2);
 	stream.Serialize(GateCloseDelay);
 	stream.Serialize(LightVisibility);
+	stream.Serialize(DeployFacing);
 	stream.Serialize(LightIntensity);
 	stream.Serialize(LightRedTint);
 	stream.Serialize(LightGreenTint);
@@ -2439,6 +2600,11 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PowersUpBuilding);
 	stream.Serialize(FreeUnit);
 	stream.Serialize(FoundationFace);
+	stream.Serialize(IsCustomFoundation);
+	stream.Serialize(CustomWidth);
+	stream.Serialize(CustomHeight);
+	stream.Serialize(CustomOccupy);
+	stream.Serialize(CustomOutline);
 	stream.Serialize(Adjacent);
 	stream.Serialize(ToBuild);
 	stream.Serialize(ExitCoordinate);
@@ -2473,6 +2639,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ExtraLight);
 	stream.Serialize(IsCanTogglePower);
 	stream.Serialize(HasSpotlight);
+	stream.Serialize(SpotlightStartHeight);
+	stream.Serialize(SpotlightDistance);
 	stream.Serialize(IsTemple);
 	stream.Serialize(IsPlug);
 	stream.Serialize(IsHoverPad);
@@ -2488,6 +2656,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanOccupyFire);
 	stream.Serialize(IsShowOccupantPips);
 	stream.Serialize(MaxNumberOccupants);
+	stream.Serialize(UCPassThrough);
+	stream.Serialize(UCFatalRate);
+	stream.Serialize(UCDamageMultiplier);
 	stream.Serialize(MuzzleFlash);
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsPoweredSpecial);
@@ -2502,6 +2673,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnitsGainSelfHeal);
 	stream.Serialize(IsSpySat);
 	stream.Serialize(IsCloning);
+	stream.Serialize(IsCloningFacility);
 	stream.Serialize(IsGrinding);
 	stream.Serialize(IsReverseEngineersVictims);
 	stream.Serialize(IsInfantryAbsorb);
@@ -2527,6 +2699,12 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHasStupidGuardMode);
 	stream.Serialize(IsBridgeRepairHut);
 	stream.Serialize(IsGate);
+	stream.Serialize(SellTime);
+	stream.Serialize(BuildupTime);
+	stream.Serialize(IsGateUpSoundSet);
+	stream.Serialize(GateUpSound);
+	stream.Serialize(IsGateDownSoundSet);
+	stream.Serialize(GateDownSound);
 	stream.Serialize(IsSAM);
 	stream.Serialize(IsConstructionYard);
 	stream.Serialize(IsNukeSilo);
@@ -2539,6 +2717,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHospital);
 	stream.Serialize(IsArmory);
 	stream.Serialize(IsEMPulseCannon);
+	stream.Serialize(IsChronoshiftVehicle);
+	stream.Serialize(LightningRodModifier);
 	stream.Serialize(IsTickTank);
 	stream.Serialize(IsTurretAnimAVoxel);
 	stream.Serialize(IsCloakGenerator);
@@ -2571,8 +2751,38 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNODBarracks);
 	stream.Serialize(IsYuriBarracks);
 	stream.Serialize(RefinerySmokeFrames);
+	stream.Serialize(LostEvaEvent);
+	stream.Serialize(MessageCapture);
+	stream.Serialize(MessageLost);
+	stream.Serialize(CursorSpy);
+	stream.Serialize(IsEngineerRepairable);
+	stream.Serialize(MassSelectable);
+	stream.Serialize(IsUnitSell);
+	stream.Serialize(IsPassable);
+	stream.Serialize(IsSpyEffectCustom);
+	stream.Serialize(IsSpyResetRadar);
+	stream.Serialize(IsSpyRevealRadar);
+	stream.Serialize(SpyPowerOutage);
+	stream.Serialize(SpyStolenMoneyPercentage);
+	stream.Serialize(SpyStolenMoneyAmount);
+	stream.Serialize(IsSpyResetSuperweapons);
+	stream.Serialize(SpyStolenTechIndex);
+	stream.Serialize(IsSpyUndoReverseEngineer);
+	stream.Serialize(IsSpyInfantryVeterancy);
+	stream.Serialize(IsSpyVehicleVeterancy);
+	stream.Serialize(IsSpyNavalVeterancy);
+	stream.Serialize(IsSpyAircraftVeterancy);
+	stream.Serialize(IsSpyBuildingVeterancy);
+	stream.Serialize(IsSpyRevealProduction);
+	stream.Serialize(AcademyInfantryVeterancy);
+	stream.Serialize(AcademyAircraftVeterancy);
+	stream.Serialize(AcademyVehicleVeterancy);
+	stream.Serialize(AcademyBuildingVeterancy);
+	stream.Serialize(AcademyTypes);
+	stream.Serialize(AcademyIgnore);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
+	stream.Serialize(SuperWeaponList);
 	stream.Serialize(GateStages);
 	stream.Serialize(PowersUpToLevel);
 	stream.Serialize(VoxelBarrelFile);
@@ -2589,6 +2799,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMobileStealth);
 	stream.Serialize(IsJuggernaut);
 	stream.Serialize(IsCoreDefender);
+	stream.Serialize(SolidHeight);
 	stream.Serialize(IsBarrelAnimAVoxel);
 	stream.Serialize(BarrelAnimZAdjust);
 	stream.Serialize(IsTurretAnimExclusive);
@@ -2599,6 +2810,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanPlaceAnywhere);
 	stream.Serialize(IsExtraDamageStage);
 	stream.Serialize(CanAIBuildThis);
+	stream.Serialize(AIBuildCounts);
+	stream.Serialize(AIExtraCounts);
+	stream.Serialize(AIBaseNormal);
+	stream.Serialize(IsAIInnerBase);
 	stream.Serialize(IsBaseDefense);
 	stream.Serialize(IsSortCameoAsBaseDefense);
 	stream.Serialize(CloakRadiusInCells);
@@ -2612,6 +2827,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashDelay);
 	stream.Serialize(ProduceCashBudget);
 	stream.Serialize(IsProduceCashResetOnCapture);
+	stream.Serialize(IsProduceCashDisplay);
 	stream.Serialize(IsSecretLab);
 	stream.Serialize(SecretInfantry);
 	stream.Serialize(SecretUnit);
@@ -2662,12 +2878,107 @@ void BuildingTypeClass::Post_Load_Game(void)
 
 
 /// <summary>
+/// Reads an Ares custom foundation from an art section that sets Foundation=Custom.
+/// Foundation.X and Foundation.Y give the width and height in cells, Foundation.0 onward list
+/// the occupied cells, and FoundationOutline.Length cells from FoundationOutline.0 list the
+/// cells around the building, which also serve as its exit cells. A missing cell list
+/// defaults to the full rectangle, and a missing outline to the ring of cells around the
+/// occupied ones. A section without a positive width and height leaves the stock size.
+/// </summary>
+void BuildingTypeClass::Read_Custom_Foundation(CCINIClass const & ini, char const * section)
+{
+	int width = ini.Get_Int(section, "Foundation.X", 0);
+	int height = ini.Get_Int(section, "Foundation.Y", 0);
+	if (width <= 0 || height <= 0) {
+		return;
+	}
+
+	std::vector<FoundationCell> occupy;
+	for (int index = 0; index < width * height; index++) {
+		char entry[32];
+		std::snprintf(entry, sizeof(entry), "Foundation.%d", index);
+		if (!ini.Is_Present(section, entry)) {
+			break;
+		}
+		Point2D point = ini.Get_Point(section, entry, Point2D(0, 0));
+		occupy.push_back(FoundationCell{point.X, point.Y});
+	}
+
+	std::vector<FoundationCell> outline;
+	int length = ini.Get_Int(section, "FoundationOutline.Length", 0);
+	for (int index = 0; index < length; index++) {
+		char entry[48];
+		std::snprintf(entry, sizeof(entry), "FoundationOutline.%d", index);
+		if (!ini.Is_Present(section, entry)) {
+			break;
+		}
+		Point2D point = ini.Get_Point(section, entry, Point2D(0, 0));
+		outline.push_back(FoundationCell{point.X, point.Y});
+	}
+
+	Foundation_Complete(width, height, occupy, outline);
+
+	IsCustomFoundation = true;
+	CustomWidth = width;
+	CustomHeight = height;
+	CustomOccupy.clear();
+	for (FoundationCell const & cell : occupy) {
+		CustomOccupy.push_back(Cell(cell.X, cell.Y));
+	}
+	CustomOccupy.push_back(REFRESH_EOL);
+
+	// War factories read the eleventh exit cell directly, so a shorter outline is padded with list ends.
+	CustomOutline.clear();
+	for (FoundationCell const & cell : outline) {
+		CustomOutline.push_back(Cell(cell.X, cell.Y));
+	}
+	do {
+		CustomOutline.push_back(REFRESH_EOL);
+	} while (CustomOutline.size() < 12);
+
+	Size = BSIZE_FIRST;
+	for (int index = BSIZE_FIRST; index < BSIZE_COUNT; index++) {
+		if (SizeWidth[index] == width && SizeHeight[index] == height && index != BSIZE_33_REF) {
+			Size = (BSizeType)index;
+			break;
+		}
+	}
+}
+
+
+void BuildingTypeClass::Clear_Custom_Foundation(void)
+{
+	IsCustomFoundation = false;
+	CustomWidth = 0;
+	CustomHeight = 0;
+	CustomOccupy.clear();
+	CustomOutline.clear();
+}
+
+
+void BuildingTypeClass::Attach_Foundation_Lists(void)
+{
+	if (IsCustomFoundation && !CustomOccupy.empty() && !CustomOutline.empty()) {
+		OccupyList = CustomOccupy.data();
+		ExitList = CustomOutline.data();
+	} else {
+		IsCustomFoundation = false;
+		OccupyList = OccupyLists[Size];
+		ExitList = ExitLists[Size];
+	}
+}
+
+
+/// <summary>
 /// Fetches the list of cells that objects leave this building through.
 /// </summary>
 /// <returns>Returns with a pointer to the exit cell list that suits this building's
 /// size.</returns>
 Cell const * BuildingTypeClass::Exit_List(void) const
 {
+	if (IsCustomFoundation) {
+		return(CustomOutline.data());
+	}
 	BSizeType size = Size;
 	if (size == BSIZE_33_REF) {
 		size = BSIZE_33;
@@ -2862,23 +3173,13 @@ bool BuildingTypeClass::Is_Immune_To_EMP(void) const
 
 
 /// <summary>
-/// Fetches the facing this building takes when it deploys.
-/// This routine is used when a mobile deployer converts between its unit and building
-/// forms so that the two share a sensible orientation.
+/// The facing a unit must reach before it deploys into this building, and the facing the unit
+/// takes when the building undeploys: DeployFacing, south unless set (read at 0x465D70 by
+/// UnitClass::TryToDeploy, 0x7393C0, and BuildingClass::Mission_Selling, 0x449C30).
 /// </summary>
-/// <returns>Returns with the direction the building faces once deployed.</returns>
 Dir256 BuildingTypeClass::Deploy_Facing(void) const
 {
-	if (!Is_Mobile_Deployer()) {
-		return(DIR_S);
-	}
-	if (IsArtillary) {
-		return(DIR_N);
-	}
-	if (IsSensorArray || IsTickTank || IsICBMLauncher) {
-		return(DIR_E);
-	}
-	return(DIR_S);
+	return(DeployFacing);
 }
 
 

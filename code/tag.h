@@ -51,7 +51,9 @@ class TagClass : public AbstractClass
 		void Timer_Local_Reset(int local);
 
 		bool Is_Trigger_Attached(TriggerClass * trig) const;
-		bool Spring(TEventType event=TEVENT_ANY, ObjectClass * object=NULL, Cell cell=CELL_NONE, bool forced=false, TechnoClass *source=NULL);
+		bool Spring(TEventType event=TEVENT_ANY, ObjectClass * object=NULL, Cell cell=CELL_NONE, bool forced=false, TechnoClass *source=NULL, HouseClass const * source_house=NULL);
+		// Whether a trigger on this tag waits on the event.
+		bool Has_Event(TEventType event) const;
 
 		Cell Get_Position(void) const;
 		void Set_Position(Cell cell);

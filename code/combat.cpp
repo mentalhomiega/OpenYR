@@ -56,6 +56,7 @@
 #include "goptions.h"
 #include "incdec.h"
 #include "infantry.h"
+#include "ionblast.h"
 #include "infatype.h"
 #include "inline.h"
 #include "isotype.h"
@@ -77,6 +78,9 @@
 #include "unittype.h"
 #include "vanim.h"
 #include "vein.h"
+#include "bullettype.h"
+#include "warheadrules.h"
+#include <map>
 #include "warhead.h"
 
 #include "mph.hh"
@@ -224,13 +228,13 @@ struct BlastHit {
 
 
 // Adds the airborne objects in range of the blast to hits. A pinpoint blast on an Iron Curtained one sets curtain_hit.
-static void Collect_Flying_Hits(Coord const & coord, Cell const & cell, int range, bool pinpoint, std::vector<BlastHit> & hits, bool & curtain_hit)
+static void Collect_Flying_Hits(Coord const & coord, Cell const & cell, WarheadTypeClass const * warhead, int range, bool pinpoint, std::vector<BlastHit> & hits, bool & curtain_hit)
 {
 	/*
 	 * Objects flying over the blast. A pinpoint blast on an object under the Iron Curtain
 	 * spends itself there and spares everything else.
 	 */
-	if (Map.Get_Height_GL(cell) < coord.Z) {
+	if (coord.Z - Map.Get_Height_GL(cell) > warhead->DamageAirThreshold) {
 		DynamicVectorClass<FootClass *> flyers;
 		for (int index = 0; index < Aircraft.Count(); index++) {
 			flyers.Add(Aircraft[index]);
@@ -284,8 +288,27 @@ static void Collect_Cell_Hits(Coord const & coord, int strength, TechnoClass * s
 {
 	int const radius = CellSpread::Radius_For(warhead->CellSpread);
 	int const count = Cell_Spread_Count(radius);
-	for (int index = 0; index < count; index++) {
-		Cell const where = cell + Cell_Spread_Offset(index);
+
+	// The table ends at CELL_SPREAD_MAX cells, which is as far as Yuri's Revenge lets a blast reach. Ares has no
+	// such limit, so a larger CellSpread goes on over the cells past the table, ring by ring.
+	std::vector<Cell> beyond;
+	int const reach = (int)(warhead->CellSpread + 0.99f);
+	if (reach > CELL_SPREAD_MAX) {
+		for (int ring = CELL_SPREAD_MAX; ring <= reach; ring++) {
+			for (int y = -ring; y <= ring; y++) {
+				int const step = (y == -ring || y == ring) ? 1 : 2 * ring;
+				for (int x = -ring; x <= ring; x += step) {
+					int const square = x * x + y * y;
+					if (square > CELL_SPREAD_MAX * CELL_SPREAD_MAX && square <= reach * reach && Map.In_Radar(cell + Cell(x, y))) {
+						beyond.push_back(Cell(x, y));
+					}
+				}
+			}
+		}
+	}
+
+	for (int index = 0; index < count + (int)beyond.size(); index++) {
+		Cell const where = cell + (index < count ? Cell_Spread_Offset(index) : beyond[index - count]);
 		if (!Map.In_Radar(where)) continue;
 		CellClass * cptr = &Map[where];
 
@@ -515,6 +538,40 @@ static void Apply_Blast_Terrain_Effects(Coord const & coord, CellClass * cellptr
 }
 
 
+// CellSpread.MaxAffect keeps only the nearest hits an object would take from this blast (Ares).
+static void Keep_Nearest_Hits(WarheadTypeClass const * warhead, std::vector<BlastHit> & hits)
+{
+	if (warhead->CellSpreadMaxAffect < 0 || hits.size() <= 1) {
+		return;
+	}
+
+	std::map<ObjectClass *, std::vector<size_t>> by_object;
+	for (size_t index = 0; index < hits.size(); index++) {
+		by_object[hits[index].Object].push_back(index);
+	}
+	std::vector<bool> dropped(hits.size(), false);
+	for (auto const & entry : by_object) {
+		if (entry.second.size() > (size_t)warhead->CellSpreadMaxAffect) {
+			std::vector<int> distances;
+			for (size_t index : entry.second) {
+				distances.push_back(hits[index].Distance);
+			}
+			std::vector<bool> const kept = WarheadRules::Hits_Kept(distances, warhead->CellSpreadMaxAffect);
+			for (size_t slot = 0; slot < kept.size(); slot++) {
+				dropped[entry.second[slot]] = !kept[slot];
+			}
+		}
+	}
+	std::vector<BlastHit> remaining;
+	for (size_t index = 0; index < hits.size(); index++) {
+		if (!dropped[index]) {
+			remaining.push_back(hits[index]);
+		}
+	}
+	hits.swap(remaining);
+}
+
+
 /***********************************************************************************************
  * Explosion_Damage -- Inflict an explosion damage affect.                                     *
  *                                                                                             *
@@ -533,6 +590,9 @@ static void Apply_Blast_Terrain_Effects(Coord const & coord, CellClass * cellptr
  *                      no attacker does. It goes to every victim as the house argument of     *
  *                      Take_Damage (Explosion_Damage, 0x489280).                              *
  *                                                                                             *
+ *          house_attacks -- The sourcehouse also counts as the attacker for AffectsAllies     *
+ *                      and AffectsOwner, as for an owned animation's damage (Ares).           *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   This routine can consume some time and will affect the AI                       *
@@ -549,11 +609,38 @@ static void Apply_Blast_Terrain_Effects(Coord const & coord, CellClass * cellptr
  *   06/20/1994 JLB : Source is a pointer.                                                     *
  *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
  *=============================================================================================*/
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of)
+static BulletTypeClass const * ExplodingProjectile = NULL;
+static HouseClass const * BlastAttackingHouse = NULL;
+
+
+BulletTypeClass const * Exploding_Projectile(void)
 {
+	return(ExplodingProjectile);
+}
+
+
+HouseClass const * Blast_Attacking_House(void)
+{
+	return(BlastAttackingHouse);
+}
+
+
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of, BulletTypeClass const * projectile, bool house_attacks)
+{
+	struct BlastScope {
+		BulletTypeClass const * Saved;
+		HouseClass const * SavedHouse;
+		BlastScope(BulletTypeClass const * now, HouseClass const * house) : Saved(ExplodingProjectile), SavedHouse(BlastAttackingHouse) { ExplodingProjectile = now; BlastAttackingHouse = house; }
+		~BlastScope() { ExplodingProjectile = Saved; BlastAttackingHouse = SavedHouse; }
+	} const scope(projectile, house_attacks ? sourcehouse : NULL);
+
 	if (Scen->Special.IsInert || warhead == NULL) return(false);
 
-	if (!strength && !warhead->IsWebby) return(false);
+	IonBlastClass::Ripple(coord, warhead->IonRipple);
+
+	// A warhead that attaches an effect reaches the objects in its spread even with no damage to deal: Ares applies
+	// the effect where the warhead goes off, whatever the damage is.
+	if (!strength && !warhead->IsWebby && !warhead->IsAllowZeroDamage && !warhead->AttachEffect.Is_Defined()) return(false);
 
 	/*
 	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance
@@ -568,7 +655,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 	std::vector<BlastHit> hits;
 
-	Collect_Flying_Hits(coord, cell, range, pinpoint, hits, curtain_hit);
+	Collect_Flying_Hits(coord, cell, warhead, range, pinpoint, hits, curtain_hit);
 
 	bool isbridge = false;
 	if (cellptr->IsUnderBridge && coord.Z > Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT / 2) {
@@ -576,6 +663,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	}
 
 	Collect_Cell_Hits(coord, strength, source, warhead, dochainreaction, spare_infantry_of, cell, pinpoint, isbridge, hits, curtain_hit);
+	Keep_Nearest_Hits(warhead, hits);
 	Deal_Blast_Damage(hits, coord, strength, source, warhead, sourcehouse, range, curtain_hit);
 	Rock_Blast_Cells(coord, cell, strength, source, warhead, isbridge);
 	Damage_Blast_Bridges(coord, cell, cellptr, strength, warhead);
@@ -634,7 +722,7 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 	}
 
 	if (warhead->ExplosionSet.Count()) {
-		if (warhead->IsEMEffect) {
+		if (warhead->Is_EM_Pulse()) {
 			return(warhead->ExplosionSet[Random_Pick(0, warhead->ExplosionSet.Count() - 1)]);
 		}
 		int val = std::max(0, std::min(damage, DAMAGE_PER_EXPLOSION_ANIM * warhead->ExplosionSet.Count() - 1));
@@ -660,14 +748,7 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 {
 	bool const detailed = Options.DetailLevel != 0 && Detail_Min_Frame_Rate() <= LastFramesPerSecond;
 	if ((detailed || (disabled_channels & 0xf) != 0) && (forced || warhead != NULL && warhead->IsBright)) {
-		damage *= 64;
-		int size = damage >> 8;
-		if (size >= 63) {
-			size = 63;
-		} else if (size <= 21) {
-			size = 21;
-		}
-
+		int const size = WarheadRules::Combat_Light_Size(damage, warhead != NULL ? warhead->CombatLightSize : 0.0f);
 		SpotLightClass * light = new SpotLightClass(coord, size);
 		light->Set_Disabled_Channels(disabled_channels);
 	}
@@ -680,20 +761,21 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 /// </summary>
 /// <param name="owner">The house credited with what the blast destroys, or NULL for none.</param>
 /// <param name="debris_over_infantry">Whether debris is thrown when the cell held infantry.</param>
-void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry)
+/// <param name="debris">The animations the debris is picked from, and how many pieces fly: a random number from least to most.</param>
+void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry, TypeList<AnimTypeClass const *> const & debris_types, int least, int most)
 {
 	BuildingClass * building = cellptr.Cell_Building();
 	TechnoClass * techno = cellptr.Cell_Techno();
 	bool const infantry = techno != NULL && techno->RTTI == RTTI_INFANTRY;
 	int const level = cellptr.Height;
-	bool debris = false;
+	bool thrown = false;
 	if (building == NULL && techno == NULL) {
 		switch (cellptr.Land_Type()) {
 			case LAND_ROAD:
 			case LAND_ROCK:
 			case LAND_WALL:
 			case LAND_WEEDS:
-				debris = true;
+				thrown = true;
 				break;
 
 			default:
@@ -705,11 +787,12 @@ void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, Wa
 	Explosion_Damage(coord, damage, NULL, warhead, true, owner);
 
 	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
-		debris = true;
+		thrown = true;
 	}
-	if ((debris_over_infantry || !infantry) && debris && Rule->MetallicDebris.Count() > 0) {
-		for (int count = Random_Pick(2, 4); count > 0; count--) {
-			new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count() - 1)], coord);
+	if ((debris_over_infantry || !infantry) && thrown && debris_types.Count() > 0) {
+		int const count = most > least ? Random_Pick(least, most) : std::max(least, 0);
+		for (int piece = count; piece > 0; piece--) {
+			new AnimClass(debris_types[Random_Pick(0, debris_types.Count() - 1)], coord);
 		}
 	}
 }

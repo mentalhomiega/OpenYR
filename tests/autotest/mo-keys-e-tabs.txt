@@ -3,8 +3,7 @@
 ; later. In gamemd (SuperClass::ShouldFlashTab, 0x6CE1A0) the weapon asks its sidebar tab to flash for 40 frames after it became ready and
 ; not before or after. "super ... flashtab" is that question, and "tabflash mask" shows the modern panel flashing its tab (bit 1, the
 ; defenses tab that holds superweapons) on the frames of its blink that are lit: flashtab 1 at the first samples after it is ready, then 0.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/mo-keys-e-tabs.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\mo-keys-e" -Seconds 100 -Filter "AUTOTEST   (super house Americans|tabflash)|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/mo-keys-e-tabs.txt -Mods tests/autotest/mo-keys-e -Seconds 100 -Filter "AUTOTEST   (super house Americans|tabflash)|Exception"
 30 command CenterBase
 90 own GAPOWR 50 44
 91 own GAPOWR 54 44

@@ -1,0 +1,10 @@
+; Needs the Mental Omega files in game\Mods\MentalOmega. Logs each step of the loading notice with its time while
+; the large mission FCAPSULE loads, so the share of the load each step takes can be read from the log, and saves a
+; picture of the window at each step as load-progress-<n>.tga in the Screenshots folder. Expected: the steps log in
+; the order of load-progress-steps.txt; each picture of the mission load shows the mission's loading picture with the
+; notice box at the centre of the screen, the step's text above a bar whose filled part grows from step to step.
+; The mission locks the player's input from its start, so a quick save writes nothing here; load-progress-steps.txt
+; covers the saved game load.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/mo-load-progress-shots.txt -Mods MentalOmega -Map FCAPSULE.MAP -Campaign -Width 1920 -Height 1080 -Seconds 300 -Filter "AUTOTEST loadstep|AUTOTEST stepshot|Exception"
+1 loadsteps load-progress
+10 quit

@@ -39,6 +39,7 @@ UINetLobbyPresenterClass::UINetLobbyPresenterClass(UINetLobbyServiceClass & serv
 /// </summary>
 static void Settle_Colour(UINetLobbyState & state)
 {
+	state.SideTip = state.Side >= 0 && state.Side < (int)state.Sides.size() ? state.Sides[state.Side].Tip : std::string();
 	bool const listed = Index_In_Range(state.Color, state.Colors.size());
 	std::string const stock = listed ? state.Colors[state.Color].Label : std::string();
 	state.ColorName = UI_Color_Button_Name(stock, state.CustomColor);
@@ -99,6 +100,7 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 		if (Index_In_Range(intent.Value, State.Sides.size())) {
 			State.Side = intent.Value;
 			Service.Set_Side(State.Side);
+			Settle_Colour(State);
 		}
 	} else if (intent.Name == "team") {
 		if (Index_In_Range(intent.Value, State.Teams.size())) {
@@ -370,6 +372,7 @@ class UINetLobbyViewClass : public UIColorPickViewClass
 			option.RegisterMember("label", &UINetOption::Label);
 			option.RegisterMember("value", &UINetOption::Value);
 			option.RegisterMember("color", &UINetOption::Color);
+			option.RegisterMember("tip", &UINetOption::Tip);
 			line.RegisterMember("text", &UINetChatLine::Text);
 			line.RegisterMember("color", &UINetChatLine::Color);
 			row.RegisterMember("name", &UINetPlayerRow::Name);
@@ -475,7 +478,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 		virtual void Sync(void) override
 		{
 			Sync_Shared();
-			Dirty({"host", "side", "teams", "team", "starts", "start", "colorname", "colortip", "colorstyle",
+			Dirty({"host", "side", "sidetip", "teams", "team", "starts", "start", "colorname", "colortip", "colorstyle",
 				"mapname", "bases", "crates", "shortgame", "allies", "truce", "fog", "bridges", "engineer",
 				"redeploy", "speed", "aiplayers", "ailevel", "units", "tech", "credits", "canaccept", "cango"});
 			Dirty_Color_Picker(Model);
@@ -497,6 +500,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 				&& model.Bind("team", &state.Team)
 				&& model.Bind("starts", &state.Starts)
 				&& model.Bind("start", &state.Start)
+				&& model.Bind("sidetip", &state.SideTip)
 				&& model.Bind("colorname", &state.ColorName)
 				&& model.Bind("colortip", &state.ColorTip)
 				&& model.Bind("colorstyle", &state.ColorStyle)

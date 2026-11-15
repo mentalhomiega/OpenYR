@@ -8,7 +8,7 @@ when_omitted:
   value: "0"
 ---
 
-The value is a position in the lobby's eight-color list, counted from `0`: gold, red, blue, green, orange, sky blue, purple, pink. It preselects the color box in the skirmish and network game dialogs. The color picked there is written back to `[MultiPlayer]` in `RA2MD.INI` when you leave the dialog.
+The value is a position in the lobby's eight-color list, counted from `0`: gold, red, blue, green, orange, sky blue, purple, pink. A UI file's [`[Colors]` section](/formats/ui-ini/#lobby-colors) can list up to sixteen colors, and the position then counts in that list. It preselects the color box in the skirmish and network game dialogs. The color picked there is written back to `[MultiPlayer]` in `RA2MD.INI` when you leave the dialog.
 
 In a network game, the host can move a player to another color, for example when the chosen one is already taken. The player then sees a color-in-use message, and the new color becomes the saved preference.
 

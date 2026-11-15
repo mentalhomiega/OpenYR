@@ -1,7 +1,6 @@
 ; Healing with negative damage: a structure with CanC4=no (CAMISC06, strength 10), a structure that can be sabotaged (GAPOWR),
 ; a forced heal by the base heal crate, an unforced heal by the Heal warhead (Organic), and a soldier that is warping out.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent5 -Script src-agent5/tests/autotest/heal-cancc4.txt -Seconds 150 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent5 -Script src-agent5/tests/autotest/heal-cancc4.txt -Seconds 150 -Filter "AUTOTEST|Exception"
 ; Rule under test (ObjectClass::ReceiveDamage, 0x5F5390): a building whose type has CanC4=no takes at least one
 ; point from any hit with a nonzero amount, so a heal hit by a warhead with negative damage costs it one point, even
 ; at full strength. The base heal crate sends a hit of Health minus MaxStrength, which is zero for a full building, so it

@@ -21,8 +21,9 @@
 class RadBeamClass
 {
 	public:
-		static void Fire(Coord const & start, Coord const & end, RGBClass const & color);
-		static void Fire_Eruption(Coord const & origin, int spread, RGBClass const & color);
+		// A duration or amplitude below zero keeps the stock one: 15 frames and 40 for a beam, and a random 5 to 20 frames and 100 to 500 for each beam of an eruption.
+		static void Fire(Coord const & start, Coord const & end, RGBClass const & color, int duration = -1, double amplitude = -1.0);
+		static void Fire_Eruption(Coord const & origin, int spread, RGBClass const & color, int duration = -1, double amplitude = -1.0);
 
 		static void Update_All(void);
 		static void Draw_All(void);

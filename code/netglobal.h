@@ -46,6 +46,11 @@ namespace NetGlobal
 	};
 
 
+	// The number of lobby colors a packet may name. It is the eight stock colors until a UI file
+	// lists more, which the engine reports here when it reads the file.
+	int Color_Limit(void);
+	void Set_Color_Limit(int limit);
+
 	// Limits the receiver applies to a scenario file offered by the host. A chunk's index is
 	// 16 bits wide, so a file of more than 65536 chunks cannot be addressed.
 	constexpr std::size_t TRANSFER_CHUNK_SIZE = MAX_SEND_FILE_PACKET_SIZE;

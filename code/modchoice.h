@@ -17,6 +17,15 @@
  * Nothing here reads or writes a file.
  */
 
+// Splits a Mods= list into the mods it names, in the order written, with the whitespace around
+// each name dropped and empty entries passed over.
+std::vector<std::string> Parse_Mod_List(char const * list);
+
+// The value Mods= holds for a list. An INI file cannot hold an empty value, so a list naming no
+// mod is a lone comma, which still overrides a deployment's list.
+std::string Mod_List_Setting(std::string const & list);
+
+
 struct ModChoiceType
 {
 	// How Mods= or -MOD= names the mod: a folder in the Mods folder, or a path.

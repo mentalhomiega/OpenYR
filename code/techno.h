@@ -163,6 +163,9 @@ class TechnoClass :	public RadioClass,
 		 */
 		CDTimerClass<FrameTimerClass> RadarFlashTimer;
 
+		// Counts down the Ares SelfHealing.CombatDelay frames after a damaging hit, during which this object does not self heal.
+		CDTimerClass<FrameTimerClass> SelfHealDelayTimer;
+
 		/*
 		 * The targeting timer holds back the area scan. It starts at 45 frames, and each area scan
 		 * restarts it with GuardAreaTargetingDelay plus a random 0 to 2 frames. Losing a target while
@@ -344,6 +347,9 @@ class TechnoClass :	public RadioClass,
 		HouseClass * BombHouse;
 		int BombPlantFrame;
 		int BombDetonateFrame;
+
+		// The weapon that planted the bomb, whose IvanBomb keys it follows. NULL for a bomb that follows the rules' settings alone.
+		WeaponTypeClass const * BombWeapon;
 		AudioHandle BombSound;
 
 		/*
@@ -386,6 +392,8 @@ class TechnoClass :	public RadioClass,
 		**	does, so a second house of that country also sees what the spy learned.
 		*/
 		CountrySet SpiedBy;
+
+		void Look_For_Radar_Spies(int sight_range, bool incremental, bool dontmap);
 
 		/*
 		**	If this object is part of a pseudo-team that the player is managing, then
@@ -446,6 +454,9 @@ class TechnoClass :	public RadioClass,
 		**	limit.
 		*/
 		int Ammo;
+
+		// Frames left until the object regains one shot of ammunition (Reload=, EmptyReload= and ReloadIncrement=).
+		CDTimerClass<FrameTimerClass> Reload;
 
 		/*
 		**	This is the amount of money spent to produce this object. This value really
@@ -728,6 +739,13 @@ class TechnoClass :	public RadioClass,
 		 */
 		int StunDuration;
 
+		// The frames left before this object may fire again after a DisableWeapons.Duration hit (Ares). It reloads, picks
+		// targets and acquires them meanwhile.
+		int WeaponsDisabledFrames;
+
+		// The warhead of the hit this object is taking, for the death announcement that follows the hit; NULL outside one.
+		WarheadTypeClass const * DamageWarhead;
+
 		// A PoweredUnit object without a working control structure is shut down: it cannot move or fire.
 		bool IsDeactivated;
 
@@ -800,7 +818,9 @@ class TechnoClass :	public RadioClass,
 		virtual bool Is_Chrono_Warping(void) const {return(false);}
 		// Warping out, or held by a chrono teleport.
 		bool Is_Warp_Fading(void) const {return(IsBeingWarpedOut || Is_Chrono_Warping());}
-		void Plant_Bomb(TechnoClass * planter);
+		void Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon = NULL);
+		int Bomb_Delay(void) const;
+		bool Can_Detonate_Bomb(void) const;
 		bool Is_Disguised_To_Player(void) const;
 		bool Looks_Friendly_To(HouseClass const * viewer) const;
 		bool Is_Bomb_Visible(void) const;
@@ -896,16 +916,22 @@ class TechnoClass :	public RadioClass,
 		double Area_Modify(Cell const & cell) const;
 		void Base_Is_Attacked(TechnoClass const * enemy);
 		void Kill_Cargo(TechnoClass * source);
+		bool Abduct(AbstractClass * target, WeaponTypeClass const * weapon);
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;
 		void Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self);
 		void Release_Warp(void);
 		void Powered_Unit_AI(void);
+		bool Has_Operator(void) const;
 		void Spring_Kill_Events(bool credited);
+		void Spring_Destroyed_By_House(TechnoClass * source, HouseClass const * house);
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
-		virtual void Reduce_Ammunition(void);
+		virtual void Reduce_Ammunition(int rounds);
+		int Rounds_Per_Shot(WeaponTypeClass const * weapon) const;
+		void Reload_Ammunition(void);
+		void Start_Reloading(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL, bool estimate=false);
 		bool Target_And_Estimate_Damage(Coord const & coord, ThreatType threat);
 		bool Targeting_Timer_Finished(void) const { return(TargetingTimer.Value() == 0); }
@@ -1017,12 +1043,17 @@ class TechnoClass :	public RadioClass,
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Pips(Point2D const & bottomleft, Point2D const & bottomright, Rect const & rect) const;
 		virtual void Draw_Insignia(Point2D const & bottomleft, Point2D const & center, Rect const & rect) const;
+		virtual void Draw_Radial_Indicator(void) const override;
 		virtual void Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & rect) const;
 		virtual void Hidden(void) override;
 		void Forget_Human_Discovery(void);
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Do_Uncloak(bool silent=false);
+
+		// The number of stages this object passes through as it cloaks and decloaks, and the sound it makes doing so.
+		int Cloaking_Stages(void) const;
+		void Play_Cloak_Sound(bool decloaking) const;
 		virtual void Do_Cloak(bool silent=false);
 		virtual void Do_Shimmer(void) override;
 		int Get_Predator_Offset(void) const;
@@ -1045,6 +1076,10 @@ class TechnoClass :	public RadioClass,
 		void Turret_Recoil_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
+		bool Is_Immune_To_Iron_Curtain(bool force_shield) const;
+		bool Uses_No_Ammo_Weapon(void) const;
+		void Create_Initial_Payload(void);
+		void Apply_Iron_Curtain_Warhead(WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse);
 		virtual bool Is_Ready_To_Random_Animate(void) const;
 		virtual bool Random_Animate(void) {return(false);}
 		virtual void Assign_Destination(AbstractClass * target, bool = true);
@@ -1084,6 +1119,9 @@ class TechnoClass :	public RadioClass,
 		 */
 		static bool ActionLines;
 
+		// Objects of this type log each hit they take as DAMAGETRACE lines (autotest `damagetrace`); NULL logs none.
+		static TechnoTypeClass const * TraceDamageType;
+
 		static void Reset_Action_Line_Timer(void);
 
 		/*
@@ -1110,9 +1148,9 @@ class TechnoClass :	public RadioClass,
 		bool Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const;
 		void Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord const & fire_coord, BuildingClass * garrison, bool garrison_fire);
 		void Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord);
-		bool Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative);
+		bool Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative, HouseClass * sourcehouse, bool & effects_apply);
 		void Release_Dependents_On_Death(TechnoClass * source);
-		void Play_Death_Voices(void);
+		void Play_Death_Voices(WarheadTypeClass const * warhead);
 		void Spawn_Death_Debris(void);
 };
 

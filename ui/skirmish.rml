@@ -11,6 +11,7 @@
 <head>
 	<title>Skirmish</title>
 	<link type="text/template" href="dialog.rml"/>
+	<link type="text/template" href="setting-rows.rml"/>
 	<link type="text/rcss" href="skirmish.rcss"/>
 	<link type="text/rcss" href="colorpick.rcss"/>
 </head>
@@ -34,7 +35,7 @@
 						</select>
 					</div>
 					<div class="cell col-side">
-						<select class="pick side" data-attr-id="'side' + row" data-attrif-disabled="!slot.active" data-event-change="queue('slotside', row, ev.value)">
+						<select class="pick side" data-attr-id="'side' + row" data-attrif-disabled="!slot.active" data-attr-tip="sides[slot.side].tip" data-event-change="queue('slotside', row, ev.value)">
 							<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == slot.side">{{entry.label}}</option>
 						</select>
 					</div>
@@ -53,7 +54,10 @@
 					</div>
 				</div>
 			</div>
-			<div id="switches" class="frame">
+			<div id="lobby-options" class="frame" data-if="declared">
+				<template src="setting-rows"/>
+			</div>
+			<div id="switches" class="frame" data-if="!declared">
 				<label class="check"><input type="checkbox" data-attrif-checked="bases" data-event-click="queue('bases', bases ? 0 : 1)"/>Bases</label>
 				<label class="check"><input type="checkbox" data-attrif-checked="crates" data-event-click="queue('crates', crates ? 0 : 1)"/>Crates</label>
 				<label class="check"><input type="checkbox" data-attrif-checked="fog" data-event-click="queue('fog', fog ? 0 : 1)"/>Fog Of War</label>
@@ -72,7 +76,14 @@
 			</div>
 			<span class="caption" id="mapname">{{mapname}}</span>
 			<button id="pick" class="big" data-event-click="queue('map')">Multiplay Map</button>
-			<div id="settings" class="frame">
+			<div id="lobby-mode-frame" class="frame" data-if="declared">
+				<span class="caption">Game Mode</span>
+				<select id="lobby-mode" data-event-change="queue('lobbymode', ev.value)">
+					<option data-for="entry : modes" data-attr-value="it_index" data-attrif-selected="it_index == mode">{{entry.label}}</option>
+				</select>
+				<span id="lobby-mode-tip">{{modetip}}</span>
+			</div>
+			<div id="settings" class="frame" data-if="!declared">
 				<div class="setting" id="setting-units">
 					<span class="caption">Unit Count:</span>
 					<div class="row"><input type="range" id="units" step="1" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span><span class="trough-edge"></span></div>

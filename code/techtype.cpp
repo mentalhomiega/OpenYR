@@ -27,10 +27,13 @@
 #include "cell.h"
 #include "classids.h"
 #include "combat.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
+#include "houstype.h"
 #include "infatype.h"
 #include "mixfile.h"
+#include "objectkeyrules.h"
 #include "psystype.h"
 #include "rules.h"
 #include "savestream.h"
@@ -42,12 +45,15 @@
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
+#include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "pip.hh"
 #include "voc.hh"
 
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <new.h>
 
@@ -79,6 +85,9 @@ void const * TechnoTypeClass::WakeShapes = NULL;
  *   03/19/1995 JLB : Created.                                                                 *
  *   05/11/1996 JLB : Moderated risk calc so range doesn't dominate.                           *
  *=============================================================================================*/
+bool TechnoTypeClass::RadarJammersExist = false;
+
+
 TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	BASECLASS(ininame),
 	IsDoubleOwned(false),
@@ -87,11 +96,13 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsScanner(false),
 	IsNominal(false),
 	IsTurretEquipped(false),
+	IsHasTurretTooltips(false),
 	IsTurretRecoil(false),
 	IsCrew(false),
 	IsRepairable(true),
 	IsRemappable(false),
 	IsCloakable(false),
+	IsCloakAllowed(true),
 	IsNoShadow(false),
 	IsDisableVoxelCache(false),
 	IsDisableShadowCache(false),
@@ -99,6 +110,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SelfHealingStep(-1),
 	SelfHealingRate(-1),
 	SelfHealingCap(-1),
+	SelfHealingCombatDelay(0),
 	IsMechanic(false),
 	IsOmniHealer(false),
 	IsExploding(false),
@@ -109,6 +121,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SizeLimit(1),
 	IsVehicleTransport(true),
 	SightRange(0),
+	DesignatorRange(-1),
+	InhibitorRange(-1),
 	Cost(0),
 	Soylent(0),
 	Level(255),
@@ -122,6 +136,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ReloadDelay(0),
 	EmptyReloadDelay(-1),
 	ReloadIncrement(0),
+	ReloadAmount(1),
+	EmptyReloadAmountSetting(INT_MIN),
 	PipWrap(0),
 	Ownable(0),
 	CameoData(NULL),
@@ -129,10 +145,14 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CameoSortOrder(0),
 	Rotation(0),
 	ROT(0),
+	TurretROT(-1),
 	Points(0),
 	CollateralDamageCoefficient(.33f),
+	Unused1(0.0f),
 	WalkRate(1),
 	IdleRate(0),
+	AirRate(0),
+	RadarJamRadius(0),
 	IsPipsDrawForAll(false),
 	SpecialThreatValue(0),
 	MyEffectivenessCoefficient(0),
@@ -194,10 +214,16 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsCanRetaliate(true),
 	IsHoverAttack(false),
 	IsJumpJet(false),
+	IsTiltCrashJumpjet(false),
 	VHPScan(VHP_SCAN_NONE),
 	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
+	IsImmuneToAbduction(false),
+	IsProtectedDriver(false),
+	ProtectedDriverMinHealth(1.0),
+	IronCurtainModifier(1.0),
+	ForceShieldModifier(1.0),
 	IsGapGenerator(false),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
@@ -210,6 +236,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
+	CrushDamage{0, 0, 0},
+	CrushDamageWarhead(NULL),
 	InitialAmmo(-1),
 	IsParasiteable(true),
 	SuppressionThreshold(0),
@@ -231,10 +259,16 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	InsigniaFrame{-1, -1, -1},
 	InsigniaShowEnemy(-1),
 	IsVehicleThiefAllowed(true),
+	IsCanBeDriven(true),
 	BuildTimeMultipleFactory(-1.0),
 	IsCrashable(false),
+	IsConsideredAircraft(false),
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
+	IsVoiceAirstrikeAttackSet(false),
+	VoiceAirstrikeAttack(VOC_NONE),
+	PromoteVeteranFlash(-1),
+	PromoteEliteFlash(-1),
 	IsHealthBarHidden(false),
 	EMPModifier(1.0),
 	EMPThreshold(0),
@@ -245,6 +279,39 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDefaultToGuardArea(false),
 	IsSelectableCombatant(false),
 	BuildTimeMultiplier(1.0),
+	SurvivorSide{},
+	CrewTechnicianChance(-1),
+	CrewEngineerChance(-1),
+	SurvivorPilots(-1),
+	SurvivorPilotChance{-1, -1, -1},
+	SurvivorPassengerChance{-1, -1, -1},
+	ParachuteAnim(NULL),
+	SlamSound(VOC_NONE),
+	IsSlamSoundSet(false),
+	RadialIndicatorRadius(0.0),
+	WaterImage(NULL),
+	IsCloneable(true),
+	ClonedAt(),
+	FactoryOwners(),
+	FactoryOwnersForbidden(),
+	CursorMove(),
+	CursorNoMove(),
+	CursorDeploy(),
+	CursorNoDeploy(),
+	CursorEnter(),
+	CursorNoEnter(),
+	CloakSound(VOC_NONE),
+	DecloakSound(VOC_NONE),
+	IsCloakSoundSet(false),
+	IsDecloakSoundSet(false),
+	CloakStages(0),
+	IsCanPassiveAquireGuard(true),
+	IsCanPassiveAquireCloak(true),
+	IsNoManualFire(false),
+	IsGattlingCycle(false),
+	EvaPromoted{},
+	EvaLost(),
+	IsEvaLostSet(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -280,6 +347,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsSpawned(false),
 	IsMissileSpawn(false),
 	IsDrainable(false),
+	IsDrainLocal(false),
+	DrainAmount(0),
 	Enslaves(NULL),
 	SlavesNumber(0),
 	SlaveRegenRate(0),
@@ -294,6 +363,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ActivateSound(VOC_NONE),
 	DeactivateSound(VOC_NONE),
 	PowersUnit(NULL),
+	IsOperatorAny(false),
 	CrashingSound(VOC_NONE),
 	VoiceCrashing(VOC_NONE),
 	SinkingSound(VOC_NONE),
@@ -322,6 +392,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsPreventAttackMove(false),
 	IsGattling(false),
 	IsChargeTurret(false),
+	IsPassengerTurret(false),
 	WeaponStages(0),
 	WeaponStage{},
 	EliteStage{},
@@ -362,7 +433,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTrainable(true),
 	IsDontScore(false),
 	IsNaval(false),
-	IsConsideredAircraft(false),
 	RequiredHouses(-1),
 	ForbiddenHouses(-1),
 	AIBasePlanningSide(-1),
@@ -387,6 +457,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsVisibleLoad(false),
 	IsLightningRod(false),
 	IsHunterSeeker(false),
+	IsHunterSeekerIgnored(false),
 	IsCrusher(false),
 	IsPushy(false),
 	IsOmniCrusher(false),
@@ -398,7 +469,28 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ZFudgeCliff(10),
 	ZFudgeColumn(5),
 	ZFudgeTunnel(10),
-	ZFudgeBridge(0)
+	ZFudgeBridge(0),
+	NoAmmoWeapon(-1),
+	NoAmmoAmount(0),
+	IsNoManualEnter(false),
+	IsNoManualUnload(false),
+	IsPassengersBySize(true),
+	FallRateParachute(INT_MIN),
+	FallRateNoParachute(INT_MIN),
+	FallRateParachuteMax(INT_MIN),
+	FallRateNoParachuteMax(INT_MIN),
+	IsCivilianEnemy(false),
+	IsOmniCrusherAggressive(true),
+	IsExperienceFromPassengers(true),
+	IsExperiencePromotePassengers(false),
+	ExperiencePassengerModifier(1.0),
+	IsExperienceFromAirstrike(false),
+	ExperienceAirstrikeModifier(1.0),
+	ExperienceMindControlSelfModifier(0.0),
+	ExperienceMindControlVictimModifier(1.0),
+	ExperienceSpawnOwnerModifier(0.0),
+	ExperienceSpawnModifier(1.0),
+	IsLowSelectionPriority(false)
 {
 	IsSentient = true;
 
@@ -416,9 +508,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 		TurretWeapon[i] = -1;
 	}
 
-	for (int seat = 0; seat < 5; seat++) {
-		AlternativeFLH[seat] = TPoint3D<int>(0, 0, 0);
-	}
+	AlternativeFLH.assign(5, TPoint3D<int>(0, 0, 0));
 
 	AbstractTypePtrTracker.Add(this);
 	TechnoTypes.Add(this);
@@ -585,16 +675,40 @@ int TechnoTypeClass::Refund(HouseClass const * house, bool unscaled) const
  *=============================================================================================*/
 void const * TechnoTypeClass::Get_Cameo_Data(void) const
 {
-	// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
-	if (AltCameoData != NULL && PlayerPtr != NULL && IsTrainable) {
+	if (AltCameoData != NULL && Is_Alt_Cameo_Shown()) {
+		return(AltCameoData);
+	}
+	return(CameoData);
+}
+
+
+/// <summary>
+/// The PCX picture to draw as this type's sidebar cameo, or an empty name when the cameo shape is drawn. The alternate
+/// picture replaces the plain one while the alternate cameo is shown, if the type has one.
+/// </summary>
+std::string const & TechnoTypeClass::Get_Cameo_PCX(void) const
+{
+	if (!AltCameoPCX.empty() && Is_Alt_Cameo_Shown()) {
+		return(AltCameoPCX);
+	}
+	return(CameoPCX);
+}
+
+
+// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
+bool TechnoTypeClass::Is_Alt_Cameo_Shown(void) const
+{
+	if (PlayerPtr != NULL && IsTrainable) {
 		RTTIType const rtti = Fetch_RTTI();
 		bool const barracks = PlayerPtr->IsBarracksInfiltrated && rtti == RTTI_INFANTRYTYPE;
 		bool const factory = PlayerPtr->IsWarFactoryInfiltrated && (rtti == RTTI_UNITTYPE || (rtti == RTTI_BUILDINGTYPE && UndeploysInto != NULL));
-		if (barracks || factory) {
-			return(AltCameoData);
-		}
+		return(barracks || factory);
 	}
-	return(CameoData);
+	// A country's VeteranBuildings show their alternate cameo whether or not they are trainable (Ares).
+	if (PlayerPtr != NULL && PlayerPtr->Class != NULL && Fetch_RTTI() == RTTI_BUILDINGTYPE && PlayerPtr->Class->VeteranBuildings.Is_In_List((BuildingTypeClass const *)this)) {
+		return(true);
+	}
+	return(false);
 }
 
 
@@ -662,9 +776,17 @@ TypeList<AnimTypeClass const *> const & TechnoTypeClass::Explosion_Set(void) con
 /// <summary>
 /// Fetches the strength one self-healing tick restores to an object of this type.
 /// </summary>
-/// <returns>Returns with the type's step, else the game-wide one, never below one.</returns>
-int TechnoTypeClass::Self_Heal_Step(void) const
+/// <param name="rank">0 rookie, 1 veteran, 2 elite.</param>
+/// <returns>Returns with the Ares SelfHealing.Amount, else its rank form (either may be zero), else the
+/// type's step, else the game-wide one, never below one.</returns>
+int TechnoTypeClass::Self_Heal_Step(int rank) const
 {
+	if (SelfHealingAmount[0] >= 0) {
+		return(SelfHealingAmount[0]);
+	}
+	if (SelfHealingAmount[1 + std::clamp(rank, 0, 2)] >= 0) {
+		return(SelfHealingAmount[1 + std::clamp(rank, 0, 2)]);
+	}
 	return(std::max(SelfHealingStep >= 0 ? SelfHealingStep : Rule->SelfHealStep, 1));
 }
 
@@ -685,9 +807,17 @@ double TechnoTypeClass::Self_Heal_Rate(void) const
 /// <summary>
 /// Fetches the health ratio at which an object of this type stops healing itself.
 /// </summary>
-/// <returns>Returns with the type's ceiling, else the game-wide one, else full strength.</returns>
-double TechnoTypeClass::Self_Heal_Cap(void) const
+/// <param name="rank">0 rookie, 1 veteran, 2 elite.</param>
+/// <returns>Returns with the Ares SelfHealing.Max, else its rank form, else the type's ceiling, else the
+/// game-wide one, else full strength.</returns>
+double TechnoTypeClass::Self_Heal_Cap(int rank) const
 {
+	if (SelfHealingMax[0] >= 0) {
+		return(SelfHealingMax[0]);
+	}
+	if (SelfHealingMax[1 + std::clamp(rank, 0, 2)] >= 0) {
+		return(SelfHealingMax[1 + std::clamp(rank, 0, 2)]);
+	}
 	if (SelfHealingCap >= 0) {
 		return(SelfHealingCap);
 	}
@@ -851,6 +981,9 @@ static int VHPScan_Named(char const * name, int fallback)
  *=============================================================================================*/
 bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 {
+	// The art section the base class reads depends on this flag.
+	IsAlternateTheaterArt = ini.Get_Bool(Name(), "AlternateTheaterArt", IsAlternateTheaterArt);
+
 	if (BASECLASS::Read_INI(ini)) {
 		// Keep this order: a type that a key names is created when it is first read, and the art
 		// readers start from values the rules readers set.
@@ -907,6 +1040,11 @@ void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
 	DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
 	WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
 	IdleRate = ini.Get_Int(Name(), "IdleRate", IdleRate);
+	AirRate = ini.Get_Int(Name(), "AirRate", AirRate);
+	RadarJamRadius = ini.Get_Int(Name(), "RadarJamRadius", RadarJamRadius);
+	if (RadarJamRadius > 0) {
+		RadarJammersExist = true;
+	}
 
 	if (RTTI == RTTI_INFANTRYTYPE) {
 		/// This routine runs before InfantryTypeClass reads its own flags, so IsCyborg is
@@ -948,14 +1086,18 @@ void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
 	Capacity = ini.Get_Int(Name(), "Storage", Capacity);
 	IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
 	IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
+	IsCloakAllowed = ini.Get_Bool(Name(), "Cloakable.Allowed", IsCloakAllowed);
 	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
 	IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
 	SightRange = ini.Get_Int(Name(), "Sight", SightRange);
+	DesignatorRange = ini.Get_Int(Name(), "DesignatorRange", DesignatorRange);
+	InhibitorRange = ini.Get_Int(Name(), "InhibitorRange", InhibitorRange);
 	Reward = Points = ini.Get_Int(Name(), "Points", Points);
 	IsDontScore = ini.Get_Bool(Name(), "DontScore", IsDontScore);
 	IsInvisible = ini.Get_Bool(Name(), "Invisible", IsInvisible);
 	IsRadarVisible = ini.Get_Bool(Name(), "RadarVisible", IsRadarVisible);
 	IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
+	IsHunterSeekerIgnored = ini.Get_Bool(Name(), "HunterSeeker.Ignore", IsHunterSeekerIgnored);
 	ZFudgeCliff = ini.Get_Int(Name(), "ZFudgeCliff", ZFudgeCliff);
 	ZFudgeColumn = ini.Get_Int(Name(), "ZFudgeColumn", ZFudgeColumn);
 	ZFudgeTunnel = ini.Get_Int(Name(), "ZFudgeTunnel", ZFudgeTunnel);
@@ -988,6 +1130,7 @@ void TechnoTypeClass::Read_Movement_INI(CCINIClass const & ini)
 	Weight = ini.Get_Float(Name(), "Weight", Weight);
 	PhysicalSize = ini.Get_Float(Name(), "PhysicalSize", PhysicalSize);
 	IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
+	IsTiltCrashJumpjet = ini.Get_Bool(Name(), "TiltCrashJumpjet", IsTiltCrashJumpjet);
 	IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
 	IsUnderwater = ini.Get_Bool(Name(), "Underwater", IsUnderwater);
 	int maxspeed = ini.Get_Int(Name(), "Speed", -1);
@@ -998,9 +1141,53 @@ void TechnoTypeClass::Read_Movement_INI(CCINIClass const & ini)
 	IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
 	IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
 	ROT = ini.Get_Int(Name(), "ROT", ROT);
+	TurretROT = ini.Get_Int(Name(), "TurretROT", TurretROT);
 	IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
 	IsPushy = ini.Get_Bool(Name(), "Pushy", IsPushy);
 	IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
+	IsOmniCrusherAggressive = ini.Get_Bool(Name(), "OmniCrusher.Aggressive", IsOmniCrusherAggressive);
+	NoAmmoWeapon = ini.Get_Int(Name(), "NoAmmoWeapon", NoAmmoWeapon);
+	NoAmmoAmount = ini.Get_Int(Name(), "NoAmmoAmount", NoAmmoAmount);
+	IsNoManualEnter = ini.Get_Bool(Name(), "NoManualEnter", IsNoManualEnter);
+	IsNoManualUnload = ini.Get_Bool(Name(), "NoManualUnload", IsNoManualUnload);
+	IsCivilianEnemy = ini.Get_Bool(Name(), "CivilianEnemy", IsCivilianEnemy);
+	IsLowSelectionPriority = ini.Get_Bool(Name(), "LowSelectionPriority", IsLowSelectionPriority);
+	IsPassengersBySize = ini.Get_Bool(Name(), "Passengers.BySize", IsPassengersBySize);
+	if (ini.Is_Present(Name(), "Passengers.Allowed")) {
+		PassengersAllowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Allowed"));
+	}
+	if (ini.Is_Present(Name(), "Passengers.Disallowed")) {
+		PassengersDisallowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Disallowed"));
+	}
+	if (ini.Is_Present(Name(), "InitialPayload.Types")) {
+		InitialPayloadTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Types"));
+	}
+	if (ini.Is_Present(Name(), "InitialPayload.Nums")) {
+		InitialPayloadNums.clear();
+		for (std::string const & count : ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Nums"))) {
+			InitialPayloadNums.push_back(atoi(count.c_str()));
+		}
+	}
+	FallRateParachute = ini.Get_Int(Name(), "FallRate.Parachute", FallRateParachute);
+	FallRateNoParachute = ini.Get_Int(Name(), "FallRate.NoParachute", FallRateNoParachute);
+	FallRateParachuteMax = ini.Get_Int(Name(), "FallRate.ParachuteMax", FallRateParachuteMax);
+	FallRateNoParachuteMax = ini.Get_Int(Name(), "FallRate.NoParachuteMax", FallRateNoParachuteMax);
+	IsExperienceFromPassengers = ini.Get_Bool(Name(), "Experience.FromPassengers", IsExperienceFromPassengers);
+	IsExperiencePromotePassengers = ini.Get_Bool(Name(), "Experience.PromotePassengers", IsExperiencePromotePassengers);
+	ExperiencePassengerModifier = ini.Get_Float(Name(), "Experience.PassengerModifier", ExperiencePassengerModifier);
+	IsExperienceFromAirstrike = ini.Get_Bool(Name(), "Experience.FromAirstrike", IsExperienceFromAirstrike);
+	ExperienceAirstrikeModifier = ini.Get_Float(Name(), "Experience.AirstrikeModifier", ExperienceAirstrikeModifier);
+	ExperienceMindControlSelfModifier = ini.Get_Float(Name(), "Experience.MindControlSelfModifier", ExperienceMindControlSelfModifier);
+	ExperienceMindControlVictimModifier = ini.Get_Float(Name(), "Experience.MindControlVictimModifier", ExperienceMindControlVictimModifier);
+	ExperienceSpawnOwnerModifier = ini.Get_Float(Name(), "Experience.SpawnOwnerModifier", ExperienceSpawnOwnerModifier);
+	ExperienceSpawnModifier = ini.Get_Float(Name(), "Experience.SpawnModifier", ExperienceSpawnModifier);
+	if (ini.Is_Present(Name(), "FakeOf")) {
+		FakeOf = ini.Get_String(Name(), "FakeOf");
+	}
+	if (ini.Is_Present(Name(), "EnemyUIName")) {
+		EnemyUIName = ini.Get_String(Name(), "EnemyUIName");
+		EnemyUINameText.clear();
+	}
 	IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
 	IsAutoCrush = ini.Get_Bool(Name(), "AutoCrush", IsAutoCrush);
 	IsTiltsWhenCrushes = ini.Get_Bool(Name(), "TiltsWhenCrushes", IsTiltsWhenCrushes);
@@ -1025,12 +1212,26 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	IsImmuneToPoison = ini.Get_Bool(Name(), "ImmuneToPoison", IsImmuneToPoison);
 	IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 	IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+	IronCurtainModifier = ini.Get_Float(Name(), "IronCurtain.Modifier", IronCurtainModifier);
+	ForceShieldModifier = ini.Get_Float(Name(), "ForceShield.Modifier", ForceShieldModifier);
+	IsImmuneToAbduction = ini.Get_Bool(Name(), "ImmuneToAbduction", IsImmuneToAbduction);
+	IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
+	ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
 	IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 	GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
 	SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
 	IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
 	DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
 	DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
+	// CrushDamage sets all three ranks; a rank's own key in the same file then overrides it.
+	if (ini.Is_Present(Name(), "CrushDamage")) {
+		int const all = ini.Get_Int(Name(), "CrushDamage", 0);
+		CrushDamage[0] = CrushDamage[1] = CrushDamage[2] = all;
+	}
+	CrushDamage[0] = ini.Get_Int(Name(), "CrushDamage.Rookie", CrushDamage[0]);
+	CrushDamage[1] = ini.Get_Int(Name(), "CrushDamage.Veteran", CrushDamage[1]);
+	CrushDamage[2] = ini.Get_Int(Name(), "CrushDamage.Elite", CrushDamage[2]);
+	CrushDamageWarhead = TGet_Class(ini, Name(), "CrushDamage.Warhead", CrushDamageWarhead);
 	IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 	SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 	IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
@@ -1039,6 +1240,7 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	IsChronoshiftAllowed = ini.Get_Bool(Name(), "Chronoshift.Allow", IsChronoshiftAllowed);
 	IsChronoshiftCrushable = ini.Get_Bool(Name(), "Chronoshift.Crushable", IsChronoshiftCrushable);
 	IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
+	IsCanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", IsCanBeDriven);
 	EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
 	IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
 
@@ -1051,6 +1253,8 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	}
 
 	IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
+	IsDrainLocal = ini.Get_Bool(Name(), "Drain.Local", IsDrainLocal);
+	DrainAmount = ini.Get_Int(Name(), "Drain.Amount", DrainAmount);
 	IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
 	IsLightningRod = ini.Get_Bool(Name(), "LightningRod", IsLightningRod);
 	IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
@@ -1059,7 +1263,17 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 	IsSelfHealing = ini.Get_Bool(Name(), "SelfHealing", IsSelfHealing);
 	SelfHealingStep = ini.Get_Int(Name(), "SelfHealingStep", SelfHealingStep);
 	SelfHealingRate = ini.Get_Float(Name(), "SelfHealingRate", SelfHealingRate);
+	SelfHealingRate = ini.Get_Float(Name(), "SelfHealing.Rate", SelfHealingRate);
 	SelfHealingCap = ini.Get_Float(Name(), "SelfHealingCap", SelfHealingCap);
+	SelfHealingAmount[0] = std::max(ini.Get_Int(Name(), "SelfHealing.Amount", SelfHealingAmount[0]), -1);
+	SelfHealingAmount[1] = std::max(ini.Get_Int(Name(), "SelfHealing.RookieAmount", SelfHealingAmount[1]), -1);
+	SelfHealingAmount[2] = std::max(ini.Get_Int(Name(), "SelfHealing.VeteranAmount", SelfHealingAmount[2]), -1);
+	SelfHealingAmount[3] = std::max(ini.Get_Int(Name(), "SelfHealing.EliteAmount", SelfHealingAmount[3]), -1);
+	SelfHealingMax[0] = ini.Get_Float(Name(), "SelfHealing.Max", SelfHealingMax[0]);
+	SelfHealingMax[1] = ini.Get_Float(Name(), "SelfHealing.RookieMax", SelfHealingMax[1]);
+	SelfHealingMax[2] = ini.Get_Float(Name(), "SelfHealing.VeteranMax", SelfHealingMax[2]);
+	SelfHealingMax[3] = ini.Get_Float(Name(), "SelfHealing.EliteMax", SelfHealingMax[3]);
+	SelfHealingCombatDelay = std::max(ini.Get_Int(Name(), "SelfHealing.CombatDelay", SelfHealingCombatDelay), 0);
 	IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
 	IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
 	IsDisableable = ini.Get_Bool(Name(), "Disableable", IsDisableable);
@@ -1174,7 +1388,6 @@ void TechnoTypeClass::Read_Spawns_INI(CCINIClass const & ini)
 	SpawnsNumber = ini.Get_Int(Name(), "SpawnsNumber", SpawnsNumber);
 	SpawnRegenRate = ini.Get_Int(Name(), "SpawnRegenRate", SpawnRegenRate);
 	SpawnReloadRate = ini.Get_Int(Name(), "SpawnReloadRate", SpawnReloadRate);
-	SecondSpawnOffset = ini.Get_Point(Name(), "SecondSpawnOffset", SecondSpawnOffset);
 	IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
 	IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
 	Enslaves = TGet_Class(ini, Name(), "Enslaves", Enslaves);
@@ -1183,14 +1396,27 @@ void TechnoTypeClass::Read_Spawns_INI(CCINIClass const & ini)
 	SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
 	IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 	PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
+	PoweredBy = TGet_TypeList<BuildingTypeClass>(ini, Name(), "PoweredBy", PoweredBy);
+
+	std::string const operators = ini.Get_String(Name(), "Operator");
+	if (!operators.empty()) {
+		Operators.Clear();
+		IsOperatorAny = false;
+		for (std::string const & name : Split_List(operators, ',', " \t", true)) {
+			if (stricmp(name.c_str(), "_ANY_") == 0) {
+				IsOperatorAny = true;
+			} else if (TechnoTypeClass const * type = TechnoTypeClass::From_Name(name.c_str())) {
+				Operators.Add(type);
+			} else if (stricmp(name.c_str(), "none") != 0) {
+				DebugString("%s: Operator names no such object type: %s; skipped.\n", Name(), name.c_str());
+			}
+		}
+	}
 }
 
 
 void TechnoTypeClass::Read_Jumpjet_INI(CCINIClass const & ini)
 {
-	// Accepted from Yuri's Revenge rules, but nothing uses it.
-	ini.Get_Bool(Name(), "TiltCrashJumpjet", false);
-
 	// The first read takes its jumpjet defaults from [JumpjetControls], read before the types.
 	if (!IsJumpjetDataSet) {
 		IsJumpjetDataSet = true;
@@ -1317,6 +1543,7 @@ void TechnoTypeClass::Read_Gattling_INI(CCINIClass const & ini)
 {
 	IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
 	IsChargeTurret = ini.Get_Bool(Name(), "IsChargeTurret", IsChargeTurret);
+	IsPassengerTurret = ini.Get_Bool(Name(), "PassengerTurret", IsPassengerTurret);
 	WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
 	RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
 	RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
@@ -1350,6 +1577,7 @@ void TechnoTypeClass::Read_Turret_INI(CCINIClass const & ini)
 {
 	IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
 	IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
+	IsHasTurretTooltips = ini.Get_Bool(Name(), "HasTurretTooltips", IsHasTurretTooltips);
 	// Accepted from Yuri's Revenge rules, but nothing uses it.
 	ini.Get_Bool(Name(), "HasTurretTooltips", false);
 	IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
@@ -1407,20 +1635,119 @@ void TechnoTypeClass::Read_Ammo_INI(CCINIClass const & ini)
 	ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
 	EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
 	ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
+	ReloadAmount = ini.Get_Int(Name(), "ReloadAmount", ReloadAmount);
+	EmptyReloadAmountSetting = ini.Get_Int(Name(), "EmptyReloadAmount", EmptyReloadAmountSetting);
 	PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
 }
 
 
 void TechnoTypeClass::Read_Production_INI(CCINIClass const & ini)
 {
+	char value[64];
 	IsDoubleOwned = ini.Get_Bool(Name(), "DoubleOwned", IsDoubleOwned);
 	BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
 
 	// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
 	BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
+	if (ini.Get_String(Name(), "Survivor.Side0", "", value, sizeof(value)) > 0) {
+		SurvivorSide[0] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	if (ini.Get_String(Name(), "Survivor.Side1", "", value, sizeof(value)) > 0) {
+		SurvivorSide[1] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	if (ini.Get_String(Name(), "Survivor.Side2", "", value, sizeof(value)) > 0) {
+		SurvivorSide[2] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	if (ini.Get_String(Name(), "Survivor.Side3", "", value, sizeof(value)) > 0) {
+		SurvivorSide[3] = strcmpi(value, "<none>") == 0 ? "" : value;
+	}
+	CrewTechnicianChance = ini.Get_Int(Name(), "Crew.TechnicianChance", CrewTechnicianChance);
+	CrewEngineerChance = ini.Get_Int(Name(), "Crew.EngineerChance", CrewEngineerChance);
+	SurvivorPilots = ini.Get_Int(Name(), "Survivor.Pilots", SurvivorPilots);
+	SurvivorPilotChance[0] = ini.Get_Int(Name(), "Survivor.RookiePilotChance", SurvivorPilotChance[0]);
+	SurvivorPilotChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPilotChance", SurvivorPilotChance[1]);
+	SurvivorPilotChance[2] = ini.Get_Int(Name(), "Survivor.ElitePilotChance", SurvivorPilotChance[2]);
+	SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
+	SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
+	SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+	ParachuteAnim = TGet_Class(ini, Name(), "Parachute.Anim", ParachuteAnim);
+	if (ini.Is_Present(Name(), "SlamSound")) {
+		SlamSound = ini.Get_VocType(Name(), "SlamSound", VOC_NONE);
+		IsSlamSoundSet = true;
+	}
+	RadialIndicatorRadius = ini.Get_Float(Name(), "RadialIndicatorRadius", RadialIndicatorRadius);
+	WaterImage = TGet_Class(ini, Name(), "WaterImage", WaterImage);
+	IsCloneable = ini.Get_Bool(Name(), "Cloneable", IsCloneable);
+	ClonedAt = TGet_TypeList<BuildingTypeClass>(ini, Name(), "ClonedAt", ClonedAt);
+	if (ini.Is_Present(Name(), "FactoryOwners")) {
+		FactoryOwners = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners"));
+	}
+	if (ini.Is_Present(Name(), "FactoryOwners.Forbidden")) {
+		FactoryOwnersForbidden = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners.Forbidden"));
+	}
+	if (ini.Get_String(Name(), "Cursor.Move", "", value, sizeof(value)) > 0) {
+		CursorMove = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.NoMove", "", value, sizeof(value)) > 0) {
+		CursorNoMove = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.Deploy", "", value, sizeof(value)) > 0) {
+		CursorDeploy = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.NoDeploy", "", value, sizeof(value)) > 0) {
+		CursorNoDeploy = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.Enter", "", value, sizeof(value)) > 0) {
+		CursorEnter = value;
+	}
+	if (ini.Get_String(Name(), "Cursor.NoEnter", "", value, sizeof(value)) > 0) {
+		CursorNoEnter = value;
+	}
+	if (ini.Is_Present(Name(), "CloakSound")) {
+		CloakSound = ini.Get_VocType(Name(), "CloakSound", VOC_NONE);
+		IsCloakSoundSet = true;
+	}
+	if (ini.Is_Present(Name(), "DecloakSound")) {
+		DecloakSound = ini.Get_VocType(Name(), "DecloakSound", VOC_NONE);
+		IsDecloakSoundSet = true;
+	}
+	CloakStages = ini.Get_Int(Name(), "Cloakable.Stages", CloakStages);
+	IsCanPassiveAquireGuard = ini.Get_Bool(Name(), "CanPassiveAquire.Guard", IsCanPassiveAquireGuard);
+	IsCanPassiveAquireCloak = ini.Get_Bool(Name(), "CanPassiveAquire.Cloak", IsCanPassiveAquireCloak);
+	IsNoManualFire = ini.Get_Bool(Name(), "NoManualFire", IsNoManualFire);
+	IsGattlingCycle = ini.Get_Bool(Name(), "Gattling.Cycle", IsGattlingCycle);
+	if (ini.Get_String(Name(), "EVA.VeteranPromoted", "", value, sizeof(value)) > 0) {
+		EvaPromoted[0] = value;
+	}
+	if (ini.Get_String(Name(), "EVA.ElitePromoted", "", value, sizeof(value)) > 0) {
+		EvaPromoted[1] = value;
+	}
+	if (ini.Get_String(Name(), "EVA.Lost", "", value, sizeof(value)) > 0) {
+		EvaLost = value;
+		IsEvaLostSet = true;
+	}
 	BuildLimit = ini.Get_Int(Name(), "BuildLimit", BuildLimit);
 	CameoSortOrder = ini.Get_Int(Name(), "CameoSortOrder", CameoSortOrder);
 	Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
+	Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite.List0", Prerequisite);
+	PrerequisiteLists.resize(std::max(0, ini.Get_Int(Name(), "Prerequisite.Lists", (int)PrerequisiteLists.size())));
+	for (std::size_t index = 0; index < PrerequisiteLists.size(); index++) {
+		std::string const key = "Prerequisite.List" + std::to_string(index + 1);
+		PrerequisiteLists[index] = ini.Get_BuildingType_List(ini, IniName, key.c_str(), PrerequisiteLists[index]);
+	}
+	PrerequisiteNegative = ini.Get_BuildingType_List(ini, IniName, "Prerequisite.Negative", PrerequisiteNegative);
+	if (ini.Is_Present(Name(), "Prerequisite.RequiredTheaters")) {
+		PrerequisiteTheaters = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.RequiredTheaters"));
+	}
+	if (ini.Is_Present(Name(), "Prerequisite.StolenTechs")) {
+		PrerequisiteStolenTechs.clear();
+		for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.StolenTechs"))) {
+			int const value = atoi(index.c_str());
+			if (value >= 0) {
+				PrerequisiteStolenTechs.push_back(value);
+			}
+		}
+	}
 	PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
 	Level = ini.Get_Int(Name(), "TechLevel", Level);
 	Cost = ini.Get_Int(Name(), "Cost", Cost);
@@ -1456,6 +1783,12 @@ void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
 	MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
 	PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 	PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+	if (ini.Is_Present(Name(), "VoiceAirstrikeAttack")) {
+		IsVoiceAirstrikeAttackSet = true;
+		VoiceAirstrikeAttack = ini.Get_VocType(Name(), "VoiceAirstrikeAttack", VoiceAirstrikeAttack);
+	}
+	PromoteVeteranFlash = ini.Get_Int(Name(), "Promote.VeteranFlash", PromoteVeteranFlash);
+	PromoteEliteFlash = ini.Get_Int(Name(), "Promote.EliteFlash", PromoteEliteFlash);
 	ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 	ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 	CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -1514,10 +1847,15 @@ void TechnoTypeClass::Read_Art_INI(void)
 	ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
 	IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
 	IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
+	if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
+		PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
+	}
 
 	char pcx[64];
 	ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
 	CameoPCX = pcx;
+	ArtINI.Get_String(Graphic_Name(), "AltCameoPCX", "", pcx, sizeof(pcx));
+	AltCameoPCX = pcx;
 
 	// gamemd TechnoTypeClass::LoadFromINI (0x712170) reads Palette= into PaletteFile, a 0x20-byte buffer.
 	char palette[32];
@@ -1541,6 +1879,8 @@ void TechnoTypeClass::Read_Art_INI(void)
 	}
 
 	TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
+	// gamemd reads the second launch point from the art section only (TechnoTypeClass::LoadFromINI, 0x712170).
+	SecondSpawnOffset = ArtINI.Get_Point(Graphic_Name(), "SecondSpawnOffset", SecondSpawnOffset);
 }
 
 
@@ -1767,6 +2107,8 @@ void TechnoTypeClass::Post_Load(void)
 
 		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
 		CameoPCX = buffer;
+		ArtINI.Get_String((const char *)GraphicName, "AltCameoPCX", "", buffer, sizeof(buffer));
+		AltCameoPCX = buffer;
 
 		AltCameoData = NULL;
 		if (ArtINI.Get_String((const char *)GraphicName, "AltCameo", "", buffer, sizeof(buffer)) > 0) {
@@ -1785,6 +2127,15 @@ void TechnoTypeClass::Post_Load(void)
 bool TechnoTypeClass::Can_Attack_Move(void) const
 {
 	return(Weapons[0].Weapon != NULL && !IsPreventAttackMove);
+}
+
+
+/// <summary>
+/// The name an enemy sees on an object of this type: the text EnemyUIName names, or NULL when the type sets none.
+/// </summary>
+char const * TechnoTypeClass::Enemy_Full_Name(void) const
+{
+	return(Label_Text(EnemyUIName, EnemyUINameText));
 }
 
 
@@ -1819,6 +2170,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Unused1);
 	stream.Serialize(WalkRate);
 	stream.Serialize(IdleRate);
+	stream.Serialize(AirRate);
+	stream.Serialize(RadarJamRadius);
 	stream.Serialize(IsPipsDrawForAll);
 	stream.Serialize(VeteranAbilities);
 	stream.Serialize(EliteAbilities);
@@ -1891,10 +2244,16 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanRetaliate);
 	stream.Serialize(IsHoverAttack);
 	stream.Serialize(IsJumpJet);
+	stream.Serialize(IsTiltCrashJumpjet);
 	stream.Serialize(VHPScan);
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
+	stream.Serialize(IsImmuneToAbduction);
+	stream.Serialize(IsProtectedDriver);
+	stream.Serialize(ProtectedDriverMinHealth);
+	stream.Serialize(IronCurtainModifier);
+	stream.Serialize(ForceShieldModifier);
 	stream.Serialize(IsGapGenerator);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
@@ -1907,6 +2266,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);
+	stream.Serialize(CrushDamage[0]);
+	stream.Serialize(CrushDamage[1]);
+	stream.Serialize(CrushDamage[2]);
+	stream.Serialize(CrushDamageWarhead);
 	stream.Serialize(InitialAmmo);
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
@@ -1928,10 +2291,16 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InsigniaFrame);
 	stream.Serialize(InsigniaShowEnemy);
 	stream.Serialize(IsVehicleThiefAllowed);
+	stream.Serialize(IsCanBeDriven);
 	stream.Serialize(BuildTimeMultipleFactory);
 	stream.Serialize(IsCrashable);
+	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
+	stream.Serialize(IsVoiceAirstrikeAttackSet);
+	stream.Serialize(VoiceAirstrikeAttack);
+	stream.Serialize(PromoteVeteranFlash);
+	stream.Serialize(PromoteEliteFlash);
 	stream.Serialize(IsHealthBarHidden);
 	stream.Serialize(EMPModifier);
 	stream.Serialize(EMPThreshold);
@@ -1945,6 +2314,71 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDefaultToGuardArea);
 	stream.Serialize(IsSelectableCombatant);
 	stream.Serialize(BuildTimeMultiplier);
+	for (std::string & side : SurvivorSide) {
+		stream.Serialize(side);
+	}
+	stream.Serialize(CrewTechnicianChance);
+	stream.Serialize(CrewEngineerChance);
+	stream.Serialize(SurvivorPilots);
+	stream.Serialize(SurvivorPilotChance);
+	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(PrerequisiteStolenTechs);
+	stream.Serialize(NoAmmoWeapon);
+	stream.Serialize(NoAmmoAmount);
+	stream.Serialize(InitialPayloadTypes);
+	stream.Serialize(InitialPayloadNums);
+	stream.Serialize(IsNoManualEnter);
+	stream.Serialize(IsNoManualUnload);
+	stream.Serialize(PassengersAllowed);
+	stream.Serialize(PassengersDisallowed);
+	stream.Serialize(IsPassengersBySize);
+	stream.Serialize(FallRateParachute);
+	stream.Serialize(FallRateNoParachute);
+	stream.Serialize(FallRateParachuteMax);
+	stream.Serialize(FallRateNoParachuteMax);
+	stream.Serialize(IsCivilianEnemy);
+	stream.Serialize(IsOmniCrusherAggressive);
+	stream.Serialize(IsExperienceFromPassengers);
+	stream.Serialize(IsExperiencePromotePassengers);
+	stream.Serialize(ExperiencePassengerModifier);
+	stream.Serialize(IsExperienceFromAirstrike);
+	stream.Serialize(ExperienceAirstrikeModifier);
+	stream.Serialize(ExperienceMindControlSelfModifier);
+	stream.Serialize(ExperienceMindControlVictimModifier);
+	stream.Serialize(ExperienceSpawnOwnerModifier);
+	stream.Serialize(ExperienceSpawnModifier);
+	stream.Serialize(EnemyUIName);
+	stream.Serialize(FakeOf);
+	stream.Serialize(IsLowSelectionPriority);
+	stream.Serialize(PaletteName);
+	stream.Serialize(ParachuteAnim);
+	stream.Serialize(SlamSound);
+	stream.Serialize(IsSlamSoundSet);
+	stream.Serialize(RadialIndicatorRadius);
+	stream.Serialize(WaterImage);
+	stream.Serialize(IsCloneable);
+	stream.Serialize(ClonedAt);
+	stream.Serialize(FactoryOwners);
+	stream.Serialize(FactoryOwnersForbidden);
+	stream.Serialize(CursorMove);
+	stream.Serialize(CursorNoMove);
+	stream.Serialize(CursorDeploy);
+	stream.Serialize(CursorNoDeploy);
+	stream.Serialize(CursorEnter);
+	stream.Serialize(CursorNoEnter);
+	stream.Serialize(CloakSound);
+	stream.Serialize(DecloakSound);
+	stream.Serialize(IsCloakSoundSet);
+	stream.Serialize(IsDecloakSoundSet);
+	stream.Serialize(CloakStages);
+	stream.Serialize(IsCanPassiveAquireGuard);
+	stream.Serialize(IsCanPassiveAquireCloak);
+	stream.Serialize(IsNoManualFire);
+	stream.Serialize(IsGattlingCycle);
+	stream.Serialize(EvaPromoted[0]);
+	stream.Serialize(EvaPromoted[1]);
+	stream.Serialize(EvaLost);
+	stream.Serialize(IsEvaLostSet);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);
@@ -1980,6 +2414,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpawned);
 	stream.Serialize(IsMissileSpawn);
 	stream.Serialize(IsDrainable);
+	stream.Serialize(IsDrainLocal);
+	stream.Serialize(DrainAmount);
 	stream.Serialize(Enslaves);
 	stream.Serialize(SlavesNumber);
 	stream.Serialize(SlaveRegenRate);
@@ -1994,6 +2430,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ActivateSound);
 	stream.Serialize(DeactivateSound);
 	stream.Serialize(PowersUnit);
+	stream.Serialize(PoweredBy);
+	stream.Serialize(Operators);
+	stream.Serialize(IsOperatorAny);
 	stream.Serialize(CrashingSound);
 	stream.Serialize(VoiceCrashing);
 	stream.Serialize(SinkingSound);
@@ -2021,6 +2460,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPreventAttackMove);
 	stream.Serialize(IsGattling);
 	stream.Serialize(IsChargeTurret);
+	stream.Serialize(IsPassengerTurret);
 	stream.Serialize(WeaponStages);
 	stream.Serialize(WeaponStage);
 	stream.Serialize(EliteStage);
@@ -2043,11 +2483,16 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SizeLimit);
 	stream.Serialize(IsVehicleTransport);
 	stream.Serialize(SightRange);
+	stream.Serialize(DesignatorRange);
+	stream.Serialize(InhibitorRange);
 	stream.Serialize(Cost);
 	stream.Serialize(Soylent);
 	stream.Serialize(FlightLevel);
 	stream.Serialize(Level);
 	stream.Serialize(Prerequisite);
+	stream.Serialize(PrerequisiteLists);
+	stream.Serialize(PrerequisiteNegative);
+	stream.Serialize(PrerequisiteTheaters);
 	stream.Serialize(PrerequisiteOverride);
 	stream.Serialize(Risk);
 	stream.Serialize(Reward);
@@ -2057,6 +2502,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ReloadDelay);
 	stream.Serialize(EmptyReloadDelay);
 	stream.Serialize(ReloadIncrement);
+	stream.Serialize(ReloadAmount);
+	stream.Serialize(EmptyReloadAmountSetting);
 	stream.Serialize(PipWrap);
 	stream.Serialize(Ownable);
 	stream.Serialize(IsAllowedToStartInMultiplayer);
@@ -2065,6 +2512,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CameoSortOrder);
 	stream.Serialize(Rotation);
 	stream.Serialize(ROT);
+	stream.Serialize(TurretROT);
 	stream.Serialize(TurretOffset);
 	stream.Serialize(Points);
 	stream.Serialize(Explosion);
@@ -2097,7 +2545,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTrainable);
 	stream.Serialize(IsDontScore);
 	stream.Serialize(IsNaval);
-	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(RequiredHouses);
 	stream.Serialize(ForbiddenHouses);
 	stream.Serialize(AIBasePlanningSide);
@@ -2122,6 +2569,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsScanner);
 	stream.Serialize(IsNominal);
 	stream.Serialize(IsTurretEquipped);
+	stream.Serialize(IsHasTurretTooltips);
 	stream.Serialize(IsTurretRecoil);
 	stream.Serialize(TurretRecoilControl.Travel);
 	stream.Serialize(TurretRecoilControl.CompressFrames);
@@ -2135,6 +2583,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrew);
 	stream.Serialize(IsRemappable);
 	stream.Serialize(IsCloakable);
+	stream.Serialize(IsCloakAllowed);
 	stream.Serialize(IsNoShadow);
 	stream.Serialize(IsDisableVoxelCache);
 	stream.Serialize(IsDisableShadowCache);
@@ -2142,6 +2591,11 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SelfHealingStep);
 	stream.Serialize(SelfHealingRate);
 	stream.Serialize(SelfHealingCap);
+	for (int slot = 0; slot < SELF_HEAL_SLOTS; slot++) {
+		stream.Serialize(SelfHealingAmount[slot]);
+		stream.Serialize(SelfHealingMax[slot]);
+	}
+	stream.Serialize(SelfHealingCombatDelay);
 	stream.Serialize(IsMechanic);
 	stream.Serialize(IsOmniHealer);
 	stream.Serialize(IsExploding);
@@ -2152,6 +2606,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsVisibleLoad);
 	stream.Serialize(IsLightningRod);
 	stream.Serialize(IsHunterSeeker);
+	stream.Serialize(IsHunterSeekerIgnored);
 	stream.Serialize(IsCrusher);
 	stream.Serialize(IsPushy);
 	stream.Serialize(IsOmniCrusher);
@@ -2166,6 +2621,17 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ZFudgeBridge);
 }
 
+bool TechnoTypeClass::Has_Abductor_Weapon(void) const
+{
+	for (int slot = 0; slot < WEAPON_SLOT_COUNT; slot++) {
+		if ((Weapons[slot].Weapon != NULL && Weapons[slot].Weapon->IsAbductor) || (EliteWeapons[slot].Weapon != NULL && EliteWeapons[slot].Weapon->IsAbductor)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 
 /// <summary>
 /// Adds this object type's rule data to a running checksum.
@@ -2176,6 +2642,19 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(IsDontScore);
+	crc(IsCanBeDriven);
+	crc(RadarJamRadius);
+	crc(NoAmmoWeapon);
+	crc(NoAmmoAmount);
+	crc((int)InitialPayloadTypes.size());
+	crc((int)PassengersAllowed.size());
+	crc((int)PassengersDisallowed.size());
+	crc(FallRateParachute);
+	crc(FallRateNoParachute);
+	crc(FallRateParachuteMax);
+	crc(FallRateNoParachuteMax);
+	crc(ExperienceSpawnOwnerModifier);
+	crc(ExperienceMindControlSelfModifier);
 	crc(ThreatAvoidanceCoefficient);
 	crc(SlowdownDistance);
 	crc(DeaccelerationFactor);
@@ -2240,10 +2719,13 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsSprayAttack);
 	crc(ReadinessReductionMultiplier);
 	crc(ReloadIncrement);
+	crc(ReloadAmount);
+	crc(EmptyReloadAmountSetting);
 	crc(PipWrap);
 	crc((int)Ownable);
 	crc(Rotation);
 	crc(ROT);
+	crc(TurretROT);
 	crc(TurretOffset);
 	crc(Points);
 	crc(Explosion.Count());
@@ -2263,6 +2745,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsScanner);
 	crc(IsNominal);
 	crc(IsTurretEquipped);
+	crc(IsHasTurretTooltips);
 	crc(IsTurretRecoil);
 	crc(TurretRecoilControl.Travel);
 	crc(TurretRecoilControl.CompressFrames);
@@ -2276,6 +2759,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsCrew);
 	crc(IsRemappable);
 	crc(IsCloakable);
+	crc(IsCloakAllowed);
 	crc(IsGapGenerator);
 	crc(GapRadiusInCells);
 	crc(IsNoShadow);
@@ -2285,6 +2769,11 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(SelfHealingStep);
 	crc(SelfHealingRate);
 	crc(SelfHealingCap);
+	for (int slot = 0; slot < SELF_HEAL_SLOTS; slot++) {
+		crc(SelfHealingAmount[slot]);
+		crc(SelfHealingMax[slot]);
+	}
+	crc(SelfHealingCombatDelay);
 	crc(IsMechanic);
 	crc(IsOmniHealer);
 	crc(IsExploding);
@@ -2295,6 +2784,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
 	crc(IsJumpJet);
+	crc(IsTiltCrashJumpjet);
 	crc(VHPScan);
 	crc(SuperGapRadiusInCells);
 	crc(IsCloseRange);
@@ -2306,10 +2796,12 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsMobileFire);
 	crc(IsPreventAttackMove);
 	crc(IsChargeTurret);
+	crc(IsPassengerTurret);
 	crc(RadialFireSegments);
 	crc(IsOmniCrusher);
 	crc(IsOmniCrushResistant);
-	for (int seat = 0; seat < 5; seat++) {
+	crc(IsHunterSeekerIgnored);
+	for (size_t seat = 0; seat < AlternativeFLH.size(); seat++) {
 		crc(AlternativeFLH[seat].X);
 		crc(AlternativeFLH[seat].Y);
 		crc(AlternativeFLH[seat].Z);

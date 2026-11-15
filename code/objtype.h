@@ -105,6 +105,11 @@ class ObjectTypeClass : public AbstractTypeClass
 		TStringID<24> GraphicName;
 		TStringID<24> AlphaGraphicName;
 
+		// AlternateTheaterArt (Ares): when set, the art section and shape are the Image name followed by the theater's image
+		// letter, if the art file has that section. BaseGraphicName then holds the Image name without the letter.
+		bool IsAlternateTheaterArt;
+		TStringID<24> BaseGraphicName;
+
 		/*
 		**	If the artwork for this object (only for generics) is theater specific, then
 		**	this flag will be true. Civilian buildings are a good example of this.

@@ -1,0 +1,26 @@
+; SlamSound. The type-keys-c-rules mod sets SlamSound=none on the power plant (GAPOWR). Both a power plant and a barracks
+; (GAPILE) are built and placed with sound logging on.
+; Expected: placing the barracks logs the stock slam sound ("Sound: PlaceBuilding"), and placing the power plant logs none
+; with -Mods; without it both log the stock sound.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/slam-sound.txt -Mods tests/autotest/type-keys-c-rules -Seconds 200 -Filter "AUTOTEST (place|produce)|Sound:|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+190 sounds 1
+200 produce GAPOWR
+400 place GAPOWR
+500 place GAPOWR
+600 place GAPOWR
+700 place GAPOWR
+800 place GAPOWR
+900 place GAPOWR
+1000 produce GAPILE
+1300 place GAPILE
+1400 place GAPILE
+1500 place GAPILE
+1600 place GAPILE
+1700 place GAPILE
+1800 place GAPILE
+1900 place GAPILE
+2000 place GAPILE
+2200 quit

@@ -217,5 +217,7 @@ enum StructType {
 	STRUCT_G_TECH=-5,
 	STRUCT_G_GDIFACTORY=-6,
 	STRUCT_G_NODFACTORY=-7,
-	STRUCT_G_PROC=-8
+	STRUCT_G_PROC=-8,
+	// The first [GenericPrerequisites] group that is not a stock one; group N after it is STRUCT_G_CUSTOM - N.
+	STRUCT_G_CUSTOM=-9
 };

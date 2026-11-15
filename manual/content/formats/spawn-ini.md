@@ -174,7 +174,7 @@ Each person has a section: `[Settings]` for the player at this machine, and `[Ot
 
 - `Name` is UTF-8 text. A name longer than 63 bytes is shortened.
 - `Side` is the person's country, numbered from `0` in the order of the rules' `[Countries]` list.
-- `Color` is one of the eight player colors, `0` to `7`. In a game against other machines, no two people may share a color.
+- `Color` is one of the lobby's player colors, `0` to `7`, or up to one less than the [`Count`](/keys/count/#scope-ui-controls) a mod's UI file sets. In a game against other machines, no two people may share a color.
 - `ColorRGB` is optional. It gives three values from `0` to `255` separated by commas, such as `ColorRGB=255,128,0`, for a free color that the person draws in. `Color` still picks the seat, so the seats stay distinct. A value that is not three numbers in that range is ignored and the person keeps the color at `Color`. A brightness below `96` is raised to `96`. The file is not checked for two people with close colors.
 - `IsSpectator` is `yes` when the person watches instead of playing. The client writes it here as well as in `[IsSpectator]`; either one makes the seat a watcher.
 
@@ -191,7 +191,7 @@ The file positions that no person's section claims are for computer players. The
 
 | Section | Entry | Meaning |
 | --- | --- | --- |
-| `[HouseColors]` | `Multi1`–`Multi8` | The color that seat plays, `0` to `7`, or `-1` for the game's choice. |
+| `[HouseColors]` | `Multi1`–`Multi8` | The color that seat plays, in the same range as `Color`, or `-1` for the game's choice. |
 | `[HouseCountries]` | `Multi1`–`Multi8` | The country that seat plays, or `-1` for the game's choice. |
 | `[HouseHandicaps]` | `Multi1`–`Multi8` | The difficulty slot that seat plays at, or `-1` to follow `AIDifficulty`. |
 
@@ -318,7 +318,7 @@ A new skirmish, and any game against other machines, new or resumed, is also ref
 - the file has no `[Settings]` or `[OtherN]` section, so it seats no person;
 - `AIDifficulty` is outside `0` to `2`;
 - `AIPlayers` is negative or more than the seats no person holds;
-- a person's `Side` is not a country the rules have, or their `Color` is outside `0` to `7`; a computer seat's country and color are checked the same way unless they are `-1`;
+- a person's `Side` is not a country the rules have, or their `Color` is outside the lobby's colors; a computer seat's country and color are checked the same way unless they are `-1`;
 - a `[HouseHandicaps]` entry is outside `-1` to `6`;
 - an occupied seat's alliance entry is outside `-1` to `7`, or names a seat that is empty;
 - every person watches and no computer plays; this check does not apply to a resumed game.
@@ -331,6 +331,19 @@ A game against other machines, new or resumed, is also refused when:
 - through a tunnel, `[Tunnel] Port` is negative or above `65535`, or `[Tunnel] Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;
 - the network cannot be opened.
+
+## A mod's game mode and game options
+
+A launch file the game writes for a skirmish under a mod's [declared game modes](/formats/mod-ini/#game-modes-and-game-options) carries the choice in `[LobbyChoice]`: `Mode=` names the mode, and every other entry gives a declared option's value, `0` or `1` for a check box and the item's position for a drop-down. The game applies the overlays of that choice over the scenario as the scenario is read, so a replay or a restart plays the same match. The option values the choice writes as launch keys are in `[Settings]` as well. A file without `Mode=` has no choice, and a file from the CnCNet client has none, since the client has already merged its overlays into the scenario it writes.
+
+```ini title="SPAWN.INI"
+[LobbyChoice]
+Mode=No Bases
+chkStolenTech=1
+cmbOreGrowth=2
+```
+
+A `[Settings]` entry the game does not read, such as a mod option's launch key, is written to the debug log once a run and kept when the game writes the file out again.
 
 ## What the game does not take from a launch file
 

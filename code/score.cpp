@@ -24,6 +24,8 @@
 #include "csf.h"
 #include "dsurface.h"
 #include "globals.h"
+#include "side.h"
+#include "houstype.h"
 #include "hud.h"
 #include "house.h"
 #include "keyboard.h"
@@ -482,11 +484,17 @@ void ScoreClass::Presentation(void)
 	if (!modern) {
 		Load_Shell(Stage, shell);
 	}
-	Stage.Load_Palette(PALETTE[side]);
 
-	ShapeSet * background = Stage.Load_Shape(BACKGROUND[side]);
+	// A side's own CampaignScore* keys replace the stock art for its palette, background and emblem animation.
+	SideClass const * own = ScoreStageClass::Player_Side();
+	auto const art = [own](std::string SideClass::* key, char const * stock) {
+		return(own != NULL && !(own->*key).empty() ? (own->*key).c_str() : stock);
+	};
+	Stage.Load_Palette(art(&SideClass::CampaignScorePalette, PALETTE[side]));
+
+	ShapeSet * background = Stage.Load_Shape(art(&SideClass::CampaignScoreBackground, BACKGROUND[side]));
 	ShapeSet * plate = Stage.Load_Shape(PLATE[side]);
-	ShapeSet * emblem = Stage.Load_Shape(EMBLEM[side]);
+	ShapeSet * emblem = Stage.Load_Shape(art(&SideClass::CampaignScoreAnimation, EMBLEM[side]));
 
 	Rect const whole(0, 0, Stage.Width(), Stage.Height());
 	Figures const figures = Collect_Figures();

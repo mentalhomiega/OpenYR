@@ -18,6 +18,7 @@
 
 #include "_alpha.h"
 #include "_convert.h"
+#include "_deploymentconfig.h"
 #include "_map.h"
 #include "_mixfile.h"
 #include "_palette.h"
@@ -33,6 +34,7 @@
 #include "cell.h"
 #include "conquer.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "draw.h"
 #include "dsurface.h"
 #include "globals.h"
@@ -307,7 +309,7 @@ IsometricTileTypeClass::IsometricTileTypeClass(IsometricTileType type, int unkno
 	IsAllowTiberium(false),
 	UseCount(0)
 {
-	AbstractTypePtrTracker.Add(this);
+	TileSetPtrTracker.Add(this);
 	if (!skip_registration) {
 		IsometricTileTypes.Add(this);
 	}
@@ -347,7 +349,7 @@ IsometricTileTypeClass::~IsometricTileTypeClass(void)
 	ImageData = NULL;
 
 	IsometricTileTypes.Delete(this);
-	AbstractTypePtrTracker.Delete(this);
+	TileSetPtrTracker.Delete(this);
 
 	for (int i = PreviewTiles.Count() - 1; i >= 0; i--) {
 		if (PreviewTiles[i] != NULL) {
@@ -774,10 +776,15 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 	}
 	IsometricTileTypeClass::Init_Drawers();
 
-	// Yuri's Revenge reads only <Root>MD.INI; <Root>.INI is read when that file is missing.
+	// Yuri's Revenge reads only <Root>MD.INI. A mod's own suffix is tried before it, and <Root>.INI is
+	// read when neither file exists.
 	char ininame[_MAX_PATH];
-	sprintf(ininame, "%sMD.INI", data.Root.c_str());
+	sprintf(ininame, "%s%s.INI", data.Root.c_str(), DeploymentConfig.TheaterSuffix.c_str());
 	CCFileClass inifile(ininame);
+	if (!inifile.Is_Available()) {
+		sprintf(ininame, "%sMD.INI", data.Root.c_str());
+		inifile.Set_Name(ininame);
+	}
 	if (!inifile.Is_Available()) {
 		sprintf(ininame, "%s.INI", data.Root.c_str());
 		inifile.Set_Name(ininame);
@@ -1249,6 +1256,20 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 				invalid_references[field], field == 0 ? "MarbleMadness" : "NonMarbleMadness", first_invalid[field]);
 		}
 	}
+
+	// Ice behavior needs ice tiles. A theater whose ice sets are unresolved or hold no tiles, such as a
+	// mod's snow theater with no ice artwork, has the tiles that follow the first ice set's number read
+	// as ice, and the ice passes rewrite them. gamemd reads no ice sets at all (Read_Control_File,
+	// 0x00545150), so its snow maps never reach those passes.
+	auto set_holds_tiles = [&](IsometricTileType set) {
+		return set >= 0 && static_cast<std::size_t>(set) < tile_set_lookup.size() && tile_set_lookup[set].Count > 0;
+	};
+	bool const ice_sets_hold_tiles = set_holds_tiles(_Ice1Set) && set_holds_tiles(_Ice2Set)
+		&& set_holds_tiles(_Ice3Set) && set_holds_tiles(_IceShoreSet);
+	if (data.IsIceGrowthWanted && !ice_sets_hold_tiles) {
+		DebugString("Theater %s: its ice tile sets hold no tiles, so its ice behavior is off.\n", data.Name());
+	}
+	Theaters[theater]->Resolve_Ice_Growth(ice_sets_hold_tiles);
 
 	// Ice tiles count as water. The remap stops at the end of a set shorter than the Tiberian Sun
 	// layout instead of running into the next set.

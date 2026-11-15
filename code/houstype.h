@@ -14,12 +14,17 @@
 #pragma once
 
 #include "abstype.h"
+#include "paragroup.h"
 
 #include "house.hh"
 #include "side.hh"
 #include "typelist.h"
 
+#include <string>
+#include <vector>
+
 class AircraftTypeClass;
+class BuildingTypeClass;
 class CCINIClass;
 class InfantryTypeClass;
 class UnitTypeClass;
@@ -127,6 +132,38 @@ class HouseTypeClass : public AbstractTypeClass
 		 */
 		bool IsMultiplayPassive;
 
+		// CanBeDriven (Ares): 1 or 0 as the country says, or -1 to follow MultiplayPassive.
+		signed char CanBeDriven;
+
+		/*
+		 * Interface files and labels of the country, from its own section: the loading screen's
+		 * picture, palette, text labels and text color scheme, the flag shown beside its player's
+		 * name, and where the country sits in the lobby's country list. An empty name or a
+		 * ListIndex of 100 means the country takes the loading screen, flag and place the stock
+		 * rules give it.
+		 */
+		std::string LoadScreenFile;
+		std::string LoadScreenPalette;
+		std::string LoadScreenName;
+		std::string LoadScreenSpecialName;
+		std::string LoadScreenBrief;
+		std::string LoadScreenColor;
+		std::string FlagFile;
+
+		/*
+		 * More interface keys of the country: the music a multiplayer match plays while it loads,
+		 * the label of the status text for the lobby's country list, and the files for taunts and
+		 * for the observer's flag and background. An empty name means the key is unset. The taunt
+		 * and observer files are read but nothing draws or plays them.
+		 */
+		std::string LoadingTheme;
+		std::string StatusText;
+		std::string TauntFile;
+		std::string ObserverFlagFile;
+		std::string ObserverBackgroundFile;
+		bool IsObserverFlagAltPalette;
+		int ListIndex;
+
 		// Whether destroying this country's objects pays bounty (Ares GivesBounty).
 		bool IsGivesBounty;
 
@@ -151,6 +188,15 @@ class HouseTypeClass : public AbstractTypeClass
 		TypeList<UnitTypeClass const *> VeteranUnits;
 		TypeList<AircraftTypeClass const *> VeteranAircraft;
 
+		// VeteranBuildings (Ares): a house of this country makes each new structure of a listed type a veteran.
+		TypeList<BuildingTypeClass const *> VeteranBuildings;
+
+		// The power plants the computer builds for a house of this country (Ares AI.PowerPlants). Empty follows the side.
+		TypeList<BuildingTypeClass const *> AIPowerPlants;
+
+		// The country's own ParaDrop.Types, ParaDrop.Num and ParaDrop.Aircraft (Ares); what is left out follows the side.
+		ParaDropList ParaDrop;
+
 		//------------------------------------------------------------------------
 		HouseTypeClass(char const * ininame = NULL);
 		virtual ~HouseTypeClass() override;
@@ -159,6 +205,8 @@ class HouseTypeClass : public AbstractTypeClass
 
 
 		virtual void Serialize(SaveStreamClass & stream) override;
+
+		bool Can_Be_Driven(void) const {return(CanBeDriven < 0 ? IsMultiplayPassive : CanBeDriven != 0);}
 
 		virtual RTTIType Fetch_RTTI(void) const override;
 		virtual void Compute_CRC(CRCEngine &) const override;
@@ -169,6 +217,13 @@ class HouseTypeClass : public AbstractTypeClass
 		static bool RA2_Numbering_Loaded(void);
 		static HousesType From_RA2_Number(HousesType number);
 		static bool Set_RA2_Numbering(bool enabled);
+
+		/*
+		 * The countries a lobby offers, in the order it lists them: the countries a player can pick
+		 * (Multiplay=yes), by ListIndex and then by place in the rules, without any whose ListIndex is
+		 * negative. Each entry is an index into HouseTypes.
+		 */
+		static std::vector<int> Lobby_Countries(void);
 		static void One_Time(void);
 		static HouseTypeClass * Find_Or_Make(char const * ininame);
 

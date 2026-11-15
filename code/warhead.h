@@ -37,12 +37,21 @@
 #include "typelist.h"
 
 #include "armor.hh"
+#include "voc.hh"
 
 #include <vector>
 
 class AnimTypeClass;
+class TechnoTypeClass;
 class ParticleSystemTypeClass;
 class VoxelAnimTypeClass;
+
+// The house a vehicle goes to when a KillDriver warhead takes its driver.
+enum KillDriverOwnerType {
+	KILLDRIVER_OWNER_SPECIAL,
+	KILLDRIVER_OWNER_CIVILIAN,
+	KILLDRIVER_OWNER_NEUTRAL
+};
 
 /**********************************************************************
 **	Each of the warhead types has specific characteristics. This structure
@@ -225,6 +234,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// With AffectsAllies=no, the warhead does nothing to objects of its firer's allies.
 		bool IsAffectsAllies;
 
+		// With AffectsEnemies=no, the warhead does nothing to objects of a house that is not an ally of its firer's (Ares).
+		bool IsAffectsEnemies;
+
 		// A Psychedelic warhead drives what it hits berzerk for as many frames as the damage it would have done.
 		bool IsPsychedelic;
 
@@ -265,6 +277,19 @@ class WarheadTypeClass : public AbstractTypeClass
 		bool IsCausesDelayKill;
 		int DelayKillFrames;
 		float DelayKillAtMax;
+
+		// Above zero, the light flash of a Bright blast takes this share of the largest flash, whatever the damage.
+		float CombatLightSize;
+
+		// Malicious=no (Ares) keeps a hit on an ore miner from raising the miner-under-attack alert.
+		bool IsMalicious;
+
+		// NukeFlash.Duration (Ares): frames the map-wide flash fades in, -1 until set; see Nuke_Flash_Duration.
+		int NukeFlashDuration;
+		int Nuke_Flash_Duration(void) const;
+
+		// Frames of the ion cannon's shockwave that a detonation shows, 0 for none (Ares IonCannon.Ripple, once Ripple.Radius).
+		int IonRipple;
 
 		// A disguise warhead makes its firer look like the soldier it hits.
 		bool IsMakesDisguise;
@@ -365,5 +390,105 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// The effect this warhead attaches to the objects it hits (Ares AttachEffect).
 		AttachEffectTypeClass AttachEffect;
+
+		// A KillDriver warhead takes the driver of a vehicle it hits instead of damaging it (Ares). The vehicle goes to
+		// the KillDriver.Owner house, and loses its rank with KillDriver.RemoveVeterancy. KillDriver.KillBelowPercent
+		// limits the effect to vehicles at or below that share of their health, and KillDriver.Chance is the chance per hit.
+		bool IsKillDriver;
+		KillDriverOwnerType KillDriverOwner;
+		double KillDriverBelowPercent;
+		double KillDriverChance;
+		bool IsKillDriverRemoveVeterancy;
+
+		// How many leptons above the ground a blast must be to damage objects in the air; -1 damages them for a blast on the ground too (Ares DamageAirThreshold).
+		int DamageAirThreshold;
+
+		// A PreventScatter warhead does not make the units it hits scatter, whatever their type or abilities allow (Ares).
+		bool IsPreventScatter;
+
+		// EffectsRequireDamage (Ares): the KillDriver and AttachEffect effects of this warhead apply only to an object the hit
+		// damages by at least one point.
+		bool IsEffectsRequireDamage;
+
+		// EffectsRequireVerses (Ares): those effects apply only to an object whose armor has a nonzero Verses. With no, they
+		// also apply at 0%.
+		bool IsEffectsRequireVerses;
+
+		// EMP.Duration and EMP.Cap (Ares): a warhead with a nonzero EMP.Duration changes the EMP counter of each object its blast
+		// damages, instead of creating a pulse. A positive duration disables the object and a negative one reactivates it;
+		// the cap decides how repeated hits combine.
+		int EMPDuration;
+		int EMPCap;
+
+		// Sonar.Duration (Ares): the frames an object the warhead hits is kept from cloaking, as a sonar pulse does. 0 does nothing.
+		int SonarDuration;
+
+		// EMP.Sparkles (Ares): the animation an object this warhead stuns shows while it is stunned, in place of the one its type
+		// or [General] EMPulseSparkles names. NULL leaves it to them.
+		AnimTypeClass const * EMPSparkles;
+
+		// IronCurtain.Duration and IronCurtain.Cap (Ares): a warhead with a nonzero IronCurtain.Duration puts each object it hits
+		// under the Iron Curtain for that many frames, or shortens the curtain it is under if the duration is negative. The cap
+		// decides how repeated hits combine.
+		int IronCurtainDuration;
+		int IronCurtainCap;
+
+		// DisableWeapons.Duration (Ares): the frames an object this warhead hits cannot fire.
+		int DisableWeaponsDuration;
+
+		// CellSpread.MaxAffect (Ares): the most hits one object takes from one blast of this warhead, the nearest ones; -1 for no limit.
+		int CellSpreadMaxAffect;
+
+		// Temporal.HealthFactor (Ares), 0 to 1: how far a warped object's lost health shortens the warp that is left.
+		double TemporalHealthFactor;
+
+		// Flash.Duration (Ares): the frames an object this warhead hits flashes, when the warhead's effects reach it.
+		int FlashDuration;
+
+		// AllowZeroDamage (Ares): a blast of this warhead with no damage still reaches the objects in its spread.
+		bool IsAllowZeroDamage;
+
+		// RelativeDamage and its per-kind percentages (Ares), each from -100 to 100: a hit takes that share of the victim's full
+		// strength, or of its current health when negative, in place of the damage the shot carries.
+		bool IsRelativeDamage;
+		int RelativeDamageBuildings;
+		int RelativeDamageAircraft;
+		int RelativeDamageInfantry;
+		int RelativeDamageVehicles;
+
+		// UnitLost.Suppress (Ares): a unit this warhead kills does not make EVA announce a lost unit.
+		bool IsUnitLostSuppress;
+
+		// DieSound.Override and VoiceDie.Override (Ares): the sound and voice an object this warhead kills plays instead of its
+		// own; VOC_NONE when set is silence.
+		bool IsDieSoundOverridden;
+		VocType DieSoundOverride;
+		bool IsVoiceDieOverridden;
+		VocType VoiceDieOverride;
+
+		// AffectsOwner (Ares): whether the warhead affects objects of the house that fired it. Without the key it follows AffectsAllies.
+		bool IsAffectsOwner;
+		bool IsAffectsOwnerSet;
+
+		// DeathWeapon.Suppress, .SuppressVehicles and .SuppressInfantry (Ares): an object this warhead kills sets off no death
+		// weapon when its type is listed, or when it is a vehicle or infantry and the matching switch is on.
+		TypeList<TechnoTypeClass *> DeathWeaponSuppress;
+		bool IsDeathWeaponSuppressVehicles;
+		bool IsDeathWeaponSuppressInfantry;
+
+		// MindControl.Permanent (Ares): a MindControl=yes warhead takes its target for good, as the psychic dominator does.
+		bool IsMindControlPermanent;
+		bool Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const;
+
+		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration under stock rules?
+		bool Is_EM_Pulse(void) const;
+
+		// The animation an infantryman not marked NotHuman=yes dies with when this warhead kills him, in place of InfDeath (Ares
+		// InfDeathAnim). An animation with MakeInfantry mutates him into that infantry type for the killer's house.
+		AnimTypeClass const * InfDeathAnim;
+
+		// PreImpactAnim (Ares): played where a projectile with this warhead hits. The blast and its damage follow when it ends. The
+		// NUKE warhead plays NUKEBALL when this is not set.
+		AnimTypeClass const * PreImpactAnim;
 
 };

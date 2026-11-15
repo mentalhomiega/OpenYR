@@ -253,6 +253,9 @@ class BuildingClass : public TechnoClass
 		*/
 		bool IsWrenchVisible;
 
+		// The countries whose spies infiltrated this SpyEffect.RevealRadar structure since its owner last changed.
+		CountrySet RadarRevealedTo;
+
 		/*
 		**	This flag is set when a commando has raided the building and planted
 		**	plastic explosives.  When the CommandoCountDown timer expires, the
@@ -403,6 +406,9 @@ class BuildingClass : public TechnoClass
 
 		// The psychic warning this silo put on its target when the launch began. It is cleared when the missile bullet takes it over.
 		AnimClass * PsiWarnAnim;
+
+		// The frame of this rearming pad's next [General] ReloadRate pass while an aircraft with its own ReloadRate is docked.
+		int PadPassFrame;
 		bool IsRequiresDamageFires;
 		void Create_Damage_Fires(void);
 		void Remove_Damage_Fires(void);
@@ -468,9 +474,15 @@ class BuildingClass : public TechnoClass
 
 		// Whether the structure was under the Iron Curtain at its last AI. Not saved; the AI sets it again.
 		bool IsCurtainDrawn;
+		// ProduceCashDisplay text state: cash paid since the last text and the frame that text was shown. Display only, so not saved.
+		int ProduceCashShownPending;
+		int ProduceCashShownFrame;
 
 		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
 		bool HasEngineer;
+
+		// Whether the structure's first owner was a MultiplayPassive country, which makes it a tech structure (Ares).
+		bool IsTechStructure;
 
 		// The item a tech secret lab drew when the game started; null for a lab placed later.
 		TechnoTypeClass const * SecretProduct;
@@ -524,6 +536,7 @@ class BuildingClass : public TechnoClass
 		virtual char const * Full_Name(void) const override;
 		virtual DirType Fire_Direction(void) const override;
 		virtual bool Considered_Vehicle(void) const override;
+		bool Extends_Base_Area(void) const;
 		virtual bool Is_Radar_Visible(DetectedType & detected) const override;
 		int Set_Turret_Frame(void);
 		void Set_Turret_Index(int index);
@@ -533,8 +546,15 @@ class BuildingClass : public TechnoClass
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
 		bool Is_Powered_On(void) const;
+		void Release_Clones(TechnoClass const * base);
+		void Release_Vehicle_Clones(TechnoClass const * product);
+		// Powered on and neither being built nor sold.
+		bool Is_Online(void) const {return(Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION);}
+		bool Is_Radar_Jammed(void) const;
 		SuperWeaponType Fetch_Super_Weapon(void) const;
 		SuperWeaponType Fetch_Super_Weapon2(void) const;
+		bool Grants_Super_Weapon(int super) const;
+		SuperWeaponType Fetch_First_Super_Weapon(void) const;
 		bool Should_Fog(void) const;
 		Matrix3D Get_Barrel_Matrix(void) const;
 
@@ -585,6 +605,7 @@ class BuildingClass : public TechnoClass
 		// Draws the weapon range ring of a selected defence when the Show defence range option is on.
 		void Draw_Defence_Range(void) const;
 		virtual void Draw_Wrench_Icon(Rect const & cliprect) const override;
+		bool Is_Wrench_Shown_To(HouseClass const * viewer) const;
 		void Draw_Overlays(Point2D const & point, Rect const & cliprect) const;
 		void Begin_Mode(BStateType bstate);
 		virtual void Draw_Extras(Point2D &point, Rect &rect);
@@ -615,7 +636,9 @@ class BuildingClass : public TechnoClass
 		virtual WeaponDataStruct const * Get_Class_Weapon_Data(int which=0) const override;
 		virtual bool Is_Turret_Equipped() const override;
 		void Update_Radar_Spied(void);
+		void End_Radar_Reveal(void);
 		void Spied_By(HouseClass * house);
+		void Custom_Spy_Effect(HouseClass * house, bool victim, bool spy);
 
 		void Update_FS_Wall_State(void);
 		bool Crossing_Firestorm(ObjectClass * object, bool do_damage);
@@ -631,6 +654,7 @@ class BuildingClass : public TechnoClass
 		void Rotation_AI(void) {}
 		void Factory_AI(void);
 		bool Start_Production_Of(TechnoTypeClass const & type);
+		bool Other_Factory_Producing(void) const;
 		void Repair_AI(void);
 		void Produce_Cash_AI(void);
 		void Update_Service_State(void);
@@ -638,6 +662,7 @@ class BuildingClass : public TechnoClass
 		void Update_Gap_State(void);
 		void Update_Gattling_Spin(void);
 		bool Trigger_C4_Timeout(void);
+		void Show_Produced_Cash(int amount);
 		TechnoTypeClass const * Secret_Item(void) const;
 		void Animation_AI(void);
 		virtual bool Revealed(HouseClass * house) override;
@@ -666,6 +691,7 @@ class BuildingClass : public TechnoClass
 		void Occupy(InfantryClass * infantry);
 		void Eject_Occupants(bool const keep_unplaced = false);
 		void Kill_Occupants(TechnoClass * assaulter);
+		bool Pass_Damage_To_Occupant(int damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse);
 		void Grind(FootClass * object);
 		bool Can_Absorb(FootClass const * object) const;
 		void Absorb(FootClass * object);
@@ -784,6 +810,7 @@ class BuildingClass : public TechnoClass
 		int Exit_Infantry(TechnoClass * base);
 		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);
+		void Drop_Unplaceable_Node(BaseNodeClass & node);
 		void Send_Computer_Unit_To_Guard(TechnoClass * base);
 		Coord Door_Coord(Cell const & exitcell) const;
 		bool Is_Damaged_Art(void) const;

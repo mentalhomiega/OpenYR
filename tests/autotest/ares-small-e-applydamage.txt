@@ -1,0 +1,10 @@
+; ApplyDamage. A Grizzly (weapon 105mm) strikes an enemy power plant. With the ares-small-e-keys mod the weapon has ApplyDamage=no, so
+; the plant keeps its full strength (the last where line); without -Mods the plant is damaged.
+; Run from the repository root, with and without -Mods:
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-applydamage.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   where|Exception"
+30 command CenterBase
+100 own MTNK 60 36
+102 spawn GAPOWR 68 36
+200 strike MTNK 68 36
+500 where GAPOWR
+520 quit

@@ -255,6 +255,9 @@ class OptionsClass {
 		 */
 		bool AircraftBodyPick;
 
+		// Does a drag selection leave out LowSelectionPriority objects when it also caught others? (Phobos PrioritySelectionFiltering)
+		bool PrioritySelectionFiltering;
+
 		/*
 		 * If true, a solo or skirmish game keeps running, silent and without input, while
 		 * another program has the focus.

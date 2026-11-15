@@ -28,6 +28,8 @@ class UIWaitBoxPresenterClass : public UIPresenterClass
 		std::string Text;
 		bool Bar;
 		int Percent = 0;
+		// The box stands alone over what the screen holds, with no menu backdrop or shade behind it.
+		bool Clear = false;
 };
 
 
@@ -40,9 +42,10 @@ class UIWaitBoxClass
 		UIWaitBoxClass(void);
 		~UIWaitBoxClass(void);
 
-		bool Show(char const * text, bool bar = false);
+		bool Show(char const * text, bool bar = false, bool clear = false);
 		void Set_Text(char const * text);
 		void Set_Fraction(double fraction);
+		void Set_Step(char const * text, double fraction);
 		void Hide(void);
 		bool Is_Shown(void) const;
 

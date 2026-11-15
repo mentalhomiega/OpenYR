@@ -1,0 +1,18 @@
+; RepairStopOnInsufficientFunds=no (Ares) keeps a human player's structure in repair mode while the player cannot pay, and repair resumes once money comes in.
+; The overlay repair-pause-no-funds.ini sets it. A player power plant at 30 percent strength is put on repair, then the player's money is set to 0 at
+; frame 60 and to 5000 at frame 300.
+; Expected: `where GAPOWR` shows the same strength at frames 100 and 290, and a higher one at frame 600; `repairon` at frame 610 says "was repairing 1".
+; Without the key, as repair-stop-no-funds.txt shows, the strength stays where it was at frame 600 and the plant was not repairing.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/repair-pause-no-funds.txt -Seconds 60 -Country 0 -Filter "AUTOTEST   where|AUTOTEST repairon|AUTOTEST credits|Exception"
+10 rules repair-pause-no-funds.ini
+30 command CenterBase
+40 own GAPOWR 64 36
+45 hurt GAPOWR 30
+50 repairon GAPOWR
+60 credits 0
+100 where GAPOWR
+290 where GAPOWR
+300 credits 5000
+600 where GAPOWR
+610 repairon GAPOWR
+620 quit

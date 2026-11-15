@@ -67,6 +67,22 @@ class UnitTypeClass : public TechnoTypeClass
 		// while deployed draws as its UnloadingClass and fires DeployFireWeapon when DeployFire is set.
 		bool IsSimpleDeployer;
 
+		// The vehicle type an IsSimpleDeployer vehicle of this type becomes when it finishes deploying, or NULL for none (Ares Convert.Deploy).
+		UnitTypeClass const * ConvertDeploy;
+
+		// The vehicle types a vehicle of this type becomes on entering a beach or water cell, and on entering any other cell (Ares
+		// Convert.Water and Convert.Land); NULL for none.
+		UnitTypeClass const * ConvertWater;
+		UnitTypeClass const * ConvertLand;
+
+		// The vehicle type a vehicle of this type becomes on a Convert type team script line, or NULL for none (Ares Convert.Script).
+		UnitTypeClass const * ConvertScript;
+
+		// VoiceIFVRepair (Ares): the reply a vehicle of this type gives to an order its repair weapon would carry out. Without the key
+		// the FV uses [AudioVisual] VoiceIFVRepair and other types use VoiceAttack.
+		bool IsVoiceIFVRepairSet;
+		VocType VoiceIFVRepair;
+
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
 		AnimTypeClass * DeployingAnim;
@@ -356,6 +372,7 @@ class UnitTypeClass : public TechnoTypeClass
 		static UnitTypeClass * Find_Or_Make(char const * name);
 
 		virtual bool Read_INI(CCINIClass const & ini) override;
+		void Read_Weapon_Turret_Indices(CCINIClass const & ini);
 		virtual Coord const Coord_Fixup(Coord const & coord) const override;
 		virtual Point3D Pixel_Dimensions(void) const override;
 		virtual Point3D Lepton_Dimensions(void) const override;

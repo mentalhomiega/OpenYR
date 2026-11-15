@@ -45,6 +45,7 @@
 
 class DSurface;
 class BSurface;
+class ConvertClass;
 template<class T> class DynamicVectorClass;
 
 typedef DynamicVectorClass<Point2D> FOUNDATION_LIST;
@@ -280,6 +281,9 @@ class RadarClass: public DisplayClass
 		 */
 		FOUNDATION_LIST Foundation[BSIZE_COUNT];
 
+		// Footprints of custom foundation sizes, keyed by width and height, made when first needed.
+		std::map<std::pair<int, int>, FOUNDATION_LIST> CustomFoundation;
+
 		/*
 		**	This is the zoom factor to use. This value is the number of pixels wide
 		**	each cell will occupy on the radar map. Completely zoomed out would be a
@@ -390,5 +394,8 @@ class RadarClass: public DisplayClass
 		CDTimerClass<SystemTimerClass> RadarAnimTimer;
 
 		static void const * RadarAnim;
+
+		// The palette of the radar logo when it is not the sidebar's.
+		static ConvertClass * RadarAnimDrawer;
 		static void const * TopShape;
 };

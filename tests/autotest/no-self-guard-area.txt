@@ -1,0 +1,12 @@
+; Two healers that can deploy stand apart: a GI with NoSelfGuardArea=yes (Ares) and a Guardian GI without it. The cursor lines
+; probe each one hovering over itself. Expected: the GI shows the deploy action (Self) and the Guardian GI the guard area action
+; (GuardArea). Without the key every healer shows GuardArea over itself, as the Guardian GI does here.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/no-self-guard-area.txt -Seconds 60 -Filter "AUTOTEST   cursor|Exception"
+10 rules no-self-guard-area.ini
+30 command CenterBase
+35 reveal
+40 own E1 70 40
+41 own GGI 74 40
+100 cursor E1 70 40
+101 cursor GGI 74 40
+120 quit

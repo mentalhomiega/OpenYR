@@ -12,6 +12,7 @@
 #include "ui/uipreview.h"
 #include "ui/uiscreen.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,6 +54,8 @@ struct UIScenarioEntry
 	std::string Label;
 	std::string File;
 	int Players = 0;
+	// False for a map the chosen game mode does not offer, which the list never shows.
+	bool InMode = true;
 };
 
 
@@ -120,3 +123,6 @@ UIScenarioServiceClass & UI_Scenario_Service(void);
 void UI_Scenario_State(UIScenarioState & state);
 
 bool UI_Scenario_Dialog(void);
+
+// Limits the maps the next dialogs list to those keep accepts by file name; an empty function lists every map.
+void UI_Scenario_Dialog_Filter(std::function<bool(std::string const & file)> keep);

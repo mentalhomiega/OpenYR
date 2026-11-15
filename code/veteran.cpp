@@ -65,7 +65,8 @@ static const char *AbilityName[ABILITY_COUNT] = {
 	"UNWARPABLE",
 	"POISONIMMUNE",
 	"PSIONICWEAPONIMMUNE",
-	"PSIONICSIMMUNE"
+	"PSIONICSIMMUNE",
+	"PROTECTED_DRIVER"
 };
 
 
@@ -115,9 +116,9 @@ VeterancyClass::~VeterancyClass(void)
 /// </summary>
 /// <param name="cost">The cost of the unit that made the kill.</param>
 /// <param name="value">The point value of the victim.</param>
-void VeterancyClass::Made_A_Kill(int cost, int value)
+void VeterancyClass::Made_A_Kill(int cost, int value, double modifier)
 {
-	Experience = VeteranRules::Experience_After_Kill(Experience, cost, value, Rule->VeteranRatio, Rule->VeteranCap);
+	Experience = VeteranRules::Experience_After_Scaled_Kill(Experience, cost, value, Rule->VeteranRatio, Rule->VeteranCap, modifier);
 }
 
 

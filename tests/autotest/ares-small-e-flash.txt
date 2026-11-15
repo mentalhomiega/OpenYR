@@ -1,0 +1,16 @@
+; Flash.Duration and AllowZeroDamage with the ares-small-e-keys mod. Four Grizzlies (MTNK) of the computer house stand apart. Blasts at the first
+; three cells: FlashWH with damage 5 (the first Grizzly flashes), FlashWH with damage 0 (the second does not, because the blast is skipped) and
+; FlashZeroWH with damage 0 (the third flashes, its strength unchanged). The fourth is never hit. Expected flash count lines: 37, 0, 39, 0 (40 less the frames since each blast).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-flash.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   (flash|where)|Exception"
+30 command CenterBase
+35 reveal
+40 spawn MTNK 62 30
+41 spawn MTNK 62 36
+42 spawn MTNK 62 42
+43 spawn MTNK 62 48
+60 blast FlashWH:5 62 30
+61 blast FlashWH:0 62 36
+62 blast FlashZeroWH:0 62 42
+63 flash MTNK
+64 where MTNK
+100 quit

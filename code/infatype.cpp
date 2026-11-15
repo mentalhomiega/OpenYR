@@ -90,6 +90,8 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsCapture(false),
 	IsFearless(false),
 	IsFraidyCat(false),
+	IsCow(ininame != NULL && stricmp(ininame, "COW") == 0),
+	IsDesolator(ininame != NULL && stricmp(ininame, "DESO") == 0),
 	IsCivilian(false),
 	IsBomber(false),
 	IsIvan(false),
@@ -100,6 +102,11 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsAgent(false),
 	IsThief(false),
 	IsVehicleThief(false),
+	IsCanDrive(false),
+	VehicleThiefEnterSound(VOC_NONE),
+	VehicleThiefLeaveSound(VOC_NONE),
+	IsVehicleThiefBreakMindControl(true),
+	IsVehicleThiefOneTime(false),
 	IsOccupier(false),
 	IsAssaulter(false),
 	OccupyWeapon(),
@@ -115,10 +122,12 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	UndeploySound(VOC_NONE),
 	IsDoggie(false),
 	IsNotHuman(false),
+	IsNoSelfGuardArea(false),
 	IsUseOwnName(false),
 	DeadBodies(),
 	DeathAnims(),
 	IsWebImmune(false),
+	ConvertScript(NULL),
 	HeapID(INFANTRY_NONE),
 	Pip(PIP_GREEN),
 	DoControls(NULL),
@@ -437,6 +446,8 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		if (IsCyborg) IsDamageSparks = true;
 		IsFearless = ini.Get_Bool(Name(), "Fearless", IsFearless);
 		IsFraidyCat = ini.Get_Bool(Name(), "Fraidycat", IsFraidyCat);
+		IsCow = ini.Get_Bool(Name(), "IsCow", IsCow);
+		IsDesolator = ini.Get_Bool(Name(), "IsDesolator", IsDesolator);
 		IsCapture = ini.Get_Bool(Name(), "Infiltrate", IsCapture);
 		IsBomber = ini.Get_Bool(Name(), "C4", IsBomber);
 		IsIvan = ini.Get_Bool(Name(), "Ivan", IsIvan);
@@ -447,6 +458,11 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsAgent = ini.Get_Bool(Name(), "Agent", IsAgent);
 		IsThief = ini.Get_Bool(Name(), "Thief", IsThief);
 		IsVehicleThief = ini.Get_Bool(Name(), "VehicleThief", IsVehicleThief);
+		IsCanDrive = ini.Get_Bool(Name(), "CanDrive", IsCanDrive);
+		VehicleThiefEnterSound = ini.Get_VocType(Name(), "VehicleThief.EnterSound", VehicleThiefEnterSound);
+		VehicleThiefLeaveSound = ini.Get_VocType(Name(), "VehicleThief.LeaveSound", VehicleThiefLeaveSound);
+		IsVehicleThiefBreakMindControl = ini.Get_Bool(Name(), "VehicleThief.BreakMindControl", IsVehicleThiefBreakMindControl);
+		IsVehicleThiefOneTime = ini.Get_Bool(Name(), "VehicleThief.OneTime", IsVehicleThiefOneTime);
 		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
 		IsAssaulter = ini.Get_Bool(Name(), "Assaulter", IsAssaulter);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
@@ -461,6 +477,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		EliteOccupyWeapon.Weapon = TGet_Class(ini, Name(), "EliteOccupyWeapon", EliteOccupyWeapon.Weapon);
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
 		IsNotHuman = ini.Get_Bool(Name(), "NotHuman", IsNotHuman);
+		IsNoSelfGuardArea = ini.Get_Bool(Name(), "NoSelfGuardArea", IsNoSelfGuardArea);
 		IsUseOwnName = ini.Get_Bool(Name(), "UseOwnName", IsUseOwnName);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeadBodies", DeadBodies);
 		DeathAnims = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeathAnims", DeathAnims, 0x80);
@@ -468,6 +485,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		if (IsEngineer) IsCapture = true;
 		if (IsAgent) IsCapture = true;
 		IsWebImmune = ini.Get_Bool(Name(), "IsWebImmune", IsWebImmune);
+		ConvertScript = TGet_Class(ini, Name(), "Convert.Script", ConvertScript);
 		IsCrawling = ArtINI.Get_Bool(Graphic_Name(), "Crawls", IsCrawling);
 		FireLaunch = ArtINI.Get_Int(Graphic_Name(), "FireUp", FireLaunch);
 		ProneLaunch = ArtINI.Get_Int(Graphic_Name(), "FireProne", ProneLaunch);
@@ -557,11 +575,15 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAgent);
 	crc(IsThief);
 	crc(IsVehicleThief);
+	crc(IsCanDrive);
+	crc(IsVehicleThiefBreakMindControl);
+	crc(IsVehicleThiefOneTime);
 	crc(IsAssaulter);
 	crc(UndeployDelay);
 	crc(IsDeployedCrushable);
 	crc(IsJumpJetTurn);
 	crc(DeathAnims.Count());
+	crc(ConvertScript != NULL);
 }
 
 
@@ -604,6 +626,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrawling);
 	stream.Serialize(IsCapture);
 	stream.Serialize(IsFraidyCat);
+	stream.Serialize(IsCow);
+	stream.Serialize(IsDesolator);
 	stream.Serialize(IsTiberiumProof);
 	stream.Serialize(IsCivilian);
 	stream.Serialize(IsBomber);
@@ -613,6 +637,11 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAgent);
 	stream.Serialize(IsThief);
 	stream.Serialize(IsVehicleThief);
+	stream.Serialize(IsCanDrive);
+	stream.Serialize(VehicleThiefEnterSound);
+	stream.Serialize(VehicleThiefLeaveSound);
+	stream.Serialize(IsVehicleThiefBreakMindControl);
+	stream.Serialize(IsVehicleThiefOneTime);
 	stream.Serialize(IsOccupier);
 	stream.Serialize(IsAssaulter);
 	stream.Serialize(IsDeployer);
@@ -628,10 +657,12 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyPip);
 	stream.Serialize(IsDoggie);
 	stream.Serialize(IsNotHuman);
+	stream.Serialize(IsNoSelfGuardArea);
 	stream.Serialize(IsUseOwnName);
 	stream.Serialize(DeadBodies);
 	stream.Serialize(DeathAnims);
 	stream.Serialize(IsWebImmune);
+	stream.Serialize(ConvertScript);
 	stream.Serialize_Bytes((void *)DoSounds, sizeof(DoSounds));
 }
 

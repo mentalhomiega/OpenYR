@@ -1,0 +1,21 @@
+; Cursor.Deploy, Cursor.Enter and Cursor.Spy. The type-cursors-rules mod defines three cursors and gives the Guardian GI
+; (GGI) Cursor.Deploy, the IFV (FV, made a transport) Cursor.Enter, and the power plant (GAPOWR) Cursor.Spy.
+; Each cursor line gives the action and the mouse number (stock cursors are below 100 and a [MouseCursors] entry follows them).
+; Expected: the Guardian GI over itself shows a number above the stock cursors, and the GI (E1) over itself shows the stock deploy
+; number; a GI over the IFV and the spy over the power plant show numbers above the stock ones, while the spy over the barracks
+; (GAPILE, no key) shows the stock enter number.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/type-cursors.txt -Mods tests/autotest/type-cursors-rules -Seconds 120 -Filter "AUTOTEST   cursor|Exception"
+30 command CenterBase
+35 reveal
+40 own GGI 66 24
+41 own E1 68 24
+42 own FV 70 24
+43 own SPY 72 24
+44 spawn GAPOWR 76 24
+45 spawn GAPILE 80 22
+100 cursor GGI 66 24
+101 cursor E1 68 24
+102 cursor E1 70 24
+103 cursor SPY 76 24
+104 cursor SPY 80 22
+300 quit

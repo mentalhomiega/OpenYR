@@ -1,0 +1,25 @@
+; An animation that deals damage uses the Warhead its art names (Ares bugfix "Animation Damage Warheads"), and an animation
+; with an owner counts that owner as the attacker, so a warhead with AffectsAllies=no spares the owner's house (Ares
+; migration notes, 0.3). The animation an object's own AttachEffect plays belongs to the object's owner. Mental Omega gives
+; a hero a damaging dust field this way. The overlay anim-damage-warhead.ini gives the player's Apocalypse tank (HTNK) an
+; endless AttachEffect playing RING1, and gives RING1 Damage=2 with the warhead TestDustWH (AffectsAllies=no, CellSpread 3).
+; A civilian truck (TRUCKA) of the computer stands next to the tank.
+; Expected: the tank keeps its full strength of 400 at every probe, and the truck, which drives off, is listed at 161, 93
+; and 27 at frames 100, 200 and 300. Before the fix the animation dealt FlameDamage2 (Fire2) with no owner, which hits
+; the tank as well.
+; This happens only in Ares rules: the mod tests/autotest/ares-rules declares an armor type; anim-damage-stock.txt checks
+; the stock game without it.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/anim-damage-warhead.txt -Mods src-agent33/tests/autotest/ares-rules -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   effects|Exception"
+10 art anim-damage-warhead.ini
+30 command CenterBase
+35 reveal
+40 own HTNK 70 40
+41 enemy TRUCKA 71 41
+60 effects HTNK
+100 where HTNK
+100 where TRUCKA
+200 where HTNK
+200 where TRUCKA
+300 where HTNK
+300 where TRUCKA
+310 quit

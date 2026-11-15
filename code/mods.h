@@ -45,10 +45,18 @@ class ModClass
 		std::string ArtFile;
 		std::string AIFile;
 
+		// The full path of mod.ini; empty when the folder has none.
+		std::string ManifestFile;
+
+		// [Lobby] Maps= and Options=: the mod's game modes and game options in the CnCNet client's files, as full
+		// paths, and CustomMapModes=, the modes that also offer maps those files do not list. Empty when not named.
+		std::string LobbyMapsFile;
+		std::string LobbyOptionsFile;
+		std::string LobbyCustomMapModes;
+
 		std::string const & Overlay(ModOverlayType type) const;
 };
 
-std::vector<std::string> Parse_Mod_List(char const * list);
 std::string Mod_Folder_Name(std::string const & name, std::string const & datadirectory);
 
 // The folder's own name, its last part. A trailing separator is ignored, so "Mods/Name/" gives "Name".
@@ -87,6 +95,13 @@ void Clear_Mods(void);
 
 // The mods in force, in the order they are read; a later one overrides an earlier one.
 std::vector<ModClass> const & Active_Mods(void);
+
+/*
+ * Makes the file names and archive prefixes the active mods give in [Files], [Palettes] and
+ * [Archives] of their mod.ini the ones in force, in mod order, so that a later mod's key wins.
+ * Call it once, after Init_Mods.
+ */
+void Apply_Mod_Files(class DeploymentConfigClass & config);
 
 // The mods in force as their folders' own names, comma separated in the order they are read.
 std::string Active_Mod_List(void);

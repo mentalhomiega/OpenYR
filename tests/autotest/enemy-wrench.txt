@@ -1,0 +1,14 @@
+; [General] EnemyWrench=no (Ares) hides a click-repaired structure's repair wrench from houses not allied with its owner. The overlay enemy-wrench.ini
+; sets it. The player damages and repairs a power plant; the wrench step asks whether the player (house #0)
+; and the computer house (#1) see the wrench.
+; Expected: the frame 150 wrench lines show repairing 1, shown to the player 1 and shown to the computer house 0. Without the overlay key both show 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/enemy-wrench.txt -Seconds 40 -Country 0 -Filter "AUTOTEST   wrench|Exception"
+10 rules enemy-wrench.ini
+20 command DebugInfiniteMoney
+30 command CenterBase
+40 own GAPOWR 64 36
+50 damage GAPOWR 400
+60 repairon GAPOWR
+150 wrench GAPOWR #0
+151 wrench GAPOWR #1
+160 quit

@@ -41,7 +41,7 @@ MakesDisguise=yes
 
 The disguise shows only to players whose house is not an ally of the disguised object's owner; its owner and allies see it as it is. It lasts until the object copies another soldier, until a hit hurts it, or until the house it imitates leaves the game. The warhead does no damage, whether or not it disguises anything.
 
-A `CanDisguise=yes` type with [`PermaDisguise=yes`](/keys/permadisguise/) is disguised from the start and never loses its disguise to damage. Whenever it has no other disguise, it looks like its owner's side's default soldier: [`AlliedDisguise`](/keys/allieddisguise/), [`SovietDisguise`](/keys/sovietdisguise/) or [`ThirdDisguise`](/keys/thirddisguise/), in its owner's colors.
+A `CanDisguise=yes` type with [`PermaDisguise=yes`](/keys/permadisguise/) is disguised from the start and never loses its disguise to damage. Whenever it has no other disguise, it looks like its owner's side's default soldier: the side's own [`DefaultDisguise`](/keys/defaultdisguise/) when its section sets one, otherwise [`AlliedDisguise`](/keys/allieddisguise/), [`SovietDisguise`](/keys/sovietdisguise/) or [`ThirdDisguise`](/keys/thirddisguise/), in its owner's colors.
 
 An infantry type with [`Disguised=yes`](/keys/disguised/) is a separate, older disguise: it always looks like the rules' `Disguise` type to other houses.
 
@@ -49,7 +49,7 @@ A disguised soldier looks like a friend to a house when it wears that house's so
 
 ## Vehicles that hide as terrain
 
-A [`DisguiseWhenStill=yes`](/keys/disguisewhenstill/) vehicle looks like a tree while it stands still: it picks one of the [`DefaultMirageDisguises`](/keys/defaultmiragedisguises/) terrain types at random. It drops the disguise as soon as it moves. A hit that does damage drops it too, and a still vehicle takes a new terrain type on its next update. On seven frames in eight, a soldier of a house that is not an ally standing in a neighboring cell also drops the disguise, and the vehicle cannot take a new one for [`InfantryBlinkDisguiseTime`](/keys/infantryblinkdisguisetime/) frames. While it looks like terrain, it is drawn without its vehicle shadow. A unit that the vehicle hits does not fire back while the vehicle is disguised to that unit's house, which means the house is not allied with the vehicle's house and no detector of that house covers the vehicle's cell.
+A [`DisguiseWhenStill=yes`](/keys/disguisewhenstill/) vehicle looks like a tree while it stands still: it picks one of the [`DefaultMirageDisguises`](/keys/defaultmiragedisguises/) terrain types at random. The type also needs `CanDisguise=yes` without `PermaDisguise=yes`; otherwise it never takes a look. A vehicle in radio contact with another object, such as one being mended on a service depot, takes no new look until the contact ends. It drops the disguise as soon as it moves. A hit that does damage drops it too, and a still vehicle takes a new terrain type on its next update. On seven frames in eight, a soldier of a house that is not an ally standing in a neighboring cell also drops the disguise, and the vehicle cannot take a new one for [`InfantryBlinkDisguiseTime`](/keys/infantryblinkdisguisetime/) frames. While it looks like terrain, it is drawn without its vehicle shadow. A unit that the vehicle hits does not fire back while the vehicle is disguised to that unit's house, which means the house is not allied with the vehicle's house and no detector of that house covers the vehicle's cell.
 
 Which look a viewer sees depends on whose vehicle it is and on the frame:
 
@@ -57,7 +57,7 @@ Which look a viewer sees depends on whose vehicle it is and on the frame:
 - Any other vehicle, such as a computer house's, looks like a tank to every viewer for [`DisguiseFakeBlinkTime`](/keys/disguisefakeblinktime/) frames after it fires.
 - Otherwise, any other vehicle looks like terrain to every viewer, allies included, unless a detector of the viewer's house covers its cell. A viewer with such a detector sees the tank.
 
-A computer house's units pick a Mirage tank as an automatic target only in those blink frames, and then only on a roll set by [`DisabledDisguiseDetectionPercent`](/keys/disableddisguisedetectionpercent/) for the side. A human house's units never pick it automatically, and units of a type with [`DetectDisguise=yes`](/keys/detectdisguise/) see through the disguise. The player's own vehicle has a short translucent shimmer in bursts of its cycle, on either look. Other vehicles get no shimmer.
+A computer house's units pick a Mirage tank as an automatic target only in those blink frames, and then only on a roll set by [`DisabledDisguiseDetectionPercent`](/keys/disableddisguisedetectionpercent/) for the house's difficulty. A human house's units never pick it automatically, and units of a type with [`DetectDisguise=yes`](/keys/detectdisguise/) see through the disguise. The player's own vehicle has a short translucent shimmer in bursts of its cycle, on either look. Other vehicles get no shimmer.
 
 A vehicle that looks like terrain to its owner stays on the clickable list, so a click on it and a [type-select](/commands/typeselect/) tap still select it.
 

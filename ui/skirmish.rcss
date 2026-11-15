@@ -33,10 +33,28 @@
 	display: flex;
 }
 
+/* The columns fill the panel, so a mod's game options take what the player list leaves. */
+#columns
+{
+	height: 440dp;
+}
+
 #left
 {
+	display: flex;
+	flex-direction: column;
 	width: 484dp;
 	margin-right: 14dp;
+}
+
+#left > div
+{
+	flex: none;
+}
+
+#left > #lobby-options
+{
+	flex: 1 1 0;
 }
 
 #right
@@ -167,6 +185,102 @@
 	display: inline-block;
 	width: 50%;
 	margin-bottom: 1dp;
+}
+
+/* A mod's declared game options take the place of the switches: two to a line, scrolling when they
+   do not fit. A row a mode or a map sets is greyed and says which, so the state does not rest on colour. */
+#lobby-options
+{
+	margin-top: 8dp;
+	padding: 6dp 8dp 4dp 8dp;
+	overflow-y: auto;
+}
+
+#lobby-options label.setting
+{
+	display: inline-block;
+	position: relative;
+	box-sizing: border-box;
+	width: 50%;
+	height: 22dp;
+	line-height: 20dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* The box stands before its caption, as the screen's own switches do. */
+#lobby-options label.check
+{
+	padding-left: 22dp;
+}
+
+#lobby-options label.check > input
+{
+	position: absolute;
+	left: 0;
+	top: 2dp;
+	margin: 0;
+}
+
+#lobby-options label.setting > .caption
+{
+	display: inline;
+}
+
+#lobby-options label.choice-row > .caption
+{
+	display: inline-block;
+	width: 36%;
+}
+
+#lobby-options label.choice-row > select
+{
+	display: inline-block;
+	width: 30%;
+	margin: 0;
+	vertical-align: middle;
+}
+
+#lobby-options .setting.disabled > .caption
+{
+	color: #8c8c8c;
+}
+
+#lobby-options .note
+{
+	display: inline;
+	margin-left: 6dp;
+	font-size: 11dp;
+	color: #b4b4b4;
+}
+
+#lobby-mode-frame
+{
+	width: 254dp;
+	margin-top: 8dp;
+	padding: 6dp 8dp 6dp 8dp;
+}
+
+#lobby-mode-frame > .caption
+{
+	display: block;
+	height: 16dp;
+}
+
+#lobby-mode
+{
+	display: block;
+	width: 236dp;
+	margin-top: 4dp;
+}
+
+#lobby-mode-tip
+{
+	display: block;
+	height: 32dp;
+	margin-top: 4dp;
+	font-size: 11dp;
+	line-height: 15dp;
 }
 
 /* The map */

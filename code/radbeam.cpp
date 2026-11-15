@@ -48,9 +48,9 @@ double const EruptionStep = 20.0;
 /// <summary>
 /// Starts a beam from start to end in the color given (TechnoClass::CreateRadBeam, 0x6FD620).
 /// </summary>
-void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const & color)
+void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const & color, int duration, double amplitude)
 {
-	Add_Beam(KIND_WAVE, start, end, color, WaveDuration, WaveAmplitude);
+	Add_Beam(KIND_WAVE, start, end, color, duration >= 0 ? duration : WaveDuration, amplitude >= 0.0 ? amplitude : WaveAmplitude);
 }
 
 
@@ -73,9 +73,9 @@ void RadBeamClass::Add_Beam(KindType kind, Coord const & start, Coord const & en
 /// Starts an arching beam from origin to each of the eight cells around it, spread cells out
 /// (TechnoClass::FireRadEruption, 0x6FD800). Each beam ends at a random point within half a cell of the
 /// center of its cell, lasts 5 to 20 frames and arches 100 to 500 leptons high. The cells are taken
-/// column by column, and a cell off the map still gets a beam.
+/// column by column, and a cell off the map still gets a beam. A duration or amplitude of zero or more replaces the random one.
 /// </summary>
-void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass const & color)
+void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass const & color, int duration, double amplitude)
 {
 	short const column = (short)(origin.X / CELL_LEPTON_W);
 	short const row = (short)(origin.Y / CELL_LEPTON_H);
@@ -92,11 +92,11 @@ void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass cons
 			end.Y += Sim_Random_Pick(-128, 128);
 
 			// Drawn into locals so the random values are taken in this order; the order of call arguments is unspecified.
-			int const duration = Sim_Random_Pick(5, 20);
-			double const amplitude = Sim_Random_Pick(100, 500);
+			int const random_duration = Sim_Random_Pick(5, 20);
+			double const random_amplitude = Sim_Random_Pick(100, 500);
 			// gamemd also draws a random value from 0 to 20 here and stores it, and no later step uses it.
 			Sim_Random_Pick(0, 20);
-			Add_Beam(KIND_ERUPTION, origin, end, color, duration, amplitude);
+			Add_Beam(KIND_ERUPTION, origin, end, color, duration >= 0 ? duration : random_duration, amplitude >= 0.0 ? amplitude : random_amplitude);
 		}
 	}
 }

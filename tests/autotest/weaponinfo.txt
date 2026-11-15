@@ -1,0 +1,9 @@
+; weaponinfo writes the weapon values in effect after the rules are read, for a type's four slots or for one weapon.
+; Expected with stock rules: "weaponinfo E1 primary M60 damage 15 rof 20 range 1024" with warhead SA and
+; "verses none=1.000,heavy=0.250"; "weaponinfo E1 eliteprimary M60E"; "weaponinfo E1 secondary Para" with warhead SSA; a weapon-name line
+; "weaponinfo - weapon 120mm damage 90" with bullet Cannon and warhead AP; and "weaponinfo NoSuchThing unknown".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/weaponinfo.txt -Seconds 40 -Filter "weaponinfo|Exception"
+10 weaponinfo E1 none heavy
+11 weaponinfo 120mm heavy
+12 weaponinfo NoSuchThing
+20 quit

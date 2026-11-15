@@ -17,6 +17,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "lightcon.h"
+#include "lobbycolor.h"
 #include "playercolor.h"
 #include "scheme.h"
 #include "session.h"
@@ -31,8 +32,9 @@ namespace
 struct ViewSchemes
 {
 	bool Built = false;
-	int Stock[PLAYER_COLOR_SEATS] = {};
-	int Safe[PLAYER_COLOR_SEATS] = {};
+	int Count = 0;
+	int Stock[PLAYER_COLOR_LISTED_MAX] = {};
+	int Safe[PLAYER_COLOR_LISTED_MAX] = {};
 	int Own = 0;
 	int Ally = 0;
 	int Enemy = 0;
@@ -45,9 +47,11 @@ ViewSchemes Schemes;
 
 void Build_Schemes(void)
 {
-	for (int seat = 0; seat < PLAYER_COLOR_SEATS; seat++) {
+	// The color-blind safe colors cover the first eight lobby colors; a color after them keeps its own scheme.
+	Schemes.Count = Lobby_Color_Count();
+	for (int seat = 0; seat < Schemes.Count; seat++) {
 		Schemes.Stock[seat] = Session.Color_Index_To_Scheme(seat);
-		Schemes.Safe[seat] = Custom_Color_Scheme_Index(Player_Color_From_RGB(UIControls.ColorBlindSafeColors[seat]));
+		Schemes.Safe[seat] = seat < PLAYER_COLOR_SEATS ? Custom_Color_Scheme_Index(Player_Color_From_RGB(UIControls.ColorBlindSafeColors[seat])) : Schemes.Stock[seat];
 	}
 	Schemes.Own = Custom_Color_Scheme_Index(Player_Color_From_RGB(UIControls.PlayerColorOwn));
 	Schemes.Ally = Custom_Color_Scheme_Index(Player_Color_From_RGB(UIControls.PlayerColorAlly));
@@ -61,7 +65,7 @@ void Build_Schemes(void)
 // A stock lobby scheme becomes its color-blind safe scheme. Any other scheme is returned as it is.
 int Safe_Scheme(int scheme)
 {
-	for (int seat = 0; seat < PLAYER_COLOR_SEATS; seat++) {
+	for (int seat = 0; seat < Schemes.Count; seat++) {
 		if (scheme == Schemes.Stock[seat]) {
 			return(Schemes.Safe[seat]);
 		}

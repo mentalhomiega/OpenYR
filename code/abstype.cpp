@@ -112,6 +112,30 @@ const char * AbstractTypeClass::Full_Name(void) const
 }
 
 
+const char * AbstractTypeClass::Label_Text(std::string const & label, std::string & cache)
+{
+	if (label.empty()) {
+		return(NULL);
+	}
+	static char const NOSTR_PREFIX[] = "NOSTR:";
+	size_t const prefix = sizeof(NOSTR_PREFIX) - 1;
+	if (_strnicmp(label.c_str(), NOSTR_PREFIX, prefix) == 0) {
+		return(label.size() > prefix ? label.c_str() + prefix : NULL);
+	}
+	if (cache.empty()) {
+		wchar_t const * text = StringTable.Find(label.c_str());
+		if (text != NULL && *text != L'\0') {
+			int const size = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
+			if (size > 1) {
+				cache.resize(size - 1);
+				WideCharToMultiByte(CP_UTF8, 0, text, -1, cache.data(), size, NULL, NULL);
+			}
+		}
+	}
+	return(cache.empty() ? NULL : cache.c_str());
+}
+
+
 bool AbstractTypeClass::Read_INI(CCINIClass const & ini)
 {
 	if (ini.Section_Present(IniName)) {

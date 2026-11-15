@@ -12,7 +12,9 @@ The offset, in leptons, added to the firing point that a carried aircraft or mis
 
 [Spawned aircraft and missiles](/systems/spawned-aircraft/#launching) gives the launch slot.
 
-```ini title="rulesmd.ini"
-[MYMISSILESHIP] ; example VesselType
-SecondSpawnOffset=0,40,60
+The key is read from the section of the object's Image ID in `artmd.ini`; a value in `rulesmd.ini` is ignored.
+
+```ini title="artmd.ini"
+[MYMISSILESHIP] ; the Image ID of a VesselType
+SecondSpawnOffset=-70,0,0
 ```

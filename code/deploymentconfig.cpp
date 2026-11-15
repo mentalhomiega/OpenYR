@@ -30,6 +30,13 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 	DataDirectory = ini.Get_String("Paths", "DataDirectory", DataDirectory.c_str());
 	UserDirectory = ini.Get_String("Paths", "UserDirectory", UserDirectory.c_str());
 	CarryScenarioFile = ini.Get_Bool("Saves", "CarryScenarioFile", CarryScenarioFile);
+	Read_Mod_INI(ini);
+	SettingsFile = ini.Get_String("Files", "Settings", SettingsFile.c_str());
+}
+
+
+void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)
+{
 	RulesFile = ini.Get_String("Files", "Rules", RulesFile.c_str());
 	RulesExpansionFile = ini.Get_String("Files", "RulesExpansion", RulesExpansionFile.c_str());
 	ArtFile = ini.Get_String("Files", "Art", ArtFile.c_str());
@@ -53,10 +60,15 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 	MultiplayerRulesExpansionFile = ini.Get_String("Files", "MultiplayerRulesExpansion", MultiplayerRulesExpansionFile.c_str());
 	TutorialFile = ini.Get_String("Files", "Tutorial", TutorialFile.c_str());
 	UIFile = ini.Get_String("Files", "UI", UIFile.c_str());
-	SettingsFile = ini.Get_String("Files", "Settings", SettingsFile.c_str());
+	MissionFile = ini.Get_String("Files", "Mission", MissionFile.c_str());
+	MapSelectFile = ini.Get_String("Files", "MapSelect", MapSelectFile.c_str());
+	TheaterSuffix = ini.Get_String("Files", "TheaterSuffix", TheaterSuffix.c_str());
 	KeyboardFile = ini.Get_String("Files", "Keyboard", KeyboardFile.c_str());
 	SchemePaletteFile = ini.Get_String("Palettes", "Scheme", SchemePaletteFile.c_str());
 	GamePaletteFile = ini.Get_String("Palettes", "Game", GamePaletteFile.c_str());
+	ExpandPrefixes = ini.Get_String("Archives", "ExpandPrefix", ExpandPrefixes.c_str());
+	CachePrefixes = ini.Get_String("Archives", "CachePrefix", CachePrefixes.c_str());
+	FollowMenuButtons = ini.Get_Bool("Menu", "FollowMenuButtons", FollowMenuButtons);
 }
 
 

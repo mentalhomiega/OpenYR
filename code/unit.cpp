@@ -128,6 +128,7 @@
 #include "combat.h"
 #include "conquer.h"
 #include "dbgprint.h"
+#include "objectkeyrules.h"
 #include "draw.h"
 #include "drive.h"
 #include "emissive.h"
@@ -171,6 +172,7 @@
 #include "vox.h"
 #include "_voxel.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "bench.hh"
@@ -271,7 +273,6 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	MirageBlockedUntil(0),
 	MirageCreationFrame(0),
 	MirageBlinkUntil(0),
-	Reload(0),
 	FiringSyncDelay(-1),
 	VisceroidFacing(FACING_NONE),
 	DeathCounter(-1),
@@ -293,7 +294,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 
 	if (Class != NULL) {
 		PrimaryFacing.Set_ROT(Class->ROT);
-		SecondaryFacing.Set_ROT(Class->ROT);
+		SecondaryFacing.Set_ROT(Class->Turret_ROT());
 		Ammo = Class->Initial_Ammo();
 		IsCloakable = Class->IsCloakable;
 		Strength = Class->MaxStrength;
@@ -323,10 +324,20 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->IsNavalSpied && Class != NULL && Class->IsTrainable && Class->IsNaval) {
+		Veterancy.Set_Veteran(true);
+	}
+
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
+	}
 
 	if (Class != NULL && Class->IsGunner) {
 		Set_Turret_Weapon(0);
 	}
+
+	Create_Initial_Payload();
 }
 
 
@@ -617,7 +628,8 @@ void UnitClass::AI(void)
 		IsHarvesting = false;
 	}
 
-	if (Class->IsDisguiseWhenStill) {
+	// UnitClass::Update (0x73649C) runs UpdateDisguise only for a CanDisguise type without PermaDisguise.
+	if (Class->IsCanDisguise && !Class->IsPermaDisguise) {
 		Mirage_AI();
 	}
 
@@ -859,32 +871,7 @@ void UnitClass::Reload_AI(void)
 		Reload = Reload + 1;
 	}
 
-	// A shot of ammunition returns once the timer runs out, and the timer starts again (TechnoClass::Reload, 0x6FB010).
-	if (Class->MaxAmmo == -1 || Class->MaxAmmo <= Ammo || Reload != 0) {
-		return;
-	}
-	Ammo++;
-	Mark(MARK_CHANGE);
-	Start_Reloading();
-}
-
-
-/// <summary>
-/// Starts the countdown to the next shot of ammunition. A unit with no ammunition left uses EmptyReload when
-/// the type sets it. Otherwise the delay is Reload plus ReloadIncrement for each PipWrap shots held, squared
-/// (TechnoClass::StartReloading, 0x6FB080). A unit already full is left alone.
-/// </summary>
-void UnitClass::Start_Reloading(void)
-{
-	if (Ammo >= Class->MaxAmmo) {
-		return;
-	}
-	if (Ammo == 0 && Class->EmptyReloadDelay != -1) {
-		Reload = Class->EmptyReloadDelay;
-		return;
-	}
-	int const steps = Class->PipWrap == 0 ? 1 : Ammo / Class->PipWrap;
-	Reload = Class->ReloadDelay + Class->ReloadIncrement * steps * steps;
+	Reload_Ammunition();
 }
 
 
@@ -1480,7 +1467,7 @@ bool UnitClass::Unlimbo(Coord const & coord, Dir256 dir)
 		/*
 		**	If it starts off the edge of the map, then it already starts cloaked.
 		*/
-		if (IsCloakable && !IsLocked) Cloak = CLOAKED;
+		if (IsCloakable && !IsLocked && Class->IsCloakAllowed) Cloak = CLOAKED;
 
 		/*
 		**	Units default to no special animation.
@@ -1499,6 +1486,140 @@ bool UnitClass::Unlimbo(Coord const & coord, Dir256 dir)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Puts a passenger that has left the hold on the first free cell beside this vehicle that it can enter.
+/// </summary>
+/// <returns>bool; Was the passenger placed?</returns>
+bool UnitClass::Place_Passenger_Beside(FootClass * passenger)
+{
+	bool placed = false;
+	for (FacingType face = FACING_N; face < FACING_COUNT && !placed; face++) {
+		Cell const cell = Adjacent_Cell(PositionCell, face);
+		if (!Map.In_Radar(cell) || Map[cell].IsUnderBridge) {
+			continue;
+		}
+		if (passenger->Can_Enter_Cell(&Map[cell], face, Get_Cell_Height()) == MOVE_OK) {
+			Coord coord = cell.As_Coord();
+			if (passenger->RTTI == RTTI_INFANTRY) {
+				coord = Map.Closest_Free_Spot(coord);
+			}
+			ScenarioInit++;
+			placed = passenger->Unlimbo(coord, DirType(face).As_Dir256());
+			ScenarioInit--;
+		}
+	}
+	return(placed);
+}
+
+
+/// <summary>
+/// Puts every passenger on a free cell beside this vehicle. A passenger with no free cell to go to stays aboard.
+/// </summary>
+void UnitClass::Eject_Passengers(void)
+{
+	for (int remaining = Cargo.How_Many(); remaining > 0; remaining--) {
+		FootClass * passenger = Cargo.Detach_Object();
+		if (passenger == NULL) {
+			break;
+		}
+
+		bool const placed = Place_Passenger_Beside(passenger);
+
+		if (placed) {
+			if (Class->IsGunner && Cargo.How_Many() == 0) {
+				Remove_Gunner(passenger);
+			}
+			passenger->Assign_Mission(MISSION_GUARD);
+		} else {
+			Cargo.Attach(passenger);
+			passenger->Hidden();
+		}
+	}
+}
+
+
+/// <summary>
+/// Takes the driver of this vehicle for a KillDriver warhead: the passengers climb out, and the vehicle goes to the
+/// warhead's KillDriver.Owner house, dropping its rank with KillDriver.RemoveVeterancy. An Organic or Natural type, a
+/// type with the PROTECTED_DRIVER ability, and a vehicle healthier than the lower of KillDriver.KillBelowPercent and
+/// the type's ProtectedDriver.MinHealth keep their driver, as does one that wins the KillDriver.Chance roll.
+/// </summary>
+/// <param name="warhead">The warhead that hit the vehicle.</param>
+/// <returns>bool; Was the driver taken? When false, the vehicle is left as it was and takes the hit's damage.</returns>
+bool UnitClass::Kill_Driver(WarheadTypeClass const * warhead)
+{
+	if (warhead == NULL || !Can_Lose_Driver(warhead->KillDriverBelowPercent)) {
+		return(false);
+	}
+
+	HouseClass * owner = NULL;
+	switch (warhead->KillDriverOwner) {
+		case KILLDRIVER_OWNER_NEUTRAL:
+			owner = House_From_Name("Neutral");
+			break;
+
+		case KILLDRIVER_OWNER_CIVILIAN:
+			for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+				if (Houses[index]->Class->Side == SIDE_CIVILIAN) {
+					owner = Houses[index];
+				}
+			}
+			break;
+
+		default:
+			owner = House_From_Name("Special");
+			break;
+	}
+	if (owner == NULL || owner == House) {
+		return(false);
+	}
+
+	if (warhead->KillDriverChance < 1.0 && Random_Pick(0, 99) >= (int)(warhead->KillDriverChance * 100.0 + 0.5)) {
+		return(false);
+	}
+
+	return(Take_Driver(owner, warhead->IsKillDriverRemoveVeterancy));
+}
+
+
+/// <summary>
+/// Does this vehicle give up its driver when something kills it? An Organic or Natural type, a type with the
+/// PROTECTED_DRIVER ability, and a vehicle healthier than the lower of the threshold given and the type's
+/// ProtectedDriver.MinHealth keep their driver, as does one under the Iron Curtain or a force shield.
+/// </summary>
+/// <param name="below_percent">The health ratio at or below which the driver may be taken, 1.0 for any health.</param>
+/// <returns>bool; May the driver be taken?</returns>
+bool UnitClass::Can_Lose_Driver(double below_percent) const
+{
+	if (Class->IsOrganic || Class->IsNatural || Has_Ability(ABILITY_PROTECTED_DRIVER)) {
+		return(false);
+	}
+	if (Is_Iron_Curtained() || IsForceShielded) {
+		return(false);
+	}
+	return(WarheadRules::Kills_Driver_At(HealthRatio, below_percent, Class->ProtectedDriverMinHealth));
+}
+
+
+/// <summary>
+/// Takes the driver: the passengers climb out and the vehicle goes to another house, dropping its rank when asked.
+/// </summary>
+/// <param name="owner">The house that now owns the empty vehicle.</param>
+/// <param name="remove_veterancy">Does the vehicle go back to rookie?</param>
+/// <returns>bool; Did the vehicle change hands? When false, the passengers are out all the same.</returns>
+bool UnitClass::Take_Driver(HouseClass * owner, bool remove_veterancy)
+{
+	Eject_Passengers();
+	if (!Set_Owning_House(owner, false)) {
+		return(false);
+	}
+	if (remove_veterancy) {
+		Veterancy.Set_Rookie(true);
+	}
+	return(true);
 }
 
 
@@ -1523,11 +1644,14 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 		});
 	}
 
-	if (HeightAGL > 208) {
+	// The passengers of a vehicle that carries an Abductor weapon get out whatever the cause of its destruction (Ares).
+	bool const abductor = Class->Has_Abductor_Weapon();
+
+	if (HeightAGL > 208 && !abductor) {
 		Kill_Cargo(source);
 	}
 
-	if (Class->IsCrashable) {
+	if (Class->IsCrashable && !abductor) {
 		Kill_Cargo(NULL);
 		return;
 	}
@@ -1551,13 +1675,29 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 		**	The cell test runs before the passenger takes the vehicle's OnBridge state, as gamemd does.
 		**	Only a clear cell, or one blocked for a moment, lets the passenger out.
 		*/
-		MoveType const reach = (forced || IsToExplode) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
+		int const chance = Class->SurvivorPassengerChance[ObjectKeyRules::Rank_Index(Veterancy.Is_Veteran(), Veterancy.Is_Elite())];
+		bool const survives = ObjectKeyRules::Passenger_Survives(chance, chance >= 0 ? Scen->RandomNumber(0, 99) : 0);
+		MoveType const reach = (!abductor && (forced || IsToExplode || !survives)) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
 		object->IsOnBridge = IsOnBridge;
 
 		bool placed = false;
 		if (reach == MOVE_OK || reach == MOVE_MOVING_BLOCK) {
 			Coord const where = IsOnBridge ? Center_Coord() : Map[Get_Coord()].Center_Coord();
 			placed = object->Unlimbo(where, PrimaryFacing.Current().As_Dir256());
+		}
+		if (!placed && abductor) {
+			placed = Place_Passenger_Beside(object);
+		}
+
+		// A type with a survival chance puts a passenger that survives on a cell near the wreck when the wreck's own is taken.
+		if (!placed && chance >= 0 && survives && !forced && !IsToExplode) {
+			Cell const nearby = Map.Nearby_Location(PositionCell, object->RTTI == RTTI_INFANTRY ? SPEED_FOOT : SPEED_TRACK);
+			if (nearby != CELL_NONE) {
+				MoveType const there = object->Can_Enter_Cell(&Map[nearby]);
+				if (there == MOVE_OK || there == MOVE_MOVING_BLOCK) {
+					placed = object->Unlimbo(Map[nearby].Center_Coord(), PrimaryFacing.Current().As_Dir256());
+				}
+			}
 		}
 
 		if (placed) {
@@ -1596,45 +1736,55 @@ void UnitClass::Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select)
 	/*
 	**	Possibly have the crew member run away.
 	*/
-	bool make_crew = false;
 	bool make_infiltrator = false;
-	InfantryClass * i = NULL;
+	int pilots = 0;
 
 	if (EnteredByInfType == INFANTRY_NONE) {
-		if (!no_crew && Class->IsCrew && Class->Max_Passengers() == 0) {
-			if (Rule->CrewEscape > Random_Double(0.0, 1.0)) {
-				make_crew = true;
+		if (!no_crew && Class->IsCrew) {
+			int const count = ObjectKeyRules::Pilot_Count(Class->SurvivorPilots, Class->Max_Passengers() == 0);
+			double const escape = ObjectKeyRules::Pilot_Escape_Fraction(Class->SurvivorPilotChance[ObjectKeyRules::Rank_Index(Veterancy.Is_Veteran(), Veterancy.Is_Elite())], Rule->CrewEscape);
+			for (int pilot = 0; pilot < count; pilot++) {
+				if (escape > Random_Double(0.0, 1.0)) {
+					pilots++;
+				}
 			}
 		}
 	} else {
 		make_infiltrator = true;
 	}
 
-	if (make_infiltrator) {
-		i = new InfantryClass(InfantryTypes[EnteredByInfType], House);
-	}
-
-	if (make_crew) {
-		InfantryTypeClass const * crew = Crew_Type();
-		if (crew) {
-			i = new InfantryClass(crew, House);
-		}
-	}
-
-	if (i != NULL) {
-		i->IsOnBridge = IsOnBridge;
-		if (i->Unlimbo(PositionCoord, DIR_N)) {
-			i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
-			i->Scatter(COORD_NONE, true);
-			if (!House->Is_Human_Player()) {
-				i->Assign_Mission(MISSION_HUNT);
-			} else {
-				i->Assign_Mission(MISSION_GUARD);
-			}
-			if (select) i->Select();
-			if (Tag != NULL && Tag->Is_To_Inherit()) i->Attach_Tag(Tag);
+	for (int index = 0; index < (make_infiltrator ? 1 : pilots); index++) {
+		InfantryClass * i = NULL;
+		if (make_infiltrator) {
+			i = new InfantryClass(InfantryTypes[EnteredByInfType], House);
 		} else {
-			delete i;
+			InfantryTypeClass const * crew = Crew_Type();
+			if (crew) {
+				i = new InfantryClass(crew, House);
+			}
+		}
+
+		if (i != NULL) {
+			i->IsOnBridge = IsOnBridge;
+
+			// A second and later pilot stands on the nearest free spot, as the first takes the wreck's own.
+			Coord const where = index == 0 ? PositionCoord : Map[PositionCoord].Closest_Free_Spot(PositionCoord);
+			if (where != COORD_NONE && i->Unlimbo(where, DIR_N)) {
+				i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
+				if (make_infiltrator && i->Class->VehicleThiefLeaveSound != VOC_NONE) {
+					Sound_Effect(i->Class->VehicleThiefLeaveSound, i->PositionCoord);
+				}
+				i->Scatter(COORD_NONE, true);
+				if (!House->Is_Human_Player()) {
+					i->Assign_Mission(MISSION_HUNT);
+				} else {
+					i->Assign_Mission(MISSION_GUARD);
+				}
+				if (select) i->Select();
+				if (Tag != NULL && Tag->Is_To_Inherit()) i->Attach_Tag(Tag);
+			} else {
+				delete i;
+			}
 		}
 	}
 
@@ -1802,7 +1952,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 	} else {
 
 		if (res != RESULT_NONE) {
-			if (Class->IsToHarvest && House == PlayerPtr) {
+			if (Class->IsToHarvest && House == PlayerPtr && (warhead == NULL || warhead->IsMalicious)) {
 				if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, Destination_Coord().As_Cell())) {
 					Speak(VOX_HARVESTER_UNDER_ATTACK);
 				}
@@ -2166,7 +2316,7 @@ bool UnitClass::Try_To_Deploy(void)
 			Locomotion->Mark_All_Occupation_Bits(MARK_UP);
 			Cell cell;
 			Cell ncell = PositionCell;
-			if (Class->DeploysInto->Is_Mobile_Deployer()) {
+			if (Class->DeploysInto->Vehicle_On_Corner()) {
 				cell = ncell;
 			} else {
 				cell = Adjacent_Cell(ncell, FACING_NW);
@@ -2441,6 +2591,15 @@ void UnitClass::Per_Cell_Process(PCPType why)
 
 	BENCH_SCOPE(BENCH_PCP);
 	if (why == PCP_END) {
+
+		// A vehicle with Convert.Water or Convert.Land changes type as it drives onto a cell of the other kind (Ares).
+		if (Class->ConvertWater != NULL || Class->ConvertLand != NULL) {
+			LandType const land = Get_Cell_Ptr()->Land_Type();
+			UnitTypeClass const * const converted = (land == LAND_WATER || land == LAND_BEACH) ? Class->ConvertWater : Class->ConvertLand;
+			if (converted != NULL) {
+				Convert_To(converted);
+			}
+		}
 
 		if (Class->IsSmallVisceroid) {
 			if (NavCom != NULL && NavCom->RTTI == RTTI_UNIT) {
@@ -3361,10 +3520,14 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 /// Updates a DisguiseWhenStill vehicle's look (UnitClass::UpdateDisguise, 0x7468C0). Moving
 /// drops the disguise. On seven frames in eight, a soldier of a house that is not an ally
 /// standing next to it also drops it and blocks a new one for InfantryBlinkDisguiseTime frames.
-/// A still vehicle without a disguise takes a random DefaultMirageDisguises terrain type.
+/// A still DisguiseWhenStill vehicle without a disguise and out of radio contact takes a random
+/// DefaultMirageDisguises terrain type.
 /// </summary>
 void UnitClass::Mirage_AI(void)
 {
+	// Whether it may take a look is settled before this frame's checks (0x7468C6..0x746918).
+	bool const may_disguise = MirageType == NULL && Class->IsDisguiseWhenStill && !Locomotion->Is_Moving() && Contact_With_Whom() == NULL;
+
 	if (Locomotion->Is_Moving()) {
 		MirageType = NULL;
 		return;
@@ -3380,7 +3543,7 @@ void UnitClass::Mirage_AI(void)
 			}
 		}
 	}
-	if (MirageType == NULL && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
+	if (may_disguise && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
 		MirageType = Rule->DefaultMirageDisguises[Random_Pick(0, Rule->DefaultMirageDisguises.Count() - 1)];
 		MirageCreationFrame = Frame;
 		Mark(MARK_CHANGE);
@@ -3598,6 +3761,9 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		UnitTypeClass * oldclass = Class;
 		if (IsSimpleDeployed && Class->UnloadingClass != NULL && Class->UnloadingClass->RTTI == RTTI_UNITTYPE) {
 			((UnitClass *)this)->Class = (UnitTypeClass *)Class->UnloadingClass;
+		}
+		if (Class->WaterImage != NULL && Class->WaterImage->RTTI == RTTI_UNITTYPE && !IsOnBridge && Map[Get_Coord()].Land_Type() == LAND_WATER) {
+			((UnitClass *)this)->Class = (UnitTypeClass *)Class->WaterImage;
 		}
 		if (IsDumping && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
 
@@ -4762,7 +4928,7 @@ std::optional<MoveType> UnitClass::Building_Occupant_Verdict(ObjectClass * obj, 
 	/*
 	 * Various special-purpose buildings do not block movement.
 	 */
-	if (bptr->Class->IsInvisibleInGame) {
+	if (bptr->Class->IsInvisibleInGame || bptr->Class->IsPassable) {
 		skip = true;
 		return(std::nullopt);
 	}
@@ -4982,7 +5148,10 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 			**	perform any self action.
 			*/
 			if (Class->Max_Passengers() > 0) {
-				if (Cargo.How_Many() == 0) {
+				if (Class->IsNoManualUnload) {
+					// A NoManualUnload transport shows no deploy cursor and cannot be told to unload (Ares).
+					action = ACTION_SELECT;
+				} else if (Cargo.How_Many() == 0) {
 					action = ACTION_NO_DEPLOY;
 				} else {
 					bool can_deploy = false;
@@ -5743,9 +5912,10 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 		if (bullet != NULL) {
 
 			/*
-			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340).
+			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340),
+			**	except a shot that used no rounds (Ares weapon Ammo=0).
 			*/
-			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload) {
+			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload && Rounds_Per_Shot(weap) != 0) {
 				Start_Reloading();
 			}
 
@@ -5864,7 +6034,7 @@ void UnitClass::Approach_Target(void)
 	/*
 	**	An OmniCrusher drives at its target to flatten it, for a human house too (UnitClass::ApproachTarget, 0x7414E0).
 	*/
-	if (Class->IsOmniCrusher && TarCom != NULL && NavCom == NULL && Is_Omni_Crushable(Dynamic_Cast<TechnoClass *>(TarCom))) {
+	if (Class->IsOmniCrusher && Class->IsOmniCrusherAggressive && TarCom != NULL && NavCom == NULL && Is_Omni_Crushable(Dynamic_Cast<TechnoClass *>(TarCom))) {
 		Assign_Destination(TarCom);
 		return;
 	}
@@ -5935,6 +6105,7 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 			ObjectClass * object = cellptr->Cell_Occupier(isbridge);
 			int crushed = false;
 			bool crushed_vehicle = false;
+			std::vector<std::pair<int, WarheadTypeClass const *>> crush_damages;
 			while (object != NULL) {
 				if (Can_Crush(object) && (!House->Is_Ally(object) || Class->IsTrain) && !object->IsFalling && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
 
@@ -5942,10 +6113,11 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 					**	If we're running over infantry, let's see if the infantry we're
 					**	squashing is a thief trying to capture us.  If so, let him succeed.
 					*/
-					if (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsVehicleThief && ((InfantryClass *)object)->NavCom == this && !Class->IsTrain) {
+					if (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsVehicleThief && ((InfantryClass *)object)->NavCom == this && !Class->IsTrain && !((InfantryClass *)object)->Is_Theft_Refused(this)) {
 						ObjectClass * next = object->Next;
 						IsOwnedByPlayer = ((InfantryClass *)object)->IsOwnedByPlayer;
 						Detach_All(false);
+						((InfantryClass *)object)->Break_Mind_Control_For_Theft(this);
 						Captured(((InfantryClass *)object)->House);
 						object->Delete_Me();
 						object = next;
@@ -5955,6 +6127,14 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 						crushed = true;
 						if (object->RTTI == RTTI_UNIT) {
 							crushed_vehicle = true;
+						}
+
+						if (object->Is_Techno()) {
+							TechnoClass const * victim = (TechnoClass const *)object;
+							int const damage = victim->TClass->CrushDamage[victim->Veterancy.Rank()];
+							if (damage != 0) {
+								crush_damages.emplace_back(damage, victim->TClass->CrushDamageWarhead);
+							}
 						}
 
 						/*
@@ -5979,6 +6159,15 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 				if (crushed_vehicle && RockingForwardsPerFrame == 0.0f) {
 					RockingForwardsPerFrame = -0.05f;
 				}
+			}
+
+			// Each crushed object with a CrushDamage hurts the crusher after the crushed objects are gone (Ares).
+			for (auto [damage, warhead] : crush_damages) {
+				if (!IsActive || Strength <= 0) {
+					break;
+				}
+				DebugString("Crush damage: %s takes %d\n", Class->Name(), damage);
+				Take_Damage(damage, 0, warhead != NULL ? warhead : Rule->C4Warhead, NULL, false);
 			}
 		}
 	}
@@ -7070,7 +7259,6 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(FiringSyncDelay);
-	stream.Serialize(Reload);
 	stream.Serialize(Class);
 	stream.Serialize(FollowingMe);
 	stream.Serialize(Flagged);
@@ -7114,7 +7302,6 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc((int)Reload);
 	crc(Class->Fetch_RTTI());
 	crc(Class->Fetch_ID());
 	if (FollowingMe != NULL) {
@@ -7159,7 +7346,8 @@ void UnitClass::Record_The_Kill(TechnoClass * source)
 {
 	if (Tag != NULL) {
 		if (EnteredByInfType == INFANTRY_NONE || !Tag->Is_To_Inherit()) {
-			if (source != NULL) {
+			Spring_Destroyed_By_House(source, NULL);
+			if (source != NULL && Tag != NULL) {
 				Tag->Spring(TEVENT_DESTROYED, this);
 			}
 			if (Tag != NULL) {
@@ -7776,6 +7964,18 @@ int UnitClass::Sort_Y(void) const
 
 
 /// <summary>
+/// Turns this vehicle into another vehicle type where it stands, as FootClass::Convert_Class describes.
+/// </summary>
+/// <returns>bool; Did the vehicle change type?</returns>
+bool UnitClass::Convert_To(UnitTypeClass const * type)
+{
+	return(Convert_Class(type, [](FootClass & self, TechnoTypeClass const * to) {
+		static_cast<UnitClass &>(self).Class = const_cast<UnitTypeClass *>(static_cast<UnitTypeClass const *>(to));
+	}));
+}
+
+
+/// <summary>
 /// Deploys or packs up a simple deployer where it stands (the unload mission of an
 /// IsSimpleDeployer unit): a DeployToLand unit in the air lands first, the DeployingAnim plays
 /// in the unit's place, backward when it packs up, and the unit then returns to guard.
@@ -7823,6 +8023,10 @@ int UnitClass::Simple_Deploy_AI(void)
 			IsSimpleDeployed = !IsSimpleDeployed;
 			DebugString("Deploy: %s %s\n", Class->Name(), IsSimpleDeployed ? "deploys" : "packs up");
 			Mark(MARK_CHANGE);
+			// A vehicle with Convert.Deploy becomes that type as it finishes deploying, and stands undeployed as the new type.
+			if (IsSimpleDeployed && Class->ConvertDeploy != NULL && Convert_To(Class->ConvertDeploy)) {
+				IsSimpleDeployed = false;
+			}
 			Assign_Mission(MISSION_GUARD);
 			// As UnitClass::Undeploy (0x739CD0): a DeployToLand unit that packs up moves to a nearby cell, which takes it off the ground.
 			if (!IsSimpleDeployed && Class->IsDeployToLand) {

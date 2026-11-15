@@ -82,6 +82,8 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsHigh(false),
 	IsSubjectToCliffs(false),
 	IsSubjectToWalls(false),
+	IsSubjectToTrenches(true),
+	IsSubjectToBuildings(false),
 	IsVeryHigh(false),
 	IsLevel(false),
 	IsShadow(true),
@@ -99,6 +101,10 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsBouncy(false),
 	IsAnimPalette(false),
 	IsSplits(false),
+	AirburstSpread(-1),
+	AroundTarget(-1),
+	BallisticScatterMin(-1),
+	BallisticScatterMax(-1),
 	IsAntiVehicle(false),
 	Cluster(1),
 	AirburstWeapon(NULL),
@@ -184,6 +190,8 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsHigh = ini.Get_Bool(Name(), "High", IsHigh);
 		IsSubjectToCliffs = ini.Get_Bool(Name(), "SubjectToCliffs", IsSubjectToCliffs);
 		IsSubjectToWalls = ini.Get_Bool(Name(), "SubjectToWalls", IsSubjectToWalls);
+		IsSubjectToTrenches = ini.Get_Bool(Name(), "SubjectToTrenches", IsSubjectToTrenches);
+		IsSubjectToBuildings = ini.Get_Bool(Name(), "SubjectToBuildings", IsSubjectToBuildings);
 		IsVeryHigh = ini.Get_Bool(Name(), "VeryHigh", IsVeryHigh);
 		IsLevel = ini.Get_Bool(Name(), "Level", IsLevel);
 		IsShadow = ini.Get_Bool(Name(), "Shadow", IsShadow);
@@ -201,6 +209,17 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		Cluster = ini.Get_Int(Name(), "Cluster", Cluster);
 		IsAntiVehicle = ini.Get_Bool(Name(), "AV", IsAntiVehicle);
 		IsSplits = ini.Get_Bool(Name(), "Splits", IsSplits);
+		{
+			double const spread = ini.Get_Float(Name(), "AirburstSpread", AirburstSpread >= 0 ? (double)AirburstSpread / CELL_LEPTON_W : -1.0);
+			AirburstSpread = spread >= 0.0 ? (int)(spread * CELL_LEPTON_W) : -1;
+			if (ini.Is_Present(Name(), "AroundTarget")) {
+				AroundTarget = ini.Get_Bool(Name(), "AroundTarget", false) ? 1 : 0;
+			}
+			double const scatter_min = ini.Get_Float(Name(), "BallisticScatter.Min", BallisticScatterMin >= 0 ? (double)BallisticScatterMin / CELL_LEPTON_W : -1.0);
+			double const scatter_max = ini.Get_Float(Name(), "BallisticScatter.Max", BallisticScatterMax >= 0 ? (double)BallisticScatterMax / CELL_LEPTON_W : -1.0);
+			BallisticScatterMin = scatter_min >= 0.0 ? (int)(scatter_min * CELL_LEPTON_W) : -1;
+			BallisticScatterMax = scatter_max >= 0.0 ? (int)(scatter_max * CELL_LEPTON_W) : -1;
+		}
 		RetargetAccuracy = ini.Get_Float(Name(), "RetargetAccuracy", RetargetAccuracy);
 
 		IsScalable = ini.Get_Bool(Name(), "Scalable", IsScalable);
@@ -307,6 +326,8 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsHigh);
 	crc(IsSubjectToCliffs);
 	crc(IsSubjectToWalls);
+	crc(IsSubjectToTrenches);
+	crc(IsSubjectToBuildings);
 	crc(IsShadow);
 	crc(IsArcing);
 	crc(IsDropping);
@@ -327,6 +348,10 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ROT);
 	crc(Arming);
 	crc(IsSplits);
+	crc(AirburstSpread);
+	crc(AroundTarget);
+	crc(BallisticScatterMin);
+	crc(BallisticScatterMax);
 	crc(RetargetAccuracy);
 	crc(SpawnDelay);
 	crc(IsScalable);
@@ -361,6 +386,8 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHigh);
 	stream.Serialize(IsSubjectToCliffs);
 	stream.Serialize(IsSubjectToWalls);
+	stream.Serialize(IsSubjectToTrenches);
+	stream.Serialize(IsSubjectToBuildings);
 	stream.Serialize(IsVeryHigh);
 	stream.Serialize(IsShadow);
 	stream.Serialize(IsArcing);
@@ -401,6 +428,10 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AnimHigh);
 	stream.Serialize(AnimRate);
 	stream.Serialize(Tumble);
+	stream.Serialize(AirburstSpread);
+	stream.Serialize(AroundTarget);
+	stream.Serialize(BallisticScatterMin);
+	stream.Serialize(BallisticScatterMax);
 }
 
 

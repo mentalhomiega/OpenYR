@@ -2,7 +2,7 @@
 ; Desolator (DESO) fires at the nearby GI (E1). RadEruptionWarhead has CellSpread=10.
 ; Expected: every shot adds eight eruption beams (radbeams eruption 8 visible 8), and they are gone after at most 20 frames.
 ; The windowshot images show green arches running ten cells out from the Desolator toward the four corners and four sides.
-; Run (with -Mods tests/autotest/rad-eruption-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/rad-eruption.txt -Mods src-agent4/tests/autotest/rad-eruption-rules -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/rad-eruption.txt -Mods src-agent4/tests/autotest/rad-eruption-rules -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 35 reveal
 40 own DESO 68 24

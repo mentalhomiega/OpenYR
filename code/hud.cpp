@@ -23,7 +23,10 @@
 #include "house.h"
 #include "mixfile.h"
 #include "houstype.h"
+#include "side.h"
 #include "sidebar.h"
+#include "hsv.h"
+#include "truecolour.h"
 #include "shapeset.h"
 #include "tab.h"
 #include "viewzoom.h"
@@ -195,23 +198,44 @@ struct HudColors {
 	RGBClass Shade;
 };
 
-// The local player's side as an index below count. It is 0 when there is no local player or the side is out of range.
-int Local_Side_Index(int count)
+int Player_Side(void)
 {
-	int const side = (PlayerPtr != NULL) ? int(PlayerPtr->Class->Side) : 0;
-	return((side < 0 || side >= count) ? 0 : side);
+	return((PlayerPtr != NULL) ? int(PlayerPtr->Class->Side) : 0);
 }
 
+// The side's own interface color, when its section sets one or its first country has a colored
+// scheme, and none for the three stock sides without a key, whose colors are fixed below.
+bool Side_Own_Color(int side, RGBClass & color)
+{
+	if (side < 0 || side >= Sides.Count()) {
+		return(false);
+	}
+	if (side < 3 && !Sides[side]->IsHudColor) {
+		return(false);
+	}
+	return(Sides[side]->Hud_Color(color));
+}
 
-// The Allies' blue, the Soviets' red and Yuri's purple.
-HudColors const & Side_Colors(void)
+// The Allies' blue, the Soviets' red and Yuri's purple. Another side takes its own color.
+HudColors Side_Colors(void)
 {
 	static HudColors const _colors[] = {
 		{RGBClass(72, 128, 200), RGBClass(28, 48, 80)},
 		{RGBClass(196, 52, 40), RGBClass(80, 24, 20)},
 		{RGBClass(150, 72, 196), RGBClass(60, 30, 84)},
 	};
-	return(_colors[Local_Side_Index(ARRAY_SIZE(_colors))]);
+	int side = Player_Side();
+	RGBClass own;
+	if (Side_Own_Color(side, own)) {
+		HSVClass const hsv = own;
+		int const shade_value = hsv.Get_Value() * 2 / 5;
+		HSVClass const shade((unsigned char)hsv.Get_Hue(), (unsigned char)(hsv.Get_Saturation() * 9 / 10), (unsigned char)shade_value);
+		return(HudColors{own, RGBClass(shade)});
+	}
+	if (side < 0 || side >= int(sizeof(_colors) / sizeof(_colors[0]))) {
+		side = 0;
+	}
+	return(_colors[side]);
 }
 
 
@@ -413,11 +437,24 @@ int Hud_Active_Pixel(void)
 
 ShapeSet const * Hud_Icon(char const * name)
 {
+	// The hues of the interface the three stock sides' icon sheets are drawn in.
 	static char const _letters[] = {'A', 'S', 'Y'};
-	int const side = Local_Side_Index(int(sizeof(_letters)));
+	static int const _hues[] = {218, 4, 275};
+
+	int side = Player_Side();
+	int shape_side = (side >= 0 && side < int(sizeof(_letters))) ? side : 0;
+	int turn = 0;
+	RGBClass own;
+	if (Side_Own_Color(side, own)) {
+		HSVClass const hsv = own;
+		if (hsv.Get_Saturation() >= 48) {
+			int const wanted = hsv.Get_Hue() * 360 / 255;
+			turn = (wanted - _hues[shape_side] + 540) % 360 - 180;
+		}
+	}
 	char file[16];
-	std::snprintf(file, sizeof(file), "HUD%c%s.SHP", _letters[side], name);
-	return(static_cast<ShapeSet const *>(MFCD::Retrieve(file)));
+	std::snprintf(file, sizeof(file), "HUD%c%s.SHP", _letters[shape_side], name);
+	return(static_cast<ShapeSet const *>(MFCD::Retrieve(TrueColour_Tinted_Name(file, turn).c_str())));
 }
 
 

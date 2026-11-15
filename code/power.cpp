@@ -382,8 +382,13 @@ void PowerClass::Draw_Power_Bar(bool complete)
 			IsToRedraw = false;
 			Map.IsToBlitSidebar = true;
 
-			Rect rect = SidebarSurface->Get_Rect();
 			Rect const bar = Bar_Rect();
+
+			// A pip shape wider than the bar, as a mod's classic sidebar may draw to cover both
+			// edges of its frame, is cut off at the modern bar's width.
+			Rect const rect = SidebarSurface->Get_Rect();
+			Rect const pipclip = Modern_Interface() ? bar : rect;
+			Point2D const origin(pipclip.X, pipclip.Y);
 			int x = bar.X;
 			int y = bar.Y;
 
@@ -391,14 +396,14 @@ void PowerClass::Draw_Power_Bar(bool complete)
 
 			int index;
 			for (index = 0; index < num; index++) {
-				Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_EMPTY, Point2D(x,y), rect, SHAPE_WIN_REL);
+				Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_EMPTY, Point2D(x - origin.X, y - origin.Y), pipclip, SHAPE_WIN_REL);
 				y += POWER_PIP_HEIGHT;
 			}
 
 			index = 0;
 			if (FlashCount > 0) {
 				if ((FlashCount % 2) == 0) {
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_WHITE, Point2D(x,y), rect, SHAPE_WIN_REL);
+					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_WHITE, Point2D(x - origin.X, y - origin.Y), pipclip, SHAPE_WIN_REL);
 					y += POWER_PIP_HEIGHT;
 					index++;
 				}
@@ -406,7 +411,7 @@ void PowerClass::Draw_Power_Bar(bool complete)
 
 			if (GreenPipCount > 0) {
 				while (index < GreenPipCount) {
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_GREEN, Point2D(x,y), rect, SHAPE_WIN_REL);
+					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_GREEN, Point2D(x - origin.X, y - origin.Y), pipclip, SHAPE_WIN_REL);
 					y += POWER_PIP_HEIGHT;
 					index++;
 				}
@@ -415,7 +420,7 @@ void PowerClass::Draw_Power_Bar(bool complete)
 
 			if (YellowPipCount > 0) {
 				while (index < YellowPipCount) {
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_YELLOW, Point2D(x,y), rect, SHAPE_WIN_REL);
+					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_YELLOW, Point2D(x - origin.X, y - origin.Y), pipclip, SHAPE_WIN_REL);
 					y += POWER_PIP_HEIGHT;
 					index++;
 				}
@@ -424,7 +429,7 @@ void PowerClass::Draw_Power_Bar(bool complete)
 
 			if (RedPipCount > 0) {
 				while (index < RedPipCount) {
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_RED, Point2D(x,y), rect, SHAPE_WIN_REL);
+					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)PowerPipShape, POWER_PIP_RED, Point2D(x - origin.X, y - origin.Y), pipclip, SHAPE_WIN_REL);
 					y += POWER_PIP_HEIGHT;
 					index++;
 				}

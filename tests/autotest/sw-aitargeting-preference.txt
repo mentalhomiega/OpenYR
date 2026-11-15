@@ -1,0 +1,23 @@
+; SW.AITargeting.Preference makes the computer aim a super weapon at the cell a trigger set, in place of the cell its SW.AITargeting
+; mode picks, while that cell is set: the offensive cell of action 135 or the defensive cell of action 140. The overlay
+; sw-aitargeting-preference.ini gives both paradrops SW.AITargeting=LightningRandom (a random cell, no preference by default) and
+; the American paradrop SW.AITargeting.Preference=defensive. `aimcell` sets the cells as the actions do; `aimpick` asks where the
+; computer would fire.
+; Expected: before any cell is set both paradrops pick a random cell. After `aimcell defensive 70 24` the American paradrop picks
+; cell 70,24 and the plain paradrop a random cell. After `aimcell offensive 72 30` the American paradrop still picks 70,24.
+; After `aimcell clear` both pick random cells again. Before the key was read the American paradrop never picked 70,24.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/sw-aitargeting-preference.txt -Seconds 60 -Filter "AUTOTEST   aim|Exception"
+10 rules sw-aitargeting-preference.ini
+30 command CenterBase
+40 aimpick AmericanParaDropSpecial
+41 aimpick ParaDropSpecial
+50 aimcell defensive 70 24
+51 aimpick AmericanParaDropSpecial
+52 aimpick ParaDropSpecial
+60 aimcell offensive 72 30
+61 aimpick AmericanParaDropSpecial
+62 aimpick ParaDropSpecial
+70 aimcell clear 0 0
+71 aimpick AmericanParaDropSpecial
+72 aimpick ParaDropSpecial
+80 quit

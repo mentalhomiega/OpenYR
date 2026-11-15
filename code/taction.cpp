@@ -44,6 +44,7 @@
 
 #include "taction.h"
 
+#include "armortypes.h"
 #include "_keyboar.h"
 #include "_map.h"
 #include "_rules.h"
@@ -78,6 +79,8 @@
 #include "reinf.h"
 #include "revent.h"
 #include "rules.h"
+#include "scheme.h"
+#include "side.h"
 #include "savestream.h"
 #include "scenario.h"
 #include "session.h"
@@ -101,6 +104,7 @@
 #include "tutorial.h"
 #include "vanim.h"
 #include "vector.h"
+#include "unit.h"
 #include "velocity.h"
 #include "viewzoom.h"
 #include "voc.h"
@@ -112,6 +116,8 @@
 #include "draw.hh"
 #include "need.hh"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <limits>
 #include <string>
@@ -270,9 +276,12 @@ static const struct {
 	{"Retint Green...", "Changes the green screen tint to the specified percent."},
 	{"Retint Blue...", "Changes the blue screen tint to the specified percent."},
 	{"Jump camera home", "Moves the tactical view to the player's construction yard at once."},
+	{"Auxiliary Power...", "Adds to the power the house always has, whatever its buildings make. A negative amount takes it away again."},
+	{"Kill Drivers Of...", "Kills the drivers of the attached vehicles, which then change to the house named."},
+	{"Set EVA Voice...", "Changes the player's EVA voice to the voice at the index given, or switches EVA off with -1."},
+	{"Set Group ID...", "Sets the group ID of the attached object."},
 	{"Disable Speech", "Disables EVA speech."},
 	{"Enable Speech", "Enables EVA speech."},
-	{"Set Group ID...", "Sets the group ID of the attached object."},
 	{"Give Credits...", "Gives or removes credits from the specified house. A positive amount gives money, a negative amount subtracts it."},
 	{"Enable Short Game", "Turns the short game rule on: a house is defeated once it has no structures and no base unit left."},
 	{"Disable Short Game", "Turns the short game rule off: a house is defeated only once it has nothing left."},
@@ -329,7 +338,6 @@ TActionClass::TActionClass(void) :
 	Actions.Add(this);
 	HeapID = Actions.ID(this);
 
-	AbstractTypePtrTracker.Add(this);
 	EventActionPtrTracker.Add(this);
 	Data.Value = 0;
 }
@@ -344,7 +352,6 @@ TActionClass::~TActionClass(void)
 {
 	Detach_This_From_All(this, true);
 
-	AbstractTypePtrTracker.Delete(this);
 	EventActionPtrTracker.Delete(this);
 	Actions.Delete(this);
 }
@@ -447,7 +454,12 @@ void TActionClass::Build_INI_Entry(char * ptr) const
 	}
 
 	ptr += strlen(ptr);
-	if (code == PARAM_CODE_TEAM_AND_TIME) {
+	if (Action == TACTION_AUXILIARY_POWER) {
+		// Ares writes this one with code 11 and the amount where other actions write a waypoint.
+		sprintf(ptr, "%d,%d,%d,%d,%d,%d,%d,%d", Action, PARAM_CODE_SUPER, val, TriggerRect.X, TriggerRect.Y,
+			TriggerRect.Width, TriggerRect.Height, Extra);
+	}
+	else if (code == PARAM_CODE_TEAM_AND_TIME) {
 		sprintf(ptr, "%d,%d,%s,%d,%d,%d,%d,%d",
 			Action,
 			code,
@@ -617,7 +629,7 @@ void TActionClass::Read_INI(void)
 		if (code == PARAM_CODE_TEAM_AND_TIME) {
 			Data.Value = atoi(temp);
 		}
-		else if (code == PARAM_CODE_TECHNO || code == PARAM_CODE_SUPER) {
+		else if (code == PARAM_CODE_TECHNO || code == PARAM_CODE_SUPER || Action == TACTION_AUXILIARY_POWER) {
 			Extra = atoi(temp);
 		}
 		else {
@@ -836,9 +848,12 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(ION_LIGHTNING_STRIKE);
 		INVOKE(PLAY_INGAME_MOVIE);
 		INVOKE(FLASH_TEAM);
+		INVOKE(AUXILIARY_POWER);
+		INVOKE(KILL_DRIVERS_OF);
+		INVOKE(SET_EVA_VOICE);
+		INVOKE(SET_GROUP_ID);
 		INVOKE(DISABLE_SPEECH);
 		INVOKE(ENABLE_SPEECH);
-		INVOKE(SET_GROUP_ID);
 		INVOKE(TALK_BUBBLE);
 		INVOKE(GIVE_CREDITS);
 		INVOKE(ENABLE_SHORT_GAME);
@@ -917,38 +932,58 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 
 
 /// <summary>
-/// Switches the house's firestorm defense off.
-/// The defense is toggled by firing the house's firestorm super weapon, so this
-/// action does nothing when the wall is already down.
+/// Does the Firestorm action work on this house? Only in Ares rules, which support them for computer houses only,
+/// and FirestormTriggerHumans=yes extends them to the houses a player controls. Yuri's Revenge does nothing for
+/// either action and counts it a success.
 /// </summary>
+static bool Firestorm_Action_Applies(HouseClass const * house)
+{
+	return(!house->Is_Human_Player() || Rule->IsFirestormTriggerHumans);
+}
+
+
+/// <summary>
+/// Switches the house's firestorm defense off. Yuri's Revenge does nothing for this action (gamemd's
+/// 0x6DD8D0 dispatcher breaks out of cases 0x5C and 0x5D); this is Ares's Deactivate Firestorm, meant for
+/// a defense Activate Firestorm raised, and it lowers any defense of a computer house.
+/// </summary>
+/// <returns>bool; Was the action applicable to the house?</returns>
 bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
-	if (house->FirestormDefenseActivated) {
-		int index = house->First_Super_Index(SUPER_FIRESTORM);
-
-		if (index != -1) {
-			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
-		}
+	if (!Are_Ares_Rules()) {
+		return(true);
 	}
+	if (!Firestorm_Action_Applies(house)) {
+		return(false);
+	}
+	house->Deactivate_Firestorm();
+	AUTOTEST_LOG("  firestorm of %s lowered\n", house->Class->Name());
 	return(true);
 }
 
 
 /// <summary>
-/// Switches the house's firestorm defense on.
-/// The defense is toggled by firing the house's firestorm super weapon, so this
-/// action does nothing when the wall is already up.
+/// Raises the house's firestorm defense whatever the super weapon's charge, without draining the charge. Ares's
+/// Activate Firestorm, for computer houses. The defense drops when the house runs short of power, and a house that
+/// is already short of power is left alone.
 /// </summary>
+/// <returns>bool; Is the defense up?</returns>
 bool TActionClass::TAction_ACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
-	if (!house->FirestormDefenseActivated) {
-		int index = house->First_Super_Index(SUPER_FIRESTORM);
-
-		if (index != -1) {
-			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
-		}
+	if (!Are_Ares_Rules()) {
+		return(true);
 	}
-	return(true);
+	if (!Firestorm_Action_Applies(house) || house->Power_Fraction() < 1.0) {
+		return(false);
+	}
+	house->Activate_Firestorm();
+	house->IsFirestormFromTrigger = house->FirestormDefenseActivated;
+	AUTOTEST_LOG("  firestorm of %s raised: %d\n", house->Class->Name(), (int)house->FirestormDefenseActivated);
+	if (house == PlayerPtr) {
+		house->IsRecalcNeeded = true;
+		Map.Flag_Strips_To_Redraw();
+	}
+	return(house->FirestormDefenseActivated);
 }
 
 
@@ -1335,6 +1370,7 @@ bool TActionClass::TAction_SET_GROUP_ID(HouseClass * , ObjectClass * object, Tri
 {
 	if (object && object->Is_Techno()) {
 		((TechnoClass *)object)->Group = Data.Value;
+		AUTOTEST_LOG("  group %d set on %s\n", Data.Value, ((TechnoClass *)object)->TClass->Name());
 	}
 	return(true);
 }
@@ -1387,7 +1423,16 @@ bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerCl
 	} else {
 		message = TutorialText.Fetch(Data.Value);
 	}
-	Session.Messages.Add_Message(NULL, 0, message, 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	// The player's side may name the color scheme of this text with MessageTextColor.
+	int color = 0;
+	SideType const side = PlayerPtr != NULL ? PlayerPtr->Class->Side : SIDE_NONE;
+	if (side != SIDE_NONE && side < Sides.Count() && !Sides[side]->MessageTextColor.empty()) {
+		int const scheme = Fetch_Scheme_Index_By_Name(Sides[side]->MessageTextColor.c_str());
+		if (scheme >= 0) {
+			color = scheme;
+		}
+	}
+	Session.Messages.Add_Message(NULL, 0, message, color, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 	return(true);
 }
 
@@ -1954,6 +1999,64 @@ bool TActionClass::TAction_FLASH_TEAM(HouseClass * , ObjectClass * , TriggerClas
 		Team->Flash(Data.Value);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Adds to the power the house always has (Ares's Auxiliary Power). Applying it again adds again, and a negative
+/// amount takes power away. The house is the first number and the amount is the one where other actions put a waypoint.
+/// </summary>
+/// <returns>bool; Was the house found?</returns>
+bool TActionClass::TAction_AUXILIARY_POWER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * target = House_From_HousesType(Data.House);
+	if (target == NULL) {
+		return(false);
+	}
+
+	int64_t const total = (int64_t)target->AuxiliaryPower + Extra;
+	target->AuxiliaryPower = (int)std::clamp<int64_t>(total, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+	target->RecalcPower = true;
+	AUTOTEST_LOG("  auxiliary power %+d for %s, now %d\n", Extra, target->Class->Name(), target->AuxiliaryPower);
+	return(true);
+}
+
+
+/// <summary>
+/// Takes the drivers of the vehicles attached to the trigger (Ares's Kill Drivers Of). The vehicles go to the house
+/// the action names, or to Special for -1. A vehicle whose driver is protected, or that stands under the Iron Curtain
+/// or a force shield, is left as it was.
+/// </summary>
+/// <returns>bool; Was any driver taken?</returns>
+bool TActionClass::TAction_KILL_DRIVERS_OF(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
+{
+	HouseClass * owner = Data.Value == -1 ? House_From_Name("Special") : House_From_HousesType(Data.House);
+	if (owner == NULL) {
+		return(false);
+	}
+
+	bool success = false;
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass * unit = Units[index];
+		if (unit->Is_Tagged_By(trig) && unit->Can_Lose_Driver(1.0) && unit->Take_Driver(owner, false)) {
+			AUTOTEST_LOG("  killed the driver of %s, now %s's\n", unit->TClass->Name(), owner->Class->Name());
+			success = true;
+		}
+	}
+	return(success);
+}
+
+
+/// <summary>
+/// Changes the player's EVA voice to the declared voice at the index, or switches EVA off with -1 (Ares's Set EVA
+/// Voice).
+/// </summary>
+/// <returns>bool; Did the index name a voice?</returns>
+bool TActionClass::TAction_SET_EVA_VOICE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	bool const done = Set_Eva_Voice(Data.Value);
+	AUTOTEST_LOG("  set eva voice %d: %s, speech %s\n", Data.Value, done ? "done" : "no such voice", Get_Speech_State() ? "on" : "off");
+	return(done);
 }
 
 
@@ -2696,9 +2799,8 @@ bool TActionClass::TAction_ION_CANNON(HouseClass * , ObjectClass * , TriggerClas
 }
 
 
-// Flies a missile of the super weapon `launcher_name` in from the nearest map edge onto `location`. Returns
-// false when the bullet could not be created.
-static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_name, int max_speed)
+// The ground point of `location`, raised onto a bridge deck when the cell is under one.
+static Coord Missile_Target_Coord(WAYPOINT location)
 {
 	Cell waypoint = Scen->Get_Waypoint_Cell(location);
 	Coord coord = Coord (waypoint);
@@ -2706,12 +2808,35 @@ static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_
 	if (Map[waypoint].IsUnderBridge) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
+	return(coord);
+}
 
+
+// The weapon a missile action fires, or NULL after logging when the rules give no weapon of that name with a
+// projectile; the action then fires nothing.
+static WeaponTypeClass const * Missile_Weapon(TActionType action, char const * weapon_name)
+{
+	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Declared(weapon_name);
+	if (weapon == NULL || weapon->Bullet == NULL) {
+		DebugString("Trigger action %d fires nothing: the rules have no weapon %s with a Projectile.\n", (int)action, weapon_name);
+		return(NULL);
+	}
+	return(weapon);
+}
+
+
+// Flies a missile of the super weapon `launcher_name` in from the nearest map edge onto `location`. Returns
+// false when the bullet could not be created.
+static bool Launch_Missile_At_Waypoint(TActionType action, WAYPOINT location, char const * launcher_name, int max_speed)
+{
+	Coord const coord = Missile_Target_Coord(location);
 	Cell closest = Map.Closest_Edge_Cell(coord.As_Cell());
 
-	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name(launcher_name)];
-	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, max_speed, false);
+	WeaponTypeClass const * weapon_type = Missile_Weapon(action, launcher_name);
+	if (weapon_type == NULL) {
+		return(false);
+	}
+	BulletClass * bullet = Create_Bullet(weapon_type->Bullet, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, max_speed, false);
 
 	if (bullet != NULL) {
 		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
@@ -2724,14 +2849,30 @@ static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_
 
 
 /// <summary>
-/// Launches a cluster missile at the action's waypoint.
-/// The missile is flown in from the nearest map edge just as the multi missile super
-/// weapon does, so the player sees the usual approach before the impact.
+/// Drops a nuclear missile onto the action's waypoint.
+/// As gamemd's action 95 (0x6E3410) does, the NukePayload weapon's projectile appears 20000 leptons above the
+/// waypoint and falls straight down at 100 leptons a frame, with the weapon's damage and warhead. Rules without
+/// a NukePayload weapon that has a projectile make the action fire nothing.
 /// </summary>
 /// <returns>bool; Was the missile launched?</returns>
 bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	return(Launch_Missile_At_Waypoint(EffectLocation, "MultiLauncher", 50));
+	Coord const coord = Missile_Target_Coord(EffectLocation);
+	WeaponTypeClass const * weapon = Missile_Weapon(Action, "NukePayload");
+	if (weapon == NULL) {
+		return(false);
+	}
+
+	BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[coord], NULL, weapon->Attack, weapon->WarheadPtr, 50, false);
+	if (bullet == NULL) {
+		return(false);
+	}
+	bullet->Weapon = weapon;
+	Coord const above(coord.X, coord.Y, coord.Z + 20000);
+	if (!bullet->Unlimbo(above, TVelocity3D<double>(0.0, 0.0, -100.0))) {
+		delete bullet;
+	}
+	return(true);
 }
 
 
@@ -2743,7 +2884,7 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 /// <returns>bool; Was the missile launched?</returns>
 bool TActionClass::TAction_CHEM_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	return(Launch_Missile_At_Waypoint(EffectLocation, "ChemLauncher", 20));
+	return(Launch_Missile_At_Waypoint(Action, EffectLocation, "ChemLauncher", 20));
 }
 
 
@@ -3316,15 +3457,14 @@ bool TActionClass::TAction_CREATE_CRATE(HouseClass * , ObjectClass * , TriggerCl
 
 
 /// <summary>
-/// Delivers the trigger's team as reinforcements at the action's waypoint. Yuri's Revenge brings
-/// the team in by chronoshift; this engine delivers it the way the team type says and leaves out
-/// the chronoshift effect.
+/// Delivers the trigger's team as reinforcements at the action's waypoint, brought in by chronoshift
+/// (gamemd 0x65EC30): the members are placed near the waypoint and warp in with the chrono arrival.
 /// </summary>
 /// <returns>bool; Were the reinforcements delivered?</returns>
 bool TActionClass::TAction_REINFORCEMENTS_CHRONO(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	if (Team != NULL && EffectLocation != -1) {
-		return(Do_Reinforcements(Team, EffectLocation));
+		return(Do_Chrono_Reinforcements(Team, EffectLocation));
 	}
 	return(false);
 }
@@ -3909,6 +4049,9 @@ NeedType Action_Needs(TActionType action)
 		case TACTION_SET_TEAM_INFANTRY_RATIO:
 		case TACTION_SET_TEAM_UNIT_RATIO:
 		case TACTION_SET_GROUP_ID:
+		case TACTION_AUXILIARY_POWER:
+		case TACTION_KILL_DRIVERS_OF:
+		case TACTION_SET_EVA_VOICE:
 			return(NEED_NUMBER);
 
 		case TACTION_SET_GLOBAL:
@@ -4085,6 +4228,7 @@ AttachType Attaches_To(TActionType event)
 		case TACTION_CHANGE_HOUSE:
 		case TACTION_GO_BERZERK:
 		case TACTION_SET_GROUP_ID:
+		case TACTION_KILL_DRIVERS_OF:
 		case TACTION_MAKE_ELITE:
 		case TACTION_DELETE_OBJECT:
 		case TACTION_EVICT_OCCUPIERS:

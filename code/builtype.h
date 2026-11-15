@@ -85,6 +85,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		int LightVisibility;
 
+		// The facing a unit turns to before it deploys into this building, and that it takes when the building undeploys (DeployFacing).
+		Dir256 DeployFacing;
+
 		/*
 		 * This is the brightness of the light this building casts, as a fixed point value
 		 * scaled by 1000. If zero, then the building carries no light source at all.
@@ -202,6 +205,18 @@ class BuildingTypeClass : public TechnoTypeClass
 		**	of the building's "footprint".
 		*/
 		BSizeType Size;
+
+		/*
+		 * An Ares custom foundation (art Foundation=Custom) gives its own size and cell lists.
+		 * Size then holds the stock size of the same width and height, or BSIZE_FIRST when no
+		 * stock size matches, for the code that only knows the stock sizes. Both lists end with
+		 * REFRESH_EOL.
+		 */
+		bool IsCustomFoundation;
+		int CustomWidth;
+		int CustomHeight;
+		std::vector<Cell> CustomOccupy;
+		std::vector<Cell> CustomOutline;
 
 		/*
 		 * This is the height of the building, expressed in cells of elevation. It sets the
@@ -422,6 +437,11 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool HasSpotlight;
 
+		// Spotlight.StartHeight and Spotlight.Distance (Ares): the beam leaves this high above the ground, and its
+		// pool of light lies this many leptons in front of the structure; a negative distance uses SpotlightLocationRadius.
+		int SpotlightStartHeight;
+		int SpotlightDistance;
+
 		/*
 		 * If this building is the Temple of Nod, then this flag will be true. The computer
 		 * rates one as a class of ion cannon target in its own right.
@@ -497,6 +517,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsCanOccupyFire;
 		bool IsShowOccupantPips;
 		int MaxNumberOccupants;
+
+		// Ares UC.PassThrough, UC.FatalRate and UC.DamageMultiplier: the share of shots at an occupied structure that hit one
+		// occupant instead, the share of those that kill the occupant, and the multiplier on the damage of the rest.
+		double UCPassThrough;
+		double UCFatalRate;
+		double UCDamageMultiplier;
 		Point2D MuzzleFlash[MUZZLE_FLASH_COUNT];
 
 		/*
@@ -558,6 +584,10 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// A Cloning=yes structure releases a copy of every soldier its owner's barracks release.
 		bool IsCloning;
+
+		// A CloningFacility=yes structure (Ares) releases a copy of every Cloneable vehicle with its Naval setting that its
+		// owner's factories release.
+		bool IsCloningFacility;
 
 		// A Grinding=yes structure takes in its owner's infantry and vehicles and pays their refund.
 		bool IsGrinding;
@@ -637,6 +667,19 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsGate;
 
+		// SellTime (Ares): minutes the sell animation takes, or below zero to play it at the construction animation's rate.
+		double SellTime;
+
+		// BuildupTime (Ares): minutes the construction animation takes, or below zero for the [General] BuildupTime.
+		double BuildupTime;
+
+		// GateUpSound and GateDownSound (Ares): the sound this gate makes as it closes and as it opens. Without the key the gate
+		// plays the [AudioVisual] GateUp or GateDown sound.
+		bool IsGateUpSoundSet;
+		VocType GateUpSound;
+		bool IsGateDownSoundSet;
+		VocType GateDownSound;
+
 		/*
 		 * If this building is a surface to air missile launcher, then this flag will be true.
 		 * It runs an attack state machine of its own and only holds airborne targets.
@@ -708,6 +751,15 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * point on the ground but never fires a weapon of its own.
 		 */
 		bool IsEMPulseCannon;
+
+		/*
+		 * If this building is a deployed vehicle, then this flag will be true. A chronosphere whose
+		 * Chronosphere.ReconsiderBuildings is on shifts it as a unit rather than as a structure.
+		 */
+		bool IsChronoshiftVehicle;
+
+		// The share of a lightning storm bolt's damage that this building takes while LightningRod=yes.
+		float LightningRodModifier;
 
 		/*
 		 * If this building is the deployed form of a Tick Tank, then this flag will be true.
@@ -833,6 +885,60 @@ class BuildingTypeClass : public TechnoTypeClass
 		// The frames each smoke system a harvester's payout starts at a refinery lives for.
 		int RefinerySmokeFrames;
 
+		// The announcer line the player who loses a NeedsEngineer structure of this type hears, or -1 for the stock line (Ares LostEvaEvent).
+		int LostEvaEvent;
+
+		// The string table labels shown to the player who captures and to the one who loses such a structure (Ares Message.Capture, Message.Lost).
+		std::string MessageCapture;
+		std::string MessageLost;
+
+		// What a spy that infiltrates this structure does when SpyEffect.Custom is yes: the keys SpyEffect.ResetRadar,
+		// PowerOutageDuration, StolenMoneyPercentage, StolenMoneyAmount, ResetSuperweapons, StolenTechIndex,
+		// UndoReverseEngineer and the five veterancy keys (UnitVeterancy is read as VehicleVeterancy).
+		bool IsSpyEffectCustom;
+		bool IsSpyResetRadar;
+		// SpyEffect.RevealRadar (Ares): a spy in this Radar=yes structure makes its owner's units reveal the map to the spy's house.
+		bool IsSpyRevealRadar;
+		int SpyPowerOutage;
+		double SpyStolenMoneyPercentage;
+		int SpyStolenMoneyAmount;
+		bool IsSpyResetSuperweapons;
+		std::vector<int> SpyStolenTechIndex;
+		bool IsSpyUndoReverseEngineer;
+		bool IsSpyInfantryVeterancy;
+		bool IsSpyVehicleVeterancy;
+		bool IsSpyNavalVeterancy;
+		bool IsSpyAircraftVeterancy;
+		bool IsSpyBuildingVeterancy;
+
+		// SpyEffect.RevealProduction (Ares): with SpyEffect.Custom=yes, a spy's house sees this structure's production, power and the
+		// owner's money only when the key is set.
+		bool IsSpyRevealProduction;
+
+		// Academy.* (Ares): the veterancy levels this structure gives a new trainable object of its house, by kind, limited to
+		// the AcademyTypes when that list is not empty and never given to the AcademyIgnore types.
+		double AcademyInfantryVeterancy;
+		double AcademyAircraftVeterancy;
+		double AcademyVehicleVeterancy;
+		double AcademyBuildingVeterancy;
+		std::vector<std::string> AcademyTypes;
+		std::vector<std::string> AcademyIgnore;
+
+		// EngineerRepairable (Ares): an engineer can restore this structure to full strength. Follows Repairable.
+		bool IsEngineerRepairable;
+
+		// MassSelectable (Ares): -1 leaves the stock rule, a structure that undeploys into a vehicle; 0 and 1 leave this structure out of a drag selection or put it in.
+		int MassSelectable;
+
+		// UnitSell (Ares): a vehicle or aircraft docked at this structure can be sold there. Follows UnitRepair.
+		bool IsUnitSell;
+
+		// IsPassable (Ares): vehicles and soldiers can enter the cells of this structure.
+		bool IsPassable;
+
+		// The cursor shown over this structure when a spy could infiltrate it, or empty for the stock enter cursor (Ares Cursor.Spy).
+		std::string CursorSpy;
+
 		/*
 		 * This is the super weapon this building grants its owner while it stands, or
 		 * SUPER_NONE if it grants none.
@@ -844,6 +950,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * that offer a choice of two. Otherwise it is SUPER_NONE.
 		 */
 		SuperWeaponType SuperWeapon2;
+
+		// The heap numbers of the further superweapons that SuperWeapons= grants.
+		TypeList<int> SuperWeaponList;
+
+		// Does this structure grant the superweapon through SuperWeapon=, SuperWeapon2= or SuperWeapons=?
+		bool Grants_Super_Weapon(int super) const {return(super != SUPER_NONE && ((int)SuperWeapon == super || (int)SuperWeapon2 == super || SuperWeaponList.Is_In_List(super)));}
 
 		/*
 		 * This is the number of frames in this gate's opening animation, across which the
@@ -948,6 +1060,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsCoreDefender;
 
+		// SolidHeight (Ares): how many cells of its height stop a SubjectToBuildings projectile; negative for the whole height,
+		// 0 for none.
+		int SolidHeight;
+
 		/*
 		 * If this building's gun barrel is a voxel model rather than a shape animation,
 		 * then this flag will be true. The barrel is loaded as a voxel of its own, separate
@@ -1011,6 +1127,20 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * the computer knows what to do with.
 		 */
 		bool CanAIBuildThis;
+
+		// AIBuildCounts and AIExtraCounts (Ares): how many of this building the computer plans, and how many more it may add at
+		// random, for each difficulty from hard to easy. An empty list plans one and adds none.
+		TypeList<int> AIBuildCounts;
+		TypeList<int> AIExtraCounts;
+		int AI_Build_Count(int difficulty) const {return(difficulty >= 0 && difficulty < AIBuildCounts.Count() && AIBuildCounts[difficulty] > 1 ? AIBuildCounts[difficulty] : 1);}
+		int AI_Extra_Count(int difficulty) const {return(difficulty >= 0 && difficulty < AIExtraCounts.Count() && AIExtraCounts[difficulty] > 0 ? AIExtraCounts[difficulty] : 0);}
+
+		// AIBaseNormal (Ares): does the building extend its owner's base space? -1 follows the building: yes unless it is a
+		// vehicle in a building's form, and never a deployed miner.
+		int AIBaseNormal;
+
+		// AIInnerBase (Ares): the computer places this structure near the center of its base. Follows CloakGenerator.
+		bool IsAIInnerBase;
 
 		/*
 		 * If this building counts as a base defense, then this flag will be true. The
@@ -1082,6 +1212,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		int ProduceCashBudget;
 		bool IsProduceCashResetOnCapture;
 
+		// ProduceCashDisplay (Ares): the cash this structure pays shows as floating text over it.
+		bool IsProduceCashDisplay;
+
 		// A SecretLab=yes structure offers one item, named by the first type below that is set or else drawn at game start.
 		bool IsSecretLab;
 		InfantryTypeClass const * SecretInfantry;
@@ -1144,11 +1277,17 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool Can_Plant_C4(void) const {return(IsCanC4 && !IsInvisibleInGame);}
 		// gamemd's IsStrange for a structure: it undeploys into a vehicle and covers one cell (BuildingTypeClass::IsVehicle, 0x465D40).
 		bool Is_Single_Cell_Vehicle(void) const {return(UndeploysInto != NULL && Width() == 1 && Height(false) == 1);}
+		// A vehicle deploying into this type stands on its top-left cell when the foundation is at most 2x2, else on the cell
+		// south-east of it (UnitClass::TryToDeploy, 0x7393C0; BuildingClass::Mission_Selling, 0x449C30).
+		bool Vehicle_On_Corner(void) const {return(Width() <= 2 && Height(false) <= 2);}
 		bool Is_Absorber(void) const {return(IsInfantryAbsorb || IsUnitAbsorb);}
 		bool Is_Walk_In_Facility(void) const {return(IsGrinding || Is_Absorber());}
 		virtual int Raw_Cost(void) const override;
 
 		Cell const * Exit_List(void) const;
+		void Read_Custom_Foundation(CCINIClass const & ini, char const * section);
+		void Clear_Custom_Foundation(void);
+		void Attach_Foundation_Lists(void);
 		Rect Get_Draw_Rect(void);
 
 		static int Get_Max_Drain(DynamicVectorClass<BuildingTypeClass *> const & list);

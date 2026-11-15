@@ -1,0 +1,14 @@
+; A Harrier with CrashSpin=no (Ares) is shot down. Its crash keeps it level: the rock lines show sideways and forwards tilt 0.00000
+; and both rates per frame 0.00000 while it falls. Without the overlay key the crash sets a sideways rate of 0.10 to 0.25 a frame
+; either way and a forwards rate of 0 to 0.1, and the tilt grows on every line (checked by removing CrashSpin=no from the overlay).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/crash-spin-off.txt -Map XMP08T2.MAP -Seconds 60 -Filter "AUTOTEST   rock|Exception"
+10 rules crash-spin-off.ini
+31 grantunit ORCA 86 66
+35 move ORCA 86 62
+60 hit ORCA:AP 9000
+61 rock ORCA
+64 rock ORCA
+68 rock ORCA
+72 rock ORCA
+76 rock ORCA
+150 quit

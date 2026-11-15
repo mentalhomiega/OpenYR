@@ -44,6 +44,7 @@
 #include "houstype.h"
 
 #include "airctype.h"
+#include "builtype.h"
 #include "campaign.h"
 #include "ccfile.h"
 #include "ccini.h"
@@ -62,6 +63,7 @@
 #include "unittype.h"
 #include "vector.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -113,8 +115,11 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	BuildTimeDefensesMult(1.0),
 	Scheme(0),
 	Prefix('A'),
+	IsObserverFlagAltPalette(false),
+	ListIndex(100),
 	IsMultiplay(false),
 	IsMultiplayPassive(false),
+	CanBeDriven(-1),
 	IsGivesBounty(true),
 	IsWallOwner(true),
 	IsSmartAI(false),
@@ -255,8 +260,26 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		BuildTimeBuildingsMult = ini.Get_Float(Name(), "BuildTimeBuildingsMult", BuildTimeBuildingsMult);
 		BuildTimeDefensesMult = ini.Get_Float(Name(), "BuildTimeDefensesMult", BuildTimeDefensesMult);
 
+		LoadScreenFile = ini.Get_String(Name(), "File.LoadScreen", LoadScreenFile.c_str());
+		LoadScreenPalette = ini.Get_String(Name(), "File.LoadScreenPAL", LoadScreenPalette.c_str());
+		LoadScreenName = ini.Get_String(Name(), "LoadScreenText.Name", LoadScreenName.c_str());
+		LoadScreenSpecialName = ini.Get_String(Name(), "LoadScreenText.SpecialName", LoadScreenSpecialName.c_str());
+		LoadScreenBrief = ini.Get_String(Name(), "LoadScreenText.Brief", LoadScreenBrief.c_str());
+		LoadScreenColor = ini.Get_String(Name(), "LoadScreenText.Color", LoadScreenColor.c_str());
+		FlagFile = ini.Get_String(Name(), "File.Flag", FlagFile.c_str());
+		LoadingTheme = ini.Get_String(Name(), "LoadingTheme", LoadingTheme.c_str());
+		StatusText = ini.Get_String(Name(), "MenuText.Status", StatusText.c_str());
+		TauntFile = ini.Get_String(Name(), "File.Taunt", TauntFile.c_str());
+		ObserverFlagFile = ini.Get_String(Name(), "File.ObserverFlag", ObserverFlagFile.c_str());
+		ObserverBackgroundFile = ini.Get_String(Name(), "File.ObserverBackground", ObserverBackgroundFile.c_str());
+		IsObserverFlagAltPalette = ini.Get_Bool(Name(), "File.ObserverFlagAltPalette", IsObserverFlagAltPalette);
+		ListIndex = ini.Get_Int(Name(), "ListIndex", ListIndex);
+
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
+		if (ini.Is_Present(Name(), "CanBeDriven")) {
+			CanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", false) ? 1 : 0;
+		}
 		IsGivesBounty = ini.Get_Bool(Name(), "GivesBounty", IsGivesBounty);
 		IsWallOwner = ini.Get_Bool(Name(), "WallOwner", IsWallOwner);
 		IsSmartAI = ini.Get_Bool(Name(), "SmartAI", IsSmartAI);
@@ -281,9 +304,31 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		VeteranInfantry = TGet_TypeList<InfantryTypeClass>(ini, Name(), "VeteranInfantry", VeteranInfantry, 128);
 		VeteranUnits = TGet_TypeList<UnitTypeClass>(ini, Name(), "VeteranUnits", VeteranUnits, 128);
 		VeteranAircraft = TGet_TypeList<AircraftTypeClass>(ini, Name(), "VeteranAircraft", VeteranAircraft, 128);
+		VeteranBuildings = TGet_TypeList<BuildingTypeClass>(ini, Name(), "VeteranBuildings", VeteranBuildings);
+		AIPowerPlants = TGet_TypeList<BuildingTypeClass>(ini, Name(), "AI.PowerPlants", AIPowerPlants);
+		ParaDrop.Take_Types(ini.Get_String(Name(), "ParaDrop.Types"));
+		if (ini.Is_Present(Name(), "ParaDrop.Num")) {
+			ParaDrop.Take_Num(ini.Get_IntList(Name(), "ParaDrop.Num", ParaDrop.Num));
+		}
+		ParaDrop.Take_Aircraft(ini.Get_String(Name(), "ParaDrop.Aircraft"));
 		return(true);
 	}
 	return(false);
+}
+
+
+std::vector<int> HouseTypeClass::Lobby_Countries(void)
+{
+	std::vector<int> list;
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		if (HouseTypes[index]->IsMultiplay && HouseTypes[index]->ListIndex >= 0) {
+			list.push_back(index);
+		}
+	}
+	std::stable_sort(list.begin(), list.end(), [](int left, int right) {
+		return(HouseTypes[left]->ListIndex < HouseTypes[right]->ListIndex);
+	});
+	return(list);
 }
 
 
@@ -344,9 +389,23 @@ void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
 	strcpy(Suffix, parent.Suffix);
 	Prefix = parent.Prefix;
 	IsMultiplayPassive = parent.IsMultiplayPassive;
+	CanBeDriven = parent.CanBeDriven;
 	IsGivesBounty = parent.IsGivesBounty;
 	IsWallOwner = parent.IsWallOwner;
 	IsSmartAI = parent.IsSmartAI;
+	LoadScreenFile = parent.LoadScreenFile;
+	LoadScreenPalette = parent.LoadScreenPalette;
+	LoadScreenName = parent.LoadScreenName;
+	LoadScreenSpecialName = parent.LoadScreenSpecialName;
+	LoadScreenBrief = parent.LoadScreenBrief;
+	LoadScreenColor = parent.LoadScreenColor;
+	FlagFile = parent.FlagFile;
+	LoadingTheme = parent.LoadingTheme;
+	StatusText = parent.StatusText;
+	TauntFile = parent.TauntFile;
+	ObserverFlagFile = parent.ObserverFlagFile;
+	ObserverBackgroundFile = parent.ObserverBackgroundFile;
+	IsObserverFlagAltPalette = parent.IsObserverFlagAltPalette;
 }
 
 
@@ -371,6 +430,7 @@ void HouseTypeClass::Inherit_Side(HouseTypeClass const & parent)
 void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(Can_Be_Driven());
 	crc(House);
 	crc(Side);
 	crc(Scheme);
@@ -406,6 +466,9 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(VeteranInfantry.Count());
 	crc(VeteranUnits.Count());
 	crc(VeteranAircraft.Count());
+	crc(VeteranBuildings.Count());
+	crc(AIPowerPlants.Count());
+	crc(ParaDrop.Types.Count());
 }
 
 
@@ -453,12 +516,16 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);
 	stream.Serialize(IsMultiplayPassive);
+	stream.Serialize(CanBeDriven);
 	stream.Serialize(IsGivesBounty);
 	stream.Serialize(IsWallOwner);
 	stream.Serialize(IsSmartAI);
 	stream.Serialize(VeteranInfantry);
 	stream.Serialize(VeteranUnits);
 	stream.Serialize(VeteranAircraft);
+	stream.Serialize(VeteranBuildings);
+	stream.Serialize(AIPowerPlants);
+	ParaDrop.Serialize(stream);
 }
 
 

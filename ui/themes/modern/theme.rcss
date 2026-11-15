@@ -784,6 +784,49 @@ body.lobby #switches > label.check > input
 	vertical-align: middle;
 }
 
+body.lobby #columns
+{
+	height: 556dp;
+}
+
+body.lobby #lobby-options
+{
+	margin-top: 12dp;
+	padding: 10dp 14dp 6dp 14dp;
+	background-color: var(--t-field-list, #0b0812a0);
+	border-radius: 4dp;
+}
+
+body.lobby #lobby-options label.setting
+{
+	height: 26dp;
+	line-height: 24dp;
+}
+
+body.lobby #lobby-options label.check > input
+{
+	top: 4dp;
+}
+
+body.lobby #lobby-options .setting.disabled > .caption, body.lobby #lobby-options .note
+{
+	color: var(--t-muted, #a99bc9);
+}
+
+body.lobby #lobby-mode-frame
+{
+	width: 288dp;
+	margin-top: 12dp;
+	padding: 10dp 12dp 8dp 12dp;
+	background-color: var(--t-field-list, #0b0812a0);
+	border-radius: 4dp;
+}
+
+body.lobby #lobby-mode
+{
+	width: 264dp;
+}
+
 body.lobby #map
 {
 	width: 288dp;
@@ -1485,6 +1528,18 @@ body.page-mods #status.problem
 	color: var(--t-accent-strong, #d29bff);
 	border-left: 3dp var(--t-accent, #b46bff);
 	padding-left: 8dp;
+}
+
+body.page-mods #ask
+{
+	height: 24dp;
+	margin-top: 8dp;
+	line-height: 22dp;
+}
+
+body.page-mods #ask input
+{
+	margin: 0 12dp 0 0;
 }
 
 body.page-mods #buttons

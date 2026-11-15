@@ -523,9 +523,14 @@ class FootClass : public TechnoClass
 		virtual bool Stop_Driver(void);
 
 		// Puts the object at a place on the map at once, dropping the move it was making.
+		bool Convert_Class(TechnoTypeClass const * type, void (* set_class)(FootClass &, TechnoTypeClass const *));
 		void Teleport_To(Coord dest);
 		// Starts a chronosphere warp that holds the object on its cell and then lands it at dest.
 		void Begin_Chrono_Warp(Coord dest);
+		// A chrono reinforcement is placed on the map, prepared with Begin_Chrono_Arrival, and then set going with Start_Chrono_Arrival.
+		void Begin_Chrono_Arrival(Coord landing);
+		void Start_Chrono_Arrival(void);
+		void Carry_Locomotor_In_Teleport(void);
 		virtual bool Is_Chrono_Warping(void) const override;
 
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;

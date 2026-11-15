@@ -49,6 +49,30 @@ class UIModsEngineServiceClass : public UIModsServiceClass
 			return(false);
 		}
 
+		virtual bool Ask_For_Mod(void) override
+		{
+			return(ConfigINI.Get_Bool("Launcher", "ModPicker", true));
+		}
+
+		virtual bool Save_Ask_For_Mod(bool ask) override
+		{
+			bool const present = ConfigINI.Is_Present("Launcher", "ModPicker");
+			bool const before = ConfigINI.Get_Bool("Launcher", "ModPicker", true);
+			ConfigINI.Put_Bool("Launcher", "ModPicker", ask);
+
+			CCFileClass file(DeploymentConfig.SettingsFile.c_str());
+			if (ConfigINI.Save(file, false) > 0) {
+				return(true);
+			}
+
+			if (present) {
+				ConfigINI.Put_Bool("Launcher", "ModPicker", before);
+			} else {
+				ConfigINI.Clear("Launcher", "ModPicker");
+			}
+			return(false);
+		}
+
 		virtual std::string File_Name(void) override
 		{
 			char const * user = CDFileClass::User_Path();

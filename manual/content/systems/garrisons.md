@@ -18,6 +18,10 @@ keys:
   - OccupyDamageMultiplier
   - OccupyROFMultiplier
   - OccupyWeaponRange
+  - UC.PassThrough
+  - UC.FatalRate
+  - UC.DamageMultiplier
+  - SubjectToTrenches
 ---
 
 A structure with [`CanBeOccupied=yes`](/keys/canbeoccupied/) holds up to [`MaxNumberOccupants`](/keys/maxnumberoccupants/) soldiers whose type sets [`Occupier=yes`](/keys/occupier/). With [`CanOccupyFire=yes`](/keys/canoccupyfire/), the structure fires its occupants' weapons for as long as one of them is inside.
@@ -89,6 +93,14 @@ Three `[CombatDamage]` settings change a garrison's fire:
 - [`OccupyWeaponRange`](/keys/occupyweaponrange/) sets how far the structure searches for targets.
 
 Shots leave from the art entry's [`MuzzleFlash0`](/keys/muzzleflash0/) through `MuzzleFlash9`, one point per occupant. The weapon's [`OccupantAnim`](/keys/occupantanim/#scope-weapontype) plays at that point for each shot, drawn in front of the structure. A weapon without an `OccupantAnim` shows no animation for these shots, even when it has a regular `Anim`.
+
+## Shots that reach the occupants
+
+A structure with a [`UC.PassThrough`](/keys/uc.passthrough/) above `0%` and at least one occupant lets that share of the shots at it hit an occupant instead. This applies to shots that damage the structure and are not forced. A passed shot does no damage to the structure; an empty structure takes every shot. A projectile with [`SubjectToTrenches=no`](/keys/subjecttotrenches/) passes all of its shots through.
+
+A passed shot picks one occupant at random. At the [`UC.FatalRate`](/keys/uc.fatalrate/) share it destroys that occupant outright. Otherwise the occupant takes the shot's damage times [`UC.DamageMultiplier`](/keys/uc.damagemultiplier/) through its own damage rules, so the warhead's `Verses` against the occupant's armor still applies. An occupant that dies leaves the garrison and counts as a kill for the attacker.
+
+A blast that reaches several cells of a large structure rolls once for each cell, as [Which candidates are damaged](/systems/warheads/#which-candidates-are-damaged) describes.
 
 ## Pips
 

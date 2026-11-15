@@ -1,0 +1,40 @@
+; Ares's trigger actions 146 to 149 and Firestorm actions 92 and 93 run the action Ares names. The lines of 146 to 149
+; are written as an Ares map writes them, and the trigactionline step reads them with the map reader. Auxiliary Power
+; (146) adds to a house's power for good and a negative amount takes it away: the computer house, country 5 here, has
+; 0 power at frame 100, 5000 after the first line and 0 after the second. Kill Drivers Of (147) and Set Group (149) act
+; on the objects tagged by the test trigger the tagtype step makes. Set EVA Voice (148) changes the announcer's voice,
+; which evafile shows as a different sample file, then silences it with -1, and a number no voice has is refused. Activate
+; Firestorm (92) raises a computer house's defense and drops it when the house runs short of power; the player's
+; house refuses both actions. The Firestorm actions act only in Ares rules (the mod tests/autotest/ares-rules);
+; trigaction-firestorm-stock.txt checks the stock game.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/trigaction-ares-numbers.txt -Mods src-agent33/tests/autotest/ares-rules -Map XMP29U2.MAP -AICountries 5 -Seconds 120 -Uncapped -StopAfterSteps -Filter "AUTOTEST   (trigactionline|trigaction 9|auxiliary|firestorm|killed|group|set eva|evafile|tagtype|house Africans)|Exception"
+30 command CenterBase
+60 own MTNK 65 20
+61 own MTNK 66 21
+62 own E1 64 21
+100 houses
+110 trigactionline 1,146,11,5,0,0,0,0,5000
+115 houses
+120 trigactionline 1,146,11,5,0,0,0,0,-5000
+125 houses
+200 tagtype MTNK
+210 trigactionline 1,147,0,-1,0,0,0,0,A
+215 houseobjects player
+220 tagtype E1
+230 trigactionline 1,149,0,7,0,0,0,0,A
+300 evafile EVA_ConstructionComplete
+310 trigactionline 1,148,0,1,0,0,0,0,A
+320 evafile EVA_ConstructionComplete
+330 trigactionline 1,148,0,-1,0,0,0,0,A
+340 trigactionline 1,148,0,99,0,0,0,0,A
+390 houseunit NAHAND@#1 56 100
+395 houses
+400 trigaction 92 0 0
+410 trigaction 92@#1 0 0
+420 trigaction 93@#1 0 0
+430 trigaction 92@#1 0 0
+440 trigactionline 1,146,11,5,0,0,0,0,-100000
+450 houses
+455 trigaction 93@#1 0 0
+460 trigaction 92@#1 0 0
+470 quit

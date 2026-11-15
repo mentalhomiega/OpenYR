@@ -53,6 +53,8 @@
 #include "always.h"
 
 #include "anim.h"
+#include "autotest.h"
+#include "dbgprint.h"
 #include "custompalette.h"
 
 #include "_bench.h"
@@ -64,9 +66,11 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "animtype.h"
+#include "armortypes.h"
 #include "bench.h"
 #include "building.h"
 #include "bullet.h"
+#include "weapon.h"
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
@@ -338,6 +342,11 @@ AnimClass::~AnimClass(void)
 		*/
 		if (xObject != NULL) {
 			ObjectClass * to = xObject;
+
+			// A unit or infantryman does not hear of a deleted anim through the anim pointer tracker, so it drops an AttachEffect anim here.
+			if (to->Is_Techno()) {
+				to->As_TechnoClass()->AttachedEffects.Detach(this);
+			}
 
 			/*
 			**	Scan for any other animations that are attached to the object that
@@ -867,7 +876,7 @@ void AnimClass::AI(void)
 	}
 
 	if (Class->IsPsiWarning) {
-		HouseClass const * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+		HouseClass const * owner = Owner_House();
 		IsPsychicHidden = !Psychic_Warning_Seen(Map[Center_Coord()], owner);
 	}
 
@@ -1039,7 +1048,7 @@ void AnimClass::AI(void)
 			**	damaging kind of animation, then do the damage to the other
 			**	object.
 			*/
-			if (Class->Damage > 0 && !IsBouncing) {
+			if (Class->Damage > 0 && !IsBouncing && (Class->DamageDelay <= 1 || stage % Class->DamageDelay == 0)) {
 				if (Is_Target_Terrain(xObject)) {
 					Accum += Class->Damage * 5;
 				} else {
@@ -1054,10 +1063,27 @@ void AnimClass::AI(void)
 					*/
 					int damage = Accum;
 					Accum -= damage;
-					if (strcmp(Class->IniName, "INVISO") == 0) {
-						Explosion_Damage(Center_Coord(), damage, NULL, Rule->C4Warhead);
+					AUTOTEST_LOG("animdamage %s stage %d damage %d at %d,%d\n", Class->Name(), stage, damage, Center_Coord().X, Center_Coord().Y);
+					if (Class->Weapon != NULL && Class->Weapon->Bullet != NULL) {
+						// A Weapon makes the animation's projectile detonate where it is, owned by the animation's house (Phobos).
+						HouseClass * const owner = Owner_House();
+						BulletClass * const bullet = Create_Bullet(Class->Weapon->Bullet, &Map[Center_Coord().As_Cell()], NULL, Class->Weapon->Attack, Class->Weapon->WarheadPtr, 0, Class->Weapon->IsBright);
+						if (bullet != NULL) {
+							bullet->Weapon = Class->Weapon;
+							bullet->CreditedHouse = owner;
+							bullet->Detonate(Center_Coord());
+							delete bullet;
+						}
 					} else {
-						Explosion_Damage(Center_Coord(), damage, NULL, Rule->FlameDamage2);
+						// Gamemd deals FlameDamage2, or C4Warhead for INVISO, with no attacker or house (AnimClass::AI, 0x424604), although
+						// stock art gives METLARGE and the debris a Warhead. In Ares rules the type's Warhead deals it, credited to the
+						// animation's owner, whom an AffectsAllies=no or AffectsOwner=no warhead spares.
+						bool const ares = Are_Ares_Rules();
+						WarheadTypeClass const * warhead = ares ? Class->Warhead : NULL;
+						if (warhead == NULL) {
+							warhead = strcmp(Class->IniName, "INVISO") == 0 ? Rule->C4Warhead : Rule->FlameDamage2;
+						}
+						Explosion_Damage(Center_Coord(), damage, NULL, warhead, true, ares ? Owner_House() : NULL, NULL, NULL, ares);
 					}
 					if (!IsActive) {
 						return;
@@ -1458,6 +1484,10 @@ void AnimClass::Detach(AbstractClass const * target, bool all)
 {
 	BASECLASS::Detach(target, all);
 	if (xObject == target) {
+		// An object about to leave the map or die keeps its AttachEffect pointers, which this deletion would leave dangling.
+		if (target->Is_Techno()) {
+			const_cast<TechnoClass *>(target->As_TechnoClass())->AttachedEffects.Detach(this);
+		}
 		Map.Remove(this);
 		xObject = NULL;
 		IsToDelete = true;
@@ -1984,6 +2014,54 @@ RTTIType AnimClass::Fetch_RTTI(void) const
 }
 
 
+HouseClass * AnimClass::Owner_House(void) const
+{
+	return((OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL);
+}
+
+
+/// <summary>
+/// The house that owns the soldier an animation type with MakeInfantry makes, as its MakeInfantryOwner says: the invoker (the
+/// house passed as invoker), the killer, the victim, the Civilian, Special or Neutral house, or any house at random (Ares).
+/// </summary>
+/// <returns>Returns with the house, or HOUSE_NONE when the choice names no house the game has.</returns>
+HousesType AnimClass::Make_Infantry_Owner(AnimTypeClass const * type, HouseClass const * invoker, HouseClass const * killer, HouseClass const * victim)
+{
+	HouseClass const * chosen = invoker;
+	auto named = [](char const * name) -> HouseClass const * {
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->Class->Name(), name) == 0) {
+				return(Houses[index]);
+			}
+		}
+		return(NULL);
+	};
+	switch (type->MakeInfantryOwner) {
+		case AnimTypeClass::MAKE_OWNER_KILLER:
+			chosen = killer;
+			break;
+		case AnimTypeClass::MAKE_OWNER_VICTIM:
+			chosen = victim;
+			break;
+		case AnimTypeClass::MAKE_OWNER_CIVILIAN:
+			chosen = named("Civilian");
+			break;
+		case AnimTypeClass::MAKE_OWNER_SPECIAL:
+			chosen = named("Special");
+			break;
+		case AnimTypeClass::MAKE_OWNER_NEUTRAL:
+			chosen = named("Neutral");
+			break;
+		case AnimTypeClass::MAKE_OWNER_RANDOM:
+			chosen = Houses.Count() > 0 ? Houses[Random_Pick(0, Houses.Count() - 1)] : NULL;
+			break;
+		default:
+			break;
+	}
+	return(chosen != NULL ? (HousesType)chosen->HeapID : HOUSE_NONE);
+}
+
+
 /// <summary>
 /// Turns a finished MakeInfantry animation into its AnimToInfantry infantryman, as the end of
 /// AnimClass::AI (0x423BC0) does. The infantryman belongs to the animation's house, or to the
@@ -1998,7 +2076,7 @@ bool AnimClass::Make_Infantry(void)
 		return(true);
 	}
 
-	HouseClass * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+	HouseClass * owner = Owner_House();
 	if (owner == NULL || owner->IsDefeated) {
 		owner = NULL;
 		SideType civilian = SideClass::From_Name("Civilian");

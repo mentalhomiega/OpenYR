@@ -11,6 +11,8 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "csf.h"
+#include "lobbycolor.h"
 #include "conquer.h"
 #include "data.h"
 #include "globals.h"
@@ -196,7 +198,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 			UINetPlayerRow row;
 			row.Name = who->Name;
-			row.Color = Player_Color_Is_Custom(who->Player.CustomColor) ? UI_Color_CSS(Player_Color_Preview(who->Player.CustomColor)) : UI_Color_Text(PlayerColorTable[who->Player.Color]);
+			row.Color = Player_Color_Is_Custom(who->Player.CustomColor) ? UI_Color_CSS(Player_Color_Preview(who->Player.CustomColor)) : UI_Color_Text(Lobby_Color_Ref(who->Player.Color));
 
 			int country = who->Player.House;
 			SideType side = (country >= HOUSE_FIRST && country < HouseTypes.Count()) ? HouseTypes[country]->Side : SIDE_NONE;
@@ -231,7 +233,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 	state.Side = 0;
 	UI_Fill_Multiplay_Sides(state.Sides, Session.House, &state.Side);
 
-	UI_Fill_Stock_Colors(state.Colors, MAX_MPLAYER_COLORS);
+	UI_Fill_Stock_Colors(state.Colors, UI_Stock_Color_Count());
 	state.Color = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colors.size()) ? Session.ColorIdx : 0;
 	state.CustomColor = Player_Color_Is_Custom(Session.CustomColor) ? Session.CustomColor : 0;
 	state.Rivals.clear();
@@ -296,7 +298,7 @@ void UINetLobbyEngineServiceClass::Set_Side(int index)
 
 void UINetLobbyEngineServiceClass::Set_Color(int index, unsigned int custom)
 {
-	if (index < 0 || index >= MAX_MPLAYER_COLORS || (custom != 0 && !Player_Color_Is_Custom(custom))) {
+	if (index < 0 || index >= Lobby_Color_Count() || (custom != 0 && !Player_Color_Is_Custom(custom))) {
 		return;
 	}
 

@@ -1,6 +1,7 @@
 ; A paradropped GI (Paradrop sequence, InfantryClass::SpawnParachuted 0x521760): it plays Paradrop while it falls and stands ready as soon as it lands (FUN_00520AE0).
 ; The Allied paradrop is granted charged at frame 20 and fired at cell 66,66 at frame 25. infstate logs the GIs every 4 frames from frame 700; 'doing' is the engine's DoType number: 34 Paradrop, 0 Ready.
-; Expected: every GI that lands (height 0) is on Ready with the next sample, none sits on Paradrop on the ground. Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-paradrop.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -Filter "AUTOTEST   infstate|Exception"
+; Expected: every GI that lands (height 0) is on Ready with the next sample, none sits on Paradrop on the ground.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-paradrop.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -Filter "AUTOTEST   infstate|Exception"
 5 view 66 66
 6 reveal
 20 grant ParaDropSpecial

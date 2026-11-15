@@ -1,0 +1,26 @@
+; Ares's counting trigger events: House Owns Techno Type (81), House Doesn't Own Techno Type (82) and Techno Type
+; Doesn't Exist More Than (86), each on a volatile general tag, so each trigger springs once, on the first frame its
+; condition holds. The player starts with no MTNK. Expected log lines:
+;   ATEV1 (82, the player owns no more than 0 MTNK) springs at frame 41 and ATEV3 (86, no more than 1 MTNK on the
+;   map) at frame 43. ATEV5 (82 on NOSUCHTYPE, a name no type has) never springs.
+;   ATEV2 (81, the player owns at least 2 MTNK) springs at frame 111, after the player's second tank. ATEV4 (81, the
+;   computer owns at least 1 MTNK) waits for the computer's tank and springs at frame 151.
+;   ATEV6 (86, no more than 2 MTNK), made when three exist, springs at frame 201, after the player's tanks are destroyed.
+;   From frame 210 the rules take HouseDoesNotOwnAtMost=no (ares-events-strict.ini): ATEV7 (82, the player owns fewer
+;   than 0 MTNK) never springs, and ATEV8 (82, fewer than 1) springs at frame 213.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-events-counts.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|TEvent|Exception"
+30 command CenterBase
+40 tagevent general 82,2,0,MTNK
+41 tagevent general 81,2,2,MTNK
+42 tagevent general 86,2,1,MTNK
+43 tagevent general@Africans 81,2,1,MTNK
+44 tagevent general@Africans 82,2,1,NOSUCHTYPE
+100 own MTNK 60 36
+110 own MTNK 62 36
+150 spawn MTNK 70 40
+160 tagevent general 86,2,2,MTNK
+200 kill MTNK 1
+210 rules ares-events-strict.ini
+211 tagevent general 82,2,0,MTNK
+212 tagevent general 82,2,1,MTNK
+260 quit

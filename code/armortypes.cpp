@@ -43,6 +43,12 @@ int Armor_Type_Count(void)
 }
 
 
+bool Are_Ares_Rules(void)
+{
+	return(!Declared.empty());
+}
+
+
 char const * Armor_Type_Name(ArmorType armor)
 {
 	if (armor >= ARMOR_FIRST && armor < ARMOR_COUNT) {

@@ -1,0 +1,57 @@
+; An aircraft type's ReloadRate (Ares) sets the minutes between the rounds a rearming pad gives it, on its own timer, in place of
+; [General] ReloadRate. The overlay aircraft-type-reload-rate.ini sets [General] ReloadRate=.2 (180 frames a round) and gives a Harrier
+; (ORCA) ReloadRate=.05 (45 frames a round); a Black Eagle (BEAG) sets none. Both start with 0 of 6 rounds and fly to the Air Force
+; Command at 60,40 to reload.
+; Expected (observed 2026-11-14): the Harrier gains a round about every 45 frames, has 6 of 6 and is back on Guard by frame 760; the Black
+; Eagle gains one every 180 frames, still sleeps on its dock with 5 of 6 at frame 1240. Before the key was read the pad gave every docked
+; aircraft one round per [General] ReloadRate pass, the Black Eagle's rate, so the Harrier was not full at frame 760.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/aircraft-type-reload-rate.txt -Seconds 200 -Filter "AUTOTEST   wpstate|Exception"
+5 rules aircraft-type-reload-rate.ini
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 62 45
+311 grantunit BEAG 64 45
+320 view 60 45
+400 wpstate ORCA
+400 wpstate BEAG
+460 wpstate ORCA
+460 wpstate BEAG
+520 wpstate ORCA
+520 wpstate BEAG
+580 wpstate ORCA
+580 wpstate BEAG
+640 wpstate ORCA
+640 wpstate BEAG
+700 wpstate ORCA
+700 wpstate BEAG
+760 wpstate ORCA
+760 wpstate BEAG
+820 wpstate ORCA
+820 wpstate BEAG
+880 wpstate ORCA
+880 wpstate BEAG
+940 wpstate ORCA
+940 wpstate BEAG
+1000 wpstate ORCA
+1000 wpstate BEAG
+1060 wpstate ORCA
+1060 wpstate BEAG
+1120 wpstate ORCA
+1120 wpstate BEAG
+1180 wpstate ORCA
+1180 wpstate BEAG
+1240 wpstate ORCA
+1240 wpstate BEAG
+1300 wpstate ORCA
+1300 wpstate BEAG
+1360 wpstate ORCA
+1360 wpstate BEAG
+1420 wpstate ORCA
+1420 wpstate BEAG
+1480 wpstate ORCA
+1480 wpstate BEAG
+1510 quit

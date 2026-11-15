@@ -79,6 +79,7 @@
 #include "inline.h"
 #include "lightcon.h"
 #include "lstorm.h"
+#include "suprtype.h"
 #include "map.h"
 #include "missile.h"
 #include "revent.h"
@@ -98,6 +99,7 @@
 #include "unit.h"
 #include "vanim.h"
 #include "voxdrsys.h"
+#include "projectilerules.h"
 #include "warhead.h"
 #include "dbgprint.h"
 #include "ebolt.h"
@@ -949,6 +951,12 @@ void BulletClass::Resolve_Impact(Coord & coord, bool forced, bool collided, Impa
 					fuse = FUSE_EXPLODE_CLOSE;
 				}
 			}
+
+			// A Ranged=yes projectile that has flown its weapon's ProjectileRange from where it was fired runs out of fuel (Ares).
+			if (fuse == FUSE_WAIT && Class->IsFueled && Weapon != NULL && SourceCoord != COORD_NONE &&
+				SourceCoord.Gamemd_Distance_To(TPoint2D<int>(coord.X, coord.Y)) >= Weapon->ProjectileRange) {
+				fuse = FUSE_EXPLODE_FAR;
+			}
 			if (!forced && (Class->IsDropping || fuse == FUSE_WAIT)) {
 				/*
 				**	Certain projectiles lose strength when they travel.
@@ -986,6 +994,8 @@ void BulletClass::Resolve_Impact(Coord & coord, bool forced, bool collided, Impa
 					if (Start_Nuke_Blast()) {
 						break;
 					}
+				} else if (Warhead->PreImpactAnim != NULL && Start_Pre_Impact_Anim()) {
+					break;
 				}
 				Bullet_Explodes(forced);
 				Delete_Me();
@@ -1362,6 +1372,17 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 		}
 	}
 
+	// A SubjectToBuildings projectile stops in a cell whose building is solid up to the projectile's height. The building that
+	// fired it never stops it, nor does an ally's building under AlliedSolidTransparency, nor an open gate (Ares).
+	if (Class->IsSubjectToBuildings) {
+		BuildingClass const * building = cellptr->Cell_Building();
+		if (building != NULL && building != Payback && building->Class->SolidHeight != 0 && !(building->Class->IsGate && building->Is_Gate_Open())
+			&& !(Rule->IsAlliedSolidTransparency && Payback != NULL && Payback->House->Is_Ally(building->House))
+			&& ProjectileRules::Building_Stops(ProjectileRules::Solid_Height(building->Class->SolidHeight, building->Class->ZHeight, LEVEL_LEPTON_H), height)) {
+			return(true);
+		}
+	}
+
 	if (height < 0) {
 		return(true);
 	}
@@ -1416,7 +1437,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 		}
 	}
 
-	if (!Warhead->IsEMEffect) {
+	if (!Warhead->Is_EM_Pulse()) {
 		if (!Class->Detonates_Once()) {
 			// Airburst and Inaccurate shells blast where they stand (BulletClass::Explode, 0x468DC7 and 0x468EB9).
 			if (!forced && !Class->IsArcing && !Is_Homing() && !Class->IsAirburst && !Class->IsInaccurate && Fuse.Fuse_Target() != COORD_NONE) {
@@ -1517,13 +1538,18 @@ void BulletClass::Detonate(Coord const & coord)
 	if (AutoTest_Active()) {
 		Coord const aim = Fuse.Fuse_Target();
 		int const from_target = TarCom != NULL ? coord.Gamemd_Distance_To(TarCom->Center_Coord()) : -1;
-		DebugString("AUTOTEST detonate frame %d %s at %d,%d,%d aim %d,%d,%d target %d\n", Frame, Class->Name(), coord.X, coord.Y, coord.Z, aim.X, aim.Y, aim.Z, from_target);
+		AUTOTEST_LOG("detonate frame %d %s at %d,%d,%d aim %d,%d,%d target %d\n", Frame, Class->Name(), coord.X, coord.Y, coord.Z, aim.X, aim.Y, aim.Z, from_target);
 	}
 
 	WarheadTypeClass * warhead = Warhead;
 	bool nullified = false;
 	if (AutoTest_Active() && stricmp(warhead->Name(), "NUKE") == 0) {
 		DebugString("AUTOTEST nuke detonates at frame %d at %d,%d,%d\n", Frame, coord.X, coord.Y, coord.Z);
+	}
+
+	// The NUKE warhead flashed when its build-up started (Start_Nuke_Blast); any other warhead flashes as it goes off.
+	if (stricmp(warhead->Name(), "NUKE") != 0 && warhead->Nuke_Flash_Duration() > 0) {
+		NukeFlashClass::Start(nullptr, warhead->Nuke_Flash_Duration());
 	}
 
 	// A DirectRocker warhead that strikes a unit rocks it instead of blasting it (BulletClass::Detonate, 0x46978E).
@@ -1556,7 +1582,7 @@ void BulletClass::Detonate(Coord const & coord)
 		/*
 		**	Non-aircraft targets apply damage to the ground.
 		*/
-		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true, Payback != NULL ? Payback->House : NULL);
+		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true, Payback != NULL ? Payback->House : CreditedHouse, NULL, Class);
 		if (!IsActive) return;
 	}
 
@@ -1641,6 +1667,11 @@ void BulletClass::Detonate(Coord const & coord)
 /// </summary>
 bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * warhead, bool direct_rocks)
 {
+	// An Abductor weapon pulls a target it can take into the firer's hold instead of hurting it.
+	if (Weapon != NULL && Weapon->IsAbductor && !(Weapon->IsAbductTemporal && warhead->IsTemporal) && Payback != NULL && Payback->Abduct(TarCom, Weapon)) {
+		return(true);
+	}
+
 	// EMEffect and Webby are not in gamemd's chain, so they come last.
 	/*
 	 * A mind control warhead takes its target over for the firer instead of hurting it, with
@@ -1648,7 +1679,8 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 	 */
 	if (warhead->IsMindControl) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (Payback != NULL && Payback->CaptureManager && target != NULL) {
+		bool const permanent = warhead->IsMindControlPermanent;
+		if (Payback != NULL && (permanent || Payback->CaptureManager) && target != NULL) {
 			// The hit offers the target's tag the attacked events before the capture is tried (BulletClass::Detonate, 0x469210).
 			if (target->IsActive && target->Tag != NULL) {
 				target->Tag->Spring(TEVENT_ATTACKED, target, CELL_NONE, false, Payback);
@@ -1657,7 +1689,8 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 				}
 			}
 			bool const players = Payback->House->Is_Player_Control() || target->House->Is_Player_Control();
-			if (target->IsActive && Payback->CaptureManager->Capture_Unit(target) && players) {
+			bool const taken = target->IsActive && (permanent ? Capture_Permanently(Payback, target) : Payback->CaptureManager->Capture_Unit(target));
+			if (taken && players) {
 				Sound_Effect(Rule->YuriMindControlSound, target->PositionCoord);
 			}
 		}
@@ -1669,7 +1702,7 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 	else if (warhead->IsIvanBomb) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		if (target != NULL) {
-			target->Plant_Bomb(Payback);
+			target->Plant_Bomb(Payback, Weapon);
 		}
 	}
 
@@ -1730,7 +1763,12 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 	// A bomb disarming warhead removes the target's bomb (BombClass::Disarm, 0x4389B0).
 	else if (warhead->IsBombDisarm) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (target != NULL) {
+		// A bomb planted by a weapon with IvanBomb.Detachable=no stays on.
+		bool const detachable = target != NULL && (target->BombWeapon == NULL || target->BombWeapon->IvanDetachable != 0);
+		if (AutoTest_Active() && target != NULL) {
+			DebugString("AUTOTEST bomb on %s: defusing %s at frame %d\n", target->TClass->Name(), detachable ? "removes it" : "fails", Frame);
+		}
+		if (detachable) {
 			target->Disarm_Bomb();
 		}
 	}
@@ -1758,7 +1796,7 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 		Nuke_Maker();
 	}
 
-	else if (warhead->IsEMEffect) {
+	else if (warhead->Is_EM_Pulse()) {
 		new EMPulseClass(coord.As_Cell(), warhead->SpreadFactor, Strength, Payback);
 	}
 
@@ -1857,7 +1895,8 @@ static TVelocity3D<double> Random_Bomblet_Velocity(WeaponTypeClass const * weapo
 /// <summary>
 /// Fires the AirburstWeapon once at each of nine cells, the eight neighbours of the cell this projectile burst over
 /// from north clockwise and then that cell, each bomblet launched at a speed of 50 without a lighting flash
-/// (BulletClass::Detonate, 0x4690B0). Cells outside the map are skipped.
+/// (BulletClass::Detonate, 0x4690B0). Cells outside the map are skipped. With AirburstSpread (Ares) it fires at every
+/// cell within the spread of that cell, or of its original target with AroundTarget=yes.
 /// </summary>
 void BulletClass::Airburst(void)
 {
@@ -1865,14 +1904,23 @@ void BulletClass::Airburst(void)
 	if (weapon == NULL || weapon->Bullet == NULL) {
 		DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
 	} else {
-		static int const offsets[9][2] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, 0}};
-		Cell const center = Center_Coord().As_Cell();
-		for (int index = 0; index < 9; index++) {
-			Cell const cell(center.X + offsets[index][0], center.Y + offsets[index][1]);
+		bool const stock = Class->AirburstSpread < 0;
+		Cell center = Center_Coord().As_Cell();
+		if (!stock && TarCom != NULL && Class->AroundTarget == 1) {
+			center = TarCom->As_Coord().As_Cell();
+		}
+		auto const offsets = stock ? ProjectileRules::Airburst_Stock_Offsets() : ProjectileRules::Airburst_Offsets((double)Class->AirburstSpread / CELL_LEPTON_W);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST airburst %s over %d,%d aimed at %d,%d around %d,%d: %d cells\n", Class->Name(), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y,
+				TarCom != NULL ? TarCom->As_Coord().As_Cell().X : -1, TarCom != NULL ? TarCom->As_Coord().As_Cell().Y : -1, center.X, center.Y, (int)offsets.size());
+		}
+		for (auto const & offset : offsets) {
+			Cell const cell(center.X + offset.first, center.Y + offset.second);
 			if (!Map.In_Radar(cell)) {
 				continue;
 			}
-			BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, 50, false);
+			// The stock burst launches every bomblet at a speed of 50 without a lighting flash.
+			BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, stock ? 50 : weapon->MaxSpeed, stock ? false : weapon->IsBright);
 			if (bullet != NULL) {
 				bullet->Weapon = weapon;
 				TVelocity3D<double> velocity = Random_Bomblet_Velocity(weapon);
@@ -1885,7 +1933,9 @@ void BulletClass::Airburst(void)
 
 /// <summary>
 /// Splits this projectile into Cluster bomblets of its AirburstWeapon. Each goes to the target, or, when there is none
-/// or the RetargetAccuracy roll fails, to a locked object within five cells or a random cell within three.
+/// or the RetargetAccuracy roll fails, to a locked object within five cells or a random cell within three. Each
+/// bomblet carries the AirburstWeapon's own Damage, Speed and Bright, which Ares uses in place of Tiberian Sun's
+/// ten times the Damage, fixed speed and no flash (Ares manual, Splits).
 /// </summary>
 void BulletClass::Split(void)
 {
@@ -1894,12 +1944,17 @@ void BulletClass::Split(void)
 	Coord split_coord = PositionCoord;
 	Cell split_cell = Center_Coord().As_Cell();
 
-	if (TarCom != NULL) {
+	// The bomblets look for targets around the original target unless AroundTarget=no puts the search where the projectile burst.
+	if (TarCom != NULL && Class->AroundTarget != 0) {
 		ObjectClass * object = TarCom->As_ObjectClass();
 		if (object != NULL) {
 			split_coord = object->PositionCoord;
 			split_cell = object->Center_Coord().As_Cell();
 		}
+	}
+
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST split %s over %d,%d searches around %d,%d\n", Class->Name(), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y, split_cell.X, split_cell.Y);
 	}
 
 	int i;
@@ -1939,7 +1994,7 @@ void BulletClass::Split(void)
 
 		if (target != NULL) {
 			const BulletTypeClass * btype = weapon->Bullet;
-			BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
+			BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);
 			if (bullet != NULL) {
 				TVelocity3D<double> velocity = Random_Bomblet_Velocity(weapon);
 				bullet->Unlimbo(PositionCoord, velocity);
@@ -1965,6 +2020,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(NextAnim);
 	stream.Serialize(SpawnNextAnim);
 	stream.Serialize(FirerHouse);
+	stream.Serialize(NukeSuper);
 	stream.Serialize(IsInaccurate);
 	stream.Serialize(Fuse);
 	stream.Serialize(IsBright);
@@ -2006,9 +2062,12 @@ bool BulletClass::Is_Homing(void) const
 /// <param name="strength">The damage the projectile will inflict when it detonates.</param>
 /// <param name="bright">Should the impact throw off a lighting flash?</param>
 /// <returns>Returns with a pointer to the projectile created, or NULL if one could not be
-/// made.</returns>
+/// made, as when no projectile type is given.</returns>
 BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright)
 {
+	if (type == NULL) {
+		return(NULL);
+	}
 	BulletClass * bullet = new BulletClass;
 	bullet->Set_Bullet_Data(type, target, payback, strength, warhead, max_speed, bright);
 	return(bullet);
@@ -2087,8 +2146,8 @@ ObjectTypeClass const * BulletClass::Class_Of(void) const
 
 /// <summary>
 /// Starts the build-up of a nuclear blast, as BulletClass::Update (0x4666E0) does when a projectile
-/// with the warhead named NUKE goes off. The map flashes, and the projectile settles on the ground and plays NUKEBALL
-/// where it is; the blast itself goes off when that animation ends.
+/// with the warhead named NUKE goes off. The map flashes, and the projectile settles on the ground and plays NUKEBALL, or
+/// the warhead's PreImpactAnim, where it is; the blast itself goes off when that animation ends.
 /// </summary>
 /// <returns>bool; Is the projectile waiting for the animation? False when there is no NUKEBALL animation, so the blast goes off at once.</returns>
 bool BulletClass::Start_Nuke_Blast(void)
@@ -2100,15 +2159,33 @@ bool BulletClass::Start_Nuke_Blast(void)
 		PositionCoord = settled;
 	}
 
-	NukeFlashClass::Start();
+	NukeFlashClass::Start(NukeSuper >= 0 && NukeSuper < SuperWeaponTypes.Count() ? SuperWeaponTypes[NukeSuper] : nullptr, Warhead->Nuke_Flash_Duration());
 
-	AnimClass * const nukeball = Spawn_Named_Anim("NUKEBALL", PositionCoord, 0, Get_Explosion_Z(PositionCoord), ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER));
+	ShapeFlags_Type const flags = ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER);
+	AnimClass * const nukeball = Warhead->PreImpactAnim != NULL
+		? new AnimClass(Warhead->PreImpactAnim, PositionCoord, 0, 1, flags, Get_Explosion_Z(PositionCoord))
+		: Spawn_Named_Anim("NUKEBALL", PositionCoord, 0, Get_Explosion_Z(PositionCoord), flags);
 	if (nukeball == NULL) {
 		return(false);
 	}
 	NextAnim = AnimClass::Held(nukeball, this);
 	SpawnNextAnim = true;
 	AUTOTEST_LOG("nuke blast builds up at frame %d\n", Frame);
+	return(true);
+}
+
+
+/// <summary>
+/// Plays the warhead's PreImpactAnim where the projectile hit; the blast goes off when it ends (Ares).
+/// </summary>
+/// <returns>bool; Is the projectile waiting for the animation?</returns>
+bool BulletClass::Start_Pre_Impact_Anim(void)
+{
+	NextAnim = AnimClass::Held(new AnimClass(Warhead->PreImpactAnim, PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord)), this);
+	SpawnNextAnim = true;
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST pre-impact %s plays %s at frame %d\n", Warhead->Name(), Warhead->PreImpactAnim->Name(), Frame);
+	}
 	return(true);
 }
 
@@ -2135,6 +2212,7 @@ void BulletClass::Nuke_Maker(void)
 	if (bullet != NULL) {
 		// The payload keeps its weapon, so its blast leaves the weapon's RadLevel behind (0x46B310).
 		bullet->Weapon = weapon;
+		bullet->NukeSuper = NukeSuper;
 		AUTOTEST_LOG("nuke payload released at frame %d from height %d\n", Frame, coord.Z);
 		if (!bullet->Unlimbo(coord, TVelocity3D<double>(0.0, 0.0, -1.0))) {
 			delete bullet;

@@ -40,19 +40,30 @@ Yuri=cyur048
 Priority=LOW
 ```
 
+`[EVATypes]` lists extra voices. The text left of each `=` is ignored, and each value is a voice name, such as `Foehn`. A line's section then gives the sample for that voice under the same name. A side picks one of these voices with [`EVA.Tag`](/keys/eva.tag/).
+
+```ini title="EVAMD.INI"
+[EVATypes]
+0=Foehn
+
+[EVA_LowPower]
+Allied=ceva053
+Foehn=cfoe053
+```
+
 A line's position in `[DialogList]`, counting the first as 0, is the number that [Play speech...](/mapping/actions/taction-play-speech/) and the [Play speech...](/mapping/missions/tmission-play-speech/) team mission name. The order of the entries decides the positions; the numbers before the `=` do not. The game also asks for lines by name, so renaming a line it uses silences that announcement.
 
 Each line's section takes these keys:
 
 | Key | Meaning |
 | --- | --- |
-| `Allied`, `Russian`, `Yuri` | The sample each voice plays, without its `.WAV` extension. Only the first eight characters are used. |
+| `Allied`, `Russian`, `Yuri`, and each name under `[EVATypes]` | The sample each voice plays, without its `.WAV` extension. Only the first eight characters are used. |
 | `Type` | How the line waits: `QUEUE`, `STANDARD`, `INTERRUPT` or `QUEUED_INTERRUPT`. Anything else is `STANDARD`. |
 | `Priority` | `LOW`, `NORMAL`, `IMPORTANT` or `CRITICAL`. Anything else is `NORMAL`. |
 | `Volume` | A multiplier for the line's volume. Without it the line plays at full volume. |
 
 [EVA speech](/systems/eva-speech/#order) gives what `Type` and `Priority` do. `Text` is not read.
 
-The voice is chosen by the player's side: the first side in `[Sides]` hears `Allied`, the second `Russian`, and any other `Yuri`. A campaign mission's `SpeechSide` in `[Basic]` picks the side instead. A line whose sample is empty for the voice in use says nothing.
+The voice is chosen by the player's side: its [`EVA.Tag`](/keys/eva.tag/) when it sets one, otherwise `Russian` for the second side in `[Sides]`, `Yuri` for the third and `Allied` for any other. A campaign mission's `SpeechSide` in `[Basic]` picks the side instead. A line whose sample is empty for the voice in use says nothing.
 
 A sample is looked up as a file first, so a loose or archived `ceva003.wav` is played in place of the bag's. Otherwise it is read from the sound bag, `AUDIO.BAG` through its `AUDIO.IDX`, where Yuri's Revenge keeps its announcer.

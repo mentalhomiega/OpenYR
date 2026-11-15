@@ -1,0 +1,20 @@
+; Convert type (script line 68) turns each vehicle of the team into the type its Convert.Script names (Ares scripts and type
+; conversion pages); a vehicle without the key is unchanged. A Grizzly (MTNK) with Convert.Script=HTNK becomes a Rhino (HTNK) at frame
+; 320; the other tank (FV, no key) stays. teams-convert-type-infantry.txt covers soldiers.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/teams-convert-type.txt -AICountries 1 -Seconds 90 -Filter "AUTOTEST   where (MTNK|HTNK|FV)|Convert:|Exception"
+; Expected: "where MTNK" at 310 and 315, a "Convert: MTNK becomes HTNK" line after 320, then "where HTNK" at 330, and no MTNK left.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 teamtrace 1
+300 spawn MTNK 52 92
+301 spawn FV 53 92
+305 rules teams-convert-type-rules.ini
+310 teamini teams-convert-type.ini
+315 where MTNK
+320 team TSTCVT
+330 where HTNK
+330 where MTNK
+330 where FV
+400 where HTNK
+450 quit

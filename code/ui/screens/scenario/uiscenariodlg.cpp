@@ -83,6 +83,16 @@ bool Service_Pick(void)
 }
 
 
+// The game mode's map filter, set by the skirmish lobby of a mod that declares modes.
+static std::function<bool(std::string const &)> ModeFilter;
+
+
+void UI_Scenario_Dialog_Filter(std::function<bool(std::string const & file)> keep)
+{
+	ModeFilter = std::move(keep);
+}
+
+
 UIScenarioServiceClass & UI_Scenario_Service(void)
 {
 	static UIScenarioEngineServiceClass service;
@@ -119,7 +129,8 @@ void UI_Scenario_State(UIScenarioState & state)
 		UIScenarioEntry entry;
 		entry.Label = Session.Scenarios[index]->Description();
 		entry.File = Session.Scenarios[index]->Get_Filename();
-		entry.Players = Start_Count(index);
+		entry.InMode = !ModeFilter || ModeFilter(entry.File);
+		entry.Players = entry.InMode ? Start_Count(index) : 0;
 		state.Entries.push_back(entry);
 	}
 

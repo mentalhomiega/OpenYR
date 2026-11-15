@@ -56,6 +56,7 @@
 #include "animtype.h"
 #include "bsurface.h"
 #include "convert.h"
+#include "dbgprint.h"
 #include "face.h"
 #include "findmake.h"
 #include "globals.h"
@@ -106,6 +107,12 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsPassive(false),
 	IsCrateGoodie(false),
 	IsSimpleDeployer(false),
+	ConvertDeploy(NULL),
+	ConvertWater(NULL),
+	ConvertLand(NULL),
+	ConvertScript(NULL),
+	IsVoiceIFVRepairSet(false),
+	VoiceIFVRepair(VOC_NONE),
 	IsDeployer(false),
 	DeployingAnim(NULL),
 	IsToHarvest(false),
@@ -374,6 +381,14 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 	if (BASECLASS::Read_INI(ini)) {
 		IsCrateGoodie = ini.Get_Bool(Name(), "CrateGoodie", IsCrateGoodie);
 		IsSimpleDeployer = ini.Get_Bool(Name(), "IsSimpleDeployer", IsSimpleDeployer);
+		ConvertDeploy = TGet_Class(ini, Name(), "Convert.Deploy", ConvertDeploy);
+		ConvertWater = TGet_Class(ini, Name(), "Convert.Water", ConvertWater);
+		ConvertLand = TGet_Class(ini, Name(), "Convert.Land", ConvertLand);
+		ConvertScript = TGet_Class(ini, Name(), "Convert.Script", ConvertScript);
+		if (ini.Is_Present(Name(), "VoiceIFVRepair")) {
+			IsVoiceIFVRepairSet = true;
+			VoiceIFVRepair = ini.Get_VocType(Name(), "VoiceIFVRepair", VoiceIFVRepair);
+		}
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
@@ -438,6 +453,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 			Map_Turret_Weapon(ini.Get_Int(Name(), "YuriPrimeTurretIndex", 0), ini.Get_Int(Name(), "YuriPrimeTurretWeapon", -1));
 			Map_Turret_Weapon(ini.Get_Int(Name(), "GuardianTurretIndex", 0), ini.Get_Int(Name(), "GuardianTurretWeapon", -1));
 		}
+		Read_Weapon_Turret_Indices(ini);
 
 		if (IsSmallVisceroid || IsLargeVisceroid) {
 			IsNonVehicle = true;
@@ -512,6 +528,29 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 
 
 /// <summary>
+/// Reads WeaponTurretIndex1 onward (Ares): the turret each weapon position shows, overriding the FV position keys.
+/// An index of -1 leaves the position as it was; one outside the type's turrets is logged and ignored.
+/// </summary>
+void UnitTypeClass::Read_Weapon_Turret_Indices(CCINIClass const & ini)
+{
+	int const turrets = std::max<int>(TurretCount, 1);
+	for (int position = 0; position < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); position++) {
+		char key[32];
+		sprintf(key, "WeaponTurretIndex%d", position + 1);
+		int const turret = ini.Get_Int(Name(), key, -1);
+		if (turret == -1) {
+			continue;
+		}
+		if (turret < 0 || turret >= turrets) {
+			DebugString("[%s] %s=%d names no turret of its %d.\n", Name(), key, turret, turrets);
+			continue;
+		}
+		Map_Turret_Weapon(turret, position);
+	}
+}
+
+
+/// <summary>
 /// Adjusts a coordinate so that the unit does not sink below the ground.
 /// This routine is used when a unit is being placed or moved, to ensure that its
 /// altitude is never lower than the terrain beneath it.
@@ -572,6 +611,9 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(MovementRestrictedTo);
 	crc(IsPassive);
+	crc(ConvertWater != NULL);
+	crc(ConvertLand != NULL);
+	crc(ConvertScript != NULL);
 	crc(IsCrateGoodie);
 	crc(WreckReleasesPassengers);
 	crc(IsToHarvest);
@@ -619,6 +661,12 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPassive);
 	stream.Serialize(IsCrateGoodie);
 	stream.Serialize(IsSimpleDeployer);
+	stream.Serialize(ConvertDeploy);
+	stream.Serialize(ConvertWater);
+	stream.Serialize(ConvertLand);
+	stream.Serialize(ConvertScript);
+	stream.Serialize(IsVoiceIFVRepairSet);
+	stream.Serialize(VoiceIFVRepair);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(DeployingAnim);
 	stream.Serialize(IsToHarvest);

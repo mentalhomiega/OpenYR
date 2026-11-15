@@ -1,0 +1,12 @@
+; Ares [CrateRules] RandomCrateMoney. Set to 0, a money crate pays exactly its [Powerups] Money amount: the credits in the
+; dump at 400 are those at 150 plus that amount (stock rules: 2000), never more. Without the key up to 900 more is added.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-random-crate-money.txt -Seconds 60 -Filter "AUTOTEST|contains money|Exception"
+5 rules ares-random-crate-money.ini
+10 command CenterBase
+100 own E1 60 44
+150 dump
+200 crate money 56 44
+210 move E1 56 44
+300 waitcell E1 56 44 0 900
+400 dump
+410 quit

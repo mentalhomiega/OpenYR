@@ -1,7 +1,8 @@
 ; Infantry deaths by warhead InfDeath= (InfantryClass::Destroy 0x517FA0): 1 Die1 (SA), 2 Die2 (HE), 3 InfantryExplode (AP), 4 FlamingInfantry (Fire),
 ; 5 electrocution (Electric), 6 head pop (PsiPulse), 7 nuked (NUKE), 8 virus (Virus), 9 mutate or Die2 (Mutate), 10 brute (TRexInfWH).
 ; Ten soldiers of ten types stand two cells apart. One by one a soldier is hit with the warhead (a GI is the firer), and the screen is captured 2, 5 and 9 frames later.
-; infstate logs E1 and E2, whose death is their own Die1 and Die2 sequence. Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-deaths.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -Filter "AUTOTEST   infstate|AUTOTEST   hit|Exception"
+; infstate logs E1 and E2, whose death is their own Die1 and Die2 sequence.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-deaths.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -Filter "AUTOTEST   infstate|AUTOTEST   hit|Exception"
 5 view 66 70
 6 reveal
 10 own GGI 56 70

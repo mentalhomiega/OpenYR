@@ -10,8 +10,7 @@
 ; (on CAMISC01, which takes no C4) on Area Guard. The E1 takes the Sabotage mission, which ends at once because the structure takes no C4; FootClass::Mission_Capture
 ; (0x4D4B20, shared with Sabotage) then leaves an Occupier=yes soldier with no target on its idle mission, where any other soldier would go back to Hunt and loop.
 ; Before the change they all stayed on Hunt except the ENGINEER, and the GHOST took the Sabotage mission.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Mods "E:\Claude ra2 decomp\src-agent27\tests\autotest\infantry-hunt-rules" -Script src-agent27/tests/autotest/infantry-hunt-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST settarget|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Mods tests/autotest/infantry-hunt-rules -Script src-agent27/tests/autotest/infantry-hunt-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST settarget|Exception"
 30 own GAPOWR 60 52
 31 own CAMISC01 66 46
 32 neutral CAHSE02 66 52

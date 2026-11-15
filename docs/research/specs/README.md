@@ -23,6 +23,7 @@ Rules for these files:
 | `build-time.md` | `BuildTime.MultipleFactory` and the other `BuildTime.*` keys |
 | `groupas-and-keepalive.md` | `GroupAs`, `TypeSelectUseDeploy`, `KeepAlive` |
 | `crashable-and-promotion.md` | `Crashable`, `CrashSpin`, `Promote.VeteranSound/EliteSound` and the other promotion keys |
+| `prism-forwarding.md` | `PrismForwarding` and the `PrismForwarding.*` keys (not implemented; what the work needs) |
 | `airburst-scatter-zadjust.md` | `AirburstSpread`, `AroundTarget`, `BallisticScatter.Min/Max`, projectile `ZAdjust`, `JumpjetCrash` |
 | `electric-bolt-colours.md` | `Bolt.Color1-3`, `Beam.Color`, `Beam.Amplitude` |
 | `targeting-flags.md` | `AttackFriendlies`, `AttackCursorOnFriendlies`, `DefaultToGuardArea` |

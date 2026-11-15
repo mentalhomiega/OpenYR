@@ -21,6 +21,7 @@
 #include "sun.h"
 #include "swizzle.h"
 #include "tagtype.h"
+#include "tevent.h"
 #include "tracker.h"
 #include "trigger.h"
 #include "trigtype.h"
@@ -247,7 +248,7 @@ bool TagClass::Is_Trigger_Attached(TriggerClass *trigger) const
 /// <param name="source">The object that caused the event, if there was one.</param>
 /// <returns>bool; Did any attached trigger fire?</returns>
 /// <remarks>A tag will refuse to spring while it is already in the middle of springing.</remarks>
-bool TagClass::Spring(TEventType event, ObjectClass * object, Cell cell, bool forced, TechnoClass *source)
+bool TagClass::Spring(TEventType event, ObjectClass * object, Cell cell, bool forced, TechnoClass *source, HouseClass const * source_house)
 {
 	bool res = false; /// was handled
 	bool die = false; /// to delete
@@ -262,7 +263,7 @@ bool TagClass::Spring(TEventType event, ObjectClass * object, Cell cell, bool fo
 	IsCurrentlySprung = true;
 
 	while (trigger != NULL) {
-		if (trigger->Should_Spring(event, object, forced, Class->Persistence == PERSISTENT, source)) {
+		if (trigger->Should_Spring(event, object, forced, Class->Persistence == PERSISTENT, source, source_house)) {
 			switch (Class->Persistence) {
 
 				case VOLATILE:
@@ -479,6 +480,19 @@ bool TagClass::Is_To_Inherit(void) const
 			return(true);
 		}
 		trigger = trigger->LinkedTo;
+	}
+	return(false);
+}
+
+
+bool TagClass::Has_Event(TEventType event) const
+{
+	for (TriggerClass const * trigger = Trigger; trigger != NULL; trigger = trigger->LinkedTo) {
+		for (TEventClass const * tevent = trigger->Class->FirstEvent; tevent != NULL; tevent = tevent->Next) {
+			if (tevent->Event == event) {
+				return(true);
+			}
+		}
 	}
 	return(false);
 }

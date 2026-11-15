@@ -15,6 +15,7 @@
 #include "_rules.h"
 #include "airctype.h"
 #include "anim.h"
+#include "bullet.h"
 #include "animtype.h"
 #include "cell.h"
 #include "classids.h"
@@ -28,6 +29,7 @@
 #include "rules.h"
 #include "savestream.h"
 #include "veteran.h"
+#include "weapon.h"
 
 #include <algorithm>
 #include <cmath>
@@ -178,6 +180,7 @@ bool RocketLocomotionClass::Process(void)
 	}
 
 	RulesClass::RocketTypeStruct const & rocket = Rocket_Settings(LinkedTo);
+	AircraftTypeClass const * type = (AircraftTypeClass const *)LinkedTo->TClass;
 	double const maxspeed = std::max(1, (int)LinkedTo->TClass->MaxSpeed);
 	Coord const position = LinkedTo->Get_Coord();
 	double const horizontal = std::hypot(double(DestinationCoord.X - position.X), double(DestinationCoord.Y - position.Y));
@@ -203,7 +206,7 @@ bool RocketLocomotionClass::Process(void)
 			CurrentPitch = float(rocket.PitchFinal * M_PI_2);
 			MissionState = STATE_CLIMB;
 			// The takeoff starts two frames into its life, with a ZAdjust of -10 (gamemd 0x66238A).
-			Spawn_Named_Anim("V3TAKOFF", position, 2, -10);
+			Spawn_Named_Anim(type->MissileTakeOffAnim.empty() ? "V3TAKOFF" : type->MissileTakeOffAnim.c_str(), position, 2, -10);
 			Sound_Effect(LinkedTo->TClass->AuxSound1, position);
 			break;
 
@@ -261,8 +264,8 @@ bool RocketLocomotionClass::Process(void)
 	}
 
 	if (MissionState >= STATE_CLIMB && Frame >= NextTrailFrame) {
-		Spawn_Named_Anim("V3TRAIL", position);
-		NextTrailFrame = Frame + 3;
+		Spawn_Named_Anim(type->MissileTrailerAnim.empty() ? "V3TRAIL" : type->MissileTrailerAnim.c_str(), position);
+		NextTrailFrame = Frame + type->MissileTrailerSeparation;
 	}
 
 	if (CurrentSpeed > 0.0) {
@@ -353,7 +356,16 @@ void RocketLocomotionClass::Explode(void)
 	// victim, and the missile leaves the map once the blast is dealt.
 	TechnoClass * source = LinkedTo;
 
-	if (warhead != NULL) {
+	WeaponTypeClass const * weapon = type->IsMissileCustom ? (IsSpawnerElite ? type->MissileEliteWeapon : type->MissileWeapon) : NULL;
+	if (weapon != NULL && weapon->Bullet != NULL) {
+		// A Missile.Weapon makes its own bullet detonate at the nose, with the weapon's damage and warhead (Ares).
+		BulletClass * const bullet = Create_Bullet(weapon->Bullet, &Map[coord], source, weapon->Attack, weapon->WarheadPtr, 0, weapon->IsBright);
+		if (bullet != NULL) {
+			bullet->Weapon = weapon;
+			bullet->Detonate(coord);
+			delete bullet;
+		}
+	} else if (warhead != NULL) {
 		AnimTypeClass const * anim = Combat_Anim(damage, warhead, Map[coord].Land_Type(), coord);
 		if (anim != NULL) {
 			new AnimClass(anim, coord);

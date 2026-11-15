@@ -1,0 +1,337 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#pragma once
+
+#include <string>
+#include <vector>
+
+#include "paragroup.h"
+#include "swrules.h"
+#include "typelist.h"
+#include "voc.hh"
+
+class AircraftTypeClass;
+class AnimTypeClass;
+class BuildingTypeClass;
+class CCINIClass;
+class SaveStreamClass;
+class TechnoTypeClass;
+class UnitTypeClass;
+class WarheadTypeClass;
+class WeaponTypeClass;
+class CRCEngine;
+
+
+/*
+ * Conversions from a key's text to the value a superweapon keeps. Each returns the value to keep: the old one
+ * when the text is empty, so a key a section leaves out changes nothing. A list replaces the old one whenever
+ * the text is not empty, and "none" empties it.
+ */
+namespace SuperKeyParse
+{
+	std::string Text_Or(std::string const & value, std::string const & old);
+	void Building_List(std::string const & value, TypeList<BuildingTypeClass const *> & list);
+	void Techno_List(std::string const & value, TypeList<TechnoTypeClass const *> & list);
+	WarheadTypeClass const * Warhead_Named(std::string const & value, WarheadTypeClass const * old);
+	AnimTypeClass const * Anim_Named(std::string const & value, AnimTypeClass const * old);
+	UnitTypeClass const * Unit_Named(std::string const & value, UnitTypeClass const * old);
+	AircraftTypeClass const * Aircraft_Named(std::string const & value, AircraftTypeClass const * old);
+	WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass const * old);
+	void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list, bool & is_set);
+	int Deliver_Owner(std::string const & value, int old);
+}
+
+
+/*
+ * The superweapon keys that Ares adds (SW.*, Money.Amount, EVA.*, Message.*, Text.* and the
+ * per-behavior keys such as Deliver.Types), as one superweapon type reads them from its rules
+ * section. A weapon keeps the defaults below for a key its section leaves out.
+ */
+struct SuperWeaponKeys
+{
+	SuperWeaponKeys(void);
+
+	void Set_Area(SuperRules::Area const & area);
+	void Set_AI_Targeting(std::string const & value);
+	void Set_AI_Requires_House(std::string const & value);
+	void Set_Pulse_Ball(std::string const & value);
+	void Read_Para_Owners(CCINIClass const & ini, char const * section);
+	void Serialize(SaveStreamClass & stream);
+	void Compute_CRC(CRCEngine & crc) const;
+
+	/*
+	 * Cost, timing and limits. A negative Money.Amount is taken from the house when the weapon
+	 * fires; a positive one is paid to it. Deferment is -1 until the section sets it.
+	 */
+	int MoneyAmount;
+	int Deferment;
+	int Shots;
+	int MaxCount;
+	int Group;
+	bool InitialReady;
+	bool VirtualCharge;
+	bool AlwaysGranted;
+	bool AllowPlayer;
+	bool AllowAI;
+	bool Unstoppable;
+	float ChargeToDrainRatio;
+
+	// Which houses and which buildings make the weapon available.
+	TypeList<BuildingTypeClass const *> AuxBuildings;
+	TypeList<BuildingTypeClass const *> NegBuildings;
+	TypeList<int> RequiredHouses;
+	TypeList<int> ForbiddenHouses;
+
+	/*
+	 * Where the weapon may be aimed and what it affects. RequiresTarget is zero until the
+	 * section sets it, which allows every cell; the Affects values hold Parse_Houses and
+	 * Parse_Targets flags.
+	 */
+	unsigned AffectsHouse;
+	bool AffectsHouseSet;
+	unsigned AffectsTarget;
+	bool AffectsTargetSet;
+	unsigned RequiresTarget;
+	unsigned RequiresHouse;
+	bool FireIntoShroud;
+	float RangeMinimum;
+	float RangeMaximum;
+	bool AreaIsSet;
+	bool AreaIsBlock;
+	float AreaRadius;
+	int AreaWidth;
+	int AreaHeight;
+	TypeList<TechnoTypeClass const *> Designators;
+	TypeList<TechnoTypeClass const *> Inhibitors;
+	bool AnyDesignator;
+	bool AnyInhibitor;
+
+	// How the computer and automatic firing choose a target.
+	int AITargeting;
+	unsigned AIRequiresTarget;
+	unsigned AIRequiresHouse;
+	unsigned AIConstraints;
+	// An SuperRules::AIPreference; Default until SW.AITargeting.Preference is set.
+	int AIPreference;
+	bool UseAITargeting;
+	bool AutoFire;
+	bool ManualFire;
+	bool ShowCameo;
+	// Who sees a ShowTimer countdown, as Parse_Houses flags relative to the owner (SW.TimerVisibility).
+	unsigned TimerVisibility;
+
+	// The effect: a warhead and damage, an animation and sounds at the target.
+	WarheadTypeClass const * Warhead;
+	int Damage;
+	AnimTypeClass const * Animation;
+	int AnimationHeight;
+	VocType Sound;
+	VocType ActivationSound;
+	bool CreateRadarEvent;
+
+	/*
+	 * Announcements. A string left empty keeps the behavior's own line; "none" turns the line
+	 * off. Messages are string table labels.
+	 */
+	std::string EvaReady;
+	std::string EvaDetected;
+	std::string EvaActivated;
+	std::string EvaImpatient;
+	std::string EvaSelectTarget;
+	std::string EvaInsufficientFunds;
+	std::string MessageDetected;
+	std::string MessageReady;
+	std::string MessageLaunch;
+	std::string MessageActivate;
+	std::string MessageAbort;
+	std::string MessageInsufficientFunds;
+	std::string MessageCannotFire;
+	bool MessageFirerColor;
+	std::string TextHold;
+	std::string TextReady;
+	std::string TextCharging;
+	std::string TextActive;
+	std::string TextPreparing;
+
+	// Names of the mouse cursors for a place the weapon may fire at and one it may not.
+	std::string Cursor;
+	std::string NoCursor;
+
+	/*
+	 * Screen lighting while a nuclear missile, lightning storm or psychic dominator acts; -1 keeps the
+	 * value the behavior would use without the key. Light.Enabled=no leaves the map unlit by the weapon.
+	 */
+	bool LightEnabled;
+	int LightAmbient;
+	int LightRed;
+	int LightGreen;
+	int LightBlue;
+
+	// UnitDelivery.
+	TypeList<TechnoTypeClass const *> DeliverTypes;
+	int DeliverOwnerMode;
+	bool DeliverBaseNormal;
+	bool DeliverBuildups;
+
+	// DropPod. Minimum and Maximum are -1 until the section sets them.
+	TypeList<TechnoTypeClass const *> DropPodTypes;
+	int DropPodMinimum;
+	int DropPodMaximum;
+	float DropPodVeterancy;
+
+	// HunterSeeker.
+	TypeList<BuildingTypeClass const *> HunterSeekerBuildings;
+	UnitTypeClass const * HunterSeekerType;
+	bool HunterSeekerRandomOnly;
+
+	// EMPulse.
+	TypeList<BuildingTypeClass const *> EMPulseCannons;
+	bool EMPulseTargetSelf;
+	bool EMPulseLinked;
+	AnimTypeClass const * EMPulsePulseBall;
+	bool EMPulseNoPulseBall;
+	int EMPulsePulseDelay;
+
+	// MultiMissile: the payload weapon, and whether a building with NukeSilo=yes launches it.
+	WeaponTypeClass const * NukePayload;
+	bool NukeSiloLaunch;
+
+	// IronCurtain and ForceShield: frames of protection, of power outage and before the end at which the fade sound plays; -1 keeps the rules value.
+	int ProtectDuration;
+	int ProtectPowerOutage;
+	int ProtectFadeSoundTime;
+
+	/*
+	 * LightningStorm. A number holds UNSET_INT, a switch holds -1, and a list holds is_set false until its
+	 * key is read, where the rules value applies. An empty list that is set replaces the rules list with nothing.
+	 */
+	int LightningDuration;
+	int LightningRadarOutage;
+	unsigned LightningRadarOutageAffects;
+	int LightningHitDelay;
+	int LightningScatterDelay;
+	int LightningScatterCount;
+	int LightningSeparation;
+	int LightningPrintText;
+	int LightningDebrisMin;
+	int LightningDebrisMax;
+	int LightningCloudHeight;
+	AnimTypeClass const * LightningBoltExplosion;
+	TypeList<int> LightningSounds;
+	TypeList<AnimTypeClass const *> LightningClouds;
+	TypeList<AnimTypeClass const *> LightningBolts;
+	TypeList<AnimTypeClass const *> LightningDebris;
+	bool LightningSoundsSet;
+	bool LightningCloudsSet;
+	bool LightningBoltsSet;
+	bool LightningDebrisSet;
+	bool LightningIgnoreRod;
+
+	// PsychicDominator. A null animation and UNSET_INT keep the rules value.
+	AnimTypeClass const * DominatorFirstAnim;
+	AnimTypeClass const * DominatorSecondAnim;
+	AnimTypeClass const * DominatorControlAnim;
+	int DominatorFirstAnimHeight;
+	int DominatorSecondAnimHeight;
+	int DominatorFireAtPercentage;
+	bool DominatorCapture;
+	bool DominatorRipple;
+	bool DominatorCaptureMindControlled;
+	bool DominatorCapturePermaMindControlled;
+	bool DominatorCaptureImmuneToPsionics;
+	bool DominatorPermanentCapture;
+
+	// ChronoSphere. A null animation keeps the rules value.
+	AnimTypeClass const * ChronoBlastSrc;
+	AnimTypeClass const * ChronoBlastDest;
+	bool ChronoKillOrganic;
+	bool ChronoKillTeleporters;
+	bool ChronoAffectsIronCurtain;
+	bool ChronoAffectsUnwarpable;
+	bool ChronoKillCargo;
+	bool ChronoReconsiderBuildings;
+	bool ChronoAffectsUndeployable;
+	bool ChronoBlowUnplaceable;
+
+	// The weapon that follows a ChronoSphere: the section the key names, or empty for the first PostClick weapon that depends on the behavior.
+	std::string PostDependent;
+
+	// GeneticConverter. MutateExplosion is -1 until the section sets it, which keeps the rules value; MutateKillNatural is true by default.
+	int MutateExplosion;
+	bool MutateIgnoreCyborg;
+	bool MutateIgnoreNotHuman;
+	bool MutateKillNatural;
+
+	// SonarPulse.
+	int SonarPulseDelay;
+
+	// Battery.
+	int BatteryPower;
+	TypeList<BuildingTypeClass const *> BatteryOverpower;
+	TypeList<BuildingTypeClass const *> BatteryKeepOnline;
+
+	// SpyPlane.
+	AircraftTypeClass const * SpyPlaneType;
+	int SpyPlaneCount;
+
+	// SpyPlane.Mission: the MissionType the planes fly, MISSION_SPYPLANE_APPROACH unless the key names another.
+	int SpyPlaneMission;
+
+	/*
+	 * ParaDrop and AmerParaDrop. A group holds the types, counts and aircraft one country or side
+	 * names for one plane (Plane 1 has no Plane<N> segment in its keys); ParaDefault holds the
+	 * plain ParaDrop.* keys, and a group with no owner holds the plain ParaDrop.Plane<N>.* keys.
+	 */
+	struct ParaGroup : ParaDropList
+	{
+		void Serialize(SaveStreamClass & stream);
+
+		std::string Owner;
+		int Plane = 1;
+	};
+	ParaGroup ParaDefault;
+	std::vector<ParaGroup> ParaByOwner;
+	int ParaDropCount;
+
+	// The most planes whose Plane<N> keys are read.
+	static constexpr int MAX_PARA_PLANES = 32;
+
+	ParaGroup const * Find_Para(char const * owner, int plane) const;
+
+	// What one plane of a paradrop carries: any of the three may be missing, and the rules supply it then.
+	struct ParaPlan
+	{
+		TypeList<TechnoTypeClass const *> const * Types = nullptr;
+		TypeList<int> const * Num = nullptr;
+		AircraftTypeClass const * Aircraft = nullptr;
+
+		// Takes from the list what the plan still lacks: its types with their numbers if the list sets either, and its aircraft.
+		void Fill_From(ParaDropList const & list);
+	};
+
+	// Looks a plane up in the order the Ares manual gives: the weapon's keys for the country, the side and no owner
+	// on the plane, then the same on plane 1. Types with Num come from the first place that sets either of them,
+	// the aircraft from the first that sets it. Returns whether any weapon key applied.
+	bool Para_Plan(int plane, char const * country, char const * side, ParaPlan & plan) const;
+
+	// May this building fire the EMPulse weapon? Every cannon may when the weapon lists none.
+	bool Allows_Cannon(BuildingTypeClass const * type) const;
+
+	// Does the weapon name no restriction on where it may be aimed?
+	bool Has_Target_Rules(void) const;
+
+	SuperRules::Area Target_Area(void) const;
+
+	// The area the weapon names, or a block of this many cells when it names none.
+	SuperRules::Area Target_Area_Or_Block(int width, int height) const;
+
+	// The target kinds the weapon names, or these when it names none.
+	unsigned Affected_Targets(unsigned fallback) const;
+};

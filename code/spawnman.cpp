@@ -18,6 +18,7 @@
 #include "airctype.h"
 #include "anim.h"
 #include "animtype.h"
+#include "autotest.h"
 #include "cell.h"
 #include "dbgprint.h"
 #include "draw.hh"
@@ -255,6 +256,9 @@ void SpawnManagerClass::Launch(NodeType & node, int index)
 		coord.Y -= 40;
 	}
 
+	Coord const center = Owner->Center_Coord();
+	AUTOTEST_LOG("spawnlaunch %s from %s index %d offset %d,%d,%d at %d,%d,%d from center %d,%d,%d\n", unit->Class->Name(), Owner->TClass->Name(), index,
+		base.X, base.Y, base.Z, coord.X, coord.Y, coord.Z, coord.X - center.X, coord.Y - center.Y, coord.Z - center.Z);
 	bool const placed = unit->Unlimbo(coord, Owner->PrimaryFacing.Current().As_Dir256());
 	if (sets_burst) {
 		Owner->BurstIndex = 0;
@@ -439,7 +443,7 @@ void SpawnManagerClass::AI(void)
 				Release_To_Kamikaze(node.Unit);
 				if (node.IsMissile) {
 					// gamemd takes the V3's takeoff times for the V3 and the Dreadnought missile's for every other rocket (0x6B7230).
-					RulesClass::RocketTypeStruct const & rocket = SpawnType == Rule->V3Rocket.Type ? Rule->V3Rocket : Rule->DMisl;
+					RulesClass::RocketTypeStruct const & rocket = SpawnType->IsMissileCustom ? SpawnType->MissileFlight : SpawnType == Rule->V3Rocket.Type ? Rule->V3Rocket : Rule->DMisl;
 					node.Status = NODE_TAKEOFF;
 					node.Start_Timer(rocket.TiltFrames + rocket.PauseFrames);
 				} else {

@@ -1,0 +1,17 @@
+; Ares PoweredBy and Operator. A Grizzly (MTNK) with PoweredBy=GATECH,NAPSIS is shut down while the player owns neither
+; (where reports deactivated 1) and starts once a Battle Lab stands (deactivated 0). An IFV (FV) with Operator=E1 is shut
+; down while empty and starts once a GI has boarded it. The "Powered unit" lines show each change.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-powered-by-operator.txt -Country 1 -Seconds 90 -Filter "AUTOTEST   (where (MTNK|FV)|recloak (MTNK|FV))|AUTOTEST enter|Powered unit|Exception"
+10 rules ares-powered-by-operator.ini
+20 own MTNK 60 40
+21 own FV 63 43
+22 own E1 66 43
+30 command CenterBase
+100 where MTNK
+101 where FV
+120 own GAPOWR 50 46
+121 own GATECH 54 46
+200 where MTNK
+210 enter E1 63 43
+320 where FV
+330 quit

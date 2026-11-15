@@ -1,0 +1,19 @@
+; Weapon positions above 64 and WeaponTurretIndexN (Ares). The overlay weapon-turret-index.ini gives the IFV 100 weapon positions with a
+; machine gun in Weapon100, maps Weapon3 to turret 3 and Weapon100 to turret 1, and sets WeaponTurretIndex1 to a turret the IFV lacks. A GI
+; (IFVMode 2) boards one IFV and an engineer (IFVMode 99) another.
+; Expected: the log has "WeaponTurretIndex1=500 names no turret"; the dump at frame 300 shows "gunner weapon 2 (...) turret 3" for the GI's IFV
+; and "gunner weapon 99 (M60) turret 1" for the engineer's. Before the change the GI's IFV showed turret 1, which the stock FV MachineGun pair gives,
+; and the engineer's IFV fell back to weapon 0, since only 64 positions existed.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/weapon-turret-index.txt -Seconds 60 -Country 8 -Filter "gunner weapon|names no turret|Exception"
+10 rules weapon-turret-index.ini
+30 command CenterBase
+35 reveal
+40 own FV 60 40
+41 own FV 60 46
+42 own E1 58 42
+43 own ENGINEER 58 47
+100 dump
+110 enter E1 60 40
+111 enter ENGINEER 60 46
+300 dump
+310 quit

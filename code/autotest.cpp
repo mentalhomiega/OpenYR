@@ -12,6 +12,8 @@
 #include "always.h"
 
 #include "autotest.h"
+#include "isotype.h"
+#include "theater.h"
 #include "mainloop.h"
 #include "combat.h"
 #include "ebolt.h"
@@ -93,7 +95,9 @@
 #include "teamtype.h"
 #include "terrain.h"
 #include "taction.h"
+#include "ion.h"
 #include "lstorm.h"
+#include "psydom.h"
 #include "lightcon.h"
 #include "_convert.h"
 #include "trigger.h"
@@ -101,6 +105,7 @@
 #include "tag.h"
 #include "tagtype.h"
 #include "tevent.h"
+#include "tracker.h"
 #include "need.hh"
 #include "reinf.h"
 #include "team.h"
@@ -163,6 +168,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <deque>
@@ -265,6 +271,12 @@ int Rank_Of(VeterancyClass const & veterancy)
 
 
 bool Active = false;
+bool DetailLogging = true;
+// The AUTOTEST_LOG lines a run writes before they stop on their own. A long mission's area warheads write a blast line per
+// object hit, which would otherwise fill the 64 MB log before the outcome is written; no test comes close to the limit.
+constexpr int DETAIL_LINE_BUDGET = 150000;
+int DetailLineBudget = DETAIL_LINE_BUDGET;
+int DetailLinesLeft = DETAIL_LINE_BUDGET;
 
 // Set by -AUTOTEST-UNCAPPED; the unattended run then plays without the frame limit.
 bool Uncapped = false;
@@ -292,6 +304,13 @@ std::string FollowType;
 // The name loading screen captures are saved under, or empty when none are taken.
 std::string LoadShotName;
 int LoadShotCount = 0;
+
+// Set by loadsteps: each step of the loading notice is logged, and saved as a picture under StepShotName unless it is empty.
+bool LogLoadSteps = false;
+// Set by typesread: log the type checksums after each scenario's rules are read.
+static bool LogTypesRead = false;
+std::string StepShotName;
+int StepShotCount = 0;
 
 // Set by a continuewin step; a won mission then carries on instead of ending the run.
 bool ContinueAfterWin = false;
@@ -576,6 +595,9 @@ bool Footprint_Free(char const * command, TechnoTypeClass const * type, Cell con
 	if (type->Fetch_RTTI() != RTTI_BUILDINGTYPE) return(true);
 	BuildingTypeClass const * building = (BuildingTypeClass const *)type;
 	if (building->Legal_Placement(cell, house)) return(true);
+	// An upgrade goes onto the structure it powers up, which Unlimbo then installs it in.
+	BuildingClass const * host = Map[cell].Cell_Building();
+	if (!building->PowersUpBuilding.empty() && host != NULL && stricmp(building->PowersUpBuilding, host->Class->IniName) == 0) return(true);
 	for (Cell const * offset = building->Occupy_List(true); *offset != REFRESH_EOL; offset++) {
 		Cell const covered = cell + *offset;
 		BuildingClass const * other = Map[covered].Cell_Building();
@@ -954,7 +976,7 @@ static void Dump_Step(StepType const &)
 		if (object->ParasiteEatingMe != NULL) {
 			DebugString("AUTOTEST     parasite %s inside\n", object->ParasiteEatingMe->TClass->Name());
 		}
-		if (object->Class->IsGunner) {
+		if (object->Class->IsGunner || object->Class->IsPassengerTurret) {
 			WeaponTypeClass const * weapon = object->Get_Class_Weapon_Data(object->CurrentWeaponNumber)->Weapon;
 			DebugString("AUTOTEST     gunner weapon %d (%s) turret %d passengers %d\n", object->CurrentWeaponNumber, weapon != NULL ? weapon->Name() : "none", object->CurrentTurretNumber, object->Cargo.How_Many());
 		}
@@ -1266,14 +1288,65 @@ static HouseClass * Named_House(std::string name)
 }
 
 
-// trigaction <number> <value> <waypoint>: carries out that trigger action for the player's house, as a
-// trigger would. The value fills the action's number, house or time field.
+// The trigger and the first object a tagtype step attached its tag to, which trigaction hands to the action.
+static TriggerClass * TaggedTrigger = NULL;
+static TechnoClass * TaggedObject = NULL;
+
+// tagtype <TypeID>: attaches one test tag, with one test trigger, to every object of the type whoever owns it, so that
+// an action that works on the objects attached to its trigger has some. The trigger belongs to no map; trigaction
+// passes it to the action along with the first object tagged.
+static void Tag_Type_Step(StepType const & step)
+{
+	TagTypeClass * tagtype = TagTypeClass::Find_Or_Make("AUTOTAG");
+	TriggerTypeClass * trigtype = TriggerTypeClass::Find_Or_Make("AUTOTRIG");
+	if (tagtype == NULL || trigtype == NULL) {
+		DebugString("AUTOTEST   tagtype %s: no tag type\n", step.Argument.c_str());
+		return;
+	}
+	if (!tagtype->Is_Linked(trigtype)) {
+		tagtype->Link(trigtype);
+	}
+	TagClass * tag = new TagClass(tagtype);
+	TaggedTrigger = tag->Trigger;
+	TaggedObject = NULL;
+	int tagged = 0;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (!techno->IsInLimbo && Is_Techno_Named(techno, step.Argument) && techno->Attach_Tag(tag)) {
+			TaggedObject = TaggedObject != NULL ? TaggedObject : techno;
+			tagged++;
+		}
+	}
+	DebugString("AUTOTEST   tagtype %s: %d objects\n", step.Argument.c_str(), tagged);
+}
+
+
+// trigactionline <fields>: reads an action as a map writes it, "<count>,<action>,<fields from the second on>" with no
+// spaces, and carries it out for the player's house with the objects of the last tagtype step.
+static void Trigger_Action_Line_Step(StepType const & step)
+{
+	std::vector<char> text(step.Argument.begin(), step.Argument.end());
+	text.push_back('\0');
+	std::strtok(text.data(), ",");
+	TActionClass * action = new TActionClass;
+	action->Read_INI();
+	bool const done = (*action)(PlayerPtr, TaggedObject, TaggedTrigger, Cell(0, 0));
+	DebugString("AUTOTEST   trigactionline %s: action %d, value %d, extra %d, %s\n", step.Argument.c_str(), (int)action->Action, action->Data.Value, action->Extra, done ? "done" : "failed");
+	delete action;
+}
+
+
+// trigaction <number> <value> <waypoint> [extra]: carries out that trigger action for the player's house, as a
+// trigger would. The value fills the action's number, house or time field. The extra number fills the field some
+// actions read where others put a waypoint, such as the amount of Auxiliary Power. After a tagtype step, the action
+// has that step's trigger and first object.
 static void Trigger_Action_Step(StepType const & step)
 {
 	TActionClass * action = new TActionClass;
 	action->Action = (TActionType)step.Argument_Int();
 	action->Data.Value = step.X;
 	action->EffectLocation = step.Y;
+	action->Extra = step.Words.size() > 5 ? std::atoi(step.Words[5].c_str()) : 0;
 
 	// "<number>@<House>" runs the action for that house, with underscores for spaces, instead of the player's.
 	HouseClass * house = PlayerPtr;
@@ -1281,7 +1354,7 @@ static void Trigger_Action_Step(StepType const & step)
 	if (at != std::string::npos) {
 		house = Named_House(step.Argument.substr(at + 1));
 	}
-	bool const done = house != NULL && (*action)(house, NULL, NULL, Cell(0, 0));
+	bool const done = house != NULL && (*action)(house, TaggedObject, TaggedTrigger, Cell(0, 0));
 	Point2D const view = TacticalMap->Get_Tactical_Position();
 	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d, scenario tint %d,%d,%d, first tile tint %d,%d,%d, waypoint cell %d,%d, lightning storm active %d pending %d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y,
 		Scen->RedTint, Scen->GreenTint, Scen->BlueTint,
@@ -1289,6 +1362,66 @@ static void Trigger_Action_Step(StepType const & step)
 		Scen->Is_Valid_Waypoint(step.Y) ? Scen->Get_Waypoint_Cell(step.Y).X : -1, Scen->Is_Valid_Waypoint(step.Y) ? Scen->Get_Waypoint_Cell(step.Y).Y : -1,
 		(int)LightningStormClass::Is_Active(), (int)(LightningStormClass::Is_Active_Or_Pending() && !LightningStormClass::Is_Active()));
 	delete action;
+}
+
+
+// tagevent <TypeID|general>[@<House>] <event fields> [<persistence> [x y]]: makes a trigger owned by the house (the
+// player's when none is named) that waits on the one event, written as a map's [Events] line writes it after the
+// count, such as 81,2,1,GAPOWR. Its tag rides on every object of the type, only the one on cell x,y when a cell is
+// given, or with "general" joins the general tags that are polled every frame. The persistence is 0 (volatile, the
+// default), 1 or 2, as a map's [Tags] gives it. The trigger has no actions; the log gets an AUTOTEST sprung line
+// each time it springs.
+std::string Word(std::vector<std::string> const & words, std::size_t index);
+
+static void Tag_Event_Step(StepType const & step)
+{
+	static int made = 0;
+	std::string target = Word(step.Words, 2);
+	std::string const fields = Word(step.Words, 3);
+	std::string const persistence = Word(step.Words, 4).empty() ? "0" : Word(step.Words, 4);
+	bool const on_cell = !Word(step.Words, 6).empty();
+	Cell const cell(std::atoi(Word(step.Words, 5).c_str()), std::atoi(Word(step.Words, 6).c_str()));
+
+	HouseClass * house = PlayerPtr;
+	std::size_t const at = target.find('@');
+	if (at != std::string::npos) {
+		house = Named_House(target.substr(at + 1));
+		target = target.substr(0, at);
+	}
+	if (house == NULL || fields.empty()) {
+		DebugString("AUTOTEST   tagevent %s: no such house or no event\n", step.Line.c_str());
+		return;
+	}
+
+	made++;
+	std::string const name = "ATEV" + std::to_string(made);
+	CCINIClass ini;
+	ini.Put_String("Triggers", name.c_str(), (std::string(house->Class->Name()) + ",<none>," + name + ",0,1,1,1,0").c_str());
+	ini.Put_String("Events", name.c_str(), ("1," + fields).c_str());
+	ini.Put_String("Actions", name.c_str(), "0");
+	ini.Put_String("Tags", name.c_str(), (persistence + "," + name + "," + name).c_str());
+
+	TriggerTypeClass * trigtype = TriggerTypeClass::Find_Or_Make(name.c_str());
+	TagTypeClass * tagtype = TagTypeClass::Find_Or_Make(name.c_str());
+	if (trigtype == NULL || tagtype == NULL || !trigtype->Read_INI(ini) || !tagtype->Read_INI(ini)) {
+		DebugString("AUTOTEST   tagevent %s: the trigger could not be made\n", step.Line.c_str());
+		return;
+	}
+
+	int attached = 0;
+	if (stricmp(target.c_str(), "general") == 0) {
+		LogicTags.Add(Find_Or_Make(tagtype));
+		attached = 1;
+	} else {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->IsActive && stricmp(techno->TClass->Name(), target.c_str()) == 0 && (!on_cell || Cell_Or_None(techno) == cell)) {
+				techno->Attach_Tag(Find_Or_Make(tagtype));
+				attached++;
+			}
+		}
+	}
+	DebugString("AUTOTEST   tagevent %s event %s house %s on %s: %d attached\n", name.c_str(), fields.c_str(), house->Class->Name(), target.c_str(), attached);
 }
 
 
@@ -1911,6 +2044,24 @@ static void Note_Gated_Types(DynamicVectorClass<T *> const & types, int id, char
 }
 
 
+// sidebarbuttons: writes, for the sidebar's repair, sell, power, beacon and options buttons, whether each is on the
+// screen's button list and where it is.
+static void Sidebar_Buttons_Step(StepType const &)
+{
+	struct { char const * Name; GadgetClass const * Button; } const buttons[] = {
+		{"repair", &SidebarClass::Repair}, {"sell", &SidebarClass::Upgrade}, {"power", &SidebarClass::Power},
+		{"beacon", &SidebarClass::BeaconButton}, {"options", &SidebarClass::OptionsButton},
+	};
+	for (auto const & entry : buttons) {
+		bool listed = false;
+		for (GadgetClass const * gadget = GScreenClass::Buttons; gadget != NULL; gadget = (GadgetClass const *)gadget->Get_Next()) {
+			listed = listed || gadget == entry.Button;
+		}
+		DebugString("AUTOTEST   sidebarbutton %s listed %d at %d,%d\n", entry.Name, (int)listed, entry.Button->X, entry.Button->Y);
+	}
+}
+
+
 // Writes which special cursor mode the player is in, so a script can check that one mode ended when another began.
 static void Modes_Step(StepType const &)
 {
@@ -2010,6 +2161,17 @@ static void Type_Dump_Step(StepType const & step)
 }
 
 
+// weaponkeys <Name>: whether the weapon read DistributedWeaponFire, for each weapon with that name (every weapon without one).
+static void Weapon_Keys_Step(StepType const & step)
+{
+	for (int index = 0; index < Weapons.Count(); index++) {
+		WeaponTypeClass const * weapon = Weapons[index];
+		if (!step.Argument.empty() && stricmp(weapon->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   weaponkeys %s distributed %d\n", weapon->Name(), (int)weapon->IsDistributedFire);
+	}
+}
+
+
 // weapons <TypeID>: each weapon slot of the type with its bullet's AA and AG flags and its range in leptons.
 static void Weapons_Step(StepType const & step)
 {
@@ -2020,6 +2182,61 @@ static void Weapons_Step(StepType const & step)
 			DebugString("AUTOTEST   weapon %s slot %d %s AA %d AG %d range %d\n", type->Name(), slot, weapon->Name(), (int)weapon->Bullet->IsAntiAircraft, (int)weapon->Bullet->IsAntiGround, (int)weapon->Range);
 		}
 	}
+}
+
+
+static void Weapon_Info_Line(char const * owner, char const * slot, WeaponTypeClass const * weapon, std::vector<ArmorType> const & armors)
+{
+	if (weapon == NULL) {
+		DebugString("AUTOTEST   weaponinfo %s %s none\n", owner, slot);
+		return;
+	}
+	BulletTypeClass const * bullet = weapon->Bullet;
+	WarheadTypeClass const * warhead = weapon->WarheadPtr;
+	std::string verses;
+	for (int index = 0; warhead != NULL && index < (int)armors.size(); index++) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%s=%.3f", verses.empty() ? "" : ",", Armor_Type_Name(armors[index]), warhead->Versus(armors[index]));
+		verses += buf;
+	}
+	DebugString("AUTOTEST   weaponinfo %s %s %s damage %d rof %d range %d minrange %d burst %d speed %d laser %d radbeam %d"
+		" bullet %s rot %d accel %d inviso %d warhead %s spread %.3f atmax %.3f conventional %d verses %s\n",
+		owner, slot, weapon->Name(), weapon->Attack, weapon->ROF, (int)weapon->Range, (int)weapon->MinimumRange, weapon->Burst,
+		(int)weapon->MaxSpeed, (int)weapon->IsLaser, (int)weapon->IsRadBeam,
+		bullet != NULL ? bullet->Name() : "none", bullet != NULL ? bullet->ROT : 0, bullet != NULL ? bullet->Acceleration : 0,
+		bullet != NULL ? (int)bullet->IsInvisible : 0, warhead != NULL ? warhead->Name() : "none",
+		warhead != NULL ? warhead->CellSpread : 0.0f, warhead != NULL ? warhead->PercentAtMax : 0.0f,
+		warhead != NULL ? (int)warhead->IsConventional : 0, verses.c_str());
+}
+
+
+// weaponinfo <TypeID|Weapon> [armor ...]: the effective values of a type's four weapon slots, or of one weapon, with its
+// projectile and warhead, after every rules file and the map have been read; verses lists the warhead against each armor named.
+static void Weapon_Info_Step(StepType const & step)
+{
+	std::string const name = step.Argument;
+	std::vector<ArmorType> armors;
+	for (size_t word = 3; word < step.Words.size(); word++) {
+		ArmorType type;
+		if (Find_Armor_Type(step.Words[word].c_str(), type)) armors.push_back(type);
+	}
+
+	TechnoTypeClass const * type = Find_Type(name);
+	if (type != NULL) {
+		DebugString("AUTOTEST   weaponinfo %s strength %d armor %s speed %d ammo %d reload %d\n", type->Name(), type->MaxStrength,
+			Armor_Type_Name(type->Armor), (int)type->MaxSpeed, type->MaxAmmo, type->ReloadDelay);
+		Weapon_Info_Line(type->Name(), "primary", type->Weapons[0].Weapon, armors);
+		Weapon_Info_Line(type->Name(), "secondary", type->Weapons[1].Weapon, armors);
+		Weapon_Info_Line(type->Name(), "eliteprimary", type->EliteWeapons[0].Weapon, armors);
+		Weapon_Info_Line(type->Name(), "elitesecondary", type->EliteWeapons[1].Weapon, armors);
+		return;
+	}
+	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Declared(name.c_str());
+	if (weapon == NULL) {
+		DebugString("AUTOTEST   weaponinfo %s unknown\n", name.c_str());
+		return;
+	}
+	Weapon_Info_Line("-", "weapon", weapon, armors);
 }
 
 
@@ -2104,7 +2321,7 @@ static void Swaim_Step(StepType const & step)
 	Map.IsTargettingMode = id;
 	ActionType const action = SuperWeaponTypes[id]->What_Action(cell, target);
 	Map.Mouse_Left_Up(cell, shadow, target, action, false);
-	DebugString("AUTOTEST   swaim %s cell %d,%d shroud %d object %s action %s mouse %d range %d line %d\n", section.c_str(), x, y, (int)shadow, target != NULL ? target->Class_Of()->Name() : "none", ActionName[action], (int)Map.Get_Mouse_Shape(), (int)SuperWeaponTypes[id]->Range, SuperWeaponTypes[id]->LineMultiplier);
+	DebugString("AUTOTEST   swaim %s cell %d,%d shroud %d object %s action %s mouse %d range %d line %d designators %d inhibitors %d min %.1f max %.1f\n", section.c_str(), x, y, (int)shadow, target != NULL ? target->Class_Of()->Name() : "none", ActionName[action], (int)Map.Get_Mouse_Shape(), (int)SuperWeaponTypes[id]->Range, SuperWeaponTypes[id]->LineMultiplier, SuperWeaponTypes[id]->Keys.Designators.Count(), SuperWeaponTypes[id]->Keys.Inhibitors.Count(), SuperWeaponTypes[id]->Keys.RangeMinimum, SuperWeaponTypes[id]->Keys.RangeMaximum);
 }
 
 
@@ -3316,6 +3533,14 @@ static void Repairon_Step(StepType const & step)
 }
 
 
+// credits <amount>: sets the player's credits to that amount, taking stored ore out of the count.
+static void Credits_Step(StepType const & step)
+{
+	PlayerPtr->Credits = std::max(0, step.Argument_Int() - PlayerPtr->Tiberium.Get_Total_Value());
+	DebugString("AUTOTEST credits %d available %d\n", PlayerPtr->Credits, PlayerPtr->Available_Money());
+}
+
+
 // poweroff <TypeID>: turns off the player's structures of that type, as a click with the power cursor does.
 static void Poweroff_Step(StepType const & step)
 {
@@ -3687,6 +3912,9 @@ static void Listhouse_Step(StepType const & step)
 				(int)techno->TClass->IsInsignificant, (int)techno->TClass->IsDontScore, (int)techno->CountedAsOwnedInfantry,
 				techno->Transporter != NULL ? techno->Transporter->TClass->Name() : "-", (int)techno->IsInTransport, techno->Cargo.How_Many(),
 				(foot != NULL && foot->Team != NULL) ? foot->Team->Class->Name() : "-", building != NULL ? building->Occupants.Count() : 0, visible);
+			if (techno->DisguiseType != NULL) {
+				DebugString("AUTOTEST   listhouse %s obj %d disguised as %s\n", owner->Class->Name(), index, techno->DisguiseType->Name());
+			}
 		}
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
@@ -4583,6 +4811,59 @@ static void Chargeai_Step(StepType const & step)
 }
 
 
+// timers: writes each present ShowTimer super weapon of every house and whether the player sees its countdown.
+static void Timers_Step(StepType const &)
+{
+	for (int h = 0; h < Houses.Count(); h++) {
+		HouseClass * house = Houses[h];
+		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
+			SuperClass const * super = house->SuperWeapon[s];
+			if (super == NULL || !super->Is_Present() || !super->Class->IsShowTimer) continue;
+			DebugString("AUTOTEST   timer %s of %s player %d ally %d seen %d\n", super->Class->Name(), house->Class->Name(), (int)(house == PlayerPtr), (int)house->Is_Ally(PlayerPtr), (int)super->Is_Timer_Visible_To(PlayerPtr));
+		}
+	}
+}
+
+
+// aimcell <offensive|defensive|clear> x y: sets the first computer house's offensive or defensive super weapon cell, as trigger
+// actions 135 and 140 do, or clears both.
+static void Aimcell_Step(StepType const & step)
+{
+	HouseClass * house = First_Computer_House(false);
+	if (house == NULL) return;
+	Cell const cell(step.X, step.Y);
+	if (stricmp(step.Argument.c_str(), "offensive") == 0) {
+		house->PreferredTargetCell = cell;
+	} else if (stricmp(step.Argument.c_str(), "defensive") == 0) {
+		house->PreferredDefensiveCell = cell;
+		house->PreferredDefensiveCellStartTime = Frame;
+	} else {
+		house->PreferredTargetCell = CELL_NONE;
+		house->PreferredDefensiveCell = CELL_NONE;
+	}
+	DebugString("AUTOTEST   aimcell %s of %s offensive %d,%d defensive %d,%d\n", step.Argument.c_str(), house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->PreferredDefensiveCell.X, (int)house->PreferredDefensiveCell.Y);
+}
+
+
+// aimpick <SuperWeaponTypeID>: writes whether the first computer house would fire that super weapon by its SW.AITargeting rules now, and at which cell.
+static void Aimpick_Step(StepType const & step)
+{
+	HouseClass * house = First_Computer_House(false);
+	SuperClass * super = house != NULL ? Super_Of(house, step.Argument) : NULL;
+	if (super == NULL) return;
+	Cell cell = CELL_NONE;
+	bool const fire = house->Pick_Super_Target(super, cell);
+	DebugString("AUTOTEST   aimpick %s of %s fire %d cell %d,%d\n", step.Argument.c_str(), house->Class->Name(), (int)fire, (int)cell.X, (int)cell.Y);
+}
+
+
+// nukeflash: writes whether the map-wide nuclear flash is fading in or fading out.
+static void Nukeflash_Step(StepType const &)
+{
+	DebugString("AUTOTEST   nukeflash frame %d in %d out %d\n", Frame, (int)NukeFlashClass::Is_Fading_In(), (int)NukeFlashClass::Is_Fading_Out());
+}
+
+
 // fire <SuperWeaponTypeID> x y: the player fires that super weapon at the cell.
 static void Fire_Step(StepType const & step)
 {
@@ -4862,7 +5143,7 @@ static void Hit_Step(StepType const & step)
 		if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
 			int damage = step.X;
 			techno->Take_Damage(damage, 0, warhead, firer, false);
-			DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none");
+			DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s stun %d curtain %d disabled %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none", (int)techno->StunDuration, (int)techno->IronCurtainTimer, techno->WeaponsDisabledFrames);
 		}
 	}
 }
@@ -4983,7 +5264,11 @@ static void Canfire_Step(StepType const & step)
 // the call a wood low bridge takes its hit in). Strength is high enough that the bridge roll always passes.
 static void Blast_Step(StepType const & step)
 {
-	WarheadTypeClass const * warhead = stricmp(step.Argument.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(step.Argument.c_str());
+	// A ":amount" after the warhead name sets the damage at ground zero, 1000 otherwise.
+	size_t const colon = step.Argument.find(':');
+	std::string const warhead_name = step.Argument.substr(0, colon);
+	int const blast_damage = colon == std::string::npos ? 1000 : std::atoi(step.Argument.c_str() + colon + 1);
+	WarheadTypeClass const * warhead = stricmp(warhead_name.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(warhead_name.c_str());
 	if (warhead != NULL) {
 		// "deck" as a last word explodes it at deck height instead of floor height on a bridge cell.
 		Coord coord = Map[Cell(step.X, step.Y)].Center_Coord();
@@ -4992,10 +5277,12 @@ static void Blast_Step(StepType const & step)
 		}
 		if (Word(step.Words, 5) == "deck") {
 			DebugString("AUTOTEST   blast %s at %d,%d z %d\n", warhead->Name(), step.X, step.Y, coord.Z);
+		} else if (colon != std::string::npos) {
+			DebugString("AUTOTEST   blast %s at %d,%d damage %d\n", warhead->Name(), step.X, step.Y, blast_damage);
 		} else {
 			DebugString("AUTOTEST   blast %s at %d,%d\n", warhead->Name(), step.X, step.Y);
 		}
-		Explosion_Damage(coord, 1000, NULL, warhead, false, NULL);
+		Explosion_Damage(coord, blast_damage, NULL, warhead, false, NULL);
 	} else {
 		DebugString("AUTOTEST   blast %s: no such warhead\n", step.Argument.c_str());
 	}
@@ -5168,14 +5455,22 @@ static void Teamini_Step(StepType const & step)
 }
 
 
-// reinforce <TeamType>: brings that team type on as a reinforcement for the player, as the trigger action does.
+// reinforce <TeamType> [<x> <y> [chrono]]: brings that team type on as a reinforcement for the player, as the trigger action does.
+// With a cell it makes waypoint 90 that cell and brings the team there, by chronoshift when the word chrono follows (action 107).
 static void Reinforce_Step(StepType const & step)
 {
 	TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
 	if (type != NULL) {
 		type->House = PlayerPtr;
 	}
-	DebugString("AUTOTEST   reinforce %s: %d\n", step.Argument.c_str(), type != NULL ? (int)Do_Reinforcements(type) : -1);
+	WAYPOINT waypoint = -1;
+	if (step.Words.size() > 4) {
+		waypoint = 90;
+		Scen->Set_Waypoint(waypoint, Cell(step.X, step.Y));
+	}
+	bool const chrono = Word(step.Words, 5) == "chrono";
+	bool const done = type != NULL && (chrono ? Do_Chrono_Reinforcements(type, waypoint) : Do_Reinforcements(type, waypoint));
+	DebugString("AUTOTEST   reinforce %s%s: %d\n", step.Argument.c_str(), chrono ? " by chrono" : "", type != NULL ? (int)done : -1);
 }
 
 
@@ -5205,6 +5500,25 @@ static void Runtrigger_Step(StepType const & step)
 static void Restart_Step(StepType const &)
 {
 	PlayerRestarts = true;
+}
+
+
+// trackers: the counts of trigger types, tag types, events and actions, and whether the removal trackers list exactly them.
+static void Trackers_Step(StepType const &)
+{
+	int listed = 0;
+	for (int index = 0; index < EventActionPtrTracker.Count(); index++) {
+		RTTIType const rtti = (RTTIType)EventActionPtrTracker[index]->RTTI;
+		listed += (rtti == RTTI_TRIGGERTYPE || rtti == RTTI_EVENT || rtti == RTTI_ACTION);
+	}
+	int in_types = 0;
+	for (int index = 0; index < AbstractTypePtrTracker.Count(); index++) {
+		RTTIType const rtti = (RTTIType)AbstractTypePtrTracker[index]->RTTI;
+		in_types += (rtti == RTTI_EVENT || rtti == RTTI_ACTION);
+	}
+	bool const exact = listed == EventActionPtrTracker.Count() && listed == TriggerTypes.Count() + Events.Count() + Actions.Count() && in_types == 0
+		&& TriggerTypePtrTracker.Count() == TriggerTypes.Count() && TagTypePtrTracker.Count() == TagTypes.Count();
+	DebugString("AUTOTEST   trackers trigger types %d tag types %d events %d actions %d, event and action tracker %d, events and actions in the type tracker %d: %s\n", TriggerTypes.Count(), TagTypes.Count(), Events.Count(), Actions.Count(), EventActionPtrTracker.Count(), in_types, exact ? "exact" : "WRONG");
 }
 
 
@@ -5551,6 +5865,59 @@ static void Cellpixel_Step(StepType const & step)
 }
 
 
+// tilecheck [tile ...]: logs how the map's tiles stand once it is loaded: the cells the playing area holds, how many of
+// them hold a tile type with no artwork, how many the map lets ice grow on, and whether the theater's ice behavior is
+// on. Each tile number after the command also gets the count of cells that hold it. A map tile that was rewritten
+// during the load shows as a change in those counts.
+static void Tilecheck_Step(StepType const & step)
+{
+	std::map<int, int> counts;
+	int cells = 0;
+	int imageless = 0;
+	int ice_flagged = 0;
+	Map.Reset_Iterator();
+	for (CellClass const * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+		cells++;
+		counts[(int)cell->ITType]++;
+		if (cell->ITType != ISOTILE_NONE && cell->ITType < IsometricTileTypes.Count() && IsometricTileTypes[cell->ITType]->Get_Image_Data() == NULL) {
+			imageless++;
+		}
+		if (cell->IsIceGrowthAllowed) {
+			ice_flagged++;
+		}
+	}
+	DebugString("AUTOTEST   tilecheck cells %d imageless %d ice-flagged %d ice-behavior %d tile-types %d\n", cells, imageless, ice_flagged,
+		(int)TheaterClass::As_Reference(Scen->Theater).IsIceGrowth, IsometricTileTypes.Count());
+	for (std::size_t word = 2; word < step.Words.size(); word++) {
+		int const tile = std::atoi(step.Words[word].c_str());
+		DebugString("AUTOTEST   tilecheck tile %d cells %d\n", tile, counts[tile]);
+	}
+}
+
+
+// settile <x> <y> <tile> [ice]: gives the cell that tile, sub-tile 0, and works out the cell's attributes again. With ice,
+// the cell is also one the map lets ice grow on.
+static void Settile_Step(StepType const & step)
+{
+	CellClass & cell = Map[step.Argument_Cell()];
+	std::vector<std::string> const & words = step.Words;
+	if (words.size() < 5) {
+		DebugString("AUTOTEST   settile needs x y tile\n");
+		return;
+	}
+	int const tile = std::atoi(words[4].c_str());
+	if (tile < 0 || tile >= IsometricTileTypes.Count()) {
+		DebugString("AUTOTEST   settile %d: no such tile\n", tile);
+		return;
+	}
+	cell.ITType = (IsometricTileType)tile;
+	cell.SubTile = 0;
+	cell.IsIceGrowthAllowed = words.size() > 5 && words[5] == "ice";
+	cell.Recalc_Attributes();
+	DebugString("AUTOTEST   settile %d,%d tile %d ice %d\n", step.Argument_Int(), step.X, tile, (int)cell.IsIceGrowthAllowed);
+}
+
+
 // hoverat x y: moves the pointer to the centre pixel of that cell, as windowmove does, so the object there hovers from the next frame.
 static void Hoverat_Step(StepType const & step)
 {
@@ -5862,8 +6229,8 @@ static void Supers_Step(StepType const &)
 		DebugString("AUTOTEST   aim house %s target %d,%d base center %d,%d defensive cell %d,%d since frame %d\n", house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->Center.As_Cell().X, (int)house->Center.As_Cell().Y, (int)house->PreferredDefensiveCell.X, (int)house->PreferredDefensiveCell.Y, house->PreferredDefensiveCellStartTime);
 		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 			SuperClass * super = house->SuperWeapon[s];
-			if (super == NULL || !super->Is_Present()) continue;
-			DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d flashtab %d suspended %d usable %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime, (int)super->Should_Flash_Tab(), (int)super->Is_Suspended(), (int)super->Can_Place());
+			if (super == NULL || (!super->Is_Present() && !super->Is_Virtual_Charging())) continue;
+			DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d flashtab %d suspended %d usable %d present %d virtual %d charged %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime, (int)super->Should_Flash_Tab(), (int)super->Is_Suspended(), (int)super->Can_Place(), (int)super->Is_Present(), (int)super->Is_Virtual_Charging(), (int)super->Is_Charged());
 		}
 	}
 }
@@ -5894,9 +6261,14 @@ static void Trails_Step(StepType const &)
 }
 
 
-// ammo <TypeID>: each unit of that type with its ammunition and the frames left before it regains a shot.
+// ammo <TypeID>: each vehicle or soldier of that type with its ammunition and the frames left before it regains a shot.
 static void Ammo_Step(StepType const & step)
 {
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass const * infantry = Infantry[index];
+		if (stricmp(infantry->Class->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   ammo %s of %s ammo %d of %d reload %d frame %d\n", infantry->Class->Name(), infantry->House->Class->Name(), infantry->Ammo, infantry->Class->MaxAmmo, (int)infantry->Reload, Frame);
+	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass const * unit = Units[index];
 		if (stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;
@@ -5948,8 +6320,9 @@ static void Houses_Step(StepType const &)
 		}
 		DebugString("AUTOTEST   seat %d %s name %s human %d scheme %d start %d difficulty %d allies %x\n", index, house->Class->Name(), (char const *)house->IniName, (int)house->IsHuman, house->Scheme, house->SpawnWaypoint, (int)house->Difficulty, allies);
 		DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
-		DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d fraction %.2f\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
-			(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated, house->Power_Fraction());
+		DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d fraction %.2f credits %d stored %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
+			(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated, house->Power_Fraction(), house->Credits, house->Tiberium.Get_Total_Value());
+		DebugString("AUTOTEST   spied %s stolen techs %08x naval %d aircraft %d building %d reversed %d\n", house->Class->Name(), house->StolenTechs, (int)house->IsNavalSpied, (int)house->IsAircraftSpied, (int)house->IsBuildingSpied, (int)house->ReversedTypes.size());
 		DebugString("AUTOTEST   gatherers %s %d powered %d\n", house->Class->Name(), house->Count_Resource_Gatherers(), house->PoweredUnitCenters);
 	}
 	for (int index = 0; index < Buildings.Count(); index++) {
@@ -6105,6 +6478,19 @@ static void Bullets_Step(StepType const &)
 }
 
 
+// bulletrange: each live projectile with its position, how far it has flown from where it was fired and its weapon's ProjectileRange, all in leptons.
+static void Bulletrange_Step(StepType const &)
+{
+	for (int index = 0; index < Bullets.Count(); index++) {
+		BulletClass const * bullet = Bullets[index];
+		if (bullet->Class == NULL || bullet->Weapon == NULL) continue;
+		Coord const here = bullet->Center_Coord();
+		DebugString("AUTOTEST   bulletrange frame %d %s at %d,%d,%d flown %d range %d\n", Frame, bullet->Class->Name(), here.X, here.Y, here.Z,
+			(int)bullet->Launch_Coord().Gamemd_Distance_To(TPoint2D<int>(here.X, here.Y)), (int)bullet->Weapon->ProjectileRange);
+	}
+}
+
+
 // radbeams: how many beams of each kind are live.
 static void Radbeams_Step(StepType const &)
 {
@@ -6201,6 +6587,42 @@ static void Plan_Step(StepType const &)
 }
 
 
+// aisummary: one line per computer house with its base, power, harvesters, army, kills, losses and the structure it builds.
+static void Aisummary_Step(StepType const &)
+{
+	for (int house = 0; house < Houses.Count(); house++) {
+		HouseClass * owner = Houses[house];
+		if (owner->Is_Human_Player() || owner->Class->IsMultiplayPassive || owner->Base.Nodes.Count() == 0) {
+			continue;
+		}
+		int buildings = 0, harvesters = 0, army = 0;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != owner || techno->IsInLimbo || techno->Strength <= 0) {
+				continue;
+			}
+			if (techno->What_Am_I() == RTTI_BUILDING) {
+				buildings++;
+			} else if (techno->TClass->IsResourceGatherer) {
+				harvesters++;
+			} else {
+				army++;
+			}
+		}
+		int kills = 0;
+		for (int victim = 0; victim < ARRAY_SIZE(owner->UnitsKilled); victim++) {
+			kills += owner->UnitsKilled[victim] + owner->BuildingsKilled[victim];
+		}
+		int const next = owner->Base.Next_Buildable_Index(STRUCT_NONE);
+		int const nexttype = next >= 0 ? owner->Base.Nodes[next].Type : STRUCT_NONE;
+		DebugString("AUTOTEST   aisummary %s defeated %d buildings %d power %d/%d harvesters %d army %d kills %d lost %d builds %s next %s of %d nodes\n",
+			owner->Class->Name(), (int)owner->IsDefeated, buildings, owner->Power, owner->Drain, harvesters, army, kills, owner->UnitsLost + owner->BuildingsLost,
+			owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-",
+			nexttype >= STRUCT_FIRST ? BuildingTypes[nexttype]->Name() : (next >= 0 ? std::to_string(nexttype).c_str() : "-"), owner->Base.Nodes.Count());
+	}
+}
+
+
 // team <TeamTypeID>: makes a team of that type for the first computer house and puts in every unit of that house no team holds.
 // With "player" last, the team is the player's house's instead.
 static void Team_Step(StepType const & step)
@@ -6242,6 +6664,26 @@ static void Team_Step(StepType const & step)
 static void Teamtrace_Step(StepType const & step)
 {
 	TeamClass::TraceScripts = step.Argument_Int() != 0;
+}
+
+
+// detaillog <0|1> [lines]: turns the AUTOTEST lines that game code writes on its own, such as blasts and shots, off or on.
+// Turning them on also starts a new line budget, of the given number of lines or the default.
+static void Detaillog_Step(StepType const & step)
+{
+	DetailLogging = step.Argument_Int() != 0;
+	if (DetailLogging) {
+		DetailLineBudget = step.X > 0 ? step.X : DETAIL_LINE_BUDGET;
+		DetailLinesLeft = DetailLineBudget;
+	}
+}
+
+
+// damagetrace <TypeID|->: logs each hit an object of that type takes, as DAMAGETRACE lines; `-` stops them.
+static void Damagetrace_Step(StepType const & step)
+{
+	TechnoClass::TraceDamageType = step.Argument == "-" ? NULL : Find_Type(step.Argument);
+	DebugString("AUTOTEST damagetrace %s\n", TechnoClass::TraceDamageType != NULL ? TechnoClass::TraceDamageType->Name() : "off");
 }
 
 
@@ -6911,6 +7353,43 @@ static void Statedump_Step(StepType const & step)
 }
 
 
+// Logs the checksums of the rules and of each type list under the label, and with a reference, the lists
+// whose checksum differs from it. Returns the checksums, or none when they could not be made.
+static std::vector<std::pair<char const *, unsigned>> Log_Type_Checksums(char const * label, std::vector<std::pair<char const *, unsigned>> const * reference)
+{
+	std::vector<std::pair<char const *, unsigned>> const sums = Type_State_Checksums();
+	if (sums.empty()) {
+		DebugString("AUTOTEST %s failed\n", label);
+		return(sums);
+	}
+	for (auto const & sum : sums) {
+		DebugString("AUTOTEST %s %s %08x\n", label, sum.first, sum.second);
+	}
+	if (reference != nullptr) {
+		std::string differ;
+		bool syncsame = false;
+		for (std::size_t index = 0; index < sums.size(); index++) {
+			bool const same = index < reference->size() && (*reference)[index].second == sums[index].second;
+			if (std::strcmp(sums[index].first, "Sync") == 0) {
+				syncsame = same;
+			} else if (!same) {
+				differ += std::string(" ") + sums[index].first;
+			}
+		}
+		DebugString("AUTOTEST %s sync %s\n", label, syncsame ? "same as the first" : "differs from the first");
+		DebugString("AUTOTEST %s image %s%s\n", label, differ.empty() ? "same as the first" : "differs:", differ.c_str());
+	}
+	return(sums);
+}
+
+
+// typecrc: the checksum of the rules and of each type list as a save would hold them.
+static void Typecrc_Step(StepType const &)
+{
+	Log_Type_Checksums("typecrc", nullptr);
+}
+
+
 // perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
 static void Perflog_Step(StepType const & step)
 {
@@ -7020,8 +7499,8 @@ static void Syncrec_Step(StepType const & step)
 }
 
 
-// log writes nothing more than the step line every step writes. searchdir <path> and loadshot <name>
-// take effect when the script is read (AutoTest_Load).
+// log writes nothing more than the step line every step writes. searchdir <path>, loadshot <name> and
+// loadsteps [name] take effect when the script is read (AutoTest_Load).
 static void No_Action_Step(StepType const &)
 {
 }
@@ -7050,10 +7529,244 @@ static void Quit_Step(StepType const &)
 }
 
 
+static void Aistrike_Step(StepType const & step)
+{
+	// aistrike <TypeID> x y: the computer players' objects of that type attack what stands on that cell.
+	TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+	DebugString("AUTOTEST aistrike %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			techno->Assign_Target(target);
+			techno->Assign_Mission(MISSION_ATTACK);
+		}
+	}
+}
+
+
+static void Cameopcx_Step(StepType const & step)
+{
+	// cameopcx <TypeID>: the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing.
+	TechnoTypeClass const * type = Find_Type(step.Argument);
+	if (type != NULL) {
+		DebugString("AUTOTEST   cameopcx %s name '%s' alternate %d\n", type->Name(), type->Get_Cameo_PCX().c_str(), (int)type->Is_Alt_Cameo_Shown());
+	}
+}
+
+
+// attackvoice <TypeID> x y: the weapon-specific reply each of the player's objects of the type gives to an order to attack what
+// stands on the cell, or none when its VoiceAttack answers.
+static void Attackvoice_Step(StepType const & step)
+{
+	TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			VocType const voice = techno->Weapon_Attack_Voice(target);
+			DebugString("AUTOTEST   attackvoice %s target %s: %s\n", techno->TClass->Name(), target != NULL ? target->TClass->Name() : "-", voice != VOC_NONE ? Voc_Name(voice) : "none");
+		}
+	}
+}
+
+
+// wrench <TypeID> <House>: each structure of the type, whoever owns it, with whether it is repairing and whether the house
+// sees its repair wrench, shroud aside.
+static void Wrench_Step(StepType const & step)
+{
+	HouseClass const * viewer = Named_House(Word(step.Words, 3));
+	if (viewer == NULL) {
+		DebugString("AUTOTEST   wrench %s: no such house\n", Word(step.Words, 3).c_str());
+		return;
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (!building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+			DebugString("AUTOTEST   wrench %s at %d,%d owner %s repairing %d shown to %s %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+				building->House->Class->Name(), (int)building->IsRepairing, viewer->Class->Name(), (int)building->Is_Wrench_Shown_To(viewer));
+		}
+	}
+}
+
+
+static void Exp_Step(StepType const & step)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			DebugString("AUTOTEST   exp %s at %d,%d: %.4f\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->Veterancy.Experience);
+		}
+	}
+}
+
+
+static void Fall_Step(StepType const & step)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			techno->Height = step.X;
+			techno->IsFalling = true;
+			techno->Riser.Z = 0;
+			DebugString("AUTOTEST   fall %s from %d\n", techno->TClass->Name(), step.X);
+		}
+	}
+}
+
+
+static void Flash_Step(StepType const & step)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			DebugString("AUTOTEST   flash %s of %s count %u\n", techno->TClass->Name(), techno->House->Class->Name(), techno->FlashCount);
+		}
+	}
+}
+
+
+static void Forceshield_Step(StepType const & step)
+{
+	// forceshield <TypeID> <frames>: puts the player's objects of that type under the Force Shield for that many frames, as the superweapon does,
+	// and writes the frames each has left.
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			techno->Iron_Curtain(step.X, PlayerPtr, true);
+			DebugString("AUTOTEST   forceshield %s at %d,%d for %d: %d frames left, shielded %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)techno->IronCurtainTimer, (int)techno->IsForceShielded);
+		}
+	}
+}
+
+
+static void Graphic_Step(StepType const & step)
+{
+	ObjectTypeClass const * type = Find_Type(step.Argument);
+	if (type != NULL) {
+		DebugString("AUTOTEST   graphic %s art %s alternate %d has shape %d\n", type->Name(), type->Graphic_Name(), (int)type->IsAlternateTheaterArt, (int)(type->Get_Image_Data() != NULL));
+	}
+}
+
+
+static void Lighting_Step(StepType const & step)
+{
+	// lighting: the ambient light now and wanted, whether a lightning storm, a dominator blast or an ion storm is on, and the tint the first tile drawer wears.
+	DebugString("AUTOTEST   lighting ambient %d wanted %d storm %d dominator %d ion %d tint %d,%d,%d special %d\n", Scen->CurrentAmbientLight, Scen->DesiredAmbientLight, (int)LightningStormClass::Is_Active(), (int)PsychicDominatorClass::Is_Lit(), (int)IonStormClass::Is_Ion_Storm_Active(),
+		TileDrawers.Count() > 0 ? TileDrawers[0]->IonRedTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->IonGreenTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->IonBlueTint : -1, TileDrawers.Count() > 0 ? (int)TileDrawers[0]->UseIonLighting : -1);
+}
+
+
+static void Link_Step(StepType const & step)
+{
+	// link <kind>:<TypeA>:<TypeB>: see the list of commands above.
+	std::string kind;
+	std::string first;
+	std::string second;
+	{
+		size_t const one = step.Argument.find(':');
+		size_t const two = one != std::string::npos ? step.Argument.find(':', one + 1) : std::string::npos;
+		if (two != std::string::npos) {
+			kind = step.Argument.substr(0, one);
+			first = step.Argument.substr(one + 1, two - one - 1);
+			second = step.Argument.substr(two + 1);
+		}
+	}
+	TechnoClass * a = NULL;
+	TechnoClass * b = NULL;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->IsInLimbo || techno->House != PlayerPtr) continue;
+		if (a == NULL && stricmp(techno->TClass->Name(), first.c_str()) == 0) a = techno;
+		if (b == NULL && stricmp(techno->TClass->Name(), second.c_str()) == 0) b = techno;
+	}
+	if (a != NULL && b != NULL) {
+		if (kind == "spawn") {
+			b->SpawnOwner = a;
+		} else if (kind == "mindcontrol") {
+			b->MindControlledBy = a;
+		} else if (kind == "passenger") {
+			b->IsInOpenToppedTransport = true;
+			b->Transporter = a;
+		} else if (kind == "airstrike" && b->RTTI == RTTI_AIRCRAFT) {
+			a->AirstrikePlanes.push_back(static_cast<AircraftClass *>(b));
+		}
+		DebugString("AUTOTEST   link %s %s to %s\n", kind.c_str(), first.c_str(), second.c_str());
+	} else {
+		DebugString("AUTOTEST   link %s: %s %s, %s %s\n", kind.c_str(), first.c_str(), a != NULL ? "found" : "missing", second.c_str(), b != NULL ? "found" : "missing");
+	}
+}
+
+
+static void Lose_Step(StepType const & step)
+{
+	// lose <TypeID>: gives the first live object of that type the player owns to a computer house through
+	// TechnoClass::Set_Owning_House, as an enemy capture does.
+	HouseClass * enemy = NULL;
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
+			enemy = Houses[index];
+			break;
+		}
+	}
+	for (int index = 0; enemy != NULL && index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			bool const given = techno->Set_Owning_House(enemy, true);
+			DebugString("AUTOTEST lose %s at %d,%d to %s: %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, enemy->Class->Name(), given ? "given" : "refused");
+			break;
+		}
+	}
+	return;
+}
+
+
+static void Maphelp_Step(StepType const & step)
+{
+	char const * text = Map.Help_Text(600);
+	DebugString("AUTOTEST   maphelp '%s'\n", text != NULL ? text : "(none)");
+}
+
+
+static void Scenarios_Step(StepType const & step)
+{
+	// scenarios: the multiplayer list the skirmish setup offers, with each file's description and availability.
+	DebugString("AUTOTEST   scenarios: %d listed, number %d is selected\n", Session.Scenarios.Count(), Session.Options.ScenarioIndex);
+	for (int index = 0; index < Session.Scenarios.Count(); index++) {
+		DebugString("AUTOTEST   scenario %d: %s \"%s\" official %d on hand %d\n", index, Session.Scenarios[index]->Get_Filename(), Session.Scenarios[index]->Description(), (int)Session.Scenarios[index]->Get_Official(), (int)CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available());
+	}
+}
+
+
+static void Seatflh_Step(StepType const & step)
+{
+	// seatflh <TypeID>: the passenger seat offsets the type reads from AlternateFLH0 on.
+	TechnoTypeClass const * type = Find_Type(step.Argument);
+	if (type != NULL) {
+		for (size_t seat = 0; seat < type->AlternativeFLH.size(); seat++) {
+			DebugString("AUTOTEST   seatflh %s seat %d (AlternateFLH%d) %d,%d,%d\n", type->Name(), (int)seat + 1, (int)seat, type->AlternativeFLH[seat].X, type->AlternativeFLH[seat].Y, type->AlternativeFLH[seat].Z);
+		}
+	}
+}
+
+
 // The handler for each script command name. The table is built on the first call.
 static std::unordered_map<std::string_view, void (*)(StepType const &)> const & Step_Handlers(void)
 {
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
+		{"aistrike", Aistrike_Step},
+		{"cameopcx", Cameopcx_Step},
+		{"wrench", Wrench_Step},
+		{"attackvoice", Attackvoice_Step},
+		{"exp", Exp_Step},
+		{"fall", Fall_Step},
+		{"flash", Flash_Step},
+		{"forceshield", Forceshield_Step},
+		{"graphic", Graphic_Step},
+		{"lighting", Lighting_Step},
+		{"link", Link_Step},
+		{"lose", Lose_Step},
+		{"maphelp", Maphelp_Step},
+		{"scenarios", Scenarios_Step},
+		{"seatflh", Seatflh_Step},
 		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
 		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
 		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
@@ -7086,6 +7799,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"hutc4", Hut_C4_Step},
 		{"c4watch", C4_Watch_Start},
 		{"weapons", Weapons_Step},
+		{"weaponkeys", Weapon_Keys_Step},
+		{"weaponinfo", Weapon_Info_Step},
 		{"airborne", Airborne_Step},
 		{"rocket", Rocket_Step},
 		{"typedump", Type_Dump_Step},
@@ -7117,6 +7832,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"alliance", Alliance_Step},
 		{"tab", Tab_Step},
 		{"modes", Modes_Step},
+		{"sidebarbuttons", Sidebar_Buttons_Step},
 		{"placement", Placement_Step},
 		{"modsig", Mod_Signature_Step},
 		{"stockcheck", Stock_Check_Step},
@@ -7135,6 +7851,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"triggerlog", [](StepType const & step) {TriggerLog = step.Argument_Int() != 0;}},
 		{"triggercoverage", Trigger_Coverage_Step},
 		{"trigaction", Trigger_Action_Step},
+		{"tagevent", Tag_Event_Step},
+		{"tagtype", Tag_Type_Step},
+		{"trigactionline", Trigger_Action_Line_Step},
 		{"dumpfile", Dumpfile_Step},
 		{"mixof", Mixof_Step},
 		{"spyon", Spyon_Step},
@@ -7146,6 +7865,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"veterancy", Veterancy_Step},
 		{"sell", Sell_Step},
 		{"repairon", Repairon_Step},
+		{"credits", Credits_Step},
 		{"poweroff", Poweroff_Step},
 		{"rally", Rally_Step},
 		{"rallyclick", Rallyclick_Step},
@@ -7240,6 +7960,10 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"enable", Enable_Step},
 		{"grantai", Grantai_Step},
 		{"chargeai", Chargeai_Step},
+		{"timers", Timers_Step},
+		{"nukeflash", Nukeflash_Step},
+		{"aimcell", Aimcell_Step},
+		{"aimpick", Aimpick_Step},
 		{"fire", Fire_Step},
 		{"rules", Rules_Step},
 		{"reload", Reload_Step},
@@ -7285,6 +8009,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"reinforce", Reinforce_Step},
 		{"runtrigger", Runtrigger_Step},
 		{"restart", Restart_Step},
+		{"trackers", Trackers_Step},
 		{"triggers", Triggers_Step},
 		{"planes", Planes_Step},
 		{"inrange", Inrange_Step},
@@ -7299,6 +8024,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"pickable", Pickable_Step},
 		{"helptext", Helptext_Step},
 		{"cellpixel", Cellpixel_Step},
+		{"tilecheck", Tilecheck_Step},
+		{"settile", Settile_Step},
 		{"hoverat", Hoverat_Step},
 		{"pips", Pips_Step},
 		{"pickat", Pickat_Step},
@@ -7326,6 +8053,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"sensors", Sensors_Step},
 		{"partsys", Partsys_Step},
 		{"bullets", Bullets_Step},
+		{"bulletrange", Bulletrange_Step},
 		{"radbeams", Radbeams_Step},
 		{"radlevel", Radlevel_Step},
 		{"quantity", Quantity_Step},
@@ -7333,8 +8061,11 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"schemes", Schemes_Step},
 		{"seq", Seq_Step},
 		{"plan", Plan_Step},
+		{"aisummary", Aisummary_Step},
 		{"team", Team_Step},
 		{"teamtrace", Teamtrace_Step},
+		{"damagetrace", Damagetrace_Step},
+		{"detaillog", Detaillog_Step},
 		{"buildtrace", Buildtrace_Step},
 		{"teams", Teams_Step},
 		{"banims", Banims_Step},
@@ -7384,6 +8115,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"defencerange", Defencerange_Step},
 		{"scriptzoom", Scriptzoom_Step},
 		{"statedump", Statedump_Step},
+		{"typecrc", Typecrc_Step},
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
 		{"perfoverlay", Perfoverlay_Step},
@@ -7396,6 +8128,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"log", No_Action_Step},
 		{"searchdir", No_Action_Step},
 		{"loadshot", No_Action_Step},
+		{"loadsteps", No_Action_Step},
+		{"typesread", No_Action_Step},
 		{"stall", Stall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
@@ -7445,6 +8179,20 @@ bool AutoTest_Active(void)
 }
 
 
+bool AutoTest_Detail_Logging(void)
+{
+	if (!DetailLogging) {
+		return(false);
+	}
+	if (--DetailLinesLeft < 0) {
+		DetailLogging = false;
+		DebugString("AUTOTEST detail lines stop at frame %d after %d lines; a detaillog 1 step starts them again\n", (int)Frame, DetailLineBudget);
+		return(false);
+	}
+	return(true);
+}
+
+
 void AutoTest_Set_Uncapped(void)
 {
 	Uncapped = true;
@@ -7473,19 +8221,65 @@ bool AutoTest_Key_Held(int virtualkey)
 /// Saves the window as the script's next loading screen capture, when it asked for them.
 /// Call once the loading screen is drawn as it should be seen.
 /// </summary>
-void AutoTest_Loading_Screen_Shown(void)
+static void Capture_Load_Shot(char const * command, std::string const & name, int & count)
 {
-	if (!Active || LoadShotName.empty()) {
-		return;
-	}
-
 	// The capture request keeps the path's address until a frame is shown.
 	static std::string path;
-	path = Screenshot_Name((LoadShotName + "-" + std::to_string(++LoadShotCount) + ".tga").c_str());
-	DebugString("AUTOTEST loadshot %s\n", path.c_str());
-	Backend_Request_Window_Capture(path.c_str());
-	Video_Present();
-	Video_Present();
+	path = Screenshot_Name((name + "-" + std::to_string(++count) + ".tga").c_str());
+	DebugString("AUTOTEST %s %s\n", command, path.c_str());
+	if (!Backend_Request_Window_Capture(path.c_str())) {
+		return;
+	}
+	// The renderer takes one capture at a time, so a request sent before this one is written would replace it.
+	unsigned int const started = timeGetTime();
+	do {
+		Video_Present();
+		Sleep(1);
+	} while (Backend_Window_Capture_Pending() && timeGetTime() - started <= Capture_Timeout);
+}
+
+
+void AutoTest_Loading_Screen_Shown(void)
+{
+	if (Active && !LoadShotName.empty()) {
+		Capture_Load_Shot("loadshot", LoadShotName, LoadShotCount);
+	}
+}
+
+
+/// <summary>
+/// Logs a step of the loading notice, and saves the window as the script's next loading notice capture,
+/// when the script asked for them. Call once the step is shown.
+/// </summary>
+void AutoTest_Load_Progress_Shown(char const * text, double fraction)
+{
+	if (!Active || !LogLoadSteps) {
+		return;
+	}
+	DebugString("AUTOTEST loadstep %d%% %s\n", (int)std::lround(fraction * 100.0), text);
+	if (!StepShotName.empty()) {
+		Capture_Load_Shot("stepshot", StepShotName, StepShotCount);
+	}
+}
+
+
+/// <summary>
+/// Logs the checksums of the rules and of each type list once a scenario's rules are read, when the script
+/// asked for them with typesread, and compares each later scenario's with the first one's.
+/// </summary>
+void AutoTest_Rules_Read(void)
+{
+	static std::vector<std::pair<char const *, unsigned>> first;
+	static int loads = 0;
+	if (!Active || !LogTypesRead) {
+		return;
+	}
+	loads++;
+	std::string const label = "typesread " + std::to_string(loads);
+	std::vector<std::pair<char const *, unsigned>> sums = Log_Type_Checksums(label.c_str(), loads > 1 ? &first : nullptr);
+	if (loads == 1) {
+		first = std::move(sums);
+	}
 }
 
 
@@ -7522,6 +8316,14 @@ static bool Apply_Load_Time_Command(char const * command, std::string const & te
 	// The first loading screen comes before any game frame.
 	if (std::strcmp(command, "loadshot") == 0) {
 		LoadShotName = text;
+	}
+	if (std::strcmp(command, "loadsteps") == 0) {
+		LogLoadSteps = true;
+		StepShotName = text;
+	}
+	if (std::strcmp(command, "typesread") == 0) {
+		LogTypesRead = true;
+		return(true);
 	}
 	// recordreplay and playreplay take effect when the script is read, before the game starts.
 	if (std::strcmp(command, "recordreplay") == 0) {

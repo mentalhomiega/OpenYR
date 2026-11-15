@@ -16,7 +16,13 @@
 #include "unittype.h"
 #include "crc.h"
 #include "findmake.h"
+#include "houstype.h"
+#include "hsv.h"
+#include "scheme.h"
 #include "globals.h"
+#include "infatype.h"
+#include "rules.h"
+#include "_rules.h"
 #include "savestream.h"
 #include "sun.h"
 #include "tracker.h"
@@ -41,14 +47,36 @@ SideClass::SideClass(char const * ininame) :
 	AIWallDefenseCoefficient(0.0),
 	IsAIBuildsWalls(true),
 	AIBaseDefensePlaceholders(2),
-	IsAIBaseDefensesWithWalls(false)
+	IsAIBaseDefensesWithWalls(false),
+	SidebarMixFileIndex(0),
+	SidebarYuriFileNames(-1),
+	IsToolTipColor(false),
+	ToolTipColor{0, 0, 0},
+	MessageTextColor(),
+	EvaTag(),
+	Crew(NULL),
+	Engineer(NULL),
+	Technician(NULL),
+	DefaultDisguise(NULL),
+	SurvivorDivisor(-1),
+	IsHudColor(false),
+	HudColor{0, 0, 0},
+	LoadingTheme(),
+	MultiplayerScoreBackground(),
+	MultiplayerScorePalette(),
+	MultiplayerScoreBars(),
+	MultiplayerScoreWinTheme(),
+	MultiplayerScoreLoseTheme(),
+	CampaignScoreBackground(),
+	CampaignScoreAnimation(),
+	CampaignScorePalette()
 {
 	Create_ID();
 	Sides.Add(this);
 
 	// No rules key seeds these, so the first two positions take what Tiberian Sun hard-coded
 	// for GDI and Nod.
-	int position = Sides.ID(this);
+	int position = Sides.ID(const_cast<SideClass *>(this));
 	if (position == 0) {
 		AIBaseDefensePlaceholders = 3;
 	} else if (position == 1) {
@@ -87,6 +115,132 @@ int SideClass::Place_In_Sides(SideType side)
 }
 
 
+/// <summary>
+/// Fetches the number that names this side's sidebar archives.
+/// </summary>
+int SideClass::Sidebar_Archive_Number(void) const
+{
+	if (SidebarMixFileIndex > 0) {
+		return(SidebarMixFileIndex);
+	}
+	int const id = Sides.ID(const_cast<SideClass *>(this));
+	return((id == SIDE_THIRD ? (int)SIDE_NOD : id) + 1);
+}
+
+
+bool SideClass::Uses_Yuri_File_Names(void) const
+{
+	if (SidebarYuriFileNames >= 0) {
+		return(SidebarYuriFileNames != 0);
+	}
+	return(Sides.ID(const_cast<SideClass *>(this)) == SIDE_THIRD);
+}
+
+
+InfantryTypeClass const * SideClass::Crew_Type(void) const
+{
+	if (Crew != NULL) {
+		return(Crew);
+	}
+	switch (ListPosition) {
+		case 0:
+			return(Rule->AlliedCrew);
+		case 1:
+			return(Rule->SovietCrew);
+		case 2:
+			return(Rule->ThirdCrew);
+		default:
+			return(Rule->Technician);
+	}
+}
+
+
+InfantryTypeClass const * SideClass::Engineer_Type(void) const
+{
+	return(Engineer != NULL ? Engineer : Rule->Engineer);
+}
+
+
+InfantryTypeClass const * SideClass::Technician_Type(void) const
+{
+	return(Technician != NULL ? Technician : Rule->Technician);
+}
+
+
+InfantryTypeClass const * SideClass::Disguise_Type(void) const
+{
+	if (DefaultDisguise != NULL) {
+		return(DefaultDisguise);
+	}
+	switch (ListPosition) {
+		case 0:
+			return(Rule->AlliedDisguise);
+		case 1:
+			return(Rule->SovietDisguise);
+		default:
+			// Any side past the second disguises as the third does, as gamemd's TechnoClass::Init (0x6F3F40) has it.
+			return(Rule->ThirdDisguise);
+	}
+}
+
+
+int SideClass::Survivor_Divisor(void) const
+{
+	if (SurvivorDivisor >= 0) {
+		return(SurvivorDivisor);
+	}
+	switch (ListPosition) {
+		case 0:
+			return(Rule->AlliedSurvivorDivisor);
+		case 1:
+			return(Rule->SovietSurvivorDivisor);
+		case 2:
+			return(Rule->ThirdSurvivorDivisor);
+		default:
+			return(0);
+	}
+}
+
+
+bool SideClass::Hud_Color(RGBClass & color) const
+{
+	if (IsHudColor) {
+		color = RGBClass(HudColor[0], HudColor[1], HudColor[2]);
+		return(true);
+	}
+
+	// The saturation and brightness of the frame colors the three stock sides have, with the
+	// hue of the country's color scheme. A scheme close to grey gives a grey frame.
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index] < 0 || Houses[index] >= HouseTypes.Count()) {
+			continue;
+		}
+		HouseTypeClass const * house = HouseTypes[Houses[index]];
+		if (house != NULL && house->Scheme >= 0 && house->Scheme < ColorSchemes.Count()) {
+			HSVClass const & hsv = ColorSchemes[house->Scheme]->HSV;
+			int const saturation = hsv.Get_Saturation() < 48 ? hsv.Get_Saturation() / 2 : 178;
+			color = HSVClass((unsigned char)hsv.Get_Hue(), (unsigned char)saturation, 199);
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+std::string SideClass::Eva_Voice_Name(void) const
+{
+	if (!EvaTag.empty()) {
+		return(stricmp(EvaTag.c_str(), "none") == 0 ? std::string() : EvaTag);
+	}
+	int const id = Sides.ID(const_cast<SideClass *>(this));
+	if (id == SIDE_NOD) {
+		return("Russian");
+	}
+	// Every side past the second speaks in the Yuri voice (VoxClass::GetFilename, 0x753380).
+	return(id >= SIDE_THIRD ? "Yuri" : "Allied");
+}
+
+
 /// <returns>Returns with the identifier of the matching side, or SIDE_NONE if there is no
 /// such side.</returns>
 SideType SideClass::From_Name(char const * name)
@@ -118,6 +272,14 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(AIBaseDefensePlaceholders);
 	crc(IsAIBaseDefensesWithWalls);
 	crc(ListPosition);
+	crc(SidebarMixFileIndex);
+	crc(SidebarYuriFileNames);
+	crc(SurvivorDivisor);
+	crc(Crew != NULL ? Crew->Name() : "");
+	crc(ParaDrop.Types.Count());
+	crc(Engineer != NULL ? Engineer->Name() : "");
+	crc(Technician != NULL ? Technician->Name() : "");
+	crc(DefaultDisguise != NULL ? DefaultDisguise->Name() : "");
 }
 
 
@@ -142,6 +304,51 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 	IsAIBuildsWalls = ini.Get_Bool(Name(), "AIBuildsWalls", IsAIBuildsWalls);
 	AIBaseDefensePlaceholders = ini.Get_Int(Name(), "AIBaseDefensePlaceholders", AIBaseDefensePlaceholders);
 	IsAIBaseDefensesWithWalls = ini.Get_Bool(Name(), "AIBaseDefensesWithWalls", IsAIBaseDefensesWithWalls);
+
+	SidebarMixFileIndex = ini.Get_Int(Name(), "Sidebar.MixFileIndex", SidebarMixFileIndex);
+	if (ini.Is_Present(Name(), "Sidebar.YuriFileNames")) {
+		SidebarYuriFileNames = ini.Get_Bool(Name(), "Sidebar.YuriFileNames", false) ? 1 : 0;
+	}
+	if (ini.Is_Present(Name(), "ToolTipColor")) {
+		RGBClass const color = ini.Get_RGBClass(Name(), "ToolTipColor", RGBClass(0, 0, 0));
+		IsToolTipColor = true;
+		ToolTipColor[0] = color.Get_Red();
+		ToolTipColor[1] = color.Get_Green();
+		ToolTipColor[2] = color.Get_Blue();
+	}
+	char buffer[64];
+	if (ini.Get_String(Name(), "MessageTextColor", "", buffer, sizeof(buffer)) > 0) {
+		MessageTextColor = buffer;
+	}
+	if (ini.Get_String(Name(), "EVA.Tag", "", buffer, sizeof(buffer)) > 0) {
+		EvaTag = buffer;
+	}
+	Crew = TGet_Class(ini, Name(), "Crew", Crew);
+	ParaDrop.Take_Types(ini.Get_String(Name(), "ParaDrop.Types"));
+	if (ini.Is_Present(Name(), "ParaDrop.Num")) {
+		ParaDrop.Take_Num(ini.Get_IntList(Name(), "ParaDrop.Num", ParaDrop.Num));
+	}
+	ParaDrop.Take_Aircraft(ini.Get_String(Name(), "ParaDrop.Aircraft"));
+	Engineer = TGet_Class(ini, Name(), "Engineer", Engineer);
+	Technician = TGet_Class(ini, Name(), "Technician", Technician);
+	DefaultDisguise = TGet_Class(ini, Name(), "DefaultDisguise", DefaultDisguise);
+	SurvivorDivisor = ini.Get_Int(Name(), "SurvivorDivisor", SurvivorDivisor);
+	if (ini.Is_Present(Name(), "Hud.Color")) {
+		RGBClass const color = ini.Get_RGBClass(Name(), "Hud.Color", RGBClass(0, 0, 0));
+		IsHudColor = true;
+		HudColor[0] = color.Get_Red();
+		HudColor[1] = color.Get_Green();
+		HudColor[2] = color.Get_Blue();
+	}
+	LoadingTheme = ini.Get_String(Name(), "LoadingTheme", LoadingTheme.c_str());
+	MultiplayerScoreBackground = ini.Get_String(Name(), "MultiplayerScore.Background", MultiplayerScoreBackground.c_str());
+	MultiplayerScorePalette = ini.Get_String(Name(), "MultiplayerScore.Palette", MultiplayerScorePalette.c_str());
+	MultiplayerScoreBars = ini.Get_String(Name(), "MultiplayerScore.Bars", MultiplayerScoreBars.c_str());
+	MultiplayerScoreWinTheme = ini.Get_String(Name(), "MultiplayerScore.WinTheme", MultiplayerScoreWinTheme.c_str());
+	MultiplayerScoreLoseTheme = ini.Get_String(Name(), "MultiplayerScore.LoseTheme", MultiplayerScoreLoseTheme.c_str());
+	CampaignScoreBackground = ini.Get_String(Name(), "CampaignScore.Background", CampaignScoreBackground.c_str());
+	CampaignScoreAnimation = ini.Get_String(Name(), "CampaignScore.Animation", CampaignScoreAnimation.c_str());
+	CampaignScorePalette = ini.Get_String(Name(), "CampaignScore.Palette", CampaignScorePalette.c_str());
 	return(true);
 }
 
@@ -173,4 +380,27 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAIBuildsWalls);
 	stream.Serialize(AIBaseDefensePlaceholders);
 	stream.Serialize(IsAIBaseDefensesWithWalls);
+	stream.Serialize(SidebarMixFileIndex);
+	stream.Serialize(SidebarYuriFileNames);
+	stream.Serialize(IsToolTipColor);
+	stream.Serialize(ToolTipColor);
+	stream.Serialize(MessageTextColor);
+	stream.Serialize(EvaTag);
+	stream.Serialize(Crew);
+	ParaDrop.Serialize(stream);
+	stream.Serialize(Engineer);
+	stream.Serialize(Technician);
+	stream.Serialize(DefaultDisguise);
+	stream.Serialize(SurvivorDivisor);
+	stream.Serialize(IsHudColor);
+	stream.Serialize(HudColor);
+	stream.Serialize(LoadingTheme);
+	stream.Serialize(MultiplayerScoreBackground);
+	stream.Serialize(MultiplayerScorePalette);
+	stream.Serialize(MultiplayerScoreBars);
+	stream.Serialize(MultiplayerScoreWinTheme);
+	stream.Serialize(MultiplayerScoreLoseTheme);
+	stream.Serialize(CampaignScoreBackground);
+	stream.Serialize(CampaignScoreAnimation);
+	stream.Serialize(CampaignScorePalette);
 }

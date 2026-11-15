@@ -64,6 +64,7 @@
 #include "truecolour.h"
 #include "emissive.h"
 #include "warhead.h"
+#include "weapon.h"
 
 
 /// <summary>
@@ -142,6 +143,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	MiddleFrameWidth(0),
 	MiddleFrameHeight(0),
 	Damage(0.0),
+	DamageDelay(0),
 	Delay(1),
 	Start(0),
 	LoopStart(0),
@@ -174,6 +176,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	MaxZVel(3.5),
 	MaxXYVel(15.0),
 	Warhead(NULL),
+	Weapon(NULL),
 	DamageRadius(0),
 	TiberiumSpawnType(NULL),
 	TiberiumSpreadRadius(0),
@@ -197,6 +200,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsAltPalette(false),
 	IsNormalized(false),
 	MakeInfantry(-1),
+	MakeInfantryOwner(MAKE_OWNER_INVOKER),
 	Layer(LAYER_AIR),
 	IsFlat(false),
 	IsDoubleThick(false),
@@ -225,7 +229,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsFootprint = false;
 
 	AnimTypes.Add(this);
-	AbstractTypePtrTracker.Add(this);
+	AnimTypePtrTracker.Add(this);
 
 	if (ininame != NULL) {
 		Load_Image(THEATER_NONE);
@@ -246,7 +250,7 @@ AnimTypeClass::~AnimTypeClass(void)
 		Free_Demand_Loaded_Shape(ImageData);
 	}
 
-	AbstractTypePtrTracker.Delete(this);
+	AnimTypePtrTracker.Delete(this);
 	AnimTypes.Delete(this);
 }
 
@@ -476,6 +480,17 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsFlameThrower = ini.Get_Bool(Name(), "Flamer", IsFlameThrower);
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
 		MakeInfantry = ini.Get_Int(Name(), "MakeInfantry", MakeInfantry);
+		{
+			char owner[24];
+			if (ini.Get_String(Name(), "MakeInfantryOwner", "", owner, sizeof(owner)) > 0) {
+				static char const * const names[] = {"invoker", "killer", "victim", "civilian", "special", "neutral", "random"};
+				for (int index = 0; index < 7; index++) {
+					if (stricmp(owner, names[index]) == 0) {
+						MakeInfantryOwner = index;
+					}
+				}
+			}
+		}
 		// Surface= is an older key for the ground layer. A recognised Layer= value overrides it,
 		// and a key left out keeps the layer already set.
 		LayerType layer = Layer;
@@ -506,6 +521,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		Damage = ini.Get_Float(Name(), "Damage", Damage);
+		DamageDelay = ini.Get_Int(Name(), "Damage.Delay", DamageDelay);
 		Start = ini.Get_Int(Name(), "Start", Start);
 		Stages = ini.Get_Int(Name(), "End", Stages);
 		LoopStart = ini.Get_Int(Name(), "LoopStart", LoopStart);
@@ -579,6 +595,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		TrailerSeperation = ini.Get_Int(Name(), "TrailerSeperation", TrailerSeperation);
 		DamageRadius = ini.Get_Int(Name(), "DamageRadius", DamageRadius);
 		Warhead = TGet_Class(ini, Name(), "Warhead", Warhead);
+		Weapon = TGet_Class(ini, Name(), "Weapon", Weapon);
 
 		IsBouncer = ini.Get_Bool(Name(), "Bouncer", IsBouncer);
 		IsTiled = ini.Get_Bool(Name(), "Tiled", IsTiled);
@@ -643,6 +660,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MiddleFrameWidth);
 	stream.Serialize(MiddleFrameHeight);
 	stream.Serialize(Damage);
+	stream.Serialize(DamageDelay);
 	stream.Serialize(Delay);
 	stream.Serialize(Start);
 	stream.Serialize(LoopStart);
@@ -673,6 +691,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxZVel);
 	stream.Serialize(MaxXYVel);
 	stream.Serialize(Warhead);
+	stream.Serialize(Weapon);
 	stream.Serialize(DamageRadius);
 	stream.Serialize(TiberiumSpawnType);
 	stream.Serialize(TiberiumSpreadRadius);
@@ -697,6 +716,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CustomPalette);
 	stream.Serialize(IsNormalized);
 	stream.Serialize(MakeInfantry);
+	stream.Serialize(MakeInfantryOwner);
 	stream.Serialize(Layer);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsDoubleThick);
@@ -745,6 +765,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsShadow);
 	crc(MiddleFrameIndex);
 	crc(Damage);
+	crc(DamageDelay);
 	crc(IsTiberiumChainReaction);
 	crc(IsHideIfNoOre);
 	crc(Delay);
@@ -788,6 +809,9 @@ void AnimTypeClass::Detach(AbstractClass const * target, bool all)
 {
 	if (ChainTo == target) {
 		ChainTo = NULL;
+	}
+	if (Weapon == (WeaponTypeClass *)target) {
+		Weapon = NULL;
 	}
 }
 

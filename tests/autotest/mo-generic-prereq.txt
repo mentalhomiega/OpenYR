@@ -1,0 +1,52 @@
+; Mental Omega tech gates through Ares prerequisite groups. Needs the Mental Omega files in Mods\MentalOmega.
+; Americans (UnitedStates) on the default map; the player starts at 65,20. A house that owns another faction's factory
+; builds that faction's units, so one run covers all four factions. Each faction's refinery and factory are destroyed
+; before the next section, so its PROC2 and factory groups start unmet. Expected canbuild lines of house UnitedStates:
+;   Allies:  CMIN 0 at frame 60 (no PROC2 refinery), 1 at frame 80; GATECH 0 at frame 120 (no ALLT2 building), 1 at
+;            frame 140 after the Mercury Network Uplink GAMERC
+;   Soviets: HARV 0 at frame 260 (no PROC2 refinery), 1 at frame 280; ZEP 0 at frame 280 (no SOVTECH), 1 at frame 320
+;            after the Russian Palace NATECHR
+;   Epsilon: BASIL 0 at frame 460 and still 0 at frame 480 with the Pandora Hub YATECH alone (no ANYPLUG); 1 at frame
+;            520 after the Psychplug upgrade YAPVLT is installed in the hub
+;   Foehn:   QUETZ 0 at frame 660 and still 0 at frame 680 with the Cyberkernel FACYBR alone (no FOETECH); 1 at frame
+;            720 after the Cyberkernel Expansion upgrade FACYBR_B is installed in it
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/mo-generic-prereq.txt -Mods MentalOmega -Country 0 -Seconds 120 -Filter "AUTOTEST +(canbuild [A-Z_]+ house UnitedStates|own )|Exception"
+1 log Mental Omega tech gates: Allies, Soviets, Epsilon, Foehn
+30 own GAPOWR 58 24
+40 own GAWEAP 62 24
+60 canbuild CMIN
+70 own GAREFN 68 24
+80 canbuild CMIN
+90 own GACNST 52 28
+100 own GAAIRC 58 28
+120 canbuild GATECH
+130 own GAMERC 63 28
+140 canbuild GATECH
+200 kill GAREFN 1
+201 kill GAWEAP 1
+230 own NAPOWR 58 33
+240 own NAWEAP 62 33
+260 canbuild HARV
+270 own NAREFN 68 33
+280 canbuild HARV
+280 canbuild ZEP
+300 own NATECHR 58 37
+320 canbuild ZEP
+400 kill NAREFN 1
+401 kill NAWEAP 1
+430 own YAPOWR 58 42
+440 own YAWEAP 62 42
+460 canbuild BASIL
+470 own YATECH 52 42
+480 canbuild BASIL
+500 own YAPVLT 52 42
+520 canbuild BASIL
+600 kill YAWEAP 1
+630 own FATRAP 58 48
+640 own FAWEAP 62 48
+660 canbuild QUETZ
+670 own FACYBR 68 48
+680 canbuild QUETZ
+700 own FACYBR_B 68 48
+720 canbuild QUETZ
+800 quit

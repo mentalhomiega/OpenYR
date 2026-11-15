@@ -1,0 +1,12 @@
+; A player Boomer on the XMP08T2 lake fires its cruise missiles at a tank ten cells off. Stock artmd.ini gives the Boomer
+; SecondSpawnOffset=-70,0,0, which gamemd reads from the art section only (TechnoTypeClass::LoadFromINI, 0x712170).
+; Expected: the spawnlaunch lines alternate index 0 with offset 0,0,0 and index 1 with offset -70,0,0, and the index 1 missile
+; leaves about 70 leptons from the index 0 one (observed 2026-11-14: 69 on the Y axis for this facing). Before the fix the key
+; was read from rulesmd.ini, where stock files do not set it, so every launch line showed offset 0,0,0 and the same point.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/second-spawn-offset-art.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST spawnlaunch|Exception"
+30 command CenterBase
+302 reveal
+305 own BSUB 84 70
+306 spawn HTNK 92 80
+320 strike BSUB 92 80
+700 quit

@@ -331,6 +331,8 @@ a computer that had read the files before:
 On a first start after the computer was switched on the same build took about 20 seconds, most of it reading
 the head of every loose map from the disk; that reading is what the first item below removes.
 
+- With a mod active, the only time loose `.MAP` files are listed, the name and flags of each are kept in `mapinfo.cache` in the player's folder, with the
+  file's size and time of last change. A file that changed, or a new one, is read as before.
 - The outcome of each INI check is kept in `inicheck.cache` there, with a signature of the catalog and of every
   text the check read. An unchanged file gets one line in the log with its counts and its findings are not
   listed again; delete the file to have them listed. A test run always lists them, unless `[IniCheck]
@@ -340,6 +342,36 @@ the head of every loose map from the disk; that reading is what the first item b
 - The loading notice names the part of the start-up in progress and shows a bar.
 
 What remains is reading the rules for the menu battle (about 1.6 s) and its tile sets (0.7 s).
+
+## Reading the rules
+
+The "Reading the rules..." step of a scenario load builds every type again from the rules, the art and the
+map. Measured on the step alone in test runs, while other test games ran on the same computer:
+
+| Load | Before | After |
+|---|---|---|
+| Mental Omega, FCAPSULE, first load of the run | 2.91 s | 1.42 s |
+| Mental Omega, FCAPSULE, restarted | 1.63 s | 0.99 s |
+| Stock campaign ALL01UMD, first load | 0.60 s | 0.26 s |
+| Stock campaign ALL01UMD, restarted | 0.27 s | 0.19 s |
+| Stock skirmish | 0.50 s | 0.22 s |
+
+- Most of the art names the types ask for (voxel turrets and barrels, cameos) are in no folder, and each probe
+  of a folder used to try to open the file. While the step runs, a probe for a name a folder does not hold is
+  answered from one listing of that folder (`FileProbeScope`). The saved-game load does the same in its rules
+  step. With Mental Omega this took the probes of a restarted mission (about 24,000) from 0.36 s to 0.08 s, and
+  those of a first load (about 70,000) from 1.17 s to 0.23 s.
+- A warhead used to look up four `Versus.` keys for every armor type, which with Mental Omega's armor types is
+  most of the time spent on warheads, and the warheads are read twice. A warhead now looks up only the armor
+  types its own `Versus.` keys name: 0.20 s and 0.19 s became 0.03 s each.
+
+Every type comes out the same. The `typesread` test command checksums the rules and every type list after the
+step, both as a save holds them and as the multiplayer checksum covers them. For each load above the multiplayer
+checksum was the same before and after, and the saved form of every type was the same byte for byte except for
+members no code sets: the wave colour of a weapon without one (now zero) and a few bytes of the projectile types
+and the rules, which also differ between two runs of one build. In the test runs the INI check of the map lists its findings on every load,
+about 0.2 s of the Mental Omega step that a normal game skips for a map it checked before. Building the voxel
+models of the vehicle types (0.2 s with Mental Omega) is now the largest part left.
 
 ## Voxel images
 
@@ -388,6 +420,30 @@ Type tests on the simulation's hot paths use `Fetch_RTTI()` or the exact locomot
 - **A bullet or a particle.** Units, infantry, aircraft, buildings, terrain objects, particles and bullets have no member that can point at one, so their `Detach` is not called for it; an animation is skipped for a particle only. Particle systems, waves, alpha shapes, houses, teams and factories are still visited.
 
 `OPENYR_DETACH_CHECK=1` visits every skipped holder as well, compares its bytes before and after, and logs `DETACH CHECK DIFFERENCE` for a holder the visit changed; `2` also stops the game there. With the check on, the late-game benchmark made 130 million skipped visits and the full regress ran, with no difference, and the benchmark's game-state hashes are the same as before the skips.
+
+## Leaving a large mission
+
+`Delete_All_Objects` deletes every object and type when the game exits, when a mission restarts, and before the next mission or a saved game loads. Each deletion goes through the [object removal broadcast](#object-removal-broadcast), so the cost grows with the square of the number of types. The Mental Omega Epsilon mission EMIGDAL has 2,966 triggers with 5,047 events and 14,792 actions, and 21,498 types in all. Of the 4.75 s from the quit line to the end of `Prog_End`, deleting the types took 4.46 s, most of it in visits to and from the trigger events and actions.
+
+Measured from the `AUTOTEST quit` line at frame 1500 (`-Uncapped`, 1920x1080) to the end of the process, two runs of each:
+
+| Map | Before | After |
+|---|---|---|
+| EMIGDAL (Mental Omega campaign) | 4.91 s, 4.90 s | 0.78 s, 0.79 s |
+| XMP29U2 (stock skirmish) | 0.11 s, 0.11 s | 0.12 s, 0.10 s |
+
+What the removal of a type or a trigger part visits now:
+
+- Trigger events and actions are not in `AbstractTypePtrTracker`. The removal of a team type visits events and actions, and that of a trigger or tag type visits actions; no other type can be named by them.
+- A trigger type no longer passes each removal on to its own events and actions, because they are visited from `EventActionPtrTracker` themselves.
+- A trigger type deletes its own events and actions without a broadcast: only it and its own lists name them.
+- Tag types, trigger types, animation types and tile sets have trackers of their own, visited only for the kinds of type their `Detach` can change anything for: a trigger type for the first two, an animation or weapon type for animation types, and a tile set or animation type for tile sets.
+- While `Delete_All_Objects` deletes the types, the removal of a team, trigger or tag type visits the events and actions only if one of them named that type when the deletion of the types began.
+
+What is deleted and the order of the deletions are the same as before. `OPENYR_DETACH_CHECK=2` visits every holder these rules skip and compares its bytes: on EMIGDAL, through a mission restart and the exit, it checked about 1.2 billion skipped visits and found no difference. The `trackers` autotest step checks that the trackers hold exactly the trigger types, tag types, events and actions, in `tests/campaign/restart-trackers.txt` and, with Mental Omega, `tests/autotest/mo-emigdal-restart-trackers.txt`, before and after a restart.
+
+Of the 0.78 s left on EMIGDAL, deleting the types takes about 0.47 s, most of it for the trigger types (0.25 s) and the 2,392 team types (0.15 s), and deleting the units, buildings and bullets about 0.1 s.
+
 ## GPU pass fallbacks
 
 A map pass that holds a draw the GPU record cannot replay is drawn in software, and the `GPU_RENDER` line counts it under `fallback`. `OPENYR_GPU_WHY=1` logs, for one such pass in 150, a `GPU_WHY frame` line with the counts and up to 12 `GPU_WHY kind` lines: the call stack of a surface lock no recorded blit accounts for (kind 0) or of a blit whose blitter has no `Describe` (kind 1), as addresses relative to the module base, to look up in `Game.map` at base 0x400000. `GPU_WHY blitter` names the blitter class. Two such draws were found this way on a large Mental Omega mission and now go to the GPU: the searchlight's depth glow lines, recorded as a light of the line's strength, and the rank insignia, drawn with `RLEBlitTransXlat`, which lacked `Describe`. A third was the flying text (the credits and damage numbers over objects), printed with `BitFontClass::Print` straight into the surface: on the Mental Omega mission STROPH three of four passes fell back for it. Each run of set glyph pixels is now recorded as a fill, and `GPU_RENDER` shows no fallback there.

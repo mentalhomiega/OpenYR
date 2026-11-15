@@ -1,0 +1,15 @@
+; Insignia files without a frame number. The insignia-first-frame-rules mod gives the GI (E1) Insignia.Rookie=PIPS and
+; the Conscript (E2) Insignia.Elite=PIPS, with no InsigniaFrame keys. Frame 0 of PIPS.SHP is a small disc.
+; Expected: the rookie GI and the elite Conscript each show that disc at their feet, where stock rules show nothing for
+; the rookie and the elite chevron (frame 15) for the elite. The veteran Guardian GI (GGI) still draws the stock chevron, frame 14.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/insignia-first-frame.txt -Mods tests/autotest/insignia-first-frame-rules -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 66 24
+41 own E2 68 24
+42 own GGI 70 24
+44 view 68 24
+50 rank E2 2
+51 rank GGI 1
+80 windowshot insignia-a
+300 quit

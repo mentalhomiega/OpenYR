@@ -22,6 +22,7 @@ registrations:
   - { section: Animations, id_from: value, entry_section: "<AnimType ID>" }
   - { section: VoxelAnims, id_from: value, entry_section: "<VoxelAnimType ID>" }
   - { section: Weapons, id_from: value, entry_section: "<WeaponType ID>" }
+  - { section: WeaponTypes, id_from: value, entry_section: "<WeaponType ID>" }
   - { section: Warheads, id_from: value, entry_section: "<WarheadType ID>" }
   - { section: Particles, id_from: value, entry_section: "<ParticleType ID>" }
   - { section: ParticleSystems, id_from: value, entry_section: "<ParticleSystemType ID>" }
@@ -75,6 +76,8 @@ A listed built-in theater starts from that theater's original settings, and its 
 
 Projectiles have no registration section. A projectile is created the first time a key names it, usually a weapon's [`Projectile=`](/keys/projectile/). A projectile a weapon names reads its settings from the section matching its name, as for a registered type.
 
-A weapon that `[Weapons]` does not list is created the same way, the first time one of these keys names it: [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/), [`Elite=`](/keys/elite/), [`WeaponType=`](/keys/weapontype/), [`DropPodWeapon=`](/keys/droppodweapon/) or [`AirburstWeapon=`](/keys/airburstweapon/).
+`[WeaponTypes]`, the Ares name for the weapon list, registers weapons the same way as `[Weapons]`, and a file may use both.
+
+A weapon that neither list names is created like a projectile, the first time one of these keys names it: [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/), [`Elite=`](/keys/elite/), [`WeaponType=`](/keys/weapontype/), [`DropPodWeapon=`](/keys/droppodweapon/) or [`AirburstWeapon=`](/keys/airburstweapon/).
 
 A weapon that only a projectile's `AirburstWeapon=` names is created while the projectiles are read, and its section is read right after them, in the same rules file. The same holds for a projectile that such a weapon names.

@@ -18,6 +18,7 @@ class SaveStreamClass;
 #include "win.h"
 
 class ShapeSet;
+class SuperWeaponTypeClass;
 
 class IonStormClass
 {
@@ -68,6 +69,7 @@ class IonStormClass
 		};
 
 		static SpecialLightType Applied_Light;
+		static SuperWeaponTypeClass const * Applied_Type;
 
 		static void Start_Audio(bool instant);
 		static void End_Audio(void);

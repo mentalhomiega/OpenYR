@@ -59,6 +59,7 @@
 
 #include "always.h"
 
+#include "lobbycolor.h"
 #include "pathahead.h"
 #include "playerdisplay.h"
 #include "scenario.h"
@@ -125,12 +126,14 @@
 #include "isotype.h"
 #include "language/language.h"
 #include "light.h"
+#include "loadprogress.h"
 #include "loadscreen.h"
 #include "logic.h"
 #include "mainopt.h"
 #include "mapgen.h"
 #include "mapsel.h"
 #include "misc.h"
+#include "modlobby.h"
 #include "mouse.h"
 #include "movie.h"
 #include "movieskip.h"
@@ -196,9 +199,11 @@
 #include "bench.hh"
 #include "psydom.h"
 #include "radsite.h"
+#include "rawfile.h"
 #include "rulescheck.h"
 
 #include <algorithm>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -216,6 +221,15 @@ static Cell const Clip_Move(Cell const & cell, FacingType facing, int dist);
 static void Multiplayer_Last_Minute_Fixups(bool official = true);
 static char const * Pick_Load_Background_Name(Point2D & text_pos);
 static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest);
+
+// Where the loading notice's bar stands as each part of a scenario load starts, in step with the share of
+// the time each part takes for a large mod's mission.
+static double const LOAD_STEP_GENERATE = 0.0;
+static double const LOAD_STEP_TERRAIN = 0.0;
+static double const LOAD_STEP_RULES = 0.01;
+static double const LOAD_STEP_MAP = 0.43;
+static double const LOAD_STEP_OBJECTS = 0.63;
+static double const LOAD_STEP_BATTLEFIELD = 0.94;
 
 
 /***********************************************************************************************
@@ -792,13 +806,21 @@ bool Read_Scenario(char const * fname)
 		if (file_read) {
 			random_map = requested.Get_Bool("Basic", "RandomMap", false);
 		}
+		// A mod's game mode and game options rewrite the map before anything reads it, as the client's merge does.
+		if (file_read && !random_map) {
+			Mod_Lobby_Apply_To_Scenario(requested, name);
+		}
 	}
 
 	Scen->IsRandom = is_seed_file || random_map;
 	DebugString("Scen->IsRandom = %s\n", Scen->IsRandom ? "true" : "false");
 
-	// The menu battle loads behind the menus, with no loading screen.
-	if (!Debug_Map && !Shellmap_In_Scope()) {
+	// The menu battle loads behind the menus, with no loading screen, and leaves the start-up notice as it stands.
+	bool const loading_screen = !Debug_Map && !Shellmap_In_Scope();
+	LoadProgressMuteClass const quiet(Shellmap_In_Scope());
+	std::optional<LoadProgressScopeClass> notice;
+
+	if (loading_screen) {
 
 		int players = 1;
 
@@ -832,6 +854,7 @@ bool Read_Scenario(char const * fname)
 			Progress.Set_Graphic_Data((players > 1) ? "PROGBARM.SHP" : "PROGBAR.SHP", background, prog_msg, prog_bar_pos);
 		}
 		Progress.Display_Progress();
+		notice.emplace("Loading...");
 
 		if (PacketTransport != NULL && Ipx.Transport_Mode() == IPXManagerClass::TRANSPORT_DIRECT && Session.Players.Count() > 1) {
 			DebugString("Setting addresses for UDP broadcast\n");
@@ -847,6 +870,7 @@ bool Read_Scenario(char const * fname)
 	ScenarioState state = ScenarioState::Ok;
 
 	if (Scen->IsRandom) {
+		Load_Progress_Step("Generating the map...", LOAD_STEP_GENERATE);
 		bool loaded = true;
 		if (random_map) {
 			RandomMapGen.SeedData.Read_INI(requested);
@@ -893,12 +917,15 @@ bool Read_Scenario(char const * fname)
 		}
 
 		if (text == NULL) {
-			text = Fetch_String(TXT_UNABLE_READ_SCENARIO);
+			snprintf(message, sizeof(message), "%s\n\n%s", Fetch_String(TXT_UNABLE_READ_SCENARIO), name);
+			text = message;
 		}
 
 		DebugString("Error - %s\n", text);
 		LoadScreen.End();
-		if (!Shellmap_In_Scope()) {
+		notice.reset();
+		// An unattended test has nobody to dismiss the box; the log line above carries the message.
+		if (!Shellmap_In_Scope() && !AutoTest_Active()) {
 			WWMessageBox().Process(text, TXT_OK);
 		}
 
@@ -928,6 +955,9 @@ bool Read_Scenario(char const * fname)
 	Fill_In_Data();
 
 	Session.Update_Progress(100 + (Scen->IsRandom ? 100 : 0));
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
+		Load_Progress_Step("Waiting for the other players...", 1.0);
+	}
 
 	Session.SawGameCompletion = false;
 	Session.OutOfSync = false;
@@ -942,7 +972,7 @@ bool Read_Scenario(char const * fname)
 
 	ScenarioInit--;
 
-	if (!Debug_Map && !Shellmap_In_Scope()) {
+	if (loading_screen) {
 		if (all_loaded) {
 
 			Call_Back();
@@ -2052,7 +2082,7 @@ std::string Mission_Label_Text(char const * label, bool log_missing)
 
 std::string Mission_Database_Briefing_Label(char const * map, bool & has_database)
 {
-	CCFileClass database("MISSIONMD.INI");
+	CCFileClass database(DeploymentConfig.MissionFile.c_str());
 	has_database = database.Is_Available();
 	if (!has_database) {
 		return(std::string());
@@ -2111,7 +2141,7 @@ static void Read_Mission_Files(void)
 		}
 
 		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
-		CCFileClass database("MISSIONMD.INI");
+		CCFileClass database(DeploymentConfig.MissionFile.c_str());
 		if (database.Is_Available()) {
 			CCINIClass missions;
 			missions.Load(database, false);
@@ -2152,6 +2182,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	ScenarioInit++;
 
+	Load_Progress_Step("Preparing the terrain...", LOAD_STEP_TERRAIN);
 	DebugString("Clearing old scenario\n");
 	Clear_Scenario();
 
@@ -2218,6 +2249,9 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	Init_Theater(Scen->Theater);
 
 	Session.Update_Progress(30);
+	Load_Progress_Step("Reading the rules...", LOAD_STEP_RULES);
+	// Reading the types probes for thousands of art files, most of which no folder holds.
+	std::optional<FileProbeScope> probes(std::in_place);
 
 	// Clearing the scenario emptied the countries, and the rules are read only after the
 	// side's archives are mounted, so the roster is rebuilt before the side is chosen.
@@ -2258,6 +2292,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	*/
 	DebugString("Initializeing Rules\n");
 	Rule->Initialize(*RuleINI);
+	LoadScreen.Play_Theme();
 	Session.Update_Progress(35);
 	Call_Back();
 
@@ -2294,6 +2329,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	AutoTest_Require_RA2_Numbering(HouseTypeClass::RA2_Numbering_Loaded());
 	Check_Map_Rules(Scen->ScenarioName, std::string_view(Scen->SourceFile.Data(), Scen->SourceFile.Size()), DeploymentConfig.RulesFile.c_str());
 	TutorialText.Read_Overrides(ini);
+	AutoTest_Rules_Read();
 	Session.Update_Progress(45);
 
 	/*
@@ -2307,6 +2343,9 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Add_CRC(&ScenarioCRC, (unsigned int)val);
 	}
 #endif
+
+	probes.reset();
+	Load_Progress_Step("Reading the map...", LOAD_STEP_MAP);
 
 	/*
 	**	Read in the specific information for each of the house types.  This creates
@@ -2417,6 +2456,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	Session.Update_Progress(70);
 
 	Call_Back();
+	Load_Progress_Step("Placing objects...", LOAD_STEP_OBJECTS);
 
 	/*
 	**	Read in any normal overlay objects.
@@ -2495,6 +2535,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SmudgeClass::Read_INI(ini);
 	Call_Back();
 
+	Load_Progress_Step("Preparing the battlefield...", LOAD_STEP_BATTLEFIELD);
 	Read_Mission_Files();
 
 	Session.Update_Progress(82);
@@ -2808,7 +2849,7 @@ void Assign_Houses(void)
 		// Pick a color for this house; keep looping until we find one.
 		int color = -1;
 		for (;;) {
-			color = Random_Pick(0, 7);
+			color = Random_Pick(0, Lobby_Color_Count() - 1);
 			if (color_used[color] == false) {
 				break;
 			}

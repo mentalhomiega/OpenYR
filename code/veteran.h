@@ -47,7 +47,7 @@ class VeterancyClass
 		VeterancyClass(void);
 		~VeterancyClass(void);
 
-		void Made_A_Kill(int cost, int value);
+		void Made_A_Kill(int cost, int value, double modifier = 1.0);
 
 		/*
 		**	Query functions.

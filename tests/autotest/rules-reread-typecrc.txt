@@ -1,0 +1,9 @@
+; A restarted mission reads its rules again, and every type must come out as the first load left it: nothing
+; read for the first load may be kept in place of reading it again. typesread logs a checksum of the rules and
+; of each type list once the rules of each load are read. Expected: "AUTOTEST typesread 2 sync same as the
+; first", and the run quits without an exception. The image line can name weapons and projectiles, whose save
+; image holds members that are never set.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/rules-reread-typecrc.txt -Map ALL01UMD.MAP -Campaign -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST typesread [0-9] sync|AUTOTEST quit|Exception"
+1 typesread
+41 restart
+100 quit

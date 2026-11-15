@@ -3,7 +3,7 @@
 ; 0x6B7392) uses 9 frames only when the launching object's own TechnoType has MissileSpawn=yes (0x6B7392 reads TechnoType+0xD68);
 ; the Dreadnought's type does not, so its gap is 20. The spawncycle lines show next_spawn, which is set at each launch, and
 ; the Spawn lines show each launch.
-; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/dred-missile-spacing.txt -Map XMP08T2.MAP -Seconds 120
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/dred-missile-spacing.txt -Map XMP08T2.MAP -Seconds 120
 10 command CenterBase
 30 reveal
 40 own DRED 84 70

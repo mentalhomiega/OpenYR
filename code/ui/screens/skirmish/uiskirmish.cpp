@@ -9,6 +9,7 @@
 
 #include "ui/screens/skirmish/uiskirmish.h"
 
+#include "ui/rml/rmlsettingrows.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uiclamp.h"
 #include "ui/screens/colorpick/uicolorpick.h"
@@ -19,6 +20,7 @@
 #include <RmlUi/Core/Elements/ElementFormControlSelect.h>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <string>
 #include <utility>
 
@@ -262,7 +264,17 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 	if (UI_Color_Pick_Intent(State.Picker, intent.Name, intent.Value, intent.Text)) {
 		return;
 	}
-	if (intent.Name == "handle") {
+	if (UI_Setting_Row_Execute(State.LobbyRows, intent.Name, intent.Value)) {
+		Take_Lobby_Rows();
+		return;
+	}
+	if (intent.Name == "lobbymode") {
+		if (Index_In_Range(intent.Value, State.Modes.size()) && intent.Value != State.Mode) {
+			State.Mode = intent.Value;
+			Service.Settle_Lobby(State, true);
+			Settle_Slots();
+		}
+	} else if (intent.Name == "handle") {
 		State.Handle = intent.Text;
 	} else if (intent.Name == "slotkind") {
 		Choose(intent.Value, FIELD_KIND, std::atoi(intent.Text.c_str()));
@@ -327,6 +339,21 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 
 void UISkirmishPresenterClass::Refresh(void)
 {
+}
+
+
+/// <summary>
+/// Keeps the value of each lobby row the person can change as their choice, and has the rows settled again, since a
+/// value can change what the rows show. A locked row's value is the mode's or the map's, so the choice keeps its own.
+/// </summary>
+void UISkirmishPresenterClass::Take_Lobby_Rows(void)
+{
+	for (UISettingRow const & row : State.LobbyRows) {
+		if (row.Kind != UISettingRowKind::HEADING && !row.Locked && row.Key.starts_with(UI_SKIRMISH_LOBBY_KEY)) {
+			State.Lobby.Set(row.Key.substr(std::string_view(UI_SKIRMISH_LOBBY_KEY).size()), row.Value);
+		}
+	}
+	Service.Settle_Lobby(State, false);
 }
 
 
@@ -498,9 +525,33 @@ class UISkirmishViewClass : public UIColorPickViewClass
 					}
 				}
 			}
+
+			// A mode or a map can change a lobby drop-down's value, which leaves the old text showing in the same way.
+			Show_Selection(document, "lobby-mode");
+			for (UISettingRow const & row : Data.State.LobbyRows) {
+				if (row.Kind == UISettingRowKind::CHOICE) {
+					Show_Selection(document, row.ElementId);
+				}
+			}
 		}
 
 	protected:
+		void Show_Selection(Rml::ElementDocument * document, std::string const & id)
+		{
+			Rml::ElementFormControlSelect * select = document != nullptr ? rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById(id)) : nullptr;
+			if (select == nullptr) {
+				return;
+			}
+			int const chosen = select->GetSelection();
+			auto const seen = LobbyChosen.find(id);
+			if (seen == LobbyChosen.end() || seen->second != chosen) {
+				LobbyChosen[id] = chosen;
+				if (chosen >= 0) {
+					select->SetSelection(chosen);
+				}
+			}
+		}
+
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
 			Rml::StructHandle<UISkirmishOption> option = model.RegisterStruct<UISkirmishOption>();
@@ -511,6 +562,7 @@ class UISkirmishViewClass : public UIColorPickViewClass
 			option.RegisterMember("label", &UISkirmishOption::Label);
 			option.RegisterMember("value", &UISkirmishOption::Value);
 			option.RegisterMember("color", &UISkirmishOption::Color);
+			option.RegisterMember("tip", &UISkirmishOption::Tip);
 
 			slot.RegisterMember("kind", &UISkirmishSlot::Kind);
 			slot.RegisterMember("side", &UISkirmishSlot::Side);
@@ -534,7 +586,9 @@ class UISkirmishViewClass : public UIColorPickViewClass
 				Live.push_back(name);
 				return(model.Bind(name, value));
 			};
-			return(model.RegisterArray<std::vector<UISkirmishOption>>()
+			Live.push_back("settingrows");
+			return(UI_Rml_Setting_Rows_Bind(model, "settingrows", state.LobbyRows)
+				&& model.RegisterArray<std::vector<UISkirmishOption>>()
 				&& model.RegisterArray<std::vector<UISkirmishSlot>>()
 				&& model.RegisterArray<std::vector<UIColorPresetOption>>()
 				&& model.RegisterArray<std::vector<UIColorRampStep>>()
@@ -543,6 +597,10 @@ class UISkirmishViewClass : public UIColorPickViewClass
 				&& model.Bind("sides", &state.Sides)
 				&& live("starts", &state.Starts)
 				&& model.Bind("teams", &state.Teams)
+				&& model.Bind("declared", &state.Declared)
+				&& model.Bind("modes", &state.Modes)
+				&& live("mode", &state.Mode)
+				&& live("modetip", &state.ModeTip)
 				&& live("slots", &state.Slots)
 				&& live("rows", &state.Rows)
 				&& live("notice", &state.Notice)
@@ -584,6 +642,8 @@ class UISkirmishViewClass : public UIColorPickViewClass
 		std::vector<char const *> Live;
 		int Shown;
 		int Chosen[UI_SKIRMISH_MAX_SLOTS][FIELDS];
+		// The same for the lobby's drop-downs, by element id.
+		std::map<std::string, int> LobbyChosen;
 };
 
 }

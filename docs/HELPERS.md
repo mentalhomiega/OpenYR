@@ -180,6 +180,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `SurfaceLock` | `surface.h` | Locks a surface until the end of scope. `As<T>()` is the pixel pointer, `Is_Valid()` is false when the lock failed, and a failed lock is not unlocked. |
 | `ScenarioInitScope` | `globals.h` | Raises `ScenarioInit` until the scope ends, on every path out. |
 | `PerfScope(phase)` | `perfstat.h` | Times a phase. Costs one flag test while recording is off (neither `PerfLog` nor the performance overlay is on), and a phase already running in an outer scope adds nothing. |
+| `FileProbeScope` | `rawfile.h` | While alive, `RawFileClass::Is_Available` on this thread answers a name its folder lacks from one listing of the folder instead of opening the file. A write or delete through `RawFileClass` drops the listings. For a step that probes thousands of art names. |
 | `HangWatchDialogScope`, `HangWatchLoadScope`, `HangWatchCounterScope<Counter>` | `hangwatch.h` | Hold the hang watchdog back during a native dialog or a scenario load. |
 | `EmissiveDrawScope(strength)` | `emissive.h` | Sets the emissive draw strength and restores the previous one. |
 | `PlanningRecordScope(recording)` | `planning.h` | While alive with `recording` true, the player's orders become planned orders. |
@@ -200,6 +201,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `AutoTest_Active()` | `autotest.h` | True in an `-AUTOTEST` run. |
 | `Perf_Count(counter, amount)` | `perfstat.h` | Adds to a performance counter while recording is on. |
 | `PerfRing<T>`, `Perf_Summarise`, `Perf_Average_Worst`, `Perf_Newest_Since` | `perfring.h` | A fixed-size ring of the newest values, and the average, nearest-rank 99th percentile and worst of its newest part. |
+| `Log_Unresolved_House(section, key, name)` | `house.h` | One load-warning line for a scenario house name that resolves to no live house, with the section and key that name it. |
 | `Hang_Watchdog_Beat()` | `hangwatch.h` | Call from a message pump; only beats from the main thread count. |
 | `Pe_Debug_Id(image, text, size)`, `Pe_Debug_Key(image, text, size)` | `stallcapture.h` | The GUID and age of a loaded image's pdb, as report text or as a symbol store folder name. |
 
@@ -217,7 +219,9 @@ a default and returns it when the section or entry is missing.
 | `Read_Numbers` | Reads a fixed count of ints or floats and reports `Absent`, `Malformed` or `Parsed`. |
 | `Get_Lepton`, `Get_Angle`, `Get_Cell`, `Get_RGBClass`, `Get_IntList`, `Get_Vector`, `Get_Offset` | Typed reads. `Get_Lepton` converts cells to leptons and `Get_Angle` converts degrees to 0 to 255. |
 | `Is_Present(section, entry)`, `Section_Present` | Test for a key or section without reading it. |
+| `Entry_Names_With_Prefix(section, prefix)` | The names of the section's keys that start with the prefix, with the prefix taken off, in file order and matched with case as lookups are. Lets a reader of a family of keys, such as `Versus.<armor>`, ask only for the members a section names. |
 | `TGet_TypeList(ini, section, entry, default, size)` | `findmake.h`. Reads a list of type names into a `TypeList`. |
+| `LobbyIniClass` | `lobbymodes.h`. INI text in file order that keeps empty values, which `INIClass` drops; names match without regard to case. For files written for the CnCNet client. |
 
 ## Colour
 
@@ -271,6 +275,7 @@ a default and returns it when the section or entry is missing.
 | `UI_Fill_Stock_Colors(colors, limit)`, `UI_Stock_Color_Count()`, `UI_Stock_Color_Name(i)` | `ui/uienginehost.h` | The eight stock player colours (name, index, CSS colour) for a lobby's colour list. |
 | `UI_Fill_Multiplay_Sides(sides, current, selected)`, `UI_Multiplay_House_Count()`, `UI_Multiplay_House_At(position)` | `ui/uienginehost.h` | The houses a lobby offers (those with `IsMultiplay`), appended to a side list; `selected` receives the position of the `current` house. `At` maps a list position back to the `HouseTypes` index, or -1. |
 | `UI_Register_Color_Structs(model)` | `ui/screens/colorpick/uicolorpickview.h` | Registers the picker's preset and ramp-step structs with a document model. Returns false when RmlUi refuses either. |
+| `Load_Progress_Begin(text)`, `Load_Progress_Step(text, fraction)`, `Load_Progress_End()`, `LoadProgressScopeClass` | `loadprogress.h` | The loading notice with text and a bar over a long load, shown only with the modern menus. See [INGAME_UI.md](INGAME_UI.md#loading-notice). |
 | `Dirty({names...})` | `ui/rml/rmlview.h` | Marks several bound model variables changed in one call. A view with nothing to refresh needs no `Sync`. |
 
 ## Lobby and network
@@ -281,6 +286,7 @@ a default and returns it when the section or entry is missing.
 | `UI_Net_Fill_Options(state, ai_max, credits_min)` | `ui/screens/netlobby/uinetlobby.h` | Fills a lobby state from `Session.Options`. Used by LAN and CnCNet. |
 | `CNCNET_OPTION_*` | `cncnet/cncnetspawn.h` | Names of the CnCNet room options. |
 | `SPAWN_ALLY_KEYS` | `cncnet/spawnkeys.h` | SPAWN.INI alliance keys in slot order. Readers and writers must share this order. |
+| `Mod_Lobby()`, `Mod_Lobby_Launch_Keys(choice, map)` | `modlobby.h` | The game modes and options the mods in force declare, and the launch keys a choice writes for a map (LOBBY_MODES.md). |
 | `NativeSocket`, `NO_SOCKET`, `Close_Native(handle)` | `cncnet/cncnetnative.h` | Socket handle type for Winsock and POSIX. |
 | `Show_Random_Map_Preview()` | `netshare.h` | Shows a random map's picture as the dialog preview. |
 
@@ -305,13 +311,16 @@ a default and returns it when the section or entry is missing.
 | `Do_Reinforcements(team, waypoint)` | `reinf.h` | Brings in a team. |
 | `Spawn_Named_Anim(name, coord, ...)`, `Spawn_Wake(where)` | `anim.h` | Create an animation by name, or a wake. |
 | `Attach_Control_Ring(techno, type)` | `capture.h` | Attaches the mind control ring animation. |
+| `AnimClass::Owner_House()` | `anim.h` | The house that owns an animation, or null. |
 | `Cloak_Cell_Occupiers(cell)` | `building.h` | Asks the mobile occupants of a cell to reconsider cloaking. |
 | `Linked_Building_Underfoot(unit)` | `building.h` | The building a unit stands on while radio-linked to it, or `NULL`. |
 | `Team_Has_Members(team)` | `init.h` | True when a player-controlled, non-limbo object belongs to the team. |
 | `Strike_Cell_Damage(...)`, `Wide_Area_Damage(...)`, `Explosion_Damage(...)` | `combat.h` | Cell, area and blast damage. |
 | `Aim_Coord(target)`, `Beam_Coord(target)` | `object.h` | The point a projectile homes on, and the point a beam is drawn to. They differ for a cell on a bridge. |
 | `Find_Armor_Type(name, armor)` | `armortypes.h` | Case-insensitive armor lookup; leaves `armor` alone and returns false for an unknown name. |
+| `Are_Ares_Rules()` | `armortypes.h` | True when the rules declare `[ArmorTypes]`; gates Ares behaviour that would change what stock data does. |
 | `Paradrop_Plane_Type()` | `house.h` | The PDPLANE type, or `NULL` when the rules have none. |
+| `Paradrop_Plane_Type(house)` | `house.h` | The paradrop aircraft of a house: its country's ParaDrop.Aircraft, else its side's, else PDPLANE. |
 | `Opposite_Difficulty(d)`, `Computer_Difficulty_Name(d)` | `diff.hh` | The computer difficulty paired with a human one, and its lobby name. |
 | `Key_Bits(shift, ctrl, alt)`, `Key_Bits_From_Window(mods)` | `keyboard.h` | The `WWKEY_*_BIT` modifier bits. |
 
@@ -335,6 +344,9 @@ a default and returns it when the section or entry is missing.
 | `Modern_Interface()` | `hud.h` | The modern panel interface is on. |
 | `MPMode_Is_Cooperative()` | `mpmode.h` | The running match is Cooperative. |
 | `house->Player_View()`, `house->Is_Player_View()`, `house->Is_Ally_Of_Player_View()` | `house.h` | The human seat whose view a house feeds, and whether it is one or is allied with one. Every copy of a network game gives the same answers, unlike `PlayerPtr` or `Is_Player_Control()`, so use these in game logic that changes a house's shroud. |
+| `house->Owned_Count(type)`, `house->Active_Count(type)` | `house.h` | How many objects of a type the house owns, in limbo or not and Insignificant ones included, or how many it has out of limbo. Each is one counter read, so use them instead of walking `Technos`. |
+| `building->Is_Online()`, `house->Has_Working_Building(types)` | `building.h`, `house.h` | Whether a structure is powered and neither being built nor sold, and whether a house owns such a structure of one of the listed types. |
+| `tag->Has_Event(event)` | `tag.h` | Whether a trigger on the tag waits on the event. Offer a new event only to tags that wait on it, so other triggers spring as before. |
 
 ## Client settings
 
@@ -362,3 +374,4 @@ to a header when a second file needs it.
 | `Find_Type_In(types, name)`, `Type_Name_At(types, id, none)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type by name or ID, or a house by name (including "player"). |
 | `Map.Cross_Bridge_Deck(old, new, bridge_height)` | `map.cpp` | Whether one step dropped onto or rose into a bridge deck. |
 | `Mount_If_Available(name)`, `Add_CC_Expansion_Mix(name)`, `Add_Disk_Expansion_Mix(name)` | `init.cpp` | Mount a mixfile only when the game can find it. |
+| `foot->Carry_Locomotor_In_Teleport()` | `foot.cpp` | Gives a foot a teleport locomotor that carries its own, as a chrono warp or a chrono arrival needs; `Begin_Chrono_Warp` and `Begin_Chrono_Arrival` both use it. |

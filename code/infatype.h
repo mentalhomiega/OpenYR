@@ -110,6 +110,11 @@ class InfantryTypeClass : public TechnoTypeClass
 		*/
 		bool IsFraidyCat;
 
+		// IsCow (Ares): the soldier idles like the cow and wanders more often. IsDesolator (Ares): its AreaFire deploy
+		// weapon does not aim at its own cell. Each defaults to whether the type is named COW or DESO.
+		bool IsCow;
+		bool IsDesolator;
+
 		/*
 		 * If this infantry type can stand in tiberium unharmed, then this flag will be true.
 		 * Everyone else is poisoned for as long as they remain in the field.
@@ -167,6 +172,22 @@ class InfantryTypeClass : public TechnoTypeClass
 		 */
 		bool IsVehicleThief;
 
+		// CanDrive (Ares): this soldier can take over a vehicle whose owner may be driven from (HouseTypeClass::Can_Be_Driven)
+		// and that is itself CanBeDriven, entering it as its driver.
+		bool IsCanDrive;
+
+		// VehicleThief.EnterSound (Ares): played where this soldier takes a vehicle over.
+		VocType VehicleThiefEnterSound;
+
+		// VehicleThief.LeaveSound (Ares): played where this soldier steps out of a destroyed vehicle it took.
+		VocType VehicleThiefLeaveSound;
+
+		// VehicleThief.BreakMindControl (Ares): may take a mind-controlled vehicle, freeing it from its controller.
+		bool IsVehicleThiefBreakMindControl;
+
+		// VehicleThief.OneTime (Ares): the soldier is used up by the theft and does not step out when the vehicle dies.
+		bool IsVehicleThiefOneTime;
+
 		// An Occupier=yes soldier can garrison a CanBeOccupied structure and fires OccupyWeapon,
 		// or EliteOccupyWeapon at elite rank, from inside it.
 		bool IsOccupier;
@@ -211,6 +232,9 @@ class InfantryTypeClass : public TechnoTypeClass
 		// A NotHuman= type leaves no body from the shared DeadBodies list when it dies.
 		bool IsNotHuman;
 
+		// NoSelfGuardArea= (Ares): a healer clicked on itself gets its ordinary self click, such as deploy, instead of guard area.
+		bool IsNoSelfGuardArea;
+
 		// UseOwnName= is read and kept. gamemd uses it to name a gunner vehicle's tooltip after its passenger; that label is not built here.
 		bool IsUseOwnName;
 
@@ -226,6 +250,9 @@ class InfantryTypeClass : public TechnoTypeClass
 		 * Everyone else is snared in place and struggles for as long as the warhead specifies.
 		 */
 		bool IsWebImmune;
+
+		// The infantry type a soldier of this type becomes on a Convert type team script line, or NULL for none (Ares Convert.Script).
+		InfantryTypeClass const * ConvertScript;
 
 		/*
 		**	This is the explicit infantry type class constructor.

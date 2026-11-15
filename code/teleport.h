@@ -28,7 +28,8 @@ class TechnoClass;
  * argument 0), again each frame while the cell had to be changed (TELEPORT_RECLEAR, stage 3); it is
  * set down (TELEPORT_LAND, stage 4, argument 1); the landing is checked for Iron Curtained
  * neighbours and water (TELEPORT_ARRIVE, stage 5, 0x7187A0); and it holds for the arrival hold
- * (TELEPORT_HOLD, stage 6).
+ * (TELEPORT_ARRIVAL_HOLD, stage 6). The end of that hold also runs stage 7 (0x719BAF), which drops
+ * the object's destination, so the carried locomotor takes over in the frame the hold ends.
  */
 enum TeleportWarpPhase
 {
@@ -39,6 +40,7 @@ enum TeleportWarpPhase
 	TELEPORT_RECLEAR = 4,
 	TELEPORT_LAND = 5,
 	TELEPORT_ARRIVE = 6,
+	TELEPORT_ARRIVAL_HOLD = 7,
 };
 
 
@@ -74,6 +76,10 @@ class TeleportLocomotionClass final : public LocomotionClass, public IPiggyback
 		// Holds the object on its cell for countdown frames, then runs the landing stages that set it down at to (chronosphere warps only).
 		void Begin_Chrono_Warp(Coord to, int countdown);
 
+		// Prepares a chrono reinforcement placed at to (trigger action 107); Start_Chrono_Arrival then starts its landing stages.
+		void Begin_Chrono_Arrival(Coord to);
+		void Start_Chrono_Arrival(void) {IsArrivalPending = true;}
+
 		// The warp-out wait of a chronosphere warp, in frames (gamemd sets it at 0x7197E4).
 		static constexpr int CHRONO_WAIT_FRAMES = 60;
 
@@ -101,6 +107,15 @@ class TeleportLocomotionClass final : public LocomotionClass, public IPiggyback
 		 */
 		int WarpPhase;
 		int WarpEnd;
+
+		/*
+		 * A chrono reinforcement (gamemd unit+0x280 set to 3): IsArrival skips the landing check and keeps the
+		 * object warping in until its hold ends; IsArrivalPending sends it to stage 3 on the next step.
+		 */
+		bool IsArrival;
+		bool IsArrivalPending;
+		// The landing of a chrono reinforcement, kept apart from DestinationCoord, which an order given before its first step clears.
+		Coord ArrivalCoord;
 
 		/*
 		 * The object's own locomotor while a chronosphere warp carries it. Null when nothing is carried.

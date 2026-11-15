@@ -782,6 +782,21 @@ std::string Wide_To_Utf8(std::wstring const & text)
 }
 
 
+std::string Wide_To_Ansi(std::wstring const & text)
+{
+	if (text.empty()) {
+		return std::string();
+	}
+
+	int const length = WideCharToMultiByte(CP_ACP, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+	std::string ansi(static_cast<std::size_t>(length > 0 ? length : 0), '\0');
+	if (length > 0) {
+		WideCharToMultiByte(CP_ACP, 0, text.data(), static_cast<int>(text.size()), ansi.data(), length, nullptr, nullptr);
+	}
+	return ansi;
+}
+
+
 std::wstring Quote_Argument(std::wstring const & arg)
 {
 	if (!arg.empty() && arg.find_first_of(L" \t\"") == std::wstring::npos) {

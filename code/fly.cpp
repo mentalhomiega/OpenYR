@@ -1782,7 +1782,7 @@ void FlyLocomotionClass::Acquire_Hunter_Seeker_Target(void)
 			}
 
 			if (enemy && techno->Strength > 0 && !techno->IsInLimbo && techno->IsActive &&
-				!techno->TClass->IsInvisible && techno->TClass->IsLegalTarget &&
+				!techno->TClass->IsInvisible && techno->TClass->IsLegalTarget && !techno->TClass->IsHunterSeekerIgnored &&
 				!(Scen->Special.IsHarvesterImmune && techno->RTTI == RTTI_UNIT && ((UnitClass*)techno)->Class->IsToHarvest)) {
 
 				if (Session.Type != GAME_NORMAL && LinkedTo->House->Is_Human_Player() && !techno->House->Class->IsMultiplayPassive &&

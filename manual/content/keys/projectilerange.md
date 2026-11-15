@@ -1,10 +1,16 @@
 ---
 key: ProjectileRange
-summary: Read from rules files, but no shot's flight depends on it.
+summary: How far a Ranged=yes projectile flies before it detonates, measured from where it was fired.
 see_also: ["Range", "Ranged", "Projectile"]
 when_omitted:
   kind: value
   value: "390.625"
 ---
 
-No projectile uses this value. A rules file that sets it still loads, but no shot's flight, detonation or fuse depends on it. To set how far a weapon fires, use [`Range=`](/keys/range/). [`Ranged=yes`](/keys/ranged/) affects the fuse, not the distance flown.
+An Ares key. A projectile with [`Ranged=yes`](/keys/ranged/) detonates in the air once it has flown this far across the ground from the point it was fired, in cells. The distance is horizontal; height does not count. Without a `Ranged=yes` projectile the key has no effect. To set how far a weapon fires, use [`Range=`](/keys/range/).
+
+```ini title="rulesmd.ini"
+[MYGUN] ; example WeaponType whose projectile has Ranged=yes
+Range=8
+ProjectileRange=3  ; the shell bursts after 3 cells
+```

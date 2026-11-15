@@ -44,6 +44,15 @@ enum SuperWeaponType {
 	SUPER_FORCE_SHIELD,
 	SUPER_PSYCHIC_REVEAL,
 
+	/*
+	**	Behaviors that Ares adds. They follow the Yuri's Revenge list so that the numbers saved in
+	**	older games keep their meaning.
+	*/
+	SUPER_GENERIC_WARHEAD,
+	SUPER_UNIT_DELIVERY,
+	SUPER_SONAR_PULSE,
+	SUPER_BATTERY,
+
 	SUPER_COUNT,
 	SUPER_FIRST=0,
 

@@ -62,6 +62,8 @@
 #include "globals.h"
 #include "gmmath.h"
 #include "goptions.h"
+#include "objectkeyrules.h"
+#include "techtype.h"
 #include "house.h"
 #include "houstype.h"
 #include "hud.h"
@@ -1699,7 +1701,7 @@ void Tactical::Draw_Placement(bool drawtrans)
 /// </summary>
 /// <param name="cells">The radius in cells.</param>
 /// <returns>Returns with the radius in pixels.</returns>
-int Tactical::Radial_Ring_Radius(int cells)
+int Tactical::Radial_Ring_Radius(double cells)
 {
 	return((int)(((double)cells + 0.5) / std::sqrt(2.0) * 60.0));
 }
@@ -1712,7 +1714,7 @@ int Tactical::Radial_Ring_Radius(int cells)
 /// <param name="center">The world coordinate at the centre of the ring.</param>
 /// <param name="cells">The radius of the ring, in cells.</param>
 /// <param name="color">The colour of the outline.</param>
-void Tactical::Draw_Range_Ring(Coord const & center, int cells, RGBClass const & color)
+void Tactical::Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color)
 {
 	if (cells < 1) {
 		return;
@@ -3736,8 +3738,11 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 
 		/*
 		 * Sweep through all selectable objects and select the ones within the
-		 * bounding box.
+		 * bounding box. An object with LowSelectionPriority is held back until the
+		 * sweep is done, and left out if the box caught any object without the flag.
 		 */
+		std::vector<ObjectClass *> picks;
+		std::vector<bool> low_priority;
 		for (int index = 0; index < (int)SelectableObjects.size(); index++) {
 			Selectable & sel = SelectableObjects[index];
 			ObjectClass * obj = sel.Object;
@@ -3770,18 +3775,28 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 					if ((type->UndeploysInto && !type->IsConstructionYard) || type->IsSelectableCombatant) {
 						force = true;
 					}
+					// MassSelectable=yes puts a structure in a drag selection, and no keeps it out (Ares).
+					if (type->MassSelectable >= 0) {
+						force = type->MassSelectable != 0;
+					}
 				}
 
 				HouseClass * hptr = obj->Owner_HouseClass();
 				if (hptr != NULL && hptr->Is_Player_Control() &&
 					obj->Class_Of()->IsSelectable &&
 					(obj->RTTI != RTTI_BUILDING || force)) {
-					if (obj->Select()) {
-						AllowVoice = false;
-					}
+					picks.push_back(obj);
+					low_priority.push_back(Options.PrioritySelectionFiltering && obj->Is_Techno() && static_cast<TechnoClass *>(obj)->TClass->IsLowSelectionPriority);
 				}
 			} else {
 				select_callback(sel.Object);
+			}
+		}
+
+		std::vector<bool> const kept = ObjectKeyRules::Selection_Kept(low_priority);
+		for (size_t index = 0; index < picks.size(); index++) {
+			if (kept[index] && picks[index]->Select()) {
+				AllowVoice = false;
 			}
 		}
 	}
@@ -4702,7 +4717,7 @@ static void Format_Timer_Line(char * buffer, std::size_t size, char const * labe
 
 
 /// <summary>
-/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
+/// Lists the countdown of every ShowTimer superweapon a house holds, where SW.TimerVisibility lets the player see it, in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
 /// of passive houses are left out, as is a suspended weapon that is still fully uncharged in a
 /// campaign.
@@ -4746,6 +4761,7 @@ void Tactical::Draw_Super_Timers(void)
 		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 			SuperClass const * super = house->SuperWeapon[s];
 			if (super == NULL || !super->Is_Present() || super->Class == NULL || !super->Class->IsShowTimer) continue;
+			if (!super->Is_Timer_Visible_To(PlayerPtr)) continue;
 			int const left = super->Control;
 			if (super->Is_Suspended() && Session.Type == GAME_NORMAL && left == super->Get_Recharge_Time()) continue;
 

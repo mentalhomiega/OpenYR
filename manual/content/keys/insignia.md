@@ -10,7 +10,7 @@ when_omitted:
 
 `Insignia` names the shape file that the [rank insignia](/systems/veterancy/#rank-display) of this type are drawn from. Write the name without an extension; the engine adds `.SHP`. The file is found among the loaded archives like `PIPS.SHP`. If it is not found, the type keeps drawing from `PIPS.SHP`.
 
-The key applies to infantry, vehicles, aircraft and structures. The frame drawn is the one [`InsigniaFrame`](/keys/insigniaframe/) or [`InsigniaFrames`](/keys/insigniaframes/) picks for the rank, or the stock frame when they pick none.
+The key applies to infantry, vehicles, aircraft and structures. The frame drawn is the one [`InsigniaFrame`](/keys/insigniaframe/) or [`InsigniaFrames`](/keys/insigniaframes/) picks for the rank, or frame 0 of the file when they pick none. A rookie whose rank has a file shows that frame too.
 
 Three keys set the file for one rank only: `Insignia.Rookie`, `Insignia.Veteran` and `Insignia.Elite`. A rank's key replaces the `Insignia` file for that rank, and a rank without a key keeps the `Insignia` file.
 
@@ -23,4 +23,4 @@ Insignia.Elite=MYELITE ; elite ones read MYELITE.SHP instead
 InsigniaFrame.Rookie=0 ; shows frame 0 of MYRANKS.SHP on a rookie
 ```
 
-In the example, a veteran shows frame 14 of `MYRANKS.SHP` and an elite object shows frame 15 of `MYELITE.SHP`, the stock frame numbers. A rookie shows an insignia only because `InsigniaFrame.Rookie` gives it a frame.
+In the example, a veteran shows frame 0 of `MYRANKS.SHP` and an elite object shows frame 0 of `MYELITE.SHP`. A rookie shows frame 0 of `MYRANKS.SHP`, because `InsigniaFrame.Rookie` is set to 0, and would show it without the frame key too.

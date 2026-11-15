@@ -107,6 +107,7 @@
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
+#include "infantry.h"
 #include "bullettype.h"
 #include "cctooltip.h"
 #include "cell.h"
@@ -157,6 +158,7 @@
 #include "waypoint.h"
 #include "xpipe.h"
 #include "xstraw.h"
+#include "weapon.h"
 #include "zbuffer.h"
 
 #include "color.hh"
@@ -1751,7 +1753,7 @@ void DisplayClass::Mouse_Right_Release(Point2D const & point)
 /// The cursor for a super weapon targeting action; any other action gets the plain cursor.
 /// The Tiberian Sun weapons borrow the Yuri's Revenge cursor that uses the same frames.
 /// </summary>
-static MouseType Super_Weapon_Mouse(ActionType action)
+static MouseType Stock_Super_Weapon_Mouse(ActionType action)
 {
 	switch (action) {
 		case ACTION_IRON_CURTAIN:		return(MOUSE_IRON_CURTAIN);
@@ -1773,6 +1775,98 @@ static MouseType Super_Weapon_Mouse(ActionType action)
 		case ACTION_EMPULSE_RANGE:		return(MOUSE_DISALLOWED);
 		default:						return(MOUSE_NORMAL);
 	}
+}
+
+
+/// <summary>
+/// The cursor a type names for an action in place of the stock one. A deploy, move or no-move cursor comes from
+/// the first selected object's type, an enter or no-enter cursor from the object under the pointer, and a spy's
+/// infiltration cursor from the structure under the pointer.
+/// </summary>
+/// <returns>Returns with the cursor the type names, or the stock one when the type names none that exists.</returns>
+static MouseType Type_Cursor(MouseType stock, ActionType action, ObjectClass const * over)
+{
+	if (CurrentObject.Count() == 0 || CurrentObject[0] == NULL || !CurrentObject[0]->Is_Techno()) {
+		return(stock);
+	}
+	TechnoClass const * selected = static_cast<TechnoClass const *>(CurrentObject[0]);
+	TechnoTypeClass const * overtype = (over != NULL && over->Is_Techno()) ? static_cast<TechnoClass const *>(over)->TClass : NULL;
+
+	std::string const * name = NULL;
+	switch (action) {
+		case ACTION_SELF:
+			name = &selected->TClass->CursorDeploy;
+			break;
+		case ACTION_NO_DEPLOY:
+			name = &selected->TClass->CursorNoDeploy;
+			break;
+		case ACTION_MOVE:
+			name = &selected->TClass->CursorMove;
+			break;
+		case ACTION_NOMOVE:
+			name = &selected->TClass->CursorNoMove;
+			break;
+		case ACTION_ENTER:
+			if (overtype != NULL) name = &overtype->CursorEnter;
+			break;
+		case ACTION_NO_ENTER:
+			if (overtype != NULL) name = &overtype->CursorNoEnter;
+			break;
+		case ACTION_CAPTURE:
+			if (selected->RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(selected)->Class->IsAgent && over != NULL && over->RTTI == RTTI_BUILDING) {
+				name = &static_cast<BuildingClass const *>(over)->Class->CursorSpy;
+			}
+			break;
+		default:
+			break;
+	}
+	if (name == NULL || name->empty()) {
+		return(stock);
+	}
+	MouseType const named = MouseClass::Find_Cursor(name->c_str());
+	return((int)named >= 0 ? named : stock);
+}
+
+
+/// <summary>
+/// The attack cursor a weapon names with Cursor.Attack, for a target in range, or Cursor.AttackOutOfRange, for one the
+/// weapon cannot reach yet (Ares). The weapon is the one the first selected object would fire at the target, and the
+/// out-of-range cursor is used only when a single object is selected.
+/// </summary>
+/// <returns>Returns with the cursor the weapon names, or the stock one when it names none that exists.</returns>
+static MouseType Weapon_Cursor(MouseType stock, bool in_range, AbstractClass * target)
+{
+	if (CurrentObject.Count() == 0 || CurrentObject[0] == NULL || !CurrentObject[0]->Is_Techno() || target == NULL) {
+		return(stock);
+	}
+	if (!in_range && CurrentObject.Count() != 1) {
+		return(stock);
+	}
+	TechnoClass const * selected = static_cast<TechnoClass const *>(CurrentObject[0]);
+	WeaponDataStruct const * data = selected->Get_Class_Weapon_Data(selected->What_Weapon_Should_I_Use(target));
+	if (data == NULL || data->Weapon == NULL) {
+		return(stock);
+	}
+	std::string const & name = in_range ? data->Weapon->CursorAttack : data->Weapon->CursorAttackOutOfRange;
+	if (name.empty()) {
+		return(stock);
+	}
+	MouseType const named = MouseClass::Find_Cursor(name.c_str());
+	return((int)named >= 0 ? named : stock);
+}
+
+
+/// <summary>
+/// The cursor for a super weapon targeting action. While a weapon is being aimed, its Cursor and
+/// NoCursor keys decide; otherwise the stock cursor for the action stands.
+/// </summary>
+static MouseType Super_Weapon_Mouse(ActionType action)
+{
+	MouseType const stock = Stock_Super_Weapon_Mouse(action);
+	if (Map.IsTargettingMode != SUPER_NONE && (unsigned)Map.IsTargettingMode < (unsigned)SuperWeaponTypes.Count()) {
+		return(SuperWeaponTypes[Map.IsTargettingMode]->Mouse_For(action, stock));
+	}
+	return(stock);
 }
 
 
@@ -1807,7 +1901,7 @@ static bool Is_Disallowed_Waypoint_Action(ActionType action)
 /*
  * The cursor for an action over a visible cell. An action that leaves the cursor as it was gives no value.
  */
-static std::optional<MouseType> Visible_Cursor_For_Action(ActionType action, AbstractClass * target)
+static std::optional<MouseType> Visible_Cursor_For_Action(ActionType action, AbstractClass * target, ObjectClass const * object)
 {
 	if (Is_Disallowed_Waypoint_Action(action)) {
 		return(MOUSE_DISALLOWED);
@@ -1816,24 +1910,24 @@ static std::optional<MouseType> Visible_Cursor_For_Action(ActionType action, Abs
 	switch (action) {
 		case ACTION_MOVE:
 		case ACTION_RALLY_TO_POINT:
-			return(MOUSE_CAN_MOVE);
+			return(Type_Cursor(MOUSE_CAN_MOVE, action, object));
 
 		case ACTION_NOMOVE:
-			return(MOUSE_NO_MOVE);
+			return(Type_Cursor(MOUSE_NO_MOVE, action, object));
 
 		case ACTION_ENTER:
 		case ACTION_CAPTURE:
 		case ACTION_ENTER_TUNNEL:
-			return(MOUSE_ENTER);
+			return(Type_Cursor(MOUSE_ENTER, action, object));
 
 		case ACTION_SELF:
-			return(MOUSE_DEPLOY);
+			return(Type_Cursor(MOUSE_DEPLOY, action, object));
 
 		case ACTION_ATTACK:
 			if (target != NULL && CurrentObject.Count() == 1 && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->In_Range(target, 0)) {
-				return(MOUSE_STAY_ATTACK);
+				return(Weapon_Cursor(MOUSE_STAY_ATTACK, true, target));
 			}
-			return(MOUSE_CAN_ATTACK);
+			return(Weapon_Cursor(MOUSE_CAN_ATTACK, false, target));
 
 		case ACTION_HARVEST:
 			return(MOUSE_CAN_ATTACK);
@@ -1891,10 +1985,10 @@ static std::optional<MouseType> Visible_Cursor_For_Action(ActionType action, Abs
 			return(MOUSE_GREPAIR);
 
 		case ACTION_NO_DEPLOY:
-			return(MOUSE_NO_DEPLOY);
+			return(Type_Cursor(MOUSE_NO_DEPLOY, action, object));
 
 		case ACTION_NO_ENTER:
-			return(MOUSE_NO_ENTER);
+			return(Type_Cursor(MOUSE_NO_ENTER, action, object));
 
 		default:
 			return(Super_Weapon_Mouse(action));
@@ -2056,7 +2150,7 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 		**	Change the mouse shape according to the default action that will occur
 		**	if the mouse button were clicked at this location.
 		*/
-		std::optional<MouseType> const visible_mouse = Visible_Cursor_For_Action(waypoint_action, target);
+		std::optional<MouseType> const visible_mouse = Visible_Cursor_For_Action(waypoint_action, target, object);
 		if (visible_mouse.has_value()) {
 			Set_Default_Mouse(visible_mouse.value(), wsmall);
 		}
@@ -2330,7 +2424,13 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 					}
 				}
 
-				SuperWeaponTypeClass *stype = SuperWeaponTypeClass::From_Action(action);
+				// The weapon being aimed fires when its own action is clicked; two weapons that share an action no longer fire the earlier one.
+				SuperWeaponTypeClass * stype = NULL;
+				if (IsTargettingMode != SUPER_NONE && (unsigned)IsTargettingMode < (unsigned)SuperWeaponTypes.Count() && SuperWeaponTypes[IsTargettingMode]->Action == action) {
+					stype = SuperWeaponTypes[IsTargettingMode];
+				} else if (action != ACTION_CUSTOM) {
+					stype = SuperWeaponTypeClass::From_Action(action);
+				}
 				if (stype != NULL) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, stype->HeapID, cell));
 				}
@@ -2837,7 +2937,7 @@ void DisplayClass::Power_Mode_Control(int control)
 		IsSellMode = false;
 		IsWaypointMode = false;
 		IsPlaceBeaconMode = false;
-		if (mode && PlayerPtr->CurBuildings > 0) {
+		if (mode && PlayerPtr->CurBuildings > 0 && Rule->IsTogglePowerAllowed) {
 			IsPowerMode = true;
 			Unselect_All();
 		} else {
@@ -3840,7 +3940,14 @@ char const * DisplayClass::Help_Text(int id)
 			if (object->RTTI != RTTI_BUILDING || !((BuildingClass *)object)->IsNominal) {
 				if (!dynamic_cast<TechnoTypeClass const *>(object->Class_Of())->IsNominal) {
 
-					if (!techno->House->Shares_View_With(PlayerPtr)) {
+					// A type's EnemyUIName is the name an enemy sees; an observer, or a player who has infiltrated the structure, sees the real name (Ares).
+					char const * const enemy_name = techno->TClass->Enemy_Full_Name();
+					bool const revealed = PlayerPtr->IsObserver || (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->SpiedBy[PlayerPtr]);
+					if (!techno->House->Shares_View_With(PlayerPtr) && enemy_name != NULL) {
+						if (!revealed) {
+							text = enemy_name;
+						}
+					} else if (!techno->House->Shares_View_With(PlayerPtr)) {
 						switch ((RTTIType)object->RTTI) {
 							case RTTI_INFANTRY:
 								text = Fetch_String(TXT_ENEMY_SOLDIER);

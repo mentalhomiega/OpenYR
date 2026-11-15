@@ -267,7 +267,7 @@ Two states change what a full pool does:
 
 ### Countdown timers
 
-Every player sees the countdown of each [`ShowTimer=yes`](/keys/showtimer/) superweapon that any house holds, listed in the bottom right corner of the battlefield in the owner's colors, as the weapon's name followed by the minutes and seconds left, with hours in front once there are any. A weapon that is ready shows `00:00`. A house whose country is [`MultiplayPassive=yes`](/keys/multiplaypassive/) shows none, and in a campaign a suspended weapon that has not started charging is left out.
+Every player sees the countdown of each [`ShowTimer=yes`](/keys/showtimer/) superweapon that any house holds, unless the weapon's [`SW.TimerVisibility`](/keys/sw.timervisibility/) leaves that player out, listed in the bottom right corner of the battlefield in the owner's colors, as the weapon's name followed by the minutes and seconds left, with hours in front once there are any. A weapon that is ready shows `00:00`. A house whose country is [`MultiplayPassive=yes`](/keys/multiplaypassive/) shows none, and in a campaign a suspended weapon that has not started charging is left out.
 
 ## Charge-draining weapons
 
@@ -468,7 +468,7 @@ The silo opens its door and launches the missile on the same frame, without wait
 
 The launch also puts the stock `PSIWARN` animation on the target cell, on the same frame the door starts to open. Its [`PsiWarning=yes`](/keys/psiwarning/) setting limits who sees it: a player sees the warning only when that player is not allied with the launching house and has a powered structure with [`PsychicDetectionRadius=`](/keys/psychicdetectionradius/#scope-buildingtype) covering the cell. The warning passes to the missile bullet when the bullet is created. It is removed when that bullet is removed, which happens when the bullet explodes. For a [`NukeMaker=yes`](/keys/nukemaker/) missile, that is at its detonation altitude, so the warning clears before the payload lands. Destroying or selling the silo does not remove the warning.
 
-In Yuri's Revenge the missile is a [`Vertical=yes`](/keys/vertical/) projectile with a [`NukeMaker=yes`](/keys/nukemaker/) warhead. It climbs off the top of the screen and explodes at its [`DetonationAltitude`](/keys/detonationaltitude/), and the `NukePayload` weapon's projectile then falls onto the target from the same height and deals the payload's damage. The payload carries the weapon's [`RadLevel`](/keys/radlevel/), so its blast leaves [radiation](/systems/radiation/) on the target. A payload whose warhead is named `NUKE` first plays the `NUKEBALL` animation where it lands, and its damage goes off when that animation ends. The map flashes when the animation starts: its light level jumps to twice daylight with a warm tint for 30 frames, then returns over about 15 more, at the pace [`NukeAmbientChangeRate`](/keys/nukeambientchangerate/) sets.
+In Yuri's Revenge the missile is a [`Vertical=yes`](/keys/vertical/) projectile with a [`NukeMaker=yes`](/keys/nukemaker/) warhead. It climbs off the top of the screen and explodes at its [`DetonationAltitude`](/keys/detonationaltitude/), and the `NukePayload` weapon's projectile then falls onto the target from the same height and deals the payload's damage. The payload carries the weapon's [`RadLevel`](/keys/radlevel/), so its blast leaves [radiation](/systems/radiation/) on the target. A payload whose warhead is named `NUKE` first plays the `NUKEBALL` animation where it lands, and its damage goes off when that animation ends. The map flashes when the animation starts: its light level jumps to twice daylight with a warm tint for 30 frames (the warhead's [`NukeFlash.Duration`](/keys/nukeflash.duration/)), then returns over about 15 more, at the pace [`NukeAmbientChangeRate`](/keys/nukeambientchangerate/) sets.
 
 ```ini title="rulesmd.ini"
 [NukeSpecial]
@@ -485,7 +485,7 @@ Warhead=NUKE
 Damage=600
 ```
 
-A one-time missile needs no silo. It enters from the map edge nearest the target. It is built from the hard-coded weapon `MultiLauncher` or `ChemLauncher`, according to the behavior, and deals that weapon's `Damage=`. It is fired with a range of `100000` leptons, longer than any map is wide.
+A one-time missile needs no silo, and neither does a repeating `Type=MultiMissile` weapon with [`Nuke.SiloLaunch=no`](/keys/nuke.silolaunch/#scope-superweapontype). Its projectile appears 20000 leptons above the target and falls straight down at 100 leptons a frame, under the `PSIWARN` animation. A `Type=MultiMissile` weapon drops the weapon [`Nuke.Payload=`](/keys/nuke.payload/#scope-superweapontype) names, or `NukePayload` without that key. A `Type=ChemMissile` weapon drops the weapon `ChemLauncher`. The weapon's `Damage=` and warhead apply unless [`SW.Damage=`](/keys/sw.damage/#scope-superweapontype) or [`SW.Warhead=`](/keys/sw.warhead/#scope-superweapontype) replace them. A weapon with no `Projectile=` drops nothing. The [Nuke strike](/mapping/actions/taction-multi-missile/) trigger action drops `NukePayload` the same way without a superweapon, and [Chem-missile strike](/mapping/actions/taction-chem-missile/) flies `ChemLauncher` in from the map edge nearest its waypoint.
 
 ### Hunter seeker
 
@@ -660,7 +660,7 @@ An EM pulse granted by the [Add 1-time special weapon](/mapping/actions/taction-
 
 ## Scripting
 
-Two trigger actions grant a weapon, and [becoming available](#becoming-available) covers what each one does. Two more toggle the firestorm defense. [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) and [Deactivate Firestorm Defense](/mapping/actions/taction-deactivate-firestorm/) each fire the house's first `Type=Firestorm` weapon at cell 0,0. Each does nothing when the wall is already in the state it asks for.
+Two trigger actions grant a weapon, and [becoming available](#becoming-available) covers what each one does. Two more raise and lower a computer house's firestorm defense directly, without the weapon: [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) and [Deactivate Firestorm Defense](/mapping/actions/taction-deactivate-firestorm/). Neither changes the weapon's charge, and each does nothing when the wall is already in the state it asks for.
 
 Three strike actions do not use superweapons at all: [Ion-cannon strike](/mapping/actions/taction-ion-cannon/), [Nuke strike](/mapping/actions/taction-multi-missile/) and [Chem-missile strike](/mapping/actions/taction-chem-missile/). They create the effect directly at the waypoint, so they need no weapon, no charge, no silo and no house that owns one.
 

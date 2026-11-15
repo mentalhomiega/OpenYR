@@ -75,6 +75,12 @@ class INIClass {
 		int Save(Pipe & file) const;
 		unsigned Transcoded_Lines(void) const {return(Transcoded);}
 
+		// Supplies the text of a file named in an [#include] section, as the game finds files; returns
+		// false when there is no such file. While no reader is set, an [#include] section is an
+		// ordinary section.
+		using IncludeReader = std::function<bool (char const * name, std::string & text)>;
+		static void Set_Include_Reader(IncludeReader reader);
+
 		/*
 		**	Erase all data within this INI file manager.
 		*/
@@ -96,6 +102,7 @@ class INIClass {
 		**	Fetch the number of entries in a section or get a particular entry in a section.
 		*/
 		int Entry_Count(char const * section) const;
+		std::vector<std::string_view> Entry_Names_With_Prefix(char const * section, std::string_view prefix) const;
 		char const * Get_Entry(char const * section, int index) const;
 
 		/*
@@ -237,6 +244,8 @@ class INIClass {
 			Malformed,
 			Parsed,
 		};
+
+		void Load_Includes(std::vector<std::string> const & names, char const * source);
 
 		INIReadResult Read_Numbers(char const * section, char const * entry, int * values, int count) const;
 		INIReadResult Read_Numbers(char const * section, char const * entry, float * values, int count) const;

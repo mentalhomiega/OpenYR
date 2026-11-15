@@ -14,7 +14,7 @@ targets:
   effect: added
 - type: key
   id: CaptureEvaEvent
-  effect: added
+  effect: changed
 - type: key
   id: ConcentricRadialIndicator
   effect: added

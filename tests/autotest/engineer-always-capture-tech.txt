@@ -1,0 +1,14 @@
+; EngineerAlwaysCaptureTech (Ares, default yes) gives an engineer the capture cursor over a tech structure, one first owned by a MultiplayPassive country,
+; whatever its health. The overlay engineer-always-capture-tech.ini sets EngineerCaptureLevel=.5, so a structure at full strength is otherwise only damaged.
+; A player engineer stands between a neutral oil derrick and an enemy power plant, both at full strength.
+; Expected: the action over the derrick (60,44) is capture and over the power plant (66,40) damage. Before the key was read both were damage.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/engineer-always-capture-tech.txt -Seconds 60 -Country 0 -Filter "AUTOTEST   action|AUTOTEST action|Exception"
+10 rules engineer-always-capture-tech.ini
+30 command CenterBase
+35 reveal
+40 own ENGINEER 62 42
+41 neutral CAOILD 60 44
+42 enemy GAPOWR 66 40
+100 action ENGINEER 60 44
+101 action ENGINEER 66 40
+110 quit

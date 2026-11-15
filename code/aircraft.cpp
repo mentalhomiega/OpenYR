@@ -211,10 +211,12 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	BASECLASS(house),
 	IsToSpendAmmo(false),
 	Class((AircraftTypeClass *)type),
+	PadReloadFrame(-1),
 	Passenger(false),
 	IsKamikaze(false),
 	field_35B(false),
 	IsLockedStraight(false),
+	StrafeShotsFired(0),
 	ParadropPasses(5),
 	DockNowHeadingTo(NULL),
 	AttacksRemaining(1),
@@ -232,6 +234,14 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	// A country that lists this type in VeteranAircraft= makes its new aircraft veterans.
 	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranAircraft.Is_In_List(Class)) {
 		Veterancy.Set_Veteran(true);
+	}
+	if (House != NULL && House->IsAircraftSpied && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
+
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
 	}
 
 	Aircraft.Add(this);
@@ -724,8 +734,11 @@ void AircraftClass::AI(void)
 	Airborne_Look();
 
 	if (HealthRatio < Rule->ConditionRed && HeightAGL > 0) {
-		if (Percent_Chance(Strength != 0 ? 10 : 80)) {
-			new AnimClass(AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")], PositionCoord);
+		if (Percent_Chance(Strength != 0 ? Class->SmokeChanceRed : Class->SmokeChanceDead)) {
+			AnimTypeClass const * smoke = Class->IsSmokeAnimSet ? Class->SmokeAnim : AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")];
+			if (smoke != NULL) {
+				new AnimClass(smoke, PositionCoord);
+			}
 		}
 	}
 
@@ -2078,6 +2091,8 @@ ActionType AircraftClass::What_Action(ObjectClass const * target, bool disallow_
 	if (action == ACTION_SELF) {
 		if (!Cargo.How_Many()) {
 		action = ACTION_NONE;
+		} else if (Class->IsNoManualUnload) {
+			action = ACTION_SELECT;
 		} else if (Map[(Coord const &)PositionCoord].Cell_Building() != NULL) {
 			action = ACTION_NO_DEPLOY;
 		}
@@ -2204,8 +2219,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		FIRE_AT_TARGET2,
 
 		/*
-		 * A strafing run is five shots -- the first is fired by FIRE_AT_TARGET, then one
-		 * by each of these states, spaced by the weapon's rate of fire.
+		 * A strafing run fires the weapon's Strafing.Shots, five by default, spaced by its rate
+		 * of fire: FIRE_AT_TARGET fires the first, these states the middle ones and
+		 * STRAFE_LAST_SHOT the last. A run of more than five shots repeats STRAFE_SHOT4.
 		 */
 		STRAFE_SHOT2,
 		STRAFE_SHOT3,
@@ -2215,8 +2231,15 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		RETURN_TO_BASE
 	};
 
-	// Fires one middle shot of a strafing run, moves on to next_status and returns the mission delay.
-	auto strafe_shot = [&](int next_status) -> int {
+	int const strafe_shots = PrimaryWeapon != NULL ? PrimaryWeapon->StrafingShots : 5;
+
+	// The delay after a run's last shot before the next run or the return to base.
+	auto strafe_end_delay = [&]() -> int {
+		return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
+	};
+
+	// Fires one middle shot of a strafing run, moves on to the next state and returns the mission delay.
+	auto strafe_shot = [&]() -> int {
 		if (TarCom == NULL) {
 			Status = RETURN_TO_BASE;
 			return(1);
@@ -2243,7 +2266,8 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		}
 		Announce_Incoming();
 		Assign_Destination(TarCom);
-		Status = next_status;
+		StrafeShotsFired++;
+		Status = StrafeShotsFired >= strafe_shots - 1 ? STRAFE_LAST_SHOT : std::min(Status + 1, (int)STRAFE_SHOT4);
 		return(PrimaryWeapon->ROF);
 	};
 
@@ -2436,8 +2460,13 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					}
 					Announce_Incoming();
 					if (Is_Strafe()) {
-						Status = STRAFE_SHOT2;
+						StrafeShotsFired = 1;
 						IsLockedStraight = true;
+						if (strafe_shots <= 1) {
+							Status = FLY_TO_POSITION;
+							return(strafe_end_delay());
+						}
+						Status = strafe_shots == 2 ? STRAFE_LAST_SHOT : STRAFE_SHOT2;
 					} else if (Is_Fighter()) {
 
 						/*
@@ -2526,13 +2555,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case STRAFE_SHOT2:
-			return(strafe_shot(STRAFE_SHOT3));
-
 		case STRAFE_SHOT3:
-			return(strafe_shot(STRAFE_SHOT4));
-
 		case STRAFE_SHOT4:
-			return(strafe_shot(STRAFE_LAST_SHOT));
+			return(strafe_shot());
 
 		case STRAFE_LAST_SHOT:
 			if (TarCom == NULL) {
@@ -2549,7 +2574,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					}
 					Announce_Incoming();
 					Status = FLY_TO_POSITION;
-					return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
+					return(strafe_end_delay());
 
 				default:
 					if (!Ammo) {
@@ -3379,7 +3404,7 @@ void AircraftClass::Scatter(Coord const & , bool, bool )
 /// <returns>bool; Is the aircraft flying?</returns>
 bool AircraftClass::In_Air(void) const
 {
-	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type && !Class->IsMissileCustom) {
 		return(ObjectClass::In_Air());
 	}
 	if (IsInLimbo) {
@@ -3400,7 +3425,7 @@ bool AircraftClass::In_Air(void) const
 /// <returns>bool; Is the aircraft on the ground?</returns>
 bool AircraftClass::On_Ground(void) const
 {
-	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type && !Class->IsMissileCustom) {
 		return(ObjectClass::On_Ground());
 	}
 	return(!IsInLimbo && !In_Air());
@@ -3840,6 +3865,7 @@ void AircraftClass::Look(bool incremental, bool dont_map)
 
 	if (sight_range) {
 		Map.Sight_From(PositionCoord, sight_range, House, incremental, dont_map);
+		Look_For_Radar_Spies(sight_range, incremental, dont_map);
 	} else {
 		if (Scen->Special.IsFogOfWar) {
 			sight_range = Rule->AircraftFogReveal;
@@ -4041,10 +4067,12 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsKamikaze);
 	stream.Serialize(field_35B);
 	stream.Serialize(IsLockedStraight);
+	stream.Serialize(StrafeShotsFired);
 	stream.Serialize(ParadropPasses);
 	stream.Serialize(DockNowHeadingTo);
 	stream.Serialize(AttacksRemaining);
 	stream.Serialize(IsReadyToCommence);
+	stream.Serialize(PadReloadFrame);
 }
 
 
@@ -4433,7 +4461,7 @@ bool AircraftClass::Should_Delete_Off_Map(void)
 /// Aircraft do not lose ammunition through the normal firing sequence -- their supply is
 /// accounted for by the mission code instead -- so this override does nothing at all.
 /// </summary>
-void AircraftClass::Reduce_Ammunition(void)
+void AircraftClass::Reduce_Ammunition(int)
 {
 	//nothing
 }
@@ -4494,6 +4522,11 @@ bool AircraftClass::Crash(TechnoClass * source)
 			RockingSidewaysPerFrame = -RockingSidewaysPerFrame;
 		}
 		RockingForwardsPerFrame = Random_Double(0.0, 0.1);
+		// The rates are still drawn with CrashSpin=no so the random sequence does not depend on the key.
+		if (!Class->IsCrashSpin) {
+			RockingSidewaysPerFrame = 0.0f;
+			RockingForwardsPerFrame = 0.0f;
+		}
 
 		Detach_This_From_All(this, false);
 		return(true);

@@ -64,6 +64,12 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsSubjectToCliffs;
 		bool IsSubjectToWalls;
 
+		// With SubjectToTrenches=no, every shot at a structure with UC.PassThrough above 0 passes through to an occupant (Ares).
+		bool IsSubjectToTrenches;
+
+		// SubjectToBuildings (Ares): a building with a nonzero SolidHeight stops this projectile in flight.
+		bool IsSubjectToBuildings;
+
 		/*
 		 * If this homing projectile cruises at extra altitude, then this flag will be true. It
 		 * holds ten terrain levels of clearance instead of five and does not begin its dive
@@ -171,6 +177,19 @@ class BulletTypeClass : public ObjectTypeClass
 		 * the AirburstWeapon straight down onto targets near the point of impact.
 		 */
 		bool IsSplits;
+
+		// AirburstSpread (Ares): an Airburst projectile that sets it, and does not set Splits=yes, fires its AirburstWeapon
+		// once at every cell within this many cells (in leptons here) of the burst, in place of the splitting. -1 when not set.
+		int AirburstSpread;
+
+		// AroundTarget (Ares): do the bomblets of a splitting or spreading projectile look for targets around its original target
+		// rather than around the point it burst at? -1 follows Splits.
+		int AroundTarget;
+
+		// BallisticScatter.Min and BallisticScatter.Max (Ares): the range of the scatter of an inaccurate arcing shell, in
+		// leptons. -1 when not set, which leaves the global [CombatDamage] BallisticScatter in charge.
+		int BallisticScatterMin;
+		int BallisticScatterMax;
 
 		// An Airburst projectile detonates once whatever its Cluster is, and then fires its AirburstWeapon after the blast.
 		bool Detonates_Once(void) const {return(IsSplits || IsAirburst);}

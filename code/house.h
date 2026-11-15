@@ -144,6 +144,9 @@ class HouseStaticClass {
 };
 
 
+namespace SuperRules { enum class AIPreference; }
+
+
 /****************************************************************************
 **	Player control structure. Each player (computer or human) has one of
 **	these structures associated. These are located in a global array.
@@ -271,6 +274,13 @@ class HouseClass : public AbstractClass
 		bool IsBarracksInfiltrated;
 		bool IsWarFactoryInfiltrated;
 
+		// Set by a spy on a structure with SpyEffect.Custom: the new ships, aircraft or structures this house builds start
+		// as veterans, and the bits of the kinds of technology it has stolen (SpyEffect.StolenTechIndex).
+		bool IsNavalSpied;
+		bool IsAircraftSpied;
+		bool IsBuildingSpied;
+		unsigned int StolenTechs;
+
 		// While the blackout runs, this house's structures make no power.
 		CDTimerClass<FrameTimerClass> PowerBlackout;
 		bool IsPowerBlackout;
@@ -344,6 +354,12 @@ class HouseClass : public AbstractClass
 		 * firestorm wall the house owns is live while it is set, and bars movement through it.
 		 */
 		bool FirestormDefenseActivated;
+
+		/*
+		 * The defense was raised by a trigger action rather than by the super weapon. It drops when the
+		 * house runs out of power, and the Deactivate Firestorm action may lower it.
+		 */
+		bool IsFirestormFromTrigger;
 
 		/*
 		 * If this house owns a threat rating structure, then this flag will be true. Its units
@@ -588,6 +604,12 @@ class HouseClass : public AbstractClass
 		int Drain;					// Power consumption.
 
 		/*
+		**	Power the house always has, whatever its buildings make. The Auxiliary Power trigger action
+		**	adds to it, and a negative total is a standing drain.
+		*/
+		int AuxiliaryPower;
+
+		/*
 		**	For human controlled houses, only one type of unit can be produced
 		**	at any one instant. These factory objects control this production.
 		**	Structures, defenses (BuildCat=Combat), vehicles and ships each have their own
@@ -671,6 +693,11 @@ class HouseClass : public AbstractClass
 		**	uses it to update their radar map from the cells this house's units reveal.
 		*/
 		CountrySet RadarSpied;
+
+		// The countries this house's units reveal the map to, from its spied SpyEffect.RevealRadar structures (Ares).
+		CountrySet UnitsRevealedTo;
+
+		void Update_Units_Revealed_To(void);
 
 		/*
 		**	Running score, based on units destroyed and units lost.
@@ -765,6 +792,15 @@ class HouseClass : public AbstractClass
 		CounterClass PUQuantity;
 		CounterClass PIQuantity;
 		CounterClass PAQuantity;
+
+		/*
+		 * These track every object of each type the house owns, in limbo or not. Unlike the
+		 * BQuantity totals, they count Insignificant and DontScore types too.
+		 */
+		CounterClass OwnedBQuantity;
+		CounterClass OwnedUQuantity;
+		CounterClass OwnedIQuantity;
+		CounterClass OwnedAQuantity;
 
 		/*
 		**	This timer keeps track of when an all out attack should be performed.
@@ -947,6 +983,7 @@ class HouseClass : public AbstractClass
 		bool Is_Player_View(void) const;
 		bool Is_Ally_Of_Player_View(void) const;
 		bool Has_Powered_Unit_Source(TechnoTypeClass const * type) const;
+		bool Has_Working_Building(TypeList<BuildingTypeClass const *> const & types) const;
 #ifdef _DEBUG
 		void Debug_Dump(MonoClass *mono) const;
 		void Print_Zone_Stats(int x, int y, ZoneType zone, MonoClass * mono) const;
@@ -978,11 +1015,15 @@ class HouseClass : public AbstractClass
 		template<typename T> T const * Get_Preferred(DynamicVectorClass<T const *> const & list) const;
 		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const;
 		template<typename T> int Count_Owned(CounterClass const & tally, TypeList<T const *> const & list) const;
+		bool Team_Breaks_Build_Limit(TeamTypeClass const & team) const;
 		bool AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
+		bool AI_Prerequisite_Planned(int pre, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
+		bool AI_Prerequisite_List_Planned(TypeList<int> const & list, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
 		void Make_Base_Nodes(void);
 		static int Base_Cell_Weight_By_Distance(HouseClass const & house, Cell const & cell, int tie_breaker, int context);
 		static int Base_Cell_Weight_By_Defense_Coverage(HouseClass const & house, Cell const & cell, int tie_breaker, int context);
 		Cell Where_To_Place_Upgrade(BuildingTypeClass const * upgrade) const;
+		BaseNodeClass * Next_Buildable_Node(void);
 		Cell Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*func)(HouseClass const &, Cell const &, int, int), int context);
 		void Calculate_Defense_Values(BuildingClass const * building, int value, int * values, Rect const & area) const;
 		DynamicVectorClass<BuildingTypeClass *> Get_Anti_Air_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const;
@@ -996,6 +1037,12 @@ class HouseClass : public AbstractClass
 
 		SuperClass * Find_Super(SuperWeaponType type) const;
 		void Update_Present_Super_Weapons(void);
+		bool Super_Weapon_Allowed(SuperClass const * super) const;
+		bool Super_Weapon_Uses_Chosen_Target(SuperClass const * super) const;
+		bool Pick_Super_Target(SuperClass const * super, Cell & cell);
+		Cell Preferred_Super_Cell(SuperClass const * super, SuperRules::AIPreference fallback) const;
+		int Battery_Power(void) const;
+		bool Battery_Affects(BuildingTypeClass const * type, bool overpower) const;
 		void Enable_Available_Super_Weapons(void);
 		// Shows the sidebar button for a super weapon. It does not test the house; callers check for the local player first.
 		void Add_Super_Cameo(int s);
@@ -1032,6 +1079,10 @@ class HouseClass : public AbstractClass
 		bool Is_Reversed(ObjectTypeClass const * type) const;
 		bool Is_Secret_Item(ObjectTypeClass const * type) const;
 		bool Owns_Prerequisite_Override(TechnoTypeClass const * type) const;
+		// How many objects of the type the house has in service, as the A*Quantity counts hold them.
+		int Active_Count(TechnoTypeClass const * type) const;
+		// How many objects of the type the house owns, as the Owned*Quantity counts hold them.
+		int Owned_Count(TechnoTypeClass const * type) const;
 		bool Has_Keep_Alive(void) const;
 		bool Add_Reversed(TechnoTypeClass const * type);
 
@@ -1046,6 +1097,7 @@ class HouseClass : public AbstractClass
 		bool Does_Enemy_Building_Exist(StructType) const;
 		void Harvested(int tiberium, TiberiumType slot);
 		void Purified(int tiberium, TiberiumType slot);
+		void Apply_Academy(TechnoClass * techno) const;
 		int Self_Heal_Points(bool infantry) const;
 		double Cost_Multiplier(TechnoTypeClass const * type) const;
 		double Country_Armor_Multiplier(TechnoTypeClass const * type) const;
@@ -1056,7 +1108,8 @@ class HouseClass : public AbstractClass
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
 		void Refund_Money(int money);
-		void Attacked(BuildingClass * source);
+		// With miner_alert false, a hit on a deployed ore miner raises no alert (a Malicious=no warhead, Ares).
+		void Attacked(BuildingClass * source, bool miner_alert = true);
 		void Adjust_Power(int adjust);
 		void Adjust_Drain(int adjust);
 		void Update_Spied_Radar(HouseClass * house);
@@ -1064,6 +1117,7 @@ class HouseClass : public AbstractClass
 		void Update_Factories(RTTIType rtti, bool naval);
 		double Power_Fraction(void) const;
 		bool Is_Being_Drained(void) const;
+		int Local_Drain(void) const;
 		bool Is_Power_Blackout(void) const {return IsPowerBlackout && PowerBlackout > 0;}
 		double Tiberium_Fraction(void) const;
 		double Weed_Fraction(void) const;
@@ -1200,7 +1254,6 @@ class HouseClass : public AbstractClass
 	private:
 		void Silo_Redraw_Check(int oldtib, int oldcap);
 		int AI_Building(void);
-		BaseNodeClass * Next_Buildable_Node(void);
 		bool Can_Replace_Node(int index) const;
 		int AI_Unit(void);
 		int AI_Infantry(void);
@@ -1395,6 +1448,8 @@ inline T const * HouseClass::Get_Preferred(DynamicVectorClass<T const *> const &
 HouseClass * House_From_HousesType(HousesType house);
 HouseClass * House_At(int spawn_waypoint);
 HouseClass * House_From_Name(char const * name);
+void Log_Unresolved_House(char const * section, char const * key, char const * name);
 HouseClass * Placed_Object_House(char const * name);
 bool House_Matches(HouseClass const * house, HousesType selector);
 AircraftTypeClass const * Paradrop_Plane_Type(void);
+AircraftTypeClass const * Paradrop_Plane_Type(HouseClass const * house);

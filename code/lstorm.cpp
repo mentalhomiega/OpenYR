@@ -11,9 +11,15 @@
 
 #include "lstorm.h"
 
+#include "autotest.h"
+#include "dbgprint.h"
+
 #include "_map.h"
 #include "_rules.h"
 #include "anim.h"
+#include "armortypes.h"
+#include "building.h"
+#include "builtype.h"
 #include "animtype.h"
 #include "autotest.h"
 #include "ccrand.h"
@@ -34,18 +40,23 @@
 #include "session.h"
 #include "shapeset.h"
 #include "stimer.h"
+#include "suprkeys.h"
+#include "suprtype.h"
 #include "super.h"
 #include "tactical.h"
 #include "techno.h"
 #include "voc.h"
+#include <cmath>
 #include "vox.h"
 
 
 bool LightningStormClass::IsActive = false;
+bool LightningStormClass::IsBolting = false;
 bool LightningStormClass::IsTimeToEnd = false;
 int LightningStormClass::StartTime = 0;
 int LightningStormClass::Duration = -1;
 int LightningStormClass::Deferment = 0;
+int LightningStormClass::Type = -1;
 Cell LightningStormClass::Center(0, 0);
 HouseClass * LightningStormClass::Owner = NULL;
 DynamicVectorClass<AnimClass *> LightningStormClass::Clouds;
@@ -59,6 +70,7 @@ static int const WARNING_INTERVAL = 225;
 NukeFlashClass::StatusType NukeFlashClass::Status = NukeFlashClass::INACTIVE;
 int NukeFlashClass::StartTime = -1;
 int NukeFlashClass::Duration = -1;
+int NukeFlashClass::Type = -1;
 
 
 /// <summary>
@@ -69,17 +81,32 @@ void NukeFlashClass::Clear(void)
 	Status = INACTIVE;
 	StartTime = -1;
 	Duration = -1;
+	Type = -1;
+}
+
+
+/// <summary>
+/// The superweapon whose Light.* keys light the flash that is showing, or null for the rules lighting.
+/// </summary>
+SuperWeaponTypeClass const * NukeFlashClass::Active_Type(void)
+{
+	return(Type >= 0 && Type < SuperWeaponTypes.Count() ? SuperWeaponTypes[Type] : nullptr);
 }
 
 
 /// <summary>
 /// Lights the map up for a nuclear blast, as the NukeFlash start (0x53AB70) does: the light fades
-/// in for 30 frames, then back out for 15.
+/// in for the given frames (30 in gamemd), then back out for 15. A superweapon with Light.Enabled=no
+/// and a duration below 1 raise no flash.
 /// </summary>
-void NukeFlashClass::Start(void)
+void NukeFlashClass::Start(SuperWeaponTypeClass const * type, int duration)
 {
+	if ((type != nullptr && !type->Keys.LightEnabled) || duration <= 0) {
+		return;
+	}
+	Type = type != nullptr ? (int)type->HeapID : -1;
 	Status = FADE_IN;
-	Duration = 30;
+	Duration = duration;
 	StartTime = Frame;
 	Scen->AmbientChangeTimer = 1;
 	IonStormClass::Update_Special_Lighting();
@@ -110,6 +137,7 @@ void NukeFlashClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Status);
 	stream.Serialize(StartTime);
 	stream.Serialize(Duration);
+	stream.Serialize(Type);
 }
 
 
@@ -142,6 +170,57 @@ static bool Cloud_Finished(AnimClass const * anim)
 }
 
 
+SuperWeaponKeys const * LightningStormClass::Keys(void)
+{
+	return(Type >= 0 && Type < SuperWeaponTypes.Count() ? &SuperWeaponTypes[Type]->Keys : nullptr);
+}
+
+
+SuperWeaponTypeClass const * LightningStormClass::Active_Type(void)
+{
+	return(Type >= 0 && Type < SuperWeaponTypes.Count() ? SuperWeaponTypes[Type] : nullptr);
+}
+
+
+namespace {
+
+// The weapon's value for a number key it sets, otherwise the rules value.
+int Number_Or(int key, int rule)
+{
+	return(key != SuperRules::UNSET_INT ? key : rule);
+}
+
+}
+
+
+bool LightningStormClass::Print_Text(void)
+{
+	SuperWeaponKeys const * keys = Keys();
+	return(keys != nullptr && keys->LightningPrintText >= 0 ? keys->LightningPrintText > 0 : Rule->LightningPrintText);
+}
+
+
+int LightningStormClass::Hit_Delay(void)
+{
+	SuperWeaponKeys const * keys = Keys();
+	return(Number_Or(keys != nullptr ? keys->LightningHitDelay : SuperRules::UNSET_INT, Rule->LightningHitDelay));
+}
+
+
+int LightningStormClass::Scatter_Delay(void)
+{
+	SuperWeaponKeys const * keys = Keys();
+	return(Number_Or(keys != nullptr ? keys->LightningScatterDelay : SuperRules::UNSET_INT, Rule->LightningScatterDelay));
+}
+
+
+int LightningStormClass::Separation(void)
+{
+	SuperWeaponKeys const * keys = Keys();
+	return(Number_Or(keys != nullptr ? keys->LightningSeparation : SuperRules::UNSET_INT, Rule->LightningSeparation));
+}
+
+
 /// <summary>
 /// Ends any storm and forgets its clouds and bolts. Call when a scenario starts.
 /// </summary>
@@ -153,6 +232,7 @@ void LightningStormClass::Clear(void)
 	StartTime = 0;
 	Duration = -1;
 	Deferment = 0;
+	Type = -1;
 	Center = Cell(0, 0);
 	Owner = NULL;
 	Clouds.Clear();
@@ -171,7 +251,7 @@ void LightningStormClass::Clear(void)
 /// <param name="deferment">How many frames to wait before it breaks.</param>
 /// <param name="cell">The cell the storm centers on.</param>
 /// <param name="owner">The house that called the storm, credited with nothing it kills.</param>
-void LightningStormClass::Start(int duration, int deferment, Cell const & cell, HouseClass * owner)
+void LightningStormClass::Start(int duration, int deferment, Cell const & cell, HouseClass * owner, SuperWeaponTypeClass const * type)
 {
 	Center = cell;
 	if (!Map.In_Radar(Center)) {
@@ -185,6 +265,8 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 	if (IsActive) {
 		return;
 	}
+
+	Type = type != nullptr ? (int)type->HeapID : -1;
 
 	if (deferment != 0) {
 		if (Deferment == 0 || deferment <= Deferment) {
@@ -200,10 +282,19 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 	IsTimeToEnd = false;
 	Duration = duration;
 
+	SuperWeaponKeys const * keys = Keys();
+	bool const outage_set = keys != nullptr && keys->LightningRadarOutage != SuperRules::UNSET_INT;
+	int const outage = keys != nullptr ? Number_Or(keys->LightningRadarOutage, Rule->LightningStormDuration) : duration;
+	unsigned const affected = keys != nullptr ? keys->LightningRadarOutageAffects : (unsigned)SuperRules::HOUSE_ENEMIES;
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass * house = Houses[index];
-		if ((Owner == NULL || !Owner->Is_Ally(house)) && !house->IsDefeated) {
-			house->Start_Radar_Blackout(duration);
+		if (house->IsDefeated) {
+			continue;
+		}
+		// A storm with no owner counts every house as an enemy.
+		bool const hit = Owner == NULL ? (affected & SuperRules::HOUSE_ENEMIES) != 0 : SuperRules::House_Passes(affected, house == Owner, Owner->Is_Ally(house));
+		if (hit && (!outage_set || outage > 0)) {
+			house->Start_Radar_Blackout(outage);
 		}
 	}
 	if (PlayerPtr != NULL) {
@@ -211,7 +302,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 	}
 	IonStormClass::Update_Special_Lighting();
 
-	if (Rule->LightningPrintText) {
+	if (Print_Text()) {
 		Sound_Effect(Rule->StormSound);
 		Show_Super_Message("TXT_LIGHTNING_STORM", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 	}
@@ -278,8 +369,8 @@ void LightningStormClass::AI(void)
 		if (Deferment > 0) {
 			Deferment--;
 			if (Deferment == 0) {
-				Start(Duration, 0, Center, Owner);
-			} else if (Deferment % WARNING_INTERVAL == 0 && Rule->LightningPrintText) {
+				Start(Duration, 0, Center, Owner, Active_Type());
+			} else if (Deferment % WARNING_INTERVAL == 0 && Print_Text()) {
 				Speak_Eva("EVA_LightningStormCreated");
 				Show_Super_Message("TXT_LIGHTNING_STORM_APPROACHING", TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW));
 			}
@@ -292,32 +383,44 @@ void LightningStormClass::AI(void)
 		return;
 	}
 
-	if (Rule->LightningHitDelay > 0 && Frame % Rule->LightningHitDelay == 0) {
+	if (Hit_Delay() > 0 && Frame % Hit_Delay() == 0) {
 		Strike(Center);
 	}
 
 	/*
-	 * Scatter a cloud somewhere near the center, away from the clouds already overhead.
-	 * Three tries are made before the chance is passed up.
+	 * Scatter clouds somewhere near the center, away from the clouds already overhead. Three
+	 * tries are made for each cloud before the chance is passed up.
 	 */
-	if (Rule->LightningScatterDelay > 0 && Frame % Rule->LightningScatterDelay == 0) {
-		int const reach = Rule->LightningCellSpread / 2;
-		for (int tries = 3; tries > 0; tries--) {
-			Cell cell = Center;
-			cell.X += Random_Pick(-reach, reach);
-			cell.Y += Random_Pick(-reach, reach);
+	if (Scatter_Delay() > 0 && Frame % Scatter_Delay() == 0) {
+		SuperWeaponKeys const * keys = Keys();
+		int reach_x = Rule->LightningCellSpread / 2;
+		int reach_y = reach_x;
+		if (keys != nullptr && keys->AreaIsSet) {
+			// SW.Range is the diameter of the area the clouds gather in.
+			reach_x = keys->AreaIsBlock ? keys->AreaWidth / 2 : (int)(keys->AreaRadius / 2);
+			reach_y = keys->AreaIsBlock ? keys->AreaHeight / 2 : reach_x;
+		}
+		int const count = keys != nullptr ? keys->LightningScatterCount : 1;
+		for (int cloud = 0; cloud < count; cloud++) {
+			for (int tries = 3; tries > 0; tries--) {
+				Cell cell = Center;
+				cell.X += Random_Pick(-reach_x, reach_x);
+				cell.Y += Random_Pick(-reach_y, reach_y);
 
-			bool crowded = false;
-			for (int index = 0; index < Clouds.Count(); index++) {
-				Cell const other = Clouds[index]->Center_Coord().As_Cell();
-				if (std::abs(cell.X - other.X) + std::abs(cell.Y - other.Y) < Rule->LightningSeparation) {
-					crowded = true;
+				bool crowded = false;
+				if (Separation() > 0) {
+					for (int index = 0; index < Clouds.Count(); index++) {
+						Cell const other = Clouds[index]->Center_Coord().As_Cell();
+						if (std::abs(cell.X - other.X) + std::abs(cell.Y - other.Y) < Separation()) {
+							crowded = true;
+							break;
+						}
+					}
+				}
+				if (Map.In_Radar(cell) && !crowded) {
+					Strike(Rod_Target(cell));
 					break;
 				}
-			}
-			if (Map.In_Radar(cell) && !crowded) {
-				Strike(cell);
-				break;
 			}
 		}
 	}
@@ -325,25 +428,77 @@ void LightningStormClass::AI(void)
 
 
 /// <summary>
-/// Gathers a cloud over the cell, high enough for its bolt to reach the ground (FUN_0053A140).
+/// Does the active storm's weapon switch off the pull of structures with LightningRod=yes
+/// (Lightning.IgnoreLightningRod)?
+/// </summary>
+bool LightningStormClass::Rods_Ignored(void)
+{
+	SuperWeaponKeys const * keys = Keys();
+	return(keys != nullptr && keys->LightningIgnoreRod);
+}
+
+
+/// <summary>
+/// The cell a randomly placed cloud forms over: the cell of the nearest structure with LightningRod=yes within
+/// LightningRodRange cells of it, or the cell itself when no rod is that close or the storm ignores rods. Rods pull
+/// clouds only in Ares rules: gamemd reads LightningRod but its storm (LightningStorm::Update, 0x53A6C0) ignores it.
+/// </summary>
+Cell LightningStormClass::Rod_Target(Cell const & cell)
+{
+	if (!Are_Ares_Rules() || Rule->LightningRodRange <= 0 || Rods_Ignored()) {
+		return(cell);
+	}
+	Cell best = cell;
+	double nearest = (double)Rule->LightningRodRange;
+	bool found = false;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (!building->IsActive || building->IsInLimbo || !building->Class->IsLightningRod) {
+			continue;
+		}
+		Cell const at = building->Center_Coord().As_Cell();
+		double const dx = at.X - cell.X;
+		double const dy = at.Y - cell.Y;
+		double const distance = std::sqrt(dx * dx + dy * dy);
+		if (distance <= nearest && (!found || distance < nearest)) {
+			nearest = distance;
+			best = at;
+			found = true;
+		}
+	}
+	return(best);
+}
+
+
+/// <summary>
+/// Gathers a cloud over the cell, high enough for its bolt to reach the ground (FUN_0053A140). A weapon's
+/// Lightning.CloudHeight sets the height above the ground instead when it is not negative.
 /// </summary>
 void LightningStormClass::Strike(Cell const & cell)
 {
-	if (Rule->WeatherConClouds.Count() == 0 || !Map.In_Radar(cell)) {
+	SuperWeaponKeys const * keys = Keys();
+	TypeList<AnimTypeClass const *> const & clouds = (keys != nullptr && keys->LightningCloudsSet) ? keys->LightningClouds : Rule->WeatherConClouds;
+	TypeList<AnimTypeClass const *> const & bolts = (keys != nullptr && keys->LightningBoltsSet) ? keys->LightningBolts : Rule->WeatherConBolts;
+	if (clouds.Count() == 0 || !Map.In_Radar(cell)) {
 		return;
 	}
 
 	CellClass const & cellptr = Map[cell];
 	int height = cellptr.Height * LEVEL_LEPTON_H + (cellptr.IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
-	if (Rule->WeatherConBolts.Count() > 0 && Rule->WeatherConBolts[0]->Get_Image_Data() != NULL) {
-		ShapeSet const * bolt = (ShapeSet const *)Rule->WeatherConBolts[0]->Get_Image_Data();
+	if (keys != nullptr && keys->LightningCloudHeight >= 0) {
+		height += keys->LightningCloudHeight;
+	} else if (bolts.Count() > 0 && bolts[0]->Get_Image_Data() != NULL) {
+		ShapeSet const * bolt = (ShapeSet const *)bolts[0]->Get_Image_Data();
 		height += Tactical::Pixel_To_Z_Lepton(bolt->Get_Height() / 2);
 	}
 	Coord coord = cell.As_Coord();
 	coord.Z = height;
 
-	AnimTypeClass const * type = Rule->WeatherConClouds.Pick(Scen->RandomNumber());
+	AnimTypeClass const * type = clouds.Pick(Scen->RandomNumber());
 	AnimClass * cloud = new AnimClass(type, coord);
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST storm cloud over %d,%d at frame %d\n", cell.X, cell.Y, Frame);
+	}
 	if (cloud != NULL) {
 		ManifestingClouds.Add(cloud);
 		Clouds.Add(cloud);
@@ -356,6 +511,7 @@ void LightningStormClass::Strike(Cell const & cell)
 /// does: the bolt and its explosion animations, a strike sound, a flash, LightningDamage
 /// through LightningWarhead, and metal debris where the strike hit bare ground or changed
 /// what stood there. The house that called the storm gets the credit for what the bolt destroys.
+/// A weapon's SW.Damage, SW.Warhead and Lightning.* keys replace the rules values they name.
 /// </summary>
 void LightningStormClass::Bolt(Coord const & from)
 {
@@ -365,9 +521,16 @@ void LightningStormClass::Bolt(Coord const & from)
 	}
 	CellClass & cellptr = Map[cell];
 
+	SuperWeaponKeys const * keys = Keys();
+	TypeList<AnimTypeClass const *> const & bolts = (keys != nullptr && keys->LightningBoltsSet) ? keys->LightningBolts : Rule->WeatherConBolts;
+	TypeList<AnimTypeClass const *> const & debris_types = (keys != nullptr && keys->LightningDebrisSet) ? keys->LightningDebris : Rule->MetallicDebris;
+	TypeList<int> const & sounds = (keys != nullptr && keys->LightningSoundsSet) ? keys->LightningSounds : Rule->LightningSounds;
+	int const damage = (keys != nullptr && keys->Damage >= 0) ? keys->Damage : Rule->LightningStormDamage;
+	WarheadTypeClass const * warhead = (keys != nullptr && keys->Warhead != NULL) ? keys->Warhead : Rule->LightningWarhead;
+
 	Coord coord = cellptr.Cell_Coord();
-	if (Rule->WeatherConBolts.Count() > 0) {
-		AnimTypeClass const * type = Rule->WeatherConBolts.Pick(Scen->RandomNumber());
+	if (bolts.Count() > 0) {
+		AnimTypeClass const * type = bolts.Pick(Scen->RandomNumber());
 		AnimClass * bolt = new AnimClass(type, coord);
 		if (bolt != NULL) {
 			Bolts.Add(bolt);
@@ -379,16 +542,23 @@ void LightningStormClass::Bolt(Coord const & from)
 
 	GpuDraw_Add_Flash();
 
-	if (Rule->LightningSounds.Count() > 0) {
-		Sound_Effect((VocType)Rule->LightningSounds.Pick(Scen->RandomNumber()), coord);
+	if (sounds.Count() > 0) {
+		Sound_Effect((VocType)sounds.Pick(Scen->RandomNumber()), coord);
 	}
 
-	AnimTypeClass const * explosion = Combat_Anim(Rule->LightningStormDamage, Rule->LightningWarhead, cellptr.Land_Type(), coord);
+	AnimTypeClass const * explosion = (keys != nullptr && keys->LightningBoltExplosion != NULL) ? keys->LightningBoltExplosion : Combat_Anim(damage, warhead, cellptr.Land_Type(), coord);
 	if (explosion != NULL) {
 		new AnimClass(explosion, coord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER));
 	}
 
-	Strike_Cell_Damage(cellptr, coord, Rule->LightningStormDamage, Rule->LightningWarhead, Owner, false);
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST storm bolt on %d,%d at frame %d damage %d\n", cell.X, cell.Y, Frame, damage);
+	}
+	int const least = keys != nullptr ? keys->LightningDebrisMin : 2;
+	int const most = keys != nullptr ? keys->LightningDebrisMax : 4;
+	IsBolting = true;
+	Strike_Cell_Damage(cellptr, coord, damage, warhead, Owner, false, debris_types, least, most);
+	IsBolting = false;
 }
 
 
@@ -420,6 +590,7 @@ void LightningStormClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(StartTime);
 	stream.Serialize(Duration);
 	stream.Serialize(Deferment);
+	stream.Serialize(Type);
 	stream.Serialize(Center);
 	stream.Serialize(Owner);
 	stream.Serialize(Clouds);

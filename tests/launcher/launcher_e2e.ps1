@@ -368,6 +368,24 @@ try {
 	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed22 + '" /LOG="' + $log + '"')
 	Check ($code -eq 0 -and (Read-Text $log).Contains('Not starting Game.exe (/NOGAME).')) 'a normal run with nothing newer starts the game path and exits with 0'
 
+	# The mod choice. /SETMOD writes the player's Mods= to user\RA2MD.INI, where the game's Mods screen reads it.
+	New-Item -ItemType Directory -Force (Join-Path $yuri 'Mods\Omega') | Out-Null
+	$settings = Join-Path $install 'user\RA2MD.INI'
+	$log = Join-Path $logs 'setmod.log'
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /SETMOD=Omega /FEED="' + $feed22 + '" /LOG="' + $log + '"')
+	Check ($code -eq 0 -and (Read-Text $settings).Contains("[Options]`r`nMods=Omega")) '/SETMOD writes Mods= under [Options] of the settings in the user folder'
+
+	[IO.File]::WriteAllText($settings, "[Video]`r`nName=Player`r`n[Options]`r`nMods=Omega`r`nSound=1`r`n", [Text.Encoding]::ASCII)
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /SETMOD= /FEED="' + $feed22 + '" /LOG="' + $log + '"')
+	Check ($code -eq 0 -and (Read-Text $settings) -eq "[Video]`r`nName=Player`r`n[Options]`r`nMods=,`r`nSound=1`r`n") 'an empty /SETMOD writes a lone comma and changes no other line'
+
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /SETMOD=Omega /FEED="' + $feed22 + '" /LOG="' + $log + '"')
+	Check ($code -eq 0 -and (Read-Text $settings).Contains('Mods=,') -and (Read-Text $log).Contains('CHECKONLY: would set Mods= to Omega')) 'a check-only run reports the choice and writes nothing'
+
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /SETMOD=Omega /FEED="' + $feed22 + '" /LOG="' + $log + '" -- -MOD=Other')
+	Check ($code -eq 0 -and (Read-Text $settings).Contains('Mods=,') -and (Read-Text $log).Contains('The mod picker is skipped')) 'a -MOD= for the game leaves the player''s list alone'
+
+
 	# The update copy, as the launcher starts it. A bad checksum stops the update before the setup runs.
 	$helper = Join-Path $root 'helper-badsum'
 	New-Item -ItemType Directory -Force $helper | Out-Null

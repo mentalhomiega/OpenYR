@@ -14,6 +14,7 @@
 #pragma once
 
 #include "cellspread.h"
+#include "typelist.h"
 #include "coord.h"
 
 #include "armor.hh"
@@ -21,6 +22,7 @@
 #include "mph.hh"
 
 class WarheadTypeClass;
+class BulletTypeClass;
 class AnimTypeClass;
 class HouseClass;
 class TechnoClass;
@@ -30,7 +32,14 @@ class CellClass;
 
 int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor, int distance);
 // Returns whether the blast struck an Iron Curtained object at its center, which nullifies it.
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL, HouseClass const * spare_infantry_of=NULL);
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL, HouseClass const * spare_infantry_of=NULL, BulletTypeClass const * projectile=NULL, bool house_attacks=false);
+
+// The house an Explosion_Damage blast with house_attacks set counts as its attacker for AffectsAllies and AffectsOwner
+// while its damage is dealt out, or NULL.
+HouseClass const * Blast_Attacking_House(void);
+
+// The projectile type of the shot whose blast Explosion_Damage is dealing out now, or NULL when the blast has no projectile.
+BulletTypeClass const * Exploding_Projectile(void);
 
 // The cells within a radius of up to CELL_SPREAD_MAX, nearest first, as gamemd's CellSpreadTable lists them.
 int Cell_Spread_Count(int radius);
@@ -39,7 +48,7 @@ Cell Cell_Spread_Offset(int index);
 AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, LandType land, Coord const & coord);
 void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced=false, int disabled_channels=0);
 // Damages one cell that a lightning bolt struck, and throws debris up if the cell changed.
-void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry);
+void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry, TypeList<AnimTypeClass const *> const & debris_types, int least, int most);
 void Wide_Area_Damage(Coord const & coord, LEPTON radius, int rawdamage, TechnoClass * source, WarheadTypeClass const * warhead);
 
 bool Calculate_Projectile_Pitch(bool high_arc, int speed, int distance, int height, double gravity, DirType & pitch);

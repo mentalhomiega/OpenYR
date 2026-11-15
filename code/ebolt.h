@@ -10,6 +10,7 @@
 #pragma once
 
 #include "coord.h"
+#include "rgb.h"
 
 template<class T> class DynamicVectorClass;
 class TechnoClass;
@@ -60,6 +61,10 @@ class EBoltClass
 		int Lifetime;
 
 		bool IsAlternateColor;
+
+		// The strand colours the weapon sets (Bolt.Color1 to Bolt.Color3); bit n of the mask marks strand n as set. Not saved.
+		int ColorMask;
+		RGBClass Colors[3];
 
 		// Mask strength of the bolt's strands; set by the weapon that fired it. Not saved.
 		unsigned char EmissiveStrength;

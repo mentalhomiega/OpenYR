@@ -162,8 +162,76 @@ bool Is_Shape_Name(char const * name, std::string & stem, std::string & extensio
 }
 
 
-std::string Png_Name(std::string const & name, char const * suffix)
+// A name such as "HUDAT0~T-38.SHP" asks for the sheet of "HUDAT0.SHP" with its hues turned by
+// -38 degrees. Returns the name without the request and sets degrees to the turn, zero when the
+// name has none.
+std::string Strip_Tint(std::string const & name, int & degrees)
 {
+	degrees = 0;
+	size_t const dot = name.rfind('.');
+	if (dot == std::string::npos || dot < 3) {
+		return(name);
+	}
+	size_t const mark = name.rfind("~T", dot);
+	if (mark == std::string::npos) {
+		return(name);
+	}
+	char * end = NULL;
+	long const value = std::strtol(name.c_str() + mark + 2, &end, 10);
+	if (end == name.c_str() + mark + 2 || end != name.c_str() + dot) {
+		return(name);
+	}
+	degrees = (int)value;
+	return(name.substr(0, mark) + name.substr(dot));
+}
+
+
+// Turns the hue of every pixel that has some colour. Grey pixels stay as they are, and the
+// alpha channel is not touched.
+void Tint_Pixels(std::vector<std::uint32_t> & pixels, int degrees)
+{
+	double const turn = (double)(((degrees % 360) + 360) % 360);
+	for (std::uint32_t & pixel : pixels) {
+		double const r = (double)(pixel & 0xFF) / 255.0;
+		double const g = (double)((pixel >> 8) & 0xFF) / 255.0;
+		double const b = (double)((pixel >> 16) & 0xFF) / 255.0;
+		double const high = std::max({r, g, b});
+		double const low = std::min({r, g, b});
+		double const range = high - low;
+		if (range < 0.02) {
+			continue;
+		}
+		double hue;
+		if (high == r) {
+			hue = std::fmod((g - b) / range, 6.0);
+		} else if (high == g) {
+			hue = (b - r) / range + 2.0;
+		} else {
+			hue = (r - g) / range + 4.0;
+		}
+		hue = std::fmod(hue * 60.0 + (hue < 0 ? 360.0 : 0.0) + turn, 360.0) / 60.0;
+		double const chroma = range;
+		double const x = chroma * (1.0 - std::fabs(std::fmod(hue, 2.0) - 1.0));
+		double rr = 0, gg = 0, bb = 0;
+		switch ((int)hue) {
+			case 0: rr = chroma; gg = x; break;
+			case 1: rr = x; gg = chroma; break;
+			case 2: gg = chroma; bb = x; break;
+			case 3: gg = x; bb = chroma; break;
+			case 4: rr = x; bb = chroma; break;
+			default: rr = chroma; bb = x; break;
+		}
+		double const base = low;
+		auto byte = [](double value) { return((std::uint32_t)std::clamp((int)(value * 255.0 + 0.5), 0, 255)); };
+		pixel = (pixel & 0xFF000000u) | byte(rr + base) | (byte(gg + base) << 8) | (byte(bb + base) << 16);
+	}
+}
+
+
+std::string Png_Name(std::string const & requested, char const * suffix)
+{
+	int degrees = 0;
+	std::string const name = Strip_Tint(requested, degrees);
 	std::string stem;
 	std::string extension;
 	if (!Is_Shape_Name(name.c_str(), stem, extension)) {
@@ -266,6 +334,11 @@ void Load(SheetRecord & entry, std::string const & name)
 	}
 	sheet->Pixels.assign(pixels, pixels + (size_t)width * (size_t)height);
 	stbi_image_free((void *)pixels);
+	int degrees = 0;
+	Strip_Tint(name, degrees);
+	if (degrees != 0) {
+		Tint_Pixels(sheet->Pixels, degrees);
+	}
 
 	sheet->House.assign(sheet->Pixels.size(), 0);
 	std::string maskname = Png_Name(name, "_hc");
@@ -657,6 +730,24 @@ void TrueColour_Note_Shape(void const * data, char const * name)
 	entry.Width = header.Width;
 	entry.Height = header.Height;
 	entry.Count = header.Count;
+}
+
+
+/// <summary>
+/// Names the sheet of a shape with its hues turned by a number of degrees, for the shape lookups
+/// that stand in a PNG sheet for a missing SHP. A turn of zero returns the name unchanged.
+/// </summary>
+std::string TrueColour_Tinted_Name(char const * name, int degrees)
+{
+	std::string text = name;
+	if (degrees == 0) {
+		return(text);
+	}
+	size_t const dot = text.rfind('.');
+	if (dot == std::string::npos) {
+		return(text);
+	}
+	return(text.substr(0, dot) + "~T" + std::to_string(degrees) + text.substr(dot));
 }
 
 

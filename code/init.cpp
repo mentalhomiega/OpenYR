@@ -153,6 +153,7 @@
 #include "light.h"
 #include "lightcon.h"
 #include "loaddlg.h"
+#include "loadprogress.h"
 #include "logic.h"
 #include "mainopt.h"
 #include "misc.h"
@@ -219,7 +220,6 @@
 #include "ui/screens/movies/uimovies.h"
 #include "ui/screens/replays/uireplays.h"
 #include "ui/screens/version/uiversion.h"
-#include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -322,7 +322,6 @@ static void Cheat_Version_Suffix(char * string);
 static std::string Version_Text(void);
 static void Startup_Notice_Show(void);
 static void Startup_Notice_Hide(void);
-void Startup_Notice_Step(char const * text, double fraction);
 
 
 
@@ -355,6 +354,33 @@ static bool Read_INI_And_Expansion(CCINIClass & ini, char const * basename, char
 	}
 
 	return(read);
+}
+
+
+/// <summary>
+/// Makes an [#include] section in any INI file read from here on find its files as the game
+/// finds data files, loose in the search folders or inside any mounted archive.
+/// </summary>
+static void Install_INI_Include_Reader(void)
+{
+	INIClass::Set_Include_Reader([](char const * name, std::string & text) {
+		CCFileClass file(name);
+		if (!file.Is_Available()) {
+			return(false);
+		}
+
+		FileStraw straw(file);
+		char block[4096];
+		text.clear();
+		for (;;) {
+			int const got = straw.Get(block, sizeof(block));
+			if (got <= 0) {
+				break;
+			}
+			text.append(block, (std::size_t)got);
+		}
+		return(true);
+	});
 }
 
 
@@ -521,7 +547,7 @@ int Init_Game(int , char * [])
 	**	Initialize the bulk data. This takes the longest time and must be performed once
 	**	before the regular game starts.
 	*/
-	Startup_Notice_Step("Loading game data...", 0.05);
+	Load_Progress_Step("Loading game data...", 0.05);
 	DebugString("Init Bulk Data\n");
 
 	if (!Init_Bulk_Data()) {
@@ -551,7 +577,7 @@ int Init_Game(int , char * [])
 	/*
 	**	Find and process any rules for this game.
 	*/
-	Startup_Notice_Step("Reading the rules...", 0.2);
+	Load_Progress_Step("Reading the rules...", 0.2);
 	DebugString("Init Rules\n");
 
 	if (!Init_Rules()) {
@@ -565,7 +591,7 @@ int Init_Game(int , char * [])
 	// A score's Side= names a side the rules declare, so the roster is built before the scores are read.
 	Prepare_Side_Roster();
 
-	Startup_Notice_Step("Reading sounds and music...", 0.4);
+	Load_Progress_Step("Reading sounds and music...", 0.4);
 	DebugString("Reading %s\n", DeploymentConfig.ThemeFile.c_str());
 
 	CCINIClass theme_ini;
@@ -617,7 +643,7 @@ int Init_Game(int , char * [])
 	// The briefing and the credits draw with the owner-draw art, colors and blend masks.
 	OwnerDraw::Prepare_Resources();
 
-	Startup_Notice_Step("Preparing the menus...", 0.5);
+	Load_Progress_Step("Preparing the menus...", 0.5);
 	DebugString("Game Init Completed.\n");
 
 	return(0);
@@ -2316,10 +2342,13 @@ static bool Add_CC_Expansion_Mix(const char *name)
 /// Unlike the cached variant, it never finds one buried inside another mixfile.
 /// </summary>
 /// <param name="name">The filename of the mixfile to mount.</param>
-static void Add_Disk_Expansion_Mix(const char *name)
+/// <param name="resident">Are its members fetched from memory?</param>
+static void Add_Disk_Expansion_Mix(const char *name, bool resident = false)
 {
 	if (CDFileClass(name).Is_Available()) {
-		ExpandMix.Add(new MFCD(name, &FastKey));
+		MFCD * expand = new MFCD(name, &FastKey);
+		expand->Set_Resident_Members(resident);
+		ExpandMix.Add(expand);
 		DebugStringNoPrefix(" %s", name);
 	}
 }
@@ -2346,14 +2375,21 @@ static void Init_Expand_Mixfiles(void)
 {
 	char name[64];
 
-	for (int index = 99; index >= 0; index--) {
-		sprintf(name, "EXPANDMD%02d.MIX", index);
-		Add_Disk_Expansion_Mix(name);
+	// The prefixes come from the deployment and from the active mods, so a mod can bring
+	// archives such as EXPANDMO99.MIX ahead of the game's EXPANDMD01.MIX.
+	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.ExpandPrefixes.c_str())) {
+		for (int index = 99; index >= 0; index--) {
+			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
+			// A mod's archives are too big to cache, yet its files are fetched from memory.
+			Add_Disk_Expansion_Mix(name, !Active_Mods().empty());
+		}
 	}
 
-	for (int index = 99; index >= 0; index--) {
-		sprintf(name, "ECACHE%02d.MIX", index);
-		Add_CC_Expansion_Mix(name);
+	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.CachePrefixes.c_str())) {
+		for (int index = 99; index >= 0; index--) {
+			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
+			Add_CC_Expansion_Mix(name);
+		}
 	}
 }
 
@@ -2467,8 +2503,19 @@ static bool Init_Bootstrap_Mixfiles(void)
 	//char name[64];
 	//MFCD * expand;
 
+	Install_INI_Include_Reader();
+
+	// With a mod active its archives are mounted ahead of the language archives, so that the main
+	// string table and the other language files can come from the mod. Without one the language
+	// archives are searched ahead of every other startup archive.
+	bool const modded = !Active_Mods().empty();
+	if (modded) {
+		Init_Patch_Mixfiles();
+		Init_Expand_Mixfiles();
+	}
+
 	// The language archives hold localised content such as CAMEOMD.MIX, which the secondary
-	// archives need, and are searched ahead of every other startup archive.
+	// archives need.
 	LanguageMix = new MFCD("LANGMD.MIX", &FastKey);
 	BaseLanguageMix = new MFCD("LANGUAGE.MIX", &FastKey);
 
@@ -2477,8 +2524,10 @@ static bool Init_Bootstrap_Mixfiles(void)
 		return(false);
 	}
 
-	Init_Patch_Mixfiles();
-	Init_Expand_Mixfiles();
+	if (!modded) {
+		Init_Patch_Mixfiles();
+		Init_Expand_Mixfiles();
+	}
 
 
 #ifndef _DEMO
@@ -3160,18 +3209,70 @@ static void Show_Title_Badges(UIMenuState & menu)
 }
 
 
+// The action the UI file's [UISettings] gives a title menu button, unless the deployment turns the actions off.
+static UIMenuActionType Button_Action(UIMenuButtonType button)
+{
+	return(DeploymentConfig.FollowMenuButtons ? UIControls.MenuButtonActions[button] : UI_ACTION_DEFAULT);
+}
+
+
+// Adds a title menu button unless its action hides it, and shows it disabled when its action disables it.
+static void Add_Button(UIMenuState & menu, UIMenuButtonType button, char const * label, char const * fallback, int selection, bool enabled)
+{
+	UIMenuActionType const action = Button_Action(button);
+	if (action == UI_ACTION_HIDE) {
+		return;
+	}
+	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8(label, fallback), selection, enabled && action != UI_ACTION_DISABLE});
+}
+
+
+// Carries out the action a button was given when the player picks it. A message button shows its text and
+// returns SEL_NONE so that the same menu shows again; the credits and sneak peek buttons start those movies.
+static int Button_Choice(UIMenuButtonType button, char const * message_label, int choice)
+{
+	switch (Button_Action(button)) {
+		case UI_ACTION_MESSAGE: {
+			std::string const text = StringTable.Find_UTF8(message_label);
+			WWMessageBox().Process(text.empty() ? message_label : text.c_str(), TXT_OK);
+			return(SEL_NONE);
+		}
+
+		case UI_ACTION_CREDITS:
+			return(SEL_VIEW_CREDITS);
+
+		case UI_ACTION_SNEAK_PEEK:
+			return(SEL_INTRO);
+
+		default:
+			return(choice);
+	}
+}
+
+
 static int Single_Player_Menu(void)
 {
-	UIMenuState menu;
-	menu.Kind = UI_MENU_SINGLE_PLAYER;
-	menu.Title = StringTable.Find_UTF8("GUI:SinglePlayerMenu", "Single Player");
-	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:NewCampaign", "New Campaign"), SEL_CAMPAIGN_GAME, true});
-	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
-	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Skirmish", "Skirmish"), MENU_SKIRMISH, true});
-	menu.Items.push_back(Back_Item());
-	Show_Title_Badges(menu);
-	UI_Menu_Place(menu);
-	return(UI_Menu_Dialog(menu, MENU_BACK));
+	while (true) {
+		UIMenuState menu;
+		menu.Kind = UI_MENU_SINGLE_PLAYER;
+		menu.Title = StringTable.Find_UTF8("GUI:SinglePlayerMenu", "Single Player");
+		Add_Button(menu, UI_BUTTON_CAMPAIGN, "GUI:NewCampaign", "New Campaign", SEL_CAMPAIGN_GAME, true);
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
+		Add_Button(menu, UI_BUTTON_SKIRMISH, "GUI:Skirmish", "Skirmish", MENU_SKIRMISH, true);
+		menu.Items.push_back(Back_Item());
+		Show_Title_Badges(menu);
+		UI_Menu_Place(menu);
+
+		int choice = UI_Menu_Dialog(menu, MENU_BACK);
+		if (choice == SEL_CAMPAIGN_GAME) {
+			choice = Button_Choice(UI_BUTTON_CAMPAIGN, "TXT_CAMPAIGNBUTTON_MSG", choice);
+		} else if (choice == MENU_SKIRMISH) {
+			choice = Button_Choice(UI_BUTTON_SKIRMISH, "TXT_SKIRMISHBUTTON_MSG", choice);
+		}
+		if (choice != SEL_NONE) {
+			return(choice);
+		}
+	}
 }
 
 
@@ -3181,18 +3282,28 @@ static int Movies_Menu(void)
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MOVIES;
 		menu.Title = StringTable.Find_UTF8("GUI:MoviesAndCredits", "Movies & Credits");
-		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
-		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:PlayMovies", "Play Movies"), MENU_PLAY_MOVIES, true});
-		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
+		Add_Button(menu, UI_BUTTON_SNEAK_PEEKS, "GUI:SneakPeeks", "Sneak Peeks", SEL_INTRO, true);
+		Add_Button(menu, UI_BUTTON_PLAY_MOVIES, "GUI:PlayMovies", "Play Movies", MENU_PLAY_MOVIES, true);
+		Add_Button(menu, UI_BUTTON_VIEW_CREDITS, "GUI:ViewCredits", "View Credits", SEL_VIEW_CREDITS, true);
 		menu.Items.push_back(Back_Item());
 		Show_Title_Badges(menu);
 		UI_Menu_Place(menu);
 
-		int const choice = UI_Menu_Dialog(menu, MENU_BACK);
-		if (choice != MENU_PLAY_MOVIES) {
+		int choice = UI_Menu_Dialog(menu, MENU_BACK);
+		if (choice == SEL_INTRO) {
+			choice = Button_Choice(UI_BUTTON_SNEAK_PEEKS, "TXT_SNEAKPEEKSBUTTON_MSG", choice);
+		} else if (choice == MENU_PLAY_MOVIES) {
+			choice = Button_Choice(UI_BUTTON_PLAY_MOVIES, "TXT_PLAYMOVIESBUTTON_MSG", choice);
+			if (choice == MENU_PLAY_MOVIES) {
+				UI_Movies_Dialog();
+			}
+			continue;
+		} else if (choice == SEL_VIEW_CREDITS) {
+			choice = Button_Choice(UI_BUTTON_VIEW_CREDITS, "TXT_VIEWCREDITSBUTTON_MSG", choice);
+		}
+		if (choice != SEL_NONE) {
 			return(choice);
 		}
-		UI_Movies_Dialog();
 	}
 }
 
@@ -3276,16 +3387,16 @@ int Main_Menu(unsigned int timeout)
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MAIN;
 		menu.Title = StringTable.Find_UTF8("GUI:MainMenu", "Main Menu");
-		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
+		Add_Button(menu, UI_BUTTON_SINGLE_PLAYER, "GUI:SinglePlayer", "Single Player", MENU_SINGLE_PLAYER, true);
 		if (UI_CnCNet_Lobby_Enabled()) {
 			menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:CnCNetLobby", "CnCNet (experimental)"), MENU_CNCNET_LOBBY, true});
 		}
 		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
-		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Network", "Network"), MENU_NETWORK, true});
+		Add_Button(menu, UI_BUTTON_NETWORK, "GUI:Network", "Network", MENU_NETWORK, true);
 		if (!Options.IsClassicMenus) {
 			menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Replays", "Replays"), MENU_REPLAYS, true});
 		}
-		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
+		Add_Button(menu, UI_BUTTON_MOVIES_AND_CREDITS, "GUI:MoviesAndCredits", "Movies & Credits", MENU_MOVIES, true);
 		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Options", "Options"), SEL_OPTIONS, true});
 		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
 		if (Options.IsClassicMenus) {
@@ -3301,9 +3412,17 @@ int Main_Menu(unsigned int timeout)
 		}
 
 		if (choice == MENU_SINGLE_PLAYER) {
-			choice = Single_Player_Menu();
+			choice = Button_Choice(UI_BUTTON_SINGLE_PLAYER, "TXT_SINGLEPLAYERBUTTON_MSG", choice);
+			if (choice == MENU_SINGLE_PLAYER) {
+				choice = Single_Player_Menu();
+			}
+		} else if (choice == MENU_NETWORK) {
+			choice = Button_Choice(UI_BUTTON_NETWORK, "TXT_NETWORKBUTTON_MSG", choice);
 		} else if (choice == MENU_MOVIES) {
-			choice = Movies_Menu();
+			choice = Button_Choice(UI_BUTTON_MOVIES_AND_CREDITS, "TXT_MOVIESANDCREDITSBUTTON_MSG", choice);
+			if (choice == MENU_MOVIES) {
+				choice = Movies_Menu();
+			}
 		}
 
 		retval = Menu_Selection(choice);
@@ -3344,44 +3463,25 @@ void Title_Screen_Restore(bool force)
 }
 
 
-// The modern menus show a loading notice over their backdrop from the start of the data load until the
-// title menu stands, so the wait is not a bare screen. Startup_Notice_Hide frees the notice; a notice
-// still shown at exit is not freed.
-static UIWaitBoxClass * StartupNotice = NULL;
+// The modern menus show the loading notice over their backdrop from the start of the data load until the
+// title menu stands, so the wait is not a bare screen.
+static bool StartupNoticeShown = false;
 
 
 static void Startup_Notice_Show(void)
 {
-	if (Options.IsClassicMenus || StartupNotice != NULL) {
-		return;
-	}
-
-	StartupNotice = new UIWaitBoxClass;
-	if (!StartupNotice->Show("Loading...", true)) {
-		delete StartupNotice;
-		StartupNotice = NULL;
-	}
-}
-
-
-// Names the part of the start-up now beginning on the loading notice and moves its bar to fraction, from 0 to 1.
-// It does nothing when no notice is shown.
-void Startup_Notice_Step(char const * text, double fraction)
-{
-	if (StartupNotice != NULL) {
-		StartupNotice->Set_Text(text);
-		StartupNotice->Set_Fraction(fraction);
-		Call_Back();
+	if (!StartupNoticeShown) {
+		StartupNoticeShown = true;
+		Load_Progress_Begin("Loading...", true);
 	}
 }
 
 
 static void Startup_Notice_Hide(void)
 {
-	if (StartupNotice != NULL) {
-		StartupNotice->Hide();
-		delete StartupNotice;
-		StartupNotice = NULL;
+	if (StartupNoticeShown) {
+		StartupNoticeShown = false;
+		Load_Progress_End();
 	}
 }
 
@@ -4172,6 +4272,9 @@ class TogglePowerCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			Map.Power_Mode_Control(-1);
+		}
+		virtual bool Is_Listed(void) const {
+			return(Rule != NULL && Rule->IsTogglePowerAllowed);
 		}
 };
 
@@ -7907,8 +8010,11 @@ void Delete_All_Objects(void)
 	LineTrailClass::All_Clear();
 	RadBeamClass::All_Clear();
 
-	while (AbstractTypes.Count()) {
-		delete AbstractTypes[0];
+	{
+		TypeTeardown const teardown;
+		while (AbstractTypes.Count()) {
+			delete AbstractTypes[0];
+		}
 	}
 	Process_Deferred_Deletion();
 
@@ -8194,6 +8300,9 @@ static bool Mount_Side_Mixfiles(int id, bool required)
 }
 
 
+static SideType PreparedSide = SIDE_NONE;
+
+
 /// <summary>
 /// Mounts the archives used outside a match, SIDEC00.MIX and SIDENC00.MIX with the expansions'
 /// copies, in place of any side's. Every one of them is optional. The interface drops the side's
@@ -8213,10 +8322,20 @@ void Prep_For_No_Side(void)
 	}
 
 	Release_Side_Mixfiles();
+	PreparedSide = SIDE_NONE;
 	Mount_Side_Mixfiles(0, false);
 
 	UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true);
 	UI_On_Archives_Change(SIDE_NONE);
+}
+
+
+/// <summary>
+/// Fetches the side whose archives Prep_For_Side mounted last, or SIDE_NONE for the archives used outside a match.
+/// </summary>
+SideType Prepared_Side(void)
+{
+	return(PreparedSide);
 }
 
 
@@ -8236,9 +8355,19 @@ bool Prep_For_Side(SideType side)
 	DebugString("Preparing Mixfiles for Side %02d.\n", side);
 
 	Release_Side_Mixfiles();
+	PreparedSide = side;
 
-	// The third side, Yuri, uses the second side's archives, as in Yuri's Revenge.
-	id = (side == SIDE_THIRD ? (int)SIDE_NOD : (int)side) + 1;
+	// The third side, Yuri, uses the second side's archives, as in Yuri's Revenge, unless the side's
+	// section numbers its own archives.
+	if (side >= 0 && side < Sides.Count()) {
+		// The rules are read for the scenario after this, so the archive keys are read ahead of it.
+		if (RuleINI != NULL) {
+			Sides[side]->Read_INI(*RuleINI);
+		}
+		id = Sides[side]->Sidebar_Archive_Number();
+	} else {
+		id = (side == SIDE_THIRD ? (int)SIDE_NOD : (int)side) + 1;
+	}
 
 	if (!Mount_Side_Mixfiles(id, true)) {
 		return(false);

@@ -1,0 +1,26 @@
+; SpyEffect.Custom and the SpyEffect keys it enables, and Prerequisite.StolenTechs. The spy-effect-rules mod gives the power plant
+; (GAPOWR) a 400 frame power outage, a theft of half the owner's money up to 1500 credits, stolen technology 3 and 5, and
+; veterancy for the infiltrator's new soldiers, vehicles, ships, aircraft and structures. The IFV (FV) needs stolen technology 3 and
+; 5 and the Grizzly (MTNK) needs 3 and 9. An American spy infiltrates the computer's power plant.
+; Expected: the "house" line of the computer house shows blackout 400 and less money after the spy, the Americans' money rises by
+; 1500 (the computer has 10000, so half is 5000 and the cap is 1500), the "spied" line of the Americans shows stolen techs
+; 00000028, naval 1, aircraft 1, building 1, and "houses" shows barracks 1 and factory 1. Then canbuild FV reads can 1 for the
+; Americans (can 0 before) and canbuild MTNK still reads can 0, and a new GI (E1) is a veteran (rank 1).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/spy-effect.txt -Mods tests/autotest/spy-effect-rules -Seconds 150 -Filter "AUTOTEST   (house|spied|canbuild|veterancy|spy)|AUTOTEST spy|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPOWR 60 20
+41 own GAPILE 64 20
+42 own GAWEAP 68 20
+43 enemy GAPOWR 76 24
+100 houses
+101 canbuild FV
+102 canbuild MTNK
+110 own SPY 72 26
+120 spy SPY 76 24
+500 houses
+501 canbuild FV
+502 canbuild MTNK
+510 own E1 70 26
+520 veterancy E1
+600 quit

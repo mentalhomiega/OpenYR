@@ -79,8 +79,10 @@
 #include "mapgen.h"
 #include "mission.h"
 #include "mods.h"
+#include "mouse.h"
 #include "movie.h"
 #include "numparse.h"
+#include "objectkeyrules.h"
 #include "overtype.h"
 #include "psystype.h"
 #include "ptype.h"
@@ -91,10 +93,12 @@
 #include "side.h"
 #include "smudtype.h"
 #include "stimer.h"
+#include "strutil.h"
 #include "sun.h"
 #include "suprtype.h"
 #include "taskforc.h"
 #include "teamtype.h"
+#include "techtype.h"
 #include "terrtype.h"
 #include "tiberium.h"
 #include "trim.h"
@@ -102,6 +106,7 @@
 #include "vanimtype.h"
 #include "vector.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "bench.hh"
@@ -199,6 +204,7 @@ RulesClass::RulesClass(void) :
 	IQHarvester(3),
 	IQSellBack(2),
 	AIBaseSpacing(1),
+	AIPlacementSearchFailures(3),
 	AINavalYardAdjacency(20),
 	SilverCrate(CRATE_HEAL_BASE),
 	WoodCrate(CRATE_MONEY),
@@ -321,12 +327,14 @@ RulesClass::RulesClass(void) :
 	HarvesterTooFarDistance(5),
 	ChronoHarvTooFarDistance(50),
 	ChronoDelay(60),
+	ChronoReinfDelay(60),
 	ChronoTrigger(true),
 	ChronoDistanceFactor(32),
 	ChronoMinimumDelay(0),
 	ChronoRangeMinimum(0),
 	ChronoErasedSuperWeapons(false),
 	UndeployScattersInfantry(false),
+	IsHouseDoesNotOwnAtMost(true),
 	TreeStrength(25),
 	TeamDelays(),
 	AIHateDelays(),
@@ -377,9 +385,14 @@ RulesClass::RulesClass(void) :
 	PrerequisiteNodFactory(),
 	EngineerCaptureLevel(1),
 	EngineerDamage(0),
+	IsEngineerAlwaysCaptureTech(true),
+	IsRepairStopOnInsufficientFunds(true),
+	IsTogglePowerAllowed(false),
+	IsEnemyWrench(true),
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
+	BerserkROFMultiplier(0.5),
 	OpenToppedRangeBonus(0),
 	OpenTransportRangeBonus(0),
 	OpenTransportDamageMultiplier(1.0),
@@ -391,11 +404,14 @@ RulesClass::RulesClass(void) :
 	EnterBioReactorSound(VOC_NONE),
 	LeaveBioReactorSound(VOC_NONE),
 	OpenToppedWarpDistance(5),
+	EMPAIRecoverMission(MISSION_NONE),
 	IvanWarhead(NULL),
 	IvanDamage(0),
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
 	IsChronoInfantryCrush(true),
+	IsCloningFacilityIgnoresFactories(true),
+	DisplayCreditsDelay(0.02),
 	IsBountyDisplay(false),
 	IsEnemyInsignia(true),
 	IsKeepAliveSet(false),
@@ -438,6 +454,7 @@ RulesClass::RulesClass(void) :
 	LightningHitDelay(90),
 	LightningScatterDelay(10),
 	LightningCellSpread(10),
+	LightningRodRange(4),
 	LightningSeparation(3),
 	LightningPrintText(true),
 	WeatherConClouds(),
@@ -655,6 +672,7 @@ RulesClass::RulesClass(void) :
 	ShipSinkingWeight(3),
 	IsAlliedWallTransparency(false),
 	IsMissileLaunchHoldsMove(true),
+	IsAlliedSolidTransparency(false),
 	ParachuteMaxFallRate(-3),
 	NoParachuteMaxFallRate(-100),
 	IceCrackSounds(),
@@ -667,6 +685,8 @@ RulesClass::RulesClass(void) :
 	VeteranROF(1),
 	VeteranCap(1),
 	CloakSound(VOC_NONE),
+	DecloakSound(VOC_NONE),
+	IsDecloakSoundSet(false),
 	SellSound(VOC_NONE),
 	GameClosed(VOC_NONE),
 	IncomingMessage(VOC_NONE),
@@ -700,6 +720,7 @@ RulesClass::RulesClass(void) :
 	UpgradeVeteranSound(VOC_NONE),
 	UpgradeEliteSound(VOC_NONE),
 	EliteFlashTimer(100),
+	VeteranFlashTimer(0),
 	DetailMinFrameRateNormal(15),
 	DetailBufferZoneWidth(5),
 	BuildingGarrisonedSound(VOC_NONE),
@@ -774,6 +795,7 @@ RulesClass::RulesClass(void) :
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
 	AISafeDistance(8),
+	AIFriendlyDistance(NO_FRIENDLY_DISTANCE),
 	PurifierBonus(0.25),
 	AIVirtualPurifiers(),
 	SpyPowerBlackout(0),
@@ -816,6 +838,10 @@ RulesClass::RulesClass(void) :
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
 	NormalTargetingDelay(27),
+	IsKeepWarheadVerses(false),
+	IsKeepWarheadVersesSet(false),
+	IsEMEffectPulse(true),
+	IsEMEffectPulseSet(false),
 	PrismType(NULL),
 	PrismSupportModifier(100),
 	PrismSupportMax(8),
@@ -998,6 +1024,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	WebbedInfantry = NULL;
 	PrerequisiteGDIFactory.Clear();
 	PrerequisiteNodFactory.Clear();
+	GenericPrerequisites.clear();
 
 	Load_Art_INI();
 
@@ -1160,6 +1187,9 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	// Declared armor types come first, so warheads and objects can name them.
 	Read_Armor_Types(ini);
 
+	// Named cursors come before the superweapons that choose them.
+	MouseClass::Read_Cursors(ini);
+
 	Color_Schemes(ini);
 	Do_HouseTypes(ini);
 	Do_Sides(ini);
@@ -1182,11 +1212,13 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Jumpjet_Controls(ini);
 	MPlayer(ini);
 	AI(ini);
+	Global_Controls(ini);
 	Powerups(ini);
 	Land_Types(ini);
 	IQ(ini);
 
 	General(ini);
+	Generic_Prerequisites(ini);
 	Objects(ini);
 	Difficulty(ini);
 	Crate_Rules(ini);
@@ -1206,6 +1238,30 @@ bool RulesClass::Addition(CCINIClass const & ini)
 
 	BEnd(BENCH_RULES);
 
+	return(true);
+}
+
+
+/// <summary>
+/// Reads the Ares [GlobalControls] keys that change how computer houses produce. A section without a key keeps its value.
+/// </summary>
+/// <returns>bool; Was a [GlobalControls] section found?</returns>
+bool RulesClass::Global_Controls(CCINIClass const & ini)
+{
+	static char const * const GLOBALCONTROLS = "GlobalControls";
+	if (!ini.Is_Present(GLOBALCONTROLS)) {
+		return(false);
+	}
+
+	IsAllowParallelAIQueues = ini.Get_Bool(GLOBALCONTROLS, "AllowParallelAIQueues", IsAllowParallelAIQueues);
+	if (ini.Is_Present(GLOBALCONTROLS, "AllowBypassBuildLimit")) {
+		IsBypassBuildLimitSet = true;
+		std::vector<std::string> const values = Split_List(ini.Get_String(GLOBALCONTROLS, "AllowBypassBuildLimit"), ',', TRIM_SPACE_TAB, false);
+		for (int index = 0; index < DIFF_COUNT; index++) {
+			// Ares names the entries easy, medium and hard; they are taken in the order of the other difficulty lists. A missing entry is no.
+			AllowBypassBuildLimit[index] = index < (int)values.size() && !values[index].empty() && std::strchr("YyTt1", values[index][0]) != nullptr;
+		}
+	}
 	return(true);
 }
 
@@ -1253,6 +1309,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 	if (ini.Is_Present(AUDIOVISUAL)) {
 		UnloadingHarvester = TGet_Class(ini, AUDIOVISUAL, "UnloadingHarvester", UnloadingHarvester);
 		IsBountyDisplay = ini.Get_Bool(AUDIOVISUAL, "BountyDisplay", IsBountyDisplay);
+		DisplayCreditsDelay = ini.Get_Float(AUDIOVISUAL, "DisplayCreditsDelay", DisplayCreditsDelay);
 		PoseDir = (Dir256)ini.Get_Int(AUDIOVISUAL, "PoseDir", PoseDir);
 		DeployDir = (Dir256)((ini.Get_Int(AUDIOVISUAL, "DeployDir", DeployDir >> 5) << 5) & 0xFF);
 		DropPodPuff = TGet_Class(ini, AUDIOVISUAL, "DropPodPuff", DropPodPuff);
@@ -1307,6 +1364,10 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		VoxelSpecularFromView = ini.Get_Bool(AUDIOVISUAL, "VoxelSpecularFromView", VoxelSpecularFromView);
 		ShakeScreen = ini.Get_Int(AUDIOVISUAL, "ShakeScreen", ShakeScreen);
 		CloakSound = ini.Get_VocType(AUDIOVISUAL, "CloakSound", CloakSound);
+		if (ini.Is_Present(AUDIOVISUAL, "DecloakSound")) {
+			DecloakSound = ini.Get_VocType(AUDIOVISUAL, "DecloakSound", DecloakSound);
+			IsDecloakSoundSet = true;
+		}
 		SellSound = ini.Get_VocType(AUDIOVISUAL, "SellSound", SellSound);
 		GameClosed = ini.Get_VocType(AUDIOVISUAL, "GameClosed", GameClosed);
 		IncomingMessage = ini.Get_VocType(AUDIOVISUAL, "IncomingMessage", IncomingMessage);
@@ -1346,6 +1407,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
 		UpgradeEliteSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeEliteSound", UpgradeEliteSound);
 		EliteFlashTimer = ini.Get_Int(AUDIOVISUAL, "EliteFlashTimer", EliteFlashTimer);
+		VeteranFlashTimer = ini.Get_Int(AUDIOVISUAL, "VeteranFlashTimer", VeteranFlashTimer);
 		DetailMinFrameRateNormal = ini.Get_Int(AUDIOVISUAL, "DetailMinFrameRateNormal", DetailMinFrameRateNormal);
 		DetailBufferZoneWidth = ini.Get_Int(AUDIOVISUAL, "DetailBufferZoneWidth", DetailBufferZoneWidth);
 		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
@@ -1483,6 +1545,7 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 		UnitCrateType = TGet_Class(ini, CRATERULES, "UnitCrateType", UnitCrateType);
 		SoloCrateMoney = ini.Get_Int(CRATERULES, "SoloCrateMoney", SoloCrateMoney);
 		CrateMoneyBonus = ini.Get_Int(CRATERULES, "CrateMoneyBonus", CrateMoneyBonus);
+		CrateMoneyBonus = ini.Get_Int(CRATERULES, "RandomCrateMoney", CrateMoneyBonus);
 		IsArmorCrateStacking = ini.Get_Bool(CRATERULES, "ArmorCrateStacks", IsArmorCrateStacking);
 		IsFirepowerCrateStacking = ini.Get_Bool(CRATERULES, "FirepowerCrateStacks", IsFirepowerCrateStacking);
 		SilverCrate = ini.Get_CrateType(CRATERULES, "SilverCrate", SilverCrate);
@@ -1550,6 +1613,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		// gamemd keeps these multipliers as float32 truncated from the INI value (RulesClass reader, (float) stores).
 		OccupyDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier));
 		OpenToppedDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier));
+		BerserkROFMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "BerserkROFMultiplier", BerserkROFMultiplier));
 		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
 		OpenTransportRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenTransport.RangeBonus", OpenTransportRangeBonus);
 		OpenTransportDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenTransport.DamageMultiplier", OpenTransportDamageMultiplier);
@@ -1557,6 +1621,10 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		BunkerROFMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerROFMultiplier", BunkerROFMultiplier);
 		BunkerWeaponRangeBonus = ini.Get_Int(COMBATDAMAGE, "BunkerWeaponRangeBonus", BunkerWeaponRangeBonus);
 		OpenToppedWarpDistance = ini.Get_Int(COMBATDAMAGE, "OpenToppedWarpDistance", OpenToppedWarpDistance);
+		std::string const recover = ini.Get_String(COMBATDAMAGE, "EMPAIRecoverMission");
+		if (!recover.empty()) {
+			EMPAIRecoverMission = MissionClass::Mission_From_Name(recover.c_str());
+		}
 		IvanWarhead = TGet_Class(ini, COMBATDAMAGE, "IvanWarhead", IvanWarhead);
 		IvanDamage = ini.Get_Int(COMBATDAMAGE, "IvanDamage", IvanDamage);
 		IvanTimedDelay = ini.Get_Int(COMBATDAMAGE, "IvanTimedDelay", IvanTimedDelay);
@@ -1660,6 +1728,135 @@ bool RulesClass::Color_Schemes(CCINIClass const & ini)
 }
 
 
+namespace {
+
+struct StockPrerequisiteGroup
+{
+	char const * Name;
+	int Group;
+	TypeList<int> RulesClass::* Buildings;
+};
+
+StockPrerequisiteGroup const StockPrerequisiteGroups[] = {
+	{"POWER", STRUCT_G_POWER, &RulesClass::PrerequisitePower},
+	{"FACTORY", STRUCT_G_FACTORY, &RulesClass::PrerequisiteFactory},
+	{"BARRACKS", STRUCT_G_BARRACKS, &RulesClass::PrerequisiteBarracks},
+	{"RADAR", STRUCT_G_RADAR, &RulesClass::PrerequisiteRadar},
+	{"TECH", STRUCT_G_TECH, &RulesClass::PrerequisiteTech},
+	{"GDIFACTORY", STRUCT_G_GDIFACTORY, &RulesClass::PrerequisiteGDIFactory},
+	{"NODFACTORY", STRUCT_G_NODFACTORY, &RulesClass::PrerequisiteNodFactory},
+	{"PROC", STRUCT_G_PROC, &RulesClass::PrerequisiteProc},
+};
+
+// Ares names the alternate key after the group with only its first letter upper case, as PrerequisiteNavalyardAlternate.
+std::string Alternate_Key(std::string const & group)
+{
+	std::string key = "Prerequisite";
+	for (std::size_t index = 0; index < group.size(); index++) {
+		key += (char)(index == 0 ? toupper((unsigned char)group[index]) : tolower((unsigned char)group[index]));
+	}
+	return(key + "Alternate");
+}
+
+}
+
+
+void GenericPrerequisiteClass::Serialize(SaveStreamClass & stream)
+{
+	stream.Serialize(Name);
+	stream.Serialize(Buildings);
+	stream.Serialize(Alternates);
+}
+
+
+std::optional<int> RulesClass::Prerequisite_Group(char const * name) const
+{
+	for (StockPrerequisiteGroup const & stock : StockPrerequisiteGroups) {
+		if (stricmp(stock.Name, name) == 0) {
+			return(stock.Group);
+		}
+	}
+	for (std::size_t index = 0; index < GenericPrerequisites.size(); index++) {
+		if (stricmp(GenericPrerequisites[index].Name.c_str(), name) == 0) {
+			return(STRUCT_G_CUSTOM - (int)index);
+		}
+	}
+	return(std::nullopt);
+}
+
+
+TypeList<int> const * RulesClass::Prerequisite_Group_Buildings(int group) const
+{
+	for (StockPrerequisiteGroup const & stock : StockPrerequisiteGroups) {
+		if (stock.Group == group) {
+			return(&(this->*stock.Buildings));
+		}
+	}
+	GenericPrerequisiteClass const * custom = Custom_Prerequisite_Group(group);
+	return(custom != NULL ? &custom->Buildings : NULL);
+}
+
+
+GenericPrerequisiteClass const * RulesClass::Custom_Prerequisite_Group(int group) const
+{
+	int const index = STRUCT_G_CUSTOM - group;
+	if (index < 0 || index >= (int)GenericPrerequisites.size()) {
+		return(NULL);
+	}
+	return(&GenericPrerequisites[index]);
+}
+
+
+/// <summary>
+/// Reads the Ares [GenericPrerequisites] groups and the [General] Prerequisite<Name>Alternate key of each group
+/// it adds. A stock group name (POWER, FACTORY, BARRACKS, RADAR, TECH, PROC) replaces the matching [General]
+/// PrerequisiteX list; PrerequisiteProcAlternate stays as it is. A group lists buildings only.
+/// </summary>
+/// <returns>bool; Was a [GenericPrerequisites] section found?</returns>
+bool RulesClass::Generic_Prerequisites(CCINIClass const & ini)
+{
+	static char const * const SECTION = "GenericPrerequisites";
+	bool const present = ini.Is_Present(SECTION);
+	int const count = present ? ini.Entry_Count(SECTION) : 0;
+	for (int entry = 0; entry < count; entry++) {
+		char const * name = ini.Get_Entry(SECTION, entry);
+		TypeList<int> buildings = ini.Get_BuildingType_List(ini, SECTION, name, TypeList<int>());
+		for (int index = buildings.Count() - 1; index >= 0; index--) {
+			if (buildings[index] < 0) {
+				buildings.Delete_Index(index);
+			}
+		}
+
+		std::optional<int> const group = Prerequisite_Group(name);
+		if (!group.has_value()) {
+			GenericPrerequisites.push_back(GenericPrerequisiteClass{name, buildings, {}});
+		} else if (*group <= STRUCT_G_CUSTOM) {
+			GenericPrerequisites[STRUCT_G_CUSTOM - *group].Buildings = buildings;
+		} else {
+			for (StockPrerequisiteGroup const & stock : StockPrerequisiteGroups) {
+				if (stock.Group == *group) {
+					this->*stock.Buildings = buildings;
+				}
+			}
+		}
+	}
+
+	for (GenericPrerequisiteClass & group : GenericPrerequisites) {
+		std::string const key = Alternate_Key(group.Name);
+		if (ini.Is_Present("General", key.c_str())) {
+			group.Alternates.Clear();
+			for (std::string const & name : ObjectKeyRules::Split_List(ini.Get_String("General", key.c_str()))) {
+				TechnoTypeClass const * type = TechnoTypeClass::From_Name(name.c_str());
+				if (type != NULL) {
+					group.Alternates.Add(type);
+				}
+			}
+		}
+	}
+	return(present);
+}
+
+
 /***********************************************************************************************
  * RulesClass::General -- Process the general main game rules.                                 *
  *                                                                                             *
@@ -1684,6 +1881,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		IsChronoInfantryCrush = ini.Get_Bool(GENERAL, "ChronoInfantryCrush", IsChronoInfantryCrush);
+		IsCloningFacilityIgnoresFactories = ini.Get_Bool(GENERAL, "CloningFacilityIgnoresFactories", IsCloningFacilityIgnoresFactories);
 		BountyEnablers = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "BountyEnablers", BountyEnablers);
 		IsEnemyInsignia = ini.Get_Bool(GENERAL, "EnemyInsignia", IsEnemyInsignia);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
@@ -1711,6 +1909,16 @@ bool RulesClass::General(CCINIClass const & ini)
 		DisabledDisguiseDetectionPercent = ini.Get_IntList(GENERAL, "DisabledDisguiseDetectionPercent", DisabledDisguiseDetectionPercent);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
 		NormalTargetingDelay = ini.Get_Int(GENERAL, "NormalTargetingDelay", NormalTargetingDelay);
+		if (ini.Is_Present(GENERAL, "KeepWarheadVerses")) {
+			IsKeepWarheadVersesSet = true;
+			IsKeepWarheadVerses = ini.Get_Bool(GENERAL, "KeepWarheadVerses", IsKeepWarheadVerses);
+		}
+		IsKeepWarheadVerses = WarheadRules::Keeps_Warhead_Verses(IsKeepWarheadVersesSet, IsKeepWarheadVerses, Armor_Type_Count() - ARMOR_COUNT);
+		if (ini.Is_Present(GENERAL, "EMEffectPulse")) {
+			IsEMEffectPulseSet = true;
+			IsEMEffectPulse = ini.Get_Bool(GENERAL, "EMEffectPulse", IsEMEffectPulse);
+		}
+		IsEMEffectPulse = WarheadRules::Makes_EMEffect_Pulse(IsEMEffectPulseSet, IsEMEffectPulse, Armor_Type_Count() - ARMOR_COUNT);
 		PrismType = TGet_Class(ini, GENERAL, "PrismType", PrismType);
 		PrismSupportModifier = (int)(ini.Get_Float(GENERAL, "PrismSupportModifier", PrismSupportModifier / 100.0) * 100.0 + 0.5);
 		PrismSupportMax = ini.Get_Int(GENERAL, "PrismSupportMax", PrismSupportMax);
@@ -1734,6 +1942,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LightningHitDelay = ini.Get_Int(GENERAL, "LightningHitDelay", LightningHitDelay);
 		LightningScatterDelay = ini.Get_Int(GENERAL, "LightningScatterDelay", LightningScatterDelay);
 		LightningCellSpread = ini.Get_Int(GENERAL, "LightningCellSpread", LightningCellSpread);
+		LightningRodRange = ini.Get_Int(GENERAL, "LightningRodRange", LightningRodRange);
 		LightningSeparation = ini.Get_Int(GENERAL, "LightningSeparation", LightningSeparation);
 		LightningPrintText = ini.Get_Bool(GENERAL, "LightningPrintText", LightningPrintText);
 		WeatherConClouds = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConClouds", WeatherConClouds);
@@ -1828,6 +2037,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
 		IsAlliedWallTransparency = ini.Get_Bool("WallModel", "AlliedWallTransparency", IsAlliedWallTransparency);
 		IsMissileLaunchHoldsMove = ini.Get_Bool(GENERAL, "MissileLaunchHoldsMove", IsMissileLaunchHoldsMove);
+		IsAlliedSolidTransparency = ini.Get_Bool("CombatDamage", "AlliedSolidTransparency", IsAlliedSolidTransparency);
 		ParachuteMaxFallRate = ini.Get_Int(GENERAL, "ParachuteMaxFallRate", ParachuteMaxFallRate);
 		NoParachuteMaxFallRate = ini.Get_Int(GENERAL, "NoParachuteMaxFallRate", NoParachuteMaxFallRate);
 		CliffBackImpassability = ini.Get_Int(GENERAL, "CliffBackImpassability", CliffBackImpassability);
@@ -1894,6 +2104,11 @@ bool RulesClass::General(CCINIClass const & ini)
 		WaypointAttackFromFirst = ini.Get_Bool(GENERAL, "WaypointAttackFromFirst", WaypointAttackFromFirst);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
+		IsFirestormTriggerHumans = ini.Get_Bool(GENERAL, "FirestormTriggerHumans", IsFirestormTriggerHumans);
+		if (ini.Is_Present(GENERAL, "TeamRetaliate")) {
+			IsTeamRetaliateSet = true;
+			IsTeamRetaliate = ini.Get_Bool(GENERAL, "TeamRetaliate", IsTeamRetaliate);
+		}
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
 		SovietBaseDefenseCounts = ini.Get_IntList(GENERAL, "SovietBaseDefenseCounts", SovietBaseDefenseCounts);
 		ThirdBaseDefenseCounts = ini.Get_IntList(GENERAL, "ThirdBaseDefenseCounts", ThirdBaseDefenseCounts);
@@ -2051,19 +2266,26 @@ bool RulesClass::General(CCINIClass const & ini)
 		LevitateLocomotionClass::Read_INI(ini);
 		EngineerCaptureLevel = (float)ini.Get_Float(GENERAL, "EngineerCaptureLevel", EngineerCaptureLevel);
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
+		IsEngineerAlwaysCaptureTech = ini.Get_Bool(GENERAL, "EngineerAlwaysCaptureTech", IsEngineerAlwaysCaptureTech);
+		IsRepairStopOnInsufficientFunds = ini.Get_Bool(GENERAL, "RepairStopOnInsufficientFunds", IsRepairStopOnInsufficientFunds);
+		IsTogglePowerAllowed = ini.Get_Bool(GENERAL, "TogglePowerAllowed", IsTogglePowerAllowed);
+		IsEnemyWrench = ini.Get_Bool(GENERAL, "EnemyWrench", IsEnemyWrench);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
 		HarvesterTooFarDistance = ini.Get_Int(GENERAL, "HarvesterTooFarDistance", HarvesterTooFarDistance);
 		ChronoHarvTooFarDistance = ini.Get_Int(GENERAL, "ChronoHarvTooFarDistance", ChronoHarvTooFarDistance);
 		ChronoDelay = ini.Get_Int(GENERAL, "ChronoDelay", ChronoDelay);
+		ChronoReinfDelay = ini.Get_Int(GENERAL, "ChronoReinfDelay", ChronoReinfDelay);
 		ChronoTrigger = ini.Get_Bool(GENERAL, "ChronoTrigger", ChronoTrigger);
 		ChronoDistanceFactor = ini.Get_Int(GENERAL, "ChronoDistanceFactor", ChronoDistanceFactor);
 		ChronoMinimumDelay = ini.Get_Int(GENERAL, "ChronoMinimumDelay", ChronoMinimumDelay);
 		ChronoRangeMinimum = ini.Get_Int(GENERAL, "ChronoRangeMinimum", ChronoRangeMinimum);
 		ChronoErasedSuperWeapons = ini.Get_Bool(GENERAL, "ChronoErasedSuperWeapons", ChronoErasedSuperWeapons);
 		UndeployScattersInfantry = ini.Get_Bool(GENERAL, "UndeployScattersInfantry", UndeployScattersInfantry);
+		IsHouseDoesNotOwnAtMost = ini.Get_Bool(GENERAL, "HouseDoesNotOwnAtMost", IsHouseDoesNotOwnAtMost);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
+		AIFriendlyDistance = ini.Get_Int(GENERAL, "AIFriendlyDistance", AIFriendlyDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
 		SpyPowerBlackout = ini.Get_Int(GENERAL, "SpyPowerBlackout", SpyPowerBlackout);
@@ -2472,19 +2694,24 @@ bool RulesClass::Do_VoxelAnimTypes(CCINIClass const & ini)
 /// of it before. The weapon then reads its own section for its firing behavior.
 /// </summary>
 /// <remarks>Weapon sections are read in one pass, so a weapon nothing else names reaches
-/// that pass only by being declared here.</remarks>
+/// that pass only by being declared here. Both [Weapons] and the Ares list [WeaponTypes]
+/// declare weapons.</remarks>
 /// <returns>bool; Were any weapons declared?</returns>
 bool RulesClass::Do_WeaponTypes(CCINIClass const & ini)
 {
-	static char const * const WEAPONS = "Weapons";
+	static char const * const LISTS[] = {"Weapons", "WeaponTypes"};
 	char buffer[32];
-	int count = ini.Entry_Count(WEAPONS);
-	for (int i = 0; i < count; i++) {
-		if (ini.Get_String(WEAPONS, ini.Get_Entry(WEAPONS, i), "", buffer, sizeof(buffer))) {
-			WeaponTypeClass::Find_Or_Make(buffer);
+	int total = 0;
+	for (char const * const list : LISTS) {
+		int const count = ini.Entry_Count(list);
+		for (int i = 0; i < count; i++) {
+			if (ini.Get_String(list, ini.Get_Entry(list, i), "", buffer, sizeof(buffer))) {
+				WeaponTypeClass::Find_Or_Make(buffer);
+			}
 		}
+		total += count;
 	}
-	return(count > 0);
+	return(total > 0);
 }
 
 
@@ -2597,6 +2824,14 @@ bool RulesClass::AI(CCINIClass const & ini)
 		AlliedBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "AlliedBaseDefenses", AlliedBaseDefenses);
 		SovietBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "SovietBaseDefenses", SovietBaseDefenses);
 		ThirdBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "ThirdBaseDefenses", ThirdBaseDefenses);
+		std::string fudge = ini.Get_String(AI, "AIForcePredictionFudge");
+		if (!fudge.empty()) {
+			AIForcePredictionFudge.clear();
+			for (std::string const & number : Split_List(fudge, ',', " \t", true)) {
+				AIForcePredictionFudge.push_back(atoi(number.c_str()));
+			}
+			DebugString("[AI] AIForcePredictionFudge read %d numbers; nothing uses them, as in Yuri's Revenge\n", (int)AIForcePredictionFudge.size());
+		}
 		BuildHelipad = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildHelipad", BuildHelipad);
 		BuildRadar = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildRadar", BuildRadar);
 		ConcreteWalls = TGet_TypeList<BuildingTypeClass>(ini, AI, "ConcreteWalls", ConcreteWalls);
@@ -2633,6 +2868,7 @@ bool RulesClass::AI(CCINIClass const & ini)
 		IsComputerParanoid = ini.Get_Bool(AI, "Paranoid", IsComputerParanoid);
 		PowerEmergencyFraction = ini.Get_Float(AI, "PowerEmergency", PowerEmergencyFraction);
 		AIBaseSpacing = ini.Get_Int(AI, "AIBaseSpacing", AIBaseSpacing);
+		AIPlacementSearchFailures = ini.Get_Int(AI, "AIPlacementSearchFailures", AIPlacementSearchFailures);
 		GDIWallDefense = ini.Get_Float(AI, "GDIWallDefense", GDIWallDefense);
 		GDIWallDefenseCoefficient = ini.Get_Float(AI, "GDIWallDefenseCoefficient", GDIWallDefenseCoefficient);
 		NodBaseDefenseCoefficient = ini.Get_Float(AI, "NodBaseDefenseCoefficient", NodBaseDefenseCoefficient);
@@ -2974,6 +3210,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(BerserkROFMultiplier);
 	stream.Serialize(OpenToppedRangeBonus);
 	stream.Serialize(OpenTransportRangeBonus);
 	stream.Serialize(OpenTransportDamageMultiplier);
@@ -2985,11 +3222,13 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EnterBioReactorSound);
 	stream.Serialize(LeaveBioReactorSound);
 	stream.Serialize(OpenToppedWarpDistance);
+	stream.Serialize(EMPAIRecoverMission);
 	stream.Serialize(IvanWarhead);
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
 	stream.Serialize(IsCanDetonateTimeBomb);
 	stream.Serialize(IsChronoInfantryCrush);
+	stream.Serialize(IsCloningFacilityIgnoresFactories);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);
@@ -3030,6 +3269,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightningHitDelay);
 	stream.Serialize(LightningScatterDelay);
 	stream.Serialize(LightningCellSpread);
+	stream.Serialize(LightningRodRange);
 	stream.Serialize(LightningSeparation);
 	stream.Serialize(LightningPrintText);
 	stream.Serialize(WeatherConClouds);
@@ -3122,6 +3362,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumHeal);
 	stream.Serialize(HSBuilding);
 	stream.Serialize(BountyEnablers);
+	stream.Serialize(DisplayCreditsDelay);
 	stream.Serialize(IsBountyDisplay);
 	stream.Serialize(IsEnemyInsignia);
 	stream.Serialize(IsKeepAliveSet);
@@ -3248,6 +3489,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ShipSinkingWeight);
 	stream.Serialize(IsAlliedWallTransparency);
 	stream.Serialize(IsMissileLaunchHoldsMove);
+	stream.Serialize(IsAlliedSolidTransparency);
 	stream.Serialize(ParachuteMaxFallRate);
 	stream.Serialize(NoParachuteMaxFallRate);
 	stream.Serialize(IceCrackSounds);
@@ -3260,6 +3502,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranROF);
 	stream.Serialize(VeteranCap);
 	stream.Serialize(CloakSound);
+	stream.Serialize(DecloakSound);
+	stream.Serialize(IsDecloakSoundSet);
 	stream.Serialize(SellSound);
 	stream.Serialize(GameClosed);
 	stream.Serialize(IncomingMessage);
@@ -3293,6 +3537,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UpgradeVeteranSound);
 	stream.Serialize(UpgradeEliteSound);
 	stream.Serialize(EliteFlashTimer);
+	stream.Serialize(VeteranFlashTimer);
 	stream.Serialize(DetailMinFrameRateNormal);
 	stream.Serialize(DetailBufferZoneWidth);
 	stream.Serialize(BuildingGarrisonedSound);
@@ -3357,7 +3602,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AlliedBaseDefenses);
 	stream.Serialize(SovietBaseDefenses);
 	stream.Serialize(ThirdBaseDefenses);
+	stream.Serialize(AIForcePredictionFudge);
 	stream.Serialize(AISafeDistance);
+	stream.Serialize(AIFriendlyDistance);
 	stream.Serialize(PurifierBonus);
 	stream.Serialize(AIVirtualPurifiers);
 	stream.Serialize(SpyPowerBlackout);
@@ -3558,6 +3805,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IQHarvester);
 	stream.Serialize(IQSellBack);
 	stream.Serialize(AIBaseSpacing);
+	stream.Serialize(AIPlacementSearchFailures);
 	stream.Serialize(AINavalYardAdjacency);
 	stream.Serialize(SilverCrate);
 	stream.Serialize(WoodCrate);
@@ -3647,12 +3895,14 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HarvesterTooFarDistance);
 	stream.Serialize(ChronoHarvTooFarDistance);
 	stream.Serialize(ChronoDelay);
+	stream.Serialize(ChronoReinfDelay);
 	stream.Serialize(ChronoTrigger);
 	stream.Serialize(ChronoDistanceFactor);
 	stream.Serialize(ChronoMinimumDelay);
 	stream.Serialize(ChronoRangeMinimum);
 	stream.Serialize(ChronoErasedSuperWeapons);
 	stream.Serialize(UndeployScattersInfantry);
+	stream.Serialize(IsHouseDoesNotOwnAtMost);
 	stream.Serialize(LightningFrequency);
 	stream.Serialize(LightningRandomness);
 	stream.Serialize(LightningDamage);
@@ -3713,6 +3963,17 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrerequisiteNodFactory);
 	stream.Serialize(EngineerCaptureLevel);
 	stream.Serialize(EngineerDamage);
+	stream.Serialize(IsEngineerAlwaysCaptureTech);
+	stream.Serialize(IsRepairStopOnInsufficientFunds);
+	stream.Serialize(IsTogglePowerAllowed);
+	stream.Serialize(IsEnemyWrench);
+	stream.Serialize(GenericPrerequisites);
+	stream.Serialize(IsTeamRetaliateSet);
+	stream.Serialize(IsTeamRetaliate);
+	stream.Serialize(IsFirestormTriggerHumans);
+	stream.Serialize(IsAllowParallelAIQueues);
+	stream.Serialize(IsBypassBuildLimitSet);
+	stream.Serialize(AllowBypassBuildLimit);
 }
 
 
@@ -3867,6 +4128,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 
 	HarvesterUnit.Delete((UnitTypeClass const *)target);
 	PrerequisiteProcAlternate.Delete((UnitTypeClass const *)target);
+	for (GenericPrerequisiteClass & group : GenericPrerequisites) {
+		group.Alternates.Delete((TechnoTypeClass const *)target);
+	}
 	BaseUnit.Delete((UnitTypeClass const *)target);
 
 	BuildConst.Delete((BuildingTypeClass const *)target);
@@ -4173,6 +4437,9 @@ RulesClass::RocketTypeStruct const * RulesClass::Rocket_Of(AircraftTypeClass con
 	if (type == NULL) {
 		return(NULL);
 	}
+	if (type->IsMissileCustom) {
+		return(&type->MissileFlight);
+	}
 	if (type == V3Rocket.Type) {
 		return(&V3Rocket);
 	}
@@ -4188,6 +4455,9 @@ RulesClass::RocketTypeStruct const * RulesClass::Rocket_Of(AircraftTypeClass con
 
 WarheadTypeClass const * RulesClass::Rocket_Warhead(AircraftTypeClass const * type, bool elite) const
 {
+	if (type->IsMissileCustom) {
+		return(elite ? type->MissileEliteWarhead : type->MissileWarhead);
+	}
 	if (type == V3Rocket.Type) {
 		return(elite ? V3EliteWarhead : V3Warhead);
 	}

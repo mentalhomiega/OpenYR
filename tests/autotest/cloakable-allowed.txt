@@ -1,0 +1,18 @@
+; Cloakable.Allowed=no (Ares) keeps objects of a type from ever cloaking. The overlay cloakable-allowed.ini makes the Grizzly (MTNK) and the Prism
+; tank (SREF) Cloakable=yes and gives the Grizzly and the GI (E1) Cloakable.Allowed=no. The GI walks onto a cloak crate at frame 210.
+; Expected: at frame 400 the cloak line of SREF shows cloak 2 (cloaked), while MTNK shows cloak 0 and its visual line ready 0, and
+; E1 shows cloakable 0 after taking the crate, which logs "contains money" instead of the cloaking device. Without the key MTNK cloaks like SREF and E1 shows cloakable 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/cloakable-allowed.txt -Seconds 60 -Country 0 -Filter "AUTOTEST   (cloak|visual)|Crate at|Exception"
+10 rules cloakable-allowed.ini
+30 command CenterBase
+35 reveal
+40 own MTNK 60 36
+41 own SREF 60 40
+42 own E1 60 44
+200 crate cloak 56 44
+210 move E1 56 44
+300 waitcell E1 56 44 0 900
+400 where MTNK
+401 where SREF
+402 where E1
+410 quit

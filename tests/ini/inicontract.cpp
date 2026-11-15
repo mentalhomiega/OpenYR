@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <map>
 #include <string>
 
 #include "crc.h"
@@ -569,6 +570,57 @@ int main(void)
 			"a transcoded database saves as UTF-8");
 		Check(UTF8::To_Windows_1252(saved) == "[General]\r\nName=caf\xE9\r\nOwner=Bj\xF6rn\r\n",
 			"the saved text converts back to the bytes the file held");
+	}
+
+	{
+		// An [#include] section is ordinary until a reader is installed.
+		INIClass plain;
+		Read(plain, "[#include]\n1=a.ini\n[General]\nCrate=1\n");
+		Check(plain.Section_Present("#include") && plain.Entry_Count("#include") == 1,
+			"an [#include] section is stored as any section while no reader is set");
+
+		std::map<std::string, std::string> files;
+		files["A.INI"] = "[General]\nCrate=2\nFromA=yes\n[#include]\n1=b.ini\n";
+		files["B.INI"] = "[General]\nCrate=3\nFromB=yes\n";
+		files["LOOP.INI"] = "[Loop]\nk=1\n[#include]\n1=loop.ini\n2=ping.ini\n";
+		files["PING.INI"] = "[Ping]\nk=1\n[#include]\n1=loop.ini\n";
+		files["LAST.INI"] = "[General]\nCrate=9\n";
+		INIClass::Set_Include_Reader([&files](char const * name, std::string & text) {
+			std::string key = name;
+			for (char & c : key) c = (char)std::toupper((unsigned char)c);
+			auto found = files.find(key);
+			if (found == files.end()) return(false);
+			text = found->second;
+			return(true);
+		});
+
+		INIClass ini;
+		Read(ini, "[General]\nCrate=1\n[#include]\n1=a.ini\n2=missing.ini\n3=last.ini\n[After]\nk=v\n");
+		Check(!ini.Section_Present("#include"), "an [#include] section is not stored once a reader is set");
+		Check(Value_Is(ini, "General", "FromA", "yes") && Value_Is(ini, "General", "FromB", "yes"),
+			"files named in [#include] are read, and so are the files they name");
+		Check(Value_Is(ini, "General", "Crate", "9"), "included files are read in order, each over the ones before");
+		Check(Value_Is(ini, "After", "k", "v"), "the including file's own sections after [#include] are kept");
+
+		INIClass later;
+		Read(later, "[General]\nCrate=1\n[#include]\n1=b.ini\n[General]\nCrate=5\n");
+		Check(Value_Is(later, "General", "Crate", "3"), "an included file is read after the whole of the including file");
+
+		INIClass loop;
+		Read(loop, "[#include]\n1=loop.ini\n");
+		Check(loop.Entry_Count("Loop") == 1 && loop.Entry_Count("Ping") == 1, "files that include each other are read once");
+
+		INIClass unlisted;
+		Read(unlisted, "[General]\nCrate=1\n");
+		Check(Value_Is(unlisted, "General", "Crate", "1") && unlisted.Section_Count() == 1,
+			"a file with no [#include] reads as it did");
+
+		INIClass keeping;
+		Read(keeping, "; top\n[#include]\n1=b.ini\n", true);
+		Check(Value_Is(keeping, "General", "FromB", "yes") && !keeping.Section_Present("#include"),
+			"a load that keeps comments reads includes as well");
+
+		INIClass::Set_Include_Reader(nullptr);
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

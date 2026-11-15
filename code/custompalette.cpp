@@ -41,6 +41,44 @@ std::map<std::tuple<std::string, int, int, int, int>, std::unique_ptr<ConvertCla
 }
 
 
+static std::string Theater_Palette_Name(std::string const & filename)
+{
+	std::string name = filename;
+	size_t const tildes = name.find("~~~");
+	if (tildes != std::string::npos && Scen != NULL) {
+		name.replace(tildes, 3, (char const *)TheaterClass::As_Reference(Scen->Theater).Suffix);
+	}
+	for (char & letter : name) {
+		letter = (char)toupper((unsigned char)letter);
+	}
+	return(name);
+}
+
+
+std::string Palette_File_Name(std::string const & filename)
+{
+	// A name without ".pal" is a palette that has a file for each theater: the name, the theater's suffix and ".pal".
+	// A mod that has only one file for all theaters may name it without the suffix.
+	std::string name = Theater_Palette_Name(filename);
+	bool const has_extension = name.size() >= 4 && name.compare(name.size() - 4, 4, ".PAL") == 0;
+	if (!has_extension) {
+		std::string themed = name;
+		if (Scen != NULL && filename.find("~~~") == std::string::npos) {
+			themed += (char const *)TheaterClass::As_Reference(Scen->Theater).Suffix;
+			for (char & letter : themed) {
+				letter = (char)toupper((unsigned char)letter);
+			}
+		}
+		themed += ".PAL";
+		name += ".PAL";
+		if (themed != name && MFCD::Retrieve(themed.c_str()) != NULL) {
+			name = themed;
+		}
+	}
+	return(name);
+}
+
+
 ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 {
 	if (filename.empty()) {
@@ -54,7 +92,8 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	}
 	name = Upper(name);
 
-	auto found = Drawers.find(name);
+	std::string const cache_key = name + '@' + std::to_string(Scen != NULL ? (int)Scen->Theater : -1);
+	auto found = Drawers.find(cache_key);
 	if (found != Drawers.end()) {
 		return(found->second.get());
 	}
@@ -67,7 +106,7 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	} else {
 		DebugString("Custom palette %s not found; the normal palette is used.\n", name.c_str());
 	}
-	return((Drawers[name] = std::move(drawer)).get());
+	return((Drawers[cache_key] = std::move(drawer)).get());
 }
 
 
@@ -80,7 +119,7 @@ ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme)
 		return(NULL);
 	}
 
-	std::string const name = Upper(filename + (char const *)TheaterClass::As_Reference(Scen->Theater).Suffix + ".PAL");
+	std::string const name = Palette_File_Name(filename);
 
 	// The palette takes the lighting tint of the house scheme it stands for, so its brightness follows the map.
 	ColorScheme const * house = ColorSchemes[scheme];

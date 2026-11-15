@@ -89,6 +89,7 @@
 #include "lstorm.h"
 #include "language/language.h"
 #include "loaddlg.h"
+#include "loadprogress.h"
 #include "light.h"
 #include "logic.h"
 #include "mods.h"
@@ -150,10 +151,12 @@
 #include "objheaps.hh"
 #include "psydom.h"
 #include "radsite.h"
+#include "rawfile.h"
 
 #include <cstdio>
 #include <memory>
 #include <new>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -167,6 +170,15 @@
 ********************************** Defines **********************************
 */
 unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
+
+// Where the loading notice's bar stands as each part of a saved game load starts, in step with the share
+// of the time each part takes for a large mod's mission.
+static double const SAVE_STEP_FILE = 0.0;
+static double const SAVE_STEP_TERRAIN = 0.05;
+static double const SAVE_STEP_RULES = 0.06;
+static double const SAVE_STEP_MAP = 0.37;
+static double const SAVE_STEP_OBJECTS = 0.68;
+static double const SAVE_STEP_BATTLEFIELD = 0.99;
 
 // While Dump_Game_State runs, the offset and class of each object record it writes.
 static std::vector<std::pair<unsigned int, std::string>> * DumpRecords = nullptr;
@@ -613,7 +625,12 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 
 	Environment.Load(stream);
 
+	Load_Progress_Step("Preparing the terrain...", SAVE_STEP_TERRAIN);
 	Init_Theater(Scen->Theater);
+
+	Load_Progress_Step("Reading the rules...", SAVE_STEP_RULES);
+	// Reading the types probes for thousands of art files, most of which no folder holds.
+	std::optional<FileProbeScope> probes(std::in_place);
 
 	RulesClass::Load_Art_INI();
 
@@ -636,6 +653,8 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
+	probes.reset();
+	Load_Progress_Step("Reading the map...", SAVE_STEP_MAP);
 	if (!Map.Load(stream)) {
 		return(false);
 	}
@@ -665,6 +684,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	// what deletes it from here on.
 	tactical.release();
 
+	Load_Progress_Step("Placing objects...", SAVE_STEP_OBJECTS);
 	if (!Load_Vector<HouseTypeClass>(stream)) {	/// HouseTypes
 		return(false);
 	}
@@ -927,6 +947,78 @@ bool Save_Game(const char *file_name, char const * descr)
 
 
 /// <summary>
+/// Checksums the rules and every type list as a save would hold them, one CRC per list in a fixed order,
+/// then "All" over all of them and "Sync" over every type's Compute_CRC. Pointers count by the order a save
+/// meets them, but a few saved members are never set, so the save image of a weapon or projectile list can
+/// differ between two reads of the same rules; "Sync" covers less and does not. The game is left as it was.
+/// </summary>
+std::vector<std::pair<char const *, unsigned>> Type_State_Checksums(void)
+{
+	std::vector<std::pair<char const *, unsigned>> sums;
+	std::vector<unsigned char> content;
+
+	Swizzler.Begin_Save();
+	SaveStreamClass stream(content, SaveStreamClass::MODE_SAVE);
+	auto add = [&](char const * name, auto save) {
+		unsigned const start = stream.Offset();
+		save();
+		sums.emplace_back(name, CRC::Memory(content.data() + start, stream.Offset() - start));
+	};
+
+	add("Rules", [&]() {Rule->Save(stream);});
+	add("HouseTypes", [&]() {Save_Vector(stream, HouseTypes);});
+	add("Sides", [&]() {Save_Vector(stream, Sides);});
+	add("SuperWeaponTypes", [&]() {Save_Vector(stream, SuperWeaponTypes);});
+	add("AnimTypes", [&]() {Save_Vector(stream, AnimTypes);});
+	add("BuildingTypes", [&]() {Save_Vector(stream, BuildingTypes);});
+	add("AircraftTypes", [&]() {Save_Vector(stream, AircraftTypes);});
+	add("UnitTypes", [&]() {Save_Vector(stream, UnitTypes);});
+	add("InfantryTypes", [&]() {Save_Vector(stream, InfantryTypes);});
+	add("Weapons", [&]() {Save_Vector(stream, Weapons);});
+	add("BulletTypes", [&]() {Save_Vector(stream, BulletTypes);});
+	add("Warheads", [&]() {Save_Vector(stream, Warheads);});
+	add("TerrainTypes", [&]() {Save_Vector(stream, TerrainTypes);});
+	add("SmudgeTypes", [&]() {Save_Vector(stream, SmudgeTypes);});
+	add("OverlayTypes", [&]() {Save_Vector(stream, OverlayTypes);});
+	add("ParticleTypes", [&]() {Save_Vector(stream, ParticleTypes);});
+	add("ParticleSystemTypes", [&]() {Save_Vector(stream, ParticleSystemTypes);});
+	add("VoxelAnimTypes", [&]() {Save_Vector(stream, VoxelAnimTypes);});
+	add("Tiberiums", [&]() {Save_Vector(stream, Tiberiums);});
+	sums.emplace_back("All", CRC::Memory(content.data(), (unsigned)content.size()));
+
+	CRCEngine sync;
+	auto fold = [&](auto const & list) {
+		for (int index = 0; index < list.Count(); index++) {
+			list[index]->Compute_CRC(sync);
+		}
+	};
+	fold(HouseTypes);
+	fold(Sides);
+	fold(SuperWeaponTypes);
+	fold(AnimTypes);
+	fold(BuildingTypes);
+	fold(AircraftTypes);
+	fold(UnitTypes);
+	fold(InfantryTypes);
+	fold(Weapons);
+	fold(BulletTypes);
+	fold(Warheads);
+	fold(TerrainTypes);
+	fold(SmudgeTypes);
+	fold(OverlayTypes);
+	fold(ParticleTypes);
+	fold(ParticleSystemTypes);
+	fold(VoxelAnimTypes);
+	fold(Tiberiums);
+	sums.emplace_back("Sync", sync());
+	if (stream.Was_Error()) {
+		sums.clear();
+	}
+	return(sums);
+}
+
+
+/// <summary>
 /// Writes the game state a save would hold, uncompressed, to the file named, and the offset
 /// and class of each object record in it, one per line, to that name with .idx added. Two
 /// dumps of games in the same state are the same bytes, so comparing dumps taken at the same
@@ -1009,6 +1101,8 @@ bool Dump_Game_State(char const * path)
  *=========================================================================*/
 bool Load_Game(const char *file_name)
 {
+	LoadProgressScopeClass const notice("Loading...");
+	Load_Progress_Step("Reading the saved game...", SAVE_STEP_FILE);
 	DebugString("\nLOADING GAME [%s]\n", file_name);
 
 	// The whole file is checked before the running game is torn down, so a damaged
@@ -1064,6 +1158,7 @@ bool Load_Game(const char *file_name)
 		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
+	Load_Progress_Step("Preparing the battlefield...", SAVE_STEP_BATTLEFIELD);
 	Swizzler.Resolve();
 
 	/*
@@ -1147,8 +1242,13 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	 * so it travels through a local either way.
 	 */
 	int state = Get_Speech_State();
+	int voice = Get_Eva_Voice_Choice();
 	stream.Serialize(state);
+	stream.Serialize(voice);
 	if (stream.Is_Loading()) {
+		if (voice >= 0) {
+			Set_Eva_Voice(voice);
+		}
 		Set_Speech_State(state != 0);
 	}
 

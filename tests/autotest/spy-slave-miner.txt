@@ -6,9 +6,9 @@
 ; The enemy refinery is placed by "spawn SMIN", which the computer house deploys into a YAREFN (waitowns waits for it).
 ; "teamspy" gives the capture mission and then the target, in that order, as team.cpp does for TMISSION_SPY.
 ; Run on XMP29U2.MAP with the same -Settings as spy-click-barracks.txt:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/spy-slave-miner.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 300 -Filter "AUTOTEST|Exception"
-; Expected: "teamspy SPY -> YAREFN" at 605. "where SPY" at 650 to 800 shows the spy walking to nav 66,40 with mission
-; Capture. The spy is gone by 850, and "houses" at 1000 shows the Americans' money rising and the Africans' falling
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/spy-slave-miner.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 300 -Filter "AUTOTEST|Exception"
+; Expected: "teamspy SPY -> YAREFN" at 605. "where SPY" at 650 and 700 shows the spy walking to nav 63,40 with mission
+; Capture. The spy is gone by 750, and "houses" at 1000 shows the Americans' money rising and the Africans' falling
 ; by about the same amount. Before the fix the spy stays at 58,42 with nav -1,-1 at every step, and the money does not move.
 10 command CenterBase
 20 command DebugInfiniteMoney
@@ -24,7 +24,7 @@
 470 where YAREFN
 500 houses
 600 own SPY 58 42
-605 teamspy SPY 65 39
+605 teamspy SPY 62 39
 650 where SPY
 700 where SPY
 750 where SPY

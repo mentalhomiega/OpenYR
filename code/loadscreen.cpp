@@ -8,6 +8,8 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 
 #include "loadscreen.h"
 
@@ -43,13 +45,16 @@
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
+#include "side.h"
 #include "strutil.h"
 #include "tactical.h"
+#include "theme.h"
 #include "truecolour.h"
 #include "utf8.h"
 
 #include <algorithm>
 #include <cstdio>
+#include <string>
 #include <vector>
 
 
@@ -618,7 +623,7 @@ Point2D LoadScreenClass::Campaign_Picture_Size(bool small)
 
 bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * mission)
 {
-	CCFileClass database("MISSIONMD.INI");
+	CCFileClass database(DeploymentConfig.MissionFile.c_str());
 	if (!database.Is_Available()) {
 		return(false);
 	}
@@ -673,6 +678,37 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 
 
 /// <summary>
+/// Plays the loading theme of the local player's country, else of the country's side, while a
+/// match's loading screen is up. A match with neither theme, or a player watching, leaves the
+/// music as it was.
+/// </summary>
+void LoadScreenClass::Play_Theme(void)
+{
+	if (!Active || !Match || Session.Players.Count() == 0 || Session.Players[0]->Player.IsObserver) {
+		return;
+	}
+	int const country = Session.Players[0]->Player.House;
+	if (country < 0 || country >= HouseTypes.Count()) {
+		return;
+	}
+	HouseTypeClass const * type = HouseTypes[country];
+	std::string name = type->LoadingTheme;
+	if (name.empty() && type->Side != SIDE_NONE && type->Side < Sides.Count()) {
+		name = Sides[type->Side]->LoadingTheme;
+	}
+	if (name.empty()) {
+		return;
+	}
+	ThemeType const theme = Theme.From_Name(name.c_str());
+	if (theme == THEME_NONE) {
+		DebugString("Loading screen: the theme %s is not in the theme list\n", name.c_str());
+		return;
+	}
+	DebugString("Loading screen: playing the theme %s\n", name.c_str());
+	Theme.Play_Song(theme);
+}
+
+
 /// Finds the picture a Cooperative match shows on a map that COOPCAMPMD.INI lists, as gamemd does
 /// (LoadProgressManager::Draw, 0x553311 to 0x5533C0).
 /// </summary>
@@ -728,19 +764,29 @@ bool LoadScreenClass::Begin_Match(char const * scenario, CCINIClass const * ini,
 	NodeNameType const * local = Session.Players[0];
 	bool const observer = local->Player.IsObserver;
 	int const country = local->Player.House;
-	if (!observer && (country < 0 || country >= (int)ARRAY_SIZE(COUNTRY_ART))) {
+	HouseTypeClass const * type = (!observer && country >= 0 && country < HouseTypes.Count()) ? HouseTypes[country] : NULL;
+
+	// A country's own File.LoadScreen replaces the stock picture; without one only the stock countries have art.
+	bool const custom = type != NULL && !type->LoadScreenFile.empty();
+	if (!observer && !custom && (country < 0 || country >= (int)ARRAY_SIZE(COUNTRY_ART))) {
 		return(false);
 	}
-	CountryArtType const & art = observer ? OBSERVER_ART : COUNTRY_ART[country];
+	CountryArtType const & stock = observer ? OBSERVER_ART : COUNTRY_ART[std::clamp(country, 0, (int)ARRAY_SIZE(COUNTRY_ART) - 1)];
 	MatchLayoutType const & layout = (Width == 640) ? MATCH_640 : MATCH_800;
 
 	// A Cooperative campaign's picture has one size, which gamemd draws at either screen width.
-	std::string palette = art.Palette;
+	std::string palette = stock.Palette;
 	if (!Coop_Picture(scenario, PictureName, palette)) {
-		char picture[32];
-		std::snprintf(picture, sizeof(picture), "LS%d%s.SHP", Width, art.Picture);
-		PictureName = picture;
-		palette = art.Palette;
+		if (custom) {
+			PictureName = type->LoadScreenFile;
+			if (!type->LoadScreenPalette.empty()) {
+				palette = type->LoadScreenPalette;
+			}
+		} else {
+			char picture[32];
+			std::snprintf(picture, sizeof(picture), "LS%d%s.SHP", Width, stock.Picture);
+			PictureName = picture;
+		}
 	}
 
 	ShapeFile const shape(PictureName.c_str());
@@ -760,29 +806,44 @@ bool LoadScreenClass::Begin_Match(char const * scenario, CCINIClass const * ini,
 		}
 	}
 
-	// Allied countries print in the Allied colour and every other side's in the Soviet one.
+	// Allied countries print in the Allied colour and every other side's in the Soviet one, unless the country names a scheme.
 	char const * scheme = "LightGrey";
 	if (!observer) {
 		scheme = (country < HouseTypes.Count() && HouseTypes[country]->Side == SIDE_FIRST) ? "AlliedLoad" : "SovietLoad";
+		if (type != NULL && !type->LoadScreenColor.empty() && Fetch_Scheme_Index_By_Name(type->LoadScreenColor.c_str()) >= 0) {
+			scheme = type->LoadScreenColor.c_str();
+		}
 	}
 	RGBClass const color = Scheme_Text_Color(Fetch_Scheme_By_Name(scheme));
 
-	std::string const name = Fetch_String_UTF8(art.Name);
+	// A label the country sets replaces the stock one; a country with a picture of its own and no label shows none.
+	auto label = [&](std::string const & own, char const * fallback) -> std::string {
+		if (!own.empty()) {
+			return(Fetch_String_UTF8(own.c_str()));
+		}
+		return(custom || fallback == NULL ? std::string() : Fetch_String_UTF8(fallback));
+	};
+
+	std::string const name = label(type != NULL ? type->LoadScreenName : std::string(), stock.Name);
 	int const name_width = Text_Width(name);
 	Point2D const name_at(layout.CountryName.X + layout.CountryName.Width - name_width, layout.CountryName.Y);
 	Shade(*Backdrop, Rect(name_at.X, name_at.Y, name_width, Text_Font().Get_Height()));
 	Print_Text(name, *Backdrop, name_at, color);
 
-	if (art.Special != NULL) {
-		Print_Text(Capitals(Fetch_String_UTF8(art.Special)), *Backdrop, layout.Special, RGBClass(0, 0, 0));
+	std::string const special = label(type != NULL ? type->LoadScreenSpecialName : std::string(), stock.Special);
+	if (!special.empty()) {
+		Print_Text(Capitals(special), *Backdrop, layout.Special, RGBClass(0, 0, 0));
+	}
 
+	std::string const brief_text = label(type != NULL ? type->LoadScreenBrief : std::string(), stock.Brief);
+	if (!brief_text.empty()) {
 		// A Cooperative match at the 800 layout starts the country's text higher, to fit the campaign picture.
 		Rect brief = layout.Brief;
 		if (Width != 640 && MPMode_Is_Cooperative()) {
 			brief.Y = COOP_BRIEF_TOP_800;
 		}
 
-		std::vector<std::string> const lines = Wrap_Text(Fetch_String_UTF8(art.Brief), brief.Width);
+		std::vector<std::string> const lines = Wrap_Text(brief_text, brief.Width);
 		Shade(*Backdrop, Rect(brief.X, brief.Y, brief.Width, Text_Font().Get_Height() * (int)lines.size()));
 		Print_Lines(lines, *Backdrop, brief.Top_Left(), color);
 	}
@@ -864,6 +925,8 @@ void LoadScreenClass::Draw_Rows(int players)
 		char const * flag_name = NULL;
 		if (node->Player.IsObserver) {
 			flag_name = "OBSI.PCX";
+		} else if (node->Player.House >= 0 && node->Player.House < HouseTypes.Count() && !HouseTypes[node->Player.House]->FlagFile.empty()) {
+			flag_name = HouseTypes[node->Player.House]->FlagFile.c_str();
 		} else if (node->Player.House >= 0 && node->Player.House < (int)ARRAY_SIZE(FLAGS)) {
 			flag_name = FLAGS[node->Player.House];
 		}

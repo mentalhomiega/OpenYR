@@ -32,6 +32,9 @@
 #include "tracker.h"
 #include "unit.h"
 #include "unittype.h"
+#include "warhead.h"
+#include "warheadrules.h"
+#include "_warhead.h"
 
 DynamicVectorClass<EMPulseClass *> EMPulseClass::EMPulses;
 
@@ -131,6 +134,126 @@ void EMPulseClass::Stun(TechnoClass * techno, DynamicVectorClass<TechnoClass *> 
 	if (threshold != 0 && techno->StunDuration > std::abs(threshold) && (threshold > 0 || techno->In_Air())) {
 		doomed.Add(techno);
 	}
+}
+
+
+/// <summary>
+/// Is this animation one an EMP stun shows on an object: the [General] EMPulseSparkles one, or one a warhead names with
+/// EMP.Sparkles?
+/// </summary>
+bool EMPulseClass::Is_Sparkles(AnimTypeClass const * type)
+{
+	if (type == NULL) {
+		return(false);
+	}
+	if (type == Rule->EMPulseSparkles) {
+		return(true);
+	}
+	for (int index = 0; index < Warheads.Count(); index++) {
+		if (Warheads[index]->EMPSparkles == type) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Changes the EMP counter of an object a blast has damaged, as a warhead with a nonzero EMP.Duration does (Ares). The
+/// kinds of object are those a pulse stuns. An immune object only springs its paralyzed event, and a positive duration
+/// is scaled by the type's EMP.Modifier. The blast's firer is spared a positive duration.
+/// </summary>
+/// <returns>bool; Does the hit destroy the object, because a flying aircraft is caught or the counter passes EMP.Threshold?</returns>
+bool EMPulseClass::Hit(TechnoClass * techno, WarheadTypeClass const * warhead, TechnoClass * source)
+{
+	int duration = warhead->EMPDuration;
+	TechnoTypeClass const * type = techno->TClass;
+
+	switch (techno->RTTI) {
+		case RTTI_BUILDING:
+			if (static_cast<BuildingClass *>(techno)->Class->IsInvisibleInGame) return(false);
+			break;
+
+		case RTTI_INFANTRY:
+			if (!static_cast<InfantryClass *>(techno)->Class->IsCyborg) return(false);
+			break;
+
+		case RTTI_UNIT:
+			if (static_cast<UnitClass *>(techno)->Class->IsLargeVisceroid || static_cast<UnitClass *>(techno)->Class->IsSmallVisceroid) return(false);
+			// fall through
+		case RTTI_AIRCRAFT:
+			if (static_cast<FootClass *>(techno)->Locomotion == NULL) return(false);
+			break;
+
+		default:
+			return(false);
+	}
+	if (duration > 0 && techno == source) {
+		return(false);
+	}
+
+	if (techno->Is_Immune_To_EMP()) {
+		if (duration > 0) {
+			techno->Spring_Tag(TEVENT_PARALYZED, techno, CELL_NONE, false, source);
+		}
+		return(false);
+	}
+
+	if (duration > 0) {
+		if (techno->RTTI == RTTI_BUILDING && static_cast<BuildingClass *>(techno)->Class->IsLimpetMine) {
+			return(true);
+		}
+		if (techno->RTTI == RTTI_AIRCRAFT && techno->HeightAGL > 0) {
+			techno->Spring_Tag(TEVENT_PARALYZED, techno, CELL_NONE, false, source);
+			return(true);
+		}
+		if (type->EMPModifier != 1.0) {
+			duration = int(duration * type->EMPModifier);
+		}
+	}
+
+	int const before = techno->StunDuration;
+	int const after = WarheadRules::Emp_Counter(before, duration, warhead->EMPCap);
+	techno->StunDuration = after;
+	if (before > 0 && after == 0) {
+		// The ordinary expiry of a stun reactivates the object on the next frame.
+		techno->StunDuration = 1;
+	}
+
+	if (before == 0 && after > 0) {
+		if (techno->RTTI == RTTI_BUILDING) {
+			BuildingClass * building = static_cast<BuildingClass *>(techno);
+			building->Power_Off();
+			if (building->Class->IsRadar) {
+				building->House->RecalcRadar = true;
+			}
+			if (building->Class->Is_Mobile_Deployer()) {
+				Coord coord = building->Center_Coord();
+				coord.X += CELL_LEPTON_W / 4;
+				coord.Y += CELL_LEPTON_H / 4;
+				coord.Z += LEVEL_LEPTON_H / 2;
+				AnimClass * sparks = new AnimClass(warhead->EMPSparkles != NULL ? warhead->EMPSparkles : Rule->EMPulseSparkles, coord, Random_Pick(0, 25));
+				if (sparks != NULL) {
+					sparks->Attach_To(building);
+				}
+			}
+		} else {
+			FootClass * foot = static_cast<FootClass *>(techno);
+			foot->Locomotion->Power_Off();
+			if (foot->Locomotion->Is_Moving()) {
+				foot->Locomotion->Stop_Moving();
+			}
+			AnimClass * sparks = new AnimClass(warhead->EMPSparkles != NULL ? warhead->EMPSparkles : Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
+			if (sparks != NULL) {
+				sparks->Attach_To(foot);
+			}
+		}
+	}
+	if (duration > 0) {
+		techno->Spring_Tag(TEVENT_PARALYZED, techno, CELL_NONE, false, source);
+	}
+
+	return(duration > 0 && WarheadRules::Emp_Counter_Destroys(after, type->EMPThreshold, techno->In_Air()));
 }
 
 

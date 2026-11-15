@@ -342,7 +342,10 @@ void ParasiteClass::Update_Squid(void)
 						}
 						Exit_Unit();
 						victim->IsSinking = true;
+						// The culling warhead is the cause of this kill, so only its UnitLost.Suppress applies.
+						victim->DamageWarhead = warhead;
 						((FootClass *)victim)->Death_Announcement(Owner);
+						victim->DamageWarhead = NULL;
 						victim->Stun();
 						Reset_Grapple();
 						Set_Paralysis(Owner, 0);

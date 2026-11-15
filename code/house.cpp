@@ -147,6 +147,7 @@
 #include "building.h"
 #include "builtype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "conquer.h"
 #include "data.h"
@@ -185,12 +186,14 @@
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
+#include "swrules.h"
 #include "surface.h"
 #include "tactical.h"
 #include "tag.h"
 #include "taskforc.h"
 #include "team.h"
 #include "techtype.h"
+#include "theater.h"
 #include "tiberium.h"
 #include "tracker.h"
 #include "trigger.h"
@@ -260,6 +263,10 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsSide2TechStolen(false),
 	IsBarracksInfiltrated(false),
 	IsWarFactoryInfiltrated(false),
+	IsNavalSpied(false),
+	IsAircraftSpied(false),
+	IsBuildingSpied(false),
+	StolenTechs(0),
 	PowerBlackout(0),
 	IsPowerBlackout(false),
 	PoweredUnitCenters(0),
@@ -278,6 +285,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsToWin(false),
 	IsCivEvacuated(false),
 	FirestormDefenseActivated(false),
+	IsFirestormFromTrigger(false),
 	IsThreatRatingNodeActive(false),
 	IsRecalcNeeded(true),
 	IPAddress(0),
@@ -331,6 +339,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	BuildingFactories(0),
 	Power(0),
 	Drain(0),
+	AuxiliaryPower(0),
 	AircraftFactory(NULL),
 	InfantryFactory(NULL),
 	UnitFactory(NULL),
@@ -349,6 +358,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	LAEnemy(HOUSE_NONE),
 	ToCapture(NULL),
 	RadarSpied(),
+	UnitsRevealedTo(),
 	PointTotal(0),
 	PreferredTarget(QUARRY_ANYTHING),
 	PreferredTargetCell(CELL_NONE),
@@ -1046,14 +1056,17 @@ bool HouseClass::Is_Secret_Item(ObjectTypeClass const * type) const
 }
 
 
+static bool Owns_Prerequisite(HouseClass const & house, int pre);
+
+
 /// <summary>
 /// Whether this house has a structure of the type's PrerequisiteOverride list in service.
-/// The count is the one the Prerequisite entries read, and a group code never counts.
+/// An entry counts as it does in a Prerequisite list.
 /// </summary>
 bool HouseClass::Owns_Prerequisite_Override(TechnoTypeClass const * type) const
 {
 	for (int index = 0; index < type->PrerequisiteOverride.Count(); index++) {
-		if (ABQuantity.Value(type->PrerequisiteOverride[index]) > 0) {
+		if (Owns_Prerequisite(*this, type->PrerequisiteOverride[index])) {
 			return(true);
 		}
 	}
@@ -1090,14 +1103,42 @@ bool HouseClass::Add_Reversed(TechnoTypeClass const * type)
 }
 
 
-static bool Owns_Any_Id(CounterClass const & tally, TypeList<int> const & ids)
+int HouseClass::Active_Count(TechnoTypeClass const * type) const
 {
-	for (int index = 0; index < ids.Count(); index++) {
-		if (tally.Value(ids[index]) > 0) {
-			return(true);
-		}
+	int const id = type->Fetch_Heap_ID();
+	switch (type->RTTI) {
+		case RTTI_BUILDINGTYPE: return(ABQuantity.Value(id));
+		case RTTI_UNITTYPE: return(AUQuantity.Value(id));
+		case RTTI_INFANTRYTYPE: return(AIQuantity.Value(id));
+		case RTTI_AIRCRAFTTYPE: return(AAQuantity.Value(id));
+		default: return(0);
 	}
-	return(false);
+}
+
+
+int HouseClass::Owned_Count(TechnoTypeClass const * type) const
+{
+	int const id = type->Fetch_Heap_ID();
+	switch (type->RTTI) {
+		case RTTI_BUILDINGTYPE: return(OwnedBQuantity.Value(id));
+		case RTTI_UNITTYPE: return(OwnedUQuantity.Value(id));
+		case RTTI_INFANTRYTYPE: return(OwnedIQuantity.Value(id));
+		case RTTI_AIRCRAFTTYPE: return(OwnedAQuantity.Value(id));
+		default: return(0);
+	}
+}
+
+
+// The tally of every owned object of each type, whatever Is_Scored says, for the given object's kind.
+static CounterClass * Owned_Tally(HouseClass & house, TechnoClass const * techno)
+{
+	switch ((RTTIType)techno->RTTI) {
+		case RTTI_BUILDING: return(&house.OwnedBQuantity);
+		case RTTI_UNIT: return(&house.OwnedUQuantity);
+		case RTTI_INFANTRY: return(&house.OwnedIQuantity);
+		case RTTI_AIRCRAFT: return(&house.OwnedAQuantity);
+		default: return(NULL);
+	}
 }
 
 
@@ -1112,23 +1153,75 @@ static bool Owns_Any_Unit_Id(CounterClass const & tally, TypeList<UnitTypeClass 
 }
 
 
-// Whether the house's last working, non-deconstructing building in the building list carries the upgrade.
-// Only that one building is checked.
-static bool Has_Installed_Upgrade(HouseClass const & house, BuildingTypeClass const * upgrade)
+// Whether the house has the building in service, for a prerequisite list. An upgrade counts when any of the
+// house's buildings carries it (Ares; gamemd checked only the most recent building, and stock rules have no upgrades).
+static bool Owns_Building_Prerequisite(HouseClass const & house, int id)
 {
-	BuildingClass * host = NULL;
-	for (int index = Buildings.Count() - 1; index >= 0; index--) {
-		BuildingClass * bptr = Buildings[index];
-		if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn &&
-				bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
-			host = bptr;
-			break;
+	BuildingTypeClass const * type = BuildingTypes[id];
+	if (type->PowersUpBuilding.empty()) {
+		return(house.ABQuantity.Value(id) > 0);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * bptr = Buildings[index];
+		if (bptr->House != &house || bptr->IsInLimbo || bptr->Strength <= 0) continue;
+		for (int slot = 0; slot < ARRAY_SIZE(bptr->Upgrades); slot++) {
+			if (bptr->Upgrades[slot] == type) {
+				return(true);
+			}
 		}
 	}
-	if (host == NULL) return(false);
+	return(false);
+}
 
-	for (int slot = 0; slot < ARRAY_SIZE(host->Upgrades); slot++) {
-		if (host->Upgrades[slot] == upgrade) {
+
+// Whether the house owns a building of the group, or an object the group accepts in place of one.
+static bool Owns_Prerequisite_Group(HouseClass const & house, int group)
+{
+	TypeList<int> const * buildings = Rule->Prerequisite_Group_Buildings(group);
+	for (int index = 0; buildings != NULL && index < buildings->Count(); index++) {
+		if (Owns_Building_Prerequisite(house, (*buildings)[index])) {
+			return(true);
+		}
+	}
+	if (group == STRUCT_G_PROC) {
+		return(Owns_Any_Unit_Id(house.AUQuantity, Rule->PrerequisiteProcAlternate));
+	}
+	GenericPrerequisiteClass const * custom = Rule->Custom_Prerequisite_Group(group);
+	if (custom != NULL) {
+		for (int index = 0; index < custom->Alternates.Count(); index++) {
+			if (house.Active_Count(custom->Alternates[index]) > 0) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+// A prerequisite entry is a building heap ID or a group code.
+static bool Owns_Prerequisite(HouseClass const & house, int pre)
+{
+	return(pre < 0 ? Owns_Prerequisite_Group(house, pre) : Owns_Building_Prerequisite(house, pre));
+}
+
+
+static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
+{
+	for (int i = 0; i < pre.Count(); i++) {
+		if (!Owns_Prerequisite(house, pre[i])) return(false);
+	}
+	return(true);
+}
+
+
+// Prerequisite or any one of the Ares Prerequisite.List# lists; an empty list is met.
+static bool Any_Prerequisite_List_Met(HouseClass const & house, TechnoTypeClass const & type)
+{
+	if (Prerequisites_Met(house, type.Prerequisite)) {
+		return(true);
+	}
+	for (TypeList<int> const & list : type.PrerequisiteLists) {
+		if (Prerequisites_Met(house, list)) {
 			return(true);
 		}
 	}
@@ -1136,37 +1229,19 @@ static bool Has_Installed_Upgrade(HouseClass const & house, BuildingTypeClass co
 }
 
 
-static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
+// Whether the Ares Prerequisite.RequiredTheaters list allows the type on the current map's theater.
+static bool Theater_Allows(TechnoTypeClass const & type)
 {
-	for (int i = 0; i < pre.Count(); i++) {
-		bool met;
-		switch (pre[i]) {
-			case STRUCT_G_POWER:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower); break;
-			case STRUCT_G_FACTORY:    met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory); break;
-			case STRUCT_G_BARRACKS:   met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks); break;
-			case STRUCT_G_RADAR:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar); break;
-			case STRUCT_G_TECH:       met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech); break;
-			case STRUCT_G_GDIFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory); break;
-			case STRUCT_G_NODFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory); break;
-
-			case STRUCT_G_PROC:
-				met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc) ||
-					Owns_Any_Unit_Id(house.AUQuantity, Rule->PrerequisiteProcAlternate);
-				break;
-
-			default: {
-				BuildingTypeClass * btype = BuildingTypes[pre[i]];
-				if (!btype->PowersUpBuilding.empty()) {
-					met = Has_Installed_Upgrade(house, btype);
-				} else {
-					met = house.ABQuantity.Value(pre[i]) != 0;
-				}
-				break;
-			}
-		}
-		if (!met) return(false);
+	if (type.PrerequisiteTheaters.empty()) {
+		return(true);
 	}
-	return(true);
+	char const * theater = TheaterClass::As_Reference(Scen->Theater).Name();
+	for (std::string const & name : type.PrerequisiteTheaters) {
+		if (stricmp(name.c_str(), theater) == 0) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -1283,6 +1358,15 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 {
 	assert(type != NULL);
 
+	// Ares: PrerequisiteOverride does not lift these two gates; we apply them to every house and shortcut.
+	if (!forced && !Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, this)) {
+		TechnoTypeClass const & gated = *(TechnoTypeClass const *)type;
+		if (!Theater_Allows(gated)) return(0);
+		for (int index = 0; index < gated.PrerequisiteNegative.Count(); index++) {
+			if (Owns_Prerequisite(*this, gated.PrerequisiteNegative[index])) return(0);
+		}
+	}
+
 	if (!forced && type->RTTI != RTTI_BUILDINGTYPE && !ReversedTypes.empty() && Is_Reversed(type)) {
 		if (((TechnoTypeClass const *)type)->IsUnbuildable) return(0);
 		forced = true;
@@ -1311,6 +1395,20 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		// gamemd HouseClass::CanBuild (0x4F7870) tests the house's own country bit here, not the acted one.
 		if (!((TechnoTypeClass const *)type)->Allows_Country_Mask(Own_Mask())) return(0);
 
+		// FactoryOwners and FactoryOwners.Forbidden look at the countries that first owned the factories this house has; the computer ignores them for structures.
+		TechnoTypeClass const * const owned_by = (TechnoTypeClass const *)type;
+		if ((!owned_by->FactoryOwners.empty() || !owned_by->FactoryOwnersForbidden.empty()) && (Is_Human_Player() || type->RTTI != RTTI_BUILDINGTYPE)) {
+			std::vector<std::string> countries;
+			for (int index = 0; index < Buildings.Count(); index++) {
+				BuildingClass const * factory = Buildings[index];
+				if (factory->House == this && !factory->IsInLimbo && factory->Class->ToBuild == type->RTTI) {
+					HouseClass const * first = factory->OriginallyOwnedByHouse != NULL ? factory->OriginallyOwnedByHouse : factory->House;
+					countries.push_back(first->Class->Name());
+				}
+			}
+			if (!ObjectKeyRules::Factory_Owners_Allow(owned_by->FactoryOwners, owned_by->FactoryOwnersForbidden, countries)) return(0);
+		}
+
 		// The unlock cheat skips the stolen tech, prerequisite and tech level gates.
 		bool const unlocked = Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, this);
 
@@ -1318,15 +1416,15 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (!unlocked && techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
 		if (!unlocked && techno->IsRequiresStolenSovietTech && !IsSide1TechStolen) return(0);
 		if (!unlocked && techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
+		if (!unlocked && !ObjectKeyRules::Stolen_Techs_Satisfied(StolenTechs, techno->PrerequisiteStolenTechs)) return(0);
 
-		TypeList<int> pre = ((TechnoTypeClass const *)type)->Prerequisite;
-		if (unlocked) pre.Clear();
+		bool ignore_prerequisites = unlocked;
 
 		int level = Control.TechLevel;
 #ifdef _DEBUG
 		if (Debug_Cheat) {
 			level = 98;
-			pre.Clear();
+			ignore_prerequisites = true;
 		}
 #endif
 
@@ -1345,7 +1443,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		/*
 		**	See if the prerequisite requirements have been met.
 		*/
-		if (!Prerequisites_Met(*this, pre)) return(0);
+		if (!ignore_prerequisites && !Any_Prerequisite_List_Met(*this, *techno)) return(0);
 
 		/*
 		**	A structure that no side owns is never buildable. Which factory builds it is decided by
@@ -1410,6 +1508,10 @@ void HouseClass::AI(void)
 	Expire_Blackouts();
 	if (RecalcPower) {
 		Recalc_Power_Drain();
+		RecalcRadar = true;
+	}
+	// Jammers move, so a world with some is checked again every second (Ares RadarJamRadius).
+	if (TechnoTypeClass::RadarJammersExist && (Frame % TICKS_PER_SECOND) == 0) {
 		RecalcRadar = true;
 	}
 	if (RecalcRadar) {
@@ -1534,7 +1636,9 @@ void HouseClass::AI(void)
 		SUGGESTED_TEAM_LIST team = Suggested_New_Team(false);
 		if (team.Count() > 0) {
 			for (int i = 0; i < team.Count(); i++) {
-				team[i]->Create_One_Of(this);
+				if (!Team_Breaks_Build_Limit(*team[i])) {
+					team[i]->Create_One_Of(this);
+				}
 			}
 		}
 
@@ -1872,6 +1976,19 @@ void HouseClass::Refresh_Production_Options(void)
 	*/
 	bool recalc_supers = false;
 	if (PlayerPtr == this) {
+		// A cameo darkens while its weapon costs more than the house holds, so the strip redraws when that changes.
+		static unsigned unaffordable_signature = 0;
+		unsigned signature = 0;
+		for (int s = 0; s < SuperWeapon.Count(); s++) {
+			if (SuperWeapon[s]->Is_Present() && !SuperRules::Can_Afford(Available_Money(), SuperWeaponTypes[s]->Keys.MoneyAmount)) {
+				signature = signature * 31 + (unsigned)s + 1;
+			}
+		}
+		if (signature != unaffordable_signature) {
+			unaffordable_signature = signature;
+			Map.Flag_Strips_To_Redraw();
+		}
+
 		if (IsRecalcNeeded) {
 			recalc_supers = true;
 			IsRecalcNeeded = false;
@@ -1933,7 +2050,17 @@ void HouseClass::Super_Weapon_Handler(void)
 	for (SuperWeaponType special = SUPER_FIRST; special < SuperWeapon.Count(); special++) {
 		SuperClass * super = SuperWeapon[special];
 
-		if (super->Is_Present()) {
+		super->Update_Deferred();
+
+		// SW.AutoFire fires a ready weapon of a player's as the computer would aim it, checked twice a second.
+		if (super->Is_Ready() && super->Class->Keys.AutoFire && Is_Human_Player() && (Frame + HeapID) % (TICKS_PER_SECOND / 2) == 0) {
+			Cell chosen = CELL_NONE;
+			if (Pick_Super_Target(super, chosen)) {
+				Place_Special_Blast(special, chosen);
+			}
+		}
+
+		if (super->Is_Present() || super->Is_Virtual_Charging()) {
 
 			/*
 			**	Perform any charge-up logic for the super weapon. If the super
@@ -1973,15 +2100,16 @@ void HouseClass::Super_Weapon_Handler(void)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-void HouseClass::Attacked(BuildingClass * source)
+void HouseClass::Attacked(BuildingClass * source, bool miner_alert)
 {
 	if (source != NULL && source->Considered_Vehicle()) return;
 
-	if (SpeakAttackDelay == 0) {
+	bool const miner = source != NULL && source->Class->UndeploysInto != NULL && source->Class->IsResourceGatherer;
+	if (SpeakAttackDelay == 0 && !(miner && !miner_alert && Is_Player_Control())) {
 		// Gamemd (HouseClass::BuildingUnderAttack, 0x4F93E0) plays the line only when its radar event is created.
 		if (Is_Player_Control()) {
 			// A gatherer that can undeploy raises the harvester event and line instead of the base one.
-			if (source != NULL && source->Class->UndeploysInto != NULL && source->Class->IsResourceGatherer) {
+			if (miner) {
 				if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, source->Center_Coord().As_Cell())) {
 					Speak(VOX_HARVESTER_UNDER_ATTACK);
 				}
@@ -2019,6 +2147,51 @@ void HouseClass::Harvested(int tiberium, TiberiumType slot)
 
 	// Delivered ore is paid out at once with no storage limit, as HouseClass::GiveTiberium (0x4F9610) does.
 	Credits += (int)(Tiberiums[slot]->CreditValue * Class->IncomeMult * tiberium);
+}
+
+
+/// <summary>
+/// Raises the veterancy of a new trainable object to the best Academy.* level that a structure of this house offers its kind
+/// (Ares). The level is the highest one on offer, not the sum, and an object that already has more keeps it. Levels run from
+/// 1 for veteran to 2 for elite, with fractions counting as part of a promotion.
+/// </summary>
+/// <param name="techno">The object just made for this house.</param>
+void HouseClass::Apply_Academy(TechnoClass * techno) const
+{
+	TechnoTypeClass const * const type = techno->TClass;
+	if (type == NULL || !type->IsTrainable) {
+		return;
+	}
+	auto const listed = [type](std::vector<std::string> const & names) {
+		for (std::string const & name : names) {
+			if (stricmp(name.c_str(), type->Name()) == 0) {
+				return(true);
+			}
+		}
+		return(false);
+	};
+
+	double best = 0.0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * const academy = Buildings[index];
+		if (academy->House != this || academy->IsInLimbo || !academy->IsActive) {
+			continue;
+		}
+		BuildingTypeClass const * const data = academy->Class;
+		double bonus = data->AcademyVehicleVeterancy;
+		if (techno->RTTI == RTTI_BUILDING) {
+			bonus = data->AcademyBuildingVeterancy;
+		} else if (techno->RTTI == RTTI_AIRCRAFT || type->IsConsideredAircraft) {
+			bonus = data->AcademyAircraftVeterancy;
+		} else if (techno->RTTI == RTTI_INFANTRY || type->IsOrganic) {
+			bonus = data->AcademyInfantryVeterancy;
+		}
+		if (bonus <= best || (!data->AcademyTypes.empty() && !listed(data->AcademyTypes)) || listed(data->AcademyIgnore)) {
+			continue;
+		}
+		best = bonus;
+	}
+	techno->Veterancy.Experience = std::max(techno->Veterancy.Experience, std::min(best, 2.0));
 }
 
 
@@ -2519,12 +2692,42 @@ bool HouseClass::Has_Powered_Unit_Source(TechnoTypeClass const * type) const
 
 
 /// <summary>
+/// Does this house own a structure of one of these types that is built, powered and not being sold?
+/// </summary>
+bool HouseClass::Has_Working_Building(TypeList<BuildingTypeClass const *> const & types) const
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this && !building->IsInLimbo && building->Strength > 0 && types.Is_In_List(building->Class) && building->Is_Online()) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Does this house see the other as its owner does? True for an ally, and either way round
 /// once the local player has the whole map. Display only; never a simulation rule.
 /// </summary>
 bool HouseClass::Shares_View_With(HouseClass const * house) const
 {
 	return(Is_Ally(house) || (Session.ObiWan && (this == PlayerPtr || house == PlayerPtr)));
+}
+
+
+/// <summary>
+/// Recomputes UnitsRevealedTo from the spied SpyEffect.RevealRadar structures this house owns.
+/// </summary>
+void HouseClass::Update_Units_Revealed_To(void)
+{
+	UnitsRevealedTo.Clear();
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this) {
+			UnitsRevealedTo |= building->RadarRevealedTo;
+		}
+	}
 }
 
 
@@ -3124,6 +3327,19 @@ void HouseClass::Special_Weapon_AI(SuperWeaponType id)
  *=============================================================================================*/
 bool HouseClass::Place_Special_Blast(SuperWeaponType id, Cell const & cell)
 {
+	// SW.UseAITargeting lets a player's click choose the target the way the computer would.
+	if (SuperWeapon[id]->Class->Keys.UseAITargeting && Is_Human_Player()) {
+		Cell chosen = CELL_NONE;
+		if (!Pick_Super_Target(SuperWeapon[id], chosen)) {
+			if (this == PlayerPtr && SuperWeapon[id]->Is_Ready()) {
+				SuperWeapon[id]->Show_Message(SuperWeapon[id]->Class->Keys.MessageCannotFire.empty() ? std::string("MSG:CannotFire") : SuperWeapon[id]->Class->Keys.MessageCannotFire);
+			}
+			return(true);
+		}
+		SuperWeapon[id]->Discharged(this == PlayerPtr, chosen);
+		return(true);
+	}
+
 	SuperWeapon[id]->Discharged(this == PlayerPtr, cell);
 
 	// Every computer house gets to react to a strike, as HouseClass::Fire_SW (0x4FAE50) lets it.
@@ -3236,6 +3452,9 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						if (Is_Player_Control()) {
 							Submit_Radar_Event(RADAREVENT_FACTORY_OUTPUT, builder->Get_Coord().As_Cell());
 						}
+						if (exit == 2 && builder->RTTI == RTTI_BUILDING) {
+							((BuildingClass *)builder)->Release_Vehicle_Clones(tech);
+						}
 						factory->Completed();
 						Abandon_Production(type, -1, buildcat, naval);
 						placed = true;
@@ -3279,7 +3498,11 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						}
 
 						if (PlayerPtr == this) {
-							Sound_Effect(Rule->BuildingSlam);
+							if (tech->TClass->IsSlamSoundSet) {
+								Sound_Effect(tech->TClass->SlamSound);
+							} else {
+								Sound_Effect(Rule->BuildingSlam);
+							}
 							Map.Set_Cursor_Shape(0);
 							Map.PendingObjectPtr = 0;
 							Map.PendingObject = 0;
@@ -5246,6 +5469,16 @@ int HouseClass::AI_Building(void)
 		BuildingTypeClass const * turbine = side != NULL ? side->PowerTurbine : NULL;
 		BuildingTypeClass const * choice = NULL;
 
+		// The country's AI.PowerPlants (Ares) replace the side's pair: the first is the regular plant and the computer
+		// builds the last one it has the prerequisites for. An upgrade in the list counts only while a structure it fits
+		// has room for it, so that a plant with no host is not started and abandoned over and over.
+		TypeList<BuildingTypeClass const *> const * listed = NULL;
+		if (ActLike >= HOUSE_FIRST && ActLike < HouseTypes.Count() && HouseTypes[ActLike]->AIPowerPlants.Count() > 0) {
+			listed = &HouseTypes[ActLike]->AIPowerPlants;
+			regular = (*listed)[0];
+			advanced = NULL;
+		}
+
 		if (turbine != NULL && regular != NULL) {
 			bool can_build_turbine = false;
 			for (int i = 0; i < Buildings.Count(); i++) {
@@ -5272,6 +5505,22 @@ int HouseClass::AI_Building(void)
 
 			if (AI_Has_Prerequisites(advanced, owned_buildings, owned_buildings.Count())) {
 				choice = advanced;
+			}
+		}
+
+		if (choice == NULL && listed != NULL) {
+			DynamicVectorClass<BuildingTypeClass const *> owned_buildings;
+			for (int i = 0; i < Buildings.Count(); i++) {
+				if (Buildings[i]->House == this) {
+					owned_buildings.Add(Buildings[i]->Class);
+				}
+			}
+			for (int i = 0; i < listed->Count(); i++) {
+				BuildingTypeClass const * plant = (*listed)[i];
+				bool const placeable = plant != NULL && (plant->PowersUpBuilding.empty() || Where_To_Place_Upgrade(plant) != CELL_NONE);
+				if (placeable && AI_Has_Prerequisites(plant, owned_buildings, owned_buildings.Count())) {
+					choice = plant;
+				}
 			}
 		}
 
@@ -5726,6 +5975,11 @@ static bool Is_Scored(TechnoClass const * techno)
  *=============================================================================================*/
 void HouseClass::Tracking_Remove(TechnoClass * techno)
 {
+	CounterClass * const owned = Owned_Tally(*this, techno);
+	if (owned != NULL && techno->TClass != NULL) {
+		owned->Decrement(techno->TClass->Fetch_Heap_ID());
+	}
+
 	// Insignificant and DontScore types are not counted as owned (HouseClass::RemoveTracking, 0x4FF550).
 	if (!Is_Scored(techno)) return;
 
@@ -5782,6 +6036,11 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
 	AircraftType aircraft;
 	InfantryType infantry;
 	UnitType unit;
+
+	CounterClass * const owned = Owned_Tally(*this, techno);
+	if (owned != NULL && techno->TClass != NULL) {
+		owned->Increment(techno->TClass->Fetch_Heap_ID());
+	}
 
 	// Insignificant and DontScore types are not counted as owned (HouseClass::AddTracking, 0x4FF700).
 	if (!Is_Scored(techno)) return;
@@ -6498,7 +6757,7 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 		if (allyhouse != NULL) {
 			allied.Set(allyhouse);
 		} else {
-			DebugString("[%s] Allies names %s, which is no house of this scenario\n", hname, ally);
+			Log_Unresolved_House(hname, "Allies", ally);
 		}
 	}
 	Make_Ally(Houses[HeapID]);
@@ -7557,6 +7816,19 @@ HouseClass * House_At(int spawn_waypoint)
 
 
 /// <summary>
+/// Writes one log line for a scenario house name that resolves to no live house. The scenario
+/// keeps loading and treats the name as before; the line shows where the map names it.
+/// </summary>
+/// <param name="section">The scenario section that holds the key.</param>
+/// <param name="key">The key, or the key and its role, that names the house.</param>
+/// <param name="name">The name that resolved to nothing.</param>
+void Log_Unresolved_House(char const * section, char const * key, char const * name)
+{
+	DebugString("[%s] %s names %s, which is no house of this scenario\n", section, key, name);
+}
+
+
+/// <summary>
 /// Fetches the live house a scenario names as an owner: a country somebody is playing, or
 /// whoever starts at the position a spawn house name refers to.
 /// </summary>
@@ -7735,6 +8007,10 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ReversedTypes);
 	stream.Serialize(IsBarracksInfiltrated);
 	stream.Serialize(IsWarFactoryInfiltrated);
+	stream.Serialize(IsNavalSpied);
+	stream.Serialize(IsAircraftSpied);
+	stream.Serialize(IsBuildingSpied);
+	stream.Serialize(StolenTechs);
 	stream.Serialize(PowerBlackout);
 	stream.Serialize(IsPowerBlackout);
 	stream.Serialize(PoweredUnitCenters);
@@ -7753,6 +8029,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsToLose);
 	stream.Serialize(IsCivEvacuated);
 	stream.Serialize(FirestormDefenseActivated);
+	stream.Serialize(IsFirestormFromTrigger);
 	stream.Serialize(IsThreatRatingNodeActive);
 	stream.Serialize(IsRecalcNeeded);
 	stream.Serialize(IPAddress);
@@ -7811,6 +8088,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingFactories);
 	stream.Serialize(Power);
 	stream.Serialize(Drain);
+	stream.Serialize(AuxiliaryPower);
 	stream.Serialize(AircraftFactory);
 	stream.Serialize(InfantryFactory);
 	stream.Serialize(UnitFactory);
@@ -7831,6 +8109,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LAEnemy);
 	stream.Serialize(ToCapture);
 	stream.Serialize(RadarSpied);
+	stream.Serialize(UnitsRevealedTo);
 	stream.Serialize(PointTotal);
 	stream.Serialize(PreferredTarget);
 	stream.Serialize(PreferredTargetCell);
@@ -7853,6 +8132,10 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PUQuantity);
 	stream.Serialize(PIQuantity);
 	stream.Serialize(PAQuantity);
+	stream.Serialize(OwnedBQuantity);
+	stream.Serialize(OwnedUQuantity);
+	stream.Serialize(OwnedIQuantity);
+	stream.Serialize(OwnedAQuantity);
 	stream.Serialize(Attack);
 	stream.Serialize(Enemy);
 	stream.Serialize(AngerNodes);
@@ -7952,6 +8235,7 @@ int HouseClass::First_Super_Index(SuperWeaponType type) const
 /// </summary>
 void HouseClass::Activate_Firestorm(void)
 {
+	IsFirestormFromTrigger = false;
 	if (!FirestormDefenseActivated) {
 		DynamicVectorClass<Cell> cells;
 		FirestormDefenseActivated = true;
@@ -7976,6 +8260,7 @@ void HouseClass::Activate_Firestorm(void)
 /// </summary>
 void HouseClass::Deactivate_Firestorm(void)
 {
+	IsFirestormFromTrigger = false;
 	if (FirestormDefenseActivated) {
 		FirestormDefenseActivated = false;
 		DynamicVectorClass<Cell> cells;
@@ -8205,7 +8490,100 @@ static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
 			return(true);
 		}
 	}
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		if (HouseTypes[index]->AIPowerPlants.Is_In_List(type)) {
+			return(true);
+		}
+	}
 	return(false);
+}
+
+
+static bool Is_In_Plan(BuildingTypeClass const * building, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount)
+{
+	for (int index = 0; index < ownedcount; index++) {
+		if (owned[index] == building) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+static bool Any_In_Plan(TypeList<int> const & buildings, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount)
+{
+	for (int index = 0; index < buildings.Count(); index++) {
+		if (Is_In_Plan(BuildingTypes[buildings[index]], owned, ownedcount)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Whether one prerequisite entry is met by the structures the computer plans to own.
+/// A stock group is met by whichever structure of that kind this house builds; a [GenericPrerequisites]
+/// group by any of its buildings in the plan. A construction yard of BuildConst always counts.
+/// </summary>
+bool HouseClass::AI_Prerequisite_Planned(int pre, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const
+{
+	if (pre >= 0) {
+		BuildingTypeClass const * building = BuildingTypes[pre];
+		return(Rule->BuildConst.Is_In_List(building) || Is_In_Plan(building, owned, ownedcount));
+	}
+
+	switch (pre) {
+		// A power plant is always in the plan.
+		case STRUCT_G_POWER:
+			return(true);
+
+		case STRUCT_G_FACTORY:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildWeapons), owned, ownedcount));
+
+		case STRUCT_G_BARRACKS:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildBarracks), owned, ownedcount));
+
+		case STRUCT_G_RADAR:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildRadar), owned, ownedcount));
+
+		case STRUCT_G_TECH:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildTech), owned, ownedcount));
+
+		case STRUCT_G_PROC:
+			return(Is_In_Plan(Get_First_Acted(Rule->BuildRefinery), owned, ownedcount));
+
+		// Any type of the group already queued satisfies it, as one owned does for a house playing.
+		case STRUCT_G_GDIFACTORY:
+			return(Any_In_Plan(Rule->PrerequisiteGDIFactory, owned, ownedcount));
+
+		case STRUCT_G_NODFACTORY:
+			return(Any_In_Plan(Rule->PrerequisiteNodFactory, owned, ownedcount));
+
+		default: {
+			GenericPrerequisiteClass const * group = Rule->Custom_Prerequisite_Group(pre);
+			if (group == NULL) {
+				return(false);
+			}
+			for (int index = 0; index < group->Buildings.Count(); index++) {
+				if (Rule->BuildConst.Is_In_List(BuildingTypes[group->Buildings[index]])) {
+					return(true);
+				}
+			}
+			return(Any_In_Plan(group->Buildings, owned, ownedcount));
+		}
+	}
+}
+
+
+bool HouseClass::AI_Prerequisite_List_Planned(TypeList<int> const & list, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const
+{
+	for (int index = 0; index < list.Count(); index++) {
+		if (!AI_Prerequisite_Planned(list[index], owned, ownedcount)) {
+			return(false);
+		}
+	}
+	return(true);
 }
 
 
@@ -8213,7 +8591,8 @@ static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
 /// Are the prerequisites for this object accounted for?
 /// This routine is used while the computer plans its base, where the question must be asked
 /// of the structures the house intends to own rather than of those it owns at this moment.
-/// A generic prerequisite is resolved to whichever structure of that kind this house builds.
+/// The type's theater list applies, a planned structure of its Prerequisite.Negative list
+/// fails it, and Prerequisite or any one of its Prerequisite.List# lists must be met.
 /// </summary>
 /// <param name="type">The object whose prerequisites are being tested.</param>
 /// <param name="owned">The structures to be counted as owned for the purposes of the test.</param>
@@ -8221,92 +8600,25 @@ static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
 /// <returns>bool; Are all of the prerequisites satisfied?</returns>
 bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const
 {
-	BuildingTypeClass const * own_building;
-
-	for (int i = 0; i < type->Prerequisite.Count(); i++) {
-
-		if (type->Prerequisite[i] >= 0) {
-
-			BuildingTypeClass const * b = BuildingTypes[type->Prerequisite[i]];
-			if (!Rule->BuildConst.Is_In_List(b)) {
-
-				bool found = false;
-				for (int j = 0; j < ownedcount; j++) {
-					if (owned[j] == b) {
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					return(false);
-				}
-			}
-
-		} else {
-
-			if (type->Prerequisite[i] == -1) {
-				continue;
-			}
-
-			own_building = NULL;
-
-			switch (type->Prerequisite[i]) {
-
-				case STRUCT_G_FACTORY:
-					own_building = Get_First_Acted(Rule->BuildWeapons);
-					break;
-
-				case STRUCT_G_BARRACKS:
-					own_building = Get_First_Acted(Rule->BuildBarracks);
-					break;
-
-				case STRUCT_G_RADAR:
-					own_building = Get_First_Acted(Rule->BuildRadar);
-					break;
-
-				case STRUCT_G_TECH:
-					own_building = Get_First_Acted(Rule->BuildTech);
-					break;
-
-				case STRUCT_G_PROC:
-					own_building = Get_First_Acted(Rule->BuildRefinery);
-					break;
-
-				// Any type of the group already queued satisfies it, as one owned does for a house playing.
-				case STRUCT_G_GDIFACTORY:
-				case STRUCT_G_NODFACTORY: {
-					TypeList<int> const & group = type->Prerequisite[i] == STRUCT_G_GDIFACTORY ? Rule->PrerequisiteGDIFactory : Rule->PrerequisiteNodFactory;
-					for (int j = 0; j < group.Count() && own_building == NULL; j++) {
-						for (int k = 0; k < ownedcount; k++) {
-							if (owned[k] == BuildingTypes[group[j]]) {
-								own_building = owned[k];
-								break;
-							}
-						}
-					}
-					break;
-				}
-
-				default:
-					break;
-			}
-
-			bool found = false;
-			for (int j = 0; j < ownedcount; j++) {
-				if (owned[j] == own_building) {
-					found = true;
-					break;
-				}
-			}
-
-			if (!found) {
-				return(false);
-			}
+	if (!Theater_Allows(*type)) {
+		return(false);
+	}
+	for (int index = 0; index < type->PrerequisiteNegative.Count(); index++) {
+		int const pre = type->PrerequisiteNegative[index];
+		TypeList<int> const * group = pre < 0 ? Rule->Prerequisite_Group_Buildings(pre) : NULL;
+		if (pre >= 0 ? Is_In_Plan(BuildingTypes[pre], owned, ownedcount) : group != NULL && Any_In_Plan(*group, owned, ownedcount)) {
+			return(false);
 		}
 	}
-
-	return(true);
+	if (AI_Prerequisite_List_Planned(type->Prerequisite, owned, ownedcount)) {
+		return(true);
+	}
+	for (TypeList<int> const & list : type->PrerequisiteLists) {
+		if (AI_Prerequisite_List_Planned(list, owned, ownedcount)) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -8525,6 +8837,35 @@ void HouseClass::Make_Base_Nodes(void)
 		refpos++;
 	}
 
+	// AIBuildCounts and AIExtraCounts (Ares): each planned type gains copies of itself, placed at random behind its first
+	// node so that its prerequisites still come first.
+	{
+		DynamicVectorClass<BuildingTypeClass const *> planned = startingqueue;
+		for (index = 0; index < planned.Count(); index++) {
+			BuildingTypeClass const * type = planned[index];
+			bool first = true;
+			for (int before = 0; before < index; before++) {
+				if (planned[before] == type) {
+					first = false;
+					break;
+				}
+			}
+			if (!first) continue;
+
+			int copies = type->AI_Build_Count(Difficulty) - 1;
+			if (type->AI_Extra_Count(Difficulty) > 0) {
+				copies += Random_Pick(0, type->AI_Extra_Count(Difficulty));
+			}
+			for (int copy = 0; copy < copies; copy++) {
+				int position = 0;
+				while (position < startingqueue.Count() - 1 && startingqueue[position] != type) {
+					position++;
+				}
+				startingqueue.Insert_After(Random_Pick(position, startingqueue.Count() - 1), type);
+			}
+		}
+	}
+
 	// A queue too short to weave defenses into is the whole plan.
 	if (startingqueue.Count() < 3) {
 		Add_Plan_Nodes(Base.Nodes, startingqueue);
@@ -8673,7 +9014,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	for (i = 0; i < Base.InnerCells.Count(); i++) {
 		Cell cell = Base.InnerCells[i];
 		int score;
-		if (!buildingtype->IsCloakGenerator) {
+		if (!buildingtype->IsAIInnerBase) {
 			score = func(*this, cell, i, context);
 		} else {
 			score = i + 1000 * (start - Coord(cell)).Gamemd_Length();
@@ -9363,6 +9704,12 @@ void HouseClass::AI_Build_Wall(void)
 	BuildingTypeClass const * ewgate = Get_First_Acted(Rule->EWGates);
 	BuildingTypeClass const * nsgate = Get_First_Acted(Rule->NSGates);
 
+	// A rule set that lists no wall for this house leaves nothing to plan; with no gate, the run keeps a three-cell gap.
+	if (wall == NULL) {
+		Base.BaseAreaRect = Base.LastBaseAreaRect;
+		return;
+	}
+
 	BuildingTypeClass const * gates[] = { ewgate, ewgate, nsgate, nsgate };
 	static const FacingType _step_facings[] = { FACING_E, FACING_E, FACING_S, FACING_S };
 	static const FacingType _adjacent_facings[] = { FACING_N, FACING_S, FACING_W, FACING_E };
@@ -9418,7 +9765,9 @@ void HouseClass::AI_Build_Wall(void)
 					Cell prev_cell = run_start;
 					for (int gate_index = run_length / 2 - 1; placed < run_length; prev_cell = node_cell) {
 						if (placed == gate_index && hard_blocked) {
-							gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+							if (gates[index] != NULL) {
+								gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+							}
 							placed += 3;
 							Cell step1 = Adjacent_Cell(prev_cell, dir);
 							Cell step2 = Adjacent_Cell(step1, dir);
@@ -9444,7 +9793,9 @@ void HouseClass::AI_Build_Wall(void)
 			Cell prev_cell = run_start;
 			for (int gate_index = run_length / 2 - 1; placed < run_length; prev_cell = node_cell) {
 				if (placed == gate_index) {
-					gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+					if (gates[index] != NULL) {
+						gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+					}
 					placed += 3;
 					Cell step1 = Adjacent_Cell(prev_cell, dir);
 					Cell step2 = Adjacent_Cell(step1, dir);
@@ -9490,19 +9841,57 @@ void HouseClass::AI_Build_Wall(void)
 }
 
 
+static bool Is_Drained_Plant(HouseClass const * house, BuildingClass const * b)
+{
+	return(b != NULL && b->House == house && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0);
+}
+
+
+static bool Is_Local_Drain(BuildingClass const * b)
+{
+	return(b->DrainingMe->TClass->IsDrainLocal || b->TClass->IsDrainLocal);
+}
+
+
 /// <summary>
-/// Tells whether an enemy is draining one of this house's power plants, as HouseClass::UpdatePower
-/// (0x508C30) finds: a structure of the house that makes power has something draining it.
+/// Tells whether an enemy is draining one of this house's power plants of all the house's power, as
+/// HouseClass::UpdatePower (0x508C30) finds: a structure of the house that makes power has something
+/// draining it, and neither sets Drain.Local.
 /// </summary>
 bool HouseClass::Is_Being_Drained(void) const
 {
 	for (int i = 0; i < Buildings.Count(); i++) {
-		BuildingClass * b = Buildings[i];
-		if (b != NULL && b->House == this && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0) {
+		BuildingClass const * b = Buildings[i];
+		if (Is_Drained_Plant(this, b) && !Is_Local_Drain(b)) {
 			return(true);
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Returns the power that Drain.Local drains take from this house (Ares): each drained plant's power, limited
+/// first by the drainer's Drain.Amount and then by the plant's, where above zero is a most and below zero a least.
+/// </summary>
+int HouseClass::Local_Drain(void) const
+{
+	int total = 0;
+	for (int i = 0; i < Buildings.Count(); i++) {
+		BuildingClass const * b = Buildings[i];
+		if (Is_Drained_Plant(this, b) && Is_Local_Drain(b)) {
+			int amount = b->Power_Output();
+			for (int limit : {b->DrainingMe->TClass->DrainAmount, b->TClass->DrainAmount}) {
+				if (limit > 0) {
+					amount = std::min(amount, limit);
+				} else if (limit < 0) {
+					amount = std::max(amount, -limit);
+				}
+			}
+			total += amount;
+		}
+	}
+	return(total);
 }
 
 
@@ -9557,10 +9946,25 @@ void HouseClass::Recalc_Power_Drain(void)
 	// making nothing, as HouseClass::UpdatePower (0x508C30) and BuildingClass::IsPowerOnline do.
 	if (IsPowerBlackout || Is_Being_Drained()) {
 		Power = 0;
+	} else if (int const local = Local_Drain(); local > 0) {
+		AUTOTEST_LOG("local drain %s power %d less %d\n", Class->Name(), Power, local);
+		Power = std::max(Power - local, 0);
 	}
+
+	// A running Battery superweapon adds its power whatever the base is doing.
+	Power += Battery_Power();
+
+	// Auxiliary power from the trigger action comes the same way.
+	Power += AuxiliaryPower;
 
 	Adjust_House_Power(this);
 	Recalc_House_Factories(this);
+
+	// A firestorm defense a trigger raised does not outlast the power it needs.
+	if (IsFirestormFromTrigger && Power_Fraction() < 1.0) {
+		AUTOTEST_LOG("  firestorm of %s dropped for lack of power\n", Class->Name());
+		Deactivate_Firestorm();
+	}
 
 	if (was_low_power != (Power_Fraction() < 1.0)) {
 		Update_Present_Super_Weapons();
@@ -9591,7 +9995,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 			} else {
 				for (int i = 0; i < Buildings.Count(); i++) {
 					BuildingClass * b = Buildings[i];
-					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown) {
+					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown && !b->Is_Radar_Jammed()) {
 						if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 						if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 							if (b->StunDuration == 0) {
@@ -9606,6 +10010,9 @@ void HouseClass::Recalc_Radar_Availability(void)
 
 		if (Map.Is_Radar_Existing() != radar_on) {
 			Map.Toggle_Radar(radar_on);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST radar frame %d is now %s\n", Frame, radar_on ? "on" : "off");
+			}
 		}
 	}
 
@@ -9622,7 +10029,7 @@ void HouseClass::Update_Spy_Satellite(void)
 	bool spysat = false;
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * b = Buildings[i];
-		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On()) {
+		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On() && !b->Is_Radar_Jammed()) {
 			if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 			if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 				spysat = true;
@@ -9953,12 +10360,22 @@ void HouseClass::AI_Super_Weapons(void)
 
 			if (super != NULL && super->Is_Ready()) {
 
+				// A weapon that names its own targeting rules (SW.AITargeting), and the Ares behaviors, pick their target by them.
+				if (Super_Weapon_Uses_Chosen_Target(super)) {
+					Cell chosen = CELL_NONE;
+					if (Pick_Super_Target(super, chosen)) {
+						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), chosen);
+					}
+					continue;
+				}
+
 				/*
 				**	A trigger action can aim the missile, the storm and the support powers at a cell of
 				**	its own, with no need for the computer to find a target. The missile and the storm
 				**	still need an enemy.
 				*/
-				if (PreferredTargetCell != CELL_NONE) {
+				Cell const preferred = Preferred_Super_Cell(super, SuperRules::AIPreference::Offensive);
+				if (preferred != CELL_NONE) {
 					bool aimed = false;
 					switch (super->Class->Type) {
 						case SUPER_PARA_DROP:
@@ -9984,7 +10401,7 @@ void HouseClass::AI_Super_Weapons(void)
 							break;
 					}
 					if (aimed) {
-						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), PreferredTargetCell);
+						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), preferred);
 						continue;
 					}
 				}
@@ -10253,6 +10670,23 @@ AircraftTypeClass const * Paradrop_Plane_Type(void)
 {
 	AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
 	return(plane != AIRCRAFT_NONE ? AircraftTypes[plane] : NULL);
+}
+
+
+/// <summary>
+/// Fetches the aircraft that carries the paratroopers of a house: the ParaDrop.Aircraft of its country, else of its side
+/// (Ares), else PDPLANE.
+/// </summary>
+AircraftTypeClass const * Paradrop_Plane_Type(HouseClass const * house)
+{
+	if (house->Class->ParaDrop.Aircraft != NULL) {
+		return(house->Class->ParaDrop.Aircraft);
+	}
+	int const side = house->Planning_Side();
+	if (side >= 0 && side < Sides.Count() && Sides[side]->ParaDrop.Aircraft != NULL) {
+		return(Sides[side]->ParaDrop.Aircraft);
+	}
+	return(Paradrop_Plane_Type());
 }
 
 
@@ -10864,12 +11298,12 @@ void HouseClass::Update_Present_Super_Weapons(void)
 							bool const on = b->IsOn && (Rule->ChronoErasedSuperWeapons || !b->IsBeingWarpedOut);
 							for (int k = 0; k < 3; k++) {
 								BuildingTypeClass const * upgrade = b->Upgrades[k];
-								if (upgrade != NULL && (upgrade->SuperWeapon == s || upgrade->SuperWeapon2 == s)) {
+								if (upgrade != NULL && upgrade->Grants_Super_Weapon(s)) {
 									present = true;
 									if (!enabled) enabled = on;
 								}
 							}
-							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s) {
+							if (b->Grants_Super_Weapon(s)) {
 								present = true;
 								if (enabled) break;
 								enabled = on;
@@ -10879,9 +11313,20 @@ void HouseClass::Update_Present_Super_Weapons(void)
 					}
 				}
 
+				// SW.AlwaysGranted needs no building: the weapon is there for as long as the house lives.
+				if (!IsDefeated && SuperWeapon[s]->Class->Keys.AlwaysGranted) {
+					present = true;
+					enabled = true;
+				}
+
 				// Power_Fraction, not the raw Power and Drain, so that the full power cheat keeps these weapons available.
 				if (Power_Fraction() < 1.0) {
 					enabled = false;
+				}
+
+				// SW.Shots, SW.AllowPlayer, SW.AllowAI, the country lists and the building lists can take a weapon away.
+				if (present && !Super_Weapon_Allowed(SuperWeapon[s])) {
+					present = false;
 				}
 
 				if (present && !IsDefeated) {
@@ -10927,38 +11372,63 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 {
 	if (!IsDefeated) {
 		for (int s = 0; s < SuperWeapon.Count(); s++) {
-			bool const withheld = !Session.Options.SWAllowed && SuperWeaponTypes[s]->IsDisableableFromShell;
+			bool const withheld = (!Session.Options.SWAllowed && SuperWeaponTypes[s]->IsDisableableFromShell) || !Super_Weapon_Allowed(SuperWeapon[s]);
 			if (!withheld && (!SuperWeapon[s]->Is_Present() || SuperWeapon[s]->Is_One_Time())) {
-				bool from_upgrade = false;
-				int j = Buildings.Count() - 1;
-				if (j >= 0) {
-					while (true) {
-						BuildingClass * b = Buildings[j];
-						if (b->IsActive && b->House == this && !b->IsInLimbo) {
-							for (int k = 0; k < BUILDING_UPGRADE_MAX; k++) {
-								BuildingTypeClass const * upgrade = b->Upgrades[k];
-								if (upgrade != NULL && (upgrade->SuperWeapon == s || upgrade->SuperWeapon2 == s)) {
-									from_upgrade = true;
-									break;
-								}
-							}
-							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s || from_upgrade) {
-								SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
-								if (this == PlayerPtr) {
-									Add_Super_Cameo(s);
-								}
-								break;
-							}
-						}
-						j--;
-						if (j < 0) {
-							break;
-						}
+				// SW.AlwaysGranted needs no building.
+				bool granted = SuperWeapon[s]->Class->Keys.AlwaysGranted;
+				for (int j = Buildings.Count() - 1; j >= 0 && !granted; j--) {
+					BuildingClass * b = Buildings[j];
+					if (!b->IsActive || b->House != this || b->IsInLimbo) {
+						continue;
+					}
+					for (int k = 0; k < BUILDING_UPGRADE_MAX && !granted; k++) {
+						BuildingTypeClass const * upgrade = b->Upgrades[k];
+						granted = upgrade != NULL && upgrade->Grants_Super_Weapon(s);
+					}
+					granted = granted || b->Grants_Super_Weapon(s);
+				}
+				if (granted) {
+					SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
+					if (this == PlayerPtr && SuperWeaponTypes[s]->Keys.ShowCameo) {
+						Add_Super_Cameo(s);
 					}
 				}
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// With AllowBypassBuildLimit=no for this house's difficulty, would a team of the type take one of its members past a
+/// positive BuildLimit, counting what the house owns? Ares then keeps the computer from creating the team. Without the
+/// key, or with yes, the team is created as before and the answer is false.
+/// </summary>
+bool HouseClass::Team_Breaks_Build_Limit(TeamTypeClass const & team) const
+{
+	int const difficulty = std::clamp((int)Difficulty, 0, DIFF_COUNT - 1);
+	if (!Rule->IsBypassBuildLimitSet || Rule->AllowBypassBuildLimit[difficulty] || team.TaskForce == NULL) {
+		return(false);
+	}
+	for (int index = 0; index < team.TaskForce->ClassCount; index++) {
+		EnlistedMemberClass const & member = team.TaskForce->Members[index];
+		TechnoTypeClass const * type = member.Class;
+		if (type == NULL || type->BuildLimit <= 0) {
+			continue;
+		}
+		int owned = 0;
+		switch (type->RTTI) {
+			case RTTI_UNITTYPE: owned = UQuantity.Value(type->Fetch_Heap_ID()); break;
+			case RTTI_INFANTRYTYPE: owned = IQuantity.Value(type->Fetch_Heap_ID()); break;
+			case RTTI_AIRCRAFTTYPE: owned = AQuantity.Value(type->Fetch_Heap_ID()); break;
+			case RTTI_BUILDINGTYPE: owned = BQuantity.Value(type->Fetch_Heap_ID()); break;
+			default: break;
+		}
+		if (owned + member.Quantity > type->BuildLimit) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -11221,4 +11691,284 @@ RTTIType HouseClass::Fetch_RTTI(void) const
 int HouseClass::Fetch_Heap_ID(void) const
 {
 	return(HeapID);
+}
+
+
+/// <summary>
+/// Does the house meet the conditions a superweapon sets for being offered to it: it has shots left,
+/// its controller and country are allowed (SW.AllowPlayer, SW.AllowAI, SW.RequiredHouses,
+/// SW.ForbiddenHouses), it owns one of the SW.AuxBuildings when the weapon lists any, and none of the
+/// SW.NegBuildings? A weapon that sets none of these is always allowed.
+/// </summary>
+bool HouseClass::Super_Weapon_Allowed(SuperClass const * super) const
+{
+	SuperWeaponKeys const & keys = super->Class->Keys;
+
+	if (super->Is_Exhausted()) {
+		return(false);
+	}
+	if (Is_Human_Player() ? !keys.AllowPlayer : !keys.AllowAI) {
+		return(false);
+	}
+	if (keys.RequiredHouses.Count() > 0 && !keys.RequiredHouses.Is_In_List(Class->HeapID)) {
+		return(false);
+	}
+	if (keys.ForbiddenHouses.Count() > 0 && keys.ForbiddenHouses.Is_In_List(Class->HeapID)) {
+		return(false);
+	}
+	if (keys.AuxBuildings.Count() > 0) {
+		bool owned = false;
+		for (int index = 0; index < keys.AuxBuildings.Count() && !owned; index++) {
+			owned = keys.AuxBuildings[index] != NULL && BQuantity.Value(keys.AuxBuildings[index]->Fetch_Heap_ID()) > 0;
+		}
+		if (!owned) {
+			return(false);
+		}
+	}
+	for (int index = 0; index < keys.NegBuildings.Count(); index++) {
+		if (keys.NegBuildings[index] != NULL && BQuantity.Value(keys.NegBuildings[index]->Fetch_Heap_ID()) > 0) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// The power that the house's running Battery superweapons add to its output.
+/// </summary>
+int HouseClass::Battery_Power(void) const
+{
+	if (!SuperWeaponTypeClass::BatteryTypesExist) {
+		return(0);
+	}
+	int power = 0;
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass const * super = SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == SUPER_BATTERY && super->Is_Drain_Active()) {
+			power += super->Class->Keys.BatteryPower;
+		}
+	}
+	return(power);
+}
+
+
+/// <summary>
+/// Does a running Battery superweapon of the house overpower, or keep online, structures of the type?
+/// </summary>
+bool HouseClass::Battery_Affects(BuildingTypeClass const * type, bool overpower) const
+{
+	if (!SuperWeaponTypeClass::BatteryTypesExist) {
+		return(false);
+	}
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass const * super = SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == SUPER_BATTERY && super->Is_Drain_Active()) {
+			TypeList<BuildingTypeClass const *> const & list = overpower ? super->Class->Keys.BatteryOverpower : super->Class->Keys.BatteryKeepOnline;
+			if (list.Is_In_List(type)) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+namespace {
+
+SuperRules::AITarget Default_AI_Mode(SuperWeaponType type)
+{
+	switch (type) {
+		case SUPER_GENERIC_WARHEAD: return(SuperRules::AITarget::Offensive);
+		case SUPER_UNIT_DELIVERY: return(SuperRules::AITarget::ParaDrop);
+		case SUPER_SONAR_PULSE: return(SuperRules::AITarget::Stealth);
+		case SUPER_BATTERY: return(SuperRules::AITarget::LowPower);
+		case SUPER_EM_PULSE: return(SuperRules::AITarget::None);
+		case SUPER_DROP_PODS: return(SuperRules::AITarget::DropPod);
+		case SUPER_HUNTER_SEEKER: return(SuperRules::AITarget::HunterSeeker);
+		default: return(SuperRules::AITarget::None);
+	}
+}
+
+}
+
+
+/// <summary>
+/// Does this superweapon choose its own target (SW.AITargeting) or belong to a behavior that has no
+/// stock computer rule? The computer's stock rules handle the others.
+/// </summary>
+bool HouseClass::Super_Weapon_Uses_Chosen_Target(SuperClass const * super) const
+{
+	SuperWeaponKeys const & keys = super->Class->Keys;
+	SuperRules::AITarget const mode = (SuperRules::AITarget)keys.AITargeting;
+	if (mode != SuperRules::AITarget::Default && mode != SuperRules::AITarget::IronCurtain && mode != SuperRules::AITarget::ForceShield) {
+		return(true);
+	}
+	switch (super->Class->Type) {
+		case SUPER_GENERIC_WARHEAD:
+		case SUPER_UNIT_DELIVERY:
+		case SUPER_SONAR_PULSE:
+		case SUPER_BATTERY:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+/// <summary>
+/// Chooses where this house fires a superweapon by the rules SW.AITargeting names (or the behavior's
+/// default), as the computer does and as SW.AutoFire and SW.UseAITargeting do for a player.
+/// </summary>
+/// <param name="cell">Receives the cell to aim at, CELL_NONE for a weapon that needs no cell.</param>
+/// <returns>Returns true when the weapon should fire now. A mode that finds no target, a constraint
+/// that does not hold, or a target the weapon's rules refuse gives false.</returns>
+bool HouseClass::Pick_Super_Target(SuperClass const * super, Cell & cell)
+{
+	using namespace SuperRules;
+
+	SuperWeaponKeys const & keys = super->Class->Keys;
+	AITarget mode = (AITarget)keys.AITargeting;
+	if (mode == AITarget::Default) {
+		mode = Default_AI_Mode(super->Class->Type);
+	}
+	cell = CELL_NONE;
+
+	unsigned const need = keys.AIConstraints;
+	bool const attacked = LATime != 0 && LATime + TICKS_PER_MINUTE > Frame;
+	bool const low_power = Power_Fraction() < 1.0;
+	if ((need & CONSTRAINT_ENEMY) && Enemy == HOUSE_NONE) return(false);
+	if ((need & CONSTRAINT_STORM_INACTIVE) && LightningStormClass::Is_Active_Or_Pending()) return(false);
+	if ((need & CONSTRAINT_DOMINATOR_INACTIVE) && PsychicDominatorClass::Is_Active()) return(false);
+	if ((need & CONSTRAINT_ATTACKED) && !attacked) return(false);
+	if ((need & CONSTRAINT_LOW_POWER) && !low_power) return(false);
+	if ((need & CONSTRAINT_OFFENSIVE_SET) && PreferredTargetCell == CELL_NONE) return(false);
+	if ((need & CONSTRAINT_OFFENSIVE_CLEAR) && PreferredTargetCell != CELL_NONE) return(false);
+	if ((need & CONSTRAINT_DEFENSIVE_SET) && PreferredDefensiveCell == CELL_NONE) return(false);
+	if ((need & CONSTRAINT_DEFENSIVE_CLEAR) && PreferredDefensiveCell != CELL_NONE) return(false);
+
+	bool needs_cell = true;
+	switch (mode) {
+		case AITarget::Default:
+		case AITarget::None:
+		case AITarget::IronCurtain:
+		case AITarget::ForceShield:
+			return(false);
+
+		case AITarget::Nuke:
+		case AITarget::MultiMissile:
+		case AITarget::LightningStorm:
+		case AITarget::Offensive:
+			if (Enemy == HOUSE_NONE) return(false);
+			cell = Pick_Strike_Target();
+			break;
+
+		case AITarget::PsychicDominator:
+			if (Enemy == HOUSE_NONE) return(false);
+			cell = Pick_Dominator_Target();
+			break;
+
+		case AITarget::GeneticMutator:
+			cell = Pick_Mutator_Target();
+			break;
+
+		case AITarget::ParaDrop:
+			cell = Pick_Drop_Target();
+			break;
+
+		case AITarget::DropPod:
+		case AITarget::LightningRandom: {
+			Cell const random_cell = Random_Cell_In_Zone(Random_Pick(ZONE_NORTH, ZONE_WEST));
+			cell = Map.Nearby_Location(random_cell, SPEED_FOOT);
+			break;
+		}
+
+		case AITarget::Self:
+			for (int index = 0; index < Buildings.Count(); index++) {
+				BuildingClass const * building = Buildings[index];
+				if (building->House == this && building->IsActive && !building->IsInLimbo && building->Strength > 0 && building->Is_Powered_On()
+						&& building->Grants_Super_Weapon(super->Class->HeapID)) {
+					cell = building->Center_Coord().As_Cell();
+					break;
+				}
+			}
+			break;
+
+		case AITarget::Base:
+			cell = ConYards.Count() > 0 ? ConYards[0]->Center_Coord().As_Cell() : Starting_Cell_Or_Default();
+			break;
+
+		case AITarget::EnemyBase:
+			if (Enemy == HOUSE_NONE) return(false);
+			cell = Map.Nearby_Location(Houses[Enemy]->Starting_Cell_Or_Default(), SPEED_FOOT);
+			break;
+
+		case AITarget::Stealth:
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass const * techno = Technos[index];
+				if (techno->IsActive && !techno->IsInLimbo && techno->Strength > 0 && (techno->Cloak == CLOAKED) && !Is_Ally(techno)) {
+					cell = techno->Center_Coord().As_Cell();
+					break;
+				}
+			}
+			break;
+
+		case AITarget::HunterSeeker:
+			if (Enemy == HOUSE_NONE) return(false);
+			needs_cell = false;
+			break;
+
+		case AITarget::NoTarget:
+			needs_cell = false;
+			break;
+
+		case AITarget::Attack:
+			if (!attacked) return(false);
+			needs_cell = false;
+			break;
+
+		case AITarget::LowPower:
+			if (!low_power) return(false);
+			needs_cell = false;
+			break;
+
+		case AITarget::LowPowerAttack:
+			if (!low_power || !attacked) return(false);
+			needs_cell = false;
+			break;
+	}
+
+	if (!needs_cell) {
+		return(true);
+	}
+	Cell const preferred = Preferred_Super_Cell(super, Default_AI_Preference(mode));
+	if (preferred != CELL_NONE) {
+		cell = preferred;
+	}
+	if (cell == CELL_NONE || !Map.In_Radar(cell)) {
+		return(false);
+	}
+	return(super->Class->Fits_AI_Target(this, cell));
+}
+
+
+/// <summary>
+/// The cell a trigger action set that this superweapon aims at in place of the computer's own pick
+/// (SW.AITargeting.Preference, or the given default when the key is not set): the offensive cell
+/// (action 135), the defensive cell (action 140), or CELL_NONE when that cell is clear or the
+/// preference is None.
+/// </summary>
+Cell HouseClass::Preferred_Super_Cell(SuperClass const * super, SuperRules::AIPreference fallback) const
+{
+	using SuperRules::AIPreference;
+	AIPreference preference = AIPreference(super->Class->Keys.AIPreference);
+	if (preference == AIPreference::Default) {
+		preference = fallback;
+	}
+	switch (preference) {
+		case AIPreference::Offensive: return(PreferredTargetCell);
+		case AIPreference::Defensive: return(PreferredDefensiveCell);
+		default: return(CELL_NONE);
+	}
 }

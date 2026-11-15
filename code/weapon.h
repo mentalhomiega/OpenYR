@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "abstype.h"
 #include "rgb.h"
 #include "typelist.h"
@@ -45,6 +47,7 @@ class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WarheadTypeClass;
 class BulletTypeClass;
+class ShapeSet;
 
 
 /**********************************************************************
@@ -80,6 +83,7 @@ class WeaponTypeClass : public AbstractTypeClass
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
 		bool Anim_Picks_By_Facing(void) const;
+		bool Applies_Damage(void) const {return(ApplyDamage < 0 ? !IsSonic && !UseFireParticles : ApplyDamage != 0);}
 
 		void Init_Max_Speed(void);
 
@@ -97,6 +101,11 @@ class WeaponTypeClass : public AbstractTypeClass
 		**	set to 2.
 		*/
 		int Burst;
+
+		// Strafing.Shots (Phobos): shots an aircraft fires in one strafing run with this weapon, at least 1.
+		int StrafingShots;
+		// The rounds of its firer's ammunition one shot uses (Ares Ammo=). With 0 a shot uses none and does not restart the reload timer.
+		int AmmoUse;
 
 		/*
 		**	This is the unit class of the projectile fired. A subset of the unit types
@@ -212,6 +221,44 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsRailgun;
 
+		// IsDetachedRailgun (Ares): the weapon draws the railgun beam but may fire again before the beam has faded.
+		bool IsDetachedRailgun;
+
+		// Bolt.Color1 to Bolt.Color3 (Ares): the colours of the three strands of an electric bolt. Bit n of the mask is set when
+		// Bolt.Color(n+1) is written; a strand without one keeps the palette colour.
+		int BoltColorMask;
+		RGBClass BoltColor[3];
+
+		// Beam.Color (Ares): the colour of the radiation beam, in place of the chrono or radiation colour.
+		bool HasBeamColor;
+		RGBClass BeamColor;
+
+		// Beam.Duration and Beam.Amplitude (Ares): how long a radiation beam shows and how far it arches; -1 keeps the stock values.
+		int BeamDuration;
+		double BeamAmplitude;
+
+		// LaserThickness (Ares): the width in pixels of this weapon's laser; 1 is the stock line.
+		int LaserThickness;
+
+		// Wave.Color and Wave.Intensity (Ares): what a sonic, magnetron or laser wave of this weapon adds to each colour channel,
+		// as a constant and in proportion to the pixel it covers, in 256ths. Both are unset until the weapon names one.
+		bool HasWaveColor;
+		int WaveColor[3];
+		bool HasWaveIntensity;
+		int WaveIntensity[3];
+
+		// Wave.ReverseAgainstVehicles, Buildings, Infantry, Aircraft and Others (Ares): the wave is drawn from the target back to the firer. -1 follows IsMagBeam, which reverses a wave at a vehicle.
+		int WaveReverseVehicles;
+		int WaveReverseBuildings;
+		int WaveReverseInfantry;
+		int WaveReverseAircraft;
+		int WaveReverseOthers;
+		bool Wave_Is_Reversed_Against(int rtti) const;
+
+		// Cursor.Attack and Cursor.AttackOutOfRange (Ares): the mouse cursor names for a target in range and out of range.
+		std::string CursorAttack;
+		std::string CursorAttackOutOfRange;
+
 		/*
 		 * If this weapon always lobs its shot in a high arc, then this flag will be true.
 		 * Other weapons resort to an arc only when the target sits high enough overhead that
@@ -244,6 +291,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsSonic;
 
+		// ApplyDamage (Ares): 1 or 0 as the weapon says, or -1 for yes unless the weapon is IsSonic or UseFireParticles.
+		signed char ApplyDamage;
+
 		// The weapon draws a magnetron beam to its target.
 		bool IsMagBeam;
 
@@ -261,6 +311,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Can a vehicle fire this weapon without first turning its body or turret to the target?
 		bool IsOmniFire;
+
+		// DistributedWeaponFire: read and saved as Yuri's Revenge does, but nothing in the game acts on it.
+		bool IsDistributedFire;
 
 		// With RevealOnFire=no, firing this weapon does not reveal the firer to the target's owner.
 		bool IsRevealOnFire;
@@ -315,6 +368,46 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Does the firer drop its target after one shot?
 		bool IsFireOnce;
+
+		// Abductor (Ares): a hit pulls an eligible target into the firer's passenger hold instead of damaging it.
+		bool IsAbductor;
+
+		// Abductor.AbductBelowPercent (Ares): the largest share of its maximum strength a target may have left to be abducted.
+		double AbductBelowPercent;
+
+		// Abductor.Anim (Ares): played where the target was taken from.
+		AnimTypeClass const * AbductAnim;
+
+		// Abductor.ChangeOwner (Ares): does the target change to the firer's house?
+		bool IsAbductChangeOwner;
+
+		// Abductor.MaxHealth (Ares): the most strength a target may have to be abducted. 0 sets no limit.
+		int AbductMaxHealth;
+
+		// Abductor.Temporal (Ares): does a temporal warhead of this weapon abduct its target when the warp finishes, rather
+		// than the hit abducting it?
+		bool IsAbductTemporal;
+
+		// IvanBomb.* (Ares): what a bomb this weapon plants does, in place of the [CombatDamage] and [AudioVisual] settings. A
+		// setting the weapon does not write is -1 (IVAN_SOUND_UNSET for a sound, NULL or empty for the rest, and a flag for a number) and leaves that
+		// setting in charge.
+		bool HasIvanDelay;
+		int IvanDelay;
+		WarheadTypeClass const * IvanWarhead;
+		bool HasIvanDamage;
+		int IvanDamage;
+		int IvanAttachSound;
+		int IvanTickingSound;
+		static int const IVAN_SOUND_UNSET = -2;
+		std::string IvanImage;
+		int IvanDetachable;
+		int IvanDetonateOnSell;
+		int IvanDestroysBridges;
+		int IvanCanDetonateTimeBomb;
+
+		// The icon file IvanBomb.Image names, found the first time a bomb of this weapon is drawn. Not saved.
+		mutable ShapeSet const * IvanImageData;
+		mutable bool IvanImageLooked;
 		AnimTypeClass const * OpenToppedAnim;
 
 		// Played at the muzzle of a garrisoned structure each time an occupant fires this weapon.

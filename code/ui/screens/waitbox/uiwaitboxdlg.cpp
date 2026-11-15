@@ -24,11 +24,12 @@ UIWaitBoxClass::~UIWaitBoxClass(void)
 }
 
 
-bool UIWaitBoxClass::Show(char const * text, bool bar)
+bool UIWaitBoxClass::Show(char const * text, bool bar, bool clear)
 {
 	Hide();
 
 	Presenter = std::make_unique<UIWaitBoxPresenterClass>((text != NULL) ? text : "", bar);
+	Presenter->Clear = clear;
 	View = UI_Wait_Box_View(*Presenter);
 
 	if (!UIShell.Show_Modeless(*View)) {
@@ -53,6 +54,17 @@ void UIWaitBoxClass::Set_Text(char const * text)
 void UIWaitBoxClass::Set_Fraction(double fraction)
 {
 	if (View != nullptr) {
+		Presenter->Set_Fraction(fraction);
+		View->Sync();
+		UIShell.Refresh();
+	}
+}
+
+
+void UIWaitBoxClass::Set_Step(char const * text, double fraction)
+{
+	if (View != nullptr) {
+		Presenter->Text = (text != NULL) ? text : "";
 		Presenter->Set_Fraction(fraction);
 		View->Sync();
 		UIShell.Refresh();

@@ -1,0 +1,43 @@
+; Ares's incidental trigger events, each on a volatile tag, so each trigger springs once. The abductor weapons come
+; from the mod in tests/autotest/ares-weapon-keys/ (MTNK, HTNK and HTK carry them); the player's tanks pick their
+; targets themselves as soon as the enemy infantry are in range. House 0 is the player's Americans and house 5 the
+; computer's Africans. Expected log lines:
+;   Abduction: ATEV1 (71, Abducted) and ATEV2 (72, Abducted By House 0) spring as their soldiers are abducted, and
+;   ATEV4 (73, Abducts Something) springs with the MTNK's abduction. ATEV3 (72, Abducted By House 5) never springs: its
+;   soldier is abducted by the player's tank.
+;   Attacks: ATEV5 (83, Attacked Or Destroyed By Anybody) and ATEV6 (84, by house 0) spring at the first hit on their
+;   soldiers, ATEV7 (84, by house 5) never springs, and ATEV8 (85, Destroyed By House 0) springs when its soldier dies.
+;   Super weapons: when the player fires AmericanParaDropSpecial (index 6) at 66,22, ATEV9 (75 for the player) and ATEV11
+;   (77, within five cells of waypoint 1 at 65,20) spring in the frame of the SUPER line. ATEV10 (75 for the computer)
+;   and ATEV12 (77 at waypoint 0, at 52,97) never spring.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-events-incidental.txt -Mods src-agent30/tests/autotest/ares-weapon-keys -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|AUTOTEST abducted|SUPER|TEvent|Exception"
+30 command CenterBase
+100 spawn E1 60 30
+101 tagevent E1 71,0,0 0 60 30
+102 spawn E1 60 40
+103 tagevent E1 72,0,0 0 60 40
+104 spawn E1 60 50
+105 tagevent E1 72,0,5 0 60 50
+110 own MTNK 56 30
+111 tagevent MTNK 73,0,0
+112 own HTNK 56 40
+113 own HTK 56 50
+120 spawn E2 78 30
+121 tagevent E2 83,0,0 0 78 30
+122 spawn E2 78 40
+123 tagevent E2 84,0,0 0 78 40
+124 spawn E2 78 50
+125 tagevent E2 84,0,5 0 78 50
+126 spawn E2 78 60
+127 tagevent E2 85,0,0 0 78 60
+130 own FV 74 30
+131 own SREF 74 40
+132 own TNKD 74 50
+133 own MGTK 74 60
+300 tagevent general 75,0,6
+301 tagevent general@Africans 75,0,6
+302 tagevent general 77,2,1,AmericanParaDropSpecial
+303 tagevent general 77,2,0,AmericanParaDropSpecial
+310 grant AmericanParaDropSpecial
+330 fire AmericanParaDropSpecial 66 22
+400 quit

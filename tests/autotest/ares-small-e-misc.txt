@@ -1,0 +1,20 @@
+; ProduceCashDisplay, Spotlight.StartHeight and Spotlight.Distance, SpyPlane.Mission and AlternateTheaterArt, with the
+; mod in tests/autotest/ares-small-e-keys. Expected log lines:
+;   producecash ... GAPOWR shows +$20 about every 45 frames once the plant opens (the plant's ProduceCashDelay), not at once for payments
+;     closer than DisplayCreditsDelay (0.02 minute, 18 frames).
+;   spotlight NAPOWR start height 100 distance 2500.
+;   wpstate SPYP shows mission Attack (SpyPlane.Mission=Attack); without the mod it shows Spyplane Approach.
+;   graphic GGI gives art GGIU when the theater's image letter names a section of the art file; E2 keeps its own name.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-misc.txt -Mods tests/autotest/ares-small-e-keys -Seconds 120 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPOWR 60 36
+42 own NAPOWR 60 44
+43 graphic GGI
+44 graphic E2
+60 grant SpyPlaneSpecial
+80 fire SpyPlaneSpecial 60 60
+90 wpstate SPYP
+110 wpstate SPYP
+150 wpstate SPYP
+400 quit

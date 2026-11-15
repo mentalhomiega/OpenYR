@@ -34,8 +34,14 @@
 
 #include "ccini.h"
 #include "face.h"
+#include "mission.hh"
 
 #include "diff.hh"
+
+#include <climits>
+#include <optional>
+#include <string>
+#include <vector>
 
 class AircraftTypeClass;
 class AnimTypeClass;
@@ -89,6 +95,20 @@ class DifficultyClass
 		}
 };
 
+class TechnoTypeClass;
+
+// A prerequisite group that [GenericPrerequisites] adds beyond the stock ones (Ares).
+struct GenericPrerequisiteClass
+{
+	std::string Name;
+	TypeList<int> Buildings;
+
+	// [General] Prerequisite<Name>Alternate: objects that satisfy the group when no member building is owned.
+	TypeList<TechnoTypeClass const *> Alternates;
+
+	void Serialize(SaveStreamClass & stream);
+};
+
 class RulesClass
 {
 	public:
@@ -98,6 +118,14 @@ class RulesClass
 		void Initialize(CCINIClass const & ini);
 
 		bool Addition(CCINIClass const & ini);
+
+		// The prerequisite entry a group name stands for: a STRUCT_G_ code, or nothing when no group has the name.
+		std::optional<int> Prerequisite_Group(char const * name) const;
+		// The buildings that satisfy a group code; NULL for a code that names no group.
+		TypeList<int> const * Prerequisite_Group_Buildings(int group) const;
+		// The [GenericPrerequisites] group of a code below the stock ones; NULL for a stock or unknown code.
+		GenericPrerequisiteClass const * Custom_Prerequisite_Group(int group) const;
+		bool Generic_Prerequisites(CCINIClass const & ini);
 
 		bool Special_Weapons(CCINIClass const & ini);
 		bool Audio_Visual_Rules(CCINIClass const & ini);
@@ -133,6 +161,7 @@ class RulesClass
 		bool Do_Tiberiums(CCINIClass const & ini);
 
 		bool AI(CCINIClass const & ini);
+		bool Global_Controls(CCINIClass const & ini);
 		bool Powerups(CCINIClass const & ini);
 		bool Land_Types(CCINIClass const & ini);
 		bool IQ(CCINIClass const & ini);
@@ -169,6 +198,9 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport multiplies its damage by this.
 		double OpenToppedDamageMultiplier;
 
+		// BerserkROFMultiplier (Ares): a berserk object's reload time is multiplied by this.
+		double BerserkROFMultiplier;
+
 		// A passenger firing from inside an open-topped transport reaches this many cells farther.
 		int OpenToppedRangeBonus;
 
@@ -194,6 +226,10 @@ class RulesClass
 		// A temporal weapon fired from an open-topped transport lets go beyond this many cells.
 		int OpenToppedWarpDistance;
 
+		// The mission a computer player's vehicle or soldier takes when its EMP wears off (Ares EMPAIRecoverMission).
+		// MISSION_NONE, the default here, keeps the mission it had, as stock Yuri's Revenge does.
+		MissionType EMPAIRecoverMission;
+
 		/*
 		 * Ivan bombs go off IvanTimedDelay frames after they are planted, doing IvanDamage through
 		 * IvanWarhead; their icon flickers every IvanIconFlickerRate frames.
@@ -207,6 +243,10 @@ class RulesClass
 
 		// Whether chronoshifted infantry destroys a vehicle it lands on; when not, the infantry dies (Ares ChronoInfantryCrush).
 		bool IsChronoInfantryCrush;
+
+		// Whether a CloningFacility=yes structure that also has Factory set copies nothing, as the Ares manual says
+		// (ours: [General] CloningFacilityIgnoresFactories).
+		bool IsCloningFacilityIgnoresFactories;
 
 		// The weapon an exploding object without a weapon of its own sets off as it dies.
 		WeaponTypeClass * DeathWeapon;
@@ -286,6 +326,9 @@ class RulesClass
 		int LightningHitDelay;
 		int LightningScatterDelay;
 		int LightningCellSpread;
+
+		// How many cells away from a randomly placed storm cloud a structure with LightningRod=yes still draws it in.
+		int LightningRodRange;
 		int LightningSeparation;
 		bool LightningPrintText;
 		TypeList<AnimTypeClass const *> WeatherConClouds;
@@ -493,6 +536,9 @@ class RulesClass
 
 		// A house earns bounty only while it owns one of these, or always when the list is empty (Ares BountyEnablers).
 		TypeList<BuildingTypeClass const *> BountyEnablers;
+
+		// The minutes between the floating texts of a ProduceCashDisplay=yes structure; cash paid in between is shown with the next (Ares DisplayCreditsDelay).
+		double DisplayCreditsDelay;
 
 		// Whether bounty earned is shown where the victim died, for types that do not say (Ares BountyDisplay).
 		bool IsBountyDisplay;
@@ -736,6 +782,9 @@ class RulesClass
 
 		// The vehicles that stand in for a refinery in a PROC prerequisite, such as the slave miner.
 		TypeList<UnitTypeClass const *> PrerequisiteProcAlternate;
+
+		// The groups [GenericPrerequisites] defines beyond the stock ones; entry N is group code STRUCT_G_CUSTOM - N.
+		std::vector<GenericPrerequisiteClass> GenericPrerequisites;
 
 		/*
 		 * These are the sound effects of a gate rising to bar the way and lowering again to
@@ -1084,6 +1133,8 @@ class RulesClass
 		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
 		bool IsAlliedWallTransparency;
 
+		// AlliedSolidTransparency (Ares): a SubjectToBuildings shot flies through solid buildings its owner's allies own.
+		bool IsAlliedSolidTransparency;
 		// Set by MissileLaunchHoldsMove: a spawner's move waits while a missile it launched is on its pad or taking off.
 		bool IsMissileLaunchHoldsMove;
 
@@ -1150,6 +1201,10 @@ class RulesClass
 		 * This is the sound effect played as an object cloaks or reappears.
 		 */
 		VocType CloakSound;
+
+		// The sound played as an object decloaks, and whether [AudioVisual] DecloakSound sets it; when not, CloakSound plays (Ares DecloakSound).
+		VocType DecloakSound;
+		bool IsDecloakSoundSet;
 
 		/*
 		 * This is the sound effect played when a building or unit is sold back for a
@@ -1315,6 +1370,9 @@ class RulesClass
 
 		// How many frames an object that has just become elite flashes.
 		int EliteFlashTimer;
+
+		// VeteranFlashTimer (Ares): how many frames an object that has just become a veteran flashes.
+		int VeteranFlashTimer;
 
 		// Frames per second below which detail-gated animations are skipped (DetailMinFrameRateNormal=).
 		int DetailMinFrameRateNormal;
@@ -1538,6 +1596,9 @@ class RulesClass
 		TypeList<BuildingTypeClass const *> SovietBaseDefenses;
 		TypeList<BuildingTypeClass const *> ThirdBaseDefenses;
 
+		// [AI] AIForcePredictionFudge: Yuri's Revenge reads and saves these numbers and nothing uses them.
+		std::vector<int> AIForcePredictionFudge;
+
 		// Base defenses a computer house of each side plans, per difficulty slot. A side with no
 		// list plans its defenses by cost instead.
 		TypeList<int> AlliedBaseDefenseCounts;
@@ -1565,6 +1626,12 @@ class RulesClass
 
 		// How many cells from a base center a team gathers before an attack or after one.
 		int AISafeDistance;
+
+		// How many cells from its own base center a team gathers on a Gather at Base line (Ares AIFriendlyDistance).
+		// NO_FRIENDLY_DISTANCE while unset, which means AISafeDistance.
+		static constexpr int NO_FRIENDLY_DISTANCE = INT_MIN;
+		int AIFriendlyDistance;
+		int Friendly_Distance(void) const {return(AIFriendlyDistance == NO_FRIENDLY_DISTANCE ? AISafeDistance : AIFriendlyDistance);}
 
 		// The share of delivered ore each ore purifier adds, and the purifiers each skirmish
 		// computer house counts as having, per difficulty slot.
@@ -1717,6 +1784,14 @@ class RulesClass
 
 		// Frames between an OpportunityFire object's scans for targets while it moves.
 		int NormalTargetingDelay;
+
+		// Whether a warhead section read again without Verses=, such as a map's override, keeps its earlier Verses.
+		bool IsKeepWarheadVerses;
+		bool IsKeepWarheadVersesSet;
+
+		// Whether an EMEffect=yes warhead without EMP.Duration makes a stock pulse that stuns for its damage in frames.
+		bool IsEMEffectPulse;
+		bool IsEMEffectPulseSet;
 
 		/*
 		 * The structure type whose towers charge each other before firing, the percent of extra
@@ -1882,9 +1957,11 @@ class RulesClass
 			void Read(CCINIClass const & ini, char const * section, char const * prefix);
 			void Serialize(SaveStreamClass & stream);
 		};
+		// The defaults of each kind are gamemd's (RulesClass::RulesClass, 0x665650): the struct's own are the V3 rocket's.
 		RocketTypeStruct V3Rocket;
-		RocketTypeStruct DMisl;
-		RocketTypeStruct CMisl;
+		RocketTypeStruct DMisl{.PauseFrames = 10, .BodyLength = 128, .IsLazyCurve = false};
+		RocketTypeStruct CMisl{.PauseFrames = 10, .TiltFrames = 30, .PitchInitial = 1.0f, .TurnRate = 1.0f, .Acceleration = 0.6f,
+			.Damage = 500, .EliteDamage = 500, .BodyLength = 128, .IsLazyCurve = false};
 
 		// The rocket settings for a missile type, or nothing when it is none of the three.
 		RocketTypeStruct const * Rocket_Of(AircraftTypeClass const * type) const;
@@ -2157,6 +2234,23 @@ class RulesClass
 		*/
 		TypeList<int> TeamDelays;
 
+		// [General] TeamRetaliate (Ares): set, an idle team turns on whoever hurts a member (yes) or keeps its orders
+		// (no). Unset keeps the engine's own response (docs/LOBBY_MODES.md).
+		bool IsTeamRetaliateSet = false;
+		bool IsTeamRetaliate = false;
+
+		// [General] FirestormTriggerHumans (ours): the Activate and Deactivate Firestorm trigger actions also work on a
+		// house a player controls. Ares supports them for computer houses only, which is the default.
+		bool IsFirestormTriggerHumans = false;
+
+		// [GlobalControls] AllowParallelAIQueues (Ares): no lets a computer house build in one factory of a kind at a time.
+		bool IsAllowParallelAIQueues = true;
+
+		// [GlobalControls] AllowBypassBuildLimit (Ares), one per difficulty in the order of TeamDelays: no keeps a computer
+		// house from creating a team that would take a type past its BuildLimit. Unset lets every difficulty do so.
+		bool IsBypassBuildLimitSet = false;
+		bool AllowBypassBuildLimit[DIFF_COUNT] = {true, true, true};
+
 		/*
 		 * This is the delay, expressed in game frames, before a computer house first
 		 * picks an enemy to hate, with one entry per difficulty level. It is only ever
@@ -2331,6 +2425,9 @@ class RulesClass
 		 * buildings of its base when it lays out base nodes.
 		 */
 		int AIBaseSpacing;
+
+		// Placement searches a computer structure may fail before its base node is dropped; 0 never drops it.
+		int AIPlacementSearchFailures;
 
 		// How far, in cells, from its construction yard the computer may place a naval yard.
 		int AINavalYardAdjacency;
@@ -2713,9 +2810,12 @@ class RulesClass
 		 * The chrono warp of a teleporting object. Unless ChronoTrigger is off, the object waits
 		 * its distance in leptons divided by ChronoDistanceFactor before it jumps, never less than
 		 * ChronoMinimumDelay, and less than ChronoRangeMinimum leptons away it waits ChronoMinimumDelay.
-		 * After the jump it holds ChronoDelay frames where it landed.
+		 * After the jump it holds ChronoDelay frames where it landed. ChronoReinfDelay is the hold
+		 * a chrono reinforcement (trigger action 107) is given when it is placed; its landing then
+		 * sets the hold to ChronoDelay (gamemd 0x719983), so the two only differ before that.
 		 */
 		int ChronoDelay;
+		int ChronoReinfDelay;
 		bool ChronoTrigger;
 		int ChronoDistanceFactor;
 		int ChronoMinimumDelay;
@@ -2734,6 +2834,12 @@ class RulesClass
 		 * on that cell makes the vehicle fail to appear, and the sale is refunded.
 		 */
 		bool UndeployScattersInfantry;
+
+		/*
+		 * Whether trigger event 82 holds while the trigger's house owns no more than the count it names.
+		 * When it is false the event holds only while the house owns fewer than that count.
+		 */
+		bool IsHouseDoesNotOwnAtMost;
 
 		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
@@ -3009,4 +3115,17 @@ class RulesClass
 
 		/// Unused
 		float EngineerDamage;
+
+		// EngineerAlwaysCaptureTech (Ares): a tech structure gets the capture cursor whatever its health.
+		bool IsEngineerAlwaysCaptureTech;
+
+		// RepairStopOnInsufficientFunds (Ares): with false, a human player's structure out of money keeps repair on and resumes once paid.
+		bool IsRepairStopOnInsufficientFunds;
+
+		// TogglePowerAllowed (Ares): whether the player can enter power mode and sees the power button. No by default, as
+		// Yuri's Revenge has no power mode.
+		bool IsTogglePowerAllowed;
+
+		// EnemyWrench (Ares): whether houses not allied with a structure's owner see its repair wrench.
+		bool IsEnemyWrench;
 };

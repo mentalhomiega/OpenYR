@@ -17,11 +17,18 @@ class FootClass;
 class IonBlastClass
 {
 	public:
-		IonBlastClass(Coord coord, bool wave_only = false);
+		IonBlastClass(Coord coord, bool wave_only = false, int frames = WAVE_FRAMES);
 		~IonBlastClass(void);
 
 		void AI(void);
 		void Draw_It(void);
+
+		// The frames a whole shockwave runs.
+		static constexpr int WAVE_FRAMES = 79;
+
+		// Shows the shockwave alone at a place for the first frames of its run (a warhead's IonCannon.Ripple).
+		// A place that got a ripple within the last RIPPLE_GAP frames gets no second one.
+		static void Ripple(Coord const & coord, int frames);
 
 		static void One_Time(void);
 		static void Update_All(void);
@@ -45,6 +52,9 @@ class IonBlastClass
 
 		// A wave-only blast shows the shockwave and nothing else (DisableIonBeam).
 		bool IsWaveOnly;
+
+		// The blast ends when its age reaches this.
+		int LastFrame;
 
 		void Rock_Occupier(FootClass * occupier, Point2D blast_pixel);
 

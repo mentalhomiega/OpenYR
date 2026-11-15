@@ -575,6 +575,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
 		ConfigINI.Load(*cfile, false);
 		Init_Mods(ConfigINI.Get_String("Options", "Mods", DeploymentConfig.Mods.c_str()).c_str());
+		Apply_Mod_Files(DeploymentConfig);
 
 		std::string uidirectory = Terminate_Path(path) + "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());

@@ -1,0 +1,30 @@
+; IvanBomb.Delay, .Damage, .Warhead, .Detachable and .DetonateOnSell, with the mod in tests/autotest/ares-bomb-keys. Rules:
+; IvanTimedDelay=90, IvanDamage=33, IvanWarhead=BombBlastWH. The player's GI plants a BombA bomb (delay 40, damage 77, warhead
+; BombBlastWH2, Detachable=no, DetonateOnSell=yes) on an Apocalypse tank and a BombB bomb (no keys) on a Rhino; an engineer and a Conscript fire a
+; defusing weapon at the Rhino and the Apocalypse tank. Expected lines:
+;   bomb planted on APOC ... with BombA at frame 110, goes off at frame 150; it goes off then with "damage 77, warhead BombBlastWH2"
+;   although the engineer fired at it (Detachable=no).
+;   bomb planted on HTNK ... with BombB at frame 110, which would go off at frame 200; the engineer removes it first, so there is no
+;   "goes off" line for the HTNK.
+; Then the player's barracks and power plant are bombed with BombA and BombB and sold: the BombA bomb goes off at the frame of the
+; sale (DetonateOnSell=yes) with damage 77; the BombB bomb never does.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-ivan-bombs.txt -Mods tests/autotest/ares-bomb-keys -Seconds 60 -Filter "AUTOTEST bomb|AUTOTEST sell|AUTOTEST strike|Exception"
+30 command CenterBase
+100 own E1 56 36
+101 own APOC 62 36
+102 own HTNK 62 40
+103 own ENGINEER 60 39
+104 own E2 58 36
+110 plantbomb APOC:BombA
+110 plantbomb HTNK:BombB
+120 strike ENGINEER 62 40
+140 strike ENGINEER 62 40
+120 strike E2 62 36
+140 strike E2 62 36
+400 own GAPILE 56 52
+401 own GAPOWR 56 56
+410 plantbomb GAPILE:BombA
+411 plantbomb GAPOWR:BombB
+420 sell 56 52
+421 sell 56 56
+600 quit

@@ -7,7 +7,9 @@ when_omitted:
   value: "no"
 ---
 
-The projectile [creates a pulse](/systems/emp-pulse/#firing-a-pulse) where it detonates. The warhead's [`Spread`](/keys/spread/#scope-warheadtype) sets the pulse's radius, and the weapon's [`Damage`](/keys/damage/#scope-weapontype) sets how long the pulse lasts; the linked section explains both. The detonation deals no blast damage and has none of a blast's ground effects, such as cratering or cracking ice.
+A warhead that also sets a nonzero [`EMP.Duration`](/keys/emp.duration/) does not form a pulse. It stuns [through its blast](/systems/emp-pulse/#warheads-with-empduration) and deals ordinary damage.
+
+Otherwise the projectile [creates a pulse](/systems/emp-pulse/#firing-a-pulse) where it detonates. The warhead's [`Spread`](/keys/spread/#scope-warheadtype) sets the pulse's radius, and the weapon's [`Damage`](/keys/damage/#scope-weapontype) sets how long the pulse lasts; the linked section explains both. The detonation deals no blast damage and has none of a blast's ground effects, such as cratering or cracking ice.
 
 The pulse forms where the projectile is when it detonates. An ordinary shot first moves its detonation onto a nearby target or its fuse point; an EM pulse projectile does not. It still moves onto the target's center when it ends within 32 leptons (an eighth of a cell), unless the projectile is [`Airburst=yes`](/keys/airburst/) or [`Inaccurate=yes`](/keys/inaccurate/).
 

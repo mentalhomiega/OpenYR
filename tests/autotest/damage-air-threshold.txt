@@ -1,0 +1,14 @@
+; DamageAirThreshold. The type-keys-c-rules mod sets DamageAirThreshold=-1 and CellSpread=4 on the HE warhead. A player Kirov (ZEP) flies at 64,24
+; and the HE warhead explodes on the ground cell beneath it.
+; Expected: with -Mods the Kirov's strength after the blast is lower than before; with the DamageAirThreshold line removed (the
+; stock threshold 0) it is unchanged, because a blast on the ground does not reach an object in the air.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/damage-air-threshold.txt -Mods tests/autotest/type-keys-c-rules -Seconds 120 -Filter "AUTOTEST   where|Exception"
+30 command CenterBase
+35 reveal
+40 own ZEP 64 24
+50 move ZEP 67 25
+250 airborne ZEP
+440 where ZEP
+450 blast HE 67 25
+480 where ZEP
+520 quit

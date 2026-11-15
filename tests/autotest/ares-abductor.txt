@@ -1,0 +1,27 @@
+; Abductor weapons, defined by the mod in tests/autotest/ares-weapon-keys/. Three of the player's tanks fire at enemy infantry
+; standing four cells away. Expected log lines:
+;   MTNK (AbductGun): "abducted E1 into MTNK" with the enemy owner, then the enemy cell is empty and listhouse shows the E1
+;   riding the MTNK. A second E2 target, which the mod makes ImmuneToAbduction=yes, stays on the map and is shot at.
+;   HTNK (AbductGunOwner, Abductor.ChangeOwner=yes): "abducted E1 into HTNK" with the player's house as the owner.
+;   HTK (AbductGunHurt, Abductor.AbductBelowPercent=50%): the first shot hurts the E1 (125 strength to 75, above 50%), and the
+;   later shot that finds it at 50% or below abducts it.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-abductor.txt -Mods src-agent9/tests/autotest/ares-weapon-keys -Seconds 90 -Filter "AUTOTEST   (abduct|strike|where|listhouse)|AUTOTEST abducted|Exception"
+30 command CenterBase
+100 own MTNK 60 36
+101 spawn E1 64 36
+102 own HTNK 60 40
+103 spawn E1 64 40
+104 own HTK 60 50
+105 spawn E1 64 50
+110 spawn E2 64 28
+111 own MTNK 60 28
+200 strike MTNK 64 36
+201 strike HTNK 64 40
+202 strike HTK 64 50
+203 strike MTNK 64 28
+260 where E1
+261 where E2
+262 where MTNK
+263 where HTNK
+264 where HTK
+300 houses

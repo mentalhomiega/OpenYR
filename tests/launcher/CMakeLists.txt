@@ -14,6 +14,13 @@ opents_add_test(LauncherTests
     LIBRARIES OpenYRLauncherCore advapi32 shell32
 )
 
+opents_add_test(LauncherModsTests
+    NAME launchermods
+    SOURCES launcher_mods_tests.cpp
+    INCLUDES "${CMAKE_SOURCE_DIR}/tools/common"
+    LIBRARIES OpenYRLauncherCore advapi32 shell32
+)
+
 add_dependencies(LauncherTests OpenYRLauncher OpenYRSetup)
 
 add_test(NAME launcher_e2e

@@ -46,6 +46,8 @@
 #include "animtype.h"
 #include "builtype.h"
 #include "cell.h"
+#include "ccini.h"
+#include "dbgprint.h"
 #include "data.h"
 #include "isotype.h"
 #include "mixfile.h"
@@ -119,7 +121,7 @@ MouseClass::MouseClass(void) :
  *=============================================================================================*/
 void MouseClass::Set_Default_Mouse(MouseType mouse, bool size)
 {
-	assert((unsigned)mouse < MOUSE_COUNT);
+	assert((unsigned)mouse < MOUSE_COUNT + CustomControl.size());
 
 	NormalMouseShape = mouse;
 	Override_Mouse_Shape(mouse, size);
@@ -165,7 +167,7 @@ void MouseClass::Revert_Mouse_Shape(void)
  *=============================================================================================*/
 void MouseClass::Mouse_Small(bool wsmall)
 {
-	MouseStruct const * control = &MouseControl[CurrentMouseShape];
+	MouseStruct const * control = &Control_For(CurrentMouseShape);
 
 	if (IsSmall == wsmall) {
 		return;
@@ -189,7 +191,7 @@ void MouseClass::Mouse_Small(bool wsmall)
 /// <returns>Returns with the shape frame number to display.</returns>
 int MouseClass::Get_Mouse_Current_Frame(MouseType mouse, bool wsmall) const
 {
-	MouseStruct const * control = &MouseControl[mouse];
+	MouseStruct const * control = &Control_For(mouse);
 
 	if (wsmall) {
 		if (control->SmallFrame != -1) {
@@ -216,7 +218,7 @@ Point2D MouseClass::Get_Mouse_Hotspot(MouseType mouse) const
 		return(hotspot);
 	}
 
-	MouseStruct const * control = &MouseControl[mouse];
+	MouseStruct const * control = &Control_For(mouse);
 
 	if (control->X == MOUSE_HOTSPOT_CENTER) {
 		hotspot.X = MouseShapes->Get_Width() / 2;
@@ -258,9 +260,9 @@ Point2D MouseClass::Get_Mouse_Hotspot(MouseType mouse) const
  *=============================================================================================*/
 bool MouseClass::Override_Mouse_Shape(MouseType mouse, bool wsmall)
 {
-	assert((unsigned)mouse < MOUSE_COUNT);
+	assert((unsigned)mouse < MOUSE_COUNT + CustomControl.size());
 
-	MouseStruct const * control = &MouseControl[mouse];
+	MouseStruct const * control = &Control_For(mouse);
 	static bool startup = false;
 
 	/*
@@ -313,7 +315,7 @@ bool MouseClass::Override_Mouse_Shape(MouseType mouse, bool wsmall)
  *=============================================================================================*/
 void MouseClass::AI(KeyNumType &input, Point2D const & xy)
 {
-	MouseStruct const * control = &MouseControl[CurrentMouseShape];
+	MouseStruct const * control = &Control_For(CurrentMouseShape);
 
 	if (control->FrameRate && Timer == 0) {
 
@@ -636,7 +638,7 @@ void MouseClass::Serialize(SaveStreamClass & stream)
 /// <returns>Returns with the starting frame number of the mouse shape specified.</returns>
 int MouseClass::Get_Mouse_Start_Frame(MouseType mouse) const
 {
-	return(MouseControl[mouse].StartFrame);
+	return(Control_For(mouse).StartFrame);
 }
 
 
@@ -646,7 +648,7 @@ int MouseClass::Get_Mouse_Start_Frame(MouseType mouse) const
 /// <returns>Returns with the frame count of the mouse shape specified.</returns>
 int MouseClass::Get_Mouse_Frame_Count(MouseType mouse) const
 {
-	return(MouseControl[mouse].FrameCount);
+	return(Control_For(mouse).FrameCount);
 }
 
 
@@ -746,3 +748,113 @@ MouseClass::MouseStruct MouseClass::MouseControl[MOUSE_COUNT] = {
 	{496,	8,	4,	515,	1,	HSCNR,	HSCNR},	// MOUSE_PSYCHIC_REVEAL
 	{504,	8,	4,	512,	1,	HSCNR,	HSCNR},	// MOUSE_SPY_PLANE
 };
+
+
+std::vector<MouseClass::MouseStruct> MouseClass::CustomControl;
+std::vector<std::string> MouseClass::CustomNames;
+
+
+MouseClass::MouseStruct const & MouseClass::Control_For(MouseType mouse)
+{
+	if ((unsigned)mouse >= MOUSE_COUNT) {
+		unsigned const index = (unsigned)mouse - MOUSE_COUNT;
+		if (index < CustomControl.size()) {
+			return(CustomControl[index]);
+		}
+		return(MouseControl[MOUSE_NORMAL]);
+	}
+	return(MouseControl[mouse]);
+}
+
+
+/// <summary>
+/// Fetches the cursor a rules file names. A cursor defined in [MouseCursors] wins over a stock cursor
+/// of the same name.
+/// </summary>
+/// <returns>Returns with the cursor, or -1 when the name is neither defined nor a stock cursor.</returns>
+MouseType MouseClass::Find_Cursor(char const * name)
+{
+	if (name == NULL || name[0] == '\0') {
+		return((MouseType)-1);
+	}
+
+	for (size_t index = 0; index < CustomNames.size(); index++) {
+		if (strcmpi(CustomNames[index].c_str(), name) == 0) {
+			return((MouseType)(MOUSE_COUNT + (int)index));
+		}
+	}
+
+	static struct { char const * Name; MouseType Mouse; } const stock[] = {
+		{"Default", MOUSE_NORMAL}, {"Normal", MOUSE_NORMAL}, {"Select", MOUSE_CAN_SELECT},
+		{"Move", MOUSE_CAN_MOVE}, {"NoMove", MOUSE_NO_MOVE}, {"Attack", MOUSE_CAN_ATTACK},
+		{"AttackOutOfRange", MOUSE_STAY_ATTACK}, {"Guard", MOUSE_AREA_GUARD}, {"Enter", MOUSE_ENTER},
+		{"NoEnter", MOUSE_NO_ENTER}, {"Deploy", MOUSE_DEPLOY}, {"NoDeploy", MOUSE_NO_DEPLOY},
+		{"Undeploy", MOUSE_UNDEPLOY}, {"Sell", MOUSE_SELL_BACK}, {"SellUnit", MOUSE_SELL_UNIT},
+		{"NoSell", MOUSE_NO_SELL_BACK}, {"GRepair", MOUSE_GREPAIR}, {"Repair", MOUSE_REPAIR},
+		{"NoRepair", MOUSE_NO_REPAIR}, {"Disguise", MOUSE_DISGUISE}, {"IvanBomb", MOUSE_IVAN_BOMB},
+		{"MindControl", MOUSE_MIND_CONTROL}, {"NoMindControl", MOUSE_NO_MIND_CONTROL}, {"Crush", MOUSE_CRUSH},
+		{"SpyTech", MOUSE_SPY_TECH}, {"SpyPower", MOUSE_SPY_POWER}, {"ParaDrop", MOUSE_PARA_DROP},
+		{"LightningStorm", MOUSE_LIGHTNING_STORM}, {"Detonate", MOUSE_DETONATE}, {"Demolitions", MOUSE_DEMOLITIONS},
+		{"Nuke", MOUSE_NUCLEAR_BOMB}, {"Power", MOUSE_POWER}, {"IronCurtain", MOUSE_IRON_CURTAIN},
+		{"Chronosphere", MOUSE_CHRONOSPHERE}, {"Disarm", MOUSE_DISARM}, {"Disallowed", MOUSE_DISALLOWED},
+		{"LeaveBuilding", MOUSE_LEAVE_BUILDING}, {"Absorb", MOUSE_INFANTRY_ABSORB}, {"Beacon", MOUSE_BEACON},
+		{"ForceShield", MOUSE_FORCE_SHIELD}, {"NoForceShield", MOUSE_NO_FORCE_SHIELD},
+		{"GeneticMutator", MOUSE_GENETIC_MUTATOR}, {"AirStrike", MOUSE_AIR_STRIKE},
+		{"PsychicDominator", MOUSE_PSYCHIC_DOMINATOR}, {"PsychicReveal", MOUSE_PSYCHIC_REVEAL},
+		{"SpyPlane", MOUSE_SPY_PLANE}
+	};
+	for (auto const & entry : stock) {
+		if (strcmpi(entry.Name, name) == 0) {
+			return(entry.Mouse);
+		}
+	}
+	return((MouseType)-1);
+}
+
+
+/// <summary>
+/// Reads the [MouseCursors] section. Each entry is Name=Frame,Count,Interval,MiniFrame,MiniCount,
+/// HotSpotX,HotSpotY, where the hot spot is Left, Center or Right and Top, Middle or Bottom. A
+/// MiniFrame below zero means the cursor has no small version. An entry that is already defined is
+/// replaced, and one that does not parse is skipped.
+/// </summary>
+void MouseClass::Read_Cursors(CCINIClass const & ini)
+{
+	static char const * const SECTION = "MouseCursors";
+	int const count = ini.Entry_Count(SECTION);
+	for (int index = 0; index < count; index++) {
+		char const * name = ini.Get_Entry(SECTION, index);
+		std::string const value = ini.Get_String(SECTION, name);
+
+		int numbers[5] = {0, 1, 0, -1, 1};
+		char hot_x[16] = "Center";
+		char hot_y[16] = "Middle";
+		int const found = sscanf(value.c_str(), " %d , %d , %d , %d , %d , %15[A-Za-z] , %15[A-Za-z]", &numbers[0], &numbers[1], &numbers[2], &numbers[3], &numbers[4], hot_x, hot_y);
+		if (found < 2 || numbers[0] < 0 || numbers[1] < 1) {
+			DebugString("[%s] %s=%s does not give a frame and a count; skipped.\n", SECTION, name, value.c_str());
+			continue;
+		}
+
+		MouseStruct control;
+		control.StartFrame = numbers[0];
+		control.FrameCount = numbers[1];
+		control.FrameRate = found >= 3 ? numbers[2] : 0;
+		control.SmallFrame = found >= 4 ? numbers[3] : -1;
+		control.SmallCount = found >= 5 ? numbers[4] : 1;
+		control.X = strcmpi(hot_x, "Left") == 0 ? MOUSE_HOTSPOT_MIN : (strcmpi(hot_x, "Right") == 0 ? MOUSE_HOTSPOT_MAX : MOUSE_HOTSPOT_CENTER);
+		control.Y = strcmpi(hot_y, "Top") == 0 ? MOUSE_HOTSPOT_MIN : (strcmpi(hot_y, "Bottom") == 0 ? MOUSE_HOTSPOT_MAX : MOUSE_HOTSPOT_CENTER);
+
+		bool replaced = false;
+		for (size_t known = 0; known < CustomNames.size(); known++) {
+			if (strcmpi(CustomNames[known].c_str(), name) == 0) {
+				CustomControl[known] = control;
+				replaced = true;
+				break;
+			}
+		}
+		if (!replaced) {
+			CustomNames.push_back(name);
+			CustomControl.push_back(control);
+		}
+	}
+}

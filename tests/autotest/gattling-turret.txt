@@ -2,7 +2,7 @@
 ; Both turrets are turned to eight 32-step facings, one ScreenCapture each, then the Gattling barrels are set to
 ; pitch 32 (45 degrees up) and 0 (straight up) with the pitch verb, so the anti-air elevation is captured without
 ; an aircraft. Each capture is named by its step order. Run from E:\Claude ra2 decomp:
-;   scripts/run_autotest.ps1 -Script src-agent19/tests/autotest/gattling-turret.txt -Build agent19 -ShotDir <dir> -Seconds 90
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent19/tests/autotest/gattling-turret.txt -Build agent19 -ShotDir <dir> -Seconds 90
 30 command CenterBase
 35 reveal
 40 own GAPOWR 58 58

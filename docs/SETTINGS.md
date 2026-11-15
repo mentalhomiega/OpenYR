@@ -32,7 +32,8 @@ The fields are:
 | `.BeforeRenderer` | Also reads the key at startup before the renderer starts, for a setting the renderer needs at its start. |
 
 The row kind comes from the entry: a `.Flag`, or a `.Names` setting with `.SwitchOn`, is a switch, and any other
-`.Number` with a label is a slider. Drop-down rows are not built yet.
+`.Number` with a label is a slider. A declaration has no drop-down row; the `CHOICE` row kind (a drop-down over
+`Items`) and a locked row with a `Note` are built by the skirmish lobby for a mod's game options (LOBBY_MODES.md).
 
 A row whose `.Page` names a page in `Pages[]` appears on that page with no other change. A row on `graphics` appears on the Graphics page.
 

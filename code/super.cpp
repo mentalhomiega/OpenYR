@@ -47,6 +47,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "_weapon.h"
+#include "aircraft.h"
 #include "airctype.h"
 #include "anim.h"
 #include "building.h"
@@ -58,8 +59,10 @@
 #include "crc.h"
 #include "csf.h"
 #include "data.h"
+#include "dbgprint.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -79,6 +82,7 @@
 #include "stimer.h"
 #include "sun.h"
 #include "suprtype.h"
+#include "swrules.h"
 #include "swizzle.h"
 #include "teleport.h"
 #include "tracker.h"
@@ -88,6 +92,8 @@
 #include "weapon.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <vector>
 
 
 /// <summary>
@@ -243,6 +249,13 @@ bool SuperClass::Enable(bool onetime, bool player, bool quiet)
 	if (!IsPresent) {
 		IsPresent = true;
 		IsOneTime = onetime;
+		if (IsVirtualCharging) {
+			IsVirtualCharging = false;
+			if (!onetime) {
+				if (quiet) Suspend(true);
+				return(false);
+			}
+		}
 		bool retval = false;
 		if (Class->IsManualControl) {
 			OldStage = -1;
@@ -252,6 +265,7 @@ bool SuperClass::Enable(bool onetime, bool player, bool quiet)
 			retval = Recharge(player && !quiet);
 		}
 		if (IsOneTime) Forced_Charge(player);
+		Note_Enabled(player && !quiet);
 		if (quiet) Suspend(true);
 		return(retval);
 	}
@@ -284,7 +298,11 @@ bool SuperClass::Remove(void)
 				Map.IsTargettingMode = SUPER_NONE;
 			}
 		}
-		IsReady = false;
+		if (Class->Keys.VirtualCharge && !IsOneTime && !Class->UseChargeDrain) {
+			IsVirtualCharging = true;
+		} else {
+			IsReady = false;
+		}
 		IsPresent = false;
 		if (Class->UseChargeDrain) {
 			House->Deactivate_Firestorm();
@@ -373,6 +391,13 @@ void SuperClass::Reset(void)
 /// </summary>
 static void Speak_Ready(SuperWeaponTypeClass const * type)
 {
+	// EVA.Ready names the line to play, and "none" plays nothing.
+	if (!type->Keys.EvaReady.empty()) {
+		if (!SuperRules::Same(type->Keys.EvaReady, "none")) {
+			Speak_Eva(type->Keys.EvaReady.c_str());
+		}
+		return;
+	}
 	if (!Is_Eva_Loaded()) {
 		Speak(type->VoxRecharge);
 		return;
@@ -456,17 +481,20 @@ bool SuperClass::Recharge(bool player)
 bool SuperClass::Discharged(bool player, Cell const & cell)
 {
 	if (Class->UseChargeDrain) {
-		if (House->Is_Human_Player()) {
+		if (House->Is_Human_Player() || Class->Type == SUPER_BATTERY) {
 			if (ChargeDrainState == FIRESTORM_ON) {
 				ChargeDrainState = READY;
-				Control = Get_Recharge_Time() - Control.Value() / Rule->ChargeToDrainRatio;
+				Control = Get_Recharge_Time() - Control.Value() / Drain_Ratio();
 				Deactivate_Firestorm(0, player);
 				return(false);
 			}
 			if (ChargeDrainState == READY) {
+				if (!Check_Launch(cell, player)) {
+					return(false);
+				}
 				ChargeDrainState = FIRESTORM_ON;
-				Control = (Get_Recharge_Time() - Control.Value()) * Rule->ChargeToDrainRatio;
-				Place(cell, player);
+				Control = (Get_Recharge_Time() - Control.Value()) * Drain_Ratio();
+				Begin_Launch(cell, player);
 				return(false);
 			}
 		} else {
@@ -486,6 +514,9 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 	if (Class->IsPostClick) {
 		SuperClass * first = Pre_Dependent();
 		if (first == NULL || !first->IsPresent || !first->IsReady) {
+			return(false);
+		}
+		if (!Check_Launch(cell, player)) {
 			return(false);
 		}
 		ChronoSource = first->ChronoSource;
@@ -509,18 +540,29 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 		// One storm and one dominator blast at a time; a refused shot keeps its charge (SuperClass::ClickFire).
 		if (Class->Type == SUPER_LIGHTNING_STORM && LightningStormClass::Is_Active_Or_Pending()) {
 			if (player) {
-				LightningStormClass::Print_Refusal();
+				if (Class->Keys.MessageAbort.empty()) {
+					LightningStormClass::Print_Refusal();
+				} else {
+					Show_Message(Class->Keys.MessageAbort);
+				}
 			}
 			return(false);
 		}
 		if (Class->Type == SUPER_PSYCHIC_DOMINATOR && PsychicDominatorClass::Is_Active()) {
 			if (player) {
-				PsychicDominatorClass::Print_Refusal();
+				if (Class->Keys.MessageAbort.empty()) {
+					PsychicDominatorClass::Print_Refusal();
+				} else {
+					Show_Message(Class->Keys.MessageAbort);
+				}
 			}
 			return(false);
 		}
 
-		Place(cell, player);
+		if (!Check_Launch(cell, player)) {
+			return(false);
+		}
+		Begin_Launch(cell, player);
 		if (Class->IsPreClick) {
 			return(false);
 		}
@@ -572,6 +614,13 @@ bool SuperClass::AI(bool player)
 		PreClickAnim->Make_Invisible();
 	}
 
+	if (IsVirtualCharging && !IsPresent) {
+		if (!IsReady && !IsSuspended && Control.Is_Active() && Control == 0) {
+			IsReady = true;
+		}
+		return(false);
+	}
+
 	if (IsPresent && (!IsReady || Class->UseChargeDrain) && !IsSuspended) {
 		if (!Control.Is_Active()) {
 			if (OldStage != -1) {
@@ -595,6 +644,7 @@ bool SuperClass::AI(bool player)
 					ReadyFrame = Frame;
 					if (player) {
 						Speak_Ready(Class);
+						Show_Message(Class->Keys.MessageReady);
 					}
 					return(true);
 				}
@@ -633,7 +683,7 @@ int SuperClass::Anim_Stage(void) const
 		int stage;
 		if (Class->UseChargeDrain) {
 			if (ChargeDrainState == FIRESTORM_ON) {
-				stage = ANIMATION_STAGES * (1-double(Get_Recharge_Time()*Rule->ChargeToDrainRatio-Control.Value()) / (Get_Recharge_Time()*Rule->ChargeToDrainRatio));
+				stage = ANIMATION_STAGES * (1-double(Get_Recharge_Time()*Drain_Ratio()-Control.Value()) / (Get_Recharge_Time()*Drain_Ratio()));
 			} else {
 				stage = ANIMATION_STAGES * (double(Get_Recharge_Time()-Control.Value()) / Get_Recharge_Time());
 			}
@@ -670,6 +720,10 @@ void SuperClass::Impatient_Click(void) const
 {
 	if (!Control.Is_Active()) {
 		Speak(Class->VoxSuspend);
+	} else if (!Class->Keys.EvaImpatient.empty()) {
+		if (!SuperRules::Same(Class->Keys.EvaImpatient, "none")) {
+			Speak_Eva(Class->Keys.EvaImpatient.c_str());
+		}
 	} else {
 		Speak(Class->VoxImpatient);
 	}
@@ -706,6 +760,7 @@ void SuperClass::Forced_Charge(bool player)
 //		IsSuspended = false;
 		if (player) {
 			Speak_Ready(Class);
+			Show_Message(Class->Keys.MessageReady);
 		}
 		if (Class->UseChargeDrain) {
 			ChargeDrainState = READY;
@@ -776,7 +831,7 @@ bool SuperClass::Can_Place(void) const
 		if (Class->UseChargeDrain) {
 			return(ChargeDrainState != CHARGING ? true : false);
 		}
-		return(IsReady);
+		return(IsReady && IsPresent);
 	}
 	return(false);
 }
@@ -792,23 +847,35 @@ static Coord Effect_Coord(Cell const & cell)
 }
 
 
-// Calls visit(cellptr, object) for every object on the 3x3 block of cells centred on center that the radar
-// map covers, in the order the cells and their occupier lists give.
+// Calls visit(cellptr) for every cell around center that the radar map covers, column by column. These are the 3x3
+// block of cells, or the cells within reach of center that the area contains.
 template <typename Visit>
-static void For_Each_Occupier_Around(Cell const & center, Visit && visit)
+static void For_Each_Cell_Around(Cell const & center, Visit && visit, int reach = 1, SuperRules::Area const * area = NULL)
 {
-	for (int dy = -1; dy <= 1; dy++) {
-		for (int dx = -1; dx <= 1; dx++) {
-			Cell const where = center + Cell(dx, dy);
-			if (!Map.In_Radar(where)) {
+	for (int dy = -reach; dy <= reach; dy++) {
+		for (int dx = -reach; dx <= reach; dx++) {
+			if (area != NULL && !SuperRules::Area_Contains(*area, dx, dy)) {
 				continue;
 			}
-			CellClass & cellptr = Map[where];
-			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
-				visit(cellptr, object);
+			Cell const where = center + Cell(dx, dy);
+			if (Map.In_Radar(where)) {
+				visit(Map[where]);
 			}
 		}
 	}
+}
+
+
+// Calls visit(cellptr, object) for every object on the cells For_Each_Cell_Around gives, in the order the cells and
+// their occupier lists give.
+template <typename Visit>
+static void For_Each_Occupier_Around(Cell const & center, Visit && visit, int reach = 1, SuperRules::Area const * area = NULL)
+{
+	For_Each_Cell_Around(center, [&visit](CellClass & cellptr) {
+		for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
+			visit(cellptr, object);
+		}
+	}, reach, area);
 }
 
 
@@ -821,7 +888,7 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 {
 	Coord coord = Effect_Coord(cell);
 	coord.Z += 5;
-	if (Rule->IronCurtainInvokeAnim != NULL) {
+	if (Rule->IronCurtainInvokeAnim != NULL && Class->Keys.Animation == NULL) {
 		new AnimClass(Rule->IronCurtainInvokeAnim, coord);
 	}
 	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
@@ -830,16 +897,34 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 	 * Gather everything first: the curtain kills infantry, which must not upset the walk
 	 * through the cell's object list.
 	 */
+	// SW.Range and SW.AffectsHouse widen or narrow the stock 3 by 3 block of cells and every house.
+	SuperRules::Area area = Class->Keys.Target_Area();
+	if (!area.IsSet) {
+		area.IsSet = true;
+		area.IsBlock = true;
+		area.Width = 3;
+		area.Height = 3;
+	}
+	int const reach = SuperRules::Area_Reach(area, 512);
 	DynamicVectorClass<TechnoClass *> covered;
-	For_Each_Occupier_Around(cell, [&covered](CellClass &, ObjectClass * object) {
-		if (object->Is_Techno()) {
-			covered.Add((TechnoClass *)object);
+	For_Each_Occupier_Around(cell, [&covered, this](CellClass & cellptr, ObjectClass * object) {
+		if (!object->Is_Techno()) {
+			return;
 		}
-	});
+		HouseClass const * owner = object->Owner_HouseClass();
+		SuperRules::Occupant const kind = object->RTTI == RTTI_BUILDING ? SuperRules::Occupant::Building : (object->RTTI == RTTI_INFANTRY ? SuperRules::Occupant::Infantry : SuperRules::Occupant::Unit);
+		if (owner != NULL && !SuperRules::House_Passes(Class->Keys.AffectsHouse, owner == House, House->Is_Ally(owner))) {
+			return;
+		}
+		if (!SuperRules::Target_Passes(Class->Keys.AffectsTarget, cellptr.Land_Type() == LAND_WATER, kind)) {
+			return;
+		}
+		covered.Add((TechnoClass *)object);
+	}, reach, &area);
 	for (int index = 0; index < covered.Count(); index++) {
 		TechnoClass * techno = covered[index];
 		if (techno->IsActive && !techno->IsInLimbo) {
-			techno->Iron_Curtain(Rule->IronCurtainDuration, House, false);
+			techno->Iron_Curtain(Class->Keys.ProtectDuration >= 0 ? Class->Keys.ProtectDuration : Rule->IronCurtainDuration, House, false);
 		}
 	}
 }
@@ -854,32 +939,57 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 /// </summary>
 void SuperClass::Genetic_Mutator(Cell const & cell) const
 {
+	SuperWeaponKeys const & keys = Class->Keys;
 	Coord coord = Effect_Coord(cell);
-	if (Rule->IonBlast != NULL) {
+	if (Rule->IonBlast != NULL && keys.Animation == NULL) {
 		new AnimClass(Rule->IonBlast, Coord(coord.X, coord.Y, coord.Z + 5));
 	}
-	Sound_Effect(Rule->GeneticMutatorActivateSound, coord);
+	if (keys.Sound == VOC_NONE) {
+		Sound_Effect(Rule->GeneticMutatorActivateSound, coord);
+	}
 	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 
 	// With MutateFriendly=no the blast spares infantry of the firing house and its allies.
 	HouseClass const * spare = Rule->MutateFriendly ? NULL : House;
 
-	if (Rule->MutateExplosion) {
-		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House, spare);
+	bool const explosion = keys.MutateExplosion >= 0 ? keys.MutateExplosion > 0 : Rule->MutateExplosion;
+	WarheadTypeClass const * warhead = keys.Warhead != NULL ? keys.Warhead : (explosion ? Rule->MutateExplosionWarhead : Rule->MutateWarhead);
+	if (explosion) {
+		Explosion_Damage(coord, keys.Damage >= 0 ? keys.Damage : 10000, NULL, warhead, false, House, spare);
 		return;
 	}
 
+	// SW.Range sizes the area, SW.AffectsHouse chooses whose infantry it takes and SW.AffectsTarget limits it to land or water cells.
+	SuperRules::Area const area = keys.Target_Area_Or_Block(3, 3);
+	unsigned const cells = keys.AffectsTarget & (SuperRules::TARGET_LAND | SuperRules::TARGET_WATER);
+	int const reach = SuperRules::Area_Reach(area, 512);
 	DynamicVectorClass<InfantryClass *> victims;
-	For_Each_Occupier_Around(cell, [&victims, spare](CellClass &, ObjectClass * object) {
-		if (object->RTTI == RTTI_INFANTRY && (spare == NULL || !spare->Is_Ally(((InfantryClass *)object)->House))) {
-			victims.Add((InfantryClass *)object);
+	For_Each_Occupier_Around(cell, [&victims, &keys, &cells, spare, this](CellClass & cellptr, ObjectClass * object) {
+		if (object->RTTI != RTTI_INFANTRY || !SuperRules::Target_Passes(cells, cellptr.Land_Type() == LAND_WATER, SuperRules::Occupant::Infantry)) {
+			return;
 		}
-	});
+		InfantryClass * infantry = (InfantryClass *)object;
+		HouseClass const * owner = infantry->House;
+		if (spare != NULL && spare->Is_Ally(owner)) {
+			return;
+		}
+		if (owner != NULL && !SuperRules::House_Passes(keys.AffectsHouse, owner == House, House->Is_Ally(owner))) {
+			return;
+		}
+		if ((keys.MutateIgnoreCyborg && infantry->Class->IsCyborg) || (keys.MutateIgnoreNotHuman && infantry->Class->IsNotHuman)) {
+			return;
+		}
+		victims.Add(infantry);
+	}, reach, &area);
+
+	// A weapon that names its own damage or warhead lets the warhead's Verses decide, and infantry with Natural=yes die outright unless Mutate.KillNatural is off.
+	bool const through_warhead = keys.Damage >= 0 || keys.Warhead != NULL;
 	for (int index = 0; index < victims.Count(); index++) {
 		InfantryClass * infantry = victims[index];
 		if (infantry->IsActive && !infantry->IsInLimbo) {
-			int damage = infantry->Class->MaxStrength;
-			infantry->Take_Damage(damage, 0, Rule->MutateWarhead, NULL, true, false, House);
+			bool const outright = !through_warhead || (keys.MutateKillNatural && infantry->Class->IsNatural);
+			int damage = outright || keys.Damage < 0 ? infantry->Class->MaxStrength : keys.Damage;
+			infantry->Take_Damage(damage, 0, warhead, NULL, outright, false, House);
 		}
 	}
 }
@@ -898,17 +1008,24 @@ void SuperClass::Force_Shield(Cell const & cell)
 		new AnimClass(Rule->ForceShieldInvokeAnim, Coord(coord.X, coord.Y, coord.Z + 5));
 	}
 
-	SpecialSoundTimer = Rule->ForceShieldDuration - Rule->ForceShieldPlayFadeSoundTime;
+	// Protect.* replace the rules values, SW.Range the radius, and SW.AffectsHouse the houses covered (the owner and its allies without it).
+	SuperWeaponKeys const & keys = Class->Keys;
+	int const duration = keys.ProtectDuration >= 0 ? keys.ProtectDuration : Rule->ForceShieldDuration;
+	int const outage = keys.ProtectPowerOutage >= 0 ? keys.ProtectPowerOutage : Rule->ForceShieldBlackoutDuration;
+	int const fade = keys.ProtectFadeSoundTime >= 0 ? keys.ProtectFadeSoundTime : Rule->ForceShieldPlayFadeSoundTime;
+	double const radius = (keys.AreaIsSet && !keys.AreaIsBlock) ? (keys.AreaRadius < 0.0f ? 100000.0 : (double)keys.AreaRadius) : (double)Rule->ForceShieldRadius;
+	SpecialSoundTimer = duration - fade;
 	IsSpecialSoundPending = Class->SpecialSound != VOC_NONE;
 	SpecialSoundCoord = coord;
 	Sound_Effect(Class->StartSound, coord);
 
-	House->Start_Power_Blackout(Rule->ForceShieldBlackoutDuration);
+	House->Start_Power_Blackout(outage);
 
 	for (int index = Buildings.Count() - 1; index >= 0; index--) {
 		BuildingClass * building = Buildings[index];
-		if (House->Is_Ally(building) && (building->Center_Coord() - coord).Gamemd_Length() < Rule->ForceShieldRadius * CELL_LEPTON_W) {
-			building->Iron_Curtain(Rule->ForceShieldDuration, House, true);
+		bool const covered = keys.AffectsHouseSet ? SuperRules::House_Passes(keys.AffectsHouse, building->House == House, House->Is_Ally(building)) : House->Is_Ally(building);
+		if (covered && (building->Center_Coord() - coord).Gamemd_Length() < radius * CELL_LEPTON_W) {
+			building->Iron_Curtain(duration, House, true);
 		}
 	}
 }
@@ -923,11 +1040,19 @@ void SuperClass::Force_Shield(Cell const & cell)
 /// </summary>
 void SuperClass::Paradrop(Cell const & cell) const
 {
+	SuperWeaponKeys const & keys = Class->Keys;
+	if (Class->Type == SUPER_SPY_PLANE && keys.SpyPlaneType != NULL) {
+		// SpyPlane.Type and SpyPlane.Count replace the stock one plane for each ally paradrop entry.
+		for (int index = 0; index < keys.SpyPlaneCount; index++) {
+			House->Send_Plane(keys.SpyPlaneType, (MissionType)keys.SpyPlaneMission, cell);
+		}
+		return;
+	}
 	if (Class->Type == SUPER_SPY_PLANE) {
 		AircraftType const plane = AircraftTypeClass::From_Name("SPYP");
 		if (plane != AIRCRAFT_NONE && Rule->AllyParaDropInf.Count() == Rule->AllyParaDropNum.Count()) {
 			for (int index = 0; index < Rule->AllyParaDropInf.Count(); index++) {
-				House->Send_Plane(AircraftTypes[plane], MISSION_SPYPLANE_APPROACH, cell);
+				House->Send_Plane(AircraftTypes[plane], (MissionType)keys.SpyPlaneMission, cell);
 			}
 		}
 		return;
@@ -941,6 +1066,7 @@ void SuperClass::Paradrop(Cell const & cell) const
 		}
 	}
 
+	// The rules' lists for the owner's side: the last place a plane looks, and the whole drop when no weapon key applies.
 	TypeList<InfantryTypeClass const *> const * infantry = &Rule->AmerParaDropInf;
 	TypeList<int> const * counts = &Rule->AmerParaDropNum;
 	if (Class->Type == SUPER_PARA_DROP) {
@@ -962,6 +1088,59 @@ void SuperClass::Paradrop(Cell const & cell) const
 		}
 	}
 
+	// ParaDrop.* keys on the weapon take over for every plane they reach (see SuperWeaponKeys::Para_Plan). What a plane
+	// still lacks comes from the ParaDrop.* keys of the owner's country, then of its side, and then from the rules.
+	{
+		int const planning = House->Planning_Side();
+		SideClass const * side = (planning >= 0 && planning < Sides.Count()) ? Sides[planning] : NULL;
+		char const * const side_name = side != NULL ? side->Name() : "";
+		int const plane_count = std::min(keys.ParaDropCount, (int)SuperWeaponKeys::MAX_PARA_PLANES);
+		std::vector<SuperWeaponKeys::ParaPlan> plans(plane_count > 0 ? plane_count : 0);
+		ParaDropList const * const owner_lists[] = {&House->Class->ParaDrop, side != NULL ? &side->ParaDrop : NULL};
+		bool weapon_keys = false;
+		for (int number = 1; number <= plane_count; number++) {
+			weapon_keys |= keys.Para_Plan(number, House->Class->Name(), side_name, plans[number - 1]);
+			for (ParaDropList const * list : owner_lists) {
+				if (list != NULL && list->IsSet) {
+					plans[number - 1].Fill_From(*list);
+					weapon_keys = true;
+				}
+			}
+		}
+		if (weapon_keys) {
+			AircraftTypeClass const * const stock_aircraft = Paradrop_Plane_Type();
+			for (SuperWeaponKeys::ParaPlan const & plan : plans) {
+				AircraftTypeClass const * aircraft = plan.Aircraft != NULL ? plan.Aircraft : stock_aircraft;
+				int const entries = plan.Types != NULL ? plan.Types->Count() : infantry->Count();
+				int const counted = plan.Types != NULL ? plan.Num->Count() : counts->Count();
+				if (aircraft == NULL || entries != counted) {
+					continue;
+				}
+				AircraftClass * carrier = NULL;
+				for (int index = 0; index < entries; index++) {
+					TechnoTypeClass const * type = plan.Types != NULL ? (*plan.Types)[index] : (*infantry)[index];
+					int const number = plan.Types != NULL ? (*plan.Num)[index] : (*counts)[index];
+					if (type == NULL || type->Fetch_RTTI() != RTTI_INFANTRYTYPE) {
+						continue;
+					}
+					InfantryTypeClass const * trooper_type = static_cast<InfantryTypeClass const *>(type);
+					if (carrier == NULL) {
+						carrier = House->Send_Plane(aircraft, MISSION_PARADROP_APPROACH, target, trooper_type, number);
+					} else {
+						for (int count = 0; count < number; count++) {
+							FootClass * trooper = static_cast<FootClass *>(trooper_type->Create_One_Of(House));
+							if (trooper == NULL) {
+								break;
+							}
+							carrier->Cargo.Attach(trooper);
+						}
+					}
+				}
+			}
+			return;
+		}
+	}
+
 	AircraftTypeClass const * plane = Paradrop_Plane_Type();
 	if (plane == NULL || infantry->Count() != counts->Count()) {
 		return;
@@ -975,26 +1154,58 @@ void SuperClass::Paradrop(Cell const & cell) const
 
 
 /// <summary>
-/// Fetches the owner's super weapon whose Type is this weapon's PreDependent, or NULL.
+/// Fetches the owner's super weapon whose Type is this weapon's PreDependent, or NULL. A weapon
+/// that names another follow-up with SW.PostDependent is passed over, and one that names this weapon is
+/// preferred, so two chronospheres with their own warps do not pick each other's cells.
 /// </summary>
 SuperClass * SuperClass::Pre_Dependent(void) const
 {
 	if (Class->PreDependent == SUPER_NONE || House == NULL) {
 		return(NULL);
 	}
-	int const index = House->First_Super_Index(Class->PreDependent);
-	return(index >= 0 ? House->SuperWeapon[index] : NULL);
+	SuperClass * first = NULL;
+	SuperClass * named = NULL;
+	for (int index = 0; index < House->SuperWeapon.Count(); index++) {
+		SuperClass * super = House->SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == Class->PreDependent) {
+			std::string const & follow = super->Class->Keys.PostDependent;
+			bool const names_this = !follow.empty() && SuperRules::Same(follow, Class->Name());
+			if (!follow.empty() && !names_this) {
+				continue;
+			}
+			// Of several weapons with that behavior, the one that is present and ready is the one that picked the cells.
+			if (super->IsPresent && super->IsReady) {
+				if (names_this) {
+					return(super);
+				}
+				if (named == NULL) {
+					named = super;
+				}
+			}
+			if (first == NULL) {
+				first = super;
+			}
+		}
+	}
+	return(named != NULL ? named : first);
 }
 
 
 /// <summary>
 /// Fetches the owner's index of the PostClick weapon that completes this weapon's shot, or
-/// SUPER_NONE when the owner has none.
+/// SUPER_NONE when the owner has none. SW.PostDependent names the weapon; without it the first
+/// PostClick weapon that depends on this weapon's behavior completes the shot.
 /// </summary>
 SuperWeaponType SuperClass::Follow_Up(void) const
 {
 	if (House == NULL) {
 		return(SUPER_NONE);
+	}
+	if (!Class->Keys.PostDependent.empty()) {
+		SuperWeaponType const named = SuperWeaponTypeClass::From_Name(Class->Keys.PostDependent.c_str());
+		if (named != SUPER_NONE && named < House->SuperWeapon.Count()) {
+			return(named);
+		}
 	}
 	for (int index = 0; index < House->SuperWeapon.Count(); index++) {
 		SuperClass const * super = House->SuperWeapon[index];
@@ -1039,6 +1250,144 @@ static void Chrono_Shift(FootClass * foot, Coord dest)
 }
 
 
+namespace {
+
+enum class ChronoKind {
+	Skip,
+	Structure,
+	Vehicle
+};
+
+struct ChronoStructure {
+	BuildingClass * Building;
+	ChronoKind Kind;
+};
+
+
+// How the chronosphere treats a structure inside its area: left alone, shifted as a structure, or shifted like a unit.
+ChronoKind Chrono_Kind_Of(SuperWeaponKeys const & keys, BuildingClass const * building, bool water)
+{
+	BuildingTypeClass const * type = building->Class;
+	if (!building->IsActive || building->IsInLimbo || !type->IsChronoshiftAllowed || type->IsWall) {
+		return(ChronoKind::Skip);
+	}
+	if (!keys.ChronoAffectsUnwarpable && !type->IsWarpable) {
+		return(ChronoKind::Skip);
+	}
+	if (building->Is_Iron_Curtained() && !keys.ChronoAffectsIronCurtain) {
+		return(ChronoKind::Skip);
+	}
+	if (keys.ChronoAffectsUndeployable && type->UndeploysInto != NULL) {
+		return(ChronoKind::Vehicle);
+	}
+	bool const as_unit = keys.ChronoReconsiderBuildings && type->IsChronoshiftVehicle;
+	unsigned const wanted = keys.Affected_Targets(SuperRules::TARGET_INFANTRY | SuperRules::TARGET_UNITS);
+	if (!SuperRules::Target_Passes(wanted, water, as_unit ? SuperRules::Occupant::Unit : SuperRules::Occupant::Building)) {
+		return(ChronoKind::Skip);
+	}
+	return(as_unit ? ChronoKind::Vehicle : ChronoKind::Structure);
+}
+
+
+// Does the whole foundation of the structure fit on the map and on clear ground with its origin on the cell?
+bool Chrono_Structure_Fits(BuildingClass * building, Cell const & where)
+{
+	for (Cell const * offset = building->Class->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+		if (!Map.In_Radar(where + *offset)) {
+			return(false);
+		}
+	}
+	return(Map.In_Radar(where) && building->Can_Enter_Cell(&Map[where], FACING_NONE) == MOVE_OK);
+}
+
+
+bool Chrono_Set_Down(BuildingClass * building, Cell const & where, bool restore)
+{
+	if (restore) {
+		// The structure stood here a moment ago, so only another structure that landed on its foundation keeps it out.
+		for (Cell const * offset = building->Class->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+			if (!Map.In_Radar(where + *offset) || Map[where + *offset].Cell_Building() != NULL) {
+				return(false);
+			}
+		}
+	} else if (!Chrono_Structure_Fits(building, where)) {
+		return(false);
+	}
+	ScenarioInit++;
+	bool const placed = building->Unlimbo(Map[where].Center_Coord(), DIR_N);
+	ScenarioInit--;
+	return(placed);
+}
+
+}
+
+
+/// <summary>
+/// Moves the structures the chronosphere picked by the offset between the picked cell and the target. Every
+/// structure leaves the map first, so structures of the group may land where another stood. A structure
+/// lands on its shifted foundation. One shifted like a unit takes the nearest free foundation within six
+/// cells of it. A structure that fits nowhere returns to its place and is destroyed when
+/// Chronosphere.BlowUnplaceable is on.
+/// </summary>
+static void Chrono_Shift_Buildings(std::vector<ChronoStructure> const & structures, Cell const & offset, SuperWeaponKeys const & keys, HouseClass * house)
+{
+	struct Mover {
+		BuildingClass * Building;
+		ChronoKind Kind;
+		Cell Origin;
+	};
+	std::vector<Mover> movers;
+	for (size_t index = 0; index < structures.size(); index++) {
+		BuildingClass * building = structures[index].Building;
+		if (!building->IsActive || building->IsInLimbo) {
+			continue;
+		}
+		if (keys.ChronoKillCargo) {
+			building->Kill_Cargo(NULL);
+		}
+		Cell const origin = building->PositionCell;
+		VocType const out_sound = building->Class->ChronoOutSound != VOC_NONE ? building->Class->ChronoOutSound : Rule->ChronoOutSound;
+		Sound_Effect(out_sound, building->Center_Coord());
+		building->Limbo();
+		if (building->IsInLimbo) {
+			movers.push_back({building, structures[index].Kind, origin});
+		}
+	}
+
+	for (size_t index = 0; index < movers.size(); index++) {
+		BuildingClass * building = movers[index].Building;
+		Cell const wanted = movers[index].Origin + offset;
+		bool placed = Chrono_Set_Down(building, wanted, false);
+		if (!placed && movers[index].Kind == ChronoKind::Vehicle) {
+			for (int ring = 1; ring <= 6 && !placed; ring++) {
+				for (int dy = -ring; dy <= ring && !placed; dy++) {
+					for (int dx = -ring; dx <= ring && !placed; dx++) {
+						if (std::max(std::abs(dx), std::abs(dy)) == ring) {
+							placed = Chrono_Set_Down(building, wanted + Cell(dx, dy), false);
+						}
+					}
+				}
+			}
+		}
+
+		if (placed) {
+			VocType const in_sound = building->Class->ChronoInSound != VOC_NONE ? building->Class->ChronoInSound : Rule->ChronoInSound;
+			Sound_Effect(in_sound, building->Center_Coord());
+			DebugString("SUPER chronoshift %s from %d,%d to %d,%d\n", building->Class->Name(), (int)movers[index].Origin.X, (int)movers[index].Origin.Y, (int)building->PositionCell.X, (int)building->PositionCell.Y);
+		} else if (Chrono_Set_Down(building, movers[index].Origin, true)) {
+			if (keys.ChronoBlowUnplaceable) {
+				Chrono_Kill(building, house);
+			}
+			DebugString("SUPER chronoshift %s at %d,%d has no room at the target\n", building->Class->Name(), (int)movers[index].Origin.X, (int)movers[index].Origin.Y);
+		} else {
+			DebugString("SUPER chronoshift %s at %d,%d cannot return and is removed\n", building->Class->Name(), (int)movers[index].Origin.X, (int)movers[index].Origin.Y);
+			building->Delete_Me();
+		}
+	}
+	house->IsRecalcNeeded = true;
+}
+
+
 /// <summary>
 /// Warps the units the chronosphere picked to the cell, as the ChronoWarp case of
 /// SuperClass::Launch (0x6CC390) does. ChronoBlast plays over the picked cell and
@@ -1047,25 +1396,59 @@ static void Chrono_Shift(FootClass * foot, Coord dest)
 /// on the bridge go. Organic units that are not Teleporters are killed instead. Units under
 /// the Iron Curtain, units already being chronoshifted or held by a temporal beam, and vehicles
 /// standing in a war factory stay behind.
+/// The keys of the chronosphere weapon that picked the cells replace this: SW.Range sizes the area,
+/// SW.AffectsHouse and SW.AffectsTarget choose the units, Chronosphere.BlastSrc and Chronosphere.BlastDest
+/// the animations, and the other Chronosphere.* keys who is killed, skipped or emptied of cargo.
 /// </summary>
 void SuperClass::Chrono_Warp(Cell const & cell) const
 {
+	SuperClass const * sphere = Pre_Dependent();
+	SuperWeaponKeys const & keys = (sphere != NULL ? sphere->Class : Class)->Keys;
 	Coord const from = Map[ChronoSource].As_Coord();
 	Coord const to = Map[cell].As_Coord();
-	if (Rule->ChronoBlastDest != NULL) {
-		new AnimClass(Rule->ChronoBlastDest, Coord(to.X, to.Y, to.Z + 5));
+	AnimTypeClass const * blast_dest = keys.ChronoBlastDest != NULL ? keys.ChronoBlastDest : Rule->ChronoBlastDest;
+	AnimTypeClass const * blast_src = keys.ChronoBlastSrc != NULL ? keys.ChronoBlastSrc : Rule->ChronoBlast;
+	if (blast_dest != NULL) {
+		new AnimClass(blast_dest, Coord(to.X, to.Y, to.Z + 5));
 	}
-	if (Rule->ChronoBlast != NULL) {
-		new AnimClass(Rule->ChronoBlast, Coord(from.X, from.Y, from.Z + 5));
+	if (blast_src != NULL) {
+		new AnimClass(blast_src, Coord(from.X, from.Y, from.Z + 5));
 	}
 
+	SuperRules::Area const area = keys.Target_Area_Or_Block(3, 3);
+	unsigned const wanted = keys.Affected_Targets(SuperRules::TARGET_INFANTRY | SuperRules::TARGET_UNITS);
+	int const reach = SuperRules::Area_Reach(area, 512);
 	DynamicVectorClass<FootClass *> killed;
 	DynamicVectorClass<FootClass *> moving;
-	For_Each_Occupier_Around(ChronoSource, [&killed, &moving](CellClass & cellptr, ObjectClass * object) {
+	std::vector<ChronoStructure> structures;
+	For_Each_Cell_Around(ChronoSource, [&structures, &keys, this](CellClass & cellptr) {
+		BuildingClass * structure = cellptr.Cell_Building();
+		if (structure == NULL || structure->House == NULL || !SuperRules::House_Passes(keys.AffectsHouse, structure->House == House, House->Is_Ally(structure->House))) {
+			return;
+		}
+		bool listed = false;
+		for (size_t known = 0; known < structures.size(); known++) {
+			listed = listed || structures[known].Building == structure;
+		}
+		ChronoKind const kind = listed ? ChronoKind::Skip : Chrono_Kind_Of(keys, structure, cellptr.Land_Type() == LAND_WATER);
+		if (kind != ChronoKind::Skip) {
+			structures.push_back({structure, kind});
+		}
+	}, reach, &area);
+	For_Each_Occupier_Around(ChronoSource, [&killed, &moving, &keys, wanted, this](CellClass & cellptr, ObjectClass * object) {
 		if (!object->Is_Foot() || object->In_Air()) {
 			return;
 		}
 		FootClass * foot = (FootClass *)object;
+
+		HouseClass const * owner = foot->Owner_HouseClass();
+		if (owner != NULL && !SuperRules::House_Passes(keys.AffectsHouse, owner == House, House->Is_Ally(owner))) {
+			return;
+		}
+		SuperRules::Occupant const kind = foot->RTTI == RTTI_INFANTRY ? SuperRules::Occupant::Infantry : SuperRules::Occupant::Unit;
+		if (!SuperRules::Target_Passes(wanted, cellptr.Land_Type() == LAND_WATER, kind)) {
+			return;
+		}
 
 		// A naval parasite, the giant squid, holding a unit the warp touches is driven out (SuperClass::Launch, 0x6CC775 tests
 		// Naval, 0x6CC7B7). A terror drone stays inside and comes out when its victim leaves the map.
@@ -1081,12 +1464,16 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 		if (!foot->TClass->IsChronoshiftAllowed) {
 			return;
 		}
-		if (foot->TClass->IsOrganic && !foot->TClass->IsTeleporter) {
+		if (!keys.ChronoAffectsUnwarpable && !foot->TClass->IsWarpable) {
+			return;
+		}
+		bool const organic = foot->TClass->IsOrganic && !foot->TClass->IsTeleporter;
+		if ((organic && keys.ChronoKillOrganic) || (foot->TClass->IsTeleporter && keys.ChronoKillTeleporters)) {
 			killed.Add(foot);
-		} else if (!foot->Is_Iron_Curtained() && !foot->Is_Chrono_Warping() && !foot->IsBeingWarpedOut) {
+		} else if ((!foot->Is_Iron_Curtained() || keys.ChronoAffectsIronCurtain) && !foot->Is_Chrono_Warping() && !foot->IsBeingWarpedOut) {
 			moving.Add(foot);
 		}
-	});
+	}, reach, &area);
 
 	// The chronosphere's house gets the credit for the organic units it kills (SuperClass::Launch, 0x6CC8C6).
 	for (int index = 0; index < killed.Count(); index++) {
@@ -1095,11 +1482,17 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 	for (int index = 0; index < moving.Count(); index++) {
 		FootClass * foot = moving[index];
 		if (foot->IsActive && !foot->IsInLimbo) {
+			if (keys.ChronoKillCargo) {
+				foot->Kill_Cargo(NULL);
+			}
 			Coord dest = foot->PositionCoord;
 			dest.X += to.X - from.X;
 			dest.Y += to.Y - from.Y;
 			Chrono_Shift(foot, dest);
 		}
+	}
+	if (!structures.empty()) {
+		Chrono_Shift_Buildings(structures, Cell(cell.X - ChronoSource.X, cell.Y - ChronoSource.Y), keys, House);
 	}
 }
 
@@ -1126,16 +1519,57 @@ void SuperClass::Finish_Placement(bool player)
 /// targeting cursor gets cleared.</param>
 void SuperClass::Place(Cell const & cell, bool player)
 {
+	if (IsReady && Class->Type != SUPER_CHRONOSPHERE && !Class->UseChargeDrain) {
+		Play_Target_Effects(cell);
+		Show_Message(Class->Keys.MessageActivate);
+	}
+
 	switch (Class->Type) {
 		case SUPER_DROP_PODS:
 			Drop_Pods(cell);
 			Finish_Placement(player);
 			break;
 
+		case SUPER_GENERIC_WARHEAD:
+			if (IsReady) {
+				Generic_Warhead(cell);
+				Speak_Activated(NULL);
+				Finish_Placement(player);
+			}
+			break;
+
+		case SUPER_UNIT_DELIVERY:
+			if (IsReady) {
+				Unit_Delivery(cell);
+				Speak_Activated(NULL);
+				Finish_Placement(player);
+			}
+			break;
+
+		case SUPER_SONAR_PULSE:
+			if (IsReady) {
+				Sonar_Pulse(cell);
+				Speak_Activated(NULL);
+				Finish_Placement(player);
+			}
+			break;
+
+		case SUPER_BATTERY:
+			Speak_Activated(NULL);
+			House->RecalcPower = true;
+			if (player) {
+				Map.Flag_Strips_To_Redraw();
+			}
+			break;
+
 		case SUPER_PSYCHIC_REVEAL:
 			if (IsReady) {
 				// Uncovers the area for the firing house, shroud and fog (the PsychicReveal case of SuperClass::Launch).
-				int const radius = Rule->PsychicRevealRadius;
+				// SW.Range sets the radius; a negative one uncovers the whole map.
+				int radius = Rule->PsychicRevealRadius;
+				if (Class->Keys.AreaIsSet && !Class->Keys.AreaIsBlock) {
+					radius = Class->Keys.AreaRadius < 0.0f ? 400 : (int)Class->Keys.AreaRadius;
+				}
 				for (int dy = -radius; dy <= radius; dy++) {
 					for (int dx = -radius; dx <= radius; dx++) {
 						Cell const where = cell + Cell(dx, dy);
@@ -1153,9 +1587,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_PSYCHIC_DOMINATOR:
 			if (IsReady) {
 				Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
-				PsychicDominatorClass::Start(cell, House);
+				PsychicDominatorClass::Start(cell, House, Class);
 				Sound_Effect(Rule->PsychicDominatorActivateSound, Map[cell].Center_Coord());
-				Speak_Eva("EVA_PsychicDominatorActivated");
+				Speak_Activated("EVA_PsychicDominatorActivated");
 				Finish_Placement(player);
 			}
 			break;
@@ -1163,7 +1597,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_GENETIC_CONVERTER:
 			if (IsReady) {
 				Genetic_Mutator(cell);
-				Speak_Eva("EVA_GeneticMutatorActivated");
+				Speak_Activated("EVA_GeneticMutatorActivated");
 				Finish_Placement(player);
 			}
 			break;
@@ -1177,8 +1611,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 		case SUPER_LIGHTNING_STORM:
 			if (IsReady) {
-				LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, cell, House);
-				Speak_Eva("EVA_LightningStormCreated");
+				int const duration = Class->Keys.LightningDuration != SuperRules::UNSET_INT ? Class->Keys.LightningDuration : Rule->LightningStormDuration;
+				LightningStormClass::Start(duration, SuperRules::Effective_Deferment(Class->Keys.Deferment, Rule->LightningStormDeferment), cell, House, Class);
+				Speak_Activated("EVA_LightningStormCreated");
 				Finish_Placement(player);
 			}
 			break;
@@ -1187,9 +1622,10 @@ void SuperClass::Place(Cell const & cell, bool player)
 			if (IsReady) {
 				ChronoSource = cell;
 				Stop_Pre_Click_Anim();
-				if (Rule->ChronoPlacement != NULL) {
+				AnimTypeClass const * placement = Class->Keys.Animation != NULL ? Class->Keys.Animation : Rule->ChronoPlacement;
+				if (placement != NULL) {
 					Coord const coord = Map[cell].As_Coord();
-					PreClickAnim = AnimClass::Held(new AnimClass(Rule->ChronoPlacement, Coord(coord.X, coord.Y, coord.Z + 5)), this);
+					PreClickAnim = AnimClass::Held(new AnimClass(placement, Coord(coord.X, coord.Y, coord.Z + (Class->Keys.Animation != NULL ? Class->Keys.AnimationHeight : 5))), this);
 				}
 				if (player) {
 					Map.IsTargettingMode = Follow_Up();
@@ -1212,14 +1648,14 @@ void SuperClass::Place(Cell const & cell, bool player)
 			Submit_Radar_Event(RADAREVENT_SUPERWEAPON, ChronoSource);
 			Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 			Chrono_Warp(cell);
-			Speak_Eva("EVA_ChronosphereActivated");
+			Speak_Activated("EVA_ChronosphereActivated");
 			Finish_Placement(player);
 			break;
 
 		case SUPER_IRON_CURTAIN:
 			if (IsReady) {
 				Iron_Curtain(cell);
-				Speak_Eva("EVA_IronCurtainActivated");
+				Speak_Activated("EVA_IronCurtainActivated");
 				Finish_Placement(player);
 			}
 			break;
@@ -1236,32 +1672,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 		case SUPER_EM_PULSE:
 			if (IsReady && (!IsOneTime || !IsPresent)) {
-				int mindist = INT_MAX;
-				BuildingClass * launchsite = NULL;
-				CellClass * target = &Map[cell];
-
-				/*
-				 * Search for a suitable launch site for the EMP.
-				 */
-				for (int index = 0; index < Buildings.Count(); index++) {
-					BuildingClass * b = Buildings[index];
-					if (!b->IsInLimbo && b->Class->IsEMPulseCannon && b->House == House && b->Is_Powered_On()) {
-						if (b->Distance(target) < mindist) {
-							mindist = b->Distance(target);
-							launchsite = b;
-						}
-					}
-				}
-
-				/*
-				 * If a launch site was found, then proceed with the normal launch
-				 * sequence.
-				 */
-				if (launchsite != NULL) {
-					launchsite->Assign_Mission(MISSION_MISSILE);
-					launchsite->Commence();
-					House->EMPDest = cell;
-				}
+				EM_Pulse_Launch(cell);
 				Finish_Placement(player);
 			}
 			break;
@@ -1277,7 +1688,8 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_MULTI_MISSILE:
 		case SUPER_CHEM_MISSILE:
 			if (IsReady) {
-				if (IsOneTime && IsPresent) {
+				// A one-time weapon, and a MultiMissile with Nuke.SiloLaunch=no, flies in from the map edge rather than from a silo.
+				if ((IsOneTime && IsPresent) || (Class->Type == SUPER_MULTI_MISSILE && !Class->Keys.NukeSiloLaunch)) {
 					/*
 					 * A one-time missile needs no silo. Its NukePayload shell appears 20000 leptons
 					 * above the target and falls straight down at 100 leptons a frame, under the
@@ -1291,13 +1703,19 @@ void SuperClass::Place(Cell const & cell, bool player)
 						start.Z += BRIDGE_LEPTON_HEIGHT;
 					}
 
-					WeaponTypeClass const * wtype = WeaponTypeClass::Find_Declared(Class->Type == SUPER_CHEM_MISSILE ? "ChemLauncher" : "NukePayload");
+					WeaponTypeClass const * wtype = Class->Type == SUPER_CHEM_MISSILE ? WeaponTypeClass::Find_Declared("ChemLauncher")
+						: (Class->Keys.NukePayload != NULL ? Class->Keys.NukePayload : WeaponTypeClass::Find_Declared("NukePayload"));
+
+					// SW.Damage and SW.Warhead replace the payload's own when the weapon sets them.
 					BulletClass * bullet = NULL;
 					if (wtype != NULL && wtype->Bullet != NULL) {
-						bullet = Create_Bullet(wtype->Bullet, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, false);
+						int const strike_damage = Class->Keys.Damage >= 0 ? Class->Keys.Damage : wtype->Attack;
+						WarheadTypeClass const * strike_warhead = Class->Keys.Warhead != NULL ? Class->Keys.Warhead : wtype->WarheadPtr;
+						bullet = Create_Bullet(wtype->Bullet, &Map[start], NULL, strike_damage, strike_warhead, wtype->MaxSpeed, false);
 					}
 					if (bullet != NULL) {
 						bullet->Weapon = wtype;
+						bullet->NukeSuper = Class->HeapID;
 						Coord const above(start.X, start.Y, start.Z + 20000);
 						if (!bullet->Unlimbo(above, TVelocity3D<double>(0.0, 0.0, -100.0))) {
 							delete bullet;
@@ -1315,7 +1733,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 					if (bullet != NULL) {
 						if (Class->Type == SUPER_MULTI_MISSILE) {
-							Speak_Eva("EVA_NuclearMissileLaunched");
+							Speak_Activated("EVA_NuclearMissileLaunched");
 							// The nuke's launch sound is RulesClass::DigSound, played at the target (SuperClass::Launch, 0x6CDCAE).
 							Sound_Effect(Rule->DigSound, start);
 						}
@@ -1324,7 +1742,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				} else {
 					for (int index = 0; index < BuildingTypes.Count(); index++) {
 						BuildingTypeClass const * btype = BuildingTypes[index];
-						if (btype->IsNukeSilo && (btype->SuperWeapon == Class->HeapID || btype->SuperWeapon2 == Class->HeapID)) {
+						if (btype->IsNukeSilo && btype->Grants_Super_Weapon(Class->HeapID)) {
 
 							/*
 							**	Search for a suitable launch site for this missile.
@@ -1339,12 +1757,12 @@ void SuperClass::Place(Cell const & cell, bool player)
 								launchsite->Assign_Mission(MISSION_MISSILE);
 								launchsite->Commence();
 								House->NukeDest = cell;
-								launchsite->LastSuperWeaponIndex = Class->Type;
+								launchsite->LastSuperWeaponIndex = Class->HeapID;
 								if (Class->Type == SUPER_MULTI_MISSILE) {
 									Coord coord = cell.As_Coord();
 									coord.Z = Map.Get_Height_GL(coord);
 									Sound_Effect(Rule->DigSound, coord);
-									Speak_Eva("EVA_NuclearMissileLaunched");
+									Speak_Activated("EVA_NuclearMissileLaunched");
 								}
 							}
 
@@ -1356,34 +1774,8 @@ void SuperClass::Place(Cell const & cell, bool player)
 			}
 			break;
 
-		case SUPER_HUNTER_SEEKER: {
-			BuildingClass * hsbuilding = NULL;
-			for (int index = 0; index < Buildings.Count(); index++) {
-				BuildingClass * b = Buildings[index];
-				if (b->House == House) {
-					for (int j = 0; j < Rule->HSBuilding.Count(); j++) {
-						if (b->Class == Rule->HSBuilding[j]) {
-							hsbuilding = b;
-						}
-					}
-				}
-			}
-
-			if (hsbuilding) {
-				Cell nearby = Map.Nearby_Location(hsbuilding->PositionCoord.As_Cell(), SPEED_FOOT);
-				SideClass const * side = House->Acted_Side();
-				if (Map.In_Local_Radar(nearby) && side != NULL && side->HunterSeeker != NULL) {
-					UnitClass * hs = new UnitClass(side->HunterSeeker, House);
-					if (!hs->Unlimbo(nearby, DIR_E)) {
-						delete hs;
-					} else {
-						hs->Locomotion->Acquire_Hunter_Seeker_Target();
-						hs->Assign_Mission(MISSION_ATTACK);
-						hs->Commence();
-					}
-				}
-			}
-		}
+		case SUPER_HUNTER_SEEKER:
+			Hunter_Seeker_Launch();
 		break;
 	}
 }
@@ -1398,6 +1790,12 @@ void SuperClass::Place(Cell const & cell, bool player)
 /// will want redrawing.</param>
 void SuperClass::Deactivate_Firestorm(int, bool player) const
 {
+	if (Class->Type == SUPER_BATTERY) {
+		House->RecalcPower = true;
+		if (player) {
+			Map.Flag_Strips_To_Redraw();
+		}
+	}
 	if (Class->Type == SUPER_FIRESTORM) {
 		House->Deactivate_Firestorm();
 		if (player) {
@@ -1460,6 +1858,21 @@ bool SuperClass::Should_Flash_Tab(void) const
 
 
 /// <summary>
+/// Does this house see the weapon's ShowTimer countdown? SW.TimerVisibility names the houses, relative
+/// to the owner; an observer counts as allied to every house. With no viewer, everyone sees it.
+/// </summary>
+bool SuperClass::Is_Timer_Visible_To(HouseClass const * viewer) const
+{
+	if (viewer == NULL || House == NULL) {
+		return(true);
+	}
+	bool const owner = viewer == House;
+	bool const ally = viewer->IsObserver || House->Is_Ally(viewer);
+	return(SuperRules::House_Passes(Class->Keys.TimerVisibility, owner, ally));
+}
+
+
+/// <summary>
 /// Lists the members this super weapon carries.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -1483,6 +1896,10 @@ void SuperClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PreClickAnim);
 	stream.Serialize(ChargeDrainState);
 	stream.Serialize(CustomRechargeTime);
+	stream.Serialize(Pending);
+	stream.Serialize(ShotsFired);
+	stream.Serialize(WasEnabled);
+	stream.Serialize(IsVirtualCharging);
 	stream.Serialize(ReadyFrame);
 }
 
@@ -1522,6 +1939,10 @@ void SuperClass::Compute_CRC(CRCEngine &crc) const
 	crc(ChargeDrainState);
 	crc(NeedsBuilding);
 	crc(CustomRechargeTime);
+	crc((int)Pending.size());
+	crc(ShotsFired);
+	crc(WasEnabled);
+	crc(IsVirtualCharging);
 }
 
 
@@ -1536,7 +1957,10 @@ void SuperClass::Compute_CRC(CRCEngine &crc) const
 void SuperClass::Drop_Pods(Cell const & cell) const
 {
 	Cell working_cell = cell;
-	int count = Random_Pick(Rule->DropPodInfantryMinimum, Rule->DropPodInfantryMaximum);
+	SuperWeaponKeys const & keys = Class->Keys;
+	int const minimum = keys.DropPodMinimum >= 0 ? keys.DropPodMinimum : Rule->DropPodInfantryMinimum;
+	int const maximum = keys.DropPodMaximum >= 0 ? std::max(keys.DropPodMaximum, minimum) : Rule->DropPodInfantryMaximum;
+	int count = Random_Pick(minimum, maximum);
 	InfantryType i1 = InfantryTypeClass::From_Name("E1");
 	InfantryTypeClass const * inftype = InfantryTypes[i1];
 	InfantryType i2 = InfantryTypeClass::From_Name("E2");
@@ -1546,11 +1970,24 @@ void SuperClass::Drop_Pods(Cell const & cell) const
 	int attempts = 3 * count;
 
 	while (toplace && attempts--) {
-		InfantryClass * inf = (InfantryClass *)(((Random_Double(0.0, 1.0) < 0.5) ? inftype : altinftype)->Create_One_Of(House));
+		InfantryTypeClass const * chosen = (Random_Double(0.0, 1.0) < 0.5) ? inftype : altinftype;
+		if (keys.DropPodTypes.Count() > 0) {
+			// DropPod.Types names the infantry; a type listed twice is twice as likely.
+			TechnoTypeClass const * listed = keys.DropPodTypes[Random_Pick(0, keys.DropPodTypes.Count() - 1)];
+			if (listed != NULL && listed->Fetch_RTTI() == RTTI_INFANTRYTYPE) {
+				chosen = static_cast<InfantryTypeClass const *>(listed);
+			}
+		}
+		InfantryClass * inf = (InfantryClass *)(chosen->Create_One_Of(House));
 
 		Cell nearby = Map.Nearby_Location(working_cell, SPEED_FOOT, -1, MZONE_INFANTRY, false, Point2D(1,1), false, false, false, false);
 		if (inf->Can_Enter_Cell(&Map[nearby]) == MOVE_OK) {
-			inf->Veterancy.Set_Elite(true);
+			// DropPod.Veterancy of 2 or more makes elite pod troops, 1 veteran ones.
+			if (keys.DropPodVeterancy >= 2.0f) {
+				inf->Veterancy.Set_Elite(true);
+			} else if (keys.DropPodVeterancy >= 1.0f) {
+				inf->Veterancy.Set_Veteran(true);
+			}
 			inf->Link_DropPod();
 			inf->PositionCoord = nearby;
 			inf->Assign_Destination(&Map[nearby]);

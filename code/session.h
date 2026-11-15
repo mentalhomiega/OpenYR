@@ -424,7 +424,7 @@ class MultiMission
 {
 	public:
 		MultiMission(INIClass const & ini, char const * filename = NULL);
-		MultiMission(const char * filename = NULL, char const * description = NULL, char const *digest = NULL, bool official = true);
+		MultiMission(const char * filename = NULL, char const * description = NULL, char const *digest = NULL, bool official = true, bool read_file = true);
 
 		void Set_Description(char const * description);
 		void Set_Filename(char const * filename);
@@ -436,11 +436,15 @@ class MultiMission
 		char const * Get_Digest(void) const {return(Digest);}
 		bool Get_Official(void) { return(IsOfficial); }
 
+		// Is the description a string table label that no entry resolves?
+		bool Is_Placeholder(void) const {return(IsPlaceholder);}
+
 	private:
 		char ScenarioDescription[DESCRIP_MAX];
 		char Filename[_MAX_PATH];
 		char Digest[32];
 		bool IsOfficial;
+		bool IsPlaceholder;
 
 		/*
 		 * These are the player limits the mission declares. Only a map pack's listing reads
@@ -478,6 +482,8 @@ struct GameOptionsType {
 	bool		ParallelPaths;		// Unit paths are searched in batches on several threads (docs/PERFORMANCE.md).
 	bool		SWAllowed;			// Off, the superweapon buildings the shell can disable cannot be built or granted.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
+	// The mod lobby's mode and options as LobbyChoiceType text (docs/LOBBY_MODES.md); empty when the match has none.
+	std::string	LobbyChoice;
 
 	bool Save(SaveStreamClass & stream);
 	bool Load(SaveStreamClass & stream);

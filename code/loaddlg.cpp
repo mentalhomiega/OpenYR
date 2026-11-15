@@ -47,6 +47,7 @@
 #include "data.h"
 #include "gamedirs.h"
 #include "globals.h"
+#include "goptions.h"
 #include "houstype.h"
 #include "init.h"
 #include "language/language.h"
@@ -613,8 +614,11 @@ int __cdecl LoadOptionsClass::Compare(const void * p1, const void * p2)
 /// <returns>bool; Was the game loaded?</returns>
 bool LoadOptionsClass::Load_File(const char * file_name)
 {
+	// With the modern menus the load shows the loading notice with its bar instead.
 	UIWaitBoxClass box;
-	box.Show(Fetch_String(TXT_LOADING));
+	if (Options.IsClassicMenus) {
+		box.Show(Fetch_String(TXT_LOADING));
+	}
 	ScenarioActive = false;
 	TacticalActive = false;
 	bool loaded = Load_Game(file_name);

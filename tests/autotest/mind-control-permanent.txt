@@ -1,0 +1,20 @@
+; MindControl.Permanent (Ares) makes a mind control warhead take its target for good, with no limit on how many, and
+; lets it take structures. The overlay mind-control-permanent.ini gives the Mastermind a weapon with such a warhead and
+; a Damage of 1, which would let a conventional controller hold only one unit. Two enemy GIs and an enemy power plant
+; stand near it, and the Mastermind is ordered at each in turn.
+; Expected: three "mind control ... taken for good" lines (E1, E1, GAPOWR) and no "taken from" line, and "counts" at frame 600 shows the
+; enemy with no infantry. Before the key was read the second GI freed the first and the power plant was never taken.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/mind-control-permanent.txt -Seconds 90 -Country 8 -Filter "AUTOTEST   counts|AUTOTEST strike|mind control|Exception"
+10 rules mind-control-permanent.ini
+30 command CenterBase
+35 reveal
+40 own MIND 64 40
+41 enemy E1 64 36
+42 enemy E1 67 37
+43 enemy GAPOWR 60 36
+100 strike MIND 64 36
+250 strike MIND 67 37
+400 strike MIND 60 36
+590 counts Player
+595 counts Computer
+600 quit

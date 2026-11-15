@@ -44,7 +44,7 @@ TagTypeClass::TagTypeClass(char const *name) :
 
 	HeapID = TagTypes.Count();
 	TagTypes.Add(this);
-	AbstractTypePtrTracker.Add(this);
+	TagTypePtrTracker.Add(this);
 }
 
 
@@ -75,7 +75,7 @@ TagTypeClass::~TagTypeClass(void)
 		}
 	}
 
-	AbstractTypePtrTracker.Delete(this);
+	TagTypePtrTracker.Delete(this);
 	TagTypes.Delete(this);
 }
 

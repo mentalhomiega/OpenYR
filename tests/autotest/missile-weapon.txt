@@ -1,0 +1,13 @@
+; Missile.Weapon (Ares, Custom Missiles page): a custom missile's blast uses the weapon's bullet, damage and warhead in place of Missile.Damage and Missile.Warhead.
+; A Dreadnought at 66,62 strikes a Pill Box (GAPILL) at 66,80. missile-weapon.ini makes its DMISL custom with Missile.Damage=1 and Missile.Weapon=105mm.
+; Expected (observed on the build that added the key): the Pill Box (400 strength) ends at 382 after the first volley of two missiles;
+; without the Missile.Weapon line it is still at 400, as 1 damage against its armor rounds to nothing. The where line at frame 340 shows its strength.
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/missile-weapon.txt -Build agentNN -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST   where GAPILL|Rocket: |Exception"
+5 rules missile-weapon.ini
+10 command CenterBase
+30 reveal
+43 own DRED 66 62
+50 spawn GAPILL 66 80
+60 strike DRED 66 80
+340 where GAPILL
+350 quit

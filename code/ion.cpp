@@ -45,6 +45,8 @@
 #include "scheme.h"
 #include "session.h"
 #include "sun.h"
+#include "suprkeys.h"
+#include "suprtype.h"
 #include "theme.h"
 #include "voc.h"
 #include "vox.h"
@@ -339,6 +341,7 @@ bool IonStormClass::Is_Storm_Lighting(void)
 
 
 IonStormClass::SpecialLightType IonStormClass::Applied_Light = IonStormClass::SPECIAL_LIGHT_NONE;
+SuperWeaponTypeClass const * IonStormClass::Applied_Type = nullptr;
 
 // A nuclear flash lights the map at twice the daylight, tinted warm, with the ground and the levels each worth a tenth.
 static int const NUKE_AMBIENT_LIGHT = 200;
@@ -359,6 +362,27 @@ static bool Nuke_Lighting_Applies(void)
 }
 
 
+// Does the weapon behind an effect light the map? A weapon with Light.Enabled=no does not.
+static bool Weapon_Lights(SuperWeaponTypeClass const * type)
+{
+	return(type == nullptr || type->Keys.LightEnabled);
+}
+
+
+// A lightning storm is raging and its weapon lights the map.
+static bool Storm_Lights(void)
+{
+	return(LightningStormClass::Is_Active() && Weapon_Lights(LightningStormClass::Active_Type()));
+}
+
+
+// A dominator blast is showing and its weapon lights the map.
+static bool Dominator_Lights(void)
+{
+	return(PsychicDominatorClass::Is_Lit() && Weapon_Lights(PsychicDominatorClass::Active_Type()));
+}
+
+
 /// <summary>
 /// Gives the map the lighting that suits what is on screen, as ScenarioClass::UpdateLighting (0x53C280)
 /// does: the nuclear lighting while the flash fades in or a chronoshift screen effect runs, else the
@@ -373,12 +397,16 @@ void IonStormClass::Update_Special_Lighting(void)
 	}
 
 	SpecialLightType mode = SPECIAL_LIGHT_NONE;
+	SuperWeaponTypeClass const * type = nullptr;
 	if (Nuke_Lighting_Applies()) {
 		mode = SPECIAL_LIGHT_NUKE;
-	} else if (LightningStormClass::Is_Active()) {
+		type = NukeFlashClass::Is_Fading_In() ? NukeFlashClass::Active_Type() : nullptr;
+	} else if (Storm_Lights()) {
 		mode = SPECIAL_LIGHT_STORM;
-	} else if (PsychicDominatorClass::Is_Lit()) {
+		type = LightningStormClass::Active_Type();
+	} else if (Dominator_Lights()) {
 		mode = SPECIAL_LIGHT_DOMINATOR;
+		type = PsychicDominatorClass::Active_Type();
 	}
 
 	int ambient = Scen->AmbientLight;
@@ -388,10 +416,14 @@ void IonStormClass::Update_Special_Lighting(void)
 		case SPECIAL_LIGHT_DOMINATOR: ambient = Scen->DominatorAmbientLight; break;
 		default: break;
 	}
+	if (type != nullptr && type->Keys.LightAmbient >= 0) {
+		ambient = type->Keys.LightAmbient;
+	}
 	Scen->DesiredAmbientLight = ambient;
 
-	if (mode != Applied_Light) {
+	if (mode != Applied_Light || type != Applied_Type) {
 		Applied_Light = mode;
+		Applied_Type = type;
 		int red = -1;
 		int green = -1;
 		int blue = -1;
@@ -447,7 +479,8 @@ void IonStormClass::Clear_Special_Lighting(void)
 void IonStormClass::Restore_Special_Lighting(void)
 {
 	Applied_Light = SPECIAL_LIGHT_NONE;
-	if (Nuke_Lighting_Applies() || LightningStormClass::Is_Active() || PsychicDominatorClass::Is_Lit()) {
+	Applied_Type = nullptr;
+	if (Nuke_Lighting_Applies() || Storm_Lights() || Dominator_Lights()) {
 		Update_Special_Lighting();
 	}
 }
@@ -471,6 +504,13 @@ void IonStormClass::Special_Tint(int & red, int & green, int & blue)
 			g = Scen->DominatorGreenTint;
 			b = Scen->DominatorBlueTint;
 		}
+		// A weapon's Light.Red, Light.Green and Light.Blue replace the tint of the effect it started.
+		if (Applied_Type != nullptr) {
+			SuperWeaponKeys const & keys = Applied_Type->Keys;
+			if (keys.LightRed >= 0) r = keys.LightRed;
+			if (keys.LightGreen >= 0) g = keys.LightGreen;
+			if (keys.LightBlue >= 0) b = keys.LightBlue;
+		}
 	}
 	red = NORMAL_LIGHT * r / 100;
 	green = NORMAL_LIGHT * g / 100;
@@ -484,10 +524,10 @@ void IonStormClass::Special_Tint(int & red, int & green, int & blue)
 /// </summary>
 IonStormClass::LightPair IonStormClass::Current_Light_Pair(void)
 {
-	if (IsActive || LightningStormClass::Is_Active()) {
+	if (IsActive || Storm_Lights()) {
 		return(LightPair{Scen->IonLevelLight, Scen->IonGroundLight});
 	}
-	if (PsychicDominatorClass::Is_Active()) {
+	if (PsychicDominatorClass::Is_Active() && Weapon_Lights(PsychicDominatorClass::Active_Type())) {
 		return(LightPair{Scen->DominatorLevelLight, Scen->DominatorGroundLight});
 	}
 	if (NukeFlashClass::Is_Fading_In()) {
@@ -534,7 +574,7 @@ void IonStormClass::Lightning_Bolt(Cell cell)
 		int damage = Rule->LightningDamage;
 		new AnimClass(Combat_Anim(damage, Rule->IonStormWarhead, cellptr->Land_Type(), coord), coord, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_ZGRAD), Get_Explosion_Z(coord));
 
-		Strike_Cell_Damage(*cellptr, coord, damage, Rule->IonStormWarhead, NULL, true);
+		Strike_Cell_Damage(*cellptr, coord, damage, Rule->IonStormWarhead, NULL, true, Rule->MetallicDebris, 2, 4);
 
 		Coord crd = coord;
 		while (crd.Z < 200 * LEVEL_LEPTON_H) {

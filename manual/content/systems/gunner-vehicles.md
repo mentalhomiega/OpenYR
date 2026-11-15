@@ -51,7 +51,7 @@ A [`Gunner=yes`](/keys/gunner/) vehicle with [`TurretCount`](/keys/turretcount/)
 Weapons are counted from `0` here, so weapon `0` is [`Weapon1`](/keys/weapon1/) of the vehicle's [numbered list](/systems/gattling-weapons/#numbered-weapon-lists), weapon `2` is `Weapon3`, and so on.
 
 - An empty gunner vehicle fires weapon `0`.
-- When a passenger boards the empty vehicle, the vehicle fires the weapon that passenger's [`IFVMode`](/keys/ifvmode/) names. A value outside `0` to `17` selects weapon `0`.
+- When a passenger boards the empty vehicle, the vehicle fires the weapon that passenger's [`IFVMode`](/keys/ifvmode/) names. A value outside `0` to `126` selects weapon `0`.
 - Passengers who board after the first, and passengers who leave while others stay aboard, change nothing.
 - Once the last passenger leaves or dies, the vehicle returns to weapon `0`.
 
@@ -106,6 +106,16 @@ Only the vehicle type named `FV` maps weapons to turrets. Each pair below sends 
 [FV]
 MachineGunTurretWeapon=2 ; weapon 2 ...
 MachineGunTurretIndex=1  ; ... shows turret 1, the art's TUR1 voxel
+```
+
+Any vehicle type can also map each position of its numbered list directly with the Ares keys `WeaponTurretIndex1` onward, one for each position up to [`WeaponCount`](/keys/weaponcount/): `WeaponTurretIndex3=1` makes `Weapon3`, which a passenger with `IFVMode=2` selects, show turret `1`. These keys are read after the `FV` pairs above and override them. A value of `-1`, the default, leaves the position as it was. A value below `-1` or not below the type's `TurretCount` names no turret: the game writes a line to its debug log and ignores it.
+
+```ini title="rulesmd.ini"
+[MYIFV] ; example VehicleType
+TurretCount=3
+WeaponCount=3
+WeaponTurretIndex2=2 ; Weapon2 shows the TUR2 voxel
+WeaponTurretIndex3=1 ; Weapon3 shows the TUR1 voxel
 ```
 
 Yuri's Revenge also hands a passenger's chrono weapon to the vehicle, draws the gunner's pip, and shows turret tooltips. None of these is done yet.

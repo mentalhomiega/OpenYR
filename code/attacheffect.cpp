@@ -15,6 +15,8 @@
 #include "animtype.h"
 #include "crc.h"
 #include "dbgprint.h"
+#include "globals.h"
+#include "house.h"
 #include "savestream.h"
 #include "techno.h"
 #include "techtype.h"
@@ -295,6 +297,8 @@ bool AttachedEffectsClass::Is_Cloakable(void) const
 /*
  * The animation shows while the object is on the map and uncloaked, and, for a
  * TemporalHidesAnim effect, not being warped out. It loops until the effect ends.
+ * The animation of the object's own effect belongs to the object's current owner, so
+ * the damage it deals spares that house under an AffectsAllies=no warhead.
  */
 void AttachedEffectsClass::Update_Anim(TechnoClass * owner, EffectStruct & effect)
 {
@@ -303,7 +307,7 @@ void AttachedEffectsClass::Update_Anim(TechnoClass * owner, EffectStruct & effec
 		&& !(type.IsTemporalHidesAnim && owner->IsBeingWarpedOut);
 
 	if (show && effect.Anim == nullptr) {
-		effect.Anim = new AnimClass(type.Animation, owner->Center_Coord());
+		effect.Anim = AnimClass::Held(new AnimClass(type.Animation, owner->Center_Coord()), owner);
 		if (effect.Anim != nullptr) {
 			effect.Anim->Attach_To(owner);
 			effect.Anim->Loops = UCHAR_MAX;
@@ -311,13 +315,20 @@ void AttachedEffectsClass::Update_Anim(TechnoClass * owner, EffectStruct & effec
 	} else if (!show) {
 		Remove_Anim(effect);
 	}
+	if (effect.Anim != nullptr && effect.Warhead == nullptr) {
+		effect.Anim->OwnerHouse = owner->House->HeapID;
+	}
 }
 
 
 void AttachedEffectsClass::Remove_Anim(EffectStruct & effect)
 {
 	if (effect.Anim != nullptr) {
-		effect.Anim->Delete_Me();
+		if (Anims.ID(effect.Anim) < 0) {
+			DebugString("AttachEffect: an animation that no longer exists was still attached.\n");
+		} else {
+			effect.Anim->Delete_Me();
+		}
 		effect.Anim = nullptr;
 	}
 }

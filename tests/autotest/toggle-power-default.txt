@@ -1,0 +1,12 @@
+; Without TogglePowerAllowed in the rules there is no power mode, as in Yuri's Revenge: the modern sidebar has no power
+; button, with the beacon, sell and repair buttons side by side, and the Power Mode command does nothing. The player owns a
+; power plant and gives the TogglePower command at frame 100.
+; Expected: the sidebarbutton line for power says "listed 0", the beacon, sell and repair buttons are listed one button
+; apart (433, 465 and 497 across on 2026-11-15), and `modes` at frame 110 writes "power 0". Before the default changed, the button was listed and "power 1".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/toggle-power-default.txt -Seconds 40 -Country 0 -Filter "AUTOTEST modes|sidebarbutton|Exception"
+30 command CenterBase
+40 own GAPOWR 64 36
+50 sidebarbuttons
+100 command TogglePower
+110 modes
+120 quit

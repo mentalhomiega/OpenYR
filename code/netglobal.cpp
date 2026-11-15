@@ -82,6 +82,7 @@ namespace NetGlobal
 		}
 
 
+		int ColorLimit = MAX_MPLAYER_COLORS;
 		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
 		bool Has_Terminator(char const * text, std::size_t capacity)
 		{
@@ -92,7 +93,7 @@ namespace NetGlobal
 		/// <summary>Checks a color index against the colors the game draws.</summary>
 		bool Color_Is_Valid(int color)
 		{
-			return(color >= 0 && color < MAX_MPLAYER_COLORS);
+			return(color >= 0 && color < ColorLimit);
 		}
 
 		/// <summary>Checks a free color: zero for none, or a packed color with its custom flag.</summary>
@@ -155,6 +156,18 @@ namespace NetGlobal
 		}
 
 	}	// namespace
+
+
+	int Color_Limit(void)
+	{
+		return(ColorLimit);
+	}
+
+
+	void Set_Color_Limit(int limit)
+	{
+		ColorLimit = std::clamp(limit, static_cast<int>(MAX_MPLAYER_COLORS), 16);
+	}
 
 
 	/// <summary>Clears an outgoing packet before selecting its command.</summary>
@@ -358,7 +371,7 @@ namespace NetGlobal
 				if (!Has_Terminator(packet.Message.Buf, sizeof(packet.Message.Buf))) {
 					return(DecodeError::UNTERMINATED_MESSAGE);
 				}
-				if (context.SenderPlayerColor < 0 || context.SenderPlayerColor >= MAX_MPLAYER_COLORS) {
+				if (context.SenderPlayerColor < 0 || context.SenderPlayerColor >= ColorLimit) {
 					return(DecodeError::INVALID_COLOR);
 				}
 				break;

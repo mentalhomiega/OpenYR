@@ -618,6 +618,38 @@ void Remove_Root(void)
 }
 
 
+// Inside a probe scope a probe answers the same as outside it, in any case, and sees a file written meanwhile.
+void Test_Probe_Scope_Answers_As_An_Open_Does(void)
+{
+	Reset();
+	Make_Directory(Root + "\\PROBE");
+	Write_File(Root + "\\PROBE\\THERE.SHP", "x");
+	std::string const there = Root + "\\PROBE\\THERE.SHP";
+	std::string const lower = Root + "\\PROBE\\there.shp";
+	std::string const missing = Root + "\\PROBE\\MISSING.SHP";
+	std::string const later = Root + "\\PROBE\\LATER.SHP";
+	std::string const nofolder = Root + "\\NOFOLDER\\THERE.SHP";
+	std::string const device = Root + "\\PROBE\\NUL";
+	bool const deviceopens = RawFileClass(device.c_str()).Is_Available();
+
+	{
+		FileProbeScope const scope;
+		Check(RawFileClass(there.c_str()).Is_Available(), "probe scope: a file in the folder is found");
+		Check(RawFileClass(lower.c_str()).Is_Available(), "probe scope: in another case too");
+		Check(!RawFileClass(missing.c_str()).Is_Available(), "probe scope: a name the folder lacks is not");
+		Check(!RawFileClass(nofolder.c_str()).Is_Available(), "probe scope: nor one in a missing folder");
+		Check(RawFileClass(device.c_str()).Is_Available() == deviceopens, "probe scope: a device name answers as an open does");
+		Write_File(later, "x");
+		Check(RawFileClass(later.c_str()).Is_Available(), "probe scope: a file written in the scope is found");
+	}
+	Check(RawFileClass(there.c_str()).Is_Available(), "after the scope: the file is still found");
+
+	DeleteFile(there.c_str());
+	DeleteFile(later.c_str());
+	Remove_Directory(Root + "\\PROBE");
+}
+
+
 int main(void)
 {
 	GetCurrentDirectory(sizeof(OriginalDirectory), OriginalDirectory);
@@ -645,6 +677,7 @@ int main(void)
 	Test_Without_A_User_Directory_Nothing_Moves();
 	Test_Saved_Games_Folder();
 	Test_Screenshots_Folder();
+	Test_Probe_Scope_Answers_As_An_Open_Does();
 
 	Reset();
 	Remove_Root();

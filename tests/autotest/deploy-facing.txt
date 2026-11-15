@@ -1,0 +1,25 @@
+; DeployFacing on a structure is the facing a vehicle turns to before it deploys into that structure, as in Yuri's Revenge
+; (UnitClass::TryToDeploy, 0x7393C0), in eight steps from 0 for north; unset it is south. The overlay deploy-facing.ini sets
+; DeployFacing=2 (east) on the Slave Miner's refinery. The player's own construction vehicle keeps the default.
+; Expected: after the deploy orders at frames 43 and 71 the `spawns SMIN` lines show the Slave Miner, which starts facing west (192),
+; turning to the desired facing 64, and the `spawns AMCV` lines show the construction vehicle turning to 128. Both structures
+; then stand: `where YAREFN` and `where GACNST` at frame 300 find them. Before the key was read the Slave Miner turned to 128.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/deploy-facing.txt -Seconds 60 -Filter "AUTOTEST   (unitstate|where|spawns)|Exception"
+10 rules deploy-facing.ini
+30 command CenterBase
+35 reveal
+36 own SMIN 70 24
+40 face 192 70 24
+42 select SMIN
+43 command DeployObject
+49 unitstate SMIN
+50 spawns SMIN
+60 spawns SMIN
+70 select AMCV
+71 command DeployObject
+80 spawns SMIN
+80 spawns AMCV
+90 spawns AMCV
+300 where YAREFN
+301 where GACNST
+310 quit

@@ -709,6 +709,16 @@ char ScoreStageClass::Side_Letter(void)
 }
 
 
+SideClass const * ScoreStageClass::Player_Side(void)
+{
+	if (PlayerPtr == NULL || PlayerPtr->Class == NULL) {
+		return(NULL);
+	}
+	SideType const side = PlayerPtr->Class->Side;
+	return(side >= 0 && side < Sides.Count() ? Sides[side] : NULL);
+}
+
+
 int ScoreStageClass::Dialog_X(int units)
 {
 	return(units * 6 / 4);

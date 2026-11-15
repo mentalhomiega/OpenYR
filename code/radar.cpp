@@ -97,6 +97,7 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
+#include "side.h"
 #include "language/language.h"
 #include "lightcon.h"
 #include "mixfile.h"
@@ -118,6 +119,7 @@
 RadarClass::RTacticalClass RadarClass::RadarButton;
 
 void const * RadarClass::RadarAnim  = NULL;
+ConvertClass * RadarClass::RadarAnimDrawer = NULL;
 void const * RadarClass::TopShape  = NULL;
 
 
@@ -263,7 +265,7 @@ void RadarClass::Draw_Open_Housing(void)
 	if (Modern_Interface()) {
 		Draw_Hud_Well(*SidebarSurface, Hud_Layout().Radar);
 	} else {
-		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+		Draw_Shape(*SidebarSurface, RadarAnimDrawer != NULL ? *RadarAnimDrawer : *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 	}
 }
 
@@ -308,7 +310,29 @@ void RadarClass::Init_Clear(void)
 void RadarClass::Init_For_House(void)
 {
 	DebugString("RadarClass::Init_For_House()\n");
-	RadarAnim = MFCD::Retrieve("RADAR.SHP");
+	RadarAnim = NULL;
+	delete RadarAnimDrawer;
+	RadarAnimDrawer = NULL;
+
+	// A side that uses the Yuri file names draws its radar logo from RADARY.SHP in the colors of
+	// RADARYURI.PAL; one whose archives lack either file keeps the RADAR.SHP logo.
+	SideType const side = Prepared_Side();
+	if (side >= 0 && side < Sides.Count() && Sides[side]->Uses_Yuri_File_Names()) {
+		void const * shape = MFCD::Retrieve("RADARY.SHP");
+		void const * colors = MFCD::Retrieve("RADARYURI.PAL");
+		if (shape != NULL && colors != NULL) {
+			PaletteClass pal;
+			memmove(&pal, colors, sizeof(pal));
+			for (int i = 0; i < PaletteClass::COLOR_COUNT; i++) {
+				pal[i] = RGBClass(pal[i].Get_Red() * 4, pal[i].Get_Green() * 4, pal[i].Get_Blue() * 4);
+			}
+			RadarAnim = shape;
+			RadarAnimDrawer = new ConvertClass(pal, pal, *VisibleSurface, 1, false);
+		}
+	}
+	if (RadarAnim == NULL) {
+		RadarAnim = MFCD::Retrieve("RADAR.SHP");
+	}
 	TopShape = MFCD::Retrieve("TOP.SHP");
 }
 
@@ -320,6 +344,8 @@ void RadarClass::Init_For_House(void)
 void RadarClass::Clear_For_House(void)
 {
 	RadarAnim = NULL;
+	delete RadarAnimDrawer;
+	RadarAnimDrawer = NULL;
 	TopShape = NULL;
 }
 
@@ -382,7 +408,7 @@ void RadarClass::Draw_It(bool forced)
 
 		if (IsToRedraw == true) {
 			IsToRedraw = (FullRedraw == true);
-			Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, RadarAnimFrame, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+			Draw_Shape(*SidebarSurface, RadarAnimDrawer != NULL ? *RadarAnimDrawer : *SidebarDrawer, (ShapeSet const *)RadarAnim, RadarAnimFrame, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 			LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 		}
 	}
@@ -416,7 +442,7 @@ void RadarClass::Draw_It(bool forced)
 			default:
 				if (IsToRedraw == true) {
 					IsToRedraw = false;
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, 0, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+					Draw_Shape(*SidebarSurface, RadarAnimDrawer != NULL ? *RadarAnimDrawer : *SidebarDrawer, (ShapeSet const *)RadarAnim, 0, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 					LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 				}
 				break;
@@ -1758,6 +1784,59 @@ void RadarClass::Radar_Pixel(Point2D const & point)
 }
 
 
+static void Compute_Foundation(FOUNDATION_LIST & foundation, int bwidth, int bheight, float ZoomFactor)
+{
+	foundation.Clear();
+
+	int zw;
+	if (bwidth == 1) {
+		zw = std::max(1.0, ZoomFactor + 0.5);
+	} else {
+		zw = std::max(2.0, bwidth * ZoomFactor + 0.5);
+	}
+
+	int zh;
+	if (bheight == 1) {
+		zh = std::max(1.0, ZoomFactor + 0.5);
+	} else {
+		zh = std::max(2.0, bheight * ZoomFactor + 0.5);
+	}
+
+	int fy = 0;
+	int zs = zh + zw - 1;
+
+	if (zs > 0) {
+		int left_edge = 0;
+		while (true) {
+			int xbegin;
+			if (fy < zh) {
+				xbegin = left_edge;
+			} else {
+				xbegin = fy - 2 * zh + 2;
+			}
+			int xend;
+			if (fy < zw) {
+				xend = fy;
+			} else {
+				xend = 2 * zw - fy - 2;
+			}
+			int fx = xbegin;
+
+			while ( fx <= xend )
+			{
+				foundation.Add(Point2D(fx, fy));
+				++fx;
+			}
+			++fy;
+			--left_edge;
+			if (fy >= zs) {
+				break;
+			}
+		}
+	}
+}
+
+
 /// <summary>
 /// Computes the radar footprint of every building size.
 /// This routine works out the diamond of radar pixels that a building of each size covers, so
@@ -1767,61 +1846,10 @@ void RadarClass::Radar_Pixel(Point2D const & point)
 /// whenever the radar zoom changes.</remarks>
 void RadarClass::Compute_Foundations(void)
 {
-	int i;
-	for (i = 0; i < BSIZE_COUNT; i++) {
-		Foundation[i].Clear();
-
-		int bwidth = BuildingTypeClass::SizeWidth[i];
-		int bheight = BuildingTypeClass::SizeHeight[i];
-
-		int zw;
-		if (bwidth == 1) {
-			zw = std::max(1.0, ZoomFactor + 0.5);
-		} else {
-			zw = std::max(2.0, bwidth * ZoomFactor + 0.5);
-		}
-
-		int zh;
-		if (bheight == 1) {
-			zh = std::max(1.0, ZoomFactor + 0.5);
-		} else {
-			zh = std::max(2.0, bheight * ZoomFactor + 0.5);
-		}
-
-		int fy = 0;
-		int zs = zh + zw - 1;
-
-		if (zs > 0) {
-			int left_edge = 0;
-			while (true) {
-				int xbegin;
-				if (fy < zh) {
-					xbegin = left_edge;
-				} else {
-					xbegin = fy - 2 * zh + 2;
-				}
-				int xend;
-				if (fy < zw) {
-					xend = fy;
-				} else {
-					xend = 2 * zw - fy - 2;
-				}
-				int fx = xbegin;
-
-				while ( fx <= xend )
-				{
-					Foundation[i].Add(Point2D(fx, fy));
-					++fx;
-				}
-				++fy;
-				--left_edge;
-				if (fy >= zs) {
-					break;
-				}
-			}
-		}
-
+	for (int i = 0; i < BSIZE_COUNT; i++) {
+		Compute_Foundation(Foundation[i], BuildingTypeClass::SizeWidth[i], BuildingTypeClass::SizeHeight[i], ZoomFactor);
 	}
+	CustomFoundation.clear();
 }
 
 
@@ -1832,6 +1860,15 @@ void RadarClass::Compute_Foundations(void)
 /// covers.</returns>
 FOUNDATION_LIST const& RadarClass::Get_Foundation(BuildingTypeClass * btype)
 {
+	if (btype->IsCustomFoundation) {
+		std::pair<int, int> key(btype->CustomWidth, btype->CustomHeight);
+		auto found = CustomFoundation.find(key);
+		if (found == CustomFoundation.end()) {
+			found = CustomFoundation.emplace(key, FOUNDATION_LIST()).first;
+			Compute_Foundation(found->second, key.first, key.second, ZoomFactor);
+		}
+		return(found->second);
+	}
 	return(Foundation[btype->Size]);
 }
 

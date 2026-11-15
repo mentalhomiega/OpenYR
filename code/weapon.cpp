@@ -60,8 +60,11 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "emissive.h"
+#include "objectkeyrules.h"
+#include "rtti.hh"
 #include "warhead.h"
 
+#include <algorithm>
 #include <cstring>
 #include <set>
 #include <string>
@@ -95,6 +98,26 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	RadLevel(0),
 	IsLimboLaunch(false),
 	IsFireOnce(false),
+	IsAbductor(false),
+	AbductBelowPercent(1.0),
+	AbductAnim(NULL),
+	IsAbductChangeOwner(false),
+	AbductMaxHealth(0),
+	IsAbductTemporal(false),
+	HasIvanDelay(false),
+	IvanDelay(0),
+	IvanWarhead(NULL),
+	HasIvanDamage(false),
+	IvanDamage(0),
+	IvanAttachSound(IVAN_SOUND_UNSET),
+	IvanTickingSound(IVAN_SOUND_UNSET),
+	IvanImage(),
+	IvanDetachable(-1),
+	IvanDetonateOnSell(-1),
+	IvanDestroysBridges(-1),
+	IvanCanDetonateTimeBomb(-1),
+	IvanImageData(NULL),
+	IvanImageLooked(false),
 	OpenToppedAnim(NULL),
 	OccupantAnim(NULL),
 	AssaultAnim(NULL),
@@ -111,6 +134,8 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsAlternateColor(false),
 	IsIonSensitive(false),
 	Burst(1),
+	StrafingShots(5),
+	AmmoUse(1),
 	Bullet(NULL),
 	Attack(0),
 	MaxSpeed(MPH_IMMOBILE),
@@ -127,17 +152,34 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	UseFireParticles(false),
 	UseSparkParticles(false),
 	IsRailgun(false),
+	IsDetachedRailgun(false),
+	BoltColorMask(0),
+	HasBeamColor(false),
+	BeamDuration(-1),
+	BeamAmplitude(-1.0),
+	LaserThickness(1),
+	HasWaveColor(false),
+	WaveColor{},
+	HasWaveIntensity(false),
+	WaveIntensity{},
+	WaveReverseVehicles(-1),
+	WaveReverseBuildings(-1),
+	WaveReverseInfantry(-1),
+	WaveReverseAircraft(-1),
+	WaveReverseOthers(-1),
 	IsLobber(false),
 	IsBright(false),
 	LaserDuration(10),
 	IsBigLaser(false),
 	IsSonic(false),
+	ApplyDamage(-1),
 	IsMagBeam(false),
 	IsDecloakToFire(true),
 	IsAreaFire(false),
 	IsNeverUse(false),
 	IsCellRangefinding(false),
 	IsOmniFire(false),
+	IsDistributedFire(false),
 	IsRevealOnFire(true),
 	IsTerrainFire(false),
 	DisguiseFakeBlinkTime(0),
@@ -200,12 +242,16 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 	if (has_section) {
 		AmbientDamage = ini.Get_Int(IniName, "AmbientDamage", AmbientDamage);
 		IsSonic = ini.Get_Bool(IniName, "IsSonic", IsSonic);
+		if (ini.Is_Present(IniName, "ApplyDamage")) {
+			ApplyDamage = ini.Get_Bool(IniName, "ApplyDamage", false) ? 1 : 0;
+		}
 		IsMagBeam = ini.Get_Bool(IniName, "IsMagBeam", IsMagBeam);
 		IsDecloakToFire = ini.Get_Bool(IniName, "DecloakToFire", IsDecloakToFire);
 		IsAreaFire = ini.Get_Bool(IniName, "AreaFire", IsAreaFire);
 		IsNeverUse = ini.Get_Bool(IniName, "NeverUse", IsNeverUse);
 		IsCellRangefinding = ini.Get_Bool(IniName, "CellRangefinding", IsCellRangefinding);
 		IsOmniFire = ini.Get_Bool(IniName, "OmniFire", IsOmniFire);
+		IsDistributedFire = ini.Get_Bool(IniName, "DistributedWeaponFire", IsDistributedFire);
 		IsRevealOnFire = ini.Get_Bool(IniName, "RevealOnFire", IsRevealOnFire);
 		IsTerrainFire = ini.Get_Bool(IniName, "TerrainFire", IsTerrainFire);
 		DisguiseFakeBlinkTime = ini.Get_Int(IniName, "DisguiseFakeBlinkTime", DisguiseFakeBlinkTime);
@@ -215,6 +261,8 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		if (Burst < 1) {
 			Burst = 1;
 		}
+		StrafingShots = std::max(1, ini.Get_Int(IniName, "Strafing.Shots", StrafingShots));
+		AmmoUse = std::max(ini.Get_Int(IniName, "Ammo", AmmoUse), 0);
 		Attack = ini.Get_Int(IniName, "Damage", Attack);
 		MaxSpeed = ini.Get_MPHType(IniName, "Speed", MaxSpeed);
 		ROF = ini.Get_Int(IniName, "ROF", ROF);
@@ -236,6 +284,44 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		RadLevel = ini.Get_Int(IniName, "RadLevel", RadLevel);
 		IsLimboLaunch = ini.Get_Bool(IniName, "LimboLaunch", IsLimboLaunch);
 		IsFireOnce = ini.Get_Bool(IniName, "FireOnce", IsFireOnce);
+		IsAbductor = ini.Get_Bool(IniName, "Abductor", IsAbductor);
+		AbductBelowPercent = ini.Get_Float(IniName, "Abductor.AbductBelowPercent", AbductBelowPercent);
+		AbductAnim = TGet_Class(ini, IniName, "Abductor.Anim", AbductAnim);
+		IsAbductChangeOwner = ini.Get_Bool(IniName, "Abductor.ChangeOwner", IsAbductChangeOwner);
+		AbductMaxHealth = ini.Get_Int(IniName, "Abductor.MaxHealth", AbductMaxHealth);
+		IsAbductTemporal = ini.Get_Bool(IniName, "Abductor.Temporal", IsAbductTemporal);
+		if (ini.Is_Present(IniName, "IvanBomb.Delay")) {
+			IvanDelay = ini.Get_Int(IniName, "IvanBomb.Delay", IvanDelay);
+			HasIvanDelay = true;
+		}
+		IvanWarhead = TGet_Class(ini, IniName, "IvanBomb.Warhead", IvanWarhead);
+		if (ini.Is_Present(IniName, "IvanBomb.Damage")) {
+			IvanDamage = ini.Get_Int(IniName, "IvanBomb.Damage", IvanDamage);
+			HasIvanDamage = true;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.AttachSound")) {
+			IvanAttachSound = ini.Get_VocType(IniName, "IvanBomb.AttachSound", VOC_NONE);
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.TickingSound")) {
+			IvanTickingSound = ini.Get_VocType(IniName, "IvanBomb.TickingSound", VOC_NONE);
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.Image")) {
+			IvanImage = ini.Get_String(IniName, "IvanBomb.Image", "");
+			IvanImageData = NULL;
+			IvanImageLooked = false;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.Detachable")) {
+			IvanDetachable = ini.Get_Bool(IniName, "IvanBomb.Detachable", true) ? 1 : 0;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.DetonateOnSell")) {
+			IvanDetonateOnSell = ini.Get_Bool(IniName, "IvanBomb.DetonateOnSell", true) ? 1 : 0;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.DestroysBridges")) {
+			IvanDestroysBridges = ini.Get_Bool(IniName, "IvanBomb.DestroysBridges", true) ? 1 : 0;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.CanDetonateTimeBomb")) {
+			IvanCanDetonateTimeBomb = ini.Get_Bool(IniName, "IvanBomb.CanDetonateTimeBomb", false) ? 1 : 0;
+		}
 		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		OccupantAnim = TGet_Class(ini, IniName, "OccupantAnim", OccupantAnim);
 		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
@@ -255,6 +341,23 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		UseFireParticles = ini.Get_Bool(IniName, "UseFireParticles", UseFireParticles);
 		UseSparkParticles = ini.Get_Bool(IniName, "UseSparkParticles", UseSparkParticles);
 		IsRailgun = ini.Get_Bool(IniName, "IsRailgun", IsRailgun);
+		IsDetachedRailgun = ini.Get_Bool(IniName, "IsDetachedRailgun", IsDetachedRailgun);
+		if (ini.Is_Present(IniName, "Bolt.Color1")) {
+			BoltColor[0] = ini.Get_RGBClass(IniName, "Bolt.Color1", BoltColor[0]);
+			BoltColorMask |= 1;
+		}
+		if (ini.Is_Present(IniName, "Bolt.Color2")) {
+			BoltColor[1] = ini.Get_RGBClass(IniName, "Bolt.Color2", BoltColor[1]);
+			BoltColorMask |= 2;
+		}
+		if (ini.Is_Present(IniName, "Bolt.Color3")) {
+			BoltColor[2] = ini.Get_RGBClass(IniName, "Bolt.Color3", BoltColor[2]);
+			BoltColorMask |= 4;
+		}
+		if (ini.Is_Present(IniName, "Beam.Color")) {
+			BeamColor = ini.Get_RGBClass(IniName, "Beam.Color", BeamColor);
+			HasBeamColor = true;
+		}
 		IsLobber = ini.Get_Bool(IniName, "Lobber", IsLobber);
 
 		LaserInnerColor = ini.Get_RGBClass(IniName, "LaserInnerColor", LaserInnerColor);
@@ -262,6 +365,23 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		LaserOuterSpread = ini.Get_RGBClass(IniName, "LaserOuterSpread", LaserOuterSpread);
 		LaserDuration = ini.Get_Int(IniName, "LaserDuration", LaserDuration);
 		IsBigLaser = ini.Get_Bool(IniName, "IsBigLaser", IsBigLaser);
+		IsBigLaser = ini.Get_Bool(IniName, "Wave.IsBigLaser", IsBigLaser);
+		LaserThickness = std::max(1, ini.Get_Int(IniName, "LaserThickness", LaserThickness));
+		BeamDuration = ini.Get_Int(IniName, "Beam.Duration", BeamDuration);
+		BeamAmplitude = ini.Get_Float(IniName, "Beam.Amplitude", BeamAmplitude);
+		if (ini.Is_Present(IniName, "Wave.Color")) {
+			HasWaveColor = ObjectKeyRules::Parse_Triplet(ini.Get_String(IniName, "Wave.Color"), WaveColor);
+		}
+		if (ini.Is_Present(IniName, "Wave.Intensity")) {
+			HasWaveIntensity = ObjectKeyRules::Parse_Triplet(ini.Get_String(IniName, "Wave.Intensity"), WaveIntensity);
+		}
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstVehicles")) WaveReverseVehicles = ini.Get_Bool(IniName, "Wave.ReverseAgainstVehicles", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstBuildings")) WaveReverseBuildings = ini.Get_Bool(IniName, "Wave.ReverseAgainstBuildings", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstInfantry")) WaveReverseInfantry = ini.Get_Bool(IniName, "Wave.ReverseAgainstInfantry", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstAircraft")) WaveReverseAircraft = ini.Get_Bool(IniName, "Wave.ReverseAgainstAircraft", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstOthers")) WaveReverseOthers = ini.Get_Bool(IniName, "Wave.ReverseAgainstOthers", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Cursor.Attack")) CursorAttack = ini.Get_String(IniName, "Cursor.Attack");
+		if (ini.Is_Present(IniName, "Cursor.AttackOutOfRange")) CursorAttackOutOfRange = ini.Get_String(IniName, "Cursor.AttackOutOfRange");
 
 		IsBright = ini.Get_Bool(IniName, "Bright", IsBright);
 		IsIonSensitive = ini.Get_Bool(IniName, "IonSensitive", IsIonSensitive);
@@ -432,6 +552,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(AmbientDamage);
 	crc(IsSonic);
+	crc(ApplyDamage);
 	crc(IsCellRangefinding);
 	crc(IsOmniFire);
 	crc(IsRevealOnFire);
@@ -456,6 +577,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsElectricBolt);
 	crc(IsAlternateColor);
 	crc(Burst);
+	crc(AmmoUse);
 	if (Bullet != NULL) crc(Bullet->Fetch_ID());
 	crc(Attack);
 	crc(MaxSpeed);
@@ -469,6 +591,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc((char)LaserDuration);
 	crc(IsBigLaser);
 	crc(IsRailgun);
+	crc(IsDetachedRailgun);
 	crc(IsElectric);
 	crc(IsBright);
 	crc(UseSparkParticles);
@@ -491,6 +614,8 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(AmbientDamage);
 	stream.Serialize(Burst);
+	stream.Serialize(StrafingShots);
+	stream.Serialize(AmmoUse);
 	stream.Serialize(Bullet);
 	stream.Serialize(Attack);
 	stream.Serialize(MaxSpeed);
@@ -514,12 +639,14 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LaserDuration);
 	stream.Serialize(IsBigLaser);
 	stream.Serialize(IsSonic);
+	stream.Serialize(ApplyDamage);
 	stream.Serialize(IsMagBeam);
 	stream.Serialize(IsDecloakToFire);
 	stream.Serialize(IsAreaFire);
 	stream.Serialize(IsNeverUse);
 	stream.Serialize(IsCellRangefinding);
 	stream.Serialize(IsOmniFire);
+	stream.Serialize(IsDistributedFire);
 	stream.Serialize(IsRevealOnFire);
 	stream.Serialize(IsTerrainFire);
 	stream.Serialize(DisguiseFakeBlinkTime);
@@ -549,6 +676,74 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDrainWeapon);
 	stream.Serialize(IsAlternateColor);
 	stream.Serialize(IsIonSensitive);
+	stream.Serialize(IsAbductor);
+	stream.Serialize(AbductBelowPercent);
+	stream.Serialize(AbductAnim);
+	stream.Serialize(IsAbductChangeOwner);
+	stream.Serialize(AbductMaxHealth);
+	stream.Serialize(IsAbductTemporal);
+	stream.Serialize(HasIvanDelay);
+	stream.Serialize(IvanDelay);
+	stream.Serialize(IvanWarhead);
+	stream.Serialize(HasIvanDamage);
+	stream.Serialize(IvanDamage);
+	stream.Serialize(IvanAttachSound);
+	stream.Serialize(IvanTickingSound);
+	stream.Serialize(IvanDetachable);
+	stream.Serialize(IvanDetonateOnSell);
+	stream.Serialize(IvanDestroysBridges);
+	stream.Serialize(IvanCanDetonateTimeBomb);
+	stream.Serialize(IsDetachedRailgun);
+	stream.Serialize(BoltColorMask);
+	stream.Serialize(BoltColor[0]);
+	stream.Serialize(BoltColor[1]);
+	stream.Serialize(BoltColor[2]);
+	stream.Serialize(HasBeamColor);
+	stream.Serialize(BeamColor);
+	stream.Serialize(BeamDuration);
+	stream.Serialize(BeamAmplitude);
+	stream.Serialize(LaserThickness);
+	stream.Serialize(HasWaveColor);
+	stream.Serialize(WaveColor);
+	stream.Serialize(HasWaveIntensity);
+	stream.Serialize(WaveIntensity);
+	stream.Serialize(WaveReverseVehicles);
+	stream.Serialize(WaveReverseBuildings);
+	stream.Serialize(WaveReverseInfantry);
+	stream.Serialize(WaveReverseAircraft);
+	stream.Serialize(WaveReverseOthers);
+	stream.Serialize(CursorAttack);
+	stream.Serialize(CursorAttackOutOfRange);
+}
+
+
+/// <summary>
+/// Is a wave this weapon draws between the firer and a target of this kind drawn from the target back to the firer? A
+/// weapon that sets no Wave.ReverseAgainst key for the kind does so only against a vehicle, and only when it is a magnetron.
+/// </summary>
+bool WeaponTypeClass::Wave_Is_Reversed_Against(int rtti) const
+{
+	int setting = -1;
+	bool by_default = false;
+	switch (rtti) {
+		case RTTI_UNIT:
+			setting = WaveReverseVehicles;
+			by_default = IsMagBeam;
+			break;
+		case RTTI_BUILDING:
+			setting = WaveReverseBuildings;
+			break;
+		case RTTI_INFANTRY:
+			setting = WaveReverseInfantry;
+			break;
+		case RTTI_AIRCRAFT:
+			setting = WaveReverseAircraft;
+			break;
+		default:
+			setting = WaveReverseOthers;
+			break;
+	}
+	return(setting < 0 ? by_default : setting != 0);
 }
 
 

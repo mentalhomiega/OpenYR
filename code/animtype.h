@@ -22,6 +22,7 @@
 #include "particle.hh"
 
 class WarheadTypeClass;
+class WeaponTypeClass;
 class OverlayTypeClass;
 
 /****************************************************************************
@@ -61,6 +62,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 * damage a bouncing animation deals to whatever it comes down on.
 		 */
 		double Damage;
+
+		// Damage.Delay (Ares): the animation frames between two applications of Damage. 0 applies it on every frame.
+		int DamageDelay;
 
 		/*
 		**	Simple animation delay value between advancing of frames. This can
@@ -239,6 +243,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		WarheadTypeClass const * Warhead;
 
+		// Weapon (Phobos): each time the animation's Damage applies, this weapon's projectile detonates where the animation is, in place of the Warhead blast.
+		WeaponTypeClass * Weapon;
+
 		/*
 		 * This is how close an object must be to the point of impact for a bouncing
 		 * animation to hurt it, expressed in leptons. The damage dealt is taken from the
@@ -393,6 +400,18 @@ class AnimTypeClass : public ObjectTypeClass
 
 		// When this animation ends, it becomes this entry of AnimToInfantry, owned by its house (-1 for none).
 		int MakeInfantry;
+
+		// MakeInfantryOwner (Ares): whose the MakeInfantry soldier is. 0 is the invoker, which depends on how the animation was started.
+		enum MakeInfantryOwnerType {
+			MAKE_OWNER_INVOKER = 0,
+			MAKE_OWNER_KILLER,
+			MAKE_OWNER_VICTIM,
+			MAKE_OWNER_CIVILIAN,
+			MAKE_OWNER_SPECIAL,
+			MAKE_OWNER_NEUTRAL,
+			MAKE_OWNER_RANDOM
+		};
+		int MakeInfantryOwner;
 
 		// The layer this animation is drawn in. Only the ground layer is sorted. An animation
 		// attached to an object is drawn in the ground layer whatever this says.

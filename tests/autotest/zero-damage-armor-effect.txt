@@ -1,0 +1,18 @@
+; A weapon with Damage=0 whose warhead carries an AttachEffect reaches every object in its CellSpread, here 25 cells, which is past the 11 cells Yuri's Revenge
+; lets a blast reach, and an AttachEffect.ArmorMultiplier of 0 takes all damage away while it lasts. Mental Omega missions protect a hero this way through a
+; cutscene. The overlay zero-damage-armor-effect.ini gives the Grizzly tank such a death weapon. A Rhino tank stands 20 cells from the Grizzly and an Apocalypse tank beside it.
+; Expected: before the Grizzly dies `effects HTNK` shows armor x1.000. After `kill MTNK 1` it shows one effect more and armor x0.000, and the Apocalypse's shells then
+; leave the Rhino's strength where it was. Before the fix the weapon did nothing, having no damage to deal, and a multiplier of zero was divided by.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/zero-damage-armor-effect.txt -Seconds 120 -Country 8 -Filter "AUTOTEST   effects|AUTOTEST own|AUTOTEST   kill|Exception"
+10 rules zero-damage-armor-effect.ini
+30 command CenterBase
+35 reveal
+40 own HTNK 70 40
+41 own APOC 66 40
+42 own MTNK 50 40
+100 effects HTNK
+110 kill MTNK 1
+120 effects HTNK
+130 forceattack APOC 70 40
+300 effects HTNK
+310 quit

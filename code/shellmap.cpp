@@ -11,6 +11,8 @@
 
 #include "shellmap.h"
 
+#include "playercolor.h"
+
 #include "_logic.h"
 #include "_rules.h"
 #include "_map.h"
@@ -27,6 +29,7 @@
 #include "house.h"
 #include "hud.h"
 #include "houstype.h"
+#include "loadprogress.h"
 #include "logic.h"
 #include "mainloop.h"
 #include "mapgen.h"
@@ -53,8 +56,6 @@
 void Init_Random(void);
 void Process_Deferred_Deletion(void);
 
-
-void Startup_Notice_Step(char const * text, double fraction);
 
 namespace
 {
@@ -299,11 +300,11 @@ NodeNameType * New_Node(char const * name, int house, int color)
 bool Prepare_Battle(char * file, int file_size)
 {
 	if (Session.Scenarios.Count() == 0) {
-		Startup_Notice_Step("Listing maps...", 0.6);
+		Load_Progress_Step("Listing maps...", 0.6);
 		Session.Read_Scenario_Descriptions();
 	}
 
-	Startup_Notice_Step("Loading the menu battle...", 0.75);
+	Load_Progress_Step("Loading the menu battle...", 0.75);
 	int starts = 0;
 	int const index = Pick_Map(starts);
 	if (index < 0) {
@@ -321,15 +322,15 @@ bool Prepare_Battle(char * file, int file_size)
 	}
 
 	int const wanted = ConfigINI.Get_Int("MenuBattle", "Players", 4);
-	int const computers = std::clamp(std::min(wanted, starts), 2, MAX_MPLAYER_COLORS - 1);
+	int const computers = std::clamp(std::min(wanted, starts), 2, PLAYER_COLOR_SEATS - 1);
 
 	Free_Players(Battle);
-	NodeNameType * watcher = New_Node("Observer", observer_house, MAX_MPLAYER_COLORS - 1);
+	NodeNameType * watcher = New_Node("Observer", observer_house, PLAYER_COLOR_SEATS - 1);
 	watcher->Player.IsObserver = true;
 	Battle.Players.push_back(watcher);
 
 	std::vector<int> colors;
-	for (int color = 0; color < MAX_MPLAYER_COLORS - 1; color++) {
+	for (int color = 0; color < PLAYER_COLOR_SEATS - 1; color++) {
 		colors.push_back(color);
 	}
 	std::shuffle(colors.begin(), colors.end(), Dice);

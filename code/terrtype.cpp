@@ -325,6 +325,9 @@ bool TerrainTypeClass::Read_INI(CCINIClass const & ini)
 		IsFlammable = ini.Get_Bool(Name(), "IsFlammable", IsFlammable);
 
 		Foundation = ArtINI.Get_BSizeType(Graphic_Name(), "Foundation", Foundation);
+		if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
+			PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
+		}
 		Occupy = _OccupyLists[Foundation];
 
 		if (!IsTheater) {
@@ -424,6 +427,7 @@ void TerrainTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SnowOccupationBits);
 	stream.Serialize(IsWaterBased);
 	stream.Serialize(IsTiberiumSpawn);
+	stream.Serialize(PaletteName);
 	stream.Serialize(IsFlammable);
 	stream.Serialize(IsAnimated);
 	stream.Serialize(IsVeinhole);

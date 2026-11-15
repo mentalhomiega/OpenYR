@@ -1,0 +1,12 @@
+; Stock case of Iron Curtain me (55): with SW.Group left at 0 and the line's parameter 0, the computer's charged Iron Curtain is fired,
+; as FUN_006EFC70 does. Uses teams-ironcurtain-group.ini without its rules overlay.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/teams-ironcurtain-stock.txt -AICountries 1 -Seconds 90 -Filter "AUTOTEST   grantai|fires|Exception"
+; Expected: "Team TSTIC0T fires IronCurtainSpecial of group 0" shortly after frame 321.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 spawn MTNK 52 92
+310 teamini teams-ironcurtain-group.ini
+318 grantai IronCurtainSpecial
+321 team TSTIC0T
+340 quit

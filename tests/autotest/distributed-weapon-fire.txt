@@ -1,0 +1,9 @@
+; Reads DistributedWeaponFire on weapon types. The rules mod sets it on M60 only.
+; gamemd reads the key in WeaponTypeClass::LoadFromINI (0x772080) and stores it, but no code acts on it
+; beyond the weapon CRC (0x772ae0), so the test only shows that the key is read and defaults to no.
+; Expected: "weaponkeys M60 distributed 1" and "weaponkeys Vulcan distributed 0" lines.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Mods src-agent31/tests/autotest/distributed-weapon-fire-rules -Script src-agent31/tests/autotest/distributed-weapon-fire.txt -Seconds 60 -Filter "weaponkeys|Exception"
+30 command CenterBase
+35 weaponkeys M60
+35 weaponkeys Vulcan
+40 quit

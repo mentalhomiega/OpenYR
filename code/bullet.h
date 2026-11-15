@@ -75,6 +75,7 @@ class BulletClass : public ObjectClass
 		Cell LastCell;
 
 	public:
+		Coord Launch_Coord(void) const { return(SourceCoord); }
 
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.
@@ -116,6 +117,7 @@ class BulletClass : public ObjectClass
 		void Airburst(void);
 		void Split(void);
 		bool Start_Nuke_Blast(void);
+		bool Start_Pre_Impact_Anim(void);
 
 		/*
 		**	If this bullet is forced to be inaccurate because of some outside means. A tank
@@ -132,6 +134,9 @@ class BulletClass : public ObjectClass
 		 */
 		AnimClass * NextAnim;
 		bool SpawnNextAnim;
+
+		// The heap number of the superweapon that launched this projectile, or -1. Its Light.* keys light the nuclear flash.
+		int NukeSuper = -1;
 
 	private:
 		// Every projectile of a Scalable=yes type that a vehicle has fired and that is still in flight.
@@ -156,6 +161,9 @@ class BulletClass : public ObjectClass
 		 * FirersPalette=yes, or -1 when no firer was known; the local player's scheme is used then.
 		 */
 		int FirerHouse;
+
+		// The house credited with a blast of a projectile that has no firer, such as one an animation's Weapon makes. Not saved: that projectile detonates as it is made.
+		HouseClass * CreditedHouse = NULL;
 
 	private:
 		/*

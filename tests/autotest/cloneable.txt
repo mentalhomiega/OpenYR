@@ -1,0 +1,11 @@
+; Cloneable. The type-keys-d-rules mod makes the power plant (GAPOWR) a cloning vat with Cloning=yes and sets Cloneable=no on the GI
+; (E1). A barracks produces one GI, and the vat copies each soldier the barracks releases unless its type is Cloneable=no.
+; Expected: count E1 shows 1 with -Mods, and 2 when the Cloneable=no line is removed from the mod (the vat's copy).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/cloneable.txt -Mods tests/autotest/type-keys-d-rules -Seconds 200 -Filter "AUTOTEST   count|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPOWR 60 20
+41 own GAPILE 64 20
+60 produce E1
+400 count E1
+900 quit

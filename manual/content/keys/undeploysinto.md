@@ -18,7 +18,7 @@ A structure whose type has no [construction artwork](/keys/buildup/#a-type-with-
 
 A structure whose type is not [`ConstructionYard=yes`](/keys/constructionyard/) always undeploys, so selling it or giving it a move order brings the vehicle back. A `ConstructionYard=yes` structure undeploys only outside a campaign, for a human player in a session with the MCV redeploy option on, when it has a destination and is not mind controlled. Otherwise it is sold for its refund.
 
-The vehicle appears on the structure's cell for a structure with one of those flags, and on the cell to the south-east for any other structure. It faces north for an artillery structure, east for a sensor array, tick tank or ICBM launcher, and south otherwise. If the vehicle cannot be placed, the house receives the structure's refund instead.
+The vehicle appears on the structure's top-left cell when the structure's [`Foundation`](/keys/foundation/#scope-buildingtype) is at most 2 cells wide and 2 cells long, and on the cell south-east of that corner for a larger structure. It faces the structure's [`DeployFacing`](/keys/deployfacing/), south unless set. If the vehicle cannot be placed, the house receives the structure's refund instead.
 
 The vehicle's health is the structure's fraction of full health applied to the vehicle's maximum, rounded down and never below 1. The vehicle keeps the structure's selection group, experience, attached tag, any limpet drone attached to it, and the country it was built for. It is selected if the structure was. If the structure had a destination, the vehicle moves there.
 

@@ -134,6 +134,7 @@
 #include "tracker.h"
 
 #include <algorithm>
+#include <climits>
 #include <cassert>
 
 
@@ -312,12 +313,14 @@ void ObjectClass::AI(void)
 		}
 
 		if (!IsInLimbo) {
+			// FallRate.* of a type replace the fall acceleration and the fastest fall (Ares).
+			TechnoTypeClass const * const fall_type = Is_Techno() ? static_cast<TechnoClass *>(this)->TClass : NULL;
 			if (IsAnimAttached) {
-				Riser.Z -= 1;
-				Riser.Z = std::max<int>(Riser.Z, Rule->ParachuteMaxFallRate);
+				Riser.Z -= (fall_type != NULL && fall_type->FallRateParachute != INT_MIN) ? fall_type->FallRateParachute : 1;
+				Riser.Z = std::max<int>(Riser.Z, (fall_type != NULL && fall_type->FallRateParachuteMax != INT_MIN) ? fall_type->FallRateParachuteMax : Rule->ParachuteMaxFallRate);
 			} else {
-				Riser.Z -= GRAVITY;
-				Riser.Z = std::max<int>(Riser.Z, Rule->NoParachuteMaxFallRate);
+				Riser.Z -= (fall_type != NULL && fall_type->FallRateNoParachute != INT_MIN) ? (double)fall_type->FallRateNoParachute : GRAVITY;
+				Riser.Z = std::max<int>(Riser.Z, (fall_type != NULL && fall_type->FallRateNoParachuteMax != INT_MIN) ? fall_type->FallRateNoParachuteMax : Rule->NoParachuteMaxFallRate);
 			}
 
 			if (layer != In_Which_Layer()) {
@@ -1823,6 +1826,17 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 		if (IsActive && (pretag_strength <= 0 || Strength > 0)) {
 
+			// Ares's 84 and then 83 are offered for every hit, the fatal one too, with or without an attacker.
+			if (Tag != NULL && Tag->Has_Event(TEVENT_ATTACKED_OR_DESTROYED_BY)) {
+				Tag->Spring(TEVENT_ATTACKED_OR_DESTROYED_BY, this, CELL_NONE, false, source, source != NULL ? NULL : sourcehouse);
+			}
+			if (IsActive && Tag != NULL && Tag->Has_Event(TEVENT_ATTACKED_OR_DESTROYED_ANY)) {
+				Tag->Spring(TEVENT_ATTACKED_OR_DESTROYED_ANY, this, CELL_NONE, false, source);
+			}
+			if (!IsActive) {
+				return(RESULT_ALREADY_DESTROYED);
+			}
+
 			/*
 			**	Check to see if the object is majorly damaged or destroyed.
 			*/
@@ -2023,6 +2037,9 @@ bool ObjectClass::Paradrop(Coord const & coord)
 		**	(0x5F5940) places it. A dropped bomb's chute starts at the bomb itself.
 		*/
 		AnimTypeClass const * chute = RTTI == RTTI_BULLET ? Rule->BombParachute : Rule->Parachute;
+		if (Is_Techno() && static_cast<TechnoClass const *>(this)->TClass->ParachuteAnim != NULL) {
+			chute = static_cast<TechnoClass const *>(this)->TClass->ParachuteAnim;
+		}
 		if (chute != NULL) {
 			Coord canopy = coord;
 			if (RTTI != RTTI_BULLET) {

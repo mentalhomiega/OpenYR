@@ -1,0 +1,11 @@
+; VeteranBuildings (Ares) makes a country's new structures of the listed types veterans. The overlay veteran-buildings.ini lists the pillbox for the Americans,
+; the player's country here. The player gets a pillbox and a power plant.
+; Expected: `veterancy GAPILL` writes rank 1 and `veterancy GAPOWR` rank 0. Before the key was read the pillbox was rank 0 too.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/veteran-buildings.txt -Seconds 40 -Country 0 -Filter "AUTOTEST   veterancy|Exception"
+10 rules veteran-buildings.ini
+30 command CenterBase
+40 own GAPILL 60 42
+41 own GAPOWR 64 36
+100 veterancy GAPILL
+101 veterancy GAPOWR
+110 quit

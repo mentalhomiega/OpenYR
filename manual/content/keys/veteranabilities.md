@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-A comma-separated list of ability tokens, matched without regard to letter case. An object of this type gains every ability named here when it reaches veteran rank. It keeps them after a promotion to elite, where [`EliteAbilities`](/keys/eliteabilities/) adds more. [The ability table](/systems/veterancy/#abilities) lists the eighteen accepted tokens and what each one does.
+A comma-separated list of ability tokens, matched without regard to letter case. An object of this type gains every ability named here when it reaches veteran rank. It keeps them after a promotion to elite, where [`EliteAbilities`](/keys/eliteabilities/) adds more. [The ability table](/systems/veterancy/#abilities) lists every accepted token and what it does.
 
 ```ini title="rules.ini"
 [MYTANK] ; example UnitType

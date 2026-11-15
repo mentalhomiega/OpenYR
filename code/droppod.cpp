@@ -131,10 +131,16 @@ bool DropPodLocomotionClass::Process(void)
 
 		if (!linked->Unlimbo(coord, DIR_N)) {
 			Explosion_Damage(coord, 100, LinkedTo, Rule->C4Warhead);
-			new AnimClass(Combat_Anim(100, Rule->C4Warhead, LAND_CLEAR, coord), coord, 0, 1, ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ZGRAD), Get_Explosion_Z(coord));
+			AnimTypeClass const * crash_anim = Combat_Anim(100, Rule->C4Warhead, LAND_CLEAR, coord);
+			if (crash_anim != NULL) {
+				new AnimClass(crash_anim, coord, 0, 1, ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ZGRAD), Get_Explosion_Z(coord));
+			}
 			linked->Delete_Me();
 		} else {
-			new AnimClass(Rule->DropPod[Direction % Rule->DropPod.Count()], coord);
+			// Rules that list no DropPod animations leave the landing without one.
+			if (Rule->DropPod.Count() > 0) {
+				new AnimClass(Rule->DropPod[Direction % Rule->DropPod.Count()], coord);
+			}
 			linked->Mark(MARK_DOWN);
 			linked->HeightAGL = 0;
 			linked->Enter_Idle_Mode();
@@ -146,7 +152,7 @@ bool DropPodLocomotionClass::Process(void)
 		WeaponTypeClass const * weapon = Rule->DropPodWeapon;
 
 		if (weapon != NULL) {
-			if (Frame % 6 == 0) {
+			if (Frame % 6 == 0 && AnimTypeClass::From_Name("SMOKEY") != ANIM_NONE) {
 				new AnimClass(AnimTypes[AnimTypeClass::From_Name("SMOKEY")], smoke_coord);
 			}
 			if (Frame % 3 == 0) {
@@ -154,7 +160,10 @@ bool DropPodLocomotionClass::Process(void)
 					Coord scattered_coord = Coord_Scatter(DestinationCoord, CELL_LEPTON / 3, false);
 					Sound_Effect((VocType)weapon->Sound.Pick(NonCriticalRandomNumber), coord);
 					Explosion_Damage(scattered_coord, 2 * weapon->Attack, LinkedTo, weapon->WarheadPtr);
-					new AnimClass(Combat_Anim(2 * weapon->Attack, weapon->WarheadPtr, LAND_CLEAR, scattered_coord), scattered_coord, 0, 1, ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ZGRAD), Get_Explosion_Z(scattered_coord));
+					AnimTypeClass const * hit_anim = Combat_Anim(2 * weapon->Attack, weapon->WarheadPtr, LAND_CLEAR, scattered_coord);
+					if (hit_anim != NULL) {
+						new AnimClass(hit_anim, scattered_coord, 0, 1, ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ZGRAD), Get_Explosion_Z(scattered_coord));
+					}
 				}
 			}
 		}
@@ -213,7 +222,9 @@ void DropPodLocomotionClass::Move_To(Coord to)
 		if (LinkedTo->Unlimbo(dropcoord, DIR_S)) {
 			LinkedTo->PositionCoord = dropcoord;
 			LinkedTo->PrimaryFacing.Set(DIR_S << 8);
-			new AnimClass(Rule->AtmosphereEntry, dropcoord);
+			if (Rule->AtmosphereEntry != NULL) {
+				new AnimClass(Rule->AtmosphereEntry, dropcoord);
+			}
 		} else {
 			LinkedTo->Unlimbo(dropcoord, DIR_S);
 		}

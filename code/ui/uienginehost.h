@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/uihost.h"
 #include "ui/uiscreen.h"
 
@@ -22,13 +23,13 @@ UIShellHostClass & UI_Engine_Host(void);
 
 std::string UI_Color_Text(COLORREF color);
 
-// The eight stock player colours of the lobbies, in palette order.
-int UI_Stock_Color_Count(void);
-char const * UI_Stock_Color_Name(int index);
+// The player colours of the lobbies, in palette order: the eight stock colours and any a mod adds.
+// UI_Stock_Color_Label is the colour's name, or the stock name of a colour the UI file leaves unnamed.
+std::string UI_Stock_Color_Label(int index);
 std::string UI_Stock_Color_Text(int index);
 
 /// <summary>
-/// Fills a lobby's colour list with the stock player colours below limit. Option needs the members
+/// Fills a lobby's colour list with the player colours below limit. Option needs the members
 /// Label, Value and Color.
 /// </summary>
 template<class Option>
@@ -37,22 +38,24 @@ void UI_Fill_Stock_Colors(std::vector<Option> & colors, int limit)
 	colors.clear();
 	for (int index = 0; index < limit && index < UI_Stock_Color_Count(); index++) {
 		Option option;
-		option.Label = UI_Stock_Color_Name(index);
+		option.Label = UI_Stock_Color_Label(index);
 		option.Value = index;
 		option.Color = UI_Stock_Color_Text(index);
 		colors.push_back(option);
 	}
 }
 
-// The houses a player can pick in a lobby (those with IsMultiplay), in HouseTypes order. UI_Multiplay_House_At
-// returns the HouseTypes index of the house at a position in that list, or -1 outside it.
+// The houses a player can pick in a lobby, in the order the lobby lists them (HouseTypeClass::Lobby_Countries).
+// UI_Multiplay_House_At returns the HouseTypes index of the house at a position in that list, or -1 outside it.
+// UI_House_Tip is the text a house's StatusText names, empty for none.
 int UI_Multiplay_House_Count(void);
 int UI_Multiplay_House_At(int position);
 char const * UI_House_Name(int house);
+std::string UI_House_Tip(int house);
 
 /// <summary>
 /// Appends the multiplayer houses to a lobby's side list. When a house is the one at current and selected is not
-/// null, selected is set to its position in the list. Option needs the members Label and Value.
+/// null, selected is set to its position in the list. Option needs the members Label and Value, and sets Tip when it has one.
 /// </summary>
 template<class Option>
 void UI_Fill_Multiplay_Sides(std::vector<Option> & sides, int current, int * selected = nullptr)
@@ -62,6 +65,9 @@ void UI_Fill_Multiplay_Sides(std::vector<Option> & sides, int current, int * sel
 		Option option;
 		option.Label = UI_House_Name(house);
 		option.Value = house;
+		if constexpr (requires { option.Tip; }) {
+			option.Tip = UI_House_Tip(house);
+		}
 		if (selected != nullptr && house == current) {
 			*selected = (int)sides.size();
 		}

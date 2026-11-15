@@ -8,6 +8,8 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 
 #include "mschoice.h"
 
@@ -64,10 +66,10 @@ bool MapChoice::Initialize(char const * side_name)
 
 	Deinit();
 
-	file.Open("MAPSELMD.INI");
+	file.Open(DeploymentConfig.MapSelectFile.c_str());
 
 	if (!ini.Load(file)) {
-		DebugString("Failed to load MAPSELMD.INI\n");
+		DebugString("Failed to load %s\n", DeploymentConfig.MapSelectFile.c_str());
 		return(false);
 	}
 

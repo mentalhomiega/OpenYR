@@ -1,0 +1,9 @@
+; With a mod active, a loose .MAP file whose Basic section says MultiplayerOnly=yes is put on the skirmish and network map
+; list, as the maps a mod ships for skirmish are. The mod in tests/autotest/loose-map-mod/ has no files of its own. The
+; dumpfile step copies the stock XMP04T8.MAP (MultiplayerOnly=1) into the working folder as dump-XMP04T8.MAP, and
+; previewtime builds the list again. Expected: a "Loose map dump-XMP04T8.MAP" line, and the list has one scenario more
+; than loose-map-stock.txt shows (175 on 2026-11-15).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/loose-map-mod.txt -Mods src-agent33/tests/autotest/loose-map-mod -Seconds 60 -Filter "Loose map|previewtime list|dumpfile|Exception"
+30 dumpfile XMP04T8.MAP
+40 previewtime
+50 quit

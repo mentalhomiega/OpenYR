@@ -1,0 +1,13 @@
+; A snow map played with a tile set file whose four ice sets hold no tiles (the blank-ice-theater mod). Tile 55 is a ramp
+; piece that lies inside the range a theater with ice sets counts as ice, 32 to 93, past the cracked ice tile at 47.
+; Frame 6 gives the cell at 60,60 that tile and marks it as one the map lets ice grow on; the mod makes the ice passes
+; run about every ten frames.
+; Expected: the debug log says "its ice tile sets hold no tiles, so its ice behavior is off", every tilecheck line says
+; ice-behavior 0, and the count of tile 55 goes up by one at frame 6 and stays there at frame 60. Without the guard the
+; ice growth pass rewrites the tile at the next pass and the count at frame 60 falls back to what it was at frame 2.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/blank-ice-theater.txt -Mods src-agent28/tests/autotest/blank-ice-theater -Map DeepFrze.yro -Seconds 60
+2 tilecheck 55 31
+6 settile 60 60 55 ice
+7 tilecheck 55 31
+60 tilecheck 55 31
+62 quit

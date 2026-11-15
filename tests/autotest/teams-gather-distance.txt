@@ -1,0 +1,27 @@
+; Gather at enemy (53) and Gather at base (54) take their distance from the base center in cells. The line's parameter is added: 53 uses
+; AISafeDistance plus the parameter, 54 uses AIFriendlyDistance (AISafeDistance while the key is unset) plus the parameter, and a negative
+; sum puts the spot on the far side of the base center. gamemd's own lines (FUN_006EF700 for 53, FUN_006EFA10 for 54) use AISafeDistance
+; alone and ignore the parameter; a parameter of 0 with no AIFriendlyDistance keeps that. Parameter and key follow the Ares scripts page.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/teams-gather-distance.txt -AICountries 1 -Seconds 120 -Filter "gathers at|AUTOTEST   rules|Exception"
+; Expected "cells" values in order, with the stock AISafeDistance of 20: 20 (54,0 with no AIFriendlyDistance), 26 (54,6), 20 (53,0),
+; 17 (53,-3), then after AIFriendlyDistance=12: 12 (54,0), 18 (54,6), and 20 (53,0), which the key does not touch.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 spawn MTNK 52 92
+310 teamini teams-gather-distance.ini
+320 team TSTGB0T
+500 spawn MTNK 52 92
+510 team TSTGB6T
+700 spawn MTNK 52 92
+710 team TSTGE0T
+900 spawn MTNK 52 92
+910 team TSTGENT
+1100 rules teams-gather-distance-rules.ini
+1110 spawn MTNK 52 92
+1120 team TSTGB0T
+1300 spawn MTNK 52 92
+1310 team TSTGB6T
+1500 spawn MTNK 52 92
+1510 team TSTGE0T
+1800 quit

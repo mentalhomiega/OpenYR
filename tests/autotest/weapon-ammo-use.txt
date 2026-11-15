@@ -1,0 +1,20 @@
+; A weapon's Ammo (Ares) is the rounds one shot uses: a shot that needs more rounds than the object holds does not fire, and Ammo=0 uses
+; none. The overlay weapon-ammo-use.ini gives a Grizzly (MTNK) 3 rounds and a weapon that uses 2 a shot, and a Rhino (HTNK) 1 round and a
+; weapon that uses none; neither reloads within the test. Both force-fire at the ground.
+; Expected: `ammo MTNK` shows 3 at frame 100 and 1 from frame 300 on (one shot, then it waits); `ammo HTNK` shows 1 throughout.
+; Before the key was read every shot used one round: the Grizzly fired three shots down to 0 and the Rhino one shot down to 0.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/weapon-ammo-use.txt -Seconds 90 -Filter "AUTOTEST   ammo|Exception"
+5 rules weapon-ammo-use.ini
+30 command CenterBase
+35 reveal
+40 own MTNK 60 36
+41 own HTNK 64 36
+100 ammo MTNK
+100 ammo HTNK
+110 forceattack MTNK 60 40
+111 forceattack HTNK 64 40
+300 ammo MTNK
+300 ammo HTNK
+500 ammo MTNK
+500 ammo HTNK
+510 quit

@@ -19,6 +19,10 @@ class CCINIClass;
  */
 int Armor_Type_Count(void);
 
+// Whether the rules are Ares rules: they declare armor types of their own in [ArmorTypes], which stock rules never do. Ares
+// behaviour that would change what stock data does runs only then.
+bool Are_Ares_Rules(void);
+
 // The armor's name, or "none" for a number that names no armor.
 char const * Armor_Type_Name(ArmorType armor);
 // Finds the armor type with the name, ignoring case. Sets armor and returns true when one has it; otherwise armor is unchanged.

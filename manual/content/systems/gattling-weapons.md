@@ -27,7 +27,7 @@ A type with [`TurretCount`](/keys/turretcount/) above `0` reads its weapons from
 
 ## Numbered weapon lists
 
-A type with `TurretCount` above `0` ignores `Primary`, `Secondary`, `ElitePrimary`, `EliteSecondary` and their art offsets. It reads [`WeaponCount`](/keys/weaponcount/) positions instead, up to 18:
+A type with `TurretCount` above `0` ignores `Primary`, `Secondary`, `ElitePrimary`, `EliteSecondary` and their art offsets. It reads [`WeaponCount`](/keys/weaponcount/) positions instead, up to 127. The table shows the positions that have a page of their own; positions 19 to 127 are named the same way:
 
 | Position | Weapon | Elite weapon | Firing offset in the art section | Elite firing offset |
 | --- | --- | --- | --- | --- |
@@ -92,6 +92,8 @@ A structure updates its spin when its attack or guard mission runs, for all the 
 - In the guard mission, the spin falls.
 
 Out of the attack mission, a structure's spin also falls by `RateDown` every frame once [`GuardAreaTargetingDelay`](/keys/guardareatargetingdelay/) plus five frames have passed since its last shot.
+
+A type with [`Gattling.Cycle=yes`](/keys/gattling.cycle/) that has reached its last stage's threshold returns to its first stage with no spin, and goes on firing at its target.
 
 Infantry and aircraft never change their spin, so a gattling type of either kind stays at its first stage.
 

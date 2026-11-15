@@ -15,6 +15,8 @@
 
 #include <array>
 #include <string>
+#include <utility>
+#include <vector>
 
 class INIClass;
 
@@ -127,6 +129,12 @@ class SpawnerConfigClass
 		bool ParallelPaths = false;
 		bool PlayMoviesInMultiplayer = false;
 		std::array<bool, GLOBAL_FLAG_COUNT> GlobalFlags = {};
+
+		// The mode and options of a mod's lobby declarations, as LobbyChoiceType text from [LobbyChoice]; empty when
+		// the file has none. The game applies the choice's overlays over the scenario (docs/LOBBY_MODES.md).
+		std::string LobbyChoice;
+		// The [Settings] entries the game does not read, in file order, kept so a file written back still holds them.
+		std::vector<std::pair<std::string, std::string>> UnreadSettings;
 
 		// Where the machines reach one another, settled by whatever service arranged the match.
 		int TunnelId = 0;

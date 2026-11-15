@@ -25,7 +25,9 @@
 #include "houstype.h"
 #include "init.h"
 #include "keyboard.h"
+#include "csf.h"
 #include "language/language.h"
+#include "lobbycolor.h"
 #include "mainloop.h"
 #include "mixfile.h"
 #include "movies.h"
@@ -57,23 +59,14 @@ static int const UI_STOCK_COLORS[] = {
 
 int UI_Multiplay_House_Count(void)
 {
-	int count = 0;
-	for (int house = 0; house < HouseTypes.Count(); house++) {
-		count += HouseTypes[house]->IsMultiplay ? 1 : 0;
-	}
-	return(count);
+	return((int)HouseTypeClass::Lobby_Countries().size());
 }
 
 
 int UI_Multiplay_House_At(int position)
 {
-	int count = 0;
-	for (int house = 0; house < HouseTypes.Count(); house++) {
-		if (HouseTypes[house]->IsMultiplay && count++ == position) {
-			return(house);
-		}
-	}
-	return(-1);
+	std::vector<int> const list = HouseTypeClass::Lobby_Countries();
+	return(position >= 0 && position < (int)list.size() ? list[position] : -1);
 }
 
 
@@ -83,21 +76,26 @@ char const * UI_House_Name(int house)
 }
 
 
-int UI_Stock_Color_Count(void)
+std::string UI_House_Tip(int house)
 {
-	return(ARRAY_SIZE(UI_STOCK_COLORS));
+	HouseTypeClass const * type = HouseTypes[house];
+	return(type->StatusText.empty() ? std::string() : Fetch_String_UTF8(type->StatusText.c_str()));
 }
 
 
-char const * UI_Stock_Color_Name(int index)
+std::string UI_Stock_Color_Label(int index)
 {
-	return(Fetch_String(UI_STOCK_COLORS[index]));
+	std::string name = UI_Stock_Color_Name(index);
+	if (name.empty() && index < ARRAY_SIZE(UI_STOCK_COLORS)) {
+		name = Fetch_String(UI_STOCK_COLORS[index]);
+	}
+	return(name);
 }
 
 
 std::string UI_Stock_Color_Text(int index)
 {
-	return(UI_Color_Text(PlayerColorTable[index]));
+	return(UI_Color_Text(Lobby_Color_Ref(index)));
 }
 
 

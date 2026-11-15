@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Each time a barracks lets out a trained infantryman, every `Cloning=yes` structure its owner has on the map lets out another infantryman of the same type for free. [Leaving the factory](/systems/production/#leaving-the-factory) describes the exit.
+Each time a barracks lets out a trained infantryman, every `Cloning=yes` structure its owner has on the map lets out another infantryman of the same type for free. [Leaving the factory](/systems/production/#leaving-the-factory) describes the exit. An infantry type with [`Cloneable=no`](/keys/cloneable/) gets no copy.
 
 ```ini title="rulesmd.ini"
 [MYVATS] ; example BuildingType

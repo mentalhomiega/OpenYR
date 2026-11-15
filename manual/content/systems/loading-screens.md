@@ -57,7 +57,9 @@ A skirmish or multiplayer match shows a picture for the local player's country, 
 | 9 | YuriCountry | `LS800YURI.SHP` | `MPYLS.PAL` | `YRII.PCX` |
 | An observer | | `LS800OBS.SHP` | `MPLSOBS.PAL` | `OBSI.PCX` |
 
-The 640 by 480 layout uses the pictures named `LS640` instead of `LS800`. A player whose country is past place 9, or whose picture or palette the game cannot find or read, gets the older loading screen, with a picture picked for the player's side.
+The 640 by 480 layout uses the pictures named `LS640` instead of `LS800`. A player whose country is past place 9 and sets no [`File.LoadScreen`](/keys/file.loadscreen/), or whose picture or palette the game cannot find or read, gets the older loading screen, with a picture picked for the player's side.
+
+A country can replace the picture, palette, texts, text color and flag of its place with [`File.LoadScreen`](/keys/file.loadscreen/), [`File.LoadScreenPAL`](/keys/file.loadscreenpal/), [`LoadScreenText.Name`](/keys/loadscreentext.name/), [`LoadScreenText.SpecialName`](/keys/loadscreentext.specialname/), [`LoadScreenText.Brief`](/keys/loadscreentext.brief/), [`LoadScreenText.Color`](/keys/loadscreentext.color/) and [`File.Flag`](/keys/file.flag/). A country with its own picture prints only the texts it sets, and uses the same 800 by 600 picture on a 640 by 480 screen.
 
 A Cooperative match on a map that `COOPCAMPMD.INI` lists shows that co-op campaign's picture instead of the country's. The map matches when one of the names in a campaign's `Map1`, `Map2` and later entries begins the scenario's file name, and the first campaign in `[Campaigns]` order that lists it is used. Its `CampaignLoadScreen` is the picture and its `CampaignLoadScreenPallet` the palette, at either screen width. When either entry is empty, the country's picture is shown. A Cooperative match on the 800 by 600 layout prints the description at y 124 instead of y 158, whichever picture it shows. The text, flags and rows are otherwise laid out as for any match.
 
@@ -77,7 +79,7 @@ The screen prints three texts from the string table over the picture, taken from
 | 9 | `Name:YuriCountry` | `Name:YURI` | `LoadBrief:YuriCountry` |
 | An observer | `Name:Observer` | | |
 
-The country name and the description are printed in `AlliedLoad` for a country of the first side in the rules `[Sides]` list, in `SovietLoad` for any other side, and in `LightGrey` for an observer. The special unit's name is printed in black capitals. The text of `GUI:LoadingEx` is printed in the country name's color. The picture is darkened behind the country name, the description and `GUI:LoadingEx`, as behind a campaign briefing, and the description's box is as wide as its wrapping width.
+The country name and the description are printed in `AlliedLoad` for a country of the first side in the rules `[Sides]` list, in `SovietLoad` for any other side, and in `LightGrey` for an observer, unless the country sets `LoadScreenText.Color`. The special unit's name is printed in black capitals. The text of `GUI:LoadingEx` is printed in the country name's color. The picture is darkened behind the country name, the description and `GUI:LoadingEx`, as behind a campaign briefing, and the description's box is as wide as its wrapping width.
 
 | Item | 800 by 600 | 640 by 480 |
 | --- | --- | --- |
@@ -91,6 +93,8 @@ The country name and the description are printed in `AlliedLoad` for a country o
 The map preview is the map's `[Preview]` picture, enlarged or reduced to fit the preview box without changing its proportions, centered on a black box. Once the houses have their start positions, the preview's own marks on the first start positions are blacked out, and `MMPB.SHP` marks each house's start position in the house's color. A house that starts away from the numbered start positions gets no mark. A random map, a map without a `[Preview]` section, or a map whose `Size` there is not between 1 and 4096 pixels in each direction shows no preview.
 
 A multiplayer match has a row for each player, and a skirmish one for the local player. From left to right, a row shows a bar in the player's color, the flag of the player's country, and the player's name in the player's color. The bar is the first frame of `PROGBARM.SHP` inside an outline in the player's color, and shows as much of its width as the share of the scenario that player has loaded. Rows follow each other down the screen, each as tall as the tallest of the bar's outline, the `USAI.PCX` flag and a line of text, plus 4 pixels. Magenta pixels of a flag are left out.
+
+A match plays a theme while it loads when the local player's country sets [`LoadingTheme=`](/keys/loadingtheme/#scope-housetype), or the country's side sets [`LoadingTheme=`](/keys/loadingtheme/#scope-side). Without either key the music is not changed. The theme starts once the rules have been read, and the match's own music takes over when the map is ready.
 
 ## Size on large screens
 

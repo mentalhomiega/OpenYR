@@ -1,0 +1,18 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mirage-depot-contact.txt -Seconds 150 -Uncapped -Filter "AUTOTEST   (where|mirage look)|Exception"
+; A player Mirage Tank (MGTK) takes 100 damage at frame 318, which blocks a new look until frame 518, and then enters a
+; Service Depot (GADEPT at 60,22) for repair, which keeps it in radio contact with the depot until it is mended.
+; Expected: no look while in contact (UnitClass::UpdateDisguise needs GetRadioContact(0) empty, 0x74690F): "mirage look
+; none" at 440, 560 and 640 on cell 61,23, then a tree after it leaves (TREE02 at 800 on 60,25). Before the fix the tank
+; took a tree on the depot once the damage block ended, so 560 and 640 showed a look.
+30 command CenterBase
+300 own GADEPT 60 22
+302 own MGTK 60 28
+304 reveal
+305 view 61 23
+318 damage MGTK 100
+340 enter MGTK 60 22
+440 where MGTK
+560 where MGTK
+640 where MGTK
+800 where MGTK
+810 quit

@@ -69,6 +69,9 @@ Tutorial=TUTORIAL.INI
 UI=UIMD.INI
 Settings=RA2MD.INI
 Keyboard=KEYBOARDMD.INI
+Mission=MISSIONMD.INI
+MapSelect=MAPSELMD.INI
+TheaterSuffix=MD
 ```
 
 Each key names one file, and a key left out keeps the name shown above.
@@ -92,12 +95,26 @@ Each key names one file, and a key left out keeps the name shown above.
 | `UI` | The [interface settings](/formats/ui-ini/) |
 | `Settings` | The file a player's options are read from and saved to |
 | `Keyboard` | The [hotkey file](/formats/keyboard-ini/), read at startup and saved by the keyboard dialog |
+| `Mission` | The campaign mission list, which names each mission's briefing and loading screen |
+| `MapSelect` | The campaign map selection file |
+
+`TheaterSuffix` names no file. A theater's tile sets are read from its root name followed by this suffix, such as `TEMPERATMD.INI` with the default `MD`. When that file is missing, the game reads the `MD` file, and then the file with no suffix, such as `TEMPERAT.INI`.
 
 The eight `Expansion` keys, such as `RulesExpansion` and `ArtExpansion`, name no file unless written. Each names an expansion's copy of the matching base file, which is read after the base file. The expansion's rules, AI and multiplayer rules files are used only while Firestorm is enabled, and so is its art file, except for that file's `[Movies]` list. Its sound, music, campaign and translated rules files are read whether or not Firestorm is enabled.
 
 `RulesExpansion` also decides whether the expansion is installed: the game counts Firestorm as installed only when it finds the file this key names.
 
 These keys change only a file's name. The game looks for each named file in the [search order](#the-order-files-are-searched-for-in) below, as it does for every other file.
+
+A [mod](/formats/mod-ini/#replacing-base-files-and-archives) can name these files too, and an `[Archives]` section sets which numbered expansion archives are mounted:
+
+```ini title="OPENTS.INI"
+[Archives]
+ExpandPrefix=EXPANDMD
+CachePrefix=ECACHE
+```
+
+`ExpandPrefix` and `CachePrefix` hold comma separated prefixes. Each prefix mounts the 100 archives numbered 99 down to 00, and the files of an earlier prefix are searched before those of a later one.
 
 The game reads its rules from the one file `Rules` names. Other files matching `RULE*.INI` are not read.
 

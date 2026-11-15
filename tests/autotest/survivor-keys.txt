@@ -1,0 +1,31 @@
+; Survivor.Pilots, Survivor.RookiePilotChance, Survivor.Side<n> and Survivor.RookiePassengerChance. The survivor-keys-rules mod
+; gives the Grizzly (MTNK) a 0% rookie passenger chance, the Rhino (HTNK) the stock rule, and the IFV (FV) three guaranteed
+; pilots that are Engineers. Three GIs (E1) board the Grizzly and three Conscripts (E2) board the Rhino, then both are destroyed.
+; Expected: the Rhino releases its three Conscripts (count E2 3 after), the Grizzly releases none of its GIs (count E1 0), and the
+; IFV leaves three Engineers (count ENGINEER 3) where stock rules leave a single crewman of the side.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/survivor-keys.txt -Mods tests/autotest/survivor-keys-rules -Seconds 120 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own MTNK 66 24
+41 own HTNK 70 24
+42 own FV 74 24
+43 own E1 66 27
+44 own E1 67 27
+45 own E1 68 27
+46 own E2 70 27
+47 own E2 71 27
+48 own E2 72 27
+50 enter E1 66 24
+51 enter E2 70 24
+180 unitstate MTNK
+181 unitstate HTNK
+190 count E1
+191 count E2
+192 count ENGINEER
+200 hit MTNK:HE@FV 9999
+201 hit HTNK:HE@FV 9999
+202 hit FV:HE@E1 9999
+230 count E1
+231 count E2
+232 count ENGINEER
+300 quit

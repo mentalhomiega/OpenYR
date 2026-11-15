@@ -156,7 +156,7 @@ EliteAbilities=SELF_HEAL,FEARLESS
 
 A veteran `MYINF` deals more damage and reloads faster. At elite rank it also heals itself and becomes immune to fear.
 
-Ability names are case-insensitive. The table lists all eighteen abilities and their effects.
+Ability names are case-insensitive. The table lists every ability and its effect.
 
 | Token | Effect on a qualifying object |
 | --- | --- |
@@ -184,6 +184,7 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `POISONIMMUNE` | `Poison=yes` warheads do not harm the object, as with [`ImmuneToPoison=yes`](/keys/immunetopoison/) (Ares). |
 | `PSIONICWEAPONIMMUNE` | `PsychicDamage=yes` warheads do not harm the object, as with [`ImmuneToPsionicWeapons=yes`](/keys/immunetopsionicweapons/) (Ares). |
 | `PSIONICSIMMUNE` | Mind control, `Psychedelic=yes` warheads and the Psychic Dominator treat the object as they treat [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) (Ares). |
+| `PROTECTED_DRIVER` | [`KillDriver=yes`](/keys/killdriver/) warheads never take the object's driver, whatever its health, as with [`ProtectedDriver=yes`](/keys/protecteddriver/) (Ares). |
 
 Unknown or misspelled ability names are ignored without a warning.
 
@@ -229,7 +230,7 @@ Promotion bonuses apply the next time the object fires, takes damage, or moves. 
 
 Extra sight reveals more terrain the next time the object reveals its surroundings. Promotion itself does not reveal the larger area.
 
-When one of the player's objects becomes a veteran or elite, the player hears the type's [`Promote.VeteranSound`](/keys/promote.veteransound/) or [`Promote.EliteSound`](/keys/promote.elitesound/) at the object, or [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) when the type sets none, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
+When one of the player's objects becomes a veteran or elite, the player hears the type's [`Promote.VeteranSound`](/keys/promote.veteransound/) or [`Promote.EliteSound`](/keys/promote.elitesound/) at the object, or [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) when the type sets none, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`, or the line [`EVA.VeteranPromoted`](/keys/eva.veteranpromoted/) or [`EVA.ElitePromoted`](/keys/eva.elitepromoted/) names. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
 
 ## Carrying rank between objects
 
@@ -247,6 +248,6 @@ The insignia comes from `PIPS.SHP`: frame 14 for a veteran, frame 15 for an elit
 
 ### Custom insignia
 
-A type can draw its own insignia for the rookie, veteran and elite ranks. [`Insignia`](/keys/insignia/) names the shape file, and [`InsigniaFrame`](/keys/insigniaframe/) or [`InsigniaFrames`](/keys/insigniaframes/) names the frame. A frame the type sets for a rank replaces the stock frame, so setting one for a rookie shows an insignia where there was none. The file and the frame are chosen separately: a rank with a file and no frame draws the stock frame number from the new file, and a rank with a frame and no file draws that frame from `PIPS.SHP`.
+A type can draw its own insignia for the rookie, veteran and elite ranks. [`Insignia`](/keys/insignia/) names the shape file, and [`InsigniaFrame`](/keys/insigniaframe/) or [`InsigniaFrames`](/keys/insigniaframes/) names the frame. A frame the type sets for a rank replaces the stock frame, so setting one for a rookie shows an insignia where there was none. The file and the frame are chosen separately: a rank with a file and no frame draws frame 0 of the new file, which is also what gives a rookie an insignia, and a rank with a frame and no file draws that frame from `PIPS.SHP`.
 
 Each key has per-rank forms, such as `Insignia.Elite` and `InsigniaFrame.Veteran`. For each rank the shorthand sets the value first, and the rank's own key then overrides it. The below-rookie insignia is not affected.

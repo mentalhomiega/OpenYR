@@ -13,6 +13,8 @@
 
 #include "always.h"
 
+#include "lobbycolor.h"
+
 #include "netdlg2.h"
 
 #include "_map.h"
@@ -137,7 +139,7 @@ int Net2FirstFreeColor(int reqcolor, int index)
 		if (taken==0) {
 			return(color);
 		}
-		reqcolor %= MAX_PLAYERS;
+		reqcolor %= Lobby_Color_Count();
 	}
 	return(requested);
 }
@@ -146,8 +148,7 @@ int Net2FirstFreeColor(int reqcolor, int index)
 /// <summary>Returns the stock lobby color for a color index, as the lobby draws it.</summary>
 static RGBClass Net2_Stock_RGB(int color)
 {
-	COLORREF const value = PlayerColorTable[color];
-	return(RGBClass((unsigned char)(value & 0xFF), (unsigned char)((value >> 8) & 0xFF), (unsigned char)((value >> 16) & 0xFF)));
+	return(Lobby_Color_RGB(color));
 }
 
 /// <summary>
@@ -195,14 +196,9 @@ int Net2CurrentGame(void)
 /// </summary>
 int Net2Country_At(int index)
 {
-	for (int country = 0; country < HouseTypes.Count(); country++) {
-		if (!HouseTypes[country]->IsMultiplay) {
-			continue;
-		}
-		if (index == 0) {
-			return(country);
-		}
-		index--;
+	std::vector<int> const list = HouseTypeClass::Lobby_Countries();
+	if (index >= 0 && index < (int)list.size()) {
+		return(list[index]);
 	}
 
 	return(-1);
@@ -2041,7 +2037,7 @@ static void Get_Join_Responses(void)
 			int reqcolor = 0;
 			unsigned int reqcustom = 0;
 			bool const house_ok = house_tok == NULL || (atol(house_tok) >= 0 && atol(house_tok) < HouseTypes.Count());
-			bool const color_ok = color_tok == NULL || (Player_Color_Parse(color_tok, reqcolor, reqcustom) && reqcolor >= 0 && reqcolor < MAX_MPLAYER_COLORS);
+			bool const color_ok = color_tok == NULL || (Player_Color_Parse(color_tok, reqcolor, reqcustom) && reqcolor >= 0 && reqcolor < Lobby_Color_Count());
 			if (!house_ok || !color_ok) {
 				DebugString("Private game options dropped: house or color out of range\n");
 				free(opts);

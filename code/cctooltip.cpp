@@ -19,6 +19,10 @@
 #include "dsurface.h"
 #include "goptions.h"
 #include "hud.h"
+#include "house.h"
+#include "houstype.h"
+#include "playercolor.h"
+#include "side.h"
 #include "scheme.h"
 #include "tab.h"
 #include "viewzoom.h"
@@ -183,10 +187,20 @@ void CCToolTip::Draw(const ToolTipText * text)
 	} else if (surface != NULL) {
 		drawrect.Set(point.X, point.Y, text->TextWidth, text->TextHeight);
 		surface->Fill_Rect(drawrect, TBLACK);
-		surface->Draw_Rect(drawrect, DSurface::Build_Hicolor_Pixel(0, 255, 0));
+
+		// A side's ToolTipColor replaces the green of the border and the text.
+		int border = DSurface::Build_Hicolor_Pixel(0, 255, 0);
+		ColorScheme * scheme = Fetch_Scheme_By_Name("Green");
+		SideType const side = PlayerPtr != NULL ? PlayerPtr->Class->Side : SIDE_NONE;
+		if (side != SIDE_NONE && side < Sides.Count() && Sides[side]->IsToolTipColor) {
+			RGBClass const color(Sides[side]->ToolTipColor[0], Sides[side]->ToolTipColor[1], Sides[side]->ToolTipColor[2]);
+			border = DSurface::Build_Hicolor_Pixel(color);
+			scheme = ColorSchemes[Custom_Color_Scheme_Index(Player_Color_From_RGB(color))];
+		}
+		surface->Draw_Rect(drawrect, border);
 		point.X = 2;
 		point.Y = 1;
-		Fancy_Text_Print(text->Text, *surface, drawrect, point, Fetch_Scheme_By_Name("Green"), TBLACK, Style);
+		Fancy_Text_Print(text->Text, *surface, drawrect, point, scheme, TBLACK, Style);
 	}
 }
 

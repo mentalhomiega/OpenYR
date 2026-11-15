@@ -304,6 +304,56 @@ COMPUTED_KEY_READS = {
 }
 
 
+# Missile flight settings are read by one helper, RulesClass::RocketTypeStruct::Read,
+# that builds each key name from a prefix at run time. Discovery follows string
+# literals, so each call of the helper stands for the helper's keys with the
+# prefix put in front. The receivers below are the helper's only callers; one
+# that appears more or fewer than once fails extraction.
+ROCKET_HELPER = re.compile(r"\bRulesClass::RocketTypeStruct::Read\s*\(")
+ROCKET_RECEIVERS = ("V3Rocket", "DMisl", "CMisl", "MissileFlight")
+ROCKET_CALL_RE = re.compile(
+    r"\b(?P<recv>" + "|".join(ROCKET_RECEIVERS) + r")\.Read\s*\(\s*ini\s*,"
+    r"\s*(?P<section>[^,]+?)\s*,\s*\"(?P<prefix>[\w.]*)\"\s*\)")
+ROCKET_KEY_RE = re.compile(
+    r"(?:ini\.Get_(?P<plain>\w+)|TGet_(?P<typed>\w+))\s*\(\s*(?:ini\s*,\s*)?section\s*,"
+    r"\s*key\(\"(?P<key>\w+)\"\)\.c_str\(\)\s*,\s*(?P<member>\w+)\s*\)")
+
+
+def rocket_helper_keys(code_directory):
+    """The (key, accessor suffix, member) of every setting the helper reads."""
+
+    with open(os.path.join(code_directory, "rules.cpp"), encoding="latin-1") as stream:
+        text = re.sub(r"//[^\n]*", "", stream.read())
+    body, _ = find_body(text, ROCKET_HELPER)
+    if body is None:
+        raise ValueError("RulesClass::RocketTypeStruct::Read was not found in code/rules.cpp")
+    keys = [(m.group("key"), m.group("plain") or m.group("typed"), m.group("member"))
+            for m in ROCKET_KEY_RE.finditer(body)]
+    if not keys:
+        raise ValueError("RulesClass::RocketTypeStruct::Read reads no key the extractor recognises")
+    return keys
+
+
+def rocket_records(code_directory, body, start, stop, line_of, defaults):
+    """Records for the helper calls in body[start:stop], one per prefixed key."""
+
+    records = []
+    for call in ROCKET_CALL_RE.finditer(body, start, stop):
+        for key, suffix, member in rocket_helper_keys(code_directory):
+            records.append({
+                "key": call.group("prefix") + key,
+                "receiver": "ini",
+                "suffix": suffix,
+                "section_expr": call.group("section"),
+                "default_expr": call.group("recv") + "." + member,
+                "local_lhs": False,
+                "member": call.group("recv") + "." + member,
+                "value_type": VALUE_TYPES.get(suffix, suffix.replace("_", " ").lower()),
+                "line": line_of(call.start()),
+            })
+    return records
+
+
 # Private helpers that a Read_INI calls to read part of its keys. Discovery
 # scans only the Read_INI body, so a key read in a helper would be missing from
 # the catalog. The helpers listed here are scanned as part of their reader, at
@@ -882,6 +932,12 @@ def _literal_records(path, cls, raw, body, offset, start, stop):
             "src": os.path.basename(path),
         })
 
+    for record in rocket_records(
+            os.path.dirname(path), body, start, stop,
+            lambda pos: raw[:offset].count("\n") + body[:pos].count("\n") + 1, None):
+        record.update({"declared_in": cls, "guard": None, "src": os.path.basename(path)})
+        records.append(record)
+
     return records
 
 
@@ -966,6 +1022,13 @@ def extract_globals(path, cls, methods, opts=None):
                 "group": opts.get("group", "global rules"),
                 "file_hint": opts.get("file"),
             })
+
+        for record in rocket_records(
+                os.path.dirname(path), body, 0, len(body),
+                lambda pos: raw[:offset].count("\n") + body[:pos].count("\n") + 1, None):
+            emit(record["receiver"], record["suffix"], record["section_expr"],
+                 record["key"], record["member"], 0, default_expr=record["default_expr"])
+            records[-1]["line"] = record["line"]
 
         # Typed accessor reads in the selected bodies.
         for m in GET_CALL_RE.finditer(body):

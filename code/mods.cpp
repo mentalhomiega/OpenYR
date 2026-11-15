@@ -12,6 +12,7 @@
 #include "mods.h"
 
 #include "cdfile.h"
+#include "deploymentconfig.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
 #include "ini.h"
@@ -42,21 +43,6 @@ std::string const & ModClass::Overlay(ModOverlayType type) const
 		default:
 			return(RulesFile);
 	}
-}
-
-
-/// <summary>
-/// Splits a configured mod list into the mods it names, in the order written, with the
-/// whitespace around each name dropped and empty entries passed over. Names are separated by
-/// commas, since a semicolon opens a comment in the file the list is written in.
-/// </summary>
-std::vector<std::string> Parse_Mod_List(char const * list)
-{
-	if (list == NULL) {
-		return(std::vector<std::string>());
-	}
-
-	return(Split_List(list, ',', TRIM_SPACE_TAB, true));
 }
 
 
@@ -93,9 +79,9 @@ std::vector<std::string> const & Command_Line_Mods(void)
 }
 
 
-static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key)
+static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key, char const * section = "Mod")
 {
-	std::string const file = Trimmed(ini.Get_String("Mod", key), TRIM_SPACE_TAB);
+	std::string const file = Trimmed(ini.Get_String(section, key), TRIM_SPACE_TAB);
 	return(file.empty() ? file : folder + file);
 }
 
@@ -110,6 +96,8 @@ static void Read_Manifest(ModClass & mod)
 		return;
 	}
 
+	mod.ManifestFile = manifest;
+
 	INIClass ini;
 	ini.Load(file, false);
 
@@ -121,6 +109,9 @@ static void Read_Manifest(ModClass & mod)
 	mod.RulesFile = Overlay_Path(ini, mod.Folder, "Rules");
 	mod.ArtFile = Overlay_Path(ini, mod.Folder, "Art");
 	mod.AIFile = Overlay_Path(ini, mod.Folder, "AI");
+	mod.LobbyMapsFile = Overlay_Path(ini, mod.Folder, "Maps", "Lobby");
+	mod.LobbyOptionsFile = Overlay_Path(ini, mod.Folder, "Options", "Lobby");
+	mod.LobbyCustomMapModes = ini.Get_String("Lobby", "CustomMapModes");
 }
 
 
@@ -233,7 +224,7 @@ std::string Configured_Mod_List(INIClass const & settings, char const * deployme
 /// </summary>
 void Put_Mod_List(INIClass & settings, std::string const & list)
 {
-	settings.Put_String(SettingsSection, SettingsKey, list.empty() ? "," : list.c_str());
+	settings.Put_String(SettingsSection, SettingsKey, Mod_List_Setting(list).c_str());
 }
 
 
@@ -320,6 +311,34 @@ void Init_Mods(char const * list)
 
 	if (!names.empty()) {
 		DebugString("[Mods] %d mods active.\n", (int)Mods.size());
+	}
+}
+
+
+/// <summary>
+/// Applies each active mod's [Files], [Palettes] and [Archives] to the configuration, in mod
+/// order. A key a mod does not write leaves the value an earlier mod or the deployment gave.
+/// </summary>
+void Apply_Mod_Files(DeploymentConfigClass & config)
+{
+	for (ModClass const & mod : Mods) {
+		if (mod.ManifestFile.empty()) {
+			continue;
+		}
+
+		RawFileClass file(mod.ManifestFile.c_str());
+		if (!file.Is_Available()) {
+			continue;
+		}
+
+		INIClass ini;
+		ini.Load(file, false);
+		config.Read_Mod_INI(ini);
+	}
+
+	if (!Mods.empty()) {
+		DebugString("[Mods] Files: rules %s, art %s, AI %s; archives %s, caches %s.\n",
+			config.RulesFile.c_str(), config.ArtFile.c_str(), config.AIFile.c_str(), config.ExpandPrefixes.c_str(), config.CachePrefixes.c_str());
 	}
 }
 

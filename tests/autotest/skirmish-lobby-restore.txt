@@ -3,9 +3,7 @@
 ; lobby and starts a game. The computers on start spots 2 to 4 (Spawn2 to Spawn4) are destroyed, so the
 ; player wins; skipscore passes over the score screen. The lobby opens again, is cancelled, and opens a
 ; third time. The log has one "AUTOTEST lobby" block per opening, and the three blocks must match.
-; Run from the workspace root (the folder that holds scripts/), in PowerShell:
-;   $s = "[Skirmish]`r`nMap=XMP03T4.MAP`r`nUnits=8`r`nCredits=5000`r`nTech=5`r`nSpeed=3`r`nBases=0`r`nCrates=1`r`nFog=1`r`nBridges=0`r`nRedeploy=0`r`nShortGame=0`r`nEngineer=1`r`nSuperWeapons=0`r`nBuildOffAlly=1`r`nSlot1=0,-1,0,0,0,0`r`nSlot2=3,2,1,2,1,0`r`nSlot3=4,0,2,3,1,0`r`nSlot4=2,-1,3,4,2,0"
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/skirmish-lobby-restore.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 200 -Settings $s -Filter "AUTOTEST lobby|game over|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/skirmish-lobby-restore.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 200 -Settings "[Skirmish]`r`nMap=XMP03T4.MAP`r`nUnits=8`r`nCredits=5000`r`nTech=5`r`nSpeed=3`r`nBases=0`r`nCrates=1`r`nFog=1`r`nBridges=0`r`nRedeploy=0`r`nShortGame=0`r`nEngineer=1`r`nSuperWeapons=0`r`nBuildOffAlly=1`r`nSlot1=0,-1,0,0,0,0`r`nSlot2=3,2,1,2,1,0`r`nSlot3=4,0,2,3,1,0`r`nSlot4=2,-1,3,4,2,0" -Filter "AUTOTEST lobby|game over|Exception"
 ; Regress: capped a menu wait of 60 seconds runs while the game plays, so the frames played depend on speed
 0 continuewin
 0 skipscore

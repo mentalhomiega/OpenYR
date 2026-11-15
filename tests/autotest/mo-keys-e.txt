@@ -4,8 +4,7 @@
 ; uses EmptyReload (100); the tank takes one shot back each time the countdown ends.
 ; "ammo" lines show the shots and the countdown; "trails" shows lines lit behind the moving tank (art UseLineTrail=yes, LineTrailColor,
 ; LineTrailColorDecrement=8), and none a few frames after it stops; "ambient COW" shows the stock COW with its AmbientSound attached.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/mo-keys-e.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\mo-keys-e" -Seconds 200 -Filter "AUTOTEST   (ammo|trails|ambient|where)|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/mo-keys-e.txt -Mods tests/autotest/mo-keys-e -Seconds 200 -Filter "AUTOTEST   (ammo|trails|ambient|where)|Exception"
 30 command CenterBase
 300 own MTNK 60 36
 301 spawn COW 58 38

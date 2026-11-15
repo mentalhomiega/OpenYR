@@ -2,7 +2,7 @@
 ; the player orders it north, at right angles to the target. A V3 with no move order fires its rocket once it has its target.
 ; Expected (gamemd SpawnManagerClass::Update 0x6B7230): the rocket is held while the body is moving, so it launches after the
 ; V3 stops, from the body facing (north), while the spawn cycle still holds the old target. The "spawns" lines show each step.
-; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/v3-move-after-attack.txt -Map XMP08T2.MAP -Seconds 120
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/v3-move-after-attack.txt -Map XMP08T2.MAP -Seconds 120
 10 command CenterBase
 30 reveal
 40 own V3 100 80

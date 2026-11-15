@@ -64,7 +64,7 @@ An aircraft attacks in one of three styles, chosen by its primary weapon and its
 
 | Style | Applies when | What the aircraft does |
 | --- | --- | --- |
-| Strafing run | The weapon's projectile has no guidance (`ROT=1` or less) and is visible | Flies straight at the target and fires five shots in a row; the pass uses one point of [`Ammo`](/keys/ammo/) |
+| Strafing run | The weapon's projectile has no guidance (`ROT=1` or less) and is visible | Flies straight at the target and fires the weapon's [`Strafing.Shots`](/keys/strafing.shots/) in a row, five by default; the pass uses one point of [`Ammo`](/keys/ammo/) |
 | Fighter pass | The projectile is guided and the type sets [`Fighter=yes`](/keys/fighter/) | Heads for a firing position, fires as soon as it is in range and facing the target, flies on without turning for the weapon's `ROF` delay, then picks its next position or returns to land |
 | Hover attack | The projectile is guided and the type is not a fighter | Flies to a firing position, stops, turns to face the target and fires from a hover |
 

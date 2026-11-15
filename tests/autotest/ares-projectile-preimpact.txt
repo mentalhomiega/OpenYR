@@ -1,0 +1,11 @@
+; PreImpactAnim, with the mods in tests/autotest/ares-projectile-keys and ares-projectile-units-preimpact. A GI (PreGun, warhead PreWH with
+; PreImpactAnim=EXPLOSML) and a Conscript (PlainGun, a warhead without it) each fire one shot at an enemy miner. Expected lines:
+;   "pre-impact PreWH plays EXPLOSML at frame F", then the "detonate" line of the GI's shot some frames after F, when the animation has ended.
+;   The Conscript's "detonate" line comes at once, with no pre-impact line.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-preimpact.txt -Mods tests/autotest/ares-projectile-keys,tests/autotest/ares-projectile-units-preimpact -Seconds 60 -Filter "AUTOTEST pre-impact|AUTOTEST detonate frame [0-9]+ Invisible|Exception"
+30 command CenterBase
+100 own E1 60 36
+101 spawn CMIN 66 36
+102 own E2 60 44
+103 spawn CMIN 66 44
+400 quit

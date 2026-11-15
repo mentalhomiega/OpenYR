@@ -1,0 +1,21 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mirage-guard-return-fire.txt -Seconds 150 -Uncapped -Filter "AUTOTEST   (where|mirage look)|DAMAGETRACE|Exception"
+; A computer Mirage Tank (MGTK at 65,42, MirageGun cut to 5 damage by the ini) stands as a tree and fires at a player Grizzly
+; (MTNK at 60,42) on guard. At frame 400 a player GI (E1) is put next to the tank.
+; Expected: before frame 400 the Grizzly is hit every ~71 frames and never fires back (no "MGTK ... by MTNK" line): a shot
+; keeps the tree look and only blinks it for DisguiseFakeBlinkTime (15) frames, "blink 1" at 345 and "blink 0" with TREE01
+; at 360 (UnitClass::Fire, 0x741444), and a human house neither picks nor retaliates against a disguised Mirage (0x6F850F
+; and 0x708899). The GI next to it drops the look (UnitClass::UpdateDisguise, 0x7469EE): "mirage look none" at 420, then the
+; Grizzly attacks it ("MGTK ... by MTNK" from frame 440, target MGTK at 500) and keeps it as its target until it dies.
+10 rules mirage-guard-return-fire.ini
+30 view 60 42
+40 enemy MGTK 65 42
+60 damagetrace MGTK
+100 own MTNK 60 42
+345 where MGTK
+360 where MGTK
+390 where MTNK
+400 own E1 66 42
+420 where MGTK
+500 where MTNK
+700 where MGTK
+710 quit

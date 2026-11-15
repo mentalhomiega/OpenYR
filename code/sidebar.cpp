@@ -121,6 +121,7 @@
 #include "shapeset.h"
 #include "super.h"
 #include "suprtype.h"
+#include "swrules.h"
 #include "surface.h"
 #include "techtype.h"
 #include "ui/uishell.h"
@@ -162,6 +163,14 @@ ShapeButtonClass SidebarClass::Power;
 ShapeButtonClass SidebarClass::Upgrade;
 ShapeButtonClass SidebarClass::Waypoint;
 ShapeButtonClass SidebarClass::TabButton[COLUMNS];
+
+
+// The modern sidebar shows the power button only when the rules allow power mode (TogglePowerAllowed); Yuri's Revenge has none.
+static bool Shows_Power_Button(void)
+{
+	return(Modern_Interface() && Rule != NULL && Rule->IsTogglePowerAllowed);
+}
+
 
 // The modern panel's tabs lit on the current blink, one bit per tab.
 static unsigned TabFlashMask = 0;
@@ -1200,7 +1209,9 @@ void SidebarClass::Draw_It(bool complete)
 		Repair.Draw_Me(true);
 		Upgrade.Draw_Me(true);
 		if (Modern_Interface()) {
-			Power.Draw_Me(true);
+			if (Shows_Power_Button()) {
+				Power.Draw_Me(true);
+			}
 			BeaconButton.Draw_Me(true);
 			OptionsButton.Draw_Me(true);
 		}
@@ -1623,8 +1634,10 @@ bool SidebarClass::Activate(int control)
 			OptionsButton.Zap();
 			Add_A_Button(OptionsButton);
 			if (Modern_Interface()) {
-				Power.Zap();
-				Add_A_Button(Power);
+				if (Shows_Power_Button()) {
+					Power.Zap();
+					Add_A_Button(Power);
+				}
 				BeaconButton.Zap();
 				Add_A_Button(BeaconButton);
 			} else {
@@ -2252,7 +2265,24 @@ char const * SidebarClass::StripClass::Help_Text(int id)
 	if (GameActive) {
 		if (i < BuildableCount) {
 			if (Buildables[i].BuildableType == RTTI_SPECIAL) {
-				return(SuperWeaponTypes[Buildables[i].BuildableID]->Full_Name());
+				// A weapon that costs credits to fire shows the cost, as a build cameo does.
+				SuperWeaponTypeClass const * special = SuperWeaponTypes[Buildables[i].BuildableID];
+				int const price = -special->Keys.MoneyAmount;
+				if (price <= 0) {
+					return(special->Full_Name());
+				}
+				if (Modern_Interface()) {
+					static std::string _special_text;
+					_special_text = special->Full_Name();
+					_special_text += "\n$" + std::to_string(price);
+					return(_special_text.c_str());
+				}
+				if (Map.IsCameoText) {
+					sprintf(_buffer, Fetch_String(TXT_MONEY_FORMAT_1), price);
+				} else {
+					sprintf(_buffer, Fetch_String(TXT_MONEY_FORMAT_2), special->Full_Name(), price);
+				}
+				return(_buffer);
 			}
 
 			TechnoTypeClass const * choice = Fetch_Techno_Type(Buildables[i].BuildableType, Buildables[i].BuildableID);
@@ -2380,7 +2410,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 						}
 
 						shapefile = (ShapeSet const *)obj->Get_Cameo_Data();
-						pcx = PCX_Cameo(obj->CameoPCX);
+						pcx = PCX_Cameo(obj->Get_Cameo_PCX());
 						factory = Buildables[index].Factory;
 						if (factory != NULL) {
 							production	= true;
@@ -2413,9 +2443,11 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					production = true;
 					completed = PlayerPtr->SuperWeapon[spc]->Is_Charging() == false;
 					isready = PlayerPtr->SuperWeapon[spc]->Can_Place();
-					state = PlayerPtr->SuperWeapon[spc]->State_String();
+					state = PlayerPtr->SuperWeapon[spc]->Caption();
 					stage = PlayerPtr->SuperWeapon[spc]->Anim_Stage();
-					darken = false;
+
+					// A weapon the house cannot pay for is darkened like a build cameo that cannot be started.
+					darken = !SuperRules::Can_Afford(PlayerPtr->Available_Money(), SuperWeaponTypes[spc]->Keys.MoneyAmount);
 				}
 
 				if (obj == NULL && spc == SUPER_NONE) {
@@ -2946,13 +2978,20 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 
 			if ((unsigned)spc < (unsigned)PlayerPtr->SuperWeapon.Count()) {
 				if (PlayerPtr->SuperWeapon[spc]->Can_Place()) {
-					if (PlayerPtr->SuperWeapon[spc]->Class->Action == ACTION_NONE) {
+					if (PlayerPtr->SuperWeapon[spc]->Class->Keys.AutoFire && !PlayerPtr->SuperWeapon[spc]->Class->Keys.ManualFire) {
+						// The weapon fires on its own when it is ready.
+					} else if (!PlayerPtr->SuperWeapon[spc]->Class->Needs_Target()) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, PlayerPtr->SuperWeapon[spc]->Class->HeapID, Cell(0, 0)));
 					} else {
 						Map.Place_Beacon_Mode_Control(0);
 						Map.IsTargettingMode = spc;
 						Unselect_All();
-						Speak(VOX_SELECT_TARGET);
+						SuperWeaponKeys const & select = PlayerPtr->SuperWeapon[spc]->Class->Keys;
+						if (select.EvaSelectTarget.empty()) {
+							Speak(VOX_SELECT_TARGET);
+						} else if (!SuperRules::Same(select.EvaSelectTarget, "none")) {
+							Speak_Eva(select.EvaSelectTarget.c_str());
+						}
 					}
 				} else {
 					PlayerPtr->SuperWeapon[spc]->Impatient_Click();
@@ -3398,6 +3437,9 @@ void SidebarClass::Reposition_Panel(void)
 
 	int x = layout.Buttons.X;
 	for (ShapeButtonClass * button : {&BeaconButton, &Upgrade, &Power, &Repair}) {
+		if (button == &Power && !Shows_Power_Button()) {
+			continue;
+		}
 		place(*button, x + (HUD_BUTTON_SIZE - button->Width) / 2, middle(layout.Buttons, button->Height));
 		x += HUD_BUTTON_SIZE + HUD_BUTTON_GAP;
 	}
@@ -3475,6 +3517,9 @@ void SidebarClass::Add_Tool_Tips(void)
 
 		if (Modern_Interface()) {
 			for (ShapeButtonClass const * button : {&Power, &BeaconButton, &OptionsButton}) {
+				if (button == &Power && !Shows_Power_Button()) {
+					continue;
+				}
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);

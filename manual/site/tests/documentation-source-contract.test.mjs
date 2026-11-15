@@ -167,10 +167,9 @@ test('Drop pod superweapon placement draws on one shared 3-per-passenger attempt
 		source('code/super.cpp'),
 		'void SuperClass::Drop_Pods(Cell const & cell) const',
 	);
-	assert.match(
-		dropPods,
-		/int count = Random_Pick\(Rule->DropPodInfantryMinimum, Rule->DropPodInfantryMaximum\);/,
-	);
+	assert.match(dropPods, /Rule->DropPodInfantryMinimum;/);
+	assert.match(dropPods, /Rule->DropPodInfantryMaximum;/);
+	assert.match(dropPods, /int count = Random_Pick\(minimum, maximum\);/);
 	assert.match(dropPods, /int attempts = 3 \* count;/);
 	assert.match(dropPods, /while \(toplace && attempts--\)/);
 });
@@ -500,7 +499,7 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 		'Get_Savefile_Info(SpawnConfig.SaveGameName.c_str(), &info)',
 		'!info.Is_Expected_Version(ExpectedGameVersion)',
 		'type == GAME_IPX',
-		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
+		'SpawnConfig.Is_Playable(HouseTypes.Count(), Lobby_Color_Count(), fault)',
 		'Spawner_Seat_Humans();',
 		'Spawner_Wire_Network()',
 		'Session.LoadGame = true;',
@@ -656,7 +655,7 @@ test('A match against other machines is assembled whole and wired to its network
 	const spawner = source('code/spawner.cpp');
 
 	assertOrdered(functionBody(spawner, 'bool Spawner_Prepare(bool & gameloaded)'), [
-		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
+		'SpawnConfig.Is_Playable(HouseTypes.Count(), Lobby_Color_Count(), fault)',
 		'Spawner_Setup_Session();',
 		'SpawnConfig.Session_Identity_CRC()',
 		'Session.Type == GAME_INTERNET && !Spawner_Wire_Network()',
@@ -953,7 +952,7 @@ test('An AI trigger names its side by its position', () => {
 });
 
 test('The hunter-seeker comes from the acted side', () => {
-	const superweapon = source('code/super.cpp');
+	const superweapon = source('code/super.cpp') + source('code/suprfire.cpp');
 
 	assert.match(superweapon, /side->HunterSeeker/, 'the acted side names the drone');
 	assert.doesNotMatch(superweapon, /GDIHunterSeeker|NodHunterSeeker/, 'the legacy pair is not consulted');
@@ -986,16 +985,20 @@ test('A lobby side entry carries its country', () => {
 		'house == current',
 	], 'each entry carries its country and the list is positioned by the country it holds');
 	assertOrdered(functionBody(source('code/ui/uienginehost.cpp'), 'int UI_Multiplay_House_At(int position)'), [
-		'HouseTypes[house]->IsMultiplay',
-		'return(house);',
+		'HouseTypeClass::Lobby_Countries()',
+		'return(position >= 0',
 	], 'only countries a player can pick are listed');
+	assertOrdered(functionBody(source('code/houstype.cpp'), 'std::vector<int> HouseTypeClass::Lobby_Countries(void)'), [
+		'HouseTypes[index]->IsMultiplay',
+		'list.push_back(index);',
+	], 'the list holds only countries a player can pick');
 	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Set_Side(int index)'), [
 		'Net2Country_At(index)',
 		'Session.House = country;',
 	], 'the selection is read back through its country');
 	assertOrdered(functionBody(source('code/netdlg2.cpp'), 'int Net2Country_At(int index)'), [
-		'HouseTypes[country]->IsMultiplay',
-		'return(country);',
+		'HouseTypeClass::Lobby_Countries()',
+		'return(list[index]);',
 	], 'a row names the country standing at it');
 	const skirmish = source('code/ui/screens/skirmish/uiskirmishdlg.cpp');
 
@@ -1143,10 +1146,9 @@ test('New theater artwork is renamed by image letter, not by a prefix list', () 
 });
 
 test('The deployment names the files the game reads', () => {
-	const config = functionBody(
-		source('code/deploymentconfig.cpp'),
-		'void DeploymentConfigClass::Read_INI(INIClass const & ini)',
-	);
+	const deployment = source('code/deploymentconfig.cpp');
+	const config = functionBody(deployment, 'void DeploymentConfigClass::Read_INI(INIClass const & ini)')
+		+ functionBody(deployment, 'void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)');
 
 	for (const [key, member] of [
 		['Rules', 'RulesFile'],
@@ -1590,12 +1592,16 @@ test('A game played alone is paced by its own speed table', () => {
 });
 
 test('An insignificant unit dies without announcing it', () => {
-	assert.equal(
+	assertOrdered(
 		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const')
 			.replace(/\/\/[^\n]*/g, '')
 			.replace(/[\s]+/g, ' ')
 			.trim(),
-		'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) { Speak(VOX_UNIT_LOST); } }',
+		[
+			'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {',
+			'if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {',
+			'Speak(VOX_UNIT_LOST);',
+		],
 		'the event and the voice are refused together',
 	);
 

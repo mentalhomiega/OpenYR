@@ -1309,8 +1309,17 @@ static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, Rect const 
 		}
 		if (blitclass == GPU_BLIT_LINE) {
 			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
-			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
+			float t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
+			if (blit.LineKind == GPU_LINE_SONIC && blit.Line >= GPU_WAVE_CUSTOM) {
+				// A line has no depth, so a custom wave colour rides in the depth fields: the scales, then the constants.
+				t2[0] = (float)blit.Tint[0];
+				t2[1] = (float)blit.Tint[1];
+				t2[2] = (float)blit.Tint[2];
+				t2[3] = (float)blit.Tint[3];
+				t3[0] = (float)blit.Tint[4];
+				t3[1] = (float)blit.Tint[5];
+			}
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
 			kinds[i] = KIND_LINE + blit.LineKind;
 			continue;

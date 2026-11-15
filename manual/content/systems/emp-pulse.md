@@ -5,6 +5,8 @@ category: weapons-projectiles
 keys:
   - Damage
   - EMEffect
+  - EMP.Cap
+  - EMP.Duration
   - EMP.Modifier
   - EMP.Threshold
   - EMPulseCannon
@@ -70,7 +72,7 @@ While the player aims an EM pulse superweapon, the cursor shows the in-range for
 
 A click on the out-of-range cursor fires the first superweapon that declares `Action=EMPulseRange`, and launches nothing if none does. The launch has no range limit of its own, so an EM pulse superweapon declared `Action=EMPulseRange` fires at any distance.
 
-The chosen cannon turns toward the target and creates the hard-coded animation `PULSBALL` at its mounting. Thirty-two frames later it fires its primary weapon at the target, and the pulse comes from that weapon's warhead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in `[SpecialWeapons]` have no effect.
+The chosen cannon turns toward the target and creates the hard-coded animation `PULSBALL` at its mounting, or no animation when the rules define no animation of that name. Thirty-two frames later it fires its primary weapon at the target, and the pulse comes from that weapon's warhead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in `[SpecialWeapons]` have no effect.
 
 ### Mobile EMP vehicle
 
@@ -154,6 +156,39 @@ When several objects share a cell, as cyborgs can, the sweep may miss some of th
 :::caution[Ordinary infantry are never stunned]
 Only cyborgs among infantry are stunned. Other soldiers walk through a pulse untouched and spring no event.
 :::
+
+## Warheads with EMP.Duration
+
+A warhead that sets [`EMP.Duration`](/keys/emp.duration/) to a value other than `0` stuns through its blast instead of through a pulse, whether or not it sets `EMEffect=yes`. The blast reaches the objects within the warhead's [`CellSpread`](/keys/cellspread/) as an ordinary blast does, and the weapon's `Damage` is dealt to them as damage. An object whose armor has a `Verses` of `0%` against the warhead is not affected.
+
+The hit changes the object's stun counter, which counts down by one each frame. [`EMP.Cap`](/keys/emp.cap/) decides how the duration combines with the counter:
+
+| Duration | `EMP.Cap` | New counter |
+| --- | --- | --- |
+| Above `0` | Above `0` | The counter plus the duration, but no higher than the cap. A counter already at or above the cap stays. |
+| Above `0` | `0` | The counter plus the duration. |
+| Above `0` | Below `0` (the default `-1`) | The larger of the counter and the duration. |
+| Below `0` | Below `0` | The counter minus the size of the duration, to a least of `0`. |
+| Below `0` | Above `0` | The counter minus the size of the duration, to a least of `0` and a most of the cap. |
+| Below `0` | `0` | `0`. |
+
+A positive duration is first multiplied by the object's [`EMP.Modifier`](/keys/emp.modifier/). A counter that reaches `0` by a negative duration ends the stun on the next frame. An object that was not stunned is stunned, powered off and given sparkles as a pulse does it, but only a hit that takes its counter above `0` from `0` does this.
+
+The same kinds of object are reached as by a pulse: structures that are not invisible, vehicles, aircraft, and cyborgs. A [limpet mine](/keys/islimpetmine/) structure, or an aircraft that is off the ground, is destroyed by a positive duration unless it is immune. An immune object only springs its Paralyzed event. The firer is not stunned by its own positive hit. An object under the Iron Curtain is not affected.
+
+A counter that passes the object's [`EMP.Threshold`](/keys/emp.threshold/) destroys it as in [Destruction by a long stun](#destruction-by-a-long-stun).
+
+```ini title="rulesmd.ini"
+[MyEMPWH] ; example Warhead
+CellSpread=2
+Verses=0%,0%,0%,100%,100%,100%,0%,0%,0%,100%,0%
+EMP.Duration=90
+EMP.Cap=300       ; repeated hits add up to 300 frames
+
+[MyReviveWH] ; example Warhead that reactivates allied objects
+Verses=-100%,-100%,-100%,-100%,-100%,-100%,-100%,-100%,-100%,-100%,-100%
+EMP.Duration=-60
+```
 
 ## While stunned
 

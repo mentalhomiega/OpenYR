@@ -1,0 +1,16 @@
+; Long Mental Omega skirmish between computer players, for crashes and stuck behaviour. Needs the Mental Omega files in game\Mods\MentalOmega.
+; The local player is a live human allied with every computer player, so the match goes on after the first computer defeat. Write the
+; spawn file with those alliances, then run from the repository root (one line):
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent2 -Script src-agent2/tests/autotest/mo-soak-skirmish.txt -SpawnIni <spawn file> -Mods MentalOmega -Map c_battlecity.map -AICountries 11,4,7,2,9 -AIPlayers 5 -Width 1024 -Height 768 -Seconds 1500 -Filter "AUTOTEST game over|Exception"
+; The spawn file is the default SPAWN.INI of run_autotest.ps1 with GameSpeed=0 (no frame limit), Seed=23, and in [Multi1_Alliances]
+; HouseAllyOne to HouseAllyFive set to seats 1 to 5, and in [Multi2_Alliances] to [Multi6_Alliances] HouseAllyOne=0.
+; Countries 0 to 11 are the three Allied, three Soviet, three Epsilon and three Foehn countries. The run ends at frame 120005 with no exception.
+10 log mo soak start
+2000 census
+20000 windowshot mo-soak-20000
+20000 houses
+60000 census
+60000 windowshot mo-soak-60000
+120000 census
+120000 windowshot mo-soak-120000
+120005 quit

@@ -10,7 +10,7 @@ when_omitted:
 
 `InsigniaFrame` is the frame number shown for a rookie, a veteran and an elite object of this type. Frames are counted from `0` in the file that [`Insignia`](/keys/insignia/) names, or in `PIPS.SHP` when the type names none. Keep the number inside the file; a frame the file lacks is not checked.
 
-The stock frames are `14` for a veteran and `15` for an elite object. A rookie has no stock frame and shows no insignia, so the key is what gives a rookie one. A value below `0` selects the stock frame for each rank.
+The stock frames are `14` for a veteran and `15` for an elite object. A rookie has no stock frame and shows no insignia unless the key or an `Insignia` file gives it one. A value below `0` selects the stock frame for each rank, or frame `0` where the rank has an `Insignia` file.
 
 Three keys set one rank only: `InsigniaFrame.Rookie`, `InsigniaFrame.Veteran` and `InsigniaFrame.Elite`. They take the same values and override `InsigniaFrame` and [`InsigniaFrames`](/keys/insigniaframes/) for their rank. The keys apply to infantry, vehicles, aircraft and structures.
 

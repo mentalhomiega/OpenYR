@@ -1,0 +1,11 @@
+; Without BerserkROFMultiplier in the rules, a berserk object reloads in half its normal time, as in Yuri's Revenge.
+; A computer Grizzly tank is driven berserk by a PsychGas hit from the player and turns on a player MCV beside it, which has no weapon.
+; Expected: the DAMAGETRACE lines for that MCV come at half the Grizzly's reload time apart, about 30 frames (ROF=60), from the second hit on.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/berserk-rof-default.txt -Seconds 60 -Country 0 -Filter "DAMAGETRACE|AUTOTEST   hit|Exception"
+30 command CenterBase
+35 reveal
+40 enemy MTNK 62 42
+41 own AMCV 60 42
+50 damagetrace AMCV
+60 hit MTNK:PsychGas 3000
+600 quit

@@ -13,7 +13,9 @@
 
 #pragma once
 
+#include <climits>
 #include <string>
+#include <vector>
 
 class ShapeSet;
 
@@ -37,6 +39,7 @@ class UnitTypeClass;
 class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WeaponTypeClass;
+class WarheadTypeClass;
 class AircraftTypeClass;
 class InfantryTypeClass;
 
@@ -58,10 +61,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 	public:
 
-		// A type carries up to eighteen weapons, each with an elite counterpart, and a gattling
-		// type up to six stages.
+		// A type carries up to 127 weapons and turrets, the most Ares allows for TurretCount, each weapon
+		// with an elite counterpart, and a gattling type up to six stages.
 		enum {
-			WEAPON_SLOT_COUNT = 18,
+			WEAPON_SLOT_COUNT = 127,
 			WEAPON_STAGE_COUNT = 6
 		};
 
@@ -82,6 +85,14 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A non-zero IdleRate makes a stopped unit step its walk animation once every IdleRate frames.
 		int IdleRate;
+
+		// AirRate (Ares): above 0, an object off the ground steps its animation once every AirRate frames, in place of WalkRate and IdleRate.
+		int AirRate;
+
+		// RadarJamRadius (Ares): the cells around this object within which it jams the radar and spy satellite structures of houses
+		// that are not allied with its owner.
+		int RadarJamRadius;
+		static bool RadarJammersExist;
 
 		// A PipsDrawForAll=yes object shows its pips to every player, not only its owner's allies.
 		bool IsPipsDrawForAll;
@@ -344,6 +355,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Does this type fly on a jump jet? (Rules key JumpJet.) A moving jumpjet's shot is not inaccurate.
 		bool IsJumpJet;
 
+		// Read from the rules key TiltCrashJumpjet; nothing in this engine uses it yet.
+		bool IsTiltCrashJumpjet;
+
 		// How a scan by this type weighs targets by their estimated health. (Rules key VHPScan.)
 		int VHPScan;
 
@@ -356,6 +370,24 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
 
+		// An ImmuneToAbduction type (Ares) is never taken aboard by an Abductor weapon, which damages it as any other weapon does.
+		bool IsImmuneToAbduction;
+
+		// Does any weapon slot of the type, elite ones included, hold an Abductor weapon?
+		bool Has_Abductor_Weapon(void) const;
+
+		// ProtectedDriver and ProtectedDriver.MinHealth (Ares): a KillDriver hit takes the driver only while the vehicle's
+		// health ratio is at or below the minimum, which is 0 for a protected driver and 1 otherwise unless the rules set it.
+		bool IsProtectedDriver;
+		double ProtectedDriverMinHealth;
+
+		// IronCurtain.Modifier (Ares): the multiplier on the length of an Iron Curtain put on an object of this type. At 0 the
+		// object is immune to it.
+		double IronCurtainModifier;
+
+		// ForceShield.Modifier (Ares): the multiplier on the length of a Force Shield put on an object of this type. At 0 or
+		// less the object cannot be shielded.
+		double ForceShieldModifier;
 		// Is this a gap generator? (Rules key GapGenerator.) Every type reads it; only a building shrouds the map.
 		bool IsGapGenerator;
 
@@ -389,6 +421,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The weapon an exploding object of this type sets off as it dies, and the share of that weapon's Damage it does.
 		WeaponTypeClass * DeathWeapon;
 		double DeathWeaponDamageModifier;
+
+		// CrushDamage.Rookie, .Veteran and .Elite (Ares): damage a vehicle that crushes an object of this type takes, by the
+		// crushed object's rank, through CrushDamageWarhead or the rules' C4Warhead when that is NULL.
+		int CrushDamage[3];
+		WarheadTypeClass const * CrushDamageWarhead;
 
 		// The ammunition a new object of this type starts with, or -1 to start full.
 		int InitialAmmo;
@@ -459,6 +496,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether a vehicle thief may take this vehicle (Ares VehicleThief.Allowed).
 		bool IsVehicleThiefAllowed;
 
+		// Whether a CanDrive soldier may take this vehicle over (Ares CanBeDriven).
+		bool IsCanBeDriven;
+
 		// The build time factor per extra factory, or below 0 for [General] MultipleFactory (Ares BuildTime.MultipleFactory).
 		double BuildTimeMultipleFactory;
 
@@ -468,6 +508,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The sounds played on promotion to veteran and elite, or VOC_NONE for the [AudioVisual] ones (Ares Promote.*Sound).
 		VocType PromoteVeteranSound;
 		VocType PromoteEliteSound;
+
+		// VoiceAirstrikeAttack (Ares): the sound played when an airstrike this designator or aircraft type takes part in is called.
+		bool IsVoiceAirstrikeAttackSet;
+		VocType VoiceAirstrikeAttack;
+
+		// The frames an object flashes on promotion to veteran and elite, or below zero for the [AudioVisual] VeteranFlashTimer and
+		// EliteFlashTimer (Ares Promote.VeteranFlash and Promote.EliteFlash).
+		int PromoteVeteranFlash;
+		int PromoteEliteFlash;
 
 		// Whether the health bar is left undrawn (Phobos HealthBar.Hide).
 		bool IsHealthBarHidden;
@@ -512,6 +561,78 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// The multiplier on this type's build time (TechnoTypeClass::BuildTimeMultiplier).
 		double BuildTimeMultiplier;
+
+		// The infantry type that survives this object for an owner on each place in [Sides], or empty for the side's crew (Ares Survivor.Side).
+		std::string SurvivorSide[4];
+
+		// The odds in percent that a survivor of this object is its owner's technician or engineer, or -1 for the stock odds (Ares Crew.TechnicianChance, Crew.EngineerChance).
+		int CrewTechnicianChance;
+		int CrewEngineerChance;
+
+		// How many pilots try to leave a destroyed vehicle, or -1 for the stock rule (Ares Survivor.Pilots).
+		int SurvivorPilots;
+
+		// The odds in percent that a pilot escapes, or a passenger survives, by rank, or -1 for the stock rule (Ares Survivor.*PilotChance and Survivor.*PassengerChance).
+		int SurvivorPilotChance[3];
+		int SurvivorPassengerChance[3];
+
+		// The animation this object hangs from while it parachutes, or NULL for [AudioVisual] Parachute (Ares Parachute.Anim).
+		AnimTypeClass const * ParachuteAnim;
+
+		// The sound played to the owner when a structure of this type is placed, and whether the type sets it; VOC_NONE with the flag set is silent (Ares SlamSound).
+		VocType SlamSound;
+		bool IsSlamSoundSet;
+
+		// The radius in cells of the ring drawn around this object while it is selected, or 0 for none (Ares RadialIndicatorRadius).
+		double RadialIndicatorRadius;
+
+		// The vehicle type this object is drawn as while it is on water, or NULL (Ares WaterImage).
+		UnitTypeClass const * WaterImage;
+
+		// Whether a cloning vat copies this soldier (Ares Cloneable).
+		bool IsCloneable;
+
+		// The structures that each release a free copy of this object when a factory releases it; when set, cloning vats and
+		// CloningFacility structures do not copy it (Ares ClonedAt).
+		TypeList<BuildingTypeClass const *> ClonedAt;
+
+		// The countries whose factories may, and may not, build this type; empty for any (Ares FactoryOwners, FactoryOwners.Forbidden).
+		std::vector<std::string> FactoryOwners;
+		std::vector<std::string> FactoryOwnersForbidden;
+
+		// The cursors shown for this type, as names of stock cursors or [MouseCursors] entries, or empty for the stock cursor (Ares Cursor.Move, Cursor.NoMove, Cursor.Deploy, Cursor.NoDeploy, Cursor.Enter, Cursor.NoEnter).
+		std::string CursorMove;
+		std::string CursorNoMove;
+		std::string CursorDeploy;
+		std::string CursorNoDeploy;
+		std::string CursorEnter;
+		std::string CursorNoEnter;
+
+		// The sounds played as this object cloaks and decloaks, each with whether the type sets it; VOC_NONE with the flag set is silent (Ares CloakSound, DecloakSound).
+		VocType CloakSound;
+		VocType DecloakSound;
+		bool IsCloakSoundSet;
+		bool IsDecloakSoundSet;
+
+		// How many stages this object passes through as it cloaks and decloaks, or 0 for [General] CloakingStages (Ares Cloakable.Stages).
+		int CloakStages;
+
+		// Whether an object on the guard mission picks targets on its own, and whether a cloakable one does (Ares CanPassiveAquire.Guard, CanPassiveAquire.Cloak).
+		bool IsCanPassiveAquireGuard;
+		bool IsCanPassiveAquireCloak;
+
+		// Whether the player's orders cannot name this object's targets (Ares NoManualFire).
+		bool IsNoManualFire;
+
+		// Whether a gattling weapon that finishes its last stage starts again at the first (Ares Gattling.Cycle).
+		bool IsGattlingCycle;
+
+		// The EVA event announced when the owner's object of this type is promoted to veteran and to elite, or empty for EVA_UnitPromoted (Ares EVA.VeteranPromoted, EVA.ElitePromoted).
+		std::string EvaPromoted[2];
+
+		// The EVA event announced when an object of this type is lost, and whether the type names one; "none" is silent (Ares EVA.Lost).
+		std::string EvaLost;
+		bool IsEvaLostSet;
 
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;
@@ -592,6 +713,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A DrainWeapon can drain this object.
 		bool IsDrainable;
 
+		// Drain.Local and Drain.Amount (Ares): when the drainer or the drained power plant sets Drain.Local, the drain takes only
+		// that plant's power, limited by each one's Drain.Amount (above zero a most, below zero a least), from the owner's total.
+		bool IsDrainLocal;
+		int DrainAmount;
+
 		// The slaves an Enslaves object keeps, the frames to replace a lost one and to rest one that has unloaded.
 		InfantryTypeClass * Enslaves;
 		int SlavesNumber;
@@ -623,6 +749,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType ActivateSound;
 		VocType DeactivateSound;
 		UnitTypeClass * PowersUnit;
+
+		// A vehicle with PoweredBy (Ares) shuts down while its owner has no working structure of these types.
+		TypeList<BuildingTypeClass const *> PoweredBy;
+
+		// An object with an Operator (Ares) shuts down until a passenger of one of these types is aboard, or any
+		// passenger when IsOperatorAny (Operator=_ANY_) is set.
+		TypeList<TechnoTypeClass const *> Operators;
+		bool IsOperatorAny;
+		bool Needs_Operator(void) const {return(IsOperatorAny || Operators.Count() > 0);}
 
 		// Played as the object starts to crash, the voice only for the player's own.
 		VocType CrashingSound;
@@ -682,6 +817,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A charge turret (such as the Prism Tank) shows the turret matching how much of its rearm is left.
 		bool IsChargeTurret;
+
+		// PassengerTurret (Ares): a multi-turret object shows the turret numbered by its passenger count, the last one when it
+		// carries more passengers than it has turrets. Its weapon does not change.
+		bool IsPassengerTurret;
 		int WeaponStages;
 		int WeaponStage[WEAPON_STAGE_COUNT];
 		int EliteStage[WEAPON_STAGE_COUNT];
@@ -748,6 +887,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		int SightRange;
 
+		// How far, in cells, this object designates or inhibits a superweapon target (Ares DesignatorRange and InhibitorRange); -1 uses SightRange.
+		int DesignatorRange;
+		int InhibitorRange;
+
 		/*
 		**	This is the credit cost to produce this object (presuming production is
 		**	allowed).
@@ -773,6 +916,18 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	of this type can be produced.
 		*/
 		TypeList<int> Prerequisite;
+
+		// Ares Prerequisite.List1 to Prerequisite.ListN: further lists, any one of which may be met in place of Prerequisite.
+		std::vector<TypeList<int>> PrerequisiteLists;
+
+		// Ares Prerequisite.Negative: owning any of these buildings or groups makes the type unbuildable.
+		TypeList<int> PrerequisiteNegative;
+
+		// Ares Prerequisite.RequiredTheaters: the theater names the type may be built in; empty allows every theater.
+		std::vector<std::string> PrerequisiteTheaters;
+
+		// The kinds of stolen technology a house must have stolen before it can build this type, as indexes from 0 to 31 (Ares Prerequisite.StolenTechs).
+		std::vector<int> PrerequisiteStolenTechs;
 
 		// A house that owns one of these buildings skips the Prerequisite, tech level, stolen tech
 		// and house checks. The Unbuildable flag and the build limit still apply.
@@ -816,6 +971,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		int ReloadIncrement;
 		int PipWrap;
 
+		// ReloadAmount and EmptyReloadAmount (Ares): the shots a ground unit regains each time its reload timer runs out,
+		// and the number it regains when it holds none. A type that sets no EmptyReloadAmount uses ReloadAmount for both,
+		// and an empty unit whose amount is 0 or less never reloads.
+		int ReloadAmount;
+		int EmptyReloadAmountSetting;
+		int Empty_Reload_Amount(void) const { return(EmptyReloadAmountSetting == INT_MIN ? ReloadAmount : EmptyReloadAmountSetting); }
+
 		/*
 		**	This is a bit field representing the houses that are allowed to
 		**	own (by normal means) this particular object type. This value is
@@ -847,6 +1009,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The cameo drawn for a trainable type once the local player has spied on the barracks or war factory (AltCameo in the art).
 		const void * AltCameoData;
 
+		// The PCX picture drawn in place of the alternate cameo (Ares AltCameoPCX in the art).
+		std::string AltCameoPCX;
+
 		/*
 		 * Where this type's cameo sorts among the others of its kind on the sidebar, lowest
 		 * first.
@@ -867,6 +1032,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	game tick.
 		*/
 		int ROT;
+
+		// TurretROT (Ares): the turret's own rate of turn; -1 when the type sets none, and the turret then turns at ROT.
+		int TurretROT;
+		int Turret_ROT(void) const { return(TurretROT < 0 ? ROT : TurretROT); }
 
 		/*
 		**	This is the distance along the centerline heading in the direction the body
@@ -958,9 +1127,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		WeaponDataStruct Weapons[WEAPON_SLOT_COUNT];
 		WeaponDataStruct EliteWeapons[WEAPON_SLOT_COUNT];
 
-		// The passenger seats of an open-topped transport, AlternateFLH0 to AlternateFLH4. Weapon index
-		// -1 to -5 reads seat 1 to 5 in TechnoClass::Weapon_FLH.
-		TPoint3D<int> AlternativeFLH[5];
+		// The passenger seats of an open-topped transport, AlternateFLH0 to AlternateFLH4, and one more for each seat
+		// beyond five that Passengers allows (Ares). Weapon index -1 reads seat 1, the first entry, in TechnoClass::Weapon_FLH.
+		std::vector<TPoint3D<int>> AlternativeFLH;
 
 		/*
 		 * If this object cannot be harmed by another object of its own type and house, then
@@ -1157,6 +1326,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsTurretEquipped;
 
+		// Read from the rules key HasTurretTooltips; nothing in this engine uses it yet.
+		bool IsHasTurretTooltips;
+
 		/*
 		 * How one part of a turret recoils when the object fires: the distance it slides back in
 		 * leptons, and the frames it spends compressing, holding and recovering. A part with no
@@ -1206,6 +1378,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsCloakable;
 
+		// Cloakable.Allowed (Ares): with no, objects of this type never cloak, by themselves, a Cloak Generator or a crate.
+		bool IsCloakAllowed;
+
 		// NoShadow=yes gives a voxel object of this type no ground shadow.
 		bool IsNoShadow;
 
@@ -1225,6 +1400,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SelfHealingStep;
 		double SelfHealingRate;
 		double SelfHealingCap;
+
+		/*
+		 * Ares SelfHealing.Amount and SelfHealing.Max, then the Rookie, Veteran and Elite forms of each,
+		 * in that order. A value below zero is unset. A set generic value wins over the rank ones.
+		 * SelfHealing.CombatDelay is the number of frames after a damaging hit during which no self healing happens.
+		 */
+		static constexpr int SELF_HEAL_SLOTS = 4;
+		int SelfHealingAmount[SELF_HEAL_SLOTS] = {-1, -1, -1, -1};
+		double SelfHealingMax[SELF_HEAL_SLOTS] = {-1, -1, -1, -1};
+		int SelfHealingCombatDelay;
 
 		/*
 		 * These redirect a healing weapon away from the kind of object its owner would
@@ -1285,6 +1470,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * through an ion storm unhindered -- it exists only to reach something and die on it.
 		 */
 		bool IsHunterSeeker;
+
+		// A Hunter Seeker never picks an object of this type as its target (Ares HunterSeeker.Ignore).
+		bool IsHunterSeekerIgnored;
 
 		/*
 		**	Can this unit squash infantry?  If it can then if the player selects
@@ -1357,11 +1545,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		TypeList<AnimTypeClass const *> const & Explosion_Set(void) const;
 		virtual int Repair_Cost(void) const;
 		virtual int Repair_Step(void) const;
-		int Self_Heal_Step(void) const;
+		int Self_Heal_Step(int rank = 0) const;
 		double Self_Heal_Rate(void) const;
-		double Self_Heal_Cap(void) const;
+		double Self_Heal_Cap(int rank = 0) const;
 		virtual int Flight_Level(void) const;
 		virtual void const * Get_Cameo_Data(void) const override;
+		std::string const & Get_Cameo_PCX(void) const;
+		bool Is_Alt_Cameo_Shown(void) const;
 		virtual int Cost_Of(HouseClass * house = NULL) const override;
 		int Refund(HouseClass const * house, bool unscaled) const;
 		virtual int Time_To_Build(void) const override;
@@ -1377,6 +1567,62 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A weapon position outside the list is ignored.
 		void Map_Turret_Weapon(int turret, int weapon) { if (weapon >= 0 && weapon < WEAPON_SLOT_COUNT) TurretWeapon[weapon] = turret; }
+
+		// NoAmmoWeapon and NoAmmoAmount (Ares): a type with limited ammo fires only this weapon, 0 or 1, once its ammo is at or below the amount. -1 uses the weapons as usual.
+		int NoAmmoWeapon;
+		int NoAmmoAmount;
+
+		// InitialPayload.Types and InitialPayload.Nums (Ares): the types an object carries when it is created, with how many of each.
+		std::vector<std::string> InitialPayloadTypes;
+		std::vector<int> InitialPayloadNums;
+
+		// NoManualEnter and NoManualUnload (Ares): no enter cursor over this transport, and no deploy cursor on it.
+		bool IsNoManualEnter;
+		bool IsNoManualUnload;
+
+		// Passengers.Allowed, Passengers.Disallowed and Passengers.BySize (Ares): the type names a transport takes or refuses, and whether a passenger uses room by its Size.
+		std::vector<std::string> PassengersAllowed;
+		std::vector<std::string> PassengersDisallowed;
+		bool IsPassengersBySize;
+
+		// FallRate.Parachute, FallRate.NoParachute and their Max keys (Ares); INT_MIN leaves the engine default.
+		int FallRateParachute;
+		int FallRateNoParachute;
+		int FallRateParachuteMax;
+		int FallRateNoParachuteMax;
+
+		// CivilianEnemy (Ares): an object of this type is a target for passive acquisition even when its owner is a neutral house.
+		bool IsCivilianEnemy;
+
+		// OmniCrusher.Aggressive (Ares): an OmniCrusher=yes vehicle drives at its target to flatten it.
+		bool IsOmniCrusherAggressive;
+
+		// The Experience.* keys (Ares): who gains from a kill and how much.
+		bool IsExperienceFromPassengers;
+		bool IsExperiencePromotePassengers;
+		double ExperiencePassengerModifier;
+		bool IsExperienceFromAirstrike;
+		double ExperienceAirstrikeModifier;
+		double ExperienceMindControlSelfModifier;
+		double ExperienceMindControlVictimModifier;
+		double ExperienceSpawnOwnerModifier;
+		double ExperienceSpawnModifier;
+
+		// EnemyUIName (Ares): the name label an enemy sees on this object, or empty for the generic enemy text.
+		std::string EnemyUIName;
+		char const * Enemy_Full_Name(void) const;
+	private:
+		mutable std::string EnemyUINameText;
+	public:
+
+		// FakeOf (Ares): the type whose price stands for this type in the health and veterancy selection commands, so a decoy cannot be told apart by them. Empty for none.
+		std::string FakeOf;
+
+		// LowSelectionPriority (Phobos): a drag selection leaves this object out when it also catches one without the flag.
+		bool IsLowSelectionPriority;
+
+		// The art Palette: a palette file (without extension) the object is drawn with in place of its house colour scheme palette; empty for none.
+		std::string PaletteName;
 
 		/*
 		**	This is a pointer to the wake shape (as needed by the gunboat).

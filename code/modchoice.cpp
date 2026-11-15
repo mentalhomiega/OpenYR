@@ -15,6 +15,71 @@
 #include <climits>
 
 
+static std::string Trim(std::string const & text)
+{
+	std::string::size_type first = text.find_first_not_of(" \t");
+	if (first == std::string::npos) {
+		return(std::string());
+	}
+
+	std::string::size_type last = text.find_last_not_of(" \t");
+	return(text.substr(first, last - first + 1));
+}
+
+
+/// <summary>
+/// Splits a configured mod list into the mods it names, in the order written, with the
+/// whitespace around each name dropped and empty entries passed over. Names are separated by
+/// commas, since a semicolon opens a comment in the file the list is written in.
+/// </summary>
+std::vector<std::string> Parse_Mod_List(char const * list)
+{
+	std::vector<std::string> names;
+
+	if (list == nullptr) {
+		return(names);
+	}
+
+	std::string const text = list;
+	std::string::size_type start = 0;
+
+	for (;;) {
+		std::string::size_type end = text.find(',', start);
+		if (end == std::string::npos) {
+			end = text.length();
+		}
+
+		std::string const name = Trim(text.substr(start, end - start));
+		if (!name.empty()) {
+			names.push_back(name);
+		}
+
+		if (end == text.length()) {
+			break;
+		}
+		start = end + 1;
+	}
+
+	return(names);
+}
+
+
+std::string Mod_List_Setting(std::string const & list)
+{
+	return(list.empty() ? std::string(",") : list);
+}
+
+
+static std::string Lower(std::string const & text)
+{
+	std::string lower = text;
+	for (char & ch : lower) {
+		ch = (char)std::tolower((unsigned char)ch);
+	}
+	return(lower);
+}
+
+
 static std::string Folder_Key(std::string const & folder)
 {
 	std::string key = Lower(folder);

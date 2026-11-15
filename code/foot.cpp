@@ -101,6 +101,7 @@
 #include "building.h"
 #include "builtype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "convert.h"
 #include "ddist.h"
@@ -146,6 +147,8 @@
 #include "bench.hh"
 #include "color.hh"
 #include "tube.hh"
+#include "autotest.h"
+#include "dbgprint.h"
 
 #include <algorithm>
 #include <cstring>
@@ -1153,10 +1156,14 @@ int FootClass::Do_MISSION_GUARD(void)
 int FootClass::Do_MISSION_HUNT(void)
 {
 	// The hunt scan restarts the targeting timer, as FootClass::Mission_Hunt (0x4D5350) does through TargetAndEstimateDamage.
-	// A StupidHunt=yes type skips the scan. In a campaign game (GAME_NORMAL), a computer player's object walks to its house's starting cell and any other idles (FootClass::Mission_Hunt, 0x4D5350).
-	if (TClass->IsStupidHunt) {
-		Cell const home = House->Starting_Cell_Or_Default();
-		if (!House->Is_Human_Player() && Session.Type == GAME_NORMAL && home != CELL_NONE) {
+	// A StupidHunt=yes type skips the scan. When it skips the scan or the scan finds nothing, a computer player's object in a
+	// campaign game (GAME_NORMAL) walks to the human player's starting cell and any other idles (FootClass::Mission_Hunt,
+	// 0x4D54EE; the cell is read from HouseClass::CurrentPlayer at 0x4D5514).
+	if (TClass->IsStupidHunt || !Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
+		Cell const home = PlayerPtr != NULL ? PlayerPtr->Starting_Cell_Or_Default() : CELL_NONE;
+		if (House->Is_Human_Player() || Session.Type != GAME_NORMAL) {
+			Random_Animate();
+		} else if (home != CELL_NONE) {
 			if (SlaveManager) {
 				SlaveManager->All_Guard();
 			}
@@ -1165,11 +1172,7 @@ int FootClass::Do_MISSION_HUNT(void)
 			if (Ready_To_Commence()) {
 				Commence();
 			}
-		} else {
-			Random_Animate();
 		}
-	} else if (!Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
-		Random_Animate();
 	} else {
 		InfantryClass * infantry = RTTI == RTTI_INFANTRY ? (InfantryClass *)this : NULL;
 		if (infantry != NULL && infantry->Class->IsEngineer && !infantry->Class->IsBomber && !infantry->Has_Ability(ABILITY_C4)) {
@@ -1187,7 +1190,7 @@ int FootClass::Do_MISSION_HUNT(void)
 				if (Ready_To_Commence()) {
 					Commence();
 				}
-			} else if (infantry != NULL && infantry->Class->IsVehicleThief) {
+			} else if (infantry != NULL && infantry->Is_Vehicle_Captor(TarCom)) {
 				Assign_Destination(TarCom);
 				Assign_Mission(MISSION_CAPTURE);
 				if (Ready_To_Commence()) {
@@ -1219,6 +1222,53 @@ bool FootClass::Is_Chrono_Warping(void) const
 
 
 /// <summary>
+/// Gives the object a teleport locomotor that carries its own locomotor until a chrono warp or arrival has run
+/// out (gamemd 0x65F03C and the chronosphere start). An object that already has a teleport locomotor keeps it.
+/// </summary>
+void FootClass::Carry_Locomotor_In_Teleport(void)
+{
+	if (Locomotor_As<TeleportLocomotionClass>(Locomotion.get()) != NULL) {
+		return;
+	}
+	std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
+	carried->Mark_All_Occupation_Bits(0);
+	carried->Stop_Movement_Animation();
+	carried->Stop_Moving();
+	Locomotion = Create_Locomotor(ClassID_TeleportLocomotion);
+	Locomotion->Link_To_Object(this);
+	Locomotion->Unlimbo();
+	IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+	piggy->Begin_Piggyback(carried);
+}
+
+
+/// <summary>
+/// Prepares a chrono reinforcement that has just been placed at landing (trigger action 107, gamemd 0x65F017):
+/// the object is given a teleport locomotor that carries its own, told to land where it stands, and flagged as
+/// warping in with the hold ChronoReinfDelay. Start_Chrono_Arrival then sets the arrival going.
+/// </summary>
+/// <param name="landing">The coordinate the object was placed at.</param>
+void FootClass::Begin_Chrono_Arrival(Coord landing)
+{
+	Carry_Locomotor_In_Teleport();
+	static_cast<TeleportLocomotionClass *>(Locomotion.get())->Begin_Chrono_Arrival(landing);
+	ChronoArrivalHold = Rule->ChronoReinfDelay;
+}
+
+
+/// <summary>
+/// Sets a prepared chrono reinforcement going (gamemd 0x65F27B): it is taken off the map and its teleport
+/// locomotor starts at the landing stages, the cell clearing, on its next step. The object lands again
+/// where it was placed and the hold runs from there.
+/// </summary>
+void FootClass::Start_Chrono_Arrival(void)
+{
+	Mark(MARK_UP);
+	static_cast<TeleportLocomotionClass *>(Locomotion.get())->Start_Chrono_Arrival();
+}
+
+
+/// <summary>
 /// Starts a chronosphere warp that lands the object at dest. The object stays on its cell for 60 frames
 /// (gamemd 0x7197E4), then its teleport locomotor clears the landing cell and sets it down at dest. A
 /// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
@@ -1231,17 +1281,7 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 	Stop_Driver();
 	Assign_Destination(NULL);
 
-	if (Locomotor_As<TeleportLocomotionClass>(Locomotion.get()) == NULL) {
-		std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
-		carried->Mark_All_Occupation_Bits(0);
-		carried->Stop_Movement_Animation();
-		carried->Stop_Moving();
-		Locomotion = Create_Locomotor(ClassID_TeleportLocomotion);
-		Locomotion->Link_To_Object(this);
-		Locomotion->Unlimbo();
-		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
-		piggy->Begin_Piggyback(carried);
-	}
+	Carry_Locomotor_In_Teleport();
 	if (IonStormClass::Is_Ion_Storm_Active() && Locomotion->Is_Ion_Sensitive()) {
 		Locomotion->Power_Off();
 	} else {
@@ -1249,6 +1289,47 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 	}
 	TeleportLocomotionClass * teleport = static_cast<TeleportLocomotionClass *>(Locomotion.get());
 	teleport->Begin_Chrono_Warp(dest, TeleportLocomotionClass::CHRONO_WAIT_FRAMES);
+}
+
+
+/// <summary>
+/// Turns this object into another type of its own kind where it stands. It keeps its owner, rank, mission, team,
+/// selection and place, and the same share of its health; ammo above the new type's maximum is cut. A type with
+/// another locomotor is refused, because the locomotor of an object is built with it.
+/// </summary>
+/// <param name="type">The new type, which the caller has checked is of this object's kind.</param>
+/// <param name="set_class">Stores the new type in the object's own type member.</param>
+/// <returns>bool; Did the object change type?</returns>
+bool FootClass::Convert_Class(TechnoTypeClass const * type, void (* set_class)(FootClass &, TechnoTypeClass const *))
+{
+	TechnoTypeClass const * old_type = Techno_Type_Class();
+	if (type == NULL || type == old_type) {
+		return(false);
+	}
+	if (std::memcmp(&type->Locomotor, &old_type->Locomotor, sizeof(type->Locomotor)) != 0) {
+		DebugString("Convert: %s cannot become %s, which has another locomotor\n", old_type->Name(), type->Name());
+		return(false);
+	}
+
+	DebugString("Convert: %s becomes %s\n", old_type->Name(), type->Name());
+	if (House != NULL) {
+		House->Tracking_Remove(this);
+	}
+	set_class(*this, type);
+	if (House != NULL) {
+		House->Tracking_Add(this);
+	}
+	Strength = ObjectKeyRules::Converted_Strength(Strength, old_type->MaxStrength, type->MaxStrength);
+	EstimatedHealth = Strength;
+	if (type->MaxAmmo >= 0 && Ammo > type->MaxAmmo) {
+		Ammo = type->MaxAmmo;
+	}
+	IsCloakable = type->IsCloakable || IsCloakable;
+	Mark(MARK_CHANGE);
+	if (IsSelected && House != NULL && House->Is_Player_Control()) {
+		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
+	}
+	return(true);
 }
 
 
@@ -1771,7 +1852,7 @@ void FootClass::Approach_Target(void)
 			*/
 			if (found) {
 				Assign_Destination(&Map[trycell]);
-			} else if (TClass->IsHunterSeeker || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief)) {
+			} else if (TClass->IsHunterSeeker || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Is_Vehicle_Captor(TarCom))) {
 				Assign_Destination(TarCom);
 			} else {
 				trycell = Map.Nearby_Location(trycell,
@@ -3404,9 +3485,20 @@ int FootClass::Rescue_Mission(AbstractClass * tarcom)
  *=============================================================================================*/
 void FootClass::Death_Announcement(TechnoClass const * ) const
 {
+	// A UnitLost.Suppress warhead kills without the announcement (Ares).
+	if (DamageWarhead != NULL && DamageWarhead->IsUnitLostSuppress) {
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST unitlost %s suppressed\n", TClass->Name());
+		}
+		return;
+	}
 	if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {
 		if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {
-			Speak(VOX_UNIT_LOST);
+			if (!TClass->IsEvaLostSet) {
+				Speak(VOX_UNIT_LOST);
+			} else if (!TClass->IsDontScore && !ObjectKeyRules::Names_Nothing(TClass->EvaLost) && !TClass->EvaLost.empty()) {
+				Speak_Eva(TClass->EvaLost.c_str());
+			}
 		}
 	}
 }
@@ -3690,7 +3782,7 @@ bool FootClass::Can_Demolish(void) const
 		case RTTI_AIRCRAFT:
 			if (In_Radio_Contact() &&
 				Contact_With_Whom()->RTTI == RTTI_BUILDING &&
-				((BuildingClass *)Contact_With_Whom())->Class->IsCanUnitRepair &&
+				((BuildingClass *)Contact_With_Whom())->Class->IsUnitSell &&
 				Distance(Contact_With_Whom()->Center_Coord()) < CELL_LEPTON / 2) {
 
 				return(true);
@@ -4229,6 +4321,10 @@ void FootClass::AI(void)
 				if (!step) {
 					step = deploy_to_land && HeightAGL >= 1 && !busy;
 				}
+			}
+			// An AirRate object off the ground steps on its air rate alone, whether it moves or hovers.
+			if (TClass->AirRate > 0 && (HeightAGL > 0 || In_Air())) {
+				step = (Frame % TClass->AirRate) == 0 && !busy;
 			}
 			if (step) {
 				TotalFramesWalked++;
@@ -5501,6 +5597,9 @@ ActionType FootClass::Transport_Enter_Action(ObjectClass const * object, ActionT
 	TechnoTypeClass const * tclass = object->TClass;
 	if (tclass == NULL || tclass->Max_Passengers() <= 0) return(action);
 
+	// A NoManualEnter transport shows no enter cursor (Ares).
+	if (tclass->IsNoManualEnter) return(action);
+
 	// A moving transport, or one on a team whose script forbids loading, takes nobody.
 	if (object->Is_Foot()) {
 		FootClass const * foot = (FootClass const *)object;
@@ -5703,6 +5802,9 @@ void FootClass::Delete_Me(void)
 /// </summary>
 void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shield)
 {
+	if (Is_Immune_To_Iron_Curtain(force_shield)) {
+		return;
+	}
 	if (TClass->IsOrganic) {
 		int damage = TClass->MaxStrength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);

@@ -1,0 +1,14 @@
+; A Magnetron (TELE) whose beam the overlay wave-custom-colour-gpu.ini gives a custom colour force-fires at bare ground five cells away, with the GPU check on.
+; Expected: the beam is recorded for the GPU map pass like a stock one, and every GPU_DIFF line of the frames with the beam reports 0 differing pixels: the shader
+; tints the beam as WaveClass::Custom_Tint does. With GpuRender on, the GPU_RENDER lines count no fallback while the beam shows. Before this a wave with a custom
+; colour was drawn by the software alone, and every frame it showed fell back to software drawing.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/wave-custom-colour-gpu.txt -Seconds 120 -Country 8 -Settings "[Video]`nGpuRender=no" -Filter "AUTOTEST wave|GPU_DIFF|Exception"
+10 rules wave-custom-colour-gpu.ini
+30 command CenterBase
+35 reveal
+40 own TELE 50 40
+45 view 52 40
+90 gpucheck 1
+100 forceattack TELE 55 41
+160 gpucheck 0
+200 quit

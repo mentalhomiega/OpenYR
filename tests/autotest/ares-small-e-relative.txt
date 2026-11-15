@@ -1,0 +1,17 @@
+; RelativeDamage with the ares-small-e-keys mod. RelWH takes 50 percent of a vehicle's full strength and 50 percent of an infantryman's
+; current health, and has no percentage for structures. Computer-house objects are hit by RelWH with a shot damage of 1:
+;   MTNK (300 strength): 150 after one hit.
+;   E1 (125 strength): 63 after one hit (half of 125, rounded down), then 32 after a second hit (half of 63, rounded down).
+;   GAPOWR (750 strength): unchanged, 750.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-relative.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   (hit|where)|Exception"
+30 command CenterBase
+35 reveal
+40 spawn MTNK 62 30
+41 spawn E1 62 36
+42 spawn GAPOWR 68 42
+60 hit MTNK:RelWH 1
+61 hit E1:RelWH 1
+62 hit GAPOWR:RelWH 1
+63 where E1
+64 hit E1:RelWH 1
+100 quit

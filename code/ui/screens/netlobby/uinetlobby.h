@@ -68,6 +68,8 @@ struct UINetOption
 	std::string Label;
 	int Value = 0;
 	std::string Color;
+	/// The tip shown while the pointer rests on the box that holds the option; empty for none.
+	std::string Tip;
 };
 
 
@@ -126,6 +128,8 @@ struct UINetLobbyState
 
 	std::vector<UINetOption> Sides;
 	int Side = 0;
+	/// The tip of the box that holds the chosen country.
+	std::string SideTip;
 	std::vector<UINetOption> Colors;
 	int Color = 0;
 	/// Whether the lobby lets each player choose a team and a start; the LAN lobby does not.

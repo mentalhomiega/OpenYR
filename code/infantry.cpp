@@ -298,6 +298,11 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->IsBarracksInfiltrated && Class != NULL && Class->IsTrainable) {
 		Veterancy.Set_Veteran(true);
 	}
+
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
+	}
 }
 
 
@@ -517,10 +522,62 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				infdeath = 5;
 			}
 
-			if (Class->DeathAnims.Count() > 0) {
+			/*
+			**	A mutation turns the soldier into the infantryman of the animation's MakeInfantry for the
+			**	killer's house. It needs ground the soldier can walk on (or a bridge), a free spot in the
+			**	cell and no building there. The animation takes the attacker's palette and house.
+			*/
+			auto const mutate = [&](AnimTypeClass const * mutate_type) -> bool {
+				Clear_Occupy_Bit(PositionCoord);
+				CellClass & mutate_cell = Map[(Coord const &)PositionCoord];
+				bool const building_here = mutate_cell.Cell_Building() != NULL;
+				bool mutated = false;
+				if (Ground[mutate_cell.Land_Type()].Cost[SPEED_FOOT] != 0 || IsOnBridge) {
+					mutated = mutate_cell.Closest_Free_Spot(PositionCoord) != COORD_NONE && !building_here;
+				}
+				if (mutated) {
+					Set_Occupy_Bit(PositionCoord);
+					if (mutate_type != NULL) {
+						AnimClass * mutate_anim = new AnimClass(mutate_type, PositionCoord);
+						HouseClass const * owner = source != NULL ? source->House : sourcehouse;
+						if (mutate_anim != NULL) {
+							// MakeInfantryOwner can give the soldier to another house than the killer's (Ares).
+							HousesType const chosen = AnimClass::Make_Infantry_Owner(mutate_type, owner, owner, House);
+							if (chosen != HOUSE_NONE && chosen < Houses.Count()) {
+								owner = Houses[chosen];
+							}
+							if (owner != NULL) {
+								mutate_anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(owner)]->Converter;
+								mutate_anim->OwnerHouse = (HousesType)owner->HeapID;
+							}
+							mutate_anim->Mark_Infantry_Spot(true);
+						}
+					}
+				}
+				return(mutated);
+			};
+
+			// A warhead's InfDeathAnim has a soldier that is not NotHuman=yes die with that animation, in place of InfDeath (Ares).
+			if (warhead != NULL && warhead->InfDeathAnim != NULL && !Class->IsNotHuman) {
+				if (warhead->InfDeathAnim->MakeInfantry != -1) {
+					if (mutate(warhead->InfDeathAnim)) {
+						delthis = true;
+					} else {
+						Do_Action(DO_EXPLOSION_DEATH, true);
+					}
+				} else {
+					new AnimClass(warhead->InfDeathAnim, PositionCoord);
+					delthis = true;
+				}
+			} else if (Class->DeathAnims.Count() > 0) {
 				int const index = (infdeath >= 0 && infdeath < Class->DeathAnims.Count()) ? infdeath : 0;
 				if (Class->DeathAnims[index] != NULL) {
-					new AnimClass(Class->DeathAnims[index], PositionCoord);
+					AnimClass * death = new AnimClass(Class->DeathAnims[index], PositionCoord);
+					// gamemd starts a DeathAnims animation with no owner, so its soldier goes to the civilian house unless MakeInfantryOwner names another (Ares).
+					if (death != NULL && Class->DeathAnims[index]->MakeInfantry != -1 && Class->DeathAnims[index]->MakeInfantryOwner != AnimTypeClass::MAKE_OWNER_INVOKER) {
+						HouseClass const * killer_house = source != NULL ? source->House : sourcehouse;
+						death->OwnerHouse = AnimClass::Make_Infantry_Owner(Class->DeathAnims[index], House, killer_house, House);
+					}
 				}
 				delthis = true;
 			} else {
@@ -555,37 +612,14 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						Do_Action(DO_EXPLOSION_DEATH, true);
 						break;
 
-					case 9: {
-						// Mutation needs ground the soldier can walk on (or a bridge), a free spot in the
-						// cell and no building there; otherwise he dies with the Die2 sequence. The
-						// InfantryMutate animation takes the attacker's palette and house, and its
-						// MakeInfantry entry turns into a new infantryman for that house.
-						Clear_Occupy_Bit(PositionCoord);
-						CellClass & mutate_cell = Map[(Coord const &)PositionCoord];
-						bool const building_here = mutate_cell.Cell_Building() != NULL;
-						bool mutated = false;
-						if (Ground[mutate_cell.Land_Type()].Cost[SPEED_FOOT] != 0 || IsOnBridge) {
-							mutated = mutate_cell.Closest_Free_Spot(PositionCoord) != COORD_NONE && !building_here;
-						}
-						if (mutated) {
-							Set_Occupy_Bit(PositionCoord);
-							if (Rule->InfantryMutate != NULL) {
-								AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
-								HouseClass const * owner = source != NULL ? source->House : sourcehouse;
-								if (mutate != NULL) {
-									if (owner != NULL) {
-										mutate->AlternativeDrawer = ColorSchemes[House_Display_Scheme(owner)]->Converter;
-										mutate->OwnerHouse = (HousesType)owner->HeapID;
-									}
-									mutate->Mark_Infantry_Spot(true);
-								}
-							}
-						} else {
+					case 9:
+						// Otherwise he dies with the Die2 sequence. The InfantryMutate animation's MakeInfantry
+						// entry turns into a new infantryman for the killer's house.
+						if (!mutate(Rule->InfantryMutate)) {
 							Do_Action(DO_EXPLOSION_DEATH, true);
 							infdeath = 2;
 						}
 						break;
-					}
 
 					case 3:
 						deathanim = Rule->InfantryExplode;
@@ -650,7 +684,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			Assign_Mission(MISSION_HUNT);
 		}
 
-		if (source != NULL) {
+		if (source != NULL && !(warhead != NULL && warhead->IsPreventScatter)) {
 			Scatter(source_coord);
 		}
 
@@ -1019,7 +1053,9 @@ bool InfantryClass::Engineer_Arrival(TechnoClass * tech)
 			Scatter(tech->Center_Coord(), true, true);
 			return(false);
 		}
-		tech->Renovate();
+		if (tech->RTTI != RTTI_BUILDING || ((BuildingClass *)tech)->Class->IsEngineerRepairable || ((BuildingClass *)tech)->Class->IsMobileWar) {
+			tech->Renovate();
+		}
 	} else {
 		bool iscapturable = false;
 		if (tech->RTTI == RTTI_BUILDING) {
@@ -1092,12 +1128,23 @@ bool InfantryClass::Capture_Arrival(CellClass * cellptr)
 			TechnoClass * tech = (TechnoClass *)NavCom;
 			if (tech != NULL) {
 				if (PositionCell == tech->PositionCell) {
+					if (Is_Theft_Refused(tech)) {
+						Assign_Destination(NULL);
+						Enter_Idle_Mode();
+						return(true);
+					}
 					if (tech->Tag) {
 						tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 					}
 					tech->Detach_All(false);
+					if (Class->VehicleThiefEnterSound != VOC_NONE && Is_Vehicle_Captor(tech)) {
+						Sound_Effect(Class->VehicleThiefEnterSound, tech->PositionCoord);
+					}
+					Break_Mind_Control_For_Theft(tech);
 					tech->Captured(House);
-					tech->EnteredByInfType = Class->HeapID;
+					if (!Class->IsVehicleThief || !Class->IsVehicleThiefOneTime) {
+						tech->EnteredByInfType = Class->HeapID;
+					}
 					tech->Scatter_Incoming_Infantry();
 					if (Tag && Tag->Is_To_Inherit()) {
 						tech->Attach_Tag(Tag);
@@ -1749,6 +1796,9 @@ void InfantryClass::AI(void)
 		return;
 	}
 
+	// Soldiers regain ammunition as vehicles do, which stock gamemd never lets them (Ares bug fix).
+	Reload_Ammunition();
+
 	if (Mission == MISSION_GUARD) {
 		BuildingClass *building = Map[(Coord const &)PositionCoord].Cell_Building();
 		if (building != NULL) {
@@ -1977,7 +2027,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				return(MOVE_NO);
 			}
 
-			if (Class->IsVehicleThief && Is_Strange_For_Thief(obj) && NavCom == obj && !obj->TClass->IsTrain) {
+			if (Is_Vehicle_Captor(obj) && Is_Strange_For_Thief(obj) && NavCom == obj && !obj->TClass->IsTrain) {
 				return(MOVE_OK);
 			}
 
@@ -2141,7 +2191,7 @@ std::optional<MoveType> InfantryClass::Mission_Destination_Verdict(ObjectClass *
 std::optional<MoveType> InfantryClass::Special_Building_Verdict(ObjectClass * obj, MoveType & retval, bool & skip) const
 {
 	BuildingClass * building = (BuildingClass *)obj;
-	if (building->Class->IsInvisibleInGame) {
+	if (building->Class->IsInvisibleInGame || building->Class->IsPassable) {
 		skip = true;
 		return(std::nullopt);
 	}
@@ -2502,8 +2552,7 @@ bool InfantryClass::Random_Animate(void)
 
 		int idle = Random_Pick(0, 10);
 		// gamemd's UpdateIdleAction (0x51CDB0) draws again for a COW, and a low roll there makes the idle the wander case.
-		bool const is_cow = stricmp(Class->Name(), "COW") == 0;
-		if (is_cow && Random_Pick(0, 10) < 5) {
+		if (Class->IsCow && Random_Pick(0, 10) < 5) {
 			idle = 8;
 		}
 		switch (idle) {
@@ -2536,7 +2585,7 @@ bool InfantryClass::Random_Animate(void)
 			case 8:
 				PrimaryFacing.Set(Facing_Dir(Random_Pick(FACING_N, FACING_NW)));
 				// A COW scatters even under human control, as gamemd's case 8 does.
-				if (is_cow || (!House->Is_Human_Player() && Class->IsFraidyCat)) {
+				if (Class->IsCow || (!House->Is_Human_Player() && Class->IsFraidyCat)) {
 					Scatter(COORD_NONE, true);
 				}
 				break;
@@ -2751,7 +2800,7 @@ int InfantryClass::Do_MISSION_UNLOAD(void)
 
 		// An AreaFire deploy weapon aims at the soldier's own cell. The Desolator's does not (InfantryClass::Mission_Unload, 0x51F76D).
 		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon;
-		if (weapon != NULL && weapon->IsAreaFire && stricmp(Class->Name(), "DESO") != 0) {
+		if (weapon != NULL && weapon->IsAreaFire && !Class->IsDesolator) {
 			Assign_Target(&Map[Get_Cell()]);
 		}
 		if (Class->UndeployDelay >= 0) {
@@ -3154,6 +3203,9 @@ BulletClass * InfantryClass::Fire_At(AbstractClass * target, int which)
 	IsFiring = false;
 
 	BulletClass * bullet = BASECLASS::Fire_At(target, which);
+	if (bullet != NULL && TClass->MaxAmmo > 0 && Ammo < TClass->MaxAmmo && !TClass->IsManualReload && Rounds_Per_Shot(Get_Class_Weapon_Data(which)->Weapon) != 0) {
+		Start_Reloading();
+	}
 	if (bullet != NULL && !IsInLimbo) {
 
 		/*
@@ -3265,7 +3317,7 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	}
 
 	if (Class->IsVehicleThief) {
-		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && ((TechnoClass *)NavCom)->TClass->IsVehicleThiefAllowed && Distance(NavCom) < 15 * CELL_LEPTON) {
+		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && ((TechnoClass *)NavCom)->TClass->IsVehicleThiefAllowed && !Is_Theft_Refused((TechnoClass *)NavCom) && Distance(NavCom) < 15 * CELL_LEPTON) {
 			return(NavCom);
 		}
 	}
@@ -3381,6 +3433,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 					return(Map.Can_Repair_Bridge(bldg->Center_Coord()) ? ACTION_GREPAIR : ACTION_NO_GREPAIR);
 				}
 				if (House->Is_Ally(bldg) || (Is_Passive_Occupiable_Building(bldg) && !bldg->IsBeingWarpedOut)) {
+					// An engineer cannot restore a structure with EngineerRepairable=no (Ares).
+					if (!bldg->Class->IsEngineerRepairable && !bldg->Class->IsMobileWar) {
+						return(ACTION_SELECT);
+					}
 					if (bldg->HealthRatio == Rule->ConditionGreen) {
 						return(ACTION_NO_GREPAIR);
 					}
@@ -3388,7 +3444,8 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 				} else {
 
 					if (bldg->Class->IsCaptureable) {
-						if (bldg->HealthRatio > Rule->EngineerCaptureLevel) {
+						bool const always = Rule->IsEngineerAlwaysCaptureTech && bldg->IsTechStructure;
+						if (!always && bldg->HealthRatio > Rule->EngineerCaptureLevel) {
 							return(ACTION_DAMAGE);
 						}
 						return(ACTION_CAPTURE);
@@ -3400,7 +3457,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	}
 
 	// Force-move outranks a healer's offer over a transport, and is the only way to board one.
-	if (Combat_Damage() < 0 && House->Is_Player_Control()) {
+	if (Combat_Damage() < 0 && House->Is_Player_Control() && (object != this || !Class->IsNoSelfGuardArea)) {
 		if (House->Is_Ally(object)) {
 			if (object == this) {
 				return(ACTION_GUARD_AREA);
@@ -3427,7 +3484,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	**	See if it's a thief attacking an enemy vehicle, let him CAPTURE it.
 	*/
 	if (House->Is_Player_Control() && Class->IsVehicleThief && object->RTTI != RTTI_BUILDING && object->Considered_Vehicle()) {
-		if (object->TClass->IsTrain || !object->TClass->IsVehicleThiefAllowed) {
+		if (object->TClass->IsTrain || !object->TClass->IsVehicleThiefAllowed || Is_Theft_Refused((TechnoClass const *)object)) {
 			return(ACTION_SELECT);
 		}
 		if (((UnitClass *)object)->House != House) {
@@ -3436,6 +3493,11 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 			}
 			return(ACTION_CAPTURE);
 		}
+	}
+
+	// A CanDrive soldier takes over a vehicle that its owner may be driven from (Ares).
+	if (House->Is_Player_Control() && !Class->IsVehicleThief && Can_Drive(object)) {
+		return(ACTION_CAPTURE);
 	}
 
 	if (object->RTTI == RTTI_BUILDING && House->Is_Ally(object) && House->Is_Player_Control()) {
@@ -3896,6 +3958,18 @@ ObjectTypeClass const * InfantryClass::Class_Of(void) const
 }
 
 
+/// <summary>
+/// Turns this soldier into another infantry type where it stands, as FootClass::Convert_Class describes.
+/// </summary>
+/// <returns>bool; Did the soldier change type?</returns>
+bool InfantryClass::Convert_To(InfantryTypeClass const * type)
+{
+	return(Convert_Class(type, [](FootClass & self, TechnoTypeClass const * to) {
+		static_cast<InfantryClass &>(self).Class = const_cast<InfantryTypeClass *>(static_cast<InfantryTypeClass const *>(to));
+	}));
+}
+
+
 /***********************************************************************************************
  * InfantryClass::Read_INI -- Reads units from scenario INI file.                              *
  *                                                                                             *
@@ -4225,6 +4299,56 @@ bool InfantryClass::Edge_Of_World_AI(void)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Tells whether this soldier can drive off the vehicle (Ares CanDrive): the soldier's type has CanDrive=yes, and the
+/// vehicle belongs to another house whose country can be driven from and is itself CanBeDriven. A train cannot be driven.
+/// </summary>
+/// <param name="object">The object under consideration.</param>
+bool InfantryClass::Can_Drive(AbstractClass const * object) const
+{
+	if (!Class->IsCanDrive || object == NULL || !object->Is_Techno() || object->RTTI == RTTI_BUILDING) {
+		return(false);
+	}
+	TechnoClass const * const vehicle = static_cast<TechnoClass const *>(object);
+	if (!vehicle->Considered_Vehicle()) {
+		return(false);
+	}
+	return(vehicle->House != House && vehicle->House->Class->Can_Be_Driven() && vehicle->TClass->IsCanBeDriven && !vehicle->TClass->IsTrain);
+}
+
+
+/// <summary>
+/// Tells whether this soldier takes the object over by entering it, as a vehicle thief or a CanDrive soldier does.
+/// </summary>
+/// <param name="object">The vehicle the soldier is sent to, or NULL.</param>
+bool InfantryClass::Is_Vehicle_Captor(AbstractClass const * object) const
+{
+	return(Class->IsVehicleThief || Can_Drive(object));
+}
+
+
+/// <summary>
+/// Tells whether this vehicle thief may not take the vehicle because a mind controller holds it and the thief's type
+/// has VehicleThief.BreakMindControl=no (Ares).
+/// </summary>
+bool InfantryClass::Is_Theft_Refused(TechnoClass const * vehicle) const
+{
+	return(Class->IsVehicleThief && !Class->IsVehicleThiefBreakMindControl && vehicle != NULL && vehicle->MindControlledBy != NULL);
+}
+
+
+/// <summary>
+/// Frees a vehicle this thief is about to take from the mind controller that holds it, so the controller keeps no link
+/// to it (Ares VehicleThief.BreakMindControl). The vehicle first returns to the house it was taken from.
+/// </summary>
+void InfantryClass::Break_Mind_Control_For_Theft(TechnoClass * vehicle) const
+{
+	if (Class->IsVehicleThief && vehicle->MindControlledBy != NULL && vehicle->MindControlledBy->CaptureManager) {
+		vehicle->MindControlledBy->CaptureManager->Free_Unit(vehicle);
+	}
 }
 
 
@@ -5297,8 +5421,11 @@ bool InfantryClass::Active_Click_With(ActionType action, Cell const & cell, bool
 /// The Iron Curtain kills infantry outright (InfantryClass::IronCurtain, 0x522600), and the house
 /// that raised the curtain gets the credit.
 /// </summary>
-void InfantryClass::Iron_Curtain(int, HouseClass * house, bool)
+void InfantryClass::Iron_Curtain(int, HouseClass * house, bool force_shield)
 {
+	if (Is_Immune_To_Iron_Curtain(force_shield)) {
+		return;
+	}
 	int damage = Class->MaxStrength;
 	Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false, house);
 }

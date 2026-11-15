@@ -16,6 +16,8 @@
 class Cell;
 class FootClass;
 class TechnoClass;
+class WarheadTypeClass;
+class AnimTypeClass;
 template<class T> class DynamicVectorClass;
 
 class EMPulseClass : public AbstractClass
@@ -36,6 +38,9 @@ class EMPulseClass : public AbstractClass
 		virtual void Serialize(SaveStreamClass & stream) override;
 
 		static void Update_All(void);
+
+		static bool Hit(TechnoClass * techno, WarheadTypeClass const * warhead, TechnoClass * source);
+		static bool Is_Sparkles(AnimTypeClass const * type);
 		static void Reset(void);
 
 		/*

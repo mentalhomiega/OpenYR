@@ -1,0 +1,26 @@
+; SpyEffect.RevealRadar=yes (Ares) on a Radar=yes structure: after a spy enters it, the owner's units reveal the map around them to the
+; spy's house as they move, until the structure is destroyed, sold or captured. The spy-reveal-radar-rules mod sets it on the Allied
+; radar (GAAIRC), which the computer house gets at 76,20. After the player's spy enters it, a computer Rhino tank (HTNK) placed at 80,30
+; attacks the player's Grizzly (MTNK) at 62,26 and drives west. The radar is then destroyed, and a computer IFV (FV) placed at 82,42
+; drives toward the Grizzly too.
+; Expected: at frame 200 cells 80,30, 76,28 and 72,27 on the Rhino's path read mapped 1; at frame 330 cells 82,42 and 78,40 at the
+; start of the IFV's path read mapped 0. Without the mod the frame 200 cells read mapped 0; without the kill step the frame 330 cells
+; read mapped 1 (observed 2026-11-15).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/spy-reveal-radar.txt -Mods src-agent30/tests/autotest/spy-reveal-radar-rules -Seconds 60 -Filter "AUTOTEST   (cell [0-9]|where|kill)|AUTOTEST (enemy|spyon)|Exception"
+30 command CenterBase
+40 enemy GAAIRC 76 20
+50 own MTNK 62 26
+60 spyon Player 76 20
+70 enemy HTNK 80 30
+80 enemystrike HTNK 62 26
+200 where HTNK
+201 cell 80 30
+202 cell 76 28
+203 cell 72 27
+210 kill GAAIRC
+220 enemy FV 82 42
+230 enemystrike FV 62 26
+330 where FV
+331 cell 82 42
+332 cell 78 40
+340 quit

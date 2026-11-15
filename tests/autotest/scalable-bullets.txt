@@ -2,7 +2,7 @@
 ; and gives its art section (120MM) Trailer=SMOKEY2 and SpawnDelay=5. Twelve computer Grizzlies (MTNK) fire at twelve player GIs (E1).
 ; Expected: bullets lines report spawndelay 5, firerspalette 1 and firerhouse 1 (the computer house). While 8 to 10 shells are in flight
 ; scaled is 6, which is 5 plus one for each three shells beyond five, rounded down; with 7 or fewer in flight it is 5.
-; Run (with -Mods tests/autotest/scalable-bullets-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/scalable-bullets.txt -Mods src-agent4/tests/autotest/scalable-bullets-rules -Seconds 120 -Filter "AUTOTEST   bullet|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/scalable-bullets.txt -Mods src-agent4/tests/autotest/scalable-bullets-rules -Seconds 120 -Filter "AUTOTEST   bullet|Exception"
 30 command CenterBase
 35 reveal
 40 spawn MTNK 60 36

@@ -1,0 +1,21 @@
+; CanDrive, CanBeDriven and VehicleThief.EnterSound with the ares-small-e-keys mod. The mod gives Conscripts (E1) and Flak Troopers (E2)
+; CanDrive=yes, E1 VehicleThief.EnterSound=ConscriptFear, and the Apocalypse Tank (APOC) CanBeDriven=no. A neutral Grizzly (MTNK) and a
+; neutral Apocalypse Tank stand 4 cells from a Conscript and a Flak Trooper. Expected:
+;   action E1 on 66,30 is Capture; action E2 on 66,34 is not (the APOC cannot be driven).
+;   After the clicks the Grizzly belongs to Americans; the log shows "Sound: ConscriptFear at 66,30" once.
+;   The Apocalypse Tank stays neutral. Without -Mods no action is Capture and nothing changes hands.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-candrive.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   (action|where)|Sound: ConscriptFear|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 62 30
+41 neutral MTNK 66 30
+42 neutral APOC 66 34
+43 own E2 62 34
+60 sounds 1
+62 action E1 66 30
+63 action E2 66 34
+64 clickon E1 66 30
+65 clickon E2 66 34
+400 where MTNK
+401 where APOC
+450 quit

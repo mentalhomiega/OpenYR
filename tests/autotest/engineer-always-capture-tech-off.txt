@@ -1,0 +1,13 @@
+; With EngineerAlwaysCaptureTech=no a tech structure follows EngineerCaptureLevel like any other. The overlay engineer-always-capture-tech-off.ini sets
+; EngineerCaptureLevel=.5 and turns the key off. A player engineer stands between a neutral oil derrick and an enemy power plant, both at full strength.
+; Expected: the action over both the derrick (60,44) and the power plant (66,40) is damage.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/engineer-always-capture-tech-off.txt -Seconds 60 -Country 0 -Filter "AUTOTEST   action|AUTOTEST action|Exception"
+10 rules engineer-always-capture-tech-off.ini
+30 command CenterBase
+35 reveal
+40 own ENGINEER 62 42
+41 neutral CAOILD 60 44
+42 enemy GAPOWR 66 40
+100 action ENGINEER 60 44
+101 action ENGINEER 66 40
+110 quit

@@ -125,10 +125,12 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "custompalette.h"
 #include "dbgprint.h"
 #include "draw.h"
 #include "drive.h"
@@ -147,6 +149,7 @@
 #include "infatype.h"
 #include "inline.h"
 #include "ion.h"
+#include "lstorm.h"
 #include "ipiggy.h"
 #include "isotile.h"
 #include "isotype.h"
@@ -165,6 +168,8 @@
 #include "side.h"
 #include "savestream.h"
 #include "scheme.h"
+#include "dialog.h"
+#include "flyingtext.h"
 #include "session.h"
 #include "shapeset.h"
 #include "smudtype.h"
@@ -172,6 +177,8 @@
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
+#include "swrules.h"
+#include "csf.h"
 #include "swizzle.h"
 #include "tactical.h"
 #include "tag.h"
@@ -183,6 +190,7 @@
 #include "unittype.h"
 #include "vox.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "color.hh"
@@ -238,6 +246,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsReadyToCommence(false),
 	IsRepairing(false),
 	IsWrenchVisible(false),
+	RadarRevealedTo(),
 	IsGoingToBlow(false),
 	IsC4Applied(false),
 	IsSurvivorless(false),
@@ -287,6 +296,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	HasExtraPowerDrain(false),
 	DamageFireAnims{},
 	PsiWarnAnim(NULL),
+	PadPassFrame(0),
 	IsRequiresDamageFires(false),
 	GapShroudedHouses(),
 	IsSensing(false),
@@ -298,9 +308,12 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
 	IsProduceCashStartupPaid(false),
+	ProduceCashShownPending(0),
+	ProduceCashShownFrame(-1000000),
 	IsShieldTinted(false),
 	IsCurtainDrawn(false),
 	HasEngineer(false),
+	IsTechStructure(house != NULL && house->Class != NULL && house->Class->IsMultiplayPassive),
 	SecretProduct(NULL)
 {
 	Create_ID();
@@ -330,6 +343,17 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval && Class->UndeploysInto != NULL) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->IsBuildingSpied && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
+	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranBuildings.Is_In_List(Class)) {
+		Veterancy.Set_Veteran(true);
+	}
+
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
+	}
 
 	if (Class != NULL) {
 		if (Class->IsCanUnitRepair) {
@@ -338,6 +362,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 		IsCloakable = Class->IsCloakable;
 		Set_Link_Count(std::max(Class->NumberOfDocks, 1));
 	}
+
+	Create_Initial_Payload();
 }
 
 
@@ -1237,14 +1263,14 @@ void BuildingClass::Draw_Voxel_Barrel_With_Anim(Point2D const & xy, Rect & rect,
 /// Draws the repair wrench over a structure that is being repaired.
 /// TechnoClass::DrawExtras (0x6F5190) draws it, with the decorations that follow the body,
 /// at the structure's render coordinate, the north corner of its first cell, with no offset.
-/// The wrench is hidden only while that cell is under shroud. It blinks through its seven
+/// The wrench is hidden while that cell is under shroud and from the houses EnemyWrench=no hides it from. It blinks through its seven
 /// frames over a quarter of the build's normalised 14 tick delay. gamemd loads POWEROFF.SHP
 /// but never draws it, so a structure that is switched off shows nothing.
 /// </summary>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 {
-	if (!IsRepairing || Map.Is_Shrouded(PositionCoord)) {
+	if (!Is_Wrench_Shown_To(PlayerPtr) || Map.Is_Shrouded(PositionCoord)) {
 		return;
 	}
 
@@ -1257,6 +1283,19 @@ void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 
 
 /// <summary>
+/// Returns whether the house sees this structure's repair wrench, shroud aside. With [General] EnemyWrench=no only
+/// the owner, its allies and observers see it.
+/// </summary>
+bool BuildingClass::Is_Wrench_Shown_To(HouseClass const * viewer) const
+{
+	if (!IsRepairing) {
+		return(false);
+	}
+	return(Rule->IsEnemyWrench || viewer == NULL || viewer->IsObserver || viewer->Is_Ally(House));
+}
+
+
+/// <summary>
 /// Draws the informational overlays that sit on top of the building.
 /// This routine handles the selection text and, for a factory the player has managed to
 /// infiltrate, the cameo of whatever is currently being produced there.
@@ -1265,13 +1304,23 @@ void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) const
 {
-	if (IsSelected && (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr])) {
+	// A structure with SpyEffect.Custom=yes shows its owner's figures to a spy's house only when it has SpyEffect.RevealProduction (Ares).
+	bool const spied_reveal = SpiedBy[PlayerPtr] && (!Class->IsSpyEffectCustom || Class->IsSpyRevealProduction);
+
+	if (IsSelected && (House->Shares_View_With(PlayerPtr) || spied_reveal)) {
 		Draw_Text_Overlay(point + Point2D(-10, 10), point, cliprect);
+	}
+
+	// A RevealProduction structure that stores resources also shows its owner's money to the house that spied on it.
+	if (IsSelected && spied_reveal && Class->IsSpyRevealProduction && Class->Capacity > 0 && !House->Shares_View_With(PlayerPtr)) {
+		char money[32];
+		snprintf(money, sizeof(money), "$%d", House->Available_Money());
+		Plain_Text_Print(money, *LogicalSurface, cliprect, point + Point2D(0, 28), WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
 	}
 
 	// Only a country that has spied on this factory sees its product, even a player given the
 	// whole map (gamemd's DisplayProductionTo test, 0x43E7B0).
-	if (SpiedBy[PlayerPtr] && IsSelected) {
+	if (spied_reveal && IsSelected) {
 
 		/*
 		**	Fetch the factory that is associate with this building. For computer controlled buildings, the
@@ -1786,6 +1835,10 @@ void BuildingClass::AI(void)
 		int const count = Overpowerer_Count();
 		IsOverpowered = count >= 3 || (count >= 1 && House->Power_Fraction() >= 1.0 && IsPoweredOn);
 	}
+	if (SuperWeaponTypeClass::BatteryTypesExist) {
+		// A Battery superweapon can overpower the types it lists, with or without Overpowerable.
+		IsOverpowered = IsOverpowered || House->Battery_Affects(Class, true);
+	}
 
 	if (Class->IsSAM && TarCom != NULL && !TarCom->In_Air()) {
 		Assign_Target(NULL);
@@ -1967,7 +2020,7 @@ void BuildingClass::AI(void)
 void BuildingClass::Update_Service_State(void)
 {
 	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
-	bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+	bool const online = Is_Online();
 	if (Class->PowersUnit != NULL) {
 		Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
 	}
@@ -2260,7 +2313,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			}
 		}
 
-		if (!Considered_Vehicle()) {
+		if (Extends_Base_Area()) {
 			Reserve_Base_Area();
 		}
 
@@ -2623,6 +2676,10 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
  *=============================================================================================*/
 ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
+	if (LightningStormClass::Is_Bolting() && Class->IsLightningRod && Class->LightningRodModifier != 1.0f && !LightningStormClass::Rods_Ignored()) {
+		damage = (int)(damage * Class->LightningRodModifier);
+	}
+
 	ResultType res = RESULT_NONE;
 	int i;
 
@@ -2660,6 +2717,11 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				firestorm->Control = std::max<double>(0.0, delay);
 				return(RESULT_NONE);
 			}
+		}
+
+		if (!forced && Pass_Damage_To_Occupant(damage, distance, warhead, source, sourcehouse)) {
+			damage = 0;
+			return(RESULT_NONE);
 		}
 
 		if (Strength != 0) {
@@ -2785,7 +2847,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	house, it might announce this fact.
 			*/
 			if (!Class->IsInsignificant && !Considered_Vehicle()) {
-				House->Attacked(this);
+				House->Attacked(this, warhead == NULL || warhead->IsMalicious);
 			}
 
 			/*
@@ -3448,6 +3510,58 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 }
 
 
+/// <summary>
+/// Has each of the owner's structures that clones a vehicle or soldier this factory has just produced release a copy
+/// of it. A copy that cannot get out is discarded, with no refund. The structures are those in the type's ClonedAt list
+/// (Ares) when it has one, and otherwise the cloning vats for a soldier and the CloningFacility=yes structures (Ares)
+/// for a vehicle.
+/// </summary>
+void BuildingClass::Release_Clones(TechnoClass const * base)
+{
+	RTTIType const product = base->Fetch_RTTI();
+	bool const vehicle = Class->ToBuild == RTTI_UNITTYPE && product == RTTI_UNIT;
+	bool const soldier = Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && product == RTTI_INFANTRY;
+	TechnoTypeClass const * type = base->TClass;
+	if ((!vehicle && !soldier) || !type->IsCloneable) {
+		return;
+	}
+	bool const listed = type->ClonedAt.Count() > 0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * vat = Buildings[index];
+		if (vat == this || vat->House != House || vat->IsInLimbo || vat->Strength <= 0) {
+			continue;
+		}
+		bool const ignored_factory = Rule->IsCloningFacilityIgnoresFactories && vat->Class->ToBuild != RTTI_NONE;
+		bool copies;
+		if (listed) {
+			copies = !ignored_factory && type->ClonedAt.Is_In_List(vat->Class);
+		} else if (soldier) {
+			copies = vat->Class->IsCloning;
+		} else {
+			copies = ObjectKeyRules::Cloning_Facility_Copies(vat->Class->IsCloningFacility, ignored_factory, vat->Class->IsNaval, type->IsNaval, true);
+		}
+		if (copies) {
+			TechnoClass * clone = static_cast<TechnoClass *>(type->Create_One_Of(vat->House));
+			if (clone != NULL && vat->Exit_Object(clone) != 2) {
+				delete clone;
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Releases the clones of a product this factory has just released, when it is a vehicle; a soldier's clones leave as
+/// the soldier exits the barracks.
+/// </summary>
+void BuildingClass::Release_Vehicle_Clones(TechnoClass const * product)
+{
+	if (product->Fetch_RTTI() == RTTI_UNIT) {
+		Release_Clones(product);
+	}
+}
+
+
 void BuildingClass::Send_Computer_Unit_To_Guard(TechnoClass * base)
 {
 	base->Assign_Mission(MISSION_GUARD_AREA);
@@ -3510,22 +3624,8 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 		return(0);
 	}
 
-	/*
-	 * Every cloning vat of the owner releases a copy of a soldier this barracks
-	 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
-	 * get out is discarded.
-	 */
-	if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
-		for (int index = 0; index < Buildings.Count(); index++) {
-			BuildingClass * vat = Buildings[index];
-			if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
-				TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
-				if (clone != NULL && vat->Exit_Object(clone) != 2) {
-					delete clone;
-				}
-			}
-		}
-	}
+	// Every cloning vat of the owner releases a copy of a soldier this barracks releases (BuildingClass::KickOutUnit, 0x443C60).
+	Release_Clones(base);
 
 	Coord exitcellcoord(exitcell);
 	Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
@@ -3638,6 +3738,27 @@ Coord BuildingClass::Door_Coord(Cell const & exitcell) const
 
 
 /// <summary>
+/// Removes a base node whose structure found no place, when it may not be tried again. An upgrade's node goes at once
+/// when it is the node the house builds next (BuildingClass::KickOutUnit, 0x443C60, with the house's node choice at
+/// 0x42EB50). Any other node goes once its searches have failed AIPlacementSearchFailures times, outside campaign games.
+/// </summary>
+void BuildingClass::Drop_Unplaceable_Node(BaseNodeClass & node)
+{
+	BaseClass & base = House->Base;
+	node.SearchFailures++;
+	bool const hostless_upgrade = !BuildingTypes[node.Type]->PowersUpBuilding.empty() && House->Next_Buildable_Node() == &node;
+	bool const out_of_tries = Session.Type != GAME_NORMAL && Rule->AIPlacementSearchFailures > 0 && node.SearchFailures >= Rule->AIPlacementSearchFailures;
+	if (hostless_upgrade || out_of_tries) {
+		if (HouseClass::TraceBuilding) {
+			DebugString("BUILDTRACE frame %d house %s drops %s node %d after %d failed searches\n", Frame, House->Class->Name(),
+				BuildingTypes[node.Type]->Name(), base.Nodes.ID(&node), node.SearchFailures);
+		}
+		base.Nodes.Delete_Index(base.Nodes.ID(&node));
+	}
+}
+
+
+/// <summary>
 /// Places a structure that a computer house built, where its base plan or placement search puts it. A human player
 /// places their own structures, so this returns 0 for them.
 /// </summary>
@@ -3700,16 +3821,20 @@ int BuildingClass::Exit_Structure(TechnoClass * base)
 		}
 	}
 
+	if (placementcoord == COORD_NONE) {
+		if (HouseClass::TraceBuilding) {
+			DebugString("BUILDTRACE frame %d house %s finds no place for %s (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
+				node != NULL ? "yes" : "no");
+		}
+		if (node != NULL) {
+			Drop_Unplaceable_Node(*node);
+		}
+		return(0);
+	}
+
 	if (HouseClass::TraceBuilding) {
 		DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
 			placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
-	}
-
-	if (placementcoord == COORD_NONE) {
-		if (!buildingtype->PowersUpBuilding.empty() && House->Base.Next_Buildable(STRUCT_NONE) == node) {
-			House->Base.Nodes.Delete_Index(House->Base.Next_Buildable_Index(STRUCT_NONE));
-		}
-		return(0);
 	}
 
 	Cell cellnum = placementcoord.As_Cell();
@@ -3885,6 +4010,7 @@ bool BuildingClass::Limbo(void)
 
 	if (!IsInLimbo) {
 
+		End_Radar_Reveal();
 		Remove_Damage_Fires();
 		IsRequiresDamageFires = false;
 		Update_Powered_Unit_Source(false);
@@ -3904,7 +4030,7 @@ bool BuildingClass::Limbo(void)
 			if (Class->IsDetectDisguise) {
 				Disguise_Detector(false);
 			}
-			if (!Considered_Vehicle()) {
+			if (Extends_Base_Area()) {
 				Release_Base_Area();
 			}
 		}
@@ -4321,16 +4447,28 @@ void BuildingClass::Grand_Opening(bool captured)
 		}
 
 		// Outside a campaign, an enemy superweapon structure is announced (BuildingClass::Place, 0x445F80).
-		SuperWeaponType const super = Fetch_Super_Weapon();
+		SuperWeaponType const super = Fetch_First_Super_Weapon();
 		if (Session.Type != GAME_NORMAL && super != SUPER_NONE && PlayerPtr != NULL && !House->Is_Player_Control() && !House->Is_Ally(PlayerPtr)) {
-			switch (SuperWeaponTypes[super]->Type) {
-				case SUPER_MULTI_MISSILE: Speak_Eva("EVA_NuclearSiloDetected"); break;
-				case SUPER_IRON_CURTAIN: Speak_Eva("EVA_IronCurtainDetected"); break;
-				case SUPER_LIGHTNING_STORM: Speak_Eva("EVA_WeatherDeviceReady"); break;
-				case SUPER_CHRONOSPHERE: Speak_Eva("EVA_ChronosphereDetected"); break;
-				case SUPER_PSYCHIC_DOMINATOR: Speak_Eva("EVA_PsychicDominatorDetected"); break;
-				case SUPER_GENETIC_CONVERTER: Speak_Eva("EVA_GeneticMutatorDetected"); break;
-				default: break;
+			SuperWeaponKeys const & announce = SuperWeaponTypes[super]->Keys;
+			if (!announce.EvaDetected.empty()) {
+				// EVA.Detected names the line to play, and "none" plays nothing.
+				if (!SuperRules::Same(announce.EvaDetected, "none")) {
+					Speak_Eva(announce.EvaDetected.c_str());
+				}
+			} else {
+				switch (SuperWeaponTypes[super]->Type) {
+					case SUPER_MULTI_MISSILE: Speak_Eva("EVA_NuclearSiloDetected"); break;
+					case SUPER_IRON_CURTAIN: Speak_Eva("EVA_IronCurtainDetected"); break;
+					case SUPER_LIGHTNING_STORM: Speak_Eva("EVA_WeatherDeviceReady"); break;
+					case SUPER_CHRONOSPHERE: Speak_Eva("EVA_ChronosphereDetected"); break;
+					case SUPER_PSYCHIC_DOMINATOR: Speak_Eva("EVA_PsychicDominatorDetected"); break;
+					case SUPER_GENETIC_CONVERTER: Speak_Eva("EVA_GeneticMutatorDetected"); break;
+					default: break;
+				}
+			}
+			if (!announce.MessageDetected.empty() && !SuperRules::Same(announce.MessageDetected, "none")) {
+				std::string const text = Fetch_String_UTF8(announce.MessageDetected.c_str());
+				Session.Messages.Add_Message(NULL, 0, text.c_str(), House_Display_Scheme(announce.MessageFirerColor ? House : PlayerPtr), TextPrintType(TPF_USE_GRAD_PAL | TPF_FULLSHADOW | TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
 			}
 		}
 	}
@@ -4445,6 +4583,13 @@ void BuildingClass::Sell_Back(int control)
 		**	appropriate action.
 		*/
 		if (decon) {
+			// A bomb planted by a weapon with IvanBomb.DetonateOnSell=yes goes off when the sale starts.
+			if (BombDetonateFrame != -1 && BombWeapon != NULL && BombWeapon->IvanDetonateOnSell == 1) {
+				Detonate_Bomb();
+				if (!IsActive) {
+					return;
+				}
+			}
 			Assign_Mission(MISSION_DECONSTRUCTION);
 			Commence();
 			//if (House->Is_Player_Control()) {
@@ -4487,6 +4632,12 @@ void BuildingClass::Assign_Planning_Path(void)
 		return;
 	}
 
+	if (BombDetonateFrame != -1 && BombWeapon != NULL && BombWeapon->IvanDetonateOnSell == 1) {
+		Detonate_Bomb();
+		if (!IsActive) {
+			return;
+		}
+	}
 	Assign_Mission(MISSION_DECONSTRUCTION);
 	Commence();
 	if (House->Is_Player_Control()) {
@@ -4702,6 +4853,16 @@ void BuildingClass::Begin_Mode(BStateType bstate)
 		int rate = ctrl->Rate;
 		if (Class->IsRegulated && bstate != BSTATE_CONSTRUCTION) {
 			rate = Options.Normalize_Delay(rate);
+		}
+		// SellTime and the type's BuildupTime spread the animation over their minutes, giving each step at least one frame.
+		if (bstate == BSTATE_CONSTRUCTION && ctrl->Count > 0) {
+			double minutes = Class->BuildupTime;
+			if (Mission == MISSION_DECONSTRUCTION && Class->SellTime >= 0.0) {
+				minutes = Class->SellTime;
+			}
+			if (minutes >= 0.0) {
+				rate = std::max(1, (int)(minutes * TICKS_PER_MINUTE / ctrl->Count));
+			}
 		}
 		Set_Rate(rate);
 		Set_Stage(ctrl->Start);
@@ -5130,6 +5291,16 @@ void BuildingClass::Grant_Cloak_And_Clear_Spy_Bits(HouseClass * newowner)
 			Update_Radar_Spied();
 		}
 	}
+	End_Radar_Reveal();
+}
+
+
+void BuildingClass::End_Radar_Reveal(void)
+{
+	if (RadarRevealedTo.Any()) {
+		RadarRevealedTo.Clear();
+		House->Update_Units_Revealed_To();
+	}
 }
 
 
@@ -5143,10 +5314,21 @@ void BuildingClass::Announce_Owner_Change(HouseClass * newowner, bool announce)
 				Speak(VOX_BUILDING_CAPTURED);
 			}
 		} else if (House != newowner) {
-			if (House->Is_Player_Control()) {
-				Speak_Eva("EVA_TechBuildingLost");
+			// The capturer of a NeedsEngineer structure sees its Message.Capture text, and the loser its Message.Lost text (Ares).
+			bool const captured = newowner->Is_Player_Control();
+			std::string const & text = captured ? Class->MessageCapture : Class->MessageLost;
+			if ((captured || House->Is_Player_Control()) && !text.empty() && !ObjectKeyRules::Names_Nothing(text)) {
+				std::string const shown = Fetch_String_UTF8(text.c_str());
+				Session.Messages.Add_Message(NULL, 0, shown.c_str(), House_Display_Scheme(captured ? newowner : House), TextPrintType(TPF_USE_GRAD_PAL | TPF_FULLSHADOW | TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
 			}
-			if (newowner->Is_Player_Control() && Class->CaptureEvaEvent != -1) {
+			if (House->Is_Player_Control()) {
+				if (Class->LostEvaEvent != -1) {
+					Speak_Eva_Index(Class->LostEvaEvent);
+				} else {
+					Speak_Eva("EVA_TechBuildingLost");
+				}
+			}
+			if (captured && Class->CaptureEvaEvent != -1) {
 				Speak_Eva_Index(Class->CaptureEvaEvent);
 			}
 		}
@@ -5910,8 +6092,10 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						**	construction yard.
 						*/
 						const InfantryTypeClass * typ = Crew_Type();
+						int attempts = 0;
 						while (typ != NULL && typ->IsEngineer && engineer) {
-							typ = Crew_Type();
+							// Crew.EngineerChance=100 would otherwise never name a second survivor.
+							typ = ++attempts < 100 ? Crew_Type() : NULL;
 						}
 						if (typ == NULL) {
 							// A survivor with no type is left out, and the rest still come out, as the destroyed-structure path does.
@@ -5988,7 +6172,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						return(1);
 					}
 
-					Coord const place = Class->Is_Mobile_Deployer() ? PositionCoord : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE));
+					Coord const place = Class->Vehicle_On_Corner() ? PositionCoord : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE));
 					if (!Undeploy_Cell_Ready(place.As_Cell())) {
 						return(1);
 					}
@@ -6416,6 +6600,20 @@ int BuildingClass::Do_MISSION_HARVEST(void)
 }
 
 
+// The docked aircraft, when its type sets its own ReloadRate (Ares); NULL for anything else.
+static AircraftClass * Own_Rate_Aircraft(TechnoClass * docked)
+{
+	AircraftClass * aircraft = docked != NULL ? docked->As_AircraftClass() : NULL;
+	return(aircraft != NULL && aircraft->Class->ReloadRate >= 0.0 ? aircraft : NULL);
+}
+
+
+static int Own_Reload_Delay(AircraftClass const * aircraft)
+{
+	return(std::max(int(aircraft->Class->ReloadRate * TICKS_PER_MINUTE), 1));
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Mission_Repair -- Handles the repair (active) state for building.            *
  *                                                                                             *
@@ -6782,21 +6980,50 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	**	A rearming pad serves every docked object each pass (BuildingClass::Mission_Repair,
 	**	0x44B780): one that is ready and undamaged is released to guard, a sleeping one is
 	**	reloaded or else repaired, and any other one still on its dock is put to sleep first.
+	**	An aircraft whose type sets its own ReloadRate (Ares) gets its rounds on its own timer
+	**	between the passes, and is repaired on the passes once it is full.
 	*/
 	if (Class->IsCanUnitReload) {
+		int const pass_delay = int(Rule->ReloadRate * TICKS_PER_MINUTE);
+		bool own_rate_docked = false;
+		for (int slot = 0; slot < Link_Count(); slot++) {
+			if (Own_Rate_Aircraft(Link(slot)) != NULL) {
+				own_rate_docked = true;
+			}
+		}
+		bool const pass = !own_rate_docked || Frame >= PadPassFrame;
+		int next_reload = std::numeric_limits<int>::max();
 		bool serving = false;
 		for (int slot = 0; slot < Link_Count(); slot++) {
 			TechnoClass * docked = Link(slot);
 			if (docked == NULL) {
 				continue;
 			}
+			AircraftClass * own_rate = Own_Rate_Aircraft(docked);
+			if (own_rate == NULL && !pass) {
+				serving = true;
+				continue;
+			}
 			bool release = Transmit_Message(RADIO_PREPARED, docked) == RADIO_ROGER && docked->Strength == docked->TClass->MaxStrength;
 			if (!release && docked->Get_Mission() != MISSION_ENTER && Transmit_Message(RADIO_NEED_TO_MOVE, docked) == RADIO_ROGER) {
 				serving = true;
-				if (docked->Get_Mission() == MISSION_SLEEP) {
-					release = Transmit_Message(RADIO_RELOAD, docked) != RADIO_ROGER && Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
-				} else {
+				if (docked->Get_Mission() != MISSION_SLEEP) {
 					docked->Assign_Mission(MISSION_SLEEP);
+					if (own_rate != NULL) {
+						own_rate->PadReloadFrame = Frame + Own_Reload_Delay(own_rate);
+					}
+				} else if (own_rate == NULL) {
+					release = Transmit_Message(RADIO_RELOAD, docked) != RADIO_ROGER && Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
+				} else if (own_rate->Ammo < own_rate->Class->MaxAmmo) {
+					if (Frame >= own_rate->PadReloadFrame) {
+						Transmit_Message(RADIO_RELOAD, docked);
+						own_rate->PadReloadFrame = Frame + Own_Reload_Delay(own_rate);
+					}
+				} else if (pass) {
+					release = Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
+				}
+				if (own_rate != NULL && own_rate->Ammo < own_rate->Class->MaxAmmo) {
+					next_reload = std::min(next_reload, own_rate->PadReloadFrame - Frame);
 				}
 			}
 			if (release) {
@@ -6806,7 +7033,13 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 			}
 		}
 		if (serving) {
-			return(int(Rule->ReloadRate * TICKS_PER_MINUTE));
+			if (pass) {
+				PadPassFrame = Frame + pass_delay;
+			}
+			if (!own_rate_docked) {
+				return(pass_delay);
+			}
+			return(std::max(std::min(next_reload, PadPassFrame - Frame), 1));
 		}
 		Assign_Mission(MISSION_GUARD);
 		return(3);
@@ -6881,11 +7114,17 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					Cell center = Center_Coord();
 					//Cell cell = Cell( Cell_X(center), 1);
 					AbstractClass * targ = &Map[House->NukeDest];
-					WeaponTypeClass const * weap = SuperWeaponTypes[LastSuperWeaponIndex]->Weapon;
-					BulletTypeClass const * bullet_type = weap->Bullet;
-					WarheadTypeClass const * warhead = weap->WarheadPtr;
-					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, true);
+					SuperWeaponTypeClass const * launched = SuperWeaponTypes[LastSuperWeaponIndex];
+					WeaponTypeClass const * weap = launched->Keys.NukePayload != NULL ? launched->Keys.NukePayload : launched->Weapon;
+					// A weapon with no payload launches nothing.
+					BulletClass * bullet = NULL;
+					if (weap != NULL) {
+						WarheadTypeClass const * warhead = launched->Keys.Warhead != NULL ? launched->Keys.Warhead : weap->WarheadPtr;
+						int const strike_damage = launched->Keys.Damage >= 0 ? launched->Keys.Damage : weap->Attack;
+						bullet = Create_Bullet(weap->Bullet, targ, this, strike_damage, warhead, MPH_LIGHT_SPEED, true);
+					}
 					if (bullet) {
+						bullet->NukeSuper = launched->HeapID;
 						// The warning passes to the missile bullet and stays up until that bullet is removed.
 						if (PsiWarnAnim != NULL) {
 							PsiWarnAnim->AttachedBullet = bullet;
@@ -6965,7 +7204,10 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 				return(1);
 
 			case EM_PULSE:
-				new AnimClass(AnimTypes[Anim_From_Name("PULSBALL")], Turret_Coord(0));
+				// A mod that defines no PULSBALL animation gets no charge-up effect.
+				if (Anim_From_Name("PULSBALL") != ANIM_NONE) {
+					new AnimClass(AnimTypes[Anim_From_Name("PULSBALL")], Turret_Coord(0));
+				}
 				Status = FIRE;
 				return(32);
 
@@ -7224,6 +7466,13 @@ int BuildingClass::Pip_Count(void) const
  *=============================================================================================*/
 void BuildingClass::Death_Announcement(TechnoClass const * source) const
 {
+	if (Class->IsEvaLostSet) {
+		// An EVA.Lost line replaces the stock announcement, which only an attacked structure makes.
+		if (House->Is_Player_Control() && !Class->IsInsignificant && !Class->IsSpawned && !Class->IsDontScore && !Class->EvaLost.empty() && !ObjectKeyRules::Names_Nothing(Class->EvaLost)) {
+			Speak_Eva(Class->EvaLost.c_str());
+		}
+		return;
+	}
 	if (source != NULL && House->Is_Player_Control()) {
 		Push_Radar_Event_Cell(Destination_Coord().As_Cell());
 		Speak(VOX_STRUCTURE_DESTROYED);
@@ -7526,7 +7775,7 @@ int BuildingClass::Do_MISSION_OPEN(void)
 						Door.Reverse();
 					} else {
 						Door.Open_Door(Class->DeployTime);
-						Sound_Effect(Rule->GateDownSound, PositionCoord);
+						Sound_Effect(Class->IsGateDownSoundSet ? Class->GateDownSound : Rule->GateDownSound, PositionCoord);
 						Rect redrawrect = Get_Render_Rect();
 						TacticalMap->Register_Dirty_Area(redrawrect);
 					}
@@ -7538,7 +7787,7 @@ int BuildingClass::Do_MISSION_OPEN(void)
 			case START_CLOSING:
 				Door.Close_Door(Class->DeployTime);
 				Status = CLOSING;
-				Sound_Effect(Rule->GateUpSound, PositionCoord);
+				Sound_Effect(Class->IsGateUpSoundSet ? Class->GateUpSound : Rule->GateUpSound, PositionCoord);
 				return(0);
 
 			case OPEN:
@@ -7741,8 +7990,14 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
  *=============================================================================================*/
 InfantryTypeClass const * BuildingClass::Crew_Type(void) const
 {
-	if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
-		return(Rule->Engineer);
+	SideType const side = House->Class->Side;
+	InfantryTypeClass const * engineer = side != SIDE_NONE && side < Sides.Count() ? Sides[side]->Engineer_Type() : Rule->Engineer;
+	if (Class->CrewEngineerChance >= 0) {
+		if (!IsCaptured && Percent_Chance(Class->CrewEngineerChance)) {
+			return(engineer);
+		}
+	} else if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
+		return(engineer);
 	}
 	return(BASECLASS::Crew_Type());
 }
@@ -8510,6 +8765,7 @@ void BuildingClass::Factory_AI(void)
 					Sound_Effect(Class->CreateUnitSound, PositionCoord);
 				}
 				House->Just_Built(product);
+				Release_Vehicle_Clones(product);
 //				fact->Completed();
 				Factory->Completed();
 //				delete fact;
@@ -8550,7 +8806,7 @@ void BuildingClass::Factory_AI(void)
 				**	money available. In cases where there is no practical money left, then
 				**	production can never complete -- don't bother starting it.
 				*/
-				if (House->IsStarted && House->Available_Money() > 10) {
+				if (House->IsStarted && House->Available_Money() > 10 && !Other_Factory_Producing()) {
 					TechnoTypeClass const * techno = House->Suggest_New_Object(Class->ToBuild, false);
 
 					// A naval factory builds only naval units, and any other factory only other units.
@@ -8569,6 +8825,26 @@ void BuildingClass::Factory_AI(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// With AllowParallelAIQueues=no, is another structure of this owner that builds the same kind already producing? Ares
+/// then lets one factory of a kind work at a time, so extra factories no longer build a copy each. Otherwise false.
+/// </summary>
+bool BuildingClass::Other_Factory_Producing(void) const
+{
+	if (Rule->IsAllowParallelAIQueues) {
+		return(false);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * other = Buildings[index];
+		if (other != this && other->House == House && other->Factory != NULL && other->Class->ToBuild == Class->ToBuild
+			&& other->Class->IsNaval == Class->IsNaval) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -8725,7 +9001,7 @@ void BuildingClass::Repair_AI(void)
 			if (Shape_Number() != shapenum) {
 				IsToDisplay = true;
 			}
-		} else {
+		} else if (Rule->IsRepairStopOnInsufficientFunds || !House->Is_Human_Player()) {
 			IsRepairing = false;
 		}
 	}
@@ -8794,6 +9070,39 @@ void BuildingClass::Produce_Cash_AI(void)
 	} else {
 		House->Spend_Money(-amount);
 	}
+	Show_Produced_Cash(amount);
+}
+
+
+/// <summary>
+/// Shows the cash this building paid as floating text when its type has ProduceCashDisplay=yes and the local
+/// player owns it or is allied with its owner. Cash paid sooner than DisplayCreditsDelay after the last text is
+/// added to the next one. A gain shows in green with a plus sign, a loss in red with a minus sign.
+/// </summary>
+/// <param name="amount">The credits paid to the owner, negative for credits taken.</param>
+void BuildingClass::Show_Produced_Cash(int amount)
+{
+	if (!Class->IsProduceCashDisplay || amount == 0 || PlayerPtr == NULL || (House != PlayerPtr && !House->Is_Ally(PlayerPtr))) {
+		return;
+	}
+
+	ProduceCashShownPending += amount;
+	if (Frame - ProduceCashShownFrame < (int)(Rule->DisplayCreditsDelay * TICKS_PER_MINUTE) || ProduceCashShownPending == 0) {
+		return;
+	}
+
+	int const shown = ProduceCashShownPending;
+	ProduceCashShownPending = 0;
+	ProduceCashShownFrame = Frame;
+	int const scheme = Fetch_Scheme_Index_By_Name(shown > 0 ? "Green" : "Red", NUM_INTENSITY_LEVELS);
+	if (scheme >= 0) {
+		char text[32];
+		snprintf(text, sizeof(text), "%c$%d", shown > 0 ? '+' : '-', shown > 0 ? shown : -shown);
+		Add_Flying_Text(text, Center_Coord(), scheme);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST producecash frame %d %s shows %s\n", Frame, Class->Name(), text);
+		}
+	}
 }
 
 
@@ -8818,6 +9127,7 @@ void BuildingClass::Produce_Cash_Startup(void)
 
 	IsProduceCashStartupPaid = true;
 	House->Refund_Money(Class->ProduceCashStartup);
+	Show_Produced_Cash(Class->ProduceCashStartup);
 }
 
 
@@ -8978,22 +9288,12 @@ int BuildingClass::How_Many_Survivors(void) const
 
 	/*
 	**	The divisor follows the house's place in [Sides], as BuildingClass::GetCrewCount (0x451330)
-	**	reads its SideIndex. Civilians hold the third place in the stock rules, so they use the
-	**	third divisor; a house on the fourth place or on no side releases no survivors.
+	**	reads its SideIndex, unless the side's own section sets SurvivorDivisor. A house on a place
+	**	the rules give no divisor, or on no side, releases no survivors.
 	*/
-	int divisor;
-	switch (SideClass::Place_In_Sides(House->Class->Side)) {
-		case 0:
-			divisor = Rule->AlliedSurvivorDivisor;
-			break;
-		case 1:
-			divisor = Rule->SovietSurvivorDivisor;
-			break;
-		case 2:
-			divisor = Rule->ThirdSurvivorDivisor;
-			break;
-		default:
-			return(0);
+	int divisor = 0;
+	if (House->Class->Side != SIDE_NONE && House->Class->Side < Sides.Count()) {
+		divisor = Sides[House->Class->Side]->Survivor_Divisor();
 	}
 	if (divisor == 0) return(0);
 	if (IsCaptured) divisor *= 2;
@@ -9084,7 +9384,7 @@ bool BuildingClass::Remove_Upgrade(void)
 	}
 
 	bool super = false;
-	if (Upgrades[UpgradeLevel-1] != NULL && Upgrades[UpgradeLevel-1]->SuperWeapon != SUPER_NONE) {
+	if (Upgrades[UpgradeLevel-1] != NULL && (Upgrades[UpgradeLevel-1]->SuperWeapon != SUPER_NONE || Upgrades[UpgradeLevel-1]->SuperWeaponList.Count() > 0)) {
 		super = true;
 	}
 
@@ -9253,13 +9553,15 @@ static float const FRAMES_TO_MINUTES = 1.0f / TICKS_PER_MINUTE;
 /// </summary>
 void BuildingClass::Update_Super_Anims(void)
 {
-	if (Class->SuperWeapon == SUPER_NONE || Class->SuperWeapon >= House->SuperWeapon.Count() || Class->ChargedAnimTime > 990.0f) {
+	// A structure with no SuperWeapon= follows the first weapon of SuperWeapons= it grants.
+	SuperWeaponType const primary = Class->SuperWeapon != SUPER_NONE ? Class->SuperWeapon : Fetch_First_Super_Weapon();
+	if (primary == SUPER_NONE || primary >= House->SuperWeapon.Count() || Class->ChargedAnimTime > 990.0f) {
 		return;
 	}
 	if (IsInLimbo || !HasOpened || Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION) {
 		return;
 	}
-	SuperClass const * super = House->SuperWeapon[Class->SuperWeapon];
+	SuperClass const * super = House->SuperWeapon[primary];
 	if (super == NULL || !super->Is_Present()) {
 		return;
 	}
@@ -9365,6 +9667,14 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		if (animptr->Class->IsShouldUseCellDrawer) {
 			animptr->AlternativeDrawer = Anim_Converter();
 			animptr->AlternativeBrightness = Apparent_Brightness();
+		}
+
+		// The animations of a structure with an art Palette are drawn through it too.
+		if (!Class->PaletteName.empty()) {
+			if (ConvertClass * custom = Palette_Scheme_Drawer(Class->PaletteName, House_Display_Scheme(House))) {
+				animptr->AlternativeDrawer = custom;
+				animptr->AlternativeBrightness = Apparent_Brightness();
+			}
 		}
 
 		if (anim == BANIM_TURRET && Class->IsBarrelAnimAVoxel) {
@@ -10320,6 +10630,40 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 
 
 /// <summary>
+/// Lets a shot at this structure hit one of its occupants instead (Ares UC.PassThrough). A structure with occupants and a
+/// UC.PassThrough above zero passes that share of the unforced, damaging shots through, or all of them from a projectile with
+/// SubjectToTrenches=no. A passed shot kills one occupant outright at the UC.FatalRate share, and otherwise damages one by the
+/// shot's damage times UC.DamageMultiplier through the occupant's own damage rules. The structure takes none of a passed shot.
+/// </summary>
+/// <returns>bool; Did the shot pass through to an occupant, so the structure takes no damage from it?</returns>
+bool BuildingClass::Pass_Damage_To_Occupant(int damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse)
+{
+	if (warhead == NULL || damage <= 0 || Occupants.Count() == 0 || Class->UCPassThrough <= 0.0) {
+		return(false);
+	}
+
+	BulletTypeClass const * const projectile = Exploding_Projectile();
+	double const pass_through = WarheadRules::Urban_Combat_Pass_Through(Class->UCPassThrough, projectile == NULL || projectile->IsSubjectToTrenches);
+	if (!WarheadRules::Chance_Succeeds(pass_through, Random_Pick(0, 9999))) {
+		return(false);
+	}
+
+	InfantryClass * const occupant = Occupants[Random_Pick(0, Occupants.Count() - 1)];
+	bool const fatal = Class->UCFatalRate > 0.0 && WarheadRules::Chance_Succeeds(Class->UCFatalRate, Random_Pick(0, 9999));
+	int hit = fatal ? occupant->Class->MaxStrength : WarheadRules::Urban_Combat_Damage(damage, Class->UCDamageMultiplier);
+	occupant->Take_Damage(hit, distance, warhead, source, fatal, true, sourcehouse);
+
+	// An occupant that died stays in the list and in limbo unless it is removed here.
+	if (occupant->IsActive && occupant->Strength <= 0) {
+		occupant->Delete_Me();
+	}
+	Update_Threat_In_Cell();
+	Mark(MARK_CHANGE);
+	return(true);
+}
+
+
+/// <summary>
 /// Keeps a garrisonable structure's owner in step with its occupants, as gamemd's FUN_00458200
 /// does every frame: an empty one belongs to the Civilian side's house and an occupied one to
 /// its first occupant's house. A structure at red health throws its occupants out. The eject
@@ -11196,6 +11540,10 @@ Coord BuildingClass::Voxel_Fire_Coord(int which) const
 /// <param name="coord">The coordinate of the cell to flag.</param>
 void BuildingClass::Set_Occupy_Bit(Coord const & coord)
 {
+	// A passable structure (Ares IsPassable) leaves its cells free for vehicles and soldiers.
+	if (Class->IsPassable) {
+		return;
+	}
 	Map[coord.As_Cell()].Flag.Occupy.Building = true;
 }
 
@@ -11208,6 +11556,9 @@ void BuildingClass::Set_Occupy_Bit(Coord const & coord)
 /// <param name="coord">The coordinate of the cell to clear.</param>
 void BuildingClass::Clear_Occupy_Bit(Coord const & coord)
 {
+	if (Class->IsPassable) {
+		return;
+	}
 	Map[coord.As_Cell()].Flag.Occupy.Building = false;
 }
 
@@ -11268,6 +11619,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAllowedToSell);
 	stream.Serialize(IsReadyToCommence);
 	stream.Serialize(IsWrenchVisible);
+	stream.Serialize(RadarRevealedTo);
 	stream.Serialize(IsGoingToBlow);
 	stream.Serialize(IsC4Applied);
 	stream.Serialize(IsSurvivorless);
@@ -11309,8 +11661,10 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
 	stream.Serialize(HasEngineer);
+	stream.Serialize(IsTechStructure);
 	stream.Serialize(SecretProduct);
 	stream.Serialize(PsiWarnAnim);
+	stream.Serialize(PadPassFrame);
 	if (stream.Is_Loading()) {
 		IsShieldTinted = false;
 	}
@@ -11380,6 +11734,7 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsReadyToCommence);
 	crc(IsRepairing);
 	crc(IsWrenchVisible);
+	RadarRevealedTo.Compute_CRC(crc);
 	crc(IsGoingToBlow);
 	crc(IsC4Applied);
 	crc(IsSurvivorless);
@@ -11859,7 +12214,7 @@ bool BuildingClass::Is_Powered_On(void) const
 	**	short of power, stays down unless two infantry overpower it (BuildingClass::IsPowerOnline,
 	**	0x4555D0). The rule applies to every structure with a drain, whatever its TogglePower.
 	*/
-	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0;
+	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0 && !House->Battery_Affects(Class, false);
 	if ((!IsOn || short_of_power) && Overpowerer_Count() < 2) {
 		return(false);
 	}
@@ -12469,9 +12824,13 @@ void BuildingClass::Plot_On_Radar(void) const
 /// </summary>
 void BuildingClass::Draw_Radial_Indicator(void) const
 {
-	int range = Class->Radial_Indicator_Range();
+	double range = Class->Radial_Indicator_Range();
 	if (Class->PsychicDetectionRadius <= 0 && Class->IsGapGenerator && IsGapSuperCharged) {
 		range = Class->SuperGapRadiusInCells;
+	}
+	// RadialIndicatorRadius (Ares) sets the ring's radius in cells, fractions included.
+	if (Class->RadialIndicatorRadius > 0.0) {
+		range = Class->RadialIndicatorRadius;
 	}
 	if (range <= 0 || !Is_Powered_On() || !House->Is_Player_Control()) {
 		return;
@@ -12619,6 +12978,124 @@ static void Speak_Stolen_Tech(bool victim, bool spy)
 
 
 /// <summary>
+/// Applies the SpyEffect keys of this structure's type to the house that infiltrated it and to its owner.
+/// </summary>
+/// <param name="house">The house that infiltrated the structure.</param>
+/// <param name="victim">Does the structure's owner hear the lines?</param>
+/// <param name="spy">Does the infiltrating house hear the lines?</param>
+void BuildingClass::Custom_Spy_Effect(HouseClass * house, bool victim, bool spy)
+{
+	bool spoke = false;
+
+	if (Class->IsSpyResetRadar && !House->IsSpySatActive) {
+		if (House == PlayerPtr) {
+			Map.Shroud_The_Map(House);
+		} else {
+			House->IsVisionary = false;
+		}
+		if (victim) Speak_Eva("EVA_RadarSabotaged");
+		if (spy) Speak_Eva("EVA_BuildingInfRadarSabotaged");
+		spoke = true;
+	}
+
+	if (Class->SpyPowerOutage > 0) {
+		House->PowerBlackout = Class->SpyPowerOutage;
+		House->IsPowerBlackout = true;
+		House->RecalcPower = true;
+		if (victim) {
+			Speak_Eva("EVA_PowerSabotaged");
+		} else if (spy) {
+			Speak_Eva("EVA_BuildingInfiltrated");
+			Speak_Eva("EVA_EnemyBasePoweredDown");
+		}
+		spoke = true;
+	}
+
+	int const stolen = ObjectKeyRules::Spy_Money_Taken(House->Available_Money(), Class->SpyStolenMoneyPercentage, Class->SpyStolenMoneyAmount);
+	if (stolen > 0) {
+		House->Spend_Money(stolen);
+		house->Refund_Money(stolen);
+		if (victim) Speak_Eva("EVA_CashStolen");
+		if (spy) Speak_Eva("EVA_BuildingInfCashStolen");
+		spoke = true;
+	}
+
+	if (Class->IsSpyResetSuperweapons) {
+		SuperWeaponType const weapons[2] = {Class->SuperWeapon, Class->SuperWeapon2};
+		for (SuperWeaponType weapon : weapons) {
+			if (weapon != SUPER_NONE && weapon < House->SuperWeapon.Count()) {
+				SuperClass * super = House->SuperWeapon[weapon];
+				if (super != NULL) {
+					super->Reset();
+				}
+			}
+		}
+	}
+
+	if (Class->IsSpyRevealRadar && Class->IsRadar) {
+		RadarRevealedTo.Set(house);
+		House->Update_Units_Revealed_To();
+	}
+
+	if (!Class->SpyStolenTechIndex.empty()) {
+		house->StolenTechs |= ObjectKeyRules::Stolen_Tech_Mask(Class->SpyStolenTechIndex);
+		house->IsRecalcNeeded = true;
+		Speak_Stolen_Tech(victim, spy);
+		spoke = true;
+	}
+
+	if (Class->IsSpyUndoReverseEngineer && !House->ReversedTypes.empty()) {
+		House->ReversedTypes.clear();
+		House->IsRecalcNeeded = true;
+		House->Production_Status_Changed();
+	}
+
+	if (Class->IsSpyInfantryVeterancy) {
+		house->IsBarracksInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	}
+	if (Class->IsSpyVehicleVeterancy) {
+		house->IsWarFactoryInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	}
+	if (Class->IsSpyNavalVeterancy) {
+		house->IsNavalSpied = true;
+	}
+	if (Class->IsSpyAircraftVeterancy) {
+		house->IsAircraftSpied = true;
+	}
+	if (Class->IsSpyBuildingVeterancy) {
+		house->IsBuildingSpied = true;
+	}
+
+	if (!spoke && (victim || spy)) {
+		Speak_Eva("EVA_BuildingInfiltrated");
+	}
+}
+
+
+/// <summary>
+/// Tells whether an object with RadarJamRadius (Ares) that is not allied with this structure's owner is close enough to jam it. A jammed
+/// radar or spy satellite structure stays on but gives its owner no radar or map.
+/// </summary>
+bool BuildingClass::Is_Radar_Jammed(void) const
+{
+	if (!TechnoTypeClass::RadarJammersExist) {
+		return(false);
+	}
+	Coord const where = Center_Coord();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * const jammer = Technos[index];
+		if (jammer->TClass->RadarJamRadius > 0 && jammer->IsActive && !jammer->IsInLimbo && !jammer->House->Is_Ally(House)
+			&& (jammer->Center_Coord() - where).Gamemd_Length() <= jammer->TClass->RadarJamRadius * CELL_LEPTON_W) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Records that a spy has infiltrated this building.
 /// This routine is called when a spy makes it inside. The spy's country is recorded, so every
 /// house of that country sees the building's spied view, and the house is handed whatever
@@ -12640,6 +13117,13 @@ void BuildingClass::Spied_By(HouseClass * house)
 	if (!((victim || spy) && Submit_Radar_Event(RADAREVENT_INFILTRATED, Center_Coord().As_Cell()))) {
 		victim = false;
 		spy = false;
+	}
+
+	// SpyEffect.Custom replaces the stock effect of the structure with the effects its keys list.
+	if (Class->IsSpyEffectCustom) {
+		Custom_Spy_Effect(house, victim, spy);
+		Mark(MARK_CHANGE);
+		return;
 	}
 
 	/*
@@ -12772,6 +13256,23 @@ bool BuildingClass::Considered_Vehicle(void) const
 
 
 /// <summary>
+/// Does this building extend the base space its owner places new structures in?
+/// A building whose type sets AIBaseNormal (Ares) follows it. Any other extends the space unless it is considered a
+/// vehicle or is the deployed form of a miner.
+/// </summary>
+bool BuildingClass::Extends_Base_Area(void) const
+{
+	if (Class->AIBaseNormal >= 0) {
+		return(Class->AIBaseNormal != 0);
+	}
+	if (Class->UndeploysInto != NULL && Class->IsResourceGatherer) {
+		return(false);
+	}
+	return(!Considered_Vehicle());
+}
+
+
+/// <summary>
 /// Fetches the super weapon that this building grants.
 /// A super weapon that names an auxiliary building is only granted while the owner
 /// actually has one of those buildings standing.
@@ -12804,6 +13305,42 @@ SuperWeaponType BuildingClass::Fetch_Super_Weapon2(void) const
 		}
 	}
 	return(Class->SuperWeapon2);
+}
+
+
+/// <summary>
+/// Does this building grant the superweapon right now? SuperWeapon=, SuperWeapon2= and SuperWeapons= all count, and a
+/// weapon that names an auxiliary building is only granted while the owner has one.
+/// </summary>
+bool BuildingClass::Grants_Super_Weapon(int super) const
+{
+	if (!Class->Grants_Super_Weapon(super)) {
+		return(false);
+	}
+	BuildingTypeClass const * aux = SuperWeapons[super]->Class->AuxBuilding;
+	return(aux == NULL || House->ABQuantity.Value(aux->HeapID) != 0);
+}
+
+
+/// <summary>
+/// Fetches the first superweapon this building grants, in the order SuperWeapon=, SuperWeapon2=, SuperWeapons=.
+/// It decides which announcement plays when the building is placed.
+/// </summary>
+/// <returns>Returns with the superweapon, or SUPER_NONE if the building grants none.</returns>
+SuperWeaponType BuildingClass::Fetch_First_Super_Weapon(void) const
+{
+	if (Fetch_Super_Weapon() != SUPER_NONE) {
+		return(Fetch_Super_Weapon());
+	}
+	if (Fetch_Super_Weapon2() != SUPER_NONE) {
+		return(Fetch_Super_Weapon2());
+	}
+	for (int index = 0; index < Class->SuperWeaponList.Count(); index++) {
+		if (Grants_Super_Weapon(Class->SuperWeaponList[index])) {
+			return((SuperWeaponType)Class->SuperWeaponList[index]);
+		}
+	}
+	return(SUPER_NONE);
 }
 
 
@@ -13079,6 +13616,9 @@ Coord BuildingClass::Render_Coord(void) const
 /// </summary>
 void BuildingClass::Iron_Curtain(int duration, HouseClass * source, bool force_shield)
 {
+	if (Is_Immune_To_Iron_Curtain(force_shield)) {
+		return;
+	}
 	if (IsGoingToBlow) {
 		IsGoingToBlow = false;
 		IsC4Applied = false;

@@ -158,6 +158,9 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "custompalette.h"
+#include "empulse.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "custompalette.h"
 #include "_mixfile.h"
@@ -224,7 +227,11 @@
 #include "vox.h"
 #include "gpudraw.h"
 #include "voxdrsys.h"
+#include "ivanrules.h"
+#include "projectilerules.h"
+#include "armortypes.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "wave.h"
 #include "weapon.h"
 
@@ -239,6 +246,7 @@
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;
+TechnoTypeClass const * TechnoClass::TraceDamageType = NULL;
 
 TalkType TechnoClass::TalkBubbleType = TALK_NONE;
 TechnoClass * TechnoClass::TalkBubbleOwner = NULL;
@@ -285,11 +293,13 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	SecondaryFacing(),
 	Arm(0),
 	Ammo(-1),
+	Reload(0),
 	PurchasePrice(0),
 	ActLike(HOUSE_NONE),
 	Cargo(),
 	Veterancy(),
 	RadarFlashTimer(),
+	SelfHealDelayTimer(),
 	TargetingTimer(45),
 	IronCurtainTimer(),
 	IronTintTimer(),
@@ -345,6 +355,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BombHouse(NULL),
 	BombPlantFrame(0),
 	BombDetonateFrame(-1),
+	BombWeapon(NULL),
 	IsBerzerk(false),
 	BerzerkDuration(0),
 	BombSound(),
@@ -393,6 +404,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsOnWaypointPatrol(false),
 	NearbyObject(NULL),
 	StunDuration(0),
+	WeaponsDisabledFrames(0),
+	DamageWarhead(NULL),
 	IsDeactivated(false),
 	LimpetType()
 {
@@ -550,6 +563,11 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		if (unit->Class->IsSimpleDeployer && unit->Class->IsDeployFire && unit->IsSimpleDeployed) {
 			return(unit->Class->DeployFireWeapon);
 		}
+	}
+
+	// A type with limited ammunition that has run low fires only its NoAmmoWeapon (Ares).
+	if (Uses_No_Ammo_Weapon()) {
+		return(TClass->NoAmmoWeapon);
 	}
 
 	// An object aimed at its own cell uses the weapon that strikes there.
@@ -822,15 +840,15 @@ bool TechnoClass::Can_Heal(ObjectClass const * object) const
 
 /// <summary>
 /// Fetches the point a weapon is mounted at, or a passenger seat of an open-topped transport when the index is negative.
-/// Index -1 to -5 is seat 1 to 5 (AlternateFLH0 to AlternateFLH4). Any other negative index is zero.
+/// Index -1 is seat 1 (AlternateFLH0), -2 is seat 2 (AlternateFLH1), and so on. A seat the type has no entry for is zero.
 /// </summary>
 /// <param name="which">The weapon slot, or a negative seat index.</param>
 /// <returns>The offset from the object's center in the turret frame, before the body and turret rotation apply.</returns>
 TPoint3D<int> TechnoClass::Weapon_FLH(int which) const
 {
 	if (which < 0) {
-		int const seat = -which - 1;
-		if (seat < 5) {
+		size_t const seat = (size_t)(-which - 1);
+		if (seat < TClass->AlternativeFLH.size()) {
 			return(TClass->AlternativeFLH[seat]);
 		}
 		return(TPoint3D<int>(0, 0, 0));
@@ -1293,7 +1311,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 			LimpetSpeedFactor = 0;
 
 			PrimaryFacing.Set_ROT(TClass->ROT);
-			SecondaryFacing.Set_ROT(TClass->ROT);
+			SecondaryFacing.Set_ROT(TClass->Turret_ROT());
 
 			/*
 			**	If it's a mine layer, re-arm him if he's empty. This always takes precedence
@@ -1469,15 +1487,22 @@ void TechnoClass::Draw_Bomb_Icon(Point2D const & point, Rect const & cliprect) c
 {
 	if (Is_Bomb_Visible()) {
 		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
-		if (_bombcurs != NULL) {
-			int frame = 0;
-			if (Rule->IvanTimedDelay >= 6) {
-				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
+		ShapeSet const * icons = _bombcurs;
+		// A weapon's IvanBomb.Image replaces the icon file when the file can be loaded.
+		if (BombWeapon != NULL && !BombWeapon->IvanImage.empty()) {
+			if (!BombWeapon->IvanImageLooked) {
+				BombWeapon->IvanImageLooked = true;
+				BombWeapon->IvanImageData = (ShapeSet const *)MFCD::Retrieve((BombWeapon->IvanImage + ".SHP").c_str());
 			}
-			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
-				frame++;
+			if (BombWeapon->IvanImageData != NULL) {
+				icons = BombWeapon->IvanImageData;
 			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+		if (icons != NULL) {
+			int const frame = IvanBombRules::Icon_Frame(Frame - BombPlantFrame, Bomb_Delay(), IvanBombRules::Icon_Blocks(icons->Get_Count()), Rule->IvanIconFlickerRate, Frame);
+			if (frame >= 0) {
+				Draw_Shape(*LogicalSurface, *NormalDrawer, icons, frame, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
 		}
 	}
 }
@@ -2549,8 +2574,9 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 					return(false);
 				}
 			} else {
+				// The weapon must also have a clear line past walls and cliffs (TechnoClass::IsCloseEnough through 0x6F7220).
 				int primary = weapon_index_for_object();
-				if (!In_Range((TechnoClass *)object, primary)) {
+				if (!Is_Close_Enough((TechnoClass *)object, primary)) {
 					return(false);
 				}
 			}
@@ -2576,7 +2602,8 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);
 	}
 
-	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits) {
+	// A CivilianEnemy type is a target even when its owner is a neutral house (Ares).
+	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits && !object->TClass->IsCivilianEnemy) {
 		return(false);
 	}
 
@@ -2611,6 +2638,11 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 		return(false);
 	}
 
+	// An unarmed thief that may not break mind control has no use for a controlled vehicle.
+	if (RTTI == RTTI_INFANTRY && !Is_Weapon_Equipped() && ((InfantryClass const *)this)->Is_Theft_Refused(object)) {
+		return(false);
+	}
+
 	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
 	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
 	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
@@ -2636,12 +2668,13 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 bool TechnoClass::Passes_Mirage_Roll(TechnoClass const * object) const
 {
 	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
-	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
+	// roll against DisabledDisguiseDetectionPercent for the house's difficulty (HouseClass+0x184, 0x6F8536). A
+	// DetectDisguise type sees through the disguise.
 	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
 		UnitClass const * vehicle = static_cast<UnitClass const *>(object);
 		if (vehicle->Is_Disguised_As(House)) {
-			int const side = House->Class->Side;
-			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
+			int const difficulty = House->Difficulty;
+			int const percent = difficulty >= 0 && difficulty < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[difficulty] : 0;
 			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
 				return(false);
 			}
@@ -3624,7 +3657,14 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 		}
 		// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
 		if (House->Is_Player_Control()) {
-			Sound_Effect(Rule->AirstrikeAttackVoice);
+			// The designator's VoiceAirstrikeAttack comes first, then the aircraft type's (Ares).
+			VocType voice = Rule->AirstrikeAttackVoice;
+			if (TClass->IsVoiceAirstrikeAttackSet) {
+				voice = TClass->VoiceAirstrikeAttack;
+			} else if (type->IsVoiceAirstrikeAttackSet) {
+				voice = type->VoiceAirstrikeAttack;
+			}
+			Sound_Effect(voice);
 		}
 		DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
 		AUTOTEST_LOG("airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
@@ -3798,27 +3838,51 @@ void TechnoClass::Turret_Recoil_AI(void)
 }
 
 
+/// <summary>
+/// Does this object carry a passenger its type's Operator accepts (Ares)?
+/// </summary>
+bool TechnoClass::Has_Operator(void) const
+{
+	int listed = 0;
+	Cargo.For_Each_Attached([&](FootClass const * passenger) {
+		if (TClass->Operators.Is_In_List(passenger->TClass)) {
+			listed++;
+		}
+	});
+	return(ObjectKeyRules::Operator_Present(TClass->IsOperatorAny, Cargo.How_Many(), listed));
+}
+
+
 void TechnoClass::Powered_Unit_AI(void)
 {
 	// A PoweredUnit object shuts down while its owner has no working control structure for its
 	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
-	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
+	// A vehicle with PoweredBy (Ares) needs one working structure of a listed type, and an object with an Operator
+	// (Ares) needs its operator aboard.
+	bool const stock = TClass->IsPoweredUnit && Is_Foot();
+	bool const powered_by = TClass->PoweredBy.Count() > 0 && RTTI == RTTI_UNIT;
+	bool const operated = TClass->Needs_Operator();
+	if ((stock || powered_by || operated) && !IsInLimbo) {
+		bool const off = ObjectKeyRules::Shut_Down(stock, stock && House->Has_Powered_Unit_Source(TClass), stock && Map[Get_Cell()].Cell_Building() != NULL,
+			powered_by, powered_by && House->Has_Working_Building(TClass->PoweredBy),
+			operated, operated && Has_Operator());
 		if (off != IsDeactivated) {
 			IsDeactivated = off;
-			FootClass * foot = (FootClass *)this;
+			FootClass * foot = Is_Foot() ? (FootClass *)this : NULL;
 			if (off) {
 				DebugString("Powered unit: %s shuts down\n", TClass->Name());
 				Sound_Effect(TClass->DeactivateSound, Center_Coord());
 				Assign_Target(NULL);
-				foot->Assign_Destination(NULL);
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_Off();
+				if (foot != NULL) {
+					foot->Assign_Destination(NULL);
+					if (foot->Locomotion != NULL) {
+						foot->Locomotion->Power_Off();
+					}
 				}
 			} else {
 				DebugString("Powered unit: %s starts up\n", TClass->Name());
 				Sound_Effect(TClass->ActivateSound, Center_Coord());
-				if (foot->Locomotion != NULL) {
+				if (foot != NULL && foot->Locomotion != NULL) {
 					foot->Locomotion->Power_On();
 				}
 			}
@@ -3853,8 +3917,8 @@ void TechnoClass::AI(void)
 
 	// A PermaDisguise object always looks like its side's default soldier when it has no other disguise (TechnoClass::Init, 0x6F3F40).
 	if (DisguiseType == NULL && TClass->IsCanDisguise && TClass->IsPermaDisguise) {
-		int const side = (int)House->Class->Side;
-		DisguiseType = side == 0 ? Rule->AlliedDisguise : (side == 1 ? Rule->SovietDisguise : Rule->ThirdDisguise);
+		SideType const side = House->Class->Side;
+		DisguiseType = side >= 0 && side < Sides.Count() ? Sides[side]->Disguise_Type() : Rule->ThirdDisguise;
 		DisguiseHouse = House;
 	}
 
@@ -3900,6 +3964,10 @@ void TechnoClass::AI(void)
 		CurrentTurretNumber = turret;
 	}
 
+	if (TClass->IsPassengerTurret && TClass->TurretCount > 0 && !TClass->IsGattling) {
+		CurrentTurretNumber = std::min(Cargo.How_Many(), TClass->TurretCount - 1);
+	}
+
 	Powered_Unit_AI();
 
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
@@ -3937,7 +4005,8 @@ void TechnoClass::AI(void)
 	// As TechnoClass::Update (0x6F9E50) and BombListClass::Update (0x438BF0): the bomb ticks where the planter's player can hear it, and goes off on time.
 	if (BombDetonateFrame != -1) {
 		if (BombHouse != NULL && BombHouse->Is_Player_Control()) {
-			Play_If_In_Range(Rule->BombTickingSound, Center_Coord(), &BombSound, true);
+			int const sound = BombWeapon != NULL && BombWeapon->IvanTickingSound != WeaponTypeClass::IVAN_SOUND_UNSET ? BombWeapon->IvanTickingSound : Rule->BombTickingSound;
+			Play_If_In_Range((VocType)sound, Center_Coord(), &BombSound, true);
 		}
 		if (Frame > BombDetonateFrame) {
 			Detonate_Bomb();
@@ -3968,7 +4037,8 @@ void TechnoClass::AI(void)
 
 	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
-	 * (TechnoClass::Update, 0x6F9E50).
+	 * (TechnoClass::Update, 0x6F9E50). A veteran flashes only with a VeteranFlashTimer or
+	 * Promote.VeteranFlash above zero (Ares).
 	 */
 	int const rank = Veterancy.Rank();
 	if (rank != CurrentRank) {
@@ -3976,10 +4046,20 @@ void TechnoClass::AI(void)
 			if (House->Is_Player_Control()) {
 				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
 				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
-				Speak_Eva("EVA_UnitPromoted");
+				std::string const & line = TClass->EvaPromoted[rank == 2 ? 1 : 0];
+				if (line.empty()) {
+					Speak_Eva("EVA_UnitPromoted");
+				} else if (!ObjectKeyRules::Names_Nothing(line)) {
+					Speak_Eva(line.c_str());
+				}
 			}
 			if (rank == 2) {
-				FlashCount = Rule->EliteFlashTimer;
+				FlashCount = TClass->PromoteEliteFlash >= 0 ? TClass->PromoteEliteFlash : Rule->EliteFlashTimer;
+			} else {
+				int const flash = TClass->PromoteVeteranFlash >= 0 ? TClass->PromoteVeteranFlash : Rule->VeteranFlashTimer;
+				if (flash > 0) {
+					FlashCount = flash;
+				}
 			}
 		}
 		CurrentRank = rank;
@@ -4052,7 +4132,9 @@ void TechnoClass::AI(void)
 	**	the heal logic here.
 	*/
 	if (Should_Self_Heal_Now()) {
-		Strength = std::min(Strength + TClass->Self_Heal_Step(), TClass->MaxStrength);
+		int rank = Veterancy.Is_Elite() ? 2 : Veterancy.Is_Veteran() ? 1 : 0;
+		int ceiling = std::max((int)(TClass->Self_Heal_Cap(rank) * TClass->MaxStrength + 0.5), (int)Strength);
+		Strength = std::min(Strength + TClass->Self_Heal_Step(rank), std::min(ceiling, (int)TClass->MaxStrength));
 		if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
 			if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
 				ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
@@ -4200,6 +4282,10 @@ void TechnoClass::AI(void)
 
 	Update_Radar_Position();
 
+	if (WeaponsDisabledFrames > 0) {
+		WeaponsDisabledFrames--;
+	}
+
 	if (StunDuration > 0) {
 		StunDuration--;
 		if (StunDuration == 0) {
@@ -4213,7 +4299,7 @@ void TechnoClass::AI(void)
 				}
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
-					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
+					if (anim != NULL && anim->xObject == this && EMPulseClass::Is_Sparkles(anim->Class)) {
 						anim->Loops = 0;
 					}
 				}
@@ -4223,15 +4309,19 @@ void TechnoClass::AI(void)
 					((FootClass *)foot)->Locomotion->Power_On();
 				}
 				UnitClass * unit = dynamic_cast<UnitClass *>(foot);
+				bool const harvester = unit != NULL && Rule->HarvesterUnit.Is_In_List(unit->Class);
 				if (unit != NULL && unit->Mission != MISSION_UNLOAD) {
-					if (Rule->HarvesterUnit.Is_In_List(unit->Class)) {
+					if (harvester) {
 						unit->Assign_Destination(NULL);
 						unit->Assign_Mission(MISSION_HARVEST);
 					}
 				}
+				if (ObjectKeyRules::Takes_EMP_Recover_Mission(Rule->EMPAIRecoverMission != MISSION_NONE, House->Is_Human_Player(), harvester, Mission == MISSION_UNLOAD)) {
+					Assign_Mission(Rule->EMPAIRecoverMission);
+				}
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
-					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
+					if (anim != NULL && anim->xObject == this && EMPulseClass::Is_Sparkles(anim->Class)) {
 						anim->Loops = 0;
 					}
 				}
@@ -4298,7 +4388,10 @@ void TechnoClass::Cloaking_AI(bool)
 						CloakingDevice.Set_Rate(0);
 						CloakingDevice.Set_Stage(0);	// re-start the stage counter
 						Cloak = UNCLOAKED;
-						CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+						// A longer delay that a Sonar.Duration hit or a sonar pulse set stays.
+						if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
+							CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+						}
 						Mark(MARK_CHANGE);
 						break;
 
@@ -4389,6 +4482,9 @@ void TechnoClass::Cloaking_AI(bool)
 /// <returns>bool; Should the object uncloak now?</returns>
 bool TechnoClass::Should_Uncloak(void) const
 {
+	if (!TClass->IsCloakAllowed) {
+		return(true);
+	}
 	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House);
 	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Immobilized()) {
 		if (Has_Ability(ABILITY_CLOAK)) return(false);
@@ -4416,6 +4512,10 @@ bool TechnoClass::Should_Uncloak(void) const
  *=============================================================================================*/
 bool TechnoClass::Is_Ready_To_Cloak(void) const
 {
+	if (!TClass->IsCloakAllowed) {
+		return(false);
+	}
+
 	/*
 	**	If the object cannot recloak, then it certainly is not allowed to start.
 	*/
@@ -4602,8 +4702,11 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 	}
 
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
-	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
-		return(FIRE_ILLEGAL);
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl) {
+		bool const can = weapon->WarheadPtr->IsMindControlPermanent ? Can_Capture_Permanently(this, techno) : (CaptureManager && CaptureManager->Can_Capture(techno));
+		if (!can) {
+			return(FIRE_ILLEGAL);
+		}
 	}
 
 	// A parasite weapon fires only at a foot object its parasite can get into; a structure or a cell is never one (TechnoClass::GetFireError, 0x6FC0B0).
@@ -4800,15 +4903,23 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	*/
 	if (check_rearm && Arm != 0) return(FIRE_REARM);
 
+	// A DisableWeapons.Duration jam holds fire as a reload does, so the object keeps its target (Ares).
+	if (WeaponsDisabledFrames > 0) return(FIRE_REARM);
+
 	if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE]) return(FIRE_REARM);
 	if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN]) return(FIRE_REARM);
 	if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK]) return(FIRE_REARM);
 	if (weapon->IsSonic && Wave) return(FIRE_REARM);
 
 	/*
-	**	If there is no ammo left, then it can't fire.
+	**	Without the rounds a shot uses it can't fire, and waits for them to reload (Ares weapon Ammo). A type
+	**	with a NoAmmoWeapon fires that weapon once its ammunition is low, and no other (Ares).
 	*/
-	if (!Ammo) {
+	if (Uses_No_Ammo_Weapon()) {
+		if (which != TClass->NoAmmoWeapon) {
+			return(FIRE_AMMO);
+		}
+	} else if (Ammo >= 0 && Ammo < Rounds_Per_Shot(weapon)) {
 		return(FIRE_AMMO);
 	}
 
@@ -5130,6 +5241,7 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, inner, outer, spread, duration, false, true, 1.0, 0.0);
 	beam->IsHouseColor = weapon->IsHouseColor;
 	beam->EmissiveStrength = weapon->EmissiveStrength;
+	beam->CoreThickness = weapon->LaserThickness;
 
 	// A house colored beam is drawn thick. A Prism Tower's is 3 lines out, or 5 while other towers support it; any other
 	// structure's stays 1, and a unit's takes 2 (TechnoClass::Fire, 0x6FDD50). No wave is made for a laser; gamemd makes
@@ -5213,7 +5325,7 @@ static void Reveal_Firer_On_Fire(TechnoClass * firer, AbstractClass * target, We
 int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 {
 	int firepower = weapon->Attack;
-	if (weapon->IsSonic || weapon->UseFireParticles) {
+	if (!weapon->Applies_Damage()) {
 		firepower = 0;
 	}
 	if (firepower > 0) {
@@ -5250,7 +5362,7 @@ int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass co
 	if (target == NULL) {
 		return(0);
 	}
-	if (weapon->IsSonic || weapon->UseFireParticles) {
+	if (!weapon->Applies_Damage()) {
 		return(0);
 	}
 
@@ -5357,7 +5469,7 @@ bool TechnoClass::Fire_Without_Projectile(AbstractClass * target, WeaponTypeClas
 			techno->LimpetType.Set(House);
 			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
 			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			SecondaryFacing.Set_ROT((int)((double)TClass->Turret_ROT() * techno->LimpetSpeedFactor));
 			if (weapon->Sound.Count() > 0) {
 				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
 			}
@@ -5393,13 +5505,15 @@ void TechnoClass::Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & di
 	int spread = 0;
 	int distance = 0;
 	int range = 0;
-	if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
-		spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
+	bool const ground_path = !bullet->Class->FlakScatter || bullet->Class->IsInvisible;
+	auto const bounds = ProjectileRules::Ballistic_Scatter_Bounds(Rule->BallisticScatter, bullet->Class->BallisticScatterMin, bullet->Class->BallisticScatterMax, ground_path);
+	if (ground_path) {
+		spread = Scen->RandomNumber(bounds.first, bounds.second);
 	} else {
 		path = "B";
 		distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
 		range = Weapon_Range(which);
-		int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
+		int const share = Scen->RandomNumber(bounds.first, bounds.second);
 		spread = range > 0 ? (share * distance) / range : 0;
 	}
 	int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
@@ -5562,12 +5676,12 @@ void TechnoClass::Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord
 void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord)
 {
 	if (weapon->IsSonic) {
-		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target, weapon);
 	}
 
 	// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
-		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target, weapon);
 	}
 
 	if (TClass->IsTargetLaser && House->Is_Player_Control()) {
@@ -5581,12 +5695,12 @@ void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass con
 	// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
 	if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
 		bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-		RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+		RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), weapon->HasBeamColor ? weapon->BeamColor : (temporal ? Rule->ChronoBeamColor : Rule->RadColor), weapon->BeamDuration, weapon->BeamAmplitude);
 	}
 
 	// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
-		RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, Rule->RadColor);
+		RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, weapon->HasBeamColor ? weapon->BeamColor : Rule->RadColor, weapon->BeamDuration, weapon->BeamAmplitude);
 	}
 
 	/*
@@ -5761,15 +5875,22 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
 		ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
 	}
-	if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) {
+	if ((weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) || weapon->IsDetachedRailgun) {
 		Coord start = fire_coord;
 		Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
-		ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+		ParticleSystemClass * beam = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST railgun %s fires %s at frame %d, detached %d\n", TClass->Name(), weapon->Name(), Frame, (int)weapon->IsDetachedRailgun);
+		}
+		// A detached beam is not remembered, so it does not hold up the next shot.
+		if (weapon->IsRailgun) {
+			ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = beam;
+		}
 	}
 
 	LastFireFrame = Frame;
 	BurstIndex++;
-	Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+	Arm = IsBerzerk ? (int)(Rearm_Delay(which) * Rule->BerserkROFMultiplier) : Rearm_Delay(which);
 	ChargeTurretDelay = (int)Arm;
 	BurstIndex %= weapon->Burst;
 
@@ -5796,7 +5917,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	/*
 	**	Reduce ammunition for this object.
 	*/
-	Reduce_Ammunition();
+	Reduce_Ammunition(Rounds_Per_Shot(weapon));
 
 	/*
 	**	Firing will in all likelihood, require the unit to be redrawn. Flag it to be
@@ -6023,7 +6144,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	the no action flag.
 		*/
 		// The player sets off their own bomb by clicking the vehicle or soldier carrying it (TechnoClass::MouseOverObject, 0x6FFEC0).
-		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Rule->IsCanDetonateTimeBomb) {
+		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Can_Detonate_Bomb()) {
 			return(ACTION_DETONATE);
 		}
 
@@ -6135,7 +6256,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 
 		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || ((!House->Is_Ally(object) || friendly_fire) && (!fooled || friendly_fire))) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
-			if (Is_Weapon_Equipped() ||
+			if ((Is_Weapon_Equipped() && !TClass->IsNoManualFire) ||
 					(RTTI == RTTI_INFANTRY &&
 					(/// ((InfantryTypeClass const *)ttype)->IsBomber ||
 					((InfantryTypeClass const *)ttype)->IsCapture)
@@ -6264,7 +6385,7 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 	/*
 	**	If firing is possible and legal, then return this action potential.
 	*/
-	if (House->Is_Player_Control() && Get_Class_Weapon_Data(0)->Weapon != NULL) {
+	if (House->Is_Player_Control() && Get_Class_Weapon_Data(0)->Weapon != NULL && !TClass->IsNoManualFire) {
 
 		bool destroyable = Map[cell].Is_Tile_Destroyable_Cliff();
 		if (destroyable) {
@@ -6909,8 +7030,30 @@ void TechnoClass::Set_Owner(HouseClass * newowner)
 /// it does any damage. Returns true when Take_Damage must return RESULT_NONE without applying
 /// the hit.
 /// </summary>
-bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative)
+bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative, HouseClass * sourcehouse, bool & effects_apply)
 {
+	DamageWarhead = warhead;
+
+	// A RelativeDamage warhead hurts by a share of the victim's strength in place of the damage the shot carries; a kind of victim
+	// with no percentage takes none (Ares). An Organic vehicle counts as infantry and a ConsideredAircraft one as an aircraft.
+	if (warhead != NULL && warhead->IsRelativeDamage && !forced) {
+		int percent = warhead->RelativeDamageVehicles;
+		if (RTTI == RTTI_BUILDING) {
+			percent = warhead->RelativeDamageBuildings;
+		} else if (RTTI == RTTI_AIRCRAFT || TClass->IsConsideredAircraft) {
+			percent = warhead->RelativeDamageAircraft;
+		} else if (RTTI == RTTI_INFANTRY || TClass->IsOrganic) {
+			percent = warhead->RelativeDamageInfantry;
+		}
+		if (percent == 0) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+		int const basis = percent > 0 ? TClass->MaxStrength : Strength;
+		int const share = (int)((double)basis * (percent < 0 ? -percent : percent) / 100.0);
+		damage = negative ? -share : share;
+	}
+
 	// A vehicle in its bunker is hurt only by PenetratesBunker warheads, which leave the bunker
 	// itself unharmed (TechnoClass::ReceiveDamage, 0x701B67).
 	if (BunkerLinkedItem != NULL && !forced && warhead != NULL) {
@@ -6927,15 +7070,22 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 	 * to one point even when it is zero (TechnoClass::ReceiveDamage, 0x701900); a Webby hit
 	 * carries no damage and stays at zero.
 	 */
-	if (!forced && !negative && !(damage == 0 && warhead != NULL && warhead->IsWebby)) {
-		damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * AttachedEffects.Armor_Multiplier()));
+	if (!forced && !negative && !(damage == 0 && warhead != NULL && (warhead->IsWebby || warhead->IsAllowZeroDamage || warhead->AttachEffect.Is_Defined()))) {
+		// An attached effect with an armor multiplier of zero or less takes all the damage away, which is how a mod
+		// makes an object invulnerable for the effect's time; dividing by it would give no number at all.
+		double const effect_armor = AttachedEffects.Armor_Multiplier();
+		if (effect_armor <= 0.0) {
+			damage = 0;
+		} else {
+			damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * effect_armor));
 
-		if (Has_Ability(ABILITY_STRONGER)) {
-			damage = VeteranRules::Divided(damage, Rule->VeteranArmor);
-		}
+			if (Has_Ability(ABILITY_STRONGER)) {
+				damage = VeteranRules::Divided(damage, Rule->VeteranArmor);
+			}
 
-		if (damage < 1) {
-			damage = 1;
+			if (damage < 1) {
+				damage = 1;
+			}
 		}
 
 		/*
@@ -6963,16 +7113,43 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 		return(true);
 	}
 
-	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not (TechnoClass::ReceiveDamage, 0x701900).
-	if (warhead != NULL && !warhead->IsAffectsAllies && source != NULL && House->Is_Ally(source->House)) {
+	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not
+	// (TechnoClass::ReceiveDamage, 0x701900). An object of the firer's own house follows AffectsOwner instead, and an
+	// owned animation's damage counts its owner as the firer (Ares).
+	HouseClass const * const attacking_house = source != NULL ? source->House : Blast_Attacking_House();
+	if (warhead != NULL && attacking_house != NULL && WarheadRules::Warhead_Spares_House(House == attacking_house, House->Is_Ally(attacking_house), warhead->IsAffectsOwner, warhead->IsAffectsAllies)) {
 		damage = 0;
 		return(true);
 	}
 
+	// An AffectsEnemies=no warhead does nothing to an object whose owner is no ally of the firer's house, which an explosion with no firer takes from the house it is credited to (Ares).
+	if (warhead != NULL && !warhead->IsAffectsEnemies) {
+		HouseClass const * const attacker = source != NULL ? source->House : sourcehouse;
+		if (attacker != NULL && !House->Is_Ally(attacker)) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+	}
+
+	// The effects of the warhead reach an object whose armor has a nonzero Verses, and that the hit damages when
+	// EffectsRequireDamage is set (Ares); EffectsRequireVerses=no lifts the Verses test.
+	effects_apply = warhead != NULL && WarheadRules::Warhead_Effects_Apply(warhead->IsEffectsRequireVerses, warhead->IsEffectsRequireDamage,
+		warhead->Versus(TClass->Armor), warhead->IsEffectsRequireDamage && !negative ? Modify_Damage(damage, warhead, TClass->Armor, distance) : 1);
+
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
-	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && effects_apply
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
 		AttachedEffects.Attach(this, warhead);
+	}
+
+	// A Flash.Duration warhead makes an object whose armor it affects flash for that many frames (Ares).
+	if (warhead != NULL && warhead->FlashDuration > 0 && Strength > 0 && effects_apply) {
+		FlashCount = std::max(FlashCount, (unsigned)warhead->FlashDuration);
+	}
+
+	// A DisableWeapons.Duration warhead jams the weapons of an object that is not under the Iron Curtain (Ares).
+	if (warhead != NULL && warhead->DisableWeaponsDuration > 0 && Strength > 0 && effects_apply && !Is_Iron_Curtained()) {
+		WeaponsDisabledFrames = std::max(WeaponsDisabledFrames, warhead->DisableWeaponsDuration);
 	}
 
 	/*
@@ -6983,8 +7160,38 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 		int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
 		Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
 		AUTOTEST_LOG("curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
+		if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && effects_apply) {
+			Apply_Iron_Curtain_Warhead(warhead, source, sourcehouse);
+		}
 		damage = 0;
 		return(true);
+	}
+
+	// A Sonar.Duration warhead decloaks an object it hits and keeps it from cloaking for that many frames, at least as long as
+	// the delay it already has (Ares).
+	if (warhead != NULL && warhead->SonarDuration > 0 && !negative && Strength > 0 && effects_apply) {
+		if (Cloak == CLOAKED || Cloak == CLOAKING) {
+			Do_Uncloak();
+		}
+		if ((int)CloakDelay < warhead->SonarDuration) {
+			CloakDelay = warhead->SonarDuration;
+		}
+	}
+
+	// A KillDriver warhead with a nonzero Verses against the armor takes a vehicle's driver instead of damaging it (Ares).
+	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && effects_apply
+		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
+	// A warhead with an EMP.Duration changes the EMP counter of an object whose armor has a nonzero Verses (Ares). A hit that
+	// destroys the object becomes a lethal hit that skips armor.
+	if (warhead != NULL && warhead->EMPDuration != 0 && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0 && !forced
+		&& EMPulseClass::Hit(this, warhead, source)) {
+		damage = TClass->MaxStrength;
+		warhead = Rule->C4Warhead;
+		forced = true;
 	}
 
 	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).
@@ -7000,9 +7207,7 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 		if (Ammo < 0) {
 			Ammo = 0;
 		}
-		if (RTTI == RTTI_UNIT) {
-			((UnitClass *)this)->Start_Reloading();
-		}
+		Start_Reloading();
 	}
 
 	// A CausesDelayKill warhead sets a fuse on an EligibleForDelayKill structure, later the farther it is from the blast (TechnoClass::ReceiveDamage, 0x701E92).
@@ -7071,19 +7276,28 @@ void TechnoClass::Release_Dependents_On_Death(TechnoClass * source)
 }
 
 
-void TechnoClass::Play_Death_Voices(void)
+void TechnoClass::Play_Death_Voices(WarheadTypeClass const * warhead)
 {
 	/*
 	 * Play the death voice response, heard only for an object the local player controls
-	 * (TechnoClass::ReceiveDamage, 0x701900).
+	 * (TechnoClass::ReceiveDamage, 0x701900). A warhead's VoiceDie.Override and DieSound.Override replace the ones
+	 * of the type, and VOC_NONE silences them (Ares).
 	 */
-	if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
+	if (warhead != NULL && warhead->IsVoiceDieOverridden) {
+		if (warhead->VoiceDieOverride != VOC_NONE && House->Is_Player_Control()) {
+			Unit_Voice_Effect(warhead->VoiceDieOverride, Get_Coord());
+		}
+	} else if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
 		VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
 		Unit_Voice_Effect(voc, Get_Coord());
 	}
 
 	// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
-	if (TClass->DieSound.Count() > 0) {
+	if (warhead != NULL && warhead->IsDieSoundOverridden) {
+		if (warhead->DieSoundOverride != VOC_NONE) {
+			Sound_Effect(warhead->DieSoundOverride, Get_Coord());
+		}
+	} else if (TClass->DieSound.Count() > 0) {
 		VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
 		Sound_Effect(voc, Get_Coord());
 	}
@@ -7134,7 +7348,24 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 {
 	bool negative = damage < 0;
 
-	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative)) {
+	int const raw_damage = damage;
+	int const strength_before = Strength;
+	bool const traced = TraceDamageType != NULL && (TClass == TraceDamageType || (source != NULL && source->TClass == TraceDamageType));
+	double const armor_before = traced ? AttachedEffects.Armor_Multiplier() : 1.0;
+	auto trace = [&](char const * outcome) {
+		if (traced) {
+			HouseClass const * attacker = source != NULL ? source->House : (sourcehouse != NULL ? sourcehouse : Blast_Attacking_House());
+			DebugString("DAMAGETRACE frame %d %s cell %d,%d by %s of %s warhead %s raw %d distance %d forced %d armor %s verses %.3f country %.3f effects %d x%.3f damage %d strength %d->%d %s\n",
+				Frame, TClass->Name(), Get_Cell().X, Get_Cell().Y, source != NULL ? source->TClass->Name() : "-", attacker != NULL ? attacker->Class->Name() : "-",
+				warhead != NULL ? warhead->Name() : "-", raw_damage, distance, (int)forced, Armor_Type_Name(TClass->Armor),
+				warhead != NULL ? warhead->Versus(TClass->Armor) : 1.0, House->Country_Armor_Multiplier(TClass), AttachedEffects.Count(), armor_before,
+				damage, strength_before, (int)Strength, outcome);
+		}
+	};
+
+	bool effects_apply = false;
+	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative, sourcehouse, effects_apply)) {
+		trace("refused");
 		return(RESULT_NONE);
 	}
 
@@ -7146,10 +7377,21 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		LimpetType.Clear();
 		LimpetSpeedFactor = 0.0;
 		PrimaryFacing.Set_ROT(TClass->ROT);
-		SecondaryFacing.Set_ROT(TClass->ROT);
+		SecondaryFacing.Set_ROT(TClass->Turret_ROT());
 	}
 
 	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
+	trace("taken");
+
+	// A damaging hit holds back self healing for the type's SelfHealing.CombatDelay frames (Ares). Healing does not.
+	if (!negative && damage > 0 && TClass->SelfHealingCombatDelay > 0) {
+		SelfHealDelayTimer = TClass->SelfHealingCombatDelay;
+	}
+
+	// An IronCurtain.Duration warhead acts once the conventional damage has landed, on an object that survived it (Ares).
+	if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && result != RESULT_DESTROYED && result != RESULT_ALREADY_DESTROYED && effects_apply) {
+		Apply_Iron_Curtain_Warhead(warhead, source, sourcehouse);
+	}
 
 	/*
 	 * Inform the owning house of the anger level this damage produced.
@@ -7181,10 +7423,15 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			DisguiseHouse = NULL;
 			Mark(MARK_CHANGE);
 		}
-		// A DisguiseWhenStill vehicle's terrain look goes too (UnitClass::ClearDisguise, 0x746720).
-		if (RTTI == RTTI_UNIT && ((UnitClass *)this)->MirageType != NULL) {
-			((UnitClass *)this)->MirageType = NULL;
-			Mark(MARK_CHANGE);
+		// A DisguiseWhenStill vehicle's terrain look goes too (UnitClass::ClearDisguise, 0x746720), and it cannot take a
+		// new one for twice the damage in frames (InfantryBlinkTimer, 0x702012).
+		if (RTTI == RTTI_UNIT) {
+			UnitClass * unit = (UnitClass *)this;
+			if (unit->MirageType != NULL) {
+				unit->MirageType = NULL;
+				Mark(MARK_CHANGE);
+			}
+			unit->MirageBlockedUntil = Frame + std::max(damage, 0) * 2;
 		}
 	}
 
@@ -7199,7 +7446,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	switch (result) {
 		case RESULT_DESTROYED:
 			Release_Dependents_On_Death(source);
-			Play_Death_Voices();
+			Play_Death_Voices(warhead);
 
 			Transmit_Message(RADIO_OVER_OUT);
 			Stun();
@@ -7379,7 +7626,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				FootClass * foot = As_FootClass();
 				if (foot != NULL) {
-					if (TarCom == NULL && foot->NavCom == NULL) {
+					if (TarCom == NULL && foot->NavCom == NULL && !warhead->IsPreventScatter) {
 						if (Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
 							Scatter(COORD_NONE, true, false);
 						}
@@ -7390,7 +7637,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				FootClass * foot = As_FootClass();
 				if (foot != NULL) {
-					if (Current_Mission_Control().IsScatter) {
+					if (Current_Mission_Control().IsScatter && !warhead->IsPreventScatter) {
 						if (!IsTethered) {
 							if (!foot->Locomotion->Is_Moving() && TarCom == NULL && foot->NavCom == NULL && Fetch_RTTI() != RTTI_AIRCRAFT) {
 								if (!House->Is_Human_Player() || Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
@@ -7465,6 +7712,9 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 	/*
 	**	Handle any trigger event associated with this object.
 	*/
+	if (RTTI != RTTI_UNIT) {
+		Spring_Destroyed_By_House(source, NULL);
+	}
 	Spring_Kill_Events(source != NULL);
 
 	// A victim of a DontScore=yes type gives its killer nothing, so none of the credit below applies.
@@ -7475,11 +7725,33 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		int const value = VeteranRules::Kill_Value(points, killer->House->Is_Ally(House), Veterancy.Is_Veteran(), Veterancy.Is_Elite());
 
 		// The experience goes to the object that fired, or to the transport or launcher it fired through. A garrison gives it to the occupant whose turn is next, since each shot moves the turn on when it is placed.
+		// The Ares Experience.* keys change who is credited and how much it counts.
 		TechnoClass * credit = NULL;
-		if (killer->IsInOpenToppedTransport && killer->Transporter != NULL && killer->Transporter->TClass->IsTrainable) {
+		double credit_modifier = 1.0;
+		TechnoClass * airstrike_caller = NULL;
+		if (killer->RTTI == RTTI_AIRCRAFT) {
+			for (int index = 0; index < Technos.Count() && airstrike_caller == NULL; index++) {
+				TechnoClass * caller = Technos[index];
+				if (caller->TClass->IsExperienceFromAirstrike && caller->IsActive && std::find(caller->AirstrikePlanes.begin(), caller->AirstrikePlanes.end(), killer) != caller->AirstrikePlanes.end()) {
+					airstrike_caller = caller;
+				}
+			}
+		}
+		if (airstrike_caller != NULL && airstrike_caller->TClass->IsTrainable) {
+			credit = airstrike_caller;
+			credit_modifier = airstrike_caller->TClass->ExperienceAirstrikeModifier;
+		} else if (killer->IsInOpenToppedTransport && killer->Transporter != NULL && killer->Transporter->TClass->IsTrainable && killer->Transporter->TClass->IsExperienceFromPassengers) {
 			credit = killer->Transporter;
+			credit_modifier = credit->TClass->ExperiencePassengerModifier;
+			// A transport that is elite already passes the experience to the soldier that made the kill.
+			if (credit->TClass->IsExperiencePromotePassengers && credit->Veterancy.Is_Elite() && killer->TClass->IsTrainable) {
+				credit = killer;
+			}
 		} else if (killer->TClass->IsTrainable) {
 			credit = killer;
+			if (killer->SpawnOwner != NULL) {
+				credit_modifier = killer->SpawnOwner->TClass->ExperienceSpawnModifier;
+			}
 		} else if (killer->TClass->IsMissileSpawn) {
 			if (killer->SpawnOwner != NULL && killer->SpawnOwner->TClass->IsTrainable) {
 				credit = killer->SpawnOwner;
@@ -7491,7 +7763,22 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			}
 		}
 		if (credit != NULL) {
-			credit->Veterancy.Made_A_Kill(credit->TClass->Cost_Of(House), value);
+			// A mind-controlled killer earns the controller's MindControlVictimModifier of its normal share, and the controller earns
+			// its MindControlSelfModifier of what the killer would have earned.
+			TechnoClass * const controller = killer->MindControlledBy;
+			if (controller != NULL && credit == killer) {
+				credit_modifier *= controller->TClass->ExperienceMindControlVictimModifier;
+				if (controller->TClass->IsTrainable && controller->TClass->ExperienceMindControlSelfModifier != 0.0) {
+					controller->Veterancy.Made_A_Kill(credit->TClass->Cost_Of(House), value, controller->TClass->ExperienceMindControlSelfModifier);
+				}
+			}
+			credit->Veterancy.Made_A_Kill(credit->TClass->Cost_Of(House), value, credit_modifier);
+
+			// A spawned craft's kill also earns its spawner's owner a share (SpawnOwnerModifier).
+			TechnoClass * const spawner = killer->SpawnOwner;
+			if (spawner != NULL && !killer->TClass->IsMissileSpawn && spawner != credit && spawner->TClass->IsTrainable && spawner->TClass->ExperienceSpawnOwnerModifier != 0.0) {
+				spawner->Veterancy.Made_A_Kill(spawner->TClass->Cost_Of(House), value, spawner->TClass->ExperienceSpawnOwnerModifier);
+			}
 		}
 
 		House->WhoLastHurtMe = killer->Owner();
@@ -7534,6 +7821,20 @@ void TechnoClass::Spring_Kill_Events(bool credited)
 		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY, this);
 
 		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY_X, this);
+	}
+}
+
+
+/// <summary>
+/// Offers Ares's Destroyed By House (85) to this object's tag when a trigger on it waits on that
+/// event. It comes before the destroyed event (7), as Ares orders them.
+/// </summary>
+/// <param name="source">The object credited with the kill, or NULL.</param>
+/// <param name="house">The house credited with the kill when no object is, or NULL.</param>
+void TechnoClass::Spring_Destroyed_By_House(TechnoClass * source, HouseClass const * house)
+{
+	if (IsActive && Tag != NULL && Tag->Has_Event(TEVENT_DESTROYED_BY_HOUSE)) {
+		Tag->Spring(TEVENT_DESTROYED_BY_HOUSE, this, CELL_NONE, false, source, house);
 	}
 }
 
@@ -7629,6 +7930,7 @@ void TechnoClass::Record_The_Kill_By_House(HouseClass * house)
 {
 	int const points = TClass->Cost_Of(House);
 
+	Spring_Destroyed_By_House(NULL, house);
 	Spring_Kill_Events(house != NULL);
 
 	if (house != NULL) {
@@ -7696,17 +7998,52 @@ Cell TechnoClass::Nearby_Location(TechnoClass const * techno) const
  *=============================================================================================*/
 void TechnoClass::Do_Uncloak(bool silent)
 {
-	CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+	if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
+		CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+	}
 
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
-		CloakingDevice.Set_Stage(Rule->CloakingStages - 1);
+		CloakingDevice.Set_Stage(Cloaking_Stages() - 1);
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(-1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Play_Cloak_Sound(true);
 		}
 	}
+}
+
+
+/// <summary>
+/// The number of stages this object passes through as it cloaks and decloaks: the type's Cloakable.Stages
+/// when that is above 0, else [General] CloakingStages.
+/// </summary>
+int TechnoClass::Cloaking_Stages(void) const
+{
+	return(TClass->CloakStages > 0 ? TClass->CloakStages : Rule->CloakingStages);
+}
+
+
+/// <summary>
+/// Plays the sound of this object cloaking or decloaking at its position. The type's own sound wins, and
+/// "none" on it is silent; otherwise a decloak uses [AudioVisual] DecloakSound when that is set, and both
+/// fall back to [AudioVisual] CloakSound.
+/// </summary>
+void TechnoClass::Play_Cloak_Sound(bool decloaking) const
+{
+	VocType sound = Rule->CloakSound;
+	if (decloaking) {
+		if (TClass->IsDecloakSoundSet) {
+			sound = TClass->DecloakSound;
+		} else if (TClass->IsCloakSoundSet) {
+			sound = TClass->CloakSound;
+		} else if (Rule->IsDecloakSoundSet) {
+			sound = Rule->DecloakSound;
+		}
+	} else if (TClass->IsCloakSoundSet) {
+		sound = TClass->CloakSound;
+	}
+	Sound_Effect(sound, PositionCoord);
 }
 
 
@@ -7733,7 +8070,7 @@ void TechnoClass::Do_Cloak(bool silent)
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Play_Cloak_Sound(false);
 		}
 	}
 }
@@ -7807,7 +8144,7 @@ VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) con
 		return(VISUAL_NORMAL);
 	}
 
-	stage = double(stage) / Rule->CloakingStages * 256;
+	stage = double(stage) / Cloaking_Stages() * 256;
 
 	if (stage < 0x0040) return(VISUAL_INDISTINCT);
 	if (stage < 0x0080) return(VISUAL_DARKEN);
@@ -8857,10 +9194,11 @@ void TechnoClass::Delete_Me(void)
 
 /// <summary>
 /// Fixes an Ivan bomb to this object (BombListClass::Plant, 0x438E70). Only a soldier plants
-/// one, and an object holds one bomb at a time. BombAttachSound plays when the planter is the
-/// player's.
+/// one, and an object holds one bomb at a time. The attach sound plays when the planter is the
+/// player's. The bomb takes its delay, sounds and other settings from the weapon's IvanBomb keys
+/// where it writes them, and from the rules otherwise.
 /// </summary>
-void TechnoClass::Plant_Bomb(TechnoClass * planter)
+void TechnoClass::Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon)
 {
 	if (planter == NULL || planter->RTTI != RTTI_INFANTRY || BombDetonateFrame != -1) {
 		return;
@@ -8868,10 +9206,33 @@ void TechnoClass::Plant_Bomb(TechnoClass * planter)
 	BombOwner = planter;
 	BombHouse = planter->House;
 	BombPlantFrame = Frame;
-	BombDetonateFrame = Frame + Rule->IvanTimedDelay;
-	if (BombHouse->Is_Player_Control()) {
-		Sound_Effect(Rule->BombAttachSound, Center_Coord());
+	BombWeapon = weapon;
+	BombDetonateFrame = Frame + Bomb_Delay();
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST bomb planted on %s by %s with %s at frame %d, goes off at frame %d\n", TClass->Name(), planter->TClass->Name(), weapon != NULL ? weapon->Name() : "no weapon", Frame, BombDetonateFrame);
 	}
+	if (BombHouse->Is_Player_Control()) {
+		int const sound = weapon != NULL && weapon->IvanAttachSound != WeaponTypeClass::IVAN_SOUND_UNSET ? weapon->IvanAttachSound : Rule->BombAttachSound;
+		Sound_Effect((VocType)sound, Center_Coord());
+	}
+}
+
+
+/// <summary>
+/// The frames the bomb on this object runs before it goes off: the planting weapon's IvanBomb.Delay, or IvanTimedDelay.
+/// </summary>
+int TechnoClass::Bomb_Delay(void) const
+{
+	return(BombWeapon != NULL && BombWeapon->HasIvanDelay ? BombWeapon->IvanDelay : Rule->IvanTimedDelay);
+}
+
+
+/// <summary>
+/// Can the player set off the bomb on this object by hand: the planting weapon's IvanBomb.CanDetonateTimeBomb, or CanDetonateTimeBomb?
+/// </summary>
+bool TechnoClass::Can_Detonate_Bomb(void) const
+{
+	return(BombWeapon != NULL && BombWeapon->IvanCanDetonateTimeBomb >= 0 ? BombWeapon->IvanCanDetonateTimeBomb != 0 : Rule->IsCanDetonateTimeBomb);
 }
 
 
@@ -8886,24 +9247,30 @@ void TechnoClass::Detonate_Bomb(void)
 		return;
 	}
 	TechnoClass * planter = BombOwner;
+	WeaponTypeClass const * const weapon = BombWeapon;
 	bool const harmless = IsInLimbo;
 	Disarm_Bomb();
-	if (harmless || Rule->IvanWarhead == NULL) {
+	WarheadTypeClass const * const warhead = weapon != NULL && weapon->IvanWarhead != NULL ? weapon->IvanWarhead : Rule->IvanWarhead;
+	int const damage = weapon != NULL && weapon->HasIvanDamage ? weapon->IvanDamage : Rule->IvanDamage;
+	if (harmless || warhead == NULL) {
 		return;
 	}
 
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST bomb on %s goes off at frame %d: damage %d, warhead %s\n", TClass->Name(), Frame, damage, warhead->Name());
+	}
 	Coord const coord = PositionCoord;
-	AnimTypeClass const * anim = Combat_Anim(Rule->IvanDamage, Rule->IvanWarhead, Map[coord].Land_Type(), coord);
+	AnimTypeClass const * anim = Combat_Anim(damage, warhead, Map[coord].Land_Type(), coord);
 	if (anim != NULL) {
 		new AnimClass(anim, coord);
 	}
-	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true);
+	Explosion_Damage(coord, damage, planter, warhead, true);
 
 	/*
 	 * A bridge repair hut that carries the bomb also runs the bridge search beside it once the
 	 * bomb has gone off (BombClass::Detonate, 0x438720).
 	 */
-	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut) {
+	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut && (weapon == NULL || weapon->IvanDestroysBridges != 0)) {
 		Map.Destroy_Bridge_At(Get_Cell());
 	}
 }
@@ -8913,6 +9280,7 @@ void TechnoClass::Disarm_Bomb(void)
 {
 	BombOwner = NULL;
 	BombHouse = NULL;
+	BombWeapon = NULL;
 	BombDetonateFrame = -1;
 	BombSound.Stop();
 	BombSound.Clear();
@@ -8998,6 +9366,13 @@ bool TechnoClass::Temporal_AI(void)
 		foot->IsLocomotorProcessing = true;
 		foot->Locomotion->Process();
 		foot->IsLocomotorProcessing = false;
+		// gamemd runs FootClass::Update (0x4DA530) in the frame the hold ends, and its end hands the carried locomotor back, so a move ordered next frame drives.
+		if (foot->IsActive && !foot->Is_Chrono_Warping()) {
+			IPiggyback * piggy = Piggyback_Of(foot->Locomotion.get());
+			if (piggy != NULL && piggy->Is_Ok_To_End()) {
+				foot->Locomotion = piggy->End_Piggyback();
+			}
+		}
 		return(true);
 	}
 
@@ -9107,6 +9482,11 @@ void TechnoClass::Gattling_Rate_Up(int frames)
 	}
 	if (CurrentGattlingStage >= 0 && CurrentGattlingStage < last && stages[CurrentGattlingStage] <= value) {
 		CurrentGattlingStage++;
+		Stop_Gattling_Sound();
+	} else if (TClass->IsGattlingCycle && last > 0 && CurrentGattlingStage == last && stages[last] <= value) {
+		// A cycling weapon that has finished its last stage starts over at the first, with its target kept.
+		CurrentGattlingStage = 0;
+		GattlingValue = 0;
 		Stop_Gattling_Sound();
 	}
 
@@ -9335,6 +9715,66 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 
 
 /// <summary>
+/// Pulls the target into this transport's hold instead of damaging it, as an Abductor=yes weapon does
+/// (Ares). The target must be infantry or a vehicle that is not ImmuneToAbduction, is not under the
+/// Iron Curtain, has no more strength left than Abductor.AbductBelowPercent allows, and fits the hold
+/// under the same rules as a loading passenger. A target that cannot be taken is left alone, so the
+/// shot deals its ordinary damage.
+/// </summary>
+/// <param name="target">The object the shot hit.</param>
+/// <param name="weapon">The Abductor weapon that was fired.</param>
+/// <returns>bool; Is the target now a passenger of this transport?</returns>
+bool TechnoClass::Abduct(AbstractClass * target, WeaponTypeClass const * weapon)
+{
+	FootClass * victim = dynamic_cast<FootClass *>(target);
+	if (weapon == NULL || !weapon->IsAbductor || victim == NULL || victim == this) return(false);
+	if (!IsActive || IsInLimbo || (RTTI != RTTI_UNIT && RTTI != RTTI_AIRCRAFT) || TClass->Max_Passengers() <= 0) return(false);
+	if (!victim->IsActive || victim->IsInLimbo || victim->Strength <= 0) return(false);
+	if (victim->RTTI != RTTI_INFANTRY && victim->RTTI != RTTI_UNIT) return(false);
+	if (victim->TClass->IsImmuneToAbduction || victim->Is_Iron_Curtained()) return(false);
+	if (!WarheadRules::Abducts_At(victim->Strength, victim->TClass->MaxStrength, weapon->AbductBelowPercent)) return(false);
+	if (weapon->AbductMaxHealth > 0 && victim->Strength > weapon->AbductMaxHealth) return(false);
+	if (!Can_Fit_Passenger(victim)) return(false);
+
+	if (weapon->AbductAnim != NULL) {
+		new AnimClass(weapon->AbductAnim, victim->Center_Coord());
+	}
+	if (weapon->IsAbductChangeOwner && !victim->Is_Immune_To_Psionics()) {
+		victim->Set_Owning_House(House, false);
+	}
+
+	victim->Remove_From_Team();
+	victim->Assign_Target(NULL);
+	victim->Assign_Destination(NULL);
+	if (victim->In_Radio_Contact()) {
+		victim->Transmit_Message(RADIO_OVER_OUT);
+	}
+	victim->Limbo();
+	Cargo.Attach(victim);
+	if (TClass->IsGunner && Cargo.How_Many() == 1) {
+		Receive_Gunner(victim);
+	}
+	Play_Transport_Sound(true);
+	victim->Hidden();
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST abducted %s into %s, owner %s, %d of %d room used\n", victim->TClass->Name(), TClass->Name(), victim->House->Class->Name(), Cargo.Total_Size(), TClass->Max_Passengers());
+	}
+
+	// Ares's abduction events: 72 before 71 on the victim, then 73 on the abductor.
+	if (victim->IsActive && victim->Tag != NULL && victim->Tag->Has_Event(TEVENT_ABDUCTED_BY_HOUSE)) {
+		victim->Tag->Spring(TEVENT_ABDUCTED_BY_HOUSE, victim, CELL_NONE, false, this);
+	}
+	if (victim->IsActive && victim->Tag != NULL && victim->Tag->Has_Event(TEVENT_ABDUCTED)) {
+		victim->Tag->Spring(TEVENT_ABDUCTED, victim, CELL_NONE, false, this);
+	}
+	if (IsActive && Tag != NULL && Tag->Has_Event(TEVENT_ABDUCTS_SOMETHING)) {
+		Tag->Spring(TEVENT_ABDUCTS_SOMETHING, this, CELL_NONE, false, this);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Whether this transport accepts the passenger: not one under mind control, as in Yuri's
 /// Revenge; its kind against IsVehicleTransport; and its Size against both the room left in
 /// the hold and this transport's SizeLimit.
@@ -9350,8 +9790,14 @@ bool TechnoClass::Can_Fit_Passenger(ObjectClass const * passenger) const
 
 	if (passenger->RTTI == RTTI_UNIT && !TClass->IsVehicleTransport) return(false);
 
+	// Passengers.Allowed lets in only the types it names, and Passengers.Disallowed keeps out the types it names (Ares).
+	if (!ObjectKeyRules::Passenger_Allowed(ptype->Name(), TClass->PassengersAllowed, TClass->PassengersDisallowed)) return(false);
+
+	// Passengers.BySize=no makes every passenger take one place, whatever its Size (Ares).
+	int const used = TClass->IsPassengersBySize ? Cargo.Total_Size() : Cargo.How_Many();
+	int const needs = TClass->IsPassengersBySize ? ptype->Size : 1;
 	return(ptype->Size <= TClass->SizeLimit &&
-		Cargo.Total_Size() + ptype->Size <= TClass->Max_Passengers());
+		used + needs <= TClass->Max_Passengers());
 }
 
 
@@ -9388,22 +9834,28 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	*/
 	// The crew follows the side of the owning house, as TechnoClass::GetCrew (0x707D20) does.
 	InfantryTypeClass const * infantry = Rule->Technician;
-	switch (SideClass::Place_In_Sides(House->Class->Side)) {
-		case 0:
-			infantry = Rule->AlliedCrew;
-			break;
-		case 1:
-			infantry = Rule->SovietCrew;
-			break;
-		case 2:
-			infantry = Rule->ThirdCrew;
-			break;
-		default:
-			break;
+	SideType const side = House->Class->Side;
+	if (side != SIDE_NONE && side < Sides.Count()) {
+		infantry = Sides[side]->Crew_Type();
 	}
-	if (House->Class->Side != SIDE_NONE) {
-		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
-			infantry = Rule->Technician;
+
+	// A type's own survivor for the owner's side stands in for the side's crew, and the technician roll does not replace it.
+	int const place = SideClass::Place_In_Sides(side);
+	if (side != SIDE_NONE && place >= 0 && place < 4 && !TClass->SurvivorSide[place].empty()) {
+		InfantryType const named = InfantryTypeClass::From_Name(TClass->SurvivorSide[place].c_str());
+		if (named != INFANTRY_NONE) {
+			return(InfantryTypes[named]);
+		}
+	}
+
+	if (side != SIDE_NONE) {
+		InfantryTypeClass const * technician = side < Sides.Count() ? Sides[side]->Technician_Type() : Rule->Technician;
+		if (TClass->CrewTechnicianChance >= 0) {
+			if (Percent_Chance(TClass->CrewTechnicianChance)) {
+				infantry = technician;
+			}
+		} else if (Is_Weapon_Equipped() && Percent_Chance(15)) {
+			infantry = technician;
 		}
 	} else {
 		infantry = Rule->Technician;
@@ -10172,10 +10624,20 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 	bool const elite = Veterancy.Is_Elite();
 
 	// The IFV, type FV, answers with VoiceIFVRepair when the weapon it would use repairs (TechnoClass::Weapon_Attack_Voice, 0x7090A0).
+	// A vehicle type's own VoiceIFVRepair (Ares) replaces that reply for its type.
 	int const which = What_Weapon_Should_I_Use(target);
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
-	if (weapon != NULL && weapon->Attack < 0 && Rule->VoiceIFVRepair != VOC_NONE && stricmp(TClass->Name(), "FV") == 0) {
-		return(Rule->VoiceIFVRepair);
+	if (weapon != NULL && weapon->Attack < 0 && RTTI == RTTI_UNIT) {
+		UnitTypeClass const * type = static_cast<UnitClass const *>(this)->Class;
+		VocType repair = VOC_NONE;
+		if (type->IsVoiceIFVRepairSet) {
+			repair = type->VoiceIFVRepair;
+		} else if (stricmp(type->Name(), "FV") == 0) {
+			repair = Rule->VoiceIFVRepair;
+		}
+		if (repair != VOC_NONE) {
+			return(repair);
+		}
 	}
 
 	if (which == 0) {
@@ -10430,6 +10892,14 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 			return(true);
 		}
 	}
+	if (Mission == MISSION_GUARD) {
+		if (!TClass->IsCanPassiveAquireGuard) {
+			return(false);
+		}
+		if (!TClass->IsCanPassiveAquireCloak && (TClass->IsCloakable || IsCloakable || Has_Ability(ABILITY_CLOAK))) {
+			return(false);
+		}
+	}
 	if (!TClass->IsOpportunityFire) {
 		if (Mission != MISSION_GUARD) {
 			return(false);
@@ -10557,6 +11027,23 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
+/// Draws the ring of a selected vehicle, soldier or aircraft whose type sets RadialIndicatorRadius, in the
+/// type's RadialColor or, when that is black, the owner's color. A structure draws its own.
+/// </summary>
+void TechnoClass::Draw_Radial_Indicator(void) const
+{
+	if (RTTI == RTTI_BUILDING || TClass->RadialIndicatorRadius <= 0.0 || !House->Is_Player_Control()) {
+		return;
+	}
+	RGBClass color = TClass->RadialColor;
+	if (color.Get_Red() == 0 && color.Get_Green() == 0 && color.Get_Blue() == 0) {
+		color = House_Display_RGB(House);
+	}
+	TacticalMap->Draw_Range_Ring(Center_Coord(), TClass->RadialIndicatorRadius, color);
+}
+
+
+/// <summary>
 /// Prints a short label in a black box edged in a house's color, as gamemd does for an object's control
 /// group number and its primary tag (TechnoClass::DrawPipScalePips, 0x709A90, and DrawExtraInfo, 0x70AA60).
 /// </summary>
@@ -10613,11 +11100,13 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 		rank = -1;
 	}
 	if (rank >= 0) {
-		if (TClass->InsigniaFrame[rank] >= 0) {
-			veterancy_shape = TClass->InsigniaFrame[rank];
-		}
+		// A custom file without a frame number shows its first frame, which also gives a rookie an insignia.
 		if (TClass->InsigniaShapes[rank] != NULL) {
 			pips1 = TClass->InsigniaShapes[rank];
+			veterancy_shape = 0;
+		}
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
 		}
 	}
 	if (veterancy_shape != PIP_NONE) {
@@ -11194,6 +11683,26 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 					Map.Sight_From(PositionCoord, sight_range, limpet_owner, incremental, dontmap);
 				}
 			}
+			if (Is_Foot()) {
+				Look_For_Radar_Spies(sight_range, incremental, dontmap);
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Reveals the map around this object to each other house whose spy infiltrated a SpyEffect.RevealRadar structure of the owner (Ares).
+/// </summary>
+void TechnoClass::Look_For_Radar_Spies(int sight_range, bool incremental, bool dontmap)
+{
+	if (!House->UnitsRevealedTo.Any()) {
+		return;
+	}
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * spy_owner = Houses[index];
+		if (spy_owner != House && House->UnitsRevealedTo[spy_owner]) {
+			Map.Sight_From(PositionCoord, sight_range, spy_owner, incremental, dontmap);
 		}
 	}
 }
@@ -11475,10 +11984,14 @@ bool TechnoClass::Should_Self_Heal_Now(void) const
 	if (Strength >= TClass->MaxStrength) {
 		return(false);
 	}
+	if (SelfHealDelayTimer > 0) {
+		return(false);
+	}
 	if ((Frame % std::max((int)(TClass->Self_Heal_Rate() * TICKS_PER_MINUTE), 1)) != 0) {
 		return(false);
 	}
-	return(HealthRatio > TClass->Self_Heal_Cap() ? false : true);
+	int rank = Veterancy.Is_Elite() ? 2 : Veterancy.Is_Veteran() ? 1 : 0;
+	return(HealthRatio > TClass->Self_Heal_Cap(rank) ? false : true);
 }
 
 
@@ -11499,6 +12012,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirepowerBias);
 	stream.Serialize(IdleTimer);
 	stream.Serialize(RadarFlashTimer);
+	stream.Serialize(SelfHealDelayTimer);
 	stream.Serialize(TargetingTimer);
 	stream.Serialize(IronCurtainTimer);
 	stream.Serialize(IronTintTimer);
@@ -11560,6 +12074,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombHouse);
 	stream.Serialize(BombPlantFrame);
 	stream.Serialize(BombDetonateFrame);
+	stream.Serialize(BombWeapon);
 	stream.Serialize(IsBerzerk);
 	stream.Serialize(BerzerkDuration);
 	stream.Serialize(IsForceShielded);
@@ -11577,6 +12092,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PitchAngle);
 	stream.Serialize(Arm);
 	stream.Serialize(Ammo);
+	stream.Serialize(Reload);
 	stream.Serialize(PurchasePrice);
 	stream.Serialize(ParticleSystems);
 	stream.Serialize(Wave);
@@ -11622,6 +12138,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOnWaypointPatrol);
 	stream.Serialize(NearbyObject);
 	stream.Serialize(StunDuration);
+	stream.Serialize(WeaponsDisabledFrames);
 	stream.Serialize(IsDeactivated);
 	stream.Serialize(LimpetType);
 	stream.Serialize(LimpetSpeedFactor);
@@ -11659,6 +12176,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(PitchAngle);
 	crc((int)Arm);
 	crc(Ammo);
+	crc((int)Reload);
 	crc(PurchasePrice);
 	crc(BurstIndex);
 	crc(RadialFireIndex);
@@ -11685,6 +12203,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	DiscoveredBy.Compute_CRC(crc);
 	crc(IsALemon);
 	crc(StunDuration);
+	crc(WeaponsDisabledFrames);
 	crc(UnusedCooldown);
 	crc(Unused1);
 	crc(SightIncrease);
@@ -12222,6 +12741,13 @@ int TechnoClass::Airstrike_Tint_Brightness(int brightness) const
 /// <returns>Returns with the tinted converter, or the scheme's own converter when no tint applies.</returns>
 ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
 {
+	// A type with an art Palette is drawn through that palette, shaded for the house colour (no tint applies to it).
+	if (!TClass->PaletteName.empty()) {
+		if (ConvertClass * custom = Palette_Scheme_Drawer(TClass->PaletteName, scheme->ID)) {
+			return(custom);
+		}
+	}
+
 	int red = 0;
 	int green = 0;
 	int blue = 0;
@@ -12374,6 +12900,74 @@ void TechnoClass::Iron_Tint_AI(void)
 
 
 /// <summary>
+/// Fills a new transport, bunker or reactor with the passengers its type's InitialPayload.Types names, as many of each
+/// as InitialPayload.Nums says (Ares). A passenger that does not fit is dropped, as is a type that is neither a soldier
+/// nor a vehicle or that carries a payload of its own.
+/// </summary>
+void TechnoClass::Create_Initial_Payload(void)
+{
+	if (TClass == NULL || TClass->InitialPayloadTypes.empty() || House == NULL) {
+		return;
+	}
+	if (RTTI != RTTI_UNIT && RTTI != RTTI_BUILDING) {
+		return;
+	}
+
+	std::vector<int> const counts = ObjectKeyRules::Payload_Counts(TClass->InitialPayloadTypes.size(), TClass->InitialPayloadNums);
+	for (size_t entry = 0; entry < TClass->InitialPayloadTypes.size(); entry++) {
+		char const * const name = TClass->InitialPayloadTypes[entry].c_str();
+		TechnoTypeClass const * type = NULL;
+		InfantryType const infantry_type = InfantryTypeClass::From_Name(name);
+		if (infantry_type != INFANTRY_NONE) {
+			type = InfantryTypes[infantry_type];
+		} else {
+			UnitType const unit_type = UnitTypeClass::From_Name(name);
+			if (unit_type != UNIT_NONE) {
+				type = UnitTypes[unit_type];
+			}
+		}
+		if (type == NULL || !type->InitialPayloadTypes.empty()) {
+			continue;
+		}
+
+		for (int copy = 0; copy < counts[entry]; copy++) {
+			BuildingClass * const building = RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(this) : NULL;
+			bool const garrison = building != NULL && building->Class->IsCanBeOccupied;
+			if (garrison && (type->RTTI != RTTI_INFANTRYTYPE || building->Occupants.Count() >= building->Class->MaxNumberOccupants)) {
+				break;
+			}
+			if (building != NULL && !garrison && (!building->Class->IsInfantryAbsorb || type->RTTI != RTTI_INFANTRYTYPE || Cargo.How_Many() >= TClass->Max_Passengers())) {
+				break;
+			}
+
+			FootClass * const passenger = static_cast<FootClass *>(type->Create_One_Of(House));
+			if (passenger == NULL) {
+				break;
+			}
+			if (garrison) {
+				passenger->Limbo();
+				building->Occupants.Add(static_cast<InfantryClass *>(passenger));
+			} else if (building != NULL) {
+				passenger->Limbo();
+				Cargo.Attach(passenger);
+				passenger->House->Tracking_Absorb(passenger);
+			} else {
+				if (!Can_Fit_Passenger(passenger)) {
+					delete passenger;
+					break;
+				}
+				Cargo.Attach(passenger);
+				passenger->Hidden();
+				if (TClass->IsGunner && Cargo.How_Many() == 1) {
+					Receive_Gunner(passenger);
+				}
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Steps the pulse of a structure an airstrike designator marks (FUN_0070E920): a flash as the mark
 /// starts, then a swing of brightness that repeats while the mark timer has 158 frames or more left,
 /// and a closing flash once it is under 31.
@@ -12465,6 +13059,51 @@ void TechnoClass::Airstrike_Tint_AI(void)
 
 
 /// <summary>
+/// Has this object run low enough on ammunition that its type's NoAmmoWeapon is the only weapon it may fire?
+/// </summary>
+bool TechnoClass::Uses_No_Ammo_Weapon(void) const
+{
+	return(ObjectKeyRules::No_Ammo_Weapon_Active(TClass->NoAmmoWeapon, TClass->MaxAmmo, Ammo, TClass->NoAmmoAmount));
+}
+
+
+/// <summary>
+/// Puts this object under the Iron Curtain for the time an IronCurtain.Duration warhead gives, or shortens the curtain it
+/// is under when the duration is negative (Ares). The type's IronCurtain.Modifier scales a positive duration, and a type
+/// immune to the curtain is left alone.
+/// </summary>
+void TechnoClass::Apply_Iron_Curtain_Warhead(WarheadTypeClass const * warhead, TechnoClass *, HouseClass * sourcehouse)
+{
+	int const duration = warhead->IronCurtainDuration;
+	int const before = IronCurtainTimer;
+	if (duration < 0) {
+		if (before > 0) {
+			IronCurtainTimer = WarheadRules::Iron_Curtain_Counter(before, duration, warhead->IronCurtainCap);
+		}
+		return;
+	}
+	if (Is_Immune_To_Iron_Curtain(false)) {
+		return;
+	}
+	bool const was_forced = IsForceShielded;
+	Iron_Curtain(duration, sourcehouse, false);
+	if (IsActive && Strength > 0 && before > 0 && !was_forced) {
+		IronCurtainTimer = WarheadRules::Iron_Curtain_Counter(before, (int)IronCurtainTimer, warhead->IronCurtainCap);
+	}
+}
+
+
+/// <summary>
+/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0, or by the Force Shield,
+/// because its type sets ForceShield.Modifier to 0 or less (Ares)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
+{
+	return(force_shield ? TClass->ForceShieldModifier <= 0.0 : TClass->IronCurtainModifier == 0.0);
+}
+
+
+/// <summary>
 /// Puts this object under the Iron Curtain (or the Force Shield) for the number of frames
 /// given, as TechnoClass::IronCurtain (0x70E2B0) does. Kinds of object that cannot be
 /// protected override this.
@@ -12474,6 +13113,7 @@ void TechnoClass::Airstrike_Tint_AI(void)
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
+	duration = WarheadRules::Iron_Curtain_Duration(duration, force_shield ? TClass->ForceShieldModifier : TClass->IronCurtainModifier);
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;
@@ -12640,13 +13280,68 @@ bool TechnoClass::Should_Use_High_Arc(int which) const
 
 
 /// <summary>
-/// Decrements the ammunition counter by one if any ammo remains.
+/// Takes the rounds one shot used from the ammunition, stopping at none left.
 /// </summary>
-void TechnoClass::Reduce_Ammunition(void)
+void TechnoClass::Reduce_Ammunition(int rounds)
 {
 	if (Ammo > 0) {
-		Ammo--;
+		Ammo = std::max(Ammo - rounds, 0);
 	}
+}
+
+
+/// <summary>
+/// Fetches the rounds of ammunition one shot of the weapon uses: the weapon's Ammo (Ares), except that aircraft use one
+/// round a shot, as Ares does not support the key on aircraft.
+/// </summary>
+int TechnoClass::Rounds_Per_Shot(WeaponTypeClass const * weapon) const
+{
+	if (weapon == NULL || RTTI == RTTI_AIRCRAFT) {
+		return(1);
+	}
+	return(weapon->AmmoUse);
+}
+
+
+/// <summary>
+/// Gives back ReloadAmount shots, or EmptyReloadAmount when none are left, once the reload timer has run out, and
+/// starts it again (TechnoClass::Reload, 0x6FB010). Nothing happens to a full object or one with unlimited ammunition.
+/// </summary>
+void TechnoClass::Reload_Ammunition(void)
+{
+	if (TClass->MaxAmmo == -1 || TClass->MaxAmmo <= Ammo || Reload != 0) {
+		return;
+	}
+	int const amount = Ammo == 0 ? TClass->Empty_Reload_Amount() : TClass->ReloadAmount;
+	if (Ammo == 0 && amount <= 0) {
+		return;
+	}
+	int const restored = std::clamp(Ammo + amount, 0, TClass->MaxAmmo);
+	if (restored != Ammo) {
+		Ammo = restored;
+		Mark(MARK_CHANGE);
+	}
+	Start_Reloading();
+}
+
+
+/// <summary>
+/// Starts the countdown to the next shot of ammunition. With no ammunition left the delay is EmptyReload when the
+/// type sets it. Otherwise it is Reload plus ReloadIncrement for each PipWrap shots held, squared
+/// (TechnoClass::StartReloading, 0x6FB080). A full object is left alone. A Reload of -1 lets the shot back on the
+/// next frame, as gamemd's timer does.
+/// </summary>
+void TechnoClass::Start_Reloading(void)
+{
+	if (Ammo >= TClass->MaxAmmo) {
+		return;
+	}
+	if (Ammo == 0 && TClass->EmptyReloadDelay != -1) {
+		Reload = TClass->EmptyReloadDelay;
+		return;
+	}
+	int const steps = TClass->PipWrap == 0 ? 1 : Ammo / TClass->PipWrap;
+	Reload = TClass->ReloadDelay + TClass->ReloadIncrement * steps * steps;
 }
 
 
@@ -12919,6 +13614,11 @@ bool TechnoClass::Is_Bomb_Visible(void) const
 /// </summary>
 void TechnoClass::Fire_Death_Weapon(void)
 {
+	// The warhead that killed the object can suppress the blast (Ares DeathWeapon.Suppress).
+	if (DamageWarhead != NULL && DamageWarhead->Is_Death_Weapon_Suppressed(TClass)) {
+		return;
+	}
+
 	// A type with turrets uses its current weapon position; any other type uses position 0 (0x70E1A0, 0x717880).
 	int const which = TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
 	WeaponTypeClass * weapon = TClass->DeathWeapon;

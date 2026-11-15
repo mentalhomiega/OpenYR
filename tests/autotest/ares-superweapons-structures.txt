@@ -1,0 +1,99 @@
+; Chronoshifted structures, SW.PostDependent, SW.VirtualCharge, the Mutate.* keys and lightning rods, defined by the mod in
+; tests/autotest/ares-superweapons-structures/. Expected log lines, in order:
+;   swaim TestLiftPost 66,40 gives action Custom and 42,50 gives NoCustom (SW.Designators=NAMISL, DesignatorRange=18).
+;   TestLiftBlow with TestLiftPost (named by SW.PostDependent; TestLiftDecoy is listed first and is not used) logs
+;   "SUPER chronoshift GAPOWR from 56,40 to 66,40". Aimed at 66,48, where a power plant stands, it logs "has no room at the target"
+;   and that GAPOWR is gone (Chronosphere.BlowUnplaceable defaults to yes). TestLiftStay does the same for 56,56 and the GAPOWR stays.
+;   swaim TestMin gives NoCustom on 72,40 (less than SW.RangeMinimum=8 from the GAPILE that grants it) and Custom on 62,44, and NoCustom
+;   on 42,50 (no NAMISL within DesignatorRange).
+;   TestVeh moves the NAPOWR (Chronoshift.IsVehicle=yes) from 56,32 to a free foundation near 66,32; TestUndeploy moves the GACNST
+;   (UndeploysInto=AMCV) from 56,24 to 66,24. A second TestUndeploy click aimed at 42,50 is refused: the GACNST stays on 66,24.
+;   After kill GAPILE, supers lists TestVirtual with present 0 virtual 1 and no TestPlain; once charged it shows charged 1. Rebuilding
+;   the GAPILE brings TestVirtual back ready 1 and TestPlain back with ready 0 and a full countdown.
+;   TestGeneA kills the enemy E1 and leaves the E2 (Cyborg) and the ENGINEER (NotHuman). TestGeneB kills the SNIPE (Natural) and leaves
+;   the E1 at strength 124 of 125. TestGeneC leaves both with one point of damage.
+;   TestRodA lowers the GAPOWR on 66,40 by half as much per bolt as TestRodB lowers the one on 66,56 (LightningRod.Modifier=0.5 and
+;   Lightning.IgnoreLightningRod). TestRodCloud forms the clouds over 67,41 (the rod's center), except where the cloud is more than LightningRodRange=4 cells from it; TestRodIgnore forms them around 64,40.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons-structures.txt -Mods tests/autotest/ares-superweapons-structures -Seconds 500 -Filter "AUTOTEST   (where GAPOWR|where NAPOWR|where GACNST|where E1|where E2|where ENGINEER|where SNIPE|swaim|super house)|AUTOTEST (storm cloud|own|spawn)|SUPER chronoshift|SUPER Test|Exception"
+30 command CenterBase
+40 own GAPOWR 56 40
+41 own GAPOWR 56 48
+42 own GAPOWR 66 48
+43 own GAPOWR 56 56
+44 own GAPOWR 66 56
+45 own NAMISL 62 46
+46 own GAPILE 70 36
+47 own NAMISL 70 24
+50 swaim TestLiftPost 66 40
+51 swaim TestLiftPost 42 50
+52 swaim TestMin 72 40
+53 swaim TestMin 62 44
+54 swaim TestMin 42 50
+55 supers
+60 grant TestLiftBlow
+70 fire TestLiftBlow 56 40
+75 fire TestLiftPost 66 40
+80 where GAPOWR
+90 grant TestLiftBlow
+100 fire TestLiftBlow 56 48
+105 fire TestLiftPost 66 48
+110 where GAPOWR
+120 grant TestLiftStay
+130 fire TestLiftStay 56 56
+135 fire TestLiftPost 66 56
+140 where GAPOWR
+150 own NAPOWR 56 32
+151 own GAPOWR 66 32
+152 grant TestVeh
+160 fire TestVeh 56 32
+165 fire TestLiftPost 66 32
+170 where NAPOWR
+175 where GAPOWR
+180 own GACNST 56 24
+185 grant TestUndeploy
+190 fire TestUndeploy 56 24
+195 fire TestLiftPost 66 24
+200 where GACNST
+205 grant TestUndeploy
+206 fire TestUndeploy 66 24
+207 fire TestLiftPost 42 50
+208 where GACNST
+210 supers
+220 kill GAPILE 1
+230 supers
+400 supers
+410 own GAPILE 70 36
+430 supers
+440 supers
+500 spawn E1 52 26
+501 spawn E2 53 26
+502 spawn ENGINEER 54 26
+503 grant TestGeneA
+504 fire TestGeneA 53 26
+520 where E1
+521 where E2
+522 where ENGINEER
+540 spawn SNIPE 52 22
+541 spawn E1 53 22
+542 grant TestGeneB
+543 fire TestGeneB 53 22
+560 where SNIPE
+561 where E1
+580 spawn SNIPE 52 18
+581 spawn E1 53 18
+582 grant TestGeneC
+583 fire TestGeneC 53 18
+600 where SNIPE
+601 where E1
+700 where GAPOWR
+701 grant TestRodA
+702 fire TestRodA 66 40
+900 where GAPOWR
+901 grant TestRodB
+902 fire TestRodB 66 56
+1100 where GAPOWR
+1300 grant TestRodCloud
+1301 fire TestRodCloud 64 40
+1700 grant TestRodIgnore
+1701 fire TestRodIgnore 64 40
+2100 quit

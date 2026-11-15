@@ -92,6 +92,7 @@ ObjectTypeClass::ObjectTypeClass(char const * ininame) :
 	IsFootprint(true),
 	IsVoxel(false),
 	IsNewTheater(false),
+	IsAlternateTheaterArt(false),
 	IsHasRadialIndicator(false),
 	IsIgnoresFirestorm(false),
 	RadialColor(0,0,0),
@@ -708,7 +709,21 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 
 	if (BASECLASS::Read_INI(ini)) {
 
+		if (!BaseGraphicName.empty()) {
+			GraphicName = BaseGraphicName;
+			BaseGraphicName.clear();
+		}
 		ini.Get_String(IniName, "Image", GraphicName);
+		IsVoxel = ArtINI.Get_Bool(GraphicName, "Voxel", IsVoxel);
+		if (IsAlternateTheaterArt && Scen != NULL && Scen->Theater != THEATER_NONE) {
+			char const letter = TheaterClass::As_Reference(Scen->Theater).ImageLetter;
+			char alternate[sizeof(GraphicName) + 2];
+			snprintf(alternate, sizeof(alternate), "%s%c", (char const *)GraphicName, letter);
+			if (letter != '\0' && ArtINI.Is_Present(alternate) && !IsVoxel) {
+				BaseGraphicName = GraphicName;
+				GraphicName = alternate;
+			}
+		}
 		ini.Get_String(IniName, "AlphaImage", AlphaGraphicName);
 
 		CrushSound = ini.Get_VocType(IniName, "CrushSound", CrushSound);
@@ -735,7 +750,6 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 		LineTrailColorDecrement = ArtINI.Get_Int(GraphicName, "LineTrailColorDecrement", LineTrailColorDecrement);
 		IsNewTheater = ArtINI.Get_Bool(GraphicName, "NewTheater", IsNewTheater);
 
-		IsVoxel = ArtINI.Get_Bool(GraphicName, "Voxel", IsVoxel);
 		if (!IsVoxel) {
 			Fetch_Normal_Image();
 		}
@@ -830,6 +844,8 @@ void ObjectTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFootprint);
 	stream.Serialize(IsVoxel);
 	stream.Serialize(IsNewTheater);
+	stream.Serialize(IsAlternateTheaterArt);
+	stream.Serialize(BaseGraphicName);
 	stream.Serialize(IsHasRadialIndicator);
 	stream.Serialize(IsIgnoresFirestorm);
 	// VoxelIndex -- caches rendered from the voxel artwork, built again as it is drawn.

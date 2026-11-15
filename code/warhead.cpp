@@ -38,9 +38,15 @@
 #include "always.h"
 
 #include "armortypes.h"
+#include <algorithm>
 #include <cstdio>
+#include <cstring>
+#include <string_view>
+#include <vector>
 #include "warhead.h"
+#include "ionblast.h"
 
+#include "_rules.h"
 #include "_warhead.h"
 #include "animtype.h"
 #include "ccini.h"
@@ -49,13 +55,16 @@
 #include "numparse.h"
 #include "partsys.h"
 #include "psystype.h"
+#include "rules.h"
 #include "savestream.h"
 #include "stimer.h"
 #include "sun.h"
 #include "swizzle.h"
+#include "techtype.h"
 #include "tracker.h"
 #include "vanimtype.h"
 #include "vector.h"
+#include "warheadrules.h"
 
 
 /// <summary>
@@ -117,6 +126,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCulling(false),
 	IsIvanBomb(false),
 	IsAffectsAllies(true),
+	IsAffectsEnemies(true),
 	IsPsychedelic(false),
 	IsPsychicDamage(false),
 	IsBullets(false),
@@ -135,6 +145,10 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCausesDelayKill(false),
 	DelayKillFrames(0),
 	DelayKillAtMax(1.0f),
+	CombatLightSize(0.0f),
+	IsMalicious(true),
+	IonRipple(0),
+	NukeFlashDuration(-1),
 	IsMakesDisguise(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
@@ -151,6 +165,43 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCLDisableBlue(false),
 	IsEMEffect(false),
 	IsVeinhole(false),
+	IsKillDriver(false),
+	KillDriverOwner(KILLDRIVER_OWNER_SPECIAL),
+	KillDriverBelowPercent(1.0),
+	KillDriverChance(1.0),
+	IsKillDriverRemoveVeterancy(false),
+	IsEffectsRequireDamage(false),
+	IsEffectsRequireVerses(true),
+	EMPDuration(0),
+	EMPCap(-1),
+	EMPSparkles(NULL),
+	IronCurtainDuration(0),
+	IronCurtainCap(-1),
+	DisableWeaponsDuration(0),
+	CellSpreadMaxAffect(-1),
+	TemporalHealthFactor(0.0),
+	FlashDuration(0),
+	IsAllowZeroDamage(false),
+	IsRelativeDamage(false),
+	RelativeDamageBuildings(0),
+	RelativeDamageAircraft(0),
+	RelativeDamageInfantry(0),
+	RelativeDamageVehicles(0),
+	IsUnitLostSuppress(false),
+	IsDieSoundOverridden(false),
+	DieSoundOverride(VOC_NONE),
+	IsVoiceDieOverridden(false),
+	VoiceDieOverride(VOC_NONE),
+	IsAffectsOwner(true),
+	IsAffectsOwnerSet(false),
+	IsDeathWeaponSuppressVehicles(false),
+	IsDeathWeaponSuppressInfantry(false),
+	IsMindControlPermanent(false),
+	DamageAirThreshold(0),
+	SonarDuration(0),
+	IsPreventScatter(false),
+	InfDeathAnim(NULL),
+	PreImpactAnim(NULL),
 	MaxDebris(0),
 	MinDebris(0)
 {
@@ -215,6 +266,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		ExplosionSet = TGet_TypeList<AnimTypeClass>(ini, Name(), "AnimList", ExplosionSet);
 
 		InfantryDeath = ini.Get_Int(Name(), "InfDeath", InfantryDeath);
+		InfDeathAnim = TGet_Class(ini, Name(), "InfDeathAnim", InfDeathAnim);
+		PreImpactAnim = TGet_Class(ini, Name(), "PreImpactAnim", PreImpactAnim);
 
 		Deform = ini.Get_Float(Name(), "Deform", Deform);
 		DeformThreshhold = ini.Get_Int(Name(), "DeformThreshhold", DeformThreshhold);
@@ -228,12 +281,15 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsWallAbsoluteDestroyer = ini.Get_Bool(Name(), "WallAbsoluteDestroyer", IsWallAbsoluteDestroyer);
 		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		IsMindControl = ini.Get_Bool(Name(), "MindControl", IsMindControl);
+		IsMindControlPermanent = ini.Get_Bool(Name(), "MindControl.Permanent", IsMindControlPermanent);
 		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
+		TemporalHealthFactor = std::clamp(ini.Get_Float(Name(), "Temporal.HealthFactor", TemporalHealthFactor), 0.0, 1.0);
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
 		IsParasite = ini.Get_Bool(Name(), "Parasite", IsParasite);
 		IsCulling = ini.Get_Bool(Name(), "Culling", IsCulling);
 		IsIvanBomb = ini.Get_Bool(Name(), "IvanBomb", IsIvanBomb);
 		IsAffectsAllies = ini.Get_Bool(Name(), "AffectsAllies", IsAffectsAllies);
+		IsAffectsEnemies = ini.Get_Bool(Name(), "AffectsEnemies", IsAffectsEnemies);
 		IsPsychedelic = ini.Get_Bool(Name(), "Psychedelic", IsPsychedelic);
 		IsPsychicDamage = ini.Get_Bool(Name(), "PsychicDamage", IsPsychicDamage);
 		IsBullets = ini.Get_Bool(Name(), "Bullets", IsBullets);
@@ -252,6 +308,12 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsCausesDelayKill = ini.Get_Bool(Name(), "CausesDelayKill", IsCausesDelayKill);
 		DelayKillFrames = ini.Get_Int(Name(), "DelayKillFrames", DelayKillFrames);
 		DelayKillAtMax = (float)ini.Get_Float(Name(), "DelayKillAtMax", DelayKillAtMax);
+		CombatLightSize = (float)ini.Get_Float(Name(), "CombatLightSize", CombatLightSize);
+		IsMalicious = ini.Get_Bool(Name(), "Malicious", IsMalicious);
+		NukeFlashDuration = ini.Get_Int(Name(), "NukeFlash.Duration", NukeFlashDuration);
+		// Ripple.Radius is the name older Ares rules use for IonCannon.Ripple; the newer name wins.
+		IonRipple = ini.Get_Int(Name(), "Ripple.Radius", IonRipple);
+		IonRipple = std::clamp(ini.Get_Int(Name(), "IonCannon.Ripple", IonRipple), 0, (int)IonBlastClass::WAVE_FRAMES);
 		IsMakesDisguise = ini.Get_Bool(Name(), "MakesDisguise", IsMakesDisguise);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
@@ -262,6 +324,55 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 
 		ProneDamage = ini.Get_Float(Name(), "ProneDamage", ProneDamage);
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
+		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
+		IsPreventScatter = ini.Get_Bool(Name(), "PreventScatter", IsPreventScatter);
+		IsEffectsRequireDamage = ini.Get_Bool(Name(), "EffectsRequireDamage", IsEffectsRequireDamage);
+		IsRelativeDamage = ini.Get_Bool(Name(), "RelativeDamage", IsRelativeDamage);
+		RelativeDamageBuildings = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Buildings", RelativeDamageBuildings), -100, 100);
+		RelativeDamageAircraft = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Aircraft", RelativeDamageAircraft), -100, 100);
+		RelativeDamageInfantry = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Infantry", RelativeDamageInfantry), -100, 100);
+		RelativeDamageVehicles = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Vehicles", RelativeDamageVehicles), -100, 100);
+		FlashDuration = ini.Get_Int(Name(), "Flash.Duration", FlashDuration);
+		IsAllowZeroDamage = ini.Get_Bool(Name(), "AllowZeroDamage", IsAllowZeroDamage);
+		IsEffectsRequireVerses = ini.Get_Bool(Name(), "EffectsRequireVerses", IsEffectsRequireVerses);
+		EMPDuration = ini.Get_Int(Name(), "EMP.Duration", EMPDuration);
+		EMPCap = ini.Get_Int(Name(), "EMP.Cap", EMPCap);
+		SonarDuration = ini.Get_Int(Name(), "Sonar.Duration", SonarDuration);
+		EMPSparkles = TGet_Class(ini, Name(), "EMP.Sparkles", EMPSparkles);
+		IronCurtainDuration = ini.Get_Int(Name(), "IronCurtain.Duration", IronCurtainDuration);
+		IronCurtainCap = ini.Get_Int(Name(), "IronCurtain.Cap", IronCurtainCap);
+		DisableWeaponsDuration = ini.Get_Int(Name(), "DisableWeapons.Duration", DisableWeaponsDuration);
+		CellSpreadMaxAffect = ini.Get_Int(Name(), "CellSpread.MaxAffect", CellSpreadMaxAffect);
+		IsUnitLostSuppress = ini.Get_Bool(Name(), "UnitLost.Suppress", IsUnitLostSuppress);
+		if (ini.Is_Present(Name(), "DieSound.Override")) {
+			IsDieSoundOverridden = true;
+			DieSoundOverride = ini.Get_VocType(Name(), "DieSound.Override", VOC_NONE);
+		}
+		if (ini.Is_Present(Name(), "VoiceDie.Override")) {
+			IsVoiceDieOverridden = true;
+			VoiceDieOverride = ini.Get_VocType(Name(), "VoiceDie.Override", VOC_NONE);
+		}
+		IsAffectsOwnerSet = ini.Is_Present(Name(), "AffectsOwner");
+		IsAffectsOwner = IsAffectsOwnerSet ? ini.Get_Bool(Name(), "AffectsOwner", IsAffectsOwner) : IsAffectsAllies;
+		DeathWeaponSuppress = ini.Get_TechnoType_List(Name(), "DeathWeapon.Suppress", DeathWeaponSuppress);
+		IsDeathWeaponSuppressVehicles = ini.Get_Bool(Name(), "DeathWeapon.SuppressVehicles", IsDeathWeaponSuppressVehicles);
+		IsDeathWeaponSuppressInfantry = ini.Get_Bool(Name(), "DeathWeapon.SuppressInfantry", IsDeathWeaponSuppressInfantry);
+		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
+		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
+		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
+		DamageAirThreshold = ini.Get_Int(Name(), "DamageAirThreshold", DamageAirThreshold);
+		{
+			char owner[32];
+			if (ini.Get_String(Name(), "KillDriver.Owner", "", owner, sizeof(owner)) && owner[0] != '\0') {
+				if (stricmp(owner, "civilian") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_CIVILIAN;
+				} else if (stricmp(owner, "neutral") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_NEUTRAL;
+				} else if (stricmp(owner, "special") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_SPECIAL;
+				}
+			}
+		}
 		MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
 		MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
 		if (MinDebris < 0) {
@@ -289,7 +400,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		Size_Armor_Tables();
 
 		char buffer[128];
-		if (ini.Get_String(Name(), "Verses", "100%,100%,100%,100%,100%,100%,100%,100%,100%,100%,100%", buffer, sizeof(buffer))) {
+		bool const reads_verses = !Rule->IsKeepWarheadVerses || ini.Is_Present(Name(), "Verses");
+		if (reads_verses && ini.Get_String(Name(), "Verses", "100%,100%,100%,100%,100%,100%,100%,100%,100%,100%,100%", buffer, sizeof(buffer))) {
 			char * aval = strtok(buffer, ",");
 			// A list shorter than the armor types leaves the rest unchanged; Yuri's Revenge
 			// crashes on one.
@@ -301,9 +413,17 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		// Versus.<armor> and its targeting switches, for declared armor types and the original eleven alike (Ares).
-		for (int armor = ARMOR_FIRST; armor < Armor_Type_Count(); armor++) {
+		// An armor type that no Versus key of this section starts with is passed over, since none of its keys is
+		// present; a name too long for every key to fit the buffer below is looked up as before.
+		std::vector<std::string_view> const versus = ini.Entry_Names_With_Prefix(Name(), "Versus.");
+		for (int armor = ARMOR_FIRST; !versus.empty() && armor < Armor_Type_Count(); armor++) {
 			char key[96];
 			char const * armorname = Armor_Type_Name(ArmorType(armor));
+
+			if (std::strlen(armorname) < sizeof(key) - sizeof("Versus..PassiveAcquire")
+				&& std::none_of(versus.begin(), versus.end(), [armorname](std::string_view rest) {return(rest.starts_with(armorname));})) {
+				continue;
+			}
 
 			snprintf(key, sizeof(key), "Versus.%s", armorname);
 			if (ini.Get_String(Name(), key, "", buffer, sizeof(buffer)) && buffer[0] != '\0') {
@@ -357,6 +477,39 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(ProneDamage);
 	crc(IsVeinhole);
 	crc(IsCulling);
+	crc(IsAffectsEnemies);
+	crc(IsKillDriver);
+	crc(int(KillDriverOwner));
+	crc(KillDriverBelowPercent);
+	crc(KillDriverChance);
+	crc(IsKillDriverRemoveVeterancy);
+	crc(DamageAirThreshold);
+	crc(IsPreventScatter);
+	crc(IsEffectsRequireDamage);
+	crc(IsEffectsRequireVerses);
+	crc(EMPDuration);
+	crc(SonarDuration);
+	crc(EMPCap);
+	crc(IronCurtainDuration);
+	crc(IronCurtainCap);
+	crc(DisableWeaponsDuration);
+	crc(CellSpreadMaxAffect);
+	crc(TemporalHealthFactor);
+	crc(FlashDuration);
+	crc(IsAllowZeroDamage);
+	crc(IsRelativeDamage);
+	crc(RelativeDamageBuildings);
+	crc(RelativeDamageAircraft);
+	crc(RelativeDamageInfantry);
+	crc(RelativeDamageVehicles);
+	crc(IsUnitLostSuppress);
+	crc(IsAffectsOwner);
+	crc(DeathWeaponSuppress.Count());
+	crc(IsDeathWeaponSuppressVehicles);
+	crc(IsDeathWeaponSuppressInfantry);
+	crc(IsMindControlPermanent);
+	crc(InfDeathAnim != NULL);
+	crc(PreImpactAnim != NULL);
 	crc(MaxDebris);
 	crc(MinDebris);
 	crc(DebrisTypes.Count());
@@ -426,11 +579,24 @@ static int Table_Entry(std::vector<signed char> const & table, ArmorType armor)
 }
 
 
+/// <summary>
+/// Frames the map-wide nuclear flash fades in when this warhead goes off, 0 for no flash. Without
+/// NukeFlash.Duration only the warhead named NUKE flashes, for the 30 frames Yuri's Revenge uses.
+/// </summary>
+int WarheadTypeClass::Nuke_Flash_Duration(void) const
+{
+	if (NukeFlashDuration >= 0) {
+		return(NukeFlashDuration);
+	}
+	return(stricmp(Name(), "NUKE") == 0 ? 30 : 0);
+}
+
+
 // Yuri's Revenge refuses to fire at an armor its warhead does nothing to (TechnoClass::GetFireError, 0x6FC3FE).
 bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
 {
 	int const entry = Table_Entry(ForceFire, armor);
-	return(entry >= 0 ? entry != 0 : Versus(armor) != 0.0);
+	return(entry >= 0 ? entry != 0 : WarheadRules::Force_Fire_Default(Versus(armor)));
 }
 
 
@@ -438,7 +604,7 @@ bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
 bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
 {
 	int const entry = Table_Entry(Retaliate, armor);
-	return(entry >= 0 ? entry != 0 : Versus(armor) >= 0.0099999997);
+	return(entry >= 0 ? entry != 0 : WarheadRules::Retaliate_Default(Versus(armor)));
 }
 
 
@@ -446,7 +612,7 @@ bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
 bool WarheadTypeClass::Can_Passive_Acquire(ArmorType armor) const
 {
 	int const entry = Table_Entry(PassiveAcquire, armor);
-	return(entry >= 0 ? entry != 0 : Versus(armor) > 0.019999999552965164);
+	return(entry >= 0 ? entry != 0 : WarheadRules::Passive_Acquire_Default(Versus(armor)));
 }
 
 
@@ -487,6 +653,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCulling);
 	stream.Serialize(IsIvanBomb);
 	stream.Serialize(IsAffectsAllies);
+	stream.Serialize(IsAffectsEnemies);
 	stream.Serialize(IsPsychedelic);
 	stream.Serialize(IsPsychicDamage);
 	stream.Serialize(IsBullets);
@@ -505,6 +672,10 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCausesDelayKill);
 	stream.Serialize(DelayKillFrames);
 	stream.Serialize(DelayKillAtMax);
+	stream.Serialize(CombatLightSize);
+	stream.Serialize(IsMalicious);
+	stream.Serialize(IonRipple);
+	stream.Serialize(NukeFlashDuration);
 	stream.Serialize(IsMakesDisguise);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);
@@ -526,6 +697,60 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DebrisTypes);
 	stream.Serialize(DebrisMaximums);
 	stream.Serialize(AttachEffect);
+	stream.Serialize(IsKillDriver);
+	stream.Serialize_Bytes(&KillDriverOwner, sizeof(KillDriverOwner));
+	stream.Serialize(KillDriverBelowPercent);
+	stream.Serialize(KillDriverChance);
+	stream.Serialize(IsKillDriverRemoveVeterancy);
+	stream.Serialize(DamageAirThreshold);
+	stream.Serialize(IsPreventScatter);
+	stream.Serialize(InfDeathAnim);
+	stream.Serialize(PreImpactAnim);
+	stream.Serialize(IsEffectsRequireDamage);
+	stream.Serialize(IsEffectsRequireVerses);
+	stream.Serialize(EMPDuration);
+	stream.Serialize(SonarDuration);
+	stream.Serialize(EMPCap);
+	stream.Serialize(EMPSparkles);
+	stream.Serialize(IronCurtainDuration);
+	stream.Serialize(IronCurtainCap);
+	stream.Serialize(DisableWeaponsDuration);
+	stream.Serialize(CellSpreadMaxAffect);
+	stream.Serialize(TemporalHealthFactor);
+	stream.Serialize(FlashDuration);
+	stream.Serialize(IsAllowZeroDamage);
+	stream.Serialize(IsRelativeDamage);
+	stream.Serialize(RelativeDamageBuildings);
+	stream.Serialize(RelativeDamageAircraft);
+	stream.Serialize(RelativeDamageInfantry);
+	stream.Serialize(RelativeDamageVehicles);
+	stream.Serialize(IsUnitLostSuppress);
+	stream.Serialize(IsDieSoundOverridden);
+	stream.Serialize(DieSoundOverride);
+	stream.Serialize(IsVoiceDieOverridden);
+	stream.Serialize(VoiceDieOverride);
+	stream.Serialize(IsAffectsOwner);
+	stream.Serialize(IsAffectsOwnerSet);
+	stream.Serialize(DeathWeaponSuppress);
+	stream.Serialize(IsDeathWeaponSuppressVehicles);
+	stream.Serialize(IsDeathWeaponSuppressInfantry);
+	stream.Serialize(IsMindControlPermanent);
+}
+
+
+bool WarheadTypeClass::Is_EM_Pulse(void) const
+{
+	return(IsEMEffect && EMPDuration == 0 && Rule->IsEMEffectPulse);
+}
+
+
+bool WarheadTypeClass::Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const
+{
+	RTTIType const kind = type->Fetch_RTTI();
+	if ((kind == RTTI_UNITTYPE && IsDeathWeaponSuppressVehicles) || (kind == RTTI_INFANTRYTYPE && IsDeathWeaponSuppressInfantry)) {
+		return(true);
+	}
+	return(DeathWeaponSuppress.Is_In_List(const_cast<TechnoTypeClass *>(type)));
 }
 
 
@@ -553,6 +778,9 @@ void WarheadTypeClass::Detach(AbstractClass const * target, bool all)
 		Particle = NULL;
 	}
 	ExplosionSet.Delete((AnimTypeClass *)target);
+	if (target == (AbstractClass *)EMPSparkles) {
+		EMPSparkles = NULL;
+	}
 	DebrisTypes.Delete((VoxelAnimTypeClass const *)target);
 	if (target == (AbstractClass *)AttachEffect.Animation) {
 		AttachEffect.Animation = NULL;

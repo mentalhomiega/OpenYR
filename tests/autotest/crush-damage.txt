@@ -1,0 +1,15 @@
+; CrushDamage (Ares) hurts a vehicle that crushes an object of the type. The overlay crush-damage.ini sets CrushDamage=30 on the engineer and then
+; CrushDamage.Rookie=20, which overrides the rookie value. A Rhino tank drives through two enemy engineers, which carry no weapon.
+; Expected: one "Crush damage: HTNK takes 20" line per engineer crushed (an engineer that runs aside is not), and the Rhino's strength at frame
+; 400 is 20 per such line below the frame 90 value, less the 1 each damage step takes. Before the key was read the Rhino crushed them unhurt.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/crush-damage.txt -Seconds 60 -Country 8 -Filter "AUTOTEST   damage|Crush damage|Exception"
+10 rules crush-damage.ini
+30 command CenterBase
+35 reveal
+40 own HTNK 50 40
+41 enemy ENGINEER 53 40
+42 enemy ENGINEER 55 40
+90 damage HTNK 0
+100 move HTNK 59 40
+400 damage HTNK 0
+410 quit

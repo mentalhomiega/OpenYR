@@ -14,12 +14,17 @@
 #pragma once
 
 #include "abstype.h"
+#include "paragroup.h"
 #include "typelist.h"
 
+#include "rgb.h"
 #include "side.hh"
+
+#include <string>
 
 class BuildingTypeClass;
 class UnitTypeClass;
+class InfantryTypeClass;
 
 
 class SideClass : public AbstractTypeClass
@@ -48,6 +53,50 @@ class SideClass : public AbstractTypeClass
 		 * the survivor divisor and the crew both follow it.
 		 */
 		static int Place_In_Sides(SideType side);
+
+		/*
+		 * The number that names this side's sidebar archives (SIDEC<n>MD.MIX, SIDEC<n>.MIX and
+		 * SIDENC<n>.MIX), from the side's own section or, without one, from the side's place in the
+		 * list. The third side shares the archives of the second, as Yuri's Revenge does.
+		 */
+		int Sidebar_Archive_Number(void) const;
+
+		/*
+		 * Does the side draw its radar logo from the Yuri files (RADARY.SHP and RADARYURI.PAL)? The
+		 * side's own section decides; without a setting only the third side does.
+		 */
+		bool Uses_Yuri_File_Names(void) const;
+
+		/*
+		 * The survivors and the disguise of this side: the side's own section when it names one,
+		 * otherwise the rules' key for the side's place in the list. A side whose place the rules
+		 * give no key falls back to the rules' technician and engineer, and to the third side's disguise.
+		 */
+		InfantryTypeClass const * Crew_Type(void) const;
+		InfantryTypeClass const * Engineer_Type(void) const;
+		InfantryTypeClass const * Technician_Type(void) const;
+		InfantryTypeClass const * Disguise_Type(void) const;
+
+		/*
+		 * The survivor divisor for buildings of this side: the side's own section, else the rules'
+		 * key for the side's place in the list, or 0 (no survivors) for a place with none.
+		 */
+		int Survivor_Divisor(void) const;
+
+		/*
+		 * The announcer voice the side speaks in, as a name in the EVA file: the side's own tag, else
+		 * Allied for the first side, Russian for the second and Yuri for any later one. An empty name
+		 * means the side has no announcer.
+		 */
+		std::string Eva_Voice_Name(void) const;
+
+		/*
+		 * The colour the modern in-game interface frames this side's panel in: the side's own
+		 * Hud.Color, else the hue of the colour scheme of the side's first country. Returns false,
+		 * leaving the colour untouched, when the side sets none and has no country with a coloured
+		 * scheme.
+		 */
+		bool Hud_Color(RGBClass & color) const;
 
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
@@ -80,4 +129,49 @@ class SideClass : public AbstractTypeClass
 		bool IsAIBuildsWalls;
 		int AIBaseDefensePlaceholders;
 		bool IsAIBaseDefensesWithWalls;
+
+		/*
+		 * Interface and survivor keys read from the side's own section. SidebarMixFileIndex is 0 and
+		 * SidebarYuriFileNames, SurvivorDivisor are -1 until the section sets them.
+		 */
+		int SidebarMixFileIndex;
+		int SidebarYuriFileNames;
+		bool IsToolTipColor;
+		int ToolTipColor[3];
+		std::string MessageTextColor;
+		std::string EvaTag;
+		InfantryTypeClass const * Crew;
+
+		// The side's own ParaDrop.Types, ParaDrop.Num and ParaDrop.Aircraft (Ares); what is left out follows the rules.
+		ParaDropList ParaDrop;
+		InfantryTypeClass const * Engineer;
+		InfantryTypeClass const * Technician;
+		InfantryTypeClass const * DefaultDisguise;
+		int SurvivorDivisor;
+
+		/*
+		 * The interface colour from the side's own Hud.Color key; IsHudColor is false until the
+		 * section sets it.
+		 */
+		bool IsHudColor;
+		int HudColor[3];
+
+		/*
+		 * The theme a multiplayer match plays while it loads for a player of this side, from the
+		 * side's own section. Empty leaves the loading screen as it was.
+		 */
+		std::string LoadingTheme;
+
+		/*
+		 * The score screens' art and music from the side's own section. An empty name leaves the
+		 * side's stock art, or the SCORE theme.
+		 */
+		std::string MultiplayerScoreBackground;
+		std::string MultiplayerScorePalette;
+		std::string MultiplayerScoreBars;
+		std::string MultiplayerScoreWinTheme;
+		std::string MultiplayerScoreLoseTheme;
+		std::string CampaignScoreBackground;
+		std::string CampaignScoreAnimation;
+		std::string CampaignScorePalette;
 };

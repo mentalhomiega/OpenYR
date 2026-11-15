@@ -58,12 +58,6 @@ class UnitClass : public FootClass
 		int FiringSyncDelay;
 
 		/*
-		**	This is the timer that controls the reload rate: the frames left until the unit
-		**	regains one shot of ammunition (Reload=, EmptyReload= and ReloadIncrement=).
-		*/
-		CDTimerClass<FrameTimerClass> Reload;
-
-		/*
 		**	This points to the static control data that gives 'this' unit its characteristics.
 		*/
 		UnitTypeClass * Class;
@@ -107,6 +101,7 @@ class UnitClass : public FootClass
 		int SimpleDeployFrame;
 		int Simple_Deploy_AI(void);
 		Cell Deploy_Landing_Cell(void) const;
+		bool Convert_To(UnitTypeClass const * type);
 
 		// The passenger count a gunner vehicle last acted on.
 		int GunnerPassengers;
@@ -280,7 +275,6 @@ class UnitClass : public FootClass
 		void Rotation_AI(void);
 		void Firing_AI(void);
 		void Reload_AI(void);
-		void Start_Reloading(void);
 		bool Edge_Of_World_AI(void);
 		void Tunnel_AI(void);
 		void Visceroid_AI(void);
@@ -310,6 +304,10 @@ class UnitClass : public FootClass
 		static void Read_INI(CCINIClass const & ini);
 		static void Write_INI(CCINIClass & ini);
 
+		bool Kill_Driver(WarheadTypeClass const * warhead);
+		bool Can_Lose_Driver(double below_percent) const;
+		bool Take_Driver(HouseClass * owner, bool remove_veterancy);
+
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
@@ -334,6 +332,8 @@ class UnitClass : public FootClass
 		bool Queue_For_Weapons_Factory(AbstractClass * target);
 		void Send_Harvester_To_Dock(BuildingClass * b, AbstractClass *& target);
 		void Power_On_At_Repair_Facility(void);
+		void Eject_Passengers(void);
+		bool Place_Passenger_Beside(FootClass * passenger);
 		void Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select);
 		void Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select);
 

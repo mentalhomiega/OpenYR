@@ -1,0 +1,26 @@
+; NukeFlash.Duration on a warhead lights the whole map for that many frames when the warhead goes off, then fades back over 15
+; frames, as the NUKE warhead does for 30 frames. The overlay nukeflash-duration.ini arms the Rhino tank with a gun whose warhead
+; sets NukeFlash.Duration=45. The Grizzly tank keeps its stock gun, whose warhead does not set the key.
+; Expected: the `nukeflash` lines after the Grizzly fires (frames 40 to 90) read in 0 out 0. After the Rhino fires at frame 100,
+; lines read in 1 for about 45 frames, then out 1, then in 0 out 0 again by frame 190. Before the key was read every line read in 0 out 0.
+; Run: scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/nukeflash-duration.txt -Seconds 60 -Filter "AUTOTEST   (nukeflash|forceattack)|Exception"
+10 rules nukeflash-duration.ini
+30 command CenterBase
+35 reveal
+36 own HTNK 70 40
+37 own MTNK 50 40
+40 forceattack HTNK 73 40
+50 nukeflash
+70 nukeflash
+90 nukeflash
+100 forceattack MTNK 53 40
+105 nukeflash
+115 nukeflash
+125 nukeflash
+135 nukeflash
+145 nukeflash
+155 nukeflash
+165 nukeflash
+175 nukeflash
+190 nukeflash
+200 quit
