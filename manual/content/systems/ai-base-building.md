@@ -18,6 +18,7 @@ keys:
   - AIBaseDefensePlaceholders
   - AIBaseDefensesWithWalls
   - AIBaseSpacing
+  - AIPlacementSearchFailures
   - AIBuildsWalls
   - AINavalYardAdjacency
   - AIBuildThis
@@ -280,7 +281,9 @@ The structure is abandoned when the search finds no cell, when placement fails, 
 - a structure that cannot take this one as an upgrade;
 - an object of a house that is not an ally.
 
-Abandoning a structure refunds its cost and deletes it. A wall or gate node is then deleted. For any other type, every node claiming the failed cell loses its cell, so the next attempt searches again. An upgrade with no structure to go on is abandoned too, and its node is deleted when it is the next unbuilt node.
+Abandoning a structure refunds its cost and deletes it. A wall or gate node is then deleted. For any other type, every node claiming the failed cell loses its cell, so the next attempt searches again.
+
+When the search finds no cell, the structure is abandoned and its node counts one failed search. An upgrade with no structure to go on is abandoned the same way, and its node is deleted when it is the node the house would build next. In a skirmish or multiplayer game, any other node is deleted once its failed searches reach [`AIPlacementSearchFailures`](/keys/aiplacementsearchfailures/), and the house goes on with the rest of its plan. A campaign game keeps the node.
 
 After a `WallTower` is placed, the next node after it whose type is [`IsBaseDefense=yes`](/keys/isbasedefense/) moves onto the tower's cell.
 

@@ -810,6 +810,7 @@ class BuildingClass : public TechnoClass
 		int Exit_Infantry(TechnoClass * base);
 		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);
+		void Drop_Unplaceable_Node(BaseNodeClass & node);
 		void Send_Computer_Unit_To_Guard(TechnoClass * base);
 		Coord Door_Coord(Cell const & exitcell) const;
 		bool Is_Damaged_Art(void) const;

@@ -79,6 +79,9 @@ class BaseNodeClass
 		 */
 		int Attempts;
 
+		// The placement searches for this node's structure that found no place.
+		int SearchFailures = 0;
+
 		// Carries this base node to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
@@ -87,6 +90,7 @@ class BaseNodeClass
 			stream.Serialize(CellID);
 			stream.Serialize(Placed);
 			stream.Serialize(Attempts);
+			stream.Serialize(SearchFailures);
 		}
 };
 

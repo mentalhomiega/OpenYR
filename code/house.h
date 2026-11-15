@@ -1023,6 +1023,7 @@ class HouseClass : public AbstractClass
 		static int Base_Cell_Weight_By_Distance(HouseClass const & house, Cell const & cell, int tie_breaker, int context);
 		static int Base_Cell_Weight_By_Defense_Coverage(HouseClass const & house, Cell const & cell, int tie_breaker, int context);
 		Cell Where_To_Place_Upgrade(BuildingTypeClass const * upgrade) const;
+		BaseNodeClass * Next_Buildable_Node(void);
 		Cell Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*func)(HouseClass const &, Cell const &, int, int), int context);
 		void Calculate_Defense_Values(BuildingClass const * building, int value, int * values, Rect const & area) const;
 		DynamicVectorClass<BuildingTypeClass *> Get_Anti_Air_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const;
@@ -1253,7 +1254,6 @@ class HouseClass : public AbstractClass
 	private:
 		void Silo_Redraw_Check(int oldtib, int oldcap);
 		int AI_Building(void);
-		BaseNodeClass * Next_Buildable_Node(void);
 		bool Can_Replace_Node(int index) const;
 		int AI_Unit(void);
 		int AI_Infantry(void);

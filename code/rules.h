@@ -2426,6 +2426,9 @@ class RulesClass
 		 */
 		int AIBaseSpacing;
 
+		// Placement searches a computer structure may fail before its base node is dropped; 0 never drops it.
+		int AIPlacementSearchFailures;
+
 		// How far, in cells, from its construction yard the computer may place a naval yard.
 		int AINavalYardAdjacency;
 

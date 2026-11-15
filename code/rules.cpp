@@ -204,6 +204,7 @@ RulesClass::RulesClass(void) :
 	IQHarvester(3),
 	IQSellBack(2),
 	AIBaseSpacing(1),
+	AIPlacementSearchFailures(3),
 	AINavalYardAdjacency(20),
 	SilverCrate(CRATE_HEAL_BASE),
 	WoodCrate(CRATE_MONEY),
@@ -2867,6 +2868,7 @@ bool RulesClass::AI(CCINIClass const & ini)
 		IsComputerParanoid = ini.Get_Bool(AI, "Paranoid", IsComputerParanoid);
 		PowerEmergencyFraction = ini.Get_Float(AI, "PowerEmergency", PowerEmergencyFraction);
 		AIBaseSpacing = ini.Get_Int(AI, "AIBaseSpacing", AIBaseSpacing);
+		AIPlacementSearchFailures = ini.Get_Int(AI, "AIPlacementSearchFailures", AIPlacementSearchFailures);
 		GDIWallDefense = ini.Get_Float(AI, "GDIWallDefense", GDIWallDefense);
 		GDIWallDefenseCoefficient = ini.Get_Float(AI, "GDIWallDefenseCoefficient", GDIWallDefenseCoefficient);
 		NodBaseDefenseCoefficient = ini.Get_Float(AI, "NodBaseDefenseCoefficient", NodBaseDefenseCoefficient);
@@ -3803,6 +3805,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IQHarvester);
 	stream.Serialize(IQSellBack);
 	stream.Serialize(AIBaseSpacing);
+	stream.Serialize(AIPlacementSearchFailures);
 	stream.Serialize(AINavalYardAdjacency);
 	stream.Serialize(SilverCrate);
 	stream.Serialize(WoodCrate);
