@@ -14,6 +14,7 @@
 #include "_warhead.h"
 #include "_weapon.h"
 #include "airctype.h"
+#include "anim.h"
 #include "animtype.h"
 #include "builtype.h"
 #include "ccini.h"
@@ -128,6 +129,8 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	NukeSiloLaunch(true),
 	NukeTakeOffSet(false),
 	NukeTakeOff(NULL),
+	NukePsiWarningSet(false),
+	NukePsiWarning(NULL),
 	LightningDuration(UNSET_INT),
 	LightningRadarOutage(UNSET_INT),
 	LightningRadarOutageAffects(HOUSE_ENEMIES),
@@ -355,6 +358,23 @@ void SuperWeaponKeys::Set_Pulse_Ball(std::string const & value)
 
 
 /// <summary>
+/// The animation that marks a missile's target: the Ares Nuke.PsiWarning when the weapon sets it, which may be
+/// none, and otherwise the PSIWARN animation type, or none when the rules do not load it.
+/// </summary>
+AnimTypeClass const * SuperWeaponKeys::Psi_Warning_Anim(void) const
+{
+	return(NukePsiWarningSet ? NukePsiWarning : Default_Psi_Warning_Anim());
+}
+
+
+AnimTypeClass const * SuperWeaponKeys::Default_Psi_Warning_Anim(void)
+{
+	AnimType const warning = Anim_From_Name("PSIWARN");
+	return(warning != ANIM_NONE ? AnimTypes[warning] : NULL);
+}
+
+
+/// <summary>
 /// Reads the ParaDrop.<country>.* and ParaDrop.<side>.* keys, whose names depend on the countries and sides
 /// the rules declare, into one group for each name that sets any of them.
 /// </summary>
@@ -543,6 +563,8 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(NukeSiloLaunch);
 	stream.Serialize(NukeTakeOffSet);
 	stream.Serialize(NukeTakeOff);
+	stream.Serialize(NukePsiWarningSet);
+	stream.Serialize(NukePsiWarning);
 	stream.Serialize(LightningDuration);
 	stream.Serialize(LightningRadarOutage);
 	stream.Serialize(LightningRadarOutageAffects);
@@ -641,6 +663,7 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(ProtectPowerOutage);
 	crc(ProtectFadeSoundTime);
 	crc(NukeTakeOffSet);
+	crc(NukePsiWarningSet);
 	crc(SonarPulseDelay);
 	crc(LightEnabled);
 	crc(LightAmbient);

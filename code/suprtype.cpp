@@ -406,6 +406,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.NukePayload = SuperKeyParse::Weapon_Named(ini.Get_String(IniName, "Nuke.Payload"), Keys.NukePayload);
 		Keys.NukeSiloLaunch = ini.Get_Bool(IniName, "Nuke.SiloLaunch", Keys.NukeSiloLaunch);
 		SuperKeyParse::Anim_Override(ini.Get_String(IniName, "Nuke.TakeOff"), Keys.NukeTakeOff, Keys.NukeTakeOffSet);
+		SuperKeyParse::Anim_Override(ini.Get_String(IniName, "Nuke.PsiWarning"), Keys.NukePsiWarning, Keys.NukePsiWarningSet);
 
 		Keys.LightningDuration = ini.Get_Int(IniName, "Lightning.Duration", Keys.LightningDuration);
 		Keys.LightningRadarOutage = ini.Get_Int(IniName, "Lightning.RadarOutage", Keys.LightningRadarOutage);

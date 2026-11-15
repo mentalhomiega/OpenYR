@@ -32945,6 +32945,23 @@ Nuke.Payload:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Nuke.PsiWarning:
+  key: Nuke.PsiWarning
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Nuke.SiloLaunch:
   key: Nuke.SiloLaunch
   scopes:

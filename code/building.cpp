@@ -7285,18 +7285,17 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 /// Puts the psychic warning marker on the cell this silo is about to fire its missile at.
 /// The marker belongs to the launch: once the missile bullet is created, the bullet takes the
 /// marker over and the marker is removed when the bullet is removed. Nothing is placed when the
-/// PSIWARN animation type is not loaded.
+/// super weapon's Nuke.PsiWarning names no animation, or without that key when the PSIWARN
+/// animation type is not loaded.
 /// </summary>
 void BuildingClass::Start_Psi_Warning(void)
 {
-	static char const * const PSI_WARN_ANIM = "PSIWARN";
-
-	AnimType const type = Anim_From_Name(PSI_WARN_ANIM);
-	if (type == ANIM_NONE) {
+	AnimTypeClass const * type = LastSuperWeaponIndex != -1 ? SuperWeaponTypes[LastSuperWeaponIndex]->Keys.Psi_Warning_Anim() : SuperWeaponKeys::Default_Psi_Warning_Anim();
+	if (type == NULL) {
 		return;
 	}
 
-	PsiWarnAnim = AnimClass::Held(new AnimClass(AnimTypes[type], Map[House->NukeDest].Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0), this);
+	PsiWarnAnim = AnimClass::Held(new AnimClass(type, Map[House->NukeDest].Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0), this);
 	PsiWarnAnim->OwnerHouse = (HousesType)House->HeapID;
 }
 
