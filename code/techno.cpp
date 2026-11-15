@@ -9366,6 +9366,13 @@ bool TechnoClass::Temporal_AI(void)
 		foot->IsLocomotorProcessing = true;
 		foot->Locomotion->Process();
 		foot->IsLocomotorProcessing = false;
+		// gamemd runs FootClass::Update (0x4DA530) in the frame the hold ends, and its end hands the carried locomotor back, so a move ordered next frame drives.
+		if (foot->IsActive && !foot->Is_Chrono_Warping()) {
+			IPiggyback * piggy = Piggyback_Of(foot->Locomotion.get());
+			if (piggy != NULL && piggy->Is_Ok_To_End()) {
+				foot->Locomotion = piggy->End_Piggyback();
+			}
+		}
 		return(true);
 	}
 

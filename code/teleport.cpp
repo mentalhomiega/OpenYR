@@ -200,7 +200,7 @@ void TeleportLocomotionClass::Do_Turn(DirType dir)
 void TeleportLocomotionClass::Stop_Moving(void)
 {
 	// A chronosphere warp cannot be stopped between its countdown and its landing; it runs on to the hold.
-	if (WarpPhase != TELEPORT_IDLE && WarpPhase != TELEPORT_HOLD) {
+	if (WarpPhase != TELEPORT_IDLE && WarpPhase != TELEPORT_HOLD && WarpPhase != TELEPORT_ARRIVAL_HOLD) {
 		return;
 	}
 	DestinationCoord = COORD_NONE;
@@ -316,15 +316,20 @@ bool TeleportLocomotionClass::Process(void)
 {
 	switch (WarpPhase) {
 		case TELEPORT_HOLD:
+		case TELEPORT_ARRIVAL_HOLD:
 			if (Frame >= WarpEnd) {
 				// The end of the hold runs while the phase still holds, so that ending it cannot hand the carried locomotor back and destroy this one.
 				FootClass * const foot = LinkedTo;
+				bool const staged = WarpPhase == TELEPORT_ARRIVAL_HOLD;
 				End_Wait_Or_Hold();
 				if (!foot->IsActive) {
 					break;
 				}
 				WarpPhase = TELEPORT_IDLE;
 				IsArrival = false;
+				if (staged) {
+					foot->Assign_Destination(NULL);
+				}
 				AUTOTEST_LOG("  warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
 			}
 			break;
@@ -677,7 +682,7 @@ void TeleportLocomotionClass::Chrono_Arrive_Stage(void)
 
 	// The hold starts before the checks, since destroying the object can destroy this locomotor.
 	DestinationCoord = COORD_NONE;
-	WarpPhase = TELEPORT_HOLD;
+	WarpPhase = TELEPORT_ARRIVAL_HOLD;
 	WarpEnd = Frame + foot->ChronoArrivalHold;
 	// A chrono reinforcement is not checked (gamemd 0x719AA3 skips 0x7187A0 while unit+0x280 is set).
 	if (!IsArrival && !Check_Landing()) {
