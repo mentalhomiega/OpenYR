@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-The weapon gives a falling pod two effects: a `SMOKEY` smoke trail, and repeated shots at its landing cell. Without a weapon, the pod leaves no trail and fires nothing, and the rest of its fall and landing is unchanged. [Descent and airborne effects](/systems/drop-pods/#descent-and-airborne-effects) describes the shots.
+The weapon gives a falling pod two effects: a `SMOKEY` smoke trail, and repeated shots at its landing cell. [`DropPodTrailer`](/keys/droppodtrailer/) replaces the trail and keeps it without a weapon. Without a weapon or that key, the pod leaves no trail and fires nothing, and the rest of its fall and landing is unchanged. [Descent and airborne effects](/systems/drop-pods/#descent-and-airborne-effects) describes the shots.
 
 Give the weapon a nonzero `Damage` and a warhead that lists at least one `AnimList` animation. Otherwise the game crashes on the pod's first shot.
 

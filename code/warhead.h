@@ -433,6 +433,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		int IronCurtainDuration;
 		int IronCurtainCap;
 
+		// IronCurtain.Flash (Ares): 1 or 0 when the warhead sets whether its hits on Iron Curtained objects flash, -1 for [AudioVisual] IronCurtainFlash.
+		int IronCurtainFlash;
+
 		// DisableWeapons.Duration (Ares): the frames an object this warhead hits cannot fire.
 		int DisableWeaponsDuration;
 

@@ -1,0 +1,19 @@
+; IronCurtain.Flash (Ares) on a warhead decides whether its hits on an Iron Curtained object flash, in place of [AudioVisual]
+; IronCurtainFlash. An Iron Curtain covers a tank at 75,40 at frame 60; each damage step hits it with the C4Warhead, Super.
+; Control first: with stock rules the hit at frame 130 flashes. At frame 150 the overlay iron-curtain-flash-warhead.ini sets
+; IronCurtain.Flash=no on Super, and the hit at frame 160 does not flash. At frame 180 iron-curtain-flash-warhead-2.ini sets
+; [AudioVisual] IronCurtainFlash=no and IronCurtain.Flash=yes on Super, and the hit at frame 190 flashes.
+; Expected: "curtain flash MTNK at 75,40 damage 80" lines at frames 130 and 190 only; every hit takes 0. Without the key the hit
+; at frame 160 flashes and the one at frame 190 does not.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/iron-curtain-flash-warhead.txt -Seconds 60 -Filter "AUTOTEST curtain|AUTOTEST   damage|AUTOTEST   grant|Exception"
+10 command CenterBase
+20 reveal
+35 own MTNK 75 40
+40 grant IronCurtainSpecial
+60 fire IronCurtainSpecial 75 40
+130 damage MTNK 40
+150 rules iron-curtain-flash-warhead.ini
+160 damage MTNK 40
+180 rules iron-curtain-flash-warhead-2.ini
+190 damage MTNK 40
+230 quit

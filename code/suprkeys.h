@@ -45,6 +45,7 @@ namespace SuperKeyParse
 	AircraftTypeClass const * Aircraft_Named(std::string const & value, AircraftTypeClass const * old);
 	WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass const * old);
 	void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list, bool & is_set);
+	void Anim_Override(std::string const & value, AnimTypeClass const * & anim, bool & is_set);
 	int Deliver_Owner(std::string const & value, int old);
 }
 
@@ -63,6 +64,8 @@ struct SuperWeaponKeys
 	void Set_AI_Requires_House(std::string const & value);
 	void Set_Pulse_Ball(std::string const & value);
 	void Read_Para_Owners(CCINIClass const & ini, char const * section);
+	AnimTypeClass const * Psi_Warning_Anim(void) const;
+	static AnimTypeClass const * Default_Psi_Warning_Anim(void);
 	void Serialize(SaveStreamClass & stream);
 	void Compute_CRC(CRCEngine & crc) const;
 
@@ -202,6 +205,12 @@ struct SuperWeaponKeys
 	// MultiMissile: the payload weapon, and whether a building with NukeSilo=yes launches it.
 	WeaponTypeClass const * NukePayload;
 	bool NukeSiloLaunch;
+	// Nuke.TakeOff: the animation on the silo at launch in place of [General] NukeTakeOff; set with NULL, none plays.
+	bool NukeTakeOffSet;
+	AnimTypeClass const * NukeTakeOff;
+	// Nuke.PsiWarning: the warning animation at a missile's target in place of PSIWARN; set with NULL, none shows.
+	bool NukePsiWarningSet;
+	AnimTypeClass const * NukePsiWarning;
 
 	// IronCurtain and ForceShield: frames of protection, of power outage and before the end at which the fade sound plays; -1 keeps the rules value.
 	int ProtectDuration;

@@ -4756,6 +4756,20 @@ AttachedParticleSystem:
 AttachedSystem:
   key: AttachedSystem
   scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: BulletTypeClass
+      member: AttachedSystem
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
   - applies_to: &id024
     - VoxelAnimType
     file: rules.ini
@@ -4763,7 +4777,7 @@ AttachedSystem:
       kind: identifier
       source: object-type
     value_type: class
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: VoxelAnimTypeClass
@@ -16075,6 +16089,24 @@ DropPodSpeed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DropPodTrailer:
+  key: DropPodTrailer
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DropPodTrailer
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DropPodWeapon:
   key: DropPodWeapon
   scopes:
@@ -25116,6 +25148,23 @@ IronCurtain.Duration:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+IronCurtain.Flash:
+  key: IronCurtain.Flash
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: IronCurtainFlash
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 IronCurtain.Modifier:
   key: IronCurtain.Modifier
   scopes:
@@ -25166,6 +25215,24 @@ IronCurtainDuration:
       default_candidate: '0'
       declared_in: RulesClass
       member: IronCurtainDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+IronCurtainFlash:
+  key: IronCurtainFlash
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsIronCurtainFlash
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -32945,6 +33012,23 @@ Nuke.Payload:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Nuke.PsiWarning:
+  key: Nuke.PsiWarning
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Nuke.SiloLaunch:
   key: Nuke.SiloLaunch
   scopes:
@@ -32959,6 +33043,23 @@ Nuke.SiloLaunch:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.NukeSiloLaunch
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Nuke.TakeOff:
+  key: Nuke.TakeOff
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass

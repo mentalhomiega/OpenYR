@@ -978,6 +978,10 @@ class RulesClass
 		 */
 		WeaponTypeClass const * DropPodWeapon;
 
+		// DropPodTrailer (Ares): once set, the smoke a falling pod leaves in place of SMOKEY, also without a DropPodWeapon; NULL leaves none.
+		bool IsDropPodTrailerSet;
+		AnimTypeClass const * DropPodTrailer;
+
 		/*
 		 * This is the altitude, expressed in leptons, that a drop pod is created at above
 		 * the cell it is to land on.
@@ -1373,6 +1377,9 @@ class RulesClass
 
 		// VeteranFlashTimer (Ares): how many frames an object that has just become a veteran flashes.
 		int VeteranFlashTimer;
+
+		// IronCurtainFlash (Ares): whether a hit on an Iron Curtained or force-shielded object makes a flash over it.
+		bool IsIronCurtainFlash;
 
 		// Frames per second below which detail-gated animations are skipped (DetailMinFrameRateNormal=).
 		int DetailMinFrameRateNormal;

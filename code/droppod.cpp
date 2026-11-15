@@ -151,10 +151,15 @@ bool DropPodLocomotionClass::Process(void)
 		LinkedTo->PositionCoord = coord;
 		WeaponTypeClass const * weapon = Rule->DropPodWeapon;
 
-		if (weapon != NULL) {
-			if (Frame % 6 == 0 && AnimTypeClass::From_Name("SMOKEY") != ANIM_NONE) {
-				new AnimClass(AnimTypes[AnimTypeClass::From_Name("SMOKEY")], smoke_coord);
+		if (Rule->IsDropPodTrailerSet) {
+			if (Frame % 6 == 0 && Rule->DropPodTrailer != NULL) {
+				new AnimClass(Rule->DropPodTrailer, smoke_coord);
 			}
+		} else if (weapon != NULL && Frame % 6 == 0 && AnimTypeClass::From_Name("SMOKEY") != ANIM_NONE) {
+			new AnimClass(AnimTypes[AnimTypeClass::From_Name("SMOKEY")], smoke_coord);
+		}
+
+		if (weapon != NULL) {
 			if (Frame % 3 == 0) {
 				if (!LinkedTo->House->Is_Ally(Map[DestinationCoord].Cell_Techno())) {
 					Coord scattered_coord = Coord_Scatter(DestinationCoord, CELL_LEPTON / 3, false);

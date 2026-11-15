@@ -21,6 +21,7 @@
 
 class WeaponTypeClass;
 class AnimTypeClass;
+class ParticleSystemTypeClass;
 class HouseClass;
 class Cell;
 
@@ -259,6 +260,9 @@ class BulletTypeClass : public ObjectTypeClass
 		 * below. If NULL, there is no trail.
 		 */
 		AnimTypeClass *Trailer;
+
+		// AttachedSystem (Ares): a smoke particle system that trails each projectile of this type in flight.
+		ParticleSystemTypeClass const * AttachedSystem;
 
 		// The trail delay, in frames, from the art section's SpawnDelay.
 		int SpawnDelay;
