@@ -78,6 +78,11 @@ class UnitTypeClass : public TechnoTypeClass
 		// The vehicle type a vehicle of this type becomes on a Convert type team script line, or NULL for none (Ares Convert.Script).
 		UnitTypeClass const * ConvertScript;
 
+		// VoiceIFVRepair (Ares): the reply a vehicle of this type gives to an order its repair weapon would carry out. Without the key
+		// the FV uses [AudioVisual] VoiceIFVRepair and other types use VoiceAttack.
+		bool IsVoiceIFVRepairSet;
+		VocType VoiceIFVRepair;
+
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
 		AnimTypeClass * DeployingAnim;

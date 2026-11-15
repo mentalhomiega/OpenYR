@@ -1,0 +1,13 @@
+; VoiceAirstrikeAttack (Ares) on the designator replaces [AudioVisual] AirstrikeAttackVoice when the player's object calls an airstrike. The overlay
+; airstrike-attack-voice.ini gives Boris VoiceAirstrikeAttack=SellBuilding. Boris marks a computer power plant two cells away, as in boris-airstrike.txt,
+; with every sound logged.
+; Expected: the "AUTOTEST airstrike call BORIS" line is preceded in the same frame by "Sound: SellBuilding". Without the overlay key the sound
+; logged there is MIGMove, the stock [AudioVisual] AirstrikeAttackVoice.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/airstrike-attack-voice.txt -Country 8 -Seconds 60 -Filter "Sound: |AUTOTEST airstrike call|Exception"
+10 rules airstrike-attack-voice.ini
+30 view 46 36
+40 grantunit BORIS 44 36
+50 enemy GAPOWR 46 38
+85 sounds 1
+90 strike BORIS 46 38
+260 quit

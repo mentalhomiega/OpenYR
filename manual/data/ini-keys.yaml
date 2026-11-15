@@ -7486,6 +7486,20 @@ BuildupSound:
 BuildupTime:
   key: BuildupTime
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BuildupTime
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -7493,7 +7507,7 @@ BuildupTime:
       kind: literal
       name: General
     value_type: floating point
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '.05'
       declared_in: RulesClass
@@ -10058,6 +10072,23 @@ Cloakable:
       default_candidate: 'no'
       declared_in: TechnoTypeClass
       member: IsCloakable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Cloakable.Allowed:
+  key: Cloakable.Allowed
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsCloakAllowed
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -18108,6 +18139,24 @@ EnemyUIName:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EnemyWrench:
+  key: EnemyWrench
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsEnemyWrench
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Engineer:
   key: Engineer
   scopes:
@@ -36857,6 +36906,23 @@ ProjectileRange:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Promote.EliteFlash:
+  key: Promote.EliteFlash
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteEliteFlash
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Promote.EliteSound:
   key: Promote.EliteSound
   scopes:
@@ -36871,6 +36937,23 @@ Promote.EliteSound:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: PromoteEliteSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Promote.VeteranFlash:
+  key: Promote.VeteranFlash
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteVeteranFlash
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -52960,6 +53043,24 @@ VeteranCombat:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+VeteranFlashTimer:
+  key: VeteranFlashTimer
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: VeteranFlashTimer
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 VeteranInfantry:
   key: VeteranInfantry
   scopes:
@@ -53152,6 +53253,23 @@ VisibleLoad:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceAirstrikeAttack:
+  key: VoiceAirstrikeAttack
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: VoiceAirstrikeAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceAttack:
   key: VoiceAttack
   scopes:
@@ -53325,6 +53443,20 @@ VoiceHarvest:
 VoiceIFVRepair:
   key: VoiceIFVRepair
   scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: VoiceIFVRepair
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -53332,7 +53464,7 @@ VoiceIFVRepair:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass

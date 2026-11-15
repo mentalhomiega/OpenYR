@@ -102,6 +102,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsRepairable(true),
 	IsRemappable(false),
 	IsCloakable(false),
+	IsCloakAllowed(true),
 	IsNoShadow(false),
 	IsDisableVoxelCache(false),
 	IsDisableShadowCache(false),
@@ -264,6 +265,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsConsideredAircraft(false),
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
+	IsVoiceAirstrikeAttackSet(false),
+	VoiceAirstrikeAttack(VOC_NONE),
+	PromoteVeteranFlash(-1),
+	PromoteEliteFlash(-1),
 	IsHealthBarHidden(false),
 	EMPModifier(1.0),
 	EMPThreshold(0),
@@ -1081,6 +1086,7 @@ void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
 	Capacity = ini.Get_Int(Name(), "Storage", Capacity);
 	IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
 	IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
+	IsCloakAllowed = ini.Get_Bool(Name(), "Cloakable.Allowed", IsCloakAllowed);
 	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
 	IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
 	SightRange = ini.Get_Int(Name(), "Sight", SightRange);
@@ -1777,6 +1783,12 @@ void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
 	MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
 	PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 	PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+	if (ini.Is_Present(Name(), "VoiceAirstrikeAttack")) {
+		IsVoiceAirstrikeAttackSet = true;
+		VoiceAirstrikeAttack = ini.Get_VocType(Name(), "VoiceAirstrikeAttack", VoiceAirstrikeAttack);
+	}
+	PromoteVeteranFlash = ini.Get_Int(Name(), "Promote.VeteranFlash", PromoteVeteranFlash);
+	PromoteEliteFlash = ini.Get_Int(Name(), "Promote.EliteFlash", PromoteEliteFlash);
 	ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 	ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 	CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -2285,6 +2297,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
+	stream.Serialize(IsVoiceAirstrikeAttackSet);
+	stream.Serialize(VoiceAirstrikeAttack);
+	stream.Serialize(PromoteVeteranFlash);
+	stream.Serialize(PromoteEliteFlash);
 	stream.Serialize(IsHealthBarHidden);
 	stream.Serialize(EMPModifier);
 	stream.Serialize(EMPThreshold);
@@ -2567,6 +2583,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrew);
 	stream.Serialize(IsRemappable);
 	stream.Serialize(IsCloakable);
+	stream.Serialize(IsCloakAllowed);
 	stream.Serialize(IsNoShadow);
 	stream.Serialize(IsDisableVoxelCache);
 	stream.Serialize(IsDisableShadowCache);
@@ -2742,6 +2759,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsCrew);
 	crc(IsRemappable);
 	crc(IsCloakable);
+	crc(IsCloakAllowed);
 	crc(IsGapGenerator);
 	crc(GapRadiusInCells);
 	crc(IsNoShadow);

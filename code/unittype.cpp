@@ -111,6 +111,8 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	ConvertWater(NULL),
 	ConvertLand(NULL),
 	ConvertScript(NULL),
+	IsVoiceIFVRepairSet(false),
+	VoiceIFVRepair(VOC_NONE),
 	IsDeployer(false),
 	DeployingAnim(NULL),
 	IsToHarvest(false),
@@ -383,6 +385,10 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		ConvertWater = TGet_Class(ini, Name(), "Convert.Water", ConvertWater);
 		ConvertLand = TGet_Class(ini, Name(), "Convert.Land", ConvertLand);
 		ConvertScript = TGet_Class(ini, Name(), "Convert.Script", ConvertScript);
+		if (ini.Is_Present(Name(), "VoiceIFVRepair")) {
+			IsVoiceIFVRepairSet = true;
+			VoiceIFVRepair = ini.Get_VocType(Name(), "VoiceIFVRepair", VoiceIFVRepair);
+		}
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
@@ -659,6 +665,8 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ConvertWater);
 	stream.Serialize(ConvertLand);
 	stream.Serialize(ConvertScript);
+	stream.Serialize(IsVoiceIFVRepairSet);
+	stream.Serialize(VoiceIFVRepair);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(DeployingAnim);
 	stream.Serialize(IsToHarvest);

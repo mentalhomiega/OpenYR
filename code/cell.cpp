@@ -3597,7 +3597,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 						break;
 
 					case CRATE_CLOAK:
-						if (object->IsCloakable) powerup = CRATE_MONEY;
+						if (object->IsCloakable || !object->TClass->IsCloakAllowed) powerup = CRATE_MONEY;
 						break;
 
 					case CRATE_HEAL_BASE:
@@ -3868,7 +3868,8 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj != NULL && obj->IsDown && obj->Is_Techno() && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
+					if (obj != NULL && obj->IsDown && obj->Is_Techno() && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius
+						&& ((TechnoClass *)obj)->TClass->IsCloakAllowed) {
 						((TechnoClass *)obj)->IsCloakable = true;
 					}
 				}

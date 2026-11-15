@@ -1466,7 +1466,7 @@ bool UnitClass::Unlimbo(Coord const & coord, Dir256 dir)
 		/*
 		**	If it starts off the edge of the map, then it already starts cloaked.
 		*/
-		if (IsCloakable && !IsLocked) Cloak = CLOAKED;
+		if (IsCloakable && !IsLocked && Class->IsCloakAllowed) Cloak = CLOAKED;
 
 		/*
 		**	Units default to no special animation.

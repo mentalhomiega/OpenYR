@@ -352,6 +352,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsBridgeRepairHut(false),
 	IsGate(false),
 	SellTime(-1.0),
+	BuildupTime(-1.0),
 	IsGateUpSoundSet(false),
 	GateUpSound(VOC_NONE),
 	IsGateDownSoundSet(false),
@@ -1510,6 +1511,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
 		SellTime = ini.Get_Double(Name(), "SellTime", SellTime);
+		BuildupTime = ini.Get_Double(Name(), "BuildupTime", BuildupTime);
 		if (ini.Is_Present(Name(), "GateUpSound")) {
 			IsGateUpSoundSet = true;
 			GateUpSound = ini.Get_VocType(Name(), "GateUpSound", GateUpSound);
@@ -2475,6 +2477,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsBridgeRepairHut);
 	crc(IsGate);
 	crc(SellTime);
+	crc(BuildupTime);
 	crc(IsSAM);
 	crc(IsConstructionYard);
 	crc(IsNukeSilo);
@@ -2695,6 +2698,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBridgeRepairHut);
 	stream.Serialize(IsGate);
 	stream.Serialize(SellTime);
+	stream.Serialize(BuildupTime);
 	stream.Serialize(IsGateUpSoundSet);
 	stream.Serialize(GateUpSound);
 	stream.Serialize(IsGateDownSoundSet);

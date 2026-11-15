@@ -387,6 +387,7 @@ RulesClass::RulesClass(void) :
 	IsEngineerAlwaysCaptureTech(true),
 	IsRepairStopOnInsufficientFunds(true),
 	IsTogglePowerAllowed(true),
+	IsEnemyWrench(true),
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
@@ -718,6 +719,7 @@ RulesClass::RulesClass(void) :
 	UpgradeVeteranSound(VOC_NONE),
 	UpgradeEliteSound(VOC_NONE),
 	EliteFlashTimer(100),
+	VeteranFlashTimer(0),
 	DetailMinFrameRateNormal(15),
 	DetailBufferZoneWidth(5),
 	BuildingGarrisonedSound(VOC_NONE),
@@ -1402,6 +1404,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
 		UpgradeEliteSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeEliteSound", UpgradeEliteSound);
 		EliteFlashTimer = ini.Get_Int(AUDIOVISUAL, "EliteFlashTimer", EliteFlashTimer);
+		VeteranFlashTimer = ini.Get_Int(AUDIOVISUAL, "VeteranFlashTimer", VeteranFlashTimer);
 		DetailMinFrameRateNormal = ini.Get_Int(AUDIOVISUAL, "DetailMinFrameRateNormal", DetailMinFrameRateNormal);
 		DetailBufferZoneWidth = ini.Get_Int(AUDIOVISUAL, "DetailBufferZoneWidth", DetailBufferZoneWidth);
 		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
@@ -2258,6 +2261,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsEngineerAlwaysCaptureTech = ini.Get_Bool(GENERAL, "EngineerAlwaysCaptureTech", IsEngineerAlwaysCaptureTech);
 		IsRepairStopOnInsufficientFunds = ini.Get_Bool(GENERAL, "RepairStopOnInsufficientFunds", IsRepairStopOnInsufficientFunds);
 		IsTogglePowerAllowed = ini.Get_Bool(GENERAL, "TogglePowerAllowed", IsTogglePowerAllowed);
+		IsEnemyWrench = ini.Get_Bool(GENERAL, "EnemyWrench", IsEnemyWrench);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
@@ -3524,6 +3528,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UpgradeVeteranSound);
 	stream.Serialize(UpgradeEliteSound);
 	stream.Serialize(EliteFlashTimer);
+	stream.Serialize(VeteranFlashTimer);
 	stream.Serialize(DetailMinFrameRateNormal);
 	stream.Serialize(DetailBufferZoneWidth);
 	stream.Serialize(BuildingGarrisonedSound);
@@ -3951,6 +3956,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEngineerAlwaysCaptureTech);
 	stream.Serialize(IsRepairStopOnInsufficientFunds);
 	stream.Serialize(IsTogglePowerAllowed);
+	stream.Serialize(IsEnemyWrench);
 	stream.Serialize(GenericPrerequisites);
 	stream.Serialize(IsTeamRetaliateSet);
 	stream.Serialize(IsTeamRetaliate);

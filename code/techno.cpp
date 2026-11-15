@@ -3656,7 +3656,14 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 		}
 		// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
 		if (House->Is_Player_Control()) {
-			Sound_Effect(Rule->AirstrikeAttackVoice);
+			// The designator's VoiceAirstrikeAttack comes first, then the aircraft type's (Ares).
+			VocType voice = Rule->AirstrikeAttackVoice;
+			if (TClass->IsVoiceAirstrikeAttackSet) {
+				voice = TClass->VoiceAirstrikeAttack;
+			} else if (type->IsVoiceAirstrikeAttackSet) {
+				voice = type->VoiceAirstrikeAttack;
+			}
+			Sound_Effect(voice);
 		}
 		DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
 		AUTOTEST_LOG("airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
@@ -4029,7 +4036,8 @@ void TechnoClass::AI(void)
 
 	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
-	 * (TechnoClass::Update, 0x6F9E50).
+	 * (TechnoClass::Update, 0x6F9E50). A veteran flashes only with a VeteranFlashTimer or
+	 * Promote.VeteranFlash above zero (Ares).
 	 */
 	int const rank = Veterancy.Rank();
 	if (rank != CurrentRank) {
@@ -4045,7 +4053,12 @@ void TechnoClass::AI(void)
 				}
 			}
 			if (rank == 2) {
-				FlashCount = Rule->EliteFlashTimer;
+				FlashCount = TClass->PromoteEliteFlash >= 0 ? TClass->PromoteEliteFlash : Rule->EliteFlashTimer;
+			} else {
+				int const flash = TClass->PromoteVeteranFlash >= 0 ? TClass->PromoteVeteranFlash : Rule->VeteranFlashTimer;
+				if (flash > 0) {
+					FlashCount = flash;
+				}
 			}
 		}
 		CurrentRank = rank;
@@ -4468,6 +4481,9 @@ void TechnoClass::Cloaking_AI(bool)
 /// <returns>bool; Should the object uncloak now?</returns>
 bool TechnoClass::Should_Uncloak(void) const
 {
+	if (!TClass->IsCloakAllowed) {
+		return(true);
+	}
 	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House);
 	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Immobilized()) {
 		if (Has_Ability(ABILITY_CLOAK)) return(false);
@@ -4495,6 +4511,10 @@ bool TechnoClass::Should_Uncloak(void) const
  *=============================================================================================*/
 bool TechnoClass::Is_Ready_To_Cloak(void) const
 {
+	if (!TClass->IsCloakAllowed) {
+		return(false);
+	}
+
 	/*
 	**	If the object cannot recloak, then it certainly is not allowed to start.
 	*/
@@ -10598,10 +10618,20 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 	bool const elite = Veterancy.Is_Elite();
 
 	// The IFV, type FV, answers with VoiceIFVRepair when the weapon it would use repairs (TechnoClass::Weapon_Attack_Voice, 0x7090A0).
+	// A vehicle type's own VoiceIFVRepair (Ares) replaces that reply for its type.
 	int const which = What_Weapon_Should_I_Use(target);
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
-	if (weapon != NULL && weapon->Attack < 0 && Rule->VoiceIFVRepair != VOC_NONE && stricmp(TClass->Name(), "FV") == 0) {
-		return(Rule->VoiceIFVRepair);
+	if (weapon != NULL && weapon->Attack < 0 && RTTI == RTTI_UNIT) {
+		UnitTypeClass const * type = static_cast<UnitClass const *>(this)->Class;
+		VocType repair = VOC_NONE;
+		if (type->IsVoiceIFVRepairSet) {
+			repair = type->VoiceIFVRepair;
+		} else if (stricmp(type->Name(), "FV") == 0) {
+			repair = Rule->VoiceIFVRepair;
+		}
+		if (repair != VOC_NONE) {
+			return(repair);
+		}
 	}
 
 	if (which == 0) {
