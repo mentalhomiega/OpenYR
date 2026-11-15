@@ -57,7 +57,7 @@ Which look a viewer sees depends on whose vehicle it is and on the frame:
 - Any other vehicle, such as a computer house's, looks like a tank to every viewer for [`DisguiseFakeBlinkTime`](/keys/disguisefakeblinktime/) frames after it fires.
 - Otherwise, any other vehicle looks like terrain to every viewer, allies included, unless a detector of the viewer's house covers its cell. A viewer with such a detector sees the tank.
 
-A computer house's units pick a Mirage tank as an automatic target only in those blink frames, and then only on a roll set by [`DisabledDisguiseDetectionPercent`](/keys/disableddisguisedetectionpercent/) for the side. A human house's units never pick it automatically, and units of a type with [`DetectDisguise=yes`](/keys/detectdisguise/) see through the disguise. The player's own vehicle has a short translucent shimmer in bursts of its cycle, on either look. Other vehicles get no shimmer.
+A computer house's units pick a Mirage tank as an automatic target only in those blink frames, and then only on a roll set by [`DisabledDisguiseDetectionPercent`](/keys/disableddisguisedetectionpercent/) for the house's difficulty. A human house's units never pick it automatically, and units of a type with [`DetectDisguise=yes`](/keys/detectdisguise/) see through the disguise. The player's own vehicle has a short translucent shimmer in bursts of its cycle, on either look. Other vehicles get no shimmer.
 
 A vehicle that looks like terrain to its owner stays on the clickable list, so a click on it and a [type-select](/commands/typeselect/) tap still select it.
 

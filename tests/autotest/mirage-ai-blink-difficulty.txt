@@ -1,0 +1,17 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mirage-ai-blink-difficulty.txt -AICountries 3 -Seconds 120 -Uncapped -Filter "AUTOTEST   (seat 1|where)|DAMAGETRACE.*by HTNK|Exception"
+; A player Mirage Tank (MGTK at 60,42, MirageGun cut to 1 damage) fires at a computer Rhino (HTNK at 63,42) of Germans,
+; an Allied (side 0) house at difficulty slot 1 ("seat 1 Germans ... difficulty 1"). The ini sets
+; DisabledDisguiseDetectionPercent=-1,100,-1.
+; Expected: the roll uses the entry for the house's difficulty (HouseClass+0x184, 0x6F8536), so the Rhino picks the
+; tank in a blink after one of its shots and hits it ("MGTK cell 60,42 by HTNK", near frame 799 in the run that wrote
+; this header). Before the fix the roll used the side's entry (-1), so the Rhino never fired at the tank.
+10 rules mirage-ai-blink-difficulty.ini
+30 view 60 42
+40 own MGTK 60 42
+50 houses
+60 damagetrace MGTK
+100 enemy HTNK 63 42
+400 where HTNK
+1000 where HTNK
+1200 where MGTK
+1210 quit
