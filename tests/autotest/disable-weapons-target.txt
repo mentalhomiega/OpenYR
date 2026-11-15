@@ -1,0 +1,21 @@
+; A DisableWeapons.Duration hit jams the weapons of the object it hits; the object keeps its target (Ares manual, DisableWeapons).
+; The disable-weapons-target-rules mod gives the GI (E1) and the Conscript (E2) 20000 strength, and the Conscript a gun
+; whose warhead jams for 30 frames, fired every 10 frames, so the player's GI (E1) on guard beside it stays jammed.
+; Expected: from frame 300 the GI is listed with the Conscript's cell 74,26 as its target at every check. Before the fix a jam
+; made Can_Fire report FIRE_CANT, the 16-frame check dropped the target, and the checks after frame 300 listed target -1,-1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/disable-weapons-target.txt -Mods src-agent33/tests/autotest/disable-weapons-target-rules -Seconds 120 -Filter "AUTOTEST   where E1|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 72 26
+41 enemy E2 74 26
+300 where E1
+321 where E1
+337 where E1
+353 where E1
+369 where E1
+385 where E1
+401 where E1
+417 where E1
+433 where E1
+449 where E1
+500 quit

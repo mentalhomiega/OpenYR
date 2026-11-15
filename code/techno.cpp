@@ -4821,11 +4821,6 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_CANT);
 	}
 
-	// DisableWeapons.Duration keeps the object from firing while the jam lasts (Ares).
-	if (WeaponsDisabledFrames > 0) {
-		return(FIRE_CANT);
-	}
-
 	if (Is_Immobilized()) {
 		if (RTTI != RTTI_UNIT) {
 			return(FIRE_CANT);
@@ -4906,6 +4901,9 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	**	Don't allow firing if still rearming.
 	*/
 	if (check_rearm && Arm != 0) return(FIRE_REARM);
+
+	// A DisableWeapons.Duration jam holds fire as a reload does, so the object keeps its target (Ares).
+	if (WeaponsDisabledFrames > 0) return(FIRE_REARM);
 
 	if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE]) return(FIRE_REARM);
 	if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN]) return(FIRE_REARM);
