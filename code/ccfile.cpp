@@ -122,7 +122,8 @@ static int const VIEW_MEMBER_SIZE = 1024 * 1024;
 
 /// <summary>
 /// Opens this file as the member of mixfile at position, an offset in the archive's file, read from a view of that
-/// file. A nested archive is left to the file handle, as its reader takes its offset from the handle.
+/// file. A nested archive (.MIX, .MMX or .YRO) is left to the file handle, as its reader takes its offset from the
+/// handle.
 /// </summary>
 /// <returns>bool; Was the member opened this way?</returns>
 bool CCFileClass::Map_Member_View(MixFileClass & mixfile, int position, int length)
@@ -132,8 +133,10 @@ bool CCFileClass::Map_Member_View(MixFileClass & mixfile, int position, int leng
 	}
 	char const * const name = File_Name();
 	std::size_t const size = name != NULL ? std::strlen(name) : 0;
-	if (size >= 4 && _stricmp(name + size - 4, ".MIX") == 0) {
-		return(false);
+	for (char const * archive : {".MIX", ".MMX", ".YRO"}) {
+		if (size >= 4 && _stricmp(name + size - 4, archive) == 0) {
+			return(false);
+		}
 	}
 
 	void * view = NULL;

@@ -133,6 +133,7 @@ void Test_Resident_Members(void)
 		{"LARGE.SHP", Pattern(300 * 1024 + 7, 2)},
 		{"MIDDLE.PAL", Pattern(70 * 1024 + 3, 3)},
 		{"HUGE.SHP", Pattern(1300 * 1024 + 11, 4)},
+		{"INNER.MIX", Pattern(5000, 5)},
 		{"EMPTY.TXT", {}},
 	};
 	std::vector<char> const archive = Archive(members);
@@ -198,6 +199,14 @@ void Test_Resident_Members(void)
 			Check(opened && size == (int)member.Bytes.size() && got == size && bytes == member.Bytes && at_end == size
 				&& back == size - 10 && tail == 10 && std::memcmp(last, member.Bytes.data() + size - 10, 10) == 0, what.c_str());
 		}
+
+		// A nested archive's reader takes its offset from the file handle, so it is never opened as a view.
+		CCFileClass small_file("SMALL.SHP");
+		CCFileClass inner_file("INNER.MIX");
+		Check(small_file.Open(FileClass::READ) && small_file.Is_Resident(), "a small member is opened as a view");
+		Check(inner_file.Open(FileClass::READ) && !inner_file.Is_Resident(), "a nested archive is opened through a file handle");
+		small_file.Close();
+		inner_file.Close();
 
 		std::vector<unsigned char> read;
 		Check(mix.Read_Member("LARGE.SHP", read) && read.size() == members[1].Bytes.size()
