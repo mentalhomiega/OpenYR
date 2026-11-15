@@ -7331,7 +7331,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	int const raw_damage = damage;
 	int const strength_before = Strength;
-	bool const traced = TraceDamageType != NULL && TClass == TraceDamageType;
+	bool const traced = TraceDamageType != NULL && (TClass == TraceDamageType || (source != NULL && source->TClass == TraceDamageType));
 	double const armor_before = traced ? AttachedEffects.Armor_Multiplier() : 1.0;
 	auto trace = [&](char const * outcome) {
 		if (traced) {
