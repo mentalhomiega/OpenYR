@@ -642,6 +642,8 @@ RulesClass::RulesClass(void) :
 	MissileSafetyAltitude(500),
 	ApproachTargetResetMultiplier(1),
 	DropPodWeapon(NULL),
+	IsDropPodTrailerSet(false),
+	DropPodTrailer(NULL),
 	DropPodHeight(1500),
 	DropPodSpeed(40),
 	DropPodAngle(M_PI/2), /// 90 deg
@@ -2008,6 +2010,10 @@ bool RulesClass::General(CCINIClass const & ini)
 		MissileSafetyAltitude = ini.Get_Int(GENERAL, "MissileSafetyAltitude", MissileSafetyAltitude);
 		ApproachTargetResetMultiplier = ini.Get_Int(GENERAL, "ApproachTargetResetMultiplier", ApproachTargetResetMultiplier);
 		DropPodWeapon = TGet_Class(ini, GENERAL, "DropPodWeapon", DropPodWeapon);
+		if (ini.Is_Present(GENERAL, "DropPodTrailer")) {
+			IsDropPodTrailerSet = true;
+			DropPodTrailer = TGet_Class(ini, GENERAL, "DropPodTrailer", (AnimTypeClass *)DropPodTrailer);
+		}
 		DropPodHeight = ini.Get_Int(GENERAL, "DropPodHeight", DropPodHeight);
 		DropPodSpeed = ini.Get_Int(GENERAL, "DropPodSpeed", DropPodSpeed);
 		DropPodAngle = ini.Get_Float(GENERAL, "DropPodAngle", DropPodAngle);
@@ -3461,6 +3467,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MissileSafetyAltitude);
 	stream.Serialize(ApproachTargetResetMultiplier);
 	stream.Serialize(DropPodWeapon);
+	stream.Serialize(IsDropPodTrailerSet);
+	stream.Serialize(DropPodTrailer);
 	stream.Serialize(DropPodHeight);
 	stream.Serialize(DropPodSpeed);
 	stream.Serialize(DropPodAngle);
@@ -4006,6 +4014,7 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	Detach_Pointer(target, WeaponNullifyAnim);
 	Detach_Pointer(target, FlamingInfantry);
 	Detach_Pointer(target, DropPodWeapon);
+	Detach_Pointer(target, DropPodTrailer);
 	Detach_Pointer(target, FlameDamage);
 	Detach_Pointer(target, FlameDamage2);
 	Detach_Pointer(target, NukeWarhead);

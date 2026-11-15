@@ -16075,6 +16075,24 @@ DropPodSpeed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DropPodTrailer:
+  key: DropPodTrailer
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DropPodTrailer
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DropPodWeapon:
   key: DropPodWeapon
   scopes:
