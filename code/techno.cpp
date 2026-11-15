@@ -7157,7 +7157,8 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
 		// The hit makes a flash over the object, blue for a force shield, as big as a blast of twice the damage (TechnoClass::ReceiveDamage, 0x701A93).
-		if (Rule->IsIronCurtainFlash) {
+		bool const flash = warhead != NULL && warhead->IronCurtainFlash >= 0 ? warhead->IronCurtainFlash != 0 : Rule->IsIronCurtainFlash;
+		if (flash) {
 			int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
 			Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
 			AUTOTEST_LOG("curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);

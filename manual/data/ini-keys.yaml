@@ -25116,6 +25116,23 @@ IronCurtain.Duration:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+IronCurtain.Flash:
+  key: IronCurtain.Flash
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: IronCurtainFlash
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 IronCurtain.Modifier:
   key: IronCurtain.Modifier
   scopes:

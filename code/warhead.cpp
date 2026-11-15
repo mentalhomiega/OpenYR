@@ -177,6 +177,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	EMPSparkles(NULL),
 	IronCurtainDuration(0),
 	IronCurtainCap(-1),
+	IronCurtainFlash(-1),
 	DisableWeaponsDuration(0),
 	CellSpreadMaxAffect(-1),
 	TemporalHealthFactor(0.0),
@@ -341,6 +342,9 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		EMPSparkles = TGet_Class(ini, Name(), "EMP.Sparkles", EMPSparkles);
 		IronCurtainDuration = ini.Get_Int(Name(), "IronCurtain.Duration", IronCurtainDuration);
 		IronCurtainCap = ini.Get_Int(Name(), "IronCurtain.Cap", IronCurtainCap);
+		if (ini.Is_Present(Name(), "IronCurtain.Flash")) {
+			IronCurtainFlash = ini.Get_Bool(Name(), "IronCurtain.Flash", IronCurtainFlash > 0) ? 1 : 0;
+		}
 		DisableWeaponsDuration = ini.Get_Int(Name(), "DisableWeapons.Duration", DisableWeaponsDuration);
 		CellSpreadMaxAffect = ini.Get_Int(Name(), "CellSpread.MaxAffect", CellSpreadMaxAffect);
 		IsUnitLostSuppress = ini.Get_Bool(Name(), "UnitLost.Suppress", IsUnitLostSuppress);
@@ -492,6 +496,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(EMPCap);
 	crc(IronCurtainDuration);
 	crc(IronCurtainCap);
+	crc(IronCurtainFlash);
 	crc(DisableWeaponsDuration);
 	crc(CellSpreadMaxAffect);
 	crc(TemporalHealthFactor);
@@ -714,6 +719,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPSparkles);
 	stream.Serialize(IronCurtainDuration);
 	stream.Serialize(IronCurtainCap);
+	stream.Serialize(IronCurtainFlash);
 	stream.Serialize(DisableWeaponsDuration);
 	stream.Serialize(CellSpreadMaxAffect);
 	stream.Serialize(TemporalHealthFactor);

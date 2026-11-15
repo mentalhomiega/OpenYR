@@ -9,7 +9,7 @@ when_omitted:
   value: "yes"
 ---
 
-`IronCurtainFlash` is an Ares key in `[AudioVisual]`. A hit that an Iron Curtain or a Force Shield turns away makes a flash of light over the object, white under the Iron Curtain and blue under the Force Shield, as big as a blast of twice the damage. With `IronCurtainFlash=no` these hits make no flash. The protection and the damage are unchanged.
+`IronCurtainFlash` is an Ares key in `[AudioVisual]`. A hit that an Iron Curtain or a Force Shield turns away makes a flash of light over the object, white under the Iron Curtain and blue under the Force Shield, as big as a blast of twice the damage. With `IronCurtainFlash=no` these hits make no flash. The protection and the damage are unchanged. A warhead's [`IronCurtain.Flash`](/keys/ironcurtain.flash/) replaces this value for its own hits.
 
 ```ini title="rulesmd.ini"
 [AudioVisual]
