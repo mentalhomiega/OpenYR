@@ -7138,8 +7138,10 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						if (!bullet->Unlimbo(launch, TVelocity3D<double>(DirType(DIR_N), DirType(DIR_N), 10))) {
 							delete bullet;
 						} else {
-							if (Rule->NukeTakeOff != NULL) {
-								new AnimClass(Rule->NukeTakeOff, launch, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -100);
+							// A super weapon's Nuke.TakeOff (Ares) replaces [General] NukeTakeOff.
+							AnimTypeClass const * takeoff = launched->Keys.NukeTakeOffSet ? launched->Keys.NukeTakeOff : Rule->NukeTakeOff;
+							if (takeoff != NULL) {
+								new AnimClass(takeoff, launch, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -100);
 							}
 							AUTOTEST_LOG("missile leaves %s at frame %d\n", Class->Name(), Frame);
 							// The announcer file announces every launch when it is fired instead.

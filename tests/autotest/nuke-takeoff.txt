@@ -1,0 +1,23 @@
+; Nuke.TakeOff (Ares) on a super weapon replaces [General] NukeTakeOff, the animation on the silo as the missile leaves.
+; Control first: a missile silo fires the stock NukeSpecial at 42,50 with stock rules. At frame 300 the overlay nuke-takeoff.ini sets
+; Nuke.TakeOff=V3TAKOFF on NukeSpecial and the silo fires it again.
+; Expected: each frame logs the NUKETO count, then the V3TAKOFF count. After the first launch (frame 64) they read 1 and 0, the stock
+; path. After the second (frame 309) they read 0 and 1. Without the key the second launch reads 1 and 0 again.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/nuke-takeoff.txt -Seconds 60 -Filter "AUTOTEST   liveanims|missile leaves|AUTOTEST   grant|Exception"
+20 own GAPOWR 56 40
+22 own NAMISL 60 46
+35 reveal
+60 grant NukeSpecial
+63 fire NukeSpecial 42 50
+68 liveanims NUKETO
+68 liveanims V3TAKOFF
+75 liveanims NUKETO
+75 liveanims V3TAKOFF
+300 rules nuke-takeoff.ini
+305 grant NukeSpecial
+308 fire NukeSpecial 42 50
+313 liveanims NUKETO
+313 liveanims V3TAKOFF
+320 liveanims NUKETO
+320 liveanims V3TAKOFF
+600 quit

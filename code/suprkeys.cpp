@@ -126,6 +126,8 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	ProtectFadeSoundTime(-1),
 	NukePayload(NULL),
 	NukeSiloLaunch(true),
+	NukeTakeOffSet(false),
+	NukeTakeOff(NULL),
 	LightningDuration(UNSET_INT),
 	LightningRadarOutage(UNSET_INT),
 	LightningRadarOutageAffects(HOUSE_ENEMIES),
@@ -271,6 +273,21 @@ void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list
 		} else if (!Same(name, "none")) {
 			DebugString("A superweapon key names no such animation: %s; skipped.\n", name.c_str());
 		}
+	}
+}
+
+
+// An animation key that, once set, replaces a default even with no animation: "none" or an unknown name shows nothing.
+void Anim_Override(std::string const & value, AnimTypeClass const * & anim, bool & is_set)
+{
+	std::string const name(Trim(value));
+	if (name.empty()) {
+		return;
+	}
+	is_set = true;
+	anim = Find_Named(AnimTypes, name.c_str());
+	if (anim == NULL && !Same(name, "none")) {
+		DebugString("A superweapon key names no such animation: %s; none plays.\n", name.c_str());
 	}
 }
 
@@ -524,6 +541,8 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProtectFadeSoundTime);
 	stream.Serialize(NukePayload);
 	stream.Serialize(NukeSiloLaunch);
+	stream.Serialize(NukeTakeOffSet);
+	stream.Serialize(NukeTakeOff);
 	stream.Serialize(LightningDuration);
 	stream.Serialize(LightningRadarOutage);
 	stream.Serialize(LightningRadarOutageAffects);
@@ -621,6 +640,7 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(ProtectDuration);
 	crc(ProtectPowerOutage);
 	crc(ProtectFadeSoundTime);
+	crc(NukeTakeOffSet);
 	crc(SonarPulseDelay);
 	crc(LightEnabled);
 	crc(LightAmbient);

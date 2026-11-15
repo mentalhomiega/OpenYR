@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-Plays where a missile silo's missile leaves the silo. [Multi missile and chem missile](/systems/superweapons/#multi-missile-and-chem-missile) covers the launch.
+Plays where a missile silo's missile leaves the silo. A super weapon's [`Nuke.TakeOff`](/keys/nuke.takeoff/#scope-superweapontype) replaces it. [Multi missile and chem missile](/systems/superweapons/#multi-missile-and-chem-missile) covers the launch.
 
 ```ini title="rulesmd.ini"
 [General]

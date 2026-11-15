@@ -45,6 +45,7 @@ namespace SuperKeyParse
 	AircraftTypeClass const * Aircraft_Named(std::string const & value, AircraftTypeClass const * old);
 	WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass const * old);
 	void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list, bool & is_set);
+	void Anim_Override(std::string const & value, AnimTypeClass const * & anim, bool & is_set);
 	int Deliver_Owner(std::string const & value, int old);
 }
 
@@ -202,6 +203,9 @@ struct SuperWeaponKeys
 	// MultiMissile: the payload weapon, and whether a building with NukeSilo=yes launches it.
 	WeaponTypeClass const * NukePayload;
 	bool NukeSiloLaunch;
+	// Nuke.TakeOff: the animation on the silo at launch in place of [General] NukeTakeOff; set with NULL, none plays.
+	bool NukeTakeOffSet;
+	AnimTypeClass const * NukeTakeOff;
 
 	// IronCurtain and ForceShield: frames of protection, of power outage and before the end at which the fade sound plays; -1 keeps the rules value.
 	int ProtectDuration;
