@@ -17,6 +17,7 @@
 #include "dbgprint.h"
 #include "data.h"
 #include "mixfile.h"
+#include "startuptrace.h"
 #include "strutil.h"
 
 #include <algorithm>
@@ -53,6 +54,7 @@ bool SampleBagSetClass::Read_From_Bag(char const * filename, std::vector<uint8_t
 			if (!index.Is_Available()) {
 				continue;
 			}
+			StartupSpanClass span("audio index %s.IDX", stem);
 			BagFileType bag;
 			bag.BagName = std::string(stem) + ".BAG";
 			std::vector<uint8_t> data;

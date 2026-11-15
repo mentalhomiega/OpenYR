@@ -56,6 +56,7 @@
 #include "pkstraw.h"
 #include "truecolour.h"
 #include "shastraw.h"
+#include "startuptrace.h"
 #include "xstraw.h"
 
 #include <climits>
@@ -125,6 +126,7 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 {
 	CCFileClass file(filename);		// Working file object.
 	Filename = strdup(file.File_Name());
+	StartupSpanClass span("MIX %s mounted", file.File_Name());
 	// The key straw is declared first so that it outlives the file straw it is chained to. The
 	// file straw's destructor reaches back to the straw chained from it.
 	PKStraw pstraw(PKStraw::DECRYPT, CryptRandom);
@@ -244,6 +246,7 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	}
 	Count = kept;
 	DataSize = (int)data_size;
+	span.Append(", %d entries", Count);
 
 	/*
 	**	Attach to list of mixfiles.
@@ -353,6 +356,9 @@ void const * MixFileClass::Retrieve(char const * filename)
 		return(TrueColour_Png_Only_Shape(filename));
 	}
 	if (ptr == NULL && mixfile != NULL && mixfile->ResidentMembers) {
+		if (Startup_Trace_Active() && mixfile->Members.find(offset) == mixfile->Members.end()) {
+			Startup_Note_Member(filename, size);
+		}
 		ptr = (void *)mixfile->Resident_Member(offset, size);
 	}
 	TrueColour_Note_Shape(ptr, filename);
@@ -481,6 +487,8 @@ bool MixFileClass::Cache(Buffer const * buffer)
 	**	If the mixfile is already cached, then no action needs to be performed.
 	*/
 	if (Data != NULL) return(true);
+
+	StartupSpanClass span("MIX %s cached, %d KB", Filename, DataSize / 1024);
 
 	/*
 	**	If a buffer was supplied (and it is big enough), then use it as the data block

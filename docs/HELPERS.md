@@ -199,6 +199,7 @@ Each of these is not copyable. Declare it as a local and let the scope end.
 | `Last_Error_Text(error)` | `dbgprint.h` | Text of a Windows error code, in a per-thread buffer that the next call overwrites. |
 | `AUTOTEST_LOG(...)` | `autotest.h` | `DebugString` with an `AUTOTEST ` prefix, only in an unattended run. Its arguments are not evaluated otherwise, so they may follow pointers that exist only in a test. |
 | `AutoTest_Active()` | `autotest.h` | True in an `-AUTOTEST` run. |
+| `Startup_Mark(format, ...)`, `StartupSpanClass` | `startuptrace.h` | One `STARTUP` log line with the time since the process started, the bytes read and the files opened, until the title menu stands or a game starts; the span writes its line, with its time and bytes, when it goes out of scope. Costs one flag test afterwards. |
 | `Perf_Count(counter, amount)` | `perfstat.h` | Adds to a performance counter while recording is on. |
 | `PerfRing<T>`, `Perf_Summarise`, `Perf_Average_Worst`, `Perf_Newest_Since` | `perfring.h` | A fixed-size ring of the newest values, and the average, nearest-rank 99th percentile and worst of its newest part. |
 | `Log_Unresolved_House(section, key, name)` | `house.h` | One load-warning line for a scenario house name that resolves to no live house, with the section and key that name it. |

@@ -9,6 +9,7 @@ opents_add_test(LobbyModesContract
         lobbymodes.cpp
         lobbymapcode.cpp
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         dbgprint.cpp
         trim.cpp

@@ -79,6 +79,7 @@
 #include "pk.h"
 #include "rect.h"
 #include "trim.h"
+#include "startuptrace.h"
 #include "utf8.h"
 #include "xpipe.h"
 #include "xstraw.h"
@@ -167,7 +168,7 @@ int INIClass::Load(FileClass & file, bool keepcomments)
 /// </summary>
 /// <returns>bool; Was a line read? The last line of a file is read whether or not a newline
 /// ends it, so only the end of the file returns false.</returns>
-static bool Read_Line(Straw & file, std::string & line)
+static bool Read_Line(Straw & file, std::string & line, std::size_t & bytes)
 {
 	line.clear();
 
@@ -176,6 +177,7 @@ static bool Read_Line(Straw & file, std::string & line)
 		if (file.Get(&c, sizeof(c)) != sizeof(c)) {
 			return(!line.empty());
 		}
+		bytes++;
 		if (c == '\n') {
 			return(true);
 		}
@@ -317,6 +319,9 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 	CacheStraw file;
 	file.Get_From(ffile);
 
+	StartupSpanClass span("INI %s", source != NULL ? source : "(text)");
+	std::size_t textbytes = 0;
+
 	std::string line;
 	line.reserve(MAX_LINE_LENGTH);
 
@@ -332,7 +337,7 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 		Transcoded = 0;
 	}
 
-	while (Read_Line(file, line)) {
+	while (Read_Line(file, line, textbytes)) {
 		if (first) {
 			first = false;
 			line.erase(0, UTF8::BOM_Length(line));
@@ -459,6 +464,7 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 		pending.clear();
 	}
 
+	span.Append(", %u KB", (unsigned)(textbytes / 1024));
 	if (!sawsection) {
 		if (keepcomments) {
 			TailComment = std::move(pending);

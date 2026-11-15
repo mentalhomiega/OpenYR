@@ -7,6 +7,7 @@ opents_add_test(RMGSettings
     ENGINE
         rmgsettings.cpp
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         dbgprint.cpp
         b64pipe.cpp

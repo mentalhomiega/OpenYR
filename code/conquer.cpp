@@ -71,6 +71,7 @@
 #include "_palette.h"
 #include "replay.h"
 #include "spawner.h"
+#include "startuptrace.h"
 #include "_rules.h"
 #include "_source.h"
 #include "_surface.h"
@@ -392,6 +393,7 @@ void Main_Game(int argc, char * argv[])
 	**		until they indicate that the user wants to exit the scenario.
 	*/
 	while (Select_Game(fade)) {
+		Startup_Trace_End("game starts");
 		fade = false;
 		ScenarioInit = 0;		// Kludge.
 		fade = true;

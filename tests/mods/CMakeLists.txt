@@ -18,6 +18,7 @@ opents_add_test(Mods
         file_win.cpp
         dbgprint.cpp
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         b64pipe.cpp
         b64straw.cpp
