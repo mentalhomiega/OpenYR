@@ -1,0 +1,20 @@
+; BuildupTime (Ares) on a structure type sets how long its construction animation takes, in place of the [General] value. The overlay
+; building-buildup-time.ini gives the Allied power plant BuildupTime=.5, 450 frames, where the [General] value gives about 54. The player builds one
+; with instant build and places it at frame 700, once it is ready.
+; Expected: banimstate shows the power plant in bstate 0 (construction) at frames 810 and 1050, its stage still rising, and in bstate 1 (idle) at frame 1250.
+; Without the overlay key it is in bstate 1 by frame 810.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/building-buildup-time.txt -Seconds 120 -Country 0 -Filter "AUTOTEST   banimstate|AUTOTEST place|Exception"
+10 rules building-buildup-time.ini
+20 own GACNST 50 30
+30 command CenterBase
+40 command DebugInfiniteMoney
+41 command DebugUnlockAll
+42 command DebugInstantBuild
+43 command DebugRevealMap
+100 produce GAPOWR
+700 place GAPOWR
+710 banimstate GAPOWR
+810 banimstate GAPOWR
+1050 banimstate GAPOWR
+1250 banimstate GAPOWR
+1260 quit

@@ -7486,6 +7486,20 @@ BuildupSound:
 BuildupTime:
   key: BuildupTime
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BuildupTime
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -7493,7 +7507,7 @@ BuildupTime:
       kind: literal
       name: General
     value_type: floating point
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '.05'
       declared_in: RulesClass
