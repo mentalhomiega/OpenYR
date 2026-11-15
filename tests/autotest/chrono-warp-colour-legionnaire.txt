@@ -5,7 +5,7 @@
 10 command CenterBase
 20 reveal
 30 view 50 40
-40 own CLEG 40 40
+30 own CLEG 40 40
 50 where CLEG
 50 record 2
 52 order CLEG 60 40
