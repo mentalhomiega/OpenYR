@@ -3693,7 +3693,8 @@ void TechnoClass::Retire_Airstrike_Planes(void)
 /// If any plane is out of ammunition the whole strike is, then each plane gets the retreat mission
 /// with no target or destination, and the designation on the structure lifts. A designator that is
 /// lost while the strike is out also plays AirstrikeAbortSound to its owner (AirstrikeClass::
-/// InvalidatePointer, 0x41D540); losing the target structure only recalls the planes.
+/// InvalidatePointer, 0x41D540) and forgets the planes; losing the target structure only recalls them,
+/// and the recharge then starts when the last plane has left.
 /// </summary>
 /// <param name="owner_lost">Is the designator itself leaving the game?</param>
 void TechnoClass::Abort_Airstrike(bool owner_lost)
@@ -3705,9 +3706,7 @@ void TechnoClass::Abort_Airstrike(bool owner_lost)
 	}
 
 	bool const out_of_ammo = std::any_of(AirstrikePlanes.begin(), AirstrikePlanes.end(), [](AircraftClass const * plane) { return plane->Ammo == 0; });
-	std::vector<AircraftClass *> planes;
-	planes.swap(AirstrikePlanes);
-	for (AircraftClass * plane : planes) {
+	for (AircraftClass * plane : AirstrikePlanes) {
 		if (out_of_ammo) {
 			plane->Ammo = 0;
 		}
@@ -3715,9 +3714,12 @@ void TechnoClass::Abort_Airstrike(bool owner_lost)
 		plane->Assign_Target(NULL);
 		plane->Assign_Destination(NULL, true);
 	}
-	AUTOTEST_LOG("airstrike abort %s planes %d owner lost %d sound %d\n", TClass->Name(), (int)planes.size(), owner_lost ? 1 : 0, owner_lost ? (int)Rule->AirstrikeAbortSound : -1);
+	AUTOTEST_LOG("airstrike abort %s planes %d owner lost %d sound %d\n", TClass->Name(), (int)AirstrikePlanes.size(), owner_lost ? 1 : 0, owner_lost ? (int)Rule->AirstrikeAbortSound : -1);
 	Clear_Airstrike_Designation();
-	Start_Airstrike_Recharge();
+	// The planes stay listed until each leaves (0x41DC80), which starts the recharge. A lost designator drops them all and has no recharge to run.
+	if (owner_lost) {
+		AirstrikePlanes.clear();
+	}
 }
 
 
