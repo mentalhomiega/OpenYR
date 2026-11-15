@@ -185,6 +185,7 @@
 #include "saveload.h"
 #include "savemgr.h"
 #include "savever.h"
+#include "startuptrace.h"
 #include "scenario.h"
 #include "scheme.h"
 #include "script.h"
@@ -446,6 +447,7 @@ int Init_Game(int , char * [])
 	}
 
 	DebugStringNoPrefix(" ...OK\n");
+	Startup_Mark("bootstrap archives, fonts and palettes");
 
 	/*
 	**	Check for an initialize a working mouse pointer. Display error and bail if
@@ -454,6 +456,7 @@ int Init_Game(int , char * [])
 	DebugString("Init Mouse\n");
 
 	Init_Mouse();
+	Startup_Mark("mouse");
 
 	/*
 	**	Register and cache any secondary mixfiles.
@@ -467,10 +470,13 @@ int Init_Game(int , char * [])
 
 	DebugStringNoPrefix(" ...OK\n");
 
+	Startup_Mark("secondary archives");
 	Mount_Side_Mixfiles(0, false);
+	Startup_Mark("side archives");
 
 	DebugString("Init Campaigns\n");
 	Init_Campaigns();
+	Startup_Mark("campaigns");
 
 	/*
 	**	Initialize the game object heaps as well as other rules-dependant buffer allocations.
@@ -488,6 +494,7 @@ int Init_Game(int , char * [])
 	DebugString("Reading Game Settings\n");
 	Options.Load_Settings();
 	SaveManager.Autosave.Set_Interval(Options.AutoSaveInterval);
+	Startup_Mark("heaps, threads and settings");
 
 	/*
 	**	Initialize the animation system.
@@ -515,9 +522,11 @@ int Init_Game(int , char * [])
 		}
 	}
 
+	Startup_Mark("movies and animation system");
 	Draw_Menu_Background();
 	Startup_Notice_Show();
 	Call_Back();
+	Startup_Mark("loading notice shown");
 
 	/*
 	**	Initialize the text remap tables.
@@ -553,6 +562,7 @@ int Init_Game(int , char * [])
 	if (!Init_Bulk_Data()) {
 		return(-1);
 	}
+	Startup_Mark("bulk data");
 
 	DebugString("Reading %s\n", DeploymentConfig.UIFile.c_str());
 	if (!UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true)) {
@@ -573,6 +583,7 @@ int Init_Game(int , char * [])
 	Free_Vocs();
 	Init_Vocs(voc_ini);
 	Load_Eva();
+	Startup_Mark("sounds and voices");
 
 	/*
 	**	Find and process any rules for this game.
@@ -585,11 +596,14 @@ int Init_Game(int , char * [])
 		return(-1);
 	}
 
+	Startup_Mark("rules");
+
 	// A map names its theater before anything else about it is read.
 	Prepare_Theater_Roster();
 
 	// A score's Side= names a side the rules declare, so the roster is built before the scores are read.
 	Prepare_Side_Roster();
+	Startup_Mark("theater and side rosters");
 
 	Load_Progress_Step("Reading sounds and music...", 0.4);
 	DebugString("Reading %s\n", DeploymentConfig.ThemeFile.c_str());
@@ -603,6 +617,7 @@ int Init_Game(int , char * [])
 	Theme.Free_Themes();
 	Theme.Init_Themes(theme_ini);
 	Theme.Scan();
+	Startup_Mark("music");
 
 	Session.MaxPlayers = Rule->MaxPlayers;
 
@@ -642,6 +657,7 @@ int Init_Game(int , char * [])
 
 	// The briefing and the credits draw with the owner-draw art, colors and blend masks.
 	OwnerDraw::Prepare_Resources();
+	Startup_Mark("commands and owner-draw art");
 
 	Load_Progress_Step("Preparing the menus...", 0.5);
 	DebugString("Game Init Completed.\n");
@@ -2439,11 +2455,13 @@ static bool Load_String_Table(char const * filename)
 	}
 	name += ".CSF";
 
+	// Read whole, as the table's reader asks for a few bytes at a time.
 	CCFileClass file(name.c_str());
-	if (!file.Is_Available()) {
+	std::vector<unsigned char> bytes;
+	if (!file.Is_Available() || !Read_File_Bytes(file, bytes)) {
 		return(false);
 	}
-	FileStraw straw(file);
+	BufferStraw straw(bytes.data(), (int)bytes.size());
 	if (!StringTable.Load(straw)) {
 		return(false);
 	}
@@ -2468,7 +2486,9 @@ static void Load_Extra_String_Tables(void)
 		if (!file.Is_Available()) {
 			continue;
 		}
-		FileStraw straw(file);
+		std::vector<unsigned char> bytes;
+		Read_File_Bytes(file, bytes);
+		BufferStraw straw(bytes.data(), (int)bytes.size());
 		CSFClass table;
 		if (!table.Load(straw)) {
 			DebugString("String table %s: not a string table, skipped\n", name);
@@ -2756,10 +2776,12 @@ static bool Bootstrap(void)
 	/*
 	**	Initialize the resident font pointers.
 	*/
+	Startup_Mark("bootstrap archives");
 	if (!Init_Fonts()) {
 		DebugString("Failed to initialize fonts!\n");
 		return(false);
 	}
+	Startup_Mark("fonts");
 
 	/*
 	**	Setup the keyboard processor in preparation for the game.
@@ -2846,6 +2868,7 @@ static bool Bootstrap(void)
 	**	in the current directory.
 	*/
 	Init_Expansion_Files();
+	Startup_Mark("palettes and voxel tables");
 
 	return(true);
 }
@@ -2922,6 +2945,7 @@ static bool Init_Bulk_Data(void)
 			return(false);
 		}
 	}
+	Startup_Mark("main archives cached");
 
 	Call_Back();
 
@@ -2932,6 +2956,7 @@ static bool Init_Bulk_Data(void)
 	CCFileClass file(DeploymentConfig.TutorialFile.c_str());
 	ini.Load(file);
 	TutorialText.Read_Base(ini);
+	Startup_Mark("tutorial text");
 
 	/*
 	**	Perform one-time game system initializations.
@@ -3377,8 +3402,12 @@ int Main_Menu(unsigned int timeout)
 	}
 
 	// The modern menus' loading notice stays up while the battle loads behind the menu.
-	Shellmap_Start();
+	{
+		StartupSpanClass span("menu battle");
+		Shellmap_Start();
+	}
 	Startup_Notice_Hide();
+	Startup_Trace_End("title menu stands");
 	Update_Check_Begin();
 
 	while (retval == SEL_NONE) {
@@ -8088,6 +8117,7 @@ void Init_Theater(TheaterType theater)
 	snprintf(shortname, sizeof(shortname), "%s.MIX", data.Suffix.c_str());
 
 	DebugString("Init theater %s\n", data.Name());
+	StartupSpanClass span("theater %s", data.Name());
 
 	/*
 	**	Save the new theater value

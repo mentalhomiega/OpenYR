@@ -3689,6 +3689,53 @@ void TechnoClass::Retire_Airstrike_Planes(void)
 
 
 /// <summary>
+/// Ends the airstrike under way and sends its planes home (AirstrikeClass::ClearTarget, 0x41DB40).
+/// If any plane is out of ammunition the whole strike is, then each plane gets the retreat mission
+/// with no target or destination, and the designation on the structure lifts. A designator that is
+/// lost while the strike is out also plays AirstrikeAbortSound to its owner (AirstrikeClass::
+/// InvalidatePointer, 0x41D540) and forgets the planes; losing the target structure only recalls them,
+/// and the recharge then starts when the last plane has left.
+/// </summary>
+/// <param name="owner_lost">Is the designator itself leaving the game?</param>
+void TechnoClass::Abort_Airstrike(bool owner_lost)
+{
+	if (AirstrikePlanes.empty()) return;
+
+	if (owner_lost && House != NULL && House->Is_Player_Control() && Rule->AirstrikeAbortSound != VOC_NONE) {
+		Sound_Effect(Rule->AirstrikeAbortSound);
+	}
+
+	bool const out_of_ammo = std::any_of(AirstrikePlanes.begin(), AirstrikePlanes.end(), [](AircraftClass const * plane) { return plane->Ammo == 0; });
+	for (AircraftClass * plane : AirstrikePlanes) {
+		if (out_of_ammo) {
+			plane->Ammo = 0;
+		}
+		plane->Assign_Mission(MISSION_RETREAT);
+		plane->Assign_Target(NULL);
+		plane->Assign_Destination(NULL, true);
+	}
+	AUTOTEST_LOG("airstrike abort %s planes %d owner lost %d sound %d\n", TClass->Name(), (int)AirstrikePlanes.size(), owner_lost ? 1 : 0, owner_lost ? (int)Rule->AirstrikeAbortSound : -1);
+	Clear_Airstrike_Designation();
+	// The planes stay listed until each leaves (0x41DC80), which starts the recharge. A lost designator drops them all and has no recharge to run.
+	if (owner_lost) {
+		AirstrikePlanes.clear();
+	}
+}
+
+
+/// <summary>
+/// A designator that leaves the game abandons its airstrike (AirstrikeClass::InvalidatePointer, 0x41D540).
+/// </summary>
+void TechnoClass::Detach_All(bool all)
+{
+	if (all) {
+		Abort_Airstrike(true);
+	}
+	BASECLASS::Detach_All(all);
+}
+
+
+/// <summary>
 /// Sets the frame the next airstrike can be called: AirstrikeRechargeTime frames from now, or the
 /// elite time for an elite object. Called when the strike's last plane has left.
 /// </summary>
@@ -7157,9 +7204,12 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
 		// The hit makes a flash over the object, blue for a force shield, as big as a blast of twice the damage (TechnoClass::ReceiveDamage, 0x701A93).
-		int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
-		Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
-		AUTOTEST_LOG("curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
+		bool const flash = warhead != NULL && warhead->IronCurtainFlash >= 0 ? warhead->IronCurtainFlash != 0 : Rule->IsIronCurtainFlash;
+		if (flash) {
+			int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
+			Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
+			AUTOTEST_LOG("curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
+		}
 		if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && effects_apply) {
 			Apply_Iron_Curtain_Warhead(warhead, source, sourcehouse);
 		}
@@ -9564,6 +9614,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 			Start_Airstrike_Recharge();
 		}
 		if (AirstrikeMarkedTarget == target) {
+			if (all) {
+				Abort_Airstrike(false);
+			}
 			Clear_Airstrike_Designation();
 		}
 		if (AirstrikeMarkedBy == target) {

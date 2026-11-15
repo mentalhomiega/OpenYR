@@ -1,0 +1,10 @@
+; Start-up marks and type checksums with stock data and the menu battle on a fixed map. Expected: one "STARTUP order:" line
+; naming the steps from "debug log open" through the loading notice, the steps of the data load and the menu battle's load
+; to "title menu stands", in that order, and the typesread checksums of the menu battle's rules, which must not change when
+; start-up work is reordered, with the string table counts, the scores found and any listed map whose file is missing. The
+; Rules, BulletTypes and All checksums are left out, as they differ between two runs.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/startup-marks.txt -Menus -Width 800 -Height 600 -Seconds 120 -Settings "[IniCheck]`nKeepInTests=yes`n[MenuBattle]`nInTests=yes`nMap=XMP29U2.MAP" -Filter "STARTUP order|AUTOTEST typesread 1 (Sync|HouseTypes|Sides|SuperWeaponTypes|AnimTypes|BuildingTypes|AircraftTypes|UnitTypes|InfantryTypes|Weapons|Warheads|TerrainTypes|SmudgeTypes|OverlayTypes|ParticleTypes|ParticleSystemTypes|VoxelAnimTypes|Tiberiums) |UISCRIPT waitfor|String table|Music: [0-9]+ of|is listed but|Exception"
+1 typesread
+ui waitfor stamp
+ui wait 300
+ui quit

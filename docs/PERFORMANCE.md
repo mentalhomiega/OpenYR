@@ -343,6 +343,59 @@ the head of every loose map from the disk; that reading is what the first item b
 
 What remains is reading the rules for the menu battle (about 1.6 s) and its tile sets (0.7 s).
 
+## Start-up time and file reads
+
+From `WinMain` until the title menu stands or a game starts, the debug log gets `STARTUP` lines (`code/startuptrace.h`):
+one per start-up step with the time since the process started, the megabytes read so far and the files opened so far,
+one per archive mounted or cached and per INI file read, with its time and size, and a summary when the title menu
+stands. The summary gives the opens, probes, reads and bytes of the file layer, the distinct bytes, the process's own
+read counters, the fifteen files read most, the counts by file type and by archive member type, and a `STARTUP order:`
+line listing the steps in order. After the summary the trace costs one flag test per file operation.
+
+The "cold disk" line of the summary estimates what a first start after switching the computer on has to read: the
+distinct bytes read through file handles, the pages of mapped archive members that were read, and one seek per file
+opened, per seek that moves and per view. We measure this way because emptying the system file cache needs
+administrator rights.
+
+Measured to the title menu in test runs at 800x600 with two other test games running, with the INI check outcome kept
+as in a normal start. "Battle" is the menu battle on a fixed map; the plain game's battle map is `XMP29U2.MAP`.
+
+| Start | First frame | Loading notice | Title menu | MB read | Files opened | Cold disk |
+|---|---|---|---|---|---|---|
+| Mental Omega, battle, before | 1.02 s | 1.52 s | 5.97 s | 449 | 5,519 | 432 MB, 10,695 seeks |
+| Mental Omega, battle, after | 0.44 s | 0.74 s | 2.47 s | 103 | 229 | 165 MB, 2,415 seeks |
+| Mental Omega, before | 1.03 s | 1.52 s | 2.30 s | 73 | 189 | 64 MB, 246 seeks |
+| Mental Omega, after | 0.38 s | 0.64 s | 1.01 s | 66 | 122 | 63 MB, 153 seeks |
+| Plain game, battle, before | 1.06 s | 1.39 s | 2.77 s | 107 | 1,308 | 98 MB, 2,464 seeks |
+| Plain game, battle, after | 0.37 s | 0.60 s | 1.07 s | 64 | 217 | 76 MB, 941 seeks |
+| Plain game, before | 1.05 s | 1.37 s | 1.68 s | 63 | 313 | 57 MB, 525 seeks |
+| Plain game, after | 0.37 s | 0.61 s | 0.81 s | 59 | 120 | 58 MB, 348 seeks |
+
+- A member of an archive that keeps its members in memory, such as a mod's archives, was read whole on its first
+  `Retrieve`. A member of 256 KB or more is now a copy-on-write view of the archive file, so only the pages that are
+  read come from the disk, and a smaller one is copied out of a view without a file handle of its own. With Mental
+  Omega the menu battle retrieved about 3,000 shapes, 280 MB, and read little more than their headers.
+- A member of 1 MB or less of an archive on disk, other than a nested archive, is opened as a view of the archive file
+  instead of opening the archive file again. With Mental Omega this took the voxel loads of the menu battle from about
+  2,000 opens of the archive to none.
+- The crash reporter loads the symbol file, about 120 MB for a release build with its symbols, on a thread of its own. It took half a
+  second before the window opened. A crash report waits up to five seconds for it.
+- File probes are answered from folder listings (`FileProbeScope`) while a map is read as well as while its rules are,
+  while the scores are looked for and while the scenario list is built. With Mental Omega, 134 scores were each looked
+  for under every sound file extension in every search folder.
+- A loose map file is no longer looked for again when the scenario list is built, and the string tables are read whole
+  before they are parsed instead of a few bytes at a time.
+
+The `typesread` checksums of the menu battle's rules are the same before and after, the multiplayer `Sync` checksum among
+them, for the plain game and for Mental Omega; the Rules, BulletTypes and All checksums differ between two runs of one
+build and are left out. The string table counts, the scores found and the scenario list did not change.
+`tests/autotest/startup-marks.txt` and `tests/autotest/mo-startup-marks.txt` check the step order and these checksums,
+and the `mixmembers` unit test checks that a member reads the same through a view as through a file handle.
+
+What is left: the renderer's start, about 0.3 s before the first frame; the four main archives and the theater
+archives, about 80 MB, which are read whole because their digest is checked; and with Mental Omega, the menu battle's
+"Reading the rules" step, about 1 s of processor time, mostly reading the types and their voxel models.
+
 ## Reading the rules
 
 The "Reading the rules..." step of a scenario load builds every type again from the rules, the art and the

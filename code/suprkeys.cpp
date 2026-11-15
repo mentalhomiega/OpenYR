@@ -14,6 +14,7 @@
 #include "_warhead.h"
 #include "_weapon.h"
 #include "airctype.h"
+#include "anim.h"
 #include "animtype.h"
 #include "builtype.h"
 #include "ccini.h"
@@ -126,6 +127,10 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	ProtectFadeSoundTime(-1),
 	NukePayload(NULL),
 	NukeSiloLaunch(true),
+	NukeTakeOffSet(false),
+	NukeTakeOff(NULL),
+	NukePsiWarningSet(false),
+	NukePsiWarning(NULL),
 	LightningDuration(UNSET_INT),
 	LightningRadarOutage(UNSET_INT),
 	LightningRadarOutageAffects(HOUSE_ENEMIES),
@@ -275,6 +280,21 @@ void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list
 }
 
 
+// An animation key that, once set, replaces a default even with no animation: "none" or an unknown name shows nothing.
+void Anim_Override(std::string const & value, AnimTypeClass const * & anim, bool & is_set)
+{
+	std::string const name(Trim(value));
+	if (name.empty()) {
+		return;
+	}
+	is_set = true;
+	anim = Find_Named(AnimTypes, name.c_str());
+	if (anim == NULL && !Same(name, "none")) {
+		DebugString("A superweapon key names no such animation: %s; none plays.\n", name.c_str());
+	}
+}
+
+
 int Deliver_Owner(std::string const & value, int old)
 {
 	return(Trim(value).empty() ? old : (int)Parse_Deliver_Owner(value));
@@ -334,6 +354,23 @@ void SuperWeaponKeys::Set_Pulse_Ball(std::string const & value)
 	}
 	EMPulseNoPulseBall = Same(name, "none");
 	EMPulsePulseBall = EMPulseNoPulseBall ? NULL : Find_Named(AnimTypes, name.c_str());
+}
+
+
+/// <summary>
+/// The animation that marks a missile's target: the Ares Nuke.PsiWarning when the weapon sets it, which may be
+/// none, and otherwise the PSIWARN animation type, or none when the rules do not load it.
+/// </summary>
+AnimTypeClass const * SuperWeaponKeys::Psi_Warning_Anim(void) const
+{
+	return(NukePsiWarningSet ? NukePsiWarning : Default_Psi_Warning_Anim());
+}
+
+
+AnimTypeClass const * SuperWeaponKeys::Default_Psi_Warning_Anim(void)
+{
+	AnimType const warning = Anim_From_Name("PSIWARN");
+	return(warning != ANIM_NONE ? AnimTypes[warning] : NULL);
 }
 
 
@@ -524,6 +561,10 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProtectFadeSoundTime);
 	stream.Serialize(NukePayload);
 	stream.Serialize(NukeSiloLaunch);
+	stream.Serialize(NukeTakeOffSet);
+	stream.Serialize(NukeTakeOff);
+	stream.Serialize(NukePsiWarningSet);
+	stream.Serialize(NukePsiWarning);
 	stream.Serialize(LightningDuration);
 	stream.Serialize(LightningRadarOutage);
 	stream.Serialize(LightningRadarOutageAffects);
@@ -621,6 +662,8 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(ProtectDuration);
 	crc(ProtectPowerOutage);
 	crc(ProtectFadeSoundTime);
+	crc(NukeTakeOffSet);
+	crc(NukePsiWarningSet);
 	crc(SonarPulseDelay);
 	crc(LightEnabled);
 	crc(LightAmbient);

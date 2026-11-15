@@ -8,4 +8,4 @@ when_omitted:
   value: none
 ---
 
-No game effect creates this animation. A falling pod's smoke trail is the fixed `SMOKEY` animation, which appears only while [`DropPodWeapon`](/keys/droppodweapon/) is set. The landing animation comes from [`DropPod`](/keys/droppod-global-rules/).
+No game effect creates this animation. A falling pod's smoke trail is the `SMOKEY` animation, which appears only while [`DropPodWeapon`](/keys/droppodweapon/) is set, or the [`DropPodTrailer`](/keys/droppodtrailer/) animation. The landing animation comes from [`DropPod`](/keys/droppod-global-rules/).

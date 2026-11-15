@@ -80,14 +80,14 @@ The `AtmosphereEntry` animation appears only if the passenger is placed at the s
 
 [`DropPodWeapon`](/keys/droppodweapon/) adds two effects while the pod is in the air:
 
-- Every six frames, the `SMOKEY` animation, a fixed name, appears at the pod's position.
+- Every six frames, the `SMOKEY` animation appears at the pod's position. [`DropPodTrailer`](/keys/droppodtrailer/) replaces it and also trails a pod when `DropPodWeapon` is not set.
 - Every three frames, the pod fires on its destination unless the object standing there is allied to the passenger's owner. An empty destination cell is fired on as well. When several objects share the cell, only one of them is checked.
 
 Each shot lands one third of a cell from the destination, in a random direction. It explodes for twice the weapon's `Damage`, using the weapon's `Warhead`, with the passenger as the attacker. The weapon's `Report` sound plays at the pod, and the warhead's clear-ground explosion animation for that damage plays at the impact point.
 
 Allied objects near the impact point still take damage. The ally check covers only the one object tested in the destination cell.
 
-No projectile is fired, and the weapon's range and rate of fire have no effect. Without a `DropPodWeapon`, the pod fires nothing and leaves no `SMOKEY` trail.
+No projectile is fired, and the weapon's range and rate of fire have no effect. Without a `DropPodWeapon`, the pod fires nothing and leaves no `SMOKEY` trail; a `DropPodTrailer` animation still appears.
 
 ## Touchdown
 

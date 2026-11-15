@@ -14,6 +14,7 @@
 #include "autotest.h"
 #include "globals.h"
 #include "goptions.h"
+#include "startuptrace.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 
 #include <memory>
@@ -49,6 +50,7 @@ void Load_Progress_End(void)
 
 void Load_Progress_Step(char const * text, double fraction)
 {
+	Startup_Mark("step %s", text);
 	if (Notice == nullptr || Muted > 0) {
 		return;
 	}

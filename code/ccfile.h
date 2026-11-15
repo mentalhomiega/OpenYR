@@ -37,6 +37,8 @@
 
 #include <climits>
 
+class MixFileClass;
+
 
 /*
 **	This derived class for file access knows about mixfiles (packed files). It can handle opening
@@ -50,7 +52,7 @@ class CCFileClass : public CDFileClass
 	public:
 		CCFileClass(char const * filename);
 		CCFileClass(void);
-		virtual ~CCFileClass(void) override {Position = 0;};
+		virtual ~CCFileClass(void) override;
 
 		// Delete should be overloaded here as well. Don't allow deletes of mixfiles.
 
@@ -91,6 +93,12 @@ class CCFileClass : public CDFileClass
 		**	range from zero to the size of the file in bytes.
 		*/
 		int Position;
+
+		// The view of the archive file that Data points into, when the member is read that way.
+		void * View;
+
+		bool Map_Member_View(MixFileClass & mixfile, int position, int length);
+		void Release_View(void);
 
 		// Force these to never be invoked.
 		CCFileClass const & operator = (CCFileClass const & c);

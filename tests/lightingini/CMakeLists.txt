@@ -6,6 +6,7 @@ opents_add_test(LightingIni
     SOURCES lightinginitest.cpp
     ENGINE
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         dbgprint.cpp
         b64pipe.cpp

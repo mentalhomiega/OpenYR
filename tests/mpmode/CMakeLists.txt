@@ -8,6 +8,7 @@ opents_add_test(MPModeContract
     ENGINE
         mpmodeparse.cpp
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         dbgprint.cpp
         trim.cpp

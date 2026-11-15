@@ -1,0 +1,19 @@
+; Nuke.PsiWarning (Ares) on a super weapon replaces the PSIWARN animation that marks a missile's target; none shows no mark.
+; Control first: a missile silo fires the stock NukeSpecial at 42,50 with stock rules. At frame 300 the overlay nuke-psi-warning.ini
+; sets Nuke.PsiWarning=none on NukeSpecial and the silo fires it again at 46,52.
+; Expected: the PSIWARN count reads 1 at frames 68 and 75, after the first launch (the stock path), and 0 at frames 313 and 320,
+; after the second. Without the key the second launch reads 1 again.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/nuke-psi-warning.txt -Seconds 60 -Filter "AUTOTEST   liveanims|missile leaves|AUTOTEST   grant|Exception"
+20 own GAPOWR 56 40
+22 own NAMISL 60 46
+35 reveal
+60 grant NukeSpecial
+63 fire NukeSpecial 42 50
+68 liveanims PSIWARN
+75 liveanims PSIWARN
+300 rules nuke-psi-warning.ini
+305 grant NukeSpecial
+308 fire NukeSpecial 46 52
+313 liveanims PSIWARN
+320 liveanims PSIWARN
+600 quit

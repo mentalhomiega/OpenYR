@@ -1,0 +1,15 @@
+; Control for boris-airstrike-abort.txt: Boris lives, so the strike runs to the plant. The planes keep
+; their attack mission until the target is destroyed; the only "AUTOTEST airstrike abort" line follows that, with owner lost 0 and no sound,
+; because losing the target structure only recalls the planes.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/boris-airstrike-abort-control.txt -Country 8 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   plane|AUTOTEST   count GAPOWR|AUTOTEST airstrike|AUTOTEST   kill|Sound: |Exception"
+30 view 46 36
+40 grantunit BORIS 44 36
+50 enemy GAPOWR 46 38
+60 sounds 1
+90 strike BORIS 46 38
+110 planes
+130 planes
+140 count GAPOWR
+200 planes
+300 count GAPOWR
+330 quit

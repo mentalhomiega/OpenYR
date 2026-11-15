@@ -7,6 +7,7 @@ opents_add_test(SettingRegistry
     SOURCES settingregistrytest.cpp
     ENGINE
         ini.cpp
+        startuptrace.cpp
         optionsettings.cpp
         ui/uisettingrows.cpp
         utf8.cpp

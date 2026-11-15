@@ -47,6 +47,7 @@
 
 #include "_mixfile.h"
 #include "mixfile.h"
+#include "startuptrace.h"
 
 #include <cassert>
 #include <cstring>
@@ -69,7 +70,8 @@
  *   03/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
 CCFileClass::CCFileClass(char const * filename) :
-	Position(0)
+	Position(0),
+	View(NULL)
 {
 	CCFileClass::Set_Name(filename);
 }
@@ -90,8 +92,63 @@ CCFileClass::CCFileClass(char const * filename) :
  *   03/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
 CCFileClass::CCFileClass(void) :
-	Position(0)
+	Position(0),
+	View(NULL)
 {
+}
+
+
+CCFileClass::~CCFileClass(void)
+{
+	Release_View();
+	Position = 0;
+}
+
+
+void CCFileClass::Release_View(void)
+{
+	if (View != NULL) {
+		Startup_Note_View_Close(Data.Get_Buffer(), Data.Get_Size());
+		MFCD::Unmap_View(View);
+		View = NULL;
+	}
+}
+
+
+// A member at most this big, of an archive on disk, is read from a view of the archive's file rather than through a file
+// handle of its own; a bigger one, such as a movie, is streamed from the file.
+static int const VIEW_MEMBER_SIZE = 1024 * 1024;
+
+
+/// <summary>
+/// Opens this file as the member of mixfile at position, an offset in the archive's file, read from a view of that
+/// file. A nested archive (.MIX, .MMX or .YRO) is left to the file handle, as its reader takes its offset from the
+/// handle.
+/// </summary>
+/// <returns>bool; Was the member opened this way?</returns>
+bool CCFileClass::Map_Member_View(MixFileClass & mixfile, int position, int length)
+{
+	if (length <= 0 || length > VIEW_MEMBER_SIZE) {
+		return(false);
+	}
+	char const * const name = File_Name();
+	std::size_t const size = name != NULL ? std::strlen(name) : 0;
+	for (char const * archive : {".MIX", ".MMX", ".YRO"}) {
+		if (size >= 4 && _stricmp(name + size - 4, archive) == 0) {
+			return(false);
+		}
+	}
+
+	void * view = NULL;
+	void const * const bytes = mixfile.Map_View(position, length, &view);
+	if (bytes == NULL) {
+		return(false);
+	}
+	View = view;
+	new (&Data) ::Buffer((void *)bytes, length);
+	Position = 0;
+	Startup_Note_View_Open(name, length);
+	return(true);
 }
 
 
@@ -373,6 +430,7 @@ bool CCFileClass::Is_Open(void) const
  *=============================================================================================*/
 void CCFileClass::Close(void)
 {
+	Release_View();
 	new(&Data) ::Buffer;
 	Position = 0;				// Starts at beginning offset.
 	BASECLASS::Close();
@@ -447,6 +505,10 @@ int CCFileClass::Open(int rights)
 		**	If the mixfile is located on disk, then fake out the file system to read from
 		**	the mixfile, but think it is reading from a solitary file.
 		*/
+		if (pointer == NULL && mixfile != NULL && Map_Member_View(*mixfile, start, length)) {
+			return(true);
+		}
+
 		if (pointer == NULL && mixfile != NULL) {
 
 			/*

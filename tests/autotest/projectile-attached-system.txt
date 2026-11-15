@@ -1,0 +1,53 @@
+; AttachedSystem (Ares) on a projectile type trails a smoke particle system behind each projectile of that type in flight. A Grizzly
+; tank at 50,40 fires its 105mm gun, whose projectile is Cannon, at the ground at 54,40. Control first: with stock rules it fires at
+; frame 40. At frame 100 the overlay projectile-attached-system.ini sets AttachedSystem=SmallGreySSys on Cannon and the tank fires
+; again at frame 110.
+; Expected: the first shot's Cannon is in flight at frames 54 to 60 ("bullet frame 54 Cannon" and on) with no partsys line on it and
+; no "attached system" line, the stock path. The second shot logs "attached system SmallGreySSys on Cannon", and at frames 124 to 130
+; each "bullet frame N Cannon" line has a "partsys frame N SmallGreySSys ... on Cannon" line whose position moves with it. The map's
+; own GasCloudSys lines are not part of the check. Without the key the second shot matches the first.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/projectile-attached-system.txt -Seconds 60 -Filter "AUTOTEST attached system|AUTOTEST   (forceattack|bullet|partsys)|Exception"
+30 command CenterBase
+35 reveal
+36 own MTNK 50 40
+40 forceattack MTNK 54 40
+44 bullets
+44 partsys
+46 bullets
+46 partsys
+48 bullets
+48 partsys
+50 bullets
+50 partsys
+52 bullets
+52 partsys
+54 bullets
+54 partsys
+56 bullets
+56 partsys
+58 bullets
+58 partsys
+60 bullets
+60 partsys
+90 stop MTNK
+100 rules projectile-attached-system.ini
+110 forceattack MTNK 54 40
+114 bullets
+114 partsys
+116 bullets
+116 partsys
+118 bullets
+118 partsys
+120 bullets
+120 partsys
+122 bullets
+122 partsys
+124 bullets
+124 partsys
+126 bullets
+126 partsys
+128 bullets
+128 partsys
+130 bullets
+130 partsys
+170 quit

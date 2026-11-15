@@ -276,6 +276,8 @@ class TechnoClass :	public RadioClass,
 		std::vector<AircraftClass *> AirstrikePlanes;
 		void Call_Airstrike(AbstractClass * target);
 		void Retire_Airstrike_Planes(void);
+		void Abort_Airstrike(bool owner_lost);
+		virtual void Detach_All(bool all=true) override;
 		void Start_Airstrike_Recharge(void);
 
 		// The airstrike designator that marks this structure, and the structure this object's airstrike marked (both NULL when none).

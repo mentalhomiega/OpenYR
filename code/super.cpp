@@ -1724,9 +1724,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 					}
 
 					// The warning belongs to the shell and goes when the shell does (HouseClass::PsiWarn, 0x43B5E0).
-					AnimType const warning = Anim_From_Name("PSIWARN");
-					if (warning != ANIM_NONE) {
-						AnimClass * marker = new AnimClass(AnimTypes[warning], target.As_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
+					AnimTypeClass const * warning = Class->Keys.Psi_Warning_Anim();
+					if (warning != NULL) {
+						AnimClass * marker = new AnimClass(warning, target.As_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
 						marker->OwnerHouse = (HousesType)House->HeapID;
 						marker->AttachedBullet = bullet;
 					}

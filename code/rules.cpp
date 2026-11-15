@@ -493,6 +493,7 @@ RulesClass::RulesClass(void) :
 	BuildingDamageSound(VOC_NONE),
 	DiskLaserChargeUp(VOC_NONE),
 	AirstrikeAttackVoice(VOC_NONE),
+	AirstrikeAbortSound(VOC_NONE),
 	SlavesFreeSound(VOC_NONE),
 	SlaveMinerSlaveScan(LEPTON(0x1000)),
 	SlaveMinerShortScan(LEPTON(0x500)),
@@ -642,6 +643,8 @@ RulesClass::RulesClass(void) :
 	MissileSafetyAltitude(500),
 	ApproachTargetResetMultiplier(1),
 	DropPodWeapon(NULL),
+	IsDropPodTrailerSet(false),
+	DropPodTrailer(NULL),
 	DropPodHeight(1500),
 	DropPodSpeed(40),
 	DropPodAngle(M_PI/2), /// 90 deg
@@ -721,6 +724,7 @@ RulesClass::RulesClass(void) :
 	UpgradeEliteSound(VOC_NONE),
 	EliteFlashTimer(100),
 	VeteranFlashTimer(0),
+	IsIronCurtainFlash(true),
 	DetailMinFrameRateNormal(15),
 	DetailBufferZoneWidth(5),
 	BuildingGarrisonedSound(VOC_NONE),
@@ -1408,6 +1412,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		UpgradeEliteSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeEliteSound", UpgradeEliteSound);
 		EliteFlashTimer = ini.Get_Int(AUDIOVISUAL, "EliteFlashTimer", EliteFlashTimer);
 		VeteranFlashTimer = ini.Get_Int(AUDIOVISUAL, "VeteranFlashTimer", VeteranFlashTimer);
+		IsIronCurtainFlash = ini.Get_Bool(AUDIOVISUAL, "IronCurtainFlash", IsIronCurtainFlash);
 		DetailMinFrameRateNormal = ini.Get_Int(AUDIOVISUAL, "DetailMinFrameRateNormal", DetailMinFrameRateNormal);
 		DetailBufferZoneWidth = ini.Get_Int(AUDIOVISUAL, "DetailBufferZoneWidth", DetailBufferZoneWidth);
 		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
@@ -1435,6 +1440,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BuildingDamageSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDamageSound", BuildingDamageSound);
 		DiskLaserChargeUp = ini.Get_VocType(AUDIOVISUAL, "DiskLaserChargeUp", DiskLaserChargeUp);
 		AirstrikeAttackVoice = ini.Get_VocType(AUDIOVISUAL, "AirstrikeAttackVoice", AirstrikeAttackVoice);
+		AirstrikeAbortSound = ini.Get_VocType(AUDIOVISUAL, "AirstrikeAbortSound", AirstrikeAbortSound);
 		SlavesFreeSound = ini.Get_VocType(AUDIOVISUAL, "SlavesFreeSound", SlavesFreeSound);
 		CrateMoneySound = ini.Get_VocType(AUDIOVISUAL, "CrateMoneySound", CrateMoneySound);
 		CrateRevealSound = ini.Get_VocType(AUDIOVISUAL, "CrateRevealSound", CrateRevealSound);
@@ -2006,6 +2012,10 @@ bool RulesClass::General(CCINIClass const & ini)
 		MissileSafetyAltitude = ini.Get_Int(GENERAL, "MissileSafetyAltitude", MissileSafetyAltitude);
 		ApproachTargetResetMultiplier = ini.Get_Int(GENERAL, "ApproachTargetResetMultiplier", ApproachTargetResetMultiplier);
 		DropPodWeapon = TGet_Class(ini, GENERAL, "DropPodWeapon", DropPodWeapon);
+		if (ini.Is_Present(GENERAL, "DropPodTrailer")) {
+			IsDropPodTrailerSet = true;
+			DropPodTrailer = TGet_Class(ini, GENERAL, "DropPodTrailer", (AnimTypeClass *)DropPodTrailer);
+		}
 		DropPodHeight = ini.Get_Int(GENERAL, "DropPodHeight", DropPodHeight);
 		DropPodSpeed = ini.Get_Int(GENERAL, "DropPodSpeed", DropPodSpeed);
 		DropPodAngle = ini.Get_Float(GENERAL, "DropPodAngle", DropPodAngle);
@@ -3308,6 +3318,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingDamageSound);
 	stream.Serialize(DiskLaserChargeUp);
 	stream.Serialize(AirstrikeAttackVoice);
+	stream.Serialize(AirstrikeAbortSound);
 	stream.Serialize(SlavesFreeSound);
 	stream.Serialize(SlaveMinerSlaveScan);
 	stream.Serialize(SlaveMinerShortScan);
@@ -3459,6 +3470,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MissileSafetyAltitude);
 	stream.Serialize(ApproachTargetResetMultiplier);
 	stream.Serialize(DropPodWeapon);
+	stream.Serialize(IsDropPodTrailerSet);
+	stream.Serialize(DropPodTrailer);
 	stream.Serialize(DropPodHeight);
 	stream.Serialize(DropPodSpeed);
 	stream.Serialize(DropPodAngle);
@@ -3538,6 +3551,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UpgradeEliteSound);
 	stream.Serialize(EliteFlashTimer);
 	stream.Serialize(VeteranFlashTimer);
+	stream.Serialize(IsIronCurtainFlash);
 	stream.Serialize(DetailMinFrameRateNormal);
 	stream.Serialize(DetailBufferZoneWidth);
 	stream.Serialize(BuildingGarrisonedSound);
@@ -4003,6 +4017,7 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	Detach_Pointer(target, WeaponNullifyAnim);
 	Detach_Pointer(target, FlamingInfantry);
 	Detach_Pointer(target, DropPodWeapon);
+	Detach_Pointer(target, DropPodTrailer);
 	Detach_Pointer(target, FlameDamage);
 	Detach_Pointer(target, FlameDamage2);
 	Detach_Pointer(target, NukeWarhead);

@@ -1,0 +1,15 @@
+; IronCurtainFlash (Ares, [AudioVisual]) turns off the flash over an Iron Curtained or force-shielded object that a hit makes.
+; An Iron Curtain covers a tank at 75,40 at frame 60. Control first: with stock rules a 40-point damage step at frame 130 hits it.
+; At frame 150 the overlay iron-curtain-flash.ini sets IronCurtainFlash=no and a second damage step hits it at frame 160.
+; Expected: one "curtain flash MTNK at 75,40 damage 80" line, at frame 130 (the stock path), and none at frame 160. Neither
+; hit damages the tank. Without the key the second hit logs a flash line too.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/iron-curtain-flash.txt -Seconds 60 -Filter "AUTOTEST curtain|AUTOTEST   damage|AUTOTEST   grant|Exception"
+10 command CenterBase
+20 reveal
+35 own MTNK 75 40
+40 grant IronCurtainSpecial
+60 fire IronCurtainSpecial 75 40
+130 damage MTNK 40
+150 rules iron-curtain-flash.ini
+160 damage MTNK 40
+200 quit

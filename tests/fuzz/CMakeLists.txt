@@ -122,6 +122,7 @@ endif()
 # The INI reader and the sources it is built from.
 set(FUZZ_INI_ENGINE
     ini.cpp
+    startuptrace.cpp
     utf8.cpp
     b64pipe.cpp
     b64straw.cpp
@@ -173,7 +174,7 @@ fuzz_add_target(FuzzCsf NAME fuzz_csf
 
 fuzz_add_target(FuzzMix NAME fuzz_mix
     SOURCES fuzz_mix.cpp
-    ENGINE mixfile.cpp ccfile.cpp cdfile.cpp rawfile.cpp file.cpp ${FUZZ_FILE_PLATFORM} bfiofile.cpp pk.cpp pkstraw.cpp
+    ENGINE mixfile.cpp ccfile.cpp cdfile.cpp rawfile.cpp startuptrace.cpp file.cpp ${FUZZ_FILE_PLATFORM} bfiofile.cpp pk.cpp pkstraw.cpp
         shastraw.cpp sha.cpp blwstraw.cpp blowfish.cpp rndstraw.cpp random.cpp _syncrec.cpp syncrec.cpp
         buff.cpp crc.cpp int.cpp mpmath.cpp pipe.cpp straw.cpp xpipe.cpp xstraw.cpp
 )
