@@ -7,7 +7,7 @@
 10 command CenterBase
 20 reveal
 30 view 75 40
-40 own CLEG 40 40
+30 own CLEG 40 40
 41 own CMIN 44 44
 50 order CLEG 75 40
 60 spawn E1 79 40
