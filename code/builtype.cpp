@@ -412,6 +412,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsPassable(false),
 	IsSpyEffectCustom(false),
 	IsSpyResetRadar(false),
+	IsSpyRevealRadar(false),
 	SpyPowerOutage(0),
 	SpyStolenMoneyPercentage(0.0),
 	SpyStolenMoneyAmount(0),
@@ -1552,6 +1553,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			}
 			IsSpyEffectCustom = ini.Get_Bool(Name(), "SpyEffect.Custom", IsSpyEffectCustom);
 			IsSpyResetRadar = ini.Get_Bool(Name(), "SpyEffect.ResetRadar", IsSpyResetRadar);
+			IsSpyRevealRadar = ini.Get_Bool(Name(), "SpyEffect.RevealRadar", IsSpyRevealRadar);
 			SpyPowerOutage = ini.Get_Int(Name(), "SpyEffect.PowerOutageDuration", SpyPowerOutage);
 			SpyStolenMoneyPercentage = ini.Get_Float(Name(), "SpyEffect.StolenMoneyPercentage", SpyStolenMoneyPercentage);
 			SpyStolenMoneyAmount = ini.Get_Int(Name(), "SpyEffect.StolenMoneyAmount", SpyStolenMoneyAmount);
@@ -2759,6 +2761,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPassable);
 	stream.Serialize(IsSpyEffectCustom);
 	stream.Serialize(IsSpyResetRadar);
+	stream.Serialize(IsSpyRevealRadar);
 	stream.Serialize(SpyPowerOutage);
 	stream.Serialize(SpyStolenMoneyPercentage);
 	stream.Serialize(SpyStolenMoneyAmount);

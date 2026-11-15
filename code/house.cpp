@@ -358,6 +358,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	LAEnemy(HOUSE_NONE),
 	ToCapture(NULL),
 	RadarSpied(),
+	UnitsRevealedTo(),
 	PointTotal(0),
 	PreferredTarget(QUARRY_ANYTHING),
 	PreferredTargetCell(CELL_NONE),
@@ -2712,6 +2713,21 @@ bool HouseClass::Has_Working_Building(TypeList<BuildingTypeClass const *> const 
 bool HouseClass::Shares_View_With(HouseClass const * house) const
 {
 	return(Is_Ally(house) || (Session.ObiWan && (this == PlayerPtr || house == PlayerPtr)));
+}
+
+
+/// <summary>
+/// Recomputes UnitsRevealedTo from the spied SpyEffect.RevealRadar structures this house owns.
+/// </summary>
+void HouseClass::Update_Units_Revealed_To(void)
+{
+	UnitsRevealedTo.Clear();
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this) {
+			UnitsRevealedTo |= building->RadarRevealedTo;
+		}
+	}
 }
 
 
@@ -8093,6 +8109,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LAEnemy);
 	stream.Serialize(ToCapture);
 	stream.Serialize(RadarSpied);
+	stream.Serialize(UnitsRevealedTo);
 	stream.Serialize(PointTotal);
 	stream.Serialize(PreferredTarget);
 	stream.Serialize(PreferredTargetCell);

@@ -11675,6 +11675,26 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 					Map.Sight_From(PositionCoord, sight_range, limpet_owner, incremental, dontmap);
 				}
 			}
+			if (Is_Foot()) {
+				Look_For_Radar_Spies(sight_range, incremental, dontmap);
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Reveals the map around this object to each other house whose spy infiltrated a SpyEffect.RevealRadar structure of the owner (Ares).
+/// </summary>
+void TechnoClass::Look_For_Radar_Spies(int sight_range, bool incremental, bool dontmap)
+{
+	if (!House->UnitsRevealedTo.Any()) {
+		return;
+	}
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * spy_owner = Houses[index];
+		if (spy_owner != House && House->UnitsRevealedTo[spy_owner]) {
+			Map.Sight_From(PositionCoord, sight_range, spy_owner, incremental, dontmap);
 		}
 	}
 }

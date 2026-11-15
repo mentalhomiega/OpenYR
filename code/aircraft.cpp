@@ -3865,6 +3865,7 @@ void AircraftClass::Look(bool incremental, bool dont_map)
 
 	if (sight_range) {
 		Map.Sight_From(PositionCoord, sight_range, House, incremental, dont_map);
+		Look_For_Radar_Spies(sight_range, incremental, dont_map);
 	} else {
 		if (Scen->Special.IsFogOfWar) {
 			sight_range = Rule->AircraftFogReveal;

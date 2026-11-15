@@ -694,6 +694,11 @@ class HouseClass : public AbstractClass
 		*/
 		CountrySet RadarSpied;
 
+		// The countries this house's units reveal the map to, from its spied SpyEffect.RevealRadar structures (Ares).
+		CountrySet UnitsRevealedTo;
+
+		void Update_Units_Revealed_To(void);
+
 		/*
 		**	Running score, based on units destroyed and units lost.
 		*/
