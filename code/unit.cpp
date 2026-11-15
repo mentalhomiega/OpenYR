@@ -628,7 +628,8 @@ void UnitClass::AI(void)
 		IsHarvesting = false;
 	}
 
-	if (Class->IsDisguiseWhenStill) {
+	// UnitClass::Update (0x73649C) runs UpdateDisguise only for a CanDisguise type without PermaDisguise.
+	if (Class->IsCanDisguise && !Class->IsPermaDisguise) {
 		Mirage_AI();
 	}
 
@@ -3519,10 +3520,14 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 /// Updates a DisguiseWhenStill vehicle's look (UnitClass::UpdateDisguise, 0x7468C0). Moving
 /// drops the disguise. On seven frames in eight, a soldier of a house that is not an ally
 /// standing next to it also drops it and blocks a new one for InfantryBlinkDisguiseTime frames.
-/// A still vehicle without a disguise takes a random DefaultMirageDisguises terrain type.
+/// A still DisguiseWhenStill vehicle without a disguise and out of radio contact takes a random
+/// DefaultMirageDisguises terrain type.
 /// </summary>
 void UnitClass::Mirage_AI(void)
 {
+	// Whether it may take a look is settled before this frame's checks (0x7468C6..0x746918).
+	bool const may_disguise = MirageType == NULL && Class->IsDisguiseWhenStill && !Locomotion->Is_Moving() && Contact_With_Whom() == NULL;
+
 	if (Locomotion->Is_Moving()) {
 		MirageType = NULL;
 		return;
@@ -3538,7 +3543,7 @@ void UnitClass::Mirage_AI(void)
 			}
 		}
 	}
-	if (MirageType == NULL && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
+	if (may_disguise && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
 		MirageType = Rule->DefaultMirageDisguises[Random_Pick(0, Rule->DefaultMirageDisguises.Count() - 1)];
 		MirageCreationFrame = Frame;
 		Mark(MARK_CHANGE);
