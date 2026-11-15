@@ -318,6 +318,7 @@ a default and returns it when the section or entry is missing.
 | `Strike_Cell_Damage(...)`, `Wide_Area_Damage(...)`, `Explosion_Damage(...)` | `combat.h` | Cell, area and blast damage. |
 | `Aim_Coord(target)`, `Beam_Coord(target)` | `object.h` | The point a projectile homes on, and the point a beam is drawn to. They differ for a cell on a bridge. |
 | `Find_Armor_Type(name, armor)` | `armortypes.h` | Case-insensitive armor lookup; leaves `armor` alone and returns false for an unknown name. |
+| `Are_Ares_Rules()` | `armortypes.h` | True when the rules declare `[ArmorTypes]`; gates Ares behaviour that would change what stock data does. |
 | `Paradrop_Plane_Type()` | `house.h` | The PDPLANE type, or `NULL` when the rules have none. |
 | `Paradrop_Plane_Type(house)` | `house.h` | The paradrop aircraft of a house: its country's ParaDrop.Aircraft, else its side's, else PDPLANE. |
 | `Opposite_Difficulty(d)`, `Computer_Difficulty_Name(d)` | `diff.hh` | The computer difficulty paired with a human one, and its lobby name. |
