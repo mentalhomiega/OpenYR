@@ -2161,6 +2161,61 @@ static void Weapons_Step(StepType const & step)
 }
 
 
+static void Weapon_Info_Line(char const * owner, char const * slot, WeaponTypeClass const * weapon, std::vector<ArmorType> const & armors)
+{
+	if (weapon == NULL) {
+		DebugString("AUTOTEST   weaponinfo %s %s none\n", owner, slot);
+		return;
+	}
+	BulletTypeClass const * bullet = weapon->Bullet;
+	WarheadTypeClass const * warhead = weapon->WarheadPtr;
+	std::string verses;
+	for (int index = 0; warhead != NULL && index < (int)armors.size(); index++) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "%s%s=%.3f", verses.empty() ? "" : ",", Armor_Type_Name(armors[index]), warhead->Versus(armors[index]));
+		verses += buf;
+	}
+	DebugString("AUTOTEST   weaponinfo %s %s %s damage %d rof %d range %d minrange %d burst %d speed %d laser %d radbeam %d"
+		" bullet %s rot %d accel %d inviso %d warhead %s spread %.3f atmax %.3f conventional %d verses %s\n",
+		owner, slot, weapon->Name(), weapon->Attack, weapon->ROF, (int)weapon->Range, (int)weapon->MinimumRange, weapon->Burst,
+		(int)weapon->MaxSpeed, (int)weapon->IsLaser, (int)weapon->IsRadBeam,
+		bullet != NULL ? bullet->Name() : "none", bullet != NULL ? bullet->ROT : 0, bullet != NULL ? bullet->Acceleration : 0,
+		bullet != NULL ? (int)bullet->IsInvisible : 0, warhead != NULL ? warhead->Name() : "none",
+		warhead != NULL ? warhead->CellSpread : 0.0f, warhead != NULL ? warhead->PercentAtMax : 0.0f,
+		warhead != NULL ? (int)warhead->IsConventional : 0, verses.c_str());
+}
+
+
+// weaponinfo <TypeID|Weapon> [armor ...]: the effective values of a type's four weapon slots, or of one weapon, with its
+// projectile and warhead, after every rules file and the map have been read; verses lists the warhead against each armor named.
+static void Weapon_Info_Step(StepType const & step)
+{
+	std::string const name = step.Argument;
+	std::vector<ArmorType> armors;
+	for (size_t word = 3; word < step.Words.size(); word++) {
+		ArmorType type;
+		if (Find_Armor_Type(step.Words[word].c_str(), type)) armors.push_back(type);
+	}
+
+	TechnoTypeClass const * type = Find_Type(name);
+	if (type != NULL) {
+		DebugString("AUTOTEST   weaponinfo %s strength %d armor %s speed %d ammo %d reload %d\n", type->Name(), type->MaxStrength,
+			Armor_Type_Name(type->Armor), (int)type->MaxSpeed, type->MaxAmmo, type->ReloadDelay);
+		Weapon_Info_Line(type->Name(), "primary", type->Weapons[0].Weapon, armors);
+		Weapon_Info_Line(type->Name(), "secondary", type->Weapons[1].Weapon, armors);
+		Weapon_Info_Line(type->Name(), "eliteprimary", type->EliteWeapons[0].Weapon, armors);
+		Weapon_Info_Line(type->Name(), "elitesecondary", type->EliteWeapons[1].Weapon, armors);
+		return;
+	}
+	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Declared(name.c_str());
+	if (weapon == NULL) {
+		DebugString("AUTOTEST   weaponinfo %s unknown\n", name.c_str());
+		return;
+	}
+	Weapon_Info_Line("-", "weapon", weapon, armors);
+}
+
+
 // airborne <TypeID>: each object of the type with its height above ground, whether it is in the air, its render layer,
 // and whether the ground or bridge occupier chain of its cell holds it.
 static void Airborne_Step(StepType const & step)
@@ -7670,6 +7725,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"c4watch", C4_Watch_Start},
 		{"weapons", Weapons_Step},
 		{"weaponkeys", Weapon_Keys_Step},
+		{"weaponinfo", Weapon_Info_Step},
 		{"airborne", Airborne_Step},
 		{"rocket", Rocket_Step},
 		{"typedump", Type_Dump_Step},

@@ -1,0 +1,8 @@
+; Reads the sections of weapons declared in the Ares [WeaponTypes] list
+; (https://ares-developers.github.io/Ares-docs/new/weapons/weapontypes.html). The rules mod declares ListedGun there
+; and nowhere else. Expected: "weaponinfo - weapon ListedGun damage 77 rof 33 range 1280" with bullet Invisible and
+; warhead AP. Before the list was read the weapon was unknown, so a weapon that only a map names (as Mental Omega
+; mission ERAGE does for its rage tower) fell back to the default projectile and warhead.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Mods src-agent28/tests/autotest/ares-weapontypes-list-rules -Script src-agent28/tests/autotest/ares-weapontypes-list.txt -Seconds 60 -Filter "weaponinfo|Exception"
+30 weaponinfo ListedGun
+40 quit
