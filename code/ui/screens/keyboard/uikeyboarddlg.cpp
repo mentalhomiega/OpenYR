@@ -76,6 +76,9 @@ void UI_Keyboard_State(UIKeyboardState & state)
 
 	for (int index = 0; index < AllCommands.Count(); index++) {
 		CommandClass const * command = AllCommands[index];
+		if (!command->Is_Listed()) {
+			continue;
+		}
 
 		UIHotkeyCommand entry;
 		entry.Name = command->Get_Unique_Name();

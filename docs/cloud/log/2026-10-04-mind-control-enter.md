@@ -2,7 +2,7 @@
 
 Branch `cloud/mind-control-enter-2026-10-04`, based on `origin/yr` at `71b4cf07`.
 
-The owner's answer in `CLOUD_BRIEFING.md` is that a mind-controlled unit cannot enter a transport or a structure, except a Bio Reactor. This branch makes the port refuse such a unit on every entry path found. Grinders and absorbers such as the Bio Reactor still take it in. Docking that keeps the unit outside is unchanged: repair depot, refinery, weeder, helipad and `UnitReload` pad.
+The owner's answer in `docs/cloud/CLOUD_BRIEFING.md` is that a mind-controlled unit cannot enter a transport or a structure, except a Bio Reactor. This branch makes the port refuse such a unit on every entry path found. Grinders and absorbers such as the Bio Reactor still take it in. Docking that keeps the unit outside is unchanged: repair depot, refinery, weeder, helipad and `UnitReload` pad.
 
 Here "controlled" means `TechnoClass::MindControlledBy != NULL`. The branch does not refuse a unit the psychic dominator took. `code/psydom.cpp:161` frees that unit from its controller, which clears `MindControlledBy`, before it sets `IsPermaControlled`, so from then on the unit belongs to the house. See question 2.
 

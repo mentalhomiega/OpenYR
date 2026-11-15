@@ -1,10 +1,12 @@
-; TogglePowerAllowed=no (Ares) makes the Power Mode command and the sidebar power button do nothing. The overlay toggle-power-allowed.ini sets it.
-; The player owns a power plant and gives the TogglePower command at frame 100.
-; Expected: `modes` at frame 110 writes "power 0". Without the key, as toggle-power-default.txt shows, it writes "power 1".
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/toggle-power-allowed.txt -Seconds 40 -Country 0 -Filter "AUTOTEST modes|Exception"
-10 rules toggle-power-allowed.ini
+; A mod whose rules set TogglePowerAllowed=yes (Ares) gets power mode: the modern sidebar shows the power button, and the
+; Power Mode command enters power mode. The mod in tests/autotest/toggle-power-allowed/ sets the key. The player owns a
+; power plant and gives the TogglePower command at frame 100.
+; Expected: the sidebarbutton line for power says "listed 1", and `modes` at frame 110 writes "power 1". Without the key,
+; as toggle-power-default.txt shows, the button is not listed and the command does nothing.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/toggle-power-allowed.txt -Mods src-agent33/tests/autotest/toggle-power-allowed -Seconds 40 -Country 0 -Filter "AUTOTEST modes|sidebarbutton|Exception"
 30 command CenterBase
 40 own GAPOWR 64 36
+50 sidebarbuttons
 100 command TogglePower
 110 modes
 120 quit

@@ -387,7 +387,7 @@ RulesClass::RulesClass(void) :
 	EngineerDamage(0),
 	IsEngineerAlwaysCaptureTech(true),
 	IsRepairStopOnInsufficientFunds(true),
-	IsTogglePowerAllowed(true),
+	IsTogglePowerAllowed(false),
 	IsEnemyWrench(true),
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),

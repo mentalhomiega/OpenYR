@@ -234,7 +234,7 @@ Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAtt
 | `TeamAddTo_8` | Team | none | none | OpenTS only; no default |
 | `TeamAddTo_9` | Team | none | none | OpenTS only; no default |
 | `TeamAddTo_10` | Team | none | none | OpenTS only; no default |
-| `TogglePower` | Interface | none | none | OpenTS only; no default |
+| `TogglePower` | Interface | none | none | OpenTS only; no default; listed only when the rules set `TogglePowerAllowed=yes` |
 | `ToggleRadar` | Interface | none | none | OpenTS only; no default |
 | `VeterancyFilter` | Selection | none | none | OpenTS only; no default |
 | `VeterancyFilterAddLower` | Selection | none | none | OpenTS only; no default |

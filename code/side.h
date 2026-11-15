@@ -70,7 +70,7 @@ class SideClass : public AbstractTypeClass
 		/*
 		 * The survivors and the disguise of this side: the side's own section when it names one,
 		 * otherwise the rules' key for the side's place in the list. A side whose place the rules
-		 * give no key falls back to the rules' technician and engineer, and to no disguise.
+		 * give no key falls back to the rules' technician and engineer, and to the third side's disguise.
 		 */
 		InfantryTypeClass const * Crew_Type(void) const;
 		InfantryTypeClass const * Engineer_Type(void) const;
@@ -85,7 +85,7 @@ class SideClass : public AbstractTypeClass
 
 		/*
 		 * The announcer voice the side speaks in, as a name in the EVA file: the side's own tag, else
-		 * Russian for the second side, Yuri for the third and Allied for any other. An empty name
+		 * Allied for the first side, Russian for the second and Yuri for any later one. An empty name
 		 * means the side has no announcer.
 		 */
 		std::string Eva_Voice_Name(void) const;

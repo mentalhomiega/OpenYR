@@ -47,6 +47,7 @@
 #include "always.h"
 
 #include "session.h"
+#include "mods.h"
 #include "mapgen.h"
 #include "lobbycolor.h"
 
@@ -1135,11 +1136,11 @@ static LooseMapInfo const & Loose_Map_Info(std::string const & file_name)
 }
 
 
-// Adds a mission from a packet file to the list, or drops it when its description is a string table label
-// that no entry resolves, which a mod uses to keep the packet from being empty while it lists its maps itself.
+// Adds a mission from a packet file to the list. With a mod active, one whose description is a string table label
+// that no entry resolves is dropped, which a mod uses to keep the packet from being empty while it lists its maps itself.
 static void Add_Listed_Scenario(DynamicVectorClass<MultiMission *> & list, MultiMission * mission)
 {
-	if (mission->Is_Placeholder()) {
+	if (!Active_Mods().empty() && mission->Is_Placeholder()) {
 		DebugString("Scenario %s is a placeholder and is not listed\n", mission->Get_Filename());
 		delete mission;
 		return;
@@ -1275,8 +1276,13 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	// Alert 2 lists them.
 	char digest_buffer[32];
 
+	// Loose .MAP files are listed only with a mod active; Yuri's Revenge never lists them.
+	bool const with_mod = !Active_Mods().empty();
 	for (char const * pattern : {"*.YRM", "*.MPR", "*.MAP"}) {
 		bool const plain = stricmp(pattern, "*.MAP") == 0;
+		if (plain && !with_mod) {
+			continue;
+		}
 		for (std::string const & file_name : Search_Files(pattern)) {
 			// A loose .MAP file is a campaign mission unless its Basic section marks it multiplayer only,
 			// as the maps a mod ships for skirmish do.
