@@ -1,0 +1,15 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mo-emigdal-libra.txt -Mods MentalOmega -Map EMIGDAL.MAP -Campaign -Width 1920 -Height 1080 -Seconds 1400 -Uncapped -Filter "AUTOTEST   where LIBRA|DAMAGETRACE frame 20[4-6]. LIBRA .* by MTNK|Game end|Exception"
+; Needs the Mental Omega files in game\Mods\MentalOmega. In the Epsilon mission EMIGDAL the map overrides many warheads
+; without Verses=, and Allied tanks attack the hero Libra (LIBRA, armor libra=flak) from frame 2040.
+; Expected: the Grizzly's AP warhead keeps its rules Verses, so its hits on Libra log "verses 0.200"; Libra is listed at
+; frames 2050 to 8000 with a strength above 0, and the mission is not lost. Before the map's override kept the Verses,
+; every overridden warhead did 100% to every armor, the hits logged "verses 1.000", and the mission was lost near frame 2800.
+1 detaillog 0
+2030 damagetrace LIBRA
+2050 where LIBRA
+2070 damagetrace -
+2500 where LIBRA
+3500 where LIBRA
+5000 where LIBRA
+8000 where LIBRA
+8010 quit

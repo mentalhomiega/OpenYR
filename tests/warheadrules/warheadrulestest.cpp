@@ -208,6 +208,15 @@ void Test_Combat_Light_Size(void)
 }
 
 
+void Test_Keep_Warhead_Verses(void)
+{
+	Check(!WarheadRules::Keeps_Warhead_Verses(false, false, 0), "stock rules reset Verses a map override leaves out");
+	Check(WarheadRules::Keeps_Warhead_Verses(false, false, 3), "rules with declared armor types keep them");
+	Check(!WarheadRules::Keeps_Warhead_Verses(true, false, 3), "KeepWarheadVerses=no resets them even with armor types");
+	Check(WarheadRules::Keeps_Warhead_Verses(true, true, 0), "KeepWarheadVerses=yes keeps them in stock rules");
+}
+
+
 }
 
 
@@ -226,6 +235,7 @@ int main(void)
 	Test_House_Spare();
 	Test_Hits_Kept();
 	Test_Combat_Light_Size();
+	Test_Keep_Warhead_Verses();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);
