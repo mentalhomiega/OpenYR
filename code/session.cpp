@@ -73,6 +73,7 @@
 #include "playercolor.h"
 #include "progress.h"
 #include "queue.h"
+#include "rawfile.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -92,6 +93,7 @@
 #include <fstream>
 #include <system_error>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <winsock.h> // for ntohl
@@ -1185,6 +1187,10 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	INIClass ini;
 	char name_buffer[64];
 
+	// Each listed map is looked for in every search folder, most of which do not hold it.
+	FileProbeScope probes;
+	std::set<std::string> loose_maps;
+
 	// Clear the scenario description lists
 	for (int index = 0; index < Scenarios.Count(); index++) {
 		delete Scenarios[index];
@@ -1272,8 +1278,6 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	for (char const * pattern : {"*.YRM", "*.MPR", "*.MAP"}) {
 		bool const plain = stricmp(pattern, "*.MAP") == 0;
 		for (std::string const & file_name : Search_Files(pattern)) {
-			file.Set_Name(file_name.c_str());
-
 			// A loose .MAP file is a campaign mission unless its Basic section marks it multiplayer only,
 			// as the maps a mod ships for skirmish do.
 			if (plain) {
@@ -1281,9 +1285,12 @@ void SessionClass::Read_Scenario_Descriptions(void)
 				if (info.IsMultiplayer) {
 					DebugString("Loose map %s: %s\n", file_name.c_str(), info.Name.c_str());
 					Scenarios.Add(new MultiMission(file_name.c_str(), info.Name.c_str(), "No Digest", info.IsOfficial, false));
+					loose_maps.insert(file_name);
 				}
 				continue;
 			}
+
+			file.Set_Name(file_name.c_str());
 
 			ini.Clear();
 			ini.Load(file);
@@ -1298,10 +1305,11 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	ini.Clear();
 	Write_Kept_Map_Infos();
 
-	// A listed map whose file no archive or folder holds cannot be started; the log names each one.
+	// A listed map whose file no archive or folder holds cannot be started; the log names each one. A loose .MAP
+	// file listed above was found in a folder a moment before.
 	for (int index = 0; index < Scenarios.Count(); index++) {
 		char const * const name = Scenarios[index]->Get_Filename();
-		if (stricmp(name, RANDOM_MAP_FILE_NAME) != 0 && !CCFileClass(name).Is_Available()) {
+		if (stricmp(name, RANDOM_MAP_FILE_NAME) != 0 && !loose_maps.contains(name) && !CCFileClass(name).Is_Available()) {
 			DebugString("Scenario %s (%s) is listed but its file is not found\n", name, Scenarios[index]->Description());
 		}
 	}
