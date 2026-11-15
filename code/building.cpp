@@ -3738,6 +3738,27 @@ Coord BuildingClass::Door_Coord(Cell const & exitcell) const
 
 
 /// <summary>
+/// Removes a base node whose structure found no place, when it may not be tried again. An upgrade's node goes at once
+/// when it is the node the house builds next (BuildingClass::KickOutUnit, 0x443C60, with the house's node choice at
+/// 0x42EB50). Any other node goes once its searches have failed AIPlacementSearchFailures times, outside campaign games.
+/// </summary>
+void BuildingClass::Drop_Unplaceable_Node(BaseNodeClass & node)
+{
+	BaseClass & base = House->Base;
+	node.SearchFailures++;
+	bool const hostless_upgrade = !BuildingTypes[node.Type]->PowersUpBuilding.empty() && House->Next_Buildable_Node() == &node;
+	bool const out_of_tries = Session.Type != GAME_NORMAL && Rule->AIPlacementSearchFailures > 0 && node.SearchFailures >= Rule->AIPlacementSearchFailures;
+	if (hostless_upgrade || out_of_tries) {
+		if (HouseClass::TraceBuilding) {
+			DebugString("BUILDTRACE frame %d house %s drops %s node %d after %d failed searches\n", Frame, House->Class->Name(),
+				BuildingTypes[node.Type]->Name(), base.Nodes.ID(&node), node.SearchFailures);
+		}
+		base.Nodes.Delete_Index(base.Nodes.ID(&node));
+	}
+}
+
+
+/// <summary>
 /// Places a structure that a computer house built, where its base plan or placement search puts it. A human player
 /// places their own structures, so this returns 0 for them.
 /// </summary>
@@ -3800,16 +3821,20 @@ int BuildingClass::Exit_Structure(TechnoClass * base)
 		}
 	}
 
+	if (placementcoord == COORD_NONE) {
+		if (HouseClass::TraceBuilding) {
+			DebugString("BUILDTRACE frame %d house %s finds no place for %s (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
+				node != NULL ? "yes" : "no");
+		}
+		if (node != NULL) {
+			Drop_Unplaceable_Node(*node);
+		}
+		return(0);
+	}
+
 	if (HouseClass::TraceBuilding) {
 		DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
 			placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
-	}
-
-	if (placementcoord == COORD_NONE) {
-		if (!buildingtype->PowersUpBuilding.empty() && House->Base.Next_Buildable(STRUCT_NONE) == node) {
-			House->Base.Nodes.Delete_Index(House->Base.Next_Buildable_Index(STRUCT_NONE));
-		}
-		return(0);
 	}
 
 	Cell cellnum = placementcoord.As_Cell();
