@@ -3894,6 +3894,9 @@ static void Listhouse_Step(StepType const & step)
 				(int)techno->TClass->IsInsignificant, (int)techno->TClass->IsDontScore, (int)techno->CountedAsOwnedInfantry,
 				techno->Transporter != NULL ? techno->Transporter->TClass->Name() : "-", (int)techno->IsInTransport, techno->Cargo.How_Many(),
 				(foot != NULL && foot->Team != NULL) ? foot->Team->Class->Name() : "-", building != NULL ? building->Occupants.Count() : 0, visible);
+			if (techno->DisguiseType != NULL) {
+				DebugString("AUTOTEST   listhouse %s obj %d disguised as %s\n", owner->Class->Name(), index, techno->DisguiseType->Name());
+			}
 		}
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
