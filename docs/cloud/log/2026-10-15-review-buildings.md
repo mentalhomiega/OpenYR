@@ -1,6 +1,6 @@
 # Review of buildings, economy and superweapons, 2026-10-15
 
-Branch `cloud/review-buildings-2026-10-15`, begun from `origin/modern` (`4d36e67d`). Job 3 of `CLOUD_JOBS.md`. No earlier log covers this job.
+Branch `cloud/review-buildings-2026-10-15`, begun from `origin/modern` (`4d36e67d`). Job 3 of `docs/cloud/CLOUD_JOBS.md`. No earlier log covers this job.
 
 ## What was read
 
