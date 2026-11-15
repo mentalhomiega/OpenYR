@@ -271,6 +271,7 @@ int Rank_Of(VeterancyClass const & veterancy)
 
 
 bool Active = false;
+bool DetailLogging = true;
 
 // Set by -AUTOTEST-UNCAPPED; the unattended run then plays without the frame limit.
 bool Uncapped = false;
@@ -6640,6 +6641,13 @@ static void Teamtrace_Step(StepType const & step)
 }
 
 
+// detaillog <0|1>: turns the AUTOTEST lines that game code writes on its own, such as blasts and shots, off or on.
+static void Detaillog_Step(StepType const & step)
+{
+	DetailLogging = step.Argument_Int() != 0;
+}
+
+
 // damagetrace <TypeID|->: logs each hit an object of that type takes, as DAMAGETRACE lines; `-` stops them.
 static void Damagetrace_Step(StepType const & step)
 {
@@ -7989,6 +7997,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"team", Team_Step},
 		{"teamtrace", Teamtrace_Step},
 		{"damagetrace", Damagetrace_Step},
+		{"detaillog", Detaillog_Step},
 		{"buildtrace", Buildtrace_Step},
 		{"teams", Teams_Step},
 		{"banims", Banims_Step},
@@ -8099,6 +8108,12 @@ void AutoTest_Cursor_Position(int & x, int & y)
 bool AutoTest_Active(void)
 {
 	return(Active);
+}
+
+
+bool AutoTest_Detail_Logging(void)
+{
+	return(DetailLogging);
 }
 
 
