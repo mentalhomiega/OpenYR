@@ -265,6 +265,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsConsideredAircraft(false),
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
+	PromoteVeteranFlash(-1),
+	PromoteEliteFlash(-1),
 	IsHealthBarHidden(false),
 	EMPModifier(1.0),
 	EMPThreshold(0),
@@ -1779,6 +1781,8 @@ void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
 	MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
 	PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 	PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+	PromoteVeteranFlash = ini.Get_Int(Name(), "Promote.VeteranFlash", PromoteVeteranFlash);
+	PromoteEliteFlash = ini.Get_Int(Name(), "Promote.EliteFlash", PromoteEliteFlash);
 	ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 	ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 	CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -2287,6 +2291,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
+	stream.Serialize(PromoteVeteranFlash);
+	stream.Serialize(PromoteEliteFlash);
 	stream.Serialize(IsHealthBarHidden);
 	stream.Serialize(EMPModifier);
 	stream.Serialize(EMPThreshold);

@@ -4029,7 +4029,8 @@ void TechnoClass::AI(void)
 
 	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
-	 * (TechnoClass::Update, 0x6F9E50).
+	 * (TechnoClass::Update, 0x6F9E50). A veteran flashes only with a VeteranFlashTimer or
+	 * Promote.VeteranFlash above zero (Ares).
 	 */
 	int const rank = Veterancy.Rank();
 	if (rank != CurrentRank) {
@@ -4045,7 +4046,12 @@ void TechnoClass::AI(void)
 				}
 			}
 			if (rank == 2) {
-				FlashCount = Rule->EliteFlashTimer;
+				FlashCount = TClass->PromoteEliteFlash >= 0 ? TClass->PromoteEliteFlash : Rule->EliteFlashTimer;
+			} else {
+				int const flash = TClass->PromoteVeteranFlash >= 0 ? TClass->PromoteVeteranFlash : Rule->VeteranFlashTimer;
+				if (flash > 0) {
+					FlashCount = flash;
+				}
 			}
 		}
 		CurrentRank = rank;

@@ -509,6 +509,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType PromoteVeteranSound;
 		VocType PromoteEliteSound;
 
+		// The frames an object flashes on promotion to veteran and elite, or below zero for the [AudioVisual] VeteranFlashTimer and
+		// EliteFlashTimer (Ares Promote.VeteranFlash and Promote.EliteFlash).
+		int PromoteVeteranFlash;
+		int PromoteEliteFlash;
+
 		// Whether the health bar is left undrawn (Phobos HealthBar.Hide).
 		bool IsHealthBarHidden;
 

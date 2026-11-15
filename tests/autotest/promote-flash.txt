@@ -1,0 +1,17 @@
+; [AudioVisual] VeteranFlashTimer and the type keys Promote.VeteranFlash and Promote.EliteFlash (Ares) set how many frames an object flashes
+; when it is promoted. The overlay promote-flash.ini sets VeteranFlashTimer=40 and gives the Grizzly tank (MTNK) Promote.VeteranFlash=30 and
+; Promote.EliteFlash=60. A Grizzly and a Rhino tank (HTNK) become veterans at frame 100, and the Grizzly becomes elite at frame 200.
+; Expected: the flash lines show MTNK count 27 and HTNK count 37 at frames 103 and 104, and MTNK count 57 at frame 203. Without the overlay
+; keys both show 0 at frames 103 and 104, and MTNK shows 147 (from the stock [AudioVisual] EliteFlashTimer) at frame 203.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/promote-flash.txt -Seconds 40 -Country 0 -Filter "AUTOTEST   flash|Exception"
+10 rules promote-flash.ini
+20 command CenterBase
+30 own MTNK 60 36
+31 own HTNK 64 36
+100 rank MTNK 1
+101 rank HTNK 1
+103 flash MTNK
+104 flash HTNK
+200 rank MTNK 2
+203 flash MTNK
+210 quit

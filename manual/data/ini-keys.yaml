@@ -36906,6 +36906,23 @@ ProjectileRange:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Promote.EliteFlash:
+  key: Promote.EliteFlash
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteEliteFlash
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Promote.EliteSound:
   key: Promote.EliteSound
   scopes:
@@ -36920,6 +36937,23 @@ Promote.EliteSound:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: PromoteEliteSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Promote.VeteranFlash:
+  key: Promote.VeteranFlash
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteVeteranFlash
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -53006,6 +53040,24 @@ VeteranCombat:
       default_candidate: '1'
       declared_in: RulesClass
       member: VeteranCombat
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+VeteranFlashTimer:
+  key: VeteranFlashTimer
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: VeteranFlashTimer
       source: code/rules.cpp
       guard: null
     level: RulesClass

@@ -1371,6 +1371,9 @@ class RulesClass
 		// How many frames an object that has just become elite flashes.
 		int EliteFlashTimer;
 
+		// VeteranFlashTimer (Ares): how many frames an object that has just become a veteran flashes.
+		int VeteranFlashTimer;
+
 		// Frames per second below which detail-gated animations are skipped (DetailMinFrameRateNormal=).
 		int DetailMinFrameRateNormal;
 
