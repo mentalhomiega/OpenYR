@@ -1,0 +1,25 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/chrono-reinforce-orders.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (warp (order|released|in |out )|where (MTNK|HTNK|APOC))|Exception"
+; Trigger action 107 brings two Grizzly Battle Tanks to 62,44 and two Rhino Tanks to 62,50 by chronoshift at frame 50;
+; an enemy Apocalypse Tank stands at 70,44. The Grizzlies' script attacks anything; the Rhinos are ordered to 66,50 at
+; frame 80, during their arrival hold. Expected: no warp order after frame 50 and no warp in line. All four are released at
+; frame 114. The Grizzlies then attack the Apocalypse Tank (target 70,44) and drive east cell by cell to firing range
+; (63,44 at 140, 65,44 at 170). The Rhinos stay on 62,49 and 62,50 on Guard: an order given during the hold is refused and
+; drops the destination (gamemd 0x718100, 0x71820F), so nothing is left to carry out once the hold ends.
+30 command CenterBase
+35 spawn APOC 70 44
+40 teamini chrono-reinforce-orders.ini
+50 reinforce TSTCRHT 62 44 chrono
+50 reinforce TSTCRMT 62 50 chrono
+80 move HTNK 66 50
+81 where HTNK
+110 where MTNK
+110 where HTNK
+120 where MTNK
+120 where HTNK
+140 where MTNK
+140 where HTNK
+170 where MTNK
+170 where HTNK
+200 where MTNK
+200 where APOC
+260 quit

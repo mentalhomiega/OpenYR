@@ -149,14 +149,15 @@ Coord TeleportLocomotionClass::Destination(void)
 /// The destination is chosen here, as gamemd's TeleportLocomotionClass::Move_To (0x718100, with the
 /// choice at 0x718B70) does, and the jump is made when this locomotor is next processed. An order
 /// given while the object holds at its destination is refused (IsWarpingIn, TechnoClass vtable
-/// +0x1D8). When no destination can be chosen the object's own destination is dropped and it does
+/// +0x1D8), and the object keeps no destination from it. When no destination can be chosen the object's own destination is dropped and it does
 /// not jump.
 /// </summary>
 /// <param name="to">The coordinate to teleport the object to.</param>
 void TeleportLocomotionClass::Move_To(Coord to)
 {
-	// An order given during a chronosphere warp, a hold or a chrono arrival is refused.
+	// An order given during a chronosphere warp, a hold or a chrono arrival is refused and the object's destination is dropped (0x71820F).
 	if (WarpPhase != TELEPORT_IDLE || IsArrival) {
+		LinkedTo->NavCom = NULL;
 		return;
 	}
 	// A soldier ordered to jump while it is being set down on the map moves everything off the cell it jumps to first (0x71816F).
