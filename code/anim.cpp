@@ -1062,9 +1062,7 @@ void AnimClass::AI(void)
 					*/
 					int damage = Accum;
 					Accum -= damage;
-					if (AutoTest_Active()) {
-						DebugString("AUTOTEST animdamage %s stage %d damage %d at %d,%d\n", Class->Name(), stage, damage, Center_Coord().X, Center_Coord().Y);
-					}
+					AUTOTEST_LOG("animdamage %s stage %d damage %d at %d,%d\n", Class->Name(), stage, damage, Center_Coord().X, Center_Coord().Y);
 					if (Class->Weapon != NULL && Class->Weapon->Bullet != NULL) {
 						// A Weapon makes the animation's projectile detonate where it is, owned by the animation's house (Phobos).
 						HouseClass * const owner = Owner_House();
