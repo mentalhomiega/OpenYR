@@ -61,6 +61,7 @@
 
 #include <climits>
 #include <cstring>
+#include <mutex>
 
 #if defined(_WIN32)
 #include <io.h>
@@ -422,9 +423,15 @@ static int const MAPPED_MEMBER_SIZE = 256 * 1024;
 /// of that file. The bytes are the file's bytes, as a read gives them, and writes to them stay in this process.
 /// </summary>
 /// <returns>bool; False when the file cannot be mapped, and then member is unchanged.</returns>
-bool MixFileClass::Map_Member(int position, int size, ResidentMemberClass & member)
+void const * MixFileClass::Map_View(int position, int size, void ** view)
 {
+	*view = NULL;
 #if defined(_WIN32)
+	if (size <= 0) {
+		return(NULL);
+	}
+	static std::mutex creating;
+	std::lock_guard<std::mutex> guard(creating);
 	if (Mapping == NULL && !MappingFailed) {
 		MappingFailed = true;
 		CCFileClass file(Filename);
@@ -437,7 +444,7 @@ bool MixFileClass::Map_Member(int position, int size, ResidentMemberClass & memb
 		}
 	}
 	if (Mapping == NULL) {
-		return(false);
+		return(NULL);
 	}
 
 	static DWORD const granularity = []() {
@@ -447,12 +454,36 @@ bool MixFileClass::Map_Member(int position, int size, ResidentMemberClass & memb
 	}();
 	DWORD const base = (DWORD)position - (DWORD)position % granularity;
 	DWORD const lead = (DWORD)position - base;
-	void * view = MapViewOfFile((HANDLE)Mapping, FILE_MAP_COPY, 0, base, (SIZE_T)lead + (SIZE_T)size);
-	if (view == NULL) {
+	*view = MapViewOfFile((HANDLE)Mapping, FILE_MAP_COPY, 0, base, (SIZE_T)lead + (SIZE_T)size);
+	return(*view != NULL ? (char const *)*view + lead : NULL);
+#else
+	(void)position;
+	(void)size;
+	return(NULL);
+#endif
+}
+
+
+void MixFileClass::Unmap_View(void * view)
+{
+#if defined(_WIN32)
+	if (view != NULL) {
+		UnmapViewOfFile(view);
+	}
+#else
+	(void)view;
+#endif
+}
+
+
+bool MixFileClass::Map_Member(int position, int size, ResidentMemberClass & member)
+{
+	void * view = NULL;
+	char const * const bytes = (char const *)Map_View(position, size, &view);
+	if (bytes == NULL) {
 		return(false);
 	}
 
-	char const * const bytes = (char const *)view + lead;
 	if (size >= MAPPED_MEMBER_SIZE) {
 		member.View = view;
 		member.Bytes = bytes;
@@ -460,16 +491,10 @@ bool MixFileClass::Map_Member(int position, int size, ResidentMemberClass & memb
 	} else {
 		member.Copy.reset(new char[size]);
 		std::memcpy(member.Copy.get(), bytes, (std::size_t)size);
-		UnmapViewOfFile(view);
+		Unmap_View(view);
 		member.Bytes = member.Copy.get();
 	}
 	return(true);
-#else
-	(void)position;
-	(void)size;
-	(void)member;
-	return(false);
-#endif
 }
 
 
@@ -485,11 +510,7 @@ MixFileClass::ResidentMemberClass::ResidentMemberClass(ResidentMemberClass && ot
 
 MixFileClass::ResidentMemberClass::~ResidentMemberClass(void)
 {
-#if defined(_WIN32)
-	if (View != NULL) {
-		UnmapViewOfFile(View);
-	}
-#endif
+	Unmap_View(View);
 }
 
 

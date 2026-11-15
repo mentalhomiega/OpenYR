@@ -55,6 +55,11 @@ class MixFileClass : public Node<MixFileClass *>
 		// end of the member. Returns false when the member is not here or the range does not lie inside it.
 		bool Read_Member(char const * filename, std::vector<unsigned char> & bytes, int start = 0, int count = -1) const;
 
+		// Maps size bytes at position, an offset in the archive's file on disk, as a copy-on-write view of that file, and
+		// returns them, with the view to give Unmap_View in view. Returns NULL when the file cannot be mapped.
+		void const * Map_View(int position, int size, void ** view);
+		static void Unmap_View(void * view);
+
 		// Makes Retrieve of a member of this archive return memory even though the archive is not
 		// cached: the member is read from the file on its first Retrieve and kept until the
 		// archive is destroyed. Meant for archives too big to cache whole.

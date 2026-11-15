@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "ccfile.h"
 #include "crc.h"
 #include "rndstraw.h"
 #include "mixfile.h"
@@ -177,6 +178,26 @@ void Test_Resident_Members(void)
 		}
 		Check(large != nullptr && large[200000] == 'x' && MixFileClass::Retrieve("LARGE.SHP") == large, "a write to a large member stays in memory");
 		Check(Read_File(path) == archive, "a write to a member leaves the file unchanged");
+
+		// A member opened as a file reads the same whether it comes from a view of the archive or from its own handle.
+		for (Member const & member : members) {
+			if (member.Bytes.empty()) {
+				continue;
+			}
+			CCFileClass file(member.Name);
+			std::vector<char> bytes(member.Bytes.size());
+			bool const opened = file.Open(FileClass::READ);
+			int const size = file.Size();
+			int const got = file.Read(bytes.data(), (int)bytes.size());
+			int const at_end = file.Seek(0, SEEK_CUR);
+			int const back = file.Seek(-10, SEEK_END);
+			char last[16] = {};
+			int const tail = file.Read(last, sizeof(last));
+			file.Close();
+			std::string const what = std::string(member.Name) + " reads as a file the bytes of the archive";
+			Check(opened && size == (int)member.Bytes.size() && got == size && bytes == member.Bytes && at_end == size
+				&& back == size - 10 && tail == 10 && std::memcmp(last, member.Bytes.data() + size - 10, 10) == 0, what.c_str());
+		}
 
 		std::vector<unsigned char> read;
 		Check(mix.Read_Member("LARGE.SHP", read) && read.size() == members[1].Bytes.size()

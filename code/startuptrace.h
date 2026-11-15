@@ -33,6 +33,12 @@ void Startup_Note_Read(char const * name, std::int64_t bytes);
 // An archive member read into memory on its own, for the summary's counts by member type.
 void Startup_Note_Member(char const * name, std::int64_t bytes);
 
+// A member of an archive opened as a view of the archive's file, without a file handle of its own.
+void Startup_Note_View_Open(char const * name, std::int64_t bytes);
+
+// The pages of such a member's view that were read, counted as it is closed.
+void Startup_Note_View_Close(void const * address, std::int64_t bytes);
+
 // A mapped view of a file; the summary counts the pages of it that were read.
 void Startup_Note_View(void const * address, std::int64_t bytes);
 

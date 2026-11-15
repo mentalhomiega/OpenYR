@@ -78,6 +78,9 @@ std::map<std::string, std::pair<int, std::int64_t>> MemberTypes;	// Extension to
 std::vector<std::pair<std::int64_t, std::string>> Members;
 std::vector<std::pair<void const *, std::int64_t>> Views;
 std::string Order;	// The marks, without the spans, in the order they were made.
+int ViewOpens = 0;
+std::int64_t ViewMappedBytes = 0;
+std::int64_t ViewOpenBytes = 0;	// The pages of them that were read.
 std::int64_t Origin = 0;	// Steady clock reading, in nanoseconds, that stands for the process start.
 bool OriginSet = false;
 
@@ -267,6 +270,17 @@ void Startup_Note_Member(char const * name, std::int64_t bytes)
 }
 
 
+void Startup_Note_View_Open(char const *, std::int64_t bytes)
+{
+	if (!Startup_Trace_Active()) {
+		return;
+	}
+	std::lock_guard<std::mutex> guard(Lock);
+	ViewOpens++;
+	ViewMappedBytes += bytes;
+}
+
+
 void Startup_Note_View(void const * address, std::int64_t bytes)
 {
 	if (!Startup_Trace_Active()) {
@@ -277,29 +291,50 @@ void Startup_Note_View(void const * address, std::int64_t bytes)
 }
 
 
-// The bytes of the mapped views that are in memory: the pages that were read.
-static std::int64_t Touched_View_Bytes(void)
+// The bytes of a mapped view that are in memory: the pages that were read.
+static std::int64_t Touched_Bytes(void const * address, std::int64_t bytes)
 {
 	std::int64_t touched = 0;
 #if defined(_WIN32)
 	std::vector<PSAPI_WORKING_SET_EX_INFORMATION> pages;
-	for (auto const & view : Views) {
-		std::uintptr_t const first = (std::uintptr_t)view.first & ~(std::uintptr_t)4095;
-		std::uintptr_t const end = (std::uintptr_t)view.first + (std::uintptr_t)view.second;
-		pages.clear();
-		for (std::uintptr_t page = first; page < end; page += 4096) {
-			PSAPI_WORKING_SET_EX_INFORMATION entry = {};
-			entry.VirtualAddress = (void *)page;
-			pages.push_back(entry);
-		}
-		if (!pages.empty() && QueryWorkingSetEx(GetCurrentProcess(), pages.data(), (DWORD)(pages.size() * sizeof(pages[0])))) {
-			for (auto const & entry : pages) {
-				touched += entry.VirtualAttributes.Valid ? 4096 : 0;
-			}
+	std::uintptr_t const first = (std::uintptr_t)address & ~(std::uintptr_t)4095;
+	std::uintptr_t const end = (std::uintptr_t)address + (std::uintptr_t)bytes;
+	for (std::uintptr_t page = first; page < end; page += 4096) {
+		PSAPI_WORKING_SET_EX_INFORMATION entry = {};
+		entry.VirtualAddress = (void *)page;
+		pages.push_back(entry);
+	}
+	if (!pages.empty() && QueryWorkingSetEx(GetCurrentProcess(), pages.data(), (DWORD)(pages.size() * sizeof(pages[0])))) {
+		for (auto const & entry : pages) {
+			touched += entry.VirtualAttributes.Valid ? 4096 : 0;
 		}
 	}
+#else
+	(void)address;
+	(void)bytes;
 #endif
 	return(touched);
+}
+
+
+static std::int64_t Touched_View_Bytes(void)
+{
+	std::int64_t touched = 0;
+	for (auto const & view : Views) {
+		touched += Touched_Bytes(view.first, view.second);
+	}
+	return(touched);
+}
+
+
+void Startup_Note_View_Close(void const * address, std::int64_t bytes)
+{
+	if (!Startup_Trace_Active()) {
+		return;
+	}
+	std::int64_t const touched = Touched_Bytes(address, bytes);
+	std::lock_guard<std::mutex> guard(Lock);
+	ViewOpenBytes += touched;
 }
 
 
@@ -354,8 +389,9 @@ void Startup_Trace_End(char const * text)
 
 	DebugString("STARTUP summary: %d opens of %d files, %d probes, %d reads, %.1f MB read, %.1f MB distinct, %d seeks\n",
 		opens, opened_files, probes, reads, (double)bytes / (1024.0 * 1024.0), (double)unique / (1024.0 * 1024.0), seeks);
-	DebugString("STARTUP cold disk: %.1f MB and %d seeks (distinct bytes, and one seek per file opened plus one per seek that moves)\n",
-		(double)unique / (1024.0 * 1024.0), seeks + opened_files);
+	std::int64_t const touched = Touched_View_Bytes();
+	DebugString("STARTUP cold disk: %.1f MB and %d seeks (distinct bytes read, members opened as views and pages of kept views read; one seek per file opened, per seek that moves and per view)\n",
+		(double)(unique + ViewOpenBytes + touched) / (1024.0 * 1024.0), seeks + opened_files + ViewOpens + (int)Views.size());
 
 #if defined(_WIN32)
 	IO_COUNTERS io;
@@ -382,12 +418,15 @@ void Startup_Trace_End(char const * text)
 			entry.first.c_str(), extension_files[entry.first], entry.second->Opens, entry.second->Reads, (double)entry.second->Bytes / (1024.0 * 1024.0));
 	}
 
+	if (ViewOpens > 0) {
+		DebugString("STARTUP view opens: %d members opened as views, %.1f MB, of which %.1f MB read\n", ViewOpens, (double)ViewMappedBytes / (1024.0 * 1024.0), (double)ViewOpenBytes / (1024.0 * 1024.0));
+	}
 	if (!Views.empty()) {
 		std::int64_t mapped = 0;
 		for (auto const & view : Views) {
 			mapped += view.second;
 		}
-		DebugString("STARTUP views: %d members mapped, %.1f MB, of which %.1f MB read\n", (int)Views.size(), (double)mapped / (1024.0 * 1024.0), (double)Touched_View_Bytes() / (1024.0 * 1024.0));
+		DebugString("STARTUP views: %d members mapped, %.1f MB, of which %.1f MB read\n", (int)Views.size(), (double)mapped / (1024.0 * 1024.0), (double)touched / (1024.0 * 1024.0));
 	}
 
 	std::vector<std::pair<std::string, std::pair<int, std::int64_t>>> members(MemberTypes.begin(), MemberTypes.end());
@@ -405,6 +444,9 @@ void Startup_Trace_End(char const * text)
 	MemberTypes.clear();
 	Members.clear();
 	Views.clear();
+	ViewOpens = 0;
+	ViewMappedBytes = 0;
+	ViewOpenBytes = 0;
 }
 
 
