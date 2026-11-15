@@ -86,6 +86,7 @@
 #include "overtype.h"
 #include "partsys.h"
 #include "playerdisplay.h"
+#include "psystype.h"
 #include "radsite.h"
 #include "rules.h"
 #include "savestream.h"
@@ -156,7 +157,8 @@ BulletClass::BulletClass(void) :
 	ClosureSamples(0),
 	Warhead(NULL),
 	AnimFrame(0),
-	AnimRate(0)
+	AnimRate(0),
+	AttachedSystem(NULL)
 {
 	Create_ID();
 	Bullets.Add(this);
@@ -1173,6 +1175,9 @@ void BulletClass::Detach(AbstractClass const * target, bool all)
 	if (NextAnim == target) {
 		NextAnim = NULL;
 	}
+	if (AttachedSystem == target) {
+		AttachedSystem = NULL;
+	}
 }
 
 
@@ -1287,6 +1292,12 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 
 		if (Is_Homing()) {
 			Velocity.Set_Speed(1);
+		}
+
+		// Ares supports only smoke systems here; another kind of system is not attached.
+		if (IsActive && AttachedSystem == NULL && Class->AttachedSystem != NULL && Class->AttachedSystem->Behaves_Like() == PSYS_BEHAVIOR_SMOKE) {
+			AttachedSystem = new ParticleSystemClass(Class->AttachedSystem, PositionCoord, NULL, this);
+			AUTOTEST_LOG("attached system %s on %s\n",Class->AttachedSystem->Name(), Class->Name());
 		}
 
 		if (IsActive) {
@@ -2036,6 +2047,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Warhead);
 	stream.Serialize(AnimFrame);
 	stream.Serialize(AnimRate);
+	stream.Serialize(AttachedSystem);
 }
 
 

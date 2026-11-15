@@ -45,6 +45,7 @@ class BulletTypeClass;
 class TechnoClass;
 class WeaponTypeClass;
 class AnimClass;
+class ParticleSystemClass;
 struct VoxelDataStruct;
 class Matrix3D;
 
@@ -249,6 +250,9 @@ class BulletClass : public ObjectClass
 		 * reaches zero it is reloaded from the animation rate of the projectile type.
 		 */
 		unsigned char AnimRate;
+
+		// The smoke system that the type's AttachedSystem (Ares) trails behind this projectile, once it has been launched.
+		ParticleSystemClass * AttachedSystem;
 };
 
 

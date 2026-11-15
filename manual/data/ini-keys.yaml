@@ -4756,6 +4756,20 @@ AttachedParticleSystem:
 AttachedSystem:
   key: AttachedSystem
   scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: BulletTypeClass
+      member: AttachedSystem
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
   - applies_to: &id024
     - VoxelAnimType
     file: rules.ini
@@ -4763,7 +4777,7 @@ AttachedSystem:
       kind: identifier
       source: object-type
     value_type: class
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: VoxelAnimTypeClass

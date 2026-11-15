@@ -48,6 +48,7 @@
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
+#include "psystype.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -117,6 +118,7 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	DetonationAltitude(0),
 	Color(0),
 	Trailer(0),
+	AttachedSystem(NULL),
 	SpawnDelay(3),
 	ScaledSpawnDelay(0),
 	IsScalable(false),
@@ -221,6 +223,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 			BallisticScatterMax = scatter_max >= 0.0 ? (int)(scatter_max * CELL_LEPTON_W) : -1;
 		}
 		RetargetAccuracy = ini.Get_Float(Name(), "RetargetAccuracy", RetargetAccuracy);
+		AttachedSystem = TGet_Class(ini, Name(), "AttachedSystem", AttachedSystem);
 
 		IsScalable = ini.Get_Bool(Name(), "Scalable", IsScalable);
 		IsFirersPalette = ini.Get_Bool(Name(), "FirersPalette", IsFirersPalette);
@@ -421,6 +424,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DetonationAltitude);
 	stream.Serialize(Color);
 	stream.Serialize(Trailer);
+	stream.Serialize(AttachedSystem);
 	stream.Serialize(ROT);
 	stream.Serialize(RetargetAccuracy);
 	stream.Serialize(Arming);
@@ -464,6 +468,9 @@ void BulletTypeClass::Detach(AbstractClass const * target, bool all)
 {
 	if (target == Trailer) {
 		Trailer = NULL;
+	}
+	if (target == AttachedSystem) {
+		AttachedSystem = NULL;
 	}
 }
 
