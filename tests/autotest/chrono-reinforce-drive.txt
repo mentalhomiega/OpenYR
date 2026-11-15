@@ -1,0 +1,20 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/chrono-reinforce-drive.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (warp (order|released|in |out )|chrono (landed|arrived)|where)|Exception"
+; Trigger action 107 (Reinforcement by Chrono, gamemd 0x65EC30) brings two Grizzly Battle Tanks to cell 62,38; their team
+; script then moves them to cell 68,38 (script line 4). The arrival hold ends at frame 114 (warp released) and its end
+; hands each tank its own locomotor back in that frame (stage 7, 0x719BAF, and the end of FootClass::Update, 0x4DA530).
+; Expected: the only warp order lines are the two at frame 50; from frame 120 the where lines show the tanks on mission
+; Move and driving east cell by cell (62,38, 63,38, ... 68,38), with no warp in line. Before, the team's move at frame
+; 115 reached the teleport locomotor still carried after the hold: both tanks logged warp order to 68,38, warp out and
+; warp in at frame 115, and stood on 68,38 by frame 120.
+30 command CenterBase
+40 teamini chrono-reinforce-drive.ini
+50 reinforce TSTCRDT 62 38 chrono
+110 where MTNK
+120 where MTNK
+130 where MTNK
+140 where MTNK
+150 where MTNK
+170 where MTNK
+200 where MTNK
+250 where MTNK
+260 quit

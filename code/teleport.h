@@ -28,7 +28,8 @@ class TechnoClass;
  * argument 0), again each frame while the cell had to be changed (TELEPORT_RECLEAR, stage 3); it is
  * set down (TELEPORT_LAND, stage 4, argument 1); the landing is checked for Iron Curtained
  * neighbours and water (TELEPORT_ARRIVE, stage 5, 0x7187A0); and it holds for the arrival hold
- * (TELEPORT_HOLD, stage 6).
+ * (TELEPORT_ARRIVAL_HOLD, stage 6). The end of that hold also runs stage 7 (0x719BAF), which drops
+ * the object's destination, so the carried locomotor takes over in the frame the hold ends.
  */
 enum TeleportWarpPhase
 {
@@ -39,6 +40,7 @@ enum TeleportWarpPhase
 	TELEPORT_RECLEAR = 4,
 	TELEPORT_LAND = 5,
 	TELEPORT_ARRIVE = 6,
+	TELEPORT_ARRIVAL_HOLD = 7,
 };
 
 
