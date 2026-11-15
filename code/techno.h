@@ -393,6 +393,8 @@ class TechnoClass :	public RadioClass,
 		*/
 		CountrySet SpiedBy;
 
+		void Look_For_Radar_Spies(int sight_range, bool incremental, bool dontmap);
+
 		/*
 		**	If this object is part of a pseudo-team that the player is managing, then
 		**	this will be set to the team number (0 - 9). If it is not part of any

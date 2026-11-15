@@ -897,6 +897,8 @@ class BuildingTypeClass : public TechnoTypeClass
 		// UndoReverseEngineer and the five veterancy keys (UnitVeterancy is read as VehicleVeterancy).
 		bool IsSpyEffectCustom;
 		bool IsSpyResetRadar;
+		// SpyEffect.RevealRadar (Ares): a spy in this Radar=yes structure makes its owner's units reveal the map to the spy's house.
+		bool IsSpyRevealRadar;
 		int SpyPowerOutage;
 		double SpyStolenMoneyPercentage;
 		int SpyStolenMoneyAmount;

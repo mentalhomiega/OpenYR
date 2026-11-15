@@ -1,0 +1,17 @@
+; The AUTOTEST lines that game code writes on its own stop after a line budget, so a long mission's area warheads cannot fill the
+; 64 MB log before its outcome. "detaillog 1 3" sets a budget of 3 lines. A player GI (E1) stands at 61,24 and HE blasts of 5 damage
+; land on it at frames 100, 105, 110 and 115, each writing one hits line while the budget lasts.
+; Expected: three "blast HE ... hits E1" lines (frames 100, 105, 110), then "AUTOTEST detail lines stop at frame 115 after 3 lines"
+; and no hits line for frame 115; after "detaillog 1" at frame 130 the blast at frame 140 writes its hits line again.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/detail-line-budget.txt -Seconds 120 -Filter "AUTOTEST frame|hits E1|detail lines stop|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 61 24
+90 detaillog 1 3
+100 blast HE:5 61 24
+105 blast HE:5 61 24
+110 blast HE:5 61 24
+115 blast HE:5 61 24
+130 detaillog 1
+140 blast HE:5 61 24
+160 quit

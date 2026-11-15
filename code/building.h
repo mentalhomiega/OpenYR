@@ -253,6 +253,9 @@ class BuildingClass : public TechnoClass
 		*/
 		bool IsWrenchVisible;
 
+		// The countries whose spies infiltrated this SpyEffect.RevealRadar structure since its owner last changed.
+		CountrySet RadarRevealedTo;
+
 		/*
 		**	This flag is set when a commando has raided the building and planted
 		**	plastic explosives.  When the CommandoCountDown timer expires, the
@@ -633,6 +636,7 @@ class BuildingClass : public TechnoClass
 		virtual WeaponDataStruct const * Get_Class_Weapon_Data(int which=0) const override;
 		virtual bool Is_Turret_Equipped() const override;
 		void Update_Radar_Spied(void);
+		void End_Radar_Reveal(void);
 		void Spied_By(HouseClass * house);
 		void Custom_Spy_Effect(HouseClass * house, bool victim, bool spy);
 

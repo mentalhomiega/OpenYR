@@ -45827,6 +45827,23 @@ SpyEffect.RevealProduction:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpyEffect.RevealRadar:
+  key: SpyEffect.RevealRadar
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyRevealRadar
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpyEffect.StolenMoneyAmount:
   key: SpyEffect.StolenMoneyAmount
   scopes:

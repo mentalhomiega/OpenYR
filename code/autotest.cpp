@@ -272,6 +272,11 @@ int Rank_Of(VeterancyClass const & veterancy)
 
 bool Active = false;
 bool DetailLogging = true;
+// The AUTOTEST_LOG lines a run writes before they stop on their own. A long mission's area warheads write a blast line per
+// object hit, which would otherwise fill the 64 MB log before the outcome is written; no test comes close to the limit.
+constexpr int DETAIL_LINE_BUDGET = 150000;
+int DetailLineBudget = DETAIL_LINE_BUDGET;
+int DetailLinesLeft = DETAIL_LINE_BUDGET;
 
 // Set by -AUTOTEST-UNCAPPED; the unattended run then plays without the frame limit.
 bool Uncapped = false;
@@ -6641,10 +6646,15 @@ static void Teamtrace_Step(StepType const & step)
 }
 
 
-// detaillog <0|1>: turns the AUTOTEST lines that game code writes on its own, such as blasts and shots, off or on.
+// detaillog <0|1> [lines]: turns the AUTOTEST lines that game code writes on its own, such as blasts and shots, off or on.
+// Turning them on also starts a new line budget, of the given number of lines or the default.
 static void Detaillog_Step(StepType const & step)
 {
 	DetailLogging = step.Argument_Int() != 0;
+	if (DetailLogging) {
+		DetailLineBudget = step.X > 0 ? step.X : DETAIL_LINE_BUDGET;
+		DetailLinesLeft = DetailLineBudget;
+	}
 }
 
 
@@ -8149,7 +8159,15 @@ bool AutoTest_Active(void)
 
 bool AutoTest_Detail_Logging(void)
 {
-	return(DetailLogging);
+	if (!DetailLogging) {
+		return(false);
+	}
+	if (--DetailLinesLeft < 0) {
+		DetailLogging = false;
+		DebugString("AUTOTEST detail lines stop at frame %d after %d lines; a detaillog 1 step starts them again\n", (int)Frame, DetailLineBudget);
+		return(false);
+	}
+	return(true);
 }
 
 

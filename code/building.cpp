@@ -246,6 +246,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsReadyToCommence(false),
 	IsRepairing(false),
 	IsWrenchVisible(false),
+	RadarRevealedTo(),
 	IsGoingToBlow(false),
 	IsC4Applied(false),
 	IsSurvivorless(false),
@@ -3984,6 +3985,7 @@ bool BuildingClass::Limbo(void)
 
 	if (!IsInLimbo) {
 
+		End_Radar_Reveal();
 		Remove_Damage_Fires();
 		IsRequiresDamageFires = false;
 		Update_Powered_Unit_Source(false);
@@ -5263,6 +5265,16 @@ void BuildingClass::Grant_Cloak_And_Clear_Spy_Bits(HouseClass * newowner)
 		if (Class->IsRadar) {
 			Update_Radar_Spied();
 		}
+	}
+	End_Radar_Reveal();
+}
+
+
+void BuildingClass::End_Radar_Reveal(void)
+{
+	if (RadarRevealedTo.Any()) {
+		RadarRevealedTo.Clear();
+		House->Update_Units_Revealed_To();
 	}
 }
 
@@ -11582,6 +11594,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAllowedToSell);
 	stream.Serialize(IsReadyToCommence);
 	stream.Serialize(IsWrenchVisible);
+	stream.Serialize(RadarRevealedTo);
 	stream.Serialize(IsGoingToBlow);
 	stream.Serialize(IsC4Applied);
 	stream.Serialize(IsSurvivorless);
@@ -11696,6 +11709,7 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsReadyToCommence);
 	crc(IsRepairing);
 	crc(IsWrenchVisible);
+	RadarRevealedTo.Compute_CRC(crc);
 	crc(IsGoingToBlow);
 	crc(IsC4Applied);
 	crc(IsSurvivorless);
@@ -12991,6 +13005,11 @@ void BuildingClass::Custom_Spy_Effect(HouseClass * house, bool victim, bool spy)
 				}
 			}
 		}
+	}
+
+	if (Class->IsSpyRevealRadar && Class->IsRadar) {
+		RadarRevealedTo.Set(house);
+		House->Update_Units_Revealed_To();
 	}
 
 	if (!Class->SpyStolenTechIndex.empty()) {
