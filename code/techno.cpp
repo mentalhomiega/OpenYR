@@ -3656,7 +3656,14 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 		}
 		// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
 		if (House->Is_Player_Control()) {
-			Sound_Effect(Rule->AirstrikeAttackVoice);
+			// The designator's VoiceAirstrikeAttack comes first, then the aircraft type's (Ares).
+			VocType voice = Rule->AirstrikeAttackVoice;
+			if (TClass->IsVoiceAirstrikeAttackSet) {
+				voice = TClass->VoiceAirstrikeAttack;
+			} else if (type->IsVoiceAirstrikeAttackSet) {
+				voice = type->VoiceAirstrikeAttack;
+			}
+			Sound_Effect(voice);
 		}
 		DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
 		AUTOTEST_LOG("airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());

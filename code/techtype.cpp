@@ -265,6 +265,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsConsideredAircraft(false),
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
+	IsVoiceAirstrikeAttackSet(false),
+	VoiceAirstrikeAttack(VOC_NONE),
 	PromoteVeteranFlash(-1),
 	PromoteEliteFlash(-1),
 	IsHealthBarHidden(false),
@@ -1781,6 +1783,10 @@ void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
 	MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
 	PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 	PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+	if (ini.Is_Present(Name(), "VoiceAirstrikeAttack")) {
+		IsVoiceAirstrikeAttackSet = true;
+		VoiceAirstrikeAttack = ini.Get_VocType(Name(), "VoiceAirstrikeAttack", VoiceAirstrikeAttack);
+	}
 	PromoteVeteranFlash = ini.Get_Int(Name(), "Promote.VeteranFlash", PromoteVeteranFlash);
 	PromoteEliteFlash = ini.Get_Int(Name(), "Promote.EliteFlash", PromoteEliteFlash);
 	ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
@@ -2291,6 +2297,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
+	stream.Serialize(IsVoiceAirstrikeAttackSet);
+	stream.Serialize(VoiceAirstrikeAttack);
 	stream.Serialize(PromoteVeteranFlash);
 	stream.Serialize(PromoteEliteFlash);
 	stream.Serialize(IsHealthBarHidden);

@@ -53253,6 +53253,23 @@ VisibleLoad:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceAirstrikeAttack:
+  key: VoiceAirstrikeAttack
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: VoiceAirstrikeAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceAttack:
   key: VoiceAttack
   scopes:

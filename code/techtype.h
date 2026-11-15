@@ -509,6 +509,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType PromoteVeteranSound;
 		VocType PromoteEliteSound;
 
+		// VoiceAirstrikeAttack (Ares): the sound played when an airstrike this designator or aircraft type takes part in is called.
+		bool IsVoiceAirstrikeAttackSet;
+		VocType VoiceAirstrikeAttack;
+
 		// The frames an object flashes on promotion to veteran and elite, or below zero for the [AudioVisual] VeteranFlashTimer and
 		// EliteFlashTimer (Ares Promote.VeteranFlash and Promote.EliteFlash).
 		int PromoteVeteranFlash;
