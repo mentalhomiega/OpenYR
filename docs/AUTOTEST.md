@@ -181,6 +181,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `defeat <house>` | Runs the defeat a house gets once it has nothing left, on that house: its forces are destroyed, then MPlayer_Defeated runs. The house is named as the waits name one; `player` is the local player. Every copy of a network game must run it on the same frame |
 | `observer` | Writes the local player's defeat, watching, whole-map and Session.ObiWan state, its owned objects, the houses still playing, its selection and the beacon and planning modes |
 | `modes` | Writes the repair, sell, power, waypoint and beacon placement flags and the targeting flag as 0 or 1, then the object pending placement |
+| `sidebarbuttons` | Writes, for the sidebar's repair, sell, power, beacon and options buttons, whether each is on the screen's button list (`listed`) and its position |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier. `gap` is 1 when a working gap generator keeps the cell shrouded for the local player |
 | `shroudhash` | Writes, for each human house, how many cells it has mapped and fog-mapped, whether it sees the whole map through a spy satellite or a reveal (`visionary`), and a checksum of its shroud and fog over the map. Every copy of a network game must write the same lines |
 | `offmapcell` | Writes the location game logic left the shared off-map cell at (see [Camera](#camera)) |

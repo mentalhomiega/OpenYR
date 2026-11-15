@@ -1,17 +1,17 @@
 ---
 key: TogglePowerAllowed
-summary: "With no, the Power Mode command and the sidebar power button do nothing."
+summary: "With yes, the player gets power mode: the Power Mode command and the modern sidebar's power button."
 see_also: [TogglePower, "system:power"]
 when_omitted:
   kind: value
-  value: "yes"
+  value: "no"
 ---
 
-`TogglePowerAllowed` is an Ares key. With `no`, [Power Mode](/commands/togglepower/) and the sidebar's power button no longer enter power mode, so players cannot switch their structures off or on. The command still appears among the keyboard commands and can still be bound. Trigger actions and a scenario's structure records can still switch structures off.
+`TogglePowerAllowed` is an Ares key. With `yes`, [Power Mode](/commands/togglepower/) and the modern sidebar's power button enter power mode, in which players switch their structures off or on.
 
-Ares defaults the key to `no`, because Yuri's Revenge had no power mode. We default it to `yes`, so rules that leave it out keep the power mode our engine has always offered; set `TogglePowerAllowed=no` to match Ares.
+With `no`, the default as in Ares, there is no power mode, as in Yuri's Revenge: the command does nothing and is left out of the keyboard settings, and the modern sidebar has no power button, its other buttons closing up. The classic sidebar never has one. Trigger actions and a scenario's structure records can still switch structures off.
 
 ```ini title="rulesmd.ini"
 [General]
-TogglePowerAllowed=no
+TogglePowerAllowed=yes
 ```

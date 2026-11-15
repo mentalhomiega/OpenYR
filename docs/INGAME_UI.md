@@ -14,7 +14,7 @@ At 1920x1080:
   over letting the view pass the edge, which showed a black strip below the panel.
 - **The build panel** sits in the top-right corner, 250 pixels wide, framed in the side's colour
   (blue for the Allies, red for the Soviets, purple for Yuri). From the top:
-  - a row of buttons: place beacon, sell, power down and repair, then the options button. Place
+  - a row of buttons: place beacon, sell, power down (only when the rules set `TogglePowerAllowed=yes`) and repair, then the options button. Place
     beacon toggles beacon placement, as the `PlaceBeacon` command does; in a single-player or
     skirmish game it does nothing, as in gamemd. Power down toggles power-down mode, as the
     `TogglePower` command does. There is no diplomacy button;

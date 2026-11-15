@@ -131,7 +131,7 @@ The fraction is never above 1, so a house producing twice its drain is in the sa
 
 ## Switching a structure off
 
-Players enter power mode with [Power Mode](/commands/togglepower/) or the sidebar's power button. The power cursor offers the toggle only over an object that passes all of these tests, in this order:
+Players enter power mode with [Power Mode](/commands/togglepower/) or the modern sidebar's power button, and only when the rules set [`TogglePowerAllowed=yes`](/keys/togglepowerallowed/); Yuri's Revenge has no power mode. The power cursor offers the toggle only over an object that passes all of these tests, in this order:
 
 - it belongs to a player-controlled house;
 - it is a structure;
