@@ -1,13 +1,13 @@
 ---
 key: DisabledDisguiseDetectionPercent
-summary: "The percent chance, per side, that a computer house sees a disguised Mirage vehicle while it blinks."
+summary: "The percent chance, per difficulty, that a computer house sees a disguised Mirage vehicle while it blinks."
 see_also: [DisguiseWhenStill, DisguiseFakeBlinkTime, "system:disguises"]
 when_omitted:
   kind: value
   value: none
 ---
 
-A computer house can pick a [`DisguiseWhenStill=yes`](/keys/disguisewhenstill/) vehicle that looks like terrain to it only while the vehicle blinks after a shot, and then only when a roll from 0 to 99 is no more than this value. The values follow the side order: Allied, Soviet, then Third. A side without a value counts as `0`, which still lets a roll of `0` through, so it sees through one blink check in a hundred. A human house never picks such a vehicle, and a type with [`DetectDisguise=yes`](/keys/detectdisguise/) sees through the disguise.
+A computer house can pick a [`DisguiseWhenStill=yes`](/keys/disguisewhenstill/) vehicle that looks like terrain to it only while the vehicle blinks after a shot, and then only when a roll from 0 to 99 is no more than this value. A house takes the entry for its [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot): for a computer house, the first entry applies at the Hard setting and the last at Easy. A slot without a value counts as `0`, which still lets a roll of `0` through, so it sees through one blink check in a hundred. A human house never picks such a vehicle, and a type with [`DetectDisguise=yes`](/keys/detectdisguise/) sees through the disguise.
 
 ```ini title="rulesmd.ini"
 [General]

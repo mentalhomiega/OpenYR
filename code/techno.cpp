@@ -2668,12 +2668,13 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 bool TechnoClass::Passes_Mirage_Roll(TechnoClass const * object) const
 {
 	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
-	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
+	// roll against DisabledDisguiseDetectionPercent for the house's difficulty (HouseClass+0x184, 0x6F8536). A
+	// DetectDisguise type sees through the disguise.
 	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
 		UnitClass const * vehicle = static_cast<UnitClass const *>(object);
 		if (vehicle->Is_Disguised_As(House)) {
-			int const side = House->Class->Side;
-			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
+			int const difficulty = House->Difficulty;
+			int const percent = difficulty >= 0 && difficulty < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[difficulty] : 0;
 			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
 				return(false);
 			}

@@ -1,0 +1,9 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mirage-candisguise-gate.txt -Seconds 60 -Uncapped -Filter "AUTOTEST   (where|mirage look)|Exception"
+; The ini sets CanDisguise=no on the stock Mirage Tank (MGTK), which keeps DisguiseWhenStill=yes. A player one stands still.
+; Expected: "mirage look none" at frame 200, because UnitClass::Update calls UpdateDisguise only for a CanDisguise type
+; without PermaDisguise (0x73649C). Before the fix DisguiseWhenStill alone gave it a tree.
+10 rules mirage-candisguise-gate.ini
+30 view 60 42
+40 own MGTK 60 42
+200 where MGTK
+210 quit
