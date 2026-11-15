@@ -493,6 +493,7 @@ RulesClass::RulesClass(void) :
 	BuildingDamageSound(VOC_NONE),
 	DiskLaserChargeUp(VOC_NONE),
 	AirstrikeAttackVoice(VOC_NONE),
+	AirstrikeAbortSound(VOC_NONE),
 	SlavesFreeSound(VOC_NONE),
 	SlaveMinerSlaveScan(LEPTON(0x1000)),
 	SlaveMinerShortScan(LEPTON(0x500)),
@@ -1439,6 +1440,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BuildingDamageSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDamageSound", BuildingDamageSound);
 		DiskLaserChargeUp = ini.Get_VocType(AUDIOVISUAL, "DiskLaserChargeUp", DiskLaserChargeUp);
 		AirstrikeAttackVoice = ini.Get_VocType(AUDIOVISUAL, "AirstrikeAttackVoice", AirstrikeAttackVoice);
+		AirstrikeAbortSound = ini.Get_VocType(AUDIOVISUAL, "AirstrikeAbortSound", AirstrikeAbortSound);
 		SlavesFreeSound = ini.Get_VocType(AUDIOVISUAL, "SlavesFreeSound", SlavesFreeSound);
 		CrateMoneySound = ini.Get_VocType(AUDIOVISUAL, "CrateMoneySound", CrateMoneySound);
 		CrateRevealSound = ini.Get_VocType(AUDIOVISUAL, "CrateRevealSound", CrateRevealSound);
@@ -3316,6 +3318,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingDamageSound);
 	stream.Serialize(DiskLaserChargeUp);
 	stream.Serialize(AirstrikeAttackVoice);
+	stream.Serialize(AirstrikeAbortSound);
 	stream.Serialize(SlavesFreeSound);
 	stream.Serialize(SlaveMinerSlaveScan);
 	stream.Serialize(SlaveMinerShortScan);
