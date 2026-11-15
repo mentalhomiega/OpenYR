@@ -2666,19 +2666,24 @@ bool RulesClass::Do_VoxelAnimTypes(CCINIClass const & ini)
 /// of it before. The weapon then reads its own section for its firing behavior.
 /// </summary>
 /// <remarks>Weapon sections are read in one pass, so a weapon nothing else names reaches
-/// that pass only by being declared here.</remarks>
+/// that pass only by being declared here. Both [Weapons] and the Ares list [WeaponTypes]
+/// declare weapons.</remarks>
 /// <returns>bool; Were any weapons declared?</returns>
 bool RulesClass::Do_WeaponTypes(CCINIClass const & ini)
 {
-	static char const * const WEAPONS = "Weapons";
+	static char const * const LISTS[] = {"Weapons", "WeaponTypes"};
 	char buffer[32];
-	int count = ini.Entry_Count(WEAPONS);
-	for (int i = 0; i < count; i++) {
-		if (ini.Get_String(WEAPONS, ini.Get_Entry(WEAPONS, i), "", buffer, sizeof(buffer))) {
-			WeaponTypeClass::Find_Or_Make(buffer);
+	int total = 0;
+	for (char const * const list : LISTS) {
+		int const count = ini.Entry_Count(list);
+		for (int i = 0; i < count; i++) {
+			if (ini.Get_String(list, ini.Get_Entry(list, i), "", buffer, sizeof(buffer))) {
+				WeaponTypeClass::Find_Or_Make(buffer);
+			}
 		}
+		total += count;
 	}
-	return(count > 0);
+	return(total > 0);
 }
 
 
