@@ -1782,6 +1782,10 @@ class RulesClass
 		// Frames between an OpportunityFire object's scans for targets while it moves.
 		int NormalTargetingDelay;
 
+		// Whether a warhead section read again without Verses=, such as a map's override, keeps its earlier Verses.
+		bool IsKeepWarheadVerses;
+		bool IsKeepWarheadVersesSet;
+
 		/*
 		 * The structure type whose towers charge each other before firing, the percent of extra
 		 * damage each supporting tower adds, how many may support one shot, the frames a

@@ -28,7 +28,9 @@ void AutoTest_Set_Stop_After_Steps(void);
 
 // Writes an "AUTOTEST " debug line only in an unattended run. The format and its arguments are not evaluated
 // otherwise, so they may follow pointers that only exist during a test.
-#define AUTOTEST_LOG(...) do { if (AutoTest_Active()) DebugString("AUTOTEST " __VA_ARGS__); } while (0)
+// The detaillog step turns these lines off for a long run that would otherwise reach the log size limit.
+#define AUTOTEST_LOG(...) do { if (AutoTest_Active() && AutoTest_Detail_Logging()) DebugString("AUTOTEST " __VA_ARGS__); } while (0)
+bool AutoTest_Detail_Logging(void);
 
 bool AutoTest_Key_Held(int virtualkey);
 

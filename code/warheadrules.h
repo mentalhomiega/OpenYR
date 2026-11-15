@@ -181,4 +181,12 @@ namespace WarheadRules
 		double const limit = kill_below < min_health ? kill_below : min_health;
 		return(health_ratio <= limit);
 	}
+
+	// Whether a warhead section read again, such as a map's override of it, keeps the Verses it had when the section
+	// has no Verses= of its own. [General] KeepWarheadVerses= decides when set; otherwise rules that declare Ares
+	// armor types keep them, and others reset them to 100% as gamemd does.
+	inline bool Keeps_Warhead_Verses(bool key_set, bool key_value, int declared_armor_types)
+	{
+		return(key_set ? key_value : declared_armor_types > 0);
+	}
 }

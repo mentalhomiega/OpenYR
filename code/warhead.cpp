@@ -46,6 +46,7 @@
 #include "warhead.h"
 #include "ionblast.h"
 
+#include "_rules.h"
 #include "_warhead.h"
 #include "animtype.h"
 #include "ccini.h"
@@ -54,6 +55,7 @@
 #include "numparse.h"
 #include "partsys.h"
 #include "psystype.h"
+#include "rules.h"
 #include "savestream.h"
 #include "stimer.h"
 #include "sun.h"
@@ -398,7 +400,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		Size_Armor_Tables();
 
 		char buffer[128];
-		if (ini.Get_String(Name(), "Verses", "100%,100%,100%,100%,100%,100%,100%,100%,100%,100%,100%", buffer, sizeof(buffer))) {
+		bool const reads_verses = !Rule->IsKeepWarheadVerses || ini.Is_Present(Name(), "Verses");
+		if (reads_verses && ini.Get_String(Name(), "Verses", "100%,100%,100%,100%,100%,100%,100%,100%,100%,100%,100%", buffer, sizeof(buffer))) {
 			char * aval = strtok(buffer, ",");
 			// A list shorter than the armor types leaves the rest unchanged; Yuri's Revenge
 			// crashes on one.

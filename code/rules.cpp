@@ -106,6 +106,7 @@
 #include "vanimtype.h"
 #include "vector.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "bench.hh"
@@ -834,6 +835,8 @@ RulesClass::RulesClass(void) :
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
 	NormalTargetingDelay(27),
+	IsKeepWarheadVerses(false),
+	IsKeepWarheadVersesSet(false),
 	PrismType(NULL),
 	PrismSupportModifier(100),
 	PrismSupportMax(8),
@@ -1900,6 +1903,11 @@ bool RulesClass::General(CCINIClass const & ini)
 		DisabledDisguiseDetectionPercent = ini.Get_IntList(GENERAL, "DisabledDisguiseDetectionPercent", DisabledDisguiseDetectionPercent);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
 		NormalTargetingDelay = ini.Get_Int(GENERAL, "NormalTargetingDelay", NormalTargetingDelay);
+		if (ini.Is_Present(GENERAL, "KeepWarheadVerses")) {
+			IsKeepWarheadVersesSet = true;
+			IsKeepWarheadVerses = ini.Get_Bool(GENERAL, "KeepWarheadVerses", IsKeepWarheadVerses);
+		}
+		IsKeepWarheadVerses = WarheadRules::Keeps_Warhead_Verses(IsKeepWarheadVersesSet, IsKeepWarheadVerses, Armor_Type_Count() - ARMOR_COUNT);
 		PrismType = TGet_Class(ini, GENERAL, "PrismType", PrismType);
 		PrismSupportModifier = (int)(ini.Get_Float(GENERAL, "PrismSupportModifier", PrismSupportModifier / 100.0) * 100.0 + 0.5);
 		PrismSupportMax = ini.Get_Int(GENERAL, "PrismSupportMax", PrismSupportMax);
