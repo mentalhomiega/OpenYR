@@ -1374,6 +1374,9 @@ class RulesClass
 		// VeteranFlashTimer (Ares): how many frames an object that has just become a veteran flashes.
 		int VeteranFlashTimer;
 
+		// IronCurtainFlash (Ares): whether a hit on an Iron Curtained or force-shielded object makes a flash over it.
+		bool IsIronCurtainFlash;
+
 		// Frames per second below which detail-gated animations are skipped (DetailMinFrameRateNormal=).
 		int DetailMinFrameRateNormal;
 

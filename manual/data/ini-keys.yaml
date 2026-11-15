@@ -25169,6 +25169,24 @@ IronCurtainDuration:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+IronCurtainFlash:
+  key: IronCurtainFlash
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsIronCurtainFlash
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 IronCurtainInvokeAnim:
   key: IronCurtainInvokeAnim
   scopes:
