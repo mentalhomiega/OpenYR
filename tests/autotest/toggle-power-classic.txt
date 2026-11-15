@@ -1,0 +1,10 @@
+; The classic sidebar never shows a power button, as in Yuri's Revenge, and without TogglePowerAllowed the Power Mode
+; command does nothing there either. Expected: the sidebarbutton line for power says "listed 0", and `modes` at frame 110
+; writes "power 0".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/toggle-power-classic.txt -Seconds 40 -Country 0 -Settings "[Options]<newline>InterfaceStyle=Classic" -Filter "AUTOTEST modes|sidebarbutton|Exception"
+30 command CenterBase
+40 own GAPOWR 64 36
+50 sidebarbuttons
+100 command TogglePower
+110 modes
+120 quit

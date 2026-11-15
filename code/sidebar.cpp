@@ -164,6 +164,14 @@ ShapeButtonClass SidebarClass::Upgrade;
 ShapeButtonClass SidebarClass::Waypoint;
 ShapeButtonClass SidebarClass::TabButton[COLUMNS];
 
+
+// The modern sidebar shows the power button only when the rules allow power mode (TogglePowerAllowed); Yuri's Revenge has none.
+static bool Shows_Power_Button(void)
+{
+	return(Modern_Interface() && Rule != NULL && Rule->IsTogglePowerAllowed);
+}
+
+
 // The modern panel's tabs lit on the current blink, one bit per tab.
 static unsigned TabFlashMask = 0;
 
@@ -1201,7 +1209,9 @@ void SidebarClass::Draw_It(bool complete)
 		Repair.Draw_Me(true);
 		Upgrade.Draw_Me(true);
 		if (Modern_Interface()) {
-			Power.Draw_Me(true);
+			if (Shows_Power_Button()) {
+				Power.Draw_Me(true);
+			}
 			BeaconButton.Draw_Me(true);
 			OptionsButton.Draw_Me(true);
 		}
@@ -1624,8 +1634,10 @@ bool SidebarClass::Activate(int control)
 			OptionsButton.Zap();
 			Add_A_Button(OptionsButton);
 			if (Modern_Interface()) {
-				Power.Zap();
-				Add_A_Button(Power);
+				if (Shows_Power_Button()) {
+					Power.Zap();
+					Add_A_Button(Power);
+				}
 				BeaconButton.Zap();
 				Add_A_Button(BeaconButton);
 			} else {
@@ -3425,6 +3437,9 @@ void SidebarClass::Reposition_Panel(void)
 
 	int x = layout.Buttons.X;
 	for (ShapeButtonClass * button : {&BeaconButton, &Upgrade, &Power, &Repair}) {
+		if (button == &Power && !Shows_Power_Button()) {
+			continue;
+		}
 		place(*button, x + (HUD_BUTTON_SIZE - button->Width) / 2, middle(layout.Buttons, button->Height));
 		x += HUD_BUTTON_SIZE + HUD_BUTTON_GAP;
 	}
@@ -3502,6 +3517,9 @@ void SidebarClass::Add_Tool_Tips(void)
 
 		if (Modern_Interface()) {
 			for (ShapeButtonClass const * button : {&Power, &BeaconButton, &OptionsButton}) {
+				if (button == &Power && !Shows_Power_Button()) {
+					continue;
+				}
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);

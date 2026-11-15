@@ -9,7 +9,7 @@ when_omitted:
   value: "3"
 ---
 
-A whole number; this key is ours. When a computer house finishes a structure and the [placement search](/systems/ai-base-building/#the-placement-search) finds no cell for it, the structure is abandoned and its cost refunded, and its base node counts one failed search. In a skirmish or multiplayer game, a node whose count reaches this value is removed from the plan, and the house builds the next structure in its plan. `0` keeps the node for as long as the game lasts, which is what Yuri's Revenge does: the house then starts the same structure again after each failure and builds nothing further down its plan. A campaign game never removes the node.
+A whole number; this key is ours. When a computer house finishes a structure and the [placement search](/systems/ai-base-building/#the-placement-search) finds no cell for it, the structure is abandoned and its cost refunded, and its base node counts one failed search. In a skirmish or multiplayer game, a node whose count reaches this value is removed from the plan, and the house builds the next structure in its plan. `0` keeps the node for as long as the game lasts, which is what Yuri's Revenge does: the house then starts the same structure again after each failure and builds nothing further down its plan. A campaign game never removes the node. The default of 3 is a deliberate departure from the original game, which retries the same structure forever.
 
 An upgrade that has no structure to go on is removed after its first failed search when it is the node the house would build next, whatever this value is.
 

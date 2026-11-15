@@ -1,0 +1,15 @@
+; A structure with LightningRod=yes in rules that are not Ares rules does not pull the clouds of a lightning storm: gamemd
+; reads the key, but its storm (LightningStorm::Update, 0x53A6C0) scatters clouds without regard to it. The overlay
+; lightning-rod-stock.ini makes GAPOWR a rod; the player's GAPOWR stands on 66,40 (center 67,41) and the stock storm is
+; aimed at 64,40, so most of its random clouds fall within LightningRodRange=4 cells of the rod. Expected: besides the
+; clouds of the direct strikes over 64,40, the storm cloud lines are spread over the cells around it, with at most a chance
+; one over 67,41 (19 random clouds on 10 cells, one of them 67,41, on 2026-11-15). With rods pulling (Ares rules, see
+; ares-superweapons-structures.txt) every random cloud within 4 cells of the rod formed over 67,41.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/lightning-rod-stock.txt -Seconds 120 -Filter "AUTOTEST storm cloud|AUTOTEST   (own|fire|grant)|Exception"
+10 art lightning-rod-stock.ini
+30 command CenterBase
+35 reveal
+40 own GAPOWR 66 40
+60 grant LightningStormSpecial
+62 fire LightningStormSpecial 64 40
+700 quit

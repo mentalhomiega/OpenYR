@@ -4273,6 +4273,9 @@ class TogglePowerCommandClass : public CommandClass
 		virtual void Execute(void) const {
 			Map.Power_Mode_Control(-1);
 		}
+		virtual bool Is_Listed(void) const {
+			return(Rule != NULL && Rule->IsTogglePowerAllowed);
+		}
 };
 
 

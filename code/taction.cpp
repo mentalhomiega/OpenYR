@@ -44,6 +44,7 @@
 
 #include "taction.h"
 
+#include "armortypes.h"
 #include "_keyboar.h"
 #include "_map.h"
 #include "_rules.h"
@@ -931,8 +932,9 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 
 
 /// <summary>
-/// Does the Firestorm action work on this house? Ares supports them for computer houses only, and
-/// FirestormTriggerHumans=yes extends them to the houses a player controls.
+/// Does the Firestorm action work on this house? Only in Ares rules, which support them for computer houses only,
+/// and FirestormTriggerHumans=yes extends them to the houses a player controls. Yuri's Revenge does nothing for
+/// either action and counts it a success.
 /// </summary>
 static bool Firestorm_Action_Applies(HouseClass const * house)
 {
@@ -948,6 +950,9 @@ static bool Firestorm_Action_Applies(HouseClass const * house)
 /// <returns>bool; Was the action applicable to the house?</returns>
 bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
+	if (!Are_Ares_Rules()) {
+		return(true);
+	}
 	if (!Firestorm_Action_Applies(house)) {
 		return(false);
 	}
@@ -965,6 +970,9 @@ bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass 
 /// <returns>bool; Is the defense up?</returns>
 bool TActionClass::TAction_ACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
+	if (!Are_Ares_Rules()) {
+		return(true);
+	}
 	if (!Firestorm_Action_Applies(house) || house->Power_Fraction() < 1.0) {
 		return(false);
 	}

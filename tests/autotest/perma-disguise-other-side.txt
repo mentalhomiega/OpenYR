@@ -1,0 +1,9 @@
+; A PermaDisguise spy of a house whose side is past the third (Neutral, of the Civilian side) disguises as the third side's
+; ThirdDisguise soldier, as gamemd's TechnoClass::Init (0x6F3F40) gives every side but the first two. Stock rules give SPY
+; PermaDisguise=yes and ThirdDisguise=INIT. Expected: the listhouse lines for Neutral show the SPY followed by "disguised as
+; INIT". When the side keys of Ares were added, sides past the third got no disguise and the line was missing.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/perma-disguise-other-side.txt -Seconds 60 -Filter "AUTOTEST   (listhouse Neutral|houseunit)|Exception"
+30 command CenterBase
+40 houseunit SPY@Neutral 60 40
+60 listhouse Neutral
+70 quit

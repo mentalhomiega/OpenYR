@@ -3122,7 +3122,8 @@ class RulesClass
 		// RepairStopOnInsufficientFunds (Ares): with false, a human player's structure out of money keeps repair on and resumes once paid.
 		bool IsRepairStopOnInsufficientFunds;
 
-		// TogglePowerAllowed (Ares): whether the player can enter power mode. Ares defaults it to no; we keep yes, as before the key was read.
+		// TogglePowerAllowed (Ares): whether the player can enter power mode and sees the power button. No by default, as
+		// Yuri's Revenge has no power mode.
 		bool IsTogglePowerAllowed;
 
 		// EnemyWrench (Ares): whether houses not allied with a structure's owner see its repair wrench.
