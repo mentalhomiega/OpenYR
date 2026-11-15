@@ -3114,4 +3114,7 @@ class RulesClass
 
 		// TogglePowerAllowed (Ares): whether the player can enter power mode. Ares defaults it to no; we keep yes, as before the key was read.
 		bool IsTogglePowerAllowed;
+
+		// EnemyWrench (Ares): whether houses not allied with a structure's owner see its repair wrench.
+		bool IsEnemyWrench;
 };

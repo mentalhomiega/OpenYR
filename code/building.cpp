@@ -1262,14 +1262,14 @@ void BuildingClass::Draw_Voxel_Barrel_With_Anim(Point2D const & xy, Rect & rect,
 /// Draws the repair wrench over a structure that is being repaired.
 /// TechnoClass::DrawExtras (0x6F5190) draws it, with the decorations that follow the body,
 /// at the structure's render coordinate, the north corner of its first cell, with no offset.
-/// The wrench is hidden only while that cell is under shroud. It blinks through its seven
+/// The wrench is hidden while that cell is under shroud and from the houses EnemyWrench=no hides it from. It blinks through its seven
 /// frames over a quarter of the build's normalised 14 tick delay. gamemd loads POWEROFF.SHP
 /// but never draws it, so a structure that is switched off shows nothing.
 /// </summary>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 {
-	if (!IsRepairing || Map.Is_Shrouded(PositionCoord)) {
+	if (!Is_Wrench_Shown_To(PlayerPtr) || Map.Is_Shrouded(PositionCoord)) {
 		return;
 	}
 
@@ -1278,6 +1278,19 @@ void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 	int frame = Options.Normalize_Delay(14) / 4;
 	if (frame < 2) frame = 2;
 	Draw_Shape(*LogicalSurface, *MouseDrawer, (ShapeSet const *)BuildingTypeClass::WrenchShapes, 6 * (Frame % frame) / (frame - 1), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
+}
+
+
+/// <summary>
+/// Returns whether the house sees this structure's repair wrench, shroud aside. With [General] EnemyWrench=no only
+/// the owner, its allies and observers see it.
+/// </summary>
+bool BuildingClass::Is_Wrench_Shown_To(HouseClass const * viewer) const
+{
+	if (!IsRepairing) {
+		return(false);
+	}
+	return(Rule->IsEnemyWrench || viewer == NULL || viewer->IsObserver || viewer->Is_Ally(House));
 }
 
 

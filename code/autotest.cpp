@@ -7523,6 +7523,25 @@ static void Cameopcx_Step(StepType const & step)
 }
 
 
+// wrench <TypeID> <House>: each structure of the type, whoever owns it, with whether it is repairing and whether the house
+// sees its repair wrench, shroud aside.
+static void Wrench_Step(StepType const & step)
+{
+	HouseClass const * viewer = Named_House(Word(step.Words, 3));
+	if (viewer == NULL) {
+		DebugString("AUTOTEST   wrench %s: no such house\n", Word(step.Words, 3).c_str());
+		return;
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (!building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+			DebugString("AUTOTEST   wrench %s at %d,%d owner %s repairing %d shown to %s %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+				building->House->Class->Name(), (int)building->IsRepairing, viewer->Class->Name(), (int)building->Is_Wrench_Shown_To(viewer));
+		}
+	}
+}
+
+
 static void Exp_Step(StepType const & step)
 {
 	for (int index = 0; index < Technos.Count(); index++) {
@@ -7689,6 +7708,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
 		{"aistrike", Aistrike_Step},
 		{"cameopcx", Cameopcx_Step},
+		{"wrench", Wrench_Step},
 		{"exp", Exp_Step},
 		{"fall", Fall_Step},
 		{"flash", Flash_Step},
