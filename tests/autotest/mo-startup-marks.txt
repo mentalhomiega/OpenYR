@@ -1,0 +1,9 @@
+; Needs Mental Omega in game\Mods\MentalOmega. The start-up marks and the menu battle's type checksums with the mod, on a
+; fixed map of the mod, as startup-marks.txt checks them with stock data. Expected: the "STARTUP order:" line, the typesread
+; checksums (Rules, BulletTypes and All left out, as they differ between two runs), the string table counts, the scores
+; found, and no listed map whose file is missing.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/mo-startup-marks.txt -Mods MentalOmega -Menus -Width 800 -Height 600 -Seconds 120 -Settings "[IniCheck]`nKeepInTests=yes`n[MenuBattle]`nInTests=yes`nMap=i_depthcharge.map" -Filter "STARTUP order|AUTOTEST typesread 1 (Sync|HouseTypes|Sides|SuperWeaponTypes|AnimTypes|BuildingTypes|AircraftTypes|UnitTypes|InfantryTypes|Weapons|Warheads|TerrainTypes|SmudgeTypes|OverlayTypes|ParticleTypes|ParticleSystemTypes|VoxelAnimTypes|Tiberiums) |UISCRIPT waitfor|String table|Music: [0-9]+ of|is listed but|Exception"
+1 typesread
+ui waitfor stamp
+ui wait 300
+ui quit
