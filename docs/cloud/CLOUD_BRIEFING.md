@@ -17,7 +17,7 @@ Many recent `modern` commits port gamemd behaviour that differs from what OpenTS
 
 - `AGENTS.md`, `code/AGENTS.md` and `manual/AGENTS.md`: the project's rules for code, comments, prose and the manual. Follow them.
 - `CONTRIBUTING.md`, `docs/STYLE.md` and `docs/BUILDING.md`.
-- `CLOUD_JOBS.md`: the job list. Each session does the one job it was given.
+- `docs/cloud/CLOUD_JOBS.md`: the job list. Each session does the one job it was given.
 
 ## What a cloud session cannot do
 
@@ -55,8 +55,8 @@ Our local session fetches every new `cloud/*` branch, builds it on Windows, runs
 
 ## Session log
 
-- Before starting, read the logs of earlier sessions on the same job: `git branch -r --list 'origin/cloud/*'`, then `git show <branch>:cloud-log/` to list a branch's logs and `git show <branch>:cloud-log/<file>` to read one. Carry forward anything they left open for your job.
-- Before finishing, add `cloud-log/YYYY-MM-DD-<job>.md` (today's UTC date) to your branch in its own commit: the report below, what you started and did not finish, ideas for the next session, and questions for MentalHomiega.
+- Before starting, read the logs of earlier sessions on the same job: `git branch -r --list 'origin/cloud/*'`, then `git show <branch>:docs/cloud/log/` to list a branch's logs and `git show <branch>:docs/cloud/log/<file>` to read one. Carry forward anything they left open for your job.
+- Before finishing, add `docs/cloud/log/YYYY-MM-DD-<job>.md` (today's UTC date) to your branch in its own commit: the report below, what you started and did not finish, ideas for the next session, and questions for MentalHomiega.
 
 ## What to report back
 
