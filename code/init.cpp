@@ -2455,11 +2455,13 @@ static bool Load_String_Table(char const * filename)
 	}
 	name += ".CSF";
 
+	// Read whole, as the table's reader asks for a few bytes at a time.
 	CCFileClass file(name.c_str());
-	if (!file.Is_Available()) {
+	std::vector<unsigned char> bytes;
+	if (!file.Is_Available() || !Read_File_Bytes(file, bytes)) {
 		return(false);
 	}
-	FileStraw straw(file);
+	BufferStraw straw(bytes.data(), (int)bytes.size());
 	if (!StringTable.Load(straw)) {
 		return(false);
 	}
@@ -2484,7 +2486,9 @@ static void Load_Extra_String_Tables(void)
 		if (!file.Is_Available()) {
 			continue;
 		}
-		FileStraw straw(file);
+		std::vector<unsigned char> bytes;
+		Read_File_Bytes(file, bytes);
+		BufferStraw straw(bytes.data(), (int)bytes.size());
 		CSFClass table;
 		if (!table.Load(straw)) {
 			DebugString("String table %s: not a string table, skipped\n", name);
