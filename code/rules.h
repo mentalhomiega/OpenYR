@@ -403,6 +403,9 @@ class RulesClass
 		// Played when an airstrike is called in.
 		VocType AirstrikeAttackVoice;
 
+		// Played to the player when the designator of an airstrike under way is lost and the planes turn home.
+		VocType AirstrikeAbortSound;
+
 		// Played when a destroyed slave miner's slaves are freed.
 		VocType SlavesFreeSound;
 

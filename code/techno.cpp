@@ -3689,6 +3689,51 @@ void TechnoClass::Retire_Airstrike_Planes(void)
 
 
 /// <summary>
+/// Ends the airstrike under way and sends its planes home (AirstrikeClass::ClearTarget, 0x41DB40).
+/// If any plane is out of ammunition the whole strike is, then each plane gets the retreat mission
+/// with no target or destination, and the designation on the structure lifts. A designator that is
+/// lost while the strike is out also plays AirstrikeAbortSound to its owner (AirstrikeClass::
+/// InvalidatePointer, 0x41D540); losing the target structure only recalls the planes.
+/// </summary>
+/// <param name="owner_lost">Is the designator itself leaving the game?</param>
+void TechnoClass::Abort_Airstrike(bool owner_lost)
+{
+	if (AirstrikePlanes.empty()) return;
+
+	if (owner_lost && House != NULL && House->Is_Player_Control() && Rule->AirstrikeAbortSound != VOC_NONE) {
+		Sound_Effect(Rule->AirstrikeAbortSound);
+	}
+
+	bool const out_of_ammo = std::any_of(AirstrikePlanes.begin(), AirstrikePlanes.end(), [](AircraftClass const * plane) { return plane->Ammo == 0; });
+	std::vector<AircraftClass *> planes;
+	planes.swap(AirstrikePlanes);
+	for (AircraftClass * plane : planes) {
+		if (out_of_ammo) {
+			plane->Ammo = 0;
+		}
+		plane->Assign_Mission(MISSION_RETREAT);
+		plane->Assign_Target(NULL);
+		plane->Assign_Destination(NULL, true);
+	}
+	AUTOTEST_LOG("airstrike abort %s planes %d owner lost %d sound %d\n", TClass->Name(), (int)planes.size(), owner_lost ? 1 : 0, owner_lost ? (int)Rule->AirstrikeAbortSound : -1);
+	Clear_Airstrike_Designation();
+	Start_Airstrike_Recharge();
+}
+
+
+/// <summary>
+/// A designator that leaves the game abandons its airstrike (AirstrikeClass::InvalidatePointer, 0x41D540).
+/// </summary>
+void TechnoClass::Detach_All(bool all)
+{
+	if (all) {
+		Abort_Airstrike(true);
+	}
+	BASECLASS::Detach_All(all);
+}
+
+
+/// <summary>
 /// Sets the frame the next airstrike can be called: AirstrikeRechargeTime frames from now, or the
 /// elite time for an elite object. Called when the strike's last plane has left.
 /// </summary>
@@ -9567,6 +9612,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 			Start_Airstrike_Recharge();
 		}
 		if (AirstrikeMarkedTarget == target) {
+			if (all) {
+				Abort_Airstrike(false);
+			}
 			Clear_Airstrike_Designation();
 		}
 		if (AirstrikeMarkedBy == target) {
