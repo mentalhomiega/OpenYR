@@ -2,7 +2,7 @@
 ; blue) and a GI (radiation beam in magenta) each fire at an enemy building. The window shots show the strands and the beam in those
 ; colours instead of the palette colours; the bolt wanders around its line, so check a few frames.
 ; Run from the repository root, with -ShotDir naming the folder the shots go to:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-bolt-beam.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-draw-keys" -ShotDir <folder> -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST strike|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-bolt-beam.txt -Mods tests/autotest/ares-draw-keys -ShotDir <folder> -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST strike|Exception"
 30 command CenterBase
 100 own TTNK 60 36
 101 spawn GAPOWR 66 36

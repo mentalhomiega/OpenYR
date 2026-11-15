@@ -2,7 +2,7 @@
 ; animlog writes its walk counter: over the 40 frames between the two logs the counter rises by 40. With the ares-small-e-airrate-control mod
 ; (WalkRate=5 alone) it rises by 8.
 ; Run from the repository root, with the first mod and then the control mod:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-airrate.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 90 -Filter "AUTOTEST   anim|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-airrate.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   anim|Exception"
 30 command CenterBase
 60 grant SpyPlaneSpecial
 80 fire SpyPlaneSpecial 60 60

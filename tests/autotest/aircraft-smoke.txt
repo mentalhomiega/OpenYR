@@ -2,7 +2,7 @@
 ; smoke on every frame while it is badly damaged or crashing.
 ; Expected: with no airfield to land on, the Harrier takes off and crashes. While it crashes, stock rules show SGRYSMK1 animations
 ; (liveanims SGRYSMK1 rises to about 31 and falls back to 0), and with -Mods PARACH rises to 39 and SGRYSMK1 stays 0.
-; Run (with -Mods tests/autotest/type-keys-c-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/aircraft-smoke.txt -Mods <absolute path of tests/autotest/type-keys-c-rules> -Seconds 120 -Filter "AUTOTEST   liveanims|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/aircraft-smoke.txt -Mods tests/autotest/type-keys-c-rules -Seconds 120 -Filter "AUTOTEST   liveanims|Exception"
 30 command CenterBase
 40 own ORCA 64 24
 50 move ORCA 70 28

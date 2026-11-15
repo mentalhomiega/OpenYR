@@ -4,7 +4,7 @@
 ; ice-behavior 0 and imageless 0 at frames 2 and 600, and the counts of tiles 434, 29, 30, 31 and 32 are the same at both
 ; frames. Without the guard the ice growth pass at the first frame rewrites several thousand ramp and rough ground cells to tile
 ; 434, and the ramps left standing show black wedges where their neighbors were.
-; Run (with -Mods MentalOmega): scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/mo-terrain-ice-sets.txt -Mods MentalOmega -Map c_battlecity.map -AIPlayers 0 -Seconds 90
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/mo-terrain-ice-sets.txt -Mods MentalOmega -Map c_battlecity.map -AIPlayers 0 -Seconds 90
 2 tilecheck 434 29 30 31 32
 600 tilecheck 434 29 30 31 32
 602 quit

@@ -2,7 +2,8 @@
 ; logs where each one is sent, the mission it is given and how many numbers the random generator handed out.
 ; Expected: an unforced scatter with no threat draws once and sends only a Fraidycat soldier; a forced one sends any soldier.
 ; A forced and insistent scatter pulls a dug-in Desolator out of its hole (the second DESO line); a plain forced one does not
-; when a human owns it (the third). Run: scripts/run_autotest.ps1 -Script tests/autotest/infantry-scatter.txt -Seconds 60 -Filter "AUTOTEST +(scatter|where|soldier)"
+; when a human owns it (the third).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script tests/autotest/infantry-scatter.txt -Seconds 60 -Filter "AUTOTEST +(scatter|where|soldier)"
 1 view 62 62
 2 reveal
 50 spawn COW 60 62

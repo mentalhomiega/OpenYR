@@ -485,7 +485,7 @@ Warhead=NUKE
 Damage=600
 ```
 
-A one-time missile needs no silo. It enters from the map edge nearest the target. It is built from the hard-coded weapon `MultiLauncher` or `ChemLauncher`, according to the behavior, and deals that weapon's `Damage=`. It is fired with a range of `100000` leptons, longer than any map is wide.
+A one-time missile needs no silo, and neither does a repeating `Type=MultiMissile` weapon with [`Nuke.SiloLaunch=no`](/keys/nuke.silolaunch/#scope-superweapontype). Its projectile appears 20000 leptons above the target and falls straight down at 100 leptons a frame, under the `PSIWARN` animation. A `Type=MultiMissile` weapon drops the weapon [`Nuke.Payload=`](/keys/nuke.payload/#scope-superweapontype) names, or `NukePayload` without that key. A `Type=ChemMissile` weapon drops the weapon `ChemLauncher`. The weapon's `Damage=` and warhead apply unless [`SW.Damage=`](/keys/sw.damage/#scope-superweapontype) or [`SW.Warhead=`](/keys/sw.warhead/#scope-superweapontype) replace them. A weapon with no `Projectile=` drops nothing. The [Nuke strike](/mapping/actions/taction-multi-missile/) trigger action drops `NukePayload` the same way without a superweapon, and [Chem-missile strike](/mapping/actions/taction-chem-missile/) flies `ChemLauncher` in from the map edge nearest its waypoint.
 
 ### Hunter seeker
 

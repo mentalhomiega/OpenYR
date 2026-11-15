@@ -3,8 +3,7 @@
 ; greatest threat in range or no target, and then goes back to Guard (EnterIdleMode) when it has none.
 ; The GGI is ordered onto a structure 22 cells off, out of reach: it is meant to drop the order and stand guard.
 ; The E1 (a GI, which also digs in) is ordered onto a structure 4 cells off, in reach: it keeps the order and fires.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Script src-agent27/tests/autotest/infantry-dugin-attack.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST   soldier|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Script src-agent27/tests/autotest/infantry-dugin-attack.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST   soldier|Exception"
 ; Expected: at frame 200 the GGI and the E1 are dug in on Guard. At frame 260 the GGI is on Guard with no target; the E1 is on Attack
 ; with a target. At frame 400 the far structure is untouched and the near one is damaged or gone.
 30 own GGI 54 40

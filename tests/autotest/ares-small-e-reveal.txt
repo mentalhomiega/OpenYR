@@ -4,7 +4,7 @@
 ; carries the power figures "Power = 500" and "Drain = 0" over the building and the computer house's money below them, the Soviet plant
 ; (reveal-b) carries no text.
 ; Run from the repository root; the screenshots go to the user folder's Screenshots folder:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-reveal.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 120 -Filter "AUTOTEST   (spy|spied)|AUTOTEST spy|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-reveal.txt -Mods tests/autotest/ares-small-e-keys -Seconds 120 -Filter "AUTOTEST   (spy|spied)|AUTOTEST spy|Exception"
 30 command CenterBase
 35 reveal
 40 enemy GAPOWR 76 24

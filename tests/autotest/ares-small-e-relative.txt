@@ -3,8 +3,7 @@
 ;   MTNK (300 strength): 150 after one hit.
 ;   E1 (125 strength): 63 after one hit (half of 125, rounded down), then 32 after a second hit (half of 63, rounded down).
 ;   GAPOWR (750 strength): unchanged, 750.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-relative.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 90 -Filter "AUTOTEST   (hit|where)|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-relative.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   (hit|where)|Exception"
 30 command CenterBase
 35 reveal
 40 spawn MTNK 62 30

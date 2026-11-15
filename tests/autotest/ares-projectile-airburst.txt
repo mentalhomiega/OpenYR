@@ -3,8 +3,7 @@
 ;   GI (AirburstAround: shell scattered 3 cells, AirburstSpread=0.5, AroundTarget=yes): the "around" cell is the cell aimed at
 ;   and the "over" cell is where the shell burst, 3 cells off; 1 cell.
 ;   Conscript (AirburstNoAround: the same with AroundTarget=no): the "around" cell is the cell the shell burst over.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-airburst.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-keys,E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-units-airburst" -Seconds 60 -Filter "AUTOTEST airburst|AUTOTEST split|BombletP|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-airburst.txt -Mods tests/autotest/ares-projectile-keys,tests/autotest/ares-projectile-units-airburst -Seconds 60 -Filter "AUTOTEST airburst|AUTOTEST split|BombletP|Exception"
 30 command CenterBase
 100 own TTNK 60 36
 101 spawn GAPOWR 66 36

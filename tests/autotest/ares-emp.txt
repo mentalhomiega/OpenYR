@@ -7,8 +7,7 @@
 ;   EmpHealCap0 (duration -5, cap 0): sets the counter to zero.
 ; The Rhino has EMP.Modifier=50% and EMP.Threshold=40: EmpSet gives it a stun of 50, above 40, and it is destroyed.
 ; EmpNoVerses (0% Verses) leaves the Grizzly's counter alone. EmpPulse (EMEffect=yes with EMP.Duration) stuns only the one it hits.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-emp.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-weapon-keys" -Seconds 60 -Filter "AUTOTEST   hit|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-emp.txt -Mods tests/autotest/ares-weapon-keys -Seconds 60 -Filter "AUTOTEST   hit|Exception"
 30 command CenterBase
 100 own E1 56 36
 101 spawn MTNK 64 36

@@ -14,8 +14,7 @@
 ;   the E1 at strength 124 of 125. TestGeneC leaves both with one point of damage.
 ;   TestRodA lowers the GAPOWR on 66,40 by half as much per bolt as TestRodB lowers the one on 66,56 (LightningRod.Modifier=0.5 and
 ;   Lightning.IgnoreLightningRod). TestRodCloud forms the clouds over 67,41 (the rod's center), except where the cloud is more than LightningRodRange=4 cells from it; TestRodIgnore forms them around 64,40.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons-structures.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\ares-superweapons-structures" -Seconds 500 -Filter "AUTOTEST   (where GAPOWR|where NAPOWR|where GACNST|where E1|where E2|where ENGINEER|where SNIPE|swaim|super house)|AUTOTEST (storm cloud|own|spawn)|SUPER chronoshift|SUPER Test|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons-structures.txt -Mods tests/autotest/ares-superweapons-structures -Seconds 500 -Filter "AUTOTEST   (where GAPOWR|where NAPOWR|where GACNST|where E1|where E2|where ENGINEER|where SNIPE|swaim|super house)|AUTOTEST (storm cloud|own|spawn)|SUPER chronoshift|SUPER Test|Exception"
 30 command CenterBase
 40 own GAPOWR 56 40
 41 own GAPOWR 56 48

@@ -4,8 +4,7 @@
 ;   AUTOTEST radar frame 135 is now off, within a second of frame 120 (the jammer is within 8 cells of the radar);
 ;   AUTOTEST radar frame 315 is now on, within a second of frame 300 (the jammer is gone).
 ; Without -Mods the radar stays on all through.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-radarjam.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 90 -Filter "AUTOTEST radar|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-radarjam.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST radar|Exception"
 30 command CenterBase
 35 reveal
 40 own NAPOWR 60 30

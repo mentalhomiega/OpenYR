@@ -16,7 +16,7 @@ The section's other keys set the rest: its delay, cameo, cursor and required [`A
 
 - A `Type=EMPulse` weapon takes its cursor from its behavior, as [`Action=`](/keys/action/#scope-superweapontype) explains.
 - A repeating `MultiMissile` or `ChemMissile` weapon launches from its silo the `WeaponType=` of the section at a fixed position in `[SuperWeaponTypes]`, as [the declaration warning](/systems/superweapons/#declaring-a-superweapon) explains.
-- A one-time `MultiMissile` or `ChemMissile` weapon fires the hard-coded weapon `MultiLauncher` or `ChemLauncher` and ignores its section's `WeaponType=`.
+- A one-time `MultiMissile` weapon drops the weapon [`Nuke.Payload=`](/keys/nuke.payload/#scope-superweapontype) names, or `NukePayload` without that key, and a one-time `ChemMissile` weapon drops the weapon `ChemLauncher`. Neither reads its section's `WeaponType=`.
 
 An unrecognized name is ignored, and the section keeps the behavior it already had. A section that has never named a valid behavior has none: it charges, shows a cameo and can be fired, but firing it has no effect.
 

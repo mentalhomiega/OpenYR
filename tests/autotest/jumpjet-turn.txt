@@ -6,7 +6,7 @@
 ; While it flies east with the target to the north (tardir 0), the shape numbers are 322-326 (east-facing) with JumpJetTurn on and 334-338 (north-facing)
 ; with it off. Both modes shoot while it hovers. Screenshots are taken with -RenderFrameRate 30.
 ; Run with the mod for each setting:
-;   scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/jumpjet-turn.txt -Mods src-agent22/tests/autotest/jumpjet-turn-rules-on -RenderFrameRate 30 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   infstate|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/jumpjet-turn.txt -Mods src-agent22/tests/autotest/jumpjet-turn-rules-on -RenderFrameRate 30 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   infstate|Exception"
 ;   (and jumpjet-turn-rules-off)
 5 view 66 66
 6 reveal

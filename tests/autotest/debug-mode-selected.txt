@@ -1,6 +1,6 @@
 ; Heal, promote and destroy selected, with two E1 and one E2 the player owns (frames 40 to 200). Run from the
 ; repository root with the setting on:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-selected.txt -Seconds 150 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST|Debug cheat|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-selected.txt -Seconds 150 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST|Debug cheat|Exception"
 ; Run it again without -Settings: the cheats do nothing, so the strengths stay at 40 percent, every rank stays 0,
 ; and the E2 is killed at frame 165 instead of surviving it.
 ; Expected with the setting on: the two E1 strengths fall to about 40 percent at frame 50 and return to the

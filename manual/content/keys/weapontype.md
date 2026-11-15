@@ -9,7 +9,7 @@ when_omitted:
 
 A missile silo launching a repeating `Type=MultiMissile` or `Type=ChemMissile` superweapon takes the missile's projectile, warhead and maximum speed from the WeaponType this key names, in the section the caution below identifies. It ignores that WeaponType's `Damage=` and gives the missile [a fixed strength of 200](/systems/superweapons/#multi-missile-and-chem-missile).
 
-No other use of a superweapon reads this key. A one-time missile, granted by a trigger action or a crate, is built from the hard-coded weapons `MultiLauncher` and `ChemLauncher` instead.
+No other use of a superweapon reads this key. A one-time missile, granted by a crate or by [Add 1-time special weapon](/mapping/actions/taction-1-special/), is built from the weapon `NukePayload` or `ChemLauncher` instead, according to its behavior. The [Nuke strike](/mapping/actions/taction-multi-missile/) and [Chem-missile strike](/mapping/actions/taction-chem-missile/) trigger actions read the same two weapons.
 
 :::caution[The silo reads this key by list position]
 A silo does not read the `WeaponType=` of the section that ordered the launch. It reads the section at a fixed position in `[SuperWeaponTypes]`: the first entry for every `Type=MultiMissile` launch and the sixth for every `Type=ChemMissile` launch. The shipped list puts its multi missile and chem missile sections at those positions.

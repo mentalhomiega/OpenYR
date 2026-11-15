@@ -6,7 +6,7 @@
 ; announcement per several minutes, so the Conscript and Guardian GI deaths are in eva-keys-lost-none.txt and eva-keys-lost-stock.txt,
 ; which expect no line and EVA_UnitLost. The captured power plant prints "TEST: the power plant was captured" and speaks
 ; EVA_TechBuildingCaptured; losing it prints "TEST: the power plant was lost" and speaks EVA_TechBuildingLost (the default line).
-; Run (with -Mods tests/autotest/eva-keys-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/eva-keys.txt -Mods <absolute path of tests/autotest/eva-keys-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Speech|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/eva-keys.txt -Mods tests/autotest/eva-keys-rules -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Speech|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 66 24

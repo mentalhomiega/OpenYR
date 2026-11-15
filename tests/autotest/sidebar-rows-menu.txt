@@ -3,7 +3,7 @@
 ; The ui shot lines write .tga files to the game's Screenshots folder. The runner copies only .png files, so
 ; convert the pictures after each run and name them by screen size, since the shot names do not carry it.
 ; Run from the repository root, once at 800 x 600 and once at 1920 x 1080:
-;   scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/sidebar-rows-menu.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 60
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/sidebar-rows-menu.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 60
 ui waitfor backdrop
 ui wait 2000
 ui press Options

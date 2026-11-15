@@ -1,7 +1,6 @@
 ; The multiplayer map picker of the skirmish lobby, which the CnCNet room shares. Opens it, filters by search and by
 ; player count, orders by players, walks the list from the keyboard and picks a map with Enter. Check the shots.
-; Run from the workspace root, in PowerShell:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/map-picker.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 120 -Filter "UISCRIPT"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/map-picker.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 120 -Filter "UISCRIPT"
 ui waitfor backdrop
 ui wait 2000
 ui press Single Player

@@ -1,5 +1,5 @@
 ; Debug cheats in a skirmish. Run from the repository root with the setting on, which -Settings adds to RA2MD.INI:
-;   scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-cheats.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 150 -Filter "AUTOTEST|Debug cheat|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-cheats.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 150 -Filter "AUTOTEST|Debug cheat|Exception"
 ; Run it again without -Settings: every cheat then does nothing (credits stay 10000, GAWEAP stays can 0, the cells stay
 ; unmapped, and the power plant is not completed by frame 300).
 ; Expected with the setting on: dump credits 10000 before the money cheat and 100000 after; canbuild GAWEAP can 0 before the

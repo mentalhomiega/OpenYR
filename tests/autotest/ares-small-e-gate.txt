@@ -1,8 +1,7 @@
 ; GateUpSound and GateDownSound with the ares-small-e-keys mod, which gives the Allied gate (GAGATE_A) the sounds ConscriptFear (opening)
 ; and ConscriptDie (closing). A Conscript walks through the gate. Expected sound log lines at the gate: Sound: ConscriptFear at 64,30 when it
 ; opens, then Sound: ConscriptDie at 64,30 when it closes again. Without -Mods both lines read Sound: Dummy, the stock gate sounds.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-gate.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 200 -Filter "Sound: [A-Za-z]* at 64,30|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-gate.txt -Mods tests/autotest/ares-small-e-keys -Seconds 200 -Filter "Sound: [A-Za-z]* at 64,30|Exception"
 30 command CenterBase
 35 reveal
 40 own GAGATE_A 64 30

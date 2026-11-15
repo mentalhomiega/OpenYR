@@ -4,7 +4,7 @@
 ; Expected: the Grizzly's scans (threatscan 0 Normal, 2 Area, 4 Air, 5 Air|Range, 6 Air|Area) pick nothing while no aircraft
 ; flies, so the infantry and the IFV are never a target, and the Area, Air|Range and Air|Area scans at frames 761 to 763 pick the Kirov. The Normal scan at frame 760 finds nothing in the run that wrote this header.
 ; The where lines show the Grizzly's own target: the infantry or IFV on the baseline build, none on the fixed one before the Kirov flies, and the Kirov after.
-; Run (with -Mods tests/autotest/aa-vehicle-rules): scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-vehicle-ignore.txt -Mods src-agent6/tests/autotest/aa-vehicle-rules -Seconds 150
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-vehicle-ignore.txt -Mods src-agent6/tests/autotest/aa-vehicle-rules -Seconds 150
 30 command CenterBase
 35 reveal
 40 spawn MTNK 60 22

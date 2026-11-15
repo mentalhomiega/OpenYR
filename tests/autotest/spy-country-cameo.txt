@@ -6,8 +6,7 @@
 ; of the Yuri Clone it builds: pips at 600 read allied 0, and pips after spyon read allied 1. gamemd keys the spy bit
 ; (DisplayProductionTo) by the country index (BuildingClass::DrawInfoTipAndSpiedSelection, 0x43E7B0, tests
 ; 1 << CurrentPlayer->Type->ArrayIndex2), so every house of the spy's country shares it.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/spy-country-cameo.txt -AIPlayers 2 -AICountries 0,9 -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/spy-country-cameo.txt -AIPlayers 2 -AICountries 0,9 -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
 ; The window shots are TGA files in the user folder's Screenshots folder.
 10 command CenterBase
 20 command DebugInfiniteMoney

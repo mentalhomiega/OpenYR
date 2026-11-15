@@ -6,8 +6,7 @@
 ; frame 151 is loaded at frame 200 and the state hash is logged before and after, so a game that continues
 ; from the load shows the same hash at frame 400 on every run. The run passes when the log has
 ; "LOADING GAME [QUICKSAVE_SKIRMISH.SAV] - Complete", the hash lines and "AUTOTEST quit", and no "SWIZZLE" line.
-; Run from the workspace root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent23 -Script src-agent23/tests/autotest/skirmish-save-load.txt -AIPlayers 1 -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|SAVING GAME|LOADING GAME|SWIZZLE|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent23 -Script src-agent23/tests/autotest/skirmish-save-load.txt -AIPlayers 1 -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|SAVING GAME|LOADING GAME|SWIZZLE|Exception"
 10 command CenterBase
 30 own GAPILE 56 34
 100 rally GAPILE 0 0

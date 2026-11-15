@@ -4,7 +4,7 @@
 ; reaches its last stage quickly, and gives the target a very large strength.
 ; Expected: with the key the stage climbs to 2 and falls back to 0 over and over while the target lives (stage values 2,0,2,0 and
 ; 1,0 in the lines). Without the key, the same mod with Gattling.Cycle removed, the stage stays at 2 once reached.
-; Run (with -Mods tests/autotest/gattling-cycle-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/gattling-cycle.txt -Mods <absolute path of tests/autotest/gattling-cycle-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   gattling|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/gattling-cycle.txt -Mods tests/autotest/gattling-cycle-rules -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   gattling|Exception"
 
 
 60 view 62 62

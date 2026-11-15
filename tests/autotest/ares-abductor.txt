@@ -5,8 +5,7 @@
 ;   HTNK (AbductGunOwner, Abductor.ChangeOwner=yes): "abducted E1 into HTNK" with the player's house as the owner.
 ;   HTK (AbductGunHurt, Abductor.AbductBelowPercent=50%): the first shot hurts the E1 (125 strength to 75, above 50%), and the
 ;   later shot that finds it at 50% or below abducts it.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-abductor.txt -Mods src-agent9/tests/autotest/ares-weapon-keys -Seconds 90 -Filter "AUTOTEST   (abduct|strike|where|listhouse)|AUTOTEST abducted|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-abductor.txt -Mods src-agent9/tests/autotest/ares-weapon-keys -Seconds 90 -Filter "AUTOTEST   (abduct|strike|where|listhouse)|AUTOTEST abducted|Exception"
 30 command CenterBase
 100 own MTNK 60 36
 101 spawn E1 64 36

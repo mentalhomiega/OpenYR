@@ -4,8 +4,7 @@
 ; otherwise keeps the attack mission.
 ; Stock soldiers with Infiltrate=yes are ENGINEER, SPY, TANY, GHOST and PTROOP. E1 and E2 have Occupier=yes. GAPOWR takes C4, CAMISC01 does not,
 ; and CAHSE02 is a neutral house a soldier may garrison.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-attack-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST strike|AUTOTEST settarget|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-attack-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST strike|AUTOTEST settarget|Exception"
 ; Expected at frame 150 (mission): the player's ENGINEER, SPY, E1 and TANY (on CAMISC01) are on Attack, and GHOST (on GAPOWR) is on Sabotage.
 ; The computer's ENGINEER, SPY and TANY (on CAMISC01) are on Capture, its GHOST (on GAPOWR) on Sabotage, its E2 (on CAHSE02) on Capture,
 ; and its E1 (on GAPOWR, which it cannot garrison) on Attack.

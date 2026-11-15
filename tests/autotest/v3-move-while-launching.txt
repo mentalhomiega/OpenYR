@@ -4,7 +4,7 @@
 ; V3 does not move while SpawnManagerClass::CountLaunchingSpawns (gamemd 0x6B7D80) counts the rocket, so it stays at 100,80
 ; facing west until the rocket has left its pad. A before run uses a copy of this script with "holdmove 0".
 ; The "spawns" lines show the V3's cell, body facing and moving flag, and the spawn cycle's nodes at each step.
-; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/v3-move-while-launching.txt -Map XMP08T2.MAP -Seconds 120
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/v3-move-while-launching.txt -Map XMP08T2.MAP -Seconds 120
 5 holdmove 1
 10 command CenterBase
 30 reveal

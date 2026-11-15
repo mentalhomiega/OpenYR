@@ -2,7 +2,7 @@
 ; The Grizzly (300 strength) is hurt to half and told to deploy.
 ; Expected: the log shows "Convert: MTNK becomes HTNK", count MTNK falls from 1 to 0 and count HTNK rises from 0 to 1, and the new
 ; Rhino has half of its own 400 strength (strength 200). Without -Mods the Grizzly cannot deploy and stays a Grizzly.
-; Run (with -Mods tests/autotest/convert-deploy-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/convert-deploy.txt -Mods <absolute path of tests/autotest/convert-deploy-rules> -Seconds 120 -Filter "AUTOTEST   (count|where)|Convert:|Deploy:|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/convert-deploy.txt -Mods tests/autotest/convert-deploy-rules -Seconds 120 -Filter "AUTOTEST   (count|where)|Convert:|Deploy:|Exception"
 30 command CenterBase
 35 reveal
 40 own MTNK 66 24

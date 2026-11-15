@@ -3,8 +3,7 @@
 ; (the same types) about the player's GAPOWR at 60,52, E2 at 63,52 and Grizzly at 63,55. The gamemd conditions are Engineer=yes
 ; (not Infiltrate=yes) for the computer's engineer that heads for a capturable structure, and IsArmed for the unarmed branch.
 ; The stock ENGINEER carries the DefuseKit weapon and SPY the MakeupKit, so both count as armed.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-greatest-threat.txt -Seconds 60 -Filter "AUTOTEST   threat|AUTOTEST   own|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-greatest-threat.txt -Seconds 60 -Filter "AUTOTEST   threat|AUTOTEST   own|Exception"
 ; Expected, the player's soldiers: E1 and SPY pick the computer's E2, TANY, GHOST, PTROOP, CLEG and DOG pick a computer soldier, and ENGINEER
 ; and the unarmed CIV1 pick nothing. The computer's soldiers: ENGINEER picks the player's GAPOWR (it counts as Engineer=yes though it carries a
 ; weapon); E1, SPY, TANY, GHOST, PTROOP, CLEG and DOG pick a unit or structure by their weapons and the player's soldiers; CIV1 picks nothing.

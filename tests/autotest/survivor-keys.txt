@@ -3,7 +3,7 @@
 ; pilots that are Engineers. Three GIs (E1) board the Grizzly and three Conscripts (E2) board the Rhino, then both are destroyed.
 ; Expected: the Rhino releases its three Conscripts (count E2 3 after), the Grizzly releases none of its GIs (count E1 0), and the
 ; IFV leaves three Engineers (count ENGINEER 3) where stock rules leave a single crewman of the side.
-; Run (with -Mods tests/autotest/survivor-keys-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/survivor-keys.txt -Mods <absolute path of tests/autotest/survivor-keys-rules> -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/survivor-keys.txt -Mods tests/autotest/survivor-keys-rules -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 35 reveal
 40 own MTNK 66 24

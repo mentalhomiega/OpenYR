@@ -2,7 +2,7 @@
 ; player has it selected (BuildingClass::DrawInfoTipAndSpiedSelection, 0x43E7B0). The barracks is the first computer house's
 ; (Africans), and the Yuri Clone is started in it the way BuildingClass::Factory_AI starts a computer house's production.
 ; Run on XMP29U2.MAP as the Americans, with the cheats that -Settings turns on:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/spied-factory-cameo.txt -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/spied-factory-cameo.txt -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
 ; The window shots are TGA files in the user folder's Screenshots folder.
 ; Expected: spy-a0-unselected has no cameo. spy-a1-selected, taken 18 frames after the Yuri Clone starts, shows its cameo
 ; (portrait and name) centred on the barracks, with the barracks' Primary tag hidden under it. The cameo is still there at

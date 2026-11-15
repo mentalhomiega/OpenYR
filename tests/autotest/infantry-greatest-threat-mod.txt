@@ -1,8 +1,7 @@
 ; The target a soldier picks for itself with the map-wide Greatest_Threat scan, for soldier flags the stock rules do not combine
 ; (InfantryClass::GreatestThreat, 0x51E140). Run with the mod infantry-threat-rules, which makes CIV1 an unarmed Infiltrate=yes soldier, CIV2 an unarmed
 ; VehicleThief=yes one, CIV3 an unarmed Engineer=yes one and E2 an armed Engineer=yes one. The targets are those of infantry-greatest-threat.txt, with E1 for E2.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Mods "E:\Claude ra2 decomp\src-agent18\tests\autotest\infantry-threat-rules" -Script src-agent18/tests/autotest/infantry-greatest-threat-mod.txt -Seconds 60 -Filter "AUTOTEST   threat|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Mods tests/autotest/infantry-threat-rules -Script src-agent18/tests/autotest/infantry-greatest-threat-mod.txt -Seconds 60 -Filter "AUTOTEST   threat|Exception"
 ; Expected: the computer's CIV3 and E2 pick the player's GAPOWR, because gamemd tests Engineer=yes whether or not the soldier is armed. Its CIV1
 ; (Infiltrate=yes alone) picks nothing. CIV2 of either side picks the Grizzly: an unarmed thief considers vehicles only. The player's CIV1
 ; and CIV3 pick nothing, and the player's E2 picks the computer's GAPOWR, since an Engineer=yes soldier considers only structures.

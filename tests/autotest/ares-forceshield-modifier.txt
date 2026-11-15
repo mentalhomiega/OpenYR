@@ -3,8 +3,7 @@
 ;   GAWEAP (ForceShield.Modifier=0.5): "100 frames left, shielded 1".
 ;   GAPILE (no key): "200 frames left, shielded 1".
 ; An Iron Curtain on the power plant is not changed by the key and gives "200 frames left".
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-forceshield-modifier.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-weapon-keys" -Seconds 40 -Filter "AUTOTEST   (forceshield|ironcurtain)|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-forceshield-modifier.txt -Mods tests/autotest/ares-weapon-keys -Seconds 40 -Filter "AUTOTEST   (forceshield|ironcurtain)|Exception"
 30 command CenterBase
 100 own GAPOWR 56 40
 101 own GAWEAP 60 40

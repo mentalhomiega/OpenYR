@@ -2,7 +2,7 @@
 ; The first shot has the soldier unselected, and the second has it selected.
 ; Expected: the second windowshot shows an ellipse about 6 cells in radius around the soldier in its owner's colour, where the
 ; first shows none.
-; Run (with -Mods tests/autotest/type-keys-d-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/radial-indicator.txt -Mods <absolute path of tests/autotest/type-keys-d-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/radial-indicator.txt -Mods tests/autotest/type-keys-d-rules -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 35 reveal
 40 own GGI 66 24

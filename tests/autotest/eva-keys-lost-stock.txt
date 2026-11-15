@@ -1,5 +1,5 @@
 ; EVA.Lost on a destroyed Guardian GI with the eva-keys-rules mod. Expected: EVA_UnitLost.
-; Run (with -Mods tests/autotest/eva-keys-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/eva-keys-lost-stock.txt -Mods <absolute path of tests/autotest/eva-keys-rules> -Seconds 120 -Filter "AUTOTEST|Speech|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/eva-keys-lost-stock.txt -Mods tests/autotest/eva-keys-rules -Seconds 120 -Filter "AUTOTEST|Speech|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 66 24

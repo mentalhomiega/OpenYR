@@ -6,7 +6,7 @@
 ; player discovers it and can select it (TechnoClass::Select refuses an undiscovered or unlocked building). The defeat
 ; ends the skirmish about 90 frames later (game over), so the observer shots come before that.
 ; Run on XMP29U2.MAP as the Americans with the cheats that -Settings turns on:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/observer-factory-cameo.txt -Settings "[Options]`r`nDebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/observer-factory-cameo.txt -Settings "[Options]`r`nDebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
 ; The window shots are TGA files in the user folder's Screenshots folder.
 ; Expected, with gamemd's rule:
 ;   obs-a1 (alive, spied barracks selected): the Yuri Clone's cameo, centred on the barracks.

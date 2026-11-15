@@ -1,7 +1,7 @@
 ; WaterImage. The type-keys-d-rules mod gives the Destroyer (DEST) WaterImage=SUB, so on water it is drawn as a Typhoon Attack Sub.
 ; Run on the lake map: a Destroyer at 82,70 and a power plant for scale.
 ; Expected: the windowshot shows the submarine model where the Destroyer floats; without -Mods it shows the Destroyer.
-; Run (with -Mods tests/autotest/type-keys-d-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/water-image.txt -Map XMP08T2.MAP -Mods <absolute path of tests/autotest/type-keys-d-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/water-image.txt -Map XMP08T2.MAP -Mods tests/autotest/type-keys-d-rules -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 300 own DEST 86 73
 302 reveal

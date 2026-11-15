@@ -3,8 +3,7 @@
 ; Expected "scatter fire" lines:
 ;   ScatterShell path A ... spread 256 (one cell, the same every shot)
 ;   ScatterShell2 path A ... spread 128 (Min defaults to half the global 1 cell, and Max is 0.5 cell)
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-scatter.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-keys,E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-units-scatter" -Seconds 60 -Filter "AUTOTEST scatter fire|AUTOTEST strike|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-scatter.txt -Mods tests/autotest/ares-projectile-keys,tests/autotest/ares-projectile-units-scatter -Seconds 60 -Filter "AUTOTEST scatter fire|AUTOTEST strike|Exception"
 30 command CenterBase
 100 own MTNK 60 36
 101 own HTNK 60 44

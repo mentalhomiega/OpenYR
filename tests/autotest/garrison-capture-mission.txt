@@ -4,8 +4,7 @@
 ; sets the structure as the destination for a soldier with Occupier, Assaulter or Infiltrate, and a computer soldier with no target goes
 ; hunting unless it is an Occupier.
 ; Stock E1 and E2 have Occupier=yes. CAHSE02 is a neutral house a soldier may garrison.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Map XMP29U2.MAP -Script src-agent14/tests/autotest/garrison-capture-mission.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   garrison|AUTOTEST   action|AUTOTEST settarget|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Map XMP29U2.MAP -Script src-agent14/tests/autotest/garrison-capture-mission.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   garrison|AUTOTEST   action|AUTOTEST settarget|Exception"
 ; Expected: the player's E1 (clicked on the house at 66 52) is on Capture at frame 150 and the house holds an occupant by frame 600.
 ; The computer's E2 (on the house at 66 46 by Hunt) is on Capture at frame 150 and that house is garrisoned by frame 600.
 ; The computer's E1 (destination 66 40 and no target) stays on Capture at frame 150, and that house is garrisoned by frame 600;

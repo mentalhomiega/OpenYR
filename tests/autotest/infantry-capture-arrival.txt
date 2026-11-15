@@ -2,8 +2,7 @@
 ; 0x519630): an engineer captures or damages it, an agent infiltrates it and is used up, and any other soldier (a C4 soldier
 ; such as TANY, GHOST or PTROOP, or an E1) takes nothing: its destination is cleared and it walks out of the building's cell.
 ; Before the change those soldiers were deleted on arrival.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-capture-arrival.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST capture|AUTOTEST spy|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-capture-arrival.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST capture|AUTOTEST spy|Exception"
 ; Expected: at frame 400 TANY, GHOST, PTROOP and E1 are all still on the map (a where line each) with nav -1,-1 and strength
 ; unchanged, not on a cell of their building; GAPOWR is still the computer's, and the building under SPY's order is
 ; the one it infiltrated, so SPY has no where line.
