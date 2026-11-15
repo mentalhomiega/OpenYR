@@ -1,7 +1,8 @@
-; The damagetrace step logs every hit an object of the named type takes as a DAMAGETRACE line: the frame, the cell, the
-; attacker and its house, the warhead, the damage before and after armour and Verses, the attached-effect armour
-; multiplier and the strength before and after. Expected: one DAMAGETRACE line for E1 on frame 120 (warhead AP, raw 50),
-; none for the HTNK hit on frame 121, and none for the E1 hit on frame 131 after `damagetrace -`.
+; The damagetrace step logs every hit an object of the named type takes or deals as a DAMAGETRACE line: the frame, the
+; cell, the attacker and its house, the warhead, the damage before and after armour and Verses, the attached-effect
+; armour multiplier and the strength before and after. Expected: a DAMAGETRACE line for E1 on frame 120 (warhead AP,
+; raw 50), one for the HTNK on frame 121 `by E1` (the hit E1 deals), and none for the E1 hit on frame 131 after
+; `damagetrace -`. Before hits dealt were traced, frame 121 had no line.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/damage-trace.txt -Map XMP29U2.MAP -Seconds 120 -Uncapped -Filter "DAMAGETRACE|AUTOTEST damagetrace|AUTOTEST   hit|Exception"
 30 command CenterBase
 100 own E1 56 30
