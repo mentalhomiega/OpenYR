@@ -154,6 +154,12 @@ enum class SymbolStateType
 static std::atomic<SymbolStateType> SymbolState { SymbolStateType::Uninitialized };
 static bool SymbolsVerified = false;
 
+// The symbol handler is prepared on a thread of its own, since reading the symbol file takes about half a second
+// that the window need not wait for. A crash report waits for it, for at most SYMBOL_WAIT_MILLISECONDS.
+static HANDLE SymbolThread = NULL;
+static std::atomic<DWORD> SymbolThreadId { 0 };
+static DWORD const SYMBOL_WAIT_MILLISECONDS = 5000;
+
 // Entry gates. The first thread to fault owns the report and the exit; a second one parks
 // rather than racing it, and an owner that faults again degrades instead of looping.
 static std::atomic<DWORD> FirstCrashThreadId { 0 };
@@ -350,10 +356,23 @@ static void Exception_Printf(_Printf_format_string_ char const * format, ...)
 
 
 /// <summary>
+/// Waits, for at most SYMBOL_WAIT_MILLISECONDS, while the symbol thread prepares the symbol handler, unless the
+/// caller is that thread.
+/// </summary>
+static void Wait_For_Symbols(void)
+{
+	if (SymbolThread != NULL && SymbolState.load() == SymbolStateType::Initializing && GetCurrentThreadId() != SymbolThreadId.load()) {
+		WaitForSingleObject(SymbolThread, SYMBOL_WAIT_MILLISECONDS);
+	}
+}
+
+
+/// <summary>
 /// Reports whether the symbol handler finished preparing and may be called.
 /// </summary>
 static bool Symbols_Usable(void)
 {
+	Wait_For_Symbols();
 	return(SymbolState.load() == SymbolStateType::Ready && DbgHelpLockReady);
 }
 
@@ -369,6 +388,7 @@ static bool Symbols_Usable(void)
 /// </remarks>
 static bool Dump_Allowed(void)
 {
+	Wait_For_Symbols();
 	return(DbgHelpLockReady && SymbolState.load() != SymbolStateType::Initializing);
 }
 
@@ -2661,7 +2681,15 @@ void Install_Exception_Handler(void)
 		}
 	}
 
-	Initialize_Symbols();
+	SymbolState.store(SymbolStateType::Initializing);
+	SymbolThread = CreateThread(NULL, 0, [](LPVOID) -> DWORD {
+		SymbolThreadId.store(GetCurrentThreadId());
+		Initialize_Symbols();
+		return(0);
+	}, NULL, 0, NULL);
+	if (SymbolThread == NULL) {
+		Initialize_Symbols();
+	}
 
 	// Primed because the first call allocates, and the report cannot afford to.
 	Version_Name();

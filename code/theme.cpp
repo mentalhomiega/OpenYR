@@ -57,6 +57,7 @@
 #include "gamedirs.h"
 #include "globals.h"
 #include "houstype.h"
+#include "rawfile.h"
 #include "incdec.h"
 #include "session.h"
 #include "vector.h"
@@ -134,6 +135,9 @@ void ThemeClass::Free_Themes(void)
 void ThemeClass::Scan(void)
 {
 	if (ScoresPresent && AudioEngine.Is_Available() && !Debug_Quiet) {
+		// Each score is looked for under every sound file extension, in every search folder.
+		FileProbeScope probes;
+		int found = 0;
 		for (ThemeType theme = THEME_FIRST; theme < Themes.Count(); theme++) {
 			ThemeControl & control = *Themes[theme];
 			if (control.Custom) {
@@ -143,7 +147,9 @@ void ThemeClass::Scan(void)
 			control.StartFailed = false;
 			control.Available = AudioEngineClass::Find_Named_File(base, control.File, sizeof(control.File));
 			control.Measured = -1.0f;
+			found += control.Available ? 1 : 0;
 		}
+		DebugString("Music: %d of %d scores found\n", found, Themes.Count());
 		Scan_Custom();
 	}
 }

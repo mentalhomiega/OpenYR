@@ -55,6 +55,11 @@ class MixFileClass : public Node<MixFileClass *>
 		// end of the member. Returns false when the member is not here or the range does not lie inside it.
 		bool Read_Member(char const * filename, std::vector<unsigned char> & bytes, int start = 0, int count = -1) const;
 
+		// Maps size bytes at position, an offset in the archive's file on disk, as a copy-on-write view of that file, and
+		// returns them, with the view to give Unmap_View in view. Returns NULL when the file cannot be mapped.
+		void const * Map_View(int position, int size, void ** view);
+		static void Unmap_View(void * view);
+
 		// Makes Retrieve of a member of this archive return memory even though the archive is not
 		// cached: the member is read from the file on its first Retrieve and kept until the
 		// archive is destroyed. Meant for archives too big to cache whole.
@@ -137,8 +142,28 @@ class MixFileClass : public Node<MixFileClass *>
 		*/
 		void * Data;						// Pointer to raw data.
 
+		// A member kept in memory by Resident_Member: a copy, or a copy-on-write view of the archive file.
+		class ResidentMemberClass
+		{
+			public:
+				ResidentMemberClass(void) = default;
+				ResidentMemberClass(ResidentMemberClass && other) noexcept;
+				ResidentMemberClass & operator=(ResidentMemberClass &&) = delete;
+				~ResidentMemberClass(void);
+
+				std::unique_ptr<char[]> Copy;
+				void * View = NULL;
+				char const * Bytes = NULL;
+		};
+
+		bool Map_Member(int position, int size, ResidentMemberClass & member);
+
 		bool ResidentMembers = false;
-		std::unordered_map<int, std::unique_ptr<char[]>> Members;
+		std::unordered_map<int, ResidentMemberClass> Members;
+
+		// The archive file's mapping, made on the first Resident_Member call; MappingFailed once it could not be made.
+		void * Mapping = NULL;
+		bool MappingFailed = false;
 
 		static ::List<MixFileClass *> List;
 };

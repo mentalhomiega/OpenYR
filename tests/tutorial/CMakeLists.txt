@@ -8,6 +8,7 @@ opents_add_test(TutorialText
     ENGINE
         tutorial.cpp
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         dbgprint.cpp
         b64pipe.cpp

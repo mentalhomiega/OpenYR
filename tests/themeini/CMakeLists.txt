@@ -9,6 +9,7 @@ opents_add_test(ThemeIni
         themeini.cpp
         vocini.cpp
         ini.cpp
+        startuptrace.cpp
         utf8.cpp
         dbgprint.cpp
         b64pipe.cpp

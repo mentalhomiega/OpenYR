@@ -118,6 +118,7 @@
 #include "scheme.h"
 #include "script.h"
 #include "sdl/sdlwindow.h"
+#include "startuptrace.h"
 #include "session.h"
 #include "shapeset.h"
 #include "rocket.h"
@@ -486,6 +487,9 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	char	path_to_exe[MAX_PATH];
 	char	buffer[512];
 
+	double const entered = Startup_Milliseconds();
+	Startup_Trace_Begin();
+
 	// First, so that everything after it is covered, including the rest of this function.
 	Install_Exception_Handler();
 
@@ -497,6 +501,8 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	ProgramInstance = instance;
 
 	Debug_Init();
+	DebugString("STARTUP WinMain entered at %.1f ms\n", entered);
+	Startup_Mark("debug log open");
 
 	// Handed over now because the exception path may not ask the logger for anything: the
 	// thread that crashed may be the one holding the logger's lock.
@@ -519,6 +525,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	}
 
 	RegisterClasses();
+	Startup_Mark("language resources");
 
 	/*
 	**	Get the full path to the .EXE
@@ -560,6 +567,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		}
 
 		Exception_Run_Immediate_Test();
+		Startup_Mark("command line and folders");
 
 		/*
 		 * Before anything is read, so that every file the game goes on to open is looked
@@ -576,6 +584,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		ConfigINI.Load(*cfile, false);
 		Init_Mods(ConfigINI.Get_String("Options", "Mods", DeploymentConfig.Mods.c_str()).c_str());
 		Apply_Mod_Files(DeploymentConfig);
+		Startup_Mark("settings and mods");
 
 		std::string uidirectory = Terminate_Path(path) + "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
@@ -650,14 +659,17 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		VideoModeWidth = framewidth;
 		VideoModeHeight = frameheight;
 
+		Startup_Mark("opening the window");
 		if (!Game_Window_Open(Options.ScreenWidth, Options.ScreenHeight)) {
 			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
 		Exception_Run_Post_Window_Test();
+		Startup_Mark("window open");
 
 		AudioEngine.Init();
+		Startup_Mark("audio engine");
 
 		// A scripted test plays silently whatever volumes its steps set, since it runs unattended.
 		if (AutoTest_Active()) {
@@ -674,6 +686,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 			exit(EXIT_FAILURE);
 		}
 
+		Startup_Mark("renderer");
 		VisibleSurface = DSurface::Create_Primary();
 		if (VisibleSurface == NULL) {
 			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
@@ -681,11 +694,13 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		}
 
 		UIShell.Init();
+		Startup_Mark("interface shell");
 
 		do {
 			Windows_Message_Handler();
 		}
 		while (!GameInFocus);
+		Startup_Mark("window in focus");
 
 		VisibleSurface->Fill(0);
 
@@ -696,6 +711,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Allocate_Surfaces(VisibleRect, composite_rect, tile_rect, sidebar_rect, false);
 		LogicalSurface = HiddenSurface;
 		Update_Visible_Surface(HiddenSurface);
+		Startup_Mark("first frame presented");
 
 		DepthBuffer = new ZBuffer(Rect(TacticalRect.X, TacticalRect.Y, 480, 480 - TacticalRect.Y));
 		DepthBuffer->Set_Scroll(ZBUFFER_MAX);

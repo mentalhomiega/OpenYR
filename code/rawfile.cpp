@@ -54,6 +54,7 @@
 #include "rawfile.h"
 
 #include "file.h"
+#include "startuptrace.h"
 
 #include <cstddef>
 #include <cstdio>
@@ -483,6 +484,7 @@ int RawFileClass::Open(int rights)
 		break;
 	}
 
+	Startup_Note_Open(Filename);
 	return(true);
 }
 
@@ -532,6 +534,7 @@ bool RawFileClass::Is_Available(int forced)
 	if (Listed_As_Missing(Filename)) {
 		return(false);
 	}
+	Startup_Note_Probe(Filename);
 	Handle = fopen(Filename, "r");
 	if (Handle == nullptr) {
 		return(false);
@@ -669,6 +672,7 @@ int RawFileClass::Read(void * buffer, int size)
 		if (bytesread == 0) break;
 	}
 	bytesread = total;
+	Startup_Note_Read(Filename, total);
 
 	/*
 	**	Close the file if it was opened by this routine and return
@@ -1223,6 +1227,7 @@ int RawFileClass::Raw_Seek(int pos, int dir)
 		}
 
 		pos = ftell(Handle);
+		Startup_Note_Seek(Filename, pos);
 	}
 
 	/*
