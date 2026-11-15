@@ -4468,6 +4468,9 @@ void TechnoClass::Cloaking_AI(bool)
 /// <returns>bool; Should the object uncloak now?</returns>
 bool TechnoClass::Should_Uncloak(void) const
 {
+	if (!TClass->IsCloakAllowed) {
+		return(true);
+	}
 	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House);
 	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Immobilized()) {
 		if (Has_Ability(ABILITY_CLOAK)) return(false);
@@ -4495,6 +4498,10 @@ bool TechnoClass::Should_Uncloak(void) const
  *=============================================================================================*/
 bool TechnoClass::Is_Ready_To_Cloak(void) const
 {
+	if (!TClass->IsCloakAllowed) {
+		return(false);
+	}
+
 	/*
 	**	If the object cannot recloak, then it certainly is not allowed to start.
 	*/

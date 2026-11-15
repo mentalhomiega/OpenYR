@@ -102,6 +102,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsRepairable(true),
 	IsRemappable(false),
 	IsCloakable(false),
+	IsCloakAllowed(true),
 	IsNoShadow(false),
 	IsDisableVoxelCache(false),
 	IsDisableShadowCache(false),
@@ -1081,6 +1082,7 @@ void TechnoTypeClass::Read_General_INI(CCINIClass const & ini)
 	Capacity = ini.Get_Int(Name(), "Storage", Capacity);
 	IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
 	IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
+	IsCloakAllowed = ini.Get_Bool(Name(), "Cloakable.Allowed", IsCloakAllowed);
 	IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
 	IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
 	SightRange = ini.Get_Int(Name(), "Sight", SightRange);
@@ -2567,6 +2569,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrew);
 	stream.Serialize(IsRemappable);
 	stream.Serialize(IsCloakable);
+	stream.Serialize(IsCloakAllowed);
 	stream.Serialize(IsNoShadow);
 	stream.Serialize(IsDisableVoxelCache);
 	stream.Serialize(IsDisableShadowCache);
@@ -2742,6 +2745,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsCrew);
 	crc(IsRemappable);
 	crc(IsCloakable);
+	crc(IsCloakAllowed);
 	crc(IsGapGenerator);
 	crc(GapRadiusInCells);
 	crc(IsNoShadow);

@@ -1369,6 +1369,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsCloakable;
 
+		// Cloakable.Allowed (Ares): with no, objects of this type never cloak, by themselves, a Cloak Generator or a crate.
+		bool IsCloakAllowed;
+
 		// NoShadow=yes gives a voxel object of this type no ground shadow.
 		bool IsNoShadow;
 

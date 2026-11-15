@@ -10075,6 +10075,23 @@ Cloakable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Cloakable.Allowed:
+  key: Cloakable.Allowed
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsCloakAllowed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Cloakable.Stages:
   key: Cloakable.Stages
   scopes:
