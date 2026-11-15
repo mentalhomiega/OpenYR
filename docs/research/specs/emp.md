@@ -48,6 +48,8 @@ Immunity: `ImmuneToEMP` overrides the defaults. Defaults: buildings are immune u
 
 An EMP warhead (`EMEffect=yes`) creates an `EMPulseClass` at the hit cell with the warhead's `CellSpread` and a duration equal to the damage value. Objects in the radius that are not immune are stunned for that duration. Airborne aircraft crash. Buildings power off. A limpet mine is destroyed. `ImmuneToEMP` is the only per type immunity key; buildings default to immune when they are core defenders. A second pulse overwrites the stun with its own duration, so there is no stacking.
 
+Ares does not read `EMEffect`: the page says Tiberian Sun used it and Ares does not, and that the weapon's damage is delivered independently of the EMP. Rules that declare Ares armor types in `[ArmorTypes]` therefore get no stock pulse from `EMEffect=yes`, and such a warhead only does its damage. `[General] EMEffectPulse=` (ours) overrides this: `yes` keeps the stock pulse, `no` drops it in stock rules too. Mental Omega sets `EMEffect=yes` on flamethrower and howitzer warheads; with the stock pulse each of their hits stunned vehicles for the damage in frames.
+
 ## Where it hooks in OpenYR
 
 - `EMPulseClass::Create` in `code/empulse.cpp` is the stock effect: it sets `foot->StunDuration = Duration` for units, `building->StunDuration = Duration` for buildings, and calls `aircraft->Crash(source)` for flying aircraft. The Ares model replaces the plain assignment with the counter rules above, using `TechnoClass::StunDuration` (`code/techno.h`, saved and in the CRC) as the counter and ticking it where `TechnoClass::AI` decrements it (`code/techno.cpp`, the `if (StunDuration > 0)` block, which also turns power and locomotion back on).

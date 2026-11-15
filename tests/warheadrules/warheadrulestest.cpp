@@ -217,6 +217,15 @@ void Test_Keep_Warhead_Verses(void)
 }
 
 
+void Test_EMEffect_Pulse(void)
+{
+	Check(WarheadRules::Makes_EMEffect_Pulse(false, false, 0), "stock rules keep the EMEffect pulse");
+	Check(!WarheadRules::Makes_EMEffect_Pulse(false, true, 3), "rules with declared armor types ignore EMEffect");
+	Check(WarheadRules::Makes_EMEffect_Pulse(true, true, 3), "EMEffectPulse=yes keeps the pulse with armor types");
+	Check(!WarheadRules::Makes_EMEffect_Pulse(true, false, 0), "EMEffectPulse=no drops it in stock rules");
+}
+
+
 }
 
 
@@ -236,6 +245,7 @@ int main(void)
 	Test_Hits_Kept();
 	Test_Combat_Light_Size();
 	Test_Keep_Warhead_Verses();
+	Test_EMEffect_Pulse();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

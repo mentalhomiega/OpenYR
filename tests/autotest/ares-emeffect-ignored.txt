@@ -1,0 +1,19 @@
+; EMEffect=yes in Ares rules: Ares does not read EMEffect (https://ares-developers.github.io/Ares-docs/restored/emp.html), so a
+; warhead without EMP.Duration only does its damage. The mod in tests/autotest/ares-emeffect/ declares an armor type, which marks
+; Ares rules, and arms the player's MTNK with a 60-damage EMEffect=yes gun. Expected: the first enemy HTNK is hit (strength 340)
+; and its recloak lines at frames 205 and 215 say "immobilized 0 stun 0". After the overlay sets [General] EMEffectPulse=yes, the
+; second HTNK gets the stock pulse, which stuns for the damage in frames: "immobilized 1" and a stun above 0 at frame 405 (15 on
+; 2026-11-15). Before the change the first tank was stunned as well.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent28 -Script src-agent28/tests/autotest/ares-emeffect-ignored.txt -Mods src-agent28/tests/autotest/ares-emeffect -Seconds 60 -Filter "AUTOTEST   (where HTNK|recloak HTNK|strike)|AUTOTEST frame|Exception"
+30 command CenterBase
+100 own MTNK 60 36
+101 spawn HTNK 63 36
+200 strike MTNK 63 36
+205 where HTNK
+215 where HTNK
+300 kill HTNK
+301 rules ares-emeffect-pulse.ini
+310 spawn HTNK 63 36
+400 strike MTNK 63 36
+405 where HTNK
+420 quit

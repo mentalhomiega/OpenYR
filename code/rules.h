@@ -1789,6 +1789,10 @@ class RulesClass
 		bool IsKeepWarheadVerses;
 		bool IsKeepWarheadVersesSet;
 
+		// Whether an EMEffect=yes warhead without EMP.Duration makes a stock pulse that stuns for its damage in frames.
+		bool IsEMEffectPulse;
+		bool IsEMEffectPulseSet;
+
 		/*
 		 * The structure type whose towers charge each other before firing, the percent of extra
 		 * damage each supporting tower adds, how many may support one shot, the frames a

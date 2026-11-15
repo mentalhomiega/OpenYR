@@ -189,4 +189,11 @@ namespace WarheadRules
 	{
 		return(key_set ? key_value : declared_armor_types > 0);
 	}
+
+	// Whether EMEffect=yes makes the stock pulse. [General] EMEffectPulse= decides when set; otherwise rules that declare
+	// Ares armor types ignore EMEffect, as Ares does, and others keep the pulse.
+	inline bool Makes_EMEffect_Pulse(bool key_set, bool key_value, int declared_armor_types)
+	{
+		return(key_set ? key_value : declared_armor_types == 0);
+	}
 }

@@ -738,6 +738,12 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
+bool WarheadTypeClass::Is_EM_Pulse(void) const
+{
+	return(IsEMEffect && EMPDuration == 0 && Rule->IsEMEffectPulse);
+}
+
+
 bool WarheadTypeClass::Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const
 {
 	RTTIType const kind = type->Fetch_RTTI();
