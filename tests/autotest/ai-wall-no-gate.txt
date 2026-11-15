@@ -1,7 +1,7 @@
 ; A computer player that plans a wall but may not build any listed gate lays the wall without gates; it must not crash.
 ; The mod in tests/autotest/ai-wall-no-gate lists only gates the Americans cannot build. Run from the repository root with an
 ; American computer player and a long game, so the plan reaches its wall step:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent2 -Script src-agent2/tests/autotest/ai-wall-no-gate.txt -Mods "E:\Claude ra2 decomp\src-agent2\tests\autotest\ai-wall-no-gate" -AICountries 0 -Seconds 240 -Filter "AUTOTEST   census|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent2 -Script src-agent2/tests/autotest/ai-wall-no-gate.txt -Mods tests/autotest/ai-wall-no-gate -AICountries 0 -Seconds 240 -Filter "AUTOTEST   census|Exception"
 ; The run ends at frame 12000 with a census line of the computer's structures that includes GAWALL.
 10 buildtrace 1
 30 command CenterBase

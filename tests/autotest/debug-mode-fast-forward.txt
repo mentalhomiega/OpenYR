@@ -1,5 +1,5 @@
 ; Fast-forward toggle (frames 30 to 10200). Run from the repository root with the setting on:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-fast-forward.txt -Seconds 200 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST fps|Debug cheat|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-fast-forward.txt -Seconds 200 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST fps|Debug cheat|Exception"
 ; The fps lines show the game frames counted in the last whole second. At GameSpeed=1 the frame limit is 60.
 ; The frame 30 line reads the game's first second, so it reads low and is not compared.
 ; The cheat is on from frame 300 to 9500. The fps line at frame 9000 is read after about 2 seconds with the cheat

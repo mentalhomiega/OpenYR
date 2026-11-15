@@ -4,7 +4,7 @@
 ; Expected: the Guardian GI over itself shows a number above the stock cursors, and the GI (E1) over itself shows the stock deploy
 ; number; a GI over the IFV and the spy over the power plant show numbers above the stock ones, while the spy over the barracks
 ; (GAPILE, no key) shows the stock enter number.
-; Run (with -Mods tests/autotest/type-cursors-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/type-cursors.txt -Mods <absolute path of tests/autotest/type-cursors-rules> -Seconds 120 -Filter "AUTOTEST   cursor|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/type-cursors.txt -Mods tests/autotest/type-cursors-rules -Seconds 120 -Filter "AUTOTEST   cursor|Exception"
 30 command CenterBase
 35 reveal
 40 own GGI 66 24

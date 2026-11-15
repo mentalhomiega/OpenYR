@@ -3,6 +3,6 @@
 ; BUILDTRACE frame 3686 houses the war factory at 57,93, and without -Mods at 51,101 (the war factory takes the ranking a cloak generator
 ; takes, by distance from the house's start). A structure without the key, and a CloakGenerator=yes one, keep their stock placement.
 ; Run from the repository root, with and without -Mods:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-innerbase.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 400 -Filter "BUILDTRACE|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-innerbase.txt -Mods tests/autotest/ares-small-e-keys -Seconds 400 -Filter "BUILDTRACE|Exception"
 1 buildtrace 1
 6000 quit

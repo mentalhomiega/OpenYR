@@ -2,7 +2,7 @@
 ; FactoryOwners=Russians and the Grizzly (MTNK) FactoryOwners.Forbidden=Americans. The player is American and owns a barracks and a
 ; war factory that it owns from the start, so their first owner is its own country.
 ; Expected: the canbuild lines of house Americans show can 1 for the GI and the IFV (FV, no key), and can 0 for the Engineer and the Grizzly.
-; Run (with -Mods tests/autotest/type-keys-d-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/factory-owners.txt -Mods <absolute path of tests/autotest/type-keys-d-rules> -Seconds 120 -Filter "AUTOTEST   canbuild|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/factory-owners.txt -Mods tests/autotest/type-keys-d-rules -Seconds 120 -Filter "AUTOTEST   canbuild|Exception"
 30 command CenterBase
 35 reveal
 40 own GAPOWR 60 20

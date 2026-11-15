@@ -2,7 +2,7 @@
 ; beside the north-south concrete span at 95-97, 46-56 (see concrete-bridge-neutral-hut-sov04.txt) and carries a BombNoBridge bomb with a delay of 30
 ; frames. Expected: before the bomb the piece at 96,50 reads an intact overlay and repairbridge at 99,44 reads 0; after the bomb goes off the span is unchanged and repairbridge still reads 0.
 ; Run from the repository root (the Windows path of the mod goes in -Mods):
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-ivan-bridge-no.txt -Mods <path of ares-bomb-keys> -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST bomb|AUTOTEST   bridge|AUTOTEST   repairbridge|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-ivan-bridge-no.txt -Mods tests/autotest/ares-bomb-keys -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST bomb|AUTOTEST   bridge|AUTOTEST   repairbridge|Exception"
 30 own CABHUT 99 44
 31 own E1 98 46
 100 bridge 96 50

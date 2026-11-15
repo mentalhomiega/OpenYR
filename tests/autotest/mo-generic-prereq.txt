@@ -10,7 +10,7 @@
 ;            520 after the Psychplug upgrade YAPVLT is installed in the hub
 ;   Foehn:   QUETZ 0 at frame 660 and still 0 at frame 680 with the Cyberkernel FACYBR alone (no FOETECH); 1 at frame
 ;            720 after the Cyberkernel Expansion upgrade FACYBR_B is installed in it
-; Run (with -Mods MentalOmega): scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/mo-generic-prereq.txt -Mods MentalOmega -Country 0 -Seconds 120 -Filter "AUTOTEST +(canbuild [A-Z_]+ house UnitedStates|own )|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/mo-generic-prereq.txt -Mods MentalOmega -Country 0 -Seconds 120 -Filter "AUTOTEST +(canbuild [A-Z_]+ house UnitedStates|own )|Exception"
 1 log Mental Omega tech gates: Allies, Soviets, Epsilon, Foehn
 30 own GAPOWR 58 24
 40 own GAWEAP 62 24

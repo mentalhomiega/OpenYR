@@ -1,8 +1,7 @@
 ; IsDetachedRailgun, with the mod in tests/autotest/ares-draw-keys. A Grizzly (RailPlain, IsRailgun=yes) and a Rhino (RailDetached,
 ; IsDetachedRailgun=yes), both with ROF=15, fire at enemy power plants for 150 frames. Expected "railgun" lines: the Rhino fires about
 ; every 15 frames (about ten shots), the Grizzly only each time the previous beam has dissolved, about every 80 frames.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-railgun.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-draw-keys" -Seconds 60 -Filter "AUTOTEST railgun|AUTOTEST strike|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-railgun.txt -Mods tests/autotest/ares-draw-keys -Seconds 60 -Filter "AUTOTEST railgun|AUTOTEST strike|Exception"
 30 command CenterBase
 100 own MTNK 60 36
 101 spawn GAPOWR 66 36

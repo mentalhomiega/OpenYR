@@ -9,8 +9,7 @@
 ; At frame 500 the derrick at 66,40 shows slot 3 disabled 0 and house is the player's house, while the other
 ; three keep slot 3 disabled 1. At frame 520, after the hit at 510, every derrick shows slot 3 disabled 0
 ; as CAOILD_AD.
-; Run from E:\Claude ra2 decomp:
-;   scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/tech-derrick-anim.txt -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/tech-derrick-anim.txt -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 40 select AMCV
 45 command DeployObject

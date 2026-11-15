@@ -3,7 +3,7 @@
 ; is spawned for the computer at frame 50 and climbs from the ground; six GIs (E1) are paradropped from a tech
 ; airport at frame 3750 and sampled while they fall. Each "airborne" line prints agl and in_air for every
 ; object of the type, so the in_air column can be compared between builds frame by frame.
-; Run from the worktree root: scripts/run_autotest.ps1 -Build agent9 -Script tests/autotest/in-air-height.txt -Seconds 600
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script tests/autotest/in-air-height.txt -Seconds 600
 30 command CenterBase
 35 reveal
 40 own JUMPJET 60 20

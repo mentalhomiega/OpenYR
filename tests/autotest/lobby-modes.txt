@@ -4,8 +4,7 @@
 ; Five. The log should show "AUTOTEST checked lobby-optionchk-no-refinery 1" (the forced box), the "[Lobby] Applied"
 ; lines for Power Down.ini and No Refinery.ini, "canbuild GAPOWR ... level 11", "canbuild GAREFN ... level 11",
 ; houses at tech 5, and the player's 7777 credits in the houses line.
-; Run from the workspace root, in PowerShell:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/lobby-modes.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 240 -Mods src-agent31/tests/autotest/lobby-modes -Filter "AUTOTEST|Lobby|Spawner|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/lobby-modes.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 240 -Mods src-agent31/tests/autotest/lobby-modes -Filter "AUTOTEST|Lobby|Spawner|Exception"
 ui waitfor backdrop
 ui wait 2000
 ui press Single Player

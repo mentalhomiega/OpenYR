@@ -10,8 +10,7 @@
 ;   Super weapons: when the player fires AmericanParaDropSpecial (index 6) at 66,22, ATEV9 (75 for the player) and ATEV11
 ;   (77, within five cells of waypoint 1 at 65,20) spring in the frame of the SUPER line. ATEV10 (75 for the computer)
 ;   and ATEV12 (77 at waypoint 0, at 52,97) never spring.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-events-incidental.txt -Mods src-agent30/tests/autotest/ares-weapon-keys -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|AUTOTEST abducted|SUPER|TEvent|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-events-incidental.txt -Mods src-agent30/tests/autotest/ares-weapon-keys -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|AUTOTEST abducted|SUPER|TEvent|Exception"
 30 command CenterBase
 100 spawn E1 60 30
 101 tagevent E1 71,0,0 0 60 30

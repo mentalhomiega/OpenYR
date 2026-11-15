@@ -8,8 +8,7 @@
 ;   ATEV6 (86, no more than 2 MTNK), made when three exist, springs at frame 201, after the player's tanks are destroyed.
 ;   From frame 210 the rules take HouseDoesNotOwnAtMost=no (ares-events-strict.ini): ATEV7 (82, the player owns fewer
 ;   than 0 MTNK) never springs, and ATEV8 (82, fewer than 1) springs at frame 213.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-events-counts.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|TEvent|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ares-events-counts.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|TEvent|Exception"
 30 command CenterBase
 40 tagevent general 82,2,0,MTNK
 41 tagevent general 81,2,2,MTNK

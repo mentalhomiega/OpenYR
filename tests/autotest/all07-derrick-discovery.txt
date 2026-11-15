@@ -8,8 +8,7 @@
 ; has no "sprung" line for Derrick_AR_Found, Derrick_AS_Found or Activate_Oil_Grab before frame 300. At frame
 ; 1400 both derricks still belong to Neutral; before this fix the Yuri3 engineers captured them at about 1205
 ; and 1385.
-; Run from E:\Claude ra2 decomp:
-;   scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/all07-derrick-discovery.txt -Campaign -Map ALL07SMD.MAP -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST   (radarall|sprung)|AUTOTEST trigger fired|AUTOTEST frame (300|1400)|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/all07-derrick-discovery.txt -Campaign -Map ALL07SMD.MAP -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST   (radarall|sprung)|AUTOTEST trigger fired|AUTOTEST frame (300|1400)|Exception"
 1 triggerlog 1
 2 radarall CAOILD
 300 radarall CAOILD

@@ -3,7 +3,7 @@
 ; so they show through the panel at the default opacity. Units on (50,16), (52,16), (50,19) and (54,19) lie under the radar
 ; and the buttons, which stay opaque, so they stay hidden. The construction yard fills the cameo grid with structure cameos.
 ; The ScreenCapture line writes the picture. Run from the repository root, once per setting:
-;   scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sidebar-opacity.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sidebar-opacity.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80"
 30 view 46 40
 35 reveal
 40 grantunit GACNST 30 30

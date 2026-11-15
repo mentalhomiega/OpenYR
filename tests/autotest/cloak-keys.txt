@@ -4,7 +4,7 @@
 ; Expected: after the hit, "Sound:" shows the GI's stock decloak sound (NavalUnitEmerge) at its cell, CreditUp at the Conscript's
 ; cell, and nothing at the Guardian GI's. At frame 320 the GI is still decloaking (stage 6 of 9), while the Conscript, which has
 ; two stages, is already visible (character 0).
-; Run (with -Mods tests/autotest/cloak-keys-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/cloak-keys.txt -Mods <absolute path of tests/autotest/cloak-keys-rules> -Seconds 120 -Filter "AUTOTEST   visual|Sound:|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/cloak-keys.txt -Mods tests/autotest/cloak-keys-rules -Seconds 120 -Filter "AUTOTEST   visual|Sound:|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 66 24

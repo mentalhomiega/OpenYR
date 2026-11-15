@@ -1,5 +1,6 @@
 ; A Brute attacks a structure with its Smash weapon (weapon index 1). It plays SecondaryFire (the Brute has no SecondaryProne) and the shot is launched at the SecondaryFire frame (InfantryClass 0x5206B0).
-; 'doing' is the engine's DoType number: 41 SecondaryFire, 4 FireUp. Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-secondary.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   infstate|AUTOTEST   settarget|Exception"
+; 'doing' is the engine's DoType number: 41 SecondaryFire, 4 FireUp.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/infantry-seq-secondary.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   infstate|AUTOTEST   settarget|Exception"
 5 view 66 66
 6 reveal
 10 own BRUTE 66 66

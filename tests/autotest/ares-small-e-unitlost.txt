@@ -2,8 +2,7 @@
 ; UnitLost.Suppress warhead) for 540 of its 600 strength, which leaves it alive in the red band. The player's Giant Squid (SQD) then culls it.
 ; The squid's own warhead does not suppress, so the log must not show an "AUTOTEST unitlost DEST suppressed" line. Before the fix the stale
 ; SuppressWH left on the Destroyer made the squid's kill silent. Map XMP08T2.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Map XMP08T2.MAP -Script src-agent9/tests/autotest/ares-small-e-unitlost.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 150 -Filter "AUTOTEST unitlost|AUTOTEST   (where|count)|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Map XMP08T2.MAP -Script src-agent9/tests/autotest/ares-small-e-unitlost.txt -Mods tests/autotest/ares-small-e-keys -Seconds 150 -Filter "AUTOTEST unitlost|AUTOTEST   (where|count)|Exception"
 30 command CenterBase
 300 neutral DEST 85 65
 301 own SQD 86 70

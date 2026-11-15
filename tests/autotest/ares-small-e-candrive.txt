@@ -4,8 +4,7 @@
 ;   action E1 on 66,30 is Capture; action E2 on 66,34 is not (the APOC cannot be driven).
 ;   After the clicks the Grizzly belongs to Americans; the log shows "Sound: ConscriptFear at 66,30" once.
 ;   The Apocalypse Tank stays neutral. Without -Mods no action is Capture and nothing changes hands.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-candrive.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 90 -Filter "AUTOTEST   (action|where)|Sound: ConscriptFear|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-candrive.txt -Mods tests/autotest/ares-small-e-keys -Seconds 90 -Filter "AUTOTEST   (action|where)|Sound: ConscriptFear|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 62 30

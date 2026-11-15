@@ -8,8 +8,7 @@
 ;   "goes off" line for the HTNK.
 ; Then the player's barracks and power plant are bombed with BombA and BombB and sold: the BombA bomb goes off at the frame of the
 ; sale (DetonateOnSell=yes) with damage 77; the BombB bomb never does.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-ivan-bombs.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-bomb-keys" -Seconds 60 -Filter "AUTOTEST bomb|AUTOTEST sell|AUTOTEST strike|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-ivan-bombs.txt -Mods tests/autotest/ares-bomb-keys -Seconds 60 -Filter "AUTOTEST bomb|AUTOTEST sell|AUTOTEST strike|Exception"
 30 command CenterBase
 100 own E1 56 36
 101 own APOC 62 36

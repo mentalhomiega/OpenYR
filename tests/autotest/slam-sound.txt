@@ -2,7 +2,7 @@
 ; (GAPILE) are built and placed with sound logging on.
 ; Expected: placing the barracks logs the stock slam sound ("Sound: PlaceBuilding"), and placing the power plant logs none
 ; with -Mods; without it both log the stock sound.
-; Run (with -Mods tests/autotest/type-keys-c-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/slam-sound.txt -Mods <absolute path of tests/autotest/type-keys-c-rules> -Seconds 200 -Filter "AUTOTEST (place|produce)|Sound:|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/slam-sound.txt -Mods tests/autotest/type-keys-c-rules -Seconds 200 -Filter "AUTOTEST (place|produce)|Sound:|Exception"
 30 command CenterBase
 40 select AMCV
 45 command DeployObject

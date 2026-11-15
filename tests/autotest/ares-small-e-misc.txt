@@ -5,8 +5,7 @@
 ;   spotlight NAPOWR start height 100 distance 2500.
 ;   wpstate SPYP shows mission Attack (SpyPlane.Mission=Attack); without the mod it shows Spyplane Approach.
 ;   graphic GGI gives art GGIU when the theater's image letter names a section of the art file; E2 keeps its own name.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-misc.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-misc.txt -Mods tests/autotest/ares-small-e-keys -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 35 reveal
 40 own GAPOWR 60 36

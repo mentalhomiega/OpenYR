@@ -4,7 +4,7 @@
 ; Before the fix the action reads NoMove, because the spy's weapon cannot fire at a building and the attack
 ; check dropped the click.
 ; Run on XMP29U2.MAP as the Americans, with the same -Settings as spy-veterancy-barracks.txt:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/spy-click-barracks.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 300 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/spy-click-barracks.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 300 -Filter "AUTOTEST|Exception"
 ; Expected: the "action SPY on YABRCK" lines at 605 and 610 read Capture. "where SPY" at 1000 shows the spy walking to
 ; the barracks (mission Capture), and "houses" at 1001 shows barracks 1 with the spy gone. The E1, MTNK and DEST built before
 ; the spy read rank 0; the E1 built after it reads rank 1, and the MTNK and DEST built after it read rank 0.

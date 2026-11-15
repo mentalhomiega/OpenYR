@@ -2,7 +2,7 @@
 ; the Conscript (E2) Insignia.Elite=PIPS, with no InsigniaFrame keys. Frame 0 of PIPS.SHP is a small disc.
 ; Expected: the rookie GI and the elite Conscript each show that disc at their feet, where stock rules show nothing for
 ; the rookie and the elite chevron (frame 15) for the elite. The veteran Guardian GI (GGI) still draws the stock chevron, frame 14.
-; Run (with -Mods tests/autotest/insignia-first-frame-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/insignia-first-frame.txt -Mods <absolute path of tests/autotest/insignia-first-frame-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/insignia-first-frame.txt -Mods tests/autotest/insignia-first-frame-rules -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 66 24

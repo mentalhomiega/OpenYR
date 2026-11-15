@@ -2,7 +2,7 @@
 ; NoManualFire=yes. Three soldiers (E1, E2 and the Guardian GI, GGI) stand on guard near a computer harvester (HARV) that is in range.
 ; Expected: the Conscript, whose stock guard scan is untouched, holds the harvester as its target (target 76,26) and the GI holds none
 ; (target -1,-1). The click on the harvester gives the Guardian GI the Attack action and the Conscript NoMove.
-; Run (with -Mods tests/autotest/guard-fire-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/guard-fire.txt -Mods <absolute path of tests/autotest/guard-fire-rules> -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   action|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/guard-fire.txt -Mods tests/autotest/guard-fire-rules -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST   action|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 72 24

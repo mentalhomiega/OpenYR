@@ -4,7 +4,7 @@
 ; order reaches every player object of its type that is outside, so objects that did not board are killed before the next
 ; trial. Boarded objects are in limbo and are not killed. The terrain of each transport cell is logged.
 ; Run from the repository root (the debug cheats are needed for DebugRevealMap):
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Map Lostlake.mmx -Country 8 -Script src-agent8/tests/autotest/amphib-transport-vehicles.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 900 -Filter "AUTOTEST|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Map Lostlake.mmx -Country 8 -Script src-agent8/tests/autotest/amphib-transport-vehicles.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 900 -Filter "AUTOTEST|Exception"
 ; Read each object's "where" line: limbo 1 means it boarded. The loading decision is UnitClass's radio CAN_LOAD case
 ; (0x73758A) and DOCKING case (0x7377D8); neither tests the vehicle type or the terrain under the transport.
 ; Observed on the final build: HTNK and SMIN board the beach and the water transport; MGTK and E1 stay outside those trials,

@@ -5,8 +5,7 @@
 ; SP2.1 springs when its tagged Allied ships die, so the script kills them at frame 60.
 ; Expected at frame 420: 4 SAPC on the map, 0 HTK on the map, and 32 riders in limbo (4 HTNK, 12 E2,
 ; 4 HTK, 1 BORIS, 5 SHK, 3 DOG, 3 SENGINEER). Expected at frame 1500: all 32 riders on the map.
-; Run from E:\Claude ra2 decomp:
-;   scripts/run_autotest.ps1 -Script src-agent8/tests/autotest/sov01-reinforcements.txt -Build agent8 -Campaign -Map SOV01UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (count|where)|AUTOTEST frame [0-9]+: log|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent8/tests/autotest/sov01-reinforcements.txt -Build agent8 -Campaign -Map SOV01UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (count|where)|AUTOTEST frame [0-9]+: log|Exception"
 1 teamtrace 1
 30 log expected at 420: 4 SAPC, 0 HTK, 32 riders in limbo (4 HTNK, 12 E2, 4 HTK, 1 BORIS, 5 SHK, 3 DOG, 3 SENGINEER)
 60 killtag 0B75455C

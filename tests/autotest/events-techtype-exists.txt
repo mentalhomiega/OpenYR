@@ -5,8 +5,7 @@
 ;   ATEV2 (60, at least 0 NOSUCHTYPE) and ATEV3 (61, NOSUCHTYPE) never spring.
 ;   ATEV4 (60, at least 2 MTNK) springs at frame 101, after the second tank is made at frame 100.
 ;   ATEV1 (61, no MTNK exists) waits while a tank exists and springs at frame 201, after the tanks are destroyed at 200.
-; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/events-techtype-exists.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV|count)|TEvent|Exception"
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/events-techtype-exists.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV|count)|TEvent|Exception"
 20 own MTNK 60 36
 30 command CenterBase
 40 tagevent general 61,2,0,MTNK
