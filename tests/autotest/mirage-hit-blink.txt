@@ -1,0 +1,14 @@
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/mirage-hit-blink.txt -Seconds 90 -Filter "AUTOTEST   (damage|mirage look)"
+; A player Mirage Tank (MGTK at 60,42) stands still and takes a tree look. At frame 210 it takes 100 points of damage.
+; Expected: the hit strips the look, and the tank cannot take a new one for twice the damage it took in frames
+; (TechnoClass::ReceiveDamage sets the disguise blink timer to 2 x damage, 0x702012): "mirage look none" at frames 220
+; and 400, a tree again at frame 440. Before the fix the tank took a new tree on the frame after the hit, so a damaged
+; Mirage stayed hidden from human targeting while it kept firing.
+30 view 60 42
+40 own MGTK 60 42
+200 where MGTK
+210 damage MGTK 100
+220 where MGTK
+400 where MGTK
+440 where MGTK
+450 quit

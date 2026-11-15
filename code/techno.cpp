@@ -7336,9 +7336,10 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	auto trace = [&](char const * outcome) {
 		if (traced) {
 			HouseClass const * attacker = source != NULL ? source->House : (sourcehouse != NULL ? sourcehouse : Blast_Attacking_House());
-			DebugString("DAMAGETRACE frame %d %s cell %d,%d by %s of %s warhead %s raw %d distance %d forced %d armor %s effects %d x%.3f damage %d strength %d->%d %s\n",
+			DebugString("DAMAGETRACE frame %d %s cell %d,%d by %s of %s warhead %s raw %d distance %d forced %d armor %s verses %.3f country %.3f effects %d x%.3f damage %d strength %d->%d %s\n",
 				Frame, TClass->Name(), Get_Cell().X, Get_Cell().Y, source != NULL ? source->TClass->Name() : "-", attacker != NULL ? attacker->Class->Name() : "-",
-				warhead != NULL ? warhead->Name() : "-", raw_damage, distance, (int)forced, Armor_Type_Name(TClass->Armor), AttachedEffects.Count(), armor_before,
+				warhead != NULL ? warhead->Name() : "-", raw_damage, distance, (int)forced, Armor_Type_Name(TClass->Armor),
+				warhead != NULL ? warhead->Versus(TClass->Armor) : 1.0, House->Country_Armor_Multiplier(TClass), AttachedEffects.Count(), armor_before,
 				damage, strength_before, (int)Strength, outcome);
 		}
 	};
@@ -7403,10 +7404,15 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			DisguiseHouse = NULL;
 			Mark(MARK_CHANGE);
 		}
-		// A DisguiseWhenStill vehicle's terrain look goes too (UnitClass::ClearDisguise, 0x746720).
-		if (RTTI == RTTI_UNIT && ((UnitClass *)this)->MirageType != NULL) {
-			((UnitClass *)this)->MirageType = NULL;
-			Mark(MARK_CHANGE);
+		// A DisguiseWhenStill vehicle's terrain look goes too (UnitClass::ClearDisguise, 0x746720), and it cannot take a
+		// new one for twice the damage in frames (InfantryBlinkTimer, 0x702012).
+		if (RTTI == RTTI_UNIT) {
+			UnitClass * unit = (UnitClass *)this;
+			if (unit->MirageType != NULL) {
+				unit->MirageType = NULL;
+				Mark(MARK_CHANGE);
+			}
+			unit->MirageBlockedUntil = Frame + std::max(damage, 0) * 2;
 		}
 	}
 
