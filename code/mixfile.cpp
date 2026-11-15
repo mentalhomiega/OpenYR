@@ -62,6 +62,11 @@
 #include <climits>
 #include <cstring>
 
+#if defined(_WIN32)
+#include <io.h>
+#include <windows.h>
+#endif
+
 
 //template<class T> int Compare(T const *obj1, T const *obj2) {
 //	if (*obj1 < *obj2) return(-1);
@@ -320,6 +325,14 @@ MixFileClass::~MixFileClass(void)
 		HeaderBuffer = NULL;
 	}
 
+	Members.clear();
+#if defined(_WIN32)
+	if (Mapping != NULL) {
+		CloseHandle((HANDLE)Mapping);
+		Mapping = NULL;
+	}
+#endif
+
 	/*
 	**	Unlink this mixfile object from the chain.
 	*/
@@ -377,21 +390,106 @@ void const * MixFileClass::Resident_Member(int position, int size)
 {
 	auto found = Members.find(position);
 	if (found != Members.end()) {
-		return(found->second.get());
+		return(found->second.Bytes);
 	}
 
 	if (size <= 0) {
 		return(NULL);
 	}
 
-	std::unique_ptr<char[]> data(new char[size]);
-	if (!Read_Range(position - DataStart, data.get(), size)) {
-		return(NULL);
+	ResidentMemberClass member;
+	if (!Map_Member(position, size, member)) {
+		member.Copy.reset(new char[size]);
+		if (!Read_Range(position - DataStart, member.Copy.get(), size)) {
+			return(NULL);
+		}
+		member.Bytes = member.Copy.get();
 	}
 
-	char const * result = data.get();
-	Members[position] = std::move(data);
+	char const * result = member.Bytes;
+	Members.emplace(position, std::move(member));
 	return(result);
+}
+
+
+// A member at least this big stays a view of the archive file, so only the pages that are read come from the disk.
+// A smaller one is copied out of the view, as a view takes at least 64 KB of address space.
+static int const MAPPED_MEMBER_SIZE = 256 * 1024;
+
+
+/// <summary>
+/// Fills member with the bytes of the member at position, an offset in the archive's file on disk, through a mapping
+/// of that file. The bytes are the file's bytes, as a read gives them, and writes to them stay in this process.
+/// </summary>
+/// <returns>bool; False when the file cannot be mapped, and then member is unchanged.</returns>
+bool MixFileClass::Map_Member(int position, int size, ResidentMemberClass & member)
+{
+#if defined(_WIN32)
+	if (Mapping == NULL && !MappingFailed) {
+		MappingFailed = true;
+		CCFileClass file(Filename);
+		if (file.Open(FileClass::READ) && file.Get_File_Handle() != NULL) {
+			HANDLE const handle = (HANDLE)_get_osfhandle(_fileno(file.Get_File_Handle()));
+			if (handle != INVALID_HANDLE_VALUE) {
+				Mapping = CreateFileMappingA(handle, NULL, PAGE_WRITECOPY, 0, 0, NULL);
+				MappingFailed = (Mapping == NULL);
+			}
+		}
+	}
+	if (Mapping == NULL) {
+		return(false);
+	}
+
+	static DWORD const granularity = []() {
+		SYSTEM_INFO info;
+		GetSystemInfo(&info);
+		return(info.dwAllocationGranularity);
+	}();
+	DWORD const base = (DWORD)position - (DWORD)position % granularity;
+	DWORD const lead = (DWORD)position - base;
+	void * view = MapViewOfFile((HANDLE)Mapping, FILE_MAP_COPY, 0, base, (SIZE_T)lead + (SIZE_T)size);
+	if (view == NULL) {
+		return(false);
+	}
+
+	char const * const bytes = (char const *)view + lead;
+	if (size >= MAPPED_MEMBER_SIZE) {
+		member.View = view;
+		member.Bytes = bytes;
+		Startup_Note_View(bytes, size);
+	} else {
+		member.Copy.reset(new char[size]);
+		std::memcpy(member.Copy.get(), bytes, (std::size_t)size);
+		UnmapViewOfFile(view);
+		member.Bytes = member.Copy.get();
+	}
+	return(true);
+#else
+	(void)position;
+	(void)size;
+	(void)member;
+	return(false);
+#endif
+}
+
+
+MixFileClass::ResidentMemberClass::ResidentMemberClass(ResidentMemberClass && other) noexcept :
+	Copy(std::move(other.Copy)),
+	View(other.View),
+	Bytes(other.Bytes)
+{
+	other.View = NULL;
+	other.Bytes = NULL;
+}
+
+
+MixFileClass::ResidentMemberClass::~ResidentMemberClass(void)
+{
+#if defined(_WIN32)
+	if (View != NULL) {
+		UnmapViewOfFile(View);
+	}
+#endif
 }
 
 

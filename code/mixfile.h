@@ -137,8 +137,28 @@ class MixFileClass : public Node<MixFileClass *>
 		*/
 		void * Data;						// Pointer to raw data.
 
+		// A member kept in memory by Resident_Member: a copy, or a copy-on-write view of the archive file.
+		class ResidentMemberClass
+		{
+			public:
+				ResidentMemberClass(void) = default;
+				ResidentMemberClass(ResidentMemberClass && other) noexcept;
+				ResidentMemberClass & operator=(ResidentMemberClass &&) = delete;
+				~ResidentMemberClass(void);
+
+				std::unique_ptr<char[]> Copy;
+				void * View = NULL;
+				char const * Bytes = NULL;
+		};
+
+		bool Map_Member(int position, int size, ResidentMemberClass & member);
+
 		bool ResidentMembers = false;
-		std::unordered_map<int, std::unique_ptr<char[]>> Members;
+		std::unordered_map<int, ResidentMemberClass> Members;
+
+		// The archive file's mapping, made on the first Resident_Member call; MappingFailed once it could not be made.
+		void * Mapping = NULL;
+		bool MappingFailed = false;
 
 		static ::List<MixFileClass *> List;
 };
