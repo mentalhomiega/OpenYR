@@ -480,8 +480,8 @@ class WarheadTypeClass : public AbstractTypeClass
 		bool IsMindControlPermanent;
 		bool Is_Death_Weapon_Suppressed(TechnoTypeClass const * type) const;
 
-		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration?
-		bool Is_EM_Pulse(void) const {return(IsEMEffect && EMPDuration == 0);}
+		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration under stock rules?
+		bool Is_EM_Pulse(void) const;
 
 		// The animation an infantryman not marked NotHuman=yes dies with when this warhead kills him, in place of InfDeath (Ares
 		// InfDeathAnim). An animation with MakeInfantry mutates him into that infantry type for the killer's house.

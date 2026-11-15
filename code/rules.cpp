@@ -839,6 +839,8 @@ RulesClass::RulesClass(void) :
 	NormalTargetingDelay(27),
 	IsKeepWarheadVerses(false),
 	IsKeepWarheadVersesSet(false),
+	IsEMEffectPulse(true),
+	IsEMEffectPulseSet(false),
 	PrismType(NULL),
 	PrismSupportModifier(100),
 	PrismSupportMax(8),
@@ -1911,6 +1913,11 @@ bool RulesClass::General(CCINIClass const & ini)
 			IsKeepWarheadVerses = ini.Get_Bool(GENERAL, "KeepWarheadVerses", IsKeepWarheadVerses);
 		}
 		IsKeepWarheadVerses = WarheadRules::Keeps_Warhead_Verses(IsKeepWarheadVersesSet, IsKeepWarheadVerses, Armor_Type_Count() - ARMOR_COUNT);
+		if (ini.Is_Present(GENERAL, "EMEffectPulse")) {
+			IsEMEffectPulseSet = true;
+			IsEMEffectPulse = ini.Get_Bool(GENERAL, "EMEffectPulse", IsEMEffectPulse);
+		}
+		IsEMEffectPulse = WarheadRules::Makes_EMEffect_Pulse(IsEMEffectPulseSet, IsEMEffectPulse, Armor_Type_Count() - ARMOR_COUNT);
 		PrismType = TGet_Class(ini, GENERAL, "PrismType", PrismType);
 		PrismSupportModifier = (int)(ini.Get_Float(GENERAL, "PrismSupportModifier", PrismSupportModifier / 100.0) * 100.0 + 0.5);
 		PrismSupportMax = ini.Get_Int(GENERAL, "PrismSupportMax", PrismSupportMax);
