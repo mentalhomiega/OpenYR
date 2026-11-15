@@ -10605,10 +10605,20 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 	bool const elite = Veterancy.Is_Elite();
 
 	// The IFV, type FV, answers with VoiceIFVRepair when the weapon it would use repairs (TechnoClass::Weapon_Attack_Voice, 0x7090A0).
+	// A vehicle type's own VoiceIFVRepair (Ares) replaces that reply for its type.
 	int const which = What_Weapon_Should_I_Use(target);
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
-	if (weapon != NULL && weapon->Attack < 0 && Rule->VoiceIFVRepair != VOC_NONE && stricmp(TClass->Name(), "FV") == 0) {
-		return(Rule->VoiceIFVRepair);
+	if (weapon != NULL && weapon->Attack < 0 && RTTI == RTTI_UNIT) {
+		UnitTypeClass const * type = static_cast<UnitClass const *>(this)->Class;
+		VocType repair = VOC_NONE;
+		if (type->IsVoiceIFVRepairSet) {
+			repair = type->VoiceIFVRepair;
+		} else if (stricmp(type->Name(), "FV") == 0) {
+			repair = Rule->VoiceIFVRepair;
+		}
+		if (repair != VOC_NONE) {
+			return(repair);
+		}
 	}
 
 	if (which == 0) {

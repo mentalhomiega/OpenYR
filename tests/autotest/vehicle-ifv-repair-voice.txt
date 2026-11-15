@@ -1,0 +1,15 @@
+; VoiceIFVRepair (Ares) on a vehicle type sets the reply it gives to an order its repair weapon would carry out. The overlay
+; vehicle-ifv-repair-voice.ini gives the IFV (FV) VoiceIFVRepair=SellBuilding. An engineer boards the IFV, which gives it the repair weapon, and
+; attackvoice asks for its reply to an order against a damaged Grizzly tank.
+; Expected: the frame 150 attackvoice line shows FV target MTNK: SellBuilding. Without the overlay key it shows IFVMove, the stock [AudioVisual] VoiceIFVRepair.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/vehicle-ifv-repair-voice.txt -Seconds 40 -Country 0 -Filter "AUTOTEST   attackvoice|Exception"
+10 rules vehicle-ifv-repair-voice.ini
+20 command CenterBase
+30 reveal
+40 own FV 60 20
+41 own ENGINEER 59 20
+42 own MTNK 64 20
+50 enter ENGINEER 60 20
+60 damage MTNK 200
+150 attackvoice FV 64 20
+160 quit

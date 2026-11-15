@@ -53374,6 +53374,20 @@ VoiceHarvest:
 VoiceIFVRepair:
   key: VoiceIFVRepair
   scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: VoiceIFVRepair
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -53381,7 +53395,7 @@ VoiceIFVRepair:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass

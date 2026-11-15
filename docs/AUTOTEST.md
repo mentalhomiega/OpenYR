@@ -104,6 +104,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `aistrike <TypeID> x y` | the computer players' objects of that type attack what stands on that cell, as strike does for the player's |
 | `cameopcx <TypeID>` | writes the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing |
 | `wrench <TypeID> <House>` | writes each structure of that type, whoever owns it, with its owner, whether it is repairing, and whether the named house sees its repair wrench when the cell is not shrouded (`EnemyWrench`) |
+| `attackvoice <TypeID> x y` | writes the weapon-specific reply each of the player's objects of that type gives to an order to attack what stands on the cell (`VoiceIFVRepair`, the weapon attack voices), or `none` when its `VoiceAttack` answers |
 | `exp <TypeID>` | writes the experience of the player's objects of that type |
 | `fall <TypeID> <height>` | puts the player's objects of that type that high in the air, falling, with or without a parachute as the type's animations decide |
 | `flash <TypeID>` | writes the flash count of each object of that type, whoever owns it |

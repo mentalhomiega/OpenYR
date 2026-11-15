@@ -7523,6 +7523,21 @@ static void Cameopcx_Step(StepType const & step)
 }
 
 
+// attackvoice <TypeID> x y: the weapon-specific reply each of the player's objects of the type gives to an order to attack what
+// stands on the cell, or none when its VoiceAttack answers.
+static void Attackvoice_Step(StepType const & step)
+{
+	TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			VocType const voice = techno->Weapon_Attack_Voice(target);
+			DebugString("AUTOTEST   attackvoice %s target %s: %s\n", techno->TClass->Name(), target != NULL ? target->TClass->Name() : "-", voice != VOC_NONE ? Voc_Name(voice) : "none");
+		}
+	}
+}
+
+
 // wrench <TypeID> <House>: each structure of the type, whoever owns it, with whether it is repairing and whether the house
 // sees its repair wrench, shroud aside.
 static void Wrench_Step(StepType const & step)
@@ -7709,6 +7724,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"aistrike", Aistrike_Step},
 		{"cameopcx", Cameopcx_Step},
 		{"wrench", Wrench_Step},
+		{"attackvoice", Attackvoice_Step},
 		{"exp", Exp_Step},
 		{"fall", Fall_Step},
 		{"flash", Flash_Step},
