@@ -48,3 +48,12 @@ inline void Copy_Ring_Rows(RingRows const & dest, Point2D const & to, RingRows c
 		std::memcpy(out, in, (std::size_t)count * sizeof(unsigned short));
 	});
 }
+
+
+// The ring offset an area of width-entry rows starts at after its picture moves by dx, dy without any entry moving:
+// the entry at x, y is then at x + dx, y + dy.
+inline int Ring_Moved_Offset(int offset, int dx, int dy, int width, int size)
+{
+	long long const moved = ((long long)offset - (long long)dy * width - dx) % size;
+	return((int)(moved < 0 ? moved + size : moved));
+}

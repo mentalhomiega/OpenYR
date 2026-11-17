@@ -2091,23 +2091,9 @@ void Tactical::Picture_Moved_To_View(Rect const & kept)
 	LastTacPixelX = TacPixelX;
 	LastTacPixelY = TacPixelY;
 
-	int const width = TacticalDimensions.Width;
-	int const height = TacticalDimensions.Height;
-	if (!kept.Is_Valid()) {
-		Register_Dirty_Area(Rect(0, 0, width, height), true);
-		return;
-	}
-	Rect const strips[4] = {
-		Rect(0, 0, kept.X, height),
-		Rect(kept.X + kept.Width, 0, width - kept.X - kept.Width, height),
-		Rect(kept.X, 0, kept.Width, kept.Y),
-		Rect(kept.X, kept.Y + kept.Height, kept.Width, height - kept.Y - kept.Height),
-	};
-	for (Rect const & strip : strips) {
-		if (strip.Is_Valid()) {
-			Register_Dirty_Area(strip, true);
-		}
-	}
+	For_Each_Rect_Outside(Rect(0, 0, TacticalDimensions.Width, TacticalDimensions.Height), kept, [this](Rect const & strip) {
+		Register_Dirty_Area(strip, true);
+	});
 }
 
 

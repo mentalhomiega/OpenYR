@@ -79,6 +79,12 @@ class DSurface : public XSurface
 		// scrolls; false means nothing moved. The pixels the move brings in from outside hold anything.
 		bool Scroll(int dx, int dy);
 
+		// Makes the picture width by height pixels, at most the size the surface was constructed with, and moves it
+		// by dx, dy as Scroll does, without allocating. A move needs a surface constructed with scrolls; false means
+		// nothing changed. Pixels the picture did not hold before hold anything.
+		bool Reframe(int dx, int dy, int width, int height);
+		virtual Point2D Get_Capacity(void) const override {return(Point2D(CapacityWidth, CapacityHeight));}
+
 		// The memory the pixels lie in and its size, which is larger than the picture on a surface that
 		// scrolls; Get_Buffer points into it. Written_Block lists the bytes of the block written since
 		// the last call of it or of Written_Runs, as Written_Runs does for the picture.
@@ -240,8 +246,12 @@ class DSurface : public XSurface
 		void * Block;
 		std::size_t BlockSize;
 
-		// Set by Scroll: the next Written_Runs reports no list, because every pixel moved.
+		// Set by Scroll and Reframe: the next Written_Runs reports no list, because every pixel moved.
 		mutable bool IsScrolled;
+
+		// The size the surface was constructed with, which Reframe stays within.
+		int CapacityWidth;
+		int CapacityHeight;
 
 		mutable WrittenRects Written;
 

@@ -3055,7 +3055,6 @@ static void Crush_Check_Step(StepType const & step)
 
 // <name> <0|1>: switches one drawing check on (1) or off (0).
 //   presentdigest logs a PRESENT_DIGEST line at each present that reaches the presenter.
-//   drawdigest logs a DRAW_DIGEST line for each draw of the map view.
 //   gpureplay records each object pass of the map view and logs how far a replay of the record is from it.
 //   gpucheck draws each object pass of the map view on the GPU too and logs how far it is from the map view.
 //   drawprobe counts the call stacks that lock the map view in its foreground pass; switching it off logs them.
@@ -3064,6 +3063,16 @@ static void Draw_Check_Step(StepType const & step, void (*setter)(bool))
 	bool const on = step.Argument_Int() != 0;
 	setter(on);
 	DebugString("AUTOTEST %s %d\n", step.Command.c_str(), (int)on);
+}
+
+
+// drawdigest <0|1|2>: 1 logs a DRAW_DIGEST line for each draw of the map view, 2 only for a draw whose game frame or
+// hash differs from the line before, and 0 stops the lines.
+static void Drawdigest_Step(StepType const & step)
+{
+	int const mode = std::clamp(step.Argument_Int(), 0, 2);
+	Video_Set_Draw_Digest((VideoDrawDigest)mode);
+	DebugString("AUTOTEST %s %d\n", step.Command.c_str(), mode);
 }
 
 
@@ -7214,6 +7223,13 @@ static void Zoomlevel_Step(StepType const &)
 }
 
 
+// mapbuffers: logs how many zoom changes there were, how many of them made map buffers, and how many they made.
+static void Mapbuffers_Step(StepType const &)
+{
+	Log_Map_Buffer_Counts();
+}
+
+
 // zoom <factor>: sets the map view zoom at once (0.5 shows twice as much), measured from the screen's own pixels.
 static void Zoom_Step(StepType const & step)
 {
@@ -7790,7 +7806,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"scenarios", Scenarios_Step},
 		{"seatflh", Seatflh_Step},
 		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
-		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
+		{"drawdigest", Drawdigest_Step},
 		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
 		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
 		{"uploadcheck", [](StepType const & step) {GpuMap_Set_Upload_Check(step.Argument_Int() != 0);}},
@@ -8124,6 +8140,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"skipscore", Skipscore_Step},
 		{"lansession", Lansession_Step},
 		{"zoomlevel", Zoomlevel_Step},
+		{"mapbuffers", Mapbuffers_Step},
 		{"zoom", Zoom_Step},
 		{"wheel", Wheel_Step},
 		{"options", Options_Step},

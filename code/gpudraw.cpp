@@ -689,8 +689,8 @@ static GpuRing Ring_Of(T * buffer, std::vector<unsigned short> & fallback)
 		return(GpuRing{ fallback.data(), _Area.Width, _Area.Height, 0 });
 	}
 	int const width = (int)buffer->Get_Buffer_Width();
-	int const height = buffer->Get_Bounds().Height;
-	unsigned short const * start = buffer->Get_Buffer_End() - (std::size_t)width * height;
+	int const height = buffer->Get_Buffer_Rows();
+	unsigned short const * start = buffer->Get_Buffer_Start();
 	unsigned short const * first = buffer->Get_Buffer_Offset(Point2D(_Area.X, _Area.Y - buffer->Get_Bounds().Y));
 	return(GpuRing{ start, width, height, (int)(first - start), &buffer->Written });
 }

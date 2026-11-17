@@ -153,8 +153,15 @@ void Video_Log_Present_Digest(DSurface const * surface, BackendLayer const * lay
 // The keyrect autotest step: how many pixels of the last presented frame in the rectangle hold the map layer key.
 unsigned long long Video_Count_Keyed_Pixels(Rect const & area);
 
-// The drawdigest autotest step: on logs a DRAW_DIGEST line for each map view passed to Video_Note_Draw_Digest.
-void Video_Set_Draw_Digest(bool enabled);
+// The drawdigest autotest step: which map views passed to Video_Note_Draw_Digest log a DRAW_DIGEST line. Changes
+// leaves out a draw with the game frame and hash of the line before it, so the clock-dependent number of draws that
+// repeat a picture between game frames leaves no trace.
+enum VideoDrawDigest {
+	VIDEO_DRAW_DIGEST_OFF,
+	VIDEO_DRAW_DIGEST_ALL,
+	VIDEO_DRAW_DIGEST_CHANGES,
+};
+void Video_Set_Draw_Digest(VideoDrawDigest mode);
 void Video_Note_Draw_Digest(Surface const & surface, Rect const & area);
 
 // The drawprobe autotest step: counts the call stacks that lock the target surface, logged when it is turned off.

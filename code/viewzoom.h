@@ -12,6 +12,8 @@
 #include "point.h"
 #include "rect.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 
 class DSurface;
@@ -98,7 +100,28 @@ bool Map_Layers_Keepable(void);
 
 // Builds or frees the map's own surfaces to match TacticalRect and ViewZoom. With kept, the new tile layer takes
 // that part of the old tile layer's picture; it is the screen's own tile layer when the map is drawn unzoomed.
+// Surfaces made for the largest view (Largest_Map_View) are reused for a new zoom on the same screen, and their
+// tile layer's picture is moved in place.
 void Allocate_Map_Surfaces(KeptMapPicture const * kept = nullptr);
+
+// The size of the largest map view (TacticalRect) that any zoom the game now allows gives on this screen. The map's
+// surfaces and its depth and alpha buffers are made this large once the zoom changes, so later changes reuse them.
+Point2D Largest_Map_View(void);
+
+// Counts one map surface or depth or alpha buffer made, of that many bytes, for the log and the mapbuffers step.
+void Count_Map_Buffer(std::size_t bytes);
+
+// A change of the map view's size: End_Map_View_Step logs the buffers made since Begin_Map_View_Step and the time taken.
+struct MapViewStep {
+	int Made;
+	std::size_t Bytes;
+	std::int64_t Started;
+};
+MapViewStep Begin_Map_View_Step(void);
+void End_Map_View_Step(MapViewStep const & step);
+
+// Logs the zoom changes so far, how many of them made map buffers, and how many buffers they made, for the mapbuffers step.
+void Log_Map_Buffer_Counts(void);
 
 // Changes the zoom at once to the given multiple of the screen's own pixels, keeping the map
 // centered where it was. Returns whether it changed. While the map is being drawn the change waits for

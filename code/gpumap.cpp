@@ -17,6 +17,7 @@
 #include "gpumapvoxel.h"
 #include "gpuvoxel.h"
 #include "monotonic.h"
+#include "perfstat.h"
 #include "renderthread.h"
 #include "writewatch.h"
 
@@ -432,6 +433,15 @@ static void Destroy_Stores(void)
 }
 
 
+// Sends memory to an area of a texture, counting its bytes as an upload in the perf log.
+static void Update_Texture(bgfx::TextureHandle texture, int x, int y, int width, int height, bgfx::Memory const * memory)
+{
+	Perf_Count(PERF_COUNT_UPLOAD_BYTES, memory->size);
+	Perf_Count(PERF_COUNT_UPLOADS);
+	bgfx::updateTexture2D(texture, 0, 0, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height, memory);
+}
+
+
 // Writes memory into the store's top rows. Exact makes the store exactly that many rows; otherwise
 // it keeps spare rows so that it is remade rarely.
 static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int width, int rows, bool exact, bgfx::Memory const * memory)
@@ -451,7 +461,7 @@ static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int widt
 			return(false);
 		}
 	}
-	bgfx::updateTexture2D(store.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)rows, memory);
+	Update_Texture(store.Handle, 0, 0, width, rows, memory);
 	return(true);
 }
 
@@ -498,7 +508,7 @@ static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes
 		bgfx::Memory const * memory = bgfx::alloc((uint32_t)ARENA_WIDTH * (last - first));
 		std::memcpy(memory->data, atlas.Bytes.data() + start, atlas.Bytes.size() - start);
 		std::memset(memory->data + (atlas.Bytes.size() - start), 0, memory->size - (atlas.Bytes.size() - start));
-		bgfx::updateTexture2D(store.Handle, 0, 0, 0, (uint16_t)first, (uint16_t)ARENA_WIDTH, (uint16_t)(last - first), memory);
+		Update_Texture(store.Handle, 0, first, ARENA_WIDTH, last - first, memory);
 		uploaded = atlas.Bytes.size();
 	}
 	bgfx::Memory const * memory = bgfx::alloc((uint32_t)ARENA_WIDTH * rows);
@@ -506,7 +516,7 @@ static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes
 		std::memcpy(memory->data, bytes, size);
 	}
 	std::memset(memory->data + size, 0, memory->size - size);
-	bgfx::updateTexture2D(store.Handle, 0, 0, 0, (uint16_t)ATLAS_ROWS, (uint16_t)ARENA_WIDTH, (uint16_t)rows, memory);
+	Update_Texture(store.Handle, 0, ATLAS_ROWS, ARENA_WIDTH, rows, memory);
 	return(true);
 }
 
@@ -546,7 +556,7 @@ static bool Fill_R16(Store & store, unsigned short const * values, int width, in
 static void Update_Rows(Store & store, unsigned short const * values, int width, int first, int end)
 {
 	uint32_t const size = (uint32_t)((std::size_t)(end - first) * width * sizeof(unsigned short));
-	bgfx::updateTexture2D(store.Handle, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(values + (std::size_t)first * width, size));
+	Update_Texture(store.Handle, 0, first, width, end - first, bgfx::copy(values + (std::size_t)first * width, size));
 }
 
 
@@ -558,7 +568,7 @@ static void Update_Rect(Store & store, unsigned short const * values, int width,
 	for (int r = 0; r < rect.Height; r++) {
 		std::memcpy(memory->data + r * rowbytes, values + (std::size_t)(rect.Y + r) * width + rect.X, rowbytes);
 	}
-	bgfx::updateTexture2D(store.Handle, 0, 0, (uint16_t)rect.X, (uint16_t)rect.Y, (uint16_t)rect.Width, (uint16_t)rect.Height, memory);
+	Update_Texture(store.Handle, rect.X, rect.Y, rect.Width, rect.Height, memory);
 }
 
 
@@ -751,7 +761,7 @@ static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vecto
 		tracked = true;
 	}
 	For_Each_Changed_Run(changed, rows, [&](int first, int end) {
-		bgfx::updateTexture2D(texture, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
+		Update_Texture(texture, 0, first, width, end - first, bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
 	});
 }
 
@@ -774,7 +784,7 @@ static bool Upload_Fade(GpuMapPass const & pass)
 	}
 	if (fresh || pass.FadeVersion != _FadeVersion) {
 		_FadeVersion = pass.FadeVersion;
-		bgfx::updateTexture2D(_Fade, 0, 0, 0, 0, (uint16_t)_FadeWidth, (uint16_t)_FadeHeight, bgfx::copy(pass.Fade->data(), (uint32_t)(pass.Fade->size() * sizeof(unsigned short))));
+		Update_Texture(_Fade, 0, 0, _FadeWidth, _FadeHeight, bgfx::copy(pass.Fade->data(), (uint32_t)(pass.Fade->size() * sizeof(unsigned short))));
 	}
 	return(true);
 }

@@ -368,13 +368,20 @@ void DisplayClass::Init_IO(void)
  *   12/06/1994 JLB : Created.                                                                 *
  *   06/27/1995 JLB : Adjusts tactical map position if necessary.                              *
  *=============================================================================================*/
-// Replaces a depth or alpha buffer with one that covers TacticalRect, holding the kept part of the old one's entries.
+// Fits a depth or alpha buffer to TacticalRect, holding the kept part of its entries. For a change of the zoom alone
+// it reuses the buffer when the buffer can hold the view, and otherwise makes one for the largest view.
 template <typename Buffer>
-static void Replace_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept)
+static void Fit_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept, bool zoom_only)
 {
+	bool const keep = kept != nullptr && kept->From.Is_Valid();
+	if (zoom_only && buffer != nullptr && buffer->Reframe(TacticalRect, keep ? kept->To - kept->From.Top_Left() : Point2D(0, 0), keep)) {
+		return;
+	}
 	std::unique_ptr<Buffer> const old(std::exchange(buffer, nullptr));
-	buffer = new Buffer(TacticalRect);
-	if (kept != nullptr && old != nullptr && kept->From.Is_Valid()) {
+	Point2D const capacity = zoom_only ? Largest_Map_View() : Point2D(TacticalRect.Width, TacticalRect.Height);
+	buffer = new Buffer(TacticalRect, capacity.X, capacity.Y);
+	Count_Map_Buffer((std::size_t)buffer->Get_Buffer_Width() * buffer->Get_Buffer_Rows() * sizeof(unsigned short));
+	if (keep && old != nullptr) {
 		buffer->Copy_From(*old, kept->From, kept->To);
 	}
 }
@@ -385,8 +392,10 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 	DebugString("Set_View_Dimensions(%d,%d,%d,%d)\n", dimensions.X, dimensions.Y, dimensions.Width, dimensions.Height);
 
 	// A change of the zoom alone keeps the map's drawn picture where the old view and the new one overlap.
-	bool const keep = dimensions == ScreenTacticalRect && Map_Layers_Keepable();
+	bool const zoom_only = dimensions == ScreenTacticalRect && TacticalMap != NULL;
+	bool const keep = zoom_only && Map_Layers_Keepable();
 	Rect const old_view = TacticalRect;
+	MapViewStep const step = Begin_Map_View_Step();
 
 	// The map view keeps its corner on screen; zooming out makes it larger than its screen area.
 	ScreenTacticalRect = dimensions;
@@ -413,15 +422,16 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		Hide_Mouse();
 
 		GpuMap_Release_References();
-		Replace_View_Buffer(DepthBuffer, keep ? &kept : nullptr);
-		DebugString("Allocating ZBuffer (%dx%d)\n", TacticalRect.Width, TacticalRect.Height);
-		Replace_View_Buffer(AlphaBuffer, keep ? &kept : nullptr);
-		DebugString("Allocating ABuffer (%dx%d)\n", TacticalRect.Width, TacticalRect.Height);
+		Fit_View_Buffer(DepthBuffer, keep ? &kept : nullptr, zoom_only);
+		Fit_View_Buffer(AlphaBuffer, keep ? &kept : nullptr, zoom_only);
 		if (keep) {
 			TacticalMap->Picture_Moved_To_View(Rect(kept.To.X, kept.To.Y, kept.From.Width, kept.From.Height));
 		}
 
 		Show_Mouse();
+	}
+	if (zoom_only) {
+		End_Map_View_Step(step);
 	}
 
 	Map.Reposition_Sidebar();

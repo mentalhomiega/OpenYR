@@ -321,31 +321,89 @@ view alone took about 31 ms.
 
 ## Zoom changes
 
-A change of the zoom keeps the map's drawn picture. The map surfaces and the depth and alpha buffers are
-still built anew for the new view size, but the part of the old picture that the new view shows is copied
-into them, with its emissive and shadow planes, and only the edges the old view did not show are drawn. A
+A change of the zoom keeps the map's drawn picture and draws only the edges the old view did not show. A
 step inward draws nothing new unless the map's edge moves the view. While a zoom glides, the map is drawn
 every frame at the zoom the glide drew last, so objects keep moving, and the presenter scales the part of
 that picture the glide shows. The GPU pass and the presenter's map texture keep the size of the whole drawn
-view through a glide; before, they were made again in every frame of a glide, as the part shown changed
-size.
+view through a glide.
+
+The map's two surfaces and its depth and alpha buffers are made once, at the first zoom change that needs
+them, for the largest map view any zoom allows on that screen. Each later change of the zoom uses part of
+them: the tile layer, the depth buffer and the alpha buffer keep their contents where they are in memory,
+and only the place where the view starts moves, as a scroll moves it. The part of the picture both views
+show, with its emissive and shadow planes, is therefore neither copied nor sent to the GPU again; while the
+GPU reads the tile layer in place, only the new edges of the three go up. The surfaces and buffers are made
+again when the screen's map area changes size or place, and when the largest view grows past them, since
+the zoom range follows the map's visible area. When the zoom returns to 1, the map surfaces are freed and
+the depth and alpha buffers keep their size until the screen's map area changes. The picture is drawn whole,
+in the same buffers, while a light fade is deferred and with `OPENYR_NO_ZOOM_KEEP=1` in the environment.
+
+Memory the map surfaces and the depth and alpha buffers use once the zoom has changed, as the `Map view` and
+`Map surfaces` lines of the log give it. Before this change the same amount was used at the furthest zoom,
+and less at a nearer one. Each emissive or shadow plane, kept while HDR highlights, `Bloom`, `SoftShadows`
+or `WaterRipples` need them, adds one byte for each pixel of its surface's size.
+
+| Screen, map | Largest view | Map surfaces | Depth and alpha | All |
+|---|---|---|---|---|
+| 1920x1080, XMP22S8 | 3840x2160 | 50 MB | 33 MB | 83 MB |
+| 3840x2160, XMP04T8 | 7546x4245 | 199 MB, made for 7680x4320 | 128 MB | 327 MB |
+
+The tile layer takes two thirds of the map surfaces' share, because its memory holds twice its largest
+picture for scrolling ([GPU_MAP.md](GPU_MAP.md#uploads)). At 3840x2160 the map surfaces were made at the
+first zoom change of the game, when the largest view was 7680x4320, and were large enough for every later view.
 
 The settled picture is the one a full redraw gives. `tests/autotest/zoom-glide.txt` glides ten mouse-wheel
-steps out and ten back in on XMP22S8 and logs the map digest of the settled view as left and after a full
-redraw; all of them match. In software, every draw of that glide also matched the draw of a run with
-`OPENYR_NO_ZOOM_KEEP=1`, which draws the whole picture at each step as before. The picture is drawn whole
-again, as before, while a light fade is deferred, when the screen size changes, and with
-`OPENYR_NO_ZOOM_KEEP=1` in the environment.
+steps out and ten back in on XMP22S8. Its `mapbuffers` lines show that the glide out changed the drawn zoom
+five times and that only the first change made buffers. It logs the map digest of the settled view as left
+and after a full redraw with `drawdigest 2`, which leaves out draws that repeat a frame's picture. The
+number of draws in a game frame depends on the clock, so with every draw logged two runs gave different
+frame and draw numbers for the same hashes; five runs now give the same log. At 1920x1080, window shots
+taken during both glides and after them matched pixel for pixel the shots of a run with
+`OPENYR_NO_ZOOM_KEEP=1`, in software and GPU drawing, and in GPU drawing also with `SoftShadows`, `Bloom`
+and Enhanced HDR highlights on; the shots after the glides also matched with `RenderThread=yes`. The shots
+after the glides matched those of the build before this change at 1920x1080 on XMP22S8 and at 3840x2160 on
+XMP04T8.
 
-Where a zoom step's time went before, from one step at 3840x2160 to a 3840x2160 map view, about 90 ms in
-both drawing modes: 14 ms for the two map surfaces, 9 ms for the depth and alpha buffers, 50 ms redrawing
-the tile layer and 8 to 15 ms presenting the new picture, most of it in the GPU frame that takes the new
-textures. A step to the furthest zoom on XMP04T8 (a 7546x4245 view) took about 100, 250 and 85 ms for the
+Each step of the glide out, before and after, from one run each with the GPU busy with another program, so
+the times are those of the processor only. Time is the zoom change itself in software drawing (making or
+reusing the surfaces and buffers and moving the kept picture), as the `Map view` line gives it; drawing the
+new edges is the same as before. Sent is what the GPU map pass sent of its textures in the passes that
+followed the step, in GPU drawing.
+
+| Screen, map | Step view | Made before | after | Time before | after | Sent before | after |
+|---|---|---|---|---|---|---|---|
+| 1920x1080, XMP22S8 | 2133x1200 | 4 buffers, 26 MB | 4 buffers, 83 MB | 6.2 ms | 13.5 ms | 27 MB | 91 MB |
+| | 2400x1350 | 4, 32 MB | none | 8.5 ms | 0.3 ms | 33 MB | 5.1 MB |
+| | 2742x1542 | 4, 42 MB | none | 10.8 ms | 0.4 ms | 43 MB | 6.9 MB |
+| | 3200x1800 | 4, 58 MB | none | 15.3 ms | 0.5 ms | 59 MB | 9.9 MB |
+| | 3840x2160 | 4, 83 MB | none | 19.7 ms | 0.8 ms | 84 MB | 15.7 MB |
+| 3840x2160, XMP04T8 | 4266x2400 | 4, 102 MB | 2 buffers, 128 MB | 27.4 ms | 39.3 ms | 103 MB | 133 MB |
+| | 4800x2700 | 4, 130 MB | none | 35.4 ms | 1.0 ms | 130 MB | 17 MB |
+| | 5485x3085 | 4, 169 MB | none | 43.6 ms | 1.4 ms | 170 MB | 24 MB |
+| | 6400x3600 | 4, 230 MB | none | 57.5 ms | 2.1 ms | 231 MB | 37 MB |
+| | 7546x4245 | 4, 320 MB | none | 86.2 ms | 2.9 ms | 321 MB | 55 MB |
+
+What is sent after a step is now the edges of the tile layer and of the depth and alpha buffers. A rectangle
+that was named twice, as the strips a step brings in are by both the buffers and the background pass, goes
+up once. The first step sends the whole of the new tile layer and buffers.
+
+Some costs remain. The GPU pass's textures and the presenter's map texture are still made again when the
+drawn view's size changes, which happens at each step; this is GPU memory and was not measured. In software
+drawing the presenter sends the whole map picture with every present, zoomed or not. At 3840x2160 on XMP04T8
+the view shot as the glide out left it differs from a run with `OPENYR_NO_ZOOM_KEEP=1` in 57 pixels, and the
+settled view after the glide in differs in 66 pixels even when it is redrawn whole; the build before this
+change shows the same pictures as this one, and the cause is not yet known.
+
+The picture was first kept across zoom changes in an earlier change, which still made new surfaces and
+buffers at each step and copied the kept part of the picture into them. Before that change, one step at
+3840x2160 to a 3840x2160 map view took about 90 ms in both drawing modes: 14 ms for the two map surfaces,
+9 ms for the depth and alpha buffers, 50 ms redrawing the tile layer and 8 to 15 ms presenting the new
+picture, most of it in the GPU frame that takes the new textures. A step to the furthest zoom on XMP04T8 (a 7546x4245 view) took about 100, 250 and 85 ms for the
 same three parts.
 
-Measured with `zoom-glide.txt` played without the frame limit, before and after, two runs each, with no
-other game running except in eight of the 3840x2160 runs, which had one; the times are the sum of the game
-frame intervals over each glide's 61 frames and the longest frame interval, in ms:
+That change was measured with `zoom-glide.txt` played without the frame limit, before and after it, two
+runs each, with no other game running except in eight of the 3840x2160 runs, which had one; the times are
+the sum of the game frame intervals over each glide's 61 frames and the longest frame interval, in ms:
 
 | Screen, map | Drawing | Glide out before | after | Longest frame before | after |
 |---|---|---|---|---|---|
@@ -355,11 +413,6 @@ frame intervals over each glide's 61 frames and the longest frame interval, in m
 | 3840x2160, XMP04T8 | Software | 2230, 2212 | 1094, 1144 | 370, 372 | 228, 244 |
 | 3840x2160, XMP04T8 | GPU | 1383, 1406 | 922, 927 | 413, 446 | 276, 278 |
 | 3840x2160, XMP04T8 | GPU, `GpuVoxels=yes` | 1727, 1646 | 976, 933 | 411, 444 | 292, 275 |
-
-Gliding back in took 0.06 to 0.95 s before and 0.04 to 0.55 s after. A step still allocates the new surfaces
-and buffers, about 25 ms for a 3840x2160 view, and sends the whole new picture to the GPU, about 15 ms,
-since every pixel of it moved; at the furthest zoom on a large map a single step outward still takes about
-230 ms.
 
 ## Start-up with a large mod
 

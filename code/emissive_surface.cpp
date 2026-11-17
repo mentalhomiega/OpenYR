@@ -46,7 +46,8 @@ void Emissive_Sync(Surface const * composite, Surface const * tile, Surface cons
 	Emissive_Retain(keep, count);
 
 	for (int index = 0; index < count; index++) {
-		Emissive_Bind(keep[index], ((Surface const *)keep[index])->Get_Width(), ((Surface const *)keep[index])->Get_Height());
+		Point2D const size = ((Surface const *)keep[index])->Get_Capacity();
+		Emissive_Bind(keep[index], size.X, size.Y);
 	}
 }
 

@@ -69,14 +69,15 @@ class WrittenRects
 			Note_Rows(0, row + 1, width - head, height, rows);
 		}
 
-		// Moves the rectangles named since the last call into rects. False means the whole store may
-		// have been written, and rects is then empty.
+		// Moves the rectangles named since the last call into rects, leaving out each one that lies inside
+		// another. False means the whole store may have been written, and rects is then empty.
 		bool Take(std::vector<Rect> & rects)
 		{
 			rects.clear();
 			bool const listed = !All;
 			if (listed) {
 				rects.swap(Rects);
+				Drop_Covered(rects);
 			}
 			All = false;
 			Rects.clear();
@@ -84,6 +85,25 @@ class WrittenRects
 		}
 
 	private:
+		// A rectangle equal to an earlier one, or inside a larger one, is dropped; what is left covers the same values.
+		static void Drop_Covered(std::vector<Rect> & rects)
+		{
+			std::vector<unsigned char> covered(rects.size(), 0);
+			for (std::size_t index = 0; index < rects.size(); index++) {
+				for (std::size_t other = 0; other < rects.size() && covered[index] == 0; other++) {
+					Rect const & rect = rects[index];
+					covered[index] = other != index && Intersect(rect, rects[other]) == rect && (rects[other] != rect || other < index);
+				}
+			}
+			std::size_t kept = 0;
+			for (std::size_t index = 0; index < rects.size(); index++) {
+				if (covered[index] == 0) {
+					rects[kept++] = rects[index];
+				}
+			}
+			rects.resize(kept);
+		}
+
 		void Note_Rows(int column, int row, int width, int height, int rows)
 		{
 			row %= rows;

@@ -150,6 +150,8 @@ DSurface::DSurface(int width, int height, bool watched, bool scrolls) :
 	Block(NULL),
 	BlockSize(0),
 	IsScrolled(false),
+	CapacityWidth(width),
+	CapacityHeight(height),
 	Changes(Next_Change()),
 	Serial(Next_Serial())
 {
@@ -267,27 +269,43 @@ void DSurface::Note_Written(Rect const & rect)
 
 bool DSurface::Scroll(int dx, int dy)
 {
-	std::size_t const size = (std::size_t)Pitch * Get_Height();
-	if (Block == NULL || BlockSize == size) {
+	return(Reframe(dx, dy, Get_Width(), Get_Height()));
+}
+
+
+bool DSurface::Reframe(int dx, int dy, int width, int height)
+{
+	if (width < 0 || height < 0 || width > CapacityWidth || height > CapacityHeight) {
 		return(false);
 	}
-	char * const block = (char *)Block;
-	char * const moved = (char *)GDIBuffer - ((std::ptrdiff_t)dy * Pitch + (std::ptrdiff_t)dx * 2);
-	if (moved >= block && moved + size <= block + BlockSize) {
-		GDIBuffer = moved;
-	} else {
-		// The picture has reached an end of the block, so the part that stays in view is copied to the middle.
-		Written.Note_All();
-		char * const centre = block + Centre_Offset(BlockSize, size);
-		char * const first = std::max(moved, block);
-		char * const end = std::min(moved + size, block + BlockSize);
-		if (first < end) {
-			std::memmove(centre + (first - moved), first, (std::size_t)(end - first));
-		}
-		GDIBuffer = centre;
+	bool const moves = dx != 0 || dy != 0;
+	if (moves && (Block == NULL || BlockSize == (std::size_t)Pitch * CapacityHeight)) {
+		return(false);
 	}
-	IsScrolled = true;
-	Changes = Next_Change();
+	if (Block != NULL) {
+		std::size_t const size = (std::size_t)Pitch * height;
+		char * const block = (char *)Block;
+		char * const moved = (char *)GDIBuffer - ((std::ptrdiff_t)dy * Pitch + (std::ptrdiff_t)dx * 2);
+		if (moved >= block && moved + size <= block + BlockSize) {
+			GDIBuffer = moved;
+		} else {
+			// The picture has reached an end of the block, so the part that stays in view is copied to the middle.
+			Written.Note_All();
+			char * const centre = block + Centre_Offset(BlockSize, size);
+			char * const first = std::max(moved, block);
+			char * const end = std::min(moved + size, block + BlockSize);
+			if (first < end) {
+				std::memmove(centre + (first - moved), first, (std::size_t)(end - first));
+			}
+			GDIBuffer = centre;
+		}
+	}
+	if (moves || width != Width || height != Height) {
+		IsScrolled = true;
+		Changes = Next_Change();
+	}
+	Width = width;
+	Height = height;
 	return(true);
 }
 

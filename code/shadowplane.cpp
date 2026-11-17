@@ -74,7 +74,8 @@ EmissivePlane * ShadowPlane_Bind(Surface const & surface)
 	if (!_Enabled) {
 		return(NULL);
 	}
-	return(_Bindings.Acquire(&surface, surface.Get_Width(), surface.Get_Height(), false));
+	Point2D const size = surface.Get_Capacity();
+	return(_Bindings.Acquire(&surface, size.X, size.Y, false));
 }
 
 
@@ -303,7 +304,8 @@ ShadowOnceRows::ShadowOnceRows(Surface const * dest, int x, int y) : X(x), Y(y)
 	if (!_OnceEnabled || _OnceScopes == 0 || dest == NULL || dest->Bytes_Per_Pixel() != 2) {
 		return;
 	}
-	Marks = _OnceMarks.Acquire(dest, dest->Get_Width(), dest->Get_Height(), false);
+	Point2D const size = dest->Get_Capacity();
+	Marks = _OnceMarks.Acquire(dest, size.X, size.Y, false);
 }
 
 
