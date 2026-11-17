@@ -35,6 +35,9 @@
 
 bool Main_Loop(void);
 void Rounding_Test_Set(char const * mode);
+double Pacing_Target_Milliseconds(void);
+void Pacing_Probe_Start(void);
+void Pacing_Probe_Report(char const * name);
 void Keyboard_Process(KeyNumType & input);
 void Remember_Render_Coords(void);
 void Multiplayer_Debug_Print(bool noframecheck);

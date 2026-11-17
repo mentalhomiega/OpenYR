@@ -15,6 +15,7 @@
 #include "isotype.h"
 #include "theater.h"
 #include "mainloop.h"
+#include "netsemantic.h"
 #include "combat.h"
 #include "ebolt.h"
 #include "laser.h"
@@ -7448,6 +7449,40 @@ static void Perfwindow_Step(StepType const & step)
 }
 
 
+// gamespeed <0-6>: sets the game speed option, as the options slider does in a solo game. Only the pacing and the animation delay tables read it.
+static void Gamespeed_Step(StepType const & step)
+{
+	Options.GameSpeed = NetSemantic::Clamp_Game_Speed(step.Argument_Int());
+}
+
+
+// pace: logs the game frame length the pacer aims at, in milliseconds, with the game speed and the kind of game.
+static void Pace_Step(StepType const &)
+{
+	double const ms = Pacing_Target_Milliseconds();
+	DebugString("AUTOTEST pace speed %d %s target %.3f ms %.2f fps\n", Options.GameSpeed,
+		Session.Type == GAME_NORMAL ? "campaign" : Session.Type == GAME_SKIRMISH ? "skirmish" : "network", ms, ms > 0.0 ? 1000.0 / ms : 0.0);
+}
+
+
+// paceprobe <start|report> [name]: counts the game frame intervals that end early. See Pacing_Probe_Report.
+static void Paceprobe_Step(StepType const & step)
+{
+	if (step.Argument == "start") {
+		Pacing_Probe_Start();
+		return;
+	}
+	Pacing_Probe_Report(step.Words.size() > 3 ? step.Words[3].c_str() : "");
+}
+
+
+// slowframe <ms>: makes this game frame take that much longer, as a spike in the game logic would.
+static void Slowframe_Step(StepType const & step)
+{
+	Sleep((DWORD)std::max(0, step.Argument_Int()));
+}
+
+
 // keyrect <x> <y> <w> <h>: logs how many pixels of the last presented frame in that screen rectangle hold the map layer key.
 static void Keyrect_Step(StepType const & step)
 {
@@ -8159,6 +8194,10 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"perflog", Perflog_Step},
 		{"perfoverlay", Perfoverlay_Step},
 		{"perfwindow", Perfwindow_Step},
+		{"gamespeed", Gamespeed_Step},
+		{"pace", Pace_Step},
+		{"paceprobe", Paceprobe_Step},
+		{"slowframe", Slowframe_Step},
 		{"uploadverify", Uploadverify_Step},
 		{"keyrect", Keyrect_Step},
 		{"stretchprobe", Stretchprobe_Step},

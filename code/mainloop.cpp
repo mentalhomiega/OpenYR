@@ -254,6 +254,69 @@ static NetTiming::FramePeriod Target_Frame_Period(void)
 	return(NetTiming::Frame_Period_For_Rate(Target_Frame_Rate()));
 }
 
+/// <summary>
+/// The length of a game frame at the current target, in milliseconds, or zero for no limit.
+/// </summary>
+double Pacing_Target_Milliseconds(void)
+{
+	NetTiming::FramePeriod const period = Target_Frame_Period();
+	return(period.Nanoseconds <= 0 ? 0.0 : period.Nanoseconds / 1e6 / period.Frames);
+}
+
+
+// Frame intervals an autotest asked to be counted.
+static struct {
+	bool Active = false;
+	std::int64_t Last = 0;
+	unsigned int Frames = 0;
+	unsigned int Short = 0;
+	double Sum = 0.0;
+	double Max = 0.0;
+} PaceProbe;
+
+
+/// <summary>
+/// Starts counting the game frame intervals and how many of them end more than 3 ms before the target length.
+/// </summary>
+void Pacing_Probe_Start(void)
+{
+	PaceProbe = {};
+	PaceProbe.Active = true;
+}
+
+
+/// <summary>
+/// Logs the counts since Pacing_Probe_Start. The "short" line holds only the count of frames that ended early,
+/// which does not depend on how busy the machine is; the times are on a line of their own.
+/// </summary>
+void Pacing_Probe_Report(char const * name)
+{
+	DebugString("AUTOTEST paceprobe %s short frames %u\n", name, PaceProbe.Short);
+	DebugString("AUTOTEST paceprobe-times %s frames %u mean %.2f ms max %.2f ms target %.2f ms\n", name, PaceProbe.Frames,
+		PaceProbe.Frames > 0 ? PaceProbe.Sum / PaceProbe.Frames : 0.0, PaceProbe.Max, Pacing_Target_Milliseconds());
+	PaceProbe.Active = false;
+}
+
+
+static void Note_Pacing_Probe(void)
+{
+	if (!PaceProbe.Active) {
+		return;
+	}
+	std::int64_t const now = Monotonic_Nanoseconds();
+	if (PaceProbe.Last != 0) {
+		double const interval = (now - PaceProbe.Last) / 1e6;
+		double const target = Pacing_Target_Milliseconds();
+		PaceProbe.Frames++;
+		PaceProbe.Sum += interval;
+		PaceProbe.Max = std::max(PaceProbe.Max, interval);
+		if (target > 0.0 && interval < target - 3.0) {
+			PaceProbe.Short++;
+		}
+	}
+	PaceProbe.Last = now;
+}
+
 // Recent time a view redraw took, in milliseconds, averaged over the last few draws.
 static double RenderCost = 0.0;
 
@@ -974,6 +1037,7 @@ void Sync_Delay(void)
 		second_timer = 1000;
 	}
 
+	Note_Pacing_Probe();
 	Log_Tick_Intervals();
 }
 

@@ -1,0 +1,17 @@
+; Pace by game speed, skirmish: the game frame length the pacer aims at for each of the seven game speeds. Speed 0 has no limit; speeds 1 to 6 give 16 ms times the speed, as gamemd's frame timer counts 16 ms units (0x55E160). The step reads the target, not the clock, so the log is the same on every machine.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/pace-speed-skirmish.txt -Width 640 -Height 480 -Seconds 60 -Filter "AUTOTEST pace |Exception"
+1 gamespeed 0
+1 pace
+1 gamespeed 1
+1 pace
+1 gamespeed 2
+1 pace
+1 gamespeed 3
+1 pace
+1 gamespeed 4
+1 pace
+1 gamespeed 5
+1 pace
+1 gamespeed 6
+1 pace
+3 quit
