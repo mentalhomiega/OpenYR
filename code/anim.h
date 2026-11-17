@@ -88,6 +88,8 @@ class AnimClass : public ObjectClass, public StageClass
 		bool IsStatusEffect;
 
 		// The strength this animation's picture takes in the emissive mask before any translucency scales it.
+		ConvertClass * Draw_Converter(void) const;
+
 		unsigned char Emissive_Strength(void) const { return(IsStatusEffect && !Class->IsEmissiveKeyed ? (unsigned char)0 : Class->EmissiveStrength); }
 		void Play_Backward(void);
 		void Make_Invisible(void) {IsInvisible = true;};

@@ -640,35 +640,21 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 
 			int height = HeightAGL;
 			int brightness = NORMAL_LIGHT;
-			ConvertClass * convert;
+			ConvertClass * convert = Draw_Converter();
 
 			if (Class->IsVeins) {
-				convert = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 				if (!Class->IsUseNormalLight) {
 					brightness = Map[Render_Coord()].TileBrightness;
 				}
 			} else if (IsAttachedToCell) {
-				CellClass * cellptr = &Map[Render_Coord().As_Cell()];
-				if (cellptr->Drawer == NULL) {
-					cellptr->Init_Drawer();
-				}
-				convert = cellptr->Drawer;
 				if (!Class->IsUseNormalLight) {
-					brightness = cellptr->TileBrightness;
+					brightness = Map[Render_Coord().As_Cell()].TileBrightness;
 				}
 			} else if (AlternativeDrawer != NULL) {
-				convert = AlternativeDrawer;
 				if (!Class->IsUseNormalLight) {
 					brightness = AlternativeBrightness;
 				}
 			} else {
-				convert = AnimDrawer;
-				if (Class->IsAltPalette) {
-					convert = ColorSchemes[0]->Converter;
-				}
-				if (ConvertClass * custom = Custom_Palette_Drawer(Class->CustomPalette)) {
-					convert = custom;
-				}
 				if (!Class->IsUseNormalLight) {
 					brightness = Map[Render_Coord().As_Cell()].Brightness;
 				}
@@ -1181,6 +1167,32 @@ void AnimClass::AI(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// The converter this animation's picture draws through. A palette file named by the type's CustomPalette key
+/// replaces the converter of every animation except a vein, one held by a cell and one that carries a house or Tiberium tint.
+/// </summary>
+ConvertClass * AnimClass::Draw_Converter(void) const
+{
+	if (Class->IsVeins) {
+		return(ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter);
+	}
+	if (IsAttachedToCell) {
+		CellClass * cellptr = &Map[Render_Coord().As_Cell()];
+		if (cellptr->Drawer == NULL) {
+			cellptr->Init_Drawer();
+		}
+		return(cellptr->Drawer);
+	}
+	if (AlternativeDrawer != NULL) {
+		return(AlternativeDrawer);
+	}
+	if (ConvertClass * custom = Custom_Palette_Drawer(Class->CustomPalette)) {
+		return(custom);
+	}
+	return(Class->IsAltPalette ? ColorSchemes[0]->Converter : AnimDrawer);
 }
 
 
