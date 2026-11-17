@@ -863,7 +863,9 @@ bool XSurface::Put_Pixel_Clip(Point2D const & point, int color, Rect const & rec
  *=============================================================================================*/
 bool XSurface::Fill_Rect(Rect const & fillrect, int color)
 {
-	return(XSurface::Fill_Rect(fillrect, Get_Rect(), color));
+	// The whole surface is the clipping rectangle. With the two the other way round, a rectangle that starts left of or
+	// above the surface was filled short by that much, which left old pixels along the right and bottom.
+	return(XSurface::Fill_Rect(Get_Rect(), fillrect, color));
 }
 
 

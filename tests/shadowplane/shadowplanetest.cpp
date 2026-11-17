@@ -266,9 +266,36 @@ void Test_Depth_Write(void)
 } // namespace
 
 
+// A fill whose rectangle starts left of and above the surface covers every pixel the rectangle holds. The scratch
+// surface a vehicle and its turret are composed on is cleared this way, and a turret picture wider than the surface
+// starts left of it.
+void Test_Fill_Past_Edge(void)
+{
+	int const size = 8;
+	std::vector<unsigned char> pixels(size * size, 7);
+	BSurface surface(size, size, 1, pixels.data());
+	surface.Fill_Rect(Rect(-3, -2, 20, 6), 0);
+	bool inside = true;
+	bool outside = true;
+	for (int y = 0; y < size; y++) {
+		for (int x = 0; x < size; x++) {
+			bool const filled = pixels[y * size + x] == 0;
+			if (y < 4) {
+				inside = inside && filled;
+			} else {
+				outside = outside && !filled;
+			}
+		}
+	}
+	Check(inside, "a fill that starts off the surface fills the whole width it covers");
+	Check(outside, "a fill that starts off the surface leaves the rows below it");
+}
+
+
 int main(void)
 {
 	Test_Plane();
+	Test_Fill_Past_Edge();
 	Test_Water();
 	Test_Shadow_Once();
 	Test_Depth_Write();
