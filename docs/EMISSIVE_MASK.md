@@ -90,7 +90,9 @@ in the red channel. SDR output clears the target and never reads it.
   cached vehicle has no highlights.
 - Voxels write the mask beside each palette index, with `Emissive_Voxel_Highlight()`
   on the shade row. The table does not separate specular rows from diffuse rows
-  above 16, so both feed the mask.
+  above 16, and counting them all made half of every vehicle glow under enhanced
+  highlights, so only the rows above 27 feed the mask, rising in four steps to the
+  table strength at row 31.
 - Light posts have a name default (`NAPOST_A`, `NAPOST_AD`, `NAPOST_B`). The
   Chronosphere and Iron Curtain effects have no separate rule. They are emissive
   through their flags, such as `Translucency=50`, or through an `Emissive=` key.

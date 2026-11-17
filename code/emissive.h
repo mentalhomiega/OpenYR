@@ -180,6 +180,11 @@ unsigned char Emissive_Anim_Name_Default(char const * name);
 
 // Voxel highlight strength for a shade row. Rows 16 and below are not highlights; row 31 gives
 // the table strength.
+// The brightest shade row of a voxel that is no highlight. The rows above 16 are brighter than the plain colour, but
+// most of them are ordinary lit faces: counting them all made half of every vehicle glow under enhanced highlights.
+// Only the few brightest rows, the glints, feed the mask. voxelshade.sh holds the same number.
+constexpr int EMISSIVE_VOXEL_LAST_PLAIN_ROW = 27;
+
 unsigned char Emissive_Voxel_Highlight(int shade_row);
 
 // Gain on paper white for one pixel: 1 + mask/255 * (peak/paper - 1). Peak and paper white are
