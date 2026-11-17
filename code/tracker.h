@@ -29,6 +29,10 @@ void Process_Deferred_Deletion(void);
  * tracked by FactoryPtrTracker.
  */
 extern DynamicVectorClass<AbstractClass *> ObjectPtrTracker;
+
+// Adds a holder to ObjectPtrTracker or takes it out again. Every addition and removal goes through these.
+void Track_Object_Holder(AbstractClass * holder);
+void Untrack_Object_Holder(AbstractClass * holder);
 extern DynamicVectorClass<AbstractClass *> AbstractTypePtrTracker;
 extern DynamicVectorClass<AbstractClass *> TagPtrTracker;
 extern DynamicVectorClass<AbstractClass *> TriggerPtrTracker;

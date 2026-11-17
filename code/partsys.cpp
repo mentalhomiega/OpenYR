@@ -99,7 +99,7 @@ ParticleSystemClass::ParticleSystemClass(ParticleSystemTypeClass const * type, C
 		CoordOffset = Coord(Position) - Source->Center_Coord();
 	}
 
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 }
 
 
@@ -124,7 +124,7 @@ ParticleSystemClass::ParticleSystemClass(void) :
 {
 	SystemParticles.Clear();
 	ParticleSystems.Add(this);
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 }
 
 
@@ -148,7 +148,7 @@ ParticleSystemClass::~ParticleSystemClass(void)
 
 	ParticleSystems.Delete(this);
 	AbstractTypePtrTracker.Delete(this);
-	ObjectPtrTracker.Delete(this);
+	Untrack_Object_Holder(this);
 }
 
 
