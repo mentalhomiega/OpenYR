@@ -357,10 +357,12 @@ steps out and ten back in on XMP22S8. Its `mapbuffers` lines show that the glide
 five times and that only the first change made buffers. It logs the map digest of the settled view as left
 and after a full redraw with `drawdigest 2`, which leaves out draws that repeat a frame's picture. The
 number of draws in a game frame depends on the clock, so with every draw logged two runs gave different
-frame and draw numbers for the same hashes; five runs now give the same log. Window shots taken during
-both glides and after them matched pixel for pixel the shots of a run with `OPENYR_NO_ZOOM_KEEP=1`, in
-software and GPU drawing and with `RenderThread` on and off, and the shots of the build before this change
-at 1920x1080 on XMP22S8 and at 3840x2160 on XMP04T8.
+frame and draw numbers for the same hashes; five runs now give the same log. At 1920x1080, window shots
+taken during both glides and after them matched pixel for pixel the shots of a run with
+`OPENYR_NO_ZOOM_KEEP=1`, in software and GPU drawing, and in GPU drawing also with `SoftShadows`, `Bloom`
+and Enhanced HDR highlights on; the shots after the glides also matched with `RenderThread=yes`. The shots
+after the glides matched those of the build before this change at 1920x1080 on XMP22S8 and at 3840x2160 on
+XMP04T8.
 
 Each step of the glide out, before and after, from one run each with the GPU busy with another program, so
 the times are those of the processor only. Time is the zoom change itself in software drawing (making or
