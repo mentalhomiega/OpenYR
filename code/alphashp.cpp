@@ -51,7 +51,7 @@ AlphaShapeClass::AlphaShapeClass(ObjectClass * owner, int x, int y) :
 	ImageData = image;
 	DrawRect = Rect(x, y, image->Get_Width(), image->Get_Height());
 	AlphaShapes.Add(this);
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 
 	if (!BrightnessCalculated) {
 		Calculate_Brightness_Table();
@@ -72,7 +72,7 @@ AlphaShapeClass::AlphaShapeClass(void) :
 	IsToDelete(false)
 {
 	AlphaShapes.Add(this);
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 
 	if (!BrightnessCalculated) {
 		Calculate_Brightness_Table();
@@ -88,7 +88,7 @@ AlphaShapeClass::AlphaShapeClass(void) :
 AlphaShapeClass::~AlphaShapeClass(void)
 {
 	AlphaShapes.Delete(this);
-	ObjectPtrTracker.Delete(this);
+	Untrack_Object_Holder(this);
 }
 
 

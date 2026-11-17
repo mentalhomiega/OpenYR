@@ -102,6 +102,9 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_GPU_VOXEL_PARTS, // voxel parts of the passes the GPU drew
 	PERF_COUNT_GPU_VOXEL_DIRECT, // those parts a blit shows
 	PERF_COUNT_GPU_VOXEL_FACES, // cube faces those parts' draws submitted (a pass scale above 1)
+	PERF_COUNT_LOGIC_OVER_20,   // game frames whose logic took over 20 ms
+	PERF_COUNT_LOGIC_OVER_33,   // game frames whose logic took over 33 ms
+	PERF_COUNT_LOGIC_OVER_50,   // game frames whose logic took over 50 ms
 	PERF_COUNTER_COUNT
 };
 

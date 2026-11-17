@@ -182,7 +182,7 @@ ObjectClass::ObjectClass(void) :
 	LineTrailer(NULL)
 {
 	Objects.Add(this);
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 	AbstractTypePtrTracker.Add(this);
 	TagPtrTracker.Add(this);
 }
@@ -202,7 +202,7 @@ ObjectClass::~ObjectClass(void)
 	}
 	ObjectsToDelete.Delete(this);
 	Objects.Delete(this);
-	ObjectPtrTracker.Delete(this);
+	Untrack_Object_Holder(this);
 	AbstractTypePtrTracker.Delete(this);
 	TagPtrTracker.Delete(this);
 

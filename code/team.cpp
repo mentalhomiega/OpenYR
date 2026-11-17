@@ -345,7 +345,7 @@ TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unkn
 	Teams.Add(this);
 	AbstractTypePtrTracker.Add(this);
 	TagPtrTracker.Add(this);
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 	NeuronPtrTracker.Add(this);
 
 	memset(Quantity, 0, sizeof(Quantity));
@@ -430,7 +430,7 @@ TeamClass::~TeamClass(void)
 	Detach_This_From_All(this);
 
 	NeuronPtrTracker.Delete(this);
-	ObjectPtrTracker.Delete(this);
+	Untrack_Object_Holder(this);
 	AbstractTypePtrTracker.Delete(this);
 	TagPtrTracker.Delete(this);
 	Teams.Delete(this);

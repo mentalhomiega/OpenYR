@@ -75,6 +75,7 @@ char const * const Counter_Names[PERF_COUNTER_COUNT] = {
 	"ring cells", "cell candidates", "object evals", "area modify", "weapon selects",
 	"detach calls", "detach visits", "detach bullet", "detach anim", "detach particle", "detach techno", "detach other",
 	"draws skipped", "presents busy", "gpu voxel parts", "gpu voxel direct", "gpu voxel faces",
+	"logic over 20 ms", "logic over 33 ms", "logic over 50 ms",
 };
 
 // Enough for five seconds of draws at 400 a second.
@@ -172,6 +173,20 @@ void Push_Samples(PerfDomain domain)
 		state.Accumulated = 0;
 	}
 	DomainTimes[domain].Push(Monotonic_Nanoseconds() / 1e6);
+}
+
+
+void Count_Slow_Logic(std::int64_t logic_nanoseconds)
+{
+	static constexpr struct {
+		std::int64_t Nanoseconds;
+		PerfCounter Counter;
+	} Limits[] = {{20000000, PERF_COUNT_LOGIC_OVER_20}, {33000000, PERF_COUNT_LOGIC_OVER_33}, {50000000, PERF_COUNT_LOGIC_OVER_50}};
+	for (auto const & limit : Limits) {
+		if (logic_nanoseconds > limit.Nanoseconds) {
+			Perf_Add_Count(limit.Counter, 1);
+		}
+	}
 }
 
 
@@ -411,6 +426,7 @@ void Perf_Frame_End(void)
 	}
 	LastFrameEnd = now;
 	HasLastFrameEnd = true;
+	Count_Slow_Logic(Phases[PERF_FRAME_LOGIC].Accumulated);
 	Push_Samples(PERF_DOMAIN_FRAME);
 	Tick();
 }

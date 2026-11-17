@@ -13738,12 +13738,12 @@ void BuildingClass::Prism_AI(void)
 /// </summary>
 int BuildingClass::Overpowerer_Count(void) const
 {
+	// Only infantry overpower, and Infantry holds the same soldiers as Technos.
 	int count = 0;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->RTTI != RTTI_INFANTRY || techno->TarCom != this || techno->IsInLimbo || techno->Strength <= 0) continue;
-		WeaponTypeClass const * weapon = techno->Get_Class_Weapon_Data(1)->Weapon;
-		if (weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsElectricAssault && (techno->House == House || techno->House->Is_Ally(House))) {
+	for (InfantryClass const * infantry : Infantry) {
+		if (infantry->TarCom != this || infantry->IsInLimbo || infantry->Strength <= 0) continue;
+		WeaponTypeClass const * weapon = infantry->Get_Class_Weapon_Data(1)->Weapon;
+		if (weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsElectricAssault && (infantry->House == House || infantry->House->Is_Ally(House))) {
 			count++;
 		}
 	}

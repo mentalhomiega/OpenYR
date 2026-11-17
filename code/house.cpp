@@ -420,7 +420,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	FactoryPtrTracker.Add(this);
 	WaypointPathPtrTracker.Add(this);
 	TagPtrTracker.Add(this);
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 
 	HeapID = (HousesType)Houses.Count();
 
@@ -847,7 +847,7 @@ HouseClass::~HouseClass (void)
 	FactoryPtrTracker.Delete(this);
 	WaypointPathPtrTracker.Delete(this);
 	TagPtrTracker.Delete(this);
-	ObjectPtrTracker.Delete(this);
+	Untrack_Object_Holder(this);
 
 	if (UnusedHouse == this) {
 		UnusedHouse = NULL;

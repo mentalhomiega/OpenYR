@@ -103,7 +103,7 @@ FactoryClass::FactoryClass(void) :
 	Set_Rate(0);
 	Set_Stage(0);
 
-	ObjectPtrTracker.Add(this);
+	Track_Object_Holder(this);
 }
 
 
@@ -132,7 +132,7 @@ FactoryClass::~FactoryClass(void)
 		Abandon();
 	}
 
-	ObjectPtrTracker.Delete(this);
+	Untrack_Object_Holder(this);
 }
 
 

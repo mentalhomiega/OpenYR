@@ -120,7 +120,37 @@ DynamicVectorClass<AbstractClass *> ObjectsToDelete;
  * HISTORY:                                                                                    *
  *   05/08/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-static bool Holder_Cannot_Name(AbstractClass const * holder, RTTIType removed);
+// The RTTI of the ObjectPtrTracker entry at the same index, or RTTI_NONE until a removal first reads it.
+static std::vector<unsigned char> ObjectHolderRtti;
+
+
+void Track_Object_Holder(AbstractClass * holder)
+{
+	if (ObjectPtrTracker.Add(holder)) {
+		ObjectHolderRtti.push_back(RTTI_NONE);
+	}
+}
+
+
+void Untrack_Object_Holder(AbstractClass * holder)
+{
+	int const index = ObjectPtrTracker.ID(holder);
+	if (index != -1 && ObjectPtrTracker.Delete_Index(index)) {
+		ObjectHolderRtti.erase(ObjectHolderRtti.begin() + index);
+	}
+}
+
+
+// Read when a removal needs it rather than when the holder is tracked, because a holder is tracked
+// before its own constructor has run.
+static RTTIType Object_Holder_Rtti(int index)
+{
+	if (ObjectHolderRtti[index] == RTTI_NONE) {
+		ObjectHolderRtti[index] = (unsigned char)ObjectPtrTracker[index]->RTTI;
+	}
+	return((RTTIType)ObjectHolderRtti[index]);
+}
+
 
 static void Count_Detach(AbstractClass const * target)
 {
@@ -128,11 +158,7 @@ static void Count_Detach(AbstractClass const * target)
 	int visits = 0;
 	if (target->RTTI == RTTI_HOUSE) visits = HousePtrTracker.Count();
 	else if (target->RTTI == RTTI_ANIM) visits = !((AnimClass const *)target)->IsHeld ? 0 : (((AnimClass const *)target)->IsHeldByMany ? AnimPtrTracker.Count() : 1);
-	else if (target->As_ObjectClass() != NULL) {
-		for (int index = 0; index < ObjectPtrTracker.Count(); index++) {
-			visits += !Holder_Cannot_Name(ObjectPtrTracker[index], (RTTIType)target->RTTI);
-		}
-	}
+	// The visits of an object's removal are counted as it makes them.
 	Perf_Count(PERF_COUNT_DETACH_VISITS, visits);
 	switch ((RTTIType)target->RTTI) {
 		case RTTI_BULLET: Perf_Count(PERF_COUNT_DETACH_BULLET); break;
@@ -223,17 +249,15 @@ static void Check_Unheld_Anim(AbstractClass const * target, bool all, AbstractCl
 }
 
 
-// True for a holder whose kind has no member that can point at a bullet or a particle being
-// removed, so its Detach would change nothing. A particle is named only by its particle system.
+// True for a kind of holder that has no member that can point at the bullet or particle being
+// removed, so its Detach would change nothing. The removed object must be a bullet or a particle.
+// A particle is named only by its particle system.
 // A bullet is named by an animation attached to it, by a particle system, a wave or an alpha
 // shape. Units, infantry, aircraft and buildings only name what they can target, follow or carry,
 // which is never a bullet or a particle.
-static bool Holder_Cannot_Name(AbstractClass const * holder, RTTIType removed)
+static bool Holder_Cannot_Name(RTTIType holder, RTTIType removed)
 {
-	if (removed != RTTI_BULLET && removed != RTTI_PARTICLE) {
-		return(false);
-	}
-	switch ((RTTIType)holder->RTTI) {
+	switch (holder) {
 		case RTTI_UNIT:
 		case RTTI_INFANTRY:
 		case RTTI_AIRCRAFT:
@@ -451,15 +475,18 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 
 	if (target->As_ObjectClass() != NULL) {
 		RTTIType const removed = (RTTIType)target->RTTI;
+		bool const skips = removed == RTTI_BULLET || removed == RTTI_PARTICLE;
 		bool const checked = Detach_Is_Checked();
+		int visits = 0;
 		for (index = 0; index < ObjectPtrTracker.Count(); index++) {
-			AbstractClass * holder = ObjectPtrTracker[index];
-			if (!Holder_Cannot_Name(holder, removed)) {
-				holder->Detach(target, all);
+			if (!skips || !Holder_Cannot_Name(Object_Holder_Rtti(index), removed)) {
+				visits++;
+				ObjectPtrTracker[index]->Detach(target, all);
 			} else if (checked) {
-				Check_Skipped_Holder(holder, target, all);
+				Check_Skipped_Holder(ObjectPtrTracker[index], target, all);
 			}
 		}
+		Perf_Count(PERF_COUNT_DETACH_VISITS, visits);
 		if (TacticalMap != NULL) {
 			TacticalMap->Detach(target, true);
 		}
