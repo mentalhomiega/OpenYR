@@ -143,8 +143,8 @@ shows a part is recorded without pixels, and the map pass draws the part's layer
 - `Gpu_Voxel_Walk` (`code/gpuvoxel.cpp`) lists a layer's voxels in the order the drawer writes them, with their
   place in the walk, colour and normal. `tests/gpuvoxel` draws that list on the CPU the way the shader does and
   compares it with the software drawers for random layers in all eight orientations.
-- `code/gpumapvoxel.cpp` keeps those lists in a 2048 by 2048 model texture, two texels a voxel, one list for each
-  layer and orientation.
+- `code/gpumapvoxel.cpp` keeps those lists in a 2048 by 8192 model texture, two texels a voxel, one list for each
+  layer and orientation, each right after the one before.
 - A shadow is one flat layer. `Gpu_Voxel_Walk_Shadow` lists one voxel with K 0 and colour 1 for each occupied column,
   and `VoxelLibrary::Setup_Shadow` gives the projection the software shadow drawer uses. A voxel animation's shadow is
   drawn the same way.
@@ -215,8 +215,9 @@ With the ground gradient in place of the cached blit's, the first two scenes dar
 - A cloaked voxel object is drawn as the plain 25% or 50% translucent blend, by the software and by the GPU.
   `RLE_Blit` and `Bit_Blit` both give their blitter a warp offset of 0, so the `Warp` blitters read the pixel they write.
   `GpuVoxelCloak=Ripple` adds a ripple the software does not draw ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple").
-- The model texture holds 2,097,152 voxels' worth of walks (a layer is stored once for each of the eight
-  orientations it is drawn in) and is emptied when full. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) lists what
+- The model texture holds 8,388,608 voxels' worth of walks (a layer is stored once for each of the eight
+  orientations it is drawn in) and is emptied when full. A pass of a large Mental Omega mission needed 2.4 million,
+  which the first size of 2,097,152 did not hold. [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) lists what
   happens to a pass that does not fit it, under "Fallback still switches look".
 
 ## The image route (deleted)
