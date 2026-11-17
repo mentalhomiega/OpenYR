@@ -710,8 +710,9 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	Video_Draw_Probe_Target(CompositeSurface);
-	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
-	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
+	// While zoomed, the GPU draws the whole map view and the presenter scales the part that is shown, so a glide
+	// keeps the GPU's picture size.
+	Rect const gpu_area = TacticalRect;
 	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0, !Options.ShadowStacking);
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
@@ -740,7 +741,7 @@ void GScreenClass::Render(void)
 	if (gpu_drawn) {
 		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
 		Fill_Map_Layer_Key(dest);
-		Video_Set_Gpu_Map_Layer(gpu_area, dest);
+		Video_Set_Gpu_Map_Layer(gpu_area, zoomed ? Shown_Map_Rect() : gpu_area, dest);
 		// The new map pass is shown at the next present even when nothing in the frame changed.
 		Video_Mark_Dirty();
 	} else if (zoomed && Video_Map_Layer_Supported()) {
@@ -751,12 +752,12 @@ void GScreenClass::Render(void)
 			Rect const panel = Hud_Layout().Panel;
 			CompositeSurface->Blit_From(panel, *MapCompositeSurface, Shown_Map_Part(panel));
 		}
-		Video_Set_Map_Layer(MapCompositeSurface, Shown_Map_Rect(), ScreenTacticalRect);
+		Video_Set_Map_Layer(MapCompositeSurface, TacticalRect, Shown_Map_Rect(), ScreenTacticalRect);
 	} else {
 		if (zoomed) {
 			CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
 		}
-		Video_Set_Map_Layer(NULL, Rect(), Rect());
+		Video_Set_Map_Layer(NULL, Rect(), Rect(), Rect());
 	}
 
 	{

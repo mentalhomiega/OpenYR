@@ -64,14 +64,18 @@ unsigned short const BACKEND_LAYER_KEY = 0xF81F;
 unsigned short const BACKEND_LAYER_TINT_KEYS[2] = {0xF83F, 0xF85F};
 
 // A picture drawn under the frame, showing through its BACKEND_LAYER_KEY pixels. Pixels is the
-// top left pixel of the picture in 565, or NULL to draw the picture uploaded last; the
-// destination is in window pixels.
+// top left pixel of the picture in 565, or NULL to draw the picture uploaded last; the part of the
+// picture from Shown, in its own pixels, fills the destination, which is in window pixels.
 struct BackendLayer
 {
 	void const * Pixels;
 	int Pitch;
 	int Width;
 	int Height;
+	int ShownX;
+	int ShownY;
+	int ShownWidth;
+	int ShownHeight;
 	int DestX;
 	int DestY;
 	int DestWidth;

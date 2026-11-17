@@ -469,11 +469,20 @@ static bool Submit_Quad_Mapped(bgfx::ViewId view, bgfx::TextureHandle texture, f
 /// Submits one textured rectangle covering the given destination. False means the
 /// transient vertex memory ran out and nothing was submitted.
 /// </summary>
-static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, bgfx::ProgramHandle program = BGFX_INVALID_HANDLE, unsigned int colour = 0xFFFFFFFF)
+// The part of a texture a quad shows, as the texture coordinates of the quad's edges.
+struct QuadSource {
+	float U0 = 0.0f;
+	float V0 = 0.0f;
+	float U1 = 1.0f;
+	float V1 = 1.0f;
+};
+
+
+static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, bgfx::ProgramHandle program = BGFX_INVALID_HANDLE, unsigned int colour = 0xFFFFFFFF, QuadSource const & source = QuadSource())
 {
-	const float vtop = flipv ? 1.0f : 0.0f;
-	const float vbottom = flipv ? 0.0f : 1.0f;
-	return(Submit_Quad_Mapped(view, texture, x, y, x + width, y + height, 0.0f, vtop, 1.0f, vbottom, samplerflags, blend, program, colour));
+	const float vtop = flipv ? source.V1 : source.V0;
+	const float vbottom = flipv ? source.V0 : source.V1;
+	return(Submit_Quad_Mapped(view, texture, x, y, x + width, y + height, source.U0, vtop, source.U1, vbottom, samplerflags, blend, program, colour));
 }
 
 
@@ -482,16 +491,16 @@ static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 /// reaches the strip the shift uncovers, and the clamping sampler fills that strip with the
 /// picture's edge pixels, so the picture is not stretched. Without a shift this is Submit_Quad.
 /// </summary>
-static bool Submit_Shifted_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false)
+static bool Submit_Shifted_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, QuadSource const & source = QuadSource())
 {
 	float const sx = _PresentShiftX;
 	float const sy = _PresentShiftY;
 	if (sx == 0.0f && sy == 0.0f) {
-		return(Submit_Quad(view, texture, x, y, width, height, samplerflags, flipv, blend));
+		return(Submit_Quad(view, texture, x, y, width, height, samplerflags, flipv, blend, BGFX_INVALID_HANDLE, 0xFFFFFFFF, source));
 	}
 
-	float const vtop = flipv ? 1.0f : 0.0f;
-	float const vbottom = flipv ? 0.0f : 1.0f;
+	float const vtop = flipv ? source.V1 : source.V0;
+	float const vbottom = flipv ? source.V0 : source.V1;
 	float const left = x + std::min(0.0f, sx);
 	float const top = y + std::min(0.0f, sy);
 	float const right = x + width + std::max(0.0f, sx);
@@ -499,8 +508,8 @@ static bool Submit_Shifted_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, 
 	// Texture coordinates of the destination's own edges after the shift; the strip beyond them falls outside 0 to 1.
 	float const picleft = x + sx;
 	float const pictop = y + sy;
-	float const u0 = (left - picleft) / width;
-	float const u1 = (right - picleft) / width;
+	float const u0 = source.U0 + (left - picleft) / width * (source.U1 - source.U0);
+	float const u1 = source.U0 + (right - picleft) / width * (source.U1 - source.U0);
 	float const v0 = vtop + (top - pictop) / height * (vbottom - vtop);
 	float const v1 = vtop + (bottom - pictop) / height * (vbottom - vtop);
 	return(Submit_Quad_Mapped(view, texture, left, top, right, bottom, u0, v0, u1, v1, samplerflags, blend, BGFX_INVALID_HANDLE, 0xFFFFFFFFu));
@@ -779,11 +788,11 @@ static void Begin_Mask_View(void)
 /// The texture is an R8 mask or a keyed mask, and the draw reads its red channel. A zero draw writes zero
 /// over the rectangle instead, using the texture only for its shape. The mask is point sampled.
 /// </summary>
-static bool Submit_Mask(bgfx::TextureHandle texture, float x, float y, float width, float height, bool blend, bool zero)
+static bool Submit_Mask(bgfx::TextureHandle texture, float x, float y, float width, float height, bool blend, bool zero, QuadSource const & source = QuadSource())
 {
 	unsigned int const sampler = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT;
 	_MaskDrawn = true;
-	return(Submit_Quad(VIEW_MASK, texture, x, y, width, height, sampler, false, blend, BGFX_INVALID_HANDLE, zero ? 0x00000000u : 0xFFFFFFFFu));
+	return(Submit_Quad(VIEW_MASK, texture, x, y, width, height, sampler, false, blend, BGFX_INVALID_HANDLE, zero ? 0x00000000u : 0xFFFFFFFFu, source));
 }
 
 
@@ -1548,8 +1557,9 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 
 	unsigned int const clamp = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 
+	QuadSource const shown{ float(layer.ShownX) / layer.Width, float(layer.ShownY) / layer.Height, float(layer.ShownX + layer.ShownWidth) / layer.Width, float(layer.ShownY + layer.ShownHeight) / layer.Height };
 	// The map keeps whole pixels while it is drawn at its own size or larger, and is smoothed when shrunk.
-	bool const layer_shrunk = layer.DestWidth < layerwidth || layer.DestHeight < layerheight;
+	bool const layer_shrunk = layer.DestWidth * layer.Width < layerwidth * layer.ShownWidth || layer.DestHeight * layer.Height < layerheight * layer.ShownHeight;
 	// The debug view shows the layer's mask alone, since it covers the same area as the frame.
 	// Masks follow the colour in the same order: the layer's mask, or zero, over the layer, then the
 	// keyed mask over the frame, which blends so that keyed pixels keep the layer's mask.
@@ -1561,14 +1571,14 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	if (masks) {
 		Begin_Mask_View();
 		if (bgfx::isValid(layermask)) {
-			Submit_Mask(layermask, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false);
+			Submit_Mask(layermask, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false, shown);
 		} else {
 			Submit_Mask(_FrameTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, true);
 		}
 	}
 
 	bool const layer_masked = _MaskView && bgfx::isValid(layermask);
-	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? layermask : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT))) {
+	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? layermask : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT), false, false, shown)) {
 		return(false);
 	}
 	if (layer_masked) {
