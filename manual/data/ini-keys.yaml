@@ -2710,6 +2710,24 @@ Airstrike:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+AirstrikeAbortSound:
+  key: AirstrikeAbortSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: AirstrikeAbortSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AirstrikeAttackVoice:
   key: AirstrikeAttackVoice
   scopes:
