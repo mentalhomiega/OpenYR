@@ -62,11 +62,19 @@ void ShadowPlane_Sync(Surface const * composite, Surface const * tile, Surface c
 	_Bindings.Retain(keep, 4);
 	Surface const * const surfaces[4] = { composite, tile, map_composite, map_tile };
 	for (Surface const * surface : surfaces) {
-		if (surface == NULL) {
-			continue;
+		if (surface != NULL) {
+			ShadowPlane_Bind(*surface);
 		}
-		_Bindings.Acquire(surface, surface->Get_Width(), surface->Get_Height(), false);
 	}
+}
+
+
+EmissivePlane * ShadowPlane_Bind(Surface const & surface)
+{
+	if (!_Enabled) {
+		return(NULL);
+	}
+	return(_Bindings.Acquire(&surface, surface.Get_Width(), surface.Get_Height(), false));
 }
 
 

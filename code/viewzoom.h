@@ -85,8 +85,20 @@ void Update_Display_Zoom(void);
 // map is drawn into the frame itself.
 std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame);
 
-// Builds or frees the map's own surfaces to match TacticalRect and ViewZoom.
-void Allocate_Map_Surfaces(void);
+// The part of the last drawn map picture that a new map view keeps: an area of the old view and where its corner
+// lands in the new view, both in pixels from the view's corner.
+struct KeptMapPicture {
+	Rect From;
+	Point2D To;
+};
+
+// Whether a change of the zoom alone can keep the map's drawn layers and their picture, so that only the parts of
+// the view the old one did not show are drawn again.
+bool Map_Layers_Keepable(void);
+
+// Builds or frees the map's own surfaces to match TacticalRect and ViewZoom. With kept, the new tile layer takes
+// that part of the old tile layer's picture; it is the screen's own tile layer when the map is drawn unzoomed.
+void Allocate_Map_Surfaces(KeptMapPicture const * kept = nullptr);
 
 // Changes the zoom at once to the given multiple of the screen's own pixels, keeping the map
 // centered where it was. Returns whether it changed. While the map is being drawn the change waits for

@@ -2068,6 +2068,50 @@ bool Tactical::Blit_Tiles(void)
 
 
 /// <summary>
+/// Where the corner of the last drawn picture lies in the view as it is now, in pixels from the view's corner.
+/// </summary>
+Point2D Tactical::Drawn_Picture_Offset(void) const
+{
+	return(Point2D(LastTacPixelX - TacPixelX, LastTacPixelY - TacPixelY));
+}
+
+
+/// <summary>
+/// Takes the layers as holding the last drawn picture moved to Drawn_Picture_Offset, as a zoom change copies it into
+/// new layers, with only the kept part of the view still valid. The next pass then draws the rest of the view and
+/// what the pending dirty areas cover, without a scroll.
+/// </summary>
+/// <param name="kept">The part of the view the layers still hold, in pixels from the view's corner.</param>
+void Tactical::Picture_Moved_To_View(Rect const & kept)
+{
+	Point2D const offset = Drawn_Picture_Offset();
+	for (int index = 0; index < DirtyAreas.Count(); index++) {
+		DirtyAreas[index].Area += offset;
+	}
+	LastTacPixelX = TacPixelX;
+	LastTacPixelY = TacPixelY;
+
+	int const width = TacticalDimensions.Width;
+	int const height = TacticalDimensions.Height;
+	if (!kept.Is_Valid()) {
+		Register_Dirty_Area(Rect(0, 0, width, height), true);
+		return;
+	}
+	Rect const strips[4] = {
+		Rect(0, 0, kept.X, height),
+		Rect(kept.X + kept.Width, 0, width - kept.X - kept.Width, height),
+		Rect(kept.X, 0, kept.Width, kept.Y),
+		Rect(kept.X, kept.Y + kept.Height, kept.Width, height - kept.Y - kept.Height),
+	};
+	for (Rect const & strip : strips) {
+		if (strip.Is_Valid()) {
+			Register_Dirty_Area(strip, true);
+		}
+	}
+}
+
+
+/// <summary>
 /// Sets the dimensions of the tactical view.
 /// This routine is called whenever the screen layout changes -- the sidebar sliding out, for
 /// example. The tactical position is reapplied so that the new dimensions cannot leave the

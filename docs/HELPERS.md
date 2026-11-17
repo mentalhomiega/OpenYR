@@ -245,12 +245,13 @@ a default and returns it when the section or entry is missing.
 |---|---|---|
 | `Allocate_Tactical_Surfaces()` | `init.h` | Allocates the hidden, composite, tile and sidebar surfaces for the current interface, and returns the tactical view rectangle. Call it after a display mode change or a save load, then set the map's view size. |
 | `Allocate_Surfaces(hidden, composite, tile, sidebar, hidden_first)` | `init.h` | The same with explicit rectangles. |
-| `Allocate_Map_Surfaces()` | `viewzoom.h` | Rebuilds the map's own surfaces to match the view and zoom. |
+| `Allocate_Map_Surfaces(kept)` | `viewzoom.h` | Rebuilds the map's own surfaces to match the view and zoom. With `kept`, the new tile layer takes that part of the old one's picture. |
 | `LayerFade_Defer`, `LayerFade_Resolve`, `LayerFadeDrawScope` | `layerfade.h` | Keep the tile layer's picture through an ambient light fade and let the GPU map pass scale it ([GPU_MAP.md](GPU_MAP.md#light-fades)). A change that makes the whole layer stale must still ask for a full redraw. |
 | `CellClass::Tile_Brightness_At(ambient)` | `cell.h` | The ground brightness `Recalc_Light` would give a cell at that ambient light level. |
 | `WrittenRects` | `writtenrects.h` | The rectangles of a buffer that its writers named since a reader last took them: `Note`, `Note_Run` and `Note_Picture` add, `Take` moves them out. The GPU map pass uploads from these lists. |
 | `DSurface::Scroll(dx, dy)` | `dsurface.h` | Moves the picture of a surface constructed with `scrolls` without copying it. False means nothing moved and the caller must copy. |
 | `DSurface::Note_Written(rect)`, `ZBuffer::Note_Written(rect)`, `ABuffer::Note_Written(rect)` | `dsurface.h`, `zbuffer.h`, `abuffer.h` | Names a rectangle of the picture a draw wrote, so the GPU map pass uploads it ([GPU_MAP.md](GPU_MAP.md#uploads)). |
+| `ZBuffer::Copy_From(source, from, to)`, `ABuffer::Copy_From(source, from, to)` | `zbuffer.h`, `abuffer.h` | Copies an area of another buffer of any size to a place in this one. Depths are rewritten for this buffer's scroll bias and row. `Copy_Ring_Rows` in `ringrows.h` does the copy for both. |
 | `Draw_Shape(...)`, `Blit_Block(...)` | `draw.h` | Draw a shape or surface block with a convert table and clip window. |
 | `Video_Mark_Dirty()` | `video.h` | Records that the visible surface was drawn to since the last present. |
 | `Release_Handle(handle)` | `bgfxviews.hh` | Destroys a valid bgfx handle and resets it to invalid; an invalid handle is left alone. |

@@ -94,6 +94,10 @@ class GScreenClass
 		*/
 		virtual void Flag_To_Redraw(GScreenRedrawFlags flags = GS_REDRAW_DIRTY);
 
+		// Asks for a full redraw in which the tactical map draws only what it flagged itself, because it kept its picture
+		// across a change of the view's size. Any other full redraw asked for before the next draw redraws the map too.
+		void Flag_To_Redraw_Kept_Map(void);
+
 		/*
 		**	Render maintenance routine (call every game tick). Probably no need
 		**	to override this in derived classes.
