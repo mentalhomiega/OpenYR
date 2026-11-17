@@ -523,10 +523,29 @@ void Run_Reframe(char const * name, unsigned short reset)
 }
 
 
+/// <summary>
+/// A rectangle named twice, or inside another named one, is taken once.
+/// </summary>
+void Run_Covered_Rects(void)
+{
+	WrittenRects written;
+	std::vector<Rect> rects;
+	written.Take(rects);
+	written.Note(2, 3, 10, 4);
+	written.Note(2, 3, 10, 4);
+	written.Note(4, 4, 2, 2);
+	written.Note(0, 20, 5, 1);
+	written.Note(2, 3, 10, 4);
+	Check(written.Take(rects) && rects.size() == 2 && rects[0] == Rect(2, 3, 10, 4) && rects[1] == Rect(0, 20, 5, 1),
+		"written rectangles: one inside another or named again is taken once");
+}
+
+
 int main(void)
 {
 	Run_Reframe<ZBuffer>("depth", 0xFFFF);
 	Run_Reframe<ABuffer>("alpha", 0x007F);
+	Run_Covered_Rects();
 	Run_Written<ZBuffer>("depth", 0xFFFF);
 	Run_Written<ABuffer>("alpha", 0x007F);
 	Run<ZBuffer>("depth", 0xFFFF);
