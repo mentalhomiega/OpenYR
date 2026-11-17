@@ -3398,11 +3398,16 @@ bool TechnoClass::Scan_Threats_Ring(ThreatType method, int mask, int range, int 
 		Perf_Count(PERF_COUNT_SCANS_RING);
 	}
 	PerfScope ring_scope(PERF_FRAME_THREAT_RING);
+	// Evaluate_Just_Cell values walls only for a computer house at a wall-destroying difficulty.
+	bool const walls_count = !House->Is_Human_Player() && Rule->Diff[House->Difficulty].IsWallDestroyer;
 	// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
+	// Evaluate_Cell finds nothing in a cell with no occupier, so an empty cell is not passed to it.
 	auto Visit_Ring_Cell = [&](Cell const & newcell) {
 		if (Map.In_Radar(newcell)) {
 			Perf_Count(PERF_COUNT_RING_CELLS);
-			if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
+			CellClass const & cellref = Map[newcell];
+			bool const occupied = cellref.Cell_Occupier(false) != NULL || cellref.Cell_Occupier(true) != NULL;
+			if (occupied && Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
 				if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
 				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
 					if (bestval < value) {
@@ -3411,7 +3416,7 @@ bool TechnoClass::Scan_Threats_Ring(ThreatType method, int mask, int range, int 
 					}
 				}
 			}
-			if (bestobject == NULL) {
+			if (bestobject == NULL && walls_count) {
 				value = Evaluate_Just_Cell(newcell);
 				if (bestcellvalue < value) {
 					bestcellvalue = value;
