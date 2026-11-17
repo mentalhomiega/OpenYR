@@ -298,7 +298,7 @@ static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int hei
 	}
 	Video_Drop_Map_Layer();
 	composite->Reframe(0, 0, width, height);
-	if (keep) {
+	if (move.X != 0 || move.Y != 0) {
 		Rect const from = kept->From + TacticalRect.Top_Left();
 		for (EmissivePlane * plane : { Emissive_Plane_For(tiles), ShadowPlane_For(tiles) }) {
 			if (plane != NULL) {
