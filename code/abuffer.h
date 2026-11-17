@@ -20,6 +20,8 @@ class ABuffer
 	public:
 		//ABuffer(void);
 		ABuffer(Rect rect);
+		// A buffer covering rect that can cover an area up to capacity_width by capacity_height later without allocating.
+		ABuffer(Rect rect, int capacity_width, int capacity_height);
 		~ABuffer(void) { Release_Surface(); }
 
 		unsigned Get_Scroll(void) const { return(ScrollOffset); }
@@ -40,6 +42,12 @@ class ABuffer
 
 		void Update(Rect rect);
 
+		// Covers bounds from now on without allocating, and returns false, changing nothing, when bounds is larger than
+		// the capacity. With keep, the entries of the area covered so far stay with the picture, whose corner lies at
+		// offset in bounds, and the rest of bounds is cleared; without keep, all of it is cleared.
+		bool Reframe(Rect const & bounds, Point2D const & offset, bool keep);
+		bool Fits(int width, int height) const { return(width <= BufferWidth && height <= BufferHeight); }
+
 		unsigned short * Get_Buffer_Offset(Point2D position);
 
 		unsigned short * Wrap_Overflow(unsigned short * position) const;
@@ -57,10 +65,14 @@ class ABuffer
 		WrittenRects Written;
 		unsigned int Get_Buffer_Width(void) const { return(BufferWidth); }
 		unsigned short * Get_Buffer_End(void) const { return(BufferEnd); }
+		unsigned short * Get_Buffer_Start(void) const { return(BufferStart); }
+		int Get_Buffer_Rows(void) const { return(BufferHeight); }
 
 	private:
 		void Release_Surface(void);
 		void Store(unsigned short * dst, int size, unsigned short value);
+		void Reset(Rect rect, unsigned short value);
+		void Move_Area(Rect const & bounds, Point2D const & offset, unsigned short value);
 
 	public:
 		/*
@@ -101,9 +113,9 @@ class ABuffer
 		unsigned int ScrollOffset;
 
 		/*
-		 * These are the width and height of the buffer, expressed in pixels, and they match
-		 * the size of the area covered. A row is BufferWidth pixels long, which is what
-		 * walking down a column steps an address by.
+		 * These are the width and height of the stored rows, its capacity, which is at least the
+		 * size of the area covered. A row is BufferWidth entries long, which is what walking down
+		 * a column steps an address by.
 		 */
 		int BufferWidth;
 		int BufferHeight;

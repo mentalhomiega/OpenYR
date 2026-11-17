@@ -307,3 +307,26 @@ template<class T>
 typedef TRect<int> Rect;
 
 inline constexpr Rect RECT_NONE(0, 0, 0, 0);
+
+
+// Calls each(strip) for up to four rectangles that together cover the part of area outside inner, which must lie
+// inside area or be invalid. An invalid inner gives area itself.
+template<typename Each>
+void For_Each_Rect_Outside(Rect const & area, Rect const & inner, Each each)
+{
+	if (!inner.Is_Valid()) {
+		each(area);
+		return;
+	}
+	Rect const strips[4] = {
+		Rect(area.X, area.Y, inner.X - area.X, area.Height),
+		Rect(inner.X + inner.Width, area.Y, area.X + area.Width - inner.X - inner.Width, area.Height),
+		Rect(inner.X, area.Y, inner.Width, inner.Y - area.Y),
+		Rect(inner.X, inner.Y + inner.Height, inner.Width, area.Y + area.Height - inner.Y - inner.Height),
+	};
+	for (Rect const & strip : strips) {
+		if (strip.Is_Valid()) {
+			each(strip);
+		}
+	}
+}

@@ -15,6 +15,7 @@
 #include "ringrows.h"
 #include "writewatch.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 
@@ -31,8 +32,14 @@
 /// </summary>
 /// <param name="rect">The area the buffer is to cover.</param>
 ZBuffer::ZBuffer(Rect rect) :
-	BufferWidth(rect.Width),
-	BufferHeight(rect.Height)
+	ZBuffer(rect, rect.Width, rect.Height)
+{
+}
+
+
+ZBuffer::ZBuffer(Rect rect, int capacity_width, int capacity_height) :
+	BufferWidth(std::max(rect.Width, capacity_width)),
+	BufferHeight(std::max(rect.Height, capacity_height))
 {
 	Bounds = rect;
 	BufferSize = BufferWidth * BufferHeight;
@@ -76,6 +83,7 @@ void ZBuffer::Copy_To(Surface *surface, Rect rect)
 				pixptr = Wrap_Overflow(pixptr);
 			}
 			surfbuffptr += steps;
+			pixptr = Wrap_Overflow(pixptr + BufferWidth - rect.Width);
 		}
 	}
 	surface->Unlock();
@@ -161,91 +169,43 @@ void ZBuffer::Store(unsigned short * dst, int size, unsigned short value)
 /// <param name="value">The depth value to reset the newly exposed area to.</param>
 void ZBuffer::Pan(int x, int y, unsigned short value)
 {
-	int target_col;
-	int target_row;
-	int x_delta = x;
-	int y_delta = y;
-
-	/// The column the buffer origin currently sits on.
-	int current_col = SurfaceOffset % BufferWidth;
-
-	if (abs(x_delta) > BufferWidth || abs(y_delta) > BufferHeight) {
+	if (abs(x) > Bounds.Width || abs(y) > Bounds.Height) {
 		Fill(value);
 		ScrollOffset = ZBUFFER_MAX;
-
-	} else {
-		target_col = current_col + x_delta;
-
-		if (x_delta != 0) {
-
-			/// Slide the origin along the row and fold it back into the buffer.
-			SurfaceOffset += x_delta;
-
-			unsigned short * new_offset = Wrap_Underflow(BufferStart + SurfaceOffset);
-			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = (int)(new_offset - BufferStart);
-
-			/// Reset the columns that have just come into view, in two pieces when the
-			/// exposed strip straddles the wrap point.
-			if (x_delta < 0) {
-				if (target_col < 0) {
-					Fill(value, Rect(0, 0, current_col, BufferHeight));
-					target_col += BufferWidth;
-					Fill(value, Rect(target_col, 0, BufferWidth - target_col, BufferHeight));
-
-				} else {
-					Fill(value, Rect(target_col, 0, -x_delta, BufferHeight));
-				}
-
-			} else if (target_col >= BufferWidth) {
-				Fill(value, Rect(current_col, 0, BufferWidth - current_col, BufferHeight));
-				target_col -= BufferWidth;
-				Fill(value, Rect(0, 0, target_col, BufferHeight));
-
-			} else {
-				Fill(value, Rect(current_col, 0, x_delta, BufferHeight));
-			}
-		}
-
-		/// The row the buffer origin currently sits on.
-		int current_row = SurfaceOffset / BufferWidth;
-
-		if (y_delta != 0) {
-			target_row = current_row + y_delta;
-
-			/// The scroll bias is what turns a screen row into a depth value, so carrying
-			/// the pan in it is what spares the entries already stored from a rewrite.
-			ScrollOffset -= y_delta;
-
-			int prev_offset = SurfaceOffset;
-
-			/// Slide the origin by whole rows and fold it back into the buffer.
-			SurfaceOffset += y_delta * BufferWidth;
-
-			unsigned short * new_offset = Wrap_Underflow(BufferStart + SurfaceOffset);
-			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = (int)(new_offset - BufferStart);
-
-			/// Reset the rows that have just come into view, in two pieces when the
-			/// exposed strip straddles the wrap point.
-			if (y_delta < 0) {
-				if (target_row < 0) {
-					Set(BufferStart, prev_offset, value);
-					Set(BufferStart + SurfaceOffset, (BufferWidth * BufferHeight) - SurfaceOffset, value);
-
-				} else {
-					Set(BufferStart + SurfaceOffset, prev_offset - SurfaceOffset, value);
-				}
-
-			} else if (target_row >= BufferHeight) {
-				Set(BufferStart + prev_offset, (BufferWidth * BufferHeight) - prev_offset, value);
-				Set(BufferStart, SurfaceOffset, value);
-
-			} else {
-				Set(BufferStart + prev_offset, SurfaceOffset - prev_offset, value);
-			}
-		}
+		return;
 	}
+	Move_Area(Bounds, Point2D(-x, -y), value);
+}
+
+
+// Covers bounds with the picture's corner at offset in it and sets the part of bounds outside the picture to value.
+void ZBuffer::Move_Area(Rect const & bounds, Point2D const & offset, unsigned short value)
+{
+	Rect const area(0, 0, bounds.Width, bounds.Height);
+	Rect const kept = Intersect(area, Rect(offset.X, offset.Y, Bounds.Width, Bounds.Height));
+	SurfaceOffset = Ring_Moved_Offset(SurfaceOffset, offset.X, offset.Y, BufferWidth, BufferSize);
+	ScrollOffset += offset.Y;
+	Bounds = bounds;
+	For_Each_Rect_Outside(area, kept, [&](Rect const & strip) {
+		Reset(strip, value);
+	});
+}
+
+
+bool ZBuffer::Reframe(Rect const & bounds, Point2D const & offset, bool keep)
+{
+	if (!Fits(bounds.Width, bounds.Height)) {
+		return(false);
+	}
+	if (keep) {
+		Move_Area(bounds, offset, ZBUFFER_COLOR);
+		return(true);
+	}
+	Bounds = bounds;
+	SurfaceOffset = 0;
+	ScrollOffset = ZBUFFER_MAX;
+	Fill(ZBUFFER_COLOR);
+	return(true);
 }
 
 
@@ -294,6 +254,12 @@ void ZBuffer::Note_Written(Rect const & rect)
 
 void ZBuffer::Update(Rect rect)
 {
+	Reset(rect, ZBUFFER_COLOR);
+}
+
+
+void ZBuffer::Reset(Rect rect, unsigned short value)
+{
 	unsigned short * buffptr = Get_Buffer_Offset(Point2D(rect.X, rect.Y));
 	Written.Note_Picture((std::size_t)(buffptr - BufferStart), BufferWidth, BufferHeight, rect.Width, rect.Height);
 
@@ -301,10 +267,10 @@ void ZBuffer::Update(Rect rect)
 
 		if ((buffptr + rect.Width) >= BufferEnd) {
 			int size = (int)(BufferEnd - buffptr);
-			Store(buffptr, size, ZBUFFER_COLOR);
-			Store(BufferStart, rect.Width - size, ZBUFFER_COLOR);
+			Store(buffptr, size, value);
+			Store(BufferStart, rect.Width - size, value);
 		} else {
-			Store(buffptr, rect.Width, ZBUFFER_COLOR);
+			Store(buffptr, rect.Width, value);
 		}
 
 		buffptr += BufferWidth;

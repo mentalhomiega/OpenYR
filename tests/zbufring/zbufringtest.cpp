@@ -466,8 +466,67 @@ void Run_Copy(char const * name, unsigned short reset, bool depth)
 }
 
 
+/// <summary>
+/// Moves the area of a buffer with room to spare, as a zoom change does: out to a larger area with the
+/// picture's corner inside it, then in to a smaller one. The entries stay where the picture took them,
+/// the depth bias follows the corner, everything outside the picture is reset, and a pan of the smaller
+/// area still resets only the strips it brings in.
+/// </summary>
+template<typename BufferT>
+void Run_Reframe(char const * name, unsigned short reset)
+{
+	char what[160];
+	BufferT buffer(Rect(0, 0, 20, 12), BUFFER_W, BUFFER_H);
+	buffer.Pan(7, 5, reset);
+	auto const value = [](int x, int y) { return((unsigned short)(0x4000 + y * 64 + x)); };
+	auto const write = [&](int width, int height) {
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				*(unsigned short *)buffer.Get_Buffer_Offset(Point2D(x, y)) = value(x, y);
+			}
+		}
+	};
+	// Counts the entries of the area that differ from the picture written before, now at offset.
+	auto const wrong = [&](Rect const & area, Point2D const & offset, Rect const & kept) {
+		int count = 0;
+		for (int y = 0; y < area.Height; y++) {
+			for (int x = 0; x < area.Width; x++) {
+				bool const inside = x >= kept.X && x < kept.X + kept.Width && y >= kept.Y && y < kept.Y + kept.Height;
+				unsigned short const expected = inside ? value(x - offset.X, y - offset.Y) : reset;
+				count += (*(unsigned short *)buffer.Get_Buffer_Offset(Point2D(x, y)) != expected) ? 1 : 0;
+			}
+		}
+		return(count);
+	};
+	write(20, 12);
+
+	unsigned const scroll = buffer.Get_Scroll();
+	std::snprintf(what, sizeof(what), "%s: an area larger than the room is refused", name);
+	Check(!buffer.Reframe(Rect(0, 0, BUFFER_W + 1, 12), Point2D(0, 0), true) && buffer.Get_Bounds() == Rect(0, 0, 20, 12), what);
+
+	std::snprintf(what, sizeof(what), "%s: a larger area keeps the picture at its corner and resets the rest", name);
+	Check(buffer.Reframe(Rect(0, 0, 36, 22), Point2D(9, 6), true) && wrong(Rect(0, 0, 36, 22), Point2D(9, 6), Rect(9, 6, 20, 12)) == 0, what);
+	std::snprintf(what, sizeof(what), "%s: the depth bias follows the picture's corner", name);
+	Check((unsigned short)buffer.Get_Scroll() == (unsigned short)(scroll + 6), what);
+
+	write(36, 22);
+	std::snprintf(what, sizeof(what), "%s: a smaller area keeps the part of the picture it shows", name);
+	Check(buffer.Reframe(Rect(0, 0, 18, 10), Point2D(-11, -5), true) && wrong(Rect(0, 0, 18, 10), Point2D(-11, -5), Rect(0, 0, 18, 10)) == 0, what);
+
+	write(18, 10);
+	buffer.Pan(3, -2, reset);
+	std::snprintf(what, sizeof(what), "%s: a pan of an area narrower than the room resets only the strips it brings in", name);
+	Check(wrong(Rect(0, 0, 18, 10), Point2D(-3, 2), Rect(0, 2, 15, 8)) == 0, what);
+
+	std::snprintf(what, sizeof(what), "%s: an area that keeps nothing is reset whole", name);
+	Check(buffer.Reframe(Rect(0, 0, 30, 20), Point2D(0, 0), false) && wrong(Rect(0, 0, 30, 20), Point2D(0, 0), Rect()) == 0, what);
+}
+
+
 int main(void)
 {
+	Run_Reframe<ZBuffer>("depth", 0xFFFF);
+	Run_Reframe<ABuffer>("alpha", 0x007F);
 	Run_Written<ZBuffer>("depth", 0xFFFF);
 	Run_Written<ABuffer>("alpha", 0x007F);
 	Run<ZBuffer>("depth", 0xFFFF);
