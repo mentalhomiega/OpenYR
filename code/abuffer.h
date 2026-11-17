@@ -32,6 +32,9 @@ class ABuffer
 
 		void Pan(int x_delta, int y_delta, unsigned short value);
 
+		// Copies the entries of an area of another buffer to a place in this one, in buffer coordinates.
+		void Copy_From(ABuffer const & source, Rect const & from, Point2D const & to);
+
 		bool Fill(unsigned short value);
 		bool Fill(unsigned short value, Rect rect);
 

@@ -12,6 +12,7 @@
 #include "zbuffer.h"
 
 #include "bsurface.h"
+#include "ringrows.h"
 #include "writewatch.h"
 
 #include <cstdint>
@@ -327,4 +328,23 @@ unsigned short * ZBuffer::Get_Buffer_Offset(Point2D pos)
 
 	buffptr += SurfaceOffset;
 	return(Wrap_Overflow(buffptr));
+}
+
+
+/// <summary>
+/// Copies the entries of the from area of source to the area of the same size at to, in buffer coordinates. Each
+/// depth is rewritten for this buffer's scroll bias and its new row, so it holds what a draw into this buffer would
+/// have stored there; an entry still at ZBUFFER_COLOR, where nothing was drawn, is kept as it is. Both areas must
+/// lie inside their buffers.
+/// </summary>
+void ZBuffer::Copy_From(ZBuffer const & source, Rect const & from, Point2D const & to)
+{
+	unsigned short const shift = (unsigned short)(ScrollOffset - source.ScrollOffset - (to.Y - from.Y));
+	Copy_Ring_Rows(RingRows{ BufferStart, BufferSize, SurfaceOffset, BufferWidth }, to, RingRows{ source.BufferStart, source.BufferSize, source.SurfaceOffset, source.BufferWidth }, from,
+		[shift](unsigned short * out, unsigned short const * in, int count) {
+			for (int index = 0; index < count; index++) {
+				out[index] = (in[index] == ZBUFFER_COLOR) ? ZBUFFER_COLOR : (unsigned short)(in[index] + shift);
+			}
+		});
+	Note_Written(Rect(Bounds.X + to.X, Bounds.Y + to.Y, from.Width, from.Height));
 }
