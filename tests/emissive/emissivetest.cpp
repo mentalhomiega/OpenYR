@@ -88,8 +88,9 @@ void Test_Voxel_Highlight(void)
 {
 	Check(Emissive_Voxel_Highlight(0) == 0, "shade row 0 is not a highlight");
 	Check(Emissive_Voxel_Highlight(16) == 0, "neutral row 16 is not a highlight");
-	Check(Emissive_Voxel_Highlight(17) == 8, "row 17 gives 128/15 rounded down");
-	Check(Emissive_Voxel_Highlight(24) == 68, "row 24 is eight steps of 128/15 above neutral");
+	Check(Emissive_Voxel_Highlight(27) == 0, "a brightly lit face is not a highlight");
+	Check(Emissive_Voxel_Highlight(28) == 32, "row 28 is the first of four steps to the table strength");
+	Check(Emissive_Voxel_Highlight(30) == 96, "row 30 is three of the four steps");
 	Check(Emissive_Voxel_Highlight(31) == 128, "row 31 gives the table strength");
 	Check(Emissive_Voxel_Highlight(31) >= Emissive_Voxel_Highlight(30), "the highlight does not fall as the row rises");
 }

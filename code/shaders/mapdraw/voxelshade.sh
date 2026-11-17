@@ -47,8 +47,9 @@ void Voxel_Shade(int colour, int normal, out int index, out int strength)
 
 	// The strength the software drawers write beside the index (Emissive_Voxel_Highlight); an unlit layer writes none.
 	strength = 0;
-	if (lit && row > 16) {
+	// 27 is EMISSIVE_VOXEL_LAST_PLAIN_ROW in emissive.h.
+	if (lit && row > 27) {
 		int top = int(u_vox[3].z + 0.5);
-		strength = row >= 31 ? top : (row - 16) * top / 15;
+		strength = row >= 31 ? top : (row - 27) * top / 4;
 	}
 }

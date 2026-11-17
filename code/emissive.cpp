@@ -103,13 +103,13 @@ unsigned char Emissive_Anim_Name_Default(char const * name)
 unsigned char Emissive_Voxel_Highlight(int shade_row)
 {
 	int const top = EmissiveDefaults[EMISSIVE_VOXEL_SPECULAR].Strength;
-	if (shade_row <= 16) {
+	if (shade_row <= EMISSIVE_VOXEL_LAST_PLAIN_ROW) {
 		return(0);
 	}
 	if (shade_row >= 31) {
 		return((unsigned char)top);
 	}
-	return((unsigned char)((shade_row - 16) * top / 15));
+	return((unsigned char)((shade_row - EMISSIVE_VOXEL_LAST_PLAIN_ROW) * top / (31 - EMISSIVE_VOXEL_LAST_PLAIN_ROW)));
 }
 
 
