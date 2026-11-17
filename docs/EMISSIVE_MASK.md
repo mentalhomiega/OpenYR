@@ -93,6 +93,10 @@ in the red channel. SDR output clears the target and never reads it.
   above 16, and counting them all made half of every vehicle glow under enhanced
   highlights, so only the rows above 27 feed the mask, rising in four steps to the
   table strength at row 31.
+- An animation that an `AttachEffect` shows on an object, such as a bubble round a unit, is a status
+  mark and not a lamp. It takes no default strength, whatever its flags, and is emissive only when its type
+  has an `Emissive=` key. Stock data has no `AttachEffect`, so it is unchanged. The autotest step
+  `animemissive <TypeID>` logs the strength of each live animation of a type.
 - Light posts have a name default (`NAPOST_A`, `NAPOST_AD`, `NAPOST_B`). The
   Chronosphere and Iron Curtain effects have no separate rule. They are emissive
   through their flags, such as `Translucency=50`, or through an `Emissive=` key.

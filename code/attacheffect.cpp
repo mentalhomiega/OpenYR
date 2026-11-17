@@ -315,6 +315,9 @@ void AttachedEffectsClass::Update_Anim(TechnoClass * owner, EffectStruct & effec
 	} else if (!show) {
 		Remove_Anim(effect);
 	}
+	if (effect.Anim != nullptr) {
+		effect.Anim->IsStatusEffect = true;
+	}
 	if (effect.Anim != nullptr && effect.Warhead == nullptr) {
 		effect.Anim->OwnerHouse = owner->House->HeapID;
 	}

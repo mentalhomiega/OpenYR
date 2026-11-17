@@ -11,6 +11,7 @@
 
 #include "always.h"
 
+#include "custompalette.h"
 #include "autotest.h"
 #include "isotype.h"
 #include "theater.h"
@@ -4059,6 +4060,29 @@ static void Beams_Step(StepType const &)
 }
 
 
+// animemissive <TypeID>: logs the emissive mask strength of each live animation of that type, whether an AttachEffect shows it, and whether its type has an Emissive= key.
+static void Animemissive_Step(StepType const & step)
+{
+	for (int index = 0; index < Anims.Count(); index++) {
+		AnimClass const * anim = Anims[index];
+		if (anim == NULL || anim->Class == NULL || stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   animemissive %s status %d keyed %d strength %d\n", anim->Class->Name(), (int)anim->IsStatusEffect, (int)anim->Class->IsEmissiveKeyed, (int)anim->Emissive_Strength());
+	}
+}
+
+
+// animpalette <TypeID>: logs each live animation of that type with its CustomPalette key, whether the palette file was found (loose or in an archive), whether an AttachEffect or a cell holds it and whether it draws through the palette's converter.
+static void Animpalette_Step(StepType const & step)
+{
+	for (int index = 0; index < Anims.Count(); index++) {
+		AnimClass * anim = Anims[index];
+		if (anim == NULL || anim->Class == NULL || stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
+		ConvertClass const * custom = Custom_Palette_Drawer(anim->Class->CustomPalette);
+		DebugString("AUTOTEST   animpalette %s palette [%s] found %d status %d cell %d object %d custom %d\n", anim->Class->Name(), anim->Class->CustomPalette.c_str(), custom != NULL ? 1 : 0, (int)anim->IsStatusEffect, (int)anim->IsAttachedToCell, anim->xObject != NULL ? 1 : 0, custom != NULL && anim->Draw_Converter() == custom ? 1 : 0);
+	}
+}
+
+
 // commandbutton <Name>: a left click at the centre of the command bar's button with that ButtonList name,
 // or a line saying the bar does not show it.
 static void Commandbutton_Step(StepType const & step)
@@ -7983,6 +8007,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"windowclick", [](StepType const & step) {Window_Click(step, 1);}},
 		{"commandbutton", Commandbutton_Step},
 		{"beams", Beams_Step},
+		{"animemissive", Animemissive_Step},
+		{"animpalette", Animpalette_Step},
 		{"windowdouble", [](StepType const & step) {Window_Click(step, 2);}},
 		{"windowpress", [](StepType const & step) {Window_Press(step, true);}},
 		{"windowrelease", [](StepType const & step) {Window_Press(step, false);}},

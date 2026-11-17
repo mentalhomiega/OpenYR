@@ -7,7 +7,7 @@ when_omitted:
   value: "none; the animation is drawn through the shared animation palette"
 ---
 
-The value is a palette file name with its extension, such as `anim.pal`. The animation's colors come from that file, and the brightness the animation is lit with is unchanged. Three tildes in the name, as in `anim~~~.pal`, are replaced by the current map's theater suffix, so one assignment picks a different file per theater. The file is searched for in the loaded MIX archives, and the name is not case sensitive.
+The value is a palette file name with its extension, such as `anim.pal`. The animation's colors come from that file, and the brightness the animation is lit with is unchanged. Three tildes in the name, as in `anim~~~.pal`, are replaced by the current map's theater suffix, so one assignment picks a different file per theater. The file is searched for in the loaded MIX archives and then as a loose file in the folders the game searches, such as a mod's own folder. The name is not case sensitive.
 
 The setting replaces the shared animation palette and takes precedence over [`AltPalette=yes`](/keys/altpalette/). It applies only to an animation that nothing else gives a palette, so these ignore it:
 

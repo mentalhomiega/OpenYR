@@ -16,6 +16,7 @@
 #include "_mixfile.h"
 #include "_surface.h"
 #include "convert.h"
+#include "ccfile.h"
 #include "dbgprint.h"
 #include "lightcon.h"
 #include "mixfile.h"
@@ -29,6 +30,7 @@
 #include <map>
 #include <memory>
 #include <tuple>
+#include <vector>
 
 
 namespace {
@@ -79,6 +81,24 @@ std::string Palette_File_Name(std::string const & filename)
 }
 
 
+// The 768 bytes of a palette file: a member of an archive, or else a loose file the game finds in a folder it searches,
+// such as a mod's own. The loose bytes are read into the vector.
+static void const * Palette_File_Data(std::string const & name, std::vector<unsigned char> & loose)
+{
+	if (void const * data = MFCD::Retrieve(name.c_str())) {
+		return(data);
+	}
+	CCFileClass file(name.c_str());
+	if (!file.Is_Available() || !file.Open(FileClass::READ)) {
+		return(NULL);
+	}
+	loose.resize(sizeof(PaletteClass));
+	bool const whole = file.Read(loose.data(), (long)loose.size()) == (long)loose.size();
+	file.Close();
+	return(whole ? loose.data() : NULL);
+}
+
+
 ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 {
 	if (filename.empty()) {
@@ -99,7 +119,8 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	}
 
 	std::unique_ptr<ConvertClass> drawer;
-	void const * data = MFCD::Retrieve(name.c_str());
+	std::vector<unsigned char> loose;
+	void const * data = Palette_File_Data(name, loose);
 	if (data != NULL && VisibleSurface != NULL) {
 		PaletteClass const palette = Widen_Six_Bit_Palette(data);
 		drawer = std::make_unique<ConvertClass>(palette, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);

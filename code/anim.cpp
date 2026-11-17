@@ -174,6 +174,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	IsPaused(false),
 	IsUnderTemporal(false),
 	IsPsychicHidden(type != NULL && type->IsPsiWarning),
+	IsStatusEffect(false),
 	Delay(timedelay),
 	Accum(1),
 	TranslucencyLevel(0),
@@ -295,6 +296,7 @@ AnimClass::AnimClass(void) :
 	IsPaused(false),
 	IsUnderTemporal(false),
 	IsPsychicHidden(false),
+	IsStatusEffect(false),
 	Delay(0),
 	Accum(0),
 	AlternativeDrawer(NULL),
@@ -638,35 +640,21 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 
 			int height = HeightAGL;
 			int brightness = NORMAL_LIGHT;
-			ConvertClass * convert;
+			ConvertClass * convert = Draw_Converter();
 
 			if (Class->IsVeins) {
-				convert = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 				if (!Class->IsUseNormalLight) {
 					brightness = Map[Render_Coord()].TileBrightness;
 				}
 			} else if (IsAttachedToCell) {
-				CellClass * cellptr = &Map[Render_Coord().As_Cell()];
-				if (cellptr->Drawer == NULL) {
-					cellptr->Init_Drawer();
-				}
-				convert = cellptr->Drawer;
 				if (!Class->IsUseNormalLight) {
-					brightness = cellptr->TileBrightness;
+					brightness = Map[Render_Coord().As_Cell()].TileBrightness;
 				}
 			} else if (AlternativeDrawer != NULL) {
-				convert = AlternativeDrawer;
 				if (!Class->IsUseNormalLight) {
 					brightness = AlternativeBrightness;
 				}
 			} else {
-				convert = AnimDrawer;
-				if (Class->IsAltPalette) {
-					convert = ColorSchemes[0]->Converter;
-				}
-				if (ConvertClass * custom = Custom_Palette_Drawer(Class->CustomPalette)) {
-					convert = custom;
-				}
 				if (!Class->IsUseNormalLight) {
 					brightness = Map[Render_Coord().As_Cell()].Brightness;
 				}
@@ -680,11 +668,13 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height));
 			}
 
-			// The bounce pass above draws ordinary light; only the picture itself is emissive.
+			// The bounce pass above draws ordinary light; only the picture itself is emissive. The picture of an
+			// AttachEffect animation, such as a bubble round a unit, is a status mark and not a lamp, so it glows
+			// only when its type has an Emissive= key (Emissive_Strength).
 			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
 			// translucency is three quarters opaque, as the blitter's opacity is.
 			int const opacity = Shape_Opacity(flags);
-			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
+			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Emissive_Strength() : (unsigned char)0;
 			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
 			if (Class->IsTiled) {
@@ -1177,6 +1167,32 @@ void AnimClass::AI(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// The converter this animation's picture draws through. A palette file named by the type's CustomPalette key
+/// replaces the converter of every animation except a vein, one held by a cell and one that carries a house or Tiberium tint.
+/// </summary>
+ConvertClass * AnimClass::Draw_Converter(void) const
+{
+	if (Class->IsVeins) {
+		return(ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter);
+	}
+	if (IsAttachedToCell) {
+		CellClass * cellptr = &Map[Render_Coord().As_Cell()];
+		if (cellptr->Drawer == NULL) {
+			cellptr->Init_Drawer();
+		}
+		return(cellptr->Drawer);
+	}
+	if (AlternativeDrawer != NULL) {
+		return(AlternativeDrawer);
+	}
+	if (ConvertClass * custom = Custom_Palette_Drawer(Class->CustomPalette)) {
+		return(custom);
+	}
+	return(Class->IsAltPalette ? ColorSchemes[0]->Converter : AnimDrawer);
 }
 
 

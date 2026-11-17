@@ -1,0 +1,17 @@
+; The animation an AttachEffect shows on an object marks a status, such as a bubble round a unit, and is not a lamp. Its picture
+; takes no emissive default, so a bright HDR display does not light it above the ground it covers; only an Emissive= key
+; gives it a strength. The overlay attach-anim-emissive.ini makes RING1 and SMOKEY self-lit and 75 percent translucent, which
+; by default is an emissive strength of 200, shows RING1 on the player's HTNK and SMOKEY, with Emissive=120, on the player's MTNK.
+; playanim then plays RING1 on its own over a cell.
+; Expected: animemissive RING1 lists the attached RING1 with status 1, keyed 0, strength 0 and the free one with status 0,
+; keyed 0, strength 200; animemissive SMOKEY lists status 1, keyed 1, strength 120.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/attach-anim-emissive.txt -Seconds 120 -Filter "AUTOTEST   animemissive|Exception"
+10 art attach-anim-emissive.ini
+30 command CenterBase
+35 reveal
+40 own HTNK 70 40
+41 own MTNK 73 40
+60 playanim RING1 70 44
+70 animemissive RING1
+70 animemissive SMOKEY
+100 quit

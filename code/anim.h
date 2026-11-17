@@ -79,6 +79,18 @@ class AnimClass : public ObjectClass, public StageClass
 		static void Post_Load_Game(void);
 
 		void Attach_To(ObjectClass *obj);
+
+		/*
+		 * Whether an AttachEffect shows this animation on an object. Such an animation marks a status, so
+		 * its picture is emissive only when its type has an Emissive= key. The effect sets it each frame
+		 * it keeps the animation, so it is kept out of saves and the checksum.
+		 */
+		bool IsStatusEffect;
+
+		// The strength this animation's picture takes in the emissive mask before any translucency scales it.
+		ConvertClass * Draw_Converter(void) const;
+
+		unsigned char Emissive_Strength(void) const { return(IsStatusEffect && !Class->IsEmissiveKeyed ? (unsigned char)0 : Class->EmissiveStrength); }
 		void Play_Backward(void);
 		void Make_Invisible(void) {IsInvisible = true;};
 		void Make_Visible(void) {IsInvisible = false;};

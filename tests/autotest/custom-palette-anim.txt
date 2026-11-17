@@ -1,0 +1,22 @@
+; An animation whose art section has CustomPalette= draws through the converter of that palette file, whether an
+; AttachEffect shows it or it plays free. The mod custom-palette-anim (pass it with -Mods) gives RING1 the palette
+; greenpal.pal, a file of our own that maps every colour to one green, and shows RING1 on the player's Apocalypse tank.
+; The palette is a loose file in the mod folder, which searchdir makes a folder the game searches. A free RING1 plays
+; on the grass beside the tank. Stock data sets no CustomPalette on an animation, so nothing in it changes.
+; Expected: animpalette lists the attached RING1 (object 1) and the free one (object 0), both found 1 and custom 1, and the
+; windowred mean over the free ring's rectangle has green more than 40 above blue with the palette and less than 15 above it
+; once the overlay nopalette.ini names a missing palette file (found 0, custom 0).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/custom-palette-anim.txt -Mods src-agent29/tests/autotest/custom-palette-anim -Width 1920 -Height 1080 -Seconds 120 -Filter "AUTOTEST   animpalette|AUTOTEST windowred|Exception|Custom palette"
+0 searchdir custom-palette-anim
+10 command CenterBase
+35 reveal
+40 own HTNK 70 40
+60 playanim RING1 66 44
+61 zoom 3
+62 view 68 42
+70 animpalette RING1
+70 windowred with 650 500 150 80
+72 art custom-palette-anim/nopalette.ini
+74 animpalette RING1
+74 windowred without 650 500 150 80
+76 quit
