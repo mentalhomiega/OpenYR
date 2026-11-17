@@ -17,7 +17,7 @@
 // The number of takes between the full resets of a steady block (see WriteWatch_Take).
 inline constexpr unsigned STICKY_FULL_RESET_EVERY = 32;
 
-// Allocates size bytes whose written pages WriteWatch_Take can list. Free it with WriteWatch_Free.
+// Allocates size bytes, all zero, whose written pages WriteWatch_Take can list. Free it with WriteWatch_Free.
 void * WriteWatch_Alloc(std::size_t size);
 
 void WriteWatch_Free(void * memory);
