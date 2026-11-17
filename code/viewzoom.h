@@ -100,7 +100,13 @@ bool Map_Layers_Keepable(void);
 
 // Builds or frees the map's own surfaces to match TacticalRect and ViewZoom. With kept, the new tile layer takes
 // that part of the old tile layer's picture; it is the screen's own tile layer when the map is drawn unzoomed.
+// Surfaces made for the largest view (Largest_Map_View) are reused for a new zoom on the same screen, and their
+// tile layer's picture is moved in place.
 void Allocate_Map_Surfaces(KeptMapPicture const * kept = nullptr);
+
+// The size of the largest map view (TacticalRect) that any zoom the game now allows gives on this screen. The map's
+// surfaces and its depth and alpha buffers are made this large once the zoom changes, so later changes reuse them.
+Point2D Largest_Map_View(void);
 
 // Counts one map surface or depth or alpha buffer made, of that many bytes, for the log and the mapbuffers step.
 void Count_Map_Buffer(std::size_t bytes);

@@ -43,19 +43,22 @@ result; [AUTOTEST.md](AUTOTEST.md) documents them.
 On Windows the tile layer, the depth buffer and the alpha buffer go to the GPU in parts, and nothing goes
 up for a pass that wrote to none of them.
 
-The tile layer's memory is twice the size of its picture, up to 16,384 rows. A scroll moves the place
-where the picture starts in that memory (`DSurface::Scroll`), as the depth and alpha buffers have always
-done, and the shader finds a pixel of each by row and column from that start. When the picture reaches an
-end of the memory, the part that stays in view is copied back to the middle and the whole layer goes up
-once. `OPENYR_NO_TILE_SCROLL=1` in the environment makes a scroll copy the layer instead, which is how the
-two pictures were compared.
+The tile layer's memory is twice the size of the largest picture it is made for, up to 16,384 rows; while
+the view is zoomed, that is the largest view the zoom allows ([PERFORMANCE.md](PERFORMANCE.md#zoom-changes)).
+A scroll moves the place where the picture starts in that memory (`DSurface::Scroll`), as the depth and alpha
+buffers have always done, and the shader finds a pixel of each by row and column from that start. A zoom
+change after the first on the same screen moves the start of all three the same way, so only the edges the
+new view adds go up. When the picture reaches an end of the memory, the part that stays in view is copied
+back to the middle and the whole layer goes up once. `OPENYR_NO_TILE_SCROLL=1` in the environment makes a
+scroll copy the layer instead, which is how the two pictures were compared.
 
 The background pass of the map view names each rectangle it draws into (`Tactical::Note_Layer_Writes`):
 the whole view on a full redraw, the strips a scroll brings in, the cells flagged for redraw and the dirty
 areas. The depth and alpha buffers name what their own pans, fills and updates write. A pass sends the
-named rectangles. A memory page written outside every named rectangle goes up as whole rows, so a draw
-that names nothing still reaches the GPU, unless it shares a page of 4,096 bytes with a named rectangle.
-More than 512 rectangles named between two passes count as the whole buffer.
+named rectangles, each once: one named again or lying inside another is left out. A memory page written
+outside every named rectangle goes up as whole rows, so a draw that names nothing still reaches the GPU,
+unless it shares a page of 4,096 bytes with a named rectangle. More than 512 rectangles named between two
+passes count as the whole buffer.
 
 A new draw into the tile layer, the depth buffer or the alpha buffer that is not clipped to one of those
 rectangles must name its own (`DSurface::Note_Written`, `ZBuffer::Note_Written`, `ABuffer::Note_Written`);

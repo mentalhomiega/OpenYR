@@ -368,14 +368,20 @@ void DisplayClass::Init_IO(void)
  *   12/06/1994 JLB : Created.                                                                 *
  *   06/27/1995 JLB : Adjusts tactical map position if necessary.                              *
  *=============================================================================================*/
-// Replaces a depth or alpha buffer with one that covers TacticalRect, holding the kept part of the old one's entries.
+// Fits a depth or alpha buffer to TacticalRect, holding the kept part of its entries. For a change of the zoom alone
+// it reuses the buffer when the buffer can hold the view, and otherwise makes one for the largest view.
 template <typename Buffer>
-static void Replace_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept)
+static void Fit_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept, bool zoom_only)
 {
+	bool const keep = kept != nullptr && kept->From.Is_Valid();
+	if (zoom_only && buffer != nullptr && buffer->Reframe(TacticalRect, keep ? kept->To - kept->From.Top_Left() : Point2D(0, 0), keep)) {
+		return;
+	}
 	std::unique_ptr<Buffer> const old(std::exchange(buffer, nullptr));
-	buffer = new Buffer(TacticalRect);
-	Count_Map_Buffer((std::size_t)buffer->Get_Buffer_Width() * buffer->Get_Bounds().Height * sizeof(unsigned short));
-	if (kept != nullptr && old != nullptr && kept->From.Is_Valid()) {
+	Point2D const capacity = zoom_only ? Largest_Map_View() : Point2D(TacticalRect.Width, TacticalRect.Height);
+	buffer = new Buffer(TacticalRect, capacity.X, capacity.Y);
+	Count_Map_Buffer((std::size_t)buffer->Get_Buffer_Width() * buffer->Get_Buffer_Rows() * sizeof(unsigned short));
+	if (keep && old != nullptr) {
 		buffer->Copy_From(*old, kept->From, kept->To);
 	}
 }
@@ -416,10 +422,8 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		Hide_Mouse();
 
 		GpuMap_Release_References();
-		Replace_View_Buffer(DepthBuffer, keep ? &kept : nullptr);
-		DebugString("Allocating ZBuffer (%dx%d)\n", TacticalRect.Width, TacticalRect.Height);
-		Replace_View_Buffer(AlphaBuffer, keep ? &kept : nullptr);
-		DebugString("Allocating ABuffer (%dx%d)\n", TacticalRect.Width, TacticalRect.Height);
+		Fit_View_Buffer(DepthBuffer, keep ? &kept : nullptr, zoom_only);
+		Fit_View_Buffer(AlphaBuffer, keep ? &kept : nullptr, zoom_only);
 		if (keep) {
 			TacticalMap->Picture_Moved_To_View(Rect(kept.To.X, kept.To.Y, kept.From.Width, kept.From.Height));
 		}

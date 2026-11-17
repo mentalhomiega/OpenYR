@@ -210,6 +210,13 @@ bool Map_Layers_Keepable(void)
 }
 
 
+Point2D Largest_Map_View(void)
+{
+	double const zoom = std::min(View_Zoom_Min(), ViewZoom);
+	return(Point2D(std::max(TacticalRect.Width, int(ScreenTacticalRect.Width / zoom)), std::max(TacticalRect.Height, int(ScreenTacticalRect.Height / zoom))));
+}
+
+
 // What the zoom changes made of the map's buffers since the game started.
 static int _ZoomSteps = 0;
 static int _AllocatingSteps = 0;
@@ -252,7 +259,8 @@ static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const &
 	Rect const area(to.X, to.Y, from.Width, from.Height);
 	dest.Blit_From(area, source, from);
 	if (Emissive_Plane_For(&source) != NULL) {
-		Emissive_Bind(&dest, dest.Get_Width(), dest.Get_Height());
+		Point2D const size = dest.Get_Capacity();
+		Emissive_Bind(&dest, size.X, size.Y);
 	}
 	if (ShadowPlane_For(&source) != NULL) {
 		ShadowPlane_Bind(dest);
@@ -265,24 +273,65 @@ static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const &
 }
 
 
+// Fits the map surfaces, made for capacity, to a picture of width by height, and moves the tile layer's picture and
+// planes as kept says without copying the picture. False means nothing changed and the surfaces must be made again.
+static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int height, Point2D const & capacity)
+{
+	DSurface * const composite = dynamic_cast<DSurface *>(MapCompositeSurface);
+	DSurface * const tiles = dynamic_cast<DSurface *>(MapTileSurface);
+	for (DSurface const * surface : { composite, tiles }) {
+		if (surface == NULL || surface->Get_Capacity() != capacity) {
+			return(false);
+		}
+	}
+	bool const keep = kept != nullptr && kept->From.Is_Valid();
+	Point2D const move = keep ? kept->To - kept->From.Top_Left() : Point2D(0, 0);
+	if (!tiles->Reframe(move.X, move.Y, width, height)) {
+		return(false);
+	}
+	Video_Drop_Map_Layer();
+	composite->Reframe(0, 0, width, height);
+	if (keep) {
+		Rect const from = kept->From + TacticalRect.Top_Left();
+		for (EmissivePlane * plane : { Emissive_Plane_For(tiles), ShadowPlane_For(tiles) }) {
+			if (plane != NULL) {
+				Emissive_Copy_Rect(*plane, from.X + move.X, from.Y + move.Y, *plane, from.X, from.Y, from.Width, from.Height);
+			}
+		}
+	}
+	return(true);
+}
+
+
 void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 {
+	// A glide to or from 1 still shows the map scaled, so it keeps the surfaces until it ends.
+	bool const wanted = ViewZoom != 1.0 || _Gliding;
+
+	// The map surfaces keep the screen composite's layout up to the map's corner, so TacticalRect means the same place in both.
+	int const width = TacticalRect.X + TacticalRect.Width;
+	int const height = TacticalRect.Y + TacticalRect.Height;
+	Point2D const capacity = TacticalRect.Top_Left() + Largest_Map_View();
+	if (wanted && Reframe_Map_Surfaces(kept, width, height, capacity)) {
+		return;
+	}
+
 	Video_Drop_Map_Layer();
 	delete MapCompositeSurface;
 	MapCompositeSurface = NULL;
 	std::unique_ptr<Surface> old_map_tiles(std::exchange(MapTileSurface, nullptr));
 
-	// A glide to or from 1 still shows the map scaled, so it keeps the surfaces until it ends.
-	if (ViewZoom != 1.0 || _Gliding) {
-		// The map surfaces keep the screen composite's layout up to the map's corner, so TacticalRect means the same place in both.
-		int const width = TacticalRect.X + TacticalRect.Width;
-		int const height = TacticalRect.Y + TacticalRect.Height;
-		MapCompositeSurface = new DSurface(width, height);
-		MapCompositeSurface->Fill(0);
-		MapTileSurface = new DSurface(width, height, true, true);
-		Count_Map_Buffer((std::size_t)MapCompositeSurface->Stride() * height);
-		Count_Map_Buffer(((DSurface *)MapTileSurface)->Get_Block_Size());
-		DebugString("Map surfaces %dx%d for zoom %.2f\n", width, height, ViewZoom);
+	if (wanted) {
+		DSurface * const composite = new DSurface(capacity.X, capacity.Y);
+		composite->Fill(0);
+		composite->Reframe(0, 0, width, height);
+		DSurface * const tiles = new DSurface(capacity.X, capacity.Y, true, true);
+		tiles->Reframe(0, 0, width, height);
+		MapCompositeSurface = composite;
+		MapTileSurface = tiles;
+		Count_Map_Buffer((std::size_t)composite->Stride() * capacity.Y);
+		Count_Map_Buffer(tiles->Get_Block_Size());
+		DebugString("Map surfaces %dx%d for zoom %.2f, made for %dx%d\n", width, height, ViewZoom, capacity.X, capacity.Y);
 	}
 
 	Surface const * const old_tiles = (old_map_tiles != nullptr) ? old_map_tiles.get() : TileSurface;
