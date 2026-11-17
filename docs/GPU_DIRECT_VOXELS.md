@@ -860,7 +860,7 @@ What stage 8 deleted:
 - **GPU memory at 4K.** At a 3840x2160 map view, one RGBA8 scene-sized texture is 33.2 MB at scale 1, 132.7 MB at
   scale 2 and 530.8 MB at scale 4, and `Size_Target` already makes three (target, snapshot, post): about 100 MB,
   400 MB and 1.6 GB. The direct route adds a D24S8 attachment of the same size and an RG8 attachment of half, about
-  1.5 more of these textures. Stage 8 freed the 8.4 MB voxel image; the 16.8 MB model texture stays, and the face
+  1.5 more of these textures. Stage 8 freed the 8.4 MB voxel image; the 67 MB model texture stays, and the face
   store adds 33.6 MB. Scale 4 at 4K is about
   2.4 GB of targets. `Pass_Scale` in `code/gpumap.cpp` lowers the scale of a pass whose scene-sized texture would be
   over 134,217,728 pixels (536.9 MB in RGBA8) or 16,384 pixels a side, about what scale 4 takes at a 3840x2160 view.
@@ -872,7 +872,9 @@ What stage 8 deleted:
   `VoxelLibrary::Get_Serial`, so a reloaded library gets new faces. HVA animation changes only the layer matrix a draw
   uploads, not the stored faces. A large Mental Omega map with many distinct voxel types fills the face store; like
   the model store it is emptied and refilled. A pass whose faces do not fit an empty face store draws its layers as
-  cube outlines; one whose layers do not fit an empty model store is not drawn, as under "Fallback" above.
+  cube outlines; one whose layers do not fit an empty model store is not drawn, as under "Fallback" above. Each layer is walked
+  to measure it only once, so such a pass is refused from the kept counts without a walk, and the `GPU_VOXEL` log line
+  gives the voxels it needs and the store's size for the first refused pass and one in 600 after.
   The first measurement below tells how close stock and Mental Omega art come.
 
 ## Performance budget

@@ -43,7 +43,7 @@ static const bgfx::EmbeddedShader _Shaders[] = {
 
 // The model texture holds two RGBA8 texels a voxel; voxelwalk.sh uses the same width.
 static int const MODEL_WIDTH = 2048;
-static int const MODEL_ROWS = 2048;
+static int const MODEL_ROWS = 8192;
 static int const VOXELS_PER_ROW = MODEL_WIDTH / 2;
 
 // The face texture holds one RG32U texel a face; vs_voxelface.sc uses the same width.
@@ -110,6 +110,14 @@ struct ModelSlot
 
 static std::unordered_map<std::uint64_t, ModelSlot> _Models;
 static int _ModelNext = 0;
+static int const MODEL_VOXELS = VOXELS_PER_ROW * MODEL_ROWS;
+
+// The voxel count of every layer walked so far. A pass whose layers are all measured and cannot fit the model
+// texture is refused from these counts, without walking a layer.
+static std::unordered_map<std::uint64_t, int> _ModelSizes;
+
+// The passes refused so far, for the log line that says which store was too small.
+static int _Refusals = 0;
 
 // The place of a layer's faces in the face texture: its first face, and where each direction's faces start after it.
 struct FaceSlot
@@ -184,33 +192,49 @@ static int Rows_For(std::size_t items, int per_row)
 }
 
 
-// Writes a layer's voxels into the model texture after the ones already there. Each layer starts on a
-// row, so the upload is whole rows.
-static void Upload_Model(std::uint64_t key, std::vector<GpuVoxelInstance> const & voxels)
+// Writes voxels into the model texture from the place first, counted in voxels: the rest of a started row, then
+// whole rows, then the start of a last row.
+static void Upload_Voxels(int first, std::vector<GpuVoxelInstance> const & voxels)
 {
-	int const first = _ModelNext;
-	int const rows = Rows_For(voxels.size(), VOXELS_PER_ROW);
-	_Models[key] = ModelSlot{ first, (int)voxels.size() };
-	if (rows == 0) {
-		return;
+	std::size_t done = 0;
+	while (done < voxels.size()) {
+		int const column = (first + (int)done) % VOXELS_PER_ROW;
+		int const row = (first + (int)done) / VOXELS_PER_ROW;
+		std::size_t const left = voxels.size() - done;
+		int rows = 1;
+		std::size_t run = std::min<std::size_t>(left, (std::size_t)(VOXELS_PER_ROW - column));
+		if (column == 0 && left >= (std::size_t)VOXELS_PER_ROW) {
+			rows = (int)(left / VOXELS_PER_ROW);
+			run = (std::size_t)rows * VOXELS_PER_ROW;
+		}
+		bgfx::Memory const * memory = bgfx::alloc((uint32_t)run * 8);
+		std::memset(memory->data, 0, memory->size);
+		for (std::size_t i = 0; i < run; i++) {
+			GpuVoxelInstance const & voxel = voxels[done + i];
+			unsigned char * texel = memory->data + i * 8;
+			texel[0] = voxel.I;
+			texel[1] = voxel.J;
+			texel[2] = voxel.K;
+			texel[3] = voxel.Colour;
+			texel[4] = voxel.Normal;
+		}
+		int const width = run >= (std::size_t)VOXELS_PER_ROW ? MODEL_WIDTH : (int)run * 2;
+		bgfx::updateTexture2D(_Model, 0, 0, (uint16_t)(column * 2), (uint16_t)row, (uint16_t)width, (uint16_t)rows, memory);
+		done += run;
 	}
-	bgfx::Memory const * memory = bgfx::alloc((uint32_t)rows * MODEL_WIDTH * 4);
-	std::memset(memory->data, 0, memory->size);
-	for (std::size_t i = 0; i < voxels.size(); i++) {
-		GpuVoxelInstance const & voxel = voxels[i];
-		unsigned char * texel = memory->data + i * 8;
-		texel[0] = voxel.I;
-		texel[1] = voxel.J;
-		texel[2] = voxel.K;
-		texel[3] = voxel.Colour;
-		texel[4] = voxel.Normal;
-	}
-	bgfx::updateTexture2D(_Model, 0, 0, 0, (uint16_t)(first / VOXELS_PER_ROW), (uint16_t)MODEL_WIDTH, (uint16_t)rows, memory);
-	_ModelNext = first + rows * VOXELS_PER_ROW;
 }
 
 
-// Writes a layer's faces into the face texture after the ones already there, in whole rows as Upload_Model does.
+// Writes a layer's voxels into the model texture right after the ones already there, so a small layer takes only
+// its own voxels and not a whole row.
+static void Upload_Model(std::uint64_t key, std::vector<GpuVoxelInstance> const & voxels)
+{
+	_Models[key] = ModelSlot{ _ModelNext, (int)voxels.size() };
+	Upload_Voxels(_ModelNext, voxels);
+	_ModelNext += (int)voxels.size();
+}
+
+
 static void Upload_Faces(std::uint64_t key, GpuVoxelFaceList const & list)
 {
 	FaceSlot slot;
@@ -301,33 +325,61 @@ static ModelSlot const * Find_Slot(std::uint64_t key)
 }
 
 
+static void Walk_Layer(LayerDraw const & layer, std::vector<GpuVoxelInstance> & voxels)
+{
+	if (layer.Shadow) {
+		Gpu_Voxel_Walk_Shadow(layer.Setup.Arg, voxels);
+	} else {
+		Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
+	}
+}
+
+
+// Says, for the first refused pass and then one in 600, which store was too small and by how much.
+static void Log_Refusal(char const * store, long long needed, long long capacity)
+{
+	if (_Refusals++ % 600 == 0) {
+		DebugString("GPU_VOXEL: the pass needs %lld %s and the store holds %lld, so the software draws it (%d passes refused)\n", needed, store, capacity, _Refusals);
+	}
+}
+
+
 // Makes the model texture hold the layers, walking the ones it lacks. A layer set that does not fit what
-// is left empties the texture first, and one that does not fit an empty texture is refused.
+// is left empties the texture first, and one that does not fit an empty texture is refused. A layer is walked to
+// measure it only once, so a pass that is refused again and again costs no walk.
 static bool Load_Models(std::vector<std::vector<LayerDraw>> const & parts)
 {
+	std::unordered_map<std::uint64_t, std::vector<GpuVoxelInstance>> walked;
 	for (int attempt = 0; attempt < 2; attempt++) {
-		std::unordered_map<std::uint64_t, std::vector<GpuVoxelInstance>> fresh;
-		int rows = 0;
+		std::unordered_map<std::uint64_t, LayerDraw const *> missing;
+		long long needed = 0;
 		for (std::vector<LayerDraw> const & part : parts) {
 			for (LayerDraw const & layer : part) {
-				if (Find_Slot(layer.Key) == NULL && fresh.find(layer.Key) == fresh.end()) {
-					std::vector<GpuVoxelInstance> & voxels = fresh[layer.Key];
-					if (layer.Shadow) {
-						Gpu_Voxel_Walk_Shadow(layer.Setup.Arg, voxels);
-					} else {
-						Gpu_Voxel_Walk(layer.Setup.Arg, layer.Reversed, layer.Lit, voxels);
-					}
-					rows += Rows_For(voxels.size(), VOXELS_PER_ROW);
+				if (Find_Slot(layer.Key) != NULL || !missing.emplace(layer.Key, &layer).second) {
+					continue;
 				}
+				auto size = _ModelSizes.find(layer.Key);
+				if (size == _ModelSizes.end()) {
+					std::vector<GpuVoxelInstance> & voxels = walked[layer.Key];
+					Walk_Layer(layer, voxels);
+					size = _ModelSizes.emplace(layer.Key, (int)voxels.size()).first;
+				}
+				needed += size->second;
 			}
 		}
-		if (_ModelNext / VOXELS_PER_ROW + rows <= MODEL_ROWS) {
-			for (auto const & model : fresh) {
-				Upload_Model(model.first, model.second);
+		if (_ModelNext + needed <= MODEL_VOXELS) {
+			for (auto const & layer : missing) {
+				auto found = walked.find(layer.first);
+				if (found == walked.end()) {
+					found = walked.emplace(layer.first, std::vector<GpuVoxelInstance>()).first;
+					Walk_Layer(*layer.second, found->second);
+				}
+				Upload_Model(layer.first, found->second);
 			}
 			return(true);
 		}
 		if (attempt == 1 || _Models.empty()) {
+			Log_Refusal("voxels", needed, MODEL_VOXELS);
 			return(false);
 		}
 		_Models.clear();
@@ -523,9 +575,10 @@ static bool Load_Lights(GpuDrawList const & list, std::vector<std::vector<LayerD
 		_Lights.clear();
 		_LightIndex.clear();
 		if (kept == 0) {
-			return(false);
+			break;
 		}
 	}
+	Log_Refusal("lighting tables", (long long)LIGHT_ROWS + 1, LIGHT_ROWS);
 	return(false);
 }
 
@@ -648,7 +701,6 @@ bool GpuVoxel_Submit(GpuDrawList const & list, int scale)
 
 	_DirectLayers.assign(list.Voxels.size(), std::vector<LayerDraw>());
 	if (!Load_Models(parts) || !Load_Lights(list, parts)) {
-		DebugString("GPU_VOXEL: the layers do not fit the model store or the lighting rows\n");
 		return(false);
 	}
 	if (Faces_Wanted(scale)) {
