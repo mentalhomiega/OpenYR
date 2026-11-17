@@ -273,14 +273,21 @@ static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const &
 }
 
 
-// Fits the map surfaces, made for capacity, to a picture of width by height, and moves the tile layer's picture and
-// planes as kept says without copying the picture. False means nothing changed and the surfaces must be made again.
-static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int height, Point2D const & capacity)
+// The screen's map area the map surfaces were made for; a change of it makes them again.
+static Rect _MapSurfacesScreen;
+
+
+// Fits the map surfaces to a picture of width by height, and moves the tile layer's picture and planes as kept says
+// without copying the picture. False means nothing changed and the surfaces must be made again.
+static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int height)
 {
 	DSurface * const composite = dynamic_cast<DSurface *>(MapCompositeSurface);
 	DSurface * const tiles = dynamic_cast<DSurface *>(MapTileSurface);
+	if (ScreenTacticalRect != _MapSurfacesScreen) {
+		return(false);
+	}
 	for (DSurface const * surface : { composite, tiles }) {
-		if (surface == NULL || surface->Get_Capacity() != capacity) {
+		if (surface == NULL || width > surface->Get_Capacity().X || height > surface->Get_Capacity().Y) {
 			return(false);
 		}
 	}
@@ -311,8 +318,7 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 	// The map surfaces keep the screen composite's layout up to the map's corner, so TacticalRect means the same place in both.
 	int const width = TacticalRect.X + TacticalRect.Width;
 	int const height = TacticalRect.Y + TacticalRect.Height;
-	Point2D const capacity = TacticalRect.Top_Left() + Largest_Map_View();
-	if (wanted && Reframe_Map_Surfaces(kept, width, height, capacity)) {
+	if (wanted && Reframe_Map_Surfaces(kept, width, height)) {
 		return;
 	}
 
@@ -322,6 +328,8 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 	std::unique_ptr<Surface> old_map_tiles(std::exchange(MapTileSurface, nullptr));
 
 	if (wanted) {
+		Point2D const capacity = TacticalRect.Top_Left() + Largest_Map_View();
+		_MapSurfacesScreen = ScreenTacticalRect;
 		DSurface * const composite = new DSurface(capacity.X, capacity.Y);
 		composite->Fill(0);
 		composite->Reframe(0, 0, width, height);
