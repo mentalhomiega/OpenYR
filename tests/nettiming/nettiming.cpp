@@ -451,17 +451,20 @@ namespace
 	}
 
 
-	void Test_Solo_Game_Speed_Frame_Rate(void)
+	void Test_Solo_Game_Speed_Frame_Period(void)
 	{
 		using namespace NetTiming;
 
-		// Zero is no limit at all.
-		unsigned int const expected[] = { 0u, 60u, 45u, 30u, 20u, 15u, 10u };
-		for (int speed = 0; speed < 7; speed++) {
-			Expect_Equal("solo speed " + std::to_string(speed) + " frame rate", Solo_Game_Speed_Frame_Rate(speed), expected[speed]);
+		// A solo frame lasts as many 16 ms units as the game speed is, and speed 0 has no limit.
+		Expect_Equal("solo speed 0 has no limit", Solo_Game_Speed_Frame_Period(0).Nanoseconds, std::int64_t(0));
+		for (int speed = 1; speed <= 6; speed++) {
+			Expect_Equal("solo speed " + std::to_string(speed) + " frame length", Solo_Game_Speed_Frame_Period(speed).Nanoseconds, std::int64_t(16000000) * speed);
 		}
-		Expect_Equal("an unknown solo speed runs unlimited", Solo_Game_Speed_Frame_Rate(7), 0u);
-		Expect_Equal("a negative solo speed runs unlimited", Solo_Game_Speed_Frame_Rate(-1), 0u);
+		Expect_Equal("solo speed 1 is 62.5 frames a second", Frames_Per_Second(Solo_Game_Speed_Frame_Period(1)), 62.5);
+		Expect_Equal("solo speed 2 is 31.25 frames a second", Frames_Per_Second(Solo_Game_Speed_Frame_Period(2)), 31.25);
+		Expect_Equal("a negative solo speed has no limit", Solo_Game_Speed_Frame_Period(-1).Nanoseconds, std::int64_t(0));
+		Expect_Equal("a campaign runs at game speed 2 whatever the option", Campaign_Frame_Period() == Solo_Game_Speed_Frame_Period(2), true);
+		Expect_Equal("no period is no frames a second", Frames_Per_Second(FramePeriod()), 0.0);
 	}
 
 
@@ -490,20 +493,23 @@ namespace
 			Expect_Equal(std::to_string(rate) + " periods differ by a nanosecond at most", longest - shortest <= 1, true);
 		}
 
-		// A frame that starts a period late or less is made up in the next deadline; a later one starts over from now.
+		// A frame that starts a little late stays on the schedule; one that starts later than the slack starts over from
+		// now, so a slow frame is never made up by a short one.
 		FrameDeadline deadline;
 		std::int64_t const period = second / 60;
 		std::int64_t const first = deadline.Arm(start, Frame_Period_For_Rate(60));
-		Expect_Equal("a frame started one period late still ends on the old schedule", deadline.Arm(first + period, Frame_Period_For_Rate(60)) - first, period + 1);
-		std::int64_t const late = first + 10 * period;
+		Expect_Equal("a frame started within the slack ends on the old schedule", deadline.Arm(first + FRAME_LATE_SLACK_NANOSECONDS, Frame_Period_For_Rate(60)) - first, period + 1);
+		std::int64_t const slow = first + period + 10 * 1000000;
+		Expect_Equal("a frame started 10 ms late lasts a whole period", deadline.Arm(slow, Frame_Period_For_Rate(60)) - slow, period);
+		std::int64_t const late = slow + 10 * period;
 		Expect_Equal("a frame started many periods late ends one period from now", deadline.Arm(late, Frame_Period_For_Rate(60)) - late, period);
 		Expect_Equal("the schedule continues from the restart", deadline.Arm(late + period, Frame_Period_For_Rate(60)) - late, 2 * period + 1);
+		std::int64_t const next = deadline.Arm(late + 2 * period + FRAME_LATE_SLACK_NANOSECONDS + 1000, Frame_Period_For_Rate(60));
+		Expect_Equal("a frame started just past the slack starts over", next - (late + 2 * period + FRAME_LATE_SLACK_NANOSECONDS + 1000), period);
 
 		// No rate means no wait and forgets the schedule.
 		Expect_Equal("rate zero ends the frame at once", deadline.Arm(late, Frame_Period_For_Rate(0)), late);
 		Expect_Equal("a change of rate starts from now", deadline.Arm(late, Frame_Period_For_Rate(30)) - late, second / 30);
-		Expect_Equal("the solo period follows the speed table", Solo_Game_Speed_Frame_Period(1) == Frame_Period_For_Rate(60), true);
-		Expect_Equal("a solo speed with no limit has no period", Solo_Game_Speed_Frame_Period(0).Nanoseconds, std::int64_t(0));
 		FrameDeadline fresh;
 		Expect_Equal("the first frame starts from now", fresh.Arm(start, Frame_Period_For_Rate(45)) - start, second / 45);
 	}
@@ -1554,7 +1560,7 @@ int main(void)
 	Test_Provisional_Seed();
 	Test_Note_Retransmit_Guards();
 	Test_Game_Speed_Frame_Rate();
-	Test_Solo_Game_Speed_Frame_Rate();
+	Test_Solo_Game_Speed_Frame_Period();
 	Test_Frame_Deadline();
 	Test_Interval_Stats();
 	Test_Speed_Reaches_Frame_Rate();

@@ -157,7 +157,6 @@ namespace NetTiming
 	};
 
 	unsigned int Game_Speed_Frame_Rate(int game_speed);
-	unsigned int Solo_Game_Speed_Frame_Rate(int game_speed);
 
 	// How long game frames last: Frames frames take Nanoseconds, so a rate that does not divide a second evenly
 	// (60 per second) is exact. Zero nanoseconds means no limit.
@@ -170,11 +169,20 @@ namespace NetTiming
 	};
 
 	FramePeriod Frame_Period_For_Rate(unsigned int rate);
-	// The solo period for a game speed. It follows Solo_Game_Speed_Frame_Rate, so the speed table is kept there.
+	double Frames_Per_Second(FramePeriod period);
+
+	// gamemd's solo frame timer counts units of 16 ms; a solo frame lasts as many units as the game speed, so speed 2
+	// gives 31.25 frames a second. Speed 0 has no limit.
+	constexpr std::int64_t SOLO_FRAME_UNIT_NANOSECONDS = 16000000;
+	// The game speed whose frame length every campaign uses.
+	constexpr int CAMPAIGN_GAME_SPEED = 2;
 	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed);
+	FramePeriod Campaign_Frame_Period(void);
 
 	// Frame deadlines on a nanosecond clock. Each deadline is the previous one plus the period, with the
-	// fraction carried, so frames do not drift. A frame that starts more than one period late restarts from now.
+	// fraction carried, so frames do not drift. A frame that starts more than FRAME_LATE_SLACK_NANOSECONDS late
+	// restarts from now: like gamemd, the loop never runs a short frame to make up for a long one.
+	constexpr std::int64_t FRAME_LATE_SLACK_NANOSECONDS = 2000000;
 	class FrameDeadline
 	{
 		public:

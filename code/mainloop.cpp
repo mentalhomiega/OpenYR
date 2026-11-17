@@ -227,31 +227,91 @@ static void Finish_Decided_Game(void)
 
 
 /// <summary>
-/// The frame rate the loop is held to, or zero for no limit.
+/// The frame rate a network game is held to, or zero for no limit.
 /// </summary>
 static int Target_Frame_Rate(void)
 {
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
-		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast() || AutoTest_Uncapped()) {
-			return(0);
-		}
-		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
-	}
-
 	// A recording is played back as fast as possible.
 	return(Session.Play ? 0 : Session.DesiredFrameRate);
 }
 
 /// <summary>
-/// How long a game frame lasts, or zero for no limit. A solo game takes it from the game speed table.
+/// How long a game frame lasts, or zero for no limit. A skirmish takes it from the game speed, as gamemd does, and
+/// a campaign always runs at one length, as gamemd's does.
 /// </summary>
 static NetTiming::FramePeriod Target_Frame_Period(void)
 {
-	if ((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && Target_Frame_Rate() != 0) {
-		return(NetTiming::Solo_Game_Speed_Frame_Period(Options.GameSpeed));
+	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
+		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
+		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast() || AutoTest_Uncapped()) {
+			return(NetTiming::FramePeriod());
+		}
+		return(Session.Type == GAME_NORMAL ? NetTiming::Campaign_Frame_Period() : NetTiming::Solo_Game_Speed_Frame_Period(Options.GameSpeed));
 	}
 	return(NetTiming::Frame_Period_For_Rate(Target_Frame_Rate()));
+}
+
+/// <summary>
+/// The length of a game frame at the current target, in milliseconds, or zero for no limit.
+/// </summary>
+double Pacing_Target_Milliseconds(void)
+{
+	NetTiming::FramePeriod const period = Target_Frame_Period();
+	return(period.Nanoseconds <= 0 ? 0.0 : period.Nanoseconds / 1e6 / period.Frames);
+}
+
+
+// Frame intervals an autotest asked to be counted.
+static struct {
+	bool Active = false;
+	std::int64_t Last = 0;
+	unsigned int Frames = 0;
+	unsigned int Short = 0;
+	double Sum = 0.0;
+	double Max = 0.0;
+} PaceProbe;
+
+
+/// <summary>
+/// Starts counting the game frame intervals and how many of them end more than 3 ms before the target length.
+/// </summary>
+void Pacing_Probe_Start(void)
+{
+	PaceProbe = {};
+	PaceProbe.Active = true;
+}
+
+
+/// <summary>
+/// Logs the counts since Pacing_Probe_Start. The "short" line holds only the count of frames that ended early,
+/// which does not depend on how busy the machine is; the times are on a line of their own.
+/// </summary>
+void Pacing_Probe_Report(char const * name)
+{
+	DebugString("AUTOTEST paceprobe %s short frames %u\n", name, PaceProbe.Short);
+	DebugString("AUTOTEST paceprobe-times %s frames %u mean %.2f ms max %.2f ms target %.2f ms\n", name, PaceProbe.Frames,
+		PaceProbe.Frames > 0 ? PaceProbe.Sum / PaceProbe.Frames : 0.0, PaceProbe.Max, Pacing_Target_Milliseconds());
+	PaceProbe.Active = false;
+}
+
+
+static void Note_Pacing_Probe(void)
+{
+	if (!PaceProbe.Active) {
+		return;
+	}
+	std::int64_t const now = Monotonic_Nanoseconds();
+	if (PaceProbe.Last != 0) {
+		double const interval = (now - PaceProbe.Last) / 1e6;
+		double const target = Pacing_Target_Milliseconds();
+		PaceProbe.Frames++;
+		PaceProbe.Sum += interval;
+		PaceProbe.Max = std::max(PaceProbe.Max, interval);
+		if (target > 0.0 && interval < target - 3.0) {
+			PaceProbe.Short++;
+		}
+	}
+	PaceProbe.Last = now;
 }
 
 // Recent time a view redraw took, in milliseconds, averaged over the last few draws.
@@ -974,6 +1034,7 @@ void Sync_Delay(void)
 		second_timer = 1000;
 	}
 
+	Note_Pacing_Probe();
 	Log_Tick_Intervals();
 }
 

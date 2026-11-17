@@ -161,13 +161,18 @@ and MA went from 6 to 4 at once.
 
 ## Frame rate and game speed
 
-Solo games (`GAME_NORMAL`, `GAME_SKIRMISH`) pace each frame at the rate in the table below. A solo rate of 0 means no limit, and fast-forward removes the limit.
-
-A solo frame ends at a deadline on the steady clock in nanoseconds (`NetTiming::FrameDeadline`, given a `NetTiming::FramePeriod` so a period need not be a whole rate). Each deadline is the previous one plus 1/F of a second, with the fractional part carried, so 60 fps frames last 16.67 ms and a minute holds exactly 3600 of them. A frame that starts more than one period late, because of a slow frame, a pause, a dialog or a change of rate, restarts the schedule from the time it started, so the loop never runs extra frames to catch up. The wait sleeps on a high-resolution timer and spins only for the last 1.5 ms (`Fine_Wait_Until` in `code/framewait.cpp`).
+A skirmish paces each frame as gamemd does (the frame timer at `0x55E160`, started in `Game::MainLoop` at `0x55D340`). The timer counts units of 16 ms (`SystemTimer::GetTime` is `timeGetTime() >> 4`, `0x6C8C40`), and a frame lasts as many units as the game speed is. Speed 0 has no limit, and fast-forward removes the limit. The slider names the speeds from 6 to 0 Slowest, Slower, Slow, Medium, Fast, Faster and Fastest, so Fast is speed 2.
 
 | `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Solo frame rate | no limit | 60 | 45 | 30 | 20 | 15 | 10 |
+| Skirmish frame | no limit | 16 ms | 32 ms | 48 ms | 64 ms | 80 ms | 96 ms |
+| Skirmish frames a second | no limit | 62.5 | 31.25 | 20.83 | 15.62 | 12.5 | 10.41 |
+
+A campaign mission (`GAME_NORMAL`) ignores the game speed: gamemd sets the frame timer to 2 units whatever the option is and hides the slider, so every campaign frame lasts 32 ms. The in-game game controls dialog hides the slider in a campaign too. The option itself still selects the animation delay table.
+
+A solo frame ends at a deadline on the steady clock in nanoseconds (`NetTiming::FrameDeadline`, given a `NetTiming::FramePeriod` so a period need not be a whole rate). Each deadline is the previous one plus the period, with the fractional part carried, so a minute holds exactly as many frames as the rate says. gamemd times each frame from its own start and never shortens a later frame to make up for a slow one; the pacer does the same. A frame that starts more than 2 ms after the deadline (`FRAME_LATE_SLACK_NANOSECONDS`), because of a slow frame, a pause, a dialog or a change of rate, restarts the schedule from the time it started. A slow frame therefore lowers the average rate and never raises the rate above the setting. The wait sleeps on a high-resolution timer and spins only for the last 1.5 ms (`Fine_Wait_Until` in `code/framewait.cpp`).
+
+The map is drawn while a frame waits for its deadline. `RenderFrameRate`, `FrameRateLimit` and `VSync` set how often it is drawn and presented; they do not change when game frames end, except that a draw longer than the time left is skipped.
 
 In a network game, the desired frame rate F is the lower of the game-speed rate and 1000 divided by the longest process time among seated players. Process time runs from the start of `Main_Loop` to the end of AI logic. It includes the map render and excludes the network wait. A process time of 0 ms gives 60 fps. While a seated player's process report is missing or stale, F keeps its synchronized value.
 

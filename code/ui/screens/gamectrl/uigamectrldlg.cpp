@@ -199,8 +199,9 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.ShowDefenceRange = Options.ShowDefenceRange;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.InGame = GameActive;
-	// A watching house has no speed to set; gamemd hides the speed slider from its observer.
-	state.HasSpeed = !(GameActive && (Session.Type == GAME_INTERNET || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
+	// A watching house has no speed to set; gamemd hides the speed slider from its observer. A campaign runs at one
+	// speed, so gamemd hides the slider there too.
+	state.HasSpeed = !(GameActive && (Session.Type == GAME_INTERNET || Session.Type == GAME_NORMAL || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
 	state.HasDifficulty = !GameActive;
 	state.SoundEnabled = AudioEngine.Is_Available();
 
