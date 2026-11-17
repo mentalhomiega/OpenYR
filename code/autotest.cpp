@@ -7214,6 +7214,13 @@ static void Zoomlevel_Step(StepType const &)
 }
 
 
+// mapbuffers: logs how many zoom changes there were, how many of them made map buffers, and how many they made.
+static void Mapbuffers_Step(StepType const &)
+{
+	Log_Map_Buffer_Counts();
+}
+
+
 // zoom <factor>: sets the map view zoom at once (0.5 shows twice as much), measured from the screen's own pixels.
 static void Zoom_Step(StepType const & step)
 {
@@ -8124,6 +8131,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"skipscore", Skipscore_Step},
 		{"lansession", Lansession_Step},
 		{"zoomlevel", Zoomlevel_Step},
+		{"mapbuffers", Mapbuffers_Step},
 		{"zoom", Zoom_Step},
 		{"wheel", Wheel_Step},
 		{"options", Options_Step},

@@ -30,6 +30,7 @@
 #include "layerfade.h"
 #include "map.h"
 #include "mmsys.h"
+#include "monotonic.h"
 #include "rules.h"
 #include "session.h"
 #include "shadowplane.h"
@@ -209,6 +210,42 @@ bool Map_Layers_Keepable(void)
 }
 
 
+// What the zoom changes made of the map's buffers since the game started.
+static int _ZoomSteps = 0;
+static int _AllocatingSteps = 0;
+static int _MapBuffersMade = 0;
+static std::size_t _MapBufferBytes = 0;
+
+
+void Count_Map_Buffer(std::size_t bytes)
+{
+	_MapBuffersMade++;
+	_MapBufferBytes += bytes;
+}
+
+
+MapViewStep Begin_Map_View_Step(void)
+{
+	return(MapViewStep{ _MapBuffersMade, _MapBufferBytes, Monotonic_Nanoseconds() });
+}
+
+
+void End_Map_View_Step(MapViewStep const & step)
+{
+	int const made = _MapBuffersMade - step.Made;
+	_ZoomSteps++;
+	_AllocatingSteps += (made > 0) ? 1 : 0;
+	DebugString("Map view %dx%d for zoom %.2f: %d buffers made, %zu bytes, %.2f ms\n", TacticalRect.Width, TacticalRect.Height, ViewZoom, made,
+		_MapBufferBytes - step.Bytes, (Monotonic_Nanoseconds() - step.Started) / 1e6);
+}
+
+
+void Log_Map_Buffer_Counts(void)
+{
+	DebugString("AUTOTEST mapbuffers zoom steps %d, %d of them made buffers, %d buffers made\n", _ZoomSteps, _AllocatingSteps, _MapBuffersMade);
+}
+
+
 // Copies an area of a tile layer's picture, with its emissive and shadow planes, to the same place in another layer.
 static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const & from, Point2D const & to)
 {
@@ -243,6 +280,8 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 		MapCompositeSurface = new DSurface(width, height);
 		MapCompositeSurface->Fill(0);
 		MapTileSurface = new DSurface(width, height, true, true);
+		Count_Map_Buffer((std::size_t)MapCompositeSurface->Stride() * height);
+		Count_Map_Buffer(((DSurface *)MapTileSurface)->Get_Block_Size());
 		DebugString("Map surfaces %dx%d for zoom %.2f\n", width, height, ViewZoom);
 	}
 

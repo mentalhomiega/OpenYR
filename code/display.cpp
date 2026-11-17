@@ -374,6 +374,7 @@ static void Replace_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept)
 {
 	std::unique_ptr<Buffer> const old(std::exchange(buffer, nullptr));
 	buffer = new Buffer(TacticalRect);
+	Count_Map_Buffer((std::size_t)buffer->Get_Buffer_Width() * buffer->Get_Bounds().Height * sizeof(unsigned short));
 	if (kept != nullptr && old != nullptr && kept->From.Is_Valid()) {
 		buffer->Copy_From(*old, kept->From, kept->To);
 	}
@@ -385,8 +386,10 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 	DebugString("Set_View_Dimensions(%d,%d,%d,%d)\n", dimensions.X, dimensions.Y, dimensions.Width, dimensions.Height);
 
 	// A change of the zoom alone keeps the map's drawn picture where the old view and the new one overlap.
-	bool const keep = dimensions == ScreenTacticalRect && Map_Layers_Keepable();
+	bool const zoom_only = dimensions == ScreenTacticalRect && TacticalMap != NULL;
+	bool const keep = zoom_only && Map_Layers_Keepable();
 	Rect const old_view = TacticalRect;
+	MapViewStep const step = Begin_Map_View_Step();
 
 	// The map view keeps its corner on screen; zooming out makes it larger than its screen area.
 	ScreenTacticalRect = dimensions;
@@ -422,6 +425,9 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		}
 
 		Show_Mouse();
+	}
+	if (zoom_only) {
+		End_Map_View_Step(step);
 	}
 
 	Map.Reposition_Sidebar();
