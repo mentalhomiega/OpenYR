@@ -43,7 +43,7 @@ void * WriteWatch_Alloc(std::size_t size)
 		return(memory);
 	}
 #endif
-	return(new char[size]);
+	return(new char[size]());
 }
 
 

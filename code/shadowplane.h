@@ -37,6 +37,9 @@ bool ShadowPlane_Set_Enabled(bool shadows, bool water);
 // the members of a pair, so both members need a plane.
 void ShadowPlane_Sync(Surface const * composite, Surface const * tile, Surface const * map_composite, Surface const * map_tile);
 
+// Binds a plane to one more surface while planes are on and returns it, or NULL while they are off.
+EmissivePlane * ShadowPlane_Bind(Surface const & surface);
+
 // The plane of a surface, or NULL when it has none.
 EmissivePlane * ShadowPlane_For(void const * surface);
 

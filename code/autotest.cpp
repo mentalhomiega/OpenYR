@@ -18,6 +18,7 @@
 #include "combat.h"
 #include "ebolt.h"
 #include "laser.h"
+#include "monotonic.h"
 #include "perfstat.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
@@ -7410,6 +7411,27 @@ static void Perfoverlay_Step(StepType const & step)
 }
 
 
+static double _PerfWindowStart = 0.0;
+
+// perfwindow <start|report> [name]: marks the start of a timed window, or logs the game frame intervals and
+// present gaps recorded since the mark. Recording must be on (perflog 1).
+static void Perfwindow_Step(StepType const & step)
+{
+	double const now = Monotonic_Nanoseconds() / 1e6;
+	if (step.Argument == "start") {
+		_PerfWindowStart = now;
+		DebugString("AUTOTEST perfwindow start\n");
+		return;
+	}
+	int const frames = Perf_Newest_Since(Perf_Domain_Times(PERF_DOMAIN_FRAME), _PerfWindowStart);
+	int const presents = Perf_Newest_Since(Perf_Domain_Times(PERF_DOMAIN_PRESENT), _PerfWindowStart);
+	PerfWindowSummary const frame = Perf_Average_Worst(Perf_Frame_Intervals(), frames);
+	PerfWindowSummary const gap = Perf_Average_Worst(Perf_Present_Gaps(), presents);
+	DebugString("AUTOTEST perfwindow %s %.0f ms frames %d avg %.2f worst %.2f presents %d gap avg %.2f worst %.2f\n",
+		step.Words.size() > 3 ? step.Words[3].c_str() : "", now - _PerfWindowStart, frames, frame.Average, frame.Worst, presents, gap.Average, gap.Worst);
+}
+
+
 // keyrect <x> <y> <w> <h>: logs how many pixels of the last presented frame in that screen rectangle hold the map layer key.
 static void Keyrect_Step(StepType const & step)
 {
@@ -8119,6 +8141,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"hashparts", Hashparts_Step},
 		{"perflog", Perflog_Step},
 		{"perfoverlay", Perfoverlay_Step},
+		{"perfwindow", Perfwindow_Step},
 		{"uploadverify", Uploadverify_Step},
 		{"keyrect", Keyrect_Step},
 		{"stretchprobe", Stretchprobe_Step},

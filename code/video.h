@@ -106,14 +106,15 @@ void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity);
 // Whether the presenter can draw the map as its own layer under the frame.
 bool Video_Map_Layer_Supported(void);
 
-// Draws part of a surface under the frame area dest (in frame pixels) wherever the frame holds
-// VIDEO_LAYER_KEY, from the next present on. Call it after each draw of the surface; a NULL
-// surface removes the layer.
-void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & dest);
+// Takes the part source of a surface as the map layer and draws its part shown under the frame area
+// dest (in frame pixels) wherever the frame holds VIDEO_LAYER_KEY, from the next present on. Call it
+// after each draw of the surface; a NULL surface removes the layer. While source keeps its size, a
+// change of shown alone sends no new picture to the GPU.
+void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & shown, Rect const & dest);
 
-// Draws the GPU map texture (gpumap.h), drawn from the map area source, under the frame area dest
-// until the next Video_Set_Map_Layer.
-void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest);
+// Draws the part shown of the GPU map texture (gpumap.h), drawn from the map area source, under the
+// frame area dest until the next Video_Set_Map_Layer.
+void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & shown, Rect const & dest);
 
 // Removes the map layer before its surface is freed; presents wait for the next map draw (see video.cpp).
 void Video_Drop_Map_Layer(void);

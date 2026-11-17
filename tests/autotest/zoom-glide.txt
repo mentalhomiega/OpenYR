@@ -1,0 +1,46 @@
+; Zoom glide: ten mouse-wheel steps out from zoom 1 to the furthest zoom, then ten back in, three game frames apart, on XMP22S8.
+; Each step that needs more of the map keeps the picture already drawn and draws only the new edges, and the presenter
+; stretches the drawn picture while the zoom glides. After each glide has settled, the view is shot as the frames left it and, a game
+; frame later, after a full redraw. Each shot logs two DRAW_DIGEST lines, the frame's own draw and the shot's, which must be equal: for the
+; second shot that compares the kept picture with a full redraw of the same frame. perfwindow logs the frame times of each glide; the Run
+; line's filter leaves those lines out, as they depend on the machine.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/zoom-glide.txt -Map XMP22S8.MAP -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nGpuRender=no" -Filter "AUTOTEST (?!perfwindow )|Exception|DRAW_DIGEST"
+1 perflog 1
+1 glideclock
+2 reveal
+100 zoom 1.0
+199 perfwindow start
+200 wheel -0.1
+203 wheel -0.1
+206 wheel -0.1
+209 wheel -0.1
+212 wheel -0.1
+215 wheel -0.1
+218 wheel -0.1
+221 wheel -0.1
+224 wheel -0.1
+227 wheel -0.1
+260 perfwindow report out
+261 zoomlevel
+261 drawdigest 1
+261 windowshot glideout asis
+261 windowshot glideout-fresh
+262 drawdigest 0
+290 perfwindow start
+300 wheel 0.1
+303 wheel 0.1
+306 wheel 0.1
+309 wheel 0.1
+312 wheel 0.1
+315 wheel 0.1
+318 wheel 0.1
+321 wheel 0.1
+324 wheel 0.1
+327 wheel 0.1
+360 perfwindow report in
+361 zoomlevel
+361 drawdigest 1
+361 windowshot glidein asis
+361 windowshot glidein-fresh
+362 drawdigest 0
+370 quit

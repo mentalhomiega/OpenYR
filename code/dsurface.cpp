@@ -160,7 +160,6 @@ DSurface::DSurface(int width, int height, bool watched, bool scrolls) :
 		// A block the GPU reads in place has at most GPU_MAP_STORE_ROWS rows.
 		BlockSize = scrolls ? std::max(size, std::min(size * 2, (std::size_t)Pitch * GPU_MAP_STORE_ROWS)) : size;
 		Block = WriteWatch_Alloc(BlockSize);
-		std::memset(Block, 0, BlockSize);
 		GDIBuffer = (char *)Block + Centre_Offset(BlockSize, size);
 		return;
 	}

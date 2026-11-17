@@ -16,23 +16,31 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
+#include "_zbuffer.h"
+#include "abuffer.h"
 #include "dbgprint.h"
 #include "debugmode.h"
 #include "dsurface.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "ftimer.h"
 #include "globals.h"
 #include "goptions.h"
 #include "gscreen.h"
+#include "layerfade.h"
 #include "map.h"
 #include "mmsys.h"
 #include "rules.h"
 #include "session.h"
+#include "shadowplane.h"
 #include "tactical.h"
 #include "video.h"
 #include "vidscale.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <utility>
 
 
 double ViewZoom = 1.0;
@@ -193,27 +201,57 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 }
 
 
-void Allocate_Map_Surfaces(void)
+bool Map_Layers_Keepable(void)
+{
+	static bool const off = std::getenv("OPENYR_NO_ZOOM_KEEP") != NULL;
+	Surface const * const tiles = (MapTileSurface != NULL) ? MapTileSurface : TileSurface;
+	return(!off && TacticalMap != NULL && DepthBuffer != NULL && AlphaBuffer != NULL && tiles != NULL && !LayerFade_Active());
+}
+
+
+// Copies an area of a tile layer's picture, with its emissive and shadow planes, to the same place in another layer.
+static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const & from, Point2D const & to)
+{
+	Rect const area(to.X, to.Y, from.Width, from.Height);
+	dest.Blit_From(area, source, from);
+	if (Emissive_Plane_For(&source) != NULL) {
+		Emissive_Bind(&dest, dest.Get_Width(), dest.Get_Height());
+	}
+	if (ShadowPlane_For(&source) != NULL) {
+		ShadowPlane_Bind(dest);
+	}
+	Emissive_After_Bit_Blit(dest, to.X, to.Y, source, from.X, from.Y, from.Width, from.Height);
+	ShadowPlane_After_Bit_Blit(dest, to.X, to.Y, source, from.X, from.Y, from.Width, from.Height);
+	if (DSurface * const layer = dynamic_cast<DSurface *>(&dest)) {
+		layer->Note_Written(area);
+	}
+}
+
+
+void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 {
 	Video_Drop_Map_Layer();
 	delete MapCompositeSurface;
 	MapCompositeSurface = NULL;
-	delete MapTileSurface;
-	MapTileSurface = NULL;
+	std::unique_ptr<Surface> old_map_tiles(std::exchange(MapTileSurface, nullptr));
 
 	// A glide to or from 1 still shows the map scaled, so it keeps the surfaces until it ends.
-	if (ViewZoom == 1.0 && !_Gliding) {
-		return;
+	if (ViewZoom != 1.0 || _Gliding) {
+		// The map surfaces keep the screen composite's layout up to the map's corner, so TacticalRect means the same place in both.
+		int const width = TacticalRect.X + TacticalRect.Width;
+		int const height = TacticalRect.Y + TacticalRect.Height;
+		MapCompositeSurface = new DSurface(width, height);
+		MapCompositeSurface->Fill(0);
+		MapTileSurface = new DSurface(width, height, true, true);
+		DebugString("Map surfaces %dx%d for zoom %.2f\n", width, height, ViewZoom);
 	}
 
-	// The map surfaces keep the screen composite's layout up to the map's corner, so TacticalRect means the same place in both.
-	int const width = TacticalRect.X + TacticalRect.Width;
-	int const height = TacticalRect.Y + TacticalRect.Height;
-	MapCompositeSurface = new DSurface(width, height);
-	MapCompositeSurface->Fill(0);
-	MapTileSurface = new DSurface(width, height, true, true);
-	MapTileSurface->Fill(0);
-	DebugString("Map surfaces %dx%d for zoom %.2f\n", width, height, ViewZoom);
+	Surface const * const old_tiles = (old_map_tiles != nullptr) ? old_map_tiles.get() : TileSurface;
+	Surface * const new_tiles = (MapTileSurface != NULL) ? MapTileSurface : TileSurface;
+	if (kept != nullptr && kept->From.Is_Valid() && old_tiles != NULL && new_tiles != NULL && new_tiles != old_tiles) {
+		Point2D const corner = TacticalRect.Top_Left();
+		Copy_Tile_Layer(*new_tiles, *old_tiles, kept->From + corner, kept->To + corner);
+	}
 }
 
 
@@ -226,10 +264,34 @@ static void Set_Drawn_Zoom(double zoom, double middlex, double middley)
 	if (TacticalMap == NULL) {
 		return;
 	}
+	Point2D const middle{ int(middlex), int(middley) };
+	bool const keep = Map_Layers_Keepable();
+	if (keep) {
+		// Set_View_Dimensions places the kept picture where the view's corner lies, so the view moves there first.
+		TacticalMap->Set_Tactical_Position(middle);
+	}
 	ViewZoom = zoom;
 	Map.Set_View_Dimensions(ScreenTacticalRect);
-	TacticalMap->Set_Tactical_Position(Point2D(int(middlex), int(middley)));
-	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	TacticalMap->Set_Tactical_Position(middle);
+	if (keep) {
+		Map.Flag_To_Redraw_Kept_Map();
+	} else {
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	}
+}
+
+
+// Builds or frees the map surfaces for a glide to or from a zoom of 1, which leaves the view's size alone.
+static void Allocate_Map_Surfaces_Same_View(void)
+{
+	if (!Map_Layers_Keepable()) {
+		Allocate_Map_Surfaces();
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		return;
+	}
+	KeptMapPicture const whole{ Rect(0, 0, TacticalRect.Width, TacticalRect.Height), Point2D(0, 0) };
+	Allocate_Map_Surfaces(&whole);
+	Map.Flag_To_Redraw_Kept_Map();
 }
 
 
@@ -395,8 +457,7 @@ void Apply_Pending_View_Zoom(void)
 			if (target < ViewZoom) {
 				Set_Drawn_Zoom(target, wantx, wanty);
 			} else if (MapCompositeSurface == NULL) {
-				Allocate_Map_Surfaces();
-				Map.Flag_To_Redraw(GS_REDRAW_ALL);
+				Allocate_Map_Surfaces_Same_View();
 			}
 
 			// Where the view will end: the wanted middle held inside what is drawn. _From and _To keep
@@ -417,8 +478,7 @@ void Apply_Pending_View_Zoom(void)
 		if (std::abs(_TargetZoom - ViewZoom) >= 0.001) {
 			Set_Drawn_Zoom(_TargetZoom, _ToMiddleX, _ToMiddleY);
 		} else if (ViewZoom == 1.0 && MapCompositeSurface != NULL) {
-			Allocate_Map_Surfaces();
-			Map.Flag_To_Redraw(GS_REDRAW_ALL);
+			Allocate_Map_Surfaces_Same_View();
 		}
 	}
 }

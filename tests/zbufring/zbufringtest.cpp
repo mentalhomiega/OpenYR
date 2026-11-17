@@ -419,6 +419,53 @@ void Run_Written(char const * name, unsigned short reset)
 }
 
 
+/// <summary>
+/// Copies an area of a panned buffer, whose rows wrap around the end of its memory, into a buffer of
+/// another size, as a zoom change does. The copied entries land at their new place, a depth is
+/// rewritten for the new buffer's scroll bias and row, an unwritten depth stays unwritten, and the
+/// rest of the new buffer keeps its reset value.
+/// </summary>
+template<typename BufferT>
+void Run_Copy(char const * name, unsigned short reset, bool depth)
+{
+	char what[160];
+	BufferT source(Rect(0, 0, BUFFER_W, BUFFER_H));
+	source.Pan(7, 5, reset);
+	auto const value = [](int x, int y) { return((unsigned short)(0x4000 + y * 64 + x)); };
+	for (int y = 0; y < BUFFER_H; y++) {
+		for (int x = 0; x < BUFFER_W; x++) {
+			*(unsigned short *)source.Get_Buffer_Offset(Point2D(x, y)) = (x == 3 && y == 4) ? reset : value(x, y);
+		}
+	}
+
+	int const width = 30;
+	int const height = 30;
+	BufferT dest(Rect(0, 0, width, height));
+	Rect const from(1, 2, 25, 20);
+	Point2D const to(4, 6);
+	dest.Copy_From(source, from, to);
+	unsigned short const shift = depth ? (unsigned short)(dest.Get_Scroll() - source.Get_Scroll() - (to.Y - from.Y)) : 0;
+
+	int wrong = 0;
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			int const fromx = x - to.X + from.X;
+			int const fromy = y - to.Y + from.Y;
+			bool const inside = x >= to.X && x < to.X + from.Width && y >= to.Y && y < to.Y + from.Height;
+			unsigned short expected = reset;
+			if (inside && !(fromx == 3 && fromy == 4)) {
+				expected = (unsigned short)(value(fromx, fromy) + shift);
+			}
+			if (*(unsigned short *)dest.Get_Buffer_Offset(Point2D(x, y)) != expected) {
+				wrong++;
+			}
+		}
+	}
+	std::snprintf(what, sizeof(what), "%s: a copied area lands at its new place and the rest keeps the reset value", name);
+	Check(wrong == 0, what);
+}
+
+
 int main(void)
 {
 	Run_Written<ZBuffer>("depth", 0xFFFF);
@@ -427,6 +474,8 @@ int main(void)
 	Run<ABuffer>("alpha", 0x007F);
 	Run_Write_Watch<ZBuffer>("depth");
 	Run_Write_Watch<ABuffer>("alpha");
+	Run_Copy<ZBuffer>("depth", 0xFFFF, true);
+	Run_Copy<ABuffer>("alpha", 0x007F, false);
 
 	std::printf("%-52s %s\n", "Ring addressing in the depth and alpha buffers",
 		Failures == 0 ? "ok" : "FAILED");

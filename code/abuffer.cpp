@@ -12,6 +12,7 @@
 #include "abuffer.h"
 
 #include "bsurface.h"
+#include "ringrows.h"
 #include "writewatch.h"
 
 #include <cstdint>
@@ -328,4 +329,15 @@ unsigned short * ABuffer::Get_Buffer_Offset(Point2D pos)
 
 	buffptr += SurfaceOffset;
 	return(Wrap_Overflow(buffptr));
+}
+
+
+/// <summary>
+/// Copies the entries of the from area of source to the area of the same size at to, in buffer coordinates. Both
+/// areas must lie inside their buffers.
+/// </summary>
+void ABuffer::Copy_From(ABuffer const & source, Rect const & from, Point2D const & to)
+{
+	Copy_Ring_Rows(RingRows{ BufferStart, BufferSize, SurfaceOffset, BufferWidth }, to, RingRows{ source.BufferStart, source.BufferSize, source.SurfaceOffset, source.BufferWidth }, from);
+	Note_Written(Rect(Bounds.X + to.X, Bounds.Y + to.Y, from.Width, from.Height));
 }

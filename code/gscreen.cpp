@@ -415,6 +415,10 @@ void GScreenClass::Init_IO(void)
  * HISTORY:                                                                                    *
  *   12/15/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+// Set while the full redraw asked for is only for a tactical map that kept its picture (Flag_To_Redraw_Kept_Map).
+static bool _MapPictureKept = false;
+
+
 void GScreenClass::Flag_To_Redraw(GScreenRedrawFlags flags)
 {
 	if (TacticalMap != NULL) {
@@ -422,11 +426,20 @@ void GScreenClass::Flag_To_Redraw(GScreenRedrawFlags flags)
 	}
 
 	if (flags != GS_REDRAW_DIRTY) {
+		_MapPictureKept = false;
 		if (DrawFlags != GS_REDRAW_ALL) {
 			DrawFlags = flags;
 		}
 		Map.Increment_Redraw_Counter();
 	}
+}
+
+
+void GScreenClass::Flag_To_Redraw_Kept_Map(void)
+{
+	bool const kept = DrawFlags == GS_REDRAW_DIRTY || _MapPictureKept;
+	Flag_To_Redraw(GS_REDRAW_ALL);
+	_MapPictureKept = kept;
 }
 
 
@@ -686,7 +699,10 @@ void GScreenClass::Render(void)
 	if (ShadowPlane_Set_Enabled(gpu_planes && Options.SoftShadows, gpu_planes && Options.WaterRipples)) {
 		redraw = true;
 		TacticalMap->IsToRedraw = true;
+		_MapPictureKept = false;
 	}
+	bool const map_redraw = redraw && !_MapPictureKept;
+	_MapPictureKept = false;
 	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
 	ShadowOnce_Set_Enabled(!Options.ShadowStacking);
 	GpuDraw_Plan(gpu_render);
@@ -696,8 +712,8 @@ void GScreenClass::Render(void)
 		ObjectTypeClass::Clear_Voxel_Indexes();
 	}
 	use_map_surfaces(true);
-	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
-	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
+	TacticalMap->Render(*CompositeSurface, map_redraw, DRAW_PASS_PAN);
+	TacticalMap->Render(*CompositeSurface, map_redraw, DRAW_PASS_BACKGROUND);
 	use_map_surfaces(false);
 	// The menu battle is drawn bare: the menus stand where the sidebar and messages would be.
 	bool const hud = !Shellmap_In_Scope();
@@ -710,8 +726,9 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	Video_Draw_Probe_Target(CompositeSurface);
-	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
-	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
+	// While zoomed, the GPU draws the whole map view and the presenter scales the part that is shown, so a glide
+	// keeps the GPU's picture size.
+	Rect const gpu_area = TacticalRect;
 	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0, !Options.ShadowStacking);
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
@@ -728,7 +745,7 @@ void GScreenClass::Render(void)
 	GpuVoxel_Set_Shared_Depth(Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);
 	GpuVoxel_Set_Cloak_Ripple(Options.GpuVoxelCloak == GPU_VOXEL_CLOAK_RIPPLE);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
-	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
+	TacticalMap->Render(*CompositeSurface, map_redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;
 	{
 		PerfScope gpumap_scope(PERF_DRAW_GPUMAP);
@@ -740,7 +757,7 @@ void GScreenClass::Render(void)
 	if (gpu_drawn) {
 		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
 		Fill_Map_Layer_Key(dest);
-		Video_Set_Gpu_Map_Layer(gpu_area, dest);
+		Video_Set_Gpu_Map_Layer(gpu_area, zoomed ? Shown_Map_Rect() : gpu_area, dest);
 		// The new map pass is shown at the next present even when nothing in the frame changed.
 		Video_Mark_Dirty();
 	} else if (zoomed && Video_Map_Layer_Supported()) {
@@ -751,12 +768,12 @@ void GScreenClass::Render(void)
 			Rect const panel = Hud_Layout().Panel;
 			CompositeSurface->Blit_From(panel, *MapCompositeSurface, Shown_Map_Part(panel));
 		}
-		Video_Set_Map_Layer(MapCompositeSurface, Shown_Map_Rect(), ScreenTacticalRect);
+		Video_Set_Map_Layer(MapCompositeSurface, TacticalRect, Shown_Map_Rect(), ScreenTacticalRect);
 	} else {
 		if (zoomed) {
 			CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
 		}
-		Video_Set_Map_Layer(NULL, Rect(), Rect());
+		Video_Set_Map_Layer(NULL, Rect(), Rect(), Rect());
 	}
 
 	{

@@ -101,6 +101,7 @@
 #include "_tactica.h"
 #include "_tooltip.h"
 #include "_zbuffer.h"
+#include "abuffer.h"
 #include "airctype.h"
 #include "animtype.h"
 #include "astar.h"
@@ -166,7 +167,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <optional>
+#include <utility>
 #include <vector>
 
 /*
@@ -365,9 +368,25 @@ void DisplayClass::Init_IO(void)
  *   12/06/1994 JLB : Created.                                                                 *
  *   06/27/1995 JLB : Adjusts tactical map position if necessary.                              *
  *=============================================================================================*/
+// Replaces a depth or alpha buffer with one that covers TacticalRect, holding the kept part of the old one's entries.
+template <typename Buffer>
+static void Replace_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept)
+{
+	std::unique_ptr<Buffer> const old(std::exchange(buffer, nullptr));
+	buffer = new Buffer(TacticalRect);
+	if (kept != nullptr && old != nullptr && kept->From.Is_Valid()) {
+		buffer->Copy_From(*old, kept->From, kept->To);
+	}
+}
+
+
 void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 {
 	DebugString("Set_View_Dimensions(%d,%d,%d,%d)\n", dimensions.X, dimensions.Y, dimensions.Width, dimensions.Height);
+
+	// A change of the zoom alone keeps the map's drawn picture where the old view and the new one overlap.
+	bool const keep = dimensions == ScreenTacticalRect && Map_Layers_Keepable();
+	Rect const old_view = TacticalRect;
 
 	// The map view keeps its corner on screen; zooming out makes it larger than its screen area.
 	ScreenTacticalRect = dimensions;
@@ -376,32 +395,31 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		TacticalRect.Width = int(dimensions.Width / ViewZoom);
 		TacticalRect.Height = int(dimensions.Height / ViewZoom);
 	}
-	Allocate_Map_Surfaces();
-
 	if (TacticalMap != NULL) {
 		TacticalMap->Set_View_Dimensions(TacticalRect);
+	}
 
+	KeptMapPicture kept{ Rect(), Point2D(0, 0) };
+	if (keep) {
+		Point2D const offset = TacticalMap->Drawn_Picture_Offset();
+		Rect const shown = Intersect(Rect(offset.X, offset.Y, old_view.Width, old_view.Height), Rect(0, 0, TacticalRect.Width, TacticalRect.Height));
+		if (shown.Is_Valid()) {
+			kept = KeptMapPicture{ shown - offset, shown.Top_Left() };
+		}
+	}
+	Allocate_Map_Surfaces(keep ? &kept : nullptr);
+
+	if (TacticalMap != NULL) {
 		Hide_Mouse();
 
 		GpuMap_Release_References();
-		if (DepthBuffer != NULL) {
-			DebugString("Deleting ZBuffer\n");
-			delete DepthBuffer;
-			DepthBuffer = NULL;
-		}
-
-		DepthBuffer = new ZBuffer(TacticalRect);
-		DepthBuffer->Set_Scroll(ZBUFFER_MAX);
+		Replace_View_Buffer(DepthBuffer, keep ? &kept : nullptr);
 		DebugString("Allocating ZBuffer (%dx%d)\n", TacticalRect.Width, TacticalRect.Height);
-
-		if (AlphaBuffer != NULL) {
-			DebugString("Deleting ABuffer\n");
-			delete AlphaBuffer;
-			AlphaBuffer = NULL;
-		}
-
-		AlphaBuffer = new ABuffer(TacticalRect);
+		Replace_View_Buffer(AlphaBuffer, keep ? &kept : nullptr);
 		DebugString("Allocating ABuffer (%dx%d)\n", TacticalRect.Width, TacticalRect.Height);
+		if (keep) {
+			TacticalMap->Picture_Moved_To_View(Rect(kept.To.X, kept.To.Y, kept.From.Width, kept.From.Height));
+		}
 
 		Show_Mouse();
 	}

@@ -75,6 +75,7 @@ static VideoDirtyStateClass _Dirty;
 // The map layer drawn under the frame, and whether its pixels changed since the last present.
 static Surface const * _LayerSurface = NULL;
 static Rect _LayerSource;
+static Rect _LayerShown;
 static Rect _LayerDest;
 static bool _LayerFresh = false;
 static bool _LayerGpu = false;
@@ -489,10 +490,11 @@ bool Video_Map_Layer_Supported(void)
 }
 
 
-void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & dest)
+void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & shown, Rect const & dest)
 {
 	_LayerSurface = surface;
 	_LayerSource = source;
+	_LayerShown = shown;
 	_LayerDest = dest;
 	_LayerFresh = (surface != NULL);
 	_LayerGpu = false;
@@ -509,7 +511,7 @@ void Video_Drop_Map_Layer(void)
 {
 	bool const was_awaiting = _AwaitingMapDraw;
 	bool const had_layer = _LayerSurface != NULL || _LayerGpu;
-	Video_Set_Map_Layer(NULL, Rect(), Rect());
+	Video_Set_Map_Layer(NULL, Rect(), Rect(), Rect());
 	if (had_layer) {
 		_MapDropTime = timeGetTime();
 	}
@@ -538,10 +540,11 @@ void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity)
 }
 
 
-void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest)
+void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & shown, Rect const & dest)
 {
 	_LayerSurface = NULL;
 	_LayerSource = source;
+	_LayerShown = shown;
 	_LayerDest = dest;
 	_LayerFresh = false;
 	_LayerGpu = true;
@@ -612,6 +615,10 @@ static void Layer_Destination(BackendLayer & layer)
 {
 	layer.Width = _LayerSource.Width;
 	layer.Height = _LayerSource.Height;
+	layer.ShownX = _LayerShown.X - _LayerSource.X;
+	layer.ShownY = _LayerShown.Y - _LayerSource.Y;
+	layer.ShownWidth = _LayerShown.Width;
+	layer.ShownHeight = _LayerShown.Height;
 	layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
 	layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
 	layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;

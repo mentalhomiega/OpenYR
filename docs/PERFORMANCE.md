@@ -319,6 +319,48 @@ tile layer takes 1 ms.
 on a computer with two graphics cards the game could start on the slower one, where the GPU pass of this
 view alone took about 31 ms.
 
+## Zoom changes
+
+A change of the zoom keeps the map's drawn picture. The map surfaces and the depth and alpha buffers are
+still built anew for the new view size, but the part of the old picture that the new view shows is copied
+into them, with its emissive and shadow planes, and only the edges the old view did not show are drawn. A
+step inward draws nothing new unless the map's edge moves the view. While a zoom glides, the map is drawn
+every frame at the zoom the glide drew last, so objects keep moving, and the presenter scales the part of
+that picture the glide shows. The GPU pass and the presenter's map texture keep the size of the whole drawn
+view through a glide; before, they were made again in every frame of a glide, as the part shown changed
+size.
+
+The settled picture is the one a full redraw gives. `tests/autotest/zoom-glide.txt` glides ten mouse-wheel
+steps out and ten back in on XMP22S8 and logs the map digest of the settled view as left and after a full
+redraw; all of them match. In software, every draw of that glide also matched the draw of a run with
+`OPENYR_NO_ZOOM_KEEP=1`, which draws the whole picture at each step as before. The picture is drawn whole
+again, as before, while a light fade is deferred, when the screen size changes, and with
+`OPENYR_NO_ZOOM_KEEP=1` in the environment.
+
+Where a zoom step's time went before, from one step at 3840x2160 to a 3840x2160 map view, about 90 ms in
+both drawing modes: 14 ms for the two map surfaces, 9 ms for the depth and alpha buffers, 50 ms redrawing
+the tile layer and 8 to 15 ms presenting the new picture, most of it in the GPU frame that takes the new
+textures. A step to the furthest zoom on XMP04T8 (a 7546x4245 view) took about 100, 250 and 85 ms for the
+same three parts.
+
+Measured with `zoom-glide.txt` played without the frame limit, before and after, two runs each, with no
+other game running except in eight of the 3840x2160 runs, which had one; the times are the sum of the game
+frame intervals over each glide's 61 frames and the longest frame interval, in ms:
+
+| Screen, map | Drawing | Glide out before | after | Longest frame before | after |
+|---|---|---|---|---|---|
+| 1920x1080, XMP22S8 | Software | 518, 541 | 307, 319 | 77, 80 | 52, 55 |
+| 1920x1080, XMP22S8 | GPU | 300, 332 | 237, 249 | 83, 102 | 61, 72 |
+| 1920x1080, XMP22S8 | GPU, `GpuVoxels=yes` | 402, 394 | 307, 265 | 92, 96 | 83, 69 |
+| 3840x2160, XMP04T8 | Software | 2230, 2212 | 1094, 1144 | 370, 372 | 228, 244 |
+| 3840x2160, XMP04T8 | GPU | 1383, 1406 | 922, 927 | 413, 446 | 276, 278 |
+| 3840x2160, XMP04T8 | GPU, `GpuVoxels=yes` | 1727, 1646 | 976, 933 | 411, 444 | 292, 275 |
+
+Gliding back in took 0.06 to 0.95 s before and 0.04 to 0.55 s after. A step still allocates the new surfaces
+and buffers, about 25 ms for a 3840x2160 view, and sends the whole new picture to the GPU, about 15 ms,
+since every pixel of it moved; at the furthest zoom on a large map a single step outward still takes about
+230 ms.
+
 ## Start-up with a large mod
 
 Measured with Mental Omega (790 loose maps, rules of about 2 MB) to the title menu with the menu battle on, on

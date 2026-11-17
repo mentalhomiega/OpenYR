@@ -165,6 +165,8 @@ class Tactical : public AbstractClass
 		 * Redraw registration.
 		 */
 		void Register_Dirty_Area(Rect area, bool refresh_shroud = false);
+		Point2D Drawn_Picture_Offset(void) const;
+		void Picture_Moved_To_View(Rect const & kept);
 		void Reset_Dirty_Rectangles(void);
 		void Register_Dirty_Buildings(Rect area);
 		void Flag_Cell(CellClass & cell);
