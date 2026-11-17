@@ -4058,6 +4058,17 @@ static void Beams_Step(StepType const &)
 }
 
 
+// animemissive <TypeID>: logs the emissive mask strength of each live animation of that type, whether an AttachEffect shows it, and whether its type has an Emissive= key.
+static void Animemissive_Step(StepType const & step)
+{
+	for (int index = 0; index < Anims.Count(); index++) {
+		AnimClass const * anim = Anims[index];
+		if (anim == NULL || anim->Class == NULL || stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   animemissive %s status %d keyed %d strength %d\n", anim->Class->Name(), (int)anim->IsStatusEffect, (int)anim->Class->IsEmissiveKeyed, (int)anim->Emissive_Strength());
+	}
+}
+
+
 // commandbutton <Name>: a left click at the centre of the command bar's button with that ButtonList name,
 // or a line saying the bar does not show it.
 static void Commandbutton_Step(StepType const & step)
@@ -7948,6 +7959,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"windowclick", [](StepType const & step) {Window_Click(step, 1);}},
 		{"commandbutton", Commandbutton_Step},
 		{"beams", Beams_Step},
+		{"animemissive", Animemissive_Step},
 		{"windowdouble", [](StepType const & step) {Window_Click(step, 2);}},
 		{"windowpress", [](StepType const & step) {Window_Press(step, true);}},
 		{"windowrelease", [](StepType const & step) {Window_Press(step, false);}},

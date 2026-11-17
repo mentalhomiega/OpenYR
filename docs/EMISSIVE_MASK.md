@@ -91,6 +91,10 @@ in the red channel. SDR output clears the target and never reads it.
 - Voxels write the mask beside each palette index, with `Emissive_Voxel_Highlight()`
   on the shade row. The table does not separate specular rows from diffuse rows
   above 16, so both feed the mask.
+- An animation that an `AttachEffect` shows on an object, such as a bubble round a unit, is a status
+  mark and not a lamp. It takes no default strength, whatever its flags, and is emissive only when its type
+  has an `Emissive=` key. Stock data has no `AttachEffect`, so it is unchanged. The autotest step
+  `animemissive <TypeID>` logs the strength of each live animation of a type.
 - Light posts have a name default (`NAPOST_A`, `NAPOST_AD`, `NAPOST_B`). The
   Chronosphere and Iron Curtain effects have no separate rule. They are emissive
   through their flags, such as `Translucency=50`, or through an `Emissive=` key.

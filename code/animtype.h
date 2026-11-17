@@ -442,6 +442,12 @@ class AnimTypeClass : public ObjectTypeClass
 		unsigned char EmissiveStrength;
 
 		/*
+		 * Whether the Emissive= key is set for this animation. An animation that an AttachEffect shows
+		 * takes no emissive default, only this key. Rules data, so it is not saved.
+		 */
+		bool IsEmissiveKeyed;
+
+		/*
 		**	Some animations leave a scorch mark behind. Napalm and other flame
 		**	type explosions are typical of this type.
 		*/

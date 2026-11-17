@@ -173,6 +173,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `settile x y tile [ice]` | Gives the cell that tile with sub-tile 0 and works its attributes out again. With `ice`, the cell is also one the map lets ice grow on |
 | `windowdouble x y` | A left click at that window pixel, as `windowclick` gives it, but its press carries `Clicks` 2: the second click of a quick pair, as SDL reports it |
 | `commandbutton <Name>` | A left click at the centre of the command bar's button with that `ButtonList` name (`Beacon`, `Stop` and so on), at the same window pixel it covers in a window the size of the frame. The log gets the pixel, or `not shown` when the bar has no such button |
+| `animemissive <TypeID>` | Writes each live animation of that type with whether an AttachEffect shows it, whether its type has an `Emissive=` key, and the emissive mask strength its picture takes before translucency scales it |
 | `beams` | Writes the emissive mask strength of each live electric bolt and laser beam, one `beam` line each, and nothing while there are none |
 | `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
 | `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
