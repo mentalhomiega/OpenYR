@@ -59,6 +59,62 @@
 bool (*Draw_Line_Record)(Surface const & surface, int color, std::vector<Point2D> const & pixels) = NULL;
 
 
+/// <summary>
+/// Holds the pixels of one 16-bit line while it is drawn.
+/// When the GPU map pass records lines, Put collects each pixel position and Flush hands them
+/// to the recorder. Otherwise Put writes the pixel at once. Flush also writes the pixels itself
+/// when the recorder declines them.
+/// </summary>
+namespace {
+
+class LinePixelSink
+{
+	public:
+		LinePixelSink(XSurface & surface, int color, void const * first, Point2D const & start, int bpp) :
+			Surface(surface),
+			Color(color),
+			Collect(bpp == 2 && Draw_Line_Record != NULL),
+			Origin((char const *)first - start.Y * surface.Stride() - start.X * bpp)
+		{
+		}
+
+		void Put(unsigned short * pixel)
+		{
+			if (Collect) {
+				Collected.push_back(pixel);
+			} else {
+				*pixel = (unsigned short)Color;
+			}
+		}
+
+		void Flush()
+		{
+			if (!Collect) return;
+
+			std::vector<Point2D> pixels;
+			pixels.reserve(Collected.size());
+			for (unsigned short * pixel : Collected) {
+				std::ptrdiff_t const offset = (char const *)pixel - Origin;
+				pixels.push_back(Point2D((int)(offset % Surface.Stride()) / 2, (int)(offset / Surface.Stride())));
+			}
+			if (!Draw_Line_Record(Surface, Color, pixels)) {
+				for (unsigned short * pixel : Collected) {
+					*pixel = (unsigned short)Color;
+				}
+			}
+		}
+
+	private:
+		XSurface & Surface;
+		int Color;
+		bool Collect;
+		char const * Origin;
+		std::vector<unsigned short *> Collected;
+};
+
+}
+
+
 /***********************************************************************************************
  * XSurface::Draw_Line -- Draws a line upon the surface.                                       *
  *                                                                                             *
@@ -135,16 +191,8 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 	void * buffer = Lock(start);
 	if (buffer != NULL) {
 
-		bool const collect = bpp == 2 && Draw_Line_Record != NULL;
-		char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * bpp;
-		std::vector<unsigned short *> collected;
-		auto const put = [&](unsigned short * pixel) {
-			if (collect) {
-				collected.push_back(pixel);
-			} else {
-				*pixel = (unsigned short)color;
-			}
-		};
+		LinePixelSink sink(*this, color, buffer, start, bpp);
+		auto const put = [&](unsigned short * pixel) { sink.Put(pixel); };
 
 		if (start.Y == end.Y) {
 
@@ -245,19 +293,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 			}
 		}
 
-		if (collect) {
-			std::vector<Point2D> pixels;
-			pixels.reserve(collected.size());
-			for (unsigned short * pixel : collected) {
-				std::ptrdiff_t const offset = (char const *)pixel - origin;
-				pixels.push_back(Point2D((int)(offset % Stride()) / 2, (int)(offset / Stride())));
-			}
-			if (!Draw_Line_Record(*this, color, pixels)) {
-				for (unsigned short * pixel : collected) {
-					*pixel = (unsigned short)color;
-				}
-			}
-		}
+		sink.Flush();
 		Unlock();
 		return(true);
 	}
@@ -299,16 +335,8 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 	if (ptr != NULL) {
 
 		// The pixels of a 16-bit line go to the recorder first, as Draw_Line's do, so the GPU map pass can draw them.
-		bool const collect = bpp == 2 && Draw_Line_Record != NULL;
-		char const * const origin = (char const *)ptr - start.Y * Stride() - start.X * bpp;
-		std::vector<unsigned short *> collected;
-		auto const put = [&](unsigned short * pixel) {
-			if (collect) {
-				collected.push_back(pixel);
-			} else {
-				*pixel = (unsigned short)color;
-			}
-		};
+		LinePixelSink sink(*this, color, ptr, start, bpp);
+		auto const put = [&](unsigned short * pixel) { sink.Put(pixel); };
 		if (start.Y == end.Y) {
 			/*
 			 * Simplest of the blits, straight horizontal line.
@@ -442,19 +470,7 @@ int XSurface::Draw_Dashed_Line(Point2D const & startpoint, Point2D const & endpo
 			}
 		}
 
-		if (collect) {
-			std::vector<Point2D> pixels;
-			pixels.reserve(collected.size());
-			for (unsigned short * pixel : collected) {
-				std::ptrdiff_t const at = (char const *)pixel - origin;
-				pixels.push_back(Point2D((int)(at % Stride()) / 2, (int)(at / Stride())));
-			}
-			if (!Draw_Line_Record(*this, color, pixels)) {
-				for (unsigned short * pixel : collected) {
-					*pixel = (unsigned short)color;
-				}
-			}
-		}
+		sink.Flush();
 
 		Unlock();
 	}
