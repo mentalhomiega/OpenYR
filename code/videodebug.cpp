@@ -43,9 +43,12 @@
 static bool _PresentDigest = false;
 static std::uint64_t _PresentDigestCount = 0;
 
-// The drawdigest autotest step: when on, each draw of the map logs a hash of the map view it drew.
-static bool _DrawDigest = false;
+// The drawdigest autotest step: when on, each draw of the map logs a hash of the map view it drew. In the changes
+// mode a draw that repeats the frame and hash of the line before it logs nothing.
+static VideoDrawDigest _DrawDigest = VIDEO_DRAW_DIGEST_OFF;
 static std::uint64_t _DrawDigestCount = 0;
+static int _DrawDigestFrame = -1;
+static unsigned long long _DrawDigestHash = 0;
 
 
 // FNV-1a with 64-bit lanes: each whole 8-byte word of a row is mixed in, then the row's tail bytes one by one.
@@ -139,12 +142,13 @@ unsigned long long Video_Count_Keyed_Pixels(Rect const & area)
 
 
 /// <summary>
-/// Turns the per-draw DRAW_DIGEST log on or off. Turning it on restarts the draw index at 0.
+/// Sets which draws log a DRAW_DIGEST line. Turning the log on restarts the draw index at 0.
 /// </summary>
-void Video_Set_Draw_Digest(bool enabled)
+void Video_Set_Draw_Digest(VideoDrawDigest mode)
 {
-	_DrawDigest = enabled;
+	_DrawDigest = mode;
 	_DrawDigestCount = 0;
+	_DrawDigestFrame = -1;
 }
 
 
@@ -154,7 +158,7 @@ void Video_Set_Draw_Digest(bool enabled)
 /// </summary>
 void Video_Note_Draw_Digest(Surface const & surface, Rect const & area)
 {
-	if (!_DrawDigest) {
+	if (_DrawDigest == VIDEO_DRAW_DIGEST_OFF) {
 		return;
 	}
 	Rect const clipped = Intersect(area, surface.Get_Rect());
@@ -166,6 +170,11 @@ void Video_Note_Draw_Digest(Surface const & surface, Rect const & area)
 			hash = Digest_Rows(hash, base, surface.Stride(), clipped.Width * surface.Bytes_Per_Pixel(), clipped.Height);
 		}
 	}
+	if (_DrawDigest == VIDEO_DRAW_DIGEST_CHANGES && Frame == _DrawDigestFrame && hash == _DrawDigestHash) {
+		return;
+	}
+	_DrawDigestFrame = Frame;
+	_DrawDigestHash = hash;
 	DebugString("DRAW_DIGEST frame %d draw %llu hash %016llx\n", Frame, (unsigned long long)_DrawDigestCount, hash);
 	_DrawDigestCount++;
 }
