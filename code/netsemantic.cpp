@@ -37,7 +37,7 @@ namespace NetSemantic
 	/// Holds a game speed read from the settings file to the range the speed tables cover, 0 to
 	/// SPEED_SETTING_COUNT. gamemd stores the value unchecked (0x5FA650). Its Normalize_Delay
 	/// (0x5FB2E0) has a column for every speed up to SPEED_SETTING_COUNT, so that last speed works
-	/// and runs solo play with no frame limit, but it divides by zero at -1 and indexes past the
+	/// and gives a solo frame of 7 units of 16 ms, but it divides by zero at -1 and indexes past the
 	/// table outside that range.
 	/// </summary>
 	int Clamp_Game_Speed(int game_speed) noexcept

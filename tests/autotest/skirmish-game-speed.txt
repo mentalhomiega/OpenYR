@@ -1,7 +1,7 @@
 ; Skirmish game speed: the fps lines show the game frames counted in the last whole second. The menu battle
-; always runs at 30 frames a second (game speed 3), so a skirmish at another GameSpeed must read its own limit.
+; always runs at 31.25 frames a second (game speed 2), so a skirmish at another GameSpeed must read its own limit.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/skirmish-game-speed.txt -Seconds 120 -Settings "[Settings]`r`nGameSpeed=6" -Filter "AUTOTEST fps|Exception"
-; GameSpeed=6 reads a limit of 10; run it again with GameSpeed=2 for a limit of 45. A spawned skirmish takes its speed from
+; GameSpeed=6 reads a limit of about 10; run it again with GameSpeed=2 for a limit of about 31. A spawned skirmish takes its speed from
 ; the [Settings] section, which the runner writes to SPAWN.INI. The first second of a game reads low, so the lines
 ; start at frame 150.
 ; Regress: capped it logs the frames counted per wall-clock second

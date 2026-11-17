@@ -109,8 +109,8 @@ unsigned int const BATTLE_LIFETIME_MS = 25 * 60 * 1000;
 // The camera pans this many map pixels a second, about a screen width in a minute.
 double const CAMERA_SPEED = 30.0;
 
-// The battle runs at game speed 3, 30 frames a second, whatever the player's GameSpeed option is; that option still applies to their games.
-int const MENU_BATTLE_GAME_SPEED = 3;
+// The battle runs at game speed 2, 31.25 frames a second, whatever the player's GameSpeed option is; that option still applies to their games.
+int const MENU_BATTLE_GAME_SPEED = 2;
 
 
 void Move_List(DynamicVectorClass<NodeNameType *> & from, std::vector<NodeNameType *> & to)
@@ -510,8 +510,8 @@ bool Load_Battle(void)
 	CampaignType const campaign = Scen->Campaign;
 	int const scenario = Scen->Scenario;
 
-	DebugString("Menu battle: %s with %d computer players at game speed %d, %u frames a second\n", file, (int)Battle.Computers.size(),
-		MENU_BATTLE_GAME_SPEED, NetTiming::Solo_Game_Speed_Frame_Rate(MENU_BATTLE_GAME_SPEED));
+	DebugString("Menu battle: %s with %d computer players at game speed %d, %.2f frames a second\n", file, (int)Battle.Computers.size(),
+		MENU_BATTLE_GAME_SPEED, NetTiming::Frames_Per_Second(NetTiming::Solo_Game_Speed_Frame_Period(MENU_BATTLE_GAME_SPEED)));
 
 	bool loaded = false;
 	Running = true;
@@ -625,8 +625,7 @@ void Shellmap_Service(void)
 		BattleScope scope;
 
 		unsigned int const now = timeGetTime();
-		int const rate = std::max(1, (int)NetTiming::Solo_Game_Speed_Frame_Rate(MENU_BATTLE_GAME_SPEED));
-		unsigned int const step = std::max(1, 1000 / rate);
+		unsigned int const step = (unsigned int)std::max<std::int64_t>(1, NetTiming::Solo_Game_Speed_Frame_Period(MENU_BATTLE_GAME_SPEED).Nanoseconds / 1000000);
 		if (LastLogic == 0) {
 			LastLogic = now;
 		}

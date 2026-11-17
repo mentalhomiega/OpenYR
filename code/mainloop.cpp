@@ -227,29 +227,26 @@ static void Finish_Decided_Game(void)
 
 
 /// <summary>
-/// The frame rate the loop is held to, or zero for no limit.
+/// The frame rate a network game is held to, or zero for no limit.
 /// </summary>
 static int Target_Frame_Rate(void)
 {
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
-		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast() || AutoTest_Uncapped()) {
-			return(0);
-		}
-		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
-	}
-
 	// A recording is played back as fast as possible.
 	return(Session.Play ? 0 : Session.DesiredFrameRate);
 }
 
 /// <summary>
-/// How long a game frame lasts, or zero for no limit. A solo game takes it from the game speed table.
+/// How long a game frame lasts, or zero for no limit. A skirmish takes it from the game speed, as gamemd does, and
+/// a campaign always runs at one length, as gamemd's does.
 /// </summary>
 static NetTiming::FramePeriod Target_Frame_Period(void)
 {
-	if ((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && Target_Frame_Rate() != 0) {
-		return(NetTiming::Solo_Game_Speed_Frame_Period(Options.GameSpeed));
+	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
+		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
+		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast() || AutoTest_Uncapped()) {
+			return(NetTiming::FramePeriod());
+		}
+		return(Session.Type == GAME_NORMAL ? NetTiming::Campaign_Frame_Period() : NetTiming::Solo_Game_Speed_Frame_Period(Options.GameSpeed));
 	}
 	return(NetTiming::Frame_Period_For_Rate(Target_Frame_Rate()));
 }

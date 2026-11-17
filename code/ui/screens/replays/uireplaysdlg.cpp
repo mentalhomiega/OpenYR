@@ -34,8 +34,8 @@ namespace
 /// <summary>The seconds a number of frames take at the game speed the recording was made at.</summary>
 std::uint32_t Seconds_Of(std::uint32_t frames, int game_speed)
 {
-	unsigned int rate = NetTiming::Solo_Game_Speed_Frame_Rate(game_speed);
-	return(frames / (rate > 0 ? rate : 15));
+	double const rate = NetTiming::Frames_Per_Second(NetTiming::Solo_Game_Speed_Frame_Period(game_speed));
+	return(static_cast<std::uint32_t>(frames / (rate > 0.0 ? rate : 15.0)));
 }
 
 

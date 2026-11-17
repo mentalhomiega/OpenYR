@@ -399,18 +399,30 @@ namespace NetTiming
 	}
 
 
-	/// <summary>The solo frame rate for a game speed, 0 fastest to 6 slowest, or zero for no limit.</summary>
-	unsigned int Solo_Game_Speed_Frame_Rate(int game_speed)
+	/// <summary>
+	/// The length of a solo frame at a game speed. gamemd waits until as many 16 ms units have passed as the game
+	/// speed is (SystemTimer::GetTime is timeGetTime() >> 4; the wait is at 0x55E160). Speed 0 has no limit.
+	/// </summary>
+	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed)
 	{
-		switch (game_speed) {
-			case 1: return(60);
-			case 2: return(45);
-			case 3: return(30);
-			case 4: return(20);
-			case 5: return(15);
-			case 6: return(10);
-			default: return(0);
-		}
+		return(game_speed < 1 ? FramePeriod() : FramePeriod{SOLO_FRAME_UNIT_NANOSECONDS * std::min(game_speed, 7), 1});
+	}
+
+
+	/// <summary>
+	/// The length of a campaign frame. gamemd sets the frame timer to 2 units in a campaign whatever the game
+	/// speed option is, and hides the speed slider there (0x55D340, 0x5FA650).
+	/// </summary>
+	FramePeriod Campaign_Frame_Period(void)
+	{
+		return(Solo_Game_Speed_Frame_Period(CAMPAIGN_GAME_SPEED));
+	}
+
+
+	/// <summary>The frames a second of a period, or zero for no limit.</summary>
+	double Frames_Per_Second(FramePeriod period)
+	{
+		return(period.Nanoseconds <= 0 ? 0.0 : 1e9 * period.Frames / period.Nanoseconds);
 	}
 
 
@@ -425,12 +437,6 @@ namespace NetTiming
 	}
 
 
-	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed)
-	{
-		return(Frame_Period_For_Rate(Solo_Game_Speed_Frame_Rate(game_speed)));
-	}
-
-
 	/// <summary>Starts the frame that begins at now and returns the time it ends.</summary>
 	std::int64_t FrameDeadline::Arm(std::int64_t now, FramePeriod period)
 	{
@@ -441,7 +447,7 @@ namespace NetTiming
 		}
 
 		std::int64_t step = period.Nanoseconds / period.Frames;
-		if (!(period == Period) || now - Deadline > step) {
+		if (!(period == Period) || now - Deadline > std::min(FRAME_LATE_SLACK_NANOSECONDS, step / 2)) {
 			Period = period;
 			Deadline = now;
 			Leftover = 0;
