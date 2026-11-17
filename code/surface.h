@@ -112,6 +112,10 @@ class Surface
 		virtual int Get_Width(void) const {return(Width);}
 		virtual int Get_Height(void) const {return(Height);}
 
+		// The width (X) and height (Y) the picture can take without the surface being made again. The planes kept
+		// beside a surface take this size.
+		virtual Point2D Get_Capacity(void) const {return(Point2D(Width, Height));}
+
 		/*
 		**	Hack function to serve the purpose that RTTI was invented for, but since
 		**	the Watcom compiler doesn't support RTTI, we must resort to using this
