@@ -1,4 +1,4 @@
-; Pace after a slow frame: five game frames, 20 frames apart, are made 40 ms longer, at game speed 2. gamemd times each frame from its own start and never runs a short frame to make up for a long one, so no frame after a spike ends early. The short line counts the frames that ended more than 3 ms before the target length and must be 0; the times line depends on the machine and is left out of the compared log.
+; Pace after a slow frame: five game frames, 20 frames apart, are made 40 ms longer, at game speed 2 (30 frames a second, 33.3 ms). gamemd times each frame from its own start and never runs a short frame to make up for a long one, so no frame after a spike ends early. The short line counts the frames that ended more than 3 ms before the target length and must be 0; the times line depends on the machine and is left out of the compared log.
 ; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/pace-spike-catchup.txt -Width 640 -Height 480 -Seconds 60 -Filter "AUTOTEST (?!paceprobe-times)(pace|paceprobe) |Exception"
 1 gamespeed 2
 2 pace

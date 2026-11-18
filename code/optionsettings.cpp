@@ -205,6 +205,11 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Tip = "Shows the frame rates, a graph of recent frame times and where the time goes, over the top left of the map. The PerfOverlay key (Ctrl+Shift+P) also cycles it through Basic, Detailed and off.",
 		.SwitchOn = PERF_OVERLAY_BASIC,
 	},
+	{
+		// No row of its own: the game controls dialog shows it beside the Game Speed slider.
+		.Section = "Options", .Key = "ClassicGameSpeeds",
+		.Flag = &OptionsClass::ClassicGameSpeeds, .Default = false,
+	},
 };
 
 }

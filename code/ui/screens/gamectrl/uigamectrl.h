@@ -40,6 +40,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
 		virtual void Set_Record_Replays(bool on) = 0;
+		virtual void Set_Classic_Game_Speeds(bool on) = 0;
 		virtual void Save(void) = 0;
 };
 
@@ -61,6 +62,13 @@ struct UIGameControlsState
 	bool ModernInterface = false;
 	bool InGame = false;
 	bool HasSpeed = true;
+	// Whether the game lets this player set its speed at all (not a watcher or an Internet game), and whether the
+	// game now running is a campaign. With ClassicGameSpeeds on, a campaign has a fixed speed and so no slider.
+	bool SpeedAllowed = true;
+	bool Campaign = false;
+	// The speed switch is hidden in a network game, which has one table.
+	bool HasSpeedTable = true;
+	bool ClassicSpeeds = false;
 	bool HasDifficulty = true;
 	bool SoundEnabled = false;
 
@@ -115,6 +123,7 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 	private:
 		void Apply(void);
 		void Update_Names(void);
+		void Update_Speed_Shown(void);
 
 		UIGameControlsServiceClass & Service;
 		// The settings as the page opened. OK compares against these, and a bad pick falls back to them.

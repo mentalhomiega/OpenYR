@@ -16,6 +16,8 @@
 #include "language/language.h"
 #include "msgbox.h"
 #include "nettiming.h"
+#include "globals.h"
+#include "goptions.h"
 #include "replay.h"
 #include "replaylist.h"
 #include "session.h"
@@ -31,10 +33,13 @@
 namespace
 {
 
-/// <summary>The seconds a number of frames take at the game speed the recording was made at.</summary>
+/// <summary>
+/// The seconds a number of frames take at the game speed the recording was made at. A recording does not say which
+/// frame lengths it was played at, so this uses the ones the ClassicGameSpeeds option names now.
+/// </summary>
 std::uint32_t Seconds_Of(std::uint32_t frames, int game_speed)
 {
-	double const rate = NetTiming::Frames_Per_Second(NetTiming::Solo_Game_Speed_Frame_Period(game_speed));
+	double const rate = NetTiming::Frames_Per_Second(NetTiming::Solo_Frame_Period(game_speed, false, Options.ClassicGameSpeeds));
 	return(static_cast<std::uint32_t>(frames / (rate > 0.0 ? rate : 15.0)));
 }
 
