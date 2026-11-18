@@ -1,0 +1,785 @@
+; Selecting at every zoom level at 3840x2160 with Debug mode on, which lifts the player's zoom-out limit. Three of the player's units
+; (two E1 and an MTNK) stand among a crowd of 620 E1 far from them, made first: the zoom-1.00 view of 1920x1080 holds none of the crowd, and the views of 0.5 hold more than the 500 entries a click list had. At each zoom the units are
+; picked by a click on each, by a click 3 window pixels to the side of each, and by a drag box over the cells whose diagonal sums lie between 233 and 247 and whose differences lie between 5 and 33 (the crowd stands on even sums and differences, and none stands within 5 of the box's edges, since the terrain's height moves a cell's pixel by tens of pixels). The selected
+; lines must be the same at every zoom, and the drag must pick the same number of units.
+; The interface scale is automatic, 2 at this size: the zoom steps are twice the ViewZoom values 0.5, 0.49, 0.42, 0.37, 0.32 and 0.27 of the map view log.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/zoom-select-4k.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 3840 -Height 2160 -Seconds 240 -Settings "[Options]`nDebugMode=yes" -Filter "AUTOTEST (zoomlevel|  selected)|Exception"
+1 view 130 110
+2 reveal
+3 grantunit E1 73 117
+3 grantunit E1 74 117
+3 grantunit E1 75 115
+3 grantunit E1 75 117
+3 grantunit E1 75 119
+3 grantunit E1 76 115
+3 grantunit E1 76 117
+3 grantunit E1 76 119
+3 grantunit E1 77 113
+3 grantunit E1 77 115
+3 grantunit E1 77 117
+3 grantunit E1 77 119
+3 grantunit E1 77 121
+3 grantunit E1 78 113
+3 grantunit E1 78 115
+3 grantunit E1 78 117
+3 grantunit E1 78 119
+3 grantunit E1 78 121
+3 grantunit E1 79 111
+3 grantunit E1 79 113
+3 grantunit E1 79 115
+3 grantunit E1 79 117
+3 grantunit E1 79 119
+3 grantunit E1 79 121
+3 grantunit E1 79 123
+3 grantunit E1 80 111
+3 grantunit E1 80 113
+3 grantunit E1 80 115
+3 grantunit E1 80 117
+3 grantunit E1 80 119
+3 grantunit E1 80 121
+3 grantunit E1 80 123
+3 grantunit E1 81 109
+3 grantunit E1 81 111
+3 grantunit E1 81 113
+3 grantunit E1 81 115
+3 grantunit E1 81 117
+3 grantunit E1 81 119
+3 grantunit E1 81 121
+3 grantunit E1 81 123
+3 grantunit E1 81 125
+3 grantunit E1 82 109
+3 grantunit E1 82 111
+3 grantunit E1 82 113
+3 grantunit E1 82 115
+3 grantunit E1 82 117
+3 grantunit E1 82 119
+3 grantunit E1 82 121
+3 grantunit E1 82 123
+3 grantunit E1 82 125
+3 grantunit E1 83 107
+3 grantunit E1 83 109
+3 grantunit E1 83 111
+3 grantunit E1 83 113
+3 grantunit E1 83 115
+3 grantunit E1 83 117
+3 grantunit E1 83 119
+3 grantunit E1 83 121
+3 grantunit E1 83 123
+3 grantunit E1 83 125
+3 grantunit E1 83 127
+3 grantunit E1 84 107
+3 grantunit E1 84 109
+3 grantunit E1 84 111
+3 grantunit E1 84 113
+3 grantunit E1 84 115
+3 grantunit E1 84 117
+3 grantunit E1 84 119
+3 grantunit E1 84 121
+3 grantunit E1 84 123
+3 grantunit E1 84 125
+3 grantunit E1 84 127
+3 grantunit E1 85 105
+3 grantunit E1 85 107
+3 grantunit E1 85 109
+3 grantunit E1 85 111
+3 grantunit E1 85 113
+3 grantunit E1 85 115
+3 grantunit E1 85 117
+3 grantunit E1 85 119
+3 grantunit E1 85 121
+3 grantunit E1 85 123
+3 grantunit E1 85 125
+3 grantunit E1 85 127
+3 grantunit E1 85 129
+3 grantunit E1 86 107
+3 grantunit E1 86 109
+3 grantunit E1 86 111
+3 grantunit E1 86 113
+3 grantunit E1 86 115
+3 grantunit E1 86 117
+3 grantunit E1 86 119
+3 grantunit E1 86 121
+3 grantunit E1 86 123
+3 grantunit E1 86 125
+3 grantunit E1 86 127
+3 grantunit E1 86 129
+3 grantunit E1 87 107
+3 grantunit E1 87 109
+3 grantunit E1 87 111
+3 grantunit E1 87 113
+3 grantunit E1 87 115
+3 grantunit E1 87 117
+3 grantunit E1 87 119
+3 grantunit E1 87 121
+3 grantunit E1 87 123
+3 grantunit E1 87 125
+3 grantunit E1 87 127
+3 grantunit E1 87 129
+3 grantunit E1 87 131
+3 grantunit E1 88 109
+3 grantunit E1 88 111
+3 grantunit E1 88 113
+3 grantunit E1 88 115
+3 grantunit E1 88 117
+3 grantunit E1 88 119
+3 grantunit E1 88 121
+3 grantunit E1 88 123
+3 grantunit E1 88 125
+3 grantunit E1 88 127
+3 grantunit E1 88 129
+3 grantunit E1 88 131
+3 grantunit E1 89 109
+3 grantunit E1 89 111
+3 grantunit E1 89 113
+3 grantunit E1 89 115
+3 grantunit E1 89 117
+3 grantunit E1 89 119
+3 grantunit E1 89 121
+3 grantunit E1 89 123
+3 grantunit E1 89 125
+3 grantunit E1 89 127
+3 grantunit E1 89 129
+3 grantunit E1 89 131
+3 grantunit E1 89 133
+3 grantunit E1 90 111
+3 grantunit E1 90 113
+3 grantunit E1 90 115
+3 grantunit E1 90 117
+3 grantunit E1 90 119
+3 grantunit E1 90 121
+3 grantunit E1 90 123
+3 grantunit E1 90 125
+3 grantunit E1 90 127
+3 grantunit E1 90 129
+3 grantunit E1 90 131
+3 grantunit E1 90 133
+3 grantunit E1 91 111
+3 grantunit E1 91 113
+3 grantunit E1 91 115
+3 grantunit E1 91 117
+3 grantunit E1 91 119
+3 grantunit E1 91 121
+3 grantunit E1 91 123
+3 grantunit E1 91 125
+3 grantunit E1 91 127
+3 grantunit E1 91 129
+3 grantunit E1 91 131
+3 grantunit E1 91 133
+3 grantunit E1 91 135
+3 grantunit E1 92 113
+3 grantunit E1 92 115
+3 grantunit E1 92 117
+3 grantunit E1 92 119
+3 grantunit E1 92 121
+3 grantunit E1 92 123
+3 grantunit E1 92 125
+3 grantunit E1 92 127
+3 grantunit E1 92 129
+3 grantunit E1 92 131
+3 grantunit E1 92 133
+3 grantunit E1 92 135
+3 grantunit E1 93 113
+3 grantunit E1 93 115
+3 grantunit E1 93 117
+3 grantunit E1 93 119
+3 grantunit E1 93 121
+3 grantunit E1 93 123
+3 grantunit E1 93 125
+3 grantunit E1 93 127
+3 grantunit E1 93 129
+3 grantunit E1 93 131
+3 grantunit E1 93 133
+3 grantunit E1 93 135
+3 grantunit E1 93 137
+3 grantunit E1 94 115
+3 grantunit E1 94 117
+3 grantunit E1 94 119
+3 grantunit E1 94 121
+3 grantunit E1 94 123
+3 grantunit E1 94 125
+3 grantunit E1 94 127
+3 grantunit E1 94 129
+3 grantunit E1 94 131
+3 grantunit E1 94 133
+3 grantunit E1 94 135
+3 grantunit E1 94 137
+3 grantunit E1 95 115
+3 grantunit E1 95 117
+3 grantunit E1 95 119
+3 grantunit E1 95 121
+3 grantunit E1 95 123
+3 grantunit E1 95 125
+3 grantunit E1 95 127
+3 grantunit E1 95 129
+3 grantunit E1 95 131
+3 grantunit E1 95 133
+3 grantunit E1 95 135
+3 grantunit E1 95 137
+3 grantunit E1 95 139
+3 grantunit E1 96 117
+3 grantunit E1 96 119
+3 grantunit E1 96 121
+3 grantunit E1 96 123
+3 grantunit E1 96 125
+3 grantunit E1 96 127
+3 grantunit E1 96 129
+3 grantunit E1 96 131
+3 grantunit E1 96 133
+3 grantunit E1 96 135
+3 grantunit E1 96 137
+3 grantunit E1 96 139
+3 grantunit E1 97 117
+3 grantunit E1 97 119
+3 grantunit E1 97 121
+3 grantunit E1 97 123
+3 grantunit E1 97 125
+3 grantunit E1 97 127
+3 grantunit E1 97 129
+3 grantunit E1 97 131
+3 grantunit E1 97 133
+3 grantunit E1 97 135
+3 grantunit E1 97 137
+3 grantunit E1 97 139
+3 grantunit E1 97 141
+3 grantunit E1 98 119
+3 grantunit E1 98 121
+3 grantunit E1 98 123
+3 grantunit E1 98 125
+3 grantunit E1 98 127
+3 grantunit E1 98 129
+3 grantunit E1 98 131
+3 grantunit E1 98 133
+3 grantunit E1 98 135
+3 grantunit E1 98 137
+3 grantunit E1 98 139
+3 grantunit E1 98 141
+3 grantunit E1 99 119
+3 grantunit E1 99 121
+3 grantunit E1 99 123
+3 grantunit E1 99 125
+3 grantunit E1 99 127
+3 grantunit E1 99 129
+3 grantunit E1 99 131
+3 grantunit E1 99 133
+3 grantunit E1 99 135
+3 grantunit E1 99 137
+3 grantunit E1 99 139
+3 grantunit E1 99 141
+3 grantunit E1 99 143
+3 grantunit E1 100 121
+3 grantunit E1 100 123
+3 grantunit E1 100 125
+3 grantunit E1 100 127
+3 grantunit E1 100 129
+3 grantunit E1 100 131
+3 grantunit E1 100 133
+3 grantunit E1 100 135
+3 grantunit E1 100 137
+3 grantunit E1 100 139
+3 grantunit E1 100 141
+3 grantunit E1 100 143
+3 grantunit E1 101 121
+3 grantunit E1 101 123
+3 grantunit E1 101 125
+3 grantunit E1 101 127
+3 grantunit E1 101 129
+3 grantunit E1 101 131
+3 grantunit E1 101 133
+3 grantunit E1 101 135
+3 grantunit E1 101 137
+3 grantunit E1 101 139
+3 grantunit E1 101 141
+3 grantunit E1 101 143
+3 grantunit E1 102 122
+3 grantunit E1 102 124
+3 grantunit E1 102 126
+3 grantunit E1 102 128
+3 grantunit E1 102 130
+3 grantunit E1 102 132
+3 grantunit E1 102 134
+3 grantunit E1 102 136
+3 grantunit E1 102 138
+3 grantunit E1 102 140
+3 grantunit E1 102 142
+3 grantunit E1 102 144
+3 grantunit E1 103 124
+3 grantunit E1 103 126
+3 grantunit E1 103 128
+3 grantunit E1 103 130
+3 grantunit E1 103 132
+3 grantunit E1 103 134
+3 grantunit E1 103 136
+3 grantunit E1 103 138
+3 grantunit E1 103 140
+3 grantunit E1 103 142
+3 grantunit E1 103 144
+3 grantunit E1 104 125
+3 grantunit E1 104 127
+3 grantunit E1 104 129
+3 grantunit E1 104 131
+3 grantunit E1 104 133
+3 grantunit E1 104 135
+3 grantunit E1 104 137
+3 grantunit E1 104 139
+3 grantunit E1 104 141
+3 grantunit E1 104 143
+3 grantunit E1 105 125
+3 grantunit E1 105 127
+3 grantunit E1 105 129
+3 grantunit E1 105 131
+3 grantunit E1 105 133
+3 grantunit E1 105 135
+3 grantunit E1 105 137
+3 grantunit E1 105 139
+3 grantunit E1 105 141
+3 grantunit E1 105 143
+3 grantunit E1 106 126
+3 grantunit E1 106 128
+3 grantunit E1 106 130
+3 grantunit E1 106 132
+3 grantunit E1 106 134
+3 grantunit E1 106 136
+3 grantunit E1 106 138
+3 grantunit E1 106 140
+3 grantunit E1 106 142
+3 grantunit E1 106 144
+3 grantunit E1 107 128
+3 grantunit E1 107 130
+3 grantunit E1 107 132
+3 grantunit E1 107 134
+3 grantunit E1 107 136
+3 grantunit E1 107 138
+3 grantunit E1 107 140
+3 grantunit E1 107 142
+3 grantunit E1 107 144
+3 grantunit E1 108 129
+3 grantunit E1 108 131
+3 grantunit E1 108 133
+3 grantunit E1 108 135
+3 grantunit E1 108 137
+3 grantunit E1 108 139
+3 grantunit E1 108 141
+3 grantunit E1 108 143
+3 grantunit E1 109 129
+3 grantunit E1 109 131
+3 grantunit E1 109 133
+3 grantunit E1 109 135
+3 grantunit E1 109 137
+3 grantunit E1 109 139
+3 grantunit E1 109 141
+3 grantunit E1 109 143
+3 grantunit E1 110 130
+3 grantunit E1 110 132
+3 grantunit E1 110 134
+3 grantunit E1 110 136
+3 grantunit E1 110 138
+3 grantunit E1 110 140
+3 grantunit E1 110 142
+3 grantunit E1 110 144
+3 grantunit E1 111 132
+3 grantunit E1 111 134
+3 grantunit E1 111 136
+3 grantunit E1 111 138
+3 grantunit E1 111 140
+3 grantunit E1 111 142
+3 grantunit E1 111 144
+3 grantunit E1 112 133
+3 grantunit E1 112 135
+3 grantunit E1 112 137
+3 grantunit E1 112 139
+3 grantunit E1 112 141
+3 grantunit E1 112 143
+3 grantunit E1 113 133
+3 grantunit E1 113 135
+3 grantunit E1 113 137
+3 grantunit E1 113 139
+3 grantunit E1 113 141
+3 grantunit E1 113 143
+3 grantunit E1 114 134
+3 grantunit E1 114 136
+3 grantunit E1 114 138
+3 grantunit E1 114 140
+3 grantunit E1 114 142
+3 grantunit E1 114 144
+3 grantunit E1 115 136
+3 grantunit E1 115 138
+3 grantunit E1 115 140
+3 grantunit E1 115 142
+3 grantunit E1 115 144
+3 grantunit E1 116 137
+3 grantunit E1 116 139
+3 grantunit E1 116 141
+3 grantunit E1 116 143
+3 grantunit E1 117 137
+3 grantunit E1 117 139
+3 grantunit E1 117 141
+3 grantunit E1 117 143
+3 grantunit E1 118 138
+3 grantunit E1 118 140
+3 grantunit E1 118 142
+3 grantunit E1 118 144
+3 grantunit E1 119 140
+3 grantunit E1 119 142
+3 grantunit E1 119 144
+3 grantunit E1 120 141
+3 grantunit E1 120 143
+3 grantunit E1 121 141
+3 grantunit E1 121 143
+3 grantunit E1 122 142
+3 grantunit E1 122 144
+3 grantunit E1 123 144
+3 grantunit E1 125 65
+3 grantunit E1 126 65
+3 grantunit E1 127 63
+3 grantunit E1 127 65
+3 grantunit E1 127 67
+3 grantunit E1 128 63
+3 grantunit E1 128 65
+3 grantunit E1 128 67
+3 grantunit E1 129 61
+3 grantunit E1 129 63
+3 grantunit E1 129 65
+3 grantunit E1 129 67
+3 grantunit E1 129 69
+3 grantunit E1 130 61
+3 grantunit E1 130 63
+3 grantunit E1 130 65
+3 grantunit E1 130 67
+3 grantunit E1 130 69
+3 grantunit E1 131 60
+3 grantunit E1 131 62
+3 grantunit E1 131 64
+3 grantunit E1 131 66
+3 grantunit E1 131 68
+3 grantunit E1 131 70
+3 grantunit E1 132 60
+3 grantunit E1 132 62
+3 grantunit E1 132 64
+3 grantunit E1 132 66
+3 grantunit E1 132 68
+3 grantunit E1 132 70
+3 grantunit E1 132 72
+3 grantunit E1 133 61
+3 grantunit E1 133 63
+3 grantunit E1 133 65
+3 grantunit E1 133 67
+3 grantunit E1 133 69
+3 grantunit E1 133 71
+3 grantunit E1 133 73
+3 grantunit E1 134 61
+3 grantunit E1 134 63
+3 grantunit E1 134 65
+3 grantunit E1 134 67
+3 grantunit E1 134 69
+3 grantunit E1 134 71
+3 grantunit E1 134 73
+3 grantunit E1 135 60
+3 grantunit E1 135 62
+3 grantunit E1 135 64
+3 grantunit E1 135 66
+3 grantunit E1 135 68
+3 grantunit E1 135 70
+3 grantunit E1 135 72
+3 grantunit E1 135 74
+3 grantunit E1 136 60
+3 grantunit E1 136 62
+3 grantunit E1 136 64
+3 grantunit E1 136 66
+3 grantunit E1 136 68
+3 grantunit E1 136 70
+3 grantunit E1 136 72
+3 grantunit E1 136 74
+3 grantunit E1 136 76
+3 grantunit E1 137 61
+3 grantunit E1 137 63
+3 grantunit E1 137 65
+3 grantunit E1 137 67
+3 grantunit E1 137 69
+3 grantunit E1 137 71
+3 grantunit E1 137 73
+3 grantunit E1 137 75
+3 grantunit E1 137 77
+3 grantunit E1 138 61
+3 grantunit E1 138 63
+3 grantunit E1 138 65
+3 grantunit E1 138 67
+3 grantunit E1 138 69
+3 grantunit E1 138 71
+3 grantunit E1 138 73
+3 grantunit E1 138 75
+3 grantunit E1 138 77
+3 grantunit E1 139 60
+3 grantunit E1 139 62
+3 grantunit E1 139 64
+3 grantunit E1 139 66
+3 grantunit E1 139 68
+3 grantunit E1 139 70
+3 grantunit E1 139 72
+3 grantunit E1 139 74
+3 grantunit E1 139 76
+3 grantunit E1 139 78
+3 grantunit E1 140 60
+3 grantunit E1 140 62
+3 grantunit E1 140 64
+3 grantunit E1 140 66
+3 grantunit E1 140 68
+3 grantunit E1 140 70
+3 grantunit E1 140 72
+3 grantunit E1 140 74
+3 grantunit E1 140 76
+3 grantunit E1 140 78
+3 grantunit E1 140 80
+3 grantunit E1 141 61
+3 grantunit E1 141 63
+3 grantunit E1 141 65
+3 grantunit E1 141 67
+3 grantunit E1 141 69
+3 grantunit E1 141 71
+3 grantunit E1 141 73
+3 grantunit E1 141 75
+3 grantunit E1 141 77
+3 grantunit E1 141 79
+3 grantunit E1 141 81
+3 grantunit E1 142 61
+3 grantunit E1 142 63
+3 grantunit E1 142 65
+3 grantunit E1 142 67
+3 grantunit E1 142 69
+3 grantunit E1 142 71
+3 grantunit E1 142 73
+3 grantunit E1 142 75
+3 grantunit E1 142 77
+3 grantunit E1 142 79
+3 grantunit E1 142 81
+3 grantunit E1 143 60
+3 grantunit E1 143 62
+3 grantunit E1 143 64
+3 grantunit E1 143 66
+3 grantunit E1 143 68
+3 grantunit E1 143 70
+3 grantunit E1 143 72
+3 grantunit E1 143 74
+3 grantunit E1 143 76
+3 grantunit E1 143 78
+3 grantunit E1 143 80
+3 grantunit E1 143 82
+3 grantunit E1 144 60
+3 grantunit E1 144 62
+3 grantunit E1 144 64
+3 grantunit E1 144 66
+3 grantunit E1 144 68
+3 grantunit E1 144 70
+3 grantunit E1 144 72
+3 grantunit E1 144 74
+3 grantunit E1 144 76
+3 grantunit E1 144 78
+3 grantunit E1 144 80
+3 grantunit E1 144 82
+3 grantunit E1 144 84
+3 grantunit E1 145 62
+3 grantunit E1 145 64
+3 grantunit E1 145 66
+3 grantunit E1 145 68
+3 grantunit E1 145 70
+3 grantunit E1 145 72
+3 grantunit E1 145 74
+3 grantunit E1 145 76
+3 grantunit E1 145 78
+3 grantunit E1 145 80
+3 grantunit E1 145 82
+3 grantunit E1 145 84
+3 grantunit E1 146 62
+3 grantunit E1 146 64
+3 grantunit E1 146 66
+3 grantunit E1 146 68
+3 grantunit E1 146 70
+3 grantunit E1 146 72
+3 grantunit E1 146 74
+3 grantunit E1 146 76
+3 grantunit E1 146 78
+3 grantunit E1 146 80
+3 grantunit E1 146 82
+3 grantunit E1 146 84
+3 grantunit E1 146 86
+3 grantunit E1 147 64
+3 grantunit E1 147 66
+3 grantunit E1 147 68
+3 grantunit E1 147 70
+3 grantunit E1 147 72
+3 grantunit E1 147 74
+3 grantunit E1 147 76
+3 grantunit E1 147 78
+3 grantunit E1 147 80
+3 grantunit E1 147 82
+3 grantunit E1 147 84
+3 grantunit E1 147 86
+3 grantunit E1 148 64
+3 grantunit E1 148 66
+3 grantunit E1 148 68
+3 grantunit E1 148 70
+3 grantunit E1 148 72
+3 grantunit E1 148 74
+3 grantunit E1 148 76
+3 grantunit E1 148 78
+3 grantunit E1 148 80
+3 grantunit E1 148 82
+3 grantunit E1 148 84
+3 grantunit E1 148 86
+3 grantunit E1 148 88
+3 grantunit E1 124 114
+3 grantunit E1 125 113
+3 grantunit E1 125 115
+3 grantunit E1 126 112
+3 grantunit E1 126 114
+3 grantunit E1 126 116
+3 grantunit E1 127 111
+3 grantunit E1 127 113
+3 grantunit E1 127 115
+3 grantunit E1 128 110
+3 grantunit E1 128 112
+3 grantunit E1 128 114
+3 grantunit E1 129 109
+3 grantunit E1 129 113
+3 grantunit E1 130 108
+3 grantunit E1 130 112
+3 grantunit E1 131 107
+3 grantunit E1 131 111
+3 grantunit E1 132 106
+3 grantunit E1 132 108
+3 grantunit E1 132 110
+3 grantunit E1 133 105
+3 grantunit E1 133 107
+3 grantunit E1 133 109
+3 grantunit E1 134 106
+3 grantunit E1 134 108
+3 grantunit E1 135 107
+4 grantunit E1 130 110
+4 grantunit E1 131 109
+4 grantunit MTNK 129 111
+20 zoom 1.0
+28 zoomlevel
+30 select ZZZ
+31 windowcell click 130 110
+34 selected
+35 select ZZZ
+36 windowcell click 131 109 3 0
+39 selected
+40 select ZZZ
+41 windowcell click 129 111 -3 0
+44 selected
+45 select ZZZ
+46 windowcell press 119 114
+47 hold 01
+48 windowcell move 130 110
+49 windowcell move 140 107
+50 windowcell move 140 107
+51 windowcell release 140 107
+52 release 01
+55 selected
+56 select ZZZ
+70 zoom 0.98
+78 zoomlevel
+80 select ZZZ
+81 windowcell click 130 110
+84 selected
+85 select ZZZ
+86 windowcell click 131 109 3 0
+89 selected
+90 select ZZZ
+91 windowcell click 129 111 -3 0
+94 selected
+95 select ZZZ
+96 windowcell press 119 114
+97 hold 01
+98 windowcell move 130 110
+99 windowcell move 140 107
+100 windowcell move 140 107
+101 windowcell release 140 107
+102 release 01
+105 selected
+106 select ZZZ
+120 zoom 0.84
+128 zoomlevel
+130 select ZZZ
+131 windowcell click 130 110
+134 selected
+135 select ZZZ
+136 windowcell click 131 109 3 0
+139 selected
+140 select ZZZ
+141 windowcell click 129 111 -3 0
+144 selected
+145 select ZZZ
+146 windowcell press 119 114
+147 hold 01
+148 windowcell move 130 110
+149 windowcell move 140 107
+150 windowcell move 140 107
+151 windowcell release 140 107
+152 release 01
+155 selected
+156 select ZZZ
+170 zoom 0.74
+178 zoomlevel
+180 select ZZZ
+181 windowcell click 130 110
+184 selected
+185 select ZZZ
+186 windowcell click 131 109 3 0
+189 selected
+190 select ZZZ
+191 windowcell click 129 111 -3 0
+194 selected
+195 select ZZZ
+196 windowcell press 119 114
+197 hold 01
+198 windowcell move 130 110
+199 windowcell move 140 107
+200 windowcell move 140 107
+201 windowcell release 140 107
+202 release 01
+205 selected
+206 select ZZZ
+220 zoom 0.64
+228 zoomlevel
+230 select ZZZ
+231 windowcell click 130 110
+234 selected
+235 select ZZZ
+236 windowcell click 131 109 3 0
+239 selected
+240 select ZZZ
+241 windowcell click 129 111 -3 0
+244 selected
+245 select ZZZ
+246 windowcell press 119 114
+247 hold 01
+248 windowcell move 130 110
+249 windowcell move 140 107
+250 windowcell move 140 107
+251 windowcell release 140 107
+252 release 01
+255 selected
+256 select ZZZ
+270 zoom 0.54
+278 zoomlevel
+280 select ZZZ
+281 windowcell click 130 110
+284 selected
+285 select ZZZ
+286 windowcell click 131 109 3 0
+289 selected
+290 select ZZZ
+291 windowcell click 129 111 -3 0
+294 selected
+295 select ZZZ
+296 windowcell press 119 114
+297 hold 01
+298 windowcell move 130 110
+299 windowcell move 140 107
+300 windowcell move 140 107
+301 windowcell release 140 107
+302 release 01
+305 selected
+306 select ZZZ
+320 quit

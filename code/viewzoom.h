@@ -53,6 +53,16 @@ double const VIEW_ZOOM_MAX_DEBUG = 16.0;
 // the map is an advantage.
 double const VIEW_ZOOM_MIN_MULTIPLAYER = 0.75;
 
+// The click search keeps the original's reach, 14 map pixels (200 as the squared distance Get_Selectable_Object
+// weighs, y counting half), and widens it when the view is zoomed out so that the reach is never under
+// VIEW_PICK_REACH frame pixels on screen. It is the original's 200 at any zoom the game shows by default.
+int const VIEW_PICK_REACH = 7;
+int View_Pick_Distance_Limit(void);
+
+// The click list holds 500 objects at a zoom of 1, as the original's does; a view that spans more map holds
+// proportionally more, so that zooming out does not drop objects from the list.
+int View_Selectables_Limit(void);
+
 // The ViewZoom at which one map pixel is one screen pixel: 1 divided by the interface scale.
 double View_Zoom_Native(void);
 
@@ -125,8 +135,9 @@ void Log_Map_Buffer_Counts(void);
 
 // Changes the zoom at once to the given multiple of the screen's own pixels, keeping the map
 // centered where it was. Returns whether it changed. While the map is being drawn the change waits for
-// the next Apply_Pending_View_Zoom, since it replaces the map surfaces the draw is using.
-bool Set_View_Zoom(double zoom);
+// the next Apply_Pending_View_Zoom, since it replaces the map surfaces the draw is using. A scene's zoom (scene set) is
+// held only to the limit of the map and the game, not to the player's zoom-out limit.
+bool Set_View_Zoom(double zoom, bool scene = false);
 
 // Tells the zoom that GScreenClass::Render is drawing the map, from its start until the frame is shown.
 void Set_View_Zoom_Drawing(bool drawing);

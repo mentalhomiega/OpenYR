@@ -6,7 +6,7 @@
 ; while locked keeps the first saved zoom, ZOOM_OUT (action 50) while locked does not restore, and the chronoshift effect
 ; locks, zooms and restores.
 ; The scriptzoom lines log the zoom on screen, the map pixels the view shows (the scene zoom shows 900 tall) and the view centre.
-; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/scripted-camera-zoom.txt -Width 1920 -Height 1080 -Seconds 120 -ShotDir "E:\Claude ra2 decomp\scratch-agent\scripted-camera-zoom\shots-1920" -Filter "AUTOTEST +(scriptzoom|scriptedzoom|zoom|trigaction|wheel|chrono)|Exception"
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/scripted-camera-zoom.txt -Width 1920 -Height 1080 -Seconds 120 -ShotDir "E:\Claude ra2 decomp\scratch-agent\scripted-camera-zoom\shots-1920" -Filter "AUTOTEST +(scriptzoom|scriptedzoom|zoom|trigaction|wheel|chrono)|Exception" -Settings "[Options]`nDebugMode=yes"
 1 glideclock
 3 reveal
 10 view 30 30

@@ -1,0 +1,19 @@
+; A scripted scene zoom goes past the player's zoom-out limit. At 1920x1080 the limit is 0.75 (a 2560x1440 view). The rules' ScriptedCameraHeight
+; is set to 1600 map pixels, so LOCK_INPUT (action 46) zooms to 1080/1600 = 0.675 and the view shows 2844x1600. UNLOCK_INPUT (47) puts the
+; player's zoom back, and a wheel step out after it stops at the limit again.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/zoom-limit-scene.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nGpuRender=no" -Filter "AUTOTEST (zoomlevel|scriptzoom|sceneheight)|Exception"
+1 glideclock
+1 view 130 110
+2 reveal
+20 sceneheight 1600
+30 wheel -0.1
+50 scriptzoom
+60 trigaction 46 0 0
+70 scriptzoom
+80 wheel -0.1
+100 scriptzoom
+110 trigaction 47 0 0
+130 scriptzoom
+140 wheel -0.5
+170 scriptzoom
+175 quit
