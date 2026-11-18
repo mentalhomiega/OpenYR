@@ -73,6 +73,17 @@ compare each upload with the buffer it came from and log an `UPLOAD_CHECK DIFFER
 that left a value out. `tests/autotest/tile-scroll-uploads.txt` scrolls a zoomed-out view in every
 direction under the check.
 
+## Textures
+
+A pass makes a texture when it first needs it. The scene target, which the presenter shows, and the post, glow and emissive
+mask targets have the size of the pass's area, with a depth attachment of the same size when voxel parts are drawn, because
+the presenter finds a pixel by its texture coordinate and a larger texture would round some pixels to other texels. They are
+made again when the area changes, so a zoom step makes the scene target of its size. The two soft shadow masks are read by
+pixel position, so they are made for the largest area so far or the view `GpuMap_Reserve` names, which the map surfaces
+([PERFORMANCE.md](PERFORMANCE.md#zoom-changes)) set to the largest view the zoom limit allows, and a pass uses their corner.
+The readback and the snapshot exist only for `gpucheck` and for sonic waves and rippled cloaks. The `gpumemory` autotest step
+logs what is held and how many textures have been made ([AUTOTEST.md](AUTOTEST.md)).
+
 ## Light fades
 
 A change of the ambient light used to redraw the whole tile layer at every step, because each cell's
