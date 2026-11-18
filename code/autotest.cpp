@@ -7299,6 +7299,33 @@ static void Zoomlevel_Step(StepType const &)
 }
 
 
+// gpumemory <label>: logs the GPU memory the map passes and the presenter hold, and how many textures they have made so far.
+static void Gpumemory_Step(StepType const & step)
+{
+	Backend_Log_Gpu_Memory(step.Argument.c_str());
+}
+
+
+static long long _TexturesAtStart = 0;
+
+// texturecheck start | texturecheck <most> <label>: start remembers how many textures the map passes and the presenter have made; the
+// second form logs `AUTOTEST texturecheck <label> ok` when they made at most that many since, and otherwise how many they made.
+static void Texturecheck_Step(StepType const & step)
+{
+	if (step.Argument == "start") {
+		_TexturesAtStart = Backend_Textures_Made();
+		return;
+	}
+	long long const made = Backend_Textures_Made() - _TexturesAtStart;
+	std::string const label = step.Words.size() > 3 ? step.Words[3] : "";
+	if (made <= step.Argument_Int()) {
+		DebugString("AUTOTEST texturecheck %s ok\n", label.c_str());
+	} else {
+		DebugString("AUTOTEST texturecheck %s made %lld textures, over %d\n", label.c_str(), made, step.Argument_Int());
+	}
+}
+
+
 // mapbuffers: logs how many zoom changes there were, how many of them made map buffers, and how many they made.
 static void Mapbuffers_Step(StepType const &)
 {
@@ -7534,8 +7561,9 @@ static void Perfwindow_Step(StepType const & step)
 	int const presents = Perf_Newest_Since(Perf_Domain_Times(PERF_DOMAIN_PRESENT), _PerfWindowStart);
 	PerfWindowSummary const frame = Perf_Average_Worst(Perf_Frame_Intervals(), frames);
 	PerfWindowSummary const gap = Perf_Average_Worst(Perf_Present_Gaps(), presents);
-	DebugString("AUTOTEST perfwindow %s %.0f ms frames %d avg %.2f worst %.2f presents %d gap avg %.2f worst %.2f\n",
-		step.Words.size() > 3 ? step.Words[3].c_str() : "", now - _PerfWindowStart, frames, frame.Average, frame.Worst, presents, gap.Average, gap.Worst);
+	DebugString("AUTOTEST perfwindow %s %.0f ms frames %d avg %.2f worst %.2f stall %.1f presents %d gap avg %.2f worst %.2f\n",
+		step.Words.size() > 3 ? step.Words[3].c_str() : "", now - _PerfWindowStart, frames, frame.Average, frame.Worst,
+		Perf_Excess_Over_Median(Perf_Frame_Intervals(), frames), presents, gap.Average, gap.Worst);
 }
 
 
@@ -8276,6 +8304,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"skipscore", Skipscore_Step},
 		{"lansession", Lansession_Step},
 		{"zoomlevel", Zoomlevel_Step},
+		{"gpumemory", Gpumemory_Step},
+		{"texturecheck", Texturecheck_Step},
 		{"mapbuffers", Mapbuffers_Step},
 		{"zoom", Zoom_Step},
 		{"interfacescale", Interfacescale_Step},

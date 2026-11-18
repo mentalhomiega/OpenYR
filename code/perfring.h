@@ -68,5 +68,9 @@ PerfWindowSummary Perf_Summarise(PerfRing<float> const & ring, int count);
 // The average and worst of the newest count values, without the percentile's sort.
 PerfWindowSummary Perf_Average_Worst(PerfRing<float> const & ring, int count);
 
+// How much longer than the median of the newest count values the others take, in total: each value over the median
+// adds its difference. A glide of frames that all cost the same reads zero.
+double Perf_Excess_Over_Median(PerfRing<float> const & ring, int count);
+
 // The number of newest times in the ring that are at least since; the ring holds times in push order.
 int Perf_Newest_Since(PerfRing<double> const & times, double since);

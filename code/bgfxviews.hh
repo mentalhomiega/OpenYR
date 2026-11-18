@@ -50,6 +50,38 @@ inline void Release_Handle(Handle & handle)
 }
 
 
+// Adds a texture of bytes bytes to the totals the gpumemory autotest step logs (bgfxbackend.cpp).
+void Count_Texture_Made(long long bytes);
+
+
+// The bytes one pixel of a texture format takes, for the formats the map passes and the presenter make.
+inline int Texture_Pixel_Bytes(bgfx::TextureFormat::Enum format)
+{
+	switch (format) {
+		case bgfx::TextureFormat::R8:
+			return(1);
+		case bgfx::TextureFormat::R16:
+		case bgfx::TextureFormat::B5G6R5:
+			return(2);
+		case bgfx::TextureFormat::RG32U:
+			return(8);
+		default:
+			return(4);
+	}
+}
+
+
+// bgfx::createTexture2D for a single-level texture, counted in the totals above.
+inline bgfx::TextureHandle Create_Texture(int width, int height, bgfx::TextureFormat::Enum format, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE)
+{
+	bgfx::TextureHandle const texture = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, format, flags);
+	if (bgfx::isValid(texture)) {
+		Count_Texture_Made((long long)width * height * Texture_Pixel_Bytes(format));
+	}
+	return(texture);
+}
+
+
 // An embedded-shader table entry that carries a Direct3D 11 blob only, as built by the shader compiler
 // into <name>.bin.h. Other renderers get no shader.
 #define BGFX_EMBEDDED_SHADER_D3D11(name) \

@@ -128,6 +128,13 @@ char const * Backend_Renderer_Name(void);
 // Logs the live texture and buffer counts from bgfx, tagged with the given label.
 void Backend_Log_Resource_Counts(char const * when);
 
+// Logs an AUTOTEST gpumemory line: the textures and render targets bgfx holds, the GPU memory the process uses, and how many
+// textures and bytes the map passes and the presenter have made since the game started.
+void Backend_Log_Gpu_Memory(char const * label);
+
+// How many textures the map passes and the presenter have made since the game started.
+long long Backend_Textures_Made(void);
+
 // Saves what the window shows after the next present as a TGA file. Returns false when there is no renderer to ask.
 bool Backend_Request_Window_Capture(char const * filepath);
 
