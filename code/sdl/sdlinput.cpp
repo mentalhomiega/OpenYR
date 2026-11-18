@@ -78,7 +78,8 @@ bool Windows_Holds(int virtualkey)
 }
 
 
-SDLInputStateClass::SDLInputStateClass(void)
+SDLInputStateClass::SDLInputStateClass(void) :
+	WindowsHolds(Windows_Holds)
 {
 	Reset();
 }
@@ -99,7 +100,7 @@ void SDLInputStateClass::Reset(void)
 void SDLInputStateClass::Note_Queued_Key(SDL_KeyboardEvent const & key)
 {
 	if (key.down && key.scancode == SDL_SCANCODE_RALT && !key.repeat) {
-		bool const altgr = Windows_Holds(VK_LCONTROL) && !SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_LCTRL] && !Unreported[VK_LCONTROL];
+		bool const altgr = WindowsHolds(VK_LCONTROL) && !SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_LCTRL] && !Unreported[VK_LCONTROL];
 		RightAltPresses.push_back({ key.timestamp, altgr });
 	}
 }
@@ -143,7 +144,7 @@ void SDLInputStateClass::Focus_Lost(void)
 void SDLInputStateClass::Hold_Windows_Keys(void)
 {
 	for (int virtualkey = 1; virtualkey < 255; virtualkey++) {
-		if (Holdable_Key(virtualkey) && !HeldKeys[virtualkey] && Windows_Holds(virtualkey)) {
+		if (Holdable_Key(virtualkey) && !HeldKeys[virtualkey] && WindowsHolds(virtualkey)) {
 			Unreported[virtualkey] = true;
 			UnreportedCount++;
 		}
@@ -188,6 +189,12 @@ bool SDLInputStateClass::Key_Down(int virtualkey)
 
 	Release_Unreported_Keys(false);
 	return(HeldKeys[virtualkey]);
+}
+
+
+void SDLInputStateClass::Read_Windows_Keys_With(bool (*holds)(int virtualkey))
+{
+	WindowsHolds = holds;
 }
 
 
@@ -273,7 +280,7 @@ void SDLInputStateClass::Release_Unreported_Keys(bool all)
 
 	bool released = false;
 	for (int virtualkey = 1; virtualkey < 255; virtualkey++) {
-		if (Unreported[virtualkey] && (all || !Windows_Holds(virtualkey))) {
+		if (Unreported[virtualkey] && (all || !WindowsHolds(virtualkey))) {
 			Report_Key(virtualkey);
 			released = true;
 		}

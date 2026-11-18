@@ -49,6 +49,9 @@ class SDLInputStateClass
 		bool Key_Down(int virtualkey);
 		bool Key_Toggled(int virtualkey) const;
 
+		// Replaces the read of whether Windows holds a key, so a test can supply its own keys.
+		void Read_Windows_Keys_With(bool (*holds)(int virtualkey));
+
 	private:
 		struct RightAltPress
 		{
@@ -71,6 +74,8 @@ class SDLInputStateClass
 		// reset, which is read from Windows until SDL reports the key.
 		bool Unreported[256];
 		int UnreportedCount;
+
+		bool (*WindowsHolds)(int virtualkey);
 
 		void Rebuild_Held_Keys(void);
 		void Press_Key(SDL_Scancode scancode, int virtualkey, bool down);

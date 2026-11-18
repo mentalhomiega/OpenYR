@@ -8,7 +8,8 @@
  ******************************************************************************/
 
 // Pins the keys the SDL layer reports held, by the Windows codes the game reads, as SDL's key
-// events and Windows' own key state change.
+// events and the keys Windows holds change. The keys Windows holds are the test's own, since a
+// real key press or release changes what GetKeyState returns on any thread.
 
 #include "sdl/sdlinput.h"
 
@@ -19,6 +20,7 @@
 #include <SDL3/SDL_keyboard.h>
 
 #include <cstdio>
+#include <cstring>
 #include <initializer_list>
 
 namespace {
@@ -60,13 +62,21 @@ void Press(SDLInputStateClass & input, SDL_KeyboardEvent const & key)
 }
 
 
+bool WindowsKeys[256];
+
+
 void Windows_Holds(std::initializer_list<int> keys)
 {
-	BYTE state[256] = {};
+	std::memset(WindowsKeys, 0, sizeof(WindowsKeys));
 	for (int key : keys) {
-		state[key] = 0x80;
+		WindowsKeys[key] = true;
 	}
-	SetKeyboardState(state);
+}
+
+
+bool Windows_Holds_Key(int virtualkey)
+{
+	return(WindowsKeys[virtualkey]);
 }
 
 }
@@ -76,6 +86,7 @@ int main(void)
 {
 	Windows_Holds({});
 	SDLInputStateClass input;
+	input.Read_Windows_Keys_With(Windows_Holds_Key);
 
 	Press(input, Key(true, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT, SDL_KMOD_LSHIFT));
 	Check(input.Key_Down(VK_SHIFT) && input.Key_Down(VK_LSHIFT) && !input.Key_Down(VK_RSHIFT) && input.Modifiers() == WINDOW_MOD_SHIFT, "a Shift press holds Shift and the side it was pressed on");
