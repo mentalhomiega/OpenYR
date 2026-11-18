@@ -3,19 +3,9 @@
 ; Once the Allied house has no ship left "AllNavyDestroyed" springs (the Asian fleet has not been called, since no Naval Yard of ours stands), and "PlayerWin2" follows.
 ; Expected: "AUTOTEST game over frame N: won" (frame 14297 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov06.txt -Campaign -Map SOV06T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
-; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 1 triggerlog 1
 10 grantunit DRED 181 88
 11 grantunit DRED 183 88

@@ -34,18 +34,7 @@ ui shot mission-browser-art-ra2-soviet
 ui choose Operation: Lone Guardian
 ui wait 800
 ui press Play
-ui wait 1500
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click resume
+ui briefing
 ui wait 1000
 60 log in the Red Alert 2 mission at frame 60
 120 log in the Red Alert 2 mission at frame 120
