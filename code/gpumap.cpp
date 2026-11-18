@@ -302,42 +302,78 @@ static bool Start(void)
 }
 
 
-static void Destroy_Target(void)
+// Sampler flags of the render targets and planes the passes read by pixel position.
+static uint64_t const POINT_CLAMP = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+static uint64_t const LINEAR_CLAMP = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+
+
+// The targets the presenter samples, their depth attachments (a frame buffer needs attachments of one size) and the
+// textures that a shader bounds by their size are made at the pass's own size and again when it changes: the presenter
+// finds a pixel by its texture coordinate, and a larger texture rounds some of them to other texels. The shadow masks are
+// read by pixel position inside the area, so they are made for the largest area a pass has had or the view GpuMap_Reserve
+// named, and a pass uses their top left corner; a zoom step makes none of them. The other textures are made when a pass
+// first uses them.
+static int _ReservedWidth = 0;
+static int _ReservedHeight = 0;
+// Set once a pass has needed a depth attachment: the scene target, and the mask target, keep one from then on.
+static bool _DepthWanted = false;
+static bool _MaskDepthWanted = false;
+static int _ShadowWidth = 0;
+static int _ShadowHeight = 0;
+
+
+// Makes a render target of one colour texture, which the frame buffer owns. False leaves both handles invalid.
+static bool Make_Colour_Target(bgfx::TextureHandle & texture, bgfx::FrameBufferHandle & target, int width, int height, bgfx::TextureFormat::Enum format, uint64_t sampler)
 {
-	if (bgfx::isValid(_PostTarget)) {
-		Release_Handle(_PostTarget);
-		_PostTexture = BGFX_INVALID_HANDLE;
+	texture = Create_Texture(width, height, format, BGFX_TEXTURE_RT | sampler);
+	if (bgfx::isValid(texture)) {
+		target = bgfx::createFrameBuffer(1, &texture, true);
+		if (!bgfx::isValid(target)) {
+			Release_Handle(texture);
+		}
 	}
+	return(bgfx::isValid(texture) && bgfx::isValid(target));
+}
+
+
+// Destroys a render target made by Make_Colour_Target.
+static void Release_Colour_Target(bgfx::TextureHandle & texture, bgfx::FrameBufferHandle & target)
+{
+	if (bgfx::isValid(target)) {
+		Release_Handle(target);
+		texture = BGFX_INVALID_HANDLE;
+	}
+}
+
+
+// Makes a depth and stencil texture of width by height pixels; the caller makes the frame buffer that uses it.
+static bool Make_Depth(bgfx::TextureHandle & texture, int width, int height)
+{
+	texture = Create_Texture(width, height, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
+	return(bgfx::isValid(texture));
+}
+
+
+// Destroys what depends on the area's size or on the scene target: the targets, the planes and the readbacks. The
+// depth attachments and shadow masks stay for the next size.
+static void Destroy_Scene(void)
+{
+	Release_Colour_Target(_PostTexture, _PostTarget);
 	_PostShown = false;
 	_TargetDrawn = false;
 	for (int i = 0; i < 2; i++) {
-		if (bgfx::isValid(_GlowTarget[i])) {
-			Release_Handle(_GlowTarget[i]);
-			_GlowTexture[i] = BGFX_INVALID_HANDLE;
-		}
+		Release_Colour_Target(_GlowTexture[i], _GlowTarget[i]);
 	}
 	Release_Handle(_GlowMask);
 	_GlowMaskTracked = false;
-	if (bgfx::isValid(_MaskTarget)) {
-		Release_Handle(_MaskTarget);
-		_MaskTexture = BGFX_INVALID_HANDLE;
-		_MaskDepth = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_MaskTarget);
+	Release_Handle(_MaskTexture);
 	Release_Handle(_MaskReadback);
 	_MaskBuilt = false;
-	for (int i = 0; i < 2; i++) {
-		if (bgfx::isValid(_ShadowTarget[i])) {
-			Release_Handle(_ShadowTarget[i]);
-			_ShadowTexture[i] = BGFX_INVALID_HANDLE;
-		}
-	}
-	if (bgfx::isValid(_Target)) {
-		Release_Handle(_Target);
-		_TargetTexture = BGFX_INVALID_HANDLE;
-		_DepthTexture = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_Target);
 	Release_Handle(_TargetTexture);
 	Release_Handle(_DepthTexture);
+	Release_Handle(_MaskDepth);
 	Release_Handle(_Readback);
 	Release_Handle(_ShadowCount.Readback);
 	Release_Handle(_Snapshot);
@@ -352,60 +388,113 @@ static void Destroy_Target(void)
 }
 
 
-// The scene, snapshot and post textures are scale times the area; every other texture is the area's size. With depth,
-// the scene target also has a depth and stencil attachment of its size.
+static void Destroy_Target(void)
+{
+	Destroy_Scene();
+	for (int i = 0; i < 2; i++) {
+		Release_Colour_Target(_ShadowTexture[i], _ShadowTarget[i]);
+	}
+	_DepthWanted = false;
+	_MaskDepthWanted = false;
+	_ShadowWidth = 0;
+	_ShadowHeight = 0;
+}
+
+
+// The scene and snapshot are scale times the area; every other texture is the area's size. With depth, the scene target
+// also has a depth and stencil attachment of its size.
 static bool Size_Target(int width, int height, int scale, bool depth)
 {
-	if (width == _TargetWidth && height == _TargetHeight && scale == _TargetScale && depth == bgfx::isValid(_DepthTexture) && bgfx::isValid(_Target)) {
+	if (width == _TargetWidth && height == _TargetHeight && scale == _TargetScale && depth == _DepthWanted && bgfx::isValid(_Target)) {
 		return(true);
 	}
-	Destroy_Target();
-	uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-	_TargetTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | point);
-	if (depth) {
-		_DepthTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
-	}
-	if (!bgfx::isValid(_TargetTexture) || (depth && !bgfx::isValid(_DepthTexture))) {
-		Destroy_Target();
+	Destroy_Scene();
+	_TargetTexture = Create_Texture(width * scale, height * scale, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | POINT_CLAMP);
+	if (!bgfx::isValid(_TargetTexture) || (depth && !Make_Depth(_DepthTexture, width * scale, height * scale))) {
+		Destroy_Scene();
 		return(false);
 	}
 	bgfx::TextureHandle const attachments[2] = { _TargetTexture, _DepthTexture };
-	_Target = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, true);
-	_Readback = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
-	_Snapshot = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | point);
-	_TileShadow = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, point);
-	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Readback) || !bgfx::isValid(_Snapshot) || !bgfx::isValid(_TileShadow)) {
-		Destroy_Target();
-		return(false);
-	}
-	for (int i = 0; i < 2; i++) {
-		_ShadowTexture[i] = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | point);
-		_ShadowTarget[i] = bgfx::isValid(_ShadowTexture[i]) ? bgfx::createFrameBuffer(1, &_ShadowTexture[i], true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
-		if (!bgfx::isValid(_ShadowTarget[i])) {
-			Destroy_Target();
-			return(false);
-		}
-	}
-	_PostTexture = bgfx::createTexture2D((uint16_t)(width * scale), (uint16_t)(height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | point);
-	_PostTarget = bgfx::isValid(_PostTexture) ? bgfx::createFrameBuffer(1, &_PostTexture, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
-	if (!bgfx::isValid(_PostTarget)) {
-		Destroy_Target();
-		return(false);
-	}
-	_GlowMask = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, point);
-	uint64_t const linear = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-	for (int i = 0; i < 2; i++) {
-		_GlowTexture[i] = bgfx::createTexture2D((uint16_t)((width + 3) / 4), (uint16_t)((height + 3) / 4), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | linear);
-		_GlowTarget[i] = bgfx::isValid(_GlowTexture[i]) ? bgfx::createFrameBuffer(1, &_GlowTexture[i], true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
-	}
-	if (!bgfx::isValid(_GlowMask) || !bgfx::isValid(_GlowTarget[0]) || !bgfx::isValid(_GlowTarget[1])) {
-		Destroy_Target();
+	_Target = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, false);
+	if (!bgfx::isValid(_Target)) {
+		Destroy_Scene();
 		return(false);
 	}
 	_TargetWidth = width;
 	_TargetHeight = height;
 	_TargetScale = scale;
-	_Pixels.assign((std::size_t)width * height * 4, 0);
+	_DepthWanted = depth;
+	return(true);
+}
+
+
+// Makes the texture, if there is none, as a plane of one byte for each pixel of the area, which the pass fills from the
+// area's own bytes; tracked is cleared so that the first upload sends it whole.
+static bool Ensure_Plane_Texture(bgfx::TextureHandle & texture, bool & tracked)
+{
+	if (!bgfx::isValid(texture)) {
+		tracked = false;
+		texture = Create_Texture(_TargetWidth, _TargetHeight, bgfx::TextureFormat::R8, POINT_CLAMP);
+	}
+	return(bgfx::isValid(texture));
+}
+
+
+// The copy of the target a sonic wave or a rippled cloak reads.
+static bool Ensure_Snapshot(void)
+{
+	if (!bgfx::isValid(_Snapshot)) {
+		_Snapshot = Create_Texture(_TargetWidth * _TargetScale, _TargetHeight * _TargetScale, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | POINT_CLAMP);
+	}
+	return(bgfx::isValid(_Snapshot));
+}
+
+
+// The picture the check reads back and the buffer it lands in.
+static bool Ensure_Readback(void)
+{
+	if (!bgfx::isValid(_Readback)) {
+		_Readback = Create_Texture(_TargetWidth, _TargetHeight, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | POINT_CLAMP);
+		_Pixels.assign((std::size_t)_TargetWidth * _TargetHeight * 4, 0);
+	}
+	return(bgfx::isValid(_Readback));
+}
+
+
+// The post pass's target, which the presenter shows in place of the scene while the post pass runs.
+static bool Ensure_Post_Target(void)
+{
+	return(bgfx::isValid(_PostTarget) || Make_Colour_Target(_PostTexture, _PostTarget, _TargetWidth * _TargetScale, _TargetHeight * _TargetScale, bgfx::TextureFormat::RGBA8, POINT_CLAMP));
+}
+
+
+// The two quarter-size pictures the glow is reduced and blurred in.
+static bool Ensure_Glow_Targets(void)
+{
+	for (int i = 0; i < 2; i++) {
+		if (!bgfx::isValid(_GlowTarget[i]) && !Make_Colour_Target(_GlowTexture[i], _GlowTarget[i], (_TargetWidth + 3) / 4, (_TargetHeight + 3) / 4, bgfx::TextureFormat::RGBA8, LINEAR_CLAMP)) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+// The two masks the shadows are drawn and blurred in, as large as the biggest area so far.
+static bool Ensure_Shadow_Targets(void)
+{
+	bool const fits = bgfx::isValid(_ShadowTarget[0]) && bgfx::isValid(_ShadowTarget[1]) && _ShadowWidth >= _TargetWidth && _ShadowHeight >= _TargetHeight;
+	if (fits) {
+		return(true);
+	}
+	_ShadowWidth = std::max(_TargetWidth, _ReservedWidth);
+	_ShadowHeight = std::max(_TargetHeight, _ReservedHeight);
+	for (int i = 0; i < 2; i++) {
+		Release_Colour_Target(_ShadowTexture[i], _ShadowTarget[i]);
+		if (!Make_Colour_Target(_ShadowTexture[i], _ShadowTarget[i], _ShadowWidth, _ShadowHeight, bgfx::TextureFormat::R8, POINT_CLAMP)) {
+			return(false);
+		}
+	}
 	return(true);
 }
 
@@ -453,7 +542,7 @@ static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int widt
 	if (!bgfx::isValid(store.Handle) || store.Width != width || store.Height < rows || (exact && store.Height != rows)) {
 		Release_Handle(store.Handle);
 		int const height = exact ? rows : std::min(TEXTURE_LIMIT, std::max(rows, store.Height) * 2);
-		store.Handle = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, format, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		store.Handle = Create_Texture(width, height, format, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 		store.Width = width;
 		store.Height = height;
 		if (!bgfx::isValid(store.Handle)) {
@@ -488,7 +577,7 @@ static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes
 	if (!bgfx::isValid(store.Handle) || store.Width != ARENA_WIDTH || store.Height < ATLAS_ROWS + rows) {
 		Release_Handle(store.Handle);
 		int const height = std::min(TEXTURE_LIMIT, std::max(ATLAS_ROWS + rows, store.Height) * 2);
-		store.Handle = bgfx::createTexture2D((uint16_t)ARENA_WIDTH, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		store.Handle = Create_Texture(ARENA_WIDTH, height, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 		store.Width = ARENA_WIDTH;
 		store.Height = height;
 		uploaded = 0;
@@ -796,7 +885,7 @@ static bool Upload_Fade(GpuMapPass const & pass)
 	bool const fresh = !bgfx::isValid(_Fade) || _FadeWidth != pass.FadeWidth || _FadeHeight != pass.FadeHeight;
 	if (fresh) {
 		Release_Handle(_Fade);
-		_Fade = bgfx::createTexture2D((uint16_t)pass.FadeWidth, (uint16_t)pass.FadeHeight, false, 1, bgfx::TextureFormat::R16);
+		_Fade = Create_Texture(pass.FadeWidth, pass.FadeHeight, bgfx::TextureFormat::R16);
 		_FadeWidth = pass.FadeWidth;
 		_FadeHeight = pass.FadeHeight;
 		if (!bgfx::isValid(_Fade)) {
@@ -950,14 +1039,21 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 	Set_Map_View(VIEW_MAPSHADOW, _ShadowTarget[0], area, projection);
 	bgfx::setViewClear(VIEW_MAPSHADOW, BGFX_CLEAR_COLOR, 0x00000000);
 	float const shadow_scale[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
-	for (int i = 1; i < shadowquads; i++) {
-		if (blits[i] != NULL && blits[i]->Voxel >= 0) {
+	auto const is_voxel = [&](int index) { return(blits[index] != NULL && blits[index]->Voxel >= 0); };
+	// Every other quad draws the same coverage with the same state, so a run of them goes in one draw.
+	for (int i = 1; i < shadowquads;) {
+		if (is_voxel(i)) {
 			GpuVoxelDirectBlit direct = Direct_Blit(*blits[i], vertex[i * 6], area, 1);
 			direct.State = BGFX_STATE_WRITE_RGB;
 			GpuVoxel_Draw_Direct(list, direct, 1, VIEW_MAPSHADOW, [ring]() { Bind_Stores(ring); });
+			i++;
 			continue;
 		}
-		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
+		int end = i + 1;
+		while (end < shadowquads && !is_voxel(end)) {
+			end++;
+		}
+		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, (uint32_t)(end - i) * 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
@@ -969,6 +1065,7 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(BGFX_STATE_WRITE_RGB);
 		bgfx::submit(VIEW_MAPSHADOW, _Program);
+		i = end;
 	}
 
 	if (_SoftShadowRadius == 0) {
@@ -977,7 +1074,7 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 	bgfx::ViewId const views[2] = { VIEW_MAPBLURX, VIEW_MAPBLURY };
 	for (int pass = 0; pass < 2; pass++) {
 		Set_Map_View(views[pass], _ShadowTarget[1 - pass], area, projection);
-		float const blur[4] = { pass == 0 ? 1.0f : 0.0f, pass == 0 ? 0.0f : 1.0f, (float)_SoftShadowRadius, 0.0f };
+		float const blur[4] = { pass == 0 ? 1.0f : 0.0f, pass == 0 ? 0.0f : 1.0f, (float)_SoftShadowRadius, (float)(pass == 0 ? area.Width : area.Height) };
 		bgfx::setUniform(_BlurUniform, blur);
 		bgfx::setVertexBuffer(0, &buffer, 0, 6);
 		bgfx::setTexture(0, _MaskSampler, _ShadowTexture[pass]);
@@ -1031,31 +1128,23 @@ static int Count_Mask_Quads(GpuDrawList const & list)
 // Makes the mask target at the area's size, with a depth attachment when depth is set; false when it cannot be made.
 static bool Size_Mask_Target(Rect const & area, bool depth)
 {
-	if (bgfx::isValid(_MaskTarget) && depth == bgfx::isValid(_MaskDepth)) {
+	if (bgfx::isValid(_MaskTarget) && depth == _MaskDepthWanted) {
 		return(true);
 	}
-	if (bgfx::isValid(_MaskTarget)) {
-		Release_Handle(_MaskTarget);
-		_MaskTexture = BGFX_INVALID_HANDLE;
-		_MaskDepth = BGFX_INVALID_HANDLE;
+	Release_Handle(_MaskTarget);
+	Release_Handle(_MaskTexture);
+	Release_Handle(_MaskDepth);
+	_MaskTexture = Create_Texture(area.Width, area.Height, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | POINT_CLAMP);
+	if (bgfx::isValid(_MaskTexture) && (!depth || Make_Depth(_MaskDepth, area.Width, area.Height))) {
+		bgfx::TextureHandle const attachments[2] = { _MaskTexture, _MaskDepth };
+		_MaskTarget = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, false);
 	}
-	uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-	_MaskTexture = bgfx::createTexture2D((uint16_t)area.Width, (uint16_t)area.Height, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | point);
-	if (depth) {
-		_MaskDepth = bgfx::createTexture2D((uint16_t)area.Width, (uint16_t)area.Height, false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
-	}
-	if (!bgfx::isValid(_MaskTexture) || (depth && !bgfx::isValid(_MaskDepth))) {
-		Release_Handle(_MaskTexture);
-		Release_Handle(_MaskDepth);
-		return(false);
-	}
-	bgfx::TextureHandle const attachments[2] = { _MaskTexture, _MaskDepth };
-	_MaskTarget = bgfx::createFrameBuffer(depth ? 2 : 1, attachments, true);
 	if (!bgfx::isValid(_MaskTarget)) {
 		Release_Handle(_MaskTexture);
 		Release_Handle(_MaskDepth);
 		return(false);
 	}
+	_MaskDepthWanted = depth;
 	return(true);
 }
 
@@ -1085,7 +1174,7 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
 	bool const voxels = !list.Voxels.empty();
-	if (!Size_Mask_Target(area, voxels || bgfx::isValid(_MaskDepth))) {
+	if (!Size_Mask_Target(area, voxels || _MaskDepthWanted)) {
 		return(false);
 	}
 	int const quads = Count_Mask_Quads(list);
@@ -1471,7 +1560,9 @@ static bgfx::ViewId Begin_Snapshot_View(bgfx::ViewId view, Rect const & area, fl
 	view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
 	Set_Map_View(view, _Target, area, projection, scale);
 	// A view's blits run before its draws, so the copy holds everything drawn before this view.
-	bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+	if (Ensure_Snapshot()) {
+		bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+	}
 	return(view);
 }
 
@@ -1614,7 +1705,7 @@ static void Submit_Post(GpuMapPass const & pass, int scale, Rect const & area, f
 {
 	_PostShown = false;
 	bool const ripple = pass.Ripples != NULL && !pass.Ripples->empty();
-	if (ripple || glow || clouds || weather) {
+	if ((ripple || glow || clouds || weather) && Ensure_Post_Target()) {
 		int const count = ripple ? std::min((int)pass.Ripples->size(), RIPPLE_LIMIT) : 0;
 		float ripples[RIPPLE_LIMIT * 4] = {};
 		for (int i = 0; i < count; i++) {
@@ -1650,7 +1741,7 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
-	if (!Size_Target(area.Width, area.Height, scale, !list.Voxels.empty() || bgfx::isValid(_DepthTexture))) {
+	if (!Size_Target(area.Width, area.Height, scale, !list.Voxels.empty() || _DepthWanted)) {
 		DebugString("GPU_DIFF frame %d: no %dx%d target\n", pass.Frame, area.Width, area.Height);
 		return(false);
 	}
@@ -1680,14 +1771,15 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
 		return(false);
 	}
-	bool const plane = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && pass.TileShadow->size() == (std::size_t)area.Width * area.Height;
+	bool const plane = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && pass.TileShadow->size() == (std::size_t)area.Width * area.Height
+		&& (_SoftShadowRadius > 0 || _WaterStrength > 0) && Ensure_Plane_Texture(_TileShadow, _TileShadowTracked);
 	bool const tileshadow = plane && _SoftShadowRadius > 0;
 	bool const water = plane && _WaterStrength > 0;
 	if (tileshadow || water) {
 		Upload_Plane(_TileShadow, _TileShadowTracked, *pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
 	}
 	bool const faded = Upload_Fade(pass);
-	bool const shadowed = shadows > 0 || tileshadow;
+	bool const shadowed = (shadows > 0 || tileshadow) && Ensure_Shadow_Targets();
 	bool const clouds = _CloudStrength > 0;
 	bool const weather = _Weather != GPU_WEATHER_NONE && _WeatherStrength > 0;
 	float world[4] = { (float)pass.WorldX, (float)pass.WorldY, 0.0f, clouds ? 0.3f * _CloudStrength / 100.0f : 0.0f };
@@ -1718,12 +1810,12 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water, faded);
 
-	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
+	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height && Ensure_Plane_Texture(_GlowMask, _GlowMaskTracked);
 	if (planed) {
 		Upload_Plane_Tiles(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowTiles);
 	}
 	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, projection, ring);
-	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram);
+	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram) && Ensure_Glow_Targets();
 	if (glow) {
 		Submit_Glow(_MaskBuilt ? _MaskTexture : _GlowMask, area, scale);
 	}
@@ -1767,7 +1859,7 @@ void GpuMap_Drop(void)
 
 bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected, std::vector<unsigned char> const * expected_mask)
 {
-	if (_Pending || !Submit_Pass(pass, 1)) {
+	if (_Pending || !Submit_Pass(pass, 1) || !Ensure_Readback()) {
 		return(false);
 	}
 	if (_CloakCount.Blits > 0) {
@@ -1778,8 +1870,7 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 	_ExpectedMask.clear();
 	if (expected_mask != NULL && _MaskBuilt) {
 		if (!bgfx::isValid(_MaskReadback)) {
-			uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-			_MaskReadback = bgfx::createTexture2D((uint16_t)pass.Area.Width, (uint16_t)pass.Area.Height, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
+			_MaskReadback = Create_Texture(pass.Area.Width, pass.Area.Height, bgfx::TextureFormat::R8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | POINT_CLAMP);
 			_MaskPixels.assign((std::size_t)pass.Area.Width * pass.Area.Height, 0);
 		}
 		if (bgfx::isValid(_MaskReadback)) {
@@ -1799,6 +1890,13 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 bool GpuMap_Supported(void)
 {
 	return(Backend_Is_Running() && Start());
+}
+
+
+void GpuMap_Reserve(int width, int height)
+{
+	_ReservedWidth = width;
+	_ReservedHeight = height;
 }
 
 
@@ -1863,7 +1961,7 @@ static void Begin_Shadow_Count(GpuMapPass const & pass, int scale)
 {
 	Rect const area(0, 0, pass.Area.Width, pass.Area.Height);
 	if (!bgfx::isValid(_ShadowCount.Readback)) {
-		_ShadowCount.Readback = bgfx::createTexture2D((uint16_t)(area.Width * scale), (uint16_t)(area.Height * scale), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		_ShadowCount.Readback = Create_Texture(area.Width * scale, area.Height * scale, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 	}
 	if (!bgfx::isValid(_ShadowCount.Readback)) {
 		return;
