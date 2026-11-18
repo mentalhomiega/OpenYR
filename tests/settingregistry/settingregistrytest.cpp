@@ -247,6 +247,7 @@ void Test_Switch_Default_On(void)
 static NameEntry const Layer_Depth_Names[] = { { "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED }, { "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED } };
 static NameEntry const Cloak_Names[] = { { "Translucent", GPU_VOXEL_CLOAK_TRANSLUCENT }, { "Ripple", GPU_VOXEL_CLOAK_RIPPLE } };
 static NameEntry const Overlay_Names[] = { { "Off", PERF_OVERLAY_OFF }, { "Basic", PERF_OVERLAY_BASIC }, { "Detailed", PERF_OVERLAY_DETAILED } };
+static NameEntry const ZoomOut_Names[] = { { "Original", ZOOM_OUT_VIEW_ORIGINAL }, { "4K", ZOOM_OUT_VIEW_4K } };
 
 
 // The GPU options as OptionsClass reads and writes them today; kept here to pin the table against that code.
@@ -276,6 +277,7 @@ struct Old_Gpu
 	bool ParallelPaths = false;
 	int PathThreads = 0;
 	int PerfOverlay = PERF_OVERLAY_OFF;
+	int ZoomOutView = ZOOM_OUT_VIEW_ORIGINAL;
 	bool ClassicGameSpeeds = false;
 };
 
@@ -313,6 +315,8 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.PathThreads = std::clamp(ini.Get_Int("Options", "PathThreads", old.PathThreads), 0, 32);
 	ini.Get_String("Video", "PerfOverlay", "Off", name, sizeof(name));
 	old.PerfOverlay = Enum_From_Name(Overlay_Names, name, PERF_OVERLAY_OFF);
+	ini.Get_String("Video", "ZoomOutView", "Original", name, sizeof(name));
+	old.ZoomOutView = Enum_From_Name(ZoomOut_Names, name, ZOOM_OUT_VIEW_ORIGINAL);
 	old.ClassicGameSpeeds = ini.Get_Bool("Options", "ClassicGameSpeeds", old.ClassicGameSpeeds);
 }
 
@@ -344,6 +348,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_Bool("Options", "ParallelPaths", old.ParallelPaths);
 	ini.Put_Int("Options", "PathThreads", old.PathThreads);
 	ini.Put_String("Video", "PerfOverlay", Enum_Name(Overlay_Names, old.PerfOverlay, "Off"));
+	ini.Put_String("Video", "ZoomOutView", Enum_Name(ZoomOut_Names, old.ZoomOutView, "Original"));
 	ini.Put_Bool("Options", "ClassicGameSpeeds", old.ClassicGameSpeeds);
 }
 
@@ -405,7 +410,7 @@ void Test_Real_Table(void)
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
 		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
-		"RenderThread", "FastestGpu", "ParallelPaths", "PathThreads", "PerfOverlay", "ClassicGameSpeeds",
+		"RenderThread", "FastestGpu", "ParallelPaths", "PathThreads", "PerfOverlay", "ZoomOutView", "ClassicGameSpeeds",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys and the game speed switch");
 
@@ -419,6 +424,7 @@ void Test_Real_Table(void)
 		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness",
 		"Voxel drawing", "Steady voxel placement", "Stacked shadows",
 		"Diagnostics", "Performance overlay",
+		"Camera", "Zoom out to a 4K view",
 	};
 	Check(labels == page_order, "the Graphics page keeps the GPU drawing rows in their old order, with the voxel rows after them");
 
@@ -428,6 +434,8 @@ void Test_Real_Table(void)
 		"[Video]\r\nGpuVoxelPath=Image\r\n",
 		"[Video]\r\nPerfOverlay=Detailed\r\n",
 		"[Video]\r\nPerfOverlay=Loud\r\n",
+		"[Video]\r\nZoomOutView=4K\r\n",
+		"[Video]\r\nZoomOutView=Unlimited\r\n",
 		"[Video]\r\nWeather=Bogus\r\nGpuVoxelPath=Sideways\r\nGpuVoxelCloak=Invisible\r\nGpuVoxels=true\r\nCloudShadowStrength=not a number\r\nWaterRipples=0\r\nShockwaves=TRUE\r\n",
 		"[Video]\r\nGpuRender=yes\r\nSoftShadows=no\r\nSoftShadowRadius=3\r\nShockwaves=no\r\nBloom=no\r\nBloomStrength=100\r\nWaterRipples=no\r\nWaterRippleStrength=100\r\nCloudShadows=no\r\nCloudShadowStrength=100\r\nGpuVoxels=no\r\nGpuVoxelSmooth=no\r\nGpuVoxelScale=1\r\nWeather=None\r\nWeatherStrength=100\r\n",
 	};
