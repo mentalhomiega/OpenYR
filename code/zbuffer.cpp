@@ -178,14 +178,18 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 }
 
 
-// Covers bounds with the picture's corner at offset in it and sets the part of bounds outside the picture to value.
-void ZBuffer::Move_Area(Rect const & bounds, Point2D const & offset, unsigned short value)
+// Covers bounds with the picture's corner at offset in it and sets the part of bounds outside the picture to value, unless
+// clear_edges is false, which leaves those entries as they were for the caller to reset before it reads them.
+void ZBuffer::Move_Area(Rect const & bounds, Point2D const & offset, unsigned short value, bool clear_edges)
 {
 	Rect const area(0, 0, bounds.Width, bounds.Height);
 	Rect const kept = Intersect(area, Rect(offset.X, offset.Y, Bounds.Width, Bounds.Height));
 	SurfaceOffset = Ring_Moved_Offset(SurfaceOffset, offset.X, offset.Y, BufferWidth, BufferSize);
 	ScrollOffset += offset.Y;
 	Bounds = bounds;
+	if (!clear_edges) {
+		return;
+	}
 	For_Each_Rect_Outside(area, kept, [&](Rect const & strip) {
 		Reset(strip, value);
 	});
@@ -198,7 +202,9 @@ bool ZBuffer::Reframe(Rect const & bounds, Point2D const & offset, bool keep)
 		return(false);
 	}
 	if (keep) {
-		Move_Area(bounds, offset, ZBUFFER_COLOR);
+		// The zoom step registers the new edges as dirty areas, and drawing them resets these entries, so resetting them here
+		// would only do it twice.
+		Move_Area(bounds, offset, ZBUFFER_COLOR, false);
 		return(true);
 	}
 	Bounds = bounds;
