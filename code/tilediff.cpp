@@ -98,6 +98,40 @@ bool Bytes_Are_Zero(void const * values, size_t count)
 }
 
 
+bool Bytes_Are_All(void const * values, size_t count, std::uint8_t value)
+{
+	std::uint8_t const * a = (std::uint8_t const *)values;
+#ifdef TILEDIFF_SSE2
+	__m128i const want = _mm_set1_epi8((char)value);
+	while (count >= 64) {
+		__m128i const x0 = _mm_xor_si128(_mm_loadu_si128((__m128i const *)a), want);
+		__m128i const x1 = _mm_xor_si128(_mm_loadu_si128((__m128i const *)(a + 16)), want);
+		__m128i const x2 = _mm_xor_si128(_mm_loadu_si128((__m128i const *)(a + 32)), want);
+		__m128i const x3 = _mm_xor_si128(_mm_loadu_si128((__m128i const *)(a + 48)), want);
+		__m128i const any = _mm_or_si128(_mm_or_si128(x0, x1), _mm_or_si128(x2, x3));
+		if (_mm_movemask_epi8(_mm_cmpeq_epi8(any, _mm_setzero_si128())) != 0xFFFF) {
+			return(false);
+		}
+		a += 64;
+		count -= 64;
+	}
+	while (count >= 16) {
+		if (_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i const *)a), want)) != 0xFFFF) {
+			return(false);
+		}
+		a += 16;
+		count -= 16;
+	}
+#endif
+	while (count-- > 0) {
+		if (*a++ != value) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
 void TileGridClass::Resize(int width, int height)
 {
 	Width = std::max(width, 0);

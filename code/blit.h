@@ -37,6 +37,8 @@
 
 #include "zgrad.hh"
 
+struct EmissivePlane;
+
 // Called for each clipped blit with its destination, blitter type name and pixel area while set; the drawprobe step sets it.
 extern void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels);
 
@@ -54,6 +56,9 @@ struct BlitRecordSource
 extern BlitRecordSource Blit_Record_Source;
 extern bool (*Blit_Record_RLE)(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha);
 extern bool (*Blit_Record_Bit)(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha);
+// Called for each RLE blit into a surface with an emissive plane, after Blit_Record_RLE, with whether that recorded
+// the blit; true means the recorder keeps the blit's emissive write and RLE_Blit must not make it.
+extern bool (*Blit_Record_Mask)(EmissivePlane const & plane, bool recorded, unsigned char strength, bool depth);
 
 bool Bit_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rect const & sourcerect, Blitter const & blitter, int zdepth = 0, ZGradientType zgrad = ZGRAD_135DEG, int alpha = 1000, int = 0);
 bool RLE_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rect const & sourcerect, RLEBlitter const & blitter, int zdepth = 0, ZGradientType zgrad = ZGRAD_135DEG, int alpha = 1000, int = 0);

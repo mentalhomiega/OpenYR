@@ -815,7 +815,24 @@ ETOTAL at 3840x2160, three alternating runs of each build without the frame limi
 
 The runs of one setting spread by up to 4 ms a draw (3840x2160 without `GpuVoxels`: 4.2, 7.8 and 6.8 ms after the change), far more than the change, so these runs show the load on the computer rather than the change; the profiler share above is the measure of it. The quietest run of each setting gave 5.8 and 5.3 ms (3840x2160, `GpuVoxels=yes`, before and after), 4.0 and 4.2 ms (`GpuVoxels=no`), 3.3 and 3.1 ms and 2.1 and 1.8 ms at 2560x1440.
 
-What is left in the walk, in the order of the time it would save: the emissive mask under shapes (about 0.9 ms at the 3840x2160 view), which a GPU pass could clear itself instead of the processor clearing it pixel by pixel; under a turret composite that the GPU draws, the mask is copied from the scratch surface and then filled with the composite mark, so where the two rectangles match the copy (about 0.2 ms) does no lasting work; the screen position and depth of each object, worked out again every draw although most objects did not move; and the GPU recorder's atlas look-up per shape.
+### The emissive mask on the GPU
+
+A pass the GPU draws now lists its writes to the emissive mask, and the GPU makes them when it needs the mask ([EMISSIVE_MASK.md](EMISSIVE_MASK.md#writes-of-a-pass-the-gpu-draws)). This also covers the copy and the mark under turret composites, which are now two list entries. At the 3840x2160 view with `GpuVoxels=yes`, the emissive mask's share of the walk fell from 19 to 20% to under 1%, and the walk, timed in the profiling build from frame 1,700, from 2.4 to 2.8 ms to 1.7 to 2.1 ms a draw. With `GpuVoxels=no` the share fell from about 3.7% to 1.3%, and the walk from 2.5 to 2.7 ms to 2.3 to 2.5 ms; there the software voxels take about 40% of the walk.
+
+Plain runs, three of each build alternating and one with the frame limit, with up to three other games and 3 to 22 build processes running (ms a draw, mean of the runs):
+
+| Map view, `GpuVoxels` | Draw avg before | after | `draw.objects` before | after | Drawn a second before | after |
+|---|---:|---:|---:|---:|---:|---:|
+| 3840x2160, yes | 4.95 | 3.79 | 2.59 | 2.09 | 102 | 108 |
+| 3840x2160, no | 3.61 | 3.43 | 2.49 | 2.33 | 127 | 127 |
+| 2560x1440, yes | 2.67 | 2.53 | 1.64 | 1.55 | 140 | 133 |
+| 2560x1440, no | 1.91 | 1.63 | 1.29 | 1.09 | 158 | 172 |
+
+One run at 2560x1440 with `GpuVoxels=yes` after the change took 3.97 ms; the other two took 1.88 and 1.73 ms. With the frame limit, the draw took 4.59 and 3.05 ms at 3840x2160 and 2.76 and 1.92 ms at 2560x1440, before and after.
+
+The change gave the same pictures as the build before it, checked as for the emissive rows above: window shots and `drawdigest 2` on ETOTAL and the XMP29U2 skirmish with `GpuRender` on and off, `GpuVoxels` on and off, the render thread on and off, `Bloom` on and off, `HDRHighlights` Classic and Enhanced, and `EmissiveDebugView` on. Every 16 by 16 block the changed build differs in is one where two runs of the build before it also differ. The `maskcheck` step found no differing list and no differing GPU mask on ETOTAL across the 3840x2160, 2560x1440 and 1920x1080 views and the zoom changes between them, and on the skirmish. The GPU, emissive, upload, zoom, digest, camera-determinism and selection autotests gave the same logs, except for the frames that `gpu-voxel-compare` and `target-line-gpu` sample and the `uploadverify checks` counts, which follow the number of draws.
+
+What is left in the walk, in the order of the time it would save: the screen position and depth of each object (about 28% of the walk after the change), worked out again every draw although most objects did not move; we did not cache them, because the depth adjustment reads the cell, bridges, tunnels, overlays and the locomotor, so we could not prove when a cached value goes stale. Next is the GPU recorder's look-up of each shape in the atlas (about 5%), most of it comparing the shape's rows with the copy kept from when it was decoded, once a pass. Comparing the rows with `Bytes_Equal` instead of the inlined `std::memcmp` did not help: the rows are short, and the look-up's share rose to about 6%.
 
 ## Target scans
 

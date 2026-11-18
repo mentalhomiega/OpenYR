@@ -93,6 +93,12 @@ struct GpuMapPass
 	// the voxel parts, and the GPU builds the finished mask from Glow and the parts' layers.
 	bool Mask = false;
 
+	// Set when the pass listed its emissive plane writes (GpuDrawList::MaskOps): Glow holds the plane as it stood
+	// before them, and the GPU makes them before Glow is used. MaskExpected, for the maskcheck step, is the finished
+	// plane under Area that the GPU's is compared with; NULL for no check.
+	bool MaskListed = false;
+	std::vector<unsigned char> const * MaskExpected = NULL;
+
 	// While an ambient light fade is deferred (code/layerfade.h), FadeWidth by FadeHeight scales, each for a block
 	// of LAYER_FADE_DIVISOR pixels a side of Area, that the base picture is multiplied by; NULL for none.
 	// FadeVersion changes whenever they hold other values than before.
@@ -172,6 +178,12 @@ std::uint16_t GpuMap_Texture(void);
 // The bgfx handle index of the emissive mask the GPU built for the pass GpuMap_Texture last drew, one byte a
 // map pixel, or bgfx::kInvalidHandle when that pass built none.
 std::uint16_t GpuMap_Mask_Texture(void);
+
+// The planes the maskcheck step has compared since the last call, and those that differed; both start again at 0.
+// Whether a pass of this area can build its emissive plane on the GPU: the scene target has that size and was made
+// at least two frames ago. A plane built in the frame that makes the target, or the frame after, comes out empty.
+bool GpuMap_Plane_Ready(Rect const & area, bool voxels);
+void GpuMap_Plane_Check_Counts(int & checked, int & differed);
 
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);

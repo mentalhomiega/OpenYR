@@ -267,6 +267,25 @@ void Emissive_Forget(void const * surface);
 // Frees every plane, as Emissive_Retain does with no surfaces kept.
 void Emissive_Release_All(void);
 
+// While the GPU draws the map view's object pass, the writes to its plane are listed for later (code/gpudraw.cpp).
+// Emissive_Fill_Rect, Emissive_Copy_Rect and Emissive_Stamp_Segment hand a write to Plane to Fill or Copy, already
+// clipped to the plane. Flush makes the listed writes and ends the deferral; it runs before Plane is read, and
+// before a caller writes Plane's pixels itself (Emissive_Settle).
+struct EmissiveDeferral
+{
+	EmissivePlane const * Plane = nullptr;
+	void (*Fill)(int x, int y, int width, int height, unsigned char value) = nullptr;
+	void (*Copy)(int x, int y, EmissivePlane const & source, int sourcex, int sourcey, int width, int height) = nullptr;
+	void (*Flush)(void) = nullptr;
+};
+
+extern EmissiveDeferral Emissive_Deferral;
+
+inline bool Emissive_Is_Deferred(EmissivePlane const & plane) { return(&plane == Emissive_Deferral.Plane); }
+
+// Makes the writes listed for plane, so the caller can read or write its pixels directly.
+void Emissive_Settle(EmissivePlane const & plane);
+
 // Writes value over a rectangle of the plane, clipped to the plane.
 void Emissive_Fill_Rect(EmissivePlane & plane, int x, int y, int width, int height, unsigned char value);
 

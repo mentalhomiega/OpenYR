@@ -31,6 +31,7 @@ EmissiveDefault const EmissiveDefaults[EMISSIVE_KIND_COUNT] = {
 
 unsigned char Emissive_Draw_Strength = 0;
 bool EmissiveActive = false;
+EmissiveDeferral Emissive_Deferral;
 
 namespace {
 
@@ -259,6 +260,10 @@ void Emissive_Fill_Rect(EmissivePlane & plane, int x, int y, int width, int heig
 	if (left >= right || top >= bottom) {
 		return;
 	}
+	if (Emissive_Is_Deferred(plane)) {
+		Emissive_Deferral.Fill(left, top, right - left, bottom - top, value);
+		return;
+	}
 	for (int row = top; row < bottom; row++) {
 		if (value != 0) {
 			std::memset(plane.Pixels + row * plane.Pitch + left, value, (size_t)(right - left));
@@ -267,6 +272,14 @@ void Emissive_Fill_Rect(EmissivePlane & plane, int x, int y, int width, int heig
 			Clear_Columns(plane, row, left, right);
 			Narrow_Lit(plane, row, left, right);
 		}
+	}
+}
+
+
+void Emissive_Settle(EmissivePlane const & plane)
+{
+	if (Emissive_Is_Deferred(plane)) {
+		Emissive_Deferral.Flush();
 	}
 }
 
@@ -293,6 +306,11 @@ void Emissive_Copy_Rect(EmissivePlane & dest, int dx, int dy, EmissivePlane cons
 	width = std::min(width, std::min(source.Width - sx, dest.Width - dx));
 	height = std::min(height, std::min(source.Height - sy, dest.Height - dy));
 	if (width <= 0 || height <= 0) {
+		return;
+	}
+	Emissive_Settle(source);
+	if (Emissive_Is_Deferred(dest)) {
+		Emissive_Deferral.Copy(dx, dy, source, sx, sy, width, height);
 		return;
 	}
 
@@ -330,10 +348,15 @@ void Emissive_Stamp_Segment(EmissivePlane & plane, int clipx, int clipy, int cli
 	int err = dx + dy;
 	int x = x0;
 	int y = y0;
+	bool const deferred = Emissive_Is_Deferred(plane);
 	for (;;) {
 		if (x >= clipx && x < clipx + clipwidth && y >= clipy && y < clipy + clipheight && x >= 0 && x < plane.Width && y >= 0 && y < plane.Height) {
-			plane.Pixels[y * plane.Pitch + x] = value;
-			Widen_Lit(plane, y, x, x + 1);
+			if (deferred) {
+				Emissive_Deferral.Fill(x, y, 1, 1, value);
+			} else {
+				plane.Pixels[y * plane.Pitch + x] = value;
+				Widen_Lit(plane, y, x, x + 1);
+			}
 		}
 		if (x == x1 && y == y1) {
 			break;

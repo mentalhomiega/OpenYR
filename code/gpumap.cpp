@@ -22,6 +22,7 @@
 #include "writewatch.h"
 
 #include <algorithm>
+#include <atomic>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
 #include "bgfxviews.hh"
@@ -36,6 +37,7 @@
 #include "shaders/mapdraw/fs_mapdraw.bin.h"
 #include "shaders/mapdraw/fs_mapglow.bin.h"
 #include "shaders/mapdraw/fs_mapmask.bin.h"
+#include "shaders/mapdraw/fs_mapplane.bin.h"
 #include "shaders/mapdraw/fs_mappost.bin.h"
 #include "shaders/mapdraw/vs_mapclear.bin.h"
 #include "shaders/mapdraw/vs_mapdraw.bin.h"
@@ -48,6 +50,7 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mappost),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapglow),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapmask),
+	BGFX_EMBEDDED_SHADER_D3D11(fs_mapplane),
 	BGFX_EMBEDDED_SHADER_D3D11(vs_mapclear),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapclear),
 	BGFX_EMBEDDED_SHADER_END()
@@ -199,6 +202,39 @@ static bgfx::FrameBufferHandle _MaskTarget = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _MaskReadback = BGFX_INVALID_HANDLE;
 static bool _MaskBuilt = false;
 
+// The emissive plane of a pass that listed its plane writes, built from Glow and the list; made on first use.
+static bgfx::ProgramHandle _PlaneProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _MaskValueSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _PlaneTexture = BGFX_INVALID_HANDLE;
+static bgfx::FrameBufferHandle _PlaneTarget = BGFX_INVALID_HANDLE;
+static int _PlaneWidth = 0;
+static int _PlaneHeight = 0;
+// The scene target as the game thread sees it, for GpuMap_Plane_Ready: its size, whether it has depth, and the
+// frames ended since it was made.
+static std::atomic<int> _ReadyWidth = 0;
+static std::atomic<int> _ReadyHeight = 0;
+static std::atomic<int> _ReadyScale = 0;
+static std::atomic<bool> _ReadyDepth = false;
+static std::atomic<int> _ReadyFrames = 0;
+// The maskcheck step reads the built plane back and compares it with the plane the CPU made at GpuMap_After_Frame.
+// A read takes about two frames, so three slots read every pass. A slot's texture only grows, so a read still
+// pending when the area changes keeps its texture and buffer.
+struct PlaneRead
+{
+	bgfx::TextureHandle Texture = BGFX_INVALID_HANDLE;
+	int TextureWidth = 0;
+	int TextureHeight = 0;
+	int Width = 0;
+	std::vector<unsigned char> Pixels;
+	std::vector<unsigned char> Expected;
+	std::uint32_t Ready = 0;
+	int Frame = 0;
+	bool Pending = false;
+};
+static PlaneRead _PlaneReads[3];
+static int _PlanesChecked = 0;
+static int _PlanesDiffered = 0;
+
 // Set while a drawn pass's buffers are uploaded by reference and its frame is not yet submitted.
 static bool _Referenced = false;
 static bool _Pending = false;
@@ -284,6 +320,8 @@ static bool Start(void)
 	if (!bgfx::isValid(_MaskProgram)) {
 		DebugString("GPU_DIFF: the voxel mask program did not build, so GPU voxels add no emissive mask\n");
 	}
+	_PlaneProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapplane");
+	_MaskValueSampler = bgfx::createUniform("s_maskvalues", bgfx::UniformType::Sampler);
 	_ClearProgram = Create_Embedded_Program(_MapShaders, "vs_mapclear", _MapShaders, "fs_mapclear");
 	if (!bgfx::isValid(_ClearProgram)) {
 		DebugString("GPU_DIFF unavailable: the depth clear program did not build\n");
@@ -361,6 +399,7 @@ static void Destroy_Scene(void)
 	Release_Colour_Target(_PostTexture, _PostTarget);
 	_PostShown = false;
 	_TargetDrawn = false;
+	_ReadyWidth = 0;
 	for (int i = 0; i < 2; i++) {
 		Release_Colour_Target(_GlowTexture[i], _GlowTarget[i]);
 	}
@@ -423,6 +462,11 @@ static bool Size_Target(int width, int height, int scale, bool depth)
 	_TargetWidth = width;
 	_TargetHeight = height;
 	_TargetScale = scale;
+	_ReadyFrames = 0;
+	_ReadyWidth = width;
+	_ReadyHeight = height;
+	_ReadyScale = scale;
+	_ReadyDepth = depth;
 	_DepthWanted = depth;
 	return(true);
 }
@@ -511,6 +555,8 @@ struct Store
 };
 
 static Store _Stores[SLOT_COUNT];
+// The values of the listed plane writes that copy values (GPU_MASK_VALUES), for the plane program.
+static Store _MaskValueStore;
 
 
 static void Destroy_Stores(void)
@@ -519,6 +565,8 @@ static void Destroy_Stores(void)
 		Release_Handle(store.Handle);
 		store = Store();
 	}
+	Release_Handle(_MaskValueStore.Handle);
+	_MaskValueStore = Store();
 }
 
 
@@ -1165,11 +1213,112 @@ static void Submit_Depth_Reset(bgfx::ViewId view, bgfx::TransientVertexBuffer co
 	bgfx::submit(view, _ClearProgram);
 }
 
-// Fills the emissive mask of a pass with GPU voxels: the CPU plane, then, in blit order, the highlight strengths of each
+// Makes the plane target at the area's size; false when it cannot be made.
+static bool Size_Plane_Target(Rect const & area)
+{
+	if (bgfx::isValid(_PlaneTarget) && _PlaneWidth == area.Width && _PlaneHeight == area.Height) {
+		return(true);
+	}
+	Release_Colour_Target(_PlaneTexture, _PlaneTarget);
+	_PlaneWidth = area.Width;
+	_PlaneHeight = area.Height;
+	return(Make_Colour_Target(_PlaneTexture, _PlaneTarget, _PlaneWidth, _PlaneHeight, bgfx::TextureFormat::R8, POINT_CLAMP));
+}
+
+
+// The quads Submit_Plane draws: the plane as the pass found it and one for each listed write.
+static int Count_Plane_Quads(GpuDrawList const & list)
+{
+	return(1 + (int)list.MaskOps.size());
+}
+
+
+// Builds the emissive plane of a pass that listed its plane writes into _PlaneTexture: Glow, the plane as the pass found
+// it, then each write in order. No quad tests or writes depth, so the writes land in their order in one draw.
+static bool Submit_Plane(GpuMapPass const & pass, float const * projection, float const * ring)
+{
+	GpuDrawList const & list = *pass.List;
+	Rect const & area = pass.Area;
+	int const quads = Count_Plane_Quads(list);
+	// No write reads the store when the pass copied no values, so a store from an earlier pass serves.
+	bool const novalues = list.MaskValues.empty() && bgfx::isValid(_MaskValueStore.Handle);
+	if (!Size_Plane_Target(area) || !(novalues || Fill_Arena(_MaskValueStore, list.MaskValues.data(), list.MaskValues.size()))
+		|| bgfx::getAvailTransientVertexBuffer((uint32_t)quads * 6, _Layout) < (uint32_t)quads * 6) {
+		return(false);
+	}
+	bgfx::TransientVertexBuffer buffer;
+	bgfx::allocTransientVertexBuffer(&buffer, (uint32_t)quads * 6, _Layout);
+	MapVertex * vertex = (MapVertex *)buffer.data;
+	float const none[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, none, none, none);
+	for (std::size_t i = 0; i < list.MaskOps.size(); i++) {
+		GpuMaskOp const & op = list.MaskOps[i];
+		float t1[4] = { 0.0f, (float)op.Width, (float)op.Value, 0.0f };
+		float t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+		float t3[4] = { 0.0f, -1.0f, 2.0f, 1.0f };
+		if (op.Kind == GPU_MASK_VALUES) {
+			t1[0] = (float)op.Values;
+			t3[2] = 3.0f;
+		} else if (op.Kind == GPU_MASK_SHAPE) {
+			GpuBlit const & blit = list.Blits[op.Blit];
+			t1[0] = Index_Offset(blit);
+			t1[1] = (float)blit.Pitch;
+			t1[3] = (float)blit.Width;
+			t2[0] = (float)blit.ZFirst;
+			t2[1] = (float)blit.ZFraction;
+			t2[2] = (float)std::max(blit.ZNumerator, 1);
+			t2[3] = (float)blit.ZDenominator;
+			t3[0] = (float)blit.ZWrap;
+			t3[1] = (float)blit.ZShape;
+			t3[2] = 1.0f;
+			t3[3] = op.Depth ? 0.0f : 1.0f;
+		}
+		Set_Quad(vertex + (i + 1) * 6, area, op.X, op.Y, op.Width, op.Height, t1, t2, t3);
+	}
+	Set_Map_View(VIEW_MAPPLANE, _PlaneTarget, area, projection);
+	bgfx::setVertexBuffer(0, &buffer, 0, (uint32_t)quads * 6);
+	Bind_Stores(ring);
+	bgfx::setTexture(SLOT_COUNT, _GlowMaskSampler, _GlowMask);
+	bgfx::setTexture(SLOT_COUNT + 1, _MaskValueSampler, _MaskValueStore.Handle);
+	bgfx::setState(BGFX_STATE_WRITE_R);
+	bgfx::submit(VIEW_MAPPLANE, _PlaneProgram);
+	return(true);
+}
+
+
+// Starts reading the built plane back for the maskcheck step, unless an earlier read is still pending.
+static void Read_Plane_Back(GpuMapPass const & pass)
+{
+	PlaneRead * read = std::find_if(std::begin(_PlaneReads), std::end(_PlaneReads), [](PlaneRead const & slot) { return(!slot.Pending); });
+	if (read == std::end(_PlaneReads) || pass.MaskExpected == NULL) {
+		return;
+	}
+	Rect const & area = pass.Area;
+	if (!bgfx::isValid(read->Texture) || area.Width > read->TextureWidth || area.Height > read->TextureHeight) {
+		Release_Handle(read->Texture);
+		read->TextureWidth = std::max(read->TextureWidth, area.Width);
+		read->TextureHeight = std::max(read->TextureHeight, area.Height);
+		uint64_t const point = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+		read->Texture = bgfx::createTexture2D((uint16_t)read->TextureWidth, (uint16_t)read->TextureHeight, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
+		read->Pixels.assign((std::size_t)read->TextureWidth * read->TextureHeight, 0);
+	}
+	if (!bgfx::isValid(read->Texture)) {
+		return;
+	}
+	bgfx::blit(VIEW_MAPREAD, read->Texture, 0, 0, _PlaneTexture, 0, 0, (uint16_t)area.Width, (uint16_t)area.Height);
+	read->Ready = bgfx::readTexture(read->Texture, read->Pixels.data());
+	read->Width = area.Width;
+	read->Expected = *pass.MaskExpected;
+	read->Frame = pass.Frame;
+	read->Pending = true;
+}
+
+
+// Fills the emissive mask of a pass with GPU voxels: the plane, then, in blit order, the highlight strengths of each
 // voxel blit where the plane still holds the mark (GPU_VOXEL_MASK_MARK). A blit zeroes the marked pixels of its
 // rectangle and draws its part's layers at scale 1, each pixel taking the voxel the scene shows there. False when the
 // mask cannot be drawn.
-static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection, float const * ring)
+static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection, float const * ring, bgfx::TextureHandle plane)
 {
 	GpuDrawList const & list = *pass.List;
 	Rect const & area = pass.Area;
@@ -1209,7 +1358,7 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 	int slices = 0;
 	for (int i = 0; i < quads; i++) {
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
-		bgfx::setTexture(0, _GlowMaskSampler, _GlowMask);
+		bgfx::setTexture(0, _GlowMaskSampler, plane);
 		bgfx::setState(BGFX_STATE_WRITE_R);
 		bgfx::submit(VIEW_MAPMASK, _MaskProgram);
 		GpuBlit const * blit = blits[i];
@@ -1223,9 +1372,9 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 			GpuVoxelDirectBlit drawn = Direct_Blit(*blit, strength, area, 1);
 			drawn.Slice = slices++;
 			drawn.State = BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
-			GpuVoxel_Draw_Direct(list, drawn, 1, VIEW_MAPMASK, [ring]() {
+			GpuVoxel_Draw_Direct(list, drawn, 1, VIEW_MAPMASK, [ring, plane]() {
 				Bind_Stores(ring);
-				bgfx::setTexture(DIRECT_PLANE_STAGE, _GlowMaskSampler, _GlowMask);
+				bgfx::setTexture(DIRECT_PLANE_STAGE, _GlowMaskSampler, plane);
 			});
 		}
 	}
@@ -1300,7 +1449,8 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	}
 	int const shadows = Count_Shadow_Blits(list);
 	// At most the vertices Submit_Pass takes, which allocates them later in the same frame.
-	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (Shadow_Mask_On() ? shadows + 2 : 0) + (pass.Mask ? Count_Mask_Quads(list) : 0)) * 6);
+	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (Shadow_Mask_On() ? shadows + 2 : 0) + (pass.Mask ? Count_Mask_Quads(list) : 0)
+		+ (pass.MaskListed ? Count_Plane_Quads(list) : 0)) * 6);
 	return(bgfx::getAvailTransientVertexBuffer(vertices, _Layout) >= vertices);
 }
 
@@ -1790,9 +1940,19 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	int const quads = (int)list.Blits.size() + 1;
 	int const shadowquads = shadowed ? shadows + 1 + (tileshadow ? 1 : 0) : 0;
-	int const maskquads = pass.Mask ? Count_Mask_Quads(list) : 0;
+	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height && Ensure_Plane_Texture(_GlowMask, _GlowMaskTracked);
+	// A listed plane is built before anything is drawn from it, so a pass whose plane cannot be built is not drawn.
+	bool const listed = planed && pass.MaskListed;
+	int const maskquads = (pass.Mask ? Count_Mask_Quads(list) : 0) + (listed ? Count_Plane_Quads(list) : 0);
 	if (valid && bgfx::getAvailTransientVertexBuffer((quads + shadowquads + maskquads) * 6, _Layout) < (uint32_t)(quads + shadowquads + maskquads) * 6) {
 		valid = false;
+	}
+	if (listed && (!bgfx::isValid(_PlaneProgram) || !Size_Plane_Target(area))) {
+		valid = false;
+	}
+	if (planed && !listed) {
+		// Made ahead, so the first pass that builds a plane does not draw into a target made in its own frame.
+		Size_Plane_Target(area);
 	}
 	if (!valid) {
 		DebugString("GPU_DIFF frame %d: the pass does not fit the GPU limits\n", pass.Frame);
@@ -1810,14 +1970,18 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water, faded);
 
-	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height && Ensure_Plane_Texture(_GlowMask, _GlowMaskTracked);
+	bgfx::TextureHandle emissive = _GlowMask;
 	if (planed) {
 		Upload_Plane_Tiles(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowTiles);
 	}
-	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, projection, ring);
+	if (listed && Submit_Plane(pass, projection, ring)) {
+		emissive = _PlaneTexture;
+		Read_Plane_Back(pass);
+	}
+	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, projection, ring, emissive);
 	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram) && Ensure_Glow_Targets();
 	if (glow) {
-		Submit_Glow(_MaskBuilt ? _MaskTexture : _GlowMask, area, scale);
+		Submit_Glow(_MaskBuilt ? _MaskTexture : emissive, area, scale);
 	}
 	Submit_Post(pass, scale, area, projection, buffer, world, glow, clouds, weather);
 	return(true);
@@ -2077,6 +2241,22 @@ std::uint16_t GpuMap_Texture(void)
 }
 
 
+bool GpuMap_Plane_Ready(Rect const & area, bool voxels)
+{
+	return(_ReadyFrames >= 2 && _ReadyWidth == area.Width && _ReadyHeight == area.Height && _ReadyScale == Pass_Scale(area)
+		&& (_ReadyDepth || !voxels));
+}
+
+
+void GpuMap_Plane_Check_Counts(int & checked, int & differed)
+{
+	checked = _PlanesChecked;
+	differed = _PlanesDiffered;
+	_PlanesChecked = 0;
+	_PlanesDiffered = 0;
+}
+
+
 std::uint16_t GpuMap_Mask_Texture(void)
 {
 	return(_MaskBuilt ? _MaskTexture.idx : bgfx::kInvalidHandle);
@@ -2086,6 +2266,26 @@ std::uint16_t GpuMap_Mask_Texture(void)
 void GpuMap_After_Frame(std::uint32_t frame)
 {
 	_Referenced = false;
+	if (_ReadyFrames < 2) {
+		_ReadyFrames++;
+	}
+	for (PlaneRead & read : _PlaneReads) {
+		if (!read.Pending || frame < read.Ready) {
+			continue;
+		}
+		read.Pending = false;
+		int differing = 0;
+		int largest = 0;
+		for (std::size_t i = 0; i < read.Expected.size(); i++) {
+			int const gpu = read.Pixels[(i / read.Width) * read.TextureWidth + i % read.Width];
+			int const diff = std::abs((int)read.Expected[i] - gpu);
+			differing += diff != 0;
+			largest = std::max(largest, diff);
+		}
+		DebugString("MASK_PLANE frame %d pixels %d differing %d maxdiff %d\n", read.Frame, (int)read.Expected.size(), differing, largest);
+		_PlanesChecked++;
+		_PlanesDiffered += differing != 0;
+	}
 	if (_ShadowCount.Pending && frame >= _ShadowCount.ReadyFrame) {
 		_ShadowCount.Pending = false;
 		Finish_Shadow_Count();
@@ -2170,12 +2370,17 @@ void GpuMap_Shutdown(void)
 		}
 	}
 	Release_Handle(_Program);
-	for (bgfx::ProgramHandle * program : { &_BlurProgram, &_PostProgram, &_GlowProgram, &_MaskProgram, &_ClearProgram }) {
+	Release_Colour_Target(_PlaneTexture, _PlaneTarget);
+	for (PlaneRead & read : _PlaneReads) {
+		Release_Handle(read.Texture);
+		read = PlaneRead();
+	}
+	for (bgfx::ProgramHandle * program : { &_BlurProgram, &_PostProgram, &_GlowProgram, &_MaskProgram, &_PlaneProgram, &_ClearProgram }) {
 		Release_Handle(*program);
 	}
 	for (bgfx::UniformHandle * uniform : { &_BlurUniform, &_MaskSampler, &_ShadowSampler, &_SceneSampler, &_RippleUniform, &_RippleInfoUniform,
 		&_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_TileShadowSampler, &_FadeSampler, &_FadeUniform, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
-		&_GlowMaskSampler, &_GlowSampler }) {
+		&_GlowMaskSampler, &_GlowSampler, &_MaskValueSampler }) {
 		Release_Handle(*uniform);
 	}
 	_Ready = false;

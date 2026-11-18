@@ -1260,6 +1260,245 @@ static void Render_Voxel_Pixels(void)
 }
 
 
+// The emissive plane of the target while the pass lists its writes (docs/EMISSIVE_MASK.md); NULL when none.
+static EmissivePlane * _MaskPlane = NULL;
+// Set while _List.MaskOps holds writes that the target's plane does not show yet.
+static bool _MaskListed = false;
+// The maskcheck step: every listed write is also made at once, and _MaskBefore keeps the plane as the pass found it.
+static bool _MaskCheck = false;
+static std::vector<unsigned char> _MaskBefore;
+// The passes the check compared and those that differed.
+static int _MaskChecked = 0;
+static int _MaskDiffered = 0;
+static int _MaskEndedEarly = 0;
+
+
+// Whether a rectangle lies inside the area the GPU draws.
+static bool Inside_Area(int x, int y, int width, int height)
+{
+	return(x >= _Area.X && y >= _Area.Y && x + width <= _Area.X + _Area.Width && y + height <= _Area.Y + _Area.Height);
+}
+
+
+// Lists a write. A one-pixel-high fill that continues the row of the fill before it, with the same value, joins it.
+static void Add_Mask_Op(GpuMaskOp const & op)
+{
+	if (op.Kind == GPU_MASK_FILL && op.Height == 1 && !_List.MaskOps.empty()) {
+		GpuMaskOp & last = _List.MaskOps.back();
+		if (last.Kind == GPU_MASK_FILL && last.Height == 1 && last.Y == op.Y && last.Value == op.Value && last.X + last.Width == op.X) {
+			last.Width += op.Width;
+			return;
+		}
+	}
+	_List.MaskOps.push_back(op);
+}
+
+
+// Writes the strength at each pixel of a recorded RLE blit's shape that passes the depth test, as RLE_Blit does.
+static void Apply_Mask_Shape(GpuMaskOp const & op, EmissivePlane & plane)
+{
+	GpuBlit const & blit = _List.Blits[op.Blit];
+	if (op.Value != 0) {
+		Emissive_Mark_Rows(plane, blit.Y, blit.Height, blit.X, blit.X + blit.Width);
+	}
+	unsigned char const * pixels = blit.InAtlas ? &_Atlas.Bytes[blit.Pixels] : &_List.PixelArena[blit.Pixels];
+	for (int r = 0; r < blit.Height; r++) {
+		int const y = blit.Y + r;
+		int z = blit.ZFirst;
+		if (blit.ZDenominator != 0) {
+			z += blit.ZWrap * ((blit.ZFraction + r * blit.ZDenominator) / blit.ZNumerator);
+		}
+		unsigned short * zp = NULL;
+		if (op.Depth && DepthBuffer != NULL) {
+			zp = DepthBuffer->Get_Buffer_Offset(Point2D(blit.X, y - DepthBuffer->Get_Bounds().Y));
+		}
+		signed char const * zshape = blit.ZShape >= 0 ? &_List.ZShapeArena[blit.ZShape + (std::size_t)r * blit.Width] : NULL;
+		unsigned char const * row = pixels + (std::size_t)r * blit.Pitch;
+		unsigned char * out = plane.Pixels + (std::size_t)y * plane.Pitch + blit.X;
+		for (int i = 0; i < blit.Width; i++) {
+			if (row[i] != 0 && (zp == NULL || (z - (zshape != NULL ? zshape[i] : 0)) < (int)*zp)) {
+				out[i] = op.Value;
+			}
+			if (zp != NULL) {
+				zp = DepthBuffer->Wrap_Overflow(zp + 1);
+			}
+		}
+	}
+}
+
+
+// Makes one listed write on plane, which must not be deferred.
+static void Apply_Mask_Op(GpuMaskOp const & op, EmissivePlane & plane)
+{
+	if (op.Kind == GPU_MASK_SHAPE) {
+		Apply_Mask_Shape(op, plane);
+	} else if (op.Kind == GPU_MASK_FILL) {
+		Emissive_Fill_Rect(plane, op.X, op.Y, op.Width, op.Height, op.Value);
+	} else {
+		EmissivePlane values = { &_List.MaskValues[op.Values], op.Width, op.Height, op.Width };
+		Emissive_Copy_Rect(plane, op.X, op.Y, values, 0, 0, op.Width, op.Height);
+	}
+}
+
+
+// Makes the listed writes on plane in order. A write that was also made at once is made again, which leaves the same
+// values, since every pixel ends with the last write that covers it.
+static void Apply_Mask_Ops(EmissivePlane & plane)
+{
+	EmissivePlane const * const deferred = Emissive_Deferral.Plane;
+	Emissive_Deferral.Plane = NULL;
+	for (GpuMaskOp const & op : _List.MaskOps) {
+		Apply_Mask_Op(op, plane);
+	}
+	Emissive_Deferral.Plane = deferred;
+}
+
+
+// Also makes a listed write at once when the GPU does not draw all of it, or while the check is on.
+static void Apply_Now(GpuMaskOp const & op)
+{
+	if (_MaskCheck || !Inside_Area(op.X, op.Y, op.Width, op.Height)) {
+		EmissivePlane const * const deferred = Emissive_Deferral.Plane;
+		Emissive_Deferral.Plane = NULL;
+		Apply_Mask_Op(op, *_MaskPlane);
+		Emissive_Deferral.Plane = deferred;
+	}
+}
+
+
+static void Defer_Fill(int x, int y, int width, int height, unsigned char value)
+{
+	GpuMaskOp const op = { GPU_MASK_FILL, x, y, width, height, -1, 0, value, false };
+	Add_Mask_Op(op);
+	Apply_Now(op);
+}
+
+
+// A copy keeps the source's values, which can change before the list is made; one value throughout is kept as a fill.
+static void Defer_Copy(int x, int y, EmissivePlane const & source, int sourcex, int sourcey, int width, int height)
+{
+	auto const row = [&](int r) { return(source.Pixels + (std::size_t)(sourcey + r) * source.Pitch + sourcex); };
+	unsigned char const first = Emissive_Row_Lit(source, sourcey) ? *row(0) : 0;
+	bool same = true;
+	for (int r = 0; same && r < height; r++) {
+		same = Emissive_Row_Lit(source, sourcey + r) ? Bytes_Are_All(row(r), (std::size_t)width, first) : first == 0;
+	}
+	GpuMaskOp op = { GPU_MASK_FILL, x, y, width, height, -1, 0, first, false };
+	if (!same) {
+		op.Kind = GPU_MASK_VALUES;
+		op.Values = (std::uint32_t)_List.MaskValues.size();
+		op.Value = 0;
+		_List.MaskValues.resize(_List.MaskValues.size() + (std::size_t)width * height);
+		unsigned char * out = &_List.MaskValues[op.Values];
+		for (int r = 0; r < height; r++) {
+			if (Emissive_Row_Lit(source, sourcey + r)) {
+				std::memcpy(out + (std::size_t)r * width, row(r), (std::size_t)width);
+			} else {
+				std::memset(out + (std::size_t)r * width, 0, (std::size_t)width);
+			}
+		}
+	}
+	Add_Mask_Op(op);
+	Apply_Now(op);
+}
+
+
+// Makes every listed write and ends the listing for the rest of the pass.
+static void Defer_Flush(void)
+{
+	Emissive_Deferral = EmissiveDeferral();
+	if (_MaskListed && _MaskPlane != NULL) {
+		Apply_Mask_Ops(*_MaskPlane);
+		_MaskEndedEarly += _MaskCheck;
+	}
+	_List.MaskOps.clear();
+	_List.MaskValues.clear();
+	_MaskListed = false;
+}
+
+
+static bool Record_Mask(EmissivePlane const & plane, bool recorded, unsigned char strength, bool depth)
+{
+	if (!Emissive_Is_Deferred(plane)) {
+		return(false);
+	}
+	// A blit the list does not hold writes the plane itself, after the writes listed before it.
+	if (!recorded || _List.Blits.empty()) {
+		Defer_Flush();
+		return(false);
+	}
+	GpuBlit const & blit = _List.Blits.back();
+	GpuMaskOp const op = { GPU_MASK_SHAPE, blit.X, blit.Y, blit.Width, blit.Height, (int)_List.Blits.size() - 1, 0, strength, depth };
+	Add_Mask_Op(op);
+	return(!_MaskCheck && Inside_Area(op.X, op.Y, op.Width, op.Height));
+}
+
+
+// Starts listing the writes to the target's emissive plane, for a pass the GPU draws.
+static void Begin_Mask_List(Surface & target)
+{
+	_MaskPlane = _Render && Emissive_Is_Enabled() ? Emissive_Plane_For(&target) : NULL;
+	if (_MaskPlane == NULL) {
+		return;
+	}
+	if (_MaskCheck) {
+		_MaskBefore.assign(_MaskPlane->Pixels, _MaskPlane->Pixels + (std::size_t)_MaskPlane->Pitch * _MaskPlane->Height);
+	}
+	_MaskListed = true;
+	Emissive_Deferral.Plane = _MaskPlane;
+	Emissive_Deferral.Fill = Defer_Fill;
+	Emissive_Deferral.Copy = Defer_Copy;
+	Emissive_Deferral.Flush = Defer_Flush;
+	Blit_Record_Mask = Record_Mask;
+}
+
+
+// Stops listing; the listed writes stay in _List.MaskOps.
+static void End_Mask_List(void)
+{
+	Emissive_Deferral = EmissiveDeferral();
+	Blit_Record_Mask = NULL;
+}
+
+
+// The plane as the pass found it, for the maskcheck step.
+static EmissivePlane Mask_Before(void)
+{
+	EmissivePlane before = *_MaskPlane;
+	before.Pixels = _MaskBefore.data();
+	before.Lit = NULL;
+	before.LitLeft = NULL;
+	before.LitRight = NULL;
+	return(before);
+}
+
+
+// The maskcheck step's MASK_LIST line: the listed writes made over the plane as the pass found it, against the plane
+// that every write reached at once.
+static void Check_Mask_List(void)
+{
+	std::vector<unsigned char> replayed = _MaskBefore;
+	EmissivePlane plane = Mask_Before();
+	plane.Pixels = replayed.data();
+	Apply_Mask_Ops(plane);
+	int differing = 0;
+	for (int y = _Area.Y; y < _Area.Y + _Area.Height; y++) {
+		bool const lit = Emissive_Row_Lit(*_MaskPlane, y);
+		std::size_t const at = (std::size_t)y * plane.Pitch + _Area.X;
+		for (int x = 0; x < _Area.Width; x++) {
+			differing += replayed[at + x] != (lit ? _MaskPlane->Pixels[at + x] : 0);
+		}
+	}
+	int counts[3] = {};
+	for (GpuMaskOp const & op : _List.MaskOps) {
+		counts[op.Kind]++;
+	}
+	DebugString("MASK_LIST frame %d writes %d shapes %d fills %d values %d bytes %d differing %d\n", Frame, (int)_List.MaskOps.size(), counts[GPU_MASK_SHAPE], counts[GPU_MASK_FILL], counts[GPU_MASK_VALUES], (int)_List.MaskValues.size(), differing);
+	_MaskChecked++;
+	_MaskDiffered += differing != 0;
+}
+
+
 static bool Finish_Render(Surface & target)
 {
 	// The kept pass reads these until it is drawn at the present or the next pass begins. Base
@@ -1313,8 +1552,29 @@ static bool Finish_Render(Surface & target)
 	}
 	bool const voxelmask = _Voxels && Emissive_Is_Enabled();
 	EmissivePlane * emissive = GpuMap_Bloom() > 0 || voxelmask ? Emissive_Plane_For(&target) : NULL;
+	static std::vector<unsigned char> maskexpected;
+	if (_MaskCheck && _MaskListed) {
+		Check_Mask_List();
+	}
+	// Until the GPU target has settled at the area's size, the CPU makes the listed writes.
+	if (_MaskListed && !GpuMap_Plane_Ready(_Area, !_List.Voxels.empty())) {
+		if (!_MaskCheck) {
+			Apply_Mask_Ops(*_MaskPlane);
+		}
+		_List.MaskOps.clear();
+		_List.MaskValues.clear();
+		_MaskListed = false;
+	}
+	// A listed plane still holds what the pass found; the GPU makes the listed writes over it.
+	bool const listed = _MaskListed && emissive == _MaskPlane;
 	if (emissive != NULL) {
-		Read_Plane_Tiles(*emissive, _Area, glow, glowtiles, glowlit);
+		// Under the check the plane took every write at once, so the GPU starts from the copy of the plane as the pass found it.
+		Read_Plane_Tiles(listed && _MaskCheck ? Mask_Before() : *emissive, _Area, glow, glowtiles, glowlit);
+		if (listed && _MaskCheck) {
+			static std::vector<unsigned char> changed;
+			static std::vector<unsigned char> lit;
+			Read_Plane(*emissive, _Area, maskexpected, changed, lit);
+		}
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
@@ -1343,6 +1603,8 @@ static bool Finish_Render(Surface & target)
 		pass.Glow = emissive != NULL ? &glow : NULL;
 		pass.GlowTiles = emissive != NULL ? &glowtiles : NULL;
 		pass.Mask = voxelmask && emissive != NULL;
+		pass.MaskListed = listed;
+		pass.MaskExpected = listed && _MaskCheck ? &maskexpected : NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
 		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
@@ -1362,6 +1624,10 @@ static bool Finish_Render(Surface & target)
 	}
 	Count_Render(false);
 	_CleanPasses = 0;
+	if (_MaskListed && !_MaskCheck) {
+		Apply_Mask_Ops(*_MaskPlane);
+	}
+	_MaskListed = false;
 	if (inplace && !Read_Area(*TileSurface, _Area, base)) {
 		return(false);
 	}
@@ -1732,6 +1998,7 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 {
 	GpuMap_Drop();
+	End_Mask_List();
 	_AtlasPass++;
 	if (_AtlasStale) {
 		_Atlas.Bytes.clear();
@@ -1749,6 +2016,9 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	_List.Blits.clear();
 	_List.PixelArena.clear();
 	_List.ZShapeArena.clear();
+	_List.MaskOps.clear();
+	_List.MaskValues.clear();
+	_MaskListed = false;
 	_List.Unsupported = 0;
 	_List.Voxels.clear();
 	_PendingPart = -1;
@@ -1777,6 +2047,7 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	Blit_Record_RLE = Record_RLE;
 	Blit_Record_Bit = Record_Bit;
 	Draw_Line_Record = Record_Plain_Line;
+	Begin_Mask_List(target);
 }
 
 
@@ -1794,6 +2065,7 @@ bool GpuDraw_End(void)
 	Blit_Record_Bit = NULL;
 	Draw_Line_Record = NULL;
 	Surface_Lock_Hook = NULL;
+	End_Mask_List();
 	// Each blit locks the target once and the object pass locks it once around the whole pass.
 	_List.Unsupported += std::max(0, _Locks - _LockedBlits - _List.Unsupported - 1);
 	Surface & target = *_Target;
@@ -1880,6 +2152,21 @@ void GpuDraw_Set_Replay_Check(bool enabled)
 void GpuDraw_Set_Gpu_Check(bool enabled)
 {
 	_GpuCheck = enabled;
+}
+
+
+void GpuDraw_Set_Mask_Check(bool enabled)
+{
+	if (_MaskCheck && !enabled) {
+		int planes = 0;
+		int planesdiffered = 0;
+		GpuMap_Plane_Check_Counts(planes, planesdiffered);
+		DebugString("MASK_CHECK lists checked %s, lists differing %d, lists ended early %d, planes checked %s, planes differing %d\n", _MaskChecked > 0 ? "yes" : "no", _MaskDiffered, _MaskEndedEarly, planes > 0 ? "yes" : "no", planesdiffered);
+	}
+	_MaskCheck = enabled;
+	_MaskChecked = 0;
+	_MaskDiffered = 0;
+	_MaskEndedEarly = 0;
 }
 
 
