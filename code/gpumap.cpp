@@ -1496,8 +1496,22 @@ static GpuVoxelDirectBlit Depth_Pre_Pass(GpuVoxelDirectBlit const & blended)
 }
 
 
+// Whether the quad of the blit before quad can join a draw of blit quads with the given blend state. Quads drawn in one
+// draw blend in their order, as separate draws would, because none of them tests or writes depth or stencil.
+static bool Joins_Draw(GpuDrawList const & list, std::vector<int> const & kinds, int quad, uint64_t state, bool shadowed)
+{
+	GpuBlit const & blit = list.Blits[quad - 1];
+	int const kind = kinds[quad - 1];
+	if (blit.Voxel >= 0 || kind == KIND_SONIC || (kind == KIND_DARKEN && shadowed)) {
+		return(false);
+	}
+	return(Blend_State_For(kind, blit.Fade) == state);
+}
+
+
 // Draws the base quad and then each blit's quad into the target, in blit order; a voxel blit submits its part's layers
-// instead. A sonic wave copies the target first, so it reads everything drawn before it.
+// instead. A sonic wave copies the target first, so it reads everything drawn before it. Neighbouring blit quads with
+// the same blend state go in one draw.
 static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water, bool faded)
 {
 	int const quads = (int)list.Blits.size() + 1;
@@ -1552,7 +1566,13 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 			continue;
 		}
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
-		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
+		int joined = 1;
+		if (i > 0 && kind != KIND_SONIC) {
+			while (i + joined < quads && Joins_Draw(list, kinds, i + joined, state, shadowed)) {
+				joined++;
+			}
+		}
+		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, (uint32_t)joined * 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
@@ -1583,6 +1603,7 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(state);
 		bgfx::submit(view, _Program);
+		i += joined - 1;
 	}
 }
 
