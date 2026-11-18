@@ -319,8 +319,10 @@ static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int hei
 
 // The map surfaces made for the largest view while the zoom is 1 and not gliding, kept for the next zoom out on the same
 // screen so that the first step makes none.
-static std::unique_ptr<Surface> _SpareComposite;
-static std::unique_ptr<Surface> _SpareTiles;
+// The holders are never destroyed: at exit a static destructor would free the surfaces after the surface code's own
+// tables are gone. A spare still held when the game ends goes with the process.
+static std::unique_ptr<Surface> & _SpareComposite = *new std::unique_ptr<Surface>;
+static std::unique_ptr<Surface> & _SpareTiles = *new std::unique_ptr<Surface>;
 
 
 // The size of the map surfaces for the largest view the zoom allows on this screen, which GpuMap_Reserve also takes.
