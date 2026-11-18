@@ -4,17 +4,7 @@
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-sov03-units-first.txt -Campaign -Map SOV03UMD.MAP -Width 800 -Height 600 -Seconds 600 -Filter "AUTOTEST +(sprung|win|game over|counts|killhouse|killtag)|Exception"
 ; With -Difficulty 0, 1 or 2 it plays the same on Easy, Normal and Hard.
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 300 killhouse YuriCountry 2
 380 counts YuriCountry
 400 killtag 0995424C

@@ -17,17 +17,7 @@ ui choose Operation: Lone Guardian
 ui wait 800
 ui press Play
 ui waitfor more
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click more
-ui wait 400
-ui click resume
+ui briefing
 ui wait 1000
 ui waitfor abort
 ui wait 500
