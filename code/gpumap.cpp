@@ -766,6 +766,27 @@ static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vecto
 }
 
 
+// Uploads the tiles of a plane kept in texture that changed since the GPU last took them, and clears
+// their marks. Tracked is cleared when the texture is remade, which sends the whole plane.
+static void Upload_Plane_Tiles(bgfx::TextureHandle texture, bool & tracked, std::vector<unsigned char> const & values, int width, int rows, TileGridClass & tiles)
+{
+	if (!tracked) {
+		tiles.Mark_All();
+		tracked = true;
+	}
+	static std::vector<TileRect> rects;
+	tiles.Rects(rects);
+	for (TileRect const & rect : rects) {
+		bgfx::Memory const * memory = bgfx::alloc((uint32_t)rect.Width * rect.Height);
+		for (int y = 0; y < rect.Height; y++) {
+			std::memcpy(memory->data + (std::size_t)y * rect.Width, &values[(std::size_t)(rect.Y + y) * width + rect.X], (std::size_t)rect.Width);
+		}
+		Update_Texture(texture, rect.X, rect.Y, rect.Width, rect.Height, memory);
+	}
+	tiles.Clear();
+}
+
+
 // Sends the scales of a deferred light fade, if the pass has any. False means the base is drawn as it is.
 static bool Upload_Fade(GpuMapPass const & pass)
 {
@@ -1676,9 +1697,9 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water, faded);
 
-	bool const planed = pass.Glow != NULL && pass.GlowChanged != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
+	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
 	if (planed) {
-		Upload_Plane(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowChanged);
+		Upload_Plane_Tiles(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowTiles);
 	}
 	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, projection, ring);
 	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram);

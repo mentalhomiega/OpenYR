@@ -11,6 +11,7 @@
 
 #include "writtenrects.h"
 #include "rect.h"
+#include "tilediff.h"
 
 #include <cstdint>
 #include <vector>
@@ -83,10 +84,10 @@ struct GpuMapPass
 	std::vector<unsigned char> const * TileShadow = NULL;
 	std::vector<unsigned char> * TileShadowChanged = NULL;
 
-	// With bloom, the emissive mask under Area and a flag for each of its rows that changed since the
-	// GPU last took it; NULL for no glow.
+	// With bloom, the emissive mask under Area and the tiles of it that changed since the GPU last took
+	// them, sized for Area; NULL for no glow. The tiles the GPU takes are cleared.
 	std::vector<unsigned char> const * Glow = NULL;
-	std::vector<unsigned char> * GlowChanged = NULL;
+	TileGridClass * GlowTiles = NULL;
 
 	// Set when GpuVoxels is on and the emissive mask is kept: Glow holds the mark GPU_VOXEL_MASK_MARK under
 	// the voxel parts, and the GPU builds the finished mask from Glow and the parts' layers.

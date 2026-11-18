@@ -47,6 +47,10 @@
 #include <cstdlib>
 #include <cstdio>
 #include <windows.h>
+#if defined(_MSC_VER) || defined(__SSE2__)
+#include <emmintrin.h>
+#endif
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -804,6 +808,81 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 }
 
 
+// Whether two tile rows of TileGridClass::TileWidth bytes, or count bytes at the right edge, are the same.
+static bool Tile_Row_Equal(unsigned char const * a, unsigned char const * b, std::size_t count)
+{
+#if defined(_MSC_VER) || defined(__SSE2__)
+	if (count == 32) {
+		__m128i const low = _mm_xor_si128(_mm_loadu_si128((__m128i const *)a), _mm_loadu_si128((__m128i const *)b));
+		__m128i const high = _mm_xor_si128(_mm_loadu_si128((__m128i const *)(a + 16)), _mm_loadu_si128((__m128i const *)(b + 16)));
+		return(_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_or_si128(low, high), _mm_setzero_si128())) == 0xFFFF);
+	}
+#endif
+	return(Bytes_Equal(a, b, count));
+}
+
+
+// Brings values up to the plane under area as Read_Plane does, and marks in tiles each tile whose values
+// changed. A tile grid or a values copy of another size is made again with every tile marked.
+static void Read_Plane_Tiles(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, TileGridClass & tiles, std::vector<unsigned char> & lit)
+{
+	std::size_t const width = (std::size_t)area.Width;
+	int const tilewidth = TileGridClass::TileWidth;
+	if (values.size() != width * area.Height || (int)lit.size() != area.Height || tiles.Tiles_X() != (area.Width + tilewidth - 1) / tilewidth
+		|| tiles.Tiles_Y() != (area.Height + TileGridClass::TileHeight - 1) / TileGridClass::TileHeight) {
+		values.assign(width * area.Height, 0);
+		lit.assign(area.Height, 0);
+		tiles.Resize(area.Width, area.Height);
+		tiles.Mark_All();
+	}
+	int const left = std::max(area.X, 0);
+	int const right = std::min(area.X + area.Width, plane.Width);
+	bool const inside = left == area.X && right == area.X + area.Width && area.Y >= 0 && area.Y + area.Height <= plane.Height;
+	static std::vector<unsigned char> padded;
+	for (int r = 0; r < area.Height; r++) {
+		int const y = area.Y + r;
+		unsigned char * copy = &values[r * width];
+		std::uint8_t * const marks = tiles.Row(r / TileGridClass::TileHeight);
+		unsigned char const * row = NULL;
+		if (inside) {
+			if (Emissive_Row_Lit(plane, y)) {
+				row = plane.Pixels + (std::size_t)y * plane.Pitch + area.X;
+			}
+		} else {
+			padded.assign(width, 0);
+			if (y >= 0 && y < plane.Height && left < right) {
+				std::memcpy(&padded[left - area.X], plane.Pixels + (std::size_t)y * plane.Pitch + left, right - left);
+			}
+			row = padded.data();
+		}
+		if (row == NULL) {
+			if (lit[r] != 0) {
+				for (std::size_t x = 0; x < width; x += tilewidth) {
+					std::size_t const count = std::min<std::size_t>(tilewidth, width - x);
+					if (!Bytes_Are_Zero(copy + x, count)) {
+						std::memset(copy + x, 0, count);
+						marks[x / tilewidth] = 1;
+					}
+				}
+				lit[r] = 0;
+			}
+			continue;
+		}
+		lit[r] = 1;
+		if (Bytes_Equal(copy, row, width)) {
+			continue;
+		}
+		for (std::size_t x = 0; x < width; x += tilewidth) {
+			std::size_t const count = std::min<std::size_t>(tilewidth, width - x);
+			if (!Tile_Row_Equal(copy + x, row + x, count)) {
+				std::memcpy(copy + x, row + x, count);
+				marks[x / tilewidth] = 1;
+			}
+		}
+	}
+}
+
+
 static void Write_Area(Surface & surface, Rect const & area, std::vector<unsigned short> const & pixels)
 {
 	SurfaceLock lock(surface, Point2D(area.X, area.Y));
@@ -1168,14 +1247,14 @@ static bool Finish_Render(Surface & target)
 	static std::vector<unsigned short> fade;
 	static std::vector<unsigned char> tileshadowlit;
 	static std::vector<unsigned char> glow;
-	static std::vector<unsigned char> glowchanged;
+	static TileGridClass glowtiles;
 	static std::vector<unsigned char> glowlit;
 	static Rect changedarea;
 	std::vector<unsigned short> & base = upload[0];
 	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
 		changed.clear();
 		tileshadowchanged.clear();
-		glowchanged.clear();
+		glow.clear();
 		changedarea = _Area;
 		_BaseTiles = NULL;
 	}
@@ -1210,7 +1289,7 @@ static bool Finish_Render(Surface & target)
 	bool const voxelmask = _Voxels && Emissive_Is_Enabled();
 	EmissivePlane * emissive = GpuMap_Bloom() > 0 || voxelmask ? Emissive_Plane_For(&target) : NULL;
 	if (emissive != NULL) {
-		Read_Plane(*emissive, _Area, glow, glowchanged, glowlit);
+		Read_Plane_Tiles(*emissive, _Area, glow, glowtiles, glowlit);
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
@@ -1237,7 +1316,7 @@ static bool Finish_Render(Surface & target)
 		pass.TileShadow = plane != NULL ? &tileshadow : NULL;
 		pass.TileShadowChanged = plane != NULL ? &tileshadowchanged : NULL;
 		pass.Glow = emissive != NULL ? &glow : NULL;
-		pass.GlowChanged = emissive != NULL ? &glowchanged : NULL;
+		pass.GlowTiles = emissive != NULL ? &glowtiles : NULL;
 		pass.Mask = voxelmask && emissive != NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
@@ -1724,6 +1803,7 @@ bool GpuDraw_End(void)
 		std::vector<unsigned char> masklit;
 		EmissivePlane const * emissive = _Voxels && Emissive_Is_Enabled() ? Emissive_Plane_For(&target) : NULL;
 		std::vector<unsigned char> marked;
+		TileGridClass masktiles;
 		if (emissive != NULL) {
 			Read_Plane(*emissive, _Area, softwaremask, maskchanged, masklit);
 			marked = softwaremask;
@@ -1738,8 +1818,10 @@ bool GpuDraw_End(void)
 					marked[at] = softwaremask[at] == mask ? GPU_VOXEL_MASK_MARK : softwaremask[at];
 				}
 			});
+			masktiles.Resize(_Area.Width, _Area.Height);
+			masktiles.Mark_All();
 			pass.Glow = &marked;
-			pass.GlowChanged = &maskchanged;
+			pass.GlowTiles = &masktiles;
 			pass.Mask = true;
 		}
 		GpuMap_Check(pass, replayed, emissive != NULL ? &softwaremask : NULL);
