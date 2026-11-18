@@ -355,7 +355,8 @@ These rows are the sizes at the furthest zoom before the zoom-out limit, which i
 |---|---|---|---|---|
 | 1920x1080 | 0.75 | 2560x1440 | 37 MB | 83 MB |
 | 2560x1440 | 1.0 | 2560x1440 | none | 147 MB |
-| 3840x2160 | none, the view starts at 3840x2160 | 3840x2160 | none | 320 MB |
+| 3840x2160, scale 1 | none | 3840x2160 | none | 320 MB |
+| 3840x2160, scale 2 (automatic) | 0.75 | 2560x1440 | 37 MB | 320 MB |
 
 The tile layer takes two thirds of the map surfaces' share, because its memory holds twice its largest
 picture for scrolling ([GPU_MAP.md](GPU_MAP.md#uploads)). At 3840x2160 the map surfaces were made at the

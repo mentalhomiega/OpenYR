@@ -75,6 +75,10 @@ double View_Zoom_Max(void);
 // surfaces are rebuilt by the next Set_View_Dimensions.
 void Reset_View_Zoom(void);
 
+// Brings the zoom in to the player's zoom-out limit without a glide, for a new screen area whose map surfaces are not
+// made yet, so that they are made for the view the limit allows rather than for the wider one the game started at.
+void Hold_View_Zoom_To_Limit(void);
+
 // Converts a screen offset from ScreenTacticalRect's corner into an offset from TacticalRect's corner.
 Point2D Screen_To_View_Offset(Point2D const & screen_offset);
 

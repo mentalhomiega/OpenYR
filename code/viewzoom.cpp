@@ -456,7 +456,10 @@ static double Zoom_Min(bool player_limit)
 	double limit_zoom = limit;
 	if (player_limit && !Debug_Mode_Active() && ScreenTacticalRect.Width > 0 && ScreenTacticalRect.Height > 0) {
 		Point2D const view = Zoom_Out_View_Limit();
-		limit_zoom = std::max(limit, std::max(ScreenTacticalRect.Width / double(view.X), ScreenTacticalRect.Height / double(view.Y)));
+		// The view is the frame's size over the zoom in map pixels, whatever the interface scale. A frame no larger than
+		// the limit has no zoom out (the zoom is 1 or more); a larger one is held to the limit, even where the game starts out wider.
+		double const wanted = std::max(ScreenTacticalRect.Width / double(view.X), ScreenTacticalRect.Height / double(view.Y));
+		limit_zoom = std::max(limit, std::min(wanted, 1.0));
 	}
 
 	// The view is ScreenTacticalRect / zoom map pixels, so it fits the area once the zoom is at least the screen size over the area size.
@@ -465,7 +468,7 @@ static double Zoom_Min(bool player_limit)
 		return(limit_zoom);
 	}
 	double const fit = std::max(ScreenTacticalRect.Width / double(area.Width), ScreenTacticalRect.Height / double(area.Height));
-	return(std::min(std::max(limit_zoom, fit), View_Zoom_Native()));
+	return(std::max(limit_zoom, std::min(fit, View_Zoom_Native())));
 }
 
 
@@ -491,17 +494,29 @@ double View_Zoom_Max(void)
 
 void Reset_View_Zoom(void)
 {
-	double const native = View_Zoom_Native();
-	ViewZoom = native;
-	DisplayZoom = native;
-	_TargetZoom = native;
-	_GlideFrom = native;
+	double const start = View_Zoom_Native();
+	ViewZoom = start;
+	DisplayZoom = start;
+	_TargetZoom = start;
+	_GlideFrom = start;
 	_PendingZoomStep = 0.0;
 	_Gliding = false;
 	_GlideProgress = 1.0;
 	_ScriptedZoomSaved = false;
 	_ZoomHeld = false;
 	_SceneZoom = false;
+}
+
+
+void Hold_View_Zoom_To_Limit(void)
+{
+	double const limit = View_Zoom_Min();
+	if (!_Gliding && !_SceneZoom && ViewZoom < limit - 0.001) {
+		ViewZoom = limit;
+		DisplayZoom = limit;
+		_TargetZoom = limit;
+		_GlideFrom = limit;
+	}
 }
 
 

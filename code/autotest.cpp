@@ -7289,6 +7289,13 @@ static void Mapbuffers_Step(StepType const &)
 }
 
 
+// interfacescale: the interface scale the game resolved, the frame it draws in and the zoom the view starts at.
+static void Interfacescale_Step(StepType const &)
+{
+	DebugString("AUTOTEST interfacescale %g frame %dx%d native zoom %.4f\n", InterfaceScale, ScreenTacticalRect.Width, ScreenTacticalRect.Height, View_Zoom_Native());
+}
+
+
 // zoom <factor>: sets the map view zoom at once (0.5 shows twice as much), measured from the screen's own pixels.
 static void Zoom_Step(StepType const & step)
 {
@@ -8253,6 +8260,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"zoomlevel", Zoomlevel_Step},
 		{"mapbuffers", Mapbuffers_Step},
 		{"zoom", Zoom_Step},
+		{"interfacescale", Interfacescale_Step},
 		{"wheel", Wheel_Step},
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
