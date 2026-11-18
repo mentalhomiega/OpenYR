@@ -25,6 +25,9 @@ struct EmissivePlane
 	int Pitch;
 	// One byte per row, zero only where the whole row is zero; NULL treats every row as lit.
 	unsigned char * Lit = nullptr;
+	// With Lit, the columns of a lit row that may hold a value other than zero, from LitLeft up to LitRight.
+	int * LitLeft = nullptr;
+	int * LitRight = nullptr;
 };
 
 
@@ -71,6 +74,8 @@ class SurfacePlaneTable
 			Release_Slot(*slot);
 			plane.Pixels = new unsigned char[(std::size_t)width * height]();
 			plane.Lit = withLit ? new unsigned char[(std::size_t)height]() : nullptr;
+			plane.LitLeft = withLit ? new int[(std::size_t)height]() : nullptr;
+			plane.LitRight = withLit ? new int[(std::size_t)height]() : nullptr;
 			plane.Width = width;
 			plane.Height = height;
 			plane.Pitch = width;
@@ -128,6 +133,8 @@ class SurfacePlaneTable
 		{
 			delete [] binding.Plane.Pixels;
 			delete [] binding.Plane.Lit;
+			delete [] binding.Plane.LitLeft;
+			delete [] binding.Plane.LitRight;
 			binding = Binding();
 		}
 
@@ -137,8 +144,9 @@ class SurfacePlaneTable
 // Whether a row may hold a value other than zero.
 inline bool Emissive_Row_Lit(EmissivePlane const & plane, int row) { return(plane.Lit == nullptr || plane.Lit[row] != 0); }
 
-// Marks rows as possibly holding values. A caller that writes Pixels directly marks the rows it wrote.
-void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count);
+// Marks the columns from left up to right of rows as possibly holding values. A caller that writes Pixels
+// directly marks what it wrote.
+void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count, int left, int right);
 
 
 // Each row of the default table. Strength is the mask value 0-255 that the kind writes.

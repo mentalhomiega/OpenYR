@@ -648,7 +648,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 			emissive = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
 			emissive_pitch = plane->Pitch;
 			if (Emissive_Draw_Strength != 0) {
-				Emissive_Mark_Rows(*plane, dcliprect.Y + drect.Y, height);
+				Emissive_Mark_Rows(*plane, dcliprect.Y + drect.Y, height, dcliprect.X + drect.X, dcliprect.X + drect.X + srect.Width);
 			} else if (plane->Lit != NULL) {
 				emissive_lit = plane->Lit + dcliprect.Y + drect.Y;
 			}
