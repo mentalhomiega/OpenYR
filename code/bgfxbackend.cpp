@@ -164,6 +164,9 @@ static bool _KeyedMaskMasked = false;
 
 static bool _VerifyUploads = false;
 static unsigned int _VerifyChecks = 0;
+// Textures made through Create_Texture and their bytes, for the gpumemory autotest step.
+static long long _TexturesMade = 0;
+static long long _TextureBytesMade = 0;
 static unsigned int _VerifyMismatches = 0;
 // The keyed mask texture as the sent rectangles build it. It is empty until checking has seen a full upload.
 static std::vector<unsigned int> _VerifyMaskMirror;
@@ -746,7 +749,7 @@ static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pi
 		if (width > caps->limits.maxTextureSize || height > caps->limits.maxTextureSize) {
 			return(false);
 		}
-		mask.Handle = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8);
+		mask.Handle = Create_Texture(width, height, bgfx::TextureFormat::R8);
 		if (!bgfx::isValid(mask.Handle)) {
 			return(false);
 		}
@@ -833,7 +836,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 			_LayerTexture = BGFX_INVALID_HANDLE;
 			return(false);
 		}
-		_LayerTexture = bgfx::createTexture2D((uint16_t)layer.Width, (uint16_t)layer.Height, false, 1, _FrameIs565 ? bgfx::TextureFormat::B5G6R5 : bgfx::TextureFormat::BGRA8);
+		_LayerTexture = Create_Texture(layer.Width, layer.Height, _FrameIs565 ? bgfx::TextureFormat::B5G6R5 : bgfx::TextureFormat::BGRA8);
 		if (!bgfx::isValid(_LayerTexture)) {
 			return(false);
 		}
@@ -860,7 +863,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 {
 	if (!bgfx::isValid(_KeyedFrameTexture)) {
-		_KeyedFrameTexture = bgfx::createTexture2D((uint16_t)_FrameWidth, (uint16_t)_FrameHeight, false, 1, bgfx::TextureFormat::BGRA8);
+		_KeyedFrameTexture = Create_Texture(_FrameWidth, _FrameHeight, bgfx::TextureFormat::BGRA8);
 		if (!bgfx::isValid(_KeyedFrameTexture)) {
 			return(false);
 		}
@@ -889,7 +892,7 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 	bool const wascurrent = _KeyedMaskCurrent;
 	_KeyedMaskCurrent = false;
 	if (!bgfx::isValid(_KeyedMaskTexture)) {
-		_KeyedMaskTexture = bgfx::createTexture2D((uint16_t)_FrameWidth, (uint16_t)_FrameHeight, false, 1, bgfx::TextureFormat::BGRA8);
+		_KeyedMaskTexture = Create_Texture(_FrameWidth, _FrameHeight, bgfx::TextureFormat::BGRA8);
 		if (!bgfx::isValid(_KeyedMaskTexture)) {
 			return(false);
 		}
@@ -1053,7 +1056,7 @@ static bool Ensure_Targets(void)
 	}
 	if (_HdrActive && !bgfx::isValid(_ReadbackTexture)) {
 		uint64_t const flags = BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-		_ReadbackTexture = bgfx::createTexture2D((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, false, 1, bgfx::TextureFormat::BGRA8, flags);
+		_ReadbackTexture = Create_Texture(_DrawableWidth, _DrawableHeight, bgfx::TextureFormat::BGRA8, flags);
 		if (!bgfx::isValid(_ReadbackTexture)) {
 			DebugString("Video: could not create the screenshot readback at %dx%d\n", _DrawableWidth, _DrawableHeight);
 			return(false);
@@ -1448,7 +1451,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 	const bgfx::Caps * caps = bgfx::getCaps();
 	_FrameIs565 = (caps->formats[bgfx::TextureFormat::B5G6R5] & BGFX_CAPS_FORMAT_TEXTURE_2D) != 0;
 
-	_FrameTexture = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, _FrameIs565 ? bgfx::TextureFormat::B5G6R5 : bgfx::TextureFormat::BGRA8);
+	_FrameTexture = Create_Texture(width, height, _FrameIs565 ? bgfx::TextureFormat::B5G6R5 : bgfx::TextureFormat::BGRA8);
 	_FrameUploaded = false;
 	if (!bgfx::isValid(_FrameTexture)) {
 		return(false);
@@ -1913,6 +1916,31 @@ void Backend_Log_Resource_Counts(char const * when)
 				when, (unsigned int)stats->numTextures, (long long)stats->textureMemoryUsed, (unsigned int)stats->numFrameBuffers,
 				(unsigned int)stats->numIndexBuffers, (unsigned int)stats->numVertexBuffers, (unsigned int)stats->numDynamicIndexBuffers,
 				(unsigned int)stats->numDynamicVertexBuffers, (long long)stats->rtMemoryUsed);
+}
+
+
+void Count_Texture_Made(long long bytes)
+{
+	_TexturesMade++;
+	_TextureBytesMade += bytes;
+}
+
+
+long long Backend_Textures_Made(void)
+{
+	return(_TexturesMade);
+}
+
+
+void Backend_Log_Gpu_Memory(char const * label)
+{
+	if (!_Initialized) {
+		return;
+	}
+	bgfx::Stats const * stats = bgfx::getStats();
+	DebugString("AUTOTEST gpumemory %s: %u textures %.1f MB, render targets %.1f MB, GPU in use %.1f MB; made so far %lld textures, %.1f MB\n", label,
+				(unsigned int)stats->numTextures, stats->textureMemoryUsed / 1048576.0, stats->rtMemoryUsed / 1048576.0, stats->gpuMemoryUsed / 1048576.0,
+				_TexturesMade, _TextureBytesMade / 1048576.0);
 }
 
 

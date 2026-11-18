@@ -368,8 +368,8 @@ void DisplayClass::Init_IO(void)
  *   12/06/1994 JLB : Created.                                                                 *
  *   06/27/1995 JLB : Adjusts tactical map position if necessary.                              *
  *=============================================================================================*/
-// Fits a depth or alpha buffer to TacticalRect, holding the kept part of its entries. For a change of the zoom alone
-// it reuses the buffer when the buffer can hold the view, and otherwise makes one for the largest view.
+// Fits a depth or alpha buffer to TacticalRect, holding the kept part of its entries. A buffer is made for the largest view
+// the zoom allows, so that a later change of the zoom alone reuses it when it can hold the view.
 template <typename Buffer>
 static void Fit_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept, bool zoom_only)
 {
@@ -378,7 +378,7 @@ static void Fit_View_Buffer(Buffer *& buffer, KeptMapPicture const * kept, bool 
 		return;
 	}
 	std::unique_ptr<Buffer> const old(std::exchange(buffer, nullptr));
-	Point2D const capacity = zoom_only ? Largest_Map_View() : Point2D(TacticalRect.Width, TacticalRect.Height);
+	Point2D const capacity = Largest_Map_View();
 	buffer = new Buffer(TacticalRect, capacity.X, capacity.Y);
 	Count_Map_Buffer((std::size_t)buffer->Get_Buffer_Width() * buffer->Get_Buffer_Rows() * sizeof(unsigned short));
 	if (keep && old != nullptr) {

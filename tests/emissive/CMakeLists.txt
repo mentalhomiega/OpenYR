@@ -6,6 +6,7 @@ opents_add_test(Emissive
     SOURCES emissivetest.cpp
     ENGINE
         emissive.cpp
+        writewatch.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS
     FLOAT

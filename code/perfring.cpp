@@ -52,6 +52,26 @@ PerfWindowSummary Perf_Summarise(PerfRing<float> const & ring, int count)
 }
 
 
+double Perf_Excess_Over_Median(PerfRing<float> const & ring, int count)
+{
+	count = std::min(count, ring.Count());
+	if (count <= 0) {
+		return(0.0);
+	}
+	std::vector<float> sorted((size_t)count);
+	for (int index = 0; index < count; index++) {
+		sorted[(size_t)index] = ring.Newest(index);
+	}
+	std::nth_element(sorted.begin(), sorted.begin() + count / 2, sorted.end());
+	float const median = sorted[(size_t)count / 2];
+	double excess = 0.0;
+	for (float value : sorted) {
+		excess += std::max(0.0f, value - median);
+	}
+	return(excess);
+}
+
+
 int Perf_Newest_Since(PerfRing<double> const & times, double since)
 {
 	int count = 0;

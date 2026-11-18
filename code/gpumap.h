@@ -124,6 +124,10 @@ bool GpuMap_Draw(GpuMapPass const & pass);
 // Forgets the pass GpuMap_Draw kept; call it before changing the list or buffers that pass uses.
 void GpuMap_Drop(void);
 
+// Names the largest area, in map pixels, that passes will draw until the next call; 0 by 0 names none. The depth attachments and the
+// shadow masks are made for it when first needed, so a zoom step that changes the area makes none of them.
+void GpuMap_Reserve(int width, int height);
+
 // Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
 // 0 draws each shadow as the software does. With union_shadows the mask is used at radius 0 too, unblurred,
 // so overlapping shadows darken the ground once with hard edges.

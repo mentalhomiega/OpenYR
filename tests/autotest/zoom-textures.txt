@@ -1,0 +1,35 @@
+; Zoom glide textures: ten mouse-wheel steps out from zoom 1 and ten back in on XMP04T8 at 3840x2160 with InterfaceScale=2 and ZoomOutView=4K.
+; Each step that changes the drawn view makes the scene target of that size and no other texture, so a glide makes about as many textures
+; as it has steps; it used to make about nine for each step. texturecheck logs ok when a glide made at most the given number.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/zoom-textures.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 3840 -Height 2160 -Seconds 120 -Settings "[Video]`nGpuRender=yes`nInterfaceScale=2`nZoomOutView=4K" -Filter "AUTOTEST (texturecheck|zoomlevel)|Exception"
+1 glideclock
+2 reveal
+100 zoom 2.0
+160 zoomlevel
+170 texturecheck start
+171 wheel -0.1
+174 wheel -0.1
+177 wheel -0.1
+180 wheel -0.1
+183 wheel -0.1
+186 wheel -0.1
+189 wheel -0.1
+192 wheel -0.1
+195 wheel -0.1
+198 wheel -0.1
+260 zoomlevel
+260 texturecheck 14 glide-out
+270 texturecheck start
+280 wheel 0.1
+283 wheel 0.1
+286 wheel 0.1
+289 wheel 0.1
+292 wheel 0.1
+295 wheel 0.1
+298 wheel 0.1
+301 wheel 0.1
+304 wheel 0.1
+307 wheel 0.1
+380 zoomlevel
+380 texturecheck 14 glide-in
+390 quit

@@ -186,7 +186,7 @@ fuzz_add_target(FuzzImage NAME fuzz_image
 
 fuzz_add_target(FuzzVoxel NAME fuzz_voxel
     SOURCES fuzz_voxel.cpp
-    ENGINE voxlib.cpp motlib.cpp voxpal.cpp matrix3d.cpp gmmath.cpp emissive.cpp
+    ENGINE voxlib.cpp motlib.cpp voxpal.cpp matrix3d.cpp gmmath.cpp emissive.cpp writewatch.cpp
 )
 
 fuzz_add_target(FuzzPcx NAME fuzz_pcx

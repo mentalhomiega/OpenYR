@@ -9,6 +9,7 @@ opents_add_test(GpuVoxel
         dbgprint.cpp
         voxlib.cpp
         emissive.cpp
+        writewatch.cpp
         gpuvoxel.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${OPENTS_GENERATED_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX

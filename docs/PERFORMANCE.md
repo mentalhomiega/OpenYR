@@ -325,18 +325,17 @@ view alone took about 31 ms.
 A change of the zoom keeps the map's drawn picture and draws only the edges the old view did not show. A
 step inward draws nothing new unless the map's edge moves the view. While a zoom glides, the map is drawn
 every frame at the zoom the glide drew last, so objects keep moving, and the presenter scales the part of
-that picture the glide shows. The GPU pass and the presenter's map texture keep the size of the whole drawn
+that picture the glide shows. The GPU pass's scene target and the presenter's map texture keep the size of the whole drawn
 view through a glide.
 
-The map's two surfaces and its depth and alpha buffers are made once, at the first zoom change that needs
-them, for the largest map view the player's zoom allows on that screen. By default that view is 2560x1440 map pixels, since `ZoomOutView` ([manual](../manual/content/keys/zoomoutview--client-settings.md)) limits the zoom out to what the original game shows at 2560x1440; `ZoomOutView=4K` makes it 3840x2160, and Debug mode in a single-player game lifts the limit to the range of 0.5. A scripted scene that zooms past the limit makes the surfaces again at its size. Each later change of the zoom uses part of
+The map's two surfaces and its depth and alpha buffers are made once, at load, for the largest map view the player's zoom allows on that screen. By default that view is 2560x1440 map pixels, since `ZoomOutView` ([manual](../manual/content/keys/zoomoutview--client-settings.md)) limits the zoom out to what the original game shows at 2560x1440; `ZoomOutView=4K` makes it 3840x2160, and Debug mode in a single-player game lifts the limit to the range of 0.5. A scripted scene that zooms past the limit makes the surfaces again at its size. Each later change of the zoom uses part of
 them: the tile layer, the depth buffer and the alpha buffer keep their contents where they are in memory,
 and only the place where the view starts moves, as a scroll moves it. The part of the picture both views
 show, with its emissive and shadow planes, is therefore neither copied nor sent to the GPU again; while the
 GPU reads the tile layer in place, only the new edges of the three go up. The surfaces and buffers are made
 again when the screen's map area changes size or place, and when the largest view grows past them, since
-the zoom range follows the map's visible area. When the zoom returns to 1, the map surfaces are freed and
-the depth and alpha buffers keep their size until the screen's map area changes. The picture is drawn whole,
+the zoom range follows the map's visible area. When the zoom returns to 1, the map surfaces are kept unused for the next zoom out, and
+the depth and alpha buffers keep their size, until the screen's map area changes. The picture is drawn whole,
 in the same buffers, while a light fade is deferred and with `OPENYR_NO_ZOOM_KEEP=1` in the environment.
 
 Memory the map surfaces and the depth and alpha buffers use once the zoom has changed, as the `Map view` and
@@ -397,12 +396,93 @@ What is sent after a step is now the edges of the tile layer and of the depth an
 that was named twice, as the strips a step brings in are by both the buffers and the background pass, goes
 up once. The first step sends the whole of the new tile layer and buffers.
 
-Some costs remain. The GPU pass's textures and the presenter's map texture are still made again when the
-drawn view's size changes, which happens at each step; this is GPU memory and was not measured. In software
-drawing the presenter sends the whole map picture with every present, zoomed or not. At 3840x2160 on XMP04T8
-the view shot as the glide out left it differs from a run with `OPENYR_NO_ZOOM_KEEP=1` in 57 pixels, and the
-settled view after the glide in differs in 66 pixels even when it is redrawn whole; the build before this
+Some costs remain. In software drawing the presenter sends the whole map picture with every present, zoomed or not.
+At 3840x2160 on XMP04T8 the view shot as the glide out left it differs from a run with `OPENYR_NO_ZOOM_KEEP=1` in 57
+pixels, and the settled view after the glide in differs in 66 pixels even when it is redrawn whole; the build before this
 change shows the same pictures as this one, and the cause is not yet known.
+
+### GPU textures at a zoom step
+
+A step used to make about ten GPU textures again when the drawn view changed size: the scene target, its depth
+attachment, the post target, the readback, the snapshot, the two soft shadow masks, the tile shadow plane, the emissive
+mask and the two glow pictures. In a ten-notch glide out at 3840x2160 that was 90 textures and 830 MB made, on ETOTAL with
+`ZoomOutView=4K` and `InterfaceScale=2`. The first step also made the stores of the map surfaces and sent them whole, which
+took about 42 ms to present and 35 ms to draw.
+
+Now a texture is made when a pass first uses it. The soft shadow masks are made for the largest view the zoom allows and
+used from their corner, so a step makes none of them. The scene target, the post target, the emissive mask target and the
+depth attachments keep the exact size of the pass, because the presenter finds a map pixel by texture coordinate, and a
+larger texture moves some pixels (a magnification of 1.5 puts a texel boundary on every third column). The same ten-notch
+glide makes 10 textures (150 MB), one scene target for each size the view takes. The first step presents in about 16 ms and
+draws in about 25 ms, since the map surfaces are made at load and kept as spares while the zoom is 1 (the depth and alpha
+buffers are made at load for the largest view the limit allows), so the first wheel notch makes no buffer.
+
+The remaining cost of a step is the software drawing of the edges the new view adds, which grows with each step from 4 to
+29 ms of `draw.terrain` at the 3840x2160 view (about 20 ms for each million new pixels). It is not on the presentation side,
+and we have not changed it.
+
+`tests/autotest/zoom-glide.txt`-style glides of ten notches out on ETOTAL after its opening scene, one build before and one
+after, two runs of each, with the machine busy (three to five other games and compilers). Worst frame and stall are from
+the `perfwindow` line of the glide out, in ms; a run with another program's hitch is marked with an asterisk. Video memory
+is the textures and render targets bgfx holds after the glide, in MB, and the textures made are those of the glide.
+
+| Screen, `ZoomOutView` | Drawing | Worst frame before | after | Stall before | after | Memory before | after | Made before | after |
+|---|---|---|---|---|---|---|---|---|---|
+| 3840x2160, 4K | software | 51, 56 | 177*, 48 | 178, 216 | 855*, 158 | 196 | 196 | 20 | 20 |
+| 3840x2160, 4K | GPU | 42, 174* | 32, 36 | 244, 2064* | 206, 206 | 406 | 275 | 101 | 11 |
+| 3840x2160, 4K | GPU voxels | 58, 48 | 45, 49 | 263, 264 | 246, 242 | 573 | 450 | 131 | 51 |
+| 3840x2160, Original | software | 154*, 28 | 27, 67* | 1112*, 135 | 151, 633* | 182 | 182 | 10 | 10 |
+| 3840x2160, Original | GPU | 21, 22 | 16, 21 | 99, 142 | 88, 133 | 279 | 221 | 51 | 6 |
+| 3840x2160, Original | GPU voxels | 27, 31 | 139*, 22 | 122, 134 | 1428*, 102 | 576 | 437 | 66 | 26 |
+| 1920x1080, Original | software | 31, 32 | 30, 35 | 125, 117 | 134, 115 | 64 | 64 | 6 | 6 |
+| 1920x1080, Original | GPU | 35, 28 | 27, 19 | 124, 119 | 99, 87 | 160 | 102 | 33 | 4 |
+| 1920x1080, Original | GPU voxels | 41, 48 | 27, 23 | 137, 179 | 124, 132 | 289 | 234 | 42 | 16 |
+
+The worst frame and the stall fall where the GPU draws, by about a fifth at 3840x2160 with the 4K limit and by more at
+1920x1080, and stay within the spread of the runs elsewhere. A step costs about what it did, because the new edges take
+most of it. The default view (the 2560x1440 limit) holds about 60 MB less video memory with GPU drawing than before, and
+about 140 MB less with `GpuVoxels`. The render thread was off in these runs.
+
+### Soft shadows
+
+`SoftShadows=yes` draws the shadows of the pass and the tile layer's shadow plane into a mask, blurs the mask along x and
+then along y (radius 3 by default), and darkens the ground through it in the base pass. The mask is as large as the map
+view, so the blur grows with the pixels of the view. Measured on the large battle of `bench-large-battle-xmp04-zoomed-out.txt`
+at a 3840x2160 view (`InterfaceScale=2`, `ZoomOutView=4K`, frames 1,500 to 3,000), GPU time from bgfx's per-view timers on a
+GeForce RTX 4090 and processor time from the Perf lines, in ms a pass or draw:
+
+| Part | Before | After |
+|---|---|---|
+| Mask draw (GPU) | 0.028 | 0.028 |
+| Blur along x and y (GPU) | 0.076 + 0.076 | 0.038 + 0.038 |
+| Submitting the shadow draws (CPU) | 0.02 | 0.005 |
+| Reading the shadow plane, `draw.gpumap` (CPU) | 0.33 | 0.02 |
+| Recording the shadow blits, in `draw.objects` (CPU) | 0.2 | 0.2 |
+
+All three passes run for every pass the GPU draws, whether or not a shadow changed. They run at the map's own pixels, whatever
+the voxel scale. The cost with the setting on was therefore mostly on the processor: the shadow plane (one byte for each pixel
+of the tile layer) was compared with its copy row by row whenever the tile layer changed. The plane now lives in
+write-watched memory and only the rows its written pages touch are compared. The blur was already separable. Its loop runs
+over the radius and no longer over 33 taps, and the mask draws of one run of shadow blits go in one draw call; the picture is
+the same, because the taps are summed in the same order and every mask draw writes the same value.
+
+We left out two cuts. Skipping the blur where the mask has no coverage needs the coverage of the tile layer's plane, and at
+0.08 ms of GPU time on this card the bookkeeping would cost more processor time than it saves. Reusing the last blurred mask
+is exact only while no shadow blit changed, and the mask also depends on the depth buffer, the shape atlas and the voxel parts,
+so any moving object changes it.
+
+An option that changes the picture, not shipped: blurring a half-size mask when the view is zoomed out would cut the blur to
+a quarter of its pixels, but it moves the edge of every shadow by up to a pixel, and we have not measured its gain.
+
+### Checking the pictures
+
+We took window shots at the settled 1920x1080 view, mid-glide, settled after the glide out and after the glide back in, with
+the glide result as left, after a full redraw and after setting the zoom directly in the same game frame, on a stock skirmish
+(XMP04T8) and on ETOTAL, at the 3840x2160 and 2560x1440 views, with `GpuRender` yes and no, the render thread on and off,
+`SoftShadows` on and off and `GpuVoxels` on and off. Apart from the sidebar, whose animation depends on the clock, every
+shot of the skirmish equals the shot of the build before the change, pixel for pixel. The shots of ETOTAL differ in a few
+dozen pixels in the same three or four blocks of 16 by 16 pixels, as two runs of the build before the change do. A glide's
+result equals a full redraw and, apart from those blocks, setting the zoom directly.
 
 The picture was first kept across zoom changes in an earlier change, which still made new surfaces and
 buffers at each step and copied the kept part of the picture into them. Before that change, one step at
