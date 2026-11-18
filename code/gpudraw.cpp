@@ -34,6 +34,7 @@
 #include "ovrlight.h"
 #include "shadowplane.h"
 #include "surface.h"
+#include "tilediff.h"
 #include "tactical.h"
 #include "convert.h"
 #include "unittype.h"
@@ -714,7 +715,7 @@ static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned
 // Copies row into copy when the two differ, and sets changed to 1 in that case.
 static void Sync_Row(void * copy, void const * row, std::size_t bytes, unsigned char & changed)
 {
-	if (std::memcmp(copy, row, bytes) != 0) {
+	if (!Bytes_Equal(copy, row, bytes)) {
 		std::memcpy(copy, row, bytes);
 		changed = 1;
 	}

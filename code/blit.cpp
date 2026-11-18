@@ -45,6 +45,7 @@
 #include "emissive.h"
 #include "emissive_surface.h"
 #include "shadowplane.h"
+#include "tilediff.h"
 #include "bsurface.h"
 #include "rect.h"
 #include "zshapewindow.h"
@@ -450,27 +451,6 @@ bool RLE_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rec
 }
 
 
-// Whether count bytes of an emissive row are all zero, so that clearing them changes nothing.
-static bool Emissive_Span_Is_Clear(unsigned char const * values, int count)
-{
-	while (count >= 8) {
-		std::uint64_t word;
-		std::memcpy(&word, values, sizeof(word));
-		if (word != 0) {
-			return(false);
-		}
-		values += 8;
-		count -= 8;
-	}
-	while (count-- > 0) {
-		if (*values++ != 0) {
-			return(false);
-		}
-	}
-	return(true);
-}
-
-
 /***********************************************************************************************
  * RLE_Blit -- Blits a rectangle of RLE compressed data to a surface.                          *
  *                                                                                             *
@@ -673,7 +653,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 				return(false);
 			}
 		}
-		return(!Emissive_Span_Is_Clear(emissive_clears->Pixels + (emissive_y + y) * emissive_clears->Pitch + left, right - left));
+		return(!Bytes_Are_Zero(emissive_clears->Pixels + (emissive_y + y) * emissive_clears->Pitch + left, (std::size_t)(right - left)));
 	};
 
 	unsigned char * shadow = NULL;

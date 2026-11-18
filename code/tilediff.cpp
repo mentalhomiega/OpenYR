@@ -24,8 +24,10 @@ static std::vector<size_t> Rect_Band_Current;
 static std::vector<std::uint8_t> Changed_Tiles;
 
 
-static bool Bytes_Equal(std::uint8_t const * a, std::uint8_t const * b, size_t count)
+bool Bytes_Equal(void const * left, void const * right, size_t count)
 {
+	std::uint8_t const * a = (std::uint8_t const *)left;
+	std::uint8_t const * b = (std::uint8_t const *)right;
 #ifdef TILEDIFF_SSE2
 	while (count >= 64) {
 		__m128i const x0 = _mm_xor_si128(_mm_loadu_si128((__m128i const *)a), _mm_loadu_si128((__m128i const *)b));
@@ -40,8 +42,59 @@ static bool Bytes_Equal(std::uint8_t const * a, std::uint8_t const * b, size_t c
 		b += 64;
 		count -= 64;
 	}
+	while (count >= 16) {
+		__m128i const x = _mm_xor_si128(_mm_loadu_si128((__m128i const *)a), _mm_loadu_si128((__m128i const *)b));
+		if (_mm_movemask_epi8(_mm_cmpeq_epi8(x, _mm_setzero_si128())) != 0xFFFF) {
+			return(false);
+		}
+		a += 16;
+		b += 16;
+		count -= 16;
+	}
 #endif
 	return(count == 0 || std::memcmp(a, b, count) == 0);
+}
+
+
+bool Bytes_Are_Zero(void const * values, size_t count)
+{
+	std::uint8_t const * a = (std::uint8_t const *)values;
+#ifdef TILEDIFF_SSE2
+	while (count >= 64) {
+		__m128i const x0 = _mm_loadu_si128((__m128i const *)a);
+		__m128i const x1 = _mm_loadu_si128((__m128i const *)(a + 16));
+		__m128i const x2 = _mm_loadu_si128((__m128i const *)(a + 32));
+		__m128i const x3 = _mm_loadu_si128((__m128i const *)(a + 48));
+		__m128i const any = _mm_or_si128(_mm_or_si128(x0, x1), _mm_or_si128(x2, x3));
+		if (_mm_movemask_epi8(_mm_cmpeq_epi8(any, _mm_setzero_si128())) != 0xFFFF) {
+			return(false);
+		}
+		a += 64;
+		count -= 64;
+	}
+	while (count >= 16) {
+		if (_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i const *)a), _mm_setzero_si128())) != 0xFFFF) {
+			return(false);
+		}
+		a += 16;
+		count -= 16;
+	}
+#endif
+	while (count >= 8) {
+		std::uint64_t word;
+		std::memcpy(&word, a, sizeof(word));
+		if (word != 0) {
+			return(false);
+		}
+		a += 8;
+		count -= 8;
+	}
+	while (count-- > 0) {
+		if (*a++ != 0) {
+			return(false);
+		}
+	}
+	return(true);
 }
 
 

@@ -16,6 +16,7 @@ opents_add_test(ShadowPlane
         abuffer.cpp
         _zbuffer.cpp
         writewatch.cpp
+        tilediff.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
 )
