@@ -611,6 +611,38 @@ and the rules, which also differ between two runs of one build. In the test runs
 about 0.2 s of the Mental Omega step that a normal game skips for a map it checked before. Building the voxel
 models of the vehicle types (0.2 s with Mental Omega) is now the largest part left.
 
+## First frame after a load
+
+The first frame draws the visible part of the map once, at the zoom the load leaves, and then once more when a mission's opening
+sets the camera zoom. The Mental Omega mission SHAND once showed a 6 s main-thread stall that the hang watchdog pinned on the
+first tile draw. The draw took about 14 ms. The 6 s was the load, which pumps no messages between its steps: the watchdog
+allows a load 60 s, but the allowance ended with the load and the 6 s since the last pump was held against the first frame. The
+watchdog now counts the end of a load as a pump, so the wait starts again there (`tests/autotest/hang-watchdog-load-end.txt`).
+
+The tile layer of the first full draw, measured with counters in `Tactical::Draw_Tiles` and the `Render_Tiles` call, on a computer
+running other test games, `InterfaceScale=Auto`, `GpuRender=yes`, `ZoomOutView=Original`:
+
+| Mission | 640x480 | 1920x1080 | 3840x2160 |
+|---|---|---|---|
+| ALL01UMD (stock) | 379 cells, 3.0 ms | 2,521 cells, 11.7 ms | 9,420 cells, 51.4 ms |
+| SHAND | 380 cells, 3.9 ms | 2,373 cells, 14.2 ms | 9,353 cells, 53.2 ms |
+| ETOTAL | 359 cells, 1.6 ms | 2,330 cells, 11.9 ms | 9,202 cells, 48.9 ms |
+| EMIGDAL | 425 cells, 4.8 ms | 2,387 cells, 13.4 ms | 9,420 cells, 69.8 ms |
+| EGODSEND | 380 cells, 1.8 ms | 2,372 cells, 9.1 ms | 9,385 cells, 50.9 ms |
+
+- The first draw covers the view only, and every tile it draws is read already: no tile art is loaded during it. The scenario
+  load reads the tile art (529 tile types on SHAND, in the load's own step).
+- The Mental Omega missions then draw a second time, 1,620 to 1,700 cells in 6 to 10 ms (1,230 to 1,250 cells at 640x480), after
+  the opening's camera zoom changes the view. In the stock mission the next two draws were partial, 193 and 205 cells. The first draw cannot be skipped, since the zoom comes from a trigger that runs in the first game frame, after it.
+- `GpuRender` and the two `ZoomOutView` values change the cell counts by none and the tile time by less than 2 ms. The zoom
+  work (the fixed buffers, the zoom-out limit, the scaled selection list) did not touch `Draw_Tiles` or `Render_Tiles`, so the
+  first frame draws what it drew before.
+- From "game starts" to the first game frame SHAND takes 0.5 to 0.8 s at every window size and the stock mission 0.03 to 0.2 s.
+  The window size does not change it, so it is the work of the first game frame, mostly its triggers, and not drawing.
+
+The `tilecells` autotest step logs the cells the tile layer has drawn so far, and `tests/autotest/first-frame-cells.txt` logs
+the count after the first draw of ALL01UMD at 1920x1080 (2,521) and 30 frames on, so a second or a larger first draw shows in a log.
+
 ## Voxel images
 
 A voxel image is rendered once, kept run-length encoded in `VoxelStaticBuffer` (8,000,000 bytes) and

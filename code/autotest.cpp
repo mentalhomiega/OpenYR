@@ -3088,6 +3088,16 @@ static void Shape_Step(StepType const &)
 }
 
 
+// tilecells: logs how many cells the tile layer has drawn since the game started, and how many since the last tilecells step.
+static void Tilecells_Step(StepType const & step)
+{
+	static int logged = 0;
+	int const drawn = Tactical::TileCellsDrawn;
+	DebugString("AUTOTEST %s %d cells drawn, %d since the last\n", step.Command.c_str(), drawn, drawn - logged);
+	logged = drawn;
+}
+
+
 // strikeobj <TypeID> x y [radius]: see Strike_Object.
 static void Strikeobj_Step(StepType const & step)
 {
@@ -7712,6 +7722,19 @@ static void Stall_Step(StepType const & step)
 }
 
 
+// loadstall <ms> <tail ms>: behaves as a scenario load that pumps no messages for <ms>, then keeps the main thread busy for
+// <tail ms> more, as the start of the first frame does. A load that ends is a sign of life, so the watchdog must not report the tail.
+static void Loadstall_Step(StepType const & step)
+{
+	DebugString("AUTOTEST loadstall %s %d\n", step.Argument.c_str(), Number(step.Words, 3, 0));
+	{
+		HangWatchLoadScope const loading;
+		Hang_Watchdog_Test_Stall((unsigned int)std::max(0, step.Argument_Int()));
+	}
+	Hang_Watchdog_Test_Stall((unsigned int)std::max(0, Number(step.Words, 3, 0)));
+}
+
+
 // rounding <near|chop|up|down|guard>: sets the game thread's rounding mode for the rest of the run, or turns the per-frame guard back on.
 static void Rounding_Step(StepType const & step)
 {
@@ -7967,6 +7990,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"seatflh", Seatflh_Step},
 		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
 		{"drawdigest", Drawdigest_Step},
+		{"tilecells", Tilecells_Step},
 		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
 		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
 		{"uploadcheck", [](StepType const & step) {GpuMap_Set_Upload_Check(step.Argument_Int() != 0);}},
@@ -8344,6 +8368,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"loadsteps", No_Action_Step},
 		{"typesread", No_Action_Step},
 		{"stall", Stall_Step},
+		{"loadstall", Loadstall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
 	};

@@ -103,7 +103,7 @@ The game suspends each thread only for the moment it copies the thread's registe
 
 A run of an autotest script also copies `Game.pdb` to `Exceptions\symbols\Game.pdb\<GUID and age>`, once per build, and `stall.txt` and `except.txt` name that folder as `pdb copy`. Players' runs keep no copy, since the file is over 100 MB. The linker adds one to the pdb's age at every link, so a pdb from a later build of the same sources does not match an earlier dump.
 
-Nothing is timed before the first message pump after the game's one-time initialization. A scenario load is reported only after 60 seconds, or after `HangSeconds` when that is longer. A native message box waiting for an answer is not reported.
+Nothing is timed before the first message pump after the game's one-time initialization. A scenario load is reported only after 60 seconds, or after `HangSeconds` when that is longer. The wait starts again when the load ends. A native message box waiting for an answer is not reported.
 
 ## Raising a crash on purpose
 

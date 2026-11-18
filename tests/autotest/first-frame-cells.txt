@@ -1,0 +1,8 @@
+; First frame cell count: the stock mission ALL01UMD at 1920x1080. The first draw after the load covers the view once; tilecells
+; logs how many cells the tile layer has drawn since the game started. The first line is the first draw, before the mission's
+; first game frame, and the cell count of a full 1920x1080 view; a second full draw of the view, or one at the wrong size, shows as a
+; larger count. The second line, 30 frames on, counts what the zoom change of the mission's opening and the moving units added.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/first-frame-cells.txt -Campaign -Map ALL01UMD.MAP -Width 1920 -Height 1080 -Seconds 60 -Filter "AUTOTEST tilecells|Exception"
+0 tilecells
+30 tilecells
+31 quit

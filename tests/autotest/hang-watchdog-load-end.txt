@@ -1,0 +1,8 @@
+; The hang watchdog after a long load. A scenario load reads the whole scenario without pumping messages, so the watchdog
+; allows it 60 seconds. The load ends and the first frame starts a moment later, still before the next message pump. The
+; wait for the next pump starts again when the load ends, so the watchdog does not report the load's time as a stall of
+; the first frame. This script holds a load scope for 2.5 seconds at frame 5 and keeps the thread busy for 0.6 seconds
+; more, with [Debug] HangSeconds=1; the log has no HANG line and the build has no new hang report folder.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/hang-watchdog-load-end.txt -Settings "[Debug]`nHangSeconds=1" -Seconds 60 -Filter "HANG|AUTOTEST loadstall|Exception"
+5 loadstall 2500 600
+60 quit
