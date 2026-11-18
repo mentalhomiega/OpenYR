@@ -3,19 +3,9 @@
 ; From frame 38400 the Rhinos strike every 100 frames to clear "Massive Last Attempt". Once "PlayerWin1" is enabled at frame 38250, BadGuy1 must have no unit left ("UNITS_DEAD"): its two Engineers at 41,81 and 98,21 hunt from frame 40500 and are struck from frame 41000, and so is a Sniper of its "Sniper/GI" team that may be left standing near 58,66 once the team's script ends.
 ; Expected: "AUTOTEST game over frame N: won" (frame 41645 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov07.txt -Campaign -Map SOV07S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
-; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 1 triggerlog 1
 10 grantunit APOC 68 64
 11 grantunit APOC 70 64

@@ -5,19 +5,9 @@
 ; The American Chrono Miners keep working (teleporters reissue their destination on Enter, as gamemd does), so the American base rebuilds and Rhino tanks run out before it falls; Apocalypse tanks outlast it.
 ; Expected: "AUTOTEST game over frame N: won" (frame 19813 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov02.txt -Campaign -Map SOV02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
-; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 1 triggerlog 1
 20 grantunit APOC 78 46
 21 grantunit APOC 80 46

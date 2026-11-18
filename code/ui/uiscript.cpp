@@ -609,7 +609,8 @@ bool UIScript_Pending(void)
 /// <summary>
 /// Carries out the menu steps that are due. A step that opens a screen running its own loop
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
-/// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
+/// Steps: wait (milliseconds), waitfor (an element id, then optionally the seconds to wait for it, 20 when not given), briefing (clicks the mission
+/// briefing's More button until its Resume button shows, then Resume; waits up to 120 seconds, or the number it is given), click (an element
 /// id), pointer (an element id and two fractions of its box, where the mouse is pressed and released),
 /// set (a slider's id and the value to give it, separated by a space; a text box's id alone empties it),
 /// xbutton (an element id and 1 or 2: a press of Mouse 4 or Mouse 5 at its centre, through the window events),
@@ -641,20 +642,53 @@ void UIScript_Tick(Rml::Context * context)
 		UIStepType const step = Steps[Next];
 
 		if (step.Command == "waitfor") {
+			std::istringstream fields(step.Argument);
+			std::string id;
+			int seconds = 20;
+			fields >> id >> seconds;
 			if (WaitForSince == 0) {
 				WaitForSince = now;
 			}
-			if (Find_Element(context, step.Argument) == nullptr) {
-				if (now - WaitForSince < 20000) {
+			if (Find_Element(context, id) == nullptr) {
+				if (now - WaitForSince < seconds * 1000LL) {
 					return;
 				}
-				DebugString("UISCRIPT waitfor %s: not found after 20 seconds\n", step.Argument.c_str());
+				DebugString("UISCRIPT waitfor %s: not found after %d seconds\n", id.c_str(), seconds);
 			} else {
-				DebugString("UISCRIPT waitfor %s: found\n", step.Argument.c_str());
+				DebugString("UISCRIPT waitfor %s: found\n", id.c_str());
 			}
 			WaitForSince = 0;
 			Next++;
 			continue;
+		}
+
+		if (step.Command == "briefing") {
+			int seconds = std::atoi(step.Argument.c_str());
+			seconds = (seconds > 0) ? seconds : 120;
+			if (WaitForSince == 0) {
+				WaitForSince = now;
+			}
+			Rml::Element * resume = Find_Element(context, "resume");
+			if (resume == nullptr || !resume->IsVisible()) {
+				Rml::Element * more = Find_Element(context, "more");
+				if (more != nullptr && more->IsVisible()) {
+					DebugString("UISCRIPT briefing: click more\n");
+					more->Click();
+					WaitUntil = now + 300;
+					return;
+				}
+				if (now - WaitForSince < seconds * 1000LL) {
+					return;
+				}
+				DebugString("UISCRIPT briefing: no Resume button after %d seconds\n", seconds);
+			} else {
+				DebugString("UISCRIPT briefing: click resume\n");
+				resume->Click();
+				WaitUntil = now + 300;
+			}
+			WaitForSince = 0;
+			Next++;
+			return;
 		}
 
 		// The step is consumed before it acts, so a screen it opens continues with the next one.

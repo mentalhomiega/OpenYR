@@ -2,19 +2,9 @@
 ; The airships clear the way to the Eiffel Tower (CAPARS01 at 46,32): each strikeobj line sends them against the next pillbox, tank, IFV or soldier along the route, one target per 400 frames. Then the three Tesla Troopers the mission gives (house Other3, which the player controls) walk to cell 47,34 and energize the tower ("Tower Energized"). The Allied units that hunt the tower arrive in waves and the airships idle after the last pillbox, so from frame 9500 a strikeobj line every 150 frames sends them against the Allied soldier, tank or IFV nearest the tower (the tesla tower and the airships thin the rest). Once every unit of the Allied house is dead "Win Timer" and "Win" follow.
 ; Expected: "AUTOTEST game over frame N: won" (frame 12721 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov05.txt -Campaign -Map SOV05U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 330 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
-; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 1 triggerlog 1
 10 grantunit ZEP 72 62
 11 grantunit ZEP 74 62

@@ -2,19 +2,9 @@
 ; Frames 200 to 1000 take the Tesla coils at the south gate, 1000 to 2000 the rest of the south base, 2000 to 3000 the coils round the lab, 3000 to 4500 the north end. At 4500 the spies are ordered to capture the Battle Lab; "BattleLab Entered" springs at about frame 5850 and the map enlarges. Twenty more tanks arrive at 6300 and go for the missile silos (NAMISL), first the Orange Team's at 56,63, then the Yellow Team's at 65,40. With both gone "Victory 1" and "Victory 2" follow.
 ; Expected: "AUTOTEST game over frame N: won" (frame 12725 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all05.txt -Campaign -Map ALL05S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
-; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 1 triggerlog 1
 10 grantunit APOC 96 128
 11 grantunit APOC 98 128
