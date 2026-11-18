@@ -46767,6 +46767,24 @@ Sticky:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+StockArtFixes:
+  key: StockArtFixes
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: StockArtFixes
+      source: code/optionsettings.cpp
+      guard: null
+    level: OptionsClass
 StopSound:
   key: StopSound
   scopes:

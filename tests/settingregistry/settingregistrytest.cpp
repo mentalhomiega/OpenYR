@@ -269,6 +269,7 @@ struct Old_Gpu
 	int GpuVoxelCloak = GPU_VOXEL_CLOAK_TRANSLUCENT;
 	bool SteadyVoxelPlacement = true;
 	bool ShadowStacking = true;
+	bool StockArtFixes = true;
 	int Weather = WEATHER_NONE;
 	int WeatherStrength = 100;
 	bool RenderThread = false;
@@ -302,6 +303,7 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.GpuVoxelCloak = Enum_From_Name(Cloak_Names, name, GPU_VOXEL_CLOAK_TRANSLUCENT);
 	old.SteadyVoxelPlacement = ini.Get_Bool("Video", "SteadyVoxelPlacement", old.SteadyVoxelPlacement);
 	old.ShadowStacking = ini.Get_Bool("Video", "ShadowStacking", old.ShadowStacking);
+	old.StockArtFixes = ini.Get_Bool("Video", "StockArtFixes", old.StockArtFixes);
 	char weathername[16];
 	ini.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
 	static NameEntry const Names[] = { { "None", WEATHER_NONE }, { "Map", WEATHER_MAP }, { "Rain", WEATHER_RAIN }, { "Snow", WEATHER_SNOW } };
@@ -336,6 +338,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_String("Video", "GpuVoxelCloak", Enum_Name(Cloak_Names, old.GpuVoxelCloak, "Translucent"));
 	ini.Put_Bool("Video", "SteadyVoxelPlacement", old.SteadyVoxelPlacement);
 	ini.Put_Bool("Video", "ShadowStacking", old.ShadowStacking);
+	ini.Put_Bool("Video", "StockArtFixes", old.StockArtFixes);
 	static NameEntry const Names[] = { { "None", WEATHER_NONE }, { "Map", WEATHER_MAP }, { "Rain", WEATHER_RAIN }, { "Snow", WEATHER_SNOW } };
 	ini.Put_String("Video", "Weather", Enum_Name(Names, std::clamp(old.Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ini.Put_Int("Video", "WeatherStrength", old.WeatherStrength);
@@ -404,7 +407,7 @@ void Test_Real_Table(void)
 
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
-		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
+		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "StockArtFixes", "Weather", "WeatherStrength",
 		"RenderThread", "FastestGpu", "ParallelPaths", "PathThreads", "PerfOverlay", "ClassicGameSpeeds",
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys and the game speed switch");
@@ -418,6 +421,7 @@ void Test_Real_Table(void)
 		"GPU drawing", "Draw units on the GPU", "Soft shadows", "Shockwaves", "Glow", "Water ripples", "Cloud shadows", "Weather",
 		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Voxel sharpness",
 		"Voxel drawing", "Steady voxel placement", "Stacked shadows",
+		"Stock art", "Fix stock art",
 		"Diagnostics", "Performance overlay",
 	};
 	Check(labels == page_order, "the Graphics page keeps the GPU drawing rows in their old order, with the voxel rows after them");

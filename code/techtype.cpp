@@ -39,6 +39,7 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "session.h"
+#include "stockartfixes.h"
 #include "strutil.h"
 #include "_tactica.h"
 #include "tactical.h"
@@ -1850,6 +1851,10 @@ void TechnoTypeClass::Read_Art_INI(void)
 	if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
 		PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
 	}
+	char const * const palette_fix = ArtINI.Is_Present(Graphic_Name(), "Palette") ? NULL : Stock_Art_Fix(Graphic_Name(), "Palette");
+	if (palette_fix != NULL) {
+		PaletteName = palette_fix;
+	}
 
 	char pcx[64];
 	ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
@@ -1860,7 +1865,7 @@ void TechnoTypeClass::Read_Art_INI(void)
 	// gamemd TechnoTypeClass::LoadFromINI (0x712170) reads Palette= into PaletteFile, a 0x20-byte buffer.
 	char palette[32];
 	ArtINI.Get_String(Graphic_Name(), "Palette", "", palette, sizeof(palette));
-	PaletteFile = palette;
+	PaletteFile = palette_fix != NULL ? palette_fix : palette;
 
 	TStringID<24> cameo;
 	if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
