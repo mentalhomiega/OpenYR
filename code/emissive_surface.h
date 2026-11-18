@@ -17,8 +17,8 @@
 #include "surface.h"
 
 
-// Binds planes to the composite and tile pair, the map pair and the presented surface while masks are on, and frees
-// the others. A pan swaps the members of a pair, so both members of each pair need a plane.
+// Binds planes to the composite and tile pair, the map pair (or the spare pair while the map has none) and the presented
+// surface while masks are on, and frees the others. A pan swaps the members of a pair, so both members of each pair need a plane.
 void Emissive_Sync(Surface const * composite, Surface const * tile, Surface const * map_composite, Surface const * map_tile, Surface const * visible);
 
 // Copies the emissive values behind a Bit_Blit, or clears them when the source has no plane.

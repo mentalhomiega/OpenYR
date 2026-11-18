@@ -326,6 +326,29 @@ static std::unique_ptr<Surface> & _SpareComposite = *new std::unique_ptr<Surface
 static std::unique_ptr<Surface> & _SpareTiles = *new std::unique_ptr<Surface>;
 
 
+Surface const * Map_Or_Spare_Composite(void)
+{
+	return((MapCompositeSurface != NULL) ? MapCompositeSurface : _SpareComposite.get());
+}
+
+
+Surface const * Map_Or_Spare_Tiles(void)
+{
+	return((MapTileSurface != NULL) ? MapTileSurface : _SpareTiles.get());
+}
+
+
+// Sets the emissive and shadow masks of a surface to zero, as a plane allocated for it would be.
+static void Clear_Masks(Surface const & surface)
+{
+	for (EmissivePlane * plane : { Emissive_Plane_For(&surface), ShadowPlane_For(&surface) }) {
+		if (plane != NULL) {
+			Emissive_Fill_Rect(*plane, 0, 0, plane->Width, plane->Height, 0);
+		}
+	}
+}
+
+
 // The size of the map surfaces for the largest view the zoom allows on this screen, which GpuMap_Reserve also takes.
 static Point2D Map_Surface_Capacity(void)
 {
@@ -409,7 +432,10 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 	// At a zoom of 1 the surfaces made for the largest view wait for the next zoom out; with no zoom out possible there are none.
 	if (old_composite != nullptr && old_map_tiles != nullptr && ScreenTacticalRect == _MapSurfacesScreen) {
 		// A spare is cleared when it is put aside rather than when it is taken, which keeps the clearing off the first step of a zoom out.
+		// Its masks stay bound while it waits (Map_Or_Spare_Composite), so they are cleared too.
 		old_composite->Fill(0);
+		Clear_Masks(*old_composite);
+		Clear_Masks(*old_map_tiles);
 		_SpareComposite = std::move(old_composite);
 		_SpareTiles = std::move(old_map_tiles);
 	} else if (_SpareComposite == nullptr || ScreenTacticalRect != _MapSurfacesScreen) {

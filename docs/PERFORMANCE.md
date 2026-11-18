@@ -463,8 +463,10 @@ ring. The cost was simply the size of the ring:
 That is 5 to 8 microseconds a cell, about what a scroll strip costs (4.7 microseconds a cell for 12-pixel strips on a 1600x900
 view). With GPU drawing about 40% of it is the first write to each memory page of the tile layer and the depth and alpha
 buffers after the GPU pass took their written pages: the depth reset of the ring took 1.0 ms with GPU drawing and 0.1 ms in
-software. A step also clears the ring in the depth and alpha buffers when it moves them, about 1 ms each with GPU drawing,
-and the edges are cleared again when drawn.
+software. A step also cleared the ring in the depth and alpha buffers when it moved them, about 1 ms each with GPU drawing,
+and the edges were cleared again when drawn. The step now leaves the ring as it was (`Move_Area` with `clear_edges` false in
+`ZBuffer` and `ABuffer`), since the edges are registered as dirty areas and drawing them resets those entries first. A step's
+buffer fitting fell from about 2.3 ms to under 0.1 ms at the 3840x2160 view.
 
 A glide shows the new edges only gradually, so a draw now adds only the part of them on screen (`Tactical::Register_Undrawn_Edges`).
 The largest edge drawing in one draw at the 3840x2160 view fell from 15.5 ms to about 7 ms; the total is the same, spread over
@@ -476,7 +478,26 @@ the step back to 1 made the screen tile layer's texture again; the presenter the
 textures of both tile layers, makes the map's when the map surfaces are made at load, and sends only what was written to a
 layer since it was last read ([GPU_MAP.md](GPU_MAP.md#uploads)); the first step presents in 3.7 ms. The spare map surface is
 cleared when it is put aside at the end of a glide back to 1 instead of when the first step takes it. The first step still
-copies the kept picture into the map's tile layer, about 2.8 ms.
+copies the kept picture into the map's tile layer, which took about 2.8 ms, 2 ms of it to allocate and zero the new tile
+layer's emissive and shadow masks. The masks of the spare surfaces now stay bound while the zoom is 1 and are cleared with
+the spare when it is put aside, so the copy takes about 0.5 ms and the first presented frame after the step allocates no
+mask of the composite either. With GPU drawing and soft shadows or bloom the spare masks hold about 15 MB at the default
+view (2560x1440) and 33 MB at the 4K view while the zoom is 1; a glide held them before and freed them at its end.
+`tests/autotest/zoom-spare-masks.txt` checks that they are bound and zero ([AUTOTEST.md](AUTOTEST.md)).
+
+Ten-notch glides out on ETOTAL at 3840x2160 (`InterfaceScale=Auto`, `GpuRender=yes`, no frame limit, no dev mode), two runs
+of the build before and after, alternating, with one other game running. The time of the glide's `Set_View_Dimensions`
+calls is the sum of the `Map view` log lines of the steps; the glide out takes 5 steps with the default `ZoomOutView` and
+10 with `4K`. Worst frame / total stall of the `perfwindow` line in ms:
+
+| `ZoomOutView` | Steps, before | after | Worst frame / stall, before | after |
+|---|---|---|---|---|
+| Original (2560x1440) | 12.0, 12.1 ms | 2.0, 2.0 ms | 19.4 / 130, 17.9 / 130 | 18.5 / 129, 18.7 / 133 |
+| 4K | 22.2, 21.8 ms | 1.5, 1.6 ms | 57.0 / 140, 64.1 / 242 | 55.8 / 130, 62.7 / 181 |
+
+The steps cost a tenth of what they did, and the worst frame and the stall stay within the spread of the runs: the worst
+frame of a glide is a draw, not a step. A frame of this scene takes 30 to 37 ms at this view on this machine, so the
+2 ms of a step is within the noise of one frame.
 
 Ten-notch glides out on ETOTAL after its opening scene (`InterfaceScale=Auto`, which is 2 here), two runs of the build before
 and after, alternating, with one other game running in most runs and none of ours played; longest frame / total stall in ms

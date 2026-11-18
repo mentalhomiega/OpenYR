@@ -16,6 +16,8 @@
 #include <cstdint>
 #include <memory>
 
+class Surface;
+
 class DSurface;
 
 /*
@@ -117,6 +119,11 @@ bool Map_Layers_Keepable(void);
 // Surfaces made for the largest view (Largest_Map_View) are reused for a new zoom on the same screen, and their
 // tile layer's picture is moved in place.
 void Allocate_Map_Surfaces(KeptMapPicture const * kept = nullptr);
+
+// The map's composite and tile surface, or the spares waiting for the next zoom out while there are none. Their masks
+// stay bound, so the first zoom step does not allocate them.
+Surface const * Map_Or_Spare_Composite(void);
+Surface const * Map_Or_Spare_Tiles(void);
 
 // The size of the largest map view (TacticalRect) that any zoom the game now allows gives on this screen. The map's
 // surfaces and its depth and alpha buffers are made this large once the zoom changes, so later changes reuse them.

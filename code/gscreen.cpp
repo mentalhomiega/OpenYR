@@ -668,7 +668,7 @@ void GScreenClass::Render(void)
 	bool complete = DrawFlags == GS_REDRAW_ALL;
 
 	// Masks follow the composite: planes are bound here, and a full redraw starts them clear.
-	Emissive_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface, VisibleSurface);
+	Emissive_Sync(CompositeSurface, TileSurface, Map_Or_Spare_Composite(), Map_Or_Spare_Tiles(), VisibleSurface);
 	if (complete && Emissive_Is_Enabled() && CompositeSurface != NULL) {
 		Emissive_After_Fill(*CompositeSurface, CompositeSurface->Get_Rect());
 	}
@@ -703,7 +703,7 @@ void GScreenClass::Render(void)
 	}
 	bool const map_redraw = redraw && !_MapPictureKept;
 	_MapPictureKept = false;
-	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
+	ShadowPlane_Sync(CompositeSurface, TileSurface, Map_Or_Spare_Composite(), Map_Or_Spare_Tiles());
 	ShadowOnce_Set_Enabled(!Options.ShadowStacking);
 	GpuDraw_Plan(gpu_render);
 	// Pictures cached under the old placement are dropped before this frame draws any.
