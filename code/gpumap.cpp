@@ -766,6 +766,27 @@ static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vecto
 }
 
 
+// Uploads the tiles of a plane kept in texture that changed since the GPU last took them, and clears
+// their marks. Tracked is cleared when the texture is remade, which sends the whole plane.
+static void Upload_Plane_Tiles(bgfx::TextureHandle texture, bool & tracked, std::vector<unsigned char> const & values, int width, int rows, TileGridClass & tiles)
+{
+	if (!tracked) {
+		tiles.Mark_All();
+		tracked = true;
+	}
+	static std::vector<TileRect> rects;
+	tiles.Rects(rects);
+	for (TileRect const & rect : rects) {
+		bgfx::Memory const * memory = bgfx::alloc((uint32_t)rect.Width * rect.Height);
+		for (int y = 0; y < rect.Height; y++) {
+			std::memcpy(memory->data + (std::size_t)y * rect.Width, &values[(std::size_t)(rect.Y + y) * width + rect.X], (std::size_t)rect.Width);
+		}
+		Update_Texture(texture, rect.X, rect.Y, rect.Width, rect.Height, memory);
+	}
+	tiles.Clear();
+}
+
+
 // Sends the scales of a deferred light fade, if the pass has any. False means the base is drawn as it is.
 static bool Upload_Fade(GpuMapPass const & pass)
 {
@@ -1475,8 +1496,22 @@ static GpuVoxelDirectBlit Depth_Pre_Pass(GpuVoxelDirectBlit const & blended)
 }
 
 
+// Whether the quad of the blit before quad can join a draw of blit quads with the given blend state. Quads drawn in one
+// draw blend in their order, as separate draws would, because none of them tests or writes depth or stencil.
+static bool Joins_Draw(GpuDrawList const & list, std::vector<int> const & kinds, int quad, uint64_t state, bool shadowed)
+{
+	GpuBlit const & blit = list.Blits[quad - 1];
+	int const kind = kinds[quad - 1];
+	if (blit.Voxel >= 0 || kind == KIND_SONIC || (kind == KIND_DARKEN && shadowed)) {
+		return(false);
+	}
+	return(Blend_State_For(kind, blit.Fade) == state);
+}
+
+
 // Draws the base quad and then each blit's quad into the target, in blit order; a voxel blit submits its part's layers
-// instead. A sonic wave copies the target first, so it reads everything drawn before it.
+// instead. A sonic wave copies the target first, so it reads everything drawn before it. Neighbouring blit quads with
+// the same blend state go in one draw.
 static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water, bool faded)
 {
 	int const quads = (int)list.Blits.size() + 1;
@@ -1531,7 +1566,13 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 			continue;
 		}
 		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
-		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
+		int joined = 1;
+		if (i > 0 && kind != KIND_SONIC) {
+			while (i + joined < quads && Joins_Draw(list, kinds, i + joined, state, shadowed)) {
+				joined++;
+			}
+		}
+		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, (uint32_t)joined * 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
@@ -1562,6 +1603,7 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(state);
 		bgfx::submit(view, _Program);
+		i += joined - 1;
 	}
 }
 
@@ -1676,9 +1718,9 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	}
 	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water, faded);
 
-	bool const planed = pass.Glow != NULL && pass.GlowChanged != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
+	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height;
 	if (planed) {
-		Upload_Plane(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowChanged);
+		Upload_Plane_Tiles(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowTiles);
 	}
 	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, projection, ring);
 	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram);

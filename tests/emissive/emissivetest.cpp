@@ -173,7 +173,7 @@ void Test_Fill_And_Copy(void)
 	for (int i = 0; i < 16; i++) {
 		plane->Pixels[i] = (unsigned char)(i + 1);
 	}
-	Emissive_Mark_Rows(*plane, 0, 4);
+	Emissive_Mark_Rows(*plane, 0, 4, 0, 4);
 	unsigned char snapshot[16];
 	std::memcpy(snapshot, plane->Pixels, sizeof(snapshot));
 	Emissive_Copy_Rect(*plane, 1, 1, *plane, 0, 0, 2, 2);
@@ -247,6 +247,38 @@ void Test_Lit_Rows(void)
 	Emissive_Release_All();
 }
 
+
+void Test_Lit_Columns(void)
+{
+	int a = 0;
+	int b = 0;
+	EmissivePlane * source = Emissive_Bind(&a, 8, 2);
+	EmissivePlane * dest = Emissive_Bind(&b, 8, 2);
+
+	Emissive_Fill_Rect(*source, 2, 0, 2, 1, 200);
+	Emissive_Fill_Rect(*source, 0, 0, 5, 1, 0);
+	Check(!Emissive_Row_Lit(*source, 0), "clearing every column that holds values unlights a row narrower than the plane");
+
+	Emissive_Fill_Rect(*source, 5, 1, 1, 1, 70);
+	Emissive_Mark_Rows(*source, 1, 1, 1, 2);
+	Emissive_Fill_Rect(*source, 3, 1, 3, 1, 0);
+	Check(Emissive_Row_Lit(*source, 1), "a row stays lit while marked columns outside the clear remain");
+	Emissive_Fill_Rect(*source, 0, 1, 3, 1, 0);
+	Check(!Emissive_Row_Lit(*source, 1), "clearing the remaining columns unlights the row");
+
+	Emissive_Fill_Rect(*source, 1, 0, 1, 1, 40);
+	Emissive_Copy_Rect(*dest, 4, 0, *source, 0, 0, 4, 1);
+	Check(Emissive_Row_Lit(*dest, 0) && dest->Pixels[5] == 40, "a copy lights the columns its values land on");
+	Emissive_Fill_Rect(*dest, 5, 0, 1, 1, 0);
+	Check(!Emissive_Row_Lit(*dest, 0), "a copy lights only the columns that held values in the source");
+
+	Emissive_Fill_Rect(*dest, 6, 1, 1, 1, 10);
+	Emissive_Copy_Rect(*dest, 0, 1, *source, 0, 1, 4, 1);
+	Check(Emissive_Row_Lit(*dest, 1) && dest->Pixels[8 + 6] == 10, "copying a dark row clears only the columns it covers");
+
+	Emissive_Release_All();
+}
+
 }
 
 
@@ -262,6 +294,7 @@ int main(void)
 	Test_Fill_And_Copy();
 	Test_Segment();
 	Test_Lit_Rows();
+	Test_Lit_Columns();
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);
 }

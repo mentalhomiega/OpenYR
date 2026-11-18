@@ -17,6 +17,7 @@ opents_add_test(ZBufRing
         shadowplane.cpp
         _surface.cpp
         writewatch.cpp
+        tilediff.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
 )

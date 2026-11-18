@@ -200,6 +200,56 @@ void Emissive_Release_All(void)
 }
 
 
+// Records that the columns from left up to right of a row may now hold values.
+static void Widen_Lit(EmissivePlane & plane, int row, int left, int right)
+{
+	if (plane.Lit == NULL || left >= right) {
+		return;
+	}
+	if (plane.Lit[row] == 0) {
+		plane.Lit[row] = 1;
+		plane.LitLeft[row] = left;
+		plane.LitRight[row] = right;
+		return;
+	}
+	plane.LitLeft[row] = std::min(plane.LitLeft[row], left);
+	plane.LitRight[row] = std::max(plane.LitRight[row], right);
+}
+
+
+// Sets the columns from left up to right of a row to zero, writing only those that may hold a value.
+static void Clear_Columns(EmissivePlane & plane, int row, int left, int right)
+{
+	int from = left;
+	int to = right;
+	if (plane.Lit != NULL) {
+		from = std::max(from, plane.LitLeft[row]);
+		to = std::min(to, plane.LitRight[row]);
+	}
+	if (from < to) {
+		std::memset(plane.Pixels + row * plane.Pitch + from, 0, (size_t)(to - from));
+	}
+}
+
+
+// Records that the columns from left up to right of a row now hold zero.
+static void Narrow_Lit(EmissivePlane & plane, int row, int left, int right)
+{
+	if (plane.Lit == NULL || plane.Lit[row] == 0 || left >= right) {
+		return;
+	}
+	int & from = plane.LitLeft[row];
+	int & to = plane.LitRight[row];
+	if (left <= from && right >= to) {
+		plane.Lit[row] = 0;
+	} else if (left <= from && right > from) {
+		from = right;
+	} else if (right >= to && left < to) {
+		to = left;
+	}
+}
+
+
 void Emissive_Fill_Rect(EmissivePlane & plane, int x, int y, int width, int height, unsigned char value)
 {
 	int const left = std::max(x, 0);
@@ -209,25 +259,26 @@ void Emissive_Fill_Rect(EmissivePlane & plane, int x, int y, int width, int heig
 	if (left >= right || top >= bottom) {
 		return;
 	}
-	bool const whole = left == 0 && right == plane.Width;
 	for (int row = top; row < bottom; row++) {
-		if (value == 0 && !Emissive_Row_Lit(plane, row)) {
-			continue;
-		}
-		std::memset(plane.Pixels + row * plane.Pitch + left, value, (size_t)(right - left));
-		if (plane.Lit != NULL && (value != 0 || whole)) {
-			plane.Lit[row] = value != 0;
+		if (value != 0) {
+			std::memset(plane.Pixels + row * plane.Pitch + left, value, (size_t)(right - left));
+			Widen_Lit(plane, row, left, right);
+		} else if (Emissive_Row_Lit(plane, row)) {
+			Clear_Columns(plane, row, left, right);
+			Narrow_Lit(plane, row, left, right);
 		}
 	}
 }
 
 
-void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count)
+void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count, int left, int right)
 {
 	int const first = std::max(top, 0);
 	int const last = std::min(top + count, plane.Height);
-	if (plane.Lit != NULL && first < last) {
-		std::memset(plane.Lit + first, 1, (size_t)(last - first));
+	left = std::max(left, 0);
+	right = std::min(right, plane.Width);
+	for (int row = first; row < last; row++) {
+		Widen_Lit(plane, row, left, right);
 	}
 }
 
@@ -247,20 +298,23 @@ void Emissive_Copy_Rect(EmissivePlane & dest, int dx, int dy, EmissivePlane cons
 
 	// Rows run bottom up when a copy within one plane moves down, so no source row is overwritten first.
 	bool const reverse = dest.Pixels == source.Pixels && dy > sy;
-	bool const whole = dx == 0 && width == dest.Width;
 	for (int step = 0; step < height; step++) {
 		int const row = reverse ? height - 1 - step : step;
 		unsigned char * out = dest.Pixels + (dy + row) * dest.Pitch + dx;
 		if (Emissive_Row_Lit(source, sy + row)) {
+			// The source's columns are read before the destination's change, as both can be the same row.
+			int left = sx;
+			int right = sx + width;
+			if (source.Lit != NULL) {
+				left = std::max(left, source.LitLeft[sy + row]);
+				right = std::min(right, source.LitRight[sy + row]);
+			}
 			std::memmove(out, source.Pixels + (sy + row) * source.Pitch + sx, (size_t)width);
-			if (dest.Lit != NULL) {
-				dest.Lit[dy + row] = 1;
-			}
+			Narrow_Lit(dest, dy + row, dx, dx + width);
+			Widen_Lit(dest, dy + row, left + dx - sx, right + dx - sx);
 		} else if (Emissive_Row_Lit(dest, dy + row)) {
-			std::memset(out, 0, (size_t)width);
-			if (dest.Lit != NULL && whole) {
-				dest.Lit[dy + row] = 0;
-			}
+			Clear_Columns(dest, dy + row, dx, dx + width);
+			Narrow_Lit(dest, dy + row, dx, dx + width);
 		}
 	}
 }
@@ -279,9 +333,7 @@ void Emissive_Stamp_Segment(EmissivePlane & plane, int clipx, int clipy, int cli
 	for (;;) {
 		if (x >= clipx && x < clipx + clipwidth && y >= clipy && y < clipy + clipheight && x >= 0 && x < plane.Width && y >= 0 && y < plane.Height) {
 			plane.Pixels[y * plane.Pitch + x] = value;
-			if (plane.Lit != NULL) {
-				plane.Lit[y] = 1;
-			}
+			Widen_Lit(plane, y, x, x + 1);
 		}
 		if (x == x1 && y == y1) {
 			break;

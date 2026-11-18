@@ -60,6 +60,10 @@ outside every named rectangle goes up as whole rows, so a draw that names nothin
 unless it shares a page of 4,096 bytes with a named rectangle. More than 512 rectangles named between two
 passes count as the whole buffer.
 
+The emissive mask under the map view goes to the GPU with `Bloom`, and with `GpuVoxels` while the mask is kept
+([EMISSIVE_MASK.md](EMISSIVE_MASK.md)). A pass compares it with the copy the GPU holds in tiles of 32 by 16 pixels
+and sends only the tiles that changed.
+
 A new draw into the tile layer, the depth buffer or the alpha buffer that is not clipped to one of those
 rectangles must name its own (`DSurface::Note_Written`, `ZBuffer::Note_Written`, `ABuffer::Note_Written`);
 otherwise the GPU can keep showing the old pixels beside a rectangle that was named.

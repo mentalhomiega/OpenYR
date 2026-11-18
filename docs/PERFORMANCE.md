@@ -599,6 +599,52 @@ With `GpuVoxels=yes`, a pass whose voxel layers do not fit the model texture is 
 
 A map pass that holds a draw the GPU record cannot replay is drawn in software, and the `GPU_RENDER` line counts it under `fallback`. `OPENYR_GPU_WHY=1` logs, for one such pass in 150, a `GPU_WHY frame` line with the counts and up to 12 `GPU_WHY kind` lines: the call stack of a surface lock no recorded blit accounts for (kind 0) or of a blit whose blitter has no `Describe` (kind 1), as addresses relative to the module base, to look up in `Game.map` at base 0x400000. `GPU_WHY blitter` names the blitter class. Two such draws were found this way on a large Mental Omega mission and now go to the GPU: the searchlight's depth glow lines, recorded as a light of the line's strength, and the rank insignia, drawn with `RLEBlitTransXlat`, which lacked `Describe`. A third was the flying text (the credits and damage numbers over objects), printed with `BitFontClass::Print` straight into the surface: on the Mental Omega mission STROPH three of four passes fell back for it. Each run of set glyph pixels is now recorded as a fill, and `GPU_RENDER` shows no fallback there.
 
+## Zoomed out on a large Mental Omega mission
+
+We measured the Mental Omega mission ETOTAL at 3840x2160, revealed and zoomed as far out as the build then allowed (a 4500x2531 map view), from game frame 1,400 to 4,000 with no input, with `GpuRender=yes`, `RenderThread=yes`, `CloudShadows=yes`, Enhanced HDR highlights, `GpuVoxelSmooth=yes` and the frame limit off. A draw visited about 2,940 objects, recorded about 2,100 blits and 520 voxel parts, and drew one GPU pass, with no pass drawn in software. Where the draw time went before the changes below, from one run with temporary timers around each part and a sampling profiler (ms a draw):
+
+| Part | `GpuVoxels=yes` | `GpuVoxels=no` | Grows with |
+|---|---:|---:|---|
+| Recording the objects (`draw.objects`) | 3.8 | 3.6 | Objects on the map, since every object is visited, and the pixels of the shapes drawn |
+| of which clearing emissive values under shapes | 1.05 | 0.3 | Rows of each shape drawn |
+| of which voxels drawn in software | - | 1.0 | Voxel bodies with no cached image |
+| Submitting the GPU pass at the present | 2.6 | 1.2 | |
+| of which uploading the emissive mask and building the voxel mask | 1.0 | - | Pixels of the map view |
+| of which the draw calls | 0.7 | 0.5 | Blits and voxel parts |
+| of which uploading the depth, alpha and blit pixel stores | 0.5 | 0.6 | Blit pixels and changed rows |
+| of which the voxel parts (`GpuVoxel_Submit`) | 0.25 | - | Voxel parts |
+| Reading the emissive mask of the map view | 0.96 | - | Pixels of the map view |
+| Background pass (`draw.terrain` and the reset of the emissive mask) | 0.6 | 0.5 | Pixels of the map view |
+| Interface, HUD and frame copy | 0.4 | 0.4 | Pixels of the screen |
+| `draw.total` | 8.8 | 6.0 | |
+
+The GPU itself took about 3 ms a frame with `GpuVoxels=yes` and 1.6 ms without, as `present.gputime` gives it.
+
+Most of the work that grows with the pixels of the view was the emissive mask, which HDR highlights keep. The map view's mask is 7,680 bytes wide, the size its surface was made for, while the zoomed view uses 4,500 of them. A row was marked as possibly holding a value until a clear covered the whole row, so after the first frame every row counted as lit. Each pass then cleared all 11 MB, every shape cleared the mask under each of its rows, and the GPU pass compared all 11 MB and sent every changed row whole, about 5 MB a draw.
+
+Five changes, none of which changes a pixel:
+
+- **Lit columns.** Each lit row of an emissive mask keeps the range of columns that may hold a value. A clear that covers that range unlights the row, and a clear of a lit row writes only that range.
+- **Clears that change nothing.** A shape drawn with an emissive strength of zero clears the mask under it only in rows whose lit columns overlap it and hold a value there.
+- **Faster compares.** Rows of the mask and of the map picture are compared 64 and 16 bytes at a time (`Bytes_Equal`, `Bytes_Are_Zero` in `tilediff.h`); the 32-bit build's inlined `memcmp` compared 4 bytes at a time.
+- **Mask tiles.** The GPU pass's emissive mask is compared in tiles of 32 by 16 pixels and only the changed tiles go up ([GPU_MAP.md](GPU_MAP.md#uploads)). Upload bytes fell from 5.2 MB to 1.7 MB a draw.
+- **Joined draws.** Neighbouring blit quads that share a blend state are drawn in one draw call. No such quad tests or writes depth or stencil, and quads in one draw blend in their order.
+
+We checked this with window shots taken at three zooms (4500x2531, 3840x2160 and 1920x1080 map views) and logged `drawdigest 2` on ETOTAL and on a stock skirmish, with `GpuRender` on and off, `GpuVoxels` on and off and the render thread on and off, for the build before the changes, after each change and after all of them. Two runs of the build before the changes already differ in a few small spots (a few dozen pixels in three to nine blocks of 16 by 16 pixels, on one structure on ETOTAL and on small objects in the skirmish), and the software map digests differ between such runs too. Every pixel the changed builds differ in lies in those blocks, and with `GpuRender` on the ETOTAL map digests match draw for draw. The GPU, zoom, upload and emissive autotests gave the same logs before and after.
+
+Measured on ETOTAL at 3840x2160 with the settings above, from game frame 60 to 4,000 with no input (the mission's opening scene holds a 1600x900 view to about frame 1,300), three alternating runs of each without the frame limit and one with it, ms a draw unless marked:
+
+| Map view, `GpuVoxels` | Draw avg before | after | p95 before | after | Upload a draw before | after | Drawn a second, limit on, before | after |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3840x2160, yes | 8.3 | 5.8 | 12.1 | 8.0 | 3.0 MB | 1.1 MB | 115 | 144 |
+| 3840x2160, no | 5.2 | 4.0 | 6.5 | 5.4 | 1.3 MB | 1.3 MB | 163 | 171 |
+| 2560x1440, yes | 3.3 | 2.9 | 4.8 | 4.6 | 1.5 MB | 0.8 MB | | |
+| 2560x1440, no | 2.3 | 2.1 | 3.7 | 3.1 | 0.9 MB | 0.9 MB | | |
+
+The 2560x1440 rows are two runs each. Other games ran on the computer during some runs, and the runs of one setting spread by up to 2 ms. With the frame limit on, the game held 44 to 45 frames a second in all runs; the hidden test window does not wait for the display, so the drawn rate is not what a visible window shows. `present.gputime` did not fall. It read about the same before and after with the frame limit on and at 3840x2160, and rose from 3.3 to 5.0 ms in the unlimited runs at the 4500x2531 view; we have not found why.
+
+What is left, in the order of the time it would save: the object walk visits every object of the map each draw (3.5 ms with 2,900 objects); with `GpuVoxels=no`, about 1 ms of it renders voxel bodies that have no cached image; the voxel parts take about 0.5 ms of draw calls and 0.25 ms in `GpuVoxel_Submit`; reading the emissive mask still compares the whole view (0.7 ms) where the lit columns could narrow it; the pixel store of the blits (about 700 KB) is copied and sent again every pass (0.25 ms).
+
 ## Target scans
 
 `TechnoClass::Passes_Before_Disguise_Roll` ran the weapon selection and `Can_Fire` first for every candidate, 111,000 times a second in the large battle, although most candidates fail a cheap test such as the type mask or the owner. The fire test now runs after every other rejection in that function, and the type mask test runs right after the limbo and strength test. Every test involved only reads (the fire test, the weapon choice, the line of fire, the range and the capture and parasite checks draw no random number and assign nothing), so the targets chosen and the random draws are the same. A shadow build that ran the old order beside the new one on every candidate and compared the result and the random draw count checked 12.6 million candidates of the 7200-frame large battle with no mismatch; it is not kept in the tree. In the large battle `frame.threat` fell from about 0.82 to about 0.08 ms a game frame and weapon selects from 111,000 to about 600 a second.
