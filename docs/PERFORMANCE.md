@@ -895,7 +895,43 @@ One run at 2560x1440 with `GpuVoxels=yes` after the change took 3.97 ms; the oth
 
 The change gave the same pictures as the build before it, checked as for the emissive rows above: window shots and `drawdigest 2` on ETOTAL and the XMP29U2 skirmish with `GpuRender` on and off, `GpuVoxels` on and off, the render thread on and off, `Bloom` on and off, `HDRHighlights` Classic and Enhanced, and `EmissiveDebugView` on. Every 16 by 16 block the changed build differs in is one where two runs of the build before it also differ. The `maskcheck` step found no differing list and no differing GPU mask on ETOTAL across the 3840x2160, 2560x1440 and 1920x1080 views and the zoom changes between them, and on the skirmish. The GPU, emissive, upload, zoom, digest, camera-determinism and selection autotests gave the same logs, except for the frames that `gpu-voxel-compare` and `target-line-gpu` sample and the `uploadverify checks` counts, which follow the number of draws.
 
-What is left in the walk, in the order of the time it would save: the screen position and depth of each object (about 28% of the walk after the change), worked out again every draw although most objects did not move; we did not cache them, because the depth adjustment reads the cell, bridges, tunnels, overlays and the locomotor, so we could not prove when a cached value goes stale. Next is the GPU recorder's look-up of each shape in the atlas (about 5%), most of it comparing the shape's rows with the copy kept from when it was decoded, once a pass. Comparing the rows with `Bytes_Equal` instead of the inlined `std::memcmp` did not help: the rows are short, and the look-up's share rose to about 6%.
+What is left in the walk, in the order of the time it would save: the screen position and depth of each object (about 28% of the walk after the change), worked out again every draw although most objects did not move; a cache of them did not pay ([Screen position and depth](#screen-position-and-depth)). Next is the GPU recorder's look-up of each shape in the atlas (about 5%), most of it comparing the shape's rows with the copy kept from when it was decoded, once a pass. Comparing the rows with `Bytes_Equal` instead of the inlined `std::memcmp` did not help: the rows are short, and the look-up's share rose to about 6%.
+
+### Screen position and depth
+
+We tried caching each object's depth adjustment between draws and did not keep it: on ETOTAL at the 3840x2160 view without the frame limit, the only cache we could prove correct made the walk slower. We timed the parts with a processor-cycle timer around each function, from game frame 1,400 to 4,000 with no input, `GpuRender=yes` and `GpuVoxels=yes`, the mission not revealed:
+
+| Function | Calls a draw | Share of the walk |
+|---|---:|---:|
+| `Get_Z_Adjust`, with the bridge, tunnel and cliff fudges it calls | 740 | about 8% |
+| `Coord_To_Pixel` | 4,300 | about 2%, once the timers' own cost is taken off |
+| Ground height, height above ground and depth gradient (`CellClass::Get_Height`, `Get_Height_AGL`, `Get_Z_Gradient`) | 3,400 | 1 to 3% |
+
+`Coord_To_Pixel` is a few multiplications, and a cache look-up costs as much. The profiler's 28% also counted samples of the callers around these functions. That leaves the depth adjustment, whose inputs are:
+
+| Objects | Screen position | Depth adjustment |
+|---|---|---|
+| Structures | Centre coordinate and the view's scroll | `Height` and the type's turret or barrel `ZAdjust`: a few instructions |
+| Terrain objects | Position | None; a still one only gets its pre-render hook in the walk |
+| Animations, particles, bullets | Own coordinate (an animation attached to an object follows it) | None |
+| Vehicles, soldiers, aircraft | Position, plus the blend back toward the previous frame's position between game frames (`RenderPrevCoord`, `RenderBlend`) | The locomotor's `Z_Adjust` (zero except the tunnel locomotor, which reads its dig timer and sets `IsUnderground`); the height and cell of the position; the eight-way facing, which between game frames is drawn part way back toward the previous frame's; `IsOnBridge`; for the own cell and up to 14 cells around it the ramp, a rock overlay, the tile type and subtile (the tile's pixel height), `IsOvershadowed`, `IsUnderBridge`, `WasUnderBridge`, `IsBridgeEastWest`, `Height` and the tunnel; a tethered vehicle's contact structure and its mission; the structure in a harvester's cell; the structure a vehicle is bunkered in |
+
+Of the 740 calls a draw, about 190 repeat a call for the same object in the same draw (a voxel vehicle's body, turret and shadow each ask), about 505 are for an object with the same position and facing as at its previous draw, which always gave the same value, and about 18 are for an object that moved or is new.
+
+A cache that holds across game frames needs those cell values in its key. Reading and comparing them for 15 cells took 1,700 to 2,000 cycles a call, about twice the 900 cycles of working the value out, because most of that work is the same cell reads. Keeping a map-wide change count instead would need every write to those cell fields to count: there are about 300 such assignments in the code, not counting the height, and ore growth changes overlays all the time.
+
+A cache that holds for one game frame needs no cell values, since the cells change only in game logic. It needs the position and facing in its key all the same. A checking mode that worked every cached value out again found 23,560 differences in 6.3 million hits with a key of the game frame alone: the facing is drawn part way back between frames, and `AircraftClass::Draw_It` lowers the aircraft to the ground for its voxel shadow and raises it again, so one draw asks at two heights. With the game frame, position and facing in the key and the tunnel locomotor left out, a run with the frame limit had 6.6 million hits and no difference. A shipped version would also have had to clear the cache when the draws between two game frames take player input.
+
+The walk in million cycles a draw, the same build with the cache switched on and off, two alternating runs each:
+
+| | Draws a game frame | Walk before | after | `Get_Z_Adjust` share before | after |
+|---|---:|---:|---:|---:|---:|
+| No frame limit | 1 | 7.44, 7.59 | 7.56, 7.71 | 8.4% | 9.0 to 9.2% |
+| Frame limit on | about 3.3 | 8.08, 8.03 | 7.47, 7.63 | 8.5% | 3.8 to 4.0% |
+
+Without the frame limit, only the repeats within one draw hit the cache, and the facing that the key needs costs more than they save. With the frame limit the walk is about 6% shorter, but the gain depends on how many draws fit in a game frame, and the hidden test window draws more of them than a window that waits for the display.
+
+Two changes need no cache. A voxel vehicle could work its depth adjustment out once a draw and pass it to the body, turret and shadow blits, which removes the 190 repeats, about 2% of the walk. `FootClass::Get_Z_Adjust` makes about 30 `Map` look-ups, which are not inlined, of 11 to 15 cells, and evaluates `Is_Z_Fudge_Bridge` twice, once through `Get_Z_Fudge_Column`.
 
 ## Target scans
 
