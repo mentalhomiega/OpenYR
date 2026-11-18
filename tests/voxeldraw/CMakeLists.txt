@@ -8,6 +8,7 @@ opents_add_test(VoxelDraw
         dbgprint.cpp
         voxlib.cpp
         emissive.cpp
+        writewatch.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${OPENTS_GENERATED_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     FLOAT
