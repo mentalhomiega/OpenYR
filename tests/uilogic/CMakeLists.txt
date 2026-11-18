@@ -1,6 +1,6 @@
 # Tests the UI code that builds without a toolkit: input ownership and text decoding, the
 # overlay renderer's arithmetic, image and font-sheet conversion, the reveal animation, and
-# the video dirty marks and the upload tile comparison. Linking no UI library keeps the harness cheap and keeps toolkit
+# the video dirty marks and present pacing, and the upload tile comparison. Linking no UI library keeps the harness cheap and keeps toolkit
 # types out of that code.
 opents_add_test(UILogic
     NAME uilogic

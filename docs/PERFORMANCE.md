@@ -168,9 +168,28 @@ between two redraws that happen, so a due redraw that is skipped again and again
 | `presents busy` | Presents put off because the render thread had not finished the last frame. It stays at zero without `RenderThread`. See [RENDER_THREAD.md](RENDER_THREAD.md) |
 | `gpu voxel parts`, `gpu voxel direct`, `gpu voxel faces` | With `GpuVoxels=yes`, the voxel parts of the passes the GPU drew, those of them a blit shows, and the cube faces their draws submitted, counted only at a voxel scale above 1 and `GpuVoxelLayerDepth=Shared`. See [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) |
 | `logic over 20 ms`, `logic over 33 ms`, `logic over 50 ms` | Game frames whose `frame.logic` took longer than 20, 33 or 50 ms. A frame over 50 ms counts in all three |
+| `presents held` | Presents whose hand-over to the renderer (`present.gpu`) took longer than a quarter of the present interval, so the display held them. See [Presents faster than the display](#presents-faster-than-the-display) |
 
 The `ring cells` counter is taken only when the cell walk runs. Each radar-map ring cell the walk visits adds one
 counter increment while recording.
+
+## Presents faster than the display
+
+A present starts at most once per present interval, which is one display refresh (or one frame of `FrameRateLimit`), timed on the nanosecond clock (`VideoPresentPaceClass` in `videodirty.h`). Presents keep to that interval on the clock: one that comes late, because the frame that reached the deadline was still drawing, lets the next come up to half an interval early, so a draw loop paced at the display rate presents on every draw. Over any stretch longer than an interval, presents average at most one per interval.
+
+When the hand-over of a frame to the renderer (`present.gpu`) takes longer than a quarter of the interval, the display held the present back, and the next present waits a whole interval from the end of that one. `presents held` counts these. Without this, presents at exactly the display's nominal rate can settle into a state where the display holds every present: one run in six did so at 3840x2160.
+
+Before, the interval was whole milliseconds: 1000 / 240 gave 4 ms on a 240 Hz display, so uncapped frames could present up to 250 times a second. The presents then outran the display, `present.gputime` read the refresh period (4.13 ms), and every present waited in `present.gpu` (about 2 ms on average) for the display to free a buffer. Whether a run fell into that state depended on how short the frames were, so a cheaper frame could make the game slower; the classic command strip document did that ([Classic command strip document](#classic-command-strip-document)). The game frame rate in that state swung between runs and between one-second windows.
+
+`tests/autotest/classic-sidebar-perf.txt` at 3840x2160, uncapped, six alternating runs of each build, medians of the runs (game frames a second over the whole run, and the medians of the one-second windows):
+
+| Build | Game frames/s, whole run | Game frames/s, windows | Presents/s | `present.gpu` ms | `present.gputime` ms |
+|---|---|---|---|---|---|
+| Before the strip document, whole-millisecond interval | 415 (285 to 543) | 281 | 239 | 1.99 | 4.13 |
+| Strip document, whole-millisecond interval | 275 (256 to 388) | 247 | 239 | 2.45 | 4.14 |
+| Strip document, paced presents | 785 (736 to 826) | 733 | 238 | 0.15 | 2.2 |
+
+With paced presents `presents held` reads 0 to 2 a second in that script. With the game frame limit on, the presents a second and their gaps are the same as before (180 a second in the same script at 45 game frames a second).
 
 ## Benchmark
 
