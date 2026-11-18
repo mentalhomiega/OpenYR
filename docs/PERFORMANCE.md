@@ -652,7 +652,58 @@ Measured on ETOTAL at 3840x2160 with the settings above, from game frame 60 to 4
 
 The 2560x1440 rows are two runs each. Other games ran on the computer during some runs, and the runs of one setting spread by up to 2 ms. With the frame limit on, the game held 44 to 45 frames a second in all runs; the hidden test window does not wait for the display, so the drawn rate is not what a visible window shows. `present.gputime` did not fall. It read about the same before and after with the frame limit on and at 3840x2160, and rose from 3.3 to 5.0 ms in the unlimited runs at the 4500x2531 view; we have not found why.
 
-What is left, in the order of the time it would save: the object walk visits every object of the map each draw (3.5 ms with 2,900 objects); with `GpuVoxels=no`, about 1 ms of it renders voxel bodies that have no cached image; the voxel parts take about 0.5 ms of draw calls and 0.25 ms in `GpuVoxel_Submit`; reading the emissive mask still compares the whole view (0.7 ms) where the lit columns could narrow it; the pixel store of the blits (about 700 KB) is copied and sent again every pass (0.25 ms).
+What is left, in the order of the time it would save: recording the objects (3.5 ms), most of it the drawing of the objects in view ([The object walk](#the-object-walk-on-a-large-mental-omega-mission)); the voxel parts take about 0.5 ms of draw calls and 0.25 ms in `GpuVoxel_Submit`; reading the emissive mask still compares the whole view (0.7 ms) where the lit columns could narrow it; the pixel store of the blits (about 700 KB) is copied and sent again every pass (0.25 ms).
+
+## The object walk on a large Mental Omega mission
+
+Most of the time `Tactical::Draw_Objects` (`draw.objects`) takes on ETOTAL goes to drawing the objects in view; the objects out of view cost about 0.15 ms a draw. We measured this with the mission not revealed, from game frame 1,320 to 4,000 with no input, `GpuRender=yes` and `GpuVoxels=yes`, in a build with a processor-cycle timer around each step of each object and a sampling profiler that recorded the function and its callers about once a millisecond inside the walk. An object is in view when its centre is, in the edge band when only the band `Coord_To_Pixel` adds around the view takes it, and out of view otherwise. The counts are the same in every run.
+
+| Objects | 3840x2160 view: count | ms a draw | µs an object | 2560x1440 view: count | ms a draw |
+|---|---:|---:|---:|---:|---:|
+| Vehicles in view | 206 | 1.2 to 1.5 | 5.7 to 7.2 | 110 | 0.58 |
+| Animations in view | 298 | 0.77 to 0.98 | 2.6 to 3.3 | 175 | 0.42 |
+| Soldiers in view | 261 | 0.57 to 0.73 | 2.2 to 2.8 | 169 | 0.33 |
+| Building lights in view | 13 | 0.13 to 0.16 | 10 to 12 | | |
+| Structures in view (their extras; the body is drawn by the background pass) | 217 | 0.10 to 0.12 | 0.5 | | |
+| Everything in view | 1,009 | 2.7 to 3.5 | | 579 | 1.45 |
+| Everything in the edge band | 213 | 0.30 to 0.37 | 1.4 to 1.7 | 239 | 0.32 |
+| Everything out of view | 1,801 | 0.14 to 0.16 | 0.08 | 2,205 | 0.14 |
+| Selection marks, health bars and pips (`Draw_Post_Render`) | | 0.10 to 0.14 | | | 0.06 |
+| Walk, with the timers | 3,023 | 3.6 to 4.5 | | 3,023 | 2.2 |
+
+An object out of view costs the layer loop, for vehicles, soldiers and aircraft a fog look-up and a `Destination_Coord` call whose result is discarded, and one `Coord_To_Pixel`; animations and structures also enter their `Render`, which returns at its own view test. A spatial index over the layers would save at most that 0.15 ms, so we did not build one. The ground layer's sort is a single pass of the game logic each game frame, not part of the draw.
+
+Inside the walk at the 3840x2160 view, the profiler gave these shares:
+
+| What | Share of the walk |
+|---|---:|
+| Emissive mask: clearing the values under each shape row by row (`Emissive_RLE_Row` with its depth test, the `Bytes_Are_Zero` row test), and copying and clearing it under turret composites (`Emissive_Copy_Rect`, `Emissive_Fill_Rect`) | 21 to 22% |
+| Walking shapes for the GPU recorder (`Draw_Shape`, `RLE_Blit` set-up and row skips) | 19 to 21% |
+| Recording blits and voxel parts (`Atlas_Image`, the prepared voxel look-up, list growth) | 17 to 18% |
+| Screen position and depth of each object (`Coord_To_Pixel`, `Get_Z_Adjust`, `Get_Z_Fudge_Cliff`, `Get_Z_Fudge_Column`, cell heights), some of it the timers' own position test | about 20% |
+| Voxel draw matrices | 4% |
+| Fog and shroud look-ups | 1.4% |
+
+The emissive values under a drawn shape are mostly set: in a test build that cleared only the columns from a row's first value to its last, that span covered nearly the whole shape and the time did not change. One change leaves every pixel as it was:
+
+- **Emissive rows.** `Emissive_RLE_Row` indexes the mask, depth and depth-shape entries of a row directly when the row's depth entries do not run past the end of the depth buffer, instead of testing for that wrap at every pixel. A draw with strength zero skips the depth test where the value is already zero, since it would write zero over zero. The function's share of the walk fell from about 10.7% to 8.9%, about 0.08 ms a draw.
+
+With `GpuVoxels=no`, the `voxels` phase takes about 1.2 ms a draw at the 3840x2160 view. About 4 voxel bodies a draw are drawn without the cache, and all of them are of one Mental Omega vehicle type that sets `DisableVoxelCache=yes`, which gamemd honours too; every other body was found in the cache or added to it, with about 0.2 misses a draw.
+
+The change gave the same pictures as the build before it. We took window shots at the 3840x2160, 2560x1440 and 1920x1080 views and logged `drawdigest 2` on ETOTAL (from frame 1,400) and on the stock skirmish map XMP29U2 with three computer players, with `GpuRender` on and off, `GpuVoxels` on and off and the render thread on and off, twice with the build before the change and once with it. Two runs of the build before the change already differ, in the same 16 by 16 blocks every time: on ETOTAL in three blocks along the base of one structure at the 3840x2160 view (40 to 85 pixels, brightness steps of up to about 50), fewer at 2560x1440 and none at 1920x1080; on the skirmish in four to nine blocks around small objects in a town. Every block the changed build differs in is one of those blocks. With `GpuRender` on, the ETOTAL map digests matched draw for draw across all three runs, so there the run-to-run difference arises after the map is recorded; we have not found its cause. The game state hashes of the skirmish matched in all runs, while its map digests differ between any two runs from the second frame they log, in every mode, as do the software digests on ETOTAL in most draws. That fits a draw between two game frames placing moving objects part way by the clock; the window shots are drawn at the game frame itself. The GPU, emissive, upload, zoom, digest, camera-determinism and selection autotests gave the same logs before and after, except for counts that follow the number of draws (`uploadverify checks`, the frames `gpu-voxel-compare` samples), with no upload mismatch in either.
+
+ETOTAL at 3840x2160, three alternating runs of each build without the frame limit and one with it, with one to seven other games running on the computer (ms a draw, mean of the runs):
+
+| Map view, `GpuVoxels` | Draw avg before | after | p95 before | after | `draw.objects` before | after | Drawn a second before | after |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3840x2160, yes | 6.8 | 7.3 | 9.5 | 12.5 | 3.4 | 3.7 | 79 | 76 |
+| 3840x2160, no | 4.2 | 6.3 | 5.5 | 11.5 | 2.8 | 3.9 | 110 | 79 |
+| 2560x1440, yes | 4.4 | 3.9 | 7.2 | 5.8 | 2.4 | 2.1 | 100 | 107 |
+| 2560x1440, no | 2.1 | 3.0 | 3.1 | 4.1 | 1.4 | 1.9 | 142 | 115 |
+
+The runs of one setting spread by up to 4 ms a draw (3840x2160 without `GpuVoxels`: 4.2, 7.8 and 6.8 ms after the change), far more than the change, so these runs show the load on the computer rather than the change; the profiler share above is the measure of it. The quietest run of each setting gave 5.8 and 5.3 ms (3840x2160, `GpuVoxels=yes`, before and after), 4.0 and 4.2 ms (`GpuVoxels=no`), 3.3 and 3.1 ms and 2.1 and 1.8 ms at 2560x1440.
+
+What is left in the walk, in the order of the time it would save: the emissive mask under shapes (about 0.9 ms at the 3840x2160 view), which a GPU pass could clear itself instead of the processor clearing it pixel by pixel; under a turret composite that the GPU draws, the mask is copied from the scratch surface and then filled with the composite mark, so where the two rectangles match the copy (about 0.2 ms) does no lasting work; the screen position and depth of each object, worked out again every draw although most objects did not move; and the GPU recorder's atlas look-up per shape.
 
 ## Target scans
 
