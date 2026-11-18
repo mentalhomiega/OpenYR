@@ -10,7 +10,7 @@
 ; Trigger actions 46 and 47 are run directly by the autotest, as a mission trigger would run them.
 ; Expected: the log has no "present keyed" line. Before the video layer fix, two "present keyed" lines follow each of the
 ; overlaypresent steps at frames 40 and 70, and none follows the one at frame 115.
-; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/scripted-camera-zoom-present.txt -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nFrameRateLimit=0" -Filter "AUTOTEST|Exception"
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/scripted-camera-zoom-present.txt -Width 1920 -Height 1080 -Seconds 120 -Settings "[Options]`nDebugMode=yes`n[Video]`nFrameRateLimit=0" -Filter "AUTOTEST|Exception"
 1 glideclock
 3 reveal
 10 view 30 30

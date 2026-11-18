@@ -4,7 +4,7 @@
 ; Expected: the two pictures of a stage (light-N-asis.tga and light-N-full.tga) differ only by what one game frame of animation moves, under a thousand pixels
 ; here, because the second is taken one game frame after the first. A lit area that was not redrawn shows in the asis picture as a block of tens of thousands of
 ; pixels with the old lighting. Observed 2026-11-13: 171, 722, 956 and 402 differing pixels, against 164, 709, 862 and 402 when both pictures are drawn afresh.
-; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/light-source-redraw.txt -AIPlayers 0 -Width 1024 -Height 768 -Seconds 200 -Filter "windowshot|AUTOTEST own|quit|Exception"
+; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/light-source-redraw.txt -AIPlayers 0 -Width 1024 -Height 768 -Seconds 200 -Filter "windowshot|AUTOTEST own|quit|Exception" -Settings "[Options]`nDebugMode=yes"
 10 zoom 0.5
 30 command CenterBase
 35 reveal

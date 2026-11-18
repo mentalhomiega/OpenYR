@@ -14,11 +14,13 @@ related:
     id: ScreenCapture
 ---
 
-The mouse wheel over the map zooms the map view. Rolling forward zooms in and rolling back zooms out, by 0.1 for each notch. The zoom stays between 0.5 and 2.0, or between 0.75 and 2.0 in a multiplayer game. At 0.5 the view shows twice as much map in each direction, and at 2.0 the map is drawn twice its normal size. Notches that arrive together add up, and a notch past either limit does nothing.
+The mouse wheel over the map zooms the map view. Rolling forward zooms in and rolling back zooms out, by 0.1 for each notch. The zoom stays between 0.5 and 2.0, or between 0.75 and 2.0 in a multiplayer game, and a smaller range follows from the zoom-out limit below. At 0.5 the view shows twice as much map in each direction, and at 2.0 the map is drawn twice its normal size. Notches that arrive together add up, and a notch past either limit does nothing.
 
 Over the sidebar the wheel scrolls the sidebar, as before. Only the map's own area zooms: the sidebar, its tabs and the command bar keep their size.
 
 ## How far out the zoom goes
+
+The player's zoom never shows a map view larger than the original game shows at 2560x1440, which is 2560x1440 map pixels. [`ZoomOutView=4K`](/keys/zoomoutview/) raises that to 3840x2160, and nothing raises it further, in any game. The view is the game's frame divided by the zoom, so the limit is the frame's size over the view's size, whatever the interface scale. The limit is 0.75 at a frame of 1920x1080, 1.0 at 2560x1440 (0.667 with `4K`), and a 4K screen at `InterfaceScale=2` has a frame of 1920x1080, so it follows the first. A frame no larger than the limit, or a limit above 1, gives a zoom limit of 1, with no zoom out. When the game starts wider than the limit, as it does on a 4K screen at `InterfaceScale=2`, it starts at the limit. In the classic interface the view loses the sidebar's 168 pixels of width and the command bar's 32 of height, as the original's does. In multiplayer the older limit of 0.75 times the start zoom applies as well, and the larger of the two holds. With `DebugMode=yes` in a single-player game, the zoom out limit does not apply.
 
 On a small map the zoom out limit is higher. It is the zoom at which the map's visible area, the part the view scrolls over, fills the screen along one axis. At that zoom and further in, the view is no wider or taller than the visible area. The limit depends on the screen size.
 
@@ -40,7 +42,7 @@ The [`ScreenCapture`](/commands/screencapture/) command saves the zoomed map alo
 
 ## Scripted scenes
 
-A scripted scene zooms the map view to [`ScriptedCameraHeight`](/keys/scriptedcameraheight/) map pixels tall, 900 by default, so the view shows the same height of map on any screen. The width follows the screen's aspect ratio. The change is made at once on the next frame, without the glide the wheel uses. Near the edge of the map the view slides to the nearest place the edge allows, as the wheel zoom does.
+A scripted scene zooms the map view to [`ScriptedCameraHeight`](/keys/scriptedcameraheight/) map pixels tall, 900 by default, so the view shows the same height of map on any screen. The scene zoom is not held to the player's zoom-out limit, only to the zoom the game allows at all (0.5, or 0.75 in multiplayer) and the map's visible area. The width follows the screen's aspect ratio. The change is made at once on the next frame, without the glide the wheel uses. Near the edge of the map the view slides to the nearest place the edge allows, as the wheel zoom does.
 
 The scene zoom applies when a trigger action takes the input away (Lock input), moves the camera (Center Camera at Waypoint, Center (Jump) Camera at Waypoint, or Jump Camera Home), or starts the Chrono Screen Effect. A team mission that centers the viewpoint applies it as well.
 

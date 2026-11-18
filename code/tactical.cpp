@@ -3435,15 +3435,15 @@ void Tactical::Add_Buildings_To_Selectable(Rect rect)
 /// Adds an object to the list of clickable objects.
 /// Objects register themselves here as they render, which gives the click handler a cheap
 /// list of what is on screen and where. An object drawn well outside the tactical view is
-/// turned away, and so is any object once the list holds 500 entries, as gamemd's
-/// TacticalSelectables array does (0x6D9E5C).
+/// turned away, and so is any object once the list holds 500 entries at a zoom of 1, as gamemd's
+/// TacticalSelectables array does (0x6D9E5C); a view of more map holds more (View_Selectables_Limit).
 /// </summary>
 /// <param name="object">The object that has just been drawn.</param>
 /// <param name="point">The pixel, relative to the tactical view, it was drawn at.</param>
 /// <returns>bool; Was the object added to the list?</returns>
 bool Tactical::Add_To_Selectables(ObjectClass * object, Point2D point)
 {
-	if (SelectableObjects.size() >= 500) {
+	if ((int)SelectableObjects.size() >= View_Selectables_Limit()) {
 		return(false);
 	}
 	if (point.X >= -32 && point.X <= TacticalRect.Width + 32 && point.Y >= -32 && point.Y <= TacticalRect.Height + 32) {
@@ -3678,6 +3678,7 @@ ObjectClass * Tactical::Get_Selectable_Object(Point2D const & point)
 {
 	ObjectClass * best = NULL;
 	unsigned int bestdist = -1;
+	int const pick_limit = View_Pick_Distance_Limit();
 
 	Point2D pixel;
 	pixel.X = point.X + TacPixelX;
@@ -3706,7 +3707,7 @@ ObjectClass * Tactical::Get_Selectable_Object(Point2D const & point)
 		if (obj != NULL && Selectable_Is_Pickable(obj)) {
 			Point2D pos = sel.Position - pixel;
 			unsigned int dist = int(double(pos.X * pos.X) + double(pos.Y * pos.Y) * 0.5);
-			if (dist < bestdist && dist < 200) {
+			if (dist < bestdist && dist < (unsigned int)pick_limit) {
 				bestdist = dist;
 				best = obj;
 			}

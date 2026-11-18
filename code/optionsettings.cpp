@@ -44,6 +44,12 @@ constexpr NameEntry PerfOverlay_Names[] = {
 };
 
 
+constexpr NameEntry ZoomOutView_Names[] = {
+	{ "Original", ZOOM_OUT_VIEW_ORIGINAL },
+	{ "4K", ZOOM_OUT_VIEW_4K },
+};
+
+
 constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
@@ -212,6 +218,13 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = GRAPHICS, .Group = "Diagnostics", .Label = "Performance overlay",
 		.Tip = "Shows the frame rates, a graph of recent frame times and where the time goes, over the top left of the map. The PerfOverlay key (Ctrl+Shift+P) also cycles it through Basic, Detailed and off.",
 		.SwitchOn = PERF_OVERLAY_BASIC,
+	},
+	{
+		.Section = "Video", .Key = "ZoomOutView",
+		.Number = &OptionsClass::ZoomOutView, .Default = ZOOM_OUT_VIEW_ORIGINAL, .Names = ZoomOutView_Names,
+		.Page = GRAPHICS, .Group = "Camera", .Label = "Zoom out to a 4K view",
+		.Tip = "Lets the mouse wheel zoom out until the view shows what the original game shows at 3840x2160, the most the game allows. Off stops at what it shows at 2560x1440. A screen smaller than the view has no more range than before.",
+		.SwitchOn = ZOOM_OUT_VIEW_4K,
 	},
 	{
 		// No row of its own: the game controls dialog shows it beside the Game Speed slider.

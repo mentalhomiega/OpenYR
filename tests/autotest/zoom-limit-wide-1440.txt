@@ -1,0 +1,26 @@
+; Zoom-out limit at 2560x1440: fourteen mouse-wheel steps out from the start zoom on XMP04T8, which is big enough that the map never ends the range.
+; ZoomOutView=4K: the zoom stops at 0.67 and the view at 3840x2160.
+; zoomlevel and scriptzoom log the zoom and the map pixels the view shows before the steps and after them.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/zoom-limit-wide-1440.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 2560 -Height 1440 -Seconds 120 -Settings "[Video]`nGpuRender=no`nZoomOutView=4K" -Filter "AUTOTEST (zoomlevel|scriptzoom)|Exception"
+1 glideclock
+1 view 130 110
+2 reveal
+20 zoomlevel
+20 scriptzoom
+30 wheel -0.1
+50 wheel -0.1
+70 wheel -0.1
+90 wheel -0.1
+110 wheel -0.1
+130 wheel -0.1
+150 wheel -0.1
+170 wheel -0.1
+190 wheel -0.1
+210 wheel -0.1
+230 wheel -0.1
+250 wheel -0.1
+270 wheel -0.1
+290 wheel -0.1
+310 zoomlevel
+310 scriptzoom
+315 quit

@@ -329,7 +329,7 @@ that picture the glide shows. The GPU pass and the presenter's map texture keep 
 view through a glide.
 
 The map's two surfaces and its depth and alpha buffers are made once, at the first zoom change that needs
-them, for the largest map view any zoom allows on that screen. Each later change of the zoom uses part of
+them, for the largest map view the player's zoom allows on that screen. By default that view is 2560x1440 map pixels, since `ZoomOutView` ([manual](../manual/content/keys/zoomoutview--client-settings.md)) limits the zoom out to what the original game shows at 2560x1440; `ZoomOutView=4K` makes it 3840x2160, and Debug mode in a single-player game lifts the limit to the range of 0.5. A scripted scene that zooms past the limit makes the surfaces again at its size. Each later change of the zoom uses part of
 them: the tile layer, the depth buffer and the alpha buffer keep their contents where they are in memory,
 and only the place where the view starts moves, as a scroll moves it. The part of the picture both views
 show, with its emissive and shadow planes, is therefore neither copied nor sent to the GPU again; while the
@@ -348,6 +348,15 @@ or `WaterRipples` need them, adds one byte for each pixel of its surface's size.
 |---|---|---|---|---|
 | 1920x1080, XMP22S8 | 3840x2160 | 50 MB | 33 MB | 83 MB |
 | 3840x2160, XMP04T8 | 7546x4245 | 199 MB, made for 7680x4320 | 128 MB | 327 MB |
+
+These rows are the sizes at the furthest zoom before the zoom-out limit, which is what `DebugMode=yes` still gives. With the limit, the four buffers the first zoom change makes take these amounts (the `Map view` line of the log):
+
+| Screen | Furthest zoom | Largest view | Buffers made | Before the limit |
+|---|---|---|---|---|
+| 1920x1080 | 0.75 | 2560x1440 | 37 MB | 83 MB |
+| 2560x1440 | 1.0 | 2560x1440 | none | 147 MB |
+| 3840x2160, scale 1 | none | 3840x2160 | none | 320 MB |
+| 3840x2160, scale 2 (automatic) | 0.75 | 2560x1440 | 37 MB | 320 MB |
 
 The tile layer takes two thirds of the map surfaces' share, because its memory holds twice its largest
 picture for scrolling ([GPU_MAP.md](GPU_MAP.md#uploads)). At 3840x2160 the map surfaces were made at the

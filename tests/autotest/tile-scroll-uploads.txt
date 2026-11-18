@@ -3,7 +3,7 @@
 ; The scrolls cover single rows and columns, diagonals, a jump farther than the view is wide, and enough rows up
 ; and down that the tile layer is moved back to the middle of its memory several times.
 ; Expected: no UPLOAD_CHECK DIFFERENCE line, then "UPLOAD_CHECK differences 0, uploads of named rectangles yes" and the quit line.
-; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/tile-scroll-uploads.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nGpuRender=yes" -Filter "UPLOAD_CHECK|Exception|: quit" -Uncapped -StopAfterSteps
+; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/tile-scroll-uploads.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1920 -Height 1080 -Seconds 120 -Settings "[Options]`nDebugMode=yes`n[Video]`nGpuRender=yes" -Filter "UPLOAD_CHECK|Exception|: quit" -Uncapped -StopAfterSteps
 1 view 132 111
 2 reveal
 4 grantunit MTNK 128 108

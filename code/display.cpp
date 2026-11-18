@@ -400,6 +400,9 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 	// The map view keeps its corner on screen; zooming out makes it larger than its screen area.
 	ScreenTacticalRect = dimensions;
 	TacticalRect = dimensions;
+	if (!zoom_only) {
+		Hold_View_Zoom_To_Limit();
+	}
 	if (ViewZoom != 1.0) {
 		TacticalRect.Width = int(dimensions.Width / ViewZoom);
 		TacticalRect.Height = int(dimensions.Height / ViewZoom);

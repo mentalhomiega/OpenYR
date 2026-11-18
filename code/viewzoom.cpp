@@ -27,12 +27,14 @@
 #include "globals.h"
 #include "goptions.h"
 #include "gscreen.h"
+#include "hud.h"
 #include "layerfade.h"
 #include "map.h"
 #include "mmsys.h"
 #include "monotonic.h"
 #include "rules.h"
 #include "session.h"
+#include "sidebar.h"
 #include "shadowplane.h"
 #include "tactical.h"
 #include "video.h"
@@ -82,6 +84,10 @@ static double _PlayerZoom = 1.0;
 static bool _Drawing = false;
 static bool _ZoomHeld = false;
 static double _HeldZoom = 1.0;
+static bool _HeldScene = false;
+
+// Whether the zoom now was set by a scripted scene, which the player's zoom-out limit does not hold to.
+static bool _SceneZoom = false;
 
 
 static unsigned int Glide_Clock(void)
@@ -400,9 +406,40 @@ static void Shown_Middle(double & middlex, double & middley)
 }
 
 
+int View_Pick_Distance_Limit(void)
+{
+	double const reach = VIEW_PICK_REACH / std::min(DisplayZoom, ViewZoom);
+	return(std::max(200, int(reach * reach)));
+}
+
+
+int View_Selectables_Limit(void)
+{
+	double const screen_area = double(ScreenTacticalRect.Width) * ScreenTacticalRect.Height;
+	double const view_area = double(TacticalRect.Width) * TacticalRect.Height;
+	return(500 * std::max(1, int(std::ceil(view_area / std::max(screen_area, 1.0) - 0.001))));
+}
+
+
 double View_Zoom_Native(void)
 {
 	return(1.0 / InterfaceScale);
+}
+
+
+/// <summary>
+/// The most map the player's zoom shows, in map pixels: what the original game shows at 2560x1440, or at 3840x2160 with
+/// the ZoomOutView setting at 4K, which is the most any setting allows. The classic layout takes the sidebar column and
+/// the command strip off, as the original does.
+/// </summary>
+static Point2D Zoom_Out_View_Limit(void)
+{
+	bool const wide = Options.ZoomOutView == ZOOM_OUT_VIEW_4K;
+	Point2D limit(wide ? 3840 : 2560, wide ? 2160 : 1440);
+	if (!Modern_Interface()) {
+		limit -= Point2D(SidebarClass::SIDE_WIDTH, SidebarClass::COMMAND_BAR_HEIGHT);
+	}
+	return(limit);
 }
 
 
@@ -411,17 +448,33 @@ double View_Zoom_Native(void)
 /// area is too small for the screen at that limit. It never exceeds the native zoom, so on a map
 /// smaller than the screen at native zoom the view is not zoomed in past native to fit.
 /// </summary>
-double View_Zoom_Min(void)
+static double Zoom_Min(bool player_limit)
 {
 	double const limit = ((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER) * View_Zoom_Native();
+
+	// The player's zoom never shows more than the view limit, in any game; Debug mode, which only a single-player game has, lifts it.
+	double limit_zoom = limit;
+	if (player_limit && !Debug_Mode_Active() && ScreenTacticalRect.Width > 0 && ScreenTacticalRect.Height > 0) {
+		Point2D const view = Zoom_Out_View_Limit();
+		// The view is the frame's size over the zoom in map pixels, whatever the interface scale. A frame no larger than
+		// the limit has no zoom out (the zoom is 1 or more); a larger one is held to the limit, even where the game starts out wider.
+		double const wanted = std::max(ScreenTacticalRect.Width / double(view.X), ScreenTacticalRect.Height / double(view.Y));
+		limit_zoom = std::max(limit, std::min(wanted, 1.0));
+	}
 
 	// The view is ScreenTacticalRect / zoom map pixels, so it fits the area once the zoom is at least the screen size over the area size.
 	Rect const area = Tactical_Visible_Map_Area();
 	if (area.Width <= 0 || area.Height <= 0) {
-		return(limit);
+		return(limit_zoom);
 	}
 	double const fit = std::max(ScreenTacticalRect.Width / double(area.Width), ScreenTacticalRect.Height / double(area.Height));
-	return(std::min(std::max(limit, fit), View_Zoom_Native()));
+	return(std::max(limit_zoom, std::min(fit, View_Zoom_Native())));
+}
+
+
+double View_Zoom_Min(void)
+{
+	return(Zoom_Min(true));
 }
 
 
@@ -441,16 +494,29 @@ double View_Zoom_Max(void)
 
 void Reset_View_Zoom(void)
 {
-	double const native = View_Zoom_Native();
-	ViewZoom = native;
-	DisplayZoom = native;
-	_TargetZoom = native;
-	_GlideFrom = native;
+	double const start = View_Zoom_Native();
+	ViewZoom = start;
+	DisplayZoom = start;
+	_TargetZoom = start;
+	_GlideFrom = start;
 	_PendingZoomStep = 0.0;
 	_Gliding = false;
 	_GlideProgress = 1.0;
 	_ScriptedZoomSaved = false;
 	_ZoomHeld = false;
+	_SceneZoom = false;
+}
+
+
+void Hold_View_Zoom_To_Limit(void)
+{
+	double const limit = View_Zoom_Min();
+	if (!_Gliding && !_SceneZoom && ViewZoom < limit - 0.001) {
+		ViewZoom = limit;
+		DisplayZoom = limit;
+		_TargetZoom = limit;
+		_GlideFrom = limit;
+	}
 }
 
 
@@ -467,14 +533,16 @@ void Set_View_Zoom_Drawing(bool drawing)
 /// as when a chronoshift effect ends, waits for the next Apply_Pending_View_Zoom: changing it would
 /// free the map surfaces under the draw.
 /// </summary>
-bool Set_View_Zoom(double zoom)
+bool Set_View_Zoom(double zoom, bool scene)
 {
 	if (_Drawing) {
 		_ZoomHeld = true;
 		_HeldZoom = zoom;
+		_HeldScene = scene;
 		return(true);
 	}
-	zoom = std::clamp(zoom * View_Zoom_Native(), View_Zoom_Min(), View_Zoom_Max());
+	_SceneZoom = scene;
+	zoom = std::clamp(zoom * View_Zoom_Native(), Zoom_Min(!scene), View_Zoom_Max());
 	if (TacticalMap == NULL || (!_Gliding && std::abs(zoom - ViewZoom) < 0.001)) {
 		return(false);
 	}
@@ -523,17 +591,18 @@ void Apply_Pending_View_Zoom(void)
 
 	if (_ZoomHeld) {
 		_ZoomHeld = false;
-		Set_View_Zoom(_HeldZoom);
+		Set_View_Zoom(_HeldZoom, _HeldScene);
 	}
 
 	// A zoom kept from an earlier skirmish, or one the map's visible area no longer allows, is brought in to the limit.
-	if (!_Gliding && _TargetZoom < View_Zoom_Min() - 0.001) {
+	if (!_Gliding && !_SceneZoom && _TargetZoom < View_Zoom_Min() - 0.001) {
 		Set_View_Zoom(View_Zoom_Min() / View_Zoom_Native());
 	}
 
 	if (_PendingZoomStep != 0.0) {
 		double const target = std::clamp(_TargetZoom + _PendingZoomStep, View_Zoom_Min(), View_Zoom_Max());
 		_PendingZoomStep = 0.0;
+		_SceneZoom = false;
 		if (std::abs(target - _TargetZoom) >= 0.001) {
 			Update_Display_Zoom();
 			Rect const shown = Shown_View_Area();
@@ -582,10 +651,10 @@ void Apply_Pending_View_Zoom(void)
 
 // Takes a zoom in ViewZoom units and sets it at once rather than gliding. A glide would end by putting
 // the view back where it began, which would undo a camera scroll still under way.
-static void SetScriptedZoomAtOnce(double zoom)
+static void SetScriptedZoomAtOnce(double zoom, bool scene)
 {
 	_PendingZoomStep = 0.0;
-	Set_View_Zoom(zoom / View_Zoom_Native());
+	Set_View_Zoom(zoom / View_Zoom_Native(), scene);
 }
 
 
@@ -603,7 +672,7 @@ void Scripted_View_Zoom(bool input_locked)
 	// tall. The zoom that shows the scene's height in map pixels therefore takes no View_Zoom_Native factor,
 	// while Set_View_Zoom takes its argument in native units.
 	double const scene = ScreenTacticalRect.Height / double(Rule->ScriptedCameraHeight);
-	SetScriptedZoomAtOnce(std::clamp(scene, View_Zoom_Min(), View_Zoom_Max()));
+	SetScriptedZoomAtOnce(std::clamp(scene, Zoom_Min(false), View_Zoom_Max()), true);
 }
 
 
@@ -613,7 +682,7 @@ void Restore_Player_View_Zoom(void)
 		return;
 	}
 	_ScriptedZoomSaved = false;
-	SetScriptedZoomAtOnce(_PlayerZoom);
+	SetScriptedZoomAtOnce(_PlayerZoom, false);
 }
 
 

@@ -3855,7 +3855,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
-			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking", "stock-art-fixes", "perf-overlay", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking", "stock-art-fixes", "perf-overlay", "zoom-out-view", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;

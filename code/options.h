@@ -66,6 +66,13 @@ enum PerfOverlayLevel {
 	PERF_OVERLAY_LEVEL_COUNT
 };
 
+// How far out the player's own zoom may go (docs/SETTINGS.md): the most map a view shows, in map pixels, which is what
+// the original game shows at that screen size. Original is 2560x1440 and 4K is 3840x2160, the most any setting allows.
+enum ZoomOutViewLimit {
+	ZOOM_OUT_VIEW_ORIGINAL,
+	ZOOM_OUT_VIEW_4K
+};
+
 // How GpuVoxels orders the layers of one object: Shared by their depth, Ordered as the software draws them, each
 // over the ones before it (docs/GPU_DIRECT_VOXELS.md).
 enum GpuVoxelLayerDepthMode {
@@ -393,6 +400,9 @@ class OptionsClass {
 
 		// A PerfOverlayLevel: how much the performance overlay over the map view shows.
 		int PerfOverlay;
+
+		// A ZoomOutViewLimit: the most map the player's zoom-out shows.
+		int ZoomOutView;
 
 		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
 		int Weather;
