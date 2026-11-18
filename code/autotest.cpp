@@ -4083,6 +4083,23 @@ static void Animpalette_Step(StepType const & step)
 }
 
 
+// buildingpalette <TypeID> x y: logs the building of that type on that cell with its art Palette key, the palette file that key names in this theater,
+// and whether the building draws through that palette's converter, through the terrain palette, or through its house colour scheme.
+static void Buildingpalette_Step(StepType const & step)
+{
+	BuildingClass const * building = Map[Cell(step.X, step.Y)].Cell_Building();
+	if (building == NULL || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) {
+		DebugString("AUTOTEST   buildingpalette %s %d,%d no building\n", step.Argument.c_str(), step.X, step.Y);
+		return;
+	}
+	BuildingTypeClass const * type = building->Class;
+	ConvertClass const * custom = building->Palette_Converter();
+	DebugString("AUTOTEST   buildingpalette %s %d,%d palette [%s] file [%s] draws %s\n", type->Name(), step.X, step.Y, type->PaletteName.c_str(),
+		type->PaletteName.empty() ? "" : Palette_File_Name(type->PaletteName).c_str(),
+		type->IsTerrainPalette ? "terrain" : (custom != NULL ? "palette" : "house"));
+}
+
+
 // commandbutton <Name>: a left click at the centre of the command bar's button with that ButtonList name,
 // or a line saying the bar does not show it.
 static void Commandbutton_Step(StepType const & step)
@@ -8016,6 +8033,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"beams", Beams_Step},
 		{"animemissive", Animemissive_Step},
 		{"animpalette", Animpalette_Step},
+		{"buildingpalette", Buildingpalette_Step},
 		{"windowdouble", [](StepType const & step) {Window_Click(step, 2);}},
 		{"windowpress", [](StepType const & step) {Window_Press(step, true);}},
 		{"windowrelease", [](StepType const & step) {Window_Press(step, false);}},

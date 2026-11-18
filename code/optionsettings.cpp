@@ -48,6 +48,7 @@ constexpr char const * GRAPHICS = "graphics";
 constexpr char const * GPU_DRAWING = "GPU drawing";
 constexpr char const * GPU_VOXELS = "GPU voxels";
 constexpr char const * VOXEL_DRAWING = "Voxel drawing";
+constexpr char const * STOCK_ART = "Stock art";
 constexpr char const * PERFORMANCE = "performance";
 constexpr char const * RENDERING = "Rendering";
 constexpr char const * PATH_SEARCHES = "Path searches";
@@ -159,6 +160,13 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Flag = &OptionsClass::ShadowStacking, .Default = true,
 		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Stacked shadows",
 		.Tip = "Overlapping vehicle and aircraft shadows darken the ground again under each, as in the original game. Off darkens it once, so a crowd of aircraft leaves a grey patch instead of a black one.",
+	},
+	{
+		.Section = "Video", .Key = "StockArtFixes",
+		.Flag = &OptionsClass::StockArtFixes, .Default = true,
+		.Page = GRAPHICS, .Group = STOCK_ART, .Label = "Fix stock art",
+		.Tip = "Draws stock art that the original game draws wrongly the way it was meant to look, such as the grey apartment blocks, which the original shows as speckled noise. Off draws it as the original game does.",
+		.NeedsRestart = true,
 	},
 	{
 		.Section = "Video", .Key = "Weather",

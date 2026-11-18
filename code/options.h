@@ -379,6 +379,9 @@ class OptionsClass {
 		// Off makes overlapping voxel shadows darken the ground once; on darkens it again under each, as the original game does (docs/GPU_VOXELS.md).
 		bool ShadowStacking;
 
+		// Draws stock art that the original data draws wrongly the way it was meant to look (stockartfixes.h). Read when the rules are read.
+		bool StockArtFixes;
+
 		// Runs the graphics device on its own thread; read at startup (docs/RENDER_THREAD.md).
 		bool RenderThread;
 		bool FastestGpu;

@@ -354,6 +354,7 @@ SystemCursor=no
 | [`ScaleMode`](../manual/content/keys/scalemode.md) | `PixelArt` | How the picture is filtered when it is scaled into the window. | OpenTS |
 | [`ShowFPS`](../manual/content/keys/showfps--client-settings.md) | `no` | `ShowFPS=yes` draws the rendered and game frame rates in the top-left corner of the game view. | OpenYR |
 | [`ShowFrameGraph`](../manual/content/keys/showframegraph--client-settings.md) | `no` | `ShowFrameGraph=yes` draws a frame-time graph under the `ShowFPS` counts. | OpenYR |
+| [`StockArtFixes`](../manual/content/keys/stockartfixes--client-settings.md) | `yes` | `StockArtFixes=yes` fills in art keys that the stock art file leaves out or comments out, so that stock art the original game draws wrongly looks as it was made to. | OpenYR |
 | [`SystemCursor`](../manual/content/keys/systemcursor--client-settings.md) | `yes` | `SystemCursor=yes` shows the Windows mouse pointer wherever the game would show its green arrow: over its menus and dialogs, and wherever no battlefield pointer is up. | OpenTS |
 | [`VSync`](../manual/content/keys/vsync.md) | `yes` | Whether the renderer waits for the display's refresh before showing a finished frame. | OpenTS |
 | [`WindowHeight`](../manual/content/keys/windowheight.md) | `-1` | The height of the drawable area of the game window, in pixels. | OpenTS |
