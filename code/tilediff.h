@@ -24,6 +24,9 @@ bool Bytes_Equal(void const * a, void const * b, std::size_t count);
 // Whether count bytes at values are all zero, tested 64 bytes at a time where the processor allows.
 bool Bytes_Are_Zero(void const * values, std::size_t count);
 
+// Whether count bytes at values all hold value, tested 64 bytes at a time where the processor allows.
+bool Bytes_Are_All(void const * values, std::size_t count, std::uint8_t value);
+
 
 struct TileRect
 {
