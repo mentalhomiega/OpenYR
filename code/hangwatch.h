@@ -51,8 +51,16 @@ using HangWatchDialogScope = HangWatchCounterScope<HangWatchDialogs>;
 
 
 // Lets a scenario load stall for longer before it is reported, since a load reads the whole
-// scenario without pumping messages.
-using HangWatchLoadScope = HangWatchCounterScope<HangWatchLoads>;
+// scenario without pumping messages. The wait for the next beat starts again when the load ends.
+class HangWatchLoadScope
+{
+	public:
+		HangWatchLoadScope(void) { HangWatchLoads.fetch_add(1, std::memory_order_relaxed); }
+		// The beat comes first, so the end of a long load is a sign of life before the limit falls back to the normal one.
+		~HangWatchLoadScope(void) { Hang_Watchdog_Beat(); HangWatchLoads.fetch_sub(1, std::memory_order_relaxed); }
+		HangWatchLoadScope(HangWatchLoadScope const &) = delete;
+		HangWatchLoadScope & operator=(HangWatchLoadScope const &) = delete;
+};
 
 
 // Keeps the calling thread busy without pumping messages, so the watchdog has a stall to report.

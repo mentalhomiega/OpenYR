@@ -303,6 +303,12 @@ class Tactical : public AbstractClass
 
 	public:
 		/*
+		 * The cells whose tiles the area scan of Draw_Tiles has drawn since the game started. The
+		 * tilecells autotest step logs it, so a change in how much of the view a draw covers shows in a log.
+		 */
+		static int TileCellsDrawn;
+
+		/*
 		 * This is the caption text drawn across the middle of the tactical view. It is empty
 		 * whenever there is no caption to show, which is how the message is taken down again.
 		 * The scenario won and scenario lost announcements are put up through it. The text is

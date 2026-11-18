@@ -126,6 +126,7 @@ std::vector<Tactical::Selectable> Tactical::SelectableObjects;
 
 
 DynamicVectorClass<DirtyAreaStruct> Tactical::DirtyAreas;
+int Tactical::TileCellsDrawn = 0;
 
 DynamicVectorClass<ShadowControlClass *> Tactical::ShadowControls;
 
@@ -2641,6 +2642,7 @@ void Tactical::Draw_Tiles(Rect const & area, Rect const & cliprect)
 				Coord_To_Pixel(coord, pixel);
 				pixel.X += ISO_TILE_PIXEL_W / -2;
 				if (render.Is_Valid() && inter.Is_Valid()) {
+					++TileCellsDrawn;
 					cellptr->Draw_It(pixel, cliprect, 0);
 				}
 			}
