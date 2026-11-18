@@ -1,5 +1,5 @@
-# The state is fed SDL key events built by hand, so no window is needed; Windows' own key
-# state is set with SetKeyboardState.
+# The state is fed SDL key events built by hand and the test's own list of the keys Windows
+# holds, so it needs no window and no keyboard.
 
 opents_add_test(SDLInputContract
     NAME sdlinputcontract
