@@ -3410,7 +3410,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		sync(weather);
 		Drive(presenter, "ok");
 		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 1011111000000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 10111110000000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
