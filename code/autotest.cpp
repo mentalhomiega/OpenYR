@@ -4112,6 +4112,44 @@ static void Window_Press(StepType const & step, bool press)
 }
 
 
+// The window pixel of the centre of a cell under the current view.
+static Point2D Cell_Window_Pixel(Cell const & cell)
+{
+	Coord const centre = Map[cell].Center_Coord();
+	Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
+	return(View_To_Screen_Point(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY)));
+}
+
+
+// windowcell <click|press|move|release> x y [dx dy]: windowclick, windowpress, windowmove or windowrelease at the window
+// pixel of the centre of that cell under the current view, moved by dx dy window pixels. In a window larger than the frame
+// the window pixel is the one the frame pixel covers. The pixel is read when the step runs,
+// so a script follows the cell through any zoom or scroll.
+static void Windowcell_Step(StepType const & step)
+{
+	std::vector<std::string> const & words = step.Words;
+	if (words.size() < 5) {
+		DebugString("AUTOTEST   windowcell needs an action and x y\n");
+		return;
+	}
+	auto const number = [&](std::size_t index) {return(index < words.size() ? std::atoi(words[index].c_str()) : 0);};
+	Point2D pixel = Cell_Window_Pixel(Cell(number(3), number(4)));
+	Game_Point_To_Window(pixel);
+	pixel += Point2D(number(5), number(6));
+	StepType at = step;
+	at.Argument = std::to_string(pixel.X);
+	at.X = pixel.Y;
+	DebugString("AUTOTEST   windowcell %s %d,%d at window %d,%d\n", words[2].c_str(), number(3), number(4), pixel.X, pixel.Y);
+	if (words[2] == "click") {
+		Window_Click(at, 1);
+	} else if (words[2] == "press" || words[2] == "release") {
+		Window_Press(at, words[2] == "press");
+	} else {
+		Windowmove_Step(at);
+	}
+}
+
+
 // xbutton <1|2>: a press and release of a side button at the pointer, given to the window the way the mouse gives it.
 static void Xbutton_Step(StepType const & step)
 {
@@ -5893,9 +5931,7 @@ static void Helptext_Step(StepType const & step)
 // cellpixel x y: the window pixel of the centre of that cell under the current view, for windowclick.
 static void Cellpixel_Step(StepType const & step)
 {
-	Coord const centre = Map[step.Argument_Cell()].Center_Coord();
-	Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
-	Point2D const window = View_To_Screen_Point(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+	Point2D const window = Cell_Window_Pixel(step.Argument_Cell());
 	DebugString("AUTOTEST   cellpixel %d,%d at window %d,%d\n", step.Argument_Int(), step.X, window.X, window.Y);
 }
 
@@ -5956,9 +5992,7 @@ static void Settile_Step(StepType const & step)
 // hoverat x y: moves the pointer to the centre pixel of that cell, as windowmove does, so the object there hovers from the next frame.
 static void Hoverat_Step(StepType const & step)
 {
-	Coord const centre = Map[step.Argument_Cell()].Center_Coord();
-	Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
-	Point2D const window = View_To_Screen_Point(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+	Point2D const window = Cell_Window_Pixel(step.Argument_Cell());
 	Move_Pointer(window.X, window.Y);
 	DebugString("AUTOTEST   hoverat %d,%d pointer %d,%d\n", step.Argument_Int(), step.X, window.X, window.Y);
 }
@@ -7370,6 +7404,14 @@ static void Scriptedzoom_Step(StepType const & step)
 }
 
 
+// sceneheight <map pixels>: sets the rules' ScriptedCameraHeight, the height of map a scripted scene shows.
+static void Sceneheight_Step(StepType const & step)
+{
+	Rule->ScriptedCameraHeight = step.Argument_Int();
+	DebugString("AUTOTEST sceneheight %d\n", Rule->ScriptedCameraHeight);
+}
+
+
 // defencerange <0|1>: turns the Show defence range option off or on, as the options screen does.
 static void Defencerange_Step(StepType const & step)
 {
@@ -8019,6 +8061,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"windowdouble", [](StepType const & step) {Window_Click(step, 2);}},
 		{"windowpress", [](StepType const & step) {Window_Press(step, true);}},
 		{"windowrelease", [](StepType const & step) {Window_Press(step, false);}},
+		{"windowcell", Windowcell_Step},
 		{"xbutton", Xbutton_Step},
 		{"mapclick", Mapclick_Step},
 		{"cell", Cell_Step},
@@ -8219,6 +8262,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"glideclock", Glideclock_Step},
 		{"overlaypresent", Overlay_Present_Step},
 		{"scriptedzoom", Scriptedzoom_Step},
+		{"sceneheight", Sceneheight_Step},
 		{"defencerange", Defencerange_Step},
 		{"scriptzoom", Scriptzoom_Step},
 		{"statedump", Statedump_Step},

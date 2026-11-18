@@ -257,6 +257,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `placement` | writes the object pending placement, the cell its cursor is on, how many cells of its footprint are marked, and whether the pointer is over the tactical view and over the map |
 | `windowpress x y` | moves the pointer to that window pixel and presses the left button there, as the start of a drag does |
 | `windowrelease x y` | moves the pointer to that window pixel and releases the left button there, as the end of a drag does |
+| `windowcell <click\|press\|move\|release> x y [dx dy]` | `windowclick`, `windowpress`, `windowmove` or `windowrelease` at the window pixel of the centre of that cell under the current view, moved by dx dy window pixels. The pixel is read when the step runs, so a script follows the cell through a zoom or a scroll, and in a window larger than the frame it is the pixel the frame pixel covers |
 | `face <dir256> x y` | turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north) |
 | `turretface <dir256> x y` | turns only the turret of the player's objects on that cell to the 256-step facing |
 | `voxelshade <type>` | writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight |
@@ -353,6 +354,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `raise x y width height level` | sets the ground height of that block of cells to the level, so a test can put a cliff under a building. Cells off the map are skipped, and the rest are not redrawn or re-zoned |
 | `repairmission <TypeID>` | puts the player's foot objects of that type on the repair mission, so the depot search of `UnitClass::Do_MISSION_REPAIR` runs |
 | `scriptedzoom <0\|1>` | Turns the scripted scene zoom option off or on, and writes the setting |
+| `sceneheight <map pixels>` | sets the rules' `ScriptedCameraHeight`, the height of map a scripted scene shows, for the rest of the run |
 | `scriptzoom` | writes the game frame, the zoom drawn and the zoom shown, the map pixels the view shows, its centre, whether a scene holds the player's zoom, and the input lock |
 | `selected` | writes how many objects are selected and their types |
 | `sensors` | writes each vehicle, soldier or aircraft with `SensorsSight` coverage, with its cell, the cell and radius it last laid coverage for, and whether its own cell counts as sensed for its owner, then the number laying coverage and the cells sensed for the player |
