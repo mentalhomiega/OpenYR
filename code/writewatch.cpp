@@ -22,6 +22,7 @@
 // written in two takes in a row is therefore left unreset and reported as written by every take until the next
 // full reset, so a take can report a page that was not written but never misses one.
 struct WatchState {
+	unsigned Serial = 0;
 	// Pages that are no longer reset.
 	std::vector<unsigned char> Sticky;
 	// Pages reported and reset by the previous take.
@@ -31,6 +32,7 @@ struct WatchState {
 
 static std::mutex Watch_Lock;
 static std::unordered_map<void const *, WatchState> Watched_Blocks;
+static unsigned Watch_Serial = 0;
 
 
 void * WriteWatch_Alloc(std::size_t size)
@@ -39,7 +41,7 @@ void * WriteWatch_Alloc(std::size_t size)
 	void * memory = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT | MEM_WRITE_WATCH, PAGE_READWRITE);
 	if (memory != NULL) {
 		std::lock_guard<std::mutex> guard(Watch_Lock);
-		Watched_Blocks[memory];
+		Watched_Blocks[memory].Serial = ++Watch_Serial;
 		return(memory);
 	}
 #endif
@@ -62,6 +64,14 @@ void WriteWatch_Free(void * memory)
 	}
 #endif
 	delete [] (char *)memory;
+}
+
+
+unsigned WriteWatch_Serial(void const * memory)
+{
+	std::lock_guard<std::mutex> guard(Watch_Lock);
+	auto const found = Watched_Blocks.find(memory);
+	return(found != Watched_Blocks.end() ? found->second.Serial : 0);
 }
 
 

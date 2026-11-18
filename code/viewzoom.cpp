@@ -27,6 +27,7 @@
 #include "globals.h"
 #include "gpumap.h"
 #include "goptions.h"
+#include "gpudraw.h"
 #include "gscreen.h"
 #include "hud.h"
 #include "layerfade.h"
@@ -365,7 +366,6 @@ static bool Take_Spare_Map_Surfaces(int width, int height)
 		}
 	}
 	Map_Surface_Capacity();
-	composite->Fill(0);
 	composite->Reframe(0, 0, width, height);
 	tiles->Reframe(0, 0, width, height);
 	MapCompositeSurface = _SpareComposite.release();
@@ -408,6 +408,8 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 	}
 	// At a zoom of 1 the surfaces made for the largest view wait for the next zoom out; with no zoom out possible there are none.
 	if (old_composite != nullptr && old_map_tiles != nullptr && ScreenTacticalRect == _MapSurfacesScreen) {
+		// A spare is cleared when it is put aside rather than when it is taken, which keeps the clearing off the first step of a zoom out.
+		old_composite->Fill(0);
 		_SpareComposite = std::move(old_composite);
 		_SpareTiles = std::move(old_map_tiles);
 	} else if (_SpareComposite == nullptr || ScreenTacticalRect != _MapSurfacesScreen) {
@@ -416,6 +418,10 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 			Make_Map_Surfaces(capacity, width, height);
 			_SpareComposite.reset(std::exchange(MapCompositeSurface, nullptr));
 			_SpareTiles.reset(std::exchange(MapTileSurface, nullptr));
+			DSurface const * const tiles = dynamic_cast<DSurface const *>(_SpareTiles.get());
+			if (tiles != NULL && Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported()) {
+				GpuDraw_Preload_Tile_Layer(*tiles);
+			}
 		} else {
 			_SpareComposite.reset();
 			_SpareTiles.reset();
