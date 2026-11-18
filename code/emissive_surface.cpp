@@ -125,6 +125,31 @@ void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int
 		}
 	}
 
+	// A row whose depth entries do not run past the end of the depth buffer is indexed directly. A pixel
+	// that a zero draw would set to zero again is not depth tested.
+	if (zbuf == NULL || length <= 0 || Blit_Wrap_Z_Buffer(zbuf + (length - 1)) == zbuf + (length - 1)) {
+		bool const clear = strength == 0 && keep == 0 && !writedepth;
+		int x = 0;
+		while (x < length) {
+			unsigned char const value = *sptr++;
+			if (value == 0) {
+				x += *sptr++;
+				continue;
+			}
+			if (!clear || mask[x] != 0) {
+				int const offset = zshape != NULL ? zshape[x] : 0;
+				if (zbuf == NULL || (zmin - offset) < (int)zbuf[x]) {
+					mask[x] = (unsigned char)(strength | (mask[x] & keep));
+					if (writedepth && zbuf != NULL) {
+						zbuf[x] = (unsigned short)(zmin - offset);
+					}
+				}
+			}
+			x++;
+		}
+		return;
+	}
+
 	while (length > 0) {
 		unsigned char value = *sptr++;
 		if (value == 0) {
