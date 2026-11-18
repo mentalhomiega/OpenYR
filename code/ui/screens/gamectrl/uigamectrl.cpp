@@ -60,6 +60,9 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.DebugMode = (intent.Value != 0);
 	} else if (intent.Name == "replays") {
 		State.RecordReplays = (intent.Value != 0);
+	} else if (intent.Name == "classicspeeds") {
+		State.ClassicSpeeds = (intent.Value != 0);
+		Update_Speed_Shown();
 	} else if (intent.Name == "autosave") {
 		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : Start.Autosave;
 	} else if (intent.Name == "ok") {
@@ -93,6 +96,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.SidebarSorting = true;
 		State.DebugMode = false;
 		State.RecordReplays = false;
+		State.ClassicSpeeds = false;
+		Update_Speed_Shown();
 		for (int index = 0; index < (int)State.Autosaves.size(); index++) {
 			if (State.Autosaves[index].Value == 10800) {	// Options.AutoSaveInterval's default, in frames
 				State.Autosave = index;
@@ -147,10 +152,20 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.RecordReplays != Start.RecordReplays) {
 		Service.Set_Record_Replays(State.RecordReplays);
 	}
+	if (State.ClassicSpeeds != Start.ClassicSpeeds) {
+		Service.Set_Classic_Game_Speeds(State.ClassicSpeeds);
+	}
 	if (State.Autosave != Start.Autosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
 		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
 	}
 	Service.Save();
+}
+
+
+void UIGameControlsPresenterClass::Update_Speed_Shown(void)
+{
+	// A campaign has one speed in gamemd's table, so it has no slider there.
+	State.HasSpeed = State.SpeedAllowed && !(State.Campaign && State.ClassicSpeeds);
 }
 
 
@@ -198,7 +213,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 		{
 			Dirty({"speed", "scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
 				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname", "rally",
-				"airpick", "background", "sorting", "debugmode", "replays", "autosave"});
+				"airpick", "background", "sorting", "debugmode", "replays", "autosave", "classicspeeds", "hasspeed"});
 		}
 
 	protected:
@@ -216,6 +231,8 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("speed", &state.Speed)
 				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("hasspeed", &state.HasSpeed)
+				&& model.Bind("hasspeedtable", &state.HasSpeedTable)
+				&& model.Bind("classicspeeds", &state.ClassicSpeeds)
 				&& model.Bind("soundenabled", &state.SoundEnabled)
 				&& model.Bind("speedname", &state.SpeedName)
 				&& model.Bind("leavelabel", &state.LeaveLabel)

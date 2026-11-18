@@ -10,7 +10,7 @@ when_omitted:
 `ShowFPS=yes` draws two counts in the top-left corner of the game view:
 
 - `Render` is the number of pictures per second that reached the display in the last complete second. A picture is counted when it is shown. A picture the game draws too soon after the previous one, within one display refresh, is not shown and not counted.
-- `Game` is the number of game ticks, the game frames the game ran, in the last second. It follows the game speed: a skirmish at [`GameSpeed`](/keys/gamespeed/) `1` shows 60. Pictures drawn between game frames do not change it, so `Render` can be higher than `Game`. [`RenderFrameRate`](/keys/renderframerate/) sets how many pictures the game draws between game frames.
+- `Game` is the number of game ticks, the game frames the game ran, in the last second. It follows the game speed: a skirmish at [`GameSpeed`](/keys/gamespeed/) `0` shows 60. Pictures drawn between game frames do not change it, so `Render` can be higher than `Game`. [`RenderFrameRate`](/keys/renderframerate/) sets how many pictures the game draws between game frames.
 
 [`ShowFrameGraph`](/keys/showframegraph/) adds a graph of recent frame times below the counts.
 

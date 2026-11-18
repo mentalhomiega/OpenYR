@@ -178,6 +178,8 @@ namespace NetTiming
 	constexpr int CAMPAIGN_GAME_SPEED = 2;
 	FramePeriod Solo_Game_Speed_Frame_Period(int game_speed);
 	FramePeriod Campaign_Frame_Period(void);
+	// The frame length of a campaign or skirmish: the network table, or with classic set, the two above.
+	FramePeriod Solo_Frame_Period(int game_speed, bool campaign, bool classic);
 
 	// Frame deadlines on a nanosecond clock. Each deadline is the previous one plus the period, with the
 	// fraction carried, so frames do not drift. A frame that starts more than FRAME_LATE_SLACK_NANOSECONDS late

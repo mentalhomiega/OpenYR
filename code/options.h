@@ -145,6 +145,10 @@ class OptionsClass {
 		*/
 		int GameSpeed;
 
+		// A campaign or skirmish runs at gamemd's own solo frame lengths: 62.5 to 10.4 frames a second, a campaign
+		// always at 31.25, with no speed slider. Off, it uses the frame rates of a network game, at any game speed.
+		bool ClassicGameSpeeds;
+
 		/*
 		 * This is the campaign difficulty the player has picked, expressed as the slider
 		 * position (0 - 4). It sets both the scenario's difficulty and the computer's when a

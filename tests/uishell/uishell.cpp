@@ -1796,6 +1796,7 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Alt_To_Rally(bool on) override { Calls.push_back(on ? "rally on" : "rally off"); }
 		virtual void Set_Simulate_Unfocused(bool on) override { Calls.push_back(on ? "background on" : "background off"); }
 		virtual void Set_Record_Replays(bool on) override { Calls.push_back(on ? "replays on" : "replays off"); }
+		virtual void Set_Classic_Game_Speeds(bool on) override { Calls.push_back(on ? "classic speeds on" : "classic speeds off"); }
 		virtual void Set_Aircraft_Body_Pick(bool on) override { Calls.push_back(on ? "airpick on" : "airpick off"); }
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
@@ -1922,6 +1923,38 @@ void Test_Game_Controls_Presenter(void)
 		Drive(presenter, "ok");
 		Check(presenter.State.Autosave == 1 && service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save",
 			"unchanged extra settings are not applied and an unknown autosave choice keeps the starting one");
+	}
+
+	{
+		// A campaign has its speed slider unless the classic speeds are on, which give it one fixed speed.
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.InGame = true;
+		state.Campaign = true;
+		state.HasSpeed = true;
+		state.HasDifficulty = false;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "classicspeeds", 1);
+		Check(presenter.State.ClassicSpeeds && !presenter.State.HasSpeed, "the classic speeds take the speed slider away in a campaign");
+		Drive(presenter, "classicspeeds", 0);
+		Check(!presenter.State.ClassicSpeeds && presenter.State.HasSpeed, "the slider is back with the classic speeds off");
+		Drive(presenter, "classicspeeds", 1);
+		Drive(presenter, "reset");
+		Check(!presenter.State.ClassicSpeeds && presenter.State.HasSpeed, "reset puts the classic speeds off");
+		Drive(presenter, "classicspeeds", 1);
+		Drive(presenter, "ok");
+		Check(service.Joined().find("classic speeds on") != std::string::npos && service.Joined().find("speed ") == std::string::npos, "accepting applies the switch, and a fixed campaign speed applies no game speed");
+	}
+
+	{
+		// A watcher has no slider whatever the switch says.
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.SpeedAllowed = false;
+		state.HasSpeed = false;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "classicspeeds", 0);
+		Check(!presenter.State.HasSpeed, "a house that cannot set the speed never gets the slider back");
 	}
 }
 

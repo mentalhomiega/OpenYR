@@ -9,7 +9,7 @@ when_omitted:
 
 A single player mission or skirmish started from the menu saves itself each time this many frames have passed. `0` or a negative value turns automatic saves off.
 
-The interval counts frames, so a faster [`GameSpeed`](/keys/gamespeed/) saves more often by the clock. At `GameSpeed=3`, which runs a campaign mission or skirmish at 30 frames a second, 10800 frames is six minutes. At `GameSpeed=2`, which runs at 45, it is four. At `GameSpeed=0` the frame rate has no limit, so the time between saves depends on the computer.
+The interval counts frames, so a faster [`GameSpeed`](/keys/gamespeed/) saves more often by the clock. At `GameSpeed=2`, which runs a campaign mission or skirmish at 30 frames a second, 10800 frames is six minutes. At `GameSpeed=1`, which runs at 45, it is four. With [`ClassicGameSpeeds=yes`](/keys/classicgamespeeds/), `GameSpeed=0` has no frame rate limit, so the time between saves depends on the computer.
 
 [Automatic saves](/formats/save-games/#automatic-saves) describes the message each save posts, the files the saves rotate through, and what starts the count over.
 

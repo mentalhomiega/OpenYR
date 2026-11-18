@@ -468,6 +468,30 @@ namespace
 	}
 
 
+	void Test_Solo_Frame_Period(void)
+	{
+		using namespace NetTiming;
+
+		// By default a campaign and a skirmish use the network table at every speed, and neither has a free speed.
+		for (int speed = 0; speed < 7; speed++) {
+			Expect_Equal("default skirmish speed " + std::to_string(speed), Frames_Per_Second(Solo_Frame_Period(speed, false, false)), double(Game_Speed_Frame_Rate(speed)));
+			Expect_Equal("default campaign speed " + std::to_string(speed), Solo_Frame_Period(speed, true, false) == Solo_Frame_Period(speed, false, false), true);
+		}
+		unsigned int const table[] = { 60u, 45u, 30u, 20u, 15u, 12u, 10u };
+		for (int speed = 0; speed < 7; speed++) {
+			Expect_Equal("default speed " + std::to_string(speed) + " rate", Frames_Per_Second(Solo_Frame_Period(speed, false, false)), double(table[speed]));
+		}
+
+		// The classic option gives gamemd's solo table, and a campaign one fixed length.
+		Expect_Equal("classic skirmish speed 0 has no limit", Solo_Frame_Period(0, false, true).Nanoseconds, std::int64_t(0));
+		for (int speed = 1; speed <= 6; speed++) {
+			Expect_Equal("classic skirmish speed " + std::to_string(speed), Solo_Frame_Period(speed, false, true) == Solo_Game_Speed_Frame_Period(speed), true);
+			Expect_Equal("classic campaign speed " + std::to_string(speed), Solo_Frame_Period(speed, true, true) == Campaign_Frame_Period(), true);
+		}
+		Expect_Equal("classic campaign speed 0 is still fixed", Solo_Frame_Period(0, true, true) == Campaign_Frame_Period(), true);
+	}
+
+
 	void Test_Frame_Deadline(void)
 	{
 		using namespace NetTiming;
@@ -1561,6 +1585,7 @@ int main(void)
 	Test_Note_Retransmit_Guards();
 	Test_Game_Speed_Frame_Rate();
 	Test_Solo_Game_Speed_Frame_Period();
+	Test_Solo_Frame_Period();
 	Test_Frame_Deadline();
 	Test_Interval_Stats();
 	Test_Speed_Reaches_Frame_Rate();

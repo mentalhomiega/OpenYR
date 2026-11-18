@@ -101,5 +101,5 @@ writes every row back when any value changed, then calls `Apply_HDR_Highlights`.
 
 ## Converted so far
 
-The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the five GPU voxel keys), `SteadyVoxelPlacement`, `ShadowStacking`, `RenderThread`, `FastestGpu` and `PerfOverlay`, and the two `[Options]` path search keys `ParallelPaths` and `PathThreads`. `RenderThread`, `FastestGpu` and the path search keys are the rows of the Performance page. `.Names` and `.Number`
+The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the five GPU voxel keys), `SteadyVoxelPlacement`, `ShadowStacking`, `RenderThread`, `FastestGpu` and `PerfOverlay`, and the two `[Options]` path search keys `ParallelPaths` and `PathThreads`. `ClassicGameSpeeds` is declared with no row: the game controls dialog shows its switch beside the speed slider, and it changes only the frame length of a solo game. `RenderThread`, `FastestGpu` and the path search keys are the rows of the Performance page. `.Names` and `.Number`
 cover the rest of `[Video]` and `[Options]` once each is moved beside the code that uses it.

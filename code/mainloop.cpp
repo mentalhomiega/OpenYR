@@ -236,8 +236,8 @@ static int Target_Frame_Rate(void)
 }
 
 /// <summary>
-/// How long a game frame lasts, or zero for no limit. A skirmish takes it from the game speed, as gamemd does, and
-/// a campaign always runs at one length, as gamemd's does.
+/// How long a game frame lasts, or zero for no limit. A campaign or skirmish takes it from the game speed in the
+/// network table, or with ClassicGameSpeeds from gamemd's solo table, where a campaign runs at one length.
 /// </summary>
 static NetTiming::FramePeriod Target_Frame_Period(void)
 {
@@ -246,7 +246,7 @@ static NetTiming::FramePeriod Target_Frame_Period(void)
 		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast() || AutoTest_Uncapped()) {
 			return(NetTiming::FramePeriod());
 		}
-		return(Session.Type == GAME_NORMAL ? NetTiming::Campaign_Frame_Period() : NetTiming::Solo_Game_Speed_Frame_Period(Options.GameSpeed));
+		return(NetTiming::Solo_Frame_Period(Options.GameSpeed, Session.Type == GAME_NORMAL, Options.ClassicGameSpeeds));
 	}
 	return(NetTiming::Frame_Period_For_Rate(Target_Frame_Rate()));
 }

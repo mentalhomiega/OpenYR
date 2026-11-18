@@ -276,6 +276,7 @@ struct Old_Gpu
 	bool ParallelPaths = false;
 	int PathThreads = 0;
 	int PerfOverlay = PERF_OVERLAY_OFF;
+	bool ClassicGameSpeeds = false;
 };
 
 
@@ -312,6 +313,7 @@ void Old_Load(INIClass const & ini, Old_Gpu & old)
 	old.PathThreads = std::clamp(ini.Get_Int("Options", "PathThreads", old.PathThreads), 0, 32);
 	ini.Get_String("Video", "PerfOverlay", "Off", name, sizeof(name));
 	old.PerfOverlay = Enum_From_Name(Overlay_Names, name, PERF_OVERLAY_OFF);
+	old.ClassicGameSpeeds = ini.Get_Bool("Options", "ClassicGameSpeeds", old.ClassicGameSpeeds);
 }
 
 
@@ -342,6 +344,7 @@ void Old_Save(INIClass & ini, Old_Gpu const & old)
 	ini.Put_Bool("Options", "ParallelPaths", old.ParallelPaths);
 	ini.Put_Int("Options", "PathThreads", old.PathThreads);
 	ini.Put_String("Video", "PerfOverlay", Enum_Name(Overlay_Names, old.PerfOverlay, "Off"));
+	ini.Put_Bool("Options", "ClassicGameSpeeds", old.ClassicGameSpeeds);
 }
 
 
@@ -402,9 +405,9 @@ void Test_Real_Table(void)
 	std::vector<std::string> const old_order = {
 		"GpuRender", "SoftShadows", "SoftShadowRadius", "Shockwaves", "Bloom", "BloomStrength", "WaterRipples", "WaterRippleStrength",
 		"CloudShadows", "CloudShadowStrength", "GpuVoxels", "GpuVoxelSmooth", "GpuVoxelScale", "GpuVoxelLayerDepth", "GpuVoxelCloak", "SteadyVoxelPlacement", "ShadowStacking", "Weather", "WeatherStrength",
-		"RenderThread", "FastestGpu", "ParallelPaths", "PathThreads", "PerfOverlay",
+		"RenderThread", "FastestGpu", "ParallelPaths", "PathThreads", "PerfOverlay", "ClassicGameSpeeds",
 	};
-	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys");
+	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys and the game speed switch");
 
 	std::vector<UISettingRow> rows = UI_Setting_Rows(settings, "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
 	std::vector<std::string> labels;

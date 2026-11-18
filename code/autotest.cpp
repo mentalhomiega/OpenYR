@@ -7480,11 +7480,18 @@ static void Gamespeed_Step(StepType const & step)
 }
 
 
+// classicspeeds <0|1>: sets the ClassicGameSpeeds option, which picks gamemd's own solo frame lengths.
+static void Classicspeeds_Step(StepType const & step)
+{
+	Options.ClassicGameSpeeds = step.Argument_Int() != 0;
+}
+
+
 // pace: logs the game frame length the pacer aims at, in milliseconds, with the game speed and the kind of game.
 static void Pace_Step(StepType const &)
 {
 	double const ms = Pacing_Target_Milliseconds();
-	DebugString("AUTOTEST pace speed %d %s target %.3f ms %.2f fps\n", Options.GameSpeed,
+	DebugString("AUTOTEST pace speed %d %s %s target %.3f ms %.2f fps\n", Options.GameSpeed, Options.ClassicGameSpeeds ? "classic" : "standard",
 		Session.Type == GAME_NORMAL ? "campaign" : Session.Type == GAME_SKIRMISH ? "skirmish" : "network", ms, ms > 0.0 ? 1000.0 / ms : 0.0);
 }
 
@@ -8221,6 +8228,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"perfoverlay", Perfoverlay_Step},
 		{"perfwindow", Perfwindow_Step},
 		{"gamespeed", Gamespeed_Step},
+		{"classicspeeds", Classicspeeds_Step},
 		{"pace", Pace_Step},
 		{"paceprobe", Paceprobe_Step},
 		{"slowframe", Slowframe_Step},

@@ -419,6 +419,20 @@ namespace NetTiming
 	}
 
 
+	/// <summary>
+	/// The length of a frame in a campaign or skirmish. Unless the classic tables are chosen it follows the same table
+	/// as a network game, so game speed 2 gives 30 frames a second in both. With them chosen it follows gamemd's solo
+	/// timer: a skirmish takes the 16 ms units of its game speed and a campaign always runs at one length.
+	/// </summary>
+	FramePeriod Solo_Frame_Period(int game_speed, bool campaign, bool classic)
+	{
+		if (!classic) {
+			return(Frame_Period_For_Rate(Game_Speed_Frame_Rate(game_speed)));
+		}
+		return(campaign ? Campaign_Frame_Period() : Solo_Game_Speed_Frame_Period(game_speed));
+	}
+
+
 	/// <summary>The frames a second of a period, or zero for no limit.</summary>
 	double Frames_Per_Second(FramePeriod period)
 	{

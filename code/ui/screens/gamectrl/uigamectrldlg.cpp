@@ -143,6 +143,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Replay_Set_Recording(on);
 		}
 
+		virtual void Set_Classic_Game_Speeds(bool on) override
+		{
+			Options.ClassicGameSpeeds = on;
+		}
+
 		virtual void Set_Autosave_Interval(int frames) override
 		{
 			Options.AutoSaveInterval = frames;
@@ -199,9 +204,13 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.ShowDefenceRange = Options.ShowDefenceRange;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.InGame = GameActive;
-	// A watching house has no speed to set; gamemd hides the speed slider from its observer. A campaign runs at one
-	// speed, so gamemd hides the slider there too.
-	state.HasSpeed = !(GameActive && (Session.Type == GAME_INTERNET || Session.Type == GAME_NORMAL || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
+	// A watching house has no speed to set; gamemd hides the speed slider from its observer. With the classic speeds a
+	// campaign runs at one speed, as gamemd's does, so the slider is hidden there too.
+	state.SpeedAllowed = !(GameActive && (Session.Type == GAME_INTERNET || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
+	state.Campaign = GameActive && Session.Type == GAME_NORMAL;
+	state.ClassicSpeeds = Options.ClassicGameSpeeds;
+	state.HasSpeedTable = !GameActive || Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH;
+	state.HasSpeed = state.SpeedAllowed && !(state.Campaign && state.ClassicSpeeds);
 	state.HasDifficulty = !GameActive;
 	state.SoundEnabled = AudioEngine.Is_Available();
 

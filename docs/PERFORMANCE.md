@@ -54,7 +54,7 @@ is the nearest-rank 95th percentile. Counts are totals for the second.
 
 The `Pacing` line times the game frames themselves. `interval` is the time between the ends of two
 consecutive frame waits: its minimum, mean, maximum and standard deviation over the second, which show
-how evenly the game is paced. A skirmish at game speed 1 should read a mean of 16.000 ms, and at game speed 2, or in any campaign, 32.000 ms. A slow frame is not made up by shorter ones, so a mean above the target is expected after a spike and a mean below it never is. `cpu` is the
+how evenly the game is paced. A campaign or skirmish at game speed 1 should read a mean of 22.222 ms (45 frames a second) and at game speed 2 a mean of 33.333 ms (30 frames a second); with `ClassicGameSpeeds=yes` they read 16.000 ms and 32.000 ms, and 32.000 ms in any campaign. A slow frame is not made up by shorter ones, so a mean above the target is expected after a spike and a mean below it never is. `cpu` is the
 processor time (kernel and user, all threads) that the process used in the window, so the waits are
 idle when it stays well below the window length.
 

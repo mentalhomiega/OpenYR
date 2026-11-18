@@ -86,7 +86,7 @@ The TIMING handler (`EventClass.c` 907) sets the frame rate, the look-ahead (les
 
 ### Frame wait
 
-`Game::MainLoop` arms each network frame for 1000 / F whole milliseconds, counted from the start of the frame (`DAT_00887330`, `DAT_00887328`). The fraction is dropped, so a frame at 45 FPS waits 22 ms (45.5 FPS at most) and a frame at 60 FPS waits 16 ms (62.5 FPS at most). Solo games use a different rule (see [Frame rate and game speed](#frame-rate-and-game-speed)).
+`Game::MainLoop` arms each network frame for 1000 / F whole milliseconds, counted from the start of the frame (`DAT_00887330`, `DAT_00887328`). The fraction is dropped, so a frame at 45 FPS waits 22 ms (45.5 FPS at most) and a frame at 60 FPS waits 16 ms (62.5 FPS at most). Solo games use a different rule, with exact periods (see [Frame rate and game speed](#frame-rate-and-game-speed)).
 
 In an online game (mode 4) with look-ahead MA of at least 31, each of floor(MA/4), floor(MA/2) and floor(3MA/4) adds 10 ms to the frame's wait when the largest per-connection value is at least that many frames. The waits apply only when the largest value is nonzero. The table holding the per-connection values has no writer that we identified, so OpenYR uses the frames the most-behind connected peer trails this machine (see open questions).
 
@@ -161,14 +161,24 @@ and MA went from 6 to 4 at once.
 
 ## Frame rate and game speed
 
-A skirmish paces each frame as gamemd does (the frame timer at `0x55E160`, started in `Game::MainLoop` at `0x55D340`). The timer counts units of 16 ms (`SystemTimer::GetTime` is `timeGetTime() >> 4`, `0x6C8C40`), and a frame lasts as many units as the game speed is. Speed 0 has no limit, and fast-forward removes the limit. The slider names the speeds from 6 to 0 Slowest, Slower, Slow, Medium, Fast, Faster and Fastest, so Fast is speed 2.
+A campaign or skirmish takes its frame length from the game speed, as a network game does. By default both use the network table below, at every speed. Speed 0 is 60 frames a second, not unlimited, and a campaign has its speed slider. Fast-forward removes the limit.
 
 | `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Skirmish frame | no limit | 16 ms | 32 ms | 48 ms | 64 ms | 80 ms | 96 ms |
-| Skirmish frames a second | no limit | 62.5 | 31.25 | 20.83 | 15.62 | 12.5 | 10.41 |
+| Default, campaign and skirmish frames a second | 60 | 45 | 30 | 20 | 15 | 12 | 10 |
 
-A campaign mission (`GAME_NORMAL`) ignores the game speed: gamemd sets the frame timer to 2 units whatever the option is and hides the slider, so every campaign frame lasts 32 ms. The in-game game controls dialog hides the slider in a campaign too. The option itself still selects the animation delay table.
+The slider names the speeds from 6 to 0 Slowest, Slower, Slow, Medium, Fast, Faster and Fastest.
+
+`ClassicGameSpeeds=yes` under `[Options]` in `RA2MD.INI` switches to gamemd's own solo pacing (the frame timer at `0x55E160`, started in `Game::MainLoop` at `0x55D340`). The timer counts units of 16 ms (`SystemTimer::GetTime` is `timeGetTime() >> 4`, `0x6C8C40`), and a skirmish frame lasts as many units as the game speed is. Speed 0 has no limit.
+
+| `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Classic skirmish frame | no limit | 16 ms | 32 ms | 48 ms | 64 ms | 80 ms | 96 ms |
+| Classic skirmish frames a second | no limit | 62.5 | 31.25 | 20.83 | 15.62 | 12.5 | 10.41 |
+
+A classic campaign mission (`GAME_NORMAL`) ignores the game speed: gamemd sets the frame timer to 2 units whatever the option is and hides the slider, so every campaign frame lasts 32 ms. The in-game game controls dialog hides the slider in a classic campaign too. `NetTiming::Solo_Frame_Period` picks the period for both tables, and the pacer, the menu battle and the replay list's length read it. The menu battle runs at game speed 2, 30 frames a second (31.25 with the classic option). In either case the option itself still selects the animation delay table, which depends on the speed value and not on the frame rate, so a solo game and a network game at one speed delay their animations alike. A recording does not store which table it was played at, so the replay list works its lengths out with the option as it is now.
+
+The option's switch is on the game controls dialog next to the speed slider, and the Settings screen's Game tab shows the same dialog. The classic style's main menu options page has no speed slider and no switch. A network game ignores the option.
 
 A solo frame ends at a deadline on the steady clock in nanoseconds (`NetTiming::FrameDeadline`, given a `NetTiming::FramePeriod` so a period need not be a whole rate). Each deadline is the previous one plus the period, with the fractional part carried, so a minute holds exactly as many frames as the rate says. gamemd times each frame from its own start and never shortens a later frame to make up for a slow one; the pacer does the same. A frame that starts more than 2 ms after the deadline (`FRAME_LATE_SLACK_NANOSECONDS`), because of a slow frame, a pause, a dialog or a change of rate, restarts the schedule from the time it started. A slow frame therefore lowers the average rate and never raises the rate above the setting. The wait sleeps on a high-resolution timer and spins only for the last 1.5 ms (`Fine_Wait_Until` in `code/framewait.cpp`).
 
