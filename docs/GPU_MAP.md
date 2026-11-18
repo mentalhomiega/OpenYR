@@ -49,7 +49,9 @@ A scroll moves the place where the picture starts in that memory (`DSurface::Scr
 buffers have always done, and the shader finds a pixel of each by row and column from that start. A zoom
 change after the first on the same screen moves the start of all three the same way, so only the edges the
 new view adds go up. When the picture reaches an end of the memory, the part that stays in view is copied
-back to the middle and the whole layer goes up once. `OPENYR_NO_TILE_SCROLL=1` in the environment makes a
+back to the middle and the whole layer goes up once. The GPU keeps a texture of the screen's tile layer and one of the
+zoomed map's, made when the map surfaces are made, so a zoom step to or from zoom 1 makes no texture and sends only what
+was written to the layer since a pass last read it. `OPENYR_NO_TILE_SCROLL=1` in the environment makes a
 scroll copy the layer instead, which is how the two pictures were compared.
 
 The background pass of the map view names each rectangle it draws into (`Tactical::Note_Layer_Writes`):

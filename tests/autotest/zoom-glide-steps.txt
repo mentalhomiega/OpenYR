@@ -1,0 +1,59 @@
+; Zoom glide steps: ten mouse-wheel steps out from zoom 1 to the 3840x2160 map view that ZoomOutView=4K allows on a 1920x1080
+; screen, then ten back in, three game frames apart, on XMP22S8, with the glide timed by game frames. A step out keeps the
+; drawn picture and draws the newly shown edges of the map as the glide shows them, so every draw of the glide must show
+; what a full redraw at that zoom shows. drawdigest 2 logs a DRAW_DIGEST line for each game frame, hashing the part of the
+; map the screen shows, and the view is shot as left one frame after each step. Play it again with OPENYR_NO_ZOOM_KEEP=1 in
+; the environment, which redraws the whole view at each step, and compare the logs with scripts/compare_digests.py and the
+; shots pixel by pixel. The Run line's filter leaves out the DRAW_DIGEST lines, whose hashes depend on the clock between game frames.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/zoom-glide-steps.txt -Map XMP22S8.MAP -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nGpuRender=no`nZoomOutView=4K" -Filter "AUTOTEST (?!perfwindow )|Exception"
+1 glideclock
+2 reveal
+200 zoom 1.0
+290 zoomlevel
+298 drawdigest 2
+301 wheel -0.1
+302 windowshot glidestep-out1 asis
+304 wheel -0.1
+305 windowshot glidestep-out2 asis
+307 wheel -0.1
+308 windowshot glidestep-out3 asis
+310 wheel -0.1
+311 windowshot glidestep-out4 asis
+313 wheel -0.1
+314 windowshot glidestep-out5 asis
+316 wheel -0.1
+317 windowshot glidestep-out6 asis
+319 wheel -0.1
+320 windowshot glidestep-out7 asis
+322 wheel -0.1
+323 windowshot glidestep-out8 asis
+325 wheel -0.1
+326 windowshot glidestep-out9 asis
+328 wheel -0.1
+329 windowshot glidestep-out10 asis
+360 windowshot glidestep-out asis
+361 zoomlevel
+400 wheel 0.1
+401 windowshot glidestep-in1 asis
+403 wheel 0.1
+404 windowshot glidestep-in2 asis
+406 wheel 0.1
+407 windowshot glidestep-in3 asis
+409 wheel 0.1
+410 windowshot glidestep-in4 asis
+412 wheel 0.1
+413 windowshot glidestep-in5 asis
+415 wheel 0.1
+416 windowshot glidestep-in6 asis
+418 wheel 0.1
+419 windowshot glidestep-in7 asis
+421 wheel 0.1
+422 windowshot glidestep-in8 asis
+424 wheel 0.1
+425 windowshot glidestep-in9 asis
+427 wheel 0.1
+428 windowshot glidestep-in10 asis
+460 windowshot glidestep-in asis
+461 zoomlevel
+462 drawdigest 0
+470 quit

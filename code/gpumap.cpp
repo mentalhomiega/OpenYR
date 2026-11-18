@@ -558,6 +558,20 @@ static Store _Stores[SLOT_COUNT];
 // The values of the listed plane writes that copy values (GPU_MASK_VALUES), for the plane program.
 static Store _MaskValueStore;
 
+// The tile layer memory a base store holds the values of, known by its address and its serial (WriteWatch_Serial), since
+// freed memory can come back at the same address. The store of the layer not read now is kept, so that a change between
+// the screen's tile layer and the zoomed map's makes no texture and sends only what was written to the other meanwhile.
+struct BaseKey
+{
+	void const * Values = NULL;
+	unsigned Serial = 0;
+
+	bool operator == (BaseKey const & other) const = default;
+};
+static BaseKey _BaseKey;
+static Store _OtherBase;
+static BaseKey _OtherBaseKey;
+
 
 static void Destroy_Stores(void)
 {
@@ -567,6 +581,10 @@ static void Destroy_Stores(void)
 	}
 	Release_Handle(_MaskValueStore.Handle);
 	_MaskValueStore = Store();
+	Release_Handle(_OtherBase.Handle);
+	_OtherBase = Store();
+	_BaseKey = BaseKey();
+	_OtherBaseKey = BaseKey();
 }
 
 
@@ -763,6 +781,26 @@ static void Check_Upload(Store const & store, unsigned short const * values, int
 		DebugString("UPLOAD_CHECK DIFFERENCE store %d row %d column %d of %dx%d\n", (int)(&store - _Stores), (int)(at / width), (int)(at % width), width, rows);
 		std::memcpy(copy.data(), values, count * sizeof(unsigned short));
 	}
+}
+
+
+// Makes the base store the one for the tile layer at values, keeping the store it replaces, with the copy the upload
+// check holds of it, as the other.
+static void Use_Base_Store(void const * values)
+{
+	BaseKey const key{ values, WriteWatch_Serial(values) };
+	if (key == _BaseKey) {
+		return;
+	}
+	if (key != _OtherBaseKey) {
+		Release_Handle(_OtherBase.Handle);
+		_OtherBase = Store();
+		_OtherBaseKey = key;
+		_UploadCopies.erase(&_OtherBase);
+	}
+	std::swap(_Stores[SLOT_BASE], _OtherBase);
+	std::swap(_BaseKey, _OtherBaseKey);
+	std::swap(_UploadCopies[&_Stores[SLOT_BASE]], _UploadCopies[&_OtherBase]);
 }
 
 
@@ -1541,8 +1579,12 @@ static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned sho
 		_BaseInPlace = inplace;
 		_Stores[SLOT_BASE].Tracked = false;
 	}
+	if (!inplace) {
+		_BaseKey = BaseKey();
+	}
 	if (inplace) {
 		GpuRing const & source = pass.BaseRing;
+		Use_Base_Store(source.Values);
 		valid = Fill_R16_Watched(_Stores[SLOT_BASE], source.Values, source.Width, source.Height, reference, source.Written) && valid;
 		Set_Ring(ring + 8, source.Start % source.Width, source.Start / source.Width, source.Width, source.Height);
 	} else if (pass.Persistent && pass.BaseChanged != NULL) {
@@ -2054,6 +2096,34 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 bool GpuMap_Supported(void)
 {
 	return(Backend_Is_Running() && Start());
+}
+
+
+void GpuMap_Preload_Base(GpuRing const & ring)
+{
+	if (ring.Values == NULL || !GpuMap_Supported()) {
+		return;
+	}
+	BaseKey const key{ ring.Values, WriteWatch_Serial(ring.Values) };
+	if (key == _BaseKey || key == _OtherBaseKey) {
+		return;
+	}
+	Release_Handle(_OtherBase.Handle);
+	_OtherBase = Store();
+	_OtherBaseKey = key;
+	static std::vector<std::pair<std::size_t, std::size_t>> runs;
+	static std::vector<Rect> rects;
+	bool const listed = WriteWatch_Take(ring.Values, (std::size_t)ring.Width * ring.Height * sizeof(unsigned short), runs);
+	if (ring.Written != NULL) {
+		ring.Written->Take(rects);
+	}
+	if (Fill_R16(_OtherBase, ring.Values, ring.Width, ring.Height, true)) {
+		_OtherBase.Tracked = listed;
+		_UploadCopies.erase(&_OtherBase);
+		if (Upload_Is_Checked()) {
+			_UploadCopies[&_OtherBase].assign(ring.Values, ring.Values + (std::size_t)ring.Width * ring.Height);
+		}
+	}
 }
 
 

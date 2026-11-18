@@ -134,6 +134,11 @@ void GpuMap_Drop(void);
 // shadow masks are made for it when first needed, so a zoom step that changes the area makes none of them.
 void GpuMap_Reserve(int width, int height);
 
+// Makes the base store for the tile layer ring names, from what the layer holds now, and keeps it aside while the
+// passes read another layer, so that the first pass that reads this one makes no texture and sends only what was
+// written to it since.
+void GpuMap_Preload_Base(GpuRing const & ring);
+
 // Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
 // 0 draws each shadow as the software does. With union_shadows the mask is used at radius 0 too, unblurred,
 // so overlapping shadows darken the ground once with hard edges.

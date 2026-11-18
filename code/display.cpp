@@ -414,7 +414,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 	KeptMapPicture kept{ Rect(), Point2D(0, 0) };
 	if (keep) {
 		Point2D const offset = TacticalMap->Drawn_Picture_Offset();
-		Rect const shown = Intersect(Rect(offset.X, offset.Y, old_view.Width, old_view.Height), Rect(0, 0, TacticalRect.Width, TacticalRect.Height));
+		Rect const shown = Intersect(TacticalMap->Drawn_Picture_Part(old_view.Width, old_view.Height) + offset, Rect(0, 0, TacticalRect.Width, TacticalRect.Height));
 		if (shown.Is_Valid()) {
 			kept = KeptMapPicture{ shown - offset, shown.Top_Left() };
 		}

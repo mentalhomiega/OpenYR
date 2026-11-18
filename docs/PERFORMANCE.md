@@ -322,7 +322,10 @@ view alone took about 31 ms.
 
 ## Zoom changes
 
-A change of the zoom keeps the map's drawn picture and draws only the edges the old view did not show. A
+A change of the zoom keeps the map's drawn picture and draws only the edges the old view did not show, as far
+as the screen shows them: during a glide out, each draw adds the part of the new edges the glide has brought on
+screen, with 64 map pixels around it for the GPU effects that read nearby pixels, and the rest is drawn when the
+glide ends, at a scroll, while a light fade is deferred or at a full redraw ([Drawing the new edges](#drawing-the-new-edges)). A
 step inward draws nothing new unless the map's edge moves the view. While a zoom glides, the map is drawn
 every frame at the zoom the glide drew last, so objects keep moving, and the presenter scales the part of
 that picture the glide shows. The GPU pass's scene target and the presenter's map texture keep the size of the whole drawn
@@ -417,9 +420,8 @@ glide makes 10 textures (150 MB), one scene target for each size the view takes.
 draws in about 25 ms, since the map surfaces are made at load and kept as spares while the zoom is 1 (the depth and alpha
 buffers are made at load for the largest view the limit allows), so the first wheel notch makes no buffer.
 
-The remaining cost of a step is the software drawing of the edges the new view adds, which grows with each step from 4 to
-29 ms of `draw.terrain` at the 3840x2160 view (about 20 ms for each million new pixels). It is not on the presentation side,
-and we have not changed it.
+The remaining cost of a step was the software drawing of the edges the new view adds, which grew with each step from 4 to
+29 ms of `draw.terrain` at the 3840x2160 view. [Drawing the new edges](#drawing-the-new-edges) spreads it over the glide.
 
 `tests/autotest/zoom-glide.txt`-style glides of ten notches out on ETOTAL after its opening scene, one build before and one
 after, two runs of each, with the machine busy (three to five other games and compilers). Worst frame and stall are from
@@ -442,6 +444,67 @@ The worst frame and the stall fall where the GPU draws, by about a fifth at 3840
 1920x1080, and stay within the spread of the runs elsewhere. A step costs about what it did, because the new edges take
 most of it. The default view (the 2560x1440 limit) holds about 60 MB less video memory with GPU drawing than before, and
 about 140 MB less with `GpuVoxels`. The render thread was off in these runs.
+
+### Drawing the new edges
+
+Measured on ETOTAL at 3840x2160 with `InterfaceScale=2` and `ZoomOutView=4K`, where a ten-notch glide out takes the view from
+1920x1080 to 3840x2160 map pixels. Each step used to register the whole ring of new edges, four or five rectangles, as dirty
+areas, and the next draw drew all of it through the same per-cell path a scroll strip takes. Cells that reach into the kept
+picture are clipped to the ring, nothing is drawn twice, and the shroud and the depth and alpha buffers are reset only over the
+ring. The cost was simply the size of the ring:
+
+| Step view | New pixels | Cells drawn | Edge drawing, software | GPU drawing |
+|---|---|---|---|---|
+| 2021x1136 | 0.22 million | 412 | 3.4 ms | 3.2 ms |
+| 2560x1440 | 0.45 million | 885 | 6.5 ms | 7.1 ms |
+| 3200x1800 | 0.86 million | 1,397 | 8.9 ms | 10.9 ms |
+| 3840x2160 | 1.44 million | 1,982 | 14.3 ms | 15.5 ms |
+
+That is 5 to 8 microseconds a cell, about what a scroll strip costs (4.7 microseconds a cell for 12-pixel strips on a 1600x900
+view). With GPU drawing about 40% of it is the first write to each memory page of the tile layer and the depth and alpha
+buffers after the GPU pass took their written pages: the depth reset of the ring took 1.0 ms with GPU drawing and 0.1 ms in
+software. A step also clears the ring in the depth and alpha buffers when it moves them, about 1 ms each with GPU drawing,
+and the edges are cleared again when drawn.
+
+A glide shows the new edges only gradually, so a draw now adds only the part of them on screen (`Tactical::Register_Undrawn_Edges`).
+The largest edge drawing in one draw at the 3840x2160 view fell from 15.5 ms to about 7 ms; the total is the same, spread over
+the frames the glide takes. Drawing more than is shown in each frame, up to 150,000 or 300,000 pixels, did not lower the worst
+frames, because most of a step's edges come on screen in the two or three frames after its notch; it is not in the build.
+
+The first step out from zoom 1 used to make the GPU texture of the map's tile layer (3840x4320 values) and send it whole, and
+the step back to 1 made the screen tile layer's texture again; the presenter then took 10.6 ms. The GPU now keeps the
+textures of both tile layers, makes the map's when the map surfaces are made at load, and sends only what was written to a
+layer since it was last read ([GPU_MAP.md](GPU_MAP.md#uploads)); the first step presents in 3.7 ms. The spare map surface is
+cleared when it is put aside at the end of a glide back to 1 instead of when the first step takes it. The first step still
+copies the kept picture into the map's tile layer, about 2.8 ms.
+
+Ten-notch glides out on ETOTAL after its opening scene (`InterfaceScale=Auto`, which is 2 here), two runs of the build before
+and after, alternating, with one other game running in most runs and none of ours played; longest frame / total stall in ms
+from the `perfwindow` line:
+
+| `ZoomOutView` | Drawing | Before | After |
+|---|---|---|---|
+| 4K | GPU | 31.3 / 166, 30.3 / 149 | 24.5 / 216, 19.6 / 173 |
+| 4K | software | 52.6 / 154, 45.6 / 157 | 38.6 / 166, 40.9 / 166 |
+| Original (2560x1440) | GPU | 15.8 / 74, 16.8 / 86 | 15.9 / 93, 14.3 / 89 |
+| Original (2560x1440) | software | 21.1 / 93, 19.5 / 78 | 19.4 / 78, 19.9 / 104 |
+
+The longest frame falls by a quarter to a third at the 4K view; the stall does not, since the same edges are drawn and the
+frames that draw them now lie above the median. The glide back in is unchanged. A settled frame at the 3840x2160 view takes
+about 8 ms with GPU drawing, so the frames of a glide out, about 20 ms at its end, are still twice that; what remains is the
+drawing of the edges the glide shows and the clearing of the depth and alpha buffers at each step.
+
+We compared window shots of the build before and after at 21 frames of a ten-notch glide out and in (one, two or three
+frames after a notch, and after the glide), as the frames left the view and after a full redraw, on XMP22S8 at 3840x2160
+(`InterfaceScale=2`) and 1920x1080 with both `ZoomOutView` values, in software drawing, GPU drawing, and GPU drawing with
+`GpuVoxels`, the render thread, `Bloom`, `SoftShadows` and `Shockwaves`; and on ETOTAL at 3840x2160 with `ZoomOutView=4K` in the
+same three modes. All shots in software drawing on XMP22S8 are the same pixel for pixel. The others differ in at most a few
+dozen pixels in one to five blocks of 16 by 16 pixels, in shots after a full redraw as well as in shots as left, and the
+same differences appear between two runs of one build. `tests/autotest/zoom-glide-steps.txt` shoots the view after every
+step for this comparison against a run with `OPENYR_NO_ZOOM_KEEP=1`.
+
+We did not try showing the kept picture stretched while the edges are drawn later: such a frame would differ from a full
+redraw at that frame's zoom.
 
 ### Soft shadows
 

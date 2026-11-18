@@ -684,6 +684,24 @@ static void Read_Ring(T * buffer, std::vector<unsigned short> & values)
 }
 
 
+// The ring of a watched tile layer's block, starting at the top left pixel of area.
+static GpuRing Tile_Layer_Ring(DSurface const & tiles, Rect const & area)
+{
+	int const stride = tiles.Stride() / (int)sizeof(unsigned short);
+	unsigned short const * const block = (unsigned short const *)tiles.Get_Block();
+	int const start = (int)((unsigned short const *)tiles.Get_Buffer() - block) + area.Y * stride + area.X;
+	return(GpuRing{ block, stride, (int)(tiles.Get_Block_Size() / tiles.Stride()), start, &tiles.Written_Rects() });
+}
+
+
+void GpuDraw_Preload_Tile_Layer(DSurface const & tiles)
+{
+	if (tiles.Get_Block() != NULL) {
+		GpuMap_Preload_Base(Tile_Layer_Ring(tiles, Rect()));
+	}
+}
+
+
 // The ring buffer as it is stored, for the GPU to read in place; a missing buffer reads as zeros
 // held in fallback.
 template<class T>
@@ -1589,9 +1607,7 @@ static bool Finish_Render(Surface & target)
 		pass.Frame = Frame;
 		pass.Base = &base;
 		if (inplace) {
-			int const stride = tiles->Stride() / (int)sizeof(unsigned short);
-			unsigned short const * const block = (unsigned short const *)tiles->Get_Block();
-			pass.BaseRing = GpuRing{ block, stride, (int)(tiles->Get_Block_Size() / tiles->Stride()), (int)((unsigned short const *)tiles->Get_Buffer() - block) + _Area.Y * stride + _Area.X, &tiles->Written_Rects() };
+			pass.BaseRing = Tile_Layer_Ring(*tiles, _Area);
 		}
 		pass.DepthRing = Ring_Of(DepthBuffer, upload[1]);
 		pass.AlphaRing = alpharead ? Ring_Of(AlphaBuffer, upload[2]) : GpuRing{};

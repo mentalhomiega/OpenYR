@@ -1183,6 +1183,10 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	SelectableObjects.clear();
 	bool has_selectable_buildings = Contains_Selectable_Buildings(TacticalRect);
 
+	if (drawpass == DRAW_PASS_PAN || drawpass == DRAW_PASS_FULL) {
+		Register_Undrawn_Edges(fullredraw);
+	}
+
 	/*
 	 * Work out how far the view has panned since the last frame. A pan smaller than the view can be
 	 * satisfied by blitting the still-valid region and only redrawing the strips that scrolled in;
@@ -2077,10 +2081,56 @@ Point2D Tactical::Drawn_Picture_Offset(void) const
 }
 
 
+// Whether a zoom change left part of the view undrawn, and the part, in pixels from the view's corner, that the layers
+// hold drawn (invalid when none). The rest is drawn as a glide shows it (Register_Undrawn_Edges).
+static bool _EdgesUndrawn = false;
+static Rect _DrawnPart;
+
+
+/// <summary>
+/// The part of the last drawn picture that the layers hold drawn, in pixels from the corner of the view it was drawn
+/// for, which was width by height pixels.
+/// </summary>
+Rect Tactical::Drawn_Picture_Part(int width, int height) const
+{
+	return(_EdgesUndrawn ? _DrawnPart : Rect(0, 0, width, height));
+}
+
+
+/// <summary>
+/// Registers the parts of the view that a zoom change left undrawn as dirty, as far as the next draw needs them: what
+/// the presenter shows during a glide, with a margin for the GPU effects that sample around a pixel, or all of them
+/// once the glide has ended, at a full redraw, a scroll or a deferred light fade.
+/// </summary>
+void Tactical::Register_Undrawn_Edges(bool fullredraw)
+{
+	if (!_EdgesUndrawn) {
+		return;
+	}
+	// The bloom glow, shockwave bends and soft shadows reach at most about 40 map pixels from where they are drawn.
+	int const MARGIN = 64;
+	Rect const view(0, 0, TacticalDimensions.Width, TacticalDimensions.Height);
+	Rect wanted = view;
+	bool const panned = TacPixelX != LastTacPixelX || TacPixelY != LastTacPixelY;
+	if (!fullredraw && !panned && Map_Layers_Keepable()) {
+		Rect const shown = Shown_Map_Rect() - TacticalRect.Top_Left();
+		Rect const needed(shown.X - MARGIN, shown.Y - MARGIN, shown.Width + 2 * MARGIN, shown.Height + 2 * MARGIN);
+		wanted = Intersect(view, Union(_DrawnPart, Intersect(view, needed)));
+	}
+	if (!fullredraw) {
+		For_Each_Rect_Outside(wanted, _DrawnPart, [this](Rect const & strip) {
+			Register_Dirty_Area(strip, true);
+		});
+	}
+	_DrawnPart = wanted;
+	_EdgesUndrawn = wanted != view;
+}
+
+
 /// <summary>
 /// Takes the layers as holding the last drawn picture moved to Drawn_Picture_Offset, as a zoom change copies it into
-/// new layers, with only the kept part of the view still valid. The next pass then draws the rest of the view and
-/// what the pending dirty areas cover, without a scroll.
+/// new layers, with only the kept part of the view still valid. The next passes draw what the pending dirty areas
+/// cover, without a scroll, and the rest of the view as Register_Undrawn_Edges asks for it.
 /// </summary>
 /// <param name="kept">The part of the view the layers still hold, in pixels from the view's corner.</param>
 void Tactical::Picture_Moved_To_View(Rect const & kept)
@@ -2092,9 +2142,9 @@ void Tactical::Picture_Moved_To_View(Rect const & kept)
 	LastTacPixelX = TacPixelX;
 	LastTacPixelY = TacPixelY;
 
-	For_Each_Rect_Outside(Rect(0, 0, TacticalDimensions.Width, TacticalDimensions.Height), kept, [this](Rect const & strip) {
-		Register_Dirty_Area(strip, true);
-	});
+	Rect const view(0, 0, TacticalDimensions.Width, TacticalDimensions.Height);
+	_DrawnPart = Intersect(view, kept);
+	_EdgesUndrawn = _DrawnPart != view;
 }
 
 

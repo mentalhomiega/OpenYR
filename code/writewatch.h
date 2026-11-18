@@ -22,6 +22,10 @@ void * WriteWatch_Alloc(std::size_t size);
 
 void WriteWatch_Free(void * memory);
 
+// A number that differs for every block WriteWatch_Alloc made, including one made where a freed block was; 0 for
+// memory it did not make.
+unsigned WriteWatch_Serial(void const * memory);
+
 // Fills runs with the byte ranges, relative to memory, of the pages written since the last call
 // (all of them on the first call) and starts listing anew. False means writes to the block are not
 // listed on this system, and every byte must be treated as written.

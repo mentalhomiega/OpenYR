@@ -610,7 +610,7 @@ DRAW_DIGEST frame 1234 draw 56 hash 9c1f0a2b3d4e5f60
 
 - `frame` is the game frame of the draw.
 - `draw` counts the logged draws from 0, starting when the step runs.
-- `hash` is the same 64-bit hash over the map view's pixels (`TacticalRect`) after the objects and their overlays are drawn, before the sidebar, panels and buttons. When the view is zoomed, it hashes the map's own surface.
+- `hash` is the same 64-bit hash over the map view's pixels (`TacticalRect`) after the objects and their overlays are drawn, before the sidebar, panels and buttons. When the view is zoomed, it hashes the part of the map's own surface that the screen shows, which is the whole view except during a zoom glide.
 
 The number of draws in a game frame depends on the clock. With `RenderFrameRate=0` the game draws the map again while more than 10 ms of the frame are left, and a `windowshot` step draws it once more; with `RenderFrameRate` above zero the draws between game frames also show moving objects part of the way along their moves. `drawdigest 2` leaves out a draw whose game frame and hash equal the line before it. With `RenderFrameRate=0` every draw in a game frame shows the same picture, so two runs of one build then give the same lines, and a second line for one frame means a draw showed another picture, such as a `windowshot` redraw that differs from the frame's own draw.
 

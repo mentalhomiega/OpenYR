@@ -28,6 +28,7 @@ struct GpuVoxelPrepKey;
 
 
 class Coord;
+class DSurface;
 class Surface;
 
 
@@ -274,6 +275,10 @@ struct GpuDrawList
 // target: the GPU pass reads it from TileSurface, and GpuDraw_Begin copies it when it cannot.
 void GpuDraw_Plan(bool render);
 bool GpuDraw_Tiles_Left(void);
+
+// Gets the GPU map pass ready to read a watched tile layer, such as the zoomed map's, from the first pass that does.
+// Call it when the layer is made, before anything is drawn into it.
+void GpuDraw_Preload_Tile_Layer(DSurface const & tiles);
 
 // True between frames while the GPU has drawn the last 30 map passes, which is when a pass leaves the terrain in the tile layer.
 bool GpuDraw_Steady(void);
