@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include "writewatch.h"
+
 #include <cstddef>
 
 
@@ -33,10 +35,13 @@ struct EmissivePlane
 
 // The planes of up to N surfaces, one slot each. A slot is free while its plane has no pixels. A
 // plane keeps its address until it is released, so a caller may hold a pointer to it across frames.
+// With watched, the pixels are memory whose written pages WriteWatch_Take can list (writewatch.h).
 template <int N>
 class SurfacePlaneTable
 {
 	public:
+		explicit SurfacePlaneTable(bool watched = false) : _Watched(watched) {}
+
 		// The plane bound to surface, or NULL when no plane is bound to it.
 		EmissivePlane * Find(void const * surface)
 		{
@@ -72,7 +77,8 @@ class SurfacePlaneTable
 			}
 
 			Release_Slot(*slot);
-			plane.Pixels = new unsigned char[(std::size_t)width * height]();
+			plane.Pixels = _Watched ? (unsigned char *)WriteWatch_Alloc((std::size_t)width * height) : new unsigned char[(std::size_t)width * height]();
+			slot->Watched = _Watched;
 			plane.Lit = withLit ? new unsigned char[(std::size_t)height]() : nullptr;
 			plane.LitLeft = withLit ? new int[(std::size_t)height]() : nullptr;
 			plane.LitRight = withLit ? new int[(std::size_t)height]() : nullptr;
@@ -127,11 +133,16 @@ class SurfacePlaneTable
 		{
 			void const * Surface = nullptr;
 			EmissivePlane Plane = {};
+			bool Watched = false;
 		};
 
 		static void Release_Slot(Binding & binding)
 		{
-			delete [] binding.Plane.Pixels;
+			if (binding.Watched) {
+				WriteWatch_Free(binding.Plane.Pixels);
+			} else {
+				delete [] binding.Plane.Pixels;
+			}
 			delete [] binding.Plane.Lit;
 			delete [] binding.Plane.LitLeft;
 			delete [] binding.Plane.LitRight;
@@ -139,6 +150,7 @@ class SurfacePlaneTable
 		}
 
 		Binding _Slots[N];
+		bool _Watched;
 };
 
 // Whether a row may hold a value other than zero.

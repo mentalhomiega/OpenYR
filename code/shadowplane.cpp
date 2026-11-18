@@ -22,7 +22,7 @@
 static bool _Enabled = false;
 static bool _Shadows = false;
 static bool _Water = false;
-static SurfacePlaneTable<4> _Bindings;
+static SurfacePlaneTable<4> _Bindings(true);
 
 // Shadow once: a mark byte per pixel holds the frame number of the shadow that last darkened it.
 static bool _OnceEnabled = false;

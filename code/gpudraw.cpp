@@ -766,18 +766,39 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 
 // Brings values up to the plane under area, flagging in changed each row that differed; the part
 // of area outside the plane reads as zero. lit keeps a byte per row of values that is zero only
-// where that row is all zero.
-static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed, std::vector<unsigned char> & lit)
+// where that row is all zero. With watched_source, the plane is a watched one (SurfacePlaneTable) and only the rows its written
+// pages touch are compared; watched_source holds the plane the values were last read from.
+static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed, std::vector<unsigned char> & lit, void const ** watched_source = NULL)
 {
 	std::size_t const width = (std::size_t)area.Width;
+	static std::vector<std::pair<std::size_t, std::size_t>> runs;
+	bool listed = watched_source != NULL && WriteWatch_Take(plane.Pixels, (std::size_t)plane.Pitch * plane.Height, runs);
+	if (watched_source != NULL) {
+		// The copy matches the plane it was last read from, not another one.
+		listed = listed && *watched_source == plane.Pixels;
+		*watched_source = plane.Pixels;
+	}
 	if (values.size() != width * area.Height || (int)changed.size() != area.Height || (int)lit.size() != area.Height) {
 		values.assign(width * area.Height, 0);
 		changed.assign(area.Height, 1);
 		lit.assign(area.Height, 0);
+		listed = false;
 	}
 	int const left = std::max(area.X, 0);
 	int const right = std::min(area.X + area.Width, plane.Width);
 	if (left == area.X && right == area.X + area.Width && area.Y >= 0 && area.Y + area.Height <= plane.Height) {
+		// A row no written page touches equals the copy from the last read.
+		static std::vector<unsigned char> touched;
+		if (listed) {
+			touched.assign(area.Height, 0);
+			for (auto const & run : runs) {
+				int const first = std::max(0, (int)(run.first / plane.Pitch) - area.Y);
+				int const end = std::min(area.Height, (int)((run.second + plane.Pitch - 1) / plane.Pitch) - area.Y);
+				if (first < end) {
+					std::fill(touched.begin() + first, touched.begin() + end, (unsigned char)1);
+				}
+			}
+		}
 		for (int r = 0; r < area.Height; r++) {
 			unsigned char * copy = &values[r * width];
 			if (!Emissive_Row_Lit(plane, area.Y + r)) {
@@ -789,6 +810,9 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 				continue;
 			}
 			lit[r] = 1;
+			if (listed && touched[r] == 0) {
+				continue;
+			}
 			unsigned char const * row = plane.Pixels + (std::size_t)(area.Y + r) * plane.Pitch + area.X;
 			Sync_Row(copy, row, width, changed[r]);
 		}
@@ -1246,6 +1270,7 @@ static bool Finish_Render(Surface & target)
 	static std::vector<unsigned char> tileshadowchanged;
 	static std::vector<unsigned short> fade;
 	static std::vector<unsigned char> tileshadowlit;
+	static void const * tileshadowsource = NULL;
 	static std::vector<unsigned char> glow;
 	static TileGridClass glowtiles;
 	static std::vector<unsigned char> glowlit;
@@ -1284,7 +1309,7 @@ static bool Finish_Render(Surface & target)
 	// A shadow drawn into the tile layer locks it, so unchanged tiles mean an unchanged plane.
 	EmissivePlane const * plane = ShadowPlane_For(TileSurface);
 	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
-		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged, tileshadowlit);
+		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged, tileshadowlit, &tileshadowsource);
 	}
 	bool const voxelmask = _Voxels && Emissive_Is_Enabled();
 	EmissivePlane * emissive = GpuMap_Bloom() > 0 || voxelmask ? Emissive_Plane_For(&target) : NULL;
