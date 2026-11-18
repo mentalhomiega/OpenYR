@@ -752,7 +752,7 @@ void GScreenClass::Render(void)
 		gpu_drawn = GpuDraw_End();
 	}
 	Video_Draw_Probe_Target(NULL);
-	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
+	Video_Note_Draw_Digest(*CompositeSurface, zoomed ? Shown_Map_Rect() : TacticalRect);
 	use_map_surfaces(false);
 	if (gpu_drawn) {
 		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
