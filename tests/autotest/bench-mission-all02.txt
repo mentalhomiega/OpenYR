@@ -5,15 +5,7 @@
 ; Units placed on a cell they cannot leave stay there. The run stops at frame 7200 (120 s at game speed 1).
 ; Run: scripts/perf_bench.ps1 -Build agent -Script src-agent/tests/autotest/bench-mission-all02.txt -Map ALL02UMD.MAP -Campaign -Width 1920 -Height 1080
 ; The ui lines click through the briefing page.
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 0 perflog 1
 1 view 148 134
 3 log BENCH_START

@@ -4,16 +4,6 @@
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-win-next.txt -Campaign -Map ALL01UMD.MAP -Width 800 -Height 600 -Seconds 300 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST game over|Debug cheat|MapSelect|Reading scenario|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 continuewin
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 400 command DebugWinMission
 4000 quit

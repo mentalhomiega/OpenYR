@@ -4,17 +4,7 @@
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/save-par-time.txt -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(ranking|game over)|SAVING GAME|LOADING|Exception"
 ; The mission locks the input at its start, so action 47 (Unlock input) runs first; a save made under the lock writes nothing.
 ; Regress: capped the par-time rank logs elapsed wall-clock time
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click more
-ui wait 300
-ui click resume
+ui briefing
 30 trigaction 47 0 0
 100 ranking
 150 command QuickSave
