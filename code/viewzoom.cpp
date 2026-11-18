@@ -25,6 +25,7 @@
 #include "emissive_surface.h"
 #include "ftimer.h"
 #include "globals.h"
+#include "gpumap.h"
 #include "goptions.h"
 #include "gscreen.h"
 #include "hud.h"
@@ -316,6 +317,61 @@ static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int hei
 }
 
 
+// The map surfaces made for the largest view while the zoom is 1 and not gliding, kept for the next zoom out on the same
+// screen so that the first step makes none.
+static std::unique_ptr<Surface> _SpareComposite;
+static std::unique_ptr<Surface> _SpareTiles;
+
+
+// The size of the map surfaces for the largest view the zoom allows on this screen, which GpuMap_Reserve also takes.
+static Point2D Map_Surface_Capacity(void)
+{
+	Point2D const capacity = TacticalRect.Top_Left() + Largest_Map_View();
+	GpuMap_Reserve(capacity.X, capacity.Y);
+	return(capacity);
+}
+
+
+// Makes the composite and tile surfaces for capacity, and sets their picture to width by height from the corner.
+static void Make_Map_Surfaces(Point2D const & capacity, int width, int height)
+{
+	_MapSurfacesScreen = ScreenTacticalRect;
+	DSurface * const composite = new DSurface(capacity.X, capacity.Y);
+	composite->Fill(0);
+	composite->Reframe(0, 0, width, height);
+	DSurface * const tiles = new DSurface(capacity.X, capacity.Y, true, true);
+	tiles->Reframe(0, 0, width, height);
+	MapCompositeSurface = composite;
+	MapTileSurface = tiles;
+	Count_Map_Buffer((std::size_t)composite->Stride() * capacity.Y);
+	Count_Map_Buffer(tiles->Get_Block_Size());
+	DebugString("Map surfaces %dx%d for zoom %.2f, made for %dx%d\n", width, height, ViewZoom, capacity.X, capacity.Y);
+}
+
+
+// Takes the spare surfaces as the map's own when they were made for this screen and hold a picture this size.
+static bool Take_Spare_Map_Surfaces(int width, int height)
+{
+	DSurface * const composite = dynamic_cast<DSurface *>(_SpareComposite.get());
+	DSurface * const tiles = dynamic_cast<DSurface *>(_SpareTiles.get());
+	if (composite == NULL || tiles == NULL || ScreenTacticalRect != _MapSurfacesScreen) {
+		return(false);
+	}
+	for (DSurface const * surface : { composite, tiles }) {
+		if (width > surface->Get_Capacity().X || height > surface->Get_Capacity().Y) {
+			return(false);
+		}
+	}
+	Map_Surface_Capacity();
+	composite->Fill(0);
+	composite->Reframe(0, 0, width, height);
+	tiles->Reframe(0, 0, width, height);
+	MapCompositeSurface = _SpareComposite.release();
+	MapTileSurface = _SpareTiles.release();
+	return(true);
+}
+
+
 void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 {
 	// A glide to or from 1 still shows the map scaled, so it keeps the surfaces until it ends.
@@ -329,23 +385,13 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 	}
 
 	Video_Drop_Map_Layer();
-	delete MapCompositeSurface;
-	MapCompositeSurface = NULL;
+	std::unique_ptr<Surface> old_composite(std::exchange(MapCompositeSurface, nullptr));
 	std::unique_ptr<Surface> old_map_tiles(std::exchange(MapTileSurface, nullptr));
 
-	if (wanted) {
-		Point2D const capacity = TacticalRect.Top_Left() + Largest_Map_View();
-		_MapSurfacesScreen = ScreenTacticalRect;
-		DSurface * const composite = new DSurface(capacity.X, capacity.Y);
-		composite->Fill(0);
-		composite->Reframe(0, 0, width, height);
-		DSurface * const tiles = new DSurface(capacity.X, capacity.Y, true, true);
-		tiles->Reframe(0, 0, width, height);
-		MapCompositeSurface = composite;
-		MapTileSurface = tiles;
-		Count_Map_Buffer((std::size_t)composite->Stride() * capacity.Y);
-		Count_Map_Buffer(tiles->Get_Block_Size());
-		DebugString("Map surfaces %dx%d for zoom %.2f, made for %dx%d\n", width, height, ViewZoom, capacity.X, capacity.Y);
+	if (wanted && !Take_Spare_Map_Surfaces(width, height)) {
+		_SpareComposite.reset();
+		_SpareTiles.reset();
+		Make_Map_Surfaces(Map_Surface_Capacity(), width, height);
 	}
 
 	Surface const * const old_tiles = (old_map_tiles != nullptr) ? old_map_tiles.get() : TileSurface;
@@ -353,6 +399,25 @@ void Allocate_Map_Surfaces(KeptMapPicture const * kept)
 	if (kept != nullptr && kept->From.Is_Valid() && old_tiles != NULL && new_tiles != NULL && new_tiles != old_tiles) {
 		Point2D const corner = TacticalRect.Top_Left();
 		Copy_Tile_Layer(*new_tiles, *old_tiles, kept->From + corner, kept->To + corner);
+	}
+
+	if (wanted) {
+		return;
+	}
+	// At a zoom of 1 the surfaces made for the largest view wait for the next zoom out; with no zoom out possible there are none.
+	if (old_composite != nullptr && old_map_tiles != nullptr && ScreenTacticalRect == _MapSurfacesScreen) {
+		_SpareComposite = std::move(old_composite);
+		_SpareTiles = std::move(old_map_tiles);
+	} else if (_SpareComposite == nullptr || ScreenTacticalRect != _MapSurfacesScreen) {
+		Point2D const capacity = Map_Surface_Capacity();
+		if (capacity.X > width || capacity.Y > height) {
+			Make_Map_Surfaces(capacity, width, height);
+			_SpareComposite.reset(std::exchange(MapCompositeSurface, nullptr));
+			_SpareTiles.reset(std::exchange(MapTileSurface, nullptr));
+		} else {
+			_SpareComposite.reset();
+			_SpareTiles.reset();
+		}
 	}
 }
 
