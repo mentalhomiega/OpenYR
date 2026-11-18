@@ -76,6 +76,44 @@ follow the colour exactly, so the mask and the picture agree:
 The masks are point sampled throughout. The mask target is BGRA8, with the mask
 in the red channel. SDR output clears the target and never reads it.
 
+## Writes of a pass the GPU draws
+
+While the GPU draws the map view's object pass (`GpuRender=yes`), the pass lists
+its writes to the map view's mask in `GpuDrawList::MaskOps` instead of making
+them (`code/gpudraw.cpp`). Each recorded shape is listed with the draw's
+strength and whether the surface has a depth buffer, each fill with its value,
+and each copy with the values it copies; a copy of one value throughout is
+listed as a fill. The list keeps the order of the writes, so it gives the same
+mask as the writes made one by one:
+
+- When the pass is drawn on the GPU and a GPU step reads the mask (the voxel
+  mask with `GpuVoxels`, or `Bloom`), the GPU builds the mask from the mask as
+  the pass found it and the list, in order, with the shapes' depth test
+  (`fs_mapplane.sc`). The voxel mask and the glow read the built mask where they
+  read the processor's mask before, and get the same values.
+- When the GPU scene target does not have the pass's size, or was made less
+  than two frames before, the processor makes the listed writes and the GPU
+  reads its mask as before. With `RenderThread=yes`, a mask the GPU built in
+  the frame that made the target, or in the frame after, came out wrong on the
+  zoom change from 1.0 back to 0.5; we have not found the cause.
+- When the pass falls back to software, the processor makes the listed writes
+  before anything reads the mask.
+- When the pass is drawn on the GPU and no GPU step reads the mask, the writes
+  are never made. The processor's mask under the map view then still holds what
+  the pass found, and nothing reads it there: at a zoom of 1 the map layer key
+  fill clears it, and while zoomed it belongs to the map surface, which the
+  presenter does not read while the GPU draws the map. The next background pass
+  copies the tile layer's mask over it.
+- A write that reaches outside the area the GPU draws is also made at once.
+- A read of the mask during the pass, or a shape the recorder does not hold,
+  makes the listed writes first and ends the list for the rest of the pass.
+  On the Mental Omega mission ETOTAL no pass ended its list early.
+
+The autotest step `maskcheck 1` ([AUTOTEST.md](AUTOTEST.md)) also makes every
+listed write at once and compares the list, made over the mask as the pass
+found it, and the mask the GPU built, with that mask, pass by pass.
+`tests/autotest/emissive-mask-list.txt` runs it.
+
 ## Limits
 
 - The mask follows draws in order, so a later draw clears the mask under the

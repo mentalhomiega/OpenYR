@@ -222,12 +222,43 @@ struct GpuArenaAllocator : std::allocator<T>
 };
 
 
+// What one write to the emissive plane of a pass the GPU draws sets.
+enum GpuMaskOpKind
+{
+	// Value at each pixel the shape of blit Blit draws, depth tested when Depth is set.
+	GPU_MASK_SHAPE,
+	// Value over the rectangle.
+	GPU_MASK_FILL,
+	// The rectangle's values, Width a row, from offset Values of GpuDrawList::MaskValues.
+	GPU_MASK_VALUES
+};
+
+// One write to the emissive plane, in the order the pass made it (docs/EMISSIVE_MASK.md). X, Y, Width and Height
+// are the rectangle written, clipped to the plane.
+struct GpuMaskOp
+{
+	GpuMaskOpKind Kind;
+	int X;
+	int Y;
+	int Width;
+	int Height;
+	int Blit;
+	std::uint32_t Values;
+	unsigned char Value;
+	bool Depth;
+};
+
+
 // The blits recorded during one object pass.
 struct GpuDrawList
 {
 	std::vector<GpuBlit> Blits;
 	std::vector<unsigned char, GpuArenaAllocator<unsigned char>> PixelArena;
 	std::vector<signed char> ZShapeArena;
+
+	// While the pass the GPU draws keeps its emissive plane writes, they are listed here instead of made.
+	std::vector<GpuMaskOp> MaskOps;
+	std::vector<unsigned char, GpuArenaAllocator<unsigned char>> MaskValues;
 
 	// The voxel objects of the pass; the GPU draws those a blit shows.
 	std::vector<GpuVoxelPart> Voxels;
@@ -352,6 +383,10 @@ void GpuDraw_Keep_Prepared(GpuVoxelPrepKey const & key, GpuVoxelPreparedRef cons
 
 // True while the GPU draws the object pass into surface.
 bool GpuDraw_Is_Rendering(Surface const & surface);
+
+// The maskcheck autotest step: each pass the GPU draws also writes its emissive plane at once, and logs how far the
+// kept list and the plane the GPU builds from it are from that plane.
+void GpuDraw_Set_Mask_Check(bool enabled);
 
 // Starts recording a line drawn into surface after its lock, with the colour and extra GpuBlit::Line
 // and GpuBlit::Fade describe; true means each pixel the line plots goes to GpuDraw_Line_Pixel, until

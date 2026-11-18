@@ -20,7 +20,9 @@ enum BgfxViewType : unsigned short
 	// Each sonic wave in a map pass continues the drawing in the next of these views.
 	VIEW_MAPWAVE,
 	VIEW_MAPWAVE_LAST = VIEW_MAPWAVE + 7,
-	// Builds the emissive mask of a pass with GPU voxels from the CPU plane and the voxel parts.
+	// Builds the emissive plane of a pass that listed its plane writes.
+	VIEW_MAPPLANE,
+	// Builds the emissive mask of a pass with GPU voxels from the plane and the voxel parts.
 	VIEW_MAPMASK,
 	VIEW_MAPGLOW,
 	VIEW_MAPGLOWX,

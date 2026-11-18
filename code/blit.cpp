@@ -144,6 +144,7 @@ void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels) = N
 BlitRecordSource Blit_Record_Source = {};
 bool (*Blit_Record_RLE)(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha) = NULL;
 bool (*Blit_Record_Bit)(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha) = NULL;
+bool (*Blit_Record_Mask)(EmissivePlane const & plane, bool recorded, unsigned char strength, bool depth) = NULL;
 
 
 /***********************************************************************************************
@@ -625,17 +626,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	EmissivePlane const * emissive_clears = NULL;
 	int const emissive_x = dcliprect.X + drect.X;
 	int const emissive_y = dcliprect.Y + drect.Y;
-	if (Emissive_Is_Enabled()) {
-		if (EmissivePlane * plane = Emissive_Plane_For(&dest)) {
-			emissive = plane->Pixels + emissive_y * plane->Pitch + emissive_x;
-			emissive_pitch = plane->Pitch;
-			if (Emissive_Draw_Strength != 0) {
-				Emissive_Mark_Rows(*plane, emissive_y, height, emissive_x, emissive_x + srect.Width);
-			} else {
-				emissive_clears = plane;
-			}
-		}
-	}
+	EmissivePlane * emissive_plane = Emissive_Is_Enabled() ? Emissive_Plane_For(&dest) : NULL;
 	auto const emissive_row_has_values = [&](int y) {
 		if (emissive_clears == NULL) {
 			return(true);
@@ -670,8 +661,22 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 
 	// A shadow drawn into the tile layer marks its plane and leaves the pixels alone.
 	bool consumed = shadow != NULL && shadow_value != 0;
+	bool recorded = false;
 	if (Blit_Record_RLE != NULL && !consumed) {
-		consumed = Blit_Record_RLE(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, sbuffer, leftmargin, current_z, z_fraction, z_step_numerator, z_step_denominator, grad->WrapIncrement, zshape != NULL ? (signed char const *)zshapelock : NULL, zshapew, alpha);
+		consumed = recorded = Blit_Record_RLE(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, sbuffer, leftmargin, current_z, z_fraction, z_step_numerator, z_step_denominator, grad->WrapIncrement, zshape != NULL ? (signed char const *)zshapelock : NULL, zshapew, alpha);
+	}
+
+	if (emissive_plane != NULL && Blit_Record_Mask != NULL && Blit_Record_Mask(*emissive_plane, recorded, Emissive_Draw_Strength, DepthBuffer != NULL)) {
+		emissive_plane = NULL;
+	}
+	if (emissive_plane != NULL) {
+		emissive = emissive_plane->Pixels + emissive_y * emissive_plane->Pitch + emissive_x;
+		emissive_pitch = emissive_plane->Pitch;
+		if (Emissive_Draw_Strength != 0) {
+			Emissive_Mark_Rows(*emissive_plane, emissive_y, height, emissive_x, emissive_x + srect.Width);
+		} else {
+			emissive_clears = emissive_plane;
+		}
 	}
 
 	// A recorded blit writes no pixels, so its rows have nothing to do unless they clear emissive values.
