@@ -1,6 +1,6 @@
 ; Logs which palette a stock CITY01 apartment block of the south-east town on XMP04T8 (a temperate map) draws through with StockArtFixes=yes (on, the default) and saves a shot of the town.
 ; Expected: the CITY01 apartment blocks at 211,93 and 220,77 name Palette [city], the file CITYTEM.PAL and draw through the palette. The CITY03 block at 211,87 does the same.
-; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/stock-art-fixes.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1280 -Height 720 -Seconds 90 -Settings "[Video]`nGpuRender=yes`nStockArtFixes=yes" -ShotDir scratch-agent/stock-art-fixes -Filter "AUTOTEST buildingpalette|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/stock-art-fixes.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1280 -Height 720 -Seconds 90 -Settings "[Video]`nGpuRender=yes`nStockArtFixes=yes" -ShotDir scratch-agent/stock-art-fixes -Filter "AUTOTEST frame|buildingpalette|Exception" -Uncapped -StopAfterSteps
 1 view 216 84
 2 reveal
 5 zoom 1.0
