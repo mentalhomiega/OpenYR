@@ -202,6 +202,10 @@ struct GpuVoxelPart
 
 	// The emissive mask the software gives Area, or empty while the mask is off or the software did not render the part.
 	std::vector<unsigned char> MaskReference;
+
+	// How far from its whole map pixel the part's object is drawn, in map pixels (GpuDraw_Set_Voxel_Shift).
+	float ShiftX = 0.0f;
+	float ShiftY = 0.0f;
 };
 
 
@@ -309,6 +313,10 @@ bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & d
 // True while a pass records and GpuVoxels is on: a voxel object prepared now should be handed to
 // GpuDraw_Voxel_Part.
 bool GpuDraw_Voxels_Wanted(void);
+
+// Sets how far from their whole map pixel the voxel parts recorded from now on are drawn, in map pixels; a draw into
+// a target at a scale above 1 moves them by that many target pixels. Set it around an object's draw and back to 0.
+void GpuDraw_Set_Voxel_Shift(float x, float y);
 
 // True while GpuDraw_Voxels_Wanted and GpuVoxelSmooth is on: a voxel object turns to its exact facing.
 bool GpuDraw_Voxels_Smooth(void);

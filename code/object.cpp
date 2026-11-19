@@ -115,6 +115,7 @@
 #include "conquer.h"
 #include "debugmode.h"
 #include "foot.h"
+#include "gpudraw.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
@@ -122,6 +123,7 @@
 #include "map.h"
 #include "mono.h"
 #include "objtype.h"
+#include "goptions.h"
 #include "rules.h"
 #include "savestream.h"
 #include "session.h"
@@ -134,6 +136,7 @@
 #include "tracker.h"
 
 #include <algorithm>
+#include <cmath>
 #include <climits>
 #include <cassert>
 
@@ -1244,9 +1247,20 @@ bool ObjectClass::Render(Rect & cliprect, bool forced, bool extras_only) const
 			}
 
 			/*
-			**	Draw the object itself
+			**	Draw the object itself. A moving object's voxels take the part of its position that
+			**	the whole pixels above leave out.
 			*/
+			bool const shifted = Options.GpuVoxelSubpixel && Is_Foot();
+			if (shifted) {
+				float x = 0.0f;
+				float y = 0.0f;
+				Render_Sub_Offset(x, y);
+				GpuDraw_Set_Voxel_Shift(x, y);
+			}
 			Draw_It(point, cliprect);
+			if (shifted) {
+				GpuDraw_Set_Voxel_Shift(0.0f, 0.0f);
+			}
 
 			return(true);
 		}
@@ -2903,17 +2917,59 @@ unsigned int RenderBlendShifts = 0;
 /// RenderBlend is 1, for an object with no previous position, and for one that moved more than
 /// two cells in a frame. It changes only where the object is drawn, never the game state.
 /// </summary>
+// Whether the object is drawn part way back toward where it stood before the current game frame, and how far back.
+static bool Render_Blends(Coord const & delta, double & back)
+{
+	if (RenderBlend >= 1.0 || std::abs(delta.X) > CELL_LEPTON * 2 || std::abs(delta.Y) > CELL_LEPTON * 2 || std::abs(delta.Z) > CELL_LEPTON * 2) {
+		return(false);
+	}
+	back = 1.0 - RenderBlend;
+	return(true);
+}
+
+
+/// <summary>
+/// Fetches how far the object's exact drawn position lies from the whole pixel Render() draws it at, in map pixels:
+/// the fractions the pixel conversion and Render_Blend_Offset drop. A voxel object drawn at a scale above 1 moves by
+/// it (GpuDraw_Set_Voxel_Shift), so a hover unit's bob and a slow move go by screen pixels. Each axis is kept within
+/// one pixel.
+/// </summary>
+void ObjectClass::Render_Sub_Offset(float & x, float & y) const
+{
+	static double const z_pixels = std::sin(DEG_TO_RAD(60)) * ISO_TILE_PIXEL_W / CELL_LEPTON_DIAG;
+
+	Coord const current = Render_Coord();
+	Point2D whole = TacticalMap->Coord_To_Pixel_Absolute(current);
+	double drawn_x = current.X;
+	double drawn_y = current.Y;
+	double drawn_z = current.Z;
+	double back = 0.0;
+	if (RenderPrevCoord != COORD_NONE && Render_Blends(RenderPrevCoord - current, back)) {
+		Coord const delta = RenderPrevCoord - current;
+		drawn_x += delta.X * back;
+		drawn_y += delta.Y * back;
+		drawn_z += delta.Z * back;
+		Coord const stepped(current.X + int(delta.X * back), current.Y + int(delta.Y * back), current.Z + int(delta.Z * back));
+		whole = TacticalMap->Coord_To_Pixel_Absolute(stepped);
+	}
+	double const exact_x = (drawn_x - drawn_y) * (ISO_TILE_PIXEL_W / 2) / CELL_LEPTON;
+	double const exact_y = (drawn_x + drawn_y) * (ISO_TILE_PIXEL_H / 2) / CELL_LEPTON - drawn_z * z_pixels;
+	x = (float)std::clamp(exact_x - whole.X, -1.0, 1.0);
+	y = (float)std::clamp(exact_y - whole.Y, -1.0, 1.0);
+}
+
+
 Point2D ObjectClass::Render_Blend_Offset(void) const
 {
-	if (RenderBlend >= 1.0 || RenderPrevCoord == COORD_NONE) {
+	if (RenderPrevCoord == COORD_NONE) {
 		return(Point2D(0, 0));
 	}
 	Coord const current = Render_Coord();
 	Coord const delta = RenderPrevCoord - current;
-	if (std::abs(delta.X) > CELL_LEPTON * 2 || std::abs(delta.Y) > CELL_LEPTON * 2 || std::abs(delta.Z) > CELL_LEPTON * 2) {
+	double back = 0.0;
+	if (!Render_Blends(delta, back)) {
 		return(Point2D(0, 0));
 	}
-	double const back = 1.0 - RenderBlend;
 	Coord const drawn(current.X + int(delta.X * back), current.Y + int(delta.Y * back), current.Z + int(delta.Z * back));
 	Point2D const offset = TacticalMap->Coord_To_Pixel_Absolute(drawn) - TacticalMap->Coord_To_Pixel_Absolute(current);
 	if (offset.X != 0 || offset.Y != 0) {
