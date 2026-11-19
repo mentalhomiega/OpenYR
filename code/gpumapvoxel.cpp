@@ -21,6 +21,7 @@
 #include "voxlib.h"
 
 #include <algorithm>
+#include <cmath>
 #include <bgfx/embedded_shader.h>
 #include "bgfxviews.hh"
 #include <cfloat>
@@ -733,6 +734,12 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 	}
 	GpuVoxelPart const & part = list.Voxels[blit.Part];
 	Rect const & area = part.Area;
+	// An object drawn between whole map pixels (GpuDraw_Set_Voxel_Shift) moves by whole target pixels, which only a
+	// scale above 1 makes finer than a map pixel. Its shadow stays on the ground, and its clip gains the pixel it may
+	// move into.
+	int const move_x = scale > 1 ? (int)std::lround(part.ShiftX * scale) : 0;
+	int const move_y = scale > 1 ? (int)std::lround(part.ShiftY * scale) : 0;
+	int const room = (move_x != 0 || move_y != 0) ? 1 : 0;
 	Rect const shown = Intersect(Rect(blit.OriginX, blit.OriginY, area.Width, area.Height), blit.Clip);
 	std::vector<LayerDraw> const & layers = _DirectLayers[blit.Part];
 	for (std::size_t i = 0; i < layers.size(); i++) {
@@ -746,12 +753,21 @@ void GpuVoxel_Draw_Direct(GpuDrawList const & list, GpuVoxelDirectBlit const & b
 		// The piece's top left corner in pass pixels, before the scale.
 		int const left = blit.OriginX + piece.Dest.X - area.X;
 		int const top = blit.OriginY + piece.Dest.Y - area.Y;
-		Rect const clip = Intersect(Rect(left, top, bounds.Width, bounds.Height), shown);
+		Rect clip = Intersect(Rect(left, top, bounds.Width, bounds.Height), shown);
 		if (clip.Width <= 0 || clip.Height <= 0) {
 			continue;
 		}
-		int const shift_x = (left - bounds.X) * scale;
-		int const shift_y = (top - bounds.Y) * scale;
+		bool const moved = room != 0 && !layer.Shadow;
+		if (moved) {
+			int const right = clip.X + clip.Width + room;
+			int const bottom = clip.Y + clip.Height + room;
+			clip.X = std::max(clip.X - room, 0);
+			clip.Y = std::max(clip.Y - room, 0);
+			clip.Width = right - clip.X;
+			clip.Height = bottom - clip.Y;
+		}
+		int const shift_x = (left - bounds.X) * scale + (moved ? move_x : 0);
+		int const shift_y = (top - bounds.Y) * scale + (moved ? move_y : 0);
 		FaceSlot const * faces = Find_Faces(layer, scale);
 		if (faces != NULL) {
 			GpuVoxelModelView const model = Gpu_Voxel_Model_View(layer.Setup.Arg, layer.Reversed, layer.Depth);
