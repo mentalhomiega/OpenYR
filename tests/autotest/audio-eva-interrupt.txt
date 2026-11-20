@@ -1,10 +1,10 @@
-; An INTERRUPT announcer line cuts the line playing and empties the queue. The test mod's EVAMD.INI gives four lines:
-; a long QUEUE line, a short LOW one, a QUEUED_INTERRUPT one and an IMPORTANT INTERRUPT one. The long line plays,
+; An INTERRUPT announcer line cuts the line playing and empties the queue. The test mod's EVAMD.INI gives, among others,
+; a long QUEUE line, a short LOW one, a QUEUED_INTERRUPT one and an IMPORTANT INTERRUPT one. The long line plays from frame 30 to 148,
 ; the short one waits behind it, and the QUEUED_INTERRUPT line asked for while the long one plays waits too, since it
 ; never cuts. The INTERRUPT line then cuts the long line at once (gamemd's VoxClass::PlayIndex, 0x752480, stops the
 ; stream and empties every list when a line plays and the new one's Type is INTERRUPT) and starts with no gap.
-; Expected log: "eva start line=EVA_TestLong", "eva queued line=EVA_TestQueuedInterrupt" at frame 120, then at
-; frame 150 "eva cleared count=2", "eva cut line=EVA_TestLong" and "eva start line=EVA_TestInterrupt" in the same
+; Expected log: "eva start line=EVA_TestLong", "eva queued line=EVA_TestQueuedInterrupt" at frame 100, then at
+; frame 120 "eva cleared count=2", "eva cut line=EVA_TestLong" and "eva start line=EVA_TestInterrupt" in the same
 ; frame; EVA_TestShort and EVA_TestQueuedInterrupt never start.
 ; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-interrupt.txt -Mods src-agent29/tests/autotest/audio-eva-rules -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* (eva|stream) |Exception"
 10 sounds 2
@@ -12,8 +12,8 @@
 20 volume voice 1
 30 speak EVA_TestLong
 30 speak EVA_TestShort
-120 speak EVA_TestQueuedInterrupt
-150 speak EVA_TestInterrupt
+100 speak EVA_TestQueuedInterrupt
+120 speak EVA_TestInterrupt
 300 audiocapture stop
 310 sounds 0
 320 quit

@@ -1232,6 +1232,7 @@ void Clear_Scenario(void)
 	LayerFade_Clear();
 	Path_Ahead_Clear();
 	Stop_All_Sound_Effects();
+	Reset_Speech();
 	Sync_Recorder_Disarm();
 
 	int index;

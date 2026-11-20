@@ -47,8 +47,6 @@ class AudioClockTimerClass
 		operator int (void) const { return((*this)()); }
 };
 
-static CDTimerClass<AudioClockTimerClass> SpeakTimer;
-
 /*
 **	This elaborates all the EVA speech voices.
 */
@@ -636,7 +634,8 @@ int const PRIORITY_LOW = 25;
 int const PRIORITY_NORMAL = 50;
 int const PRIORITY_IMPORTANT = 100;
 int const PRIORITY_CRITICAL = 255;
-int const SETTLE_TICKS = TIMER_SECOND;
+// gamemd starts the next line 500 ms after the stream it plays on last started or ended (FUN_00752760 with the time
+// the stream's end callback, 0x407a30, stores); a line ends after it starts, so the gap follows the end.
 int const GAP_TICKS = TIMER_SECOND / 2;
 
 // A queued line at or above this number is a Tiberian Sun speech file, numbered by its VoxType.
@@ -686,6 +685,11 @@ VoxQueueClass Queue;
 AudioHandle Current;
 int CurrentLine = -1;
 CDTimerClass<AudioClockTimerClass> SpeakGapTimer;
+
+// While BlockCount is above zero new lines are dropped; while PauseCount is, the line playing is paused and no line
+// starts. gamemd keeps the same two counters (0x753570, 0x7535b0).
+int BlockCount = 0;
+int PauseCount = 0;
 
 // The announcer lines that stand for Tiberian Sun's voices with Yuri's Revenge data.
 struct VoiceEvaType {
@@ -789,6 +793,19 @@ bool Is_Eva_Line(VoxType voice)
 }
 
 
+// The priority level the queue keeps, from 0 (LOW) to 3 (CRITICAL), as gamemd numbers the file's priorities.
+int Priority_Level(int priority)
+{
+	if (priority >= PRIORITY_CRITICAL) {
+		return(3);
+	}
+	if (priority >= PRIORITY_IMPORTANT) {
+		return(2);
+	}
+	return(priority >= PRIORITY_NORMAL ? 1 : 0);
+}
+
+
 // The name the audio test log gives a queued line.
 std::string Line_Name(int line)
 {
@@ -802,14 +819,16 @@ std::string Line_Name(int line)
 
 char const * Control_Name(VoxControlType control)
 {
-	static char const * const NAMES[] = {"queue", "critical", "queued-interrupt", "standard", "interrupt"};
+	static char const * const NAMES[] = {"standard", "queue", "interrupt", "queued-interrupt"};
 	return((unsigned)control < sizeof(NAMES) / sizeof(NAMES[0]) ? NAMES[control] : "?");
 }
 
 
 void Trace_Line(char const * action, int line, char const * format = "", ...)
 {
-	if (!AudioTrace.Is_On()) {
+	// A line that will not play goes to the debug log too, so a play-test log says why it was silent.
+	bool const unplayed = strcmp(action, "dropped") == 0 || strcmp(action, "skipped") == 0 || strcmp(action, "cleared") == 0;
+	if (!AudioTrace.Is_On() && !unplayed) {
 		return;
 	}
 	char extra[256];
@@ -817,6 +836,11 @@ void Trace_Line(char const * action, int line, char const * format = "", ...)
 	va_start(args, format);
 	std::vsnprintf(extra, sizeof(extra), format, args);
 	va_end(args);
+	if (unplayed && strcmp(action, "cleared") == 0) {
+		DebugString("Speech: %s emptied the queue, %s\n", Line_Name(line).c_str(), extra);
+	} else if (unplayed) {
+		DebugString("Speech: %s %s, %s\n", action, Line_Name(line).c_str(), extra);
+	}
 	AudioTrace.Write("eva", "%s line=%s%s%s", action, AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), extra[0] != '\0' ? " " : "", extra);
 }
 
@@ -889,23 +913,45 @@ void Speak_Eva(char const * name, bool now)
 
 /// <summary>
 /// Queues the announcer line at that position of the announcer file's list, as Yuri's Revenge's
-/// VoxClass::PlayIndex (0x752480) does. A line asked for now goes ahead of the waiting lines;
-/// otherwise its Type and Priority in the file decide where it waits.
+/// VoxClass::PlayIndex (0x752480) does: its Type and Priority in the file decide where it waits, and it
+/// starts at once when the announcer is free. A line asked for now is asked as gamemd's radar asks for
+/// its incoming-transmission line (0x6579ac): with CRITICAL priority and the STANDARD type.
 /// </summary>
 void Speak_Eva_Index(int line, bool now)
+{
+	if (now) {
+		Speak_Eva_Index_As(line, VOXC_STANDARD, VoxQueueClass::LEVELS - 1);
+	} else {
+		Speak_Eva_Index_As(line, -1, -1);
+	}
+}
+
+
+/// <summary>
+/// Queues the announcer line at that position of the announcer file's list with its Type, its priority
+/// level (0 LOW to 3 CRITICAL), or both replaced, as gamemd's callers of PlayIndex may; -1 keeps the
+/// file's value.
+/// </summary>
+void Speak_Eva_Index_As(int line, int type, int level)
 {
 	if (line >= 0 && line < (int)EvaLines.size()) {
 		DebugString("Speech: request %s\n", EvaLines[line].Name.c_str());
 	}
 	if (AudioTrace.Is_On()) {
-		Trace_Line("request", line, "now=%d", (int)now);
+		Trace_Line("request", line, "%s%s", type >= 0 ? "as=" : "", type >= 0 ? Control_Name(VoxControlType(type)) : "");
 	}
-	// The menu battle has nobody playing, so EVA stays quiet for it.
-	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || line < 0 || Shellmap_In_Scope()) {
+	// The menu battle has nobody playing, so EVA stays quiet for it. A line asked for at speech volume 0 still
+	// takes its turn, silent, as gamemd's PlayIndex never reads the volume.
+	// Only a blocked line reaches the debug log here; the other cases hold for every line alike.
+	if (Debug_Quiet || !AudioEngine.Is_Available() || line < 0 || Shellmap_In_Scope()) {
 		if (AudioTrace.Is_On()) {
-			char const * reason = line < 0 ? "no-line" : (SpeechVolume <= 0 ? "volume-zero" : (Shellmap_In_Scope() ? "menu-battle" : "no-audio"));
-			Trace_Line("dropped", line, "reason=%s", reason);
+			char const * reason = line < 0 ? "no-line" : (Shellmap_In_Scope() ? "menu-battle" : "no-audio");
+			AudioTrace.Write("eva", "dropped line=%s reason=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), reason);
 		}
+		return;
+	}
+	if (BlockCount > 0) {
+		Trace_Line("dropped", line, "reason=blocked");
 		return;
 	}
 
@@ -917,7 +963,7 @@ void Speak_Eva_Index(int line, bool now)
 			Trace_Line("dropped", line, "reason=speech-off");
 			return;
 		}
-		control = Is_Critical_Line(voice) ? VOXC_CRITICAL : VOXC_QUEUE;
+		control = Is_Critical_Line(voice) ? VOXC_STANDARD : VOXC_QUEUE;
 		priority = Is_Critical_Line(voice) ? PRIORITY_CRITICAL : PRIORITY_NORMAL;
 	} else {
 		if (line >= (int)EvaLines.size()) {
@@ -928,46 +974,36 @@ void Speak_Eva_Index(int line, bool now)
 			Trace_Line("dropped", line, "reason=speech-off");
 			return;
 		}
-		control = entry.Priority == PRIORITY_CRITICAL ? VOXC_CRITICAL : entry.Control;
+		control = entry.Control;
 		priority = entry.Priority;
 	}
-	if (now) {
-		control = VOXC_QUEUED_INTERRUPT;
+	if (type >= 0) {
+		control = VoxControlType(type);
+	}
+	if (level >= 0) {
+		static int const PRIORITIES[VoxQueueClass::LEVELS] = {PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_IMPORTANT, PRIORITY_CRITICAL};
+		priority = PRIORITIES[std::min(level, VoxQueueClass::LEVELS - 1)];
 	}
 
-	bool idle = !Current.Is_Valid() && Queue.Count() == 0;
 	VoxSubmitClass outcome;
-	bool const cut = Queue.Submit(line, priority, control, Current.Is_Valid() ? CurrentLine : -1, &outcome);
-	if (AudioTrace.Is_On()) {
-		static char const * const RESULTS[] = {"queued", "dropped", "dropped", "dropped"};
-		static char const * const REASONS[] = {"", " reason=playing", " reason=waiting", " reason=standard-held"};
-		Trace_Line(RESULTS[outcome.Result], line, "prio=%d type=%s pending=%d%s", priority, Control_Name(control), Queue.Count(), REASONS[outcome.Result]);
-		if (outcome.Cleared > 0) {
-			Trace_Line("cleared", line, "count=%d", outcome.Cleared);
-		}
-		if (outcome.Replaced >= 0) {
-			Trace_Line("dropped", outcome.Replaced, "reason=replaced by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
-		}
-		if (outcome.Evicted >= 0) {
-			Trace_Line("dropped", outcome.Evicted, "reason=queue-full by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
-		}
-		if (cut) {
-			Trace_Line("cut", CurrentLine, "by=%s h=%u", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), Current.Raw());
-		}
+	bool const cut = Queue.Submit(line, Priority_Level(priority), control, Current.Is_Valid() ? CurrentLine : -1, &outcome);
+	static char const * const REASONS[] = {"", " reason=playing", " reason=waiting", " reason=standard-held", " reason=urgent-waiting"};
+	Trace_Line(outcome.Result == VoxSubmitClass::ADDED ? "queued" : "dropped", line, "prio=%d type=%s pending=%d%s", priority, Control_Name(control), Queue.Count(), REASONS[outcome.Result]);
+	if (outcome.Cleared > 0) {
+		Trace_Line("cleared", line, "count=%d", outcome.Cleared);
 	}
+	if (outcome.Replaced >= 0) {
+		Trace_Line("dropped", outcome.Replaced, "reason=replaced by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
+	}
+	if (cut) {
+		Trace_Line("cut", CurrentLine, "by=%s h=%u", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), Current.Raw());
+	}
+	// gamemd starts the interrupting line with no gap (PlayIndex zeroes DAT_00b1d4d0).
 	if (cut) {
 		AudioEngine.Stop_Stream(Current);
 		Current.Clear();
 		CurrentLine = -1;
-	}
-
-	// A burst settles for a second before its first line, unless one is wanted at once.
-	if (idle) {
-		SpeakTimer = SETTLE_TICKS;
 		SpeakGapTimer = 0;
-	}
-	if (now) {
-		SpeakTimer = 0;
 	}
 	Speak_AI();
 }
@@ -1003,13 +1039,17 @@ void Speak_AI(void)
 		CurrentLine = -1;
 		SpeakGapTimer = GAP_TICKS;
 	}
-	if (Queue.Count() == 0 || SpeakTimer > 0 || SpeakGapTimer > 0) {
+	if (Queue.Count() == 0 || SpeakGapTimer > 0 || PauseCount > 0) {
 		return;
 	}
 
 	// A line whose file is missing is passed over for the next.
 	int next;
-	while (Queue.Next(next)) {
+	int discarded;
+	while (Queue.Next(next, &discarded)) {
+		if (discarded >= 0) {
+			Trace_Line("dropped", discarded, "reason=standard-discarded by=%s", AudioTraceClass::Word(Line_Name(next).c_str()).c_str());
+		}
 		char name[_MAX_FNAME + _MAX_EXT];
 		float volume = 1.0f;
 		if (next >= LEGACY_LINE) {
@@ -1062,6 +1102,54 @@ void Stop_Speaking(void)
 	Current.Clear();
 	CurrentLine = -1;
 	SpeakGapTimer = 0;
+}
+
+
+/// <summary>
+/// Ends every line as Stop_Speaking does and lifts every block and pause, as gamemd does when a scenario ends
+/// (0x7535d0).
+/// </summary>
+void Reset_Speech(void)
+{
+	Stop_Speaking();
+	BlockCount = 0;
+	PauseCount = 0;
+}
+
+
+/// <summary>
+/// Drops every line asked for until as many Unblock_Speech calls follow, as gamemd's announcer does while the
+/// chronoshift screen effect or an in-radar movie runs (0x753570).
+/// </summary>
+void Block_Speech(void)
+{
+	BlockCount++;
+}
+
+
+void Unblock_Speech(void)
+{
+	BlockCount = std::max(BlockCount - 1, 0);
+}
+
+
+/// <summary>
+/// Pauses the line playing and holds the waiting lines until as many Resume_Speech calls follow, as gamemd's
+/// announcer does during a movie and while the game has lost the focus (0x7535b0).
+/// </summary>
+void Pause_Speech(void)
+{
+	if (PauseCount++ == 0 && Current.Is_Valid()) {
+		Current.Pause();
+	}
+}
+
+
+void Resume_Speech(void)
+{
+	if (PauseCount > 0 && --PauseCount == 0 && Current.Is_Valid()) {
+		Current.Resume();
+	}
 }
 
 

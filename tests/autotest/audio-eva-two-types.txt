@@ -1,0 +1,17 @@
+; The same announcer line asked for again while it waits is dropped only when the new request has the Type of the
+; waiting copy, as gamemd's FUN_00752680 test in VoxClass::PlayIndex (0x752480) decides. The test mod's EVA_TestLong
+; plays; EVA_TestShort (QUEUE) waits, a second QUEUE request for it is dropped, and a STANDARD request for it adds a
+; second copy, held as the STANDARD line.
+; Expected log: "eva dropped line=EVA_TestShort ... reason=waiting" at frame 40, "eva queued line=EVA_TestShort ...
+; type=standard" at frame 50, then two "eva start line=EVA_TestShort" after EVA_TestLong ends.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-two-types.txt -Mods src-agent29/tests/autotest/audio-eva-rules -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* eva |Exception"
+10 sounds 2
+10 audiocapture audio-eva-two-types
+20 volume voice 1
+30 speak EVA_TestLong
+30 speak EVA_TestShort
+40 speak EVA_TestShort
+50 speakas standard EVA_TestShort
+450 audiocapture stop
+460 sounds 0
+470 quit

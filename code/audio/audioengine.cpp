@@ -332,7 +332,10 @@ bool AudioEngineClass::Init(void)
 	Feeder.Setup(&Mixer, Device.get());
 	Feeder.Start();
 
-	LastDropped = 0;
+	LastDropped = Mixer.Dropped_Commands();
+	for (int type = 0; type < AudioDropLogClass::TYPES; type++) {
+		LastDroppedByType[type] = Mixer.Drop_Log().ByType[type].load(std::memory_order_relaxed);
+	}
 	LastDropReport = 0;
 	Available = true;
 
@@ -1000,10 +1003,37 @@ void AudioEngineClass::Sound_Callback(void)
 
 	unsigned dropped = Mixer.Dropped_Commands();
 	if (dropped != LastDropped && now - LastDropReport >= DROP_REPORT_MS) {
-		DebugString("Audio: %u commands dropped\n", dropped - LastDropped);
-		LastDropped = dropped;
+		Report_Drops(dropped);
 		LastDropReport = now;
 	}
+}
+
+
+// Writes one line for the commands dropped since the last report: the count of each type, then the first of them
+// with why it was dropped.
+void AudioEngineClass::Report_Drops(unsigned dropped)
+{
+	static char const * const TYPES[AudioDropLogClass::TYPES] = {"play", "play-stream", "end", "stop", "pause", "resume", "gain",
+		"pan", "pitch", "group-gain", "group-duck", "master-gain", "stop-all"};
+	static char const * const REASONS[] = {"ring-full", "bad-slot", "not-allocated", "start-failed", "not-live", "reused", "unknown-type"};
+	static char const * const STATES[] = {"free", "allocated", "playing", "paused", "stopping", "done"};
+
+	std::string counts;
+	for (int type = 0; type < AudioDropLogClass::TYPES; type++) {
+		unsigned const count = Mixer.Drop_Log().ByType[type].load(std::memory_order_relaxed);
+		if (count != LastDroppedByType[type]) {
+			counts += std::string(counts.empty() ? "" : ", ") + TYPES[type] + " " + std::to_string(count - LastDroppedByType[type]);
+			LastDroppedByType[type] = count;
+		}
+	}
+	AudioDropLogClass::DropClass first;
+	if (Mixer.Drop_Log().Take_First(first)) {
+		DebugString("Audio: %u commands dropped (%s); first %s, %s, voice %s\n", dropped - LastDropped, counts.c_str(),
+			TYPES[(int)first.Type], REASONS[(int)first.Reason], STATES[(int)first.State]);
+	} else {
+		DebugString("Audio: %u commands dropped (%s)\n", dropped - LastDropped, counts.c_str());
+	}
+	LastDropped = dropped;
 }
 
 

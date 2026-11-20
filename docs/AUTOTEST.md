@@ -474,7 +474,8 @@ at 0, so raise the ones a test needs with `volume`.
 | `playsound <Sound> [x y]` | Plays that sound list entry, at the cell when one is given, as a weapon or a building would |
 | `music <theme\|number\|stop>` | Plays that score, by name or by its place in the score list, from its start; `stop` stops the music |
 | `speak <EVA name>` | Asks for that announcer line |
-| `speaknow <EVA name>` | Asks for that announcer line at once, as a line that skips the settle delay is asked for |
+| `speaknow <EVA name>` | Asks for that announcer line as the radar asks for its incoming-transmission line: STANDARD, with CRITICAL priority |
+| `speakas <standard\|queue\|interrupt\|queued_interrupt> <EVA name>` | Asks for that announcer line with that Type in place of its own, as the Play Speech trigger action asks for its line as INTERRUPT |
 | `stopspeaking` | Stops the announcer and clears its waiting lines |
 | `evalines` | Writes each announcer line with its priority, type, volume and sample in the current voice, or `-` when it has none |
 

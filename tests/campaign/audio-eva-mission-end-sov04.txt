@@ -1,0 +1,22 @@
+; A mission ending while another announcer line speaks, as at the loss on Soviet 4 (docs/SOV04_PLAYTHROUGH_REVIEW.md,
+; finding 2). EVA_UnitLost (STANDARD, IMPORTANT) starts at once. The mission line Mis_xS4_RomanovIAmCaptured comes
+; from the Play Speech trigger action (21, line 192 of the announcer list), which gamemd asks for as an INTERRUPT line
+; (TActionClass::Execute, 0x6de904): it cuts EVA_UnitLost and starts with no gap. The Lose action (2, naming the
+; Russian house, 8) then asks for EVA_MissionFailed (STANDARD, NORMAL), which is held while the mission line plays,
+; and EVA_OreMinerUnderAttack, of no higher priority, is dropped. The held line starts half a second after the mission
+; line ends; in a game that is during the speech wait of the end of the mission, which this test does not reach, since
+; the run stops at game over.
+; Expected log: "eva cut line=EVA_UnitLost by=Mis_xS4_RomanovIAmCaptured" and "eva start
+; line=Mis_xS4_RomanovIAmCaptured" at frame 110, "eva queued line=EVA_MissionFailed" at frame 120, "eva dropped
+; line=EVA_OreMinerUnderAttack ... reason=standard-held" at frame 130, and "AUTOTEST game over frame 210: lost".
+; Run: scripts/run_autotest.ps1 -Script src-agent29/tests/campaign/audio-eva-mission-end-sov04.txt -Build agent29 -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(game over)|AUDIOLOG.* eva |Game end|Exception"
+; The ui briefing step clicks through the briefing page; the mission needs a window of at least 800x600.
+ui briefing
+90 stopspeaking
+95 sounds 2
+95 audiocapture audio-eva-mission-end-sov04
+96 volume voice 1
+100 speak EVA_UnitLost
+110 trigaction 21 192 0
+120 trigaction 2 8 0
+130 speak EVA_OreMinerUnderAttack

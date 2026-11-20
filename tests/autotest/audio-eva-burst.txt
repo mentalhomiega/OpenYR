@@ -1,9 +1,6 @@
-; Ten QUEUE announcer lines of the same priority asked for in one frame. Our queue holds eight waiting lines, so the
-; ninth and tenth push out the two oldest, which never play; the other eight play in the order asked for.
-; gamemd differs (docs/AUDIO_TESTING.md, announcer rules): its QUEUE lists have no limit (FUN_00752590, 0x752590),
-; and it starts the first line at once, so all ten play.
-; Expected log: "eva dropped line=EVA_NuclearMissileReady reason=queue-full" and the same for EVA_IronCurtainReady at
-; frame 40, then "eva start" for the other eight in the order asked for.
+; Ten QUEUE announcer lines of the same priority asked for in one frame. gamemd's QUEUE lists have no limit
+; (FUN_00752590, 0x752590), so all ten play, the first at once and the rest in the order asked for.
+; Expected log: "eva start" for all ten in the order asked for, and no "eva dropped".
 ; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-burst.txt -Width 800 -Height 600 -Seconds 180 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* eva (start|dropped)|Exception"
 10 sounds 2
 10 audiocapture audio-eva-burst

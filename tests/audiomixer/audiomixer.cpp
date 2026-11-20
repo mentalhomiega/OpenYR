@@ -558,6 +558,23 @@ void Test_Late_Commands(void)
 	rig.Mixer.Push(Simple(AudioCommandType::STOP, 0, 2, 0.1f));
 	rig.Run(480);
 	Check(rig.Mixer.Dropped_Commands() == dropped + 1, "a command for an older use of the voice is counted as dropped");
+
+	// The game may release the voice, or prepare it for its next sound, before a late command arrives.
+	rig.Mixer.Free_Voice(0);
+	dropped = rig.Mixer.Dropped_Commands();
+	rig.Mixer.Push(Simple(AudioCommandType::SET_GAIN, 0, 3, 0.5f, 0.0f));
+	rig.Run(480);
+	Check(rig.Mixer.Dropped_Commands() == dropped, "a gain change that arrives after the voice was released is not counted as dropped");
+	Check(rig.Mixer.Allocate_Voice(0), "the released voice can be prepared again");
+	rig.Mixer.Push(Simple(AudioCommandType::SET_PAN, 0, 3, 0.5f, 0.0f));
+	rig.Run(480);
+	Check(rig.Mixer.Dropped_Commands() == dropped, "nor one that arrives once the voice is prepared for its next sound");
+	AudioDropLogClass::DropClass first;
+	rig.Mixer.Drop_Log().Take_First(first);
+	rig.Mixer.Push(Simple(AudioCommandType::STOP, 0, 2, 0.1f));
+	rig.Run(480);
+	Check(rig.Mixer.Drop_Log().Take_First(first) && first.Type == AudioCommandType::STOP && first.Reason == AudioDropReason::REUSED, "the drop log names the first drop's type and reason");
+	rig.Mixer.Free_Voice(0);
 }
 
 

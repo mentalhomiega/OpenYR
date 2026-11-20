@@ -54,6 +54,7 @@
 #include "globals.h"
 #include "misc.h"
 #include "movie.h"
+#include "vox.h"
 #include "opents_version.h"
 #include "pcx.h"
 #include "sdl/sdlwindow.h"
@@ -93,6 +94,7 @@ void Focus_Loss(void)
 {
 	DebugString("Focus_Loss()\n");
 	Pause_Ingame_Movie(true);
+	Pause_Speech();
 	AudioEngine.Focus_Loss();
 	if (MouseCursor) {
 		_MouseCaptured = MouseCursor->Is_Captured();
@@ -112,6 +114,7 @@ void Focus_Restore(void)
 {
 	DebugString("Focus_Restore()\n");
 	AudioEngine.Focus_Restore();
+	Resume_Speech();
 	DebugString("Focus_Restore(): _MouseCaptured = %s\n", _MouseCaptured ? "true" : "false");
 	if (MouseCursor && _MouseCaptured == true && !Debug_Map) {
 		MouseCursor->Capture_Mouse();

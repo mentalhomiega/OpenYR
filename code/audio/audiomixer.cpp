@@ -94,7 +94,7 @@ struct AudioMixerClass::StateClass {
 	std::unique_ptr<float[]> Resampled;    // one block at the output rate, source channels
 	unsigned Rate = 0;
 
-	void Apply(AudioCommand const & command, std::atomic<unsigned> & dropped);
+	void Apply(AudioCommand const & command, AudioDropLogClass & dropped);
 	bool Start_Segment(VoiceClass & voice);
 	bool Advance_Segment(VoiceClass & voice);
 	bool Configure_Resampler(VoiceClass & voice, unsigned rate, unsigned channels);
@@ -212,9 +212,35 @@ bool AudioMixerClass::Push(AudioCommand const & command)
 		return(false);
 	}
 	if (!State->Commands.Push(command)) {
-		Dropped.fetch_add(1, std::memory_order_relaxed);
+		Drops.Count(command.Type, AudioDropReason::RING_FULL, AudioVoiceState::FREE);
 		return(false);
 	}
+	return(true);
+}
+
+
+void AudioDropLogClass::Count(AudioCommandType type, AudioDropReason reason, AudioVoiceState state)
+{
+	Total.fetch_add(1, std::memory_order_relaxed);
+	if ((unsigned)type < (unsigned)TYPES) {
+		ByType[(unsigned)type].fetch_add(1, std::memory_order_relaxed);
+	}
+	bool expected = false;
+	if (HaveFirst.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+		First = {type, reason, state};
+		FirstReady.store(true, std::memory_order_release);
+	}
+}
+
+
+bool AudioDropLogClass::Take_First(DropClass & drop)
+{
+	if (!FirstReady.load(std::memory_order_acquire)) {
+		return(false);
+	}
+	drop = First;
+	FirstReady.store(false, std::memory_order_relaxed);
+	HaveFirst.store(false, std::memory_order_release);
 	return(true);
 }
 
@@ -255,7 +281,7 @@ void AudioMixerClass::Render(float * output, unsigned frames)
 
 	AudioCommand command;
 	while (s.Commands.Pop(command)) {
-		s.Apply(command, Dropped);
+		s.Apply(command, Drops);
 	}
 
 	bool pause = PauseAll.load(std::memory_order_acquire);
@@ -305,7 +331,7 @@ void AudioMixerClass::Render(float * output, unsigned frames)
 }
 
 
-void AudioMixerClass::StateClass::Apply(AudioCommand const & command, std::atomic<unsigned> & dropped)
+void AudioMixerClass::StateClass::Apply(AudioCommand const & command, AudioDropLogClass & dropped)
 {
 	switch (command.Type) {
 		case AudioCommandType::GROUP_SET_GAIN:
@@ -342,7 +368,7 @@ void AudioMixerClass::StateClass::Apply(AudioCommand const & command, std::atomi
 	}
 
 	if (command.Slot >= AUDIO_MAX_VOICES) {
-		dropped.fetch_add(1, std::memory_order_relaxed);
+		dropped.Count(command.Type, AudioDropReason::BAD_SLOT, AudioVoiceState::FREE);
 		return;
 	}
 	VoiceClass & voice = Voices[command.Slot];
@@ -350,7 +376,7 @@ void AudioMixerClass::StateClass::Apply(AudioCommand const & command, std::atomi
 
 	if (command.Type == AudioCommandType::PLAY_SEQUENCE || command.Type == AudioCommandType::PLAY_STREAM) {
 		if (state != AudioVoiceState::ALLOCATED || command.Ptr == nullptr || command.Group >= AUDIO_GROUP_COUNT) {
-			dropped.fetch_add(1, std::memory_order_relaxed);
+			dropped.Count(command.Type, AudioDropReason::NOT_ALLOCATED, state);
 			return;
 		}
 		voice.Generation = command.Generation;
@@ -386,7 +412,7 @@ void AudioMixerClass::StateClass::Apply(AudioCommand const & command, std::atomi
 				&& Start_Segment(voice);
 		}
 		if (!started) {
-			dropped.fetch_add(1, std::memory_order_relaxed);
+			dropped.Count(command.Type, AudioDropReason::START_FAILED, state);
 			voice.State.store(AudioVoiceState::DONE, std::memory_order_release);
 			return;
 		}
@@ -396,9 +422,11 @@ void AudioMixerClass::StateClass::Apply(AudioCommand const & command, std::atomi
 
 	bool live = (state == AudioVoiceState::PLAYING || state == AudioVoiceState::PAUSED || state == AudioVoiceState::STOPPING);
 	if (!live || voice.Generation != command.Generation) {
-		// A command reaching a voice that already finished is harmless, not lost.
-		if (state != AudioVoiceState::DONE || voice.Generation != command.Generation) {
-			dropped.fetch_add(1, std::memory_order_relaxed);
+		// A command reaching a voice that already finished is harmless, not lost, also once the game has released
+		// or prepared the voice again: the generation stays until the voice's next play is applied.
+		bool const ended = state == AudioVoiceState::DONE || state == AudioVoiceState::FREE || state == AudioVoiceState::ALLOCATED;
+		if (!ended || voice.Generation != command.Generation) {
+			dropped.Count(command.Type, voice.Generation != command.Generation ? AudioDropReason::REUSED : AudioDropReason::NOT_LIVE, state);
 		}
 		return;
 	}
@@ -479,7 +507,7 @@ void AudioMixerClass::StateClass::Apply(AudioCommand const & command, std::atomi
 			break;
 
 		default:
-			dropped.fetch_add(1, std::memory_order_relaxed);
+			dropped.Count(command.Type, AudioDropReason::UNKNOWN_TYPE, state);
 			break;
 	}
 }

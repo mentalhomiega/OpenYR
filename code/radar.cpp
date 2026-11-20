@@ -122,6 +122,17 @@ void const * RadarClass::RadarAnim  = NULL;
 ConvertClass * RadarClass::RadarAnimDrawer = NULL;
 void const * RadarClass::TopShape  = NULL;
 
+// True while the radar's movies hold the announcer paused.
+static bool MoviePausesSpeech = false;
+
+static void Release_Movie_Speech(void)
+{
+	if (MoviePausesSpeech) {
+		MoviePausesSpeech = false;
+		Resume_Speech();
+	}
+}
+
 
 /***********************************************************************************************
  * RadarClass::RadarClass -- Default constructor for RadarClass object.                        *
@@ -553,8 +564,16 @@ void RadarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	if (IngameVQ.Count() > 0 && RadarMode != RMODE_MOVIE && !Is_Speaking()) {
 		Speak(VOX_INCOMING_TRANSMISSION, true);
+		// Until the movie starts, gamemd drops every other announcer line (0x6579c0).
+		Block_Speech();
 		SuspendedRadarMode = RadarMode;
 		Radar_Activate(3);
+	}
+
+	// gamemd's radar lifts the announcer's block each frame that neither a radar movie nor the chronoshift screen
+	// effect holds it (RadarClass::Update, 0x653850).
+	if (RadarMode != RMODE_MOVIE && !Chrono_Screen_Effect_Is_Running()) {
+		Unblock_Speech();
 	}
 }
 
@@ -1633,6 +1652,7 @@ void RadarClass::Post_Load_Radar_Fixup(void)
 		Technos[i]->IsRadarTracked = false;
 	}
 	if (RadarMode == RMODE_MOVIE) {
+		Release_Movie_Speech();
 		RadarState = RSTATE_MOVIE_DONE;
 		Radar_Activate(SuspendedRadarMode);
 	}
@@ -2390,6 +2410,13 @@ void RadarClass::Play_Movie(void)
 	VQHandle * handle = NULL;
 
 	if (needs_volume_adjustment == true && !Is_Speaking()) {
+		// As gamemd does when its radar movie starts (0x657922), the announcer may queue lines again but starts none
+		// until the movies end.
+		Unblock_Speech();
+		if (!MoviePausesSpeech) {
+			Pause_Speech();
+			MoviePausesSpeech = true;
+		}
 		AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 0.5f, 250);
 		AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 0.5f, 250);
 		AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 0.5f, 250);
@@ -2425,6 +2452,7 @@ void RadarClass::Play_Movie(void)
 
 		if (IngameVQ.Count() == 0) {
 			DebugString("Radar: Movie done.\n");
+			Release_Movie_Speech();
 			AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 1.0f, 250);
 			AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 1.0f, 250);
 			AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 1.0f, 250);

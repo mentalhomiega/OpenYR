@@ -4739,6 +4739,24 @@ static void Speak_Step(StepType const & step)
 }
 
 
+// speakas <standard|queue|interrupt|queued_interrupt> <EVA name>: asks for that announcer line with that Type in place
+// of its own, as some of gamemd's callers do.
+static void Speakas_Step(StepType const & step)
+{
+	// In VoxControlType order.
+	static char const * const TYPES[] = {"standard", "queue", "interrupt", "queued_interrupt"};
+	std::string const type = step.Words.size() > 2 ? step.Words[2] : "";
+	std::string const name = step.Words.size() > 3 ? step.Words[3] : "";
+	for (int index = 0; index < (int)std::size(TYPES); index++) {
+		if (_stricmp(type.c_str(), TYPES[index]) == 0) {
+			Speak_Eva_Index_As(Eva_Line(name.c_str()), index, -1);
+			return;
+		}
+	}
+	DebugString("AUTOTEST   speakas: no type %s\n", type.c_str());
+}
+
+
 // evafile <EVA name>: opens that announcer line's sample for the player's side at no volume.
 static void Evafile_Step(StepType const & step)
 {
@@ -8433,6 +8451,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"ini", Ini_Step},
 		{"speak", Speak_Step},
 		{"speaknow", Speaknow_Step},
+		{"speakas", Speakas_Step},
 		{"stopspeaking", [](StepType const &) {Stop_Speaking();}},
 		{"evalines", [](StepType const &) {Log_Eva_Lines();}},
 		{"evafile", Evafile_Step},
