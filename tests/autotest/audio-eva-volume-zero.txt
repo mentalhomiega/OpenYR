@@ -1,0 +1,10 @@
+; An announcer line asked for at speech volume 0 still takes its turn, silent, as gamemd's VoxClass::PlayIndex
+; (0x752480) never reads the volume. The run leaves the voice volume at the 0 run_autotest.ps1 sets.
+; Expected log: "eva queued line=EVA_UnitReady" and "eva start line=EVA_UnitReady" at frame 40, then "eva end".
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-volume-zero.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* eva |Exception"
+10 sounds 2
+10 audiocapture audio-eva-volume-zero
+40 speak EVA_UnitReady
+300 audiocapture stop
+310 sounds 0
+320 quit

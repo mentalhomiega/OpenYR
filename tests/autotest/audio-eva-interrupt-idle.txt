@@ -1,0 +1,16 @@
+; An INTERRUPT announcer line asked for while nothing plays clears nothing, as in gamemd's VoxClass::PlayIndex
+; (0x752480), which empties the lists only when a line is playing. The test mod's EVA_TestLong plays and ends at frame
+; 148; EVA_TestShort waits for the half-second gap. EVA_TestInterrupt, asked for in that gap, is held as a STANDARD line
+; would be (FUN_00752590), and the held line plays before the QUEUE lists, so it starts first and EVA_TestShort follows.
+; Expected log: "eva queued line=EVA_TestInterrupt" at frame 155 with no "eva cleared" and no "eva cut", then
+; "eva start" for EVA_TestInterrupt and later for EVA_TestShort.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-interrupt-idle.txt -Mods src-agent29/tests/autotest/audio-eva-rules -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* eva |Exception"
+10 sounds 2
+10 audiocapture audio-eva-interrupt-idle
+20 volume voice 1
+30 speak EVA_TestLong
+30 speak EVA_TestShort
+155 speak EVA_TestInterrupt
+450 audiocapture stop
+460 sounds 0
+470 quit

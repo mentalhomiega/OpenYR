@@ -97,6 +97,7 @@
 #include "utf8.h"
 #include "vector.h"
 #include "vein.h"
+#include "vox.h"
 #include "waypoint.h"
 #include "zbuffer.h"
 
@@ -4899,6 +4900,8 @@ void Start_Chrono_Screen_Effect(int frames)
 		Sound_Effect(Rule->LetsDoTheTimeWarpOutAgain, 1.0f, SOUND_PAN_CENTER, &ChronoSound);
 	}
 	Scripted_View_Zoom(true);
+	// The radar lifts the block once the effect has ended.
+	Block_Speech();
 }
 
 

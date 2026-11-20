@@ -109,6 +109,7 @@
 #include "viewzoom.h"
 #include "voc.h"
 #include "vox.h"
+#include "voxqueue.h"
 #include "warhead.h"
 #include "waypoint.h"
 #include "weapon.h"
@@ -1807,15 +1808,16 @@ bool TActionClass::TAction_PLAY_MUSIC(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_PLAY_SPEECH(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	// gamemd asks for the line as an INTERRUPT one, which cuts the line playing (TActionClass::Execute, 0x6de904).
 	// Yuri's Revenge names the line instead of numbering it.
 	if (Text[0] != '\0') {
-		Speak_Eva(Text);
+		Speak_Eva_Index_As(Eva_Line(Text), VOXC_INTERRUPT, -1);
 		return(true);
 	}
 
 	// With an announcer file the number is a position in its list, as in Yuri's Revenge.
 	if (Is_Eva_Loaded()) {
-		Speak_Eva_Index((int)Data.Speech);
+		Speak_Eva_Index_As((int)Data.Speech, VOXC_INTERRUPT, -1);
 	} else {
 		Speak(Data.Speech);
 	}

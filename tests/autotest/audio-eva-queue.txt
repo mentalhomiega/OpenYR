@@ -1,10 +1,10 @@
 ; Three QUEUE announcer lines asked for in the same frame, lowest priority first: EVA_NewConstructionOptions (LOW),
-; EVA_BuildingCaptured (NORMAL) and EVA_ReinforcementsHaveArrived (IMPORTANT). They play one at a time, highest
-; priority first, after the one-second settle of a burst, and each waits half a second after the one before ends.
-; gamemd differs (docs/AUDIO_TESTING.md, announcer rules): VoxClass::PlayIndex (0x752480) starts the first line at once,
-; and FUN_00752760 lets the next start 500 ms after the previous one started, not ended.
-; Expected log: three "eva queued" lines at frame 40, then "eva start" for EVA_ReinforcementsHaveArrived,
-; EVA_BuildingCaptured and EVA_NewConstructionOptions in that order, each after the "eva end" of the one before.
+; EVA_BuildingCaptured (NORMAL) and EVA_ReinforcementsHaveArrived (IMPORTANT). The first starts at once, since the
+; announcer is free (VoxClass::PlayIndex, 0x752480); the other two wait in their priority's QUEUE list and play
+; highest priority first, each half a second after the one before ends (FUN_00752760 and the stream's end time).
+; Expected log: three "eva queued" lines at frame 40 and "eva start" for EVA_NewConstructionOptions in the same frame,
+; then "eva start" for EVA_ReinforcementsHaveArrived and EVA_BuildingCaptured in that order, each after the "eva end"
+; of the one before.
 ; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-queue.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* (eva|stream) |Exception"
 10 sounds 2
 10 audiocapture audio-eva-queue

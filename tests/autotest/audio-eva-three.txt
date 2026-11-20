@@ -1,12 +1,11 @@
-; Three STANDARD announcer lines asked for in the same frame. Our announcer keeps one waiting STANDARD line: the
-; second line of equal priority is dropped, and the third, of higher priority, replaces the first. Only
-; EVA_InsufficientFunds plays, after the one-second settle delay. The run records the mix with audiocapture, so the
+; Three STANDARD announcer lines asked for in the same frame, as gamemd's VoxClass::PlayIndex (0x752480) takes them.
+; EVA_ConstructionComplete starts at once, since the announcer is free (FUN_00752760). EVA_UnitReady is held as the
+; one waiting STANDARD line, and EVA_InsufficientFunds, of higher priority, replaces it (FUN_00752590), so it plays
+; after EVA_ConstructionComplete and EVA_UnitReady never plays. The run records the mix with audiocapture, so the
 ; frames below follow the recorded audio, not the wall clock.
-; gamemd differs (docs/AUDIO_TESTING.md, announcer rules): it starts the first line at once (0x752760), so
-; EVA_ConstructionComplete plays and EVA_InsufficientFunds follows it.
-; Expected log at frame 40: "eva queued" for EVA_ConstructionComplete, "eva dropped" for EVA_UnitReady,
-; "eva queued" for EVA_InsufficientFunds, "eva dropped line=EVA_ConstructionComplete reason=replaced"; then
-; "eva start" and "eva end" for EVA_InsufficientFunds only.
+; Expected log at frame 40: "eva start" for EVA_ConstructionComplete, "eva queued" for EVA_UnitReady and
+; EVA_InsufficientFunds, "eva dropped line=EVA_UnitReady reason=replaced"; then "eva start" for EVA_InsufficientFunds
+; half a second after EVA_ConstructionComplete ends.
 ; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-three.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* eva |Exception"
 10 sounds 2
 10 audiocapture audio-eva-three

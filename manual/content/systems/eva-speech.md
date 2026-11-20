@@ -1,11 +1,11 @@
 ---
 title: EVA speech
-summary: The announcer's lines come from EVAMD.INI in the voice of the player's side, wait in a queue of up to eight, and play one at a time.
+summary: The announcer's lines come from EVAMD.INI in the voice of the player's side, wait by their Type and priority, and play one at a time.
 category: audio-speech
 keys: [VoiceVolume]
 ---
 
-Every line spoken during a game goes through one queue and plays one at a time. That includes the announcer's lines and the lines that [Play speech](/mapping/actions/taction-play-speech/) asks for. Up to eight lines can wait in the queue.
+Every line spoken during a game goes through one queue and plays one at a time. That includes the announcer's lines and the lines that [Play speech](/mapping/actions/taction-play-speech/) asks for. The queue has no limit.
 
 ## Where the lines come from
 
@@ -19,27 +19,26 @@ A line whose file cannot be opened is skipped, and the next waiting line plays i
 
 ## Timing
 
-When a line is requested while nothing is speaking or waiting, the game waits about a second before playing it. The other lines an event requests over the next few frames join the queue during that second. After each line ends, the next one waits half a second.
-
-A line can also be requested to play at once. It ends the one-second wait and goes ahead of the ordinary waiting lines, but it does not cut a line that is already speaking, and it still waits out the half-second gap. The incoming-transmission call that opens a radar movie is requested this way.
+A line starts at once when nothing is speaking and at least half a second has passed since the last line ended. Otherwise it waits, and the next waiting line starts half a second after the line speaking ends.
 
 ## Order
 
-Each line has a `Type` and a `Priority` in EVAMD.INI. Waiting lines play in this order:
+Each line has a `Type` and a `Priority` in EVAMD.INI. A line waits in one of four places:
 
-1. `Priority=CRITICAL` lines.
-2. Lines requested to play at once, and `INTERRUPT` and `QUEUED_INTERRUPT` lines.
-3. `QUEUE` lines.
-4. The one waiting `STANDARD` line.
+1. A `QUEUED_INTERRUPT` line joins the interrupt list.
+2. A `QUEUE` line joins the list of its priority. A `QUEUE` line of `CRITICAL` priority waits here, not with the critical lines.
+3. Any other line of `CRITICAL` priority joins the critical list.
+4. Any other line becomes the one held `STANDARD` line, if no interrupt or critical line waits and the held line, if any, has a lower priority; it then replaces the held line. Otherwise the new line is dropped.
 
-Within each group, a higher priority plays first, and lines of equal priority play oldest first.
+The next line to play is the first of the interrupt list, else the first of the critical list, else the held line, else the first line of the highest-priority `QUEUE` list. Each list plays oldest first. When an interrupt or critical line starts, the held line is dropped.
 
-- An `INTERRUPT` line empties the queue and cuts the line that is speaking.
-- Only one `STANDARD` line waits at a time. A new one replaces it only with a higher priority; otherwise the new line is dropped.
+- An `INTERRUPT` line asked for while a line speaks cuts that line, empties the queue and starts at once. Asked for while nothing speaks, it empties nothing and waits as a `STANDARD` line.
+- [Play speech](/mapping/actions/taction-play-speech/) asks for its line as an `INTERRUPT` line, whatever its `Type`.
+- The incoming-transmission call that opens a radar movie is asked for as a `STANDARD` line of `CRITICAL` priority.
 
-A line that is speaking or already waiting is not added again. When all eight places are taken, the new line takes the place of a waiting one: a `STANDARD` line first, then the lowest-priority `QUEUE` line, then the lowest-priority line of the second group, with the oldest going first among equals. A critical line is replaced only when every waiting line is critical.
+A line asked for while it speaks is not added again. A line asked for while it waits is dropped when it was asked for with the same `Type` as the waiting copy; with another `Type`, a second copy waits.
 
-Without EVAMD.INI, mission accomplished and mission failed are the critical lines, and every other line is a `QUEUE` line of the same priority.
+Without EVAMD.INI, mission accomplished and mission failed are `STANDARD` lines of `CRITICAL` priority, and every other line is a `QUEUE` line of the same priority.
 
 ## What stops a line
 
@@ -47,6 +46,8 @@ Stopping speech empties the queue and cuts the line that is speaking. It happens
 
 - a mission is lost, once every waiting line has played or about five seconds pass;
 - a scenario or saved game loads, because the game switches voices.
+
+While the chronoshift screen effect runs, and while a radar movie's incoming-transmission call speaks, every new line is dropped. While a movie plays, and while the game window does not have the focus, the line speaking is paused and no line starts; requested lines still wait.
 
 Aborting a game stops speech at once. The announcer then announces the exit, and speech stops again when that line ends or after about five seconds. While EVA is turned off, no exit announcement plays.
 
@@ -60,8 +61,9 @@ Each scenario starts with EVA enabled. A saved game restores the setting it had 
 
 [`VoiceVolume`](/keys/voicevolume/) sets the volume of all speech: EVA lines, taunts and the lines that Play speech asks for. A line's `Volume` in EVAMD.INI scales its own. A change to `VoiceVolume` applies at once, including to the line that is speaking. Unit and building replies are not speech and follow [`UnitVoiceVolume`](/keys/unitvoicevolume/).
 
-While any of these holds, every request to speak is refused and nothing is queued:
+A line asked for at a `VoiceVolume` of zero still takes its turn, without sound, so the lines after it wait as they would at any volume.
+
+While either of these holds, every request to speak is refused and nothing is queued:
 
 - the game was started with the [quiet launch option](/using/command-line/quiet/);
-- `VoiceVolume` is below 1/255 (about 0.004), which includes zero;
 - no audio device is available.

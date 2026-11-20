@@ -7,23 +7,26 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The order EVA lines wait in. Each request carries a class that says where it
-// goes: critical lines first, then lines asked for right away, then the queue
-// by priority and age, then the one standard slot. A line is a number from
-// zero, and a negative number names none. The queue holds nothing about
-// playback, so it is tested on its own.
+// The lines waiting for the announcer, kept as Yuri's Revenge keeps them
+// (FUN_00752590, FUN_00752760): a list of QUEUED_INTERRUPT lines, a list of
+// CRITICAL-priority lines, one held STANDARD line, and one QUEUE list for each
+// priority level, every list first in first out. A line is a number from zero,
+// and a negative number names none. The queue holds nothing about playback, so
+// it is tested on its own.
 
 #pragma once
 
 #include "vox.hh"
 
+#include <deque>
 
+
+// A line's Type in the announcer file, numbered as gamemd numbers them.
 enum VoxControlType {
-	VOXC_QUEUE,               // waits its turn by priority, then by age
-	VOXC_CRITICAL,            // goes ahead of everything waiting
-	VOXC_QUEUED_INTERRUPT,    // goes ahead of the queue but never cuts a playing line
-	VOXC_STANDARD,            // one slot, replaced only by a higher priority
-	VOXC_INTERRUPT            // empties the queue and cuts the playing line
+	VOXC_STANDARD,            // held alone, and only while no QUEUED_INTERRUPT or CRITICAL line waits
+	VOXC_QUEUE,               // waits in the list of its priority
+	VOXC_INTERRUPT,           // cuts the playing line and empties the queue; else held as STANDARD
+	VOXC_QUEUED_INTERRUPT     // goes ahead of every other waiting line, never cuts
 };
 
 
@@ -32,34 +35,36 @@ struct VoxSubmitClass {
 	enum ResultType {
 		ADDED,              // the line waits its turn
 		PLAYING,            // dropped: it is the line playing
-		WAITING,            // dropped: it already waits
-		STANDARD_HELD       // dropped: a standard line of at least its priority holds the slot
+		WAITING,            // dropped: it already waits with the same Type
+		STANDARD_HELD,      // dropped: the held STANDARD line has at least its priority
+		URGENT_WAITING      // dropped: a QUEUED_INTERRUPT or CRITICAL line waits, so no STANDARD line is held
 	};
 	ResultType Result = ADDED;
 	int Cleared = 0;        // lines an interrupt emptied out of the queue
-	int Replaced = -1;      // the standard line it replaced, or -1
-	int Evicted = -1;       // the line dropped to make room, or -1
+	int Replaced = -1;      // the held STANDARD line it replaced, or -1
 };
 
 
 class VoxQueueClass
 {
 	public:
-		enum { MAX_PENDING = 8 };
+		// The four priority levels of the announcer file, LOW to CRITICAL.
+		enum { LEVELS = 4 };
 
 		VoxQueueClass(void) = default;
 
-		// Returns true when the playing line must be cut for this one. A line
-		// already playing or waiting is not added again. When the queue is full
-		// the oldest of the lowest-priority lines is dropped. The outcome, when
+		// Returns true when the playing line must be cut for this one. The
+		// priority is a level from 0 (LOW) to 3 (CRITICAL). The outcome, when
 		// given, receives what happened to the line and to the lines waiting.
 		bool Submit(int voice, int priority, VoxControlType control, int playing, VoxSubmitClass * outcome = nullptr);
 
-		// Takes the next line to play. False when nothing waits.
-		bool Next(int & voice);
+		// Takes the next line to play. False when nothing waits. A held
+		// STANDARD line is discarded when a QUEUED_INTERRUPT or CRITICAL line
+		// is taken; discarded then receives it, else -1.
+		bool Next(int & voice, int * discarded = nullptr);
 
 		bool Contains(int voice) const;
-		int Count(void) const { return(Pending); }
+		int Count(void) const;
 		void Clear(void);
 
 	private:
@@ -67,14 +72,14 @@ class VoxQueueClass
 			int Voice;
 			int Priority;
 			VoxControlType Control;
-			unsigned Order;
 		};
+		using ListType = std::deque<EntryClass>;
 
-		static int Rank(VoxControlType control);
-		bool Before(EntryClass const & a, EntryClass const & b) const;
-		void Remove(int index);
+		EntryClass const * Find(int voice) const;
+		void Place(EntryClass const & entry, VoxSubmitClass & result);
 
-		EntryClass Entries[MAX_PENDING];
-		int Pending = 0;
-		unsigned Serial = 0;
+		ListType QueuedInterrupts;
+		ListType Criticals;
+		ListType Queues[LEVELS];
+		EntryClass Held = {-1, 0, VOXC_STANDARD};
 };

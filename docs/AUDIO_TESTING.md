@@ -70,7 +70,7 @@ Each line is `f=<game frame> ms=<audio clock> pos=<sample position in the record
 | `sfx` | `request`, `silent`, `place`, `dropped` | A sound effect asked for: name, group, level, pan, and for a placed sound its cell and range. `silent` is a placed sound out of range; `dropped` gives the reason, such as `volume-zero` |
 | `event` | `started`, `delayed`, `queued`, `refused-*`, `cut-limit`, `cut-budget`, `stopped`, `finished`, `live`, `retarget` | What the mixer did with a sound: handle, type, group, priority, level, gain, pan, pitch, the sample files chosen and loop points. `retarget` is a level or pan change with its ramp |
 | `stream` | `open`, `live`, `stop`, `refused` | Streamed files: announcer lines and music |
-| `eva` | `request`, `queued`, `dropped`, `cleared`, `cut`, `start`, `skipped`, `end`, `stop-all` | The announcer: each line asked for, its priority and type, why it was dropped (`playing`, `waiting`, `standard-held`, `replaced`, `queue-full`), which line cut which, and when each starts and ends |
+| `eva` | `request`, `queued`, `dropped`, `cleared`, `cut`, `start`, `skipped`, `end`, `stop-all` | The announcer: each line asked for, the Type a caller asked for in place of its own (`as=`), its priority and type, why it was dropped (`playing`, `waiting`, `standard-held`, `urgent-waiting`, `replaced`, `standard-discarded`, `blocked`), which line cut which, and when each starts and ends |
 | `music` | `start`, `failed`, `stop` | Scores started and stopped, with file, level, fade and loop |
 | `capture` | `start`, `stop`, `pause`, `resume` | The recording: mix rate, channels and frame length |
 
@@ -154,35 +154,49 @@ The report lists each known sound found, the time it occurs and its match score 
 (`--eva-pattern`), so `eva-overlap` and `eva-repeat` apply to them. The clip's own mix and compression lower the scores; a short sound under music and battle noise
 may be missed.
 
-## Announcer rules compared with gamemd
+## Announcer rules
 
-The announcer queue in `code/vox.cpp` and `code/voxqueue.cpp` differs from gamemd's `VoxClass` (decompiled
-`gamemd.exe`) in these ways. The test scripts in the last column show our side in the log. We have not changed our
-rules yet.
+The announcer queue in `code/vox.cpp` and `code/voxqueue.cpp` follows gamemd's `VoxClass` (decompiled `gamemd.exe`).
 
-gamemd keeps four kinds of waiting line: a list of QUEUED_INTERRUPT lines, a list of other CRITICAL lines, one held
-STANDARD line, and one QUEUE list per priority. It tries to start a line every update (about 30 ms) and whenever a
-line is asked for: the first QUEUED_INTERRUPT line, else the first CRITICAL line, else the held line, else the first
-line of the highest-priority QUEUE list. A line starts only when the announcer stream is idle and at least 500 ms have
-passed since the last line started.
+Each line has a Type and a priority from the announcer file (`Type=` and `Priority=` in EVAMD.INI; a line that sets
+neither is STANDARD and NORMAL). The waiting lines are kept in four kinds of list, each first in first out:
 
-| Difference | gamemd | Ours | Certainty | Script |
-| --- | --- | --- | --- | --- |
-| First line of a burst | Starts at once (`FUN_00752760`, called from `VoxClass::PlayIndex`, 0x752480) | Waits a one-second settle | Certain | `audio-eva-queue`, `audio-eva-three` |
-| Gap between lines | Next line may start once the stream is idle and 500 ms after the last one started (`DAT_00b1d4d0`, set after each start) | 500 ms after the last one ended | Likely; the idle test is `0x408070` | `audio-eva-queue` |
-| Waiting-line limit | None; lists grow (`FUN_00407420` appends) | Eight; a ninth pushes out the lowest-ranked line, the oldest among equals | Certain | `audio-eva-burst` |
-| Same line asked for again while waiting | Dropped only when its type matches the waiting copy (`FUN_00752680`) | Always dropped | Certain | `audio-eva-three` |
-| STANDARD line | Held only when no QUEUED_INTERRUPT or CRITICAL line waits and the held line has lower priority; a held line is discarded when one of those starts (`FUN_00752590`, 0x752590) | Kept with lower rank than every QUEUE line | Certain | `audio-eva-three` |
-| INTERRUPT line with nothing playing | Queued like a STANDARD or CRITICAL line; nothing is cleared | Clears every waiting line | Certain | none yet |
-| Order of waiting lines | QUEUED_INTERRUPT list, CRITICAL list, held STANDARD, then QUEUE lists by priority, each first in first out | By control (CRITICAL, then QUEUED_INTERRUPT and INTERRUPT, then QUEUE, then STANDARD), then priority, then age; a CRITICAL QUEUE line goes first, where gamemd puts it in the top QUEUE list after the held line | Certain | `audio-eva-queue`, `audio-eva-interrupt` |
-| Line asked for "at once" | No such flag; callers can only override the type | Treated as QUEUED_INTERRUPT and skips the settle | Uncertain; callers not all checked | none |
-| Speech volume 0 | `PlayIndex` queues regardless | Dropped | Certain for `PlayIndex`; whether another flag stops speech is uncertain | none |
-| Block and pause counters | The radar coming online and the chronoshift screen effect block new lines (`0x753570`/`0x753580`); movies and focus loss pause starting (`0x7535b0`/`0x753620`) | No equivalent | Likely to change radar and chronoshift announcements | none |
-| Missing sample | The line is dropped; the next starts on the next update | The next line is tried at once | Certain; one update, so negligible | none |
-| Per-line `Volume=` | Read from EVAMD.INI; whether it scales playback is not established | Scales the line | Uncertain | none |
+| Kind | Holds | gamemd |
+| --- | --- | --- |
+| QUEUED_INTERRUPT list | Every QUEUED_INTERRUPT line | `FUN_00752590`, 0x752590 |
+| CRITICAL list | Every STANDARD or INTERRUPT line of CRITICAL priority | same |
+| Held STANDARD line | One STANDARD or INTERRUPT line of lower priority | same |
+| QUEUE lists | One list per priority; a CRITICAL QUEUE line waits in the top QUEUE list | same |
 
-INTERRUPT with a line playing matches: both stop the line, clear every waiting line and start the new one with no
-gap (`PlayIndex` stops the stream through `0x407f40` and empties the lists through `0x752370`).
+- A line starts at once when the announcer is free: nothing plays and at least 500 ms have passed since the last line
+  ended (`FUN_00752760`, called from `VoxClass::PlayIndex`, 0x752480; the stream stores its end time through
+  0x407a30).
+- The next line is the first QUEUED_INTERRUPT line, else the first CRITICAL line, else the held line, else the first
+  line of the highest-priority QUEUE list. A held line is discarded when a QUEUED_INTERRUPT or CRITICAL line starts.
+- A STANDARD line is held only when no QUEUED_INTERRUPT or CRITICAL line waits and the held line, if any, has a lower
+  priority; it then replaces the held line. Otherwise it is dropped.
+- The lists have no limit.
+- A line asked for while it plays is dropped. A line asked for while a copy waits is dropped when its Type matches
+  the waiting copy's (`FUN_00752680`); with another Type a second copy waits.
+- An INTERRUPT line asked for while a line plays stops it, clears every waiting line and starts with no gap
+  (`PlayIndex` stops the stream through `0x407f40` and empties the lists through `0x752370`). With nothing playing
+  it clears nothing and waits as a STANDARD line.
+- A line asked for at speech volume 0 takes its turn, silent: `PlayIndex` never reads the volume.
+- Some callers replace a line's Type or priority. The Play Speech trigger action asks for its line as INTERRUPT
+  (`TActionClass::Execute`, 0x6de904). The radar's incoming-transmission line before a radar movie is asked for as
+  STANDARD with CRITICAL priority (0x6579ac); in our code that is what `Speak(..., true)` asks.
+- While the chronoshift screen effect runs, and from a radar movie's incoming-transmission line until the movie
+  starts, every new line is dropped (`0x753570`, lifted by `RadarClass::Update`, 0x653850). During a movie and while
+  the game has lost the focus, the line playing is paused and none starts (`0x7535b0`, `0x753620`). The end of a
+  scenario lifts both (`0x7535d0`).
+
+These differences remain:
+
+| Difference | gamemd | Ours |
+| --- | --- | --- |
+| Line asked for again just after it ended | Dropped as playing until the 500 ms gap has passed | Queued |
+| Missing sample | The line is dropped; the next starts on the next update (about 30 ms) | The next line is tried at once |
+| Per-line `Volume=` | Read from EVAMD.INI; whether it scales playback is not established | Scales the line |
 
 ## Test scripts
 
@@ -190,10 +204,17 @@ gap (`PlayIndex` stops the stream through `0x407f40` and empties the lists throu
 | --- | --- |
 | `audio-unit-voice.txt` | A soldier's select reply plays in the unit voice group, centred |
 | `audio-weapon-sound.txt` | A weapon sound is full level in view, quieter and panned off the side, silent out of range |
-| `audio-eva-three.txt` | Three STANDARD lines in one frame: only the highest-priority one plays |
-| `audio-eva-queue.txt` | Three QUEUE lines play one at a time, highest priority first |
-| `audio-eva-burst.txt` | Ten QUEUE lines: the two oldest are pushed out |
+| `audio-eva-three.txt` | Three STANDARD lines in one frame: the first starts at once, the higher of the other two replaces the lower as the held line |
+| `audio-eva-queue.txt` | Three QUEUE lines: the first starts at once, the other two follow highest priority first, half a second after the one before ends |
+| `audio-eva-burst.txt` | Ten QUEUE lines all play, in the order asked for |
 | `audio-eva-interrupt.txt` | An INTERRUPT line cuts the line playing and clears the queue; uses the test mod in `audio-eva-rules\` |
+| `audio-eva-interrupt-idle.txt` | An INTERRUPT line asked for while nothing plays clears nothing and plays before the QUEUE line waiting; test mod |
+| `audio-eva-two-types.txt` | A waiting line asked for again with its own Type is dropped, with another Type a second copy plays; test mod |
+| `audio-eva-standard.txt` | No STANDARD line is held while a QUEUED_INTERRUPT line waits, and the held line is discarded when it starts; test mod |
+| `audio-eva-order.txt` | QUEUED_INTERRUPT, then CRITICAL, then a CRITICAL QUEUE line, then a LOW QUEUE line; test mod |
+| `audio-eva-volume-zero.txt` | A line asked for at speech volume 0 still starts |
+| `audio-eva-chrono-block.txt` | A line asked for during the chronoshift screen effect is dropped; one asked for after it plays |
+| `../campaign/audio-eva-mission-end-sov04.txt` | On Soviet 4, a Play Speech line cuts the line playing, and the mission-failed line is held behind it |
 | `audio-music-start.txt` | A score opens a music stream; stopping it ends the stream and the playlist starts the next |
 
 The tool's own tests, on synthetic recordings, are in `tests/audiocheck/` and run with the unit tests.

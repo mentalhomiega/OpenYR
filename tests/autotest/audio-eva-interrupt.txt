@@ -1,4 +1,4 @@
-; An INTERRUPT announcer line cuts the line playing and empties the queue. The test mod's EVAMD.INI gives four lines:
+; An INTERRUPT announcer line cuts the line playing and empties the queue. The test mod's EVAMD.INI gives, among others,
 ; a long QUEUE line, a short LOW one, a QUEUED_INTERRUPT one and an IMPORTANT INTERRUPT one. The long line plays,
 ; the short one waits behind it, and the QUEUED_INTERRUPT line asked for while the long one plays waits too, since it
 ; never cuts. The INTERRUPT line then cuts the long line at once (gamemd's VoxClass::PlayIndex, 0x752480, stops the

@@ -1,0 +1,15 @@
+; The chronoshift screen effect blocks new announcer lines, as gamemd's does (0x753570 when the effect starts, and
+; RadarClass::Update, 0x653850, lifting the block once it has ended). A line asked for during the effect is dropped;
+; one asked for after it plays. The effect runs 10 frames per swirl from frame 40.
+; Expected log: "eva dropped line=EVA_UnitReady reason=blocked" at frame 50, then "eva start line=EVA_UnitReady" at
+; frame 300.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-eva-chrono-block.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* eva |Exception"
+10 sounds 2
+10 audiocapture audio-eva-chrono-block
+20 volume voice 1
+40 chrono 10
+50 speak EVA_UnitReady
+300 speak EVA_UnitReady
+500 audiocapture stop
+510 sounds 0
+520 quit

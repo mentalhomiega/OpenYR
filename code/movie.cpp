@@ -32,6 +32,7 @@
 #include "session.h"
 #include "strutil.h"
 #include "vector.h"
+#include "vox.h"
 #include "vqa.h"
 
 #include "vq.hh"
@@ -120,7 +121,9 @@ void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool str
 	}
 	if (is_bink || !bink_name.empty()) {
 		Keyboard->Clear();
+		Pause_Speech();
 		Bink_Play(is_bink ? name : bink_name.c_str());
+		Resume_Speech();
 		if (clrscrn_after) {
 			HiddenSurface->Fill(0);
 			Update_Visible_Surface(HiddenSurface);
@@ -177,7 +180,9 @@ void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool str
 			vqa->VQA->Set_Pause_On_Focus_Loss(false);
 		}
 
+		Pause_Speech();
 		Movie_Play(vqa, true, theme, false);
+		Resume_Speech();
 		Movie_Destroy(vqa);
 		delete vqa;
 

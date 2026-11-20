@@ -10,56 +10,82 @@
 #include "voxqueue.h"
 
 #include <algorithm>
-#include <tuple>
 
 
-int VoxQueueClass::Rank(VoxControlType control)
+namespace {
+
+int const CRITICAL_LEVEL = VoxQueueClass::LEVELS - 1;
+
+} // namespace
+
+
+int VoxQueueClass::Count(void) const
 {
-	switch (control) {
-		case VOXC_CRITICAL:
-			return(0);
-		case VOXC_QUEUED_INTERRUPT:
-		case VOXC_INTERRUPT:
-			return(1);
-		case VOXC_QUEUE:
-			return(2);
-		default:
-			return(3);
+	int count = (int)(QueuedInterrupts.size() + Criticals.size()) + (Held.Voice >= 0 ? 1 : 0);
+	for (ListType const & list : Queues) {
+		count += (int)list.size();
 	}
-}
-
-
-// True when a plays before b: by class, then priority, then age.
-bool VoxQueueClass::Before(EntryClass const & a, EntryClass const & b) const
-{
-	int ra = Rank(a.Control);
-	int rb = Rank(b.Control);
-	if (ra != rb) {
-		return(ra < rb);
-	}
-	if (a.Priority != b.Priority) {
-		return(a.Priority > b.Priority);
-	}
-	return(a.Order < b.Order);
-}
-
-
-void VoxQueueClass::Remove(int index)
-{
-	std::move(Entries + index + 1, Entries + Pending, Entries + index);
-	Pending--;
-}
-
-
-bool VoxQueueClass::Contains(int voice) const
-{
-	return(std::any_of(Entries, Entries + Pending, [voice](EntryClass const & entry) { return(entry.Voice == voice); }));
+	return(count);
 }
 
 
 void VoxQueueClass::Clear(void)
 {
-	Pending = 0;
+	QueuedInterrupts.clear();
+	Criticals.clear();
+	for (ListType & list : Queues) {
+		list.clear();
+	}
+	Held.Voice = -1;
+}
+
+
+// The waiting copy of a line, searched in gamemd's order (FUN_00752680).
+VoxQueueClass::EntryClass const * VoxQueueClass::Find(int voice) const
+{
+	auto in = [voice](ListType const & list) -> EntryClass const * {
+		auto found = std::find_if(list.begin(), list.end(), [voice](EntryClass const & entry) { return(entry.Voice == voice); });
+		return(found != list.end() ? &*found : nullptr);
+	};
+	if (EntryClass const * found = in(QueuedInterrupts)) {
+		return(found);
+	}
+	if (Held.Voice == voice) {
+		return(&Held);
+	}
+	for (int level = LEVELS - 1; level >= 0; level--) {
+		if (EntryClass const * found = in(Queues[level])) {
+			return(found);
+		}
+	}
+	return(in(Criticals));
+}
+
+
+bool VoxQueueClass::Contains(int voice) const
+{
+	return(voice >= 0 && Find(voice) != nullptr);
+}
+
+
+// Puts a line in its list as FUN_00752590 does. The Type is tested before the priority, so a CRITICAL QUEUE line
+// waits in the top QUEUE list, not with the other CRITICAL lines.
+void VoxQueueClass::Place(EntryClass const & entry, VoxSubmitClass & result)
+{
+	if (entry.Control == VOXC_QUEUED_INTERRUPT) {
+		QueuedInterrupts.push_back(entry);
+	} else if (entry.Control == VOXC_QUEUE) {
+		Queues[entry.Priority].push_back(entry);
+	} else if (entry.Priority == CRITICAL_LEVEL) {
+		Criticals.push_back(entry);
+	} else if (!QueuedInterrupts.empty() || !Criticals.empty()) {
+		result.Result = VoxSubmitClass::URGENT_WAITING;
+	} else if (Held.Voice >= 0 && Held.Priority >= entry.Priority) {
+		result.Result = VoxSubmitClass::STANDARD_HELD;
+	} else {
+		result.Replaced = Held.Voice;
+		Held = entry;
+	}
 }
 
 
@@ -72,55 +98,60 @@ bool VoxQueueClass::Submit(int voice, int priority, VoxControlType control, int 
 	if (voice < 0) {
 		return(false);
 	}
-	if (voice == playing || Contains(voice)) {
-		result.Result = voice == playing ? VoxSubmitClass::PLAYING : VoxSubmitClass::WAITING;
+	if (voice == playing) {
+		result.Result = VoxSubmitClass::PLAYING;
 		return(false);
 	}
 
-	bool cut = false;
-	if (control == VOXC_INTERRUPT) {
-		result.Cleared = Pending;
+	// An INTERRUPT line with nothing playing clears nothing and waits as a STANDARD line would.
+	bool const cut = control == VOXC_INTERRUPT && playing >= 0;
+	if (cut) {
+		result.Cleared = Count();
 		Clear();
-		cut = playing >= 0;
 	}
 
-	if (control == VOXC_STANDARD) {
-		EntryClass const * standard = std::find_if(Entries, Entries + Pending, [](EntryClass const & entry) { return(entry.Control == VOXC_STANDARD); });
-		if (standard != Entries + Pending) {
-			if (standard->Priority >= priority) {
-				result.Result = VoxSubmitClass::STANDARD_HELD;
-				return(false);
-			}
-			result.Replaced = standard->Voice;
-			Remove((int)(standard - Entries));
-		}
+	// A second copy of a waiting line is kept when its Type differs from the first.
+	EntryClass const * waiting = Find(voice);
+	if (waiting != nullptr && waiting->Control == control) {
+		result.Result = VoxSubmitClass::WAITING;
+		return(cut);
 	}
 
-	if (Pending >= MAX_PENDING) {
-		// The oldest of the lowest-priority lines makes room, critical ones last.
-		EntryClass const * victim = std::min_element(Entries, Entries + Pending, [](EntryClass const & a, EntryClass const & b) {
-			return(std::make_tuple(-Rank(a.Control), a.Priority, a.Order) < std::make_tuple(-Rank(b.Control), b.Priority, b.Order));
-		});
-		result.Evicted = victim->Voice;
-		Remove((int)(victim - Entries));
-	}
-
-	EntryClass & entry = Entries[Pending++];
+	EntryClass entry;
 	entry.Voice = voice;
-	entry.Priority = priority;
+	entry.Priority = std::clamp(priority, 0, CRITICAL_LEVEL);
 	entry.Control = control;
-	entry.Order = ++Serial;
+	Place(entry, result);
 	return(cut);
 }
 
 
-bool VoxQueueClass::Next(int & voice)
+bool VoxQueueClass::Next(int & voice, int * discarded)
 {
-	if (Pending == 0) {
-		return(false);
+	if (discarded != nullptr) {
+		*discarded = -1;
 	}
-	EntryClass const * best = std::min_element(Entries, Entries + Pending, [this](EntryClass const & a, EntryClass const & b) { return(Before(a, b)); });
-	voice = best->Voice;
-	Remove((int)(best - Entries));
-	return(true);
+	ListType * urgent = !QueuedInterrupts.empty() ? &QueuedInterrupts : (!Criticals.empty() ? &Criticals : nullptr);
+	if (urgent != nullptr) {
+		voice = urgent->front().Voice;
+		urgent->pop_front();
+		if (Held.Voice >= 0 && discarded != nullptr) {
+			*discarded = Held.Voice;
+		}
+		Held.Voice = -1;
+		return(true);
+	}
+	if (Held.Voice >= 0) {
+		voice = Held.Voice;
+		Held.Voice = -1;
+		return(true);
+	}
+	for (int level = LEVELS - 1; level >= 0; level--) {
+		if (!Queues[level].empty()) {
+			voice = Queues[level].front().Voice;
+			Queues[level].pop_front();
+			return(true);
+		}
+	}
+	return(false);
 }

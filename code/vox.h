@@ -20,6 +20,9 @@
 void Speak(VoxType voice, bool now=false);
 void Speak_Eva(char const * name, bool now=false);
 void Speak_Eva_Index(int index, bool now=false);
+// Asks for the line with its Type (a VoxControlType), its priority level (0 LOW to 3 CRITICAL), or both replaced;
+// -1 keeps the announcer file's value.
+void Speak_Eva_Index_As(int index, int type, int level);
 // The position of the named line in the announcer file's list, or -1 when the file does not list it.
 int Eva_Line(char const * name);
 void Load_Eva(void);
@@ -38,6 +41,12 @@ std::string Eva_Line_Name(int index);
 void Log_Eva_Lines(void);
 void Speak_AI(void);
 void Stop_Speaking(void);
+void Reset_Speech(void);
+// Each block or pause lasts until a matching unblock or resume; Reset_Speech lifts them all.
+void Block_Speech(void);
+void Unblock_Speech(void);
+void Pause_Speech(void);
+void Resume_Speech(void);
 bool Is_Speaking(void);
 
 void Set_Speech_Volume(int volume);
