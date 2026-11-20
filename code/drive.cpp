@@ -87,6 +87,10 @@ static const double _deaccel = 0.3f;
 static const double _sinking = 0.1f;
 static const double _sinking_scale = 0.0015f;
 
+// Speed accumulator spent per track step. gamemd keeps Tiberian Sun's 7 (0x4B1510, 0x4B159D)
+// although its larger cells would give 6 from the pixel-per-lepton sizes.
+static constexpr int TRACK_STEP_ACCUM = 7;
+
 
 /***********************************************************************************************
  * DriveClass::DriveClass -- Constructor for drive class object.                               *
@@ -995,7 +999,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 		return(false);
 	}
 
-	if (actual > ((PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2)) {
+	if (actual > TRACK_STEP_ACCUM) {
 		TurnTrackType	const * track;  // Track control pointer.
 		TrackType		const	* ptr;  // Pointer to coord offset values.
 		int				tracknum;       // The track number being processed.
@@ -1030,11 +1034,11 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 		**	flag the unit accordingly.
 		*/
 		//LinkedTo->Mark(MARK_UP);
-		while (actual > (PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2) {
+		while (actual > TRACK_STEP_ACCUM) {
 			Point2D	offset;
 			Dir256	dir;
 
-			actual -= (PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2;
+			actual -= TRACK_STEP_ACCUM;
 
 			offset = ptr[TrackIndex].Offset;
 			if (offset != Point2D(0, 0) || !TrackIndex) {
@@ -1285,7 +1289,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			CellClass * stepcellptr = &Map[stepcoord];
 
 			Coord partial(0, 0, 0);
-			partial = Lerp(partial, movement, SpeedAccum / (CELL_LEPTON / ((CELL_PIXEL_W + CELL_PIXEL_H) / 2.0)));
+			partial = Lerp(partial, movement, SpeedAccum / double(TRACK_STEP_ACCUM));
 			Coord partialcoord = oldcoord + partial;
 
 			CellClass * oldcellptr = &Map[oldcoord];
@@ -2349,7 +2353,7 @@ DriveLocomotionClass::TrackType const DriveLocomotionClass::Track1[24] = {
 int DriveLocomotionClass::Travel_Leptons(int maxspeed, int frames)
 {
 	// A straight track spends this much of the speed accumulator crossing one cell.
-	int const percell = ARRAY_SIZE(Track1) * ((PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2);
+	int const percell = ARRAY_SIZE(Track1) * TRACK_STEP_ACCUM;
 
 	return(int((static_cast<long long>(maxspeed) * frames * CELL_LEPTON) / percell));
 }
@@ -2365,7 +2369,7 @@ int DriveLocomotionClass::Travel_Frames(int maxspeed, int leptons)
 		return(0);
 	}
 
-	int const percell = ARRAY_SIZE(Track1) * ((PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2);
+	int const percell = ARRAY_SIZE(Track1) * TRACK_STEP_ACCUM;
 
 	return(int((static_cast<long long>(leptons) * percell) / (static_cast<long long>(maxspeed) * CELL_LEPTON)));
 }

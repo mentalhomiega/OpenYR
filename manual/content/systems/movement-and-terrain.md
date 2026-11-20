@@ -258,6 +258,8 @@ For a vehicle moved by the drive locomotor, the distance it covers each frame co
 | 9 | The throttle from steps 1 to 4 |
 | 10 | Half, while the vehicle is carrying a captured flag |
 
+The vehicle spends the result of step 10 along its track: each 7 moves it one step, and a straight crossing of a cell takes 24 steps. A cell therefore takes 168 divided by that result in frames. A Rhino, `Speed=6`, gets 15 a frame at full throttle and crosses a cell in about 11 frames.
+
 Several details change the result:
 
 - Step 1 uses the `[Road]` figures whenever the destination's ground is two or more levels from the height the vehicle travels at, as on a bridge deck. A vehicle therefore keeps its speed on a bridge over water.
