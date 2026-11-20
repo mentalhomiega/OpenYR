@@ -20986,6 +20986,24 @@ GameForming:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GameMode:
+  key: GameMode
+  scopes:
+  - applies_to:
+    - map packets
+    file: scenario packet (.pkt)
+    section:
+      kind: identifier
+      source: multiplayer-map
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: MultiMission
+      member: null
+      source: code/session.cpp
+      guard: null
+    level: MultiMission
 GameSpeed:
   key: GameSpeed
   scopes:

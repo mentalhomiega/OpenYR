@@ -321,11 +321,23 @@ site_exclusions:
 
   # Map sizing for the menu battle's choice of map.
   - path: code/shellmap.cpp
-    function: Visible_Map_Size
+    function: Map_Layout
     keys: [LocalSize]
     classification: duplicate
     canonical_key: LocalSize
     reason: The menu battle sizes a map from its [Map] LocalSize, the same setting DisplayClass already extracts from the map file.
+  - path: code/shellmap.cpp
+    function: Map_Layout
+    keys: [Theater]
+    classification: duplicate
+    canonical_key: Theater
+    reason: The menu battle reads a map's [Map] Theater to list it, the same setting the scenario loader already extracts from the map file.
+  - path: code/shellmap.cpp
+    function: Map_Layout
+    keys: [NumPlayers]
+    classification: duplicate
+    canonical_key: NumPlayers
+    reason: The menu battle counts a generated map's start positions from its [RandomMap] NumPlayers, the same setting the map generator already extracts.
   # Settings for the menu battle's own setup, which the settings screen does not expose.
   - path: code/shellmap.cpp
     function: Pick_Map
