@@ -165,7 +165,9 @@ void Schedule_Removal(std::wstring const & folder, std::wstring const & self)
 	STARTUPINFOW startup{};
 	startup.cb = sizeof(startup);
 	PROCESS_INFORMATION process{};
-	if (CreateProcessW(nullptr, buffer.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW | DETACHED_PROCESS, nullptr, nullptr, &startup, &process)) {
+	// CREATE_NO_WINDOW alone: with DETACHED_PROCESS the shell has no console at all, so Windows opens a visible one
+	// for the ping it starts.
+	if (CreateProcessW(nullptr, buffer.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process)) {
 		CloseHandle(process.hThread);
 		CloseHandle(process.hProcess);
 	}
