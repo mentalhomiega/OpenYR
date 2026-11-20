@@ -256,9 +256,9 @@ A building with [`SiloDamage=yes`](/keys/silodamage/) shows how full it is with 
 
 ## Damage
 
-Infantry take damage each time they finish moving into a Tiberium cell. The damage is the Tiberium type's [`Power`](/keys/power/#scope-tiberium) divided by ten, rounded down, and at least 1. Armor, veterancy and other damage reductions do not lower it.
+Standing or moving on Tiberium harms nothing. Infantry, vehicles and aircraft keep their strength on any Tiberium cell, whatever its [`Power`](/keys/power/#scope-tiberium), as in the original game.
 
-Infantry whose type sets [`TiberiumProof=yes`](/keys/tiberiumproof/), or that have the [`TIBERIUM_PROOF`](/systems/veterancy/#abilities) veteran ability, take none. Infantry killed this way leave no visceroid, whatever [`TiberiumDeathToVisceroid`](/keys/tiberiumdeathtovisceroid/) is set to.
+Tiberium does not heal either. [`TiberiumProof`](/keys/tiberiumproof/) and [`TiberiumHeal`](/keys/tiberiumheal/) are read but change nothing, as [the list below](#settings-the-engine-parses-but-never-reads) says.
 
 A sonic wave passing over a cell does not set off the Tiberium in it, whatever the overlay's [`ChainReaction`](/keys/chainreaction/) setting.
 
@@ -280,7 +280,7 @@ A Tiberium [crate](/systems/crates/) places stage 1 Tiberium of a randomly chose
 
 A VoxelAnimType with [`IsTiberium=yes`](/keys/istiberium/#scope-voxelanimtype) seeds stage 0 Tiberium where it comes down, unless it lands in water or on a bridge. With [`IsMeteor=yes`](/keys/ismeteor/#scope-voxelanimtype) it seeds the eight cells around the impact instead of the impact cell. The type is always the first registered type with `Image=3`, or slot 0 if no type uses that set.
 
-A destroyed object whose type sets [`TiberiumHeal=yes`](/keys/tiberiumheal/) seeds slot 0 Tiberium in the cells to its north-west, north, east, south and west, but not in the cell it stood on. [The step every kind shares](/systems/destruction-and-debris/#the-step-every-kind-shares) covers it. A destroyed harvester can spill its load as slot 0 Tiberium, as [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) describes.
+A destroyed harvester can spill its load as slot 0 Tiberium, as [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) describes.
 
 ## Settings the engine parses but never reads
 
@@ -290,3 +290,5 @@ The following settings have no effect:
 - [`TiberiumExplosive` in `[SpecialFlags]`](/keys/tiberiumexplosive/#scope-scenarios). Use the `[CombatDamage]` entry.
 - [`TiberiumStrength`](/keys/tiberiumstrength/) in `[CombatDamage]`.
 - [`TiberiumTransmogrify`](/keys/tiberiumtransmogrify/) in `[General]`.
+- [`TiberiumProof`](/keys/tiberiumproof/) on an infantry type, and the `TIBERIUM_PROOF` [veteran ability](/systems/veterancy/#abilities). Infantry take no Tiberium damage with or without them.
+- [`TiberiumHeal`](/keys/tiberiumheal/) on a type or in `[General]`, and the `TIBERIUM_HEAL` ability. Nothing heals on Tiberium, and no destroyed object seeds it.

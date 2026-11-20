@@ -1,0 +1,56 @@
+; Standing and walking on ore and on gems does not hurt anything. In gamemd the infantry arrival code (0x519630) and
+; FootClass::Update (0x4DA530) have no tiberium damage or healing, and nothing reads TiberiumProof or TiberiumHeal, so a
+; soldier or a tank on a field keeps its strength. Tiberian Sun poisoned infantry there, and OpenTS did the same.
+; Two soldiers (E1) and a tank (MTNK) are granted on the ore field near cell 17,60 and walk along it in four legs; two
+; soldiers (E2) and a tank (HTNK) do the same on the gem field near cell 56,62. The mod sets TiberiumHeal=yes on E2 and HTNK,
+; and at frame 45 they are hurt to half strength, so a heal on tiberium would show. The same units at frame 60, at the end of
+; each leg and at the end are written with their strength by "where".
+; Expected: every unit has the same strength in every line of the same unit type (E1 125, MTNK 300, E2 62, HTNK 200), and the
+; grants are not refused. Before the fix the E1 and E2 soldiers lost strength on every cell they entered.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/tiberium-no-damage.txt -Mods src-agent31/tests/autotest/tiberium-no-damage-rules -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   (where|grant)|Exception"
+30 command CenterBase
+40 grantunit E1 17 60
+40 grantunit E1 18 60
+40 grantunit MTNK 17 61
+40 grantunit E2 56 62
+40 grantunit E2 57 62
+40 grantunit HTNK 56 63
+45 hurt E2 50
+45 hurt HTNK 50
+60 where E1
+60 where MTNK
+60 where E2
+60 where HTNK
+100 move E1 17 63
+100 move MTNK 17 63
+100 move E2 56 66
+100 move HTNK 56 66
+440 where E1
+440 where MTNK
+440 where E2
+440 where HTNK
+450 move E1 18 60
+450 move MTNK 18 60
+450 move E2 57 62
+450 move HTNK 57 62
+790 where E1
+790 where MTNK
+790 where E2
+790 where HTNK
+800 move E1 17 63
+800 move MTNK 17 63
+800 move E2 56 66
+800 move HTNK 56 66
+1090 where E1
+1090 where MTNK
+1090 where E2
+1090 where HTNK
+1100 move E1 17 60
+1100 move MTNK 17 60
+1100 move E2 56 62
+1100 move HTNK 56 62
+1300 where E1
+1300 where MTNK
+1300 where E2
+1300 where HTNK
+1310 quit

@@ -275,7 +275,8 @@ Each machine writes its own file, with itself in `[Settings]` and the other peop
 - the same people, with the same `Name`, `Side` and `Color`;
 - the same entries in `[HouseColors]`, `[HouseCountries]`, `[HouseHandicaps]`, `[SpawnLocations]`, the `[MultiN_Alliances]` sections and `[IsSpectator]`, and the same `IsSpectator` in each person's section;
 - the same `[Tunnel]` section, when the match is played through a tunnel.
-- the same `FrameSendRate`, `MaxAhead` and `Protocol`, when the host chose them.
+- the same `FrameSendRate`, `MaxAhead` and `Protocol`, when the host chose them;
+- the same `MeasuredMaxAhead` and `StartRoundTrip`, when the first is `yes`.
 
 The keys under [What a player is shown](#what-a-player-is-shown) and the two waits below may differ between machines.
 
@@ -300,6 +301,8 @@ Through a tunnel, each `Port` entry of `[Settings]` and `[OtherN]` holds a tunne
 `TimingPolicy=Adaptive` makes this machine's timing master use the [adaptive table](/systems/network-synchronization/#adaptive-policy). Any other value, or no key, plays the [default timing](/systems/network-synchronization/#timing-policy). Only the master's choice matters, because the master sends the timing that every machine applies.
 
 `FrameSendRate` and `MaxAhead` set the match's send period and look-ahead for the whole match. `FrameSendRate` is `1` to `10` frames and `MaxAhead` is `4` to `250` frames; a value outside its range is passed over. The look-ahead is rounded up to a whole number of send periods, and a look-ahead left out follows the [default timing](/systems/network-synchronization/#timing-policy) with the chosen send period. The CnCNet client writes `FrameSendRate=2` or `FrameSendRate=7` in every game, so those two values with no `MaxAhead` count as no choice. `HostTiming=yes` makes the game take the values as written, including `2` and `7`. `Protocol=0` plays [protocol 0](/systems/network-synchronization/#protocol-0) and is read only with `HostTiming=yes`; any other value plays protocol 2. Every machine must write the same values; machines that start with different ones stall or go out of sync. A chosen value changes the session identity described under [A game against other machines](#a-game-against-other-machines).
+
+`MeasuredMaxAhead=yes` sets the look-ahead from the measured round trip instead of the default timing's formula, under the chosen or default send period. See [Measured look-ahead](/systems/network-synchronization/#measured-look-ahead). It is read only without a chosen `MaxAhead` and under protocol 2. `StartRoundTrip` is a round trip in milliseconds, `0` to `5000`, that sets the starting look-ahead by the same rule; `0` or no key starts with the default timing's look-ahead. It is read only with `MeasuredMaxAhead=yes`. The built-in CnCNet lobby writes both keys when the host chose a send period and no look-ahead. Both change the session identity when `MeasuredMaxAhead=yes`.
 
 Each machine applies its own waits, so files that differ do not put the match out of step. Writing the same values everywhere is still the better choice, since the machine with the shortest wait is the first to drop a slow machine.
 

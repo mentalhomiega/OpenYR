@@ -9,7 +9,7 @@ when_omitted:
 
 An object of an immune type ignores damage unless the damage is [forced](/keys/c4warhead/). A shot still lands on it, but the object keeps its current strength. A healing weapon cannot restore its strength either.
 
-Forced damage includes, for example, Tiberium poisoning an infantryman and a demolition charge destroying a structure when its countdown ends.
+Forced damage includes, for example, a demolition charge destroying a structure when its countdown ends.
 
 Two kinds of object ignore forced damage too when their type is immune:
 

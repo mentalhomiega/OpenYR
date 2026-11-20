@@ -101,7 +101,12 @@ param(
     # game reads as no choice. FrameSendRate is 1 to 10 and MaxAhead 4 to 250 (rounded up to whole send periods).
     [ValidateRange(0, 99)][int]$FrameSendRate = 0,
     [ValidateRange(0, 999)][int]$MaxAhead = 0,
-    [ValidateRange(-1, 2)][int]$Protocol = -1
+    [ValidateRange(-1, 2)][int]$Protocol = -1,
+    # Writes MeasuredMaxAhead=yes into both launch files (Runner style), as the built-in CnCNet lobby does when the
+    # host chose a send period and no look-ahead. -StartRoundTripMs writes StartRoundTrip, the lobby's round-trip
+    # estimate for the start look-ahead; 0 writes no key.
+    [switch]$MeasuredMaxAhead,
+    [ValidateRange(0, 5000)][int]$StartRoundTripMs = 0
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -213,6 +218,8 @@ if ($FrameSendRate -gt 0 -or $MaxAhead -gt 0 -or $Protocol -ge 0) { $timingLines
 if ($FrameSendRate -gt 0) { $timingLines += "FrameSendRate=$FrameSendRate`r`n" }
 if ($MaxAhead -gt 0) { $timingLines += "MaxAhead=$MaxAhead`r`n" }
 if ($Protocol -ge 0) { $timingLines += "Protocol=$Protocol`r`n" }
+if ($MeasuredMaxAhead) { $timingLines += "MeasuredMaxAhead=yes`r`n" }
+if ($StartRoundTripMs -gt 0) { $timingLines += "StartRoundTrip=$StartRoundTripMs`r`n" }
 $cncnetFrameSendRate = if ($FrameSendRate -gt 0) { $FrameSendRate } else { 7 }
 $cncnetMaxAheadLine = if ($MaxAhead -gt 0) { "MaxAhead=$MaxAhead`r`n" } else { '' }
 $cncnetProtocol = if ($Protocol -ge 0) { $Protocol } else { 2 }

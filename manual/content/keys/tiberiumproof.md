@@ -1,12 +1,10 @@
 ---
 key: TiberiumProof
-summary: Stops Tiberium from poisoning an infantry type.
+summary: Read for an infantry type, but it changes nothing.
 see_also: ["system:tiberium", "Power"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-Infantry of a `TiberiumProof=yes` type take no [Tiberium damage](/systems/tiberium/#damage) when they finish moving into a Tiberium cell, including a blossom tree's cell. The `TIBERIUM_PROOF` [veteran ability](/systems/veterancy/#abilities) gives the same protection to a type without the flag.
-
-The flag covers only that damage. Weapon hits are unaffected.
+The game reads this flag and counts it in the rules checksum, but nothing acts on it. Infantry take no [Tiberium damage](/systems/tiberium/#damage) whether it is set or not, and the `TIBERIUM_PROOF` [veteran ability](/systems/veterancy/#abilities) has no effect either.

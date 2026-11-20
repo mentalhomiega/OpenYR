@@ -526,8 +526,8 @@ class RulesClass
 		double TunnelSpeed;
 
 		/*
-		 * This is the interval, expressed in minutes, between the healing ticks a unit
-		 * that is flagged to heal in tiberium receives while it stands in a field.
+		 * The TiberiumHeal interval, expressed in minutes. It is loaded and checksummed, but
+		 * nothing acts on it: gamemd never reads it.
 		 */
 		double TiberiumHeal;
 

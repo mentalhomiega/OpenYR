@@ -60,6 +60,8 @@ struct CnCNetMatchType
 	int Seed = 0;
 	std::string TunnelHost;
 	uint16_t TunnelPort = 0;
+	// The host's estimate of the players' round trip in milliseconds, for the start look-ahead; 0 when it has none.
+	int RoundTripMS = 0;
 	std::vector<CnCNetMatchSeatType> Seats;     // In the room's player order; the host is first.
 };
 
@@ -78,12 +80,17 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 // The SPAWN.INI text for one player of the match, with the room's options.
 // bridge_port is the loopback port of that player's tunnel bridge. Numeric options are held to the lobby's ranges,
 // with credits and tech level capped by limits. adaptive_timing picks the adaptive network timing; false plays gamemd's.
+// A host who chose a send period and no look-ahead gets the measured look-ahead (MeasuredMaxAhead=yes), started from
+// the match's RoundTripMS when it has one.
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
 	std::string const & own_name, uint16_t bridge_port, CnCNetRuleLimitsType const & limits, bool adaptive_timing = true);
 
 // The network choices in a room's options (FrameSendRate, MaxAhead and Protocol). A key that is absent or out of
 // range is no choice, so a room that never set one gives the defaults.
 NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::string> const & options);
+
+// True when the host's choice leaves the look-ahead to the measured round trip: a send period, no look-ahead, protocol 2.
+bool CnCNet_Measured_Max_Ahead(NetTiming::HostNetworkOptions const & network);
 
 // The room option keys that hold these choices; a default value has no key.
 std::map<std::string, std::string> CnCNet_Network_Option_Values(NetTiming::HostNetworkOptions const & network);

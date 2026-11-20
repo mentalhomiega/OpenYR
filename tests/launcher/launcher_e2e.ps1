@@ -238,6 +238,17 @@ function Run-Exe([string]$kind, [string]$exe, [string]$arguments) {
 	return $process.ExitCode
 }
 
+# Starts a process that lives for about the given number of seconds, for the launcher to wait on. It has no
+# window: a console window, even a hidden one's flash, takes the focus from whoever is at the computer.
+function Start-Waiter([int]$seconds) {
+	$info = New-Object System.Diagnostics.ProcessStartInfo
+	$info.FileName = 'cmd.exe'
+	$info.Arguments = "/c ping -n $seconds 127.0.0.1 >nul"
+	$info.UseShellExecute = $false
+	$info.CreateNoWindow = $true
+	return [System.Diagnostics.Process]::Start($info)
+}
+
 function Read-Text([string]$path) {
 	if (-not (Test-Path -LiteralPath $path)) { return '' }
 	return [IO.File]::ReadAllText($path)
@@ -409,14 +420,14 @@ try {
 
 	# The update the player asked for in the game: the launcher waits for the game's process, then updates without a question.
 	$log = Join-Path $logs 'update-now-none.log'
-	$waiter = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ping -n 2 127.0.0.1 >nul' -WindowStyle Hidden -PassThru
+	$waiter = Start-Waiter 2
 	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/UPDATENOW=' + $waiter.Id + ' /NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed22 + '" /LOG="' + $log + '"')
 	$text = Read-Text $log
 	Check ($code -eq 0 -and $text.Contains('has closed.') -and $text.Contains('There is no update to install now.')) 'an update asked for in the game, with nothing newer in the feed, installs nothing'
 	Check ((Read-Text (Join-Path $install 'Game.exe')) -eq 'engine beta22') 'and Game.exe is still beta22'
 
 	$log = Join-Path $logs 'update-now.log'
-	$waiter = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ping -n 3 127.0.0.1 >nul' -WindowStyle Hidden -PassThru
+	$waiter = Start-Waiter 3
 	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/UPDATENOW=' + $waiter.Id + ' /NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed23 + '" /LOG="' + $log + '"')
 	$deadline = (Get-Date).AddSeconds(120)
 	while ((Get-Date) -lt $deadline -and -not (Read-Text $log).Contains('Updated to Beta 23.')) { Start-Sleep -Milliseconds 500 }
@@ -431,7 +442,7 @@ try {
 	Copy-Item -LiteralPath $Launcher -Destination (Join-Path $helper 'OpenYR-Update.exe')
 	$log = Join-Path $logs 'update.log'
 	# /WAITFOR names a process the copy waits for before the setup runs; a short ping stands in for the launcher.
-	$waiter = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ping -n 3 127.0.0.1 >nul' -WindowStyle Hidden -PassThru
+	$waiter = Start-Waiter 3
 	$arguments = '/UPDATE=beta23 /SETUPURL="' + $setup23 + '" /SUMURL="' + $sum23 + '" /FOLDER="' + $install + '" /YR="' + $yuri + '" /LOG="' + $log + '" /WAITFOR=' + $waiter.Id + ' /NOGAME /QUIET /NOSHORTCUTS -- -SPAWN'
 	$code = Run-Exe 'launcher' (Join-Path $helper 'OpenYR-Update.exe') $arguments
 	$text = Read-Text $log

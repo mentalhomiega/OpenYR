@@ -13,4 +13,4 @@ when_omitted:
 TiberiumDeathToVisceroid=no
 ```
 
-Nothing in the game reads this switch. Infantry killed by the [damage Tiberium deals](/systems/tiberium/#damage), and any object killed by the damage a gas particle ([`BehavesLike=Gas`](/keys/behaveslike/#scope-particletype)) deals, leave no visceroid whatever the value. The map's value is still read and saved.
+Nothing in the game reads this switch. Any object killed by the damage a gas particle ([`BehavesLike=Gas`](/keys/behaveslike/#scope-particletype)) deals leaves no visceroid whatever the value. The map's value is still read and saved.

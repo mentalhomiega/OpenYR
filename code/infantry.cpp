@@ -1393,15 +1393,10 @@ bool InfantryClass::Take_Cell_Hazard_Damage(void)
 		return(true);
 	}
 
-	if (!Class->IsTiberiumProof && !Has_Ability(ABILITY_TIBERIUM_PROOF) && Strength > 0) {
-		TiberiumType tiberium = Map[Get_Coord()].Tiberium_Type_Here();
-		if (tiberium != TIBERIUM_NONE) {
-			int damage = Tiberiums[tiberium]->Power / 10;
-			if (damage <= 1) damage = 1;
-			// A tiberium death leaves no visceroid: gamemd never reads TiberiumDeathToVisceroid (ScenarioClass+0x34B3).
-			Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-		}
-	}
+	/*
+	**	Standing on tiberium does not hurt. gamemd's arrival code (0x519630) ends with the land check
+	**	above, and nothing in it reads TiberiumProof, which the type only loads and checksums.
+	*/
 	return(false);
 }
 

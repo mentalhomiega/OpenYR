@@ -961,9 +961,12 @@ static void Queue_AI_Multiplayer(void)
 
 	int const timing_master = Session.Master_Player_ID();
 	// gamemd evaluates on absolute frames that are multiples of 256; the adaptive policy counts from its own origin.
+	// The measured look-ahead also evaluates at the adaptive policy's two early frames, so a start estimate is soon replaced.
 	bool const evaluation_due = Session.NetworkTimingAdaptive
 		? NetTiming::Evaluation_Is_Due(network_timing_frame)
-		: Frame % static_cast<int>(NetTiming::GAMEMD_EVALUATION_INTERVAL) == 0;
+		: Frame % static_cast<int>(NetTiming::GAMEMD_EVALUATION_INTERVAL) == 0
+			|| (Session.NetworkMeasuredMaxAhead && (Frame == static_cast<int>(NetTiming::BOOTSTRAP_FIRST_EVALUATION)
+				|| Frame == static_cast<int>(NetTiming::BOOTSTRAP_FINAL_EVALUATION)));
 	if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP && PlayerPtr != NULL && PlayerPtr->HeapID == timing_master
 		&& Frame > 0 && evaluation_due) {
 		Generate_Real_Timing_Event();
@@ -1641,6 +1644,10 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 	if (!census.ProcessComplete) {
 		return;
 	}
+	// The measured look-ahead waits for every round trip, since a missing one would lower it to the floor.
+	if (Session.NetworkMeasuredMaxAhead && !census.RoundTripComplete && !census.RequiresConservativeTiming) {
+		return;
+	}
 
 	unsigned int const desired_frame_rate = Desired_Frame_Rate_For(census);
 	NetTiming::TimingSettings const current = Session.Network_Timing_Target();
@@ -1648,7 +1655,9 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 	NetTiming::TimingSettings const settings = census.RequiresConservativeTiming
 		? NetTiming::Apply_Host_Choice(NetTiming::TimingSettings{NetTiming::MAXIMUM_TIMING_RUNG, NetTiming::MAXIMUM_MAX_AHEAD},
 			Session.NetworkTimingChoice)
-		: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead, Session.NetworkTimingChoice);
+		: Session.NetworkMeasuredMaxAhead
+			? NetTiming::Measured_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead, Session.NetworkTimingChoice)
+			: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead, Session.NetworkTimingChoice);
 
 	if (Debug_SyncLog) {
 		Log_Sync_Timing(frame, census, desired_frame_rate, settings,
