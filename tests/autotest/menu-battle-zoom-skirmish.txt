@@ -1,0 +1,28 @@
+; The menu battle keeps its own zoom and speed. A skirmish played at zoom 2 and game speed 5 is won and the game
+; returns to the lobby: the battle that starts behind it must show the map at zoom 1 (every "battle 1" viewstate line
+; reads zoom 1.000 and the view as large as the screen), at its own game speed 2 (speed 2 session 2, 30 frames a second),
+; while the player's game speed option stays 5. The next skirmish started from that lobby then plays at zoom 2 and game
+; speed 5 again, as the player left them. The first game steps use frames up to 150; the last ones run in the second
+; game, whose frame count starts over.
+; Run: scripts/run_autotest.ps1 -Script src-agent27/tests/autotest/menu-battle-zoom-skirmish.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 150 -Settings "[MenuBattle]`nInTests=yes`nMap=XMP29U2.MAP`n[Skirmish]`nSpeed=1" -Filter 'AUTOTEST (zoom|viewstate)|Menu battle: (stopped|over)|Exception'
+0 continuewin
+60 zoom 2
+61 gamespeed 5
+62 viewstate
+150 killhouse Medium_AI 0
+400 viewstate
+410 quit
+ui waitfor backdrop
+ui wait 4000
+ui battleview
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui battleview
+ui press OK
+ui wait 6000
+ui wait 20000
+ui battleview
+ui press OK
+ui wait 6000

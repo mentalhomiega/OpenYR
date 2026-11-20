@@ -14,6 +14,7 @@
 #include "playercolor.h"
 
 #include "_logic.h"
+#include "_rect.h"
 #include "_rules.h"
 #include "_map.h"
 #include "_tactica.h"
@@ -43,6 +44,7 @@
 #include "tactical.h"
 #include "techno.h"
 #include "video.h"
+#include "vidscale.h"
 #include "viewzoom.h"
 
 #include <algorithm>
@@ -82,6 +84,8 @@ bool Running = false;
 bool Loading = false;
 int ScopeDepth = 0;
 bool InService = false;
+// Set while a finished battle is replaced by the next, which keeps the player's zoom held aside in between.
+bool Restarting = false;
 // Set while a match runs in another process, so the battle runs no frames and draws nothing.
 bool Paused = false;
 
@@ -513,6 +517,9 @@ bool Load_Battle(void)
 	DebugString("Menu battle: %s with %d computer players at game speed %d, %.2f frames a second\n", file, (int)Battle.Computers.size(),
 		MENU_BATTLE_GAME_SPEED, NetTiming::Frames_Per_Second(NetTiming::Solo_Frame_Period(MENU_BATTLE_GAME_SPEED, false, Options.ClassicGameSpeeds)));
 
+	// The battle shows the map at the zoom a fresh game starts at; the player's own zoom comes back when it stops.
+	Hold_Player_View_Zoom();
+
 	bool loaded = false;
 	Running = true;
 	Loading = true;
@@ -547,6 +554,7 @@ bool Load_Battle(void)
 	if (!loaded) {
 		DebugString("Menu battle: %s did not load\n", file);
 		Running = false;
+		Release_Player_View_Zoom();
 		Free_Players(Battle);
 		return(false);
 	}
@@ -606,6 +614,9 @@ void Shellmap_Stop(void)
 
 	DebugString("Menu battle: stopped\n");
 	Running = false;
+	if (!Restarting) {
+		Release_Player_View_Zoom();
+	}
 	Video_Set_Map_Subpixel(0.0, 0.0);
 	Free_Players(Battle);
 	Battle.PlayerPtr = nullptr;
@@ -660,9 +671,32 @@ void Shellmap_Service(void)
 
 	if (restart) {
 		DebugString("Menu battle: over, starting another\n");
+		Restarting = true;
 		Shellmap_Stop();
 		Shellmap_Start();
+		Restarting = false;
+		// No map to play: the menus show no battle, so the player's zoom comes back.
+		if (!Running) {
+			Release_Player_View_Zoom();
+		}
 	}
+}
+
+
+void Shellmap_Log_View(void)
+{
+	// The battle's own session state is read inside its scope, since the menus' copy is what stands outside it.
+	int speed = -1;
+	int session_speed = -1;
+	if (Running) {
+		BattleScope scope;
+		speed = Options.GameSpeed;
+		session_speed = Session.Options.GameSpeed;
+	}
+	double const fps = NetTiming::Frames_Per_Second(NetTiming::Solo_Frame_Period(MENU_BATTLE_GAME_SPEED, false, Options.ClassicGameSpeeds));
+	DebugString("AUTOTEST viewstate battle %d held %d zoom %.3f display %.3f view %dx%d screen %dx%d speed %d session %d player speed %d battle rate %.2f fps\n",
+		Running ? 1 : 0, Player_View_Zoom_Held() ? 1 : 0, ViewZoom * InterfaceScale, DisplayZoom * InterfaceScale, TacticalRect.Width, TacticalRect.Height,
+		ScreenTacticalRect.Width, ScreenTacticalRect.Height, speed, session_speed, Options.GameSpeed, fps);
 }
 
 

@@ -24,6 +24,7 @@
 #include "perfstat.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
+#include "shellmap.h"
 #include "replay.h"
 #include "spawner.h"
 #include "statehash.h"
@@ -7390,6 +7391,13 @@ static void Zoom_Step(StepType const & step)
 }
 
 
+// viewstate: logs the map view zoom and size and the game speed, and whether the menu battle holds the player's zoom aside.
+static void Viewstate_Step(StepType const &)
+{
+	Shellmap_Log_View();
+}
+
+
 // wheel <step> [x y]: glides the zoom by that step around a screen point, as the mouse wheel
 // does; without a point the zoom centers on the middle of the map view.
 static void Wheel_Step(StepType const & step)
@@ -8368,6 +8376,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"zoom", Zoom_Step},
 		{"interfacescale", Interfacescale_Step},
 		{"wheel", Wheel_Step},
+		{"viewstate", Viewstate_Step},
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
 		{"windowdark", Windowdark_Step},

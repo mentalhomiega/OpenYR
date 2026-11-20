@@ -77,6 +77,14 @@ double View_Zoom_Max(void);
 // surfaces are rebuilt by the next Set_View_Dimensions.
 void Reset_View_Zoom(void);
 
+// The menu battle shows the map at the zoom a fresh game starts at, not at the one the player left their last match at.
+// Hold_Player_View_Zoom puts the zoom, a glide in progress and a scripted scene's kept zoom aside and shows the native
+// zoom; Release_Player_View_Zoom brings them back. A call while already held, or a release with nothing held, does
+// nothing, and Reset_View_Zoom drops what is held, since a new frame size starts the zoom over.
+void Hold_Player_View_Zoom(void);
+void Release_Player_View_Zoom(void);
+bool Player_View_Zoom_Held(void);
+
 // Brings the zoom in to the player's zoom-out limit without a glide, for a new screen area whose map surfaces are not
 // made yet, so that they are made for the view the limit allows rather than for the wider one the game started at.
 void Hold_View_Zoom_To_Limit(void);

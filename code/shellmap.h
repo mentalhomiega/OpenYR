@@ -41,6 +41,10 @@ void Shellmap_Stop(void);
 // their loops; further calls before the next presented frame do nothing.
 void Shellmap_Service(void);
 
+// Logs one AUTOTEST viewstate line: whether a battle runs, the view zoom (as the zoom step gives it), the map view's size,
+// the game speed the battle's session holds, the player's game speed option and the frame length the battle runs at.
+void Shellmap_Log_View(void);
+
 // The logic frames the battle has run since the game started.
 std::uint64_t Shellmap_Frame_Count(void);
 

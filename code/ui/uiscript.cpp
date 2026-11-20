@@ -30,6 +30,7 @@
 #include "hud.h"
 #include "init.h"
 #include "monotonic.h"
+#include "shellmap.h"
 
 #include <algorithm>
 #include <cctype>
@@ -568,6 +569,14 @@ bool Step_Hudrows(Rml::Context *, UIStepType const &, long long)
 
 
 // Starts the update check for an installed build and a local feed, as the title menu does from the install record.
+// Logs the view zoom and speed, as the viewstate game step does.
+bool Step_Battleview(Rml::Context *, UIStepType const &, long long)
+{
+	Shellmap_Log_View();
+	return(false);
+}
+
+
 bool Step_Updatecheck(Rml::Context *, UIStepType const & step, long long)
 {
 	std::string::size_type const space = step.Argument.find(' ');
@@ -612,6 +621,7 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"checked", Step_Checked},
 		{"inside", Step_Inside},
 		{"hudrows", Step_Hudrows},
+		{"battleview", Step_Battleview},
 		{"updatecheck", Step_Updatecheck},
 		{"quit", Step_Quit},
 	};
@@ -657,7 +667,7 @@ bool UIScript_Pending(void)
 /// without pumping messages, for testing the hang watchdog), command (runs the registered command of that
 /// name, as its key does; the in-game script's command step cannot run while a replay is paused), updatecheck (an installed
 /// build such as beta33 and a local feed file, separated by a space: starts the update check the title menus start from the
-/// install record) and quit.
+/// install record), battleview (logs the menu battle's view zoom, map view size and speed) and quit.
 /// </summary>
 void UIScript_Tick(Rml::Context * context)
 {
