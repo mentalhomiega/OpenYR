@@ -190,12 +190,6 @@ class BulletClass : public ObjectClass
 		 */
 		TVelocity3D<double> Velocity;
 
-		/*
-		 * The number of times this (arcing) projectile has struck a surface. When it
-		 * reaches the bounce limit, the projectile is forced to detonate.
-		 */
-		int BounceCount;
-
 		// The center of the target when the projectile was launched (BulletClass::MoveTo, 0x468670, keeps it at +0x140).
 		Coord TargetCoord;
 

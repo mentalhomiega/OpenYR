@@ -151,7 +151,6 @@ BulletClass::BulletClass(void) :
 	field_A4(true),
 	IsLaunching(true),
 	CourseLockCounter(0),
-	BounceCount(0),
 	TargetCoord(COORD_NONE),
 	TarCom(NULL),
 	MaxSpeed(0),
@@ -749,96 +748,40 @@ void BulletClass::Fly_Ballistic(Coord & coord, bool & forced, bool & collided, I
 	}
 
 	/*
-	 * The projectile bounces unless it is still clear of the ground and has
-	 * struck nothing along the way.
+	 * A projectile that has gone below the ground, through a bridge deck or into an obstacle on the way
+	 * stops there only when its firer is gone: it is put back on the surface, bounced off it and bursts.
+	 * While the firer lives, a projectile that crosses a deck bursts on it, and one that hits the ground
+	 * or an obstacle flies on below the surface (BulletClass::Update, 0x467609). Bouncy is not read.
 	 */
-	bool do_bounce = true;
-	if (position.Z >= height) {
-		if (!fell_through_bridge && !rose_through_bridge && !hit_obstacle) {
-			do_bounce = false;
-		}
-	}
-
-	if (do_bounce) {
-		/*
-		 * Bring the projectile back to the surface it struck -- the deck it
-		 * dropped onto, the underside of the deck it rose into, or the
-		 * ground itself.
-		 */
-		if (fell_through_bridge) {
-			position.Z = bridge_height;
-		} else if (rose_through_bridge) {
-			bridge_height -= 20;
-			position.Z = bridge_height;
-		} else {
-			bridge_height = height - 100;
-			if (bridge_height < position.Z) {
+	if (position.Z < height || fell_through_bridge || rose_through_bridge || hit_obstacle) {
+		if (payback == NULL) {
+			if (fell_through_bridge) {
+				position.Z = bridge_height;
+			} else if (rose_through_bridge) {
+				position.Z = bridge_height - 20;
+			} else if (height - 100 < position.Z) {
 				position.Z = height;
 			}
-		}
 
-		/*
-		 * Bounce the projectile off that surface. Its velocity is rotated
-		 * into the frame of reference of the ground slope, damped by the
-		 * projectile's elasticity, reflected in Z, and then rotated back
-		 * out again.
-		 */
-		Matrix3D slope_matrix = Get_Slope_Matrix(TacticalMap->Get_Cell_Ramp(new_coord));
-		Matrix3D slope_matrix_inv = Matrix3D::Orthogonal_Inverse(slope_matrix);
-		Vector3 vec(velocity.X, -velocity.Y, velocity.Z);
-		vec = slope_matrix_inv.Rotate_Vector(vec);
-		vec *= elasticity;
-		vec.Z = -vec.Z;
-		vec = slope_matrix.Rotate_Vector(vec);
-		velocity.X = vec.X;
-		velocity.Y = -vec.Y;
-		velocity.Z = vec.Z;
+			/*
+			 * The velocity is rotated into the frame of the ground slope, damped by the
+			 * projectile's elasticity, reflected in Z, and rotated back out again.
+			 */
+			Matrix3D slope_matrix = Get_Slope_Matrix(TacticalMap->Get_Cell_Ramp(new_coord));
+			Matrix3D slope_matrix_inv = Matrix3D::Orthogonal_Inverse(slope_matrix);
+			Vector3 vec(velocity.X, -velocity.Y, velocity.Z);
+			vec = slope_matrix_inv.Rotate_Vector(vec);
+			vec *= elasticity;
+			vec.Z = -vec.Z;
+			vec = slope_matrix.Rotate_Vector(vec);
+			velocity.X = vec.X;
+			velocity.Y = -vec.Y;
+			velocity.Z = vec.Z;
 
-		/*
-		 * See who is standing in the cell the projectile is bouncing out
-		 * of, taking care to look on top of a bridge rather than beneath it
-		 * when the projectile is riding above the deck. Neither the firer
-		 * nor an ally of the firer counts as a victim.
-		 */
-		bool on_bridge = Map[coord].IsUnderBridge && Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT <= position.Z;
-		TechnoClass * techno = Map[coord].Cell_Techno(Point2D(0, 0), on_bridge);
-		if (Payback != NULL && coord.As_Cell() == Payback->Center_Coord().As_Cell() || techno != NULL && Payback != NULL && Payback->House->Is_Ally(techno)) {
-			techno = NULL;
-		}
-
-		/*
-		 * Only a bouncy projectile survives the impact, and even then only
-		 * if it did not come down on top of somebody.
-		 */
-		if (!Class->IsBouncy || techno != NULL && (Payback == NULL || techno != Payback)) {
 			impact = IMPACT_NORMAL;
 			forced = true;
-			collided = true;
-		}
-
-		/// This test can never pass -- the check above already forces a
-		/// non-bouncy projectile to explode.
-
-		/*
-		 * A projectile aimed at a cell rather than at an object was to
-		 * detonate as soon as it landed in that cell.
-		 */
-		if (!Class->IsBouncy && !forced) {
-			if (Is_Target_Cell(TarCom)) {
-				if (TarCom->Center_Coord().As_Cell() == coord.As_Cell()) {
-					impact = IMPACT_NORMAL;
-					forced = true;
-					collided = true;
-				}
-			}
-		}
-
-		/*
-		 * A projectile is allowed only so many bounces before it is forced
-		 * to detonate wherever it happens to have landed.
-		 */
-		BounceCount++;
-		if (!forced && BounceCount >= 3) {
+		} else if (fell_through_bridge || rose_through_bridge) {
+			position.Z = fell_through_bridge ? bridge_height : bridge_height - 20;
 			impact = IMPACT_NORMAL;
 			forced = true;
 		}
@@ -965,6 +908,11 @@ void BulletClass::Resolve_Impact(Coord & coord, bool forced, bool collided, Impa
 				Coord cur_coord = PositionCoord;
 				forced = Is_Forced_To_Explode(cur_coord);
 				PositionCoord = cur_coord;
+			}
+
+			// A projectile forced to burst below the ground bursts on it (BulletClass::Update, 0x467BF0).
+			if (forced && HeightAGL < 0) {
+				HeightAGL = 0;
 			}
 			LastCell = PositionCoord.As_Cell();
 
@@ -1426,7 +1374,12 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 		}
 	}
 
-	if (height < 0) {
+	// A projectile flying on below the ground bursts four levels down; a flak shell bursts as soon as it is
+	// below the ground and its target's center (BulletClass::AI, 0x468C86 and 0x468CAB).
+	if (height <= -4 * LEVEL_LEPTON_H) {
+		return(true);
+	}
+	if (Class->FlakScatter && TarCom != NULL && PositionCoord.Z < TarCom->Center_Coord().Z && height < 0) {
 		return(true);
 	}
 
@@ -2093,7 +2046,6 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Fuse);
 	stream.Serialize(IsBright);
 	stream.Serialize(Velocity);
-	stream.Serialize(BounceCount);
 	stream.Serialize(TargetCoord);
 	stream.Serialize(field_A4);
 	stream.Serialize(IsLaunching);
