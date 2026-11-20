@@ -12,7 +12,8 @@
 #include "ui/uiclamp.h"
 
 #include <algorithm>
-#include <cctype>
+#include <cctype>
+#include <utility>
 
 
 namespace
@@ -26,6 +27,43 @@ UISettingRow const * Row_Named(std::vector<UISettingRow> const & rows, std::stri
 		}
 	}
 	return(nullptr);
+}
+
+
+UISettingRow * Row_Named(std::vector<UISettingRow> & rows, std::string const & key)
+{
+	return(const_cast<UISettingRow *>(Row_Named(std::as_const(rows), key)));
+}
+
+
+// The fold row that has the label, or null.
+UISettingRow const * Fold_Named(std::vector<UISettingRow> const & rows, std::string const & label)
+{
+	for (UISettingRow const & row : rows) {
+		if (row.Kind == UISettingRowKind::FOLD && row.Label == label) {
+			return(&row);
+		}
+	}
+	return(nullptr);
+}
+
+
+// The position of the first preset whose values every row holds, or one past the last when none is.
+int Preset_Index(std::vector<UISettingRow> const & rows, SettingPresetChoice const & choice)
+{
+	int index = 0;
+	for (SettingPreset const & preset : choice.Presets) {
+		bool all = true;
+		for (SettingPresetValue const & value : preset.Values) {
+			UISettingRow const * row = Row_Named(rows, value.Key);
+			all = all && row != nullptr && row->Value == value.Value;
+		}
+		if (all) {
+			return(index);
+		}
+		index++;
+	}
+	return(index);
 }
 
 
@@ -59,6 +97,8 @@ char const * Kind_Name(UISettingRowKind kind)
 			return("slider");
 		case UISettingRowKind::CHOICE:
 			return("choice");
+		case UISettingRowKind::FOLD:
+			return("fold");
 		default:
 			return("switch");
 	}
@@ -67,16 +107,25 @@ char const * Kind_Name(UISettingRowKind kind)
 
 std::string Row_Classes(UISettingRow const & row)
 {
+	std::string classes;
 	switch (row.Kind) {
 		case UISettingRowKind::HEADING:
-			return("section");
+			classes = "section";
+			break;
 		case UISettingRowKind::SLIDER:
-			return(row.Disabled ? "setting slider-row disabled" : "setting slider-row");
+			classes = row.Disabled ? "setting slider-row disabled" : "setting slider-row";
+			break;
 		case UISettingRowKind::CHOICE:
-			return(row.Disabled ? "setting choice-row disabled" : "setting choice-row");
+			classes = row.Disabled ? "setting choice-row disabled" : "setting choice-row";
+			break;
+		case UISettingRowKind::FOLD:
+			classes = "fold-row";
+			break;
 		default:
-			return(row.Disabled ? "check setting disabled" : "check setting");
+			classes = row.Disabled ? "check setting disabled" : "check setting";
+			break;
 	}
+	return(row.Hidden ? classes + " folded" : classes);
 }
 
 }
@@ -95,12 +144,28 @@ std::string UI_Setting_Element_Id(std::string const & key)
 }
 
 
+void UI_Setting_Rows_Sync_Presets(std::vector<UISettingRow> & rows, bool start)
+{
+	for (UISettingRow & row : rows) {
+		if (row.Preset != nullptr) {
+			row.Value = Preset_Index(rows, *row.Preset);
+			if (start) {
+				row.Start = row.Value;
+			}
+		}
+	}
+}
+
+
 void UI_Setting_Rows_Refresh(std::vector<UISettingRow> & rows, UISettingConditionCheck const & met)
 {
+	UI_Setting_Rows_Sync_Presets(rows);
 	for (UISettingRow & row : rows) {
 		row.KindName = Kind_Name(row.Kind);
 		row.On = (row.Value != row.Off);
-		row.Disabled = (row.Kind != UISettingRowKind::HEADING) && !Row_Enabled(rows, row, met);
+		row.Disabled = (row.Kind != UISettingRowKind::HEADING && row.Kind != UISettingRowKind::FOLD) && !Row_Enabled(rows, row, met);
+		UISettingRow const * fold = row.Fold.empty() ? nullptr : Fold_Named(rows, row.Fold);
+		row.Hidden = (fold != nullptr && fold->Value == 0);
 		row.Classes = Row_Classes(row);
 		if (row.Kind == UISettingRowKind::HEADING) {
 			continue;
@@ -108,7 +173,9 @@ void UI_Setting_Rows_Refresh(std::vector<UISettingRow> & rows, UISettingConditio
 		row.Intent = Lower_Text(row.Key);
 		row.ElementId = UI_Setting_Element_Id(row.Key);
 		row.RowId = (row.Kind == UISettingRowKind::SWITCH) ? "switch-" + row.ElementId : row.ElementId + "-row";
-		if (row.Kind == UISettingRowKind::CHOICE) {
+		if (row.Kind == UISettingRowKind::FOLD) {
+			row.ValueText = std::string(row.On ? "[-] Hide " : "[+] Show ") + row.Label;
+		} else if (row.Kind == UISettingRowKind::CHOICE) {
 			row.ValueText = Index_In_Range(row.Value, row.Items.size()) ? row.Items[row.Value] : std::string();
 		} else {
 			row.ValueText = (row.Value == 0 && !row.ZeroText.empty()) ? row.ZeroText : std::to_string(row.Value) + row.Unit;
@@ -126,7 +193,20 @@ bool UI_Setting_Row_Execute(std::vector<UISettingRow> & rows, std::string const 
 		if (row.Disabled) {
 			return(true);
 		}
-		if (row.Kind == UISettingRowKind::SLIDER) {
+		if (row.Kind == UISettingRowKind::FOLD) {
+			row.Value = (value != 0) ? 1 : 0;
+		} else if (row.Preset != nullptr) {
+			// A position past the presets is Custom, which changes no row. The choice then reads from the rows.
+			if (value >= 0 && value < (int)row.Preset->Presets.size()) {
+				for (SettingPresetValue const & preset_value : row.Preset->Presets[value].Values) {
+					UISettingRow * target = Row_Named(rows, preset_value.Key);
+					if (target != nullptr) {
+						target->Value = preset_value.Value;
+					}
+				}
+			}
+			UI_Setting_Rows_Sync_Presets(rows);
+		} else if (row.Kind == UISettingRowKind::SLIDER) {
 			row.Value = (row.Min < row.Max) ? std::clamp(value, row.Min, row.Max) : value;
 		} else if (row.Kind == UISettingRowKind::CHOICE) {
 			row.Value = row.Items.empty() ? 0 : std::clamp(value, 0, (int)row.Items.size() - 1);
@@ -135,6 +215,7 @@ bool UI_Setting_Row_Execute(std::vector<UISettingRow> & rows, std::string const 
 		} else {
 			row.Value = (row.Start != row.Off) ? row.Start : row.SwitchOn;
 		}
+		UI_Setting_Rows_Sync_Presets(rows);
 		return(true);
 	}
 	return(false);
@@ -144,12 +225,17 @@ bool UI_Setting_Row_Execute(std::vector<UISettingRow> & rows, std::string const 
 void UI_Setting_Rows_Reset(std::vector<UISettingRow> & rows)
 {
 	for (UISettingRow & row : rows) {
-		row.Value = row.Default;
+		if (row.Kind != UISettingRowKind::FOLD) {
+			row.Value = row.Default;
+		}
 	}
+	UI_Setting_Rows_Sync_Presets(rows);
 }
 
 
 bool UI_Setting_Rows_Changed(std::vector<UISettingRow> const & rows)
 {
-	return(std::any_of(rows.begin(), rows.end(), [](UISettingRow const & row) { return(row.Value != row.Start); }));
+	return(std::any_of(rows.begin(), rows.end(), [](UISettingRow const & row) {
+		return(row.Kind != UISettingRowKind::FOLD && row.Preset == nullptr && row.Value != row.Start);
+	}));
 }

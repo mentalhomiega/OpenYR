@@ -23,6 +23,7 @@ The fields are:
 | `.Min`, `.Max` | The range a `.Number` is held to when read and on its slider. Equal values mean no range. |
 | `.Names` | A table of file names for a `.Number`, saved as text. An unknown name reads as `.Default`. |
 | `.Page`, `.Group`, `.Label`, `.Tip` | The settings page, the group heading, and the row's text. Without `.Label` the setting has no row. |
+| `.Fold` | The name of a fold the group sits in. See [Folds and presets](#folds-and-presets). |
 | `.Needs` | The key of another row on the same page. This row is greyed while that one is off or greyed. |
 | `.Condition` | A reason for greying that is not a setting, such as `SettingCondition::MODERN_INTERFACE`. The page answers it. |
 | `.NeedsRestart` | Adds "Applies at the next start." to the tip. |
@@ -32,7 +33,7 @@ The fields are:
 | `.BeforeRenderer` | Also reads the key at startup before the renderer starts, for a setting the renderer needs at its start. |
 
 The row kind comes from the entry: a `.Flag`, or a `.Names` setting with `.SwitchOn`, is a switch, and any other
-`.Number` with a label is a slider. A declaration has no drop-down row; the `CHOICE` row kind (a drop-down over
+`.Number` with a label is a slider. A declaration has no drop-down row; a preset choice is one (see below), and the `CHOICE` row kind (a drop-down over
 `Items`) and a locked row with a `Note` are built by the skirmish lobby for a mod's game options (LOBBY_MODES.md).
 
 A row whose `.Page` names a page in `Pages[]` appears on that page with no other change. A row on `graphics` appears on the Graphics page.
@@ -73,7 +74,7 @@ therefore reached from the modern menu style.
 Some parts stay written by hand:
 
 - The Graphics page is its own screen (`code/ui/screens/display/`), and the rows on `graphics` are listed among its
-  hand-written rows. It is not in `Pages[]`.
+  hand-written rows, below the preset choice and the Advanced fold. It is not in `Pages[]`.
 - The built-in tabs (Game, Display, Graphics, Audio, Keyboard, Accessibility, Mods) keep their `UISettingsTab` values,
   their entries in `UI_Settings_Tab_Bar` (`code/ui/uisettingshost.cpp`) and their presenters in `Build_Session`
   (`code/ui/uisettings.cpp`). The tab bar is built from that list: the menu style's frame holds an empty `#tabs`, and
@@ -82,13 +83,50 @@ Some parts stay written by hand:
 - The classic options menu sizes its panel by its button count in `ui/mainopt.rcss` (`.count-7` for one declared
   page). A second declared page needs a `.count-8` rule there; the modern style already has rules up to eight.
 
+## Folds and presets
+
+A page can fold groups of rows under a heading that opens and closes them. Give each row of those groups the same
+`.Fold` text, such as `.Fold = ADVANCED`. The page shows the fold's groups together, at the place its first group
+would be, under a button reading "[+] Show Advanced" while they are hidden and "[-] Hide Advanced" while they show.
+A fold is closed each time the page opens, a hidden row cannot be tabbed to, and opening or closing a fold is not a
+setting change: Reset to defaults leaves the fold as it is, and Back and OK ignore it.
+
+A preset choice is a drop-down at the top of a page that sets several rows at once. It is declared in `Presets[]` in
+`code/optionsettings.cpp` as a `SettingPresetChoice`: the page, a key, the group heading, the label and tip, and a list
+of `SettingPreset`, each a label and the value it gives each of its rows. The choice is never stored and has no key in
+`RA2MD.INI`. The page reads it from the rows on every change: it shows the first preset whose values every named row
+holds, and "Custom" when none is. A settings file therefore reads as the right preset whatever build wrote it, and
+changing any covered row by hand switches the choice to Custom. Choosing Custom changes nothing. Choosing a preset
+sets its rows on the page like a hand change, so they reach `Options` on OK through the usual apply path, and Cancel
+drops them. The choice greys with the condition the declaration names.
+
+The Graphics page has one preset choice, Preset under the heading Graphics quality, over the rows of the Advanced fold
+and the Weather row. Each preset names the same ten rows. Switches no preset names, such as the sharpness slider,
+**Steady vehicle placement** and **Darker overlapping shadows**, keep their value and do not change the reading.
+
+| Row | Classic | Enhanced | Full |
+|---|---|---|---|
+| Draw with the graphics card (`GpuRender`) | on | on | on |
+| Soft shadows (`SoftShadows`) | off | on | on |
+| Draw vehicles and aircraft in 3D (`GpuVoxels`) | off | on | on |
+| Smooth turning (`GpuVoxelSmooth`) | off | on | on |
+| Smooth movement when zoomed in (`GpuVoxelSubpixel`) | off | on | on |
+| Shockwaves, Glow (`Bloom`), Water ripples, Cloud shadows | off | off | on |
+| Weather (`Weather`) | None | None | Map |
+
+Classic is the default of every row it names, so a settings file with none of these keys reads as Classic, and the
+picture is the one the game drew before the presets existed. Enhanced changes how the game draws what it already
+shows: it draws with the graphics card, softens shadows, and turns and moves vehicles smoothly. Full adds effects that
+put new things in the picture. None of the rows changes the game's state, so every preset plays the same game and is
+allowed in multiplayer. A preset sets no renderer and no strength slider.
+
 ## What the table order decides
 
 A save writes each entry in table order, and `INIClass` moves a key it writes to the end of its section. The table
 order is therefore the order of those keys in a saved file, and keys the table does not declare stay above them. To
 keep a saved file the same as before, add a converted key at the place its old `Put_` call had.
 
-A page shows its rows grouped: each group under its `.Group` heading, in the order the table first names the group.
+A page shows its rows grouped: each group under its `.Group` heading, in the order the table first names the group. A preset choice comes first, and the groups of a fold follow its button at the place its first group would be.
 The row markup is one `data-for` block in the template `ui/setting-rows.rml`, which `ui/graphics.rml` and `ui/settingspage.rml` both insert; it needs no edit for a new row.
 
 ## Reading and greying

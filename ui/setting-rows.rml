@@ -19,11 +19,12 @@
 <body>
 	<label data-for="row : settingrows" data-attr-class="row.classes" data-attr-id="row.rowid" data-attr-desc="row.tip">
 		<span data-if="row.kind == 'heading'">{{row.label}}</span>
-		<span class="caption" data-if="row.kind != 'heading'">{{row.label}}</span>
+		<button class="fold" data-if="row.kind == 'fold'" data-attr-id="row.kind == 'fold' ? row.id : ''" data-event-click="queue(row.intent, row.on ? 0 : 1)">{{row.valuetext}}</button>
+		<span class="caption" data-if="row.kind != 'heading' && row.kind != 'fold'">{{row.label}}</span>
 		<input type="checkbox" data-if="row.kind == 'switch'" data-attr-id="row.kind == 'switch' ? row.id : ''" data-attrif-checked="row.on" data-attrif-disabled="row.disabled" data-event-click="queue(row.intent, row.on ? 0 : 1)"/>
 		<input type="range" step="1" data-if="row.kind == 'slider'" data-attr-id="row.kind == 'slider' ? row.id : ''" data-attr-min="row.min" data-attr-max="row.max" data-attr-value="row.value" data-attrif-disabled="row.disabled" data-event-change="queue(row.intent, ev.value)"/>
 		<span class="value" data-if="row.kind == 'slider'">{{row.valuetext}}</span>
-		<select data-if="row.kind == 'choice'" data-attr-id="row.kind == 'choice' ? row.id : ''" data-attrif-disabled="row.disabled" data-event-change="queue(row.intent, ev.value)">
+		<select data-if="row.kind == 'choice'" data-attr-id="row.kind == 'choice' ? row.id : ''" data-value="row.value" data-attrif-disabled="row.disabled" data-event-change="queue(row.intent, ev.value)">
 			<option data-for="item : row.items" data-attr-value="it_index" data-attrif-selected="it_index == row.value">{{item}}</option>
 		</select>
 		<span class="note" data-if="row.note != ''">{{row.note}}</span>

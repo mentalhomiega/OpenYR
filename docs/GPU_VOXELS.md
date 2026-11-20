@@ -14,7 +14,7 @@ smooth facing, the shadow count, and the record of the image route, the first GP
 With `GpuVoxels=yes` in `[Video]` of `RA2MD.INI` (default `no`), a voxel object that is blitted straight into the map
 view, or a vehicle composed from its hull, turret and barrel, is drawn on the GPU from its voxels instead of from the
 software's 256 by 256 picture. The key does nothing unless the GPU draws the pass (`GpuRender`) or the `gpucheck`
-autotest step runs. The **GPU voxels** group of the Graphics page sets it.
+autotest step runs. The **Draw vehicles and aircraft in 3D** switch, in the **Vehicles and aircraft** group under Advanced on the Graphics page, sets it.
 
 These objects are drawn on the GPU:
 

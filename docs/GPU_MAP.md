@@ -116,12 +116,14 @@ the deferral with a full redraw. `OPENYR_NO_FADE_DEFER=1` in the environment tur
 
 ## Settings
 
-All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
-Graphics page of the settings set `GpuRender`, `SoftShadows`, `Shockwaves`, `Bloom` (the **Glow**
-switch), `WaterRipples`, `CloudShadows` and `Weather` when the page is accepted. The **GPU voxels**
-group sets `GpuVoxels`, `GpuVoxelSmooth` and `GpuVoxelScale`. The game writes every key in the table
-back to `RA2MD.INI`. The effect switches and the voxel rows are greyed out until GPU drawing is
-ticked, and GPU drawing is greyed out without the modern interface. Ticking **Weather** sets
+All keys are in the `[Video]` section and are read at startup. The Graphics page of the settings has a
+**Preset** choice (Classic, Enhanced, Full or Custom) that sets these keys together, and an **Advanced** fold,
+closed when the page opens, with one row for each. The **Graphics card effects** group sets `GpuRender`,
+`SoftShadows`, `Shockwaves`, `Bloom` (the **Glow** switch), `WaterRipples`, `CloudShadows` and `Weather` when the
+page is accepted. The **Vehicles and aircraft** group sets `GpuVoxels`, `GpuVoxelSmooth`, `GpuVoxelSubpixel` and
+`GpuVoxelScale`. The game writes every key in the table back to `RA2MD.INI`. The effect switches and the vehicle
+rows are greyed out until **Draw with the graphics card** is ticked, and it is greyed out without the modern
+interface. [SETTINGS.md](SETTINGS.md#folds-and-presets) lists what each preset sets. Ticking **Weather** sets
 `Weather=Map` unless `RA2MD.INI` already chose `Rain` or `Snow`, and clearing it sets `None`.
 The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTINGS.md) describes it.
 `SoftShadowRadius`, `BloomStrength`, `WaterRippleStrength`, `CloudShadowStrength` and

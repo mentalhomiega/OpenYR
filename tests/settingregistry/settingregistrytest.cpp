@@ -420,20 +420,28 @@ void Test_Real_Table(void)
 	};
 	Check(keys == old_order, "the table lists the [Video] GPU keys in the order the settings file has always had them, then the path search keys and the game speed switch");
 
-	std::vector<UISettingRow> rows = UI_Setting_Rows(settings, "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Default); });
+	std::vector<UISettingRow> rows = UI_Setting_Rows(settings, "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Default); }, Option_Setting_Presets());
 	std::vector<std::string> labels;
 	for (UISettingRow const & row : rows) {
 		labels.push_back(row.Label);
 	}
 	std::vector<std::string> const page_order = {
-		"GPU drawing", "Draw units on the GPU", "Soft shadows", "Shockwaves", "Glow", "Water ripples", "Cloud shadows", "Weather",
-		"GPU voxels", "Draw voxels on the GPU", "Smooth voxel turning", "Smooth voxel motion when zoomed in", "Voxel sharpness",
-		"Voxel drawing", "Steady voxel placement", "Stacked shadows",
+		"Graphics quality", "Preset", "Advanced",
+		"Graphics card effects", "Draw with the graphics card", "Soft shadows", "Shockwaves", "Glow", "Water ripples", "Cloud shadows", "Weather",
+		"Vehicles and aircraft", "Draw vehicles and aircraft in 3D", "Smooth turning", "Smooth movement when zoomed in", "Vehicle sharpness",
+		"Vehicle details", "Steady vehicle placement", "Darker overlapping shadows",
 		"Stock art", "Fix stock art",
 		"Diagnostics", "Performance overlay",
 		"Camera", "Zoom out to a 4K view",
 	};
-	Check(labels == page_order, "the Graphics page keeps the GPU drawing rows in their old order, with the voxel rows after them");
+	Check(labels == page_order, "the Graphics page shows the quality choice, then the Advanced fold with the GPU drawing rows in their old order and the vehicle rows after them, then the other groups");
+	std::vector<std::string> folded;
+	for (UISettingRow const & row : rows) {
+		if (!row.Fold.empty()) {
+			folded.push_back(row.Label);
+		}
+	}
+	Check(folded.size() == 16 && folded.front() == "Graphics card effects" && folded.back() == "Darker overlapping shadows", "every row and heading from the GPU drawing group to the vehicle details sits under the Advanced fold, and no other does");
 
 	char const * const texts[] = {
 		"[Video]\r\n",
@@ -449,6 +457,112 @@ void Test_Real_Table(void)
 	for (char const * text : texts) {
 		Check(Round_Trip_Matches(text, "fixture"), "the declared table reads and writes a settings file exactly as the old code did");
 	}
+}
+
+
+// The rows of the Graphics page for the settings a file text holds, as the page opens on them.
+std::vector<UISettingRow> Graphics_Rows_Of(std::string const & text)
+{
+	INIClass ini;
+	Read(ini, text);
+	Blank_Options blank;
+	Settings_Reset(Option_Settings(), blank.Get());
+	Settings_Load(Option_Settings(), ini, blank.Get());
+	OptionsClass & options = blank.Get();
+	return(UI_Setting_Rows(Option_Settings(), "graphics", [&](Setting<OptionsClass> const & setting) { return(Setting_Value(setting, options)); }, Option_Setting_Presets()));
+}
+
+
+UISettingRow * Quality(std::vector<UISettingRow> & rows)
+{
+	return(Row_Of(rows, "GraphicsQuality"));
+}
+
+
+std::string Quality_Text(std::vector<UISettingRow> & rows)
+{
+	UISettingRow * row = Quality(rows);
+	return((row != nullptr && row->Value >= 0 && row->Value < (int)row->Items.size()) ? row->Items[row->Value] : "?");
+}
+
+
+void Test_Presets(void)
+{
+	std::span<SettingPresetChoice const> const choices = Option_Setting_Presets();
+	Check(choices.size() == 1 && choices[0].Presets.size() == 3, "the Graphics page declares one choice over three presets");
+
+	// A preset names only rows that exist, and Classic sets the default of each.
+	std::vector<UISettingRow> defaults = Graphics_Rows_Of("[Video]\r\n");
+	for (SettingPreset const & preset : choices[0].Presets) {
+		for (SettingPresetValue const & value : preset.Values) {
+			Check(Row_Of(defaults, value.Key) != nullptr, "a preset names a row of its page");
+		}
+		Check(preset.Values.size() == choices[0].Presets[0].Values.size(), "every preset sets the same switches");
+	}
+	for (SettingPresetValue const & value : choices[0].Presets[0].Values) {
+		Check(Row_Of(defaults, value.Key)->Value == Row_Of(defaults, value.Key)->Default && value.Value == Row_Of(defaults, value.Key)->Default, "Classic holds the default of each switch it covers");
+	}
+
+	Check(Quality_Text(defaults) == "Classic", "a settings file with no graphics keys reads as Classic");
+	Check(Quality(defaults)->Items.size() == 4 && Quality(defaults)->Items.back() == "Custom", "the choice lists the presets, then Custom");
+	Check(!UI_Setting_Rows_Changed(defaults), "an unchanged page reports no change");
+
+	UI_Setting_Rows_Refresh(defaults, [](SettingCondition) { return(true); });
+	UI_Setting_Row_Execute(defaults, "graphicsquality", 1);
+	Check(Quality_Text(defaults) == "Enhanced", "choosing Enhanced reads back as Enhanced");
+	Check(Row_Of(defaults, "GpuVoxels")->Value == 1 && Row_Of(defaults, "GpuVoxelSmooth")->Value == 1 && Row_Of(defaults, "GpuVoxelSubpixel")->Value == 1 && Row_Of(defaults, "SoftShadows")->Value == 1, "Enhanced turns on soft shadows and the GPU vehicle drawing with smooth turning and movement");
+	Check(Row_Of(defaults, "Bloom")->Value == 0 && Row_Of(defaults, "Shockwaves")->Value == 0 && Row_Of(defaults, "WaterRipples")->Value == 0 && Row_Of(defaults, "CloudShadows")->Value == 0 && Row_Of(defaults, "Weather")->Value == WEATHER_NONE, "Enhanced adds no effect to the picture");
+	Check(UI_Setting_Rows_Changed(defaults), "a preset counts as a change");
+
+	UI_Setting_Row_Execute(defaults, "graphicsquality", 2);
+	Check(Quality_Text(defaults) == "Full" && Row_Of(defaults, "Bloom")->Value == 1 && Row_Of(defaults, "Shockwaves")->Value == 1 && Row_Of(defaults, "WaterRipples")->Value == 1 && Row_Of(defaults, "CloudShadows")->Value == 1 && Row_Of(defaults, "Weather")->Value == WEATHER_MAP, "Full adds glow, shockwaves, water ripples, cloud shadows and map weather");
+
+	UI_Setting_Row_Execute(defaults, "graphicsquality", 0);
+	Check(Quality_Text(defaults) == "Classic" && !UI_Setting_Rows_Changed(defaults), "choosing Classic again puts every covered switch back, and the page is unchanged");
+
+	UI_Setting_Row_Execute(defaults, "graphicsquality", 2);
+	UI_Setting_Row_Execute(defaults, "bloom", 0);
+	Check(Quality_Text(defaults) == "Custom", "changing one covered switch by hand reads as Custom");
+	UI_Setting_Rows_Refresh(defaults, [](SettingCondition) { return(true); });
+	UI_Setting_Row_Execute(defaults, "graphicsquality", 3);
+	Check(Quality_Text(defaults) == "Custom" && Row_Of(defaults, "Bloom")->Value == 0 && Row_Of(defaults, "Shockwaves")->Value == 1, "choosing Custom changes nothing");
+	UI_Setting_Row_Execute(defaults, "bloom", 1);
+	Check(Quality_Text(defaults) == "Full", "putting the switch back reads as Full again");
+
+	UI_Setting_Row_Execute(defaults, "gpuvoxelscale", 3);
+	UI_Setting_Row_Execute(defaults, "steadyvoxelplacement", 0);
+	Check(Quality_Text(defaults) == "Full", "a switch no preset covers does not change the reading");
+	UI_Setting_Rows_Reset(defaults);
+	Check(Quality_Text(defaults) == "Classic", "Reset to defaults reads as Classic");
+
+	// Files an older build wrote hold only the keys it knew, and the preset reads from the values alone.
+	std::vector<UISettingRow> old_enhanced = Graphics_Rows_Of("[Video]\r\nGpuRender=yes\r\nSoftShadows=yes\r\nGpuVoxels=yes\r\nGpuVoxelSmooth=yes\r\nGpuVoxelSubpixel=yes\r\nGpuVoxelScale=4\r\nShadowStacking=no\r\n");
+	Check(Quality_Text(old_enhanced) == "Enhanced", "an older settings file with the Enhanced switches reads as Enhanced");
+	std::vector<UISettingRow> old_full = Graphics_Rows_Of("[Video]\r\nSoftShadows=yes\r\nShockwaves=yes\r\nBloom=yes\r\nWaterRipples=yes\r\nCloudShadows=yes\r\nWeather=Map\r\nGpuVoxels=yes\r\nGpuVoxelSmooth=yes\r\nGpuVoxelSubpixel=yes\r\n");
+	Check(Quality_Text(old_full) == "Full", "an older settings file with the Full switches reads as Full");
+	std::vector<UISettingRow> half = Graphics_Rows_Of("[Video]\r\nSoftShadows=yes\r\nGpuVoxels=yes\r\n");
+	Check(Quality_Text(half) == "Custom", "a settings file that holds some of a preset's switches reads as Custom");
+	std::vector<UISettingRow> rain = Graphics_Rows_Of("[Video]\r\nWeather=Rain\r\n");
+	Check(Quality_Text(rain) == "Custom", "a settings file with rain weather reads as Custom");
+	std::vector<UISettingRow> software = Graphics_Rows_Of("[Video]\r\nGpuRender=no\r\n");
+	Check(Quality_Text(software) == "Custom", "software drawing reads as Custom");
+
+	// The fold opens and closes, hides its rows while closed, and is not a setting.
+	std::vector<UISettingRow> rows = Graphics_Rows_Of("[Video]\r\n");
+	auto met = [](SettingCondition) { return(true); };
+	UI_Setting_Rows_Refresh(rows, met);
+	UISettingRow * fold = Row_Of(rows, "Advanced");
+	Check(fold != nullptr && fold->Kind == UISettingRowKind::FOLD && fold->Value == 0 && fold->ValueText == "[+] Show Advanced", "the Advanced fold starts closed and says what pressing it does");
+	Check(Row_Of(rows, "Bloom")->Hidden && Row_Of(rows, "Bloom")->Classes.find("folded") != std::string::npos && !Row_Of(rows, "ZoomOutView")->Hidden && !Quality(rows)->Hidden, "a closed fold hides its rows, and the others show");
+	UI_Setting_Row_Execute(rows, "advanced", 1);
+	UI_Setting_Rows_Refresh(rows, met);
+	Check(Row_Of(rows, "Advanced")->ValueText == "[-] Hide Advanced" && !Row_Of(rows, "Bloom")->Hidden, "opening the fold shows its rows");
+	Check(!UI_Setting_Rows_Changed(rows), "opening a fold is not a change");
+	UI_Setting_Rows_Reset(rows);
+	Check(Row_Of(rows, "Advanced")->Value == 1, "Reset to defaults leaves the fold as it is");
+
+	UI_Setting_Rows_Refresh(rows, [](SettingCondition) { return(false); });
+	Check(Quality(rows)->Disabled, "the choice greys without the modern interface");
 }
 
 
@@ -508,6 +622,7 @@ int main(int argc, char * argv[])
 	Test_Rows_And_Greying();
 	Test_Switch_Default_On();
 	Test_Real_Table();
+	Test_Presets();
 	if (argc > 1) {
 		Round_Trip_File(argv[1]);
 	}

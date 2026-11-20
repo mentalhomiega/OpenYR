@@ -24,7 +24,9 @@ enum class UISettingRowKind
 	SWITCH,
 	SLIDER,
 	// A drop-down whose value is the position of the chosen item in Items.
-	CHOICE
+	CHOICE,
+	// A heading that opens and closes the rows under it: Value is 1 while they show. Nothing is stored.
+	FOLD
 };
 
 
@@ -51,6 +53,10 @@ struct UISettingRow
 	// A locked row shows its value greyed and keeps it; Note says why, beside the control.
 	bool Locked = false;
 	std::string Note;
+	// The label of the fold row this row sits under, or empty. The row is hidden while that fold is closed.
+	std::string Fold;
+	// Set on a preset row (a CHOICE): its Value is read from the rows it names, as UI_Setting_Rows_Sync_Presets does.
+	SettingPresetChoice const * Preset = nullptr;
 
 	// Filled by UI_Setting_Rows_Refresh for the page's markup.
 	std::string KindName;
@@ -61,6 +67,7 @@ struct UISettingRow
 	std::string ValueText;
 	bool On = false;
 	bool Disabled = false;
+	bool Hidden = false;
 };
 
 
@@ -78,7 +85,11 @@ bool UI_Setting_Row_Execute(std::vector<UISettingRow> & rows, std::string const 
 
 void UI_Setting_Rows_Reset(std::vector<UISettingRow> & rows);
 
-// Returns whether any row differs from the value the page opened with.
+// Sets each preset row to the first preset whose values every row holds, or to Custom (the last item) when none. With start,
+// the value the page opened with is set too.
+void UI_Setting_Rows_Sync_Presets(std::vector<UISettingRow> & rows, bool start = false);
+
+// Returns whether any row differs from the value the page opened with. A fold and a preset row hold no setting and do not count.
 bool UI_Setting_Rows_Changed(std::vector<UISettingRow> const & rows);
 
 
@@ -98,6 +109,7 @@ UISettingRow Row_Of(Setting<Owner> const & setting, int value)
 	}
 	row.Needs = (setting.Needs != nullptr) ? setting.Needs : "";
 	row.Condition = setting.Condition;
+	row.Fold = (setting.Fold != nullptr) ? setting.Fold : "";
 	row.Value = value;
 	row.Start = value;
 	row.Default = setting.Default;
@@ -117,32 +129,101 @@ bool On_Page(Setting<Owner> const & setting, char const * page)
 	return(setting.Label != nullptr && setting.Page != nullptr && std::strcmp(setting.Page, page) == 0);
 }
 
+
+// Adds a group's heading and its rows.
+template<typename Owner, typename ValueOf>
+void Add_Group(std::vector<UISettingRow> & rows, std::span<Setting<Owner> const> settings, char const * page, char const * group, ValueOf value_of)
+{
+	UISettingRow heading;
+	heading.Kind = UISettingRowKind::HEADING;
+	heading.Label = group;
+	for (Setting<Owner> const & member : settings) {
+		if (On_Page(member, page) && std::strcmp(member.Group, group) == 0) {
+			heading.Fold = (member.Fold != nullptr) ? member.Fold : "";
+			break;
+		}
+	}
+	rows.push_back(heading);
+
+	for (Setting<Owner> const & member : settings) {
+		if (On_Page(member, page) && std::strcmp(member.Group, group) == 0) {
+			rows.push_back(Row_Of(member, value_of(member)));
+		}
+	}
 }
 
 
-// Builds the rows of one page: each group in the order it first appears, under a heading row. value_of(setting) gives a row's value.
+// Adds a preset choice under its group heading.
+inline void Add_Preset(std::vector<UISettingRow> & rows, SettingPresetChoice const & choice)
+{
+	UISettingRow heading;
+	heading.Kind = UISettingRowKind::HEADING;
+	heading.Label = choice.Group;
+	rows.push_back(heading);
+
+	UISettingRow row;
+	row.Kind = UISettingRowKind::CHOICE;
+	row.Key = choice.Key;
+	row.Label = choice.Label;
+	row.Tip = choice.Tip;
+	row.Condition = choice.Condition;
+	row.Preset = &choice;
+	for (SettingPreset const & preset : choice.Presets) {
+		row.Items.push_back(preset.Label);
+	}
+	row.Items.push_back("Custom");
+	rows.push_back(row);
+}
+
+}
+
+
+// Builds the rows of one page: its preset choices first, then each group in the order it first appears, under a heading
+// row. The groups of one fold follow a fold row, which opens and closes them, at the first of them. value_of(setting)
+// gives a row's value.
 template<typename Owner, typename ValueOf>
-std::vector<UISettingRow> UI_Setting_Rows(std::span<Setting<Owner> const> settings, char const * page, ValueOf value_of)
+std::vector<UISettingRow> UI_Setting_Rows(std::span<Setting<Owner> const> settings, char const * page, ValueOf value_of, std::span<SettingPresetChoice const> presets = {})
 {
 	std::vector<UISettingRow> rows;
-	std::vector<std::string> groups;
+	for (SettingPresetChoice const & choice : presets) {
+		if (choice.Page != nullptr && std::strcmp(choice.Page, page) == 0) {
+			uisettingrows_detail::Add_Preset(rows, choice);
+		}
+	}
+
+	std::vector<std::string> added;
 	for (Setting<Owner> const & setting : settings) {
-		if (!uisettingrows_detail::On_Page(setting, page) || std::find(groups.begin(), groups.end(), setting.Group) != groups.end()) {
+		if (!uisettingrows_detail::On_Page(setting, page)) {
 			continue;
 		}
-		groups.push_back(setting.Group);
+		std::string const name = std::string((setting.Fold != nullptr) ? "fold " : "group ") + ((setting.Fold != nullptr) ? setting.Fold : setting.Group);
+		if (std::find(added.begin(), added.end(), name) != added.end()) {
+			continue;
+		}
+		added.push_back(name);
 
-		UISettingRow heading;
-		heading.Kind = UISettingRowKind::HEADING;
-		heading.Label = setting.Group;
-		rows.push_back(heading);
+		if (setting.Fold == nullptr) {
+			uisettingrows_detail::Add_Group(rows, settings, page, setting.Group, value_of);
+			continue;
+		}
 
+		UISettingRow fold;
+		fold.Kind = UISettingRowKind::FOLD;
+		fold.Key = setting.Fold;
+		fold.Label = setting.Fold;
+		fold.Tip = "Shows or hides the settings in this part of the page. Closing it keeps every change.";
+		rows.push_back(fold);
+
+		std::vector<std::string> groups;
 		for (Setting<Owner> const & member : settings) {
-			if (uisettingrows_detail::On_Page(member, page) && std::strcmp(member.Group, setting.Group) == 0) {
-				rows.push_back(uisettingrows_detail::Row_Of(member, value_of(member)));
+			if (uisettingrows_detail::On_Page(member, page) && member.Fold != nullptr && std::strcmp(member.Fold, setting.Fold) == 0
+				&& std::find(groups.begin(), groups.end(), member.Group) == groups.end()) {
+				groups.push_back(member.Group);
+				uisettingrows_detail::Add_Group(rows, settings, page, member.Group, value_of);
 			}
 		}
 	}
+	UI_Setting_Rows_Sync_Presets(rows, true);
 	return(rows);
 }
 

@@ -56,6 +56,10 @@ struct Setting
 	char const * Label = nullptr;
 	char const * Tip = nullptr;
 
+	// The name of a fold the group sits in. A page shows the groups of one fold together under a heading that opens and
+	// closes them, closed when the page opens. A setting with no Fold sits in the open.
+	char const * Fold = nullptr;
+
 	// The key of another setting on the page. The row is greyed while that setting is off or greyed.
 	char const * Needs = nullptr;
 	SettingCondition Condition = SettingCondition::NONE;
@@ -86,6 +90,36 @@ struct SettingPage
 	char const * Id = nullptr;
 	// The text of the page's tab and of its button in the options menu.
 	char const * Label = nullptr;
+};
+
+
+// A value a preset gives the row of one setting.
+struct SettingPresetValue
+{
+	char const * Key = nullptr;
+	int Value = 0;
+};
+
+
+struct SettingPreset
+{
+	char const * Label = nullptr;
+	std::span<SettingPresetValue const> Values = {};
+};
+
+
+// A choice on a settings page that sets several rows at once. It is not a setting and is never stored: the page reads it
+// from the rows, as the first preset whose values every row holds, or as Custom when none is.
+struct SettingPresetChoice
+{
+	char const * Page = nullptr;
+	// Names the row, as a setting's key does.
+	char const * Key = nullptr;
+	char const * Group = nullptr;
+	char const * Label = nullptr;
+	char const * Tip = nullptr;
+	SettingCondition Condition = SettingCondition::NONE;
+	std::span<SettingPreset const> Presets = {};
 };
 
 
