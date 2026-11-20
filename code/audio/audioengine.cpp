@@ -42,6 +42,10 @@ double const MAX_STREAM_SECONDS = 86400.0;
 // that jumps, as when a saved game loads, does not render minutes of audio.
 int const MAX_CAPTURE_FRAME_STEP = 60;
 
+// A recording's clock starts on a multiple of the game timer's 16 ms tick, so the announcer's timers, which
+// count those ticks of this clock, run out on the same frames every run.
+unsigned const CAPTURE_CLOCK_ALIGN_MS = 16;
+
 // The start of a music stream is enough to find it in a recording.
 float const STREAM_DUMP_SECONDS = 120.0f;
 
@@ -709,7 +713,8 @@ void AudioEngineClass::Enter_Offline(void)
 		Device->Stop();
 	}
 	Offline = true;
-	OfflineBase = now - (unsigned)(Rendered * 1000 / AUDIO_MIX_RATE);
+	unsigned const base = now - (unsigned)(Rendered * 1000 / AUDIO_MIX_RATE);
+	OfflineBase = base + (CAPTURE_CLOCK_ALIGN_MS - base % CAPTURE_CLOCK_ALIGN_MS) % CAPTURE_CLOCK_ALIGN_MS;
 	Push_Level(AudioCommandType::MASTER_SET_GAIN, AUDIO_GROUP_SFX, 1.0f, 0.0f);
 }
 
