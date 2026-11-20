@@ -214,6 +214,18 @@ Four more checks can end a ballistic flight after the move, in this order. A che
 3. A projectile that has left the playfield is removed at its previous position without detonating, even if it had just landed.
 4. A projectile moving slower than 10 leptons a frame, and lying within 10 leptons of the ground, detonates where it lies.
 
+### Shots at cliffs
+
+These results were measured in Yuri's Revenge with a Rhino, a Grizzly and an IFV, and the engine gives the same ones:
+
+| Shot | Result |
+| --- | --- |
+| Cannon at a target on the edge of a four-level cliff top, two cells away on the low ground | Hits |
+| Cannon at a target on the edge of a four-level cliff top, three cells away on the low ground | Misses. The shell reaches the target's cell four levels below the ground there, so it goes off on the cliff edge and is not moved onto the target |
+| Cannon at a target behind a four-level cliff face, with cliff cells on the line between them | Does not fire. The tank drives to a point on the high ground and fires from there, because the shell is [`SubjectToCliffs=yes`](/keys/subjecttocliffs/) |
+| IFV missile from a cliff top at a target four levels below, three cells away | Misses. The missile goes off on the cliff edge |
+| IFV missile down, or cannon up, a two-level slope, three cells away | Hits |
+
 ## What ends a flight
 
 This table gathers every way a flight ends, in the order a turn tests them. The middle column gives the flight model each applies to. The last column says where the blast is placed, since several of these move the projectile first.
