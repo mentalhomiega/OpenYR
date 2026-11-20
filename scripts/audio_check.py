@@ -45,6 +45,8 @@ PERCEPTUAL_EXPONENT = 5.0 / 3.0
 # The mixer shapes samples above this magnitude to keep them below full scale.
 SOFT_CLIP = 0.9
 
+# The mixer's resampler, linear with a fourth-order low-pass filter, delays a sound by about this many frames.
+MIXER_DELAY_FRAMES = 4
 # Matching works on a mono copy at this rate (numpy) or the coarse rate (no numpy).
 MATCH_RATE = 8000
 COARSE_RATE = 2000
@@ -58,6 +60,12 @@ MIN_MATCH_SECONDS = 0.03
 MATCH_SCORE = 0.5
 # A quarter of a sound counts as played when it correlates at least this well where it should be.
 PART_SCORE = 0.35
+# A sound counts as in the mix when the level that fits it best is within this much of the level the log predicts.
+LEVEL_SLACK_DB = 6.0
+# A sound predicted this much quieter (-20 dB) than the mix at its place is reported masked, not missing.
+MASKED = 0.1
+# A stretch quieter than this (-60 dBFS) counts as silence.
+SILENCE = 0.001
 # A weaker correlation still counts within this many seconds of the logged start when the level matches the log.
 WEAK_SCORE = 0.2
 WEAK_SLACK = 0.01
@@ -176,8 +184,12 @@ def decimate(samples, rate, target):
     if step == 1:
         return samples, rate
     if np is not None:
-        usable = (len(samples) // step) * step
-        return np.asarray(samples[:usable]).reshape(-1, step).mean(axis=1), rate / float(step)
+        # Everything above the new band is removed first, so sound above it cannot fold down into it; the mixer's
+        # resampler and ours treat those high frequencies differently.
+        values = np.asarray(samples, dtype=np.float64)
+        spectrum = np.fft.rfft(values)
+        spectrum[np.fft.rfftfreq(len(values), 1.0 / rate) > 0.45 * rate / step] = 0.0
+        return np.fft.irfft(spectrum, len(values))[::step], rate / float(step)
     out = [sum(samples[i:i + step]) / step for i in range(0, len(samples) - step + 1, step)]
     return out, rate / float(step)
 
@@ -342,6 +354,12 @@ class Occurrence:
         self.end_reason = ''
         self.request = None
         self.live = False
+        self.loop = None
+        self.cycles = 1
+        self.template = None
+        self.reference = 0.0
+        self.coefficient = 0.0
+        self.changes = []
         self.findings = {}
 
 
@@ -365,6 +383,10 @@ def occurrences_from_log(entries, rate):
             item.pitch = float(entry.get('pitch', 1.0)) or 1.0
             sounds = entry.get('sounds', '')
             item.files = [s for s in sounds.split(',') if s]
+            loop = re.match(r'(\d+)-(\d+)$', entry.get('loop', ''))
+            if loop and item.files:
+                item.loop = (int(loop.group(1)), int(loop.group(2)))
+            item.cycles = int(entry.get('cycles', 1) or 1)
             item.kind = {'unitvoice': 'voice', 'speech': 'eva', 'music': 'music'}.get(item.group, 'sfx')
             found.append(item)
             live[handle] = item
@@ -373,6 +395,7 @@ def occurrences_from_log(entries, rate):
             item = live.get(handle)
             if item is not None and not item.files:
                 item.files = [os.path.splitext(entry.get('file', ''))[0]]
+                item.cycles = -1 if entry.get('loop') == '1' else 1
                 if item.name == '<stream>':
                     item.name = entry.get('file', '')
         elif kind == 'eva' and action == 'start':
@@ -385,6 +408,10 @@ def occurrences_from_log(entries, rate):
             if item is not None:
                 item.kind = 'music'
                 item.name = entry.get('theme', item.name)
+        elif kind == 'event' and action == 'retarget':
+            item = live.get(handle)
+            if item is not None:
+                item.changes.append((seconds, float(entry.get('gain', 0.0)), float(entry.get('pan', 0.0)), float(entry.get('ramp', 0.0))))
         elif kind == 'event' and action in ('finished', 'stopped', 'cut-limit', 'cut-budget'):
             item = live.pop(handle, None)
             if item is not None:
@@ -427,29 +454,63 @@ class Library:
         return sorted(self.paths)
 
 
-def expected_signal(item, library, rate):
-    """The occurrence's sounds back to back at the mix rate and its pitch, as the mixer would add them to each
-    channel before the pan: a list of per-channel signals and the per-channel gains, or None when a sound is missing.
+def expected_signal(item, library, rate, until):
+    """The occurrence as the mixer adds it to the mono mix of the two channels, at the mix rate: its sounds back to
+    back at its pitch, the body repeated while it loops, scaled by its gain and pan and by every change the log
+    records. Returns the signal and the loudest scale it reaches, or None when a sound file is missing.
     """
     parts = []
     for stem in item.files:
         sound = library.get(stem)
         if sound is None:
             return None
-        parts.append(sound)
+        parts.append(resample(sound.mono(), rate / (sound.rate * item.pitch)))
     if not parts:
         return None
-    left = min(1.0 - item.pan, 1.0) * item.gain
-    right = min(1.0 + item.pan, 1.0) * item.gain
-    pieces = []
-    for sound in parts:
-        mono = sound.mono()
-        pieces.append(resample(mono, rate / (sound.rate * item.pitch)))
+    # A loop repeats its body until it ends, or until the recording does; one that never ends in the log is drawn
+    # up to the given time.
+    first, last = item.loop if item.loop else (0, len(parts))
+    pieces = list(parts[:last])
+    end = item.end if item.end is not None else until
+    if (item.cycles < 0 or item.cycles > 1) and last > first:
+        body = parts[first:last]
+        body_length = sum(len(p) for p in body)
+        played = sum(len(p) for p in pieces)
+        repeats = item.cycles - 1 if item.cycles > 1 else int(max(0.0, (end - item.start) * rate - played) // max(body_length, 1)) + 1
+        for _ in range(max(0, repeats)):
+            pieces.extend(body)
+    pieces.extend(parts[last:])
     if np is not None:
         joined = np.concatenate([np.asarray(p, dtype=np.float64) for p in pieces])
     else:
         joined = [x for p in pieces for x in p]
-    return joined, (left, right)
+    if item.cycles != 1:
+        joined = joined[:max(1, int((end - item.start) * rate))]
+    # The level the sound starts at, then each change the log records, ramped as the mixer ramps it.
+    points = [(0.0, mix_scale(item.gain, item.pan), 0.0)]
+    points += [(t - item.start, mix_scale(gain, pan), ramp) for t, gain, pan, ramp in item.changes]
+    reference = max(value for _, value, _ in points)
+    count = len(joined)
+    envelope = np.full(count, points[0][1]) if np is not None else [points[0][1]] * count
+    for (at, value, ramp) in points[1:]:
+        start = max(0, int(at * rate))
+        if start >= count:
+            break
+        steps = float(max(1, int(ramp * rate)))
+        before = envelope[start]
+        if np is not None:
+            done = np.minimum(1.0, (np.arange(start, count) - start + 1) / steps)
+            envelope[start:] = before + (value - before) * done
+        else:
+            for i in range(start, count):
+                envelope[i] = before + (value - before) * min(1.0, (i - start + 1) / steps)
+    joined = joined * envelope if np is not None else [x * e for x, e in zip(joined, envelope)]
+    return joined, reference
+
+
+def mix_scale(gain, pan):
+    """How much of a sound the mono mix of the two channels holds at this gain and pan."""
+    return gain * (min(1.0 - pan, 1.0) + min(1.0 + pan, 1.0)) * 0.5
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -457,8 +518,8 @@ def expected_signal(item, library, rate):
 
 
 class Matcher:
-    """The recording's mono mix at the matching rate. Each sound found is subtracted from the residual, so a quiet
-    sound under a loud one is looked for in what the loud one leaves."""
+    """The recording's mono mix at the matching rate, and what is left of it once every sound the log names is
+    taken out at the level that fits it best."""
 
     def __init__(self, capture):
         self.capture = capture
@@ -467,113 +528,198 @@ class Matcher:
         self.residual = self.signal.copy() if np is not None else list(self.signal)
         self.coarse = np is None
 
-    def slice(self, start, end):
-        a = max(0, int(start * self.rate))
-        b = min(len(self.residual), int(end * self.rate))
-        return self.residual[a:b], a / self.rate
-
-    def subtract(self, start, template, scale):
-        a = max(0, int(round(start * self.rate)))
-        b = min(len(self.residual), a + len(template))
-        if np is not None:
-            self.residual[a:b] -= scale * np.asarray(template[:b - a])
-        else:
-            for i in range(a, b):
-                self.residual[i] -= scale * template[i - a]
-
     def prepare(self, signal, rate):
         mono, at = decimate(signal, rate, self.rate)
         if abs(at - self.rate) > 1e-6:
             mono = resample(mono, self.rate / at)
         return mono
 
+    def place(self, item):
+        """Where the occurrence's samples go in the signal: (first index, its template clipped to the signal)."""
+        first = max(0, int(round(item.start * self.rate)))
+        return first, item.template[:max(0, len(self.signal) - first)]
 
-def check_occurrence(item, library, matcher, options):
+    def add(self, item, scale):
+        first, template = self.place(item)
+        if np is not None:
+            self.residual[first:first + len(template)] += scale * np.asarray(template)
+        else:
+            for i, value in enumerate(template):
+                self.residual[first + i] += scale * value
+
+    def own(self, item, before=0.0, after=0.0):
+        """The residual with this occurrence put back, over its own stretch widened by the seconds given; and the
+        index that stretch starts at."""
+        first, template = self.place(item)
+        self.add(item, item.coefficient)
+        a = max(0, first - int(before * self.rate))
+        b = min(len(self.residual), first + len(template) + int(after * self.rate))
+        piece = self.residual[a:b]
+        piece = piece.copy() if np is not None else list(piece)
+        self.add(item, -item.coefficient)
+        return piece, a
+
+
+def prepare_occurrence(item, library, matcher):
+    """Builds the occurrence's template at the matching rate, or sets a status saying why it cannot be checked."""
     findings = item.findings
-    expected = expected_signal(item, library, matcher.capture.rate)
+    capture = matcher.capture
+    expected = expected_signal(item, library, capture.rate, capture.seconds)
     if expected is None:
         findings['status'] = 'no-file'
-        return
-    joined, (left, right) = expected
-    duration = len(joined) / float(matcher.capture.rate)
-    findings['duration'] = round(duration, 3)
-    # A sound the game stopped early is matched only on the part that played before the stop.
-    if item.end is not None and item.end_reason != 'finished' and item.end - item.start < duration:
-        joined = joined[:int((item.end - item.start) * matcher.capture.rate)]
-        if len(joined) < matcher.capture.rate * MIN_MATCH_SECONDS:
+        return False
+    joined, reference = expected
+    item.reference = reference
+    findings['duration'] = round(len(joined) / float(capture.rate), 3)
+    findings['expected_db'] = round(db(reference), 1)
+    # A sound the game stopped early is checked only on the part that played before the stop.
+    if item.end is not None and item.end_reason != 'finished' and item.end - item.start < len(joined) / float(capture.rate):
+        joined = joined[:int((item.end - item.start) * capture.rate)]
+        if len(joined) < capture.rate * MIN_MATCH_SECONDS:
             findings['status'] = 'too-short'
-            return
-    full = matcher.prepare(joined, matcher.capture.rate)
-    template = full[:int(TEMPLATE_SECONDS * matcher.rate)]
-    window, origin = matcher.slice(item.start - SEARCH_BEFORE, item.start + SEARCH_AFTER + len(template) / matcher.rate)
-    expected_scale = (left + right) * 0.5
-    findings['expected_db'] = round(db(expected_scale), 1)
-    if rms(template) < 1e-6 or expected_scale <= 0.0:
+            return False
+    # Only what falls inside the recording can be compared.
+    joined = joined[:max(1, int((capture.seconds - item.start) * capture.rate))]
+    if np is not None:
+        joined = np.concatenate((np.zeros(MIXER_DELAY_FRAMES), joined))
+    else:
+        joined = [0.0] * MIXER_DELAY_FRAMES + list(joined)
+    item.template = matcher.prepare(joined, capture.rate)
+    if reference <= 0.0 or rms(item.template) < 1e-7:
         findings['status'] = 'silent-sound'
+        return False
+    return True
+
+
+def fit_levels(items, matcher):
+    """Fits every template at its logged place at once, so sounds that overlap share the mix between them, and sets
+    each occurrence's coefficient: 1 when it is in the mix at the level the log predicts, 0 when it is absent."""
+    if np is None:
+        # Without numpy, the loudest sounds are fitted and taken out first.
+        for item in sorted(items, key=lambda i: -i.reference):
+            first, template = matcher.place(item)
+            piece = matcher.residual[first:first + len(template)]
+            item.coefficient = dot(piece, template) / max(dot(template, template), 1e-12)
+            matcher.add(item, -item.coefficient)
         return
-    offset, score = best_match(window, template)
+    count = len(items)
+    if count == 0:
+        return
+    places = [matcher.place(item) for item in items]
+    gram = np.zeros((count, count))
+    target = np.zeros(count)
+    order = sorted(range(count), key=lambda i: places[i][0])
+    for position, i in enumerate(order):
+        first_i, template_i = places[i]
+        end_i = first_i + len(template_i)
+        target[i] = np.dot(matcher.signal[first_i:end_i], template_i)
+        gram[i, i] = np.dot(template_i, template_i)
+        for j in order[position + 1:]:
+            first_j, template_j = places[j]
+            if first_j >= end_i:
+                break
+            end = min(end_i, first_j + len(template_j))
+            value = np.dot(template_i[first_j - first_i:end - first_i], template_j[:end - first_j])
+            gram[i, j] = gram[j, i] = value
+    ridge = 1e-6 * max(np.trace(gram) / count, 1e-12)
+    coefficients = np.linalg.solve(gram + ridge * np.eye(count), target)
+    for item, coefficient in zip(items, coefficients):
+        item.coefficient = float(coefficient)
+        matcher.add(item, -item.coefficient)
+
+
+def leading_silence(signal):
+    """The samples before a signal first reaches a hundredth of its peak."""
+    if np is not None:
+        values = np.abs(np.asarray(signal))
+        if len(values) == 0:
+            return 0
+        loud = np.nonzero(values > values.max() * 0.01)[0]
+        return int(loud[0]) if len(loud) else 0
+    peak = max((abs(x) for x in signal), default=0.0)
+    for index, value in enumerate(signal):
+        if abs(value) > peak * 0.01:
+            return index
+    return 0
+
+
+def judge_occurrence(item, matcher):
+    """Says whether the occurrence is in the mix at its logged place and level, where it is when it is elsewhere,
+    whether it plays at the wrong rate, and how much of it played."""
+    findings = item.findings
+    template = item.template
+    # Silence at the start of a sound tells nothing, so the comparison starts where the sound does.
+    lead = leading_silence(template)
+    head = template[lead:lead + int(TEMPLATE_SECONDS * matcher.rate)]
+    piece, origin = matcher.own(item, SEARCH_BEFORE, SEARCH_AFTER)
+    first, _ = matcher.place(item)
+    at_place = first - origin + lead
+    local = piece[at_place:at_place + len(head)]
+    score = dot(local, head) / math.sqrt(max(dot(local, local), 1e-12) * max(dot(head, head), 1e-12)) if len(local) == len(head) else 0.0
     findings['score'] = round(score, 3)
-    weak = False
-    if score < MATCH_SCORE:
-        # Under louder sounds the correlation stays low, so a sound right where the log puts it, at the level the log
-        # predicts, still counts.
-        near = int((SEARCH_BEFORE + WEAK_SLACK) * matcher.rate)
-        local = window[max(0, near - 2 * int(WEAK_SLACK * matcher.rate)):near + len(template)]
-        local_offset, local_score = best_match(local, template)
-        local_offset += max(0, near - 2 * int(WEAK_SLACK * matcher.rate))
-        segment = window[local_offset:local_offset + len(template)]
-        local_scale = dot(segment, template) / max(dot(template, template), 1e-12)
-        if local_score >= WEAK_SCORE and abs(db(abs(local_scale) / expected_scale)) <= WEAK_LEVEL_DB:
-            offset, score, weak = local_offset, local_score, True
-            findings['score'] = round(score, 3)
-    if score < MATCH_SCORE and not weak:
+    findings['coefficient'] = round(item.coefficient, 3)
+    # A long sound under louder ones correlates weakly yet far above chance, so the bar falls with its length.
+    weak_bar = max(WEAK_SCORE / 2, 10.0 / math.sqrt(max(len(head), 1)))
+    present = item.coefficient > 0.0 and abs(db(item.coefficient)) <= LEVEL_SLACK_DB and score >= min(WEAK_SCORE, weak_bar)
+    offset = at_place
+    if not present or score < MATCH_SCORE:
+        # Elsewhere in the window: late or early.
+        moved, moved_score = best_match(piece, head)
+        if moved_score >= MATCH_SCORE and moved_score > score + 0.1 and abs(moved - at_place) > WEAK_SLACK * matcher.rate:
+            segment = piece[moved:moved + len(head)]
+            scale = dot(segment, head) / max(dot(head, head), 1e-12)
+            if scale > 0.0:
+                present, offset, score = True, moved, moved_score
+                findings['score'] = round(score, 3)
+                item.coefficient = scale
+    if not present:
         # A sound that only matches at another rate was played at the wrong pitch.
         for factor in RATE_FACTORS:
-            other = resample(template, 1.0 / factor)
-            other_offset, other_score = best_match(window, other)
+            other = resample(head, 1.0 / factor)
+            other_offset, other_score = best_match(piece, other)
             if other_score >= MATCH_SCORE and other_score > score + 0.15:
                 findings['status'] = 'rate-mismatch'
                 findings['rate_factor'] = round(factor, 4)
                 findings['score'] = round(other_score, 3)
                 return
-        level = ac_rms(window)
+        level = ac_rms(local)
         findings['window_db'] = round(db(level), 1)
-        findings['status'] = 'silent' if level < 1e-4 else 'not-found'
+        if level < SILENCE:
+            findings['status'] = 'silent'
+        elif rms(head) < MASKED * ac_rms(matcher.signal[first:first + len(head)]):
+            # Far quieter than what else plays there, so its absence cannot be told from its presence.
+            findings['status'] = 'masked'
+        else:
+            findings['status'] = 'not-found'
         return
-    found_at = origin + offset / matcher.rate
-    findings['status'] = 'found-weak' if weak else 'found'
-    findings['offset_ms'] = int(round((found_at - item.start) * 1000))
-    segment = window[offset:offset + len(template)]
-    scale = dot(segment, template) / max(dot(template, template), 1e-12)
-    findings['measured_db'] = round(db(abs(scale)), 1)
-    findings['level_error_db'] = round(db(abs(scale) / expected_scale), 1)
-    # How much of it played: each quarter of the whole sound must still be where it belongs.
+    findings['status'] = 'found' if score >= MATCH_SCORE else 'found-weak'
+    findings['offset_ms'] = int(round((offset - at_place) / matcher.rate * 1000))
+    offset -= lead
+    findings['level_error_db'] = round(db(abs(item.coefficient)), 1)
+    findings['measured_db'] = round(db(abs(item.coefficient) * item.reference), 1)
+    # How much of it played: each quarter of the template must still be where it belongs, at its level.
     quarters = 4
     played = 0
     for q in range(quarters):
-        a = int(len(full) * q / quarters)
-        b = int(len(full) * (q + 1) / quarters)
-        part = full[a:b]
-        if rms(part) < rms(full) * 0.05:
+        a = int(len(template) * q / quarters)
+        b = int(len(template) * (q + 1) / quarters)
+        part = template[a:b]
+        segment = piece[offset + a:offset + b]
+        if len(segment) < len(part):
+            break
+        expected = rms(part) * abs(item.coefficient)
+        if expected < rms(template) * abs(item.coefficient) * 0.05 or expected < 0.3 * ac_rms(segment):
+            # Too quiet against what else plays there to tell either way.
             played = q + 1
             continue
-        piece, piece_origin = matcher.slice(found_at + a / matcher.rate, found_at + b / matcher.rate)
-        if len(piece) < len(part):
-            break
-        piece = piece[:len(part)]
-        value = dot(piece, part) / math.sqrt(max(dot(piece, piece), 1e-12) * max(dot(part, part), 1e-12))
-        part_scale = dot(piece, part) / max(dot(part, part), 1e-12)
-        level_holds = value >= WEAK_SCORE / 2 and part_scale > 0 and abs(db(part_scale / abs(scale))) <= WEAK_LEVEL_DB
+        value = dot(segment, part) / math.sqrt(max(dot(segment, segment), 1e-12) * max(dot(part, part), 1e-12))
+        part_scale = dot(segment, part) / max(dot(part, part), 1e-12)
+        level_holds = value >= WEAK_SCORE / 2 and part_scale > 0 and abs(db(part_scale / abs(item.coefficient))) <= WEAK_LEVEL_DB
         if value < PART_SCORE and not level_holds:
             break
         played = q + 1
     findings['played'] = played / float(quarters)
-    matcher.subtract(found_at, full[:int(len(full) * played / quarters)], scale)
-    logged = (item.end - item.start) if item.end is not None else None
-    if logged is not None:
-        findings['logged_seconds'] = round(logged, 3)
-    looping = len(item.files) > 0 and duration > 0 and logged is not None and logged > duration * 1.5
-    if played < quarters and not looping:
+    if played < quarters:
         findings['cut'] = True
 
 
@@ -653,20 +799,26 @@ def check_eva(entries, items, rate, findings, repeat_seconds, late_ms):
             findings.append({'flag': 'eva-repeat', 'line': item.name, 'start': round(item.start, 3),
                              'text': '%s plays again %.2f s after it last started' % (item.name, item.start - previous)})
         last[item.name] = item.start
+    # A line is late when it starts long after the announcer was free for it: after its request, and after the line
+    # before it ended.
     requests = eva_requests(entries, rate)
     used = set()
+    previous_end = None
     for item in eva:
         for index, (t, name) in enumerate(requests):
             if index in used or name != item.name or t > item.start + 1e-6:
                 continue
             used.add(index)
             item.request = t
-            delay = (item.start - t) * 1000.0
-            item.findings['request_delay_ms'] = int(round(delay))
+            free = t if previous_end is None else max(t, previous_end)
+            delay = (item.start - free) * 1000.0
+            item.findings['request_delay_ms'] = int(round((item.start - t) * 1000.0))
+            item.findings['wait_ms'] = int(round(delay))
             if delay > late_ms:
                 findings.append({'flag': 'eva-late', 'line': item.name, 'delay_ms': int(round(delay)),
-                                 'text': '%s starts %d ms after it was asked for (threshold %d ms)' % (item.name, delay, late_ms)})
+                                 'text': '%s starts %d ms after the announcer was free for it (threshold %d ms)' % (item.name, delay, late_ms)})
             break
+        previous_end = item.end if item.end is not None else item.start + item.findings.get('duration', 0.0)
 
 
 def run_check(capture_path, log_path, sound_folders, options):
@@ -690,13 +842,16 @@ def run_check(capture_path, log_path, sound_folders, options):
     library = Library(sound_folders)
     items = occurrences_from_log(entries, capture.rate)
     matcher = Matcher(capture)
-    for item in sorted(items, key=lambda i: -i.gain):
+    checkable = []
+    for item in items:
         if item.live:
             item.findings['status'] = 'already-playing'
-            continue
-        if options.range and not (options.range[0] <= item.start <= options.range[1]):
-            continue
-        check_occurrence(item, library, matcher, options)
+        elif not options.range or options.range[0] <= item.start <= options.range[1]:
+            if prepare_occurrence(item, library, matcher):
+                checkable.append(item)
+    fit_levels(checkable, matcher)
+    for item in checkable:
+        judge_occurrence(item, matcher)
     for item in items:
         status = item.findings.get('status')
         name = item.name
@@ -901,7 +1056,7 @@ def main(argv=None):
         p.add_argument('--range', type=time_range, help='START:END in seconds: limits the spectrogram, and for run the sounds checked')
         p.add_argument('--repeat-seconds', type=float, default=5.0, help='flag an announcer line heard again within this time (default 5)')
     run.add_argument('--late-ms', type=int, default=100, help='flag a sound heard further than this from its logged start (default 100)')
-    run.add_argument('--eva-late-ms', type=int, default=1200, help='flag an announcer line starting this long after its request (default 1200)')
+    run.add_argument('--eva-late-ms', type=int, default=600, help='flag an announcer line starting this long after it was asked for and the line before ended (default 600)')
     run.add_argument('--quiet-db', type=float, default=-45.0, help='sounds predicted quieter than this are not flagged as missing (default -45)')
     run.add_argument('--floor-db', type=float, default=-50.0, help='stretches louder than this need a logged sound (default -50)')
     options = parser.parse_args(argv)

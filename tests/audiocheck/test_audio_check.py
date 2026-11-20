@@ -54,7 +54,8 @@ class Recording:
             stretched = stretched[:int(length * RATE)]
         left = gain * min(1.0 - pan, 1.0)
         right = gain * min(1.0 + pan, 1.0)
-        first = int(start * RATE)
+        # The mixer's resampler delays every sound a few frames; the made-up mix does the same.
+        first = int(start * RATE) + audio_check.MIXER_DELAY_FRAMES
         for i, value in enumerate(stretched):
             if first + i < len(self.left):
                 self.left[first + i] += float(value) * left
@@ -98,7 +99,7 @@ class Recording:
 
 
 def options(**changes):
-    values = dict(range=None, late_ms=100, eva_late_ms=1200, quiet_db=-45.0, floor_db=-50.0, repeat_seconds=5.0)
+    values = dict(range=None, late_ms=100, eva_late_ms=600, quiet_db=-45.0, floor_db=-50.0, repeat_seconds=5.0)
     values.update(changes)
     return argparse.Namespace(**values)
 
@@ -118,7 +119,7 @@ class AudioCheckTest(unittest.TestCase):
             audio = audio_check.Audio(SOURCE_RATE, [samples])
             audio_check.write_wav(os.path.join(cls.sounds, name + '.wav'), audio)
 
-        recording = Recording(9.0)
+        recording = Recording(10.0)
         clips = cls.clips
         recording.add(clips['boom'], SOURCE_RATE, 0.5, 0.5)
         recording.event(0.5, 0.95, 'Boom', 'boom', 0.5)
@@ -127,7 +128,7 @@ class AudioCheckTest(unittest.TestCase):
         # Logged as finished, but only its first third is in the recording.
         recording.add(clips['boom'], SOURCE_RATE, 1.8, 0.5, length=0.13)
         recording.event(1.8, 2.25, 'Boom', 'boom', 0.5)
-        # Two announcer lines that overlap, and the first line again soon after; the second starts late.
+        # Two announcer lines that overlap, and the first line again soon after.
         recording.add(clips['ceva001'], SOURCE_RATE, 2.6, 0.45)
         recording.eva(2.5, 2.6, 3.45, 'EVA_First', 'ceva001', gain=0.45)
         recording.add(clips['ceva002'], SOURCE_RATE, 3.0, 0.45)
@@ -141,8 +142,11 @@ class AudioCheckTest(unittest.TestCase):
         recording.event(6.0, 6.6, 'Fast', 'fast', 0.5)
         # Logged but never mixed.
         recording.event(7.0, 7.5, 'Gone', 'gone', 0.5)
+        # A line that starts 0.7 s after it was asked for, with the announcer free.
+        recording.add(clips['ceva002'], SOURCE_RATE, 8.2, 0.45)
+        recording.eva(7.5, 8.2, 8.85, 'EVA_Third', 'ceva002', gain=0.45)
         # Clipping in the last half second on the left, and a DC offset throughout on the right.
-        for i in range(int(8.5 * RATE), int(9.0 * RATE)):
+        for i in range(int(9.5 * RATE), int(10.0 * RATE)):
             recording.left[i] = 0.97 if (i // 40) % 2 else -0.97
         for i in range(len(recording.right)):
             recording.right[i] += 0.01
@@ -201,8 +205,8 @@ class AudioCheckTest(unittest.TestCase):
         repeat = self.flags('eva-repeat')
         self.assertEqual([flag['line'] for flag in repeat], ['EVA_First'])
         late = self.flags('eva-late')
-        self.assertEqual([flag['line'] for flag in late], ['EVA_Second'])
-        self.assertEqual(late[0]['delay_ms'], 1500)
+        self.assertEqual([flag['line'] for flag in late], ['EVA_Third'])
+        self.assertEqual(late[0]['delay_ms'], 700)
         self.assertEqual(self.sound('EVA_First', 2.6)['status'], 'found')
 
     def test_clipping_and_dc(self):
