@@ -1,0 +1,54 @@
+; The title menu's version text and the footer buttons of each Settings page stay on the screen. Each `AUTOTEST inside` line
+; ends in 1 while the element lies wholly inside the screen. The shots show the main menu and each page; run once per size.
+; Run: scripts/run_autotest.ps1 -Script src-agent30/tests/autotest/menu-layout-fit.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 90 -Filter 'AUTOTEST inside|no such|Exception'
+ui waitfor backdrop
+ui wait 2500
+ui inside badge-version
+ui inside emblem
+ui inside stamp
+ui shot fit-title
+ui press Options
+ui wait 1500
+ui click tab-game
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-game
+ui click tab-display
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-display
+ui click tab-graphics
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-graphics
+ui click tab-audio
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-audio
+ui click tab-keyboard
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-keyboard
+ui click tab-accessibility
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-accessibility
+ui click tab-performance
+ui wait 900
+ui inside footer-cancel
+ui inside footer-ok
+ui inside footer-reset
+ui shot fit-performance
+ui quit

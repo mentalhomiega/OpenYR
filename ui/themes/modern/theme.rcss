@@ -536,18 +536,13 @@ body.titlemenu.update-offer #update
 	position: absolute;
 	left: 16dp;
 	bottom: 10dp;
-	width: 240dp;
-	height: 16dp;
+	right: 512dp;
 	pointer-events: none;
 }
 
 #badge-version
 {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 240dp;
-	height: 16dp;
+	display: block;
 	font-size: 12dp;
 	line-height: 16dp;
 	text-align: left;
@@ -631,7 +626,7 @@ body.titlemenu #content > button
 	width: 244dp;
 	height: 40dp;
 	margin: 0 auto 8dp auto;
-	padding: 11dp 16dp 0 16dp;
+	padding: 9.5dp 16dp 0 16dp;
 	font-size: 16dp;
 	text-align: left;
 	border-radius: 2dp;
@@ -645,12 +640,12 @@ body.titlemenu #content > button:hover
 
 body.titlemenu #content > button:active
 {
-	padding: 12dp 16dp 0 16dp;
+	padding: 10.5dp 16dp 0 16dp;
 }
 
 body.titlemenu #content > button.disabled, body.titlemenu #content > button:disabled
 {
-	padding: 11dp 16dp 0 16dp;
+	padding: 9.5dp 16dp 0 16dp;
 }
 
 body.titlemenu #title
@@ -1365,7 +1360,7 @@ body.page-settings .setting.disabled > .caption
 body.page-settings .setting > select
 {
 	flex: 0 0 auto;
-	width: 168dp;
+	width: 184dp;
 	height: 26dp;
 	margin: 0;
 }
