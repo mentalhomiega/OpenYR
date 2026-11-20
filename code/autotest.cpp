@@ -7380,7 +7380,7 @@ static void Playsound_Step(StepType const & step)
 }
 
 
-// music <theme>|stop: plays that score from its start, or stops the music.
+// music <theme>|<number>|stop: plays that score, named or by its place in the score list, from its start, or stops the music.
 static void Music_Step(StepType const & step)
 {
 	std::string const name = Word(step.Words, 2);
@@ -7388,7 +7388,7 @@ static void Music_Step(StepType const & step)
 		Theme.Stop();
 		return;
 	}
-	ThemeType const theme = Theme.From_Name(name.c_str());
+	ThemeType const theme = !name.empty() && std::isdigit((unsigned char)name[0]) ? ThemeType(std::atoi(name.c_str())) : Theme.From_Name(name.c_str());
 	if (theme == THEME_NONE) {
 		DebugString("AUTOTEST   music %s: no such score\n", name.c_str());
 		return;
