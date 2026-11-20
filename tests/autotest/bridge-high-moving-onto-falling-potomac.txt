@@ -11,11 +11,11 @@
 31 view 84 49
 40 grantunit MTNK 76 49
 60 move MTNK 92 49
-129 bridgeobj MTNK
-130 bridgehit 84 49
-131 bridgehit 84 49
-132 bridgedecks 79 88 49
-133 bridgeobj MTNK
+139 bridgeobj MTNK
+140 bridgehit 84 49
+141 bridgehit 84 49
+142 bridgedecks 79 88 49
+143 bridgeobj MTNK
 150 bridgeobj MTNK
 300 bridgeobj MTNK
 301 quit
