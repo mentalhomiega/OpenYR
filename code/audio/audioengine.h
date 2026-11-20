@@ -19,9 +19,13 @@
 #include "audio/audiomixer.h"
 #include "audio/audiosample.h"
 #include "audio/audiostream.h"
+#include "audio/audiowav.h"
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
+#include <set>
+#include <string>
 
 class AudioDeviceClass;
 
@@ -117,20 +121,49 @@ class AudioEngineClass
 		// Services the pool until the event has let go of its voice, or ms pass.
 		bool Wait_Finished(AudioHandle handle, int ms);
 
+		// Call after turning the audio test log on or off, so the event pool reports to it.
+		void Trace_Changed(void);
+
+		// Records the mix into a 16-bit WAV at the mix rate. While recording, the game
+		// thread renders the mix instead of the device: each game frame renders the
+		// audio of ticks_den / ticks_num seconds, so the recording and the audio clock
+		// follow the game frames and nothing reaches the speakers. The master level is
+		// lifted to full for the recording only. A movie pauses the recording.
+		bool Start_Capture(std::string const & path, unsigned ticks_num, unsigned ticks_den);
+
+		// Ends the recording and writes every sound and stream it played, decoded, to
+		// the folder given, so the analysis needs no game files.
+		void Stop_Capture(std::string const & soundfolder);
+		bool Is_Capturing(void) const { return(Capture.Is_Open()); }
+
+		// Once per pass of the game's callback, with the game frame.
+		void Game_Frame(int frame);
+
+		// Writes a sound as the event pool decodes it, or a stream file decoded from
+		// its start for at most maxseconds. False when the file is not found.
+		bool Dump_Sound(char const * basename, std::string const & path);
+		bool Dump_Stream(char const * filename, std::string const & path, float maxseconds);
+
 	private:
 		struct StreamSlotClass {
 			AudioStreamClass Stream;
 			std::unique_ptr<AudioFileStreamProducerClass> Producer;
 			AudioHandle Handle;
+			std::string File;
 			bool InUse = false;
 			bool External = false;
 		};
 
 		static int Random_Proc(int low, int high, void * context);
+		static void Trace_Clock(unsigned & ms, long long & position);
 		int Free_Stream_Slot(void) const;
 		void Reap_Streams(void);
 		void Close_Stream(int slot);
 		void Push_Level(AudioCommandType type, AudioGroupType group, float level, float ramp);
+		unsigned Wall_Ms(void) const;
+		void Render_Offline(unsigned frames);
+		void Enter_Offline(void);
+		void Leave_Offline(void);
 
 		std::unique_ptr<AudioDeviceClass> Device;
 		AudioMixerClass Mixer;
@@ -146,6 +179,24 @@ class AudioEngineClass
 		unsigned LastDropped = 0;
 		unsigned LastDropReport = 0;
 		bool Available = false;
+
+		std::unique_ptr<AudioEventObserverClass> Observer;
+
+		// The recording. While Offline the clock is OfflineBase plus the audio
+		// rendered; otherwise it is the wall clock plus LiveOffset, so it never
+		// steps back when the recording starts, pauses or ends.
+		AudioWavWriterClass Capture;
+		std::unique_ptr<float[]> CaptureBuffer;
+		bool Offline = false;
+		unsigned OfflineBase = 0;
+		unsigned LiveOffset = 0;
+		uint64_t Rendered = 0;
+		uint64_t Ticks = 0;
+		unsigned TicksNum = 1;
+		unsigned TicksDen = 1;
+		int LastFrame = 0;
+		std::set<std::string> CaptureSounds;
+		std::set<std::string> CaptureStreams;
 };
 
 extern AudioEngineClass AudioEngine;

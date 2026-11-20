@@ -355,13 +355,19 @@ bool AudioFeederClass::Start(void)
 }
 
 
-void AudioFeederClass::Stop(void)
+void AudioFeederClass::Stop_Thread(void)
 {
 	if (Thread.joinable()) {
 		Exit.store(true, std::memory_order_release);
 		Thread.join();
 	}
 	Running.store(false, std::memory_order_release);
+}
+
+
+void AudioFeederClass::Stop(void)
+{
+	Stop_Thread();
 	for (SlotClass & slot : Slots) {
 		if (slot.Producer != nullptr) {
 			slot.Producer->Close();

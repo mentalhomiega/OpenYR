@@ -11,6 +11,7 @@
 
 #include "audio/audiodecode.h"
 #include "audio/audiodevice.h"
+#include "audio/audiotrace.h"
 #include "audio/samplebagset.h"
 #include "_rand.h"
 #include "ccfile.h"
@@ -21,6 +22,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <set>
 #include <string>
 #include <thread>
@@ -35,6 +37,13 @@ unsigned const DROP_REPORT_MS = 1000;
 
 // A stated length over a day means a damaged file.
 double const MAX_STREAM_SECONDS = 86400.0;
+
+// A recording renders at most this many game frames at once, so a frame counter
+// that jumps, as when a saved game loads, does not render minutes of audio.
+int const MAX_CAPTURE_FRAME_STEP = 60;
+
+// The start of a music stream is enough to find it in a recording.
+float const STREAM_DUMP_SECONDS = 120.0f;
 
 
 // A byte source over the game's file layer, so a stream reads loose files and
@@ -181,6 +190,52 @@ class CacheProviderClass : public AudioClipProviderClass
 		std::set<std::string> Missing;
 };
 
+
+// Writes the pool's reports to the audio test log, and while a recording runs
+// notes each sound started, for the files written beside the recording.
+class EngineObserverClass : public AudioTraceObserverClass
+{
+	public:
+		EngineObserverClass(float const * groupgains, AudioWavWriterClass const & capture, std::set<std::string> & sounds) :
+			AudioTraceObserverClass(groupgains),
+			Capture(capture),
+			Sounds(sounds)
+		{
+		}
+
+		void Report(AudioEventReportClass const & report) override
+		{
+			AudioTraceObserverClass::Report(report);
+			if (Capture.Is_Open() && report.Fate == AudioEventFate::STARTED) {
+				for (unsigned i = 0; i < report.SoundCount; i++) {
+					Sounds.insert(report.Sounds[i]);
+				}
+			}
+		}
+
+	private:
+		AudioWavWriterClass const & Capture;
+		std::set<std::string> & Sounds;
+};
+
+
+// The bytes of a stream file: a loose or archived file read a block at a time,
+// or a WAV the sample bag holds, read whole.
+std::unique_ptr<AudioByteSourceClass> Open_Stream_Source(char const * filename, AudioAssetReaderClass * reader)
+{
+	std::unique_ptr<CCFileByteSourceClass> file(new CCFileByteSourceClass(filename));
+	if (file->Is_Open()) {
+		return(file);
+	}
+	// A WAV with no file of its own is read whole from the sample bag, where Yuri's Revenge
+	// keeps the announcer's lines.
+	std::vector<uint8_t> bytes;
+	if (reader == nullptr || !reader->Read(filename, bytes)) {
+		return(nullptr);
+	}
+	return(std::unique_ptr<AudioByteSourceClass>(new MemoryByteSourceClass(std::move(bytes))));
+}
+
 } // namespace
 
 
@@ -204,10 +259,31 @@ int AudioEngineClass::Random_Proc(int low, int high, void *)
 }
 
 
-unsigned AudioEngineClass::Now_Ms(void) const
+unsigned AudioEngineClass::Wall_Ms(void) const
 {
 	auto elapsed = std::chrono::steady_clock::now() - Epoch;
 	return((unsigned)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+}
+
+
+unsigned AudioEngineClass::Now_Ms(void) const
+{
+	if (Offline) {
+		return(OfflineBase + (unsigned)(Rendered * 1000 / AUDIO_MIX_RATE));
+	}
+	return(Wall_Ms() + LiveOffset);
+}
+
+
+void AudioEngineClass::Trace_Clock(unsigned & ms, long long & position)
+{
+	if (AudioEngine.Capture.Is_Open()) {
+		ms = (unsigned)(AudioEngine.Rendered * 1000 / AUDIO_MIX_RATE);
+		position = (long long)AudioEngine.Rendered;
+	} else {
+		ms = AudioEngine.Now_Ms();
+		position = -1;
+	}
 }
 
 
@@ -217,6 +293,7 @@ bool AudioEngineClass::Init(void)
 		return(true);
 	}
 	Epoch = std::chrono::steady_clock::now();
+	LiveOffset = 0;
 
 	if (!Mixer.Init(AUDIO_MIX_RATE, AUDIO_MIX_CHANNELS)) {
 		DebugString("Audio: mixer init failed\n");
@@ -261,6 +338,10 @@ bool AudioEngineClass::Init(void)
 	}
 	Push_Level(AudioCommandType::MASTER_SET_GAIN, AUDIO_GROUP_SFX, MasterGain, 0.0f);
 
+	Observer.reset(new EngineObserverClass(GroupGains, Capture, CaptureSounds));
+	AudioTrace.Set_Clock(Trace_Clock);
+	Trace_Changed();
+
 	DebugString("Audio: %s, %u Hz, %u x %u frames\n", Device->Name(), Device->Rate(), Device->Periods(), Device->Period_Frames());
 	return(true);
 }
@@ -272,6 +353,11 @@ void AudioEngineClass::End(void)
 		return;
 	}
 	Available = false;
+	if (Capture.Is_Open()) {
+		Capture.Close();
+	}
+	Offline = false;
+	Pool.Set_Observer(nullptr);
 
 	// The device thread reads the pool's sequences and the streams' rings, so
 	// rendering stops before either is torn down.
@@ -338,29 +424,29 @@ AudioHandle AudioEngineClass::Open_Stream(char const * filename, AudioGroupType 
 	int slot = Free_Stream_Slot();
 	if (slot < 0) {
 		DebugString("Audio: no free stream for %s\n", filename);
+		if (AudioTrace.Is_On()) {
+			AudioTrace.Write("stream", "refused file=%s reason=no-slot", AudioTraceClass::Word(filename).c_str());
+		}
 		return(AudioHandle());
 	}
 
-	std::unique_ptr<AudioByteSourceClass> source;
-	std::unique_ptr<CCFileByteSourceClass> file(new CCFileByteSourceClass(filename));
-	if (file->Is_Open()) {
-		source = std::move(file);
-	} else {
-		// A WAV with no file of its own is read whole from the sample bag, where Yuri's Revenge
-		// keeps the announcer's lines.
-		std::vector<uint8_t> bytes;
-		if (Reader == nullptr || !Reader->Read(filename, bytes)) {
-			static std::set<std::string> reported;
-			if (reported.insert(std::string(filename)).second) {
-				DebugString("Audio: %s not found\n", filename);
-			}
-			return(AudioHandle());
+	std::unique_ptr<AudioByteSourceClass> source = Open_Stream_Source(filename, Reader.get());
+	if (source == nullptr) {
+		static std::set<std::string> reported;
+		if (reported.insert(std::string(filename)).second) {
+			DebugString("Audio: %s not found\n", filename);
 		}
-		source.reset(new MemoryByteSourceClass(std::move(bytes)));
+		if (AudioTrace.Is_On()) {
+			AudioTrace.Write("stream", "refused file=%s reason=not-found", AudioTraceClass::Word(filename).c_str());
+		}
+		return(AudioHandle());
 	}
 	std::unique_ptr<AudioFileStreamProducerClass> producer(new AudioFileStreamProducerClass());
 	if (!producer->Open(std::move(source), loop)) {
 		DebugString("Audio: cannot decode %s\n", filename);
+		if (AudioTrace.Is_On()) {
+			AudioTrace.Write("stream", "refused file=%s reason=cannot-decode", AudioTraceClass::Word(filename).c_str());
+		}
 		return(AudioHandle());
 	}
 
@@ -387,8 +473,16 @@ AudioHandle AudioEngineClass::Open_Stream(char const * filename, AudioGroupType 
 		Feeder.Detach(slot);
 		return(AudioHandle());
 	}
+	if (AudioTrace.Is_On()) {
+		AudioTrace.Write("stream", "open h=%u file=%s group=%s level=%.3f loop=%d rate=%u channels=%u", handle.Raw(),
+			AudioTraceClass::Word(filename).c_str(), Audio_Group_Name(group), volume, (int)loop, producer->Rate(), producer->Channels());
+	}
+	if (Capture.Is_Open()) {
+		CaptureStreams.insert(filename);
+	}
 	s.Producer = std::move(producer);
 	s.Handle = handle;
+	s.File = filename;
 	s.InUse = true;
 	return(handle);
 }
@@ -398,6 +492,9 @@ void AudioEngineClass::Stop_Stream(AudioHandle handle)
 {
 	if (!Available || handle.Is_Null()) {
 		return;
+	}
+	if (AudioTrace.Is_On()) {
+		AudioTrace.Write("stream", "stop h=%u", handle.Raw());
 	}
 	Pool.Cut(handle, 0);
 	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
@@ -524,6 +621,11 @@ int AudioEngineClass::Acquire_Stream_Slot(AudioStreamClass ** stream)
 	if (slot < 0) {
 		return(-1);
 	}
+	// The movie's clock is the device playing its sound, so a recording waits for the movie to end.
+	if (Offline) {
+		Leave_Offline();
+		AudioTrace.Write("capture", "pause reason=movie");
+	}
 	Streams[slot].InUse = true;
 	Streams[slot].External = true;
 	*stream = &Streams[slot].Stream;
@@ -539,6 +641,10 @@ void AudioEngineClass::Release_Stream_Slot(int slot)
 	Streams[slot].External = false;
 	Streams[slot].InUse = false;
 	Streams[slot].Handle.Clear();
+	if (Capture.Is_Open() && !Offline) {
+		Enter_Offline();
+		AudioTrace.Write("capture", "resume");
+	}
 }
 
 
@@ -565,8 +671,181 @@ bool AudioEngineClass::Wait_Finished(AudioHandle handle, int ms)
 		if (Now_Ms() - start > (unsigned)ms) {
 			return(false);
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		// Nothing else renders while recording, so the wait renders the mix itself.
+		if (Offline) {
+			Render_Offline(AUDIO_RENDER_BLOCK_FRAMES);
+		} else {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 	}
+}
+
+
+void AudioEngineClass::Trace_Changed(void)
+{
+	bool report = Available && Observer != nullptr && (AudioTrace.Is_On() || Capture.Is_Open());
+	Pool.Set_Observer(report ? Observer.get() : nullptr);
+}
+
+
+void AudioEngineClass::Render_Offline(unsigned frames)
+{
+	while (frames > 0) {
+		unsigned count = std::min(frames, (unsigned)AUDIO_MAX_RENDER_FRAMES);
+		Feeder.Service_Streams();
+		Mixer.Render(CaptureBuffer.get(), count);
+		Capture.Write(CaptureBuffer.get(), count);
+		Rendered += count;
+		frames -= count;
+	}
+}
+
+
+void AudioEngineClass::Enter_Offline(void)
+{
+	unsigned now = Now_Ms();
+	Feeder.Stop_Thread();
+	if (Device != nullptr) {
+		Device->Stop();
+	}
+	Offline = true;
+	OfflineBase = now - (unsigned)(Rendered * 1000 / AUDIO_MIX_RATE);
+	Push_Level(AudioCommandType::MASTER_SET_GAIN, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+}
+
+
+void AudioEngineClass::Leave_Offline(void)
+{
+	unsigned now = Now_Ms();
+	Offline = false;
+	LiveOffset = now - Wall_Ms();
+	Push_Level(AudioCommandType::MASTER_SET_GAIN, AUDIO_GROUP_SFX, MasterGain, 0.0f);
+	if (Device != nullptr) {
+		Device->Start();
+	}
+	Feeder.Start();
+}
+
+
+bool AudioEngineClass::Start_Capture(std::string const & path, unsigned ticks_num, unsigned ticks_den)
+{
+	if (!Available || Capture.Is_Open() || ticks_num == 0 || ticks_den == 0) {
+		return(false);
+	}
+	if (CaptureBuffer == nullptr) {
+		CaptureBuffer.reset(new (std::nothrow) float[(size_t)AUDIO_MAX_RENDER_FRAMES * AUDIO_MIX_CHANNELS]);
+		if (CaptureBuffer == nullptr) {
+			return(false);
+		}
+	}
+	if (!Capture.Open(path, Mixer.Rate(), Mixer.Channels())) {
+		return(false);
+	}
+	TicksNum = ticks_num;
+	TicksDen = ticks_den;
+	Ticks = 0;
+	Rendered = 0;
+	CaptureSounds.clear();
+	CaptureStreams.clear();
+	Enter_Offline();
+	Trace_Changed();
+	AudioTrace.Write("capture", "start rate=%u channels=%u tick=%u/%u", Mixer.Rate(), Mixer.Channels(), ticks_den, ticks_num);
+	Pool.Report_Live();
+	for (StreamSlotClass const & stream : Streams) {
+		if (stream.InUse && !stream.External && !Pool.Is_Finished(stream.Handle)) {
+			AudioTrace.Write("stream", "live h=%u file=%s", stream.Handle.Raw(), AudioTraceClass::Word(stream.File.c_str()).c_str());
+		}
+	}
+	return(true);
+}
+
+
+void AudioEngineClass::Stop_Capture(std::string const & soundfolder)
+{
+	if (!Capture.Is_Open()) {
+		return;
+	}
+	if (Offline) {
+		Leave_Offline();
+	}
+	AudioTrace.Write("capture", "stop frames=%llu", (unsigned long long)Rendered);
+	Capture.Close();
+	Trace_Changed();
+	if (soundfolder.empty()) {
+		return;
+	}
+	std::error_code error;
+	std::filesystem::create_directories(soundfolder, error);
+	for (std::string const & sound : CaptureSounds) {
+		Dump_Sound(sound.c_str(), soundfolder + sound + ".wav");
+	}
+	for (std::string const & stream : CaptureStreams) {
+		std::string stem = std::filesystem::path(stream).stem().string();
+		Dump_Stream(stream.c_str(), soundfolder + stem + ".wav", STREAM_DUMP_SECONDS);
+	}
+}
+
+
+void AudioEngineClass::Game_Frame(int frame)
+{
+	int previous = LastFrame;
+	LastFrame = frame;
+	if (!Offline) {
+		return;
+	}
+	if (frame > previous) {
+		Ticks += (uint64_t)std::min(frame - previous, MAX_CAPTURE_FRAME_STEP);
+	}
+	uint64_t target = Ticks * AUDIO_MIX_RATE * TicksDen / TicksNum;
+	if (Rendered < target) {
+		Render_Offline((unsigned)(target - Rendered));
+	}
+}
+
+
+bool AudioEngineClass::Dump_Sound(char const * basename, std::string const & path)
+{
+	if (!Available || Reader == nullptr || basename == nullptr || basename[0] == '\0') {
+		return(false);
+	}
+	AudioSampleClass * clip = Cache.Acquire_Named(basename, *Reader);
+	if (clip == nullptr) {
+		return(false);
+	}
+	bool written = Audio_Write_Wav(path, clip->Data(), clip->Frames, clip->Rate, clip->Channels);
+	Cache.Release(clip);
+	return(written);
+}
+
+
+bool AudioEngineClass::Dump_Stream(char const * filename, std::string const & path, float maxseconds)
+{
+	if (filename == nullptr || filename[0] == '\0') {
+		return(false);
+	}
+	std::unique_ptr<AudioByteSourceClass> source = Open_Stream_Source(filename, Reader.get());
+	AudioFileStreamProducerClass producer;
+	if (source == nullptr || !producer.Open(std::move(source), false) || producer.Rate() == 0) {
+		return(false);
+	}
+	AudioStreamClass stream;
+	unsigned frames = std::max(producer.Rate(), producer.Min_Ring_Frames());
+	if (!stream.Init(frames, producer.Channels(), producer.Rate())) {
+		return(false);
+	}
+	unsigned const rate = producer.Rate();
+	unsigned const channels = producer.Channels();
+	uint64_t limit = (uint64_t)(maxseconds * (float)rate);
+	std::vector<int16_t> pcm;
+	std::vector<int16_t> block((size_t)frames * channels);
+	bool more = true;
+	while ((more || stream.Ring.Available_Read() > 0) && pcm.size() / channels < limit) {
+		more = more && producer.Fill(stream);
+		unsigned got = stream.Ring.Read(block.data(), frames);
+		pcm.insert(pcm.end(), block.begin(), block.begin() + (size_t)got * channels);
+	}
+	producer.Close();
+	return(Audio_Write_Wav(path, pcm.data(), (unsigned)(pcm.size() / channels), rate, channels));
 }
 
 
