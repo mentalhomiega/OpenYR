@@ -37,7 +37,6 @@ keys:
   - Storage
   - ThirdSurvivorDivisor
   - TiberiumExplosive
-  - TiberiumHeal
   - Wake
   - WreckReleasesPassengers
 related:
@@ -82,16 +81,15 @@ The shared step runs first, in this order, for a vehicle, a structure, an infant
 
 1. One of the type's [`VoiceDie`](/keys/voicedie/) sounds plays at the object's position if the local player controls the object, then one of its [`DieSound`](/keys/diesound/) sounds plays whoever owns it.
 2. The object breaks radio contact, stops, and drops its target and destination.
-3. A [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type seeds [Tiberium](/systems/tiberium/) in the five cells to its north-west, north, east, south and west. Each cell that accepts growth gets a random stage from 0 to 2 of the first registered Tiberium type. The object's cell gets none.
-4. Any flame particle system attached to the object is removed.
-5. **The water exit.** The rest of this step is skipped when **all of** these hold:
+3. Any flame particle system attached to the object is removed.
+4. **The water exit.** The rest of this step is skipped when **all of** these hold:
    - the object is no more than 10 [leptons](/glossary/#lepton) above the ground;
    - it fell from a height, for example when a bridge collapsed under it;
    - the ground beneath it is water.
 
    The infantry step, and the step for a vehicle without [`DeathFrames`](/keys/deathframes/), then leave a wake and a splash in place of the usual death animation.
-6. **The wreckage.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero throws wreckage. A type with a [`DebrisTypes`](/keys/debristypes/) list throws those voxel pieces from its center, and a type with [`DebrisAnims`](/keys/debrisanims/) throws those animations from twenty leptons above it. A type with neither throws [`MetallicDebris`](/keys/metallicdebris/) animations instead. [`MaxDebris`](/keys/maxdebris/) describes how many pieces are thrown.
-7. **The death weapon.** An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type, or an object whose rank grants [the explodes ability](/systems/veterancy/#abilities), sets off its death weapon where it dies. [`Explodes`](/keys/explodes/#scope-aircrafttype) owns which weapon that is and how much damage it does.
+5. **The wreckage.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero throws wreckage. A type with a [`DebrisTypes`](/keys/debristypes/) list throws those voxel pieces from its center, and a type with [`DebrisAnims`](/keys/debrisanims/) throws those animations from twenty leptons above it. A type with neither throws [`MetallicDebris`](/keys/metallicdebris/) animations instead. [`MaxDebris`](/keys/maxdebris/) describes how many pieces are thrown.
+6. **The death weapon.** An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type, or an object whose rank grants [the explodes ability](/systems/veterancy/#abilities), sets off its death weapon where it dies. [`Explodes`](/keys/explodes/#scope-aircrafttype) owns which weapon that is and how much damage it does.
 
 Because the water exit comes before the wreckage and the death weapon, a vehicle without `DeathFrames` that falls off a bridge into a river leaves only the splash, whatever its wreckage and explosion settings. A vehicle with `DeathFrames` also skips the wreckage and the death weapon, but it still becomes [a wreck](#a-vehicle). The wreck gets no splash, and it plays its death explosion when its counter runs out.
 
@@ -207,7 +205,7 @@ A vehicle, soldier or aircraft lays no ground mark itself. A structure lays [its
 
 Such an animation stamps the ground on its middle frame if it is under 30 leptons above the ground. The mark is picked at random each time from the smudge types with the matching flag that fit the spot; [`Scorch`](/keys/scorch/) lists what makes a spot fit. No mark lands on a cell a structure still stands on, except a structure's central mark. A [`Flamer=yes`](/keys/flamer/) or `Scorch=yes` animation also starts fires, within the height and ground limits that [`Scorch`](/keys/scorch/#the-fire) gives.
 
-The table lists what can remain after each kind of object dies, besides the Tiberium a [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type seeds. Check it when a death leaves less than you expect.
+The table lists what can remain after each kind of object dies. Check it when a death leaves less than you expect.
 
 | Left behind | Vehicle | Structure | Infantry | Aircraft |
 | --- | --- | --- | --- | --- |

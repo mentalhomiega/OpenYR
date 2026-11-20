@@ -4268,21 +4268,6 @@ void FootClass::AI(void)
 	if (IsActive) {
 		IsIdle = false;
 
-		if (TClass->IsTiberiumHeal || Has_Ability(ABILITY_TIBERIUM_HEAL)) {
-			if (Strength > 0 && HealthRatio < Rule->ConditionGreen) {
-				if (Map[Center_Coord()].Land_Type() == LAND_TIBERIUM) {
-					if ((Frame % int(Rule->TiberiumHeal * TICKS_PER_MINUTE)) == 0) {
-						int step = TClass->Repair_Step();
-						step = std::max(step, 1);
-						Strength += step;
-						if (HealthRatio > Rule->ConditionGreen) {
-							Strength = Techno_Type_Class()->MaxStrength;
-						}
-					}
-				}
-			}
-		}
-
 		bool stepped = false;
 
 		// A DirectRocker-linked unit that is not Pushy runs no locomotor step (FootClass::Update, 0x4DA530).

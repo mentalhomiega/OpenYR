@@ -1,4 +1,4 @@
 ---
 key: TiberiumHeal
-summary: Whether an object mends itself while standing on Tiberium, and how often every such object is mended.
+summary: Read for a type and for the rules, but nothing mends on Tiberium.
 ---

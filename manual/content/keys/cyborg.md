@@ -19,7 +19,7 @@ The hit counts as a drop into condition red, not as a kill, so nothing that reac
 
 A prone cyborg gets no reprieve. The next killing hit plays `InfantryExplode` and removes the soldier at once, with no death animation and no corpse. The exception is a cyborg knocked off a height that dies just above water, which leaves a splash instead. [`InfantryExplode`](/keys/infantryexplode/) lists the order of these cases.
 
-Forced damage, such as Tiberium damage to a soldier standing in it, skips the reprieve even for a standing cyborg. The soldier is removed at once and leaves no corpse. A warhead with [`InfDeath`](/keys/infdeath/) `3`, `4` or `5` still plays its death animation, and a laser fence kill plays the electrocution animation. `InfantryExplode` also plays if the soldier was falling.
+Forced damage, such as a laser fence kill, skips the reprieve even for a standing cyborg. The soldier is removed at once and leaves no corpse. A warhead with [`InfDeath`](/keys/infdeath/) `3`, `4` or `5` still plays its death animation, and a laser fence kill plays the electrocution animation. `InfantryExplode` also plays if the soldier was falling.
 
 ## Getting up again
 

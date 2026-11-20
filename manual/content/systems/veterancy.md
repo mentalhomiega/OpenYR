@@ -167,7 +167,7 @@ Ability names are case-insensitive. The table lists every ability and its effect
 | `ROF` | Reload delay is multiplied by [`VeteranROF`](/keys/veteranrof/). |
 | `SIGHT` | Sight range is multiplied by [`VeteranSight`](/keys/veteransight/). |
 | `CLOAK` | The object cloaks and recloaks without [`Cloakable=yes`](/keys/cloakable/), and stays cloaked while immobilized. |
-| `TIBERIUM_PROOF` | Infantry take no damage from standing in Tiberium, as with [`TiberiumProof=yes`](/keys/tiberiumproof/). |
+| `TIBERIUM_PROOF` | None. Infantry take no damage from Tiberium whether it is set or not, see [`TiberiumProof`](/keys/tiberiumproof/). |
 | `VEIN_PROOF` | Veins do not damage the object, as with [`ImmuneToVeins=yes`](/keys/immunetoveins/). |
 | `SELF_HEAL` | The object repairs itself while below its [self-healing ceiling](/systems/repair/#self-healing), as with [`SelfHealing=yes`](/keys/selfhealing/). |
 | `EXPLODES` | Death produces the violent explosion of [`Explodes=yes`](/keys/explodes/). |
@@ -175,7 +175,7 @@ Ability names are case-insensitive. The table lists every ability and its effect
 | `SENSORS` | An adjacent enemy cloaked object shimmers, as with [`Sensors=yes`](/keys/sensors/). |
 | `FEARLESS` | Infantry accumulate no fear, as with [`Fearless=yes`](/keys/fearless/). |
 | `C4` | Infantry sabotage a structure that [`CanC4`](/keys/canc4/) allows, as with [`C4=yes`](/keys/c4/), and attack the others. |
-| `TIBERIUM_HEAL` | Standing in Tiberium repairs the object, as with [`TiberiumHeal=yes`](/keys/tiberiumheal/). |
+| `TIBERIUM_HEAL` | None. Nothing heals on Tiberium, see [`TiberiumHeal`](/keys/tiberiumheal/). |
 | `GUARD_AREA` | An idle armed vehicle, and an idle human-owned infantry, takes the Guard Area mission instead of Guard. A member of a team is unaffected, and so is a computer-owned infantry, whose idle handling never reads the ability. |
 | `CRUSHER` | A vehicle crushes crushable objects and overlays, as with [`Crusher=yes`](/keys/crusher/). |
 | `EMPIMMUNE` | EMP does not disable the object, as with [`ImmuneToEMP=yes`](/keys/immunetoemp/) (Ares). |

@@ -1235,9 +1235,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		std::optional<bool> IsImmuneToEMP;
 
 		/*
-		 * If this object mends itself while it stands on tiberium, then this flag will be
-		 * true. It recovers a repair step at the interval given by the TiberiumHeal rule, and
-		 * when it is destroyed it spills tiberium back into the cells around it.
+		 * The TiberiumHeal flag. It is loaded and checksummed, but nothing acts on it: gamemd
+		 * never reads it, so an object does not mend on tiberium or spill it when destroyed.
 		 */
 		bool IsTiberiumHeal;
 

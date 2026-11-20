@@ -12,7 +12,7 @@ when_omitted:
 
 It wanders when it stands still with no destination and no target, on a guard mission or no mission at all. It picks one of the eight directions and moves one cell that way if it can enter the cell. It keeps its last direction two times in three.
 
-Below [`ConditionYellow`](/keys/conditionyellow/) health, a visceroid standing off Tiberium heads for Tiberium within 16 cells instead. While it is hurt and standing on Tiberium, it wanders only onto other Tiberium cells. This steering heals nothing by itself. The visceroid heals on Tiberium only with [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype), as the shipped `VISC_SML` sets, or with the `TIBERIUM_HEAL` ability from [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/).
+Below [`ConditionYellow`](/keys/conditionyellow/) health, a visceroid standing off Tiberium heads for Tiberium within 16 cells instead. While it is hurt and standing on Tiberium, it wanders only onto other Tiberium cells. This steering heals nothing: nothing heals on Tiberium, whatever the visceroid's [`TiberiumHeal`](/keys/tiberiumheal/) says.
 
 Merging is what separates it from a [`LargeVisceroid=yes`](/keys/largevisceroid/#scope-unittype) type:
 
