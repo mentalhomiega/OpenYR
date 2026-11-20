@@ -793,6 +793,7 @@ class TechnoClass :	public RadioClass,
 		virtual bool Should_Uncloak(void) const;
 		virtual DirType Turret_Facing(void) const;
 		virtual bool Is_Weapon_Equipped(void) const;
+		bool Is_Combat_Unit(void) const;
 		virtual bool Is_On_Elevation(void) const;
 		virtual double Tiberium_Load(void) const;
 		virtual double Weed_Load(void) const;

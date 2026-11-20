@@ -3817,6 +3817,16 @@ void Tactical::Detach(AbstractClass const * target, bool all)
 }
 
 
+std::vector<bool> Combat_Selection_Kept(std::vector<ObjectClass *> const & caught)
+{
+	std::vector<bool> noncombat;
+	for (ObjectClass const * object : caught) {
+		noncombat.push_back(Options.CombatSelectionFirst && !(object->Is_Techno() && static_cast<TechnoClass const *>(object)->Is_Combat_Unit()));
+	}
+	return(ObjectKeyRules::Selection_Kept(noncombat));
+}
+
+
 /***********************************************************************************************
  * DisplayClass::Select_These -- All selectable objects in region are selected.                *
  *                                                                                             *
@@ -3902,9 +3912,18 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 			}
 		}
 
-		std::vector<bool> const kept = ObjectKeyRules::Selection_Kept(low_priority);
+		// Unarmed objects go first, then the low priority ones among the objects left.
+		std::vector<bool> const fighters = Combat_Selection_Kept(picks);
+		std::vector<bool> low_of_fighters;
 		for (size_t index = 0; index < picks.size(); index++) {
-			if (kept[index] && picks[index]->Select()) {
+			if (fighters[index]) {
+				low_of_fighters.push_back(low_priority[index]);
+			}
+		}
+		std::vector<bool> const kept = ObjectKeyRules::Selection_Kept(low_of_fighters);
+		size_t next = 0;
+		for (size_t index = 0; index < picks.size(); index++) {
+			if (fighters[index] && kept[next++] && picks[index]->Select()) {
 				AllowVoice = false;
 			}
 		}

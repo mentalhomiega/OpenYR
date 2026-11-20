@@ -232,6 +232,7 @@ OptionsClass::OptionsClass(void) :
 	AltToRally(false),
 	AircraftBodyPick(true),
 	PrioritySelectionFiltering(true),
+	CombatSelectionFirst(true),
 	FlatPlacementGrid(true),
 	SimulateWhileUnfocused(false),
 	TextBackgroundColor(12),
@@ -718,6 +719,7 @@ void OptionsClass::Load_Settings(void)
 	AircraftBodyPick = ConfigINI.Get_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	DebugString("AircraftBodyPick is %s\n", On_Off(AircraftBodyPick));
 	PrioritySelectionFiltering = ConfigINI.Get_Bool("Options", "PrioritySelectionFiltering", PrioritySelectionFiltering);
+	CombatSelectionFirst = ConfigINI.Get_Bool("Options", "CombatSelectionFirst", CombatSelectionFirst);
 	FlatPlacementGrid = ConfigINI.Get_Bool("Options", "FlatPlacementGrid", FlatPlacementGrid);
 
 	SimulateWhileUnfocused = ConfigINI.Get_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
@@ -926,6 +928,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	ConfigINI.Put_Bool("Options", "PrioritySelectionFiltering", PrioritySelectionFiltering);
+	ConfigINI.Put_Bool("Options", "CombatSelectionFirst", CombatSelectionFirst);
 	ConfigINI.Put_Bool("Options", "FlatPlacementGrid", FlatPlacementGrid);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
 	ConfigINI.Put_Bool("Options", "RecordReplays", Replay_Is_Recording_Enabled());

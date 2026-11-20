@@ -342,6 +342,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `glideclock` | times zoom glides by game frames instead of real time, for recordings |
 | `overlaypresent` | marks the UI overlay changed and runs the window message handler, which presents the frame if the refresh interval allows. It is the present a window message makes between draws |
 | `helptext <id>` | writes the tooltip text the map gives for the mouse position now, or `(none)` |
+| `combatfirst <0\|1>` | Turns the `CombatSelectionFirst` setting off or on for the rest of the run, and writes the setting |
 | `holdmove <0\|1>` | Turns `MissileLaunchHoldsMove` off or on for the rest of the run, and writes the setting |
 | `hoverat x y` | moves the pointer to the centre of that cell, as `windowmove` does, so the object there is hovered from the next frame, and writes the pointer position |
 | `infstate <TypeID>` | writes each soldier of that type with its cell, sequence, stage, shape, facing, whether it is prone, mission, height, fear, whether its type turns as a jump jet, and the direction to its target or -1 |

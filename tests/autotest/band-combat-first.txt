@@ -1,0 +1,101 @@
+; A selection box and Select View with CombatSelectionFirst on (the default). gamemd's box callback (0x4AC2B0) selects everything
+; selectable the box holds; OpenYR's own option leaves out unarmed units, such as miners, engineers and an MCV, when the box also
+; holds a combat unit. Cluster A at cells 60..62,40..42 holds a GI (E1) and a Grizzly (MTNK) with an engineer, a Chrono Miner
+; (CMIN) and an MCV (AMCV). Cluster B at 66..67,36..37 holds only an engineer, a Chrono Miner and an MCV.
+; 1. A box over cluster A selects E1 and MTNK only.
+; 2. A box over cluster B selects the three unarmed units, as no combat unit is in it.
+; 3. A box over cluster A, then a Shift box over cluster B, leaves E1 and MTNK selected and adds the three of cluster B.
+; 4. A Shift box over cluster A with cluster B selected adds E1 and MTNK and no unarmed unit of cluster A.
+; 5. With CombatSelectionFirst off, a box over cluster A selects all five.
+; 6. Select View, after a box over empty ground cleared the selection, selects the combat units in view and none of the unarmed.
+; 7. With the option off, Select View adds the unarmed units too and five are selected.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/band-combat-first.txt -Width 1280 -Height 720 -Seconds 90 -Settings "[Options]`r`nInterfaceStyle=Modern" -Filter "AUTOTEST|Exception"
+30 view 56 32
+35 reveal
+40 grantunit E1 60 40
+41 grantunit ENGINEER 61 40
+42 grantunit CMIN 62 40
+43 grantunit MTNK 60 42
+44 grantunit AMCV 61 42
+45 grantunit ENGINEER 66 36
+46 grantunit CMIN 67 36
+47 grantunit AMCV 66 37
+50 combatfirst 1
+51 cellpixel 60 40
+52 cellpixel 62 42
+53 cellpixel 66 36
+54 cellpixel 67 37
+60 windowcell press 58 38 -150 0
+61 hold 01
+62 windowcell move 61 41
+63 windowcell move 64 44 150 0
+64 windowcell move 64 44 150 0
+65 windowcell release 64 44 150 0
+66 release 01
+70 selected
+80 windowcell press 65 34 -120 0
+81 hold 01
+82 windowcell move 66 36
+83 windowcell move 68 39 120 0
+84 windowcell move 68 39 120 0
+85 windowcell release 68 39 120 0
+86 release 01
+90 selected
+100 windowcell press 58 38 -150 0
+101 hold 01
+102 windowcell move 61 41
+103 windowcell move 64 44 150 0
+104 windowcell move 64 44 150 0
+105 windowcell release 64 44 150 0
+106 release 01
+110 hold 16
+111 windowcell press 65 34 -120 0
+112 hold 01
+113 windowcell move 66 36
+114 windowcell move 68 39 120 0
+115 windowcell move 68 39 120 0
+116 windowcell release 68 39 120 0
+117 release 01
+118 release 16
+120 selected
+130 windowcell press 65 34 -120 0
+131 hold 01
+132 windowcell move 66 36
+133 windowcell move 68 39 120 0
+134 windowcell move 68 39 120 0
+135 windowcell release 68 39 120 0
+136 release 01
+140 hold 16
+141 windowcell press 58 38 -150 0
+142 hold 01
+143 windowcell move 61 41
+144 windowcell move 64 44 150 0
+145 windowcell move 64 44 150 0
+146 windowcell release 64 44 150 0
+147 release 01
+148 release 16
+150 selected
+160 combatfirst 0
+161 windowcell press 58 38 -150 0
+162 hold 01
+163 windowcell move 61 41
+164 windowcell move 64 44 150 0
+165 windowcell move 64 44 150 0
+166 windowcell release 64 44 150 0
+167 release 01
+170 selected
+180 combatfirst 1
+181 windowcell press 52 30 -40 0
+182 hold 01
+183 windowcell move 54 32
+184 windowcell move 55 33
+185 windowcell move 55 33
+186 windowcell release 55 33
+187 release 01
+188 selected
+189 command SelectView
+190 selected
+195 combatfirst 0
+196 command SelectView
+197 selected
+200 quit

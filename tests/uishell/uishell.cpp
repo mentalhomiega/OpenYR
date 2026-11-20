@@ -1799,6 +1799,7 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Classic_Game_Speeds(bool on) override { Calls.push_back(on ? "classic speeds on" : "classic speeds off"); }
 		virtual void Set_Aircraft_Body_Pick(bool on) override { Calls.push_back(on ? "airpick on" : "airpick off"); }
 		virtual void Set_Flat_Placement_Grid(bool on) override { Calls.push_back(on ? "flat grid on" : "flat grid off"); }
+		virtual void Set_Combat_Selection_First(bool on) override { Calls.push_back(on ? "combat first on" : "combat first off"); }
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
 		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
@@ -1907,8 +1908,19 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "flatgrid", 0);
 		Check(!presenter.State.FlatPlacementGrid && service.Calls.empty(), "the flat placement grid switch is held until the player accepts");
+		Drive(presenter, "combatfirst", 0);
 		Drive(presenter, "ok");
-		Check(service.Joined().find("flat grid off; save") != std::string::npos, "accepting applies the flat placement grid switch");
+		Check(service.Joined().find("flat grid off; combat first off; save") != std::string::npos, "accepting applies the flat placement grid and combat selection switches");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.FlatPlacementGrid = false;
+		state.CombatSelectionFirst = false;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "reset");
+		Check(presenter.State.FlatPlacementGrid && presenter.State.CombatSelectionFirst, "reset to defaults turns both switches back on");
 	}
 
 	{

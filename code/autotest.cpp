@@ -7278,6 +7278,13 @@ static void Holdmove_Step(StepType const & step)
 }
 
 
+static void Combatfirst_Step(StepType const & step)
+{
+	Options.CombatSelectionFirst = step.Argument != "0";
+	DebugString("AUTOTEST combatfirst %d\n", (int)Options.CombatSelectionFirst);
+}
+
+
 static void Record_Step(StepType const & step)
 {
 	RecordInterval = std::max(0, step.Argument_Int());
@@ -8379,6 +8386,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wall", Wall_Step},
 		{"ewall", Ewall_Step},
 		{"holdmove", Holdmove_Step},
+		{"combatfirst", Combatfirst_Step},
 		{"record", Record_Step},
 		{"fps", Fps_Step},
 		{"dump", Dump_Step},
