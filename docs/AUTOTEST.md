@@ -414,6 +414,11 @@ Use it to check a settings screen after a `ui choose`, `ui click` or cancel.
 The menu script step `ui checked <id>` logs `AUTOTEST checked <id> 1` or `0`, for whether the element has its `checked`
 attribute. A check box has it while ticked.
 
+The menu script step `ui inside <id> [<container id>]` logs `AUTOTEST inside <id> <x>,<y> <w>x<h> of <w>x<h>: 1` when the
+element's box lies wholly inside the container's box (the screen when no container is named), and `: 0` when any edge falls
+outside. The sizes are in pixels, so they change with the window size; `tests/autotest/menu-layout-fit.txt` uses it to keep
+the title menu's version text and the Settings footer buttons on screen.
+
 ### File paths
 
 The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.

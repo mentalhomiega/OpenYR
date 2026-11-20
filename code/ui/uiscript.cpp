@@ -529,6 +529,37 @@ bool Step_Checked(Rml::Context * context, UIStepType const & step, long long)
 }
 
 
+// "id [container]" logs whether the element's box lies wholly inside the container's box, or inside the screen when no
+// container is named: AUTOTEST inside <id> <x>,<y> <w>x<h> of <w>x<h>: 1 or 0.
+bool Step_Inside(Rml::Context * context, UIStepType const & step, long long)
+{
+	std::istringstream fields(step.Argument);
+	std::string id;
+	std::string container_id;
+	fields >> id >> container_id;
+	Rml::Element * element = Find_Element(context, id);
+	Rml::Element * container = container_id.empty() ? nullptr : Find_Element(context, container_id);
+	if (element == nullptr || (!container_id.empty() && container == nullptr)) {
+		Log_No_Element(step, "");
+		return(false);
+	}
+
+	Rml::Vector2f const at = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+	Rml::Vector2f const size = element->GetBox().GetSize(Rml::BoxArea::Border);
+	Rml::Vector2f outer_at(0, 0);
+	Rml::Vector2f outer_size((float)context->GetDimensions().x, (float)context->GetDimensions().y);
+	if (container != nullptr) {
+		outer_at = container->GetAbsoluteOffset(Rml::BoxArea::Border);
+		outer_size = container->GetBox().GetSize(Rml::BoxArea::Border);
+	}
+	bool const inside = at.x >= outer_at.x - 0.5f && at.y >= outer_at.y - 0.5f
+		&& at.x + size.x <= outer_at.x + outer_size.x + 0.5f && at.y + size.y <= outer_at.y + outer_size.y + 0.5f;
+	DebugString("AUTOTEST inside %s %.0f,%.0f %.0fx%.0f of %.0fx%.0f: %d\n", id.c_str(), at.x, at.y, size.x, size.y,
+		outer_size.x, outer_size.y, inside ? 1 : 0);
+	return(false);
+}
+
+
 bool Step_Hudrows(Rml::Context *, UIStepType const &, long long)
 {
 	DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
@@ -579,6 +610,7 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"command", Step_Command},
 		{"movie", Step_Movie},
 		{"checked", Step_Checked},
+		{"inside", Step_Inside},
 		{"hudrows", Step_Hudrows},
 		{"updatecheck", Step_Updatecheck},
 		{"quit", Step_Quit},
@@ -619,7 +651,7 @@ bool UIScript_Pending(void)
 /// inside the element with that id), key (escape, return, tab, space, page up or down, an arrow, a letter, a digit, shift
 /// or ctrl, with ctrl+, shift+ or alt+ in front to hold that key),
 /// frames (logs the game frame count and the clock), keydown and keyup (a key name, pressed or released, with the
-/// shift, ctrl and alt keys that keydown holds), shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
+/// shift, ctrl and alt keys that keydown holds), inside (an element id and optionally a container id: logs whether the element lies wholly inside the container, or the screen), shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does), stall (milliseconds to hold the main thread
 /// without pumping messages, for testing the hang watchdog), command (runs the registered command of that

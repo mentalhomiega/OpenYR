@@ -536,18 +536,13 @@ body.titlemenu.update-offer #update
 	position: absolute;
 	left: 16dp;
 	bottom: 10dp;
-	width: 240dp;
-	height: 16dp;
+	right: 512dp;
 	pointer-events: none;
 }
 
 #badge-version
 {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 240dp;
-	height: 16dp;
+	display: block;
 	font-size: 12dp;
 	line-height: 16dp;
 	text-align: left;
