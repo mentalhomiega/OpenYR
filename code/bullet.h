@@ -97,6 +97,7 @@ class BulletClass : public ObjectClass
 		bool Is_Forced_To_Explode(Coord & coord) const;
 		bool Target_Is_Airborne(void) const;
 		void Bullet_Explodes(bool forced);
+		void Trace_Shot(Coord const & blast, ObjectClass const * target, int strength_before) const;
 		virtual int Shape_Number(void) const;
 		virtual LayerType In_Which_Layer(void) const override;
 		virtual void Assign_Target(AbstractClass * target);
@@ -193,6 +194,9 @@ class BulletClass : public ObjectClass
 		 * reaches the bounce limit, the projectile is forced to detonate.
 		 */
 		int BounceCount;
+
+		// Set by the shotlog autotest step: each projectile that bursts writes a SHOTTRACE line.
+		static bool TraceShots;
 
 		/// Unused
 		bool field_A4;

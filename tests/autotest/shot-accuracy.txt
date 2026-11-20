@@ -1,0 +1,938 @@
+; Shot accuracy: seven computer firers (Rhino HTNK and Grizzly MTNK cannons, the Flak Track HTK's arcing shell, the IFV FV's
+; missile, the GI E1's bullets, the Tesla tank TTNK's bolt, and the Howitzer HOWI's ballistic shell from twice as far) fire at
+; unarmed player vehicles three cells away on built terrain: flat, up and down a two-level slope, across a slope, on a slope,
+; up and down a four-level cliff and up one level, and at moving trucks. The targets are made very strong by the mod so they
+; last. Each projectile that bursts writes a SHOTTRACE line; scripts/shot_accuracy.py turns them into a hit-rate table by block.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/shot-accuracy.txt -Mods src-agent33/tests/autotest/shot-accuracy-rules -Map XMP08T2.MAP -Seconds 300 -Uncapped -Filter "SHOTTRACE|AUTOTEST cellattack|Exception"
+; Each block line gives its name and the cell of the firer row's first firer; the target column is three cells east.
+; block flat 75 90
+; block uphill 75 81
+; block downhill 75 99
+; block across 87 87
+; block onslope 63 78
+; block cliffup 87 78
+; block cliffdown 99 90
+; block oneup 50 69
+; block flatinf 78 54
+; block moveflat 32 50
+; block moveup 44 38
+; block moveacross 32 41
+; block movedown 20 46
+10 raise 70 89 12 9 4 0
+10 raise 70 80 12 9 4 0
+10 raise 76 81 1 1 4 1
+10 raise 77 81 1 1 5 1
+10 raise 78 81 1 1 6 0
+10 raise 79 81 1 1 6 0
+10 raise 80 81 1 1 6 0
+10 raise 76 82 1 1 4 1
+10 raise 77 82 1 1 5 1
+10 raise 78 82 1 1 6 0
+10 raise 79 82 1 1 6 0
+10 raise 80 82 1 1 6 0
+10 raise 76 83 1 1 4 1
+10 raise 77 83 1 1 5 1
+10 raise 78 83 1 1 6 0
+10 raise 79 83 1 1 6 0
+10 raise 80 83 1 1 6 0
+10 raise 76 84 1 1 4 1
+10 raise 77 84 1 1 5 1
+10 raise 78 84 1 1 6 0
+10 raise 79 84 1 1 6 0
+10 raise 80 84 1 1 6 0
+10 raise 76 85 1 1 4 1
+10 raise 77 85 1 1 5 1
+10 raise 78 85 1 1 6 0
+10 raise 79 85 1 1 6 0
+10 raise 80 85 1 1 6 0
+10 raise 76 86 1 1 4 1
+10 raise 77 86 1 1 5 1
+10 raise 78 86 1 1 6 0
+10 raise 79 86 1 1 6 0
+10 raise 80 86 1 1 6 0
+10 raise 76 87 1 1 4 1
+10 raise 77 87 1 1 5 1
+10 raise 78 87 1 1 6 0
+10 raise 79 87 1 1 6 0
+10 raise 80 87 1 1 6 0
+10 raise 70 98 12 9 4 0
+10 raise 71 99 1 1 6 0
+10 raise 72 99 1 1 6 0
+10 raise 73 99 1 1 6 0
+10 raise 74 99 1 1 6 0
+10 raise 75 99 1 1 6 0
+10 raise 76 99 1 1 6 3
+10 raise 77 99 1 1 5 3
+10 raise 71 100 1 1 6 0
+10 raise 72 100 1 1 6 0
+10 raise 73 100 1 1 6 0
+10 raise 74 100 1 1 6 0
+10 raise 75 100 1 1 6 0
+10 raise 76 100 1 1 6 3
+10 raise 77 100 1 1 5 3
+10 raise 71 101 1 1 6 0
+10 raise 72 101 1 1 6 0
+10 raise 73 101 1 1 6 0
+10 raise 74 101 1 1 6 0
+10 raise 75 101 1 1 6 0
+10 raise 76 101 1 1 6 3
+10 raise 77 101 1 1 5 3
+10 raise 71 102 1 1 6 0
+10 raise 72 102 1 1 6 0
+10 raise 73 102 1 1 6 0
+10 raise 74 102 1 1 6 0
+10 raise 75 102 1 1 6 0
+10 raise 76 102 1 1 6 3
+10 raise 77 102 1 1 5 3
+10 raise 71 103 1 1 6 0
+10 raise 72 103 1 1 6 0
+10 raise 73 103 1 1 6 0
+10 raise 74 103 1 1 6 0
+10 raise 75 103 1 1 6 0
+10 raise 76 103 1 1 6 3
+10 raise 77 103 1 1 5 3
+10 raise 71 104 1 1 6 0
+10 raise 72 104 1 1 6 0
+10 raise 73 104 1 1 6 0
+10 raise 74 104 1 1 6 0
+10 raise 75 104 1 1 6 0
+10 raise 76 104 1 1 6 3
+10 raise 77 104 1 1 5 3
+10 raise 71 105 1 1 6 0
+10 raise 72 105 1 1 6 0
+10 raise 73 105 1 1 6 0
+10 raise 74 105 1 1 6 0
+10 raise 75 105 1 1 6 0
+10 raise 76 105 1 1 6 3
+10 raise 77 105 1 1 5 3
+10 raise 82 86 12 9 4 0
+10 raise 83 87 1 1 4 2
+10 raise 84 87 1 1 4 2
+10 raise 85 87 1 1 4 2
+10 raise 86 87 1 1 4 2
+10 raise 87 87 1 1 4 2
+10 raise 88 87 1 1 4 2
+10 raise 89 87 1 1 4 2
+10 raise 90 87 1 1 4 2
+10 raise 91 87 1 1 4 2
+10 raise 92 87 1 1 4 2
+10 raise 83 88 1 1 5 2
+10 raise 84 88 1 1 5 2
+10 raise 85 88 1 1 5 2
+10 raise 86 88 1 1 5 2
+10 raise 87 88 1 1 5 2
+10 raise 88 88 1 1 5 2
+10 raise 89 88 1 1 5 2
+10 raise 90 88 1 1 5 2
+10 raise 91 88 1 1 5 2
+10 raise 92 88 1 1 5 2
+10 raise 83 89 1 1 6 2
+10 raise 84 89 1 1 6 2
+10 raise 85 89 1 1 6 2
+10 raise 86 89 1 1 6 2
+10 raise 87 89 1 1 6 2
+10 raise 88 89 1 1 6 2
+10 raise 89 89 1 1 6 2
+10 raise 90 89 1 1 6 2
+10 raise 91 89 1 1 6 2
+10 raise 92 89 1 1 6 2
+10 raise 83 90 1 1 7 2
+10 raise 84 90 1 1 7 2
+10 raise 85 90 1 1 7 2
+10 raise 86 90 1 1 7 2
+10 raise 87 90 1 1 7 2
+10 raise 88 90 1 1 7 2
+10 raise 89 90 1 1 7 2
+10 raise 90 90 1 1 7 2
+10 raise 91 90 1 1 7 2
+10 raise 92 90 1 1 7 2
+10 raise 83 91 1 1 8 2
+10 raise 84 91 1 1 8 2
+10 raise 85 91 1 1 8 2
+10 raise 86 91 1 1 8 2
+10 raise 87 91 1 1 8 2
+10 raise 88 91 1 1 8 2
+10 raise 89 91 1 1 8 2
+10 raise 90 91 1 1 8 2
+10 raise 91 91 1 1 8 2
+10 raise 92 91 1 1 8 2
+10 raise 83 92 1 1 9 2
+10 raise 84 92 1 1 9 2
+10 raise 85 92 1 1 9 2
+10 raise 86 92 1 1 9 2
+10 raise 87 92 1 1 9 2
+10 raise 88 92 1 1 9 2
+10 raise 89 92 1 1 9 2
+10 raise 90 92 1 1 9 2
+10 raise 91 92 1 1 9 2
+10 raise 92 92 1 1 9 2
+10 raise 83 93 1 1 10 2
+10 raise 84 93 1 1 10 2
+10 raise 85 93 1 1 10 2
+10 raise 86 93 1 1 10 2
+10 raise 87 93 1 1 10 2
+10 raise 88 93 1 1 10 2
+10 raise 89 93 1 1 10 2
+10 raise 90 93 1 1 10 2
+10 raise 91 93 1 1 10 2
+10 raise 92 93 1 1 10 2
+10 raise 58 77 12 9 4 0
+10 raise 64 78 1 1 4 1
+10 raise 65 78 1 1 5 1
+10 raise 66 78 1 1 6 1
+10 raise 67 78 1 1 7 1
+10 raise 68 78 1 1 8 0
+10 raise 64 79 1 1 4 1
+10 raise 65 79 1 1 5 1
+10 raise 66 79 1 1 6 1
+10 raise 67 79 1 1 7 1
+10 raise 68 79 1 1 8 0
+10 raise 64 80 1 1 4 1
+10 raise 65 80 1 1 5 1
+10 raise 66 80 1 1 6 1
+10 raise 67 80 1 1 7 1
+10 raise 68 80 1 1 8 0
+10 raise 64 81 1 1 4 1
+10 raise 65 81 1 1 5 1
+10 raise 66 81 1 1 6 1
+10 raise 67 81 1 1 7 1
+10 raise 68 81 1 1 8 0
+10 raise 64 82 1 1 4 1
+10 raise 65 82 1 1 5 1
+10 raise 66 82 1 1 6 1
+10 raise 67 82 1 1 7 1
+10 raise 68 82 1 1 8 0
+10 raise 64 83 1 1 4 1
+10 raise 65 83 1 1 5 1
+10 raise 66 83 1 1 6 1
+10 raise 67 83 1 1 7 1
+10 raise 68 83 1 1 8 0
+10 raise 64 84 1 1 4 1
+10 raise 65 84 1 1 5 1
+10 raise 66 84 1 1 6 1
+10 raise 67 84 1 1 7 1
+10 raise 68 84 1 1 8 0
+10 raise 82 77 12 9 4 0
+10 raise 90 78 1 1 8 0
+10 raise 91 78 1 1 8 0
+10 raise 92 78 1 1 8 0
+10 raise 90 79 1 1 8 0
+10 raise 91 79 1 1 8 0
+10 raise 92 79 1 1 8 0
+10 raise 90 80 1 1 8 0
+10 raise 91 80 1 1 8 0
+10 raise 92 80 1 1 8 0
+10 raise 90 81 1 1 8 0
+10 raise 91 81 1 1 8 0
+10 raise 92 81 1 1 8 0
+10 raise 90 82 1 1 8 0
+10 raise 91 82 1 1 8 0
+10 raise 92 82 1 1 8 0
+10 raise 90 83 1 1 8 0
+10 raise 91 83 1 1 8 0
+10 raise 92 83 1 1 8 0
+10 raise 90 84 1 1 8 0
+10 raise 91 84 1 1 8 0
+10 raise 92 84 1 1 8 0
+10 raise 94 89 12 9 4 0
+10 raise 95 90 1 1 8 0
+10 raise 96 90 1 1 8 0
+10 raise 97 90 1 1 8 0
+10 raise 98 90 1 1 8 0
+10 raise 99 90 1 1 8 0
+10 raise 100 90 1 1 8 0
+10 raise 101 90 1 1 8 0
+10 raise 95 91 1 1 8 0
+10 raise 96 91 1 1 8 0
+10 raise 97 91 1 1 8 0
+10 raise 98 91 1 1 8 0
+10 raise 99 91 1 1 8 0
+10 raise 100 91 1 1 8 0
+10 raise 101 91 1 1 8 0
+10 raise 95 92 1 1 8 0
+10 raise 96 92 1 1 8 0
+10 raise 97 92 1 1 8 0
+10 raise 98 92 1 1 8 0
+10 raise 99 92 1 1 8 0
+10 raise 100 92 1 1 8 0
+10 raise 101 92 1 1 8 0
+10 raise 95 93 1 1 8 0
+10 raise 96 93 1 1 8 0
+10 raise 97 93 1 1 8 0
+10 raise 98 93 1 1 8 0
+10 raise 99 93 1 1 8 0
+10 raise 100 93 1 1 8 0
+10 raise 101 93 1 1 8 0
+10 raise 95 94 1 1 8 0
+10 raise 96 94 1 1 8 0
+10 raise 97 94 1 1 8 0
+10 raise 98 94 1 1 8 0
+10 raise 99 94 1 1 8 0
+10 raise 100 94 1 1 8 0
+10 raise 101 94 1 1 8 0
+10 raise 95 95 1 1 8 0
+10 raise 96 95 1 1 8 0
+10 raise 97 95 1 1 8 0
+10 raise 98 95 1 1 8 0
+10 raise 99 95 1 1 8 0
+10 raise 100 95 1 1 8 0
+10 raise 101 95 1 1 8 0
+10 raise 95 96 1 1 8 0
+10 raise 96 96 1 1 8 0
+10 raise 97 96 1 1 8 0
+10 raise 98 96 1 1 8 0
+10 raise 99 96 1 1 8 0
+10 raise 100 96 1 1 8 0
+10 raise 101 96 1 1 8 0
+10 raise 45 68 12 9 4 0
+10 raise 53 69 1 1 5 0
+10 raise 54 69 1 1 5 0
+10 raise 55 69 1 1 5 0
+10 raise 53 70 1 1 5 0
+10 raise 54 70 1 1 5 0
+10 raise 55 70 1 1 5 0
+10 raise 53 71 1 1 5 0
+10 raise 54 71 1 1 5 0
+10 raise 55 71 1 1 5 0
+10 raise 53 72 1 1 5 0
+10 raise 54 72 1 1 5 0
+10 raise 55 72 1 1 5 0
+10 raise 53 73 1 1 5 0
+10 raise 54 73 1 1 5 0
+10 raise 55 73 1 1 5 0
+10 raise 53 74 1 1 5 0
+10 raise 54 74 1 1 5 0
+10 raise 55 74 1 1 5 0
+10 raise 53 75 1 1 5 0
+10 raise 54 75 1 1 5 0
+10 raise 55 75 1 1 5 0
+10 raise 73 53 12 9 4 0
+10 raise 27 49 12 9 4 0
+10 raise 39 37 12 9 4 0
+10 raise 45 38 1 1 4 1
+10 raise 46 38 1 1 5 1
+10 raise 47 38 1 1 6 0
+10 raise 48 38 1 1 6 0
+10 raise 49 38 1 1 6 0
+10 raise 45 39 1 1 4 1
+10 raise 46 39 1 1 5 1
+10 raise 47 39 1 1 6 0
+10 raise 48 39 1 1 6 0
+10 raise 49 39 1 1 6 0
+10 raise 45 40 1 1 4 1
+10 raise 46 40 1 1 5 1
+10 raise 47 40 1 1 6 0
+10 raise 48 40 1 1 6 0
+10 raise 49 40 1 1 6 0
+10 raise 45 41 1 1 4 1
+10 raise 46 41 1 1 5 1
+10 raise 47 41 1 1 6 0
+10 raise 48 41 1 1 6 0
+10 raise 49 41 1 1 6 0
+10 raise 45 42 1 1 4 1
+10 raise 46 42 1 1 5 1
+10 raise 47 42 1 1 6 0
+10 raise 48 42 1 1 6 0
+10 raise 49 42 1 1 6 0
+10 raise 45 43 1 1 4 1
+10 raise 46 43 1 1 5 1
+10 raise 47 43 1 1 6 0
+10 raise 48 43 1 1 6 0
+10 raise 49 43 1 1 6 0
+10 raise 45 44 1 1 4 1
+10 raise 46 44 1 1 5 1
+10 raise 47 44 1 1 6 0
+10 raise 48 44 1 1 6 0
+10 raise 49 44 1 1 6 0
+10 raise 27 40 12 9 4 0
+10 raise 28 41 1 1 4 2
+10 raise 29 41 1 1 4 2
+10 raise 30 41 1 1 4 2
+10 raise 31 41 1 1 4 2
+10 raise 32 41 1 1 4 2
+10 raise 33 41 1 1 4 2
+10 raise 34 41 1 1 4 2
+10 raise 35 41 1 1 4 2
+10 raise 36 41 1 1 4 2
+10 raise 37 41 1 1 4 2
+10 raise 28 42 1 1 5 2
+10 raise 29 42 1 1 5 2
+10 raise 30 42 1 1 5 2
+10 raise 31 42 1 1 5 2
+10 raise 32 42 1 1 5 2
+10 raise 33 42 1 1 5 2
+10 raise 34 42 1 1 5 2
+10 raise 35 42 1 1 5 2
+10 raise 36 42 1 1 5 2
+10 raise 37 42 1 1 5 2
+10 raise 28 43 1 1 6 2
+10 raise 29 43 1 1 6 2
+10 raise 30 43 1 1 6 2
+10 raise 31 43 1 1 6 2
+10 raise 32 43 1 1 6 2
+10 raise 33 43 1 1 6 2
+10 raise 34 43 1 1 6 2
+10 raise 35 43 1 1 6 2
+10 raise 36 43 1 1 6 2
+10 raise 37 43 1 1 6 2
+10 raise 28 44 1 1 7 2
+10 raise 29 44 1 1 7 2
+10 raise 30 44 1 1 7 2
+10 raise 31 44 1 1 7 2
+10 raise 32 44 1 1 7 2
+10 raise 33 44 1 1 7 2
+10 raise 34 44 1 1 7 2
+10 raise 35 44 1 1 7 2
+10 raise 36 44 1 1 7 2
+10 raise 37 44 1 1 7 2
+10 raise 28 45 1 1 8 2
+10 raise 29 45 1 1 8 2
+10 raise 30 45 1 1 8 2
+10 raise 31 45 1 1 8 2
+10 raise 32 45 1 1 8 2
+10 raise 33 45 1 1 8 2
+10 raise 34 45 1 1 8 2
+10 raise 35 45 1 1 8 2
+10 raise 36 45 1 1 8 2
+10 raise 37 45 1 1 8 2
+10 raise 28 46 1 1 9 2
+10 raise 29 46 1 1 9 2
+10 raise 30 46 1 1 9 2
+10 raise 31 46 1 1 9 2
+10 raise 32 46 1 1 9 2
+10 raise 33 46 1 1 9 2
+10 raise 34 46 1 1 9 2
+10 raise 35 46 1 1 9 2
+10 raise 36 46 1 1 9 2
+10 raise 37 46 1 1 9 2
+10 raise 28 47 1 1 10 2
+10 raise 29 47 1 1 10 2
+10 raise 30 47 1 1 10 2
+10 raise 31 47 1 1 10 2
+10 raise 32 47 1 1 10 2
+10 raise 33 47 1 1 10 2
+10 raise 34 47 1 1 10 2
+10 raise 35 47 1 1 10 2
+10 raise 36 47 1 1 10 2
+10 raise 37 47 1 1 10 2
+10 raise 15 45 12 9 4 0
+10 raise 16 46 1 1 6 0
+10 raise 17 46 1 1 6 0
+10 raise 18 46 1 1 6 0
+10 raise 19 46 1 1 6 0
+10 raise 20 46 1 1 6 0
+10 raise 21 46 1 1 6 3
+10 raise 22 46 1 1 5 3
+10 raise 16 47 1 1 6 0
+10 raise 17 47 1 1 6 0
+10 raise 18 47 1 1 6 0
+10 raise 19 47 1 1 6 0
+10 raise 20 47 1 1 6 0
+10 raise 21 47 1 1 6 3
+10 raise 22 47 1 1 5 3
+10 raise 16 48 1 1 6 0
+10 raise 17 48 1 1 6 0
+10 raise 18 48 1 1 6 0
+10 raise 19 48 1 1 6 0
+10 raise 20 48 1 1 6 0
+10 raise 21 48 1 1 6 3
+10 raise 22 48 1 1 5 3
+10 raise 16 49 1 1 6 0
+10 raise 17 49 1 1 6 0
+10 raise 18 49 1 1 6 0
+10 raise 19 49 1 1 6 0
+10 raise 20 49 1 1 6 0
+10 raise 21 49 1 1 6 3
+10 raise 22 49 1 1 5 3
+10 raise 16 50 1 1 6 0
+10 raise 17 50 1 1 6 0
+10 raise 18 50 1 1 6 0
+10 raise 19 50 1 1 6 0
+10 raise 20 50 1 1 6 0
+10 raise 21 50 1 1 6 3
+10 raise 22 50 1 1 5 3
+10 raise 16 51 1 1 6 0
+10 raise 17 51 1 1 6 0
+10 raise 18 51 1 1 6 0
+10 raise 19 51 1 1 6 0
+10 raise 20 51 1 1 6 0
+10 raise 21 51 1 1 6 3
+10 raise 22 51 1 1 5 3
+10 raise 16 52 1 1 6 0
+10 raise 17 52 1 1 6 0
+10 raise 18 52 1 1 6 0
+10 raise 19 52 1 1 6 0
+10 raise 20 52 1 1 6 0
+10 raise 21 52 1 1 6 3
+10 raise 22 52 1 1 5 3
+400 enemy HTNK 75 90
+400 own AMCV 78 90
+400 enemy MTNK 75 91
+400 own AMCV 78 91
+400 enemy HTK 75 92
+400 own AMCV 78 92
+400 enemy FV 75 93
+400 own AMCV 78 93
+400 enemy E1 75 94
+400 own AMCV 78 94
+400 enemy TTNK 75 95
+400 own AMCV 78 95
+400 enemy HOWI 72 96
+400 own AMCV 78 96
+400 enemy HTNK 75 81
+400 own AMCV 78 81
+400 enemy MTNK 75 82
+400 own AMCV 78 82
+400 enemy HTK 75 83
+400 own AMCV 78 83
+400 enemy FV 75 84
+400 own AMCV 78 84
+400 enemy E1 75 85
+400 own AMCV 78 85
+400 enemy TTNK 75 86
+400 own AMCV 78 86
+400 enemy HOWI 72 87
+400 own AMCV 78 87
+400 enemy HTNK 75 99
+400 own AMCV 78 99
+400 enemy MTNK 75 100
+400 own AMCV 78 100
+400 enemy HTK 75 101
+400 own AMCV 78 101
+400 enemy FV 75 102
+400 own AMCV 78 102
+400 enemy E1 75 103
+400 own AMCV 78 103
+400 enemy TTNK 75 104
+400 own AMCV 78 104
+400 enemy HOWI 72 105
+400 own AMCV 78 105
+400 enemy HTNK 87 87
+400 own AMCV 90 87
+400 enemy MTNK 87 88
+400 own AMCV 90 88
+400 enemy HTK 87 89
+400 own AMCV 90 89
+400 enemy FV 87 90
+400 own AMCV 90 90
+400 enemy E1 87 91
+400 own AMCV 90 91
+400 enemy TTNK 87 92
+400 own AMCV 90 92
+400 enemy HOWI 84 93
+400 own AMCV 90 93
+400 enemy HTNK 63 78
+400 own AMCV 66 78
+400 enemy MTNK 63 79
+400 own AMCV 66 79
+400 enemy HTK 63 80
+400 own AMCV 66 80
+400 enemy FV 63 81
+400 own AMCV 66 81
+400 enemy E1 63 82
+400 own AMCV 66 82
+400 enemy TTNK 63 83
+400 own AMCV 66 83
+400 enemy HOWI 60 84
+400 own AMCV 66 84
+400 enemy HTNK 87 78
+400 own AMCV 90 78
+400 enemy MTNK 87 79
+400 own AMCV 90 79
+400 enemy HTK 87 80
+400 own AMCV 90 80
+400 enemy FV 87 81
+400 own AMCV 90 81
+400 enemy E1 87 82
+400 own AMCV 90 82
+400 enemy TTNK 87 83
+400 own AMCV 90 83
+400 enemy HOWI 84 84
+400 own AMCV 90 84
+400 enemy HTNK 99 90
+400 own AMCV 102 90
+400 enemy MTNK 99 91
+400 own AMCV 102 91
+400 enemy HTK 99 92
+400 own AMCV 102 92
+400 enemy FV 99 93
+400 own AMCV 102 93
+400 enemy E1 99 94
+400 own AMCV 102 94
+400 enemy TTNK 99 95
+400 own AMCV 102 95
+400 enemy HOWI 96 96
+400 own AMCV 102 96
+400 enemy HTNK 50 69
+400 own AMCV 53 69
+400 enemy MTNK 50 70
+400 own AMCV 53 70
+400 enemy HTK 50 71
+400 own AMCV 53 71
+400 enemy FV 50 72
+400 own AMCV 53 72
+400 enemy E1 50 73
+400 own AMCV 53 73
+400 enemy TTNK 50 74
+400 own AMCV 53 74
+400 enemy HOWI 47 75
+400 own AMCV 53 75
+400 enemy HTNK 78 54
+400 own ENGINEER 81 54
+400 enemy MTNK 78 55
+400 own ENGINEER 81 55
+400 enemy HTK 78 56
+400 own ENGINEER 81 56
+400 enemy FV 78 57
+400 own ENGINEER 81 57
+400 enemy E1 78 58
+400 own ENGINEER 81 58
+400 enemy TTNK 78 59
+400 own ENGINEER 81 59
+400 enemy HOWI 75 60
+400 own ENGINEER 81 60
+400 enemy HTNK 32 50
+400 enemy MTNK 32 51
+400 enemy HTK 32 52
+400 enemy FV 32 53
+400 enemy E1 32 54
+400 enemy TTNK 32 55
+400 enemy HOWI 29 56
+400 own TRUCKA 35 50
+400 enemy HTNK 44 38
+400 enemy MTNK 44 39
+400 enemy HTK 44 40
+400 enemy FV 44 41
+400 enemy E1 44 42
+400 enemy TTNK 44 43
+400 enemy HOWI 41 44
+400 own TRUCKB 47 38
+400 enemy HTNK 32 41
+400 enemy MTNK 32 42
+400 enemy HTK 32 43
+400 enemy FV 32 44
+400 enemy E1 32 45
+400 enemy TTNK 32 46
+400 enemy HOWI 29 47
+400 own CAR 35 41
+400 enemy HTNK 20 46
+400 enemy MTNK 20 47
+400 enemy HTK 20 48
+400 enemy FV 20 49
+400 enemy E1 20 50
+400 enemy TTNK 20 51
+400 enemy HOWI 17 52
+400 own SUVB 23 46
+410 shotlog 1
+420 cellattack 75 90 78 90
+420 cellattack 75 91 78 91
+420 cellattack 75 92 78 92
+420 cellattack 75 93 78 93
+420 cellattack 75 94 78 94
+420 cellattack 75 95 78 95
+420 cellattack 72 96 78 96
+420 cellattack 75 81 78 81
+420 cellattack 75 82 78 82
+420 cellattack 75 83 78 83
+420 cellattack 75 84 78 84
+420 cellattack 75 85 78 85
+420 cellattack 75 86 78 86
+420 cellattack 72 87 78 87
+420 cellattack 75 99 78 99
+420 cellattack 75 100 78 100
+420 cellattack 75 101 78 101
+420 cellattack 75 102 78 102
+420 cellattack 75 103 78 103
+420 cellattack 75 104 78 104
+420 cellattack 72 105 78 105
+420 cellattack 87 87 90 87
+420 cellattack 87 88 90 88
+420 cellattack 87 89 90 89
+420 cellattack 87 90 90 90
+420 cellattack 87 91 90 91
+420 cellattack 87 92 90 92
+420 cellattack 84 93 90 93
+420 cellattack 63 78 66 78
+420 cellattack 63 79 66 79
+420 cellattack 63 80 66 80
+420 cellattack 63 81 66 81
+420 cellattack 63 82 66 82
+420 cellattack 63 83 66 83
+420 cellattack 60 84 66 84
+420 cellattack 87 78 90 78
+420 cellattack 87 79 90 79
+420 cellattack 87 80 90 80
+420 cellattack 87 81 90 81
+420 cellattack 87 82 90 82
+420 cellattack 87 83 90 83
+420 cellattack 84 84 90 84
+420 cellattack 99 90 102 90
+420 cellattack 99 91 102 91
+420 cellattack 99 92 102 92
+420 cellattack 99 93 102 93
+420 cellattack 99 94 102 94
+420 cellattack 99 95 102 95
+420 cellattack 96 96 102 96
+420 cellattack 50 69 53 69
+420 cellattack 50 70 53 70
+420 cellattack 50 71 53 71
+420 cellattack 50 72 53 72
+420 cellattack 50 73 53 73
+420 cellattack 50 74 53 74
+420 cellattack 47 75 53 75
+420 cellattack 78 54 81 54
+420 cellattack 78 55 81 55
+420 cellattack 78 56 81 56
+420 cellattack 78 57 81 57
+420 cellattack 78 58 81 58
+420 cellattack 78 59 81 59
+420 cellattack 75 60 81 60
+420 cellattack 32 50 35 50
+420 cellattack 32 51 35 50
+420 cellattack 32 52 35 50
+420 cellattack 32 53 35 50
+420 cellattack 32 54 35 50
+420 cellattack 32 55 35 50
+420 cellattack 29 56 35 50
+420 cellattack 44 38 47 38
+420 cellattack 44 39 47 38
+420 cellattack 44 40 47 38
+420 cellattack 44 41 47 38
+420 cellattack 44 42 47 38
+420 cellattack 44 43 47 38
+420 cellattack 41 44 47 38
+420 cellattack 32 41 35 41
+420 cellattack 32 42 35 41
+420 cellattack 32 43 35 41
+420 cellattack 32 44 35 41
+420 cellattack 32 45 35 41
+420 cellattack 32 46 35 41
+420 cellattack 29 47 35 41
+420 cellattack 20 46 23 46
+420 cellattack 20 47 23 46
+420 cellattack 20 48 23 46
+420 cellattack 20 49 23 46
+420 cellattack 20 50 23 46
+420 cellattack 20 51 23 46
+420 cellattack 17 52 23 46
+440 move TRUCKA 35 56
+440 move TRUCKB 47 44
+440 move CAR 35 47
+440 move SUVB 23 52
+560 move TRUCKA 35 50
+560 move TRUCKB 47 38
+560 move CAR 35 41
+560 move SUVB 23 46
+680 move TRUCKA 35 56
+680 move TRUCKB 47 44
+680 move CAR 35 47
+680 move SUVB 23 52
+800 move TRUCKA 35 50
+800 move TRUCKB 47 38
+800 move CAR 35 41
+800 move SUVB 23 46
+920 move TRUCKA 35 56
+920 move TRUCKB 47 44
+920 move CAR 35 47
+920 move SUVB 23 52
+1040 move TRUCKA 35 50
+1040 move TRUCKB 47 38
+1040 move CAR 35 41
+1040 move SUVB 23 46
+1160 move TRUCKA 35 56
+1160 move TRUCKB 47 44
+1160 move CAR 35 47
+1160 move SUVB 23 52
+1280 move TRUCKA 35 50
+1280 move TRUCKB 47 38
+1280 move CAR 35 41
+1280 move SUVB 23 46
+1300 cellattack 75 90 78 90
+1300 cellattack 75 91 78 91
+1300 cellattack 75 92 78 92
+1300 cellattack 75 93 78 93
+1300 cellattack 75 94 78 94
+1300 cellattack 75 95 78 95
+1300 cellattack 72 96 78 96
+1300 cellattack 75 81 78 81
+1300 cellattack 75 82 78 82
+1300 cellattack 75 83 78 83
+1300 cellattack 75 84 78 84
+1300 cellattack 75 85 78 85
+1300 cellattack 75 86 78 86
+1300 cellattack 72 87 78 87
+1300 cellattack 75 99 78 99
+1300 cellattack 75 100 78 100
+1300 cellattack 75 101 78 101
+1300 cellattack 75 102 78 102
+1300 cellattack 75 103 78 103
+1300 cellattack 75 104 78 104
+1300 cellattack 72 105 78 105
+1300 cellattack 87 87 90 87
+1300 cellattack 87 88 90 88
+1300 cellattack 87 89 90 89
+1300 cellattack 87 90 90 90
+1300 cellattack 87 91 90 91
+1300 cellattack 87 92 90 92
+1300 cellattack 84 93 90 93
+1300 cellattack 63 78 66 78
+1300 cellattack 63 79 66 79
+1300 cellattack 63 80 66 80
+1300 cellattack 63 81 66 81
+1300 cellattack 63 82 66 82
+1300 cellattack 63 83 66 83
+1300 cellattack 60 84 66 84
+1300 cellattack 87 78 90 78
+1300 cellattack 87 79 90 79
+1300 cellattack 87 80 90 80
+1300 cellattack 87 81 90 81
+1300 cellattack 87 82 90 82
+1300 cellattack 87 83 90 83
+1300 cellattack 84 84 90 84
+1300 cellattack 99 90 102 90
+1300 cellattack 99 91 102 91
+1300 cellattack 99 92 102 92
+1300 cellattack 99 93 102 93
+1300 cellattack 99 94 102 94
+1300 cellattack 99 95 102 95
+1300 cellattack 96 96 102 96
+1300 cellattack 50 69 53 69
+1300 cellattack 50 70 53 70
+1300 cellattack 50 71 53 71
+1300 cellattack 50 72 53 72
+1300 cellattack 50 73 53 73
+1300 cellattack 50 74 53 74
+1300 cellattack 47 75 53 75
+1300 cellattack 78 54 81 54
+1300 cellattack 78 55 81 55
+1300 cellattack 78 56 81 56
+1300 cellattack 78 57 81 57
+1300 cellattack 78 58 81 58
+1300 cellattack 78 59 81 59
+1300 cellattack 75 60 81 60
+1400 move TRUCKA 35 56
+1400 move TRUCKB 47 44
+1400 move CAR 35 47
+1400 move SUVB 23 52
+1520 move TRUCKA 35 50
+1520 move TRUCKB 47 38
+1520 move CAR 35 41
+1520 move SUVB 23 46
+1640 move TRUCKA 35 56
+1640 move TRUCKB 47 44
+1640 move CAR 35 47
+1640 move SUVB 23 52
+1760 move TRUCKA 35 50
+1760 move TRUCKB 47 38
+1760 move CAR 35 41
+1760 move SUVB 23 46
+1880 move TRUCKA 35 56
+1880 move TRUCKB 47 44
+1880 move CAR 35 47
+1880 move SUVB 23 52
+2000 move TRUCKA 35 50
+2000 move TRUCKB 47 38
+2000 move CAR 35 41
+2000 move SUVB 23 46
+2120 move TRUCKA 35 56
+2120 move TRUCKB 47 44
+2120 move CAR 35 47
+2120 move SUVB 23 52
+2200 cellattack 75 90 78 90
+2200 cellattack 75 91 78 91
+2200 cellattack 75 92 78 92
+2200 cellattack 75 93 78 93
+2200 cellattack 75 94 78 94
+2200 cellattack 75 95 78 95
+2200 cellattack 72 96 78 96
+2200 cellattack 75 81 78 81
+2200 cellattack 75 82 78 82
+2200 cellattack 75 83 78 83
+2200 cellattack 75 84 78 84
+2200 cellattack 75 85 78 85
+2200 cellattack 75 86 78 86
+2200 cellattack 72 87 78 87
+2200 cellattack 75 99 78 99
+2200 cellattack 75 100 78 100
+2200 cellattack 75 101 78 101
+2200 cellattack 75 102 78 102
+2200 cellattack 75 103 78 103
+2200 cellattack 75 104 78 104
+2200 cellattack 72 105 78 105
+2200 cellattack 87 87 90 87
+2200 cellattack 87 88 90 88
+2200 cellattack 87 89 90 89
+2200 cellattack 87 90 90 90
+2200 cellattack 87 91 90 91
+2200 cellattack 87 92 90 92
+2200 cellattack 84 93 90 93
+2200 cellattack 63 78 66 78
+2200 cellattack 63 79 66 79
+2200 cellattack 63 80 66 80
+2200 cellattack 63 81 66 81
+2200 cellattack 63 82 66 82
+2200 cellattack 63 83 66 83
+2200 cellattack 60 84 66 84
+2200 cellattack 87 78 90 78
+2200 cellattack 87 79 90 79
+2200 cellattack 87 80 90 80
+2200 cellattack 87 81 90 81
+2200 cellattack 87 82 90 82
+2200 cellattack 87 83 90 83
+2200 cellattack 84 84 90 84
+2200 cellattack 99 90 102 90
+2200 cellattack 99 91 102 91
+2200 cellattack 99 92 102 92
+2200 cellattack 99 93 102 93
+2200 cellattack 99 94 102 94
+2200 cellattack 99 95 102 95
+2200 cellattack 96 96 102 96
+2200 cellattack 50 69 53 69
+2200 cellattack 50 70 53 70
+2200 cellattack 50 71 53 71
+2200 cellattack 50 72 53 72
+2200 cellattack 50 73 53 73
+2200 cellattack 50 74 53 74
+2200 cellattack 47 75 53 75
+2200 cellattack 78 54 81 54
+2200 cellattack 78 55 81 55
+2200 cellattack 78 56 81 56
+2200 cellattack 78 57 81 57
+2200 cellattack 78 58 81 58
+2200 cellattack 78 59 81 59
+2200 cellattack 75 60 81 60
+2240 move TRUCKA 35 50
+2240 move TRUCKB 47 38
+2240 move CAR 35 41
+2240 move SUVB 23 46
+2360 move TRUCKA 35 56
+2360 move TRUCKB 47 44
+2360 move CAR 35 47
+2360 move SUVB 23 52
+2480 move TRUCKA 35 50
+2480 move TRUCKB 47 38
+2480 move CAR 35 41
+2480 move SUVB 23 46
+2600 move TRUCKA 35 56
+2600 move TRUCKB 47 44
+2600 move CAR 35 47
+2600 move SUVB 23 52
+2720 move TRUCKA 35 50
+2720 move TRUCKB 47 38
+2720 move CAR 35 41
+2720 move SUVB 23 46
+2840 move TRUCKA 35 56
+2840 move TRUCKB 47 44
+2840 move CAR 35 47
+2840 move SUVB 23 52
+2960 move TRUCKA 35 50
+2960 move TRUCKB 47 38
+2960 move CAR 35 41
+2960 move SUVB 23 46
+3080 move TRUCKA 35 56
+3080 move TRUCKB 47 44
+3080 move CAR 35 47
+3080 move SUVB 23 52
+3100 shotlog 0
+3100 where AMCV
+3101 quit

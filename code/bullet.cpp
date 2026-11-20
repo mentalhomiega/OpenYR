@@ -191,6 +191,7 @@ void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *ta
 
 
 DynamicVectorClass<BulletClass *> BulletClass::ScalableBullets;
+bool BulletClass::TraceShots = false;
 
 
 /// <summary>
@@ -1469,6 +1470,10 @@ void BulletClass::Bullet_Explodes(bool forced)
 		}
 	}
 
+	ObjectClass * const traced = TraceShots && TarCom != NULL ? TarCom->As_ObjectClass() : NULL;
+	int const traced_strength = traced != NULL ? traced->Strength : 0;
+	Coord const blast = coord;
+
 	if (!Class->Detonates_Once()) {
 		Coord newcoord = coord;
 		for (int i = 0; i < Class->Cluster; i++) {
@@ -1481,6 +1486,27 @@ void BulletClass::Bullet_Explodes(bool forced)
 	} else {
 		Detonate(coord);
 	}
+
+	if (TraceShots) {
+		Trace_Shot(blast, traced, traced_strength);
+	}
+}
+
+
+// Writes a SHOTTRACE line for a projectile that has burst at blast. The shot hit when its target object lost strength or
+// was destroyed; the offset is from the target's center. A target object must still be in memory, which holds within
+// the frame of its destruction.
+void BulletClass::Trace_Shot(Coord const & blast, ObjectClass const * target, int strength_before) const
+{
+	Coord const aim = target != NULL ? target->Center_Coord() : (TarCom != NULL ? TarCom->Center_Coord() : blast);
+	bool const hit = target != NULL && (!target->IsActive || target->Strength < strength_before);
+	Cell const from = SourceCoord != COORD_NONE ? SourceCoord.As_Cell() : CELL_NONE;
+	DebugString("SHOTTRACE frame %d %s %s by %s from %d,%d at %s %d,%d %s off %d,%d,%d cells %d,%d agl %d tagl %d\n",
+		(int)Frame, Weapon != NULL ? Weapon->Name() : "-", Class->Name(), Payback != NULL ? Payback->Class_Of()->Name() : "-",
+		(int)from.X, (int)from.Y, target != NULL ? target->Class_Of()->Name() : "cell", (int)aim.As_Cell().X, (int)aim.As_Cell().Y,
+		target == NULL ? "ground" : (hit ? "hit" : "miss"), blast.X - aim.X, blast.Y - aim.Y, blast.Z - aim.Z,
+		(int)blast.As_Cell().X - (int)aim.As_Cell().X, (int)blast.As_Cell().Y - (int)aim.As_Cell().Y,
+		blast.Z - Map.Get_Height_GL(blast), target != NULL ? target->HeightAGL : 0);
 }
 
 

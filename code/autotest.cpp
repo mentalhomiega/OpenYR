@@ -4288,8 +4288,9 @@ static void Terrain_Step(StepType const & step)
 }
 
 
-// raise x y width height level: sets the ground height of that block of cells to the level, so a test can put a cliff
-// under a building. Cells off the map are skipped, and the rest are not redrawn or re-zoned.
+// raise x y width height level [ramp]: sets the ground height of that block of cells to the level, so a test can put a
+// cliff under a building. A ramp (1 to 20) also slopes each cell, as a slope tile does. Cells off the map are skipped,
+// and the rest are not redrawn or re-zoned.
 static void Raise_Step(StepType const & step)
 {
 	int const left = step.Argument_Int();
@@ -4297,15 +4298,23 @@ static void Raise_Step(StepType const & step)
 	int const width = Number(step.Words, 4, 0);
 	int const height = Number(step.Words, 5, 0);
 	int const level = Number(step.Words, 6, 0);
+	int const ramp = Number(step.Words, 7, -1);
 	for (int y = top; y < top + height; y++) {
 		for (int x = left; x < left + width; x++) {
 			Cell const cell(x, y);
 			if (Map.Is_Valid(cell)) {
 				Map[cell].Height = (char)level;
+				if (ramp >= 0) {
+					Map[cell].Ramp = (unsigned char)ramp;
+				}
 			}
 		}
 	}
-	DebugString("AUTOTEST   raise %d,%d %dx%d to level %d\n", left, top, width, height, level);
+	if (ramp >= 0) {
+		DebugString("AUTOTEST   raise %d,%d %dx%d to level %d ramp %d\n", left, top, width, height, level, ramp);
+	} else {
+		DebugString("AUTOTEST   raise %d,%d %dx%d to level %d\n", left, top, width, height, level);
+	}
 }
 
 
@@ -6785,6 +6794,44 @@ static void Damagetrace_Step(StepType const & step)
 }
 
 
+// shotlog <0|1>: logs each projectile that bursts, as SHOTTRACE lines (BulletClass::Trace_Shot).
+static void Shotlog_Step(StepType const & step)
+{
+	BulletClass::TraceShots = step.Argument_Int() != 0;
+	DebugString("AUTOTEST shotlog %d\n", (int)BulletClass::TraceShots);
+}
+
+
+// landscan x y width height: writes one line per row of the block, two characters per cell: its land type as a digit and
+// its height level as a letter from a, or ## for a cell with a structure or terrain object. A script uses it to find open
+// ground to build a test on.
+static void Landscan_Step(StepType const & step)
+{
+	int const left = step.Argument_Int();
+	int const top = step.X;
+	int const width = Number(step.Words, 4, 0);
+	int const height = Number(step.Words, 5, 0);
+	for (int y = top; y < top + height; y++) {
+		std::string row;
+		for (int x = left; x < left + width; x++) {
+			Cell const cell(x, y);
+			if (!Map.Is_Valid(cell)) {
+				row += "..";
+				continue;
+			}
+			CellClass const & cellptr = Map[cell];
+			if (cellptr.Cell_Building() != NULL || cellptr.Cell_Terrain() != NULL) {
+				row += "##";
+				continue;
+			}
+			row += (char)('0' + (int)cellptr.Land_Type() % 10);
+			row += (char)('a' + std::clamp((int)cellptr.Height, 0, 25));
+		}
+		DebugString("AUTOTEST   landscan %d,%d %s\n", left, y, row.c_str());
+	}
+}
+
+
 // buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
 static void Buildtrace_Step(StepType const & step)
 {
@@ -7797,6 +7844,20 @@ static void Aistrike_Step(StepType const & step)
 }
 
 
+// cellattack x y tx ty: the object on cell x,y, whoever owns it, attacks what stands on cell tx,ty. A test with several
+// objects of one type gives each its own target this way.
+static void Cellattack_Step(StepType const & step)
+{
+	TechnoClass * attacker = Map[Cell(step.Argument_Int(), step.X)].Cell_Techno();
+	TechnoClass * target = Map[Cell(Number(step.Words, 4, 0), Number(step.Words, 5, 0))].Cell_Techno();
+	DebugString("AUTOTEST cellattack %s -> %s\n", attacker != NULL ? attacker->TClass->Name() : "(none)", target != NULL ? target->TClass->Name() : "(none)");
+	if (attacker != NULL && target != NULL) {
+		attacker->Assign_Target(target);
+		attacker->Assign_Mission(MISSION_ATTACK);
+	}
+}
+
+
 static void Cameopcx_Step(StepType const & step)
 {
 	// cameopcx <TypeID>: the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing.
@@ -8006,6 +8067,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 {
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
 		{"aistrike", Aistrike_Step},
+		{"cellattack", Cellattack_Step},
 		{"cameopcx", Cameopcx_Step},
 		{"wrench", Wrench_Step},
 		{"attackvoice", Attackvoice_Step},
@@ -8180,6 +8242,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"water", Water_Step},
 		{"terrain", Terrain_Step},
 		{"raise", Raise_Step},
+		{"landscan", Landscan_Step},
+		{"shotlog", Shotlog_Step},
 		{"follow", Follow_Step},
 		{"enter", Enter_Step},
 		{"spy", Spy_Step},
