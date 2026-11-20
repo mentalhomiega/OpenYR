@@ -6,8 +6,7 @@
 GpuRender=no
 GpuVoxels=yes
 GpuVoxelSmooth=yes
-HDRHighlights=Classic
-Bloom=no" -Filter "GPU_DIFF|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
+HDRHighlights=Classic" -Filter "GPU_DIFF|Exception|AUTOTEST steps done" -Uncapped -StopAfterSteps
 0 gpucheck 1
 5 view 61 43
 6 reveal

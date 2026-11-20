@@ -1,5 +1,5 @@
 ; Draws vehicles at several body and turret facings and saves three screenshots, so GpuVoxels on and off can be compared pixel for pixel (docs/GPU_VOXELS.md).
-; Run with -ShotDir and -Settings "[Video]`nGpuRender=no`nGpuVoxels=yes`nHDRHighlights=Classic`nBloom=no", then with GpuVoxels=no. A screenshot shows the software picture, so a GpuRender=yes run shows the map as the layer key colour.
+; Run with -ShotDir and -Settings "[Video]`nGpuRender=no`nGpuVoxels=yes`nHDRHighlights=Classic", then with GpuVoxels=no. A screenshot shows the software picture, so a GpuRender=yes run shows the map as the layer key colour.
 1 view 50 57
 2 reveal
 10 grantunit MTNK 44 56
