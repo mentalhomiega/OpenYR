@@ -1,0 +1,9 @@
+; The maps the menu battle picks by itself. The shellmaps step logs one line for each listed map: accepted or rejected, its
+; theater, start positions, game modes, visible area and the shortest and longest distance between two start positions in map
+; pixels, then a line with the reason for a rejected map: mode (the packet does not list the standard mode), starts (fewer than
+; four start positions), clustered (the two furthest start positions are under 0.35 of the visible diagonal apart) or
+; unofficial. With stock Yuri's Revenge it accepts the standard maps with four starts or more, except XRound and MojoSprt, whose
+; starts sit round one gem field in the middle. A map named by [MenuBattle] Map= is used whatever the list says.
+; Run: scripts/run_autotest.ps1 -Script src-agent27/tests/autotest/menu-battle-maps.txt -Seconds 60 -Filter 'AUTOTEST shellmap|Exception'
+0 shellmaps
+5 quit

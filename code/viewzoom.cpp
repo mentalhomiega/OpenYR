@@ -582,8 +582,19 @@ double View_Zoom_Max(void)
 }
 
 
+// The player's zoom while the menu battle runs at its own, see Hold_Player_View_Zoom.
+struct AsideZoom
+{
+	double View, Display, Target, GlideFrom, PlayerZoom;
+	bool Gliding, ScriptedSaved, Scene;
+};
+static AsideZoom _Aside;
+static bool _HasAside = false;
+
+
 void Reset_View_Zoom(void)
 {
+	_HasAside = false;
 	double const start = View_Zoom_Native();
 	ViewZoom = start;
 	DisplayZoom = start;
@@ -607,6 +618,87 @@ void Hold_View_Zoom_To_Limit(void)
 		_TargetZoom = limit;
 		_GlideFrom = limit;
 	}
+}
+
+
+// Makes the map draw at the given zoom, which is already the one in the zoom variables, with the view's middle kept.
+static void Redraw_At_Zoom(double zoom)
+{
+	if (ScreenTacticalRect.Width <= 0 || ScreenTacticalRect.Height <= 0) {
+		ViewZoom = zoom;
+		return;
+	}
+	if (TacticalMap == NULL) {
+		ViewZoom = zoom;
+		Map.Set_View_Dimensions(ScreenTacticalRect);
+		return;
+	}
+	double middlex, middley;
+	Shown_Middle(middlex, middley);
+	Set_Drawn_Zoom(zoom, middlex, middley);
+}
+
+
+void Hold_Player_View_Zoom(void)
+{
+	if (_HasAside) {
+		return;
+	}
+	_Aside = AsideZoom{ ViewZoom, DisplayZoom, _TargetZoom, _GlideFrom, _PlayerZoom, _Gliding, _ScriptedZoomSaved, _SceneZoom };
+	_HasAside = true;
+
+	double const drawn = ViewZoom;
+	double const start = View_Zoom_Native();
+	DisplayZoom = start;
+	_TargetZoom = start;
+	_GlideFrom = start;
+	_PendingZoomStep = 0.0;
+	_Gliding = false;
+	_GlideProgress = 1.0;
+	_ScriptedZoomSaved = false;
+	_ZoomHeld = false;
+	_SceneZoom = false;
+	if (drawn != start) {
+		Redraw_At_Zoom(start);
+	}
+}
+
+
+void Release_Player_View_Zoom(void)
+{
+	if (!_HasAside) {
+		return;
+	}
+	_HasAside = false;
+
+	double const drawn = ViewZoom;
+	_PendingZoomStep = 0.0;
+	_ZoomHeld = false;
+	DisplayZoom = _Aside.Display;
+	_TargetZoom = _Aside.Target;
+	_GlideFrom = _Aside.GlideFrom;
+	_PlayerZoom = _Aside.PlayerZoom;
+	_Gliding = _Aside.Gliding;
+	_GlideProgress = _Aside.Gliding ? 0.0 : 1.0;
+	_ScriptedZoomSaved = _Aside.ScriptedSaved;
+	_SceneZoom = _Aside.Scene;
+	// A glide that was under way ends where it was headed, since its start time is gone.
+	if (_Gliding) {
+		_Gliding = false;
+		DisplayZoom = _TargetZoom;
+		_Aside.View = _TargetZoom;
+	}
+	if (drawn != _Aside.View) {
+		Redraw_At_Zoom(_Aside.View);
+	} else {
+		ViewZoom = _Aside.View;
+	}
+}
+
+
+bool Player_View_Zoom_Held(void)
+{
+	return(_HasAside);
 }
 
 
