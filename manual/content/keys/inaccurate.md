@@ -11,9 +11,7 @@ An inaccurate [`Arcing=yes`](/keys/arcing/) projectile is aimed at a point scatt
 
 The scatter distance is drawn between half of [`[CombatDamage] BallisticScatter`](/keys/ballisticscatter/) and all of it, in a random direction. At the engine default that is half a cell to a whole cell. The distance does not grow with range: a shot at maximum range is scattered no more than a point-blank one. The exception is a flak shell with [`FlakScatter=yes`](/keys/flakscatter/), which scatters by its distance to the target. The firer solves its arc for the scattered point, so the shell comes down short, long or wide of the target. If the arc cannot reach the scattered point, that shot is not fired.
 
-A shell that is not [`Bouncy=yes`](/keys/bouncy/) still bursts on its target when it comes down within a cell and a half of it, or farther for a fast shell, unless it is [`Airburst=yes`](/keys/airburst/). At the engine default the scatter stays inside that reach, so for such a shell the scatter shows in its flight but not in where it bursts. [Where the blast lands](/systems/projectile-flight/#where-the-blast-lands) gives the exact reach.
-
-A `Bouncy=yes` shell, such as the Firestorm Juggernaut's, bursts where it comes to rest, so its scatter does show in where it bursts. The exception is a shell that comes down in a cell holding an object that is not friendly; that shell is moved onto its target within the same reach.
+An inaccurate shell is never moved onto its target, so its scatter shows in where it bursts. It still bursts as it enters its target's cell less than 208 leptons above the ground, wherever in that cell it is, and the warhead's spread decides whether the target takes damage. [Where the blast lands](/systems/projectile-flight/#where-the-blast-lands) lists the moves an accurate shell gets.
 
 ```ini title="rules.ini"
 [MYARTILLERYSHELL] ; a BulletType, registered by a weapon naming it as its Projectile

@@ -94,12 +94,12 @@ A live and a slack segment treat each of these as follows:
 | --- | --- | --- |
 | Vehicles and infantry | Cannot enter the cell | Pass through |
 | Infantry standing in the cell on Guard | Scatter away | Stay put |
-| Projectiles that are not homing ([`ROT=0`](/keys/rot/#scope-bullettype)) | Strike the segment, unless the firer is allied to its house | Pass through |
+| Projectiles that are not homing ([`ROT=0`](/keys/rot/#scope-bullettype)) | Strike the segment only once the projectile has forgotten its firer; otherwise pass through | Pass through |
 | Particles and bouncing debris | Strike the segment | Pass through |
 
 A live segment stops a projectile, particle or piece of debris only while it passes through the cell less than 150 [leptons](/glossary/#lepton) above the ground. A shell arcing higher crosses over the fence.
 
-A projectile that strikes a live segment detonates on it. A [`Bouncy=yes`](/keys/bouncy/) projectile bounces off instead. It still detonates if it lands in a cell holding an object that is not allied to its firer.
+A projectile that strikes a live segment detonates on it. A projectile still knows its firer until the firer is destroyed, captured, enters a transport or a structure, or starts to cloak; [Ballistic flight](/systems/projectile-flight/#ballistic-flight) gives the rules.
 
 Segments take only forced damage, so ordinary weapon fire never destroys one. A segment is removed only when its post removes the run, or when a post or gate is placed on it.
 
