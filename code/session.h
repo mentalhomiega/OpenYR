@@ -664,6 +664,11 @@ class SessionClass
 		NetTiming::HostTimingChoice NetworkTimingChoice;
 		// Set when the match runs through a tunnel. gamemd adds 20 to the start look-ahead then.
 		bool NetworkThroughTunnel = false;
+		// Set by the built-in CnCNet lobby's MeasuredMaxAhead=yes: under gamemd's timing the look-ahead follows
+		// NetTiming::Measured_Timing_Settings in place of gamemd's formula.
+		bool NetworkMeasuredMaxAhead = false;
+		// The lobby's round-trip estimate in milliseconds, which sets the measured start look-ahead; 0 when it had none.
+		unsigned int NetworkStartRoundTrip = 0;
 		// Frames the most-behind peer was last heard at, behind this machine. Drives the local pacing.
 		unsigned int NetworkPeerLag = 0;
 

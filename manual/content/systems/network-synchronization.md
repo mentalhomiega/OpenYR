@@ -33,9 +33,17 @@ The [adaptive table](#adaptive-policy) is the other option.
 
 A host can fix the send period, the look-ahead, or both for the whole match. In the built-in CnCNet lobby and the LAN lobby, the host types `/FrameSendRate 1` to `10`, `/MaxAhead 4` to `250`, or `auto` in place of the number. A command with no number shows the current value. The lobby shows the options to every player, and a player who is not the host is told that only the host can change them.
 
-A chosen send period replaces the 10 or 5 above at the start and at every evaluation. A chosen look-ahead replaces the computed one, rounded up to a whole number of send periods and held at 250 or below, so `/FrameSendRate 7` with `/MaxAhead 30` plays `7/35`. With only a send period chosen, the look-ahead still follows the round trip. The master keeps sending timing events, and every one carries the chosen values. A chosen option plays gamemd's timing in the CnCNet lobby even where the adaptive table is the default, because the adaptive table has no fixed values.
+A chosen send period replaces the 10 or 5 above at the start and at every evaluation. A chosen look-ahead replaces the computed one, rounded up to a whole number of send periods and held at 250 or below, so `/FrameSendRate 7` with `/MaxAhead 30` plays `7/35`. With only a send period chosen, the look-ahead still follows the round trip; in the built-in CnCNet lobby it follows the [measured look-ahead](#measured-look-ahead) instead of the formula above. The master keeps sending timing events, and every one carries the chosen values. A chosen option plays gamemd's timing in the CnCNet lobby even where the adaptive table is the default, because the adaptive table has no fixed values.
 
 A match without a choice is unchanged.
+
+### Measured look-ahead
+
+When the host of a built-in CnCNet room chose a send period and no look-ahead, under protocol 2, the look-ahead is the smallest whole number of send periods that holds half the worst round trip, 50 ms more for jitter, and one send period. It is never below three send periods (4 frames at a send period of 1) and never above 250 frames. A rise applies in full at the next evaluation. A fall happens only when the look-ahead for 1.25 times the round trip is lower too. The master evaluates at frames 64 and 128 as well as every 256 frames, and waits until every player has reported a round trip.
+
+At 60 frames per second and a send period of 3, every round trip up to 100 ms gives 9 frames, 150 ms. gamemd's formula gives 15 frames for a 76 ms round trip.
+
+The match starts from the host's ping to the tunnel, taken twice as the round trip, when the host's lobby picked the tunnel from the tunnel list. Without that ping it starts with gamemd's look-ahead above, 60 frames at game speed 0 through a tunnel. The room writes the setting and the estimate into every player's launch file as `MeasuredMaxAhead` and `StartRoundTrip`, so every machine starts with the same values.
 
 ### Protocol 0
 

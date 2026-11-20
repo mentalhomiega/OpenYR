@@ -689,6 +689,64 @@ namespace
 	}
 
 
+	// The built-in CnCNet lobby's measured look-ahead: the one-way trip plus 50 ms, plus one send period, at least the
+	// TIMING event's floor; a fall needs 1.25 x the round trip, plus the 50 ms, to allow it too.
+	void Test_Measured_Max_Ahead(void)
+	{
+		using namespace NetTiming;
+
+		// The real match: 76 ms at 60 FPS with send period 3. gamemd's formula gave 3/15; the measured one gives 3/9.
+		Expect("gamemd gives 3/15 for 76 ms at 60 FPS under send period 3",
+			Gamemd_Timing_Settings(76, 60, 60, HostTimingChoice{3, 0}) == (TimingSettings{3, 15}));
+		Expect("the measured look-ahead gives 3/9 for 76 ms at 60 FPS",
+			Measured_Timing_Settings(76, 60, 60, HostTimingChoice{3, 0}) == (TimingSettings{3, 9}));
+		Expect("the measured start for 76 ms is 3/9", Measured_Timing_Settings(76, 60, 0, HostTimingChoice{3, 0}) == (TimingSettings{3, 9}));
+		// 38 + 50 ms is 5.28 frames, so 6, plus one send period.
+		Expect_Equal("76 ms at send period 1 gives 7", Measured_Max_Ahead(76, 60, 1, 0), 7u);
+		Expect_Equal("100 ms at send period 1 gives 7", Measured_Max_Ahead(100, 60, 1, 0), 7u);
+		Expect_Equal("101 ms at send period 3 passes the floor", Measured_Max_Ahead(101, 60, 3, 0), 12u);
+		Expect_Equal("no round trip gives the floor", Measured_Max_Ahead(0, 60, 3, 0), 9u);
+		// 100 + 50 ms is 9 frames, plus 3 is 12.
+		Expect_Equal("200 ms at send period 3 gives 12", Measured_Max_Ahead(200, 60, 3, 0), 12u);
+		Expect_Equal("200 ms at 30 FPS gives 9", Measured_Max_Ahead(200, 30, 3, 0), 9u);
+		Expect_Equal("a rise is taken at once", Measured_Max_Ahead(400, 60, 3, 9), 18u);
+		// 90 ms: the rise value is 9, but 1.25 x 90 = 113 ms and 100 ms more need 7 + 3 = 10, so 12, and 12 stays.
+		Expect_Equal("a fall inside the margin keeps the look-ahead", Measured_Max_Ahead(90, 60, 3, 12), 12u);
+		Expect_Equal("a fall past the margin is taken", Measured_Max_Ahead(60, 60, 3, 12), 9u);
+		Expect_Equal("a fall stops at the larger margin", Measured_Max_Ahead(120, 60, 3, 30), 12u);
+		Expect_Equal("the ceiling is 250 at send period 10", Measured_Max_Ahead(65534, 60, 10, 0), 250u);
+		Expect_Equal("the ceiling is 249 at send period 3", Measured_Max_Ahead(65534, 60, 3, 0), 249u);
+
+		Expect("a chosen look-ahead wins", Measured_Timing_Settings(76, 60, 9, HostTimingChoice{3, 30}) == (TimingSettings{3, 30}));
+		Expect("without a chosen send period gamemd's applies",
+			Measured_Timing_Settings(76, 60, 0) == (TimingSettings{10, 30}) && Measured_Timing_Settings(76, 30, 0) == (TimingSettings{5, 15}));
+
+		bool all_valid = true;
+		bool covers = true;
+		bool lowest = true;
+		for (Milliseconds rtt : {0u, 17u, 50u, 76u, 83u, 150u, 300u, 1000u, 5000u, 65534u}) {
+			for (unsigned int rate : {60u, 45u, 30u, 20u, 10u, 1u}) {
+				for (unsigned int period = 1; period <= 10; ++period) {
+					for (unsigned int current : {0u, 4u, 9u, 30u, 60u, 250u}) {
+						TimingSettings const next = Measured_Timing_Settings(rtt, rate, current, HostTimingChoice{period, 0});
+						all_valid = all_valid && next.FrameSendRate == period && Timing_Settings_Are_Valid(next);
+						// The look-ahead holds the one-way trip, 50 ms and a send period, up to the ceiling.
+						std::uint64_t const needed = ((static_cast<std::uint64_t>(rtt) + 100) * rate + 1999) / 2000 + period;
+						covers = covers && (next.MaxAhead >= needed || next.MaxAhead + period > MAXIMUM_MAX_AHEAD);
+					}
+					// From nothing, one send period less would not cover it or would pass under the floor.
+					unsigned int const start = Measured_Max_Ahead(rtt, rate, period, 0);
+					lowest = lowest && (start == Host_Max_Ahead_For(0, period)
+						|| start - period < ((static_cast<std::uint64_t>(rtt) + 100) * rate + 1999) / 2000 + period);
+				}
+			}
+		}
+		Expect("every measured setting is valid and keeps the send period", all_valid);
+		Expect("every measured look-ahead covers the trip and one send period", covers);
+		Expect("the measured start is the lowest whole number of send periods that covers it", lowest);
+	}
+
+
 	void Test_Host_Choice(void)
 	{
 		using namespace NetTiming;
@@ -1591,6 +1649,7 @@ int main(void)
 	Test_Speed_Reaches_Frame_Rate();
 	Test_Gamemd_Timing();
 	Test_Host_Choice();
+	Test_Measured_Max_Ahead();
 	Test_Census();
 	Test_Rungs();
 	Test_Connection_Quality();

@@ -28,6 +28,16 @@ namespace NetTiming
 		}
 
 
+		// Frames a one-way trip takes at the rate, for the round trip raised by headroom_quarters quarters of itself,
+		// plus extra_milliseconds on the one-way trip.
+		std::uint64_t One_Way_Frames(Milliseconds round_trip, unsigned int frame_rate, unsigned int headroom_quarters,
+			Milliseconds extra_milliseconds = 0)
+		{
+			std::uint64_t const adjusted = Divide_Round_Up(std::uint64_t{round_trip} * (4 + headroom_quarters), 4) + 2ull * extra_milliseconds;
+			return(Divide_Round_Up(adjusted * std::clamp(frame_rate, 1u, 60u), 2000));
+		}
+
+
 		constexpr Milliseconds Clamp_Rto(std::uint64_t value)
 		{
 			return(static_cast<Milliseconds>(std::clamp<std::uint64_t>(value, MINIMUM_RTO, MAXIMUM_RTO)));
@@ -250,12 +260,7 @@ namespace NetTiming
 	{
 		target_fps = std::clamp(target_fps, 1u, 60u);
 
-		std::uint64_t adjusted = worst_round_trip;
-		if (require_headroom) {
-			adjusted = Divide_Round_Up(adjusted * 5, 4);
-		}
-
-		std::uint64_t const one_way_frames = Divide_Round_Up(adjusted * target_fps, 2000);
+		std::uint64_t const one_way_frames = One_Way_Frames(worst_round_trip, target_fps, require_headroom ? 1u : 0u);
 		// A rung must cover one-way flight time plus a complete send period.
 		for (unsigned int rung = MINIMUM_TIMING_RUNG; rung < MAXIMUM_TIMING_RUNG; rung++) {
 			TimingSettings const settings = Settings_For_Rung(rung);
@@ -620,6 +625,33 @@ namespace NetTiming
 			? choice.FrameSendRate : Gamemd_Frame_Send_Rate(frame_rate);
 		unsigned int const max_ahead = Gamemd_Max_Ahead(Round_Trip_Ticks(worst_round_trip), frame_rate, frame_send_rate,
 			current_max_ahead, GAMEMD_LATENCY_STAGE);
+		return(Apply_Host_Choice(TimingSettings{frame_send_rate, max_ahead}, choice));
+	}
+
+
+	unsigned int Measured_Max_Ahead(Milliseconds round_trip, unsigned int frame_rate, unsigned int frame_send_rate,
+		unsigned int current_max_ahead)
+	{
+		frame_send_rate = std::clamp(frame_send_rate, MINIMUM_TIMING_RUNG, MAXIMUM_TIMING_RUNG);
+		// The same cover the adaptive table asks of a rung: the one-way trip plus a complete send period.
+		auto const needed = [&](unsigned int headroom_quarters) {
+			std::uint64_t const frames = One_Way_Frames(round_trip, frame_rate, headroom_quarters, MEASURED_JITTER_MARGIN) + frame_send_rate;
+			return(Host_Max_Ahead_For(static_cast<unsigned int>(std::min<std::uint64_t>(frames, MAXIMUM_MAX_AHEAD)), frame_send_rate));
+		};
+		unsigned int const rise = needed(0);
+		if (current_max_ahead <= rise) {
+			return(rise);
+		}
+		return(Host_Max_Ahead_For(std::min(current_max_ahead, needed(MEASURED_FALL_HEADROOM_QUARTERS)), frame_send_rate));
+	}
+
+
+	TimingSettings Measured_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead,
+		HostTimingChoice choice)
+	{
+		unsigned int const frame_send_rate = Host_Frame_Send_Rate_Is_Valid(choice.FrameSendRate)
+			? choice.FrameSendRate : Gamemd_Frame_Send_Rate(frame_rate);
+		unsigned int const max_ahead = Measured_Max_Ahead(worst_round_trip, frame_rate, frame_send_rate, current_max_ahead);
 		return(Apply_Host_Choice(TimingSettings{frame_send_rate, max_ahead}, choice));
 	}
 

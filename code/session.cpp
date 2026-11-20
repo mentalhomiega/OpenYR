@@ -647,6 +647,10 @@ NetTiming::TimingSettings SessionClass::Network_Start_Timing(void) const
 	if (NetworkTimingAdaptive) {
 		return(NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG));
 	}
+	if (NetworkMeasuredMaxAhead && NetworkStartRoundTrip != 0) {
+		return(NetTiming::Measured_Timing_Settings(NetworkStartRoundTrip, NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed), 0,
+			NetworkTimingChoice));
+	}
 	return(NetTiming::Apply_Host_Choice(NetTiming::Gamemd_Start_Settings(Options.GameSpeed, NetworkThroughTunnel), NetworkTimingChoice));
 }
 
