@@ -259,6 +259,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `alliance <house>` | queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame |
 | `tab` | writes the sidebar tab shown, how many items each tab lists, and the object pending placement |
 | `placement` | writes the object pending placement, the cell its cursor is on, how many cells of its footprint are marked, and whether the pointer is over the tactical view and over the map |
+| `placementmarks` | writes whether the placement squares are drawn flat and at which height level, then for each marked cell of the footprint its own height and slope and the height level its square is drawn at |
 | `windowpress x y` | moves the pointer to that window pixel and presses the left button there, as the start of a drag does |
 | `windowrelease x y` | moves the pointer to that window pixel and releases the left button there, as the end of a drag does |
 | `windowcell <click\|press\|move\|release> x y [dx dy]` | `windowclick`, `windowpress`, `windowmove` or `windowrelease` at the window pixel of the centre of that cell under the current view, moved by dx dy window pixels. The pixel is read when the step runs, so a script follows the cell through a zoom or a scroll, and in a window larger than the frame it is the pixel the frame pixel covers |
@@ -341,6 +342,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `glideclock` | times zoom glides by game frames instead of real time, for recordings |
 | `overlaypresent` | marks the UI overlay changed and runs the window message handler, which presents the frame if the refresh interval allows. It is the present a window message makes between draws |
 | `helptext <id>` | writes the tooltip text the map gives for the mouse position now, or `(none)` |
+| `combatfirst <0\|1>` | Turns the `CombatSelectionFirst` setting off or on for the rest of the run, and writes the setting |
 | `holdmove <0\|1>` | Turns `MissileLaunchHoldsMove` off or on for the rest of the run, and writes the setting |
 | `hoverat x y` | moves the pointer to the centre of that cell, as `windowmove` does, so the object there is hovered from the next frame, and writes the pointer position |
 | `infstate <TypeID>` | writes each soldier of that type with its cell, sequence, stage, shape, facing, whether it is prone, mission, height, fear, whether its type turns as a jump jet, and the direction to its target or -1 |
@@ -358,7 +360,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `pitch <dir256> x y` | sets the barrel pitch of the player's objects on that cell to that direction in 256 steps, 64 level and 0 straight up, and writes each |
 | `planes` | writes each aircraft on the map with its cell, mission and passenger count |
 | `playanim <AnimTypeID> x y` | plays one loop of that animation over the cell |
-| `raise x y width height level` | sets the ground height of that block of cells to the level, so a test can put a cliff under a building. Cells off the map are skipped, and the rest are not redrawn or re-zoned |
+| `raise x y width height level [slope]` | sets the ground height of that block of cells to the level, so a test can put a cliff under a building. A fifth number sets the slope shape of the cells too, where it is left alone otherwise. Cells off the map are skipped, and the rest are not redrawn or re-zoned |
 | `repairmission <TypeID>` | puts the player's foot objects of that type on the repair mission, so the depot search of `UnitClass::Do_MISSION_REPAIR` runs |
 | `scriptedzoom <0\|1>` | Turns the scripted scene zoom option off or on, and writes the setting |
 | `sceneheight <map pixels>` | sets the rules' `ScriptedCameraHeight`, the height of map a scripted scene shows, for the rest of the run |

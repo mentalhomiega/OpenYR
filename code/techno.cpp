@@ -6695,6 +6695,28 @@ bool TechnoClass::Is_Weapon_Equipped(void) const
 }
 
 
+/// <summary>
+/// Reports whether a selection box should treat this object as a fighter.
+/// An object is one when it has a weapon and is not an ore or vein harvester or an engineer; a
+/// harvester that carries a gun is still a miner to the player. Gamemd has no such test: this is
+/// OpenYR's own rule for the CombatSelectionFirst option.
+/// </summary>
+bool TechnoClass::Is_Combat_Unit(void) const
+{
+	if (!Is_Weapon_Equipped()) {
+		return(false);
+	}
+	if (RTTI == RTTI_UNIT) {
+		UnitTypeClass const * type = static_cast<UnitClass const *>(this)->Class;
+		return(!type->IsToHarvest && !type->IsToVeinHarvest);
+	}
+	if (RTTI == RTTI_INFANTRY) {
+		return(!static_cast<InfantryClass const *>(this)->Class->IsEngineer);
+	}
+	return(true);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Can_Repair -- Determines if the object can and should be repaired.             *
  *                                                                                             *

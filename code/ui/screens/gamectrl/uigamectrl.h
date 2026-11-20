@@ -36,6 +36,8 @@ class UIGameControlsServiceClass
 		virtual void Set_Alt_To_Rally(bool on) = 0;
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
 		virtual void Set_Aircraft_Body_Pick(bool on) = 0;
+		virtual void Set_Flat_Placement_Grid(bool on) = 0;
+		virtual void Set_Combat_Selection_First(bool on) = 0;
 		virtual void Set_Sidebar_Sorting(bool on) = 0;
 		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
@@ -77,6 +79,8 @@ struct UIGameControlsState
 	bool AltToRally = false;
 	bool SimulateUnfocused = false;
 	bool AircraftBodyPick = true;
+	bool FlatPlacementGrid = true;
+	bool CombatSelectionFirst = true;
 	bool SidebarSorting = false;
 	bool DebugMode = false;
 	bool RecordReplays = false;

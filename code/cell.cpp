@@ -1849,8 +1849,9 @@ InfantryClass * CellClass::Cell_Infantry(bool bridge) const
 /// <param name="xpoint">The pixel position to draw the cell at.</param>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 /// <param name="zeroalpha">Should the cursor be drawn with the zero alpha blend?</param>
+/// <param name="flat_level">The height level to draw at, with the flat shape, in place of this cell's own height and slope; -1 draws the cell as gamemd does.</param>
 /// <returns>bool; May the pending building be placed on this cell?</returns>
-bool CellClass::Draw_Placement_Cursor(Point2D const & xpoint, Rect const & cliprect, bool zeroalpha)
+bool CellClass::Draw_Placement_Cursor(Point2D const & xpoint, Rect const & cliprect, bool zeroalpha, int flat_level)
 {
 	Point2D point;
 	point.X = ISO_TILE_PIXEL_W / 2;
@@ -1871,10 +1872,12 @@ bool CellClass::Draw_Placement_Cursor(Point2D const & xpoint, Rect const & clipr
 		 * Compute the vertical draw offsets. The cursor is lifted according to
 		 * the cell's height level and nudged up further on ramp (sloped) cells.
 		 */
-		int lift = LEVEL_PIXEL_H_1 * Height;
+		bool const flat = flat_level >= 0;
+		int const ramp = flat ? 0 : Ramp;
+		int lift = LEVEL_PIXEL_H_1 * (flat ? flat_level : Height);
 		point.Y = -1 - lift;
 		int height_offset = -2 - lift;
-		if (Ramp) {
+		if (ramp) {
 			height_offset -= 10;
 		}
 
@@ -1942,7 +1945,7 @@ bool CellClass::Draw_Placement_Cursor(Point2D const & xpoint, Rect const & clipr
 				0, point + xpoint, cliprect, flags, 0, height_offset);
 		} else {
 			Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet *)DisplayClass::PlacementShapes,
-				Ramp + 1, point + xpoint, cliprect, flags, 0, height_offset);
+				ramp + 1, point + xpoint, cliprect, flags, 0, height_offset);
 		}
 	}
 

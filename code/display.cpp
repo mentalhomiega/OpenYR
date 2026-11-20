@@ -189,6 +189,8 @@ void const * DisplayClass::PlacementShapes;
 DisplayClass::TacticalClass DisplayClass::TacButton;
 
 void Bandbox_Selection_Callback(ObjectClass *object);
+static std::vector<ObjectClass *> BandCaught;
+static void Select_Band_Caught(void);
 
 
 /***********************************************************************************************
@@ -2322,7 +2324,9 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 			}
 
 			Rect const panel = Modern_Panel_View_Rect();
+			BandCaught.clear();
 			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback, panel.Is_Valid() ? &panel : NULL);
+			Select_Band_Caught();
 			TechnoClass::Reset_Action_Line_Timer();
 
 			IsRubberBand = false;
@@ -2479,6 +2483,7 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 /// every object inside the band. Only the player's own selectable objects are taken, and
 /// buildings are passed over unless they are of the sort that can undeploy into a unit. A slave
 /// owned by a Slave Miner is passed over too, as gamemd's rubber band callback (0x4AC2B0) refuses it.
+/// The objects are only collected here; Select_Band_Caught selects them once the whole band is known.
 /// </summary>
 /// <param name="object">The object that the rubber band has caught.</param>
 void Bandbox_Selection_Callback(ObjectClass *object)
@@ -2498,13 +2503,29 @@ void Bandbox_Selection_Callback(ObjectClass *object)
 			}
 			if (selectable) {
 				if (!object->IsInLimbo) {
-					if (object->Select()) {
-						AllowVoice = false;
-					}
+					BandCaught.push_back(object);
 				}
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Selects the objects the rubber band caught.
+/// Unarmed objects such as ore miners and engineers are left out when the band also caught a
+/// combat unit and CombatSelectionFirst is on. Gamemd selects every object the band catches.
+/// </summary>
+static void Select_Band_Caught(void)
+{
+	std::vector<bool> const kept = Combat_Selection_Kept(BandCaught);
+	for (size_t index = 0; index < BandCaught.size(); index++) {
+		if (kept[index] && BandCaught[index]->Select()) {
+			AllowVoice = false;
+		}
+	}
+	BandCaught.clear();
+	AllowVoice = true;
 }
 
 

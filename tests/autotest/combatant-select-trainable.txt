@@ -1,0 +1,19 @@
+; The Select Combatants command (CombatantSelect, P by default). gamemd's combatant test (0x7325C0) accepts a player's object that is
+; not a structure, whose type reads Trainable=yes and that can be selected now (0x6FC030); it does not look at weapons. With the
+; stock rules the unarmed engineer, Chrono Miner and MCV are Trainable=no, so the command picks the GI (E1) and the Grizzly (MTNK)
+; and leaves them out; it does this whatever CombatSelectionFirst says.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/combatant-select-trainable.txt -Width 1280 -Height 720 -Seconds 60 -Filter "AUTOTEST|Exception"
+30 view 56 32
+35 reveal
+40 grantunit E1 60 40
+41 grantunit ENGINEER 61 40
+42 grantunit CMIN 62 40
+43 grantunit MTNK 60 42
+44 grantunit AMCV 61 42
+50 combatfirst 0
+60 command CombatantSelect
+70 selected
+80 combatfirst 1
+90 command CombatantSelect
+100 selected
+110 quit

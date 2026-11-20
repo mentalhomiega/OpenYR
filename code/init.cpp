@@ -6752,7 +6752,9 @@ class CombatantSelectCommandClass : public CommandClass
 
 		static bool Is_Combatant(TechnoClass * techno)
 		{
-			return(techno->House->Is_Player_Control() && techno->What_Am_I() != RTTI_BUILDING && techno->Is_Weapon_Equipped());
+			// As gamemd's combatant test (0x7325C0): a unit, not a structure, whose type is Trainable and that can be selected now.
+			return(techno->House->Is_Player_Control() && techno->What_Am_I() != RTTI_BUILDING && techno->TClass->IsTrainable
+				&& techno->SlaveOwner == NULL && !techno->IsDeactivated);
 		}
 
 		inline static std::vector<TechnoClass *> InView;

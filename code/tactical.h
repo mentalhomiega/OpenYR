@@ -26,6 +26,7 @@ template<class T> class DynamicVectorClass;
 class CellClass;
 class Cell;
 class HouseClass;
+class ObjectClass;
 class RGBClass;
 class ShadowControlClass;
 class ShapeSet;
@@ -69,6 +70,10 @@ class ShadowControlClass
 		Rect Unknown6;
 		int Unknown7;
 };
+
+// Which of the objects a selection box caught stay in the selection. With CombatSelectionFirst on, unarmed objects drop out
+// when the box also caught a combat unit; otherwise every object stays.
+std::vector<bool> Combat_Selection_Kept(std::vector<ObjectClass *> const & caught);
 
 struct DirtyAreaStruct
 {
@@ -243,6 +248,8 @@ class Tactical : public AbstractClass
 		 */
 		void Draw_Placement(bool drawtrans);
 		void Draw_Placement_Range(void);
+		int Placement_Flat_Level(void) const;
+		int Placement_Mark_Level(Cell const & cell) const;
 		void Draw_Super_Range(void);
 		void Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color);
 		void Draw_Range_Ring_Pixels(Coord const & center, int radius, RGBClass const & color);

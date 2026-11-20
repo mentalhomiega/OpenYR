@@ -2099,6 +2099,25 @@ static void Placement_Step(StepType const &)
 }
 
 
+// Writes the height level each marked cell of the placement footprint is drawn at, beside the cell's own height and slope.
+static void Placement_Marks_Step(StepType const &)
+{
+	if (Map.CursorSize == NULL || Map.ZoneCell == CELL_NONE) {
+		DebugString("AUTOTEST placementmarks none\n");
+		return;
+	}
+	int const flat_level = TacticalMap->Placement_Flat_Level();
+	DebugString("AUTOTEST placementmarks flat %d level %d\n", (int)(flat_level >= 0), flat_level);
+	for (Cell const * ptr = Map.CursorSize; *ptr != REFRESH_EOL; ptr++) {
+		Cell const cell = Cell(Map.ZoneCell + Map.ZoneOffset + *ptr);
+		if (Map.In_Radar(cell) && Map[cell].IsCursorHere) {
+			DebugString("AUTOTEST placementmarks cell %d,%d height %d ramp %d drawn at %d\n", cell.X, cell.Y,
+				(int)Map[cell].Height, (int)Map[cell].Ramp, TacticalMap->Placement_Mark_Level(cell));
+		}
+	}
+}
+
+
 // The techno on a cell for the probes: the ground occupier if there is one, else a flying object over the cell.
 static TechnoClass * Techno_Over_Cell(Cell const & cell)
 {
@@ -4300,15 +4319,22 @@ static void Raise_Step(StepType const & step)
 	int const width = Number(step.Words, 4, 0);
 	int const height = Number(step.Words, 5, 0);
 	int const level = Number(step.Words, 6, 0);
+	int const ramp = Number(step.Words, 7, -1);
 	for (int y = top; y < top + height; y++) {
 		for (int x = left; x < left + width; x++) {
 			Cell const cell(x, y);
 			if (Map.Is_Valid(cell)) {
 				Map[cell].Height = (char)level;
+				if (ramp >= 0) {
+					Map[cell].Ramp = ramp;
+				}
 			}
 		}
 	}
 	DebugString("AUTOTEST   raise %d,%d %dx%d to level %d\n", left, top, width, height, level);
+	if (ramp >= 0) {
+		DebugString("AUTOTEST   raise slope %d\n", ramp);
+	}
 }
 
 
@@ -7255,6 +7281,13 @@ static void Holdmove_Step(StepType const & step)
 }
 
 
+static void Combatfirst_Step(StepType const & step)
+{
+	Options.CombatSelectionFirst = step.Argument != "0";
+	DebugString("AUTOTEST combatfirst %d\n", (int)Options.CombatSelectionFirst);
+}
+
+
 static void Record_Step(StepType const & step)
 {
 	RecordInterval = std::max(0, step.Argument_Int());
@@ -8280,6 +8313,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"modes", Modes_Step},
 		{"sidebarbuttons", Sidebar_Buttons_Step},
 		{"placement", Placement_Step},
+		{"placementmarks", Placement_Marks_Step},
 		{"modsig", Mod_Signature_Step},
 		{"stockcheck", Stock_Check_Step},
 		{"previewtime", Preview_Time_Step},
@@ -8546,6 +8580,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wall", Wall_Step},
 		{"ewall", Ewall_Step},
 		{"holdmove", Holdmove_Step},
+		{"combatfirst", Combatfirst_Step},
 		{"record", Record_Step},
 		{"fps", Fps_Step},
 		{"dump", Dump_Step},
