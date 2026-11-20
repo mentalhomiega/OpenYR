@@ -306,6 +306,10 @@ int StateCRCInterval = 0;
 std::string SpeedProbeType;
 int SpeedProbeInterval = 0;
 
+// The types the sample step logs and the frames between its logs, 0 when it is off.
+std::vector<std::string> SampleTypes;
+int SampleInterval = 0;
+
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
 
@@ -1104,6 +1108,41 @@ static void Speed_Probe(StepType const & step)
 	SpeedProbeType = step.Argument;
 	SpeedProbeInterval = std::max(0, step.X);
 	Log_Speed_Probe();
+}
+
+
+/// <summary>
+/// Logs one line for each object of the sampled types on the map, whoever owns it: its exact position in leptons,
+/// strength, mission number and raw body and turret facings. The gamemd comparison harness reads the same values
+/// from Yuri's Revenge, so the fields and their units must stay as they are. Reading the state does not change it.
+/// </summary>
+static void Log_Samples(void)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {
+			return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
+				[&](std::string const & name) {return(Is_Techno_Named(techno, name));}));
+		},
+		[&](TechnoClass * techno) {
+			Coord const at = techno->Center_Coord();
+			DebugString("AUTOTEST sample frame %d id %d type %s house %s x %d y %d z %d health %d mission %d facing %d turret %d\n",
+				Frame, techno->ID, techno->TClass->Name(), techno->House->Class->Name(), at.X, at.Y, at.Z, (int)techno->Strength,
+				(int)techno->Get_Mission(), techno->PrimaryFacing.Current().As_Int() & 0xFFFF,
+				techno->SecondaryFacing.Current().As_Int() & 0xFFFF);
+		});
+}
+
+
+// sample <TypeID> <interval>: adds the type to the sampled types, which are logged on every frame that is a multiple
+// of the interval. An interval of 0 stops the samples and clears the types.
+static void Sample_Step(StepType const & step)
+{
+	SampleInterval = std::max(0, step.X);
+	if (SampleInterval == 0) {
+		SampleTypes.clear();
+		return;
+	}
+	SampleTypes.push_back(step.Argument);
 }
 
 
@@ -8373,6 +8412,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"shape", Shape_Step},
 		{"swaim", Swaim_Step},
 		{"speed", Speed_Probe},
+		{"sample", Sample_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
 		{"scatter", Scatter_Step},
@@ -9120,6 +9160,10 @@ void AutoTest_Frame(void)
 
 	if (SpeedProbeInterval > 0 && (Frame % SpeedProbeInterval) == 0) {
 		Log_Speed_Probe();
+	}
+
+	if (SampleInterval > 0 && (Frame % SampleInterval) == 0) {
+		Log_Samples();
 	}
 }
 
