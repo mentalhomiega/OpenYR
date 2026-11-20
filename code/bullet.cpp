@@ -803,20 +803,19 @@ void BulletClass::Fly_Ballistic(Coord & coord, bool & forced, bool & collided, I
 	}
 
 	/*
-	 * A projectile that is still flying detonates anyway if it passed close
-	 * enough to somebody to count as a hit. The firer and its allies are
-	 * ignored.
+	 * A projectile that passes within half a cell of somebody bursts, on that object unless the projectile is
+	 * Inaccurate, and skips the checks below. The firer and its allies are ignored (BulletClass::Update, 0x4678F8
+	 * to 0x467A10).
 	 */
-	if (!forced) {
-		TechnoClass * techno = Map[coord].Cell_Techno();
-		if (Payback == NULL || techno != Payback) {
-			if (techno != NULL && (Payback == NULL || !Payback->House->Is_Ally(techno))) {
-				if (coord.Gamemd_Distance_To(techno->PositionCoord) < CELL_LEPTON / 2) {
-					forced = true;
-					impact = IMPACT_NORMAL;
-					coord = techno->PositionCoord;
-				}
+	TechnoClass * techno = Map[coord].Cell_Techno();
+	if (techno != NULL && techno != Payback && (Payback == NULL || !Payback->House->Is_Ally(techno))) {
+		if (coord.Gamemd_Distance_To(techno->PositionCoord) < CELL_LEPTON / 2) {
+			forced = true;
+			impact = IMPACT_NORMAL;
+			if (!Class->IsInaccurate) {
+				coord = techno->PositionCoord;
 			}
+			return;
 		}
 	}
 
