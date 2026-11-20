@@ -8399,6 +8399,46 @@ int TechnoClass::Get_Z_Fudge_Cliff(void) const
 }
 
 
+// The object whose draw a ZAdjustOnceScope is open for, and the adjustment it has worked out so far.
+static TechnoClass const * ZAdjustOnceObject = NULL;
+static bool ZAdjustOnceKnown = false;
+static int ZAdjustOnceValue = 0;
+
+ZAdjustOnceScope::ZAdjustOnceScope(TechnoClass const * object) :
+	OuterObject(ZAdjustOnceObject),
+	OuterKnown(ZAdjustOnceKnown),
+	OuterValue(ZAdjustOnceValue)
+{
+	ZAdjustOnceObject = object;
+	ZAdjustOnceKnown = false;
+}
+
+ZAdjustOnceScope::~ZAdjustOnceScope()
+{
+	ZAdjustOnceObject = OuterObject;
+	ZAdjustOnceKnown = OuterKnown;
+	ZAdjustOnceValue = OuterValue;
+}
+
+
+/// <summary>
+/// Fetches the depth adjustment for a blit of this object's drawing.
+/// Inside a ZAdjustOnceScope for this object, the first call works the value out and the others
+/// repeat it. Anywhere else it is Get_Z_Adjust.
+/// </summary>
+int TechnoClass::Draw_Z_Adjust(void) const
+{
+	if (ZAdjustOnceObject != this) {
+		return(Get_Z_Adjust());
+	}
+	if (!ZAdjustOnceKnown) {
+		ZAdjustOnceValue = Get_Z_Adjust();
+		ZAdjustOnceKnown = true;
+	}
+	return(ZAdjustOnceValue);
+}
+
+
 /// <summary>
 /// Fetches this object's draw depth adjustment.
 /// This routine biases the object's depth so that it sorts sensibly against whatever it is
@@ -9064,7 +9104,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	// The GPU composes the pieces of the scratch surface itself, so the software leaves it empty.
 	if (!(gpu_draws && composited)) {
 		GpuDraw_Voxel_Cloak(Visual_Character() != VISUAL_NORMAL, (flags & SHAPE_PREDATOR) ? predoffset : -1);
-		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Draw_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
 	}
 	if (gpu && !composited) {
 		GpuDraw_Voxel_End();
@@ -9114,7 +9154,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 		// With GpuVoxels the shadow takes the place of the cached blit (Techno_Blit_Voxel) and needs its gradient; the ground gradient's depth equals the ground's, so a shadow on flat ground would fail the depth test everywhere.
 		ZGradientType const gradient = (GpuDraw_Voxels_Wanted() && !TClass->IsDisableShadowCache) ? Get_Z_Gradient() : ZGRAD_GROUND;
 		ShadowOnceScope once;
-		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust(), gradient);
+		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Draw_Z_Adjust(), gradient);
 	}
 	GpuDraw_Voxel_End();
 
@@ -9162,7 +9202,7 @@ void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Poin
 	}
 
 	if (blitter != NULL) {
-		RLE_Blit(*LogicalSurface, cliprect, dest, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
+		RLE_Blit(*LogicalSurface, cliprect, dest, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Draw_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
 	}
 }
 

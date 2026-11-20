@@ -2958,14 +2958,14 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 		rect.Height = 32;
 		source_rect = UnitCompositeDirtyRect;
 		source_rect.Height = 32;
-		Bit_Blit(surface, cliprect, rect, *LogicalSurface, LogicalSurface->Get_Rect(), source_rect, *blitter, Get_Z_Adjust() - (UnitCompositeDirtyRect.Height - 32) / 3, ZGRAD_GROUND, brightness, predoffset);
+		Bit_Blit(surface, cliprect, rect, *LogicalSurface, LogicalSurface->Get_Rect(), source_rect, *blitter, Draw_Z_Adjust() - (UnitCompositeDirtyRect.Height - 32) / 3, ZGRAD_GROUND, brightness, predoffset);
 		rect.Y += 32;
 		rect.Height = UnitCompositeDirtyRect.Height - 32;
 		source_rect = Rect(UnitCompositeDirtyRect.X, UnitCompositeDirtyRect.Y + 32, UnitCompositeDirtyRect.Width, UnitCompositeDirtyRect.Height);
 		source_rect.Height -= 32;
-		Bit_Blit(surface, cliprect, rect, *LogicalSurface, LogicalSurface->Get_Rect(), source_rect, *blitter, Get_Z_Adjust(), ZGRAD_90DEG, brightness, predoffset);
+		Bit_Blit(surface, cliprect, rect, *LogicalSurface, LogicalSurface->Get_Rect(), source_rect, *blitter, Draw_Z_Adjust(), ZGRAD_90DEG, brightness, predoffset);
 	} else {
-		Bit_Blit(surface, cliprect, rect, *LogicalSurface, LogicalSurface->Get_Rect(), UnitCompositeDirtyRect, *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+		Bit_Blit(surface, cliprect, rect, *LogicalSurface, LogicalSurface->Get_Rect(), UnitCompositeDirtyRect, *blitter, Draw_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
 	}
 
 
@@ -3021,7 +3021,7 @@ bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect c
 	}
 
 	BSurface bsurface(entry.Width, entry.Height, 1, entry.Data);
-	RLE_Blit(surface, cliprect, rect, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, 0, NULL, Point2D());
+	RLE_Blit(surface, cliprect, rect, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Draw_Z_Adjust(), Get_Z_Gradient(), brightness, 0, NULL, Point2D());
 	return(true);
 }
 
@@ -3037,6 +3037,9 @@ bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect c
 /// <param name="brightness">The lighting level to draw the unit at.</param>
 void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightness) const
 {
+	// The shadow, hull, turret and barrel blits all take the one depth adjustment.
+	ZAdjustOnceScope const z_adjust_once(this);
+
 	// gamemd's UnitClass::DrawAsVXL (0x73B470) halves the body's brightness while the vehicle is deactivated. A
 	// turreted vehicle is shaded once when it is blitted, so the whole vehicle is darkened here.
 	if (IsDeactivated) {

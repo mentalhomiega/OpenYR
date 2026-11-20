@@ -837,6 +837,7 @@ class TechnoClass :	public RadioClass,
 		void Stop_Turret_Sound(void);
 		virtual int Get_Collateral_Damage(void) const;
 		virtual int Get_Z_Adjust(void) const;
+		int Draw_Z_Adjust(void) const;
 		bool Is_Z_Fudge_Bridge(void) const;
 		bool Was_Z_Fudge_Bridge(void) const;
 		int Get_Z_Fudge_Column(void) const;
@@ -1154,6 +1155,27 @@ class TechnoClass :	public RadioClass,
 		void Release_Dependents_On_Death(TechnoClass * source);
 		void Play_Death_Voices(WarheadTypeClass const * warhead);
 		void Spawn_Death_Debris(void);
+};
+
+/// <summary>
+/// Gives every blit of one object's drawing the same depth adjustment. A vehicle's hull, turret,
+/// barrel and shadow each ask for it, and nothing that decides it changes between them, so the
+/// first ask works it out and the rest read it. Only open one where that holds: an aircraft is
+/// lowered to the ground for its shadow, so its shadow and body must not share a scope.
+/// </summary>
+class ZAdjustOnceScope
+{
+	public:
+		explicit ZAdjustOnceScope(TechnoClass const * object);
+		~ZAdjustOnceScope();
+
+		ZAdjustOnceScope(ZAdjustOnceScope const &) = delete;
+		ZAdjustOnceScope & operator=(ZAdjustOnceScope const &) = delete;
+
+	private:
+		TechnoClass const * OuterObject;
+		bool OuterKnown;
+		int OuterValue;
 };
 
 inline bool TechnoClass::Is_Allowed_To_Leave_Map(void) const { return(false); }
