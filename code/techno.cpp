@@ -5860,6 +5860,14 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	BuildingClass * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(this) : NULL;
 
 	int max_speed = weapon->MaxSpeed;
+
+	// A projectile with no rate of turn leaves fast enough to carry 1.2 times the flat distance to the target at 45
+	// degrees, as measured when it is fired, rather than the weapon's whole range (TechnoClass::Fire, 0x6FE53A, calls
+	// WeaponTypeClass 0x773070, which calls 0x48AB90).
+	if (weapon->Bullet != NULL && weapon->Bullet->ROT == 0) {
+		double const gravity = weapon->Bullet->IsFloater ? Get_Floater_Gravity() : Rule->Gravity;
+		max_speed = Calculate_Projectile_Speed(Point2D(target_coord - fire_coord).Gamemd_Length(), gravity);
+	}
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->IsBright);
 	if (bullet == NULL) {
 		return(NULL);
