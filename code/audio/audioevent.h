@@ -103,6 +103,58 @@ enum AudioEventState {
 };
 
 
+// What became of a request, as the pool reports it to an observer.
+enum class AudioEventFate : uint8_t {
+	STARTED,          // a voice took the sequence; reported again for each cycle of a delayed loop
+	DELAYED,          // waiting out its pre-delay
+	QUEUED,           // Control=QUEUE: waiting for a voice
+	REFUSED_LIMIT,    // the type's Limit held and no event of the type was quieter
+	REFUSED_BUDGET,   // the effect budget held and no effect was weaker
+	REFUSED_VOICE,    // every mixer voice was in use, or the mixer took no command
+	REFUSED_SOUND,    // none of the type's sounds could be loaded
+	REFUSED_EVENT,    // every event slot was in use
+	CUT_LIMIT,        // ended to make room under the type's Limit for the event By
+	CUT_BUDGET,       // its voice was taken for the event By
+	STOPPED,          // the game stopped, faded or ended it
+	FINISHED,         // its voice played to the end
+	LIVE              // already playing or waiting when Report_Live was called
+};
+
+char const * Audio_Event_Fate_Name(AudioEventFate fate);
+
+
+// One report. Sounds holds the type's sound names in the order the voice plays
+// them, or is empty for a raw clip, a stream, or an event that never started.
+struct AudioEventReportClass {
+	AudioEventFate Fate;
+	AudioHandle Handle;
+	AudioHandle By;
+	AudioEventTypeClass const * Type;   // null for a raw clip or a stream
+	AudioGroupType Group;
+	int Priority;
+	float Level;                        // the event's own level: type volume, request volume and volume shift
+	float Pan;
+	float Pitch;
+	int Voice;
+	bool Stream;
+	char const * Sounds[AUDIO_MAX_SEQUENCE];
+	unsigned SoundCount;
+	unsigned LoopStart;
+	unsigned LoopEnd;
+	int Cycles;
+};
+
+
+// Receives the pool's reports on the game thread, while the pool is inside the
+// call that caused them; it must not call back into the pool.
+class AudioEventObserverClass
+{
+	public:
+		virtual ~AudioEventObserverClass(void) = default;
+		virtual void Report(AudioEventReportClass const & report) = 0;
+};
+
+
 class AudioEventPoolClass
 {
 	public:
@@ -118,6 +170,13 @@ class AudioEventPoolClass
 		void Shutdown(void);
 
 		void Set_Random(AudioRandomProc proc, void * context);
+
+		// With no observer, which is the default, nothing is reported.
+		void Set_Observer(AudioEventObserverClass * observer) { Observer = observer; }
+
+		// Reports every event playing or waiting now, so a log that begins now can
+		// tell what it hears.
+		void Report_Live(void);
 
 		// Voices the SFX and SYSTEM groups may hold at once; streams are outside it.
 		void Set_Budget(int channels);
@@ -199,9 +258,11 @@ class AudioEventPoolClass
 		void Release_Voice(EventClass & event);
 		void Release_Pins(EventClass & event);
 		void Reap_Voices(unsigned now);
-		void Kill(EventClass & event, float fade);
+		void Kill(EventClass & event, float fade, AudioEventFate fate = AudioEventFate::STOPPED, EventClass const * by = nullptr);
 		void Finish(EventClass & event);
 		AudioSampleClass * Pin(EventClass & event, unsigned sound);
+		AudioHandle Handle_Of(EventClass const & event) const;
+		void Report(EventClass const & event, AudioEventFate fate, EventClass const * by = nullptr);
 
 		enum { DEFAULT_BUDGET = 16 };
 
@@ -209,6 +270,7 @@ class AudioEventPoolClass
 		uint32_t VoiceGenerations[AUDIO_MAX_VOICES] = {};
 		AudioMixerClass * Mixer = nullptr;
 		AudioClipProviderClass * Clips = nullptr;
+		AudioEventObserverClass * Observer = nullptr;
 		AudioRandomProc RandomProc = nullptr;
 		void * RandomContext = nullptr;
 		unsigned Seed = 0x1234567u;

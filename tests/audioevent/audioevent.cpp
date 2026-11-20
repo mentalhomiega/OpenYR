@@ -1010,6 +1010,70 @@ void Test_Unit_Voice_Budget(void)
 }
 
 
+// Keeps every report the pool makes.
+class RecorderClass : public AudioEventObserverClass
+{
+	public:
+		void Report(AudioEventReportClass const & report) override
+		{
+			Fates.push_back(report.Fate);
+			Handles.push_back(report.Handle);
+			Bys.push_back(report.By);
+			Sounds.push_back(report.SoundCount > 0 ? report.Sounds[0] : "");
+		}
+
+		std::vector<AudioEventFate> Fates;
+		std::vector<AudioHandle> Handles;
+		std::vector<AudioHandle> Bys;
+		std::vector<std::string> Sounds;
+};
+
+
+void Test_Observer(void)
+{
+	RigClass rig;
+	RecorderClass recorder;
+
+	AudioEventTypeClass & type = rig.Type("OBS", 2, SOUND_CONTROL_RANDOM);
+	type.Limit = 1;
+	AudioHandle unseen = rig.Pool.Start(type, AUDIO_GROUP_SFX, 0.5f, 0.0f);
+	Check(!unseen.Is_Null(), "observer: a start before the observer");
+	rig.Pool.Stop(unseen);
+	rig.Tick(10);
+
+	rig.Pool.Set_Observer(&recorder);
+	AudioHandle quiet = rig.Pool.Start(type, AUDIO_GROUP_SFX, 0.5f, 0.0f);
+	AudioHandle loud = rig.Pool.Start(type, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	AudioHandle refused = rig.Pool.Start(type, AUDIO_GROUP_SFX, 0.2f, 0.0f);
+	Check(refused.Is_Null(), "observer: the quieter third is refused");
+	Check(recorder.Fates.size() == 4, "observer: start, cut, start and refusal reported");
+	if (recorder.Fates.size() == 4) {
+		Check(recorder.Fates[0] == AudioEventFate::STARTED && recorder.Handles[0] == quiet, "observer: the first start names its handle");
+		Check(recorder.Sounds[0] == "OBS0", "observer: the start names the sound picked");
+		Check(recorder.Fates[1] == AudioEventFate::CUT_LIMIT && recorder.Handles[1] == quiet && recorder.Bys[1] == loud, "observer: the cut names the event that took its place");
+		Check(recorder.Fates[2] == AudioEventFate::STARTED && recorder.Handles[2] == loud, "observer: the louder start");
+		Check(recorder.Fates[3] == AudioEventFate::REFUSED_LIMIT, "observer: the refusal gives the limit as its reason");
+	}
+
+	for (int i = 0; i < 4; i++) {
+		rig.Tick(50);
+	}
+	Check(recorder.Fates.back() == AudioEventFate::FINISHED && recorder.Handles.back() == loud, "observer: a sound that plays out is reported finished");
+
+	AudioHandle live = rig.Pool.Start(type, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	size_t before = recorder.Fates.size();
+	rig.Pool.Report_Live();
+	Check(recorder.Fates.size() == before + 1 && recorder.Fates.back() == AudioEventFate::LIVE && recorder.Handles.back() == live, "observer: the live event is listed");
+	rig.Pool.Stop(live);
+	Check(recorder.Fates.back() == AudioEventFate::STOPPED, "observer: a stop is reported");
+
+	rig.Pool.Set_Observer(nullptr);
+	before = recorder.Fates.size();
+	rig.Pool.Start(type, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	Check(recorder.Fates.size() == before, "observer: nothing is reported once it is removed");
+}
+
+
 int main(void)
 {
 	Test_One_Shot();
@@ -1030,6 +1094,7 @@ int main(void)
 	Test_Unchanged_Retargets();
 	Test_Lost_Changes();
 	Test_Shutdown_Releases();
+	Test_Observer();
 
 	std::printf("%d checks, %d failures\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);
