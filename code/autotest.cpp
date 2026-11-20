@@ -7844,12 +7844,20 @@ static void Aistrike_Step(StepType const & step)
 }
 
 
-// cellattack x y tx ty: the object on cell x,y, whoever owns it, attacks what stands on cell tx,ty. A test with several
-// objects of one type gives each its own target this way.
+// The object on the ground of the cell, or else on the bridge deck over it.
+static TechnoClass * Ground_Or_Deck_Techno(Cell const & cell)
+{
+	TechnoClass * techno = Map[cell].Cell_Techno();
+	return(techno != NULL ? techno : Map[cell].Cell_Techno(Point2D(0, 0), true));
+}
+
+
+// cellattack x y tx ty: the object on cell x,y, whoever owns it, attacks what stands on cell tx,ty, on the ground or else on
+// a bridge deck. A test with several objects of one type gives each its own target this way.
 static void Cellattack_Step(StepType const & step)
 {
-	TechnoClass * attacker = Map[Cell(step.Argument_Int(), step.X)].Cell_Techno();
-	TechnoClass * target = Map[Cell(Number(step.Words, 4, 0), Number(step.Words, 5, 0))].Cell_Techno();
+	TechnoClass * attacker = Ground_Or_Deck_Techno(Cell(step.Argument_Int(), step.X));
+	TechnoClass * target = Ground_Or_Deck_Techno(Cell(Number(step.Words, 4, 0), Number(step.Words, 5, 0)));
 	DebugString("AUTOTEST cellattack %s -> %s\n", attacker != NULL ? attacker->TClass->Name() : "(none)", target != NULL ? target->TClass->Name() : "(none)");
 	if (attacker != NULL && target != NULL) {
 		attacker->Assign_Target(target);

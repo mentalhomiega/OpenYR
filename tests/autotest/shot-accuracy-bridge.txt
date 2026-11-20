@@ -1,0 +1,50 @@
+; Shot accuracy on a high bridge: the seven computer firers of shot-accuracy.txt stand on Potomac's west bank and fire
+; at three unarmed player vehicles that have driven onto the north bridge deck, five cells east (the Howitzer three cells
+; further back). Firers that are out of range drive closer first. scripts/shot_accuracy.py turns the SHOTTRACE lines into a
+; hit-rate row; the bridgeobj lines show the targets on the deck (onbridge 1). BridgeDestroy=no keeps the deck up.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/shot-accuracy-bridge.txt -Mods src-agent33/tests/autotest/shot-accuracy-rules -Map Potomac.mmx -Seconds 300 -Uncapped -Settings "[Settings]`nBridgeDestroy=no" -Filter "SHOTTRACE|AUTOTEST( cellattack|   bridgeobj)|Exception"
+; block bridge 77 46
+30 reveal
+40 own TRUCKA 80 48
+50 move TRUCKA 82 48
+40 own TRUCKB 80 49
+50 move TRUCKB 82 49
+40 own CAR 80 50
+50 move CAR 82 50
+400 enemy HTNK 77 46
+400 enemy MTNK 77 47
+400 enemy HTK 77 48
+400 enemy FV 77 49
+400 enemy E1 77 50
+400 enemy TTNK 77 51
+400 enemy HOWI 74 52
+405 bridgeobj TRUCKA
+405 bridgeobj TRUCKB
+405 bridgeobj CAR
+410 shotlog 1
+420 cellattack 77 46 82 48
+420 cellattack 77 47 82 48
+420 cellattack 77 48 82 48
+420 cellattack 77 49 82 49
+420 cellattack 77 50 82 50
+420 cellattack 77 51 82 50
+420 cellattack 74 52 82 50
+1300 cellattack 77 46 82 48
+1300 cellattack 77 47 82 48
+1300 cellattack 77 48 82 48
+1300 cellattack 77 49 82 49
+1300 cellattack 77 50 82 50
+1300 cellattack 77 51 82 50
+1300 cellattack 74 52 82 50
+2200 cellattack 77 46 82 48
+2200 cellattack 77 47 82 48
+2200 cellattack 77 48 82 48
+2200 cellattack 77 49 82 49
+2200 cellattack 77 50 82 50
+2200 cellattack 77 51 82 50
+2200 cellattack 74 52 82 50
+3100 shotlog 0
+3100 bridgeobj TRUCKA
+3100 bridgeobj TRUCKB
+3100 bridgeobj CAR
+3101 quit
