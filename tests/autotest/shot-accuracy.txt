@@ -5,6 +5,8 @@
 ; last. Each projectile that bursts writes a SHOTTRACE line; scripts/shot_accuracy.py turns them into a hit-rate table by block.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/shot-accuracy.txt -Mods src-agent33/tests/autotest/shot-accuracy-rules -Map XMP08T2.MAP -Seconds 300 -Uncapped -Filter "SHOTTRACE|AUTOTEST cellattack|Exception"
 ; Each block line gives its name and the cell of the firer row's first firer; the target column is three cells east.
+; Expected on standing targets: nearly every shot hits, except the HTNK and MTNK in cliffup and the FV in cliffdown. Those go
+; off on the cliff edge and miss in Yuri's Revenge too (measured on XMP08T2's own cliffs).
 ; block flat 75 90
 ; block uphill 75 81
 ; block downhill 75 99
@@ -61,50 +63,50 @@
 10 raise 73 99 1 1 6 0
 10 raise 74 99 1 1 6 0
 10 raise 75 99 1 1 6 0
-10 raise 76 99 1 1 6 3
-10 raise 77 99 1 1 5 3
+10 raise 76 99 1 1 5 3
+10 raise 77 99 1 1 4 3
 10 raise 71 100 1 1 6 0
 10 raise 72 100 1 1 6 0
 10 raise 73 100 1 1 6 0
 10 raise 74 100 1 1 6 0
 10 raise 75 100 1 1 6 0
-10 raise 76 100 1 1 6 3
-10 raise 77 100 1 1 5 3
+10 raise 76 100 1 1 5 3
+10 raise 77 100 1 1 4 3
 10 raise 71 101 1 1 6 0
 10 raise 72 101 1 1 6 0
 10 raise 73 101 1 1 6 0
 10 raise 74 101 1 1 6 0
 10 raise 75 101 1 1 6 0
-10 raise 76 101 1 1 6 3
-10 raise 77 101 1 1 5 3
+10 raise 76 101 1 1 5 3
+10 raise 77 101 1 1 4 3
 10 raise 71 102 1 1 6 0
 10 raise 72 102 1 1 6 0
 10 raise 73 102 1 1 6 0
 10 raise 74 102 1 1 6 0
 10 raise 75 102 1 1 6 0
-10 raise 76 102 1 1 6 3
-10 raise 77 102 1 1 5 3
+10 raise 76 102 1 1 5 3
+10 raise 77 102 1 1 4 3
 10 raise 71 103 1 1 6 0
 10 raise 72 103 1 1 6 0
 10 raise 73 103 1 1 6 0
 10 raise 74 103 1 1 6 0
 10 raise 75 103 1 1 6 0
-10 raise 76 103 1 1 6 3
-10 raise 77 103 1 1 5 3
+10 raise 76 103 1 1 5 3
+10 raise 77 103 1 1 4 3
 10 raise 71 104 1 1 6 0
 10 raise 72 104 1 1 6 0
 10 raise 73 104 1 1 6 0
 10 raise 74 104 1 1 6 0
 10 raise 75 104 1 1 6 0
-10 raise 76 104 1 1 6 3
-10 raise 77 104 1 1 5 3
+10 raise 76 104 1 1 5 3
+10 raise 77 104 1 1 4 3
 10 raise 71 105 1 1 6 0
 10 raise 72 105 1 1 6 0
 10 raise 73 105 1 1 6 0
 10 raise 74 105 1 1 6 0
 10 raise 75 105 1 1 6 0
-10 raise 76 105 1 1 6 3
-10 raise 77 105 1 1 5 3
+10 raise 76 105 1 1 5 3
+10 raise 77 105 1 1 4 3
 10 raise 82 86 12 9 4 0
 10 raise 83 87 1 1 4 2
 10 raise 84 87 1 1 4 2
@@ -421,50 +423,50 @@
 10 raise 18 46 1 1 6 0
 10 raise 19 46 1 1 6 0
 10 raise 20 46 1 1 6 0
-10 raise 21 46 1 1 6 3
-10 raise 22 46 1 1 5 3
+10 raise 21 46 1 1 5 3
+10 raise 22 46 1 1 4 3
 10 raise 16 47 1 1 6 0
 10 raise 17 47 1 1 6 0
 10 raise 18 47 1 1 6 0
 10 raise 19 47 1 1 6 0
 10 raise 20 47 1 1 6 0
-10 raise 21 47 1 1 6 3
-10 raise 22 47 1 1 5 3
+10 raise 21 47 1 1 5 3
+10 raise 22 47 1 1 4 3
 10 raise 16 48 1 1 6 0
 10 raise 17 48 1 1 6 0
 10 raise 18 48 1 1 6 0
 10 raise 19 48 1 1 6 0
 10 raise 20 48 1 1 6 0
-10 raise 21 48 1 1 6 3
-10 raise 22 48 1 1 5 3
+10 raise 21 48 1 1 5 3
+10 raise 22 48 1 1 4 3
 10 raise 16 49 1 1 6 0
 10 raise 17 49 1 1 6 0
 10 raise 18 49 1 1 6 0
 10 raise 19 49 1 1 6 0
 10 raise 20 49 1 1 6 0
-10 raise 21 49 1 1 6 3
-10 raise 22 49 1 1 5 3
+10 raise 21 49 1 1 5 3
+10 raise 22 49 1 1 4 3
 10 raise 16 50 1 1 6 0
 10 raise 17 50 1 1 6 0
 10 raise 18 50 1 1 6 0
 10 raise 19 50 1 1 6 0
 10 raise 20 50 1 1 6 0
-10 raise 21 50 1 1 6 3
-10 raise 22 50 1 1 5 3
+10 raise 21 50 1 1 5 3
+10 raise 22 50 1 1 4 3
 10 raise 16 51 1 1 6 0
 10 raise 17 51 1 1 6 0
 10 raise 18 51 1 1 6 0
 10 raise 19 51 1 1 6 0
 10 raise 20 51 1 1 6 0
-10 raise 21 51 1 1 6 3
-10 raise 22 51 1 1 5 3
+10 raise 21 51 1 1 5 3
+10 raise 22 51 1 1 4 3
 10 raise 16 52 1 1 6 0
 10 raise 17 52 1 1 6 0
 10 raise 18 52 1 1 6 0
 10 raise 19 52 1 1 6 0
 10 raise 20 52 1 1 6 0
-10 raise 21 52 1 1 6 3
-10 raise 22 52 1 1 5 3
+10 raise 21 52 1 1 5 3
+10 raise 22 52 1 1 4 3
 400 enemy HTNK 75 90
 400 own AMCV 78 90
 400 enemy MTNK 75 91
