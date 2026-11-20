@@ -554,6 +554,9 @@ void Main_Game(int argc, char * argv[])
  *=============================================================================================*/
 void Call_Back(void)
 {
+	// A recording of the mix advances with the game frames, so it comes before the clock is read.
+	AudioEngine.Game_Frame(Frame);
+
 	/*
 	**	Music and speech maintenance
 	*/

@@ -27,6 +27,21 @@ enum VoxControlType {
 };
 
 
+// What Submit did with a line, for the audio test log.
+struct VoxSubmitClass {
+	enum ResultType {
+		ADDED,              // the line waits its turn
+		PLAYING,            // dropped: it is the line playing
+		WAITING,            // dropped: it already waits
+		STANDARD_HELD       // dropped: a standard line of at least its priority holds the slot
+	};
+	ResultType Result = ADDED;
+	int Cleared = 0;        // lines an interrupt emptied out of the queue
+	int Replaced = -1;      // the standard line it replaced, or -1
+	int Evicted = -1;       // the line dropped to make room, or -1
+};
+
+
 class VoxQueueClass
 {
 	public:
@@ -36,8 +51,9 @@ class VoxQueueClass
 
 		// Returns true when the playing line must be cut for this one. A line
 		// already playing or waiting is not added again. When the queue is full
-		// the oldest of the lowest-priority lines is dropped.
-		bool Submit(int voice, int priority, VoxControlType control, int playing);
+		// the oldest of the lowest-priority lines is dropped. The outcome, when
+		// given, receives what happened to the line and to the lines waiting.
+		bool Submit(int voice, int priority, VoxControlType control, int playing, VoxSubmitClass * outcome = nullptr);
 
 		// Takes the next line to play. False when nothing waits.
 		bool Next(int & voice);

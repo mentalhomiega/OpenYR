@@ -20,6 +20,7 @@
 #include "_tactica.h"
 #include "ambient.h"
 #include "audio/audioengine.h"
+#include "audio/audiotrace.h"
 #include "ccini.h"
 #include "cell.h"
 #include "dbgprint.h"
@@ -190,6 +191,10 @@ AudioHandle VocClass::Play(float vol, int pan, bool no_attack, AudioGroupType gr
 	if (AudioEngine.Group_Gain(group) > 0.0f && vol > 0.0 && Can_Play() && AudioEngine.Is_Available()) {
 		return(AudioEngine.Play_Event(Type, group, Effect_Level(vol), Pan_Level(pan), no_attack));
 	}
+	if (AudioTrace.Is_On()) {
+		char const * reason = AudioEngine.Group_Gain(group) <= 0.0f ? "volume-zero" : (vol <= 0.0 ? "level-zero" : "cannot-play");
+		AudioTrace.Write("sfx", "dropped name=%s group=%s reason=%s", Name, Audio_Group_Name(group), reason);
+	}
 	return(AudioHandle());
 }
 
@@ -245,6 +250,9 @@ AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handl
 	}
 	if (LogSoundEffects) {
 		DebugString("Sound: %s\n", Voc_Name(voc));
+	}
+	if (AudioTrace.Is_On()) {
+		AudioTrace.Write("sfx", "request name=%s group=%s level=%.3f pan=%d", Voc_Name(voc), Audio_Group_Name(group), Effect_Level(volume), pan);
 	}
 	return(Play_Effect(voc, volume, pan, handle, group));
 }
@@ -357,6 +365,10 @@ AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle,
 
 	int pan;
 	float volume = Calculate_Volume_And_Pan(coord, sound.Type_Data(), pan);
+	if (AudioTrace.Is_On()) {
+		AudioTrace.Write("sfx", "%s name=%s group=%s cell=%d,%d level=%.3f pan=%d range=%d", volume > 0.0f ? "request" : "silent", Voc_Name(voc),
+			Audio_Group_Name(group), coord.As_Cell().X, coord.As_Cell().Y, volume, pan, sound.Type_Data().Range);
+	}
 	if (Stop_If_Silent(volume, handle)) {
 		return(AudioHandle());
 	}
@@ -435,6 +447,10 @@ AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * han
 	handle->Clear();
 	if (volume <= 0.0f || !(start || sound.Type_Data().Never_Ends())) {
 		return(AudioHandle());
+	}
+	if (AudioTrace.Is_On()) {
+		AudioTrace.Write("sfx", "place name=%s cell=%d,%d level=%.3f pan=%d range=%d attack=%d", Voc_Name(voc), coord.As_Cell().X, coord.As_Cell().Y,
+			volume, pan, sound.Type_Data().Range, (int)start);
 	}
 	*handle = sound.Play(volume, pan, !start);
 	return(*handle);
@@ -717,6 +733,18 @@ char const * Voc_Name(VocType voc)
 		return(Vocs[voc]->Name);
 	}
 	return("<none>");
+}
+
+
+int Voc_Count(void)
+{
+	return(Vocs.Count());
+}
+
+
+AudioEventTypeClass const * Voc_Type_Data(VocType voc)
+{
+	return(voc != VOC_NONE && voc < Vocs.Count() ? &Vocs[voc]->Type_Data() : nullptr);
 }
 
 

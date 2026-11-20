@@ -36,6 +36,8 @@ static char const * const ScreenshotsFolder = "Screenshots";
 
 static char const * const ReplaysFolder = "Replays";
 
+static char const * const AudioTestFolder = "AudioTest";
+
 static char const * const MusicFolder = "Music";
 
 
@@ -304,6 +306,16 @@ std::string Screenshot_Name(char const * filename)
 std::string Replay_Name(char const * filename)
 {
 	return(Own_Folder_Name(ReplaysFolder, filename));
+}
+
+
+/// <summary>
+/// Names a recording, log or decoded sound of the audio tests inside the AudioTest folder, making the folder on
+/// every call.
+/// </summary>
+std::string Audio_Test_Name(char const * filename)
+{
+	return(Own_Folder_Name(AudioTestFolder, filename));
 }
 
 

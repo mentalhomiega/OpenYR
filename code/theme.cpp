@@ -53,6 +53,7 @@
 #include "ccini.h"
 #include "ccrand.h"
 #include "audio/audioengine.h"
+#include "audio/audiotrace.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
 #include "globals.h"
@@ -497,6 +498,10 @@ bool ThemeClass::Start(ThemeType theme, bool fadein)
 	ThemeControl & control = *Themes[theme];
 	float level = Level(theme);
 	Current = AudioEngine.Open_Stream(Theme_File_Name(theme), AUDIO_GROUP_MUSIC, fadein ? 0.0f : level, Loops(theme));
+	if (AudioTrace.Is_On()) {
+		AudioTrace.Write("music", "%s theme=%s file=%s h=%u level=%.3f fadein=%d loop=%d", Current.Is_Null() ? "failed" : "start",
+			AudioTraceClass::Word(control.Name).c_str(), AudioTraceClass::Word(control.File).c_str(), Current.Raw(), level, (int)fadein, (int)Loops(theme));
+	}
 
 	/*
 	 * Stopping a score that never started does nothing, so recording one that
@@ -619,6 +624,9 @@ void ThemeClass::Stop(bool fade)
 		Discard_Interruption();
 		IsPaused = false;
 		if (!Current.Is_Finished()) {
+			if (AudioTrace.Is_On()) {
+				AudioTrace.Write("music", "stop h=%u fade=%d", Current.Raw(), fade ? FadeOutMs : 0);
+			}
 			if (fade) {
 				DebugString("Theme::Stop(%d) - Fading\n", Score);
 				Retire(FadeOutMs);
