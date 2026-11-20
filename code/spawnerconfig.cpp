@@ -46,7 +46,7 @@ char const * const READ_SETTINGS[] = {
 	"BuildOffAlly", "SuperWeapons", "GameSpeed", "MultiEngineer", "UnitCount", "AIPlayers", "AIDifficulty", "AlliesAllowed",
 	"GameMode", "HarvesterTruce", "FogOfWar", "MCVRedeploy", "AutoDeployMCV", "Seed", "TechLevel", "Firestorm",
 	"DifficultyModeHuman", "DifficultyModeComputer", "Port", "BindAddress", "ConnTimeout", "ReconnectTimeout", "TimingPolicy",
-	"FrameSendRate", "MaxAhead", "Protocol", "HostTiming", "QuickMatch", "SkipScoreScreen", "DifficultyBasedAINames",
+	"FrameSendRate", "MaxAhead", "Protocol", "HostTiming", "MeasuredMaxAhead", "StartRoundTrip", "QuickMatch", "SkipScoreScreen", "DifficultyBasedAINames",
 	"CoachMode", "AutoSurrender", "AttackNeutralUnits", "ScrapMetal", "ParallelPaths", "PlayMoviesInMultiplayer",
 	"CustomLoadScreen", "DifficultyName", "SyncLog", "CustomLoadScreenPos", "Name", "Color", "ColorRGB", "Side",
 	"IsSpectator", "Ip",
@@ -355,6 +355,10 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	if (Protocol != 2) {
 		crc(Protocol);
 	}
+	if (MeasuredMaxAhead) {
+		crc(MeasuredMaxAhead);
+		crc(StartRoundTrip);
+	}
 
 	for (bool flag : GlobalFlags) {
 		crc(flag);
@@ -614,6 +618,8 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 		TimingChoice.FrameSendRate = 0;
 	}
 	Protocol = host_timing && Protocol == 0 ? 0 : 2;
+	MeasuredMaxAhead = Spawn_Bool(ini, SETTINGS, "MeasuredMaxAhead", false) && TimingChoice.MaxAhead == 0 && Protocol == 2;
+	StartRoundTrip = MeasuredMaxAhead ? std::clamp(ini.Get_Int(SETTINGS, "StartRoundTrip", 0), 0, static_cast<int>(NetTiming::MAXIMUM_START_ROUND_TRIP)) : 0;
 
 	QuickMatch = Spawn_Bool(ini, SETTINGS, "QuickMatch", QuickMatch);
 	SkipScoreScreen = Spawn_Bool(ini, SETTINGS, "SkipScoreScreen", SkipScoreScreen);

@@ -1264,6 +1264,26 @@ void Test_Spawn(void)
 	chosen.erase("FrameSendRate");
 	chosen.erase("Protocol");
 	Check(Has(CnCNet_Spawn_Ini(match, chosen, "Guest", 40000, rules), "HostTiming=yes\nMaxAhead=40\nProtocol=2\n"), "spawn: a look-ahead alone leaves the send period out");
+	Check(!Has(chosen_ini, "MeasuredMaxAhead") && !Has(CnCNet_Spawn_Ini(match, chosen, "Guest", 40000, rules), "MeasuredMaxAhead"),
+		"spawn: a chosen look-ahead or protocol 0 keeps gamemd's look-ahead");
+	Check(!Has(ini, "MeasuredMaxAhead") && !Has(ini, "StartRoundTrip"), "spawn: no choice leaves the look-ahead to the timing policy");
+	std::map<std::string, std::string> period_only = options;
+	period_only["FrameSendRate"] = "3";
+	std::string const period_ini = CnCNet_Spawn_Ini(match, period_only, "Guest", 40000, rules);
+	Check(Has(period_ini, "HostTiming=yes\nFrameSendRate=3\nProtocol=2\nMeasuredMaxAhead=yes\nTimingPolicy=Gamemd\n"),
+		"spawn: a send period alone sets the measured look-ahead");
+	CnCNetMatchType pinged = match;
+	pinged.RoundTripMS = 80;
+	CnCNetMatchType pinged_read;
+	Check(CnCNet_Read_Match(CnCNet_Match_Info(pinged), pinged_read) && pinged_read.RoundTripMS == 80, "spawn: the round-trip estimate reads back");
+	Check(CnCNet_Match_Info(match).count("Ping") == 0 && read.RoundTripMS == 0, "spawn: no estimate sends no key");
+	std::map<std::string, std::string> far_info = CnCNet_Match_Info(pinged);
+	far_info["Ping"] = "99999";
+	Check(CnCNet_Read_Match(far_info, pinged_read) && pinged_read.RoundTripMS == 0, "spawn: an estimate out of range is none");
+	Check(Has(CnCNet_Spawn_Ini(pinged, period_only, "Guest", 40000, rules), "MeasuredMaxAhead=yes\nStartRoundTrip=80\n")
+		&& Has(CnCNet_Spawn_Ini(pinged, period_only, "Host", 40000, rules), "MeasuredMaxAhead=yes\nStartRoundTrip=80\n"),
+		"spawn: every machine writes the host's estimate");
+	Check(!Has(CnCNet_Spawn_Ini(pinged, options, "Guest", 40000, rules), "StartRoundTrip"), "spawn: the estimate needs the measured look-ahead");
 	std::map<std::string, std::string> bad = options;
 	bad["FrameSendRate"] = "99";
 	bad["MaxAhead"] = "2";

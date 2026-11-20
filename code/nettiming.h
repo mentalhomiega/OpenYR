@@ -319,6 +319,21 @@ namespace NetTiming
 	// An unset choice gives gamemd's own settings.
 	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead,
 		HostTimingChoice choice = {});
+	// The measured look-ahead (a launch file's MeasuredMaxAhead=yes) covers the one-way trip plus this margin, plus one
+	// send period. A fall is taken only when it also covers the round trip raised by a quarter, the adaptive table's
+	// drop headroom.
+	constexpr Milliseconds MEASURED_JITTER_MARGIN = 50;
+	constexpr unsigned int MEASURED_FALL_HEADROOM_QUARTERS = 1;
+	// The largest start round trip a launch file or lobby start message carries, in milliseconds.
+	constexpr Milliseconds MAXIMUM_START_ROUND_TRIP = 5000;
+	// The lowest look-ahead under the send period that covers the round trip as above, at least the smallest the
+	// TIMING event accepts and at most 250. A current look-ahead of 0 gives the rise value, as at the start.
+	unsigned int Measured_Max_Ahead(Milliseconds round_trip, unsigned int frame_rate, unsigned int frame_send_rate,
+		unsigned int current_max_ahead);
+	// The settings a master sends under the measured look-ahead: the chosen send period, or gamemd's for the rate.
+	// A chosen look-ahead wins over the measured one.
+	TimingSettings Measured_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead,
+		HostTimingChoice choice = {});
 	// Whole milliseconds a frame is armed for. gamemd truncates 1000 / rate and does not spread the remainder.
 	Milliseconds Gamemd_Frame_Wait(unsigned int rate);
 	// Extra milliseconds a frame waits for a peer that lags by lag_frames, at look-ahead 31 and up.

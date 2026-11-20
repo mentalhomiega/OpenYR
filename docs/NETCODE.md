@@ -7,6 +7,8 @@ Two policies pick FSR and MA:
 - **gamemd timing** is the default. It follows gamemd's online timing. The game speed sets the start values, and the master re-sets the look-ahead every 256 frames from the worst round trip. Online games (the spawner's game mode 4 here, `Session.Type == GAME_INTERNET`) and LAN games (mode 3, `GAME_IPX`) both use it.
 - **The adaptive table** is OpenYR's own policy. It is selected with `TimingPolicy=Adaptive` in a spawner launch file. See [Adaptive policy](#adaptive-policy).
 
+Under gamemd timing, a match from the built-in CnCNet lobby whose host chose a send period and no look-ahead takes its look-ahead from the measured round trip instead of gamemd's formula. See [Measured look-ahead](#measured-look-ahead).
+
 The timing event is the same for both. Only the master evaluates, so a machine's own choice of policy decides the events only while that machine is the master.
 
 This page covers protocol 2 (`COMM_PROTOCOL_MULTI_E_COMP`). Every assignment to `Session.CommProtocol` in this build uses it, so the protocol 0 and 1 branches do not run in a network game.
@@ -204,7 +206,7 @@ The host can fix the send period (FSR), the look-ahead (MA) or both for a match.
 
 - **Ranges.** FSR is 1 to 10. MA is 4 to 250. A value outside its range is refused by the command and passed over in a launch file. MA is rounded up to a whole number of send periods and held at or below 250, and it is at least `3 * FSR` (4 for FSR 1), the smallest the TIMING event accepts. FSR 7 with MA 30 plays 7/35.
 - **Start.** `Network_Start_Timing` puts the choice over the game-speed table. A chosen MA replaces the tunnel's extra 20 frames.
-- **Evaluation.** The master still evaluates every 256 frames. `Gamemd_Timing_Settings` uses the chosen FSR in place of the 10 or 5 and returns the chosen MA, so the TIMING event it sends repeats the choice. With only FSR chosen, MA still follows the round trip, aligned to the chosen FSR. A chosen option also applies to the never-measured round trip case (MA 250 under the chosen FSR).
+- **Evaluation.** The master still evaluates every 256 frames. `Gamemd_Timing_Settings` uses the chosen FSR in place of the 10 or 5 and returns the chosen MA, so the TIMING event it sends repeats the choice. With only FSR chosen, MA still follows the round trip, aligned to the chosen FSR: through gamemd's formula from a launch file, and through the [measured look-ahead](#measured-look-ahead) from the built-in CnCNet lobby. A chosen option also applies to the never-measured round trip case (MA 250 under the chosen FSR).
 - **Adaptive table.** It ignores the choice. The built-in CnCNet lobby writes `TimingPolicy=Gamemd` when the host chose anything.
 - **Identity.** A chosen value is part of the session identity, so the out-of-sync report shows a mismatch. The identity of a match without a choice is unchanged.
 - **Launch file defaults.** The CnCNet client forces `FrameSendRate=2` and `Protocol=0` in its game options and shows 7 and 2 as its host command defaults. A file with FSR 2 or 7, no `MaxAhead` and no `HostTiming=yes` is no choice, so stock-client games keep gamemd's timing. A host who wants exactly 2 or 7 through the stock client cannot get it; the built-in lobby writes `HostTiming=yes`.
@@ -213,6 +215,70 @@ The host can fix the send period (FSR), the look-ahead (MA) or both for a match.
 ### Protocol 0
 
 `Protocol=0` selects `COMM_PROTOCOL_SINGLE_NO_COMP`. The queue sends an uncompressed packet every frame, TIMING and NETWORK_REPORT events are refused, and the send period is 1. `Session::Reset_Network_Timing` sets MA to the chosen value, or to the game-speed start value, and the frame rate to the speed's rate. These stay for the match. Protocol 1 (single frame, compressed) is not offered.
+
+## Measured look-ahead
+
+A match from the built-in CnCNet lobby whose host chose a send period and no look-ahead (`/FrameSendRate` without `/MaxAhead`, under protocol 2) plays gamemd's timing with one change: the look-ahead follows the measured round trip instead of gamemd's formula. The lobby writes `MeasuredMaxAhead=yes` into every player's launch file. A typed `/MaxAhead` wins, and `/ProtocolVersion 0` turns it off. The stock CnCNet client never writes the key and LAN games never set it, so those games, and every match with no choice, keep the timing described above. The code is `NetTiming::Measured_Timing_Settings` and `NetTiming::Measured_Max_Ahead`.
+
+### Rule
+
+MA is the smallest whole number of send periods that holds the one-way trip, a 50 ms jitter margin (`MEASURED_JITTER_MARGIN`) and one send period. R is the worst smoothed round trip among seated players, in milliseconds, and F is the desired frame rate:
+
+- Needed frames: ceil((R / 2 + 50) × F / 1000) + FSR.
+- MA is that rounded up to whole send periods, at least the TIMING event's floor of 3 × FSR (4 at FSR 1), and at most 250 (`Host_Max_Ahead_For`).
+- A rise applies in full at the next evaluation. gamemd's limit of one send period per evaluation does not apply.
+- A fall must also hold for 1.25 × R, rounded up to a whole millisecond: MA falls to the value for 1.25 × R when that is below the current MA, and otherwise stays. The fall is staged as under [Applying a change](#applying-a-change).
+- FSR stays the host's.
+- The master evaluates at frames 64 and 128 as well as at every multiple of 256, so the start value is soon replaced. It skips an evaluation while a seated player has not reported a round trip, since a missing round trip would lower MA to the floor. A round trip that no connection has measured for 512 frames still gives MA 250.
+
+At 60 fps:
+
+| Round trip | FSR 1 | FSR 2 | FSR 3 | FSR 5 | gamemd's formula at FSR 3 |
+| --- | --- | --- | --- | --- | --- |
+| 40 ms | 6 (100 ms) | 8 (133 ms) | 9 (150 ms) | 15 (250 ms) | 12 |
+| 76 ms | 7 (117 ms) | 8 (133 ms) | 9 (150 ms) | 15 (250 ms) | 15 |
+| 100 ms | 7 (117 ms) | 8 (133 ms) | 9 (150 ms) | 15 (250 ms) | 15 |
+| 150 ms | 9 (150 ms) | 10 (167 ms) | 12 (200 ms) | 15 (250 ms) | 18 |
+| 220 ms | 11 (183 ms) | 12 (200 ms) | 15 (250 ms) | 15 (250 ms) | 21 |
+| 300 ms | 13 (217 ms) | 14 (233 ms) | 15 (250 ms) | 20 (333 ms) | 24 |
+
+An order waits MA frames plus up to FSR − 1 more for the next send frame. gamemd's column is the value after its rises; it climbs one send period per evaluation from the start value.
+
+### What we reused
+
+The cover is the adaptive table's: a rung must hold the one-way trip plus one send period, and never less than three send periods (`Select_Timing_Settings`). Both now compute the one-way trip with the same helper, and the fall's 1.25 × R is the adaptive table's drop headroom. The jitter margin is new. The early evaluation frames are the adaptive table's first two. We did not reuse the rung table itself, because a rung ties FSR to MA and the host has fixed FSR. Alignment, floor and ceiling come from `Host_Max_Ahead_For`, which a chosen look-ahead already uses.
+
+### Margin
+
+A machine may run until its frame reaches the oldest peer's last send frame plus MA (`Can_Advance`). That send frame is up to FSR − 1 frames old when it leaves the peer and a one-way trip old when it arrives. With both machines at one rate, MA must therefore exceed the one-way trip plus FSR − 1 frames, which the one send period covers. The 50 ms margin covers what the smoothed round trip does not show: single datagrams later than the average, and the wait loop, which checks again only after a tick and a map draw. In the real match the reported round trip moved between 75 and 99 ms, about 12 ms each way, and the relay runs below add up to 20 or 30 ms each way. A first version used a quarter of the round trip instead, which is 19 ms at 76 ms and shrinks on a short link although jitter does not; on the 100 ms relay link it chose 12 frames, and that run waited often. Rounding up to a whole send period adds up to FSR − 1 frames more. At FSR 3 and 60 fps, the floor of 9 frames (150 ms) holds every round trip up to 100 ms, which covers the real match.
+
+We did not size the margin to cover a lost datagram. A loss waits for the retransmission, at least 100 ms (`MINIMUM_RTO`) after the send, and the measured runs below show such waits at gamemd's 15 frames too. Covering them would cost every order the same time.
+
+### Start
+
+gamemd's start is the game-speed table plus 20 frames through a tunnel: 40 + 20 = 60 frames at speed 0, one second. A chosen FSR 3 keeps 60, since it is a whole number of send periods. The first evaluation is at frame 256, and its TIMING event goes out on the next send frame and executes 60 frames later, so the real match below played its first 318 frames at 60.
+
+With the measured look-ahead, the host's lobby sends its ping to the tunnel it took from the tunnel list. It sends twice that ping as the match's round-trip estimate (the `Ping` key of the start message), which takes each guest's leg to the tunnel to be as long as the host's. Every machine writes the estimate as `StartRoundTrip`, and the start settings are the rule above for that round trip at the game speed's frame rate. A lobby with no ping, because `Tunnel=` names the tunnel or the tunnel never answered, writes no estimate, and the match starts with gamemd's value. An estimate that is too low stalls the start until the evaluation at frame 64; one that is too high delays orders until then.
+
+### Same values on every machine
+
+Every machine writes `MeasuredMaxAhead` and `StartRoundTrip` from the host's room options and start message, so every machine starts with the same FSR and MA. Both keys are part of the session identity when `MeasuredMaxAhead` holds; the identity of every other match is unchanged. After the start, only the master evaluates and the TIMING event carries the result, as before.
+
+### No choice
+
+A host who chose nothing keeps the lobby's existing default, `TimingPolicy=Adaptive` (the `[CnCNet]` `TimingPolicy` setting in `RA2MD.INI`). The adaptive table already picks FSR and MA together from the measured round trip and starts on rung 2 (2/6, 100 ms at 60 fps), so we left the send period to it. With `TimingPolicy=Gamemd` in that setting, the match plays gamemd's timing exactly.
+
+### Waits in the real match
+
+These come from the host's log of a two-player match through the built-in lobby, at speed 0 with FSR 3 chosen (`DEBUG_19-11-2026_23-59-06.LOG`). The look-ahead was 60 frames to frame 318 and 15 frames (250 ms) after it, on a round trip of 75 to 99 ms.
+
+- 71 of the 834 reports carried a longest wait of 50 ms or more, up to 366 ms. A report carries the larger of its own and the previous report's longest wait, so each wait shows in two reports: about 36 waits in 14 minutes. Player 0, the host, reported 52 of the 71.
+- Waits are whole ticks of 1/60 second: 50 ms is 3 ticks and 133 ms is 8.
+- Player 0 reported a wait of 16 or 33 ms in 306 of its 417 reports. It ran a little faster than player 1 and sat at the look-ahead's edge, waiting a tick or two at most send frames. A machine at that edge has no slack, so every late frame or late packet from the other machine becomes a wait of its full length, whatever the look-ahead.
+- The waits of 50 ms or more are therefore most likely player 1's frames running long (a hitch on that machine) or a lost datagram waiting for its retransmission. A one-way trip of 40 ms cannot by itself account for a wait at a 250 ms look-ahead. The log has no packet timing, so it does not separate the two. The relay runs below with 20 ms of jitter and 1% loss show waits of 116 and 133 ms at gamemd's 15 frames.
+- The wait loop draws the map on each pass (`Wait_For_Players`), so a wait ends only after a draw, which can lengthen it by one draw at a high resolution.
+
+A lower look-ahead does not remove the slack that the leading machine never had, so these waits do not grow with it, except where jitter passes the margin.
 
 ## Launch file keys
 
@@ -224,6 +290,8 @@ The host can fix the send period (FSR), the look-ahead (MA) or both for a match.
 | `ConnTimeout` | Longest wait for loading progress. Default 3600 (60 s). It does not apply to frame stalls. |
 | `FrameSendRate`, `MaxAhead` | The host's send period (1 to 10) and look-ahead (4 to 250). See [Host choice](#host-choice). The CnCNet client's defaults (`FrameSendRate` 2 or 7 with no `MaxAhead`) count as no choice. |
 | `HostTiming` | `yes` takes `FrameSendRate`, `MaxAhead` and `Protocol` literally, including the client's default values. The built-in lobby writes it. |
+| `MeasuredMaxAhead` | `yes` plays the [measured look-ahead](#measured-look-ahead) under gamemd's timing. Read only without a chosen `MaxAhead` and under protocol 2. The built-in lobby writes it when the host chose a send period and no look-ahead. Part of the session identity when it holds. |
+| `StartRoundTrip` | The lobby's round-trip estimate in milliseconds, 0 to 5000, for the start look-ahead. Read only with `MeasuredMaxAhead=yes`, and then part of the session identity. |
 | `Protocol` | `0` plays protocol 0, only with `HostTiming=yes`. Any other value plays protocol 2. |
 | `ParallelPaths` | `yes` searches unit paths in batches on several threads ([Parallel path searches](PERFORMANCE.md#parallel-path-searches)). Every player's file must hold the same value. `yes` is part of the session identity; a file without the key, or with `no`, keeps the identity it had. |
 | `PreCalcMaxAhead` | Not read. |
@@ -259,6 +327,25 @@ We read the two tester logs from `tester-inbox\files\mp-host-1014` and `mp-thund
 **Would the change remove them?** Only partly, and we have not measured it on a real link. The new policy at speed 0 with an 83 ms round trip starts at 60 frames (1 s, through a tunnel) and drops to 30 frames (500 ms at 60 fps) at frame 256. The old look-ahead was 6 frames (200 ms at 30 fps). A copy's pause shorter than its look-ahead no longer stalls the other copy. A longer pause stalls the other copy only for the excess. On that estimate the host's 637 ms and 875 ms pauses would stall thunder for about 140 ms and 375 ms, where the old look-ahead would have given about 440 ms and 675 ms. These figures come from the horizon arithmetic. The loopback runs below contain no pause, so they do not test this case. With ±30 ms of jitter, the longest report wait fell from 50 ms to 0 ms, but the jitter is not the real link's, and one run each does not establish it.
 
 ## Measurements
+
+### Measured look-ahead runs
+
+These runs used `scripts/run_netsync.ps1 -Tunnel -RelayBuffer 2048 -GameSpeed 0 -FrameSendRate 3 -Seconds 120` with the XMP29U2 map and the `xmp29u2` order scripts. "Before" is the build without the measured look-ahead; "after" adds `-MeasuredMaxAhead -StartRoundTripMs 80`, which writes the keys the built-in lobby writes. Frames is the frames side A played in the 120 s. A wait is a report's longest wait; one wait shows in two reports. Each row is one run, and other games ran on the computer during some of them.
+
+| Relay hop | Run | Look-ahead | Order delay (frames) | Frames | Longest wait | Reports with 50 ms or more | Mean report wait |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 40 ms | Before | 60 to frame 318, then 15 | 15 to 17, 60 at the start | 7307 | 16 ms | 0 of 116 | 0.3 ms |
+| 40 ms | After | 9 throughout | 9 to 11 | 7402 | 0 ms | 0 of 118 | 0.0 ms |
+| 40 ± 20 ms, 1% loss | Before | 60 to frame 318, then 15 | 15 to 17, 60 at the start | 7109 | 133 ms | 2 of 114 | 2.6 ms |
+| 40 ± 20 ms, 1% loss | Before, again | 60 to frame 318, then 15 | 15 to 17, 60 at the start | 7089 | 116 ms | 12 of 114 | 10.2 ms |
+| 40 ± 20 ms, 1% loss | After | 9, then 12 from frame 777 | 9 to 14 | 7095 | 133 ms | 4 of 114 | 6.5 ms |
+| 40 ± 20 ms, 1% loss | After, again | 9, then 12 from frame 75 | 9 to 14 | 7393 | 216 ms | 8 of 118 | 11.1 ms |
+| 100 ± 30 ms, 2% loss | Before | 60 to frame 318, then 21 | 21 to 23, 60 at the start | 7372 | 200 ms | 6 of 118 | 8.0 ms |
+| 100 ± 30 ms, 2% loss | After | 9, then 15 from frame 75 | 9 to 17 | 7230 | 566 ms | 16 of 116 | 35.9 ms |
+
+Every run printed `IN SYNC`, and no order arrived too late. On the real match's link the order delay falls from 15 frames (250 ms) to 9 (150 ms) with no added waits. With 20 ms of jitter and 1% loss the waits of the two look-aheads overlap from run to run, and the loss waits reach 100 to 200 ms at either. On the 200 ms link with 30 ms of jitter and 2% loss the lower look-ahead waited about four times as long on average, for orders 6 frames sooner. Two more runs of the 40 ± 20 ms link with the measured look-ahead ran at 26 to 34 fps for their first 2000 frames on both copies, with the round trip reading 150 to 160 ms instead of about 110; other games were starting on the computer then, and a repeat ran at 62.5 fps throughout. We count those two as the computer's load, not the policy.
+
+A run with `-MeasuredMaxAhead` and no `-StartRoundTripMs` started at 60, as gamemd does. The reports sent at frame 32 arrived after frame 64, so the evaluation at frame 64 waited, and the one at frame 128 sent 3/9, which applied at frame 189. The `lookahead` order scripts (`tests/netsync/lookahead-side-a.txt` and `-b.txt`) with the estimate stayed at 9 frames, with delays of 9 to 11 frames and no wait.
 
 ### Latency runs
 
@@ -434,4 +521,6 @@ with the same frame model and values that every machine agrees on.
 - **Process-time guard.** gamemd computes the frame rate's process term only when `DAT_00afa400 & 0xffff` is above 4. Otherwise the decompile leaves the frame rate unset. We did not resolve what gamemd uses in that case.
 - **Packet timing in the tester logs.** The 754 ms and 936 ms gaps on thunder, and the host's ~190 ms frames around frame 124, have no recorded cause. A log of packet arrival times would show whether they are losses, retransmissions or a late send.
 - **Fall of the look-ahead.** gamemd applies a fall on execution. We stage it, and the staged horizon is shorter than gamemd's during the drain. Whether an immediate fall is safe on a real link is untested.
+- **The lobby's policy on each machine.** The built-in lobby writes `TimingPolicy` from each machine's own `[CnCNet]` setting when the host chose nothing. Two machines with different settings start with different look-aheads (2/6 against 10/60), so a guest could pass the host's orders before they arrive. The default setting is the same on every machine, so this needs an edited `RA2MD.INI`. Sending the host's policy in the start message would close it.
+- **Start estimate.** `StartRoundTrip` takes each guest's leg to the tunnel to equal the host's. A guest's own tunnel ping would need a new room message.
 - **Real links.** Every run here used loopback with a fixed 50 ms delay each way. We have not run jitter, loss or a real internet route under the new policy.

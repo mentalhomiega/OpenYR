@@ -145,7 +145,7 @@ CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & pl
 
 std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & match)
 {
-	return(std::map<std::string, std::string>{
+	std::map<std::string, std::string> info{
 		{"Seed", std::to_string(match.Seed)},
 		{"Tunnel", match.TunnelHost + ":" + std::to_string(match.TunnelPort)},
 		{"Names", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(seat.Name); })},
@@ -158,7 +158,11 @@ std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & mat
 		// last key first. ZEnd sorts after every other key and Count says how many seats the lists hold.
 		{"Count", std::to_string(match.Seats.size())},
 		{"ZEnd", "1"},
-	});
+	};
+	if (match.RoundTripMS > 0) {
+		info["Ping"] = std::to_string(match.RoundTripMS);
+	}
+	return(info);
 }
 
 
@@ -186,6 +190,10 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 		return(false);
 	}
 	match.TunnelPort = static_cast<uint16_t>(port);
+	// An older host sends no estimate, and one out of range is none.
+	auto const ping = info.find("Ping");
+	int const round_trip = ping != info.end() ? std::atoi(ping->second.c_str()) : 0;
+	match.RoundTripMS = round_trip > 0 && round_trip <= static_cast<int>(NetTiming::MAXIMUM_START_ROUND_TRIP) ? round_trip : 0;
 
 	std::vector<std::string> const names = Split_Parts(info.at("Names"), ',');
 	std::vector<std::string> const sides = Split_Parts(info.at("Sides"), ',');
@@ -227,6 +235,12 @@ NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::
 	network.Timing = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
 	network.Protocol = NetTiming::Host_Protocol_Is_Valid(protocol) ? protocol : 2;
 	return(network);
+}
+
+
+bool CnCNet_Measured_Max_Ahead(NetTiming::HostNetworkOptions const & network)
+{
+	return(network.Timing.FrameSendRate != 0 && network.Timing.MaxAhead == 0 && network.Protocol == 2);
 }
 
 
@@ -290,6 +304,12 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 			line("MaxAhead", std::to_string(network.Timing.MaxAhead));
 		}
 		line("Protocol", std::to_string(network.Protocol));
+		if (CnCNet_Measured_Max_Ahead(network)) {
+			line("MeasuredMaxAhead", "yes");
+			if (match.RoundTripMS > 0) {
+				line("StartRoundTrip", std::to_string(match.RoundTripMS));
+			}
+		}
 	}
 	// Only the host's choice counts, since the host sets the timing for every player.
 	// The host's send period and look-ahead are defined against gamemd's timing, so any choice plays that policy.

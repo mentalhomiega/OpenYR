@@ -158,6 +158,12 @@ class SpawnerConfigClass
 		NetTiming::HostTimingChoice TimingChoice;
 		// The network protocol the match plays: 2, or 0 when the host chose it.
 		int Protocol = 2;
+		// MeasuredMaxAhead=yes, which the built-in CnCNet lobby writes when its host chose a send period and no look-ahead:
+		// the look-ahead follows the measured round trip. It holds only without a chosen look-ahead and under protocol 2.
+		// StartRoundTrip is the lobby's round-trip estimate in milliseconds for the start look-ahead, 0 when it has none.
+		// Both are shared, so both are part of the session identity when the first is set.
+		bool MeasuredMaxAhead = false;
+		int StartRoundTrip = 0;
 
 		// A debugging aid that logs the frame check value each frame. It does not change the match,
 		// so it stays out of the session identity.

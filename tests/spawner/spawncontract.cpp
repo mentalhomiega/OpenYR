@@ -664,6 +664,38 @@ int main(void)
 	}
 
 	/*
+	 * The built-in CnCNet lobby's measured look-ahead and its start estimate are shared, so they are part of the
+	 * identity when set. A chosen look-ahead or protocol 0 turns the measured look-ahead off.
+	 */
+	{
+		char const period[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nProtocol=2\n";
+		char const measured[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nProtocol=2\nMeasuredMaxAhead=yes\nStartRoundTrip=80\n";
+		char const other_estimate[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nProtocol=2\nMeasuredMaxAhead=yes\nStartRoundTrip=120\n";
+		char const with_ahead[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nMaxAhead=30\nMeasuredMaxAhead=yes\nStartRoundTrip=80\n";
+		char const protocol_zero[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nProtocol=0\nMeasuredMaxAhead=yes\n";
+		char const estimate_alone[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nProtocol=2\nStartRoundTrip=80\n";
+		char const far[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=3\nMeasuredMaxAhead=yes\nStartRoundTrip=90000\n";
+
+		SpawnerConfigClass const a = Read(period, sizeof(period) - 1);
+		SpawnerConfigClass const b = Read(measured, sizeof(measured) - 1);
+		SpawnerConfigClass const c = Read(other_estimate, sizeof(other_estimate) - 1);
+		SpawnerConfigClass const d = Read(with_ahead, sizeof(with_ahead) - 1);
+		SpawnerConfigClass const e = Read(protocol_zero, sizeof(protocol_zero) - 1);
+		SpawnerConfigClass const f = Read(estimate_alone, sizeof(estimate_alone) - 1);
+		SpawnerConfigClass const g = Read(far, sizeof(far) - 1);
+
+		Check(!a.MeasuredMaxAhead && a.StartRoundTrip == 0, "a send period alone keeps gamemd's look-ahead");
+		Check(b.MeasuredMaxAhead && b.StartRoundTrip == 80, "MeasuredMaxAhead=yes reads with its start estimate");
+		Check(!d.MeasuredMaxAhead && d.StartRoundTrip == 0, "a chosen look-ahead turns the measured look-ahead off");
+		Check(!e.MeasuredMaxAhead, "protocol 0 turns the measured look-ahead off");
+		Check(!f.MeasuredMaxAhead && f.StartRoundTrip == 0, "a start estimate alone is not read");
+		Check(g.MeasuredMaxAhead && g.StartRoundTrip == 5000, "a start estimate is held to 5000 ms");
+		Check(a.Session_Identity_CRC() == f.Session_Identity_CRC(), "a start estimate alone leaves the identity alone");
+		Check(a.Session_Identity_CRC() != b.Session_Identity_CRC(), "the measured look-ahead moves the identity");
+		Check(b.Session_Identity_CRC() != c.Session_Identity_CRC(), "another start estimate moves the identity");
+	}
+
+	/*
 	 * The scenario flags are named by their number, and a load screen position is taken
 	 * whole or not at all.
 	 */

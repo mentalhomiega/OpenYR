@@ -496,7 +496,9 @@ bool CnCNetRoomServiceClass::Host_Command(char const * text)
 	if (result.Changed) {
 		NetworkOptions = trial;
 		if (!trial.Is_Default()) {
-			Note("A chosen option plays gamemd's timing for the whole match, with no adaptive changes.");
+			Note(CnCNet_Measured_Max_Ahead(trial)
+				? "A chosen send period plays gamemd's timing, with the look-ahead set from the measured round trip."
+				: "A chosen option plays gamemd's timing for the whole match, with no adaptive changes.");
 		}
 		Publish();
 	}
@@ -1025,6 +1027,7 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 {
 	// Tunnel= in the settings wins; otherwise the nearest tunnel from the master list.
 	std::string tunnel = Setup.Tunnel;
+	int tunnel_ping = 0;
 	if (tunnel.empty()) {
 		CnCNetTunnelChoiceType const choice = Setup.Choice != nullptr ? Setup.Choice->Poll(static_cast<int>(TheRoom.Players().size())) : CnCNetTunnelChoiceType();
 		if (!choice.Found) {
@@ -1032,6 +1035,7 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 			return(false);
 		}
 		tunnel = choice.Host + ":" + std::to_string(choice.Port);
+		tunnel_ping = choice.PingMS;
 		Note(choice.Text);
 	}
 	std::optional<HostPortText> const address = Split_Host_Port(tunnel);
@@ -1054,9 +1058,13 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 		}
 	}
 	std::mt19937 random{std::random_device{}()};
-	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, UI_Stock_Color_Count()),
+	CnCNetMatchType match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, UI_Stock_Color_Count()),
 		Map_Starts(Session.ScenarioFileName),
 		std::string(address->Host), static_cast<uint16_t>(port), random);
+	// Only the host's ping to the tunnel is known, so the guests' legs are taken to be as long as the host's.
+	if (tunnel_ping > 0) {
+		match.RoundTripMS = std::min(2 * tunnel_ping, static_cast<int>(NetTiming::MAXIMUM_START_ROUND_TRIP));
+	}
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
 		error = TheRoom.Take_Problem();
 		if (error.empty()) {

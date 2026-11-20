@@ -1,0 +1,66 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP: the built-in CnCNet lobby's measured look-ahead.
+; Side B runs lookahead-side-b.txt. Each order line moves the MCV, which reaches the other side through
+; the event queue, so the SYNC order lines give each order's delay. Orders on consecutive frames show the send-period
+; wait; the later ones come after the first evaluations at frames 64, 128 and 256.
+; Expect: MaxAhead is 9 at the start (StartRoundTrip=80) and stays 9 (no timing event), order delays of 9 to 11
+; frames, and IN SYNC. Without -MeasuredMaxAhead the same run starts at 60 and moves to 3/15 at frame 318.
+; Run: scripts/run_netsync.ps1 -GameExe <Game.exe> -DataDir <game data> -Tunnel -LatencyMs 40 -RelayBuffer 2048 -GameSpeed 0 -FrameSendRate 3 -MeasuredMaxAhead -StartRoundTripMs 80 -Seconds 120 -ScriptA tests/netsync/lookahead-side-a.txt -ScriptB tests/netsync/lookahead-side-b.txt
+1 log netsync side A: measured look-ahead orders
+12 order AMCV 54 97
+13 order AMCV 52 97
+14 order AMCV 54 97
+15 order AMCV 52 97
+16 order AMCV 54 97
+17 order AMCV 52 97
+18 order AMCV 54 97
+19 order AMCV 52 97
+20 order AMCV 54 97
+21 order AMCV 52 97
+22 order AMCV 54 97
+23 order AMCV 52 97
+24 order AMCV 54 97
+25 order AMCV 52 97
+26 order AMCV 54 97
+27 order AMCV 52 97
+28 order AMCV 54 97
+29 order AMCV 52 97
+30 order AMCV 54 97
+31 order AMCV 52 97
+32 order AMCV 54 97
+33 order AMCV 52 97
+34 order AMCV 54 97
+35 order AMCV 52 97
+36 order AMCV 54 97
+37 order AMCV 52 97
+38 order AMCV 54 97
+39 order AMCV 52 97
+40 order AMCV 54 97
+100 order AMCV 52 97
+250 order AMCV 54 97
+400 order AMCV 52 97
+550 order AMCV 54 97
+700 order AMCV 52 97
+850 order AMCV 54 97
+1000 order AMCV 52 97
+1150 order AMCV 54 97
+1300 order AMCV 52 97
+1450 order AMCV 54 97
+1600 order AMCV 52 97
+1750 order AMCV 54 97
+1900 order AMCV 52 97
+2050 order AMCV 54 97
+2200 order AMCV 52 97
+2350 order AMCV 54 97
+2500 order AMCV 52 97
+2650 order AMCV 54 97
+2800 order AMCV 52 97
+2950 order AMCV 54 97
+3100 order AMCV 52 97
+3250 order AMCV 54 97
+3400 order AMCV 52 97
+3550 order AMCV 54 97
+3700 order AMCV 52 97
+3850 order AMCV 54 97
+4000 order AMCV 52 97
+4100 select AMCV
+4120 command DeployObject
