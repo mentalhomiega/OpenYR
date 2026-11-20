@@ -79,6 +79,8 @@ class FactoryClass : public AbstractClass, private StageClass
 		void AI(void);
 		void Set(TechnoClass & object);
 		HouseClass * Get_House(void) {return(House);};
+		int Production_Rate(void) const {return(Fetch_Rate());};
+		int Balance_Due(void) const {return(Balance);};
 		char const * Name(void) {return("Factory");}
 
 		int Build_Rate(void) const;

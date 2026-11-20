@@ -310,6 +310,9 @@ int SpeedProbeInterval = 0;
 std::vector<std::string> SampleTypes;
 int SampleInterval = 0;
 
+// The frames between the sampleprod step's logs, 0 when it is off.
+int ProductionSampleInterval = 0;
+
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
 
@@ -1143,6 +1146,38 @@ static void Sample_Step(StepType const & step)
 		return;
 	}
 	SampleTypes.push_back(step.Argument);
+}
+
+
+/// <summary>
+/// Logs each house's cash, power and factory buildings, and each factory's production: its object number, the object
+/// on the line, its step out of 54, the frames per step, the money still owed and whether the line is finished or
+/// waiting. The gamemd
+/// comparison harness reads the same fields from Yuri's Revenge, so the fields and their units must stay as they are.
+/// </summary>
+static void Log_Production(void)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		DebugString("AUTOTEST prodhouse frame %d house %s credits %d power %d drain %d barracks %d warfactories %d conyards %d\n",
+			Frame, house->Class->Name(), house->Credits, house->Power, house->Drain, house->Factory_Count(RTTI_INFANTRYTYPE),
+			house->Factory_Count(RTTI_UNITTYPE), house->Factory_Count(RTTI_BUILDINGTYPE));
+	}
+	for (int index = 0; index < Factories.Count(); index++) {
+		FactoryClass * factory = Factories[index];
+		TechnoClass const * object = factory->Get_Object();
+		DebugString("AUTOTEST prodfactory frame %d id %d house %s object %s stage %d rate %d balance %d suspended %d\n",
+			Frame, factory->ID, factory->Get_House()->Class->Name(), object != NULL ? object->TClass->Name() : "none", factory->Completion(),
+			factory->Production_Rate(), factory->Balance_Due(), (int)factory->Is_Suspended());
+	}
+}
+
+
+// sampleprod <interval>: logs every house's money, power and factory counts and every factory's production on each
+// frame that is a multiple of the interval; 0 stops.
+static void Sampleprod_Step(StepType const & step)
+{
+	ProductionSampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8413,6 +8448,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"swaim", Swaim_Step},
 		{"speed", Speed_Probe},
 		{"sample", Sample_Step},
+		{"sampleprod", Sampleprod_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
 		{"scatter", Scatter_Step},
@@ -9164,6 +9200,10 @@ void AutoTest_Frame(void)
 
 	if (SampleInterval > 0 && (Frame % SampleInterval) == 0) {
 		Log_Samples();
+	}
+
+	if (ProductionSampleInterval > 0 && (Frame % ProductionSampleInterval) == 0) {
+		Log_Production();
 	}
 }
 
