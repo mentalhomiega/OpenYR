@@ -1,0 +1,14 @@
+; Starting a score opens its stream in the music group at the music volume, and stopping it ends the stream. With
+; music audible and nothing playing, the playlist starts the next score on the following frame.
+; Expected log: at frame 20 "event started", "stream open" and "music start theme=INTRO" for the same handle in the
+; music group; at frame 200 "music stop" and "event stopped" for that handle; at frame 201 "music start" for the
+; next playlist score.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-music-start.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.* (music|stream) |AUDIOLOG.*group=music|Exception"
+10 sounds 2
+10 audiocapture audio-music-start
+20 volume music 1
+20 music 0
+200 music stop
+260 audiocapture stop
+270 sounds 0
+280 quit

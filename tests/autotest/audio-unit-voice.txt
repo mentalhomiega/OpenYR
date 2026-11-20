@@ -1,0 +1,15 @@
+; Selecting a soldier plays its select reply in the unit voice group, centred and at the unit voice volume. The run
+; records the mix, so the reply's start and end follow the recorded audio.
+; Expected log: "Voice: GISelect" and an "sfx request name=GISelect group=unitvoice" line at frame 60, then
+; "event started" for GISelect with one of its igise samples, and "event finished" for the same handle.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-unit-voice.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|Voice:|AUDIOLOG.*GISelect|Exception"
+10 sounds 2
+10 audiocapture audio-unit-voice
+20 volume unitvoice 1
+32 view 60 44
+35 reveal
+40 grantunit E1 56 44
+60 select E1
+200 audiocapture stop
+210 sounds 0
+220 quit
