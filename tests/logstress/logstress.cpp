@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <thread>
@@ -285,20 +286,24 @@ int main(void)
 	Check(!Delete_Files_Older_Than(directory.c_str(), "DEBUG_*.LOG", 91), "pruning refuses an absurd age");
 	Check(!Delete_Files_Older_Than(NULL, "DEBUG_*.LOG", 14), "pruning refuses a null directory");
 
-	// A console subsystem program already owns a console, which would turn AllocConsole away.
-	FreeConsole();
-	Debug_Init_Console();
-	DebugString("the console sink is reachable\n");
+	// The console check opens a new console window, which Windows brings to the front of whatever the person at
+	// the computer is doing. It runs only when OPENYR_TEST_CONSOLE is set.
+	if (std::getenv("OPENYR_TEST_CONSOLE") != NULL) {
+		// A console subsystem program already owns a console, which would turn AllocConsole away.
+		FreeConsole();
+		Debug_Init_Console();
+		DebugString("the console sink is reachable\n");
 
-	HWND const console = GetConsoleWindow();
-	Check(console != NULL, "console allocated after detaching");
+		HWND const console = GetConsoleWindow();
+		Check(console != NULL, "console allocated after detaching");
 
-	// A missing SC_CLOSE proves the window was set up rather than merely allocated.
-	bool close_removed = false;
-	if (console != NULL) {
-		close_removed = GetMenuState(GetSystemMenu(console, FALSE), SC_CLOSE, MF_BYCOMMAND) == UINT(-1);
+		// A missing SC_CLOSE proves the window was set up rather than merely allocated.
+		bool close_removed = false;
+		if (console != NULL) {
+			close_removed = GetMenuState(GetSystemMenu(console, FALSE), SC_CLOSE, MF_BYCOMMAND) == UINT(-1);
+		}
+		Check(close_removed, "console close button disabled");
 	}
-	Check(close_removed, "console close button disabled");
 
 	Say(Failures == 0 ? "\nPASSED\n" : "\nFAILED\n");
 
