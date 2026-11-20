@@ -971,7 +971,22 @@ The walk in million cycles a draw, the same build with the cache switched on and
 
 Without the frame limit, only the repeats within one draw hit the cache, and the facing that the key needs costs more than they save. With the frame limit the walk is about 6% shorter, but the gain depends on how many draws fit in a game frame, and the hidden test window draws more of them than a window that waits for the display.
 
-Two changes need no cache. A voxel vehicle could work its depth adjustment out once a draw and pass it to the body, turret and shadow blits, which removes the 190 repeats, about 2% of the walk. `FootClass::Get_Z_Adjust` makes about 30 `Map` look-ups, which are not inlined, of 11 to 15 cells, and evaluates `Is_Z_Fudge_Bridge` twice, once through `Get_Z_Fudge_Column`.
+Two changes need no cache, and we made both:
+
+- **One value for a vehicle's blits.** `UnitClass::Unit_Draw_Voxel` opens a `ZAdjustOnceScope`, and the blits of its shadow, hull, turret, barrel and turret composite read the adjustment through `TechnoClass::Draw_Z_Adjust`, which works it out on the first call and repeats it. Aircraft do not use the scope: `AircraftClass::Draw_It` lowers the aircraft for its shadow, so the shadow and the body ask at different heights, and each asks once anyway.
+- **A cheaper `FootClass::Get_Z_Adjust`.** `MapClass::operator[]` for a cell is now inline, with the off-map scratch cell in `Off_Map_Cell`, so the 30 look-ups no longer call out. `Is_Z_Fudge_Bridge` runs once and is passed to `Get_Z_Fudge_Column(bool)`, and `TechnoClass::Get_Z_Adjust` reads the facing once instead of ten times.
+
+Both changes leave every value as it was. During development a check ran the old code beside the new on every call, and a sweep also evaluated both at eight other cells of the map for each call. The shared value against a fresh one: 7.7 million checks (ETOTAL and several hundred regress script runs, stock and Mental Omega, with bridges, cliffs and aircraft) with no mismatch. The new function against the old: 22 million calls and 9.2 million swept cells, no mismatch, with the bridge (105,000 calls), cliff (410,000), aircraft (141,000) and, in the sweep, column (4,500) fudges all non-zero. No tunnel fudge came up in either, so the tunnel path is covered only by it being unchanged apart from the inline look-up. The check is not kept in the tree.
+
+ETOTAL at 3840x2160, `GpuRender=yes`, `GpuVoxels=yes`, no input, no frame limit, no dev mode, game frames 1,400 to 4,000, with the cycle timers, two alternating runs of each build (thousand cycles a draw):
+
+| | `Get_Z_Adjust` calls a draw | Time in `Get_Z_Adjust` | Walk |
+|---|---:|---:|---:|
+| Before | 758 | 684, 725 | 7,452, 8,015 |
+| One value per vehicle | 564 | 509, 598 | 7,158, 7,853 |
+| Both changes | 564 | 487, 427 | 7,902, 7,276 |
+
+`Get_Z_Adjust` falls by about 35%, from about 9.1% of the walk to about 6%. The walk itself varies by about 8% between runs of one build, more than the 0.25 million cycles saved, so its total did not measurably change.
 
 ## Target scans
 

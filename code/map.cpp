@@ -467,20 +467,13 @@ CellClass & MapClass::operator[](Coord const & coord) const
 
 
 /// <summary>
-/// Fetches the cell at the specified cell location.
-/// This routine never fails. A location that lies outside the map is handed the scratch
-/// cell instead, so callers may reach past the edge of the map without checking first --
-/// but whatever they write there is thrown away.
+/// Hands out the scratch cell for a cell location outside the map, which operator[] calls when
+/// the location has no cell. Callers may reach past the edge of the map without checking
+/// first, but whatever they write there is thrown away.
 /// </summary>
-/// <returns>Returns with a reference to the cell at that location.</returns>
-CellClass & MapClass::operator[](Cell const & cell) const
+/// <returns>Returns with a reference to the scratch cell, now at that location.</returns>
+CellClass & MapClass::Off_Map_Cell(Cell const & cell) const
 {
-	int cellnum = cell.X + cell.Y * MAP_CELL_H;
-
-	if (cellnum >= 0 && cellnum < MAP_CELL_TOTAL && Array[cellnum] != NULL) {
-		return(*Array[cellnum]);
-	}
-
 	CellClass & off_map = OffMapCellOverride != NULL ? *OffMapCellOverride : BlubCell;
 	off_map.CellID = cell;
 	return(off_map);

@@ -8283,11 +8283,21 @@ bool TechnoClass::Was_Z_Fudge_Bridge(void) const
 /// <returns>Returns with the column fudge strength, or zero if no column is in the way.</returns>
 int TechnoClass::Get_Z_Fudge_Column(void) const
 {
+	return(Get_Z_Fudge_Column(Is_Z_Fudge_Bridge()));
+}
+
+
+/// <summary>
+/// Works out the column fudge for a caller that has already asked Is_Z_Fudge_Bridge.
+/// </summary>
+/// <param name="under_bridge">The result of Is_Z_Fudge_Bridge for this object.</param>
+int TechnoClass::Get_Z_Fudge_Column(bool under_bridge) const
+{
 	Cell cell = Get_Cell();
 	int fudge = 0;
 	CellClass * cptr = &Map[cell];
 
-	if (cptr != NULL && (Is_Z_Fudge_Bridge() || Was_Z_Fudge_Bridge())) {
+	if (cptr != NULL && (under_bridge || Was_Z_Fudge_Bridge())) {
 		CellClass * south = &Map[Adjacent_Cell(cell, FACING_S)];
 		CellClass * east = &Map[Adjacent_Cell(cell, FACING_E)];
 		CellClass * south_east = &Map[Adjacent_Cell(cell, FACING_SE)];
@@ -8399,6 +8409,46 @@ int TechnoClass::Get_Z_Fudge_Cliff(void) const
 }
 
 
+// The object whose draw a ZAdjustOnceScope is open for, and the adjustment it has worked out so far.
+static TechnoClass const * ZAdjustOnceObject = NULL;
+static bool ZAdjustOnceKnown = false;
+static int ZAdjustOnceValue = 0;
+
+ZAdjustOnceScope::ZAdjustOnceScope(TechnoClass const * object) :
+	OuterObject(ZAdjustOnceObject),
+	OuterKnown(ZAdjustOnceKnown),
+	OuterValue(ZAdjustOnceValue)
+{
+	ZAdjustOnceObject = object;
+	ZAdjustOnceKnown = false;
+}
+
+ZAdjustOnceScope::~ZAdjustOnceScope()
+{
+	ZAdjustOnceObject = OuterObject;
+	ZAdjustOnceKnown = OuterKnown;
+	ZAdjustOnceValue = OuterValue;
+}
+
+
+/// <summary>
+/// Fetches the depth adjustment for a blit of this object's drawing.
+/// Inside a ZAdjustOnceScope for this object, the first call works the value out and the others
+/// repeat it. Anywhere else it is Get_Z_Adjust.
+/// </summary>
+int TechnoClass::Draw_Z_Adjust(void) const
+{
+	if (ZAdjustOnceObject != this) {
+		return(Get_Z_Adjust());
+	}
+	if (!ZAdjustOnceKnown) {
+		ZAdjustOnceValue = Get_Z_Adjust();
+		ZAdjustOnceKnown = true;
+	}
+	return(ZAdjustOnceValue);
+}
+
+
 /// <summary>
 /// Fetches this object's draw depth adjustment.
 /// This routine biases the object's depth so that it sorts sensibly against whatever it is
@@ -8464,14 +8514,15 @@ int TechnoClass::Get_Z_Adjust(void) const
 		}
 	}
 
-	CellClass *ahead_right = &Map[Adjacent_Cell(cell, Facing_Add(PrimaryFacing.Current().As_Dir8(), FACING_45))];
-	CellClass *ahead_left = &Map[Adjacent_Cell(cell, Facing_Sub(PrimaryFacing.Current().As_Dir8(), FACING_45))];
+	FacingType const facing = PrimaryFacing.Current().As_Dir8();
+	CellClass *ahead_right = &Map[Adjacent_Cell(cell, Facing_Add(facing, FACING_45))];
+	CellClass *ahead_left = &Map[Adjacent_Cell(cell, Facing_Sub(facing, FACING_45))];
 
-	CellClass *ahead = &Map[Adjacent_Cell(cell, Facing_Add(PrimaryFacing.Current().As_Dir8(), FACING_0))];
-	CellClass *behind = &Map[Adjacent_Cell(cell, Facing_Sub(PrimaryFacing.Current().As_Dir8(), FACING_180))];
+	CellClass *ahead = &Map[Adjacent_Cell(cell, Facing_Add(facing, FACING_0))];
+	CellClass *behind = &Map[Adjacent_Cell(cell, Facing_Sub(facing, FACING_180))];
 
-	CellClass *behind_right = &Map[Adjacent_Cell(cell, Facing_Add(PrimaryFacing.Current().As_Dir8(), FACING_135))];
-	CellClass *behind_left = &Map[Adjacent_Cell(cell, Facing_Sub(PrimaryFacing.Current().As_Dir8(), FACING_135))];
+	CellClass *behind_right = &Map[Adjacent_Cell(cell, Facing_Add(facing, FACING_135))];
+	CellClass *behind_left = &Map[Adjacent_Cell(cell, Facing_Sub(facing, FACING_135))];
 
 	if (ahead_right != NULL && ahead_left != NULL && ahead != NULL) {
 
@@ -8486,12 +8537,12 @@ int TechnoClass::Get_Z_Adjust(void) const
 						return(zadjust + _techno_zadj_ramp1);
 					}
 
-					if (PrimaryFacing.Current().As_Dir8() == FACING_W || PrimaryFacing.Current().As_Dir8() == FACING_N) {
+					if (facing == FACING_W || facing == FACING_N) {
 						cptrs[0] = behind;
 						cptrs[1] = behind_right;
 						cptrs[2] = behind_left;
 					}
-					else if (PrimaryFacing.Current().As_Dir8() == FACING_S || PrimaryFacing.Current().As_Dir8() == FACING_E) {
+					else if (facing == FACING_S || facing == FACING_E) {
 						cptrs[0] = ahead_right;
 						cptrs[1] = ahead_left;
 						cptrs[2] = ahead;
@@ -9064,7 +9115,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	// The GPU composes the pieces of the scratch surface itself, so the software leaves it empty.
 	if (!(gpu_draws && composited)) {
 		GpuDraw_Voxel_Cloak(Visual_Character() != VISUAL_NORMAL, (flags & SHAPE_PREDATOR) ? predoffset : -1);
-		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(GpuDraw_Voxel_Blit_Flags(flags)), Draw_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
 	}
 	if (gpu && !composited) {
 		GpuDraw_Voxel_End();
@@ -9114,7 +9165,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 		// With GpuVoxels the shadow takes the place of the cached blit (Techno_Blit_Voxel) and needs its gradient; the ground gradient's depth equals the ground's, so a shadow on flat ground would fail the depth test everywhere.
 		ZGradientType const gradient = (GpuDraw_Voxels_Wanted() && !TClass->IsDisableShadowCache) ? Get_Z_Gradient() : ZGRAD_GROUND;
 		ShadowOnceScope once;
-		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Get_Z_Adjust(), gradient);
+		Blit_Block(*LogicalSurface, *NormalDrawer, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, NormalDrawer->Blitter_From_Flags(flags), Draw_Z_Adjust(), gradient);
 	}
 	GpuDraw_Voxel_End();
 
@@ -9162,7 +9213,7 @@ void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Poin
 	}
 
 	if (blitter != NULL) {
-		RLE_Blit(*LogicalSurface, cliprect, dest, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
+		RLE_Blit(*LogicalSurface, cliprect, dest, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Draw_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
 	}
 }
 

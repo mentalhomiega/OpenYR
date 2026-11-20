@@ -93,7 +93,15 @@ class MapClass: public GScreenClass
 		 * Cell access, validity and visibility
 		 */
 		CellClass & operator [] (Coord const & coord) const;
-		CellClass & operator [] (Cell const & cell) const;
+		CellClass & operator [] (Cell const & cell) const
+		{
+			int const cellnum = cell.X + cell.Y * MAP_CELL_H;
+			if (cellnum >= 0 && cellnum < MAP_CELL_TOTAL && Array[cellnum] != NULL) {
+				return(*Array[cellnum]);
+			}
+			return(Off_Map_Cell(cell));
+		}
+		CellClass & Off_Map_Cell(Cell const & cell) const;
 		int ID(CellClass * ptr) {return(Array.ID(ptr));};
 		int ID(CellClass & ptr) {return(Array.ID(&ptr));};
 		bool Is_Valid(Cell const & cell);
