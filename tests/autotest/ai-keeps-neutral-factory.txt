@@ -1,0 +1,19 @@
+; A computer player and a structure handed to it in a skirmish (BuildingClass::SetOwningHouse, 0x448260). Run with -AICountries 5.
+; gamemd sells a structure a computer player receives only when the structure's first owner (InitialOwner, +0x14C) is neither the
+; computer player nor a MultiplayPassive country such as Neutral or Special. A factory placed for Neutral and handed over by the
+; All change house action stays; a factory the player built and gave away, as a capture does, is sold, upgrades first.
+; Expected: the Neutral GAWEAP is still on Guard after the hand-over, with strength unchanged; the player's GAWEAP is on mission 19
+; (Selling) at once and gone by frame 400.
+; Before the fix the computer sold both, the Neutral one too.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/ai-keeps-neutral-factory.txt -AICountries 5 -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST (own|neutral|lose|quit)|AUTOTEST   trigaction|Exception"
+30 command CenterBase
+35 reveal
+40 neutral GAWEAP 60 42
+41 own GAWEAP 60 50
+60 where GAWEAP
+70 trigaction 36@Neutral 5 0
+80 lose GAWEAP
+100 where GAWEAP
+110 where GAWEAP
+400 where GAWEAP
+410 quit

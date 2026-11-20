@@ -481,8 +481,10 @@ class BuildingClass : public TechnoClass
 		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
 		bool HasEngineer;
 
-		// Whether the structure's first owner was a MultiplayPassive country, which makes it a tech structure (Ares).
-		bool IsTechStructure;
+		// The house the structure was created for, as its house number, or -1 for none (TechnoClass::InitialOwner in
+		// gamemd). A computer player sells a structure taken from another player but keeps one first owned by a
+		// MultiplayPassive country. Kept as a number so that the saved layout stays one byte.
+		signed char InitialOwnerID;
 
 		// The item a tech secret lab drew when the game started; null for a lab placed later.
 		TechnoTypeClass const * SecretProduct;
@@ -532,6 +534,8 @@ class BuildingClass : public TechnoClass
 		bool Add_Upgrade(void);
 		bool Remove_Upgrade(void);
 		void Sell_All_Upgrades(void);
+		HouseClass * Initial_Owner(void) const;
+		bool Is_Tech_Structure(void) const;
 		virtual ObjectTypeClass const * Class_Of(void) const override;
 		virtual char const * Full_Name(void) const override;
 		virtual DirType Fire_Direction(void) const override;
