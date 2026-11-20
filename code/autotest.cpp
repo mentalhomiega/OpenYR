@@ -16,6 +16,7 @@
 #include "isotype.h"
 #include "theater.h"
 #include "mainloop.h"
+#include "nettiming.h"
 #include "netsemantic.h"
 #include "combat.h"
 #include "ebolt.h"
@@ -39,6 +40,7 @@
 #include "_rules.h"
 #include "_tactica.h"
 #include "audio/audioengine.h"
+#include "audio/audiotrace.h"
 #include "aircraft.h"
 #include "airctype.h"
 #include "animtype.h"
@@ -182,6 +184,7 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <set>
 #include <span>
 #include <sstream>
@@ -7264,10 +7267,186 @@ static void Fps_Step(StepType const &)
 }
 
 
-// sounds <0|1>: stops or starts writing every sound effect played to the log.
+// sounds <0|1|2>: stops or starts writing every sound effect played to the log; 2 also writes the audio test log there.
 static void Sounds_Step(StepType const & step)
 {
 	LogSoundEffects = step.Argument_Int() != 0;
+	AudioTrace.Set_Debug_Log(step.Argument_Int() >= 2);
+	AudioEngine.Trace_Changed();
+}
+
+
+// The recording audiocapture started, by the name its files carry, or empty.
+static std::string CaptureName;
+
+
+// The game frames a second as num / den, from the frame length a skirmish or campaign is paced at.
+static void Paced_Frame_Rate(unsigned & num, unsigned & den)
+{
+	NetTiming::FramePeriod const period = NetTiming::Solo_Frame_Period(Options.GameSpeed, Session.Type == GAME_NORMAL, Options.ClassicGameSpeeds);
+	if (period.Nanoseconds <= 0) {
+		num = 60;
+		den = 1;
+		return;
+	}
+	std::uint64_t const n = 1000000000ull * period.Frames;
+	std::uint64_t const d = (std::uint64_t)period.Nanoseconds;
+	std::uint64_t const g = std::gcd(n, d);
+	num = (unsigned)(n / g);
+	den = (unsigned)(d / g);
+}
+
+
+// audiocapture <name>|stop: records the mix and the audio test log as <name>.wav and <name>.log in the AudioTest
+// folder, or ends the recording and writes the sounds it played, decoded, into <name>.sounds.
+static void Audiocapture_Step(StepType const & step)
+{
+	std::string const name = Word(step.Words, 2);
+	if (name.empty() || name == "stop") {
+		if (CaptureName.empty()) {
+			DebugString("AUTOTEST   audiocapture stop: none running\n");
+			return;
+		}
+		std::string const folder = Audio_Test_Name((CaptureName + ".sounds").c_str()) + (char)std::filesystem::path::preferred_separator;
+		AudioEngine.Stop_Capture(folder);
+		AudioTrace.Close_File();
+		AudioEngine.Trace_Changed();
+		DebugString("AUTOTEST   audiocapture %s stopped\n", CaptureName.c_str());
+		CaptureName.clear();
+		return;
+	}
+	if (!CaptureName.empty()) {
+		DebugString("AUTOTEST   audiocapture %s: %s is still running\n", name.c_str(), CaptureName.c_str());
+		return;
+	}
+	unsigned num = 0;
+	unsigned den = 0;
+	Paced_Frame_Rate(num, den);
+	AudioTrace.Open_File(Audio_Test_Name((name + ".log").c_str()));
+	AudioEngine.Trace_Changed();
+	if (!AudioEngine.Start_Capture(Audio_Test_Name((name + ".wav").c_str()), num, den)) {
+		AudioTrace.Close_File();
+		AudioEngine.Trace_Changed();
+		DebugString("AUTOTEST   audiocapture %s: failed\n", name.c_str());
+		return;
+	}
+	CaptureName = name;
+	DebugString("AUTOTEST   audiocapture %s started, %u/%u frames a second\n", name.c_str(), num, den);
+}
+
+
+// volume <sound|voice|unitvoice|music|movie> <0..1>: sets that volume option, as its slider does.
+static void Volume_Step(StepType const & step)
+{
+	struct VolumeType {
+		char const * Name;
+		void (OptionsClass::*Set)(float, bool);
+	};
+	static VolumeType const VOLUMES[] = {
+		{"sound", &OptionsClass::Set_Sound_Volume},
+		{"voice", &OptionsClass::Set_Voice_Volume},
+		{"unitvoice", &OptionsClass::Set_Unit_Voice_Volume},
+		{"music", &OptionsClass::Set_Score_Volume},
+		{"movie", &OptionsClass::Set_Movie_Volume},
+	};
+	std::string const name = Word(step.Words, 2);
+	float const level = (float)std::atof(Word(step.Words, 3).c_str());
+	for (VolumeType const & volume : VOLUMES) {
+		if (_stricmp(name.c_str(), volume.Name) == 0) {
+			(Options.*volume.Set)(level, false);
+			DebugString("AUTOTEST   volume %s %.2f\n", volume.Name, level);
+			return;
+		}
+	}
+	DebugString("AUTOTEST   volume %s: unknown\n", name.c_str());
+}
+
+
+// playsound <Sound> [x y]: plays that sound effect, at the cell when one is given, as a weapon or a building would.
+static void Playsound_Step(StepType const & step)
+{
+	VocType const voc = VocClass::From_Name(Word(step.Words, 2).c_str());
+	if (voc == VOC_NONE) {
+		DebugString("AUTOTEST   playsound %s: no such sound\n", Word(step.Words, 2).c_str());
+		return;
+	}
+	std::string const x = Word(step.Words, 3);
+	if (x.empty()) {
+		Sound_Effect(voc);
+	} else {
+		Sound_Effect(voc, Cell(std::atoi(x.c_str()), std::atoi(Word(step.Words, 4).c_str())).As_Coord());
+	}
+}
+
+
+// music <theme>|<number>|stop: plays that score, named or by its place in the score list, from its start, or stops the music.
+static void Music_Step(StepType const & step)
+{
+	std::string const name = Word(step.Words, 2);
+	if (name == "stop") {
+		Theme.Stop();
+		return;
+	}
+	ThemeType const theme = !name.empty() && std::isdigit((unsigned char)name[0]) ? ThemeType(std::atoi(name.c_str())) : Theme.From_Name(name.c_str());
+	if (theme == THEME_NONE) {
+		DebugString("AUTOTEST   music %s: no such score\n", name.c_str());
+		return;
+	}
+	Theme.Play_Song(theme);
+}
+
+
+// The sound names a dump step covers: every sound of the sound list, or those of the named entry.
+static void Dump_Sound_Names(std::string const & name, std::set<std::string> & names)
+{
+	for (int index = 0; index < Voc_Count(); index++) {
+		AudioEventTypeClass const * type = Voc_Type_Data((VocType)index);
+		if (type == nullptr || (name != "*" && _stricmp(name.c_str(), Voc_Name((VocType)index)) != 0)) {
+			continue;
+		}
+		for (unsigned sound = 0; sound < type->SoundCount; sound++) {
+			names.insert(type->Sounds[sound]);
+		}
+	}
+}
+
+
+// audiodump <sound|eva|file> <name|*>: writes decoded copies of sounds into the AudioTest\library folder for the
+// analysis tool: a sound list entry's sounds, an announcer line's sample in the current voice, or a stream file.
+static void Audiodump_Step(StepType const & step)
+{
+	std::string const kind = Word(step.Words, 2);
+	std::string const name = Word(step.Words, 3);
+	std::string const folder = Audio_Test_Name("library") + (char)std::filesystem::path::preferred_separator;
+	std::filesystem::create_directories(folder);
+	int written = 0;
+	int missing = 0;
+	auto count = [&](bool ok) { ok ? written++ : missing++; };
+	if (kind == "sound") {
+		std::set<std::string> names;
+		Dump_Sound_Names(name, names);
+		for (std::string const & sound : names) {
+			count(AudioEngine.Dump_Sound(sound.c_str(), folder + sound + ".wav"));
+		}
+	} else if (kind == "eva") {
+		for (int index = 0; index < Eva_Line_Count(); index++) {
+			std::string const line = Eva_Line_Name(index);
+			std::string const file = Eva_Sample_File(line.c_str());
+			if ((name == "*" || _stricmp(name.c_str(), line.c_str()) == 0) && !file.empty()) {
+				count(AudioEngine.Dump_Stream(file.c_str(), folder + std::filesystem::path(file).stem().string() + ".wav", 600.0f));
+			}
+		}
+	} else if (kind == "file") {
+		count(AudioEngine.Dump_Stream(name.c_str(), folder + std::filesystem::path(name).stem().string() + ".wav", 600.0f));
+	}
+	DebugString("AUTOTEST   audiodump %s %s: %d written, %d not found\n", kind.c_str(), name.c_str(), written, missing);
+}
+
+
+// speaknow <EVA name>: queues that announcer line ahead of the waiting lines, as a line asked for at once is.
+static void Speaknow_Step(StepType const & step)
+{
+	Speak_Eva(step.Argument.c_str(), true);
 }
 
 
@@ -8204,6 +8383,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"reveal", Reveal_Step},
 		{"ini", Ini_Step},
 		{"speak", Speak_Step},
+		{"speaknow", Speaknow_Step},
+		{"stopspeaking", [](StepType const &) {Stop_Speaking();}},
+		{"evalines", [](StepType const &) {Log_Eva_Lines();}},
 		{"evafile", Evafile_Step},
 		{"musicstage", Musicstage_Step},
 		{"musicscan", Musicscan_Step},
@@ -8353,6 +8535,11 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"fps", Fps_Step},
 		{"dump", Dump_Step},
 		{"sounds", Sounds_Step},
+		{"audiocapture", Audiocapture_Step},
+		{"audiodump", Audiodump_Step},
+		{"volume", Volume_Step},
+		{"playsound", Playsound_Step},
+		{"music", Music_Step},
 		{"movie", Movie_Step},
 		{"ranking", Ranking_Step},
 		{"skipscore", Skipscore_Step},

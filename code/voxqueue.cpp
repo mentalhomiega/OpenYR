@@ -63,17 +63,23 @@ void VoxQueueClass::Clear(void)
 }
 
 
-bool VoxQueueClass::Submit(int voice, int priority, VoxControlType control, int playing)
+bool VoxQueueClass::Submit(int voice, int priority, VoxControlType control, int playing, VoxSubmitClass * outcome)
 {
+	VoxSubmitClass ignored;
+	VoxSubmitClass & result = outcome != nullptr ? *outcome : ignored;
+	result = VoxSubmitClass();
+
 	if (voice < 0) {
 		return(false);
 	}
 	if (voice == playing || Contains(voice)) {
+		result.Result = voice == playing ? VoxSubmitClass::PLAYING : VoxSubmitClass::WAITING;
 		return(false);
 	}
 
 	bool cut = false;
 	if (control == VOXC_INTERRUPT) {
+		result.Cleared = Pending;
 		Clear();
 		cut = playing >= 0;
 	}
@@ -82,8 +88,10 @@ bool VoxQueueClass::Submit(int voice, int priority, VoxControlType control, int 
 		EntryClass const * standard = std::find_if(Entries, Entries + Pending, [](EntryClass const & entry) { return(entry.Control == VOXC_STANDARD); });
 		if (standard != Entries + Pending) {
 			if (standard->Priority >= priority) {
+				result.Result = VoxSubmitClass::STANDARD_HELD;
 				return(false);
 			}
+			result.Replaced = standard->Voice;
 			Remove((int)(standard - Entries));
 		}
 	}
@@ -93,6 +101,7 @@ bool VoxQueueClass::Submit(int voice, int priority, VoxControlType control, int 
 		EntryClass const * victim = std::min_element(Entries, Entries + Pending, [](EntryClass const & a, EntryClass const & b) {
 			return(std::make_tuple(-Rank(a.Control), a.Priority, a.Order) < std::make_tuple(-Rank(b.Control), b.Priority, b.Order));
 		});
+		result.Evicted = victim->Voice;
 		Remove((int)(victim - Entries));
 	}
 

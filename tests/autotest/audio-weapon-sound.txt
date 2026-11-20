@@ -1,0 +1,17 @@
+; A weapon's report sound plays at its place: full level inside the view, quieter and panned outside it, and not
+; at all beyond its range. GIAttack, the GI's report, is played on a cell in view, on one off the left of the view,
+; and on one far away.
+; Expected log: "sfx request name=GIAttack" with level 1.000 at cell 60,44, a lower level and a pan toward the left at
+; cell 44,54, and "sfx silent" at cell 5,5; an "event started" line for each of the first two.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/audio-weapon-sound.txt -Width 800 -Height 600 -Seconds 120 -Uncapped -Filter "AUTOTEST|AUDIOLOG.*GIAttack|Exception"
+10 sounds 2
+10 audiocapture audio-weapon-sound
+20 volume sound 1
+32 view 60 44
+35 reveal
+60 playsound GIAttack 60 44
+90 playsound GIAttack 44 54
+120 playsound GIAttack 5 5
+200 audiocapture stop
+210 sounds 0
+220 quit

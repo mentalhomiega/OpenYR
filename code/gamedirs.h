@@ -66,6 +66,9 @@ std::string Screenshot_Name(char const * filename);
 // Where a replay is kept, in the same way as a screenshot.
 std::string Replay_Name(char const * filename);
 
+// Where the audio tests write their recordings, logs and decoded sounds, in the same way as a screenshot.
+std::string Audio_Test_Name(char const * filename);
+
 // The folder of the player's own music tracks, ending in a separator.
 std::string Music_Folder(void);
 

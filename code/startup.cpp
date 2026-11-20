@@ -55,6 +55,7 @@
 #include "anim.h"
 #include "animtype.h"
 #include "audio/audioengine.h"
+#include "audio/audiotrace.h"
 #include "autotest.h"
 #include "blight.h"
 #include "brain.h"
@@ -669,6 +670,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Startup_Mark("window open");
 
 		AudioEngine.Init();
+		AudioTrace.Set_Frame_Source(&Frame);
 		Startup_Mark("audio engine");
 
 		// A scripted test plays silently whatever volumes its steps set, since it runs unattended.

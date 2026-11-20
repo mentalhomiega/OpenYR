@@ -100,6 +100,12 @@ void Static_Sounds_Serialize(SaveStreamClass & stream);
 VocClass * VocClass_From_Name(char const * name);
 char const * Voc_Name(VocType voc);
 
+// The sound list's length; a VocType counts from zero to one less.
+int Voc_Count(void);
+
+// The sound list entry's settings, or null for an entry the list does not hold.
+AudioEventTypeClass const * Voc_Type_Data(VocType voc);
+
 // While set, every sound effect started is written to the debug log; tests use it.
 extern bool LogSoundEffects;
 

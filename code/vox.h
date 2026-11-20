@@ -31,6 +31,11 @@ bool Set_Eva_Voice(int index);
 int Get_Eva_Voice_Choice(void);
 bool Is_Eva_Loaded(void);
 std::string Eva_Sample_File(char const * name);
+// The number of announcer lines, and the name of the line at a position, or an empty string past the end.
+int Eva_Line_Count(void);
+std::string Eva_Line_Name(int index);
+// Writes each announcer line with its priority, its Type and its volume to the debug log, for tests.
+void Log_Eva_Lines(void);
 void Speak_AI(void);
 void Stop_Speaking(void);
 bool Is_Speaking(void);

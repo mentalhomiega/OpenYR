@@ -167,6 +167,10 @@ class AudioFeederClass
 		bool Setup(AudioMixerClass * mixer, AudioDeviceClass * device);
 		bool Start(void);
 		void Stop(void);
+
+		// Ends the thread but keeps the attached streams, so Service runs only when
+		// called; Start runs the thread again.
+		void Stop_Thread(void);
 		bool Is_Running(void) const { return(Running.load(std::memory_order_acquire)); }
 
 		// Game thread. The producer is serviced from the next period on and stays
@@ -182,6 +186,9 @@ class AudioFeederClass
 		// One pass of the feeder's work, for a test or a caller without the thread.
 		void Service(void);
 
+		// The streams' part of a pass alone, for a caller rendering the mix itself.
+		void Service_Streams(void);
+
 		// How often a lost device is restarted and, failing that, reopened. Set
 		// before Start; a test shortens them.
 		void Set_Recovery_Timing(unsigned retry_ms, unsigned reopen_ms);
@@ -196,7 +203,6 @@ class AudioFeederClass
 		};
 
 		void Run(void);
-		void Service_Streams(void);
 		void Service_Device(void);
 
 		SlotClass Slots[AUDIO_MAX_STREAMS];

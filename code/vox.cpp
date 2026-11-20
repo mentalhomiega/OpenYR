@@ -16,6 +16,7 @@
 #include "vox.h"
 
 #include "audio/audioengine.h"
+#include "audio/audiotrace.h"
 #include "ccfile.h"
 #include "ccini.h"
 #include "dbgprint.h"
@@ -30,11 +31,23 @@
 #include "voxqueue.h"
 
 #include <algorithm>
+#include <cstdarg>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
 
-CDTimerClass<SystemTimerClass> SpeakTimer;
+// Counts 16 ms ticks of the audio clock, which follows the wall clock unless a
+// recording of the mix runs; then it follows the game frames, so a recording
+// hears the announcer's waits the same way on every run.
+class AudioClockTimerClass
+{
+	public:
+		int operator () (void) const { return((int)(AudioEngine.Now_Ms() / TIMER_TICK_MILLISECONDS)); }
+		operator int (void) const { return((*this)()); }
+};
+
+static CDTimerClass<AudioClockTimerClass> SpeakTimer;
 
 /*
 **	This elaborates all the EVA speech voices.
@@ -672,7 +685,7 @@ static void Select_Eva_Voice(void)
 VoxQueueClass Queue;
 AudioHandle Current;
 int CurrentLine = -1;
-CDTimerClass<SystemTimerClass> SpeakGapTimer;
+CDTimerClass<AudioClockTimerClass> SpeakGapTimer;
 
 // The announcer lines that stand for Tiberian Sun's voices with Yuri's Revenge data.
 struct VoiceEvaType {
@@ -775,6 +788,38 @@ bool Is_Eva_Line(VoxType voice)
 	return(strncmp(Speech[voice], "00-", 3) == 0 || strncmp(Speech[voice], "01-", 3) == 0);
 }
 
+
+// The name the audio test log gives a queued line.
+std::string Line_Name(int line)
+{
+	if (line >= LEGACY_LINE) {
+		int const voice = line - LEGACY_LINE;
+		return(voice < VOX_COUNT ? Speech[voice] : "?");
+	}
+	return(line >= 0 && line < (int)EvaLines.size() ? EvaLines[line].Name : "?");
+}
+
+
+char const * Control_Name(VoxControlType control)
+{
+	static char const * const NAMES[] = {"queue", "critical", "queued-interrupt", "standard", "interrupt"};
+	return((unsigned)control < sizeof(NAMES) / sizeof(NAMES[0]) ? NAMES[control] : "?");
+}
+
+
+void Trace_Line(char const * action, int line, char const * format = "", ...)
+{
+	if (!AudioTrace.Is_On()) {
+		return;
+	}
+	char extra[256];
+	va_list args;
+	va_start(args, format);
+	std::vsnprintf(extra, sizeof(extra), format, args);
+	va_end(args);
+	AudioTrace.Write("eva", "%s line=%s%s%s", action, AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), extra[0] != '\0' ? " " : "", extra);
+}
+
 } // namespace
 
 static int SpeechVolume = 255;
@@ -852,8 +897,15 @@ void Speak_Eva_Index(int line, bool now)
 	if (line >= 0 && line < (int)EvaLines.size()) {
 		DebugString("Speech: request %s\n", EvaLines[line].Name.c_str());
 	}
+	if (AudioTrace.Is_On()) {
+		Trace_Line("request", line, "now=%d", (int)now);
+	}
 	// The menu battle has nobody playing, so EVA stays quiet for it.
 	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || line < 0 || Shellmap_In_Scope()) {
+		if (AudioTrace.Is_On()) {
+			char const * reason = line < 0 ? "no-line" : (SpeechVolume <= 0 ? "volume-zero" : (Shellmap_In_Scope() ? "menu-battle" : "no-audio"));
+			Trace_Line("dropped", line, "reason=%s", reason);
+		}
 		return;
 	}
 
@@ -862,6 +914,7 @@ void Speak_Eva_Index(int line, bool now)
 	if (line >= LEGACY_LINE) {
 		VoxType const voice = VoxType(line - LEGACY_LINE);
 		if (voice >= VOX_COUNT || (!SpeechEnabled && Is_Eva_Line(voice))) {
+			Trace_Line("dropped", line, "reason=speech-off");
 			return;
 		}
 		control = Is_Critical_Line(voice) ? VOXC_CRITICAL : VOXC_QUEUE;
@@ -872,6 +925,7 @@ void Speak_Eva_Index(int line, bool now)
 		}
 		EvaLineType const & entry = EvaLines[line];
 		if (!SpeechEnabled && Starts_With_No_Case(entry.Name, "EVA_")) {
+			Trace_Line("dropped", line, "reason=speech-off");
 			return;
 		}
 		control = entry.Priority == PRIORITY_CRITICAL ? VOXC_CRITICAL : entry.Control;
@@ -882,7 +936,26 @@ void Speak_Eva_Index(int line, bool now)
 	}
 
 	bool idle = !Current.Is_Valid() && Queue.Count() == 0;
-	if (Queue.Submit(line, priority, control, Current.Is_Valid() ? CurrentLine : -1)) {
+	VoxSubmitClass outcome;
+	bool const cut = Queue.Submit(line, priority, control, Current.Is_Valid() ? CurrentLine : -1, &outcome);
+	if (AudioTrace.Is_On()) {
+		static char const * const RESULTS[] = {"queued", "dropped", "dropped", "dropped"};
+		static char const * const REASONS[] = {"", " reason=playing", " reason=waiting", " reason=standard-held"};
+		Trace_Line(RESULTS[outcome.Result], line, "prio=%d type=%s pending=%d%s", priority, Control_Name(control), Queue.Count(), REASONS[outcome.Result]);
+		if (outcome.Cleared > 0) {
+			Trace_Line("cleared", line, "count=%d", outcome.Cleared);
+		}
+		if (outcome.Replaced >= 0) {
+			Trace_Line("dropped", outcome.Replaced, "reason=replaced by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
+		}
+		if (outcome.Evicted >= 0) {
+			Trace_Line("dropped", outcome.Evicted, "reason=queue-full by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
+		}
+		if (cut) {
+			Trace_Line("cut", CurrentLine, "by=%s h=%u", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), Current.Raw());
+		}
+	}
+	if (cut) {
 		AudioEngine.Stop_Stream(Current);
 		Current.Clear();
 		CurrentLine = -1;
@@ -926,6 +999,7 @@ void Speak_AI(void)
 	}
 	if (CurrentLine >= 0) {
 		// The line has ended; the next one waits its half second.
+		Trace_Line("end", CurrentLine);
 		CurrentLine = -1;
 		SpeakGapTimer = GAP_TICKS;
 	}
@@ -943,6 +1017,7 @@ void Speak_AI(void)
 		} else {
 			EvaLineType const & entry = EvaLines[next];
 			if (!Has_Eva_Sample(entry)) {
+				Trace_Line("skipped", next, "reason=no-sample");
 				continue;
 			}
 			_makepath(name, NULL, NULL, entry.Sample[EvaSide].c_str(), ".WAV");
@@ -952,8 +1027,10 @@ void Speak_AI(void)
 		if (Current.Is_Valid()) {
 			CurrentLine = next;
 			DebugString("Speech: %s\n", name);
+			Trace_Line("start", next, "file=%s h=%u volume=%.3f", AudioTraceClass::Word(name).c_str(), Current.Raw(), volume);
 			return;
 		}
+		Trace_Line("skipped", next, "reason=open-failed file=%s", AudioTraceClass::Word(name).c_str());
 	}
 }
 
@@ -975,6 +1052,9 @@ void Speak_AI(void)
  *=============================================================================================*/
 void Stop_Speaking(void)
 {
+	if (AudioTrace.Is_On() && (Queue.Count() > 0 || Current.Is_Valid())) {
+		Trace_Line("stop-all", CurrentLine, "pending=%d", Queue.Count());
+	}
 	Queue.Clear();
 	if (Current.Is_Valid()) {
 		AudioEngine.Stop_Stream(Current);
@@ -1207,6 +1287,27 @@ std::string Eva_Sample_File(char const * name)
 		return(std::string());
 	}
 	return(EvaLines[line].Sample[EvaSide] + ".WAV");
+}
+
+
+int Eva_Line_Count(void)
+{
+	return((int)EvaLines.size());
+}
+
+
+std::string Eva_Line_Name(int index)
+{
+	return(index >= 0 && index < (int)EvaLines.size() ? EvaLines[index].Name : std::string());
+}
+
+
+void Log_Eva_Lines(void)
+{
+	for (EvaLineType const & line : EvaLines) {
+		DebugString("AUTOTEST   evaline %s prio %d type %s volume %.2f sample %s\n", line.Name.c_str(), line.Priority, Control_Name(line.Control), line.Volume,
+			Has_Eva_Sample(line) ? line.Sample[EvaSide].c_str() : "-");
+	}
 }
 
 

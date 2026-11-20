@@ -36,6 +36,17 @@ bool Is_Effect_Group(AudioGroupType group)
 } // namespace
 
 
+char const * Audio_Event_Fate_Name(AudioEventFate fate)
+{
+	static char const * const NAMES[] = {
+		"started", "delayed", "queued", "refused-limit", "refused-budget", "refused-voice", "refused-sound",
+		"refused-event", "cut-limit", "cut-budget", "stopped", "finished", "live", "retarget"
+	};
+	unsigned index = (unsigned)fate;
+	return(index < sizeof(NAMES) / sizeof(NAMES[0]) ? NAMES[index] : "unknown");
+}
+
+
 struct AudioEventPoolClass::EventClass {
 	AudioEventState State;
 	unsigned Generation;
@@ -67,6 +78,8 @@ struct AudioEventPoolClass::EventClass {
 	unsigned QueuedSince;
 	void const * Tag;
 	unsigned Order;
+	AudioEventFate Refusal;       // why the last start attempt failed
+	uint8_t SoundIndex[AUDIO_MAX_SEQUENCE];   // the type's sound each sequence segment plays
 
 	bool Is_Live(void) const { return(State == AUDIO_EVENT_PENDING || State == AUDIO_EVENT_PLAYING || State == AUDIO_EVENT_GAP); }
 	bool Counts_Toward_Budget(void) const { return(State == AUDIO_EVENT_PLAYING && Voice >= 0 && !Stolen && Stream == nullptr && Is_Effect_Group(Group)); }
@@ -173,6 +186,44 @@ AudioEventPoolClass::EventClass const * AudioEventPoolClass::Lookup(AudioHandle 
 }
 
 
+// The handle the caller was given; valid until Finish moves the generation on.
+AudioHandle AudioEventPoolClass::Handle_Of(EventClass const & event) const
+{
+	return(AudioHandle::Make((unsigned)(&event - Events), event.Generation));
+}
+
+
+void AudioEventPoolClass::Report(EventClass const & event, AudioEventFate fate, EventClass const * by, float ramp)
+{
+	if (Observer == nullptr) {
+		return;
+	}
+	AudioEventReportClass report = {};
+	report.Fate = fate;
+	report.Handle = Handle_Of(event);
+	report.By = by != nullptr ? Handle_Of(*by) : AudioHandle();
+	report.Type = event.Type;
+	report.Group = event.Group;
+	report.Priority = event.Priority;
+	report.Level = Current_Level(event);
+	report.Pan = event.Pan;
+	report.Pitch = event.Pitch;
+	report.Ramp = ramp;
+	report.Voice = event.Voice;
+	report.Stream = event.Stream != nullptr;
+	if ((fate == AudioEventFate::STARTED || fate == AudioEventFate::LIVE) && event.Type != nullptr) {
+		for (unsigned i = 0; i < event.Sequence.Count; i++) {
+			unsigned sound = event.SoundIndex[i];
+			report.Sounds[report.SoundCount++] = sound < event.Type->SoundCount ? event.Type->Sounds[sound] : "";
+		}
+		report.LoopStart = event.Sequence.LoopStart;
+		report.LoopEnd = event.Sequence.LoopEnd;
+		report.Cycles = event.Sequence.Cycles;
+	}
+	Observer->Report(report);
+}
+
+
 AudioEventPoolClass::EventClass * AudioEventPoolClass::Allocate(void)
 {
 	// A finished event whose voice is still ramping down keeps its slot until the
@@ -252,6 +303,8 @@ void AudioEventPoolClass::Send_Volume(EventClass & event, float volume, float ra
 	event.RequestVolume = volume;
 	if (!Push_Level(event, ramp)) {
 		event.RequestVolume = previous;
+	} else if (event.Voice >= 0) {
+		Report(event, AudioEventFate::RETARGET, nullptr, ramp);
 	}
 }
 
@@ -262,6 +315,8 @@ void AudioEventPoolClass::Send_Pan(EventClass & event, float pan, float ramp)
 	event.Pan = pan;
 	if (!Push_Pan(event, ramp)) {
 		event.Pan = previous;
+	} else if (event.Voice >= 0) {
+		Report(event, AudioEventFate::RETARGET, nullptr, ramp);
 	}
 }
 
@@ -300,8 +355,11 @@ void AudioEventPoolClass::Release_Voice(EventClass & event)
 
 // Sends the voice a stop and detaches the event from it. The voice ramps down
 // on its own and is freed once the mixer reports it done.
-void AudioEventPoolClass::Kill(EventClass & event, float fade)
+void AudioEventPoolClass::Kill(EventClass & event, float fade, AudioEventFate fate, EventClass const * by)
 {
+	if (!event.Stolen) {
+		Report(event, fate, by);
+	}
 	if (event.Voice >= 0) {
 		AudioCommand command = {};
 		command.Type = AudioCommandType::STOP;
@@ -366,13 +424,14 @@ bool AudioEventPoolClass::Enforce_Limit(EventClass & event)
 	bool tie = (theirs >= mine * 0.99f && theirs <= mine * 1.01f);
 	bool interrupt = (type->Control & SOUND_CONTROL_INTERRUPT) != 0;
 	if (mine > theirs && !tie) {
-		Kill(*quietest, AUDIO_STOP_RAMP_SECONDS);
+		Kill(*quietest, AUDIO_STOP_RAMP_SECONDS, AudioEventFate::CUT_LIMIT, &event);
 		return(true);
 	}
 	if (tie && interrupt) {
-		Kill(*quietest, AUDIO_STOP_RAMP_SECONDS);
+		Kill(*quietest, AUDIO_STOP_RAMP_SECONDS, AudioEventFate::CUT_LIMIT, &event);
 		return(true);
 	}
+	event.Refusal = AudioEventFate::REFUSED_LIMIT;
 	return(false);
 }
 
@@ -419,13 +478,15 @@ bool AudioEventPoolClass::Acquire_Voice(EventClass & event)
 			}
 		}
 		if (victim == nullptr) {
+			event.Refusal = AudioEventFate::REFUSED_BUDGET;
 			return(false);
 		}
 		bool weaker = victim->Priority < event.Priority || (victim->Priority == event.Priority && Current_Level(*victim) < mine * (1.0f - VOLUME_SLACK));
 		if (!weaker) {
+			event.Refusal = AudioEventFate::REFUSED_BUDGET;
 			return(false);
 		}
-		Kill(*victim, AUDIO_STOP_RAMP_SECONDS);
+		Kill(*victim, AUDIO_STOP_RAMP_SECONDS, AudioEventFate::CUT_BUDGET, &event);
 	}
 
 	// A voice the mixer has finished with still belongs to its event until that
@@ -439,6 +500,7 @@ bool AudioEventPoolClass::Acquire_Voice(EventClass & event)
 			return(true);
 		}
 	}
+	event.Refusal = AudioEventFate::REFUSED_VOICE;
 	return(false);
 }
 
@@ -458,22 +520,24 @@ bool AudioEventPoolClass::Issue(EventClass & event, bool attack, bool body, bool
 	unsigned bodycount = type.Body_Count();
 	bool spare = (attackcount + decaycount < type.SoundCount);
 
-	if (attack && spare && attackcount > 0) {
-		unsigned pick = (unsigned)Random(0, (int)attackcount - 1);
-		AudioSampleClass * clip = Pin(event, pick);
+	auto append = [&](unsigned sound) {
+		AudioSampleClass * clip = Pin(event, sound);
 		if (clip != nullptr) {
+			event.SoundIndex[sequence.Count] = (uint8_t)sound;
 			sequence.Clips[sequence.Count++] = clip;
 		}
+		return(clip != nullptr);
+	};
+
+	if (attack && spare && attackcount > 0) {
+		append((unsigned)Random(0, (int)attackcount - 1));
 	}
 
 	sequence.LoopStart = sequence.Count;
 	if (body && bodycount > 0) {
 		if (type.Control & SOUND_CONTROL_ALL) {
 			for (unsigned i = 0; i < bodycount && sequence.Count < AUDIO_MAX_SEQUENCE; i++) {
-				AudioSampleClass * clip = Pin(event, bodystart + i);
-				if (clip != nullptr) {
-					sequence.Clips[sequence.Count++] = clip;
-				}
+				append(bodystart + i);
 			}
 		} else {
 			if (event.BodyPick < 0) {
@@ -488,9 +552,7 @@ bool AudioEventPoolClass::Issue(EventClass & event, bool attack, bool body, bool
 			}
 			// A missing body sound falls through to the next one so the type still plays.
 			for (unsigned tries = 0; tries < bodycount; tries++) {
-				AudioSampleClass * clip = Pin(event, bodystart + ((unsigned)event.BodyPick + tries) % bodycount);
-				if (clip != nullptr) {
-					sequence.Clips[sequence.Count++] = clip;
+				if (append(bodystart + ((unsigned)event.BodyPick + tries) % bodycount)) {
 					break;
 				}
 			}
@@ -499,15 +561,13 @@ bool AudioEventPoolClass::Issue(EventClass & event, bool attack, bool body, bool
 	sequence.LoopEnd = sequence.Count;
 
 	if (decay && spare && decaycount > 0 && sequence.Count < AUDIO_MAX_SEQUENCE) {
-		unsigned pick = type.SoundCount - decaycount + (unsigned)Random(0, (int)decaycount - 1);
-		AudioSampleClass * clip = Pin(event, pick);
-		if (clip != nullptr) {
-			sequence.Clips[sequence.Count++] = clip;
+		if (append(type.SoundCount - decaycount + (unsigned)Random(0, (int)decaycount - 1))) {
 			event.DecayIssued = true;
 		}
 	}
 
 	if (sequence.Count == 0) {
+		event.Refusal = AudioEventFate::REFUSED_SOUND;
 		return(false);
 	}
 
@@ -527,7 +587,11 @@ bool AudioEventPoolClass::Issue(EventClass & event, bool attack, bool body, bool
 	command.B = event.Pan;
 	command.C = event.Pitch;
 	command.Ptr = &sequence;
-	return(Mixer->Push(command));
+	if (!Mixer->Push(command)) {
+		event.Refusal = AudioEventFate::REFUSED_VOICE;
+		return(false);
+	}
+	return(true);
 }
 
 
@@ -556,6 +620,7 @@ bool AudioEventPoolClass::Try_Start(EventClass & event)
 	event.AttackPlayed = true;
 	event.State = AUDIO_EVENT_PLAYING;
 	event.Queued = false;
+	Report(event, AudioEventFate::STARTED);
 	return(true);
 }
 
@@ -599,6 +664,7 @@ AudioHandle AudioEventPoolClass::Start(AudioEventTypeClass const & type, AudioGr
 	bool predelay = (type.Control & SOUND_CONTROL_PREDELAY) != 0 && type.Has_Delay();
 	if (predelay) {
 		event->NextStart = LastNow + (unsigned)Random(type.DelayMin, type.DelayMax);
+		Report(*event, AudioEventFate::DELAYED);
 		return(AudioHandle::Make((unsigned)(event - Events), event->Generation));
 	}
 
@@ -607,8 +673,10 @@ AudioHandle AudioEventPoolClass::Start(AudioEventTypeClass const & type, AudioGr
 		if (type.Control & SOUND_CONTROL_QUEUE) {
 			event->Queued = true;
 			event->QueuedSince = LastNow;
+			Report(*event, AudioEventFate::QUEUED);
 			return(AudioHandle::Make((unsigned)(event - Events), event->Generation));
 		}
+		Report(*event, event->Refusal);
 		Finish(*event);
 		return(AudioHandle());
 	}
@@ -636,6 +704,7 @@ AudioHandle AudioEventPoolClass::Start_Sample(AudioSampleClass * clip, AudioGrou
 	event->State = AUDIO_EVENT_PENDING;
 
 	if (!Acquire_Voice(*event)) {
+		Report(*event, event->Refusal);
 		Finish(*event);
 		return(AudioHandle());
 	}
@@ -659,10 +728,12 @@ AudioHandle AudioEventPoolClass::Start_Sample(AudioSampleClass * clip, AudioGrou
 	command.Ptr = &sequence;
 	if (!Mixer->Push(command)) {
 		Release_Voice(*event);
+		Report(*event, AudioEventFate::REFUSED_VOICE);
 		Finish(*event);
 		return(AudioHandle());
 	}
 	event->State = AUDIO_EVENT_PLAYING;
+	Report(*event, AudioEventFate::STARTED);
 	return(AudioHandle::Make((unsigned)(event - Events), event->Generation));
 }
 
@@ -685,6 +756,7 @@ AudioHandle AudioEventPoolClass::Start_Stream(AudioStreamClass * stream, AudioGr
 	event->State = AUDIO_EVENT_PENDING;
 
 	if (!Acquire_Voice(*event)) {
+		Report(*event, event->Refusal);
 		Finish(*event);
 		return(AudioHandle());
 	}
@@ -700,10 +772,12 @@ AudioHandle AudioEventPoolClass::Start_Stream(AudioStreamClass * stream, AudioGr
 	command.Ptr = stream;
 	if (!Mixer->Push(command)) {
 		Release_Voice(*event);
+		Report(*event, AudioEventFate::REFUSED_VOICE);
 		Finish(*event);
 		return(AudioHandle());
 	}
 	event->State = AUDIO_EVENT_PLAYING;
+	Report(*event, AudioEventFate::STARTED);
 	return(AudioHandle::Make((unsigned)(event - Events), event->Generation));
 }
 
@@ -738,6 +812,7 @@ void AudioEventPoolClass::Reap_Voices(unsigned now)
 			event.State = AUDIO_EVENT_GAP;
 			event.NextStart = now;
 		} else {
+			Report(event, AudioEventFate::FINISHED);
 			Finish(event);
 		}
 	}
@@ -770,8 +845,10 @@ void AudioEventPoolClass::Service(unsigned now)
 				bool playing = !event.DecayIssued && event.Type->DecayCount > 0 && Acquire_Voice(event) && Issue(event, false, false, true);
 				if (playing) {
 					event.State = AUDIO_EVENT_PLAYING;
+					Report(event, AudioEventFate::STARTED);
 				} else {
 					Release_Voice(event);
+					Report(event, AudioEventFate::FINISHED);
 					Finish(event);
 				}
 				continue;
@@ -781,8 +858,19 @@ void AudioEventPoolClass::Service(unsigned now)
 				if (event.Queued && now - event.QueuedSince < QUEUE_WAIT_MS) {
 					continue;
 				}
+				Report(event, event.Refusal);
 				Finish(event);
 			}
+		}
+	}
+}
+
+
+void AudioEventPoolClass::Report_Live(void)
+{
+	for (int i = 0; Ready && i < AUDIO_MAX_EVENTS; i++) {
+		if (Events[i].Is_Live() && !Events[i].Stolen) {
+			Report(Events[i], AudioEventFate::LIVE);
 		}
 	}
 }
@@ -920,6 +1008,7 @@ void AudioEventPoolClass::End(AudioHandle handle)
 	}
 	event->EndRequested = true;
 	if (event->State == AUDIO_EVENT_PENDING) {
+		Report(*event, AudioEventFate::STOPPED);
 		Finish(*event);
 		return;
 	}
@@ -949,6 +1038,7 @@ void AudioEventPoolClass::End_Looping(AudioHandle handle)
 	}
 	event->EndRequested = true;
 	if (event->State == AUDIO_EVENT_PENDING) {
+		Report(*event, AudioEventFate::STOPPED);
 		Finish(*event);
 		return;
 	}
