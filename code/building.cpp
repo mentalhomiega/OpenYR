@@ -313,7 +313,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsShieldTinted(false),
 	IsCurtainDrawn(false),
 	HasEngineer(false),
-	IsTechStructure(house != NULL && house->Class != NULL && house->Class->IsMultiplayPassive),
+	InitialOwnerID(house != NULL ? (signed char)house->HeapID : (signed char)-1),
 	SecretProduct(NULL)
 {
 	Create_ID();
@@ -5262,10 +5262,11 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 
 	Welcome_Captured_Dockers(captured_dockers);
 
-	if (Session.Type != GAME_NORMAL && !newowner->Is_Human_Player()) {
-		if (newowner->ABQuantity.Value(Class->HeapID) > 1 || Class->ToBuild != RTTI_BUILDINGTYPE) {
-			Sell_All_Upgrades();
-		}
+	// Outside the campaign a computer player sells a structure taken from another player, upgrades first; it keeps
+	// one built for it and one first owned by a MultiplayPassive country such as Neutral or Special (0x448260).
+	if (Session.Type != GAME_NORMAL && !newowner->Is_Human_Player()
+		&& Initial_Owner() != NULL && Initial_Owner() != newowner && !Is_Tech_Structure()) {
+		Sell_All_Upgrades();
 	}
 
 	oldowner->IsRecalcNeeded = true;
@@ -6073,7 +6074,9 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				**	members leaving is equal to the unrecovered cost of the building
 				**	divided by 100 (the typical cost of a minigunner infantryman).
 				*/
-				if (ArchiveTarget == NULL && Class->UndeploysInto == NULL) {
+				// Only a structure packing up into its vehicle keeps its crew; a sold construction yard releases
+				// its crew like any other (Mission_Selling, 0x449C30).
+				if (ArchiveTarget == NULL || Class->UndeploysInto == NULL) {
 					int count = How_Many_Survivors();
 					bool engineer = false;
 
@@ -11662,7 +11665,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
 	stream.Serialize(HasEngineer);
-	stream.Serialize(IsTechStructure);
+	stream.Serialize(InitialOwnerID);
 	stream.Serialize(SecretProduct);
 	stream.Serialize(PsiWarnAnim);
 	stream.Serialize(PadPassFrame);
@@ -13193,6 +13196,26 @@ void BuildingClass::Spied_By(HouseClass * house)
 		Speak_Stolen_Tech(victim, spy);
 	}
 	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Fetches the house the structure was created for.
+/// </summary>
+/// <returns>Returns with the house, or NULL when it had none.</returns>
+HouseClass * BuildingClass::Initial_Owner(void) const
+{
+	return(InitialOwnerID >= 0 && InitialOwnerID < Houses.Count() ? Houses[InitialOwnerID] : NULL);
+}
+
+
+/// <summary>
+/// Whether the structure's first owner was a MultiplayPassive country, which makes it a tech structure (Ares).
+/// </summary>
+bool BuildingClass::Is_Tech_Structure(void) const
+{
+	HouseClass const * first = Initial_Owner();
+	return(first != NULL && first->Class->IsMultiplayPassive);
 }
 
 
