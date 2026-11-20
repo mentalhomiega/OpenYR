@@ -434,10 +434,17 @@ class MultiMission
 		char const * Description(void) const {return(ScenarioDescription);}
 		char const * Get_Filename(void) const {return(Filename);}
 		char const * Get_Digest(void) const {return(Digest);}
-		bool Get_Official(void) { return(IsOfficial); }
+		bool Get_Official(void) const { return(IsOfficial); }
 
 		// Is the description a string table label that no entry resolves?
 		bool Is_Placeholder(void) const {return(IsPlaceholder);}
+
+		// The game modes the map's packet entry lists in GameMode=, such as "standard, teamgame", as written; empty when
+		// the entry lists none, as a loose map's does not.
+		char const * Game_Modes(void) const {return(GameModes.c_str());}
+
+		// Does the packet entry list that mode (without regard to case)?
+		bool Lists_Mode(char const * mode) const;
 
 	private:
 		char ScenarioDescription[DESCRIP_MAX];
@@ -445,6 +452,7 @@ class MultiMission
 		char Digest[32];
 		bool IsOfficial;
 		bool IsPlaceholder;
+		std::string GameModes;
 
 		/*
 		 * These are the player limits the mission declares. Only a map pack's listing reads

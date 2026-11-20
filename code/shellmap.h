@@ -45,6 +45,11 @@ void Shellmap_Service(void);
 // the game speed the battle's session holds, the player's game speed option and the frame length the battle runs at.
 void Shellmap_Log_View(void);
 
+// Logs one AUTOTEST shellmap line for each listed map: whether the automatic pick takes it, its start positions, its
+// game modes, its visible area and the shortest and longest distance between two start positions in map pixels, and
+// the reason for a map it rejects.
+void Shellmap_Log_Map_Choices(void);
+
 // The logic frames the battle has run since the game started.
 std::uint64_t Shellmap_Frame_Count(void);
 

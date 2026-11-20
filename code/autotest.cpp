@@ -7398,6 +7398,13 @@ static void Viewstate_Step(StepType const &)
 }
 
 
+// shellmaps: logs which listed maps the menu battle's automatic pick takes and which it rejects, and why.
+static void Shellmaps_Step(StepType const &)
+{
+	Shellmap_Log_Map_Choices();
+}
+
+
 // wheel <step> [x y]: glides the zoom by that step around a screen point, as the mouse wheel
 // does; without a point the zoom centers on the middle of the map view.
 static void Wheel_Step(StepType const & step)
@@ -8377,6 +8384,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"interfacescale", Interfacescale_Step},
 		{"wheel", Wheel_Step},
 		{"viewstate", Viewstate_Step},
+		{"shellmaps", Shellmaps_Step},
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
 		{"windowdark", Windowdark_Step},

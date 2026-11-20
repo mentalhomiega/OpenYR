@@ -34,6 +34,7 @@
 #include "logic.h"
 #include "mainloop.h"
 #include "mapgen.h"
+#include "modlobby.h"
 #include "netshare.h"
 #include "nettiming.h"
 #include "object.h"
@@ -201,29 +202,107 @@ void Free_Players(SessionPart & part)
 }
 
 
-// The map's visible area in map pixels, or 0 by 0 when the file cannot be read.
-Point2D Visible_Map_Size(char const * file)
+// The two start positions furthest apart must lie at least this far apart, as a part of the visible area's diagonal. The stock
+// standard maps with four or more starts keep at least 0.44; two snow maps whose starts sit round a field in the middle have 0.25 and 0.30.
+double const MIN_START_SPREAD = 0.35;
+
+
+// What the automatic pick needs to know of a map: the start positions it places and how they lie on the map, in map pixels.
+struct MapLayout
 {
-	static std::map<std::string, Point2D> known;
+	int Starts = 0;
+	// The map's visible area, or 0 by 0 when the file cannot be read.
+	Point2D Visible = Point2D(0, 0);
+	// The shortest and the longest distance between two start positions; 0 with fewer than two positions on the map.
+	double MinGap = 0.0;
+	double MaxGap = 0.0;
+	std::string Theater;
+};
+
+
+// The map's start positions and visible area. Each file is read once.
+MapLayout Map_Layout(char const * file)
+{
+	static std::map<std::string, MapLayout> known;
 	auto found = known.find(file);
 	if (found != known.end()) {
 		return(found->second);
 	}
 
-	Point2D size(0, 0);
+	MapLayout layout;
 	CCFileClass map(file);
 	if (map.Is_Available()) {
 		CCINIClass ini;
 		ini.Load(map, false);
 		Rect const local = ini.Get_Rect("Map", "LocalSize", Rect(0, 0, 0, 0));
-		size = Point2D(ISO_TILE_PIXEL_W * local.Width, ISO_TILE_PIXEL_H * (2 * local.Height + 9) / 2);
+		char theater[32];
+		ini.Get_String("Map", "Theater", "", theater, sizeof(theater));
+		layout.Theater = theater;
+		layout.Visible = Point2D(ISO_TILE_PIXEL_W * local.Width, ISO_TILE_PIXEL_H * (2 * local.Height + 9) / 2);
+
+		// A waypoint is the cell's Y * 1000 + X. The cell's pixel is the isometric projection of it.
+		std::vector<Point2D> spots;
+		for (int number = 0; number < MAX_PLAYERS; number++) {
+			char key[16];
+			std::snprintf(key, sizeof(key), "%d", number);
+			int const value = ini.Get_Int("Waypoints", key, -1);
+			if (value >= 0) {
+				int const x = value % 1000;
+				int const y = value / 1000;
+				spots.push_back(Point2D((x - y) * ISO_TILE_PIXEL_W / 2, (x + y) * ISO_TILE_PIXEL_H / 2));
+			}
+		}
+		layout.Starts = spots.empty() ? ini.Get_Int("RandomMap", "NumPlayers", 0) : (int)spots.size();
+		layout.MinGap = 1e9;
+		for (size_t first = 0; first < spots.size(); first++) {
+			for (size_t second = first + 1; second < spots.size(); second++) {
+				double const gap = std::hypot((double)(spots[first].X - spots[second].X), (double)(spots[first].Y - spots[second].Y));
+				layout.MinGap = std::min(layout.MinGap, gap);
+				layout.MaxGap = std::max(layout.MaxGap, gap);
+			}
+		}
+		if (spots.size() < 2) {
+			layout.MinGap = 0.0;
+		}
 	}
-	known[file] = size;
-	return(size);
+	known[file] = layout;
+	return(layout);
 }
 
 
-// Takes a map with four start positions or more whose visible area covers the screen, so no black edge shows;
+// Whether the map is made for the standard mode. A map whose packet entry lists game modes must list standard; with a mod
+// that declares lobby modes, its list for its standard mode (the first mode when it has none of that name) must offer the map too.
+// A map that lists no mode, as a loose map does, counts as standard in the packet's terms.
+bool Offered_In_Standard_Mode(MultiMission const & mission)
+{
+	if (mission.Game_Modes()[0] != '\0' && !mission.Lists_Mode("standard")) {
+		return(false);
+	}
+	LobbyDeclarationsClass const & lobby = Mod_Lobby();
+	return(lobby.Is_Empty() || lobby.Map_In_Mode(mission.Get_Filename(), std::max(0, lobby.Find_Mode("Standard"))));
+}
+
+
+// Why a map is not taken for the automatic pick, or null when it is. Only a standard battle map is: one that the game
+// lists for the standard mode, or a mod lists in its standard mode, with the starting room the computers need.
+char const * Reject_Reason(MultiMission const & mission, MapLayout const & layout)
+{
+	if (!Offered_In_Standard_Mode(mission)) {
+		return("mode");
+	}
+	if (layout.Starts < 4) {
+		return("starts");
+	}
+	// Players who start in one cluster, as on a map with a single field in the middle, leave the computers no base to build.
+	double const diagonal = std::hypot((double)layout.Visible.X, (double)layout.Visible.Y);
+	if (layout.MaxGap < MIN_START_SPREAD * diagonal) {
+		return("clustered");
+	}
+	return(nullptr);
+}
+
+
+// Takes a map that Reject_Reason accepts whose visible area covers the screen, so no black edge shows;
 // failing that, the largest such map, or -1 when no map has the positions. The maps are tried in a shuffled
 // order and each is read only as it is tried, so a long map list costs the reading of a few maps, not of all.
 int Pick_Fitting(std::vector<int> & choices)
@@ -234,10 +313,11 @@ int Pick_Fitting(std::vector<int> & choices)
 	int best = -1;
 	long long best_area = -1;
 	for (int index : choices) {
-		if (RandomMapWaypointCount(index) < 4) {
+		MapLayout const layout = Map_Layout(Session.Scenarios[index]->Get_Filename());
+		if (Reject_Reason(*Session.Scenarios[index], layout) != nullptr) {
 			continue;
 		}
-		Point2D const size = Visible_Map_Size(Session.Scenarios[index]->Get_Filename());
+		Point2D const size = layout.Visible;
 		if (size.X >= shown.Width && size.Y >= shown.Height) {
 			return(index);
 		}
@@ -284,7 +364,7 @@ int Pick_Map(int & starts)
 	if (index < 0) {
 		return(-1);
 	}
-	starts = RandomMapWaypointCount(index);
+	starts = Map_Layout(Session.Scenarios[index]->Get_Filename()).Starts;
 	return(CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available() ? index : -1);
 }
 
@@ -697,6 +777,32 @@ void Shellmap_Log_View(void)
 	DebugString("AUTOTEST viewstate battle %d held %d zoom %.3f display %.3f view %dx%d screen %dx%d speed %d session %d player speed %d battle rate %.2f fps\n",
 		Running ? 1 : 0, Player_View_Zoom_Held() ? 1 : 0, ViewZoom * InterfaceScale, DisplayZoom * InterfaceScale, TacticalRect.Width, TacticalRect.Height,
 		ScreenTacticalRect.Width, ScreenTacticalRect.Height, speed, session_speed, Options.GameSpeed, fps);
+}
+
+
+void Shellmap_Log_Map_Choices(void)
+{
+	if (Session.Scenarios.Count() == 0) {
+		Session.Read_Scenario_Descriptions();
+	}
+	int accepted = 0;
+	int rejected = 0;
+	for (int index = 0; index < Session.Scenarios.Count(); index++) {
+		MultiMission const & mission = *Session.Scenarios[index];
+		char const * file = mission.Get_Filename();
+		if (stricmp(file, RANDOM_MAP_FILE_NAME) == 0) {
+			continue;
+		}
+		MapLayout const layout = Map_Layout(file);
+		char const * reason = !mission.Get_Official() ? "unofficial" : Reject_Reason(mission, layout);
+		(reason == nullptr ? accepted : rejected)++;
+		DebugString("AUTOTEST shellmap %s %s theater %s starts %d modes [%s] visible %dx%d gap %.0f to %.0f\n", file, reason == nullptr ? "accepted" : "rejected",
+			layout.Theater.c_str(), layout.Starts, mission.Game_Modes(), layout.Visible.X, layout.Visible.Y, layout.MinGap, layout.MaxGap);
+		if (reason != nullptr) {
+			DebugString("AUTOTEST shellmap %s reason %s\n", file, reason);
+		}
+	}
+	DebugString("AUTOTEST shellmap accepted %d rejected %d\n", accepted, rejected);
 }
 
 

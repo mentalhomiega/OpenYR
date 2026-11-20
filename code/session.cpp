@@ -86,6 +86,8 @@
 #include "utf8.h"
 #include "xstraw.h"
 
+#include "strutil.h"
+
 #include <algorithm>
 #include <ctime> // for station ID computation
 #include <dos.h> // for station ID computation
@@ -1694,6 +1696,8 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 
 		MinPlayers = ini.Get_Int(name, "MinPlayers", MinPlayers);
 		MaxPlayers = ini.Get_Int(name, "MaxPlayers", MaxPlayers);
+		ini.Get_String(name, "GameMode", "", buffer, sizeof(buffer));
+		GameModes = buffer;
 
 		CCFileClass file(Filename);
 
@@ -1759,6 +1763,17 @@ MultiMission::MultiMission(char const * filename, char const * description, char
 		MinPlayers = ccini.Get_Int("Multiplay", "MinPlayers", MinPlayers);
 		MaxPlayers = ccini.Get_Int("Multiplay", "MaxPlayers", MaxPlayers);
 	}
+}
+
+
+bool MultiMission::Lists_Mode(char const * mode) const
+{
+	for (std::string const & listed : Split_List(GameModes, ',', TRIM_SPACE_TAB, true)) {
+		if (stricmp(listed.c_str(), mode) == 0) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
