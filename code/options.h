@@ -269,6 +269,9 @@ class OptionsClass {
 		// Does a drag selection leave out LowSelectionPriority objects when it also caught others? (Phobos PrioritySelectionFiltering)
 		bool PrioritySelectionFiltering;
 
+		// Are the building placement squares drawn flat, at the height of the square under the pointer? Only the modern interface style does so.
+		bool FlatPlacementGrid;
+
 		/*
 		 * If true, a solo or skirmish game keeps running, silent and without input, while
 		 * another program has the focus.

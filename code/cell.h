@@ -664,7 +664,7 @@ class CellClass : public AbstractClass
 		Rect Overlay_Render_Rect(void) const;
 		Rect Overlay_Shadow_Render_Rect(void) const;
 		Rect Cell_Render_Rect(void) const;
-		bool Draw_Placement_Cursor(Point2D const & xpoint, Rect const & cliprect, bool zeroalpha);
+		bool Draw_Placement_Cursor(Point2D const & xpoint, Rect const & cliprect, bool zeroalpha, int flat_level = -1);
 		void Draw_Shroud_Or_Fog_Shape(Point2D const & xpoint, Rect const & cliprect, int index);
 		void Draw_Fog_Shape(Point2D const & xpoint, Rect const & cliprect, int index);
 		void Draw_Overlay_Shadow(Point2D const & xpoint, Rect const & cliprect);

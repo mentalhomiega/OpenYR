@@ -52,6 +52,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.AltToRally = (intent.Value != 0);
 	} else if (intent.Name == "airpick") {
 		State.AircraftBodyPick = (intent.Value != 0);
+	} else if (intent.Name == "flatgrid") {
+		State.FlatPlacementGrid = (intent.Value != 0);
 	} else if (intent.Name == "background") {
 		State.SimulateUnfocused = (intent.Value != 0);
 	} else if (intent.Name == "sorting") {
@@ -93,6 +95,7 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.ShowDefenceRange = State.ModernInterface;
 		State.AltToRally = false;
 		State.SimulateUnfocused = false;
+		State.FlatPlacementGrid = true;
 		State.SidebarSorting = true;
 		State.DebugMode = false;
 		State.RecordReplays = false;
@@ -142,6 +145,9 @@ void UIGameControlsPresenterClass::Apply(void)
 	}
 	if (State.AircraftBodyPick != Start.AircraftBodyPick) {
 		Service.Set_Aircraft_Body_Pick(State.AircraftBodyPick);
+	}
+	if (State.FlatPlacementGrid != Start.FlatPlacementGrid) {
+		Service.Set_Flat_Placement_Grid(State.FlatPlacementGrid);
 	}
 	if (State.SidebarSorting != Start.SidebarSorting) {
 		Service.Set_Sidebar_Sorting(State.SidebarSorting);
@@ -213,7 +219,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 		{
 			Dirty({"speed", "scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
 				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname", "rally",
-				"airpick", "background", "sorting", "debugmode", "replays", "autosave", "classicspeeds", "hasspeed"});
+				"airpick", "flatgrid", "background", "sorting", "debugmode", "replays", "autosave", "classicspeeds", "hasspeed"});
 		}
 
 	protected:
@@ -239,6 +245,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("extras", &state.Extras)
 				&& model.Bind("rally", &state.AltToRally)
 				&& model.Bind("airpick", &state.AircraftBodyPick)
+				&& model.Bind("flatgrid", &state.FlatPlacementGrid)
 				&& model.Bind("background", &state.SimulateUnfocused)
 				&& model.Bind("sorting", &state.SidebarSorting)
 				&& model.Bind("debugmode", &state.DebugMode)

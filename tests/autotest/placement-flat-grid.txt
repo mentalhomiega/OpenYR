@@ -1,0 +1,33 @@
+; The squares that show where a building may go. gamemd draws each square at its own cell's height, and a sloped cell with its
+; slope shape (CellClass::DrawBuildingPlacementPreview, 0x47EC90, called from 0x6D7D70), so the grid follows ramps and cliffs. The
+; modern interface style draws them flat, all at the height of the cell under the pointer, while FlatPlacementGrid is on (the default);
+; the classic style and FlatPlacementGrid=no draw as gamemd does.
+; A power plant (2x2) is carried over a cliff edge: its cursor cell is flat, the cell beside it stands two levels up, and the cell
+; below the cursor is a slope at level one.
+; Expected with flat squares: "placementmarks flat 1 level 0" and every cell "drawn at 0" (the cursor cell 52,32 sits at level 0). Otherwise: "flat 0 level -1", and
+; each cell drawn at its own height (the raised cell at 2, the slope cell at 1).
+; Two more carries follow: over plain flat ground, then over a block of slope cells at level one; the marks log shows each.
+; Run (modern, flat): scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/placement-flat-grid.txt -Country 8 -Width 1280 -Height 720 -Seconds 120 -Settings "[Options]`r`nInterfaceStyle=Modern" -Filter "AUTOTEST|Exception"
+; Run (modern, unflattened): add FlatPlacementGrid=no to the settings. Classic: InterfaceStyle=Classic.
+20 command CenterBase
+30 own GACNST 50 30
+31 own GAPOWR 56 40
+40 produce GAPOWR
+44 raise 50 30 6 6 0 0
+45 raise 53 32 1 1 2 0
+46 raise 52 33 1 1 1 1
+50 view 52 33
+600 cameopress GAPOWR left
+610 windowcell move 52 32
+620 placement
+621 placementmarks
+625 windowshot placement-flat-grid
+630 raise 51 35 6 6 0 0
+631 raise 54 38 2 2 1 1
+635 windowcell move 52 36
+640 placementmarks
+641 windowshot placement-flat-grid-ground
+650 windowcell move 54 38
+655 placementmarks
+656 windowshot placement-flat-grid-slope
+670 quit

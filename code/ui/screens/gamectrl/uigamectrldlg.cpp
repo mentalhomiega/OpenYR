@@ -128,6 +128,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.AircraftBodyPick = on;
 		}
 
+		virtual void Set_Flat_Placement_Grid(bool on) override
+		{
+			Options.FlatPlacementGrid = on;
+		}
+
 		virtual void Set_Sidebar_Sorting(bool on) override
 		{
 			Options.SidebarSorting = on;
@@ -222,6 +227,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.AltToRally = Options.AltToRally;
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
 	state.AircraftBodyPick = Options.AircraftBodyPick;
+	state.FlatPlacementGrid = Options.FlatPlacementGrid;
 	state.SidebarSorting = Options.SidebarSorting;
 	state.DebugMode = Options.DebugMode;
 	state.RecordReplays = Replay_Is_Recording_Enabled();

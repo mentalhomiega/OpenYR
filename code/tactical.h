@@ -243,6 +243,8 @@ class Tactical : public AbstractClass
 		 */
 		void Draw_Placement(bool drawtrans);
 		void Draw_Placement_Range(void);
+		int Placement_Flat_Level(void) const;
+		int Placement_Mark_Level(Cell const & cell) const;
 		void Draw_Super_Range(void);
 		void Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color);
 		void Draw_Range_Ring_Pixels(Coord const & center, int radius, RGBClass const & color);

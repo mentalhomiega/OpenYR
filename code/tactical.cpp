@@ -1612,6 +1612,31 @@ void Tactical::Draw_Screen_Text(wchar_t const * text)
 
 
 /// <summary>
+/// The height level the placement squares are drawn at when they ignore the terrain, or -1 when
+/// each square follows its own cell as in gamemd.
+/// The squares are flat in the modern interface style while FlatPlacementGrid is on; they then all
+/// sit at the height of the cell under the pointer.
+/// </summary>
+int Tactical::Placement_Flat_Level(void) const
+{
+	if (!Modern_Interface() || !Options.FlatPlacementGrid || Map.ZoneCell == CELL_NONE || !Map.In_Radar(Map.ZoneCell)) {
+		return(-1);
+	}
+	return(Map[Map.ZoneCell].Height);
+}
+
+
+/// <summary>
+/// The height level a placement square on the cell is drawn at.
+/// </summary>
+int Tactical::Placement_Mark_Level(Cell const & cell) const
+{
+	int const flat_level = Placement_Flat_Level();
+	return(flat_level >= 0 ? flat_level : Map[cell].Height);
+}
+
+
+/// <summary>
 /// Draws the placement cursor for the object waiting to be built.
 /// This routine is used while a pending object is being positioned under the mouse. Every
 /// cell of its footprint is marked to show whether it will accept the object, and a wall,
@@ -1647,6 +1672,7 @@ void Tactical::Draw_Placement(bool drawtrans)
 	/*
 	 * Mark every cell of the footprint, remembering whether they all accepted the object.
 	 */
+	int const flat_level = Placement_Flat_Level();
 	bool all_valid = true;
 	for (int cx = start.X; cx < dims.X; cx++) {
 		for (int cy = start.Y; cy < dims.Y; cy++) {
@@ -1657,7 +1683,7 @@ void Tactical::Draw_Placement(bool drawtrans)
 			pixel.X = ISO_TILE_PIXEL_W / -2 + pixel.X;
 			if (Map.In_Radar(cell)) {
 				CellClass * cellptr = &Map[cell];
-				all_valid = cellptr->Draw_Placement_Cursor(pixel, TacticalRect, drawtrans) && all_valid;
+				all_valid = cellptr->Draw_Placement_Cursor(pixel, TacticalRect, drawtrans, flat_level) && all_valid;
 			}
 		}
 	}
@@ -1916,8 +1942,8 @@ void Tactical::Draw_Fence_Placement(bool drawtrans, Cell cell)
 								  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
 			Cell drawcell = Adjacent_Cell(cell, facing);
 			for (int i = count; i > 0; i--) {
-				int yoff = -1 - LEVEL_PIXEL_H_1 * Map[drawcell].Height;
-				int zoff = -2 - LEVEL_PIXEL_H_1 * Map[drawcell].Height;
+				int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
+				int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
 				Coord coord = Coord_Whole(Coord(drawcell));
 				Point2D pixel;
 				Coord_To_Pixel(coord, pixel);
@@ -1978,8 +2004,8 @@ void Tactical::Draw_Firestorm_Wall_Placement(bool drawtrans, Cell cell)
 								  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
 			Cell drawcell = Adjacent_Cell(cell, facing);
 			for (int i = count; i > 0; i--) {
-				int yoff = -1 - LEVEL_PIXEL_H_1 * Map[drawcell].Height;
-				int zoff = -2 - LEVEL_PIXEL_H_1 * Map[drawcell].Height;
+				int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
+				int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
 				Coord coord = Coord_Whole(Coord(drawcell));
 				Point2D pixel;
 				Coord_To_Pixel(coord, pixel);
@@ -2044,8 +2070,8 @@ void Tactical::Draw_Wall_Placement(bool drawtrans, Cell cell)
 								  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
 			Cell drawcell = Adjacent_Cell(cell, facing);
 			for (int i = count; i > 0; i--) {
-				int yoff = -1 - LEVEL_PIXEL_H_1 * Map[drawcell].Height;
-				int zoff = -2 - LEVEL_PIXEL_H_1 * Map[drawcell].Height;
+				int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
+				int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
 				Coord coord = Coord_Whole(Coord(drawcell));
 				Point2D pixel;
 				Coord_To_Pixel(coord, pixel);
