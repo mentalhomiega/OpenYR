@@ -153,4 +153,5 @@ class VocClass
 	private:
 		char 				Name[256];			// Digitized voice file name.
 		AudioEventTypeClass Type;
+		bool				ReportedSilent = false;	// The debug log has said that the sound names no sample.
 };

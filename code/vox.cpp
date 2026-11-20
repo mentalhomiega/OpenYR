@@ -826,7 +826,9 @@ char const * Control_Name(VoxControlType control)
 
 void Trace_Line(char const * action, int line, char const * format = "", ...)
 {
-	if (!AudioTrace.Is_On()) {
+	// A line that will not play goes to the debug log too, so a play-test log says why it was silent.
+	bool const unplayed = strcmp(action, "dropped") == 0 || strcmp(action, "skipped") == 0 || strcmp(action, "cleared") == 0;
+	if (!AudioTrace.Is_On() && !unplayed) {
 		return;
 	}
 	char extra[256];
@@ -834,6 +836,11 @@ void Trace_Line(char const * action, int line, char const * format = "", ...)
 	va_start(args, format);
 	std::vsnprintf(extra, sizeof(extra), format, args);
 	va_end(args);
+	if (unplayed && strcmp(action, "cleared") == 0) {
+		DebugString("Speech: %s emptied the queue, %s\n", Line_Name(line).c_str(), extra);
+	} else if (unplayed) {
+		DebugString("Speech: %s %s, %s\n", action, Line_Name(line).c_str(), extra);
+	}
 	AudioTrace.Write("eva", "%s line=%s%s%s", action, AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), extra[0] != '\0' ? " " : "", extra);
 }
 
@@ -935,11 +942,16 @@ void Speak_Eva_Index_As(int line, int type, int level)
 	}
 	// The menu battle has nobody playing, so EVA stays quiet for it. A line asked for at speech volume 0 still
 	// takes its turn, silent, as gamemd's PlayIndex never reads the volume.
-	if (Debug_Quiet || !AudioEngine.Is_Available() || line < 0 || Shellmap_In_Scope() || BlockCount > 0) {
+	// Only a blocked line reaches the debug log here; the other cases hold for every line alike.
+	if (Debug_Quiet || !AudioEngine.Is_Available() || line < 0 || Shellmap_In_Scope()) {
 		if (AudioTrace.Is_On()) {
-			char const * reason = line < 0 ? "no-line" : (Shellmap_In_Scope() ? "menu-battle" : (BlockCount > 0 ? "blocked" : "no-audio"));
-			Trace_Line("dropped", line, "reason=%s", reason);
+			char const * reason = line < 0 ? "no-line" : (Shellmap_In_Scope() ? "menu-battle" : "no-audio");
+			AudioTrace.Write("eva", "dropped line=%s reason=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), reason);
 		}
+		return;
+	}
+	if (BlockCount > 0) {
+		Trace_Line("dropped", line, "reason=blocked");
 		return;
 	}
 
@@ -975,18 +987,16 @@ void Speak_Eva_Index_As(int line, int type, int level)
 
 	VoxSubmitClass outcome;
 	bool const cut = Queue.Submit(line, Priority_Level(priority), control, Current.Is_Valid() ? CurrentLine : -1, &outcome);
-	if (AudioTrace.Is_On()) {
-		static char const * const REASONS[] = {"", " reason=playing", " reason=waiting", " reason=standard-held", " reason=urgent-waiting"};
-		Trace_Line(outcome.Result == VoxSubmitClass::ADDED ? "queued" : "dropped", line, "prio=%d type=%s pending=%d%s", priority, Control_Name(control), Queue.Count(), REASONS[outcome.Result]);
-		if (outcome.Cleared > 0) {
-			Trace_Line("cleared", line, "count=%d", outcome.Cleared);
-		}
-		if (outcome.Replaced >= 0) {
-			Trace_Line("dropped", outcome.Replaced, "reason=replaced by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
-		}
-		if (cut) {
-			Trace_Line("cut", CurrentLine, "by=%s h=%u", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), Current.Raw());
-		}
+	static char const * const REASONS[] = {"", " reason=playing", " reason=waiting", " reason=standard-held", " reason=urgent-waiting"};
+	Trace_Line(outcome.Result == VoxSubmitClass::ADDED ? "queued" : "dropped", line, "prio=%d type=%s pending=%d%s", priority, Control_Name(control), Queue.Count(), REASONS[outcome.Result]);
+	if (outcome.Cleared > 0) {
+		Trace_Line("cleared", line, "count=%d", outcome.Cleared);
+	}
+	if (outcome.Replaced >= 0) {
+		Trace_Line("dropped", outcome.Replaced, "reason=replaced by=%s", AudioTraceClass::Word(Line_Name(line).c_str()).c_str());
+	}
+	if (cut) {
+		Trace_Line("cut", CurrentLine, "by=%s h=%u", AudioTraceClass::Word(Line_Name(line).c_str()).c_str(), Current.Raw());
 	}
 	// gamemd starts the interrupting line with no gap (PlayIndex zeroes DAT_00b1d4d0).
 	if (cut) {

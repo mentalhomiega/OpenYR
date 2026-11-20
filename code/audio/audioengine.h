@@ -158,6 +158,7 @@ class AudioEngineClass
 		static void Trace_Clock(unsigned & ms, long long & position);
 		int Free_Stream_Slot(void) const;
 		void Reap_Streams(void);
+		void Report_Drops(unsigned dropped);
 		void Close_Stream(int slot);
 		void Push_Level(AudioCommandType type, AudioGroupType group, float level, float ramp);
 		unsigned Wall_Ms(void) const;
@@ -177,6 +178,7 @@ class AudioEngineClass
 		float MasterGain = 1.0f;
 		std::chrono::steady_clock::time_point Epoch;
 		unsigned LastDropped = 0;
+		unsigned LastDroppedByType[AudioDropLogClass::TYPES] = {};
 		unsigned LastDropReport = 0;
 		bool Available = false;
 

@@ -74,6 +74,23 @@ Each line is `f=<game frame> ms=<audio clock> pos=<sample position in the record
 | `music` | `start`, `failed`, `stop` | Scores started and stopped, with file, level, fade and loop |
 | `capture` | `start`, `stop`, `pause`, `resume` | The recording: mix rate, channels and frame length |
 
+### Silent sounds in the debug log
+
+Without the audio log, the debug log still says why a sound asked for stayed silent, so a play-test log can be read
+on its own:
+
+- `Speech: dropped <line>, ... reason=<reason>` and `Speech: skipped <line>, reason=<reason>` for an announcer line
+  that will not play, with the reasons of the `eva` table above. `no-sample` means the line names no sample for the
+  voice speaking; `open-failed` that its file could not be opened. `Speech: <line> emptied the queue, count=<n>` is
+  an INTERRUPT line clearing the lines that waited.
+- `Sound: <name> not played: it names no sample`, once for each sound, and `Audio: sample <file> not found`, once for
+  each sample file.
+- `Audio: <n> commands dropped (<type> <count>, ...); first <type>, <reason>, voice <state>`, at most once a second,
+  for commands the mixer could not apply: how many of each type, and for the first since the last such line why it
+  was dropped (`ring-full`, `not-allocated`, `start-failed`, `not-live`, `reused` for a voice already playing a newer
+  sound) and the state the voice was in. A command reaching a voice whose sound has ended is not counted, also after
+  the game has released the voice.
+
 ## Checking a recording
 
 ```
@@ -212,6 +229,7 @@ These differences remain:
 | `audio-eva-two-types.txt` | A waiting line asked for again with its own Type is dropped, with another Type a second copy plays; test mod |
 | `audio-eva-standard.txt` | No STANDARD line is held while a QUEUED_INTERRUPT line waits, and the held line is discarded when it starts; test mod |
 | `audio-eva-order.txt` | QUEUED_INTERRUPT, then CRITICAL, then a CRITICAL QUEUE line, then a LOW QUEUE line; test mod |
+| `audio-eva-no-sample.txt` | A line with no sample is skipped, and the debug log names it and the reason; test mod |
 | `audio-eva-volume-zero.txt` | A line asked for at speech volume 0 still starts |
 | `audio-eva-chrono-block.txt` | A line asked for during the chronoshift screen effect is dropped; one asked for after it plays |
 | `../campaign/audio-eva-mission-end-sov04.txt` | On Soviet 4, a Play Speech line cuts the line playing, and the mission-failed line is held behind it |

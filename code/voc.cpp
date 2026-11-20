@@ -195,6 +195,11 @@ AudioHandle VocClass::Play(float vol, int pan, bool no_attack, AudioGroupType gr
 		char const * reason = AudioEngine.Group_Gain(group) <= 0.0f ? "volume-zero" : (vol <= 0.0 ? "level-zero" : "cannot-play");
 		AudioTrace.Write("sfx", "dropped name=%s group=%s reason=%s", Name, Audio_Group_Name(group), reason);
 	}
+	// A sound that names no sample never plays, so the debug log says so once for each.
+	if (!Debug_Quiet && Type.SoundCount == 0 && !ReportedSilent) {
+		ReportedSilent = true;
+		DebugString("Sound: %s not played: it names no sample\n", Name);
+	}
 	return(AudioHandle());
 }
 

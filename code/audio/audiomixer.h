@@ -22,6 +22,42 @@
 #include <memory>
 
 
+// Why the mixer could not apply a command.
+enum class AudioDropReason : uint8_t {
+	RING_FULL,          // the command queue was full when the game pushed it
+	BAD_SLOT,           // the command names no voice
+	NOT_ALLOCATED,      // a play reached a voice the game had not prepared
+	START_FAILED,       // a play's clip or stream could not start
+	NOT_LIVE,           // the voice is not playing; the drop's voice state says what it is
+	REUSED,             // the voice plays a newer sound than the one the command was for
+	UNKNOWN_TYPE
+};
+
+
+// The commands the mixer dropped, counted by type, and the first drop since the game last took it. Any thread.
+struct AudioDropLogClass {
+	enum { TYPES = (int)AudioCommandType::STOP_ALL + 1 };
+
+	struct DropClass {
+		AudioCommandType Type;
+		AudioDropReason Reason;
+		AudioVoiceState State;
+	};
+
+	void Count(AudioCommandType type, AudioDropReason reason, AudioVoiceState state);
+	// False when nothing was dropped since the last call.
+	bool Take_First(DropClass & drop);
+
+	std::atomic<unsigned> Total{0};
+	std::atomic<unsigned> ByType[TYPES] = {};
+
+	private:
+		std::atomic<bool> HaveFirst{false};
+		std::atomic<bool> FirstReady{false};
+		DropClass First = {};
+};
+
+
 class AudioMixerClass
 {
 	public:
@@ -47,7 +83,8 @@ class AudioMixerClass
 		void Free_Voice(unsigned slot);
 		AudioVoiceState Voice_State(unsigned slot) const;
 		bool Push(AudioCommand const & command);
-		unsigned Dropped_Commands(void) const { return(Dropped.load(std::memory_order_relaxed)); }
+		unsigned Dropped_Commands(void) const { return(Drops.Total.load(std::memory_order_relaxed)); }
+		AudioDropLogClass & Drop_Log(void) { return(Drops); }
 
 		// Any thread. Ramps everything to silence over a few milliseconds and then
 		// stops advancing voices, so positions are kept for the resume.
@@ -69,7 +106,7 @@ class AudioMixerClass
 		std::unique_ptr<StateClass> State;
 		std::atomic<int> RenderOwner{0};
 		std::atomic<bool> PauseAll{false};
-		std::atomic<unsigned> Dropped{0};
+		AudioDropLogClass Drops;
 		unsigned MixRate = 0;
 		unsigned MixChannels = 0;
 		bool Ready = false;
