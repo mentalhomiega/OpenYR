@@ -355,6 +355,11 @@ bool Main_Window_Create(bool windowed, int width, int height)
 
 	SDL_WindowFlags flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	flags |= windowed ? SDL_WINDOW_RESIZABLE : SDL_WINDOW_FULLSCREEN;
+	// A test run's window is never shown, and it must not become the foreground window either: that takes the
+	// keyboard from whatever the person at the computer is doing.
+	if (AutoTest_Active()) {
+		flags |= SDL_WINDOW_NOT_FOCUSABLE;
+	}
 
 	_Window = SDL_CreateWindow("Tiberian Sun", width, height, flags);
 	if (_Window == nullptr) {
@@ -598,7 +603,7 @@ void Main_Window_Request_Repaint(void)
 void Main_Window_Take_Focus(void)
 {
 	HWND const window = Window_Handle();
-	if (window != NULL) {
+	if (window != NULL && !AutoTest_Active()) {
 		SetFocus(window);
 	}
 }
