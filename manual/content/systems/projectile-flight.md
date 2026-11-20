@@ -61,7 +61,7 @@ related:
 
 A projectile carries figures from the weapon that fired it. The weapon supplies the damage, the warhead, the launch speed, and the object credited with any kill. The projectile type decides how the shot travels, what ends its flight, and how many blasts it delivers.
 
-[`ROT`](/keys/rot/#scope-bullettype) chooses between two flight models. A projectile with `ROT` above zero is steered: the missile autopilot turns it toward its target each frame and lifts it over the ground in the way. A projectile with `ROT=0` is ballistic: it follows the arc it was launched along, falls under gravity, and bounces off whatever it lands on. Most settings on this page affect only one of the two models.
+[`ROT`](/keys/rot/#scope-bullettype) chooses between two flight models. A projectile with `ROT` above zero is steered: the missile autopilot turns it toward its target each frame and lifts it over the ground in the way. A projectile with `ROT=0` is ballistic: it follows the arc it was launched along and falls under gravity. Most settings on this page affect only one of the two models.
 
 [Firing geometry and beam weapons](/systems/firing-geometry/) owns where a shot appears and what is drawn alongside it. This page owns the shot itself, from the velocity it leaves with to the last blast it delivers.
 
@@ -110,7 +110,7 @@ The pitch comes from the first of these rules that applies:
 3. Any other projectile leaves almost level, about 1.4 degrees up, unless the aim point is more than 200 leptons above or below the weapon's mounting. Then it is pitched at the aim point, with the height difference reduced by 20 leptons first.
    - When that happens and the firer's target is a structure, the aim height becomes 200 leptons for each point of the structure's [`Height`](/keys/height/#scope-buildingtype). That height is counted from the map's zero height, not from the ground the structure stands on.
 
-A ballistic projectile does not use the weapon's [`Speed=`](/keys/speed/#scope-weapontype). Once the rules are read, the engine replaces it with a speed worked out from the weapon's [`Range=`](/keys/range/) and gravity, fast enough to carry the shot the weapon's full range. At launch that speed is capped at half the distance to the aim point, so a point-blank shot leaves more slowly than a shot at full range. An arcing shot's arc is worked out at the capped speed.
+A ballistic projectile does not use the weapon's [`Speed=`](/keys/speed/#scope-weapontype). It leaves at a speed worked out from gravity and the horizontal distance from the weapon's mounting to the target at the moment it is fired: the speed that carries a 45-degree shot 1.2 times that distance. That speed is then capped at half the distance to the aim point. An arcing shot's arc is worked out at the capped speed. The firer's range test still uses a speed worked out from the weapon's [`Range=`](/keys/range/).
 
 A steered projectile leaves at 1 lepton a frame, whatever the distance, and works up to the weapon's `Speed=` in flight, as [steered flight](#steered-flight) describes.
 
@@ -139,7 +139,7 @@ Each turn runs these steps in order:
 3. On every frame of the game clock that is a multiple of the trail delay, a [`Trailer`](/keys/trailer/) puff is left at the position the projectile is about to leave. The delay is [`SpawnDelay`](/keys/spawndelay/#scope-bullettype), 3 unless the art sets it, or the longer delay a [`Scalable=yes`](/keys/scalable/) type has been given.
 4. One of the two flight models moves the projectile, and may mark it to detonate.
 5. The projectile takes up its new position. If it now stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through, the wall consumes it and the turn ends.
-6. A projectile not already marked goes through three standing tests: a tall overlay in its cell, ground level, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
+6. A projectile not already marked goes through three standing tests: a tall overlay in its cell, depth below the ground, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
 7. A steered or `Ranged=yes` projectile checks its fuse.
 8. A projectile that is not marked, and whose fuse has not tripped, keeps flying. A [`Degenerates=yes`](/keys/degenerates/) projectile then loses 1 point of damage, down to a floor of 5. Any other projectile detonates and is removed.
 
@@ -189,7 +189,12 @@ Several tests below ignore friendly objects: those that belong to the firer's ho
 
 A projectile forgets its firer when the firer is destroyed, captured, enters a transport or a structure, or starts to cloak. For the rest of its flight nothing counts as friendly, so the shot can go off on its own side's units and structures.
 
-The projectile has landed when a step takes it below ground level, through a bridge deck, or into an obstacle. It is then placed on the ground or deck it struck.
+The projectile has landed when a step takes it below ground level, through a bridge deck, or into an obstacle. What follows depends on whether it still knows its firer:
+
+- A projectile that has forgotten its firer is placed on the ground or deck it struck and detonates.
+- A projectile that still knows its firer detonates on a bridge deck it crossed, at deck height. Ground and obstacles do not stop it: it flies on below the surface along its arc. It goes off when it reaches the target's cell, four terrain levels below the ground, at a cliff or wall that stops a [`SubjectToCliffs=yes`](/keys/subjecttocliffs/) or [`SubjectToWalls=yes`](/keys/subjecttowalls/) projectile, or by one of the other checks below. A blast below the ground goes off on the ground above it.
+
+[`Bouncy`](/keys/bouncy/) and [`Elasticity`](/keys/elasticity/#scope-bullettype) are read but change nothing.
 
 An obstacle is a structure or a wall in the cell, and it counts only while the projectile is less than 150 leptons above the ground. These structures do not stop the shot:
 
@@ -198,21 +203,28 @@ An obstacle is a structure or a wall in the cell, and it counts only while the p
 - a one-cell structure whose type names an [`UndeploysInto`](/keys/undeploysinto/) vehicle;
 - a friendly structure.
 
-Walls have no exemptions, so a wall also stops ballistic fire from its owner's house and allies. Only three overlays count as walls in this test: the ones at positions 2, 26 and 243 of the `[OverlayTypes]` list, counting from 0. The stock list puts `GAWALL`, `NAWALL` and `GAFWLL` there.
+Walls have no exemptions, so a wall stops a shot that has forgotten its firer whoever owns the wall. Only three overlays count as walls in this test: the ones at positions 2, 26 and 243 of the `[OverlayTypes]` list, counting from 0. The stock list puts `GAWALL`, `NAWALL` and `GAFWLL` there.
 
 Another overlay marked [`High=yes`](/keys/high/#scope-overlaytype) stops a shot only through the tall-overlay test in [What ends a flight](#what-ends-a-flight). That test applies to both flight models and exempts a projectile marked [`High=yes`](/keys/high/#scope-bullettype). A `High=yes` projectile gets no exemption from the wall test above. The stock sandbag wall, `GASAND`, sets [`Wall=yes`](/keys/wall/) but not `High=yes`, so neither test stops a shot passing over it.
 
-Every landing works out a rebound, even when the projectile is about to detonate. The velocity is scaled by [`Elasticity`](/keys/elasticity/#scope-bullettype) and reflected off the slope of the ground it landed on, so a shot that lands on a ramp bounces off downhill. What happens next depends on [`Bouncy`](/keys/bouncy/):
+Four more checks can end a ballistic flight after the move, in this order. A check that ends the flight skips the ones after it.
 
-- A projectile that is not `Bouncy=yes` detonates where it landed.
-- A `Bouncy=yes` projectile detonates when the cell it was in at the start of the turn holds an object that is not friendly. The firer's cell never counts. Otherwise it flies on.
-- Any projectile detonates on its third landing.
+1. A projectile that enters the cell its target's center was in at launch, or a cell of the structure standing there, goes off when it was less than two terrain levels (208 leptons) above the ground at the start of the turn, and is moved onto the target when it is close enough, as [Where the blast lands](#where-the-blast-lands) describes. A shell that comes down short of a target on a slope flies on below the ground into this cell.
+2. A projectile goes off when an object that is not friendly stands in the cell the projectile just entered, within 128 leptons (half a cell) of it. It goes off on that object, unless it is [`Inaccurate=yes`](/keys/inaccurate/).
+3. A projectile that has left the playfield is removed at its previous position without detonating, even if it had just landed.
+4. A projectile moving slower than 10 leptons a frame, and lying within 10 leptons of the ground, detonates where it lies.
 
-Three more checks can end a ballistic flight after the move:
+### Shots at cliffs
 
-1. A projectile not already marked to detonate goes off on an object that is not friendly when that object stands in the cell the projectile just entered, within 128 leptons (half a cell) of it.
-2. A projectile that has left the playfield is removed at its previous position without detonating, even if it had just landed.
-3. A projectile moving slower than 10 leptons a frame, and lying within 10 leptons of the ground, detonates where it lies.
+These results were measured in Yuri's Revenge with a Rhino, a Grizzly and an IFV, and the engine gives the same ones:
+
+| Shot | Result |
+| --- | --- |
+| Cannon at a target on the edge of a four-level cliff top, two cells away on the low ground | Hits |
+| Cannon at a target on the edge of a four-level cliff top, three cells away on the low ground | Misses. The shell reaches the target's cell four levels below the ground there, so it goes off on the cliff edge and is not moved onto the target |
+| Cannon at a target behind a four-level cliff face, with cliff cells on the line between them | Does not fire. The tank drives to a point on the high ground and fires from there, because the shell is [`SubjectToCliffs=yes`](/keys/subjecttocliffs/) |
+| IFV missile from a cliff top at a target four levels below, three cells away | Misses. The missile goes off on the cliff edge |
+| IFV missile down, or cannon up, a two-level slope, three cells away | Hits |
 
 ## What ends a flight
 
@@ -224,14 +236,14 @@ This table gathers every way a flight ends, in the order a turn tests them. The 
 | It has arrived: half a frame's travel or less to go, or it is at ground level | Steered | On its homing point, unless it is [`Airburst=yes`](/keys/airburst/) or at ground level |
 | It has stopped gaining on its target | Steered | Where it stands. `Airburst=yes` and [`VeryHigh=yes`](/keys/veryhigh/) are exempt |
 | It crossed the height of a bridge deck | Steered | At deck height |
-| It landed, and either is not [`Bouncy=yes`](/keys/bouncy/) or the cell it was in at the start of the turn holds an object that is not friendly | Ballistic | On the ground or deck it struck |
-| It landed for the third time | Ballistic | Where it came down |
-| It came within 128 leptons of an object that is not friendly, in the cell it just entered | Ballistic | On that object |
+| It landed after its firer was forgotten, or crossed a bridge deck | Ballistic | On the ground or deck it struck |
+| It entered its target's cell less than 208 leptons above the ground | Ballistic | Where it stands, then moved onto the target as described below |
+| It came within 128 leptons of an object that is not friendly, in the cell it just entered | Ballistic | On that object, unless it is [`Inaccurate=yes`](/keys/inaccurate/) |
 | It left the playfield | Ballistic | Nowhere. It is removed without a blast |
 | It is moving slower than 10 leptons a frame and lies within 10 leptons of the ground | Ballistic | Where it lies |
 | It stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through | Both | Nowhere. The wall consumes it without a blast |
 | A [`High=yes`](/keys/high/#scope-overlaytype) overlay stands in its cell, the projectile is less than 100 leptons above the ground, and it is not [`High=yes`](/keys/high/#scope-bullettype) itself | Both | Where it stands |
-| It is below ground level | Both | Where it stands |
+| It is four terrain levels (416 leptons) or more below ground level, or it is a [`FlakScatter=yes`](/keys/flakscatter/) projectile below both the ground and its target's center | Both | On the ground above it |
 | It is [`AA=yes`](/keys/aa/) and within 128 leptons of the aircraft, or the airborne jumpjet infantry, it is chasing | Both | Where it stands |
 | Its fuse tripped | Steered or `Ranged=yes`, but never a `Dropping=yes` projectile | Where it stands. A trip within 64 leptons of the fuse point moves it onto the target, as described below |
 
@@ -241,7 +253,7 @@ The blast does not always go off where the projectile stood. Up to three moves p
 
 1. The blast moves onto the target's center when the projectile is neither [`Airburst=yes`](/keys/airburst/) nor [`Inaccurate=yes`](/keys/inaccurate/), and **Any of:**
    - the fuse tripped within 64 leptons of the point it was set on;
-   - a ballistic shot landed and went off because it is not `Bouncy=yes`, or because the cell it was in at the start of the turn held an object that is not friendly. It must also have come down within 384 leptons (a cell and a half) of the target, or within six times its rebound speed if that is farther. Only half the height difference counts toward that distance.
+   - a ballistic shot went off on entering its target's cell. It must also have come down within 384 leptons (a cell and a half) of the target, or within six times its speed if that is farther. Only half the height difference counts toward that distance.
 2. The blast moves onto the target's center when it is within 32 leptons of it. `Airburst=yes` and [`Inaccurate=yes`](/keys/inaccurate/) projectiles skip this move.
 3. Unless the warhead is [`EMEffect=yes`](/keys/emeffect/), or the projectile is [`Airburst=yes`](/keys/airburst/), [`Splits=yes`](/keys/splits/) or [`Inaccurate=yes`](/keys/inaccurate/), the blast moves onto a nearby target. An airborne target within 128 leptons of the projectile pulls the blast onto the point weapons aim at on it. Any other target within 42 leptons pulls the blast onto its position, and a structure's distance is measured to its edge.
 

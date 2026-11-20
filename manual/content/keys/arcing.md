@@ -15,7 +15,7 @@ Use `Arcing=yes` only on a projectile with no `ROT`. A projectile whose `ROT` is
 
 When no arc at the launch speed reaches the target, the weapon does not fire. No projectile is created, no ammunition is spent and no reload delay starts, so the firer can try again at once.
 
-**Reach.** An arcing weapon counts a target as in range when the horizontal distance to it is within the weapon's [`Range`](/keys/range/#scope-weapontype) and an arc at the weapon's launch speed can reach it. A projectile with no `ROT` is launched at a speed worked out from `Range`, which reaches about 1.2 times `Range` over level ground, so over level ground `Range` is the limit; a target well above the firer may be within `Range` but beyond the arc.
+**Reach.** An arcing weapon counts a target as in range when the horizontal distance to it is within the weapon's [`Range`](/keys/range/#scope-weapontype) and an arc at the weapon's launch speed can reach it. The range test assumes a launch speed worked out from `Range`, which reaches about 1.2 times `Range` over level ground, so over level ground `Range` is the limit; a target well above the firer may be within `Range` but beyond the arc. The shot itself leaves at the speed for the distance to the target, as [What the shot leaves with](/systems/projectile-flight/#what-the-shot-leaves-with) explains.
 
 Two limits still apply to an arcing weapon:
 
@@ -24,7 +24,7 @@ Two limits still apply to an arcing weapon:
 
 **Aircraft.** An aircraft also needs a valid arc before it fires. It then launches a projectile with no `ROT` level along its heading, so the shot does not follow the arc.
 
-**Clearance.** An arc passes over walls and structures only where it flies high enough. A projectile with no `ROT` that crosses a cell less than 150 leptons above the ground lands on any wall or structure in that cell, except a structure of the firer's house or its allies. A [`Bouncy=yes`](/keys/bouncy/) projectile rebounds from that landing; any other projectile detonates there. [Ballistic flight](/systems/projectile-flight/#ballistic-flight) lists the other exceptions.
+**Clearance.** A projectile with no `ROT` flies on through walls, structures and the ground while its firer is known, unless it is [`SubjectToWalls=yes`](/keys/subjecttowalls/) or [`SubjectToCliffs=yes`](/keys/subjecttocliffs/) and meets a wall or cliff those settings stop it at. Once its firer is forgotten, crossing a cell less than 150 leptons above the ground detonates it on any wall or structure in that cell, except a structure of the firer's house or its allies. [Ballistic flight](/systems/projectile-flight/#ballistic-flight) gives the full rules.
 
 A [`High=yes`](/keys/high/#scope-overlaytype) overlay sets off any projectile that crosses its cell less than 100 leptons above the ground, unless the projectile is itself [`High=yes`](/keys/high/#scope-bullettype).
 

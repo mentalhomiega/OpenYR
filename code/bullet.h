@@ -97,6 +97,7 @@ class BulletClass : public ObjectClass
 		bool Is_Forced_To_Explode(Coord & coord) const;
 		bool Target_Is_Airborne(void) const;
 		void Bullet_Explodes(bool forced);
+		void Trace_Shot(Coord const & blast, ObjectClass const * target, int strength_before) const;
 		virtual int Shape_Number(void) const;
 		virtual LayerType In_Which_Layer(void) const override;
 		virtual void Assign_Target(AbstractClass * target);
@@ -148,6 +149,7 @@ class BulletClass : public ObjectClass
 		void Fly_Homing(Coord & coord, bool & forced, ImpactType & impact);
 		void Fly_Ballistic(Coord & coord, bool & forced, bool & collided, ImpactType & impact);
 		void Vanish_If_Off_Map(Coord & coord, bool & forced, ImpactType & impact) const;
+		bool Is_Over_Target_Cell(Coord const & coord) const;
 		void Resolve_Impact(Coord & coord, bool forced, bool collided, ImpactType impact);
 
 	public:
@@ -188,11 +190,11 @@ class BulletClass : public ObjectClass
 		 */
 		TVelocity3D<double> Velocity;
 
-		/*
-		 * The number of times this (arcing) projectile has struck a surface. When it
-		 * reaches the bounce limit, the projectile is forced to detonate.
-		 */
-		int BounceCount;
+		// The center of the target when the projectile was launched (BulletClass::MoveTo, 0x468670, keeps it at +0x140).
+		Coord TargetCoord;
+
+		// Set by the shotlog autotest step: each projectile that bursts writes a SHOTTRACE line.
+		static bool TraceShots;
 
 		/// Unused
 		bool field_A4;
