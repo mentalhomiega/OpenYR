@@ -149,6 +149,7 @@ class BulletClass : public ObjectClass
 		void Fly_Homing(Coord & coord, bool & forced, ImpactType & impact);
 		void Fly_Ballistic(Coord & coord, bool & forced, bool & collided, ImpactType & impact);
 		void Vanish_If_Off_Map(Coord & coord, bool & forced, ImpactType & impact) const;
+		bool Is_Over_Target_Cell(Coord const & coord) const;
 		void Resolve_Impact(Coord & coord, bool forced, bool collided, ImpactType impact);
 
 	public:
@@ -194,6 +195,9 @@ class BulletClass : public ObjectClass
 		 * reaches the bounce limit, the projectile is forced to detonate.
 		 */
 		int BounceCount;
+
+		// The center of the target when the projectile was launched (BulletClass::MoveTo, 0x468670, keeps it at +0x140).
+		Coord TargetCoord;
 
 		// Set by the shotlog autotest step: each projectile that bursts writes a SHOTTRACE line.
 		static bool TraceShots;

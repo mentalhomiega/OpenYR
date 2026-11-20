@@ -152,6 +152,7 @@ BulletClass::BulletClass(void) :
 	IsLaunching(true),
 	CourseLockCounter(0),
 	BounceCount(0),
+	TargetCoord(COORD_NONE),
 	TarCom(NULL),
 	MaxSpeed(0),
 	ClosureSamples(0),
@@ -848,6 +849,17 @@ void BulletClass::Fly_Ballistic(Coord & coord, bool & forced, bool & collided, I
 	coord.Z = (int)position.Z;
 
 	/*
+	 * A projectile low over its target's cell strikes the target, whatever it struck on the way. This
+	 * skips the checks below and leaves the velocity as it was (BulletClass::Update, 0x467840).
+	 */
+	if (Is_Over_Target_Cell(coord)) {
+		forced = true;
+		collided = true;
+		impact = IMPACT_NORMAL;
+		return;
+	}
+
+	/*
 	 * A projectile that is still flying detonates anyway if it passed close
 	 * enough to somebody to count as a hit. The firer and its allies are
 	 * ignored.
@@ -883,6 +895,24 @@ void BulletClass::Fly_Ballistic(Coord & coord, bool & forced, bool & collided, I
 		forced = true;
 		impact = IMPACT_NORMAL;
 	}
+}
+
+
+/// <summary>
+/// Is a projectile moving to coord low enough over its target to strike it? It must be within two levels of the
+/// ground where it is now, and coord must lie in the cell of the target's launch-time center or in a cell of the
+/// structure standing there (BulletClass::Update, 0x467840 and 0x4678C8).
+/// </summary>
+bool BulletClass::Is_Over_Target_Cell(Coord const & coord) const
+{
+	if (TargetCoord == COORD_NONE || HeightAGL >= 2 * LEVEL_LEPTON_H) {
+		return(false);
+	}
+	if (coord.As_Cell() == TargetCoord.As_Cell()) {
+		return(true);
+	}
+	BuildingClass const * building = Map[coord].Cell_Building();
+	return(building != NULL && building == Map[TargetCoord].Cell_Building());
 }
 
 
@@ -1214,6 +1244,7 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 		Map.Remove(this);
 
 		Coord tcoord = TarCom->As_Coord();
+		TargetCoord = TarCom->Center_Coord();
 
 		/*
 		**	A flak shell that is invisible moves its aim point (BulletClass::MoveTo, 0x468670). The
@@ -2063,6 +2094,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBright);
 	stream.Serialize(Velocity);
 	stream.Serialize(BounceCount);
+	stream.Serialize(TargetCoord);
 	stream.Serialize(field_A4);
 	stream.Serialize(IsLaunching);
 	stream.Serialize(CourseLockCounter);
