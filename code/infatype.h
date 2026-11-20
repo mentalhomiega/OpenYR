@@ -116,8 +116,8 @@ class InfantryTypeClass : public TechnoTypeClass
 		bool IsDesolator;
 
 		/*
-		 * If this infantry type can stand in tiberium unharmed, then this flag will be true.
-		 * Everyone else is poisoned for as long as they remain in the field.
+		 * The TiberiumProof flag. It is loaded and checksummed, but nothing acts on it: gamemd
+		 * never reads it, and no infantry is hurt by standing in tiberium.
 		 */
 		bool IsTiberiumProof;
 

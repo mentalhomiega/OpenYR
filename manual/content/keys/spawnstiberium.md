@@ -9,7 +9,7 @@ when_omitted:
 
 A Tiberium-spawning terrain object, such as a blossom tree, seeds the cells around it only if its type also sets [`IsAnimated=yes`](/keys/isanimated/). Each time its animation reaches the middle frame of its shape file, the animation stops and the object plants stage 5 Tiberium in one neighboring cell. The type is the one in Tiberium slot [`TiberiumToSpawn`](/keys/tiberiumtospawn/). [Other sources of Tiberium](/systems/tiberium/#other-sources-of-tiberium) covers which neighbors qualify.
 
-Every cell of the object's [`Foundation`](/keys/foundation/#scope-terraintype) block without a Tiberium overlay counts as holding that Tiberium type. Infantry take [Tiberium damage](/systems/tiberium/#damage) there as in any Tiberium cell. A harvester collects nothing from these cells.
+Every cell of the object's [`Foundation`](/keys/foundation/#scope-terraintype) block without a Tiberium overlay counts as holding that Tiberium type. Infantry take no damage there, as in any Tiberium cell. A harvester collects nothing from these cells.
 
 Placing the object removes any overlay already in its top-left cell, and new Tiberium cannot take root in any cell of its block.
 

@@ -19,7 +19,6 @@ Most of these events deal forced damage. Forced damage skips the warhead's [`Ver
 - a vehicle, infantryman or aircraft moving into a raised firestorm wall section;
 - a bridge collapsing or losing a section, for the objects on it and those left on a cell they can no longer occupy;
 - an infantryman stopped on rock or water, and a vehicle stopped on a cell it cannot enter where no structure stands;
-- Tiberium poisoning an infantryman;
 - an aircraft, jumpjet or tunneling unit with nowhere to land or surface, and a jumpjet that moves while off the ground during an ion storm;
 - collecting an explosive crate, for the collector;
 - an engineer [damaging a structure](/systems/capture/#damaging-it-instead) in a multiplayer game;

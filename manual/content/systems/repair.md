@@ -40,7 +40,6 @@ keys:
   - SelfHealingStep
   - SellBack
   - Strength
-  - TiberiumHeal
   - URepairRate
   - UnitReload
   - UnitRepair
@@ -56,7 +55,7 @@ related:
     id: ToggleRepair
 ---
 
-The game restores strength in five ways: the repair wrench on a structure, a service depot for vehicles and aircraft, a hospital for infantry, self-healing, and Tiberium healing. An armory uses the hospital's settings to promote infantry instead of healing them.
+The game restores strength in four ways: the repair wrench on a structure, a service depot for vehicles and aircraft, a hospital for infantry, and self-healing. Tiberium does not heal anything. An armory uses the hospital's settings to promote infantry instead of healing them.
 
 The paths share their rules settings, and a setting's name does not say which paths read it. Most settings reach more than one path. Changing `RepairRate` for the wrench also changes self-healing, and changing `IRepairRate` for the hospital also changes the armory. Only self-healing can be moved off the shared settings, using the three keys at the end of the table.
 
@@ -68,18 +67,16 @@ The paths share their rules settings, and a setting's name does not say which pa
 | [`RepairStep`](/keys/repairstep/) | The strength one step restores to a structure, vehicle or aircraft, and a divisor in the credit cost |
 | [`IRepairStep`](/keys/irepairstep/) | The strength one step restores to infantry |
 | [`RepairPercent`](/keys/repairpercent/) | The multiplier at the end of the credit cost |
-| [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules) | The interval between Tiberium healing steps |
 | [`SelfHealRate`](/keys/selfhealrate/) | The interval between self-healing steps, replacing `RepairRate` for self-healing only |
 | [`SelfHealStep`](/keys/selfhealstep/) | The strength one self-healing step restores |
 | [`SelfHealCap`](/keys/selfhealcap/) | The share of maximum strength at which self-healing stops; without it, self-healing continues to full strength |
 
-Each interval setting is a fraction of a minute, which the engine multiplies by 900 frames. The wrench, self-healing and Tiberium healing step on frames that are multiples of the result, truncated to whole frames. The depot, the hospital and the armory count up and act when the count reaches the result, rounded up to a whole number. At the engine defaults, with `SelfHealRate` unset, the paths step at these intervals:
+Each interval setting is a fraction of a minute, which the engine multiplies by 900 frames. The wrench and self-healing step on frames that are multiples of the result, truncated to whole frames. The depot, the hospital and the armory count up and act when the count reaches the result, rounded up to a whole number. At the engine defaults, with `SelfHealRate` unset, the paths step at these intervals:
 
 | Path | Default interval |
 | --- | --- |
 | Structure repair | 14 frames |
 | Self-healing | 14 frames |
-| Tiberium healing | 15 frames |
 | Service depot | 15 frames |
 | Hospital | 15 frames |
 | Armory | About 210 frames, explained under [Hospitals and armories](#hospitals-and-armories) |
@@ -308,10 +305,6 @@ An object at zero strength never heals. Only an aircraft can be at zero strength
 :::caution[The ceiling is not the damage threshold]
 Healing continues while the strength ratio is at or below the ceiling, so the last tick can carry the object up to one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides when an object counts as damaged, so a ceiling below it leaves a healed object damaged. When self-healing lifts a structure above `ConditionYellow`, its damage smoke stops. Its animations stay in their damaged form until something else refreshes them, such as a hit, a paid repair step, an engineer, an upgrade or the start of a new animation.
 :::
-
-Tiberium healing is a separate path. [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) on an infantry, vehicle or aircraft type, or the `TIBERIUM_HEAL` ability, heals the object while its cell contains Tiberium. Height is not checked, so such an aircraft also heals while flying over Tiberium. Structures never heal this way.
-
-The rules key of the same name, [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules), sets the interval, 15 frames at the engine default. Each tick restores the type's repair step: `IRepairStep` for infantry and `RepairStep` for vehicles and aircraft, with a minimum of `1`. Tiberium healing continues to maximum strength and has no ceiling.
 
 A weapon that deals negative damage, such as a medic's or a mechanic's, heals through ordinary damage and uses none of the settings on this page. Each heal also clears the target's limpet mine and resets its turn rates to the type's `ROT`.
 

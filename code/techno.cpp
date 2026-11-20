@@ -7507,20 +7507,6 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			Stun();
 
 			/*
-			 * Tiberium-healing objects spew tiberium into the adjacent cells when destroyed.
-			 */
-			if (TClass->IsTiberiumHeal) {
-				static FacingType _heal_facing[] = {FACING_NONE, FACING_N, FACING_E, FACING_S, FACING_W};
-
-				Cell center = Center_Coord().As_Cell();
-				for (int index = 0; index < ARRAY_SIZE(_heal_facing); index++) {
-					Cell cell = Adjacent_Cell(center, _heal_facing[index]);
-					CellClass * cellptr = &Map[cell];
-					cellptr->Place_Tiberium(TIBERIUM_RIPARIUS, Scen->RandomNumber(0, 2));
-				}
-			}
-
-			/*
 			 * Clean up the primary attached particle system.
 			 */
 			if (ParticleSystems[0] != NULL) {
