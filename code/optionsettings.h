@@ -18,7 +18,11 @@
 // The RA2MD.INI settings declared in optionsettings.cpp, in the order they are read and written.
 std::span<Setting<OptionsClass> const> Option_Settings(void);
 
-// The preset choices of the settings pages, each over rows declared in Option_Settings.
+// The key a graphics preset gives the Graphics page's Modern in-game interface switch, which the page draws by hand.
+constexpr char const * MODERN_INTERFACE_ROW = "ModernInterface";
+
+// The preset choices of the settings pages, each over rows declared in Option_Settings and, on the Graphics page,
+// MODERN_INTERFACE_ROW.
 std::span<SettingPresetChoice const> Option_Setting_Presets(void);
 
 // The settings pages built from those rows alone, in the order of their tabs. The Graphics page is not one: its own screen shows its rows.

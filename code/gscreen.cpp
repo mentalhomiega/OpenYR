@@ -79,10 +79,8 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
-#include "lstorm.h"
 #include "replay.h"
 #include "scenario.h"
-#include "theater.h"
 #include "emissive.h"
 #include "emissive_surface.h"
 #include "shadowplane.h"
@@ -664,7 +662,7 @@ void GScreenClass::Render(void)
 	Surface * oldpage = LogicalSurface;
 	LogicalSurface = CompositeSurface;
 
-	bool redraw = DrawFlags != GS_REDRAW_DIRTY;
+	bool const redraw = DrawFlags != GS_REDRAW_DIRTY;
 	bool complete = DrawFlags == GS_REDRAW_ALL;
 
 	// Masks follow the composite: planes are bound here, and a full redraw starts them clear.
@@ -695,15 +693,8 @@ void GScreenClass::Render(void)
 
 	// The chronoshift effect swirls a snapshot of the finished map view, which only the software pass holds.
 	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && !Chrono_Screen_Effect_Is_Running();
-	bool const gpu_planes = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && GpuMap_Supported();
-	if (ShadowPlane_Set_Enabled(gpu_planes && Options.SoftShadows, gpu_planes && Options.WaterRipples)) {
-		redraw = true;
-		TacticalMap->IsToRedraw = true;
-		_MapPictureKept = false;
-	}
 	bool const map_redraw = redraw && !_MapPictureKept;
 	_MapPictureKept = false;
-	ShadowPlane_Sync(CompositeSurface, TileSurface, Map_Or_Spare_Composite(), Map_Or_Spare_Tiles());
 	ShadowOnce_Set_Enabled(!Options.ShadowStacking);
 	GpuDraw_Plan(gpu_render);
 	// Pictures cached under the old placement are dropped before this frame draws any.
@@ -729,17 +720,7 @@ void GScreenClass::Render(void)
 	// While zoomed, the GPU draws the whole map view and the presenter scales the part that is shown, so a glide
 	// keeps the GPU's picture size.
 	Rect const gpu_area = TacticalRect;
-	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0, !Options.ShadowStacking);
-	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
-	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
-	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);
-	GpuWeather weather = GPU_WEATHER_NONE;
-	if (Options.Weather == WEATHER_RAIN || (Options.Weather == WEATHER_MAP && LightningStormClass::Is_Active())) {
-		weather = GPU_WEATHER_RAIN;
-	} else if (Options.Weather == WEATHER_SNOW || (Options.Weather == WEATHER_MAP && Scen != NULL && TheaterClass::As_Reference(Scen->Theater).IsArctic)) {
-		weather = GPU_WEATHER_SNOW;
-	}
-	GpuMap_Set_Weather(weather, Options.WeatherStrength);
+	GpuMap_Set_Soft_Shadows(0, !Options.ShadowStacking);
 	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
 	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Gpu_Voxel_Pass_Scale(Options.GpuVoxelScale, DisplayZoom * InterfaceScale) : 1);
 	GpuVoxel_Set_Shared_Depth(Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);

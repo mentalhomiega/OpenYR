@@ -13,24 +13,24 @@ ui inside footer-cancel
 ui inside footer-reset
 ui inside graphics-quality
 ui inside advanced
-ui shot gp-classic-closed
+ui shot gp-enhanced-closed
 ui click advanced
 ui wait 600
 ui inside gpu-render list
-ui shot gp-classic-open
-ui set graphics-quality 1
-ui wait 800
 ui shot gp-enhanced-open
+ui set graphics-quality 0
+ui wait 800
+ui shot gp-classic-open
 ui click advanced
 ui wait 600
-ui shot gp-enhanced-closed
+ui shot gp-classic-closed
 ui set graphics-quality 2
 ui wait 800
-ui shot gp-full-closed
+ui shot gp-smooth-closed
 ui click advanced
 ui wait 600
-ui shot gp-full-open
-ui click bloom
+ui shot gp-smooth-open
+ui click gpu-voxel-smooth
 ui wait 600
 ui shot gp-custom-open
 ui click advanced

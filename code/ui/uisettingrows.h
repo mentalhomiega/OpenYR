@@ -30,6 +30,15 @@ enum class UISettingRowKind
 };
 
 
+// The rows a page draws by hand, which a preset may name by key as it names a declared row. Get returns false for a key
+// the page does not have and otherwise reads the row's pending value; Set changes that value.
+struct UISettingOutsideRows
+{
+	std::function<bool(std::string const & key, int & value)> Get;
+	std::function<void(std::string const & key, int value)> Set;
+};
+
+
 // One row a settings page builds from a declaration. A page edits Value; nothing reaches the setting until OK.
 struct UISettingRow
 {
@@ -57,6 +66,8 @@ struct UISettingRow
 	std::string Fold;
 	// Set on a preset row (a CHOICE): its Value is read from the rows it names, as UI_Setting_Rows_Sync_Presets does.
 	SettingPresetChoice const * Preset = nullptr;
+	// On a preset row, the page's hand-drawn rows that its presets may name.
+	UISettingOutsideRows Outside;
 
 	// Filled by UI_Setting_Rows_Refresh for the page's markup.
 	std::string KindName;
@@ -88,6 +99,9 @@ void UI_Setting_Rows_Reset(std::vector<UISettingRow> & rows);
 // Sets each preset row to the first preset whose values every row holds, or to Custom (the last item) when none. With start,
 // the value the page opened with is set too.
 void UI_Setting_Rows_Sync_Presets(std::vector<UISettingRow> & rows, bool start = false);
+
+// Gives every preset row the page's hand-drawn rows and reads each choice again, as the value the page opened with.
+void UI_Setting_Rows_Set_Outside(std::vector<UISettingRow> & rows, UISettingOutsideRows const & outside);
 
 // Returns whether any row differs from the value the page opened with. A fold and a preset row hold no setting and do not count.
 bool UI_Setting_Rows_Changed(std::vector<UISettingRow> const & rows);

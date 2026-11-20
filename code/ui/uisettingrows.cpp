@@ -48,15 +48,25 @@ UISettingRow const * Fold_Named(std::vector<UISettingRow> const & rows, std::str
 }
 
 
+// Whether the row a preset names, declared or drawn by hand, holds value.
+bool Preset_Value_Held(std::vector<UISettingRow> const & rows, UISettingOutsideRows const & outside, SettingPresetValue const & value)
+{
+	if (UISettingRow const * row = Row_Named(rows, value.Key)) {
+		return(row->Value == value.Value);
+	}
+	int held = 0;
+	return(outside.Get && outside.Get(value.Key, held) && held == value.Value);
+}
+
+
 // The position of the first preset whose values every row holds, or one past the last when none is.
-int Preset_Index(std::vector<UISettingRow> const & rows, SettingPresetChoice const & choice)
+int Preset_Index(std::vector<UISettingRow> const & rows, UISettingRow const & choice)
 {
 	int index = 0;
-	for (SettingPreset const & preset : choice.Presets) {
+	for (SettingPreset const & preset : choice.Preset->Presets) {
 		bool all = true;
 		for (SettingPresetValue const & value : preset.Values) {
-			UISettingRow const * row = Row_Named(rows, value.Key);
-			all = all && row != nullptr && row->Value == value.Value;
+			all = all && Preset_Value_Held(rows, choice.Outside, value);
 		}
 		if (all) {
 			return(index);
@@ -148,12 +158,23 @@ void UI_Setting_Rows_Sync_Presets(std::vector<UISettingRow> & rows, bool start)
 {
 	for (UISettingRow & row : rows) {
 		if (row.Preset != nullptr) {
-			row.Value = Preset_Index(rows, *row.Preset);
+			row.Value = Preset_Index(rows, row);
 			if (start) {
 				row.Start = row.Value;
 			}
 		}
 	}
+}
+
+
+void UI_Setting_Rows_Set_Outside(std::vector<UISettingRow> & rows, UISettingOutsideRows const & outside)
+{
+	for (UISettingRow & row : rows) {
+		if (row.Preset != nullptr) {
+			row.Outside = outside;
+		}
+	}
+	UI_Setting_Rows_Sync_Presets(rows, true);
 }
 
 
@@ -198,10 +219,13 @@ bool UI_Setting_Row_Execute(std::vector<UISettingRow> & rows, std::string const 
 		} else if (row.Preset != nullptr) {
 			// A position past the presets is Custom, which changes no row. The choice then reads from the rows.
 			if (value >= 0 && value < (int)row.Preset->Presets.size()) {
+				UISettingOutsideRows const & outside = row.Outside;
 				for (SettingPresetValue const & preset_value : row.Preset->Presets[value].Values) {
-					UISettingRow * target = Row_Named(rows, preset_value.Key);
-					if (target != nullptr) {
+					int held = 0;
+					if (UISettingRow * target = Row_Named(rows, preset_value.Key)) {
 						target->Value = preset_value.Value;
+					} else if (outside.Get && outside.Set && outside.Get(preset_value.Key, held)) {
+						outside.Set(preset_value.Key, preset_value.Value);
 					}
 				}
 			}

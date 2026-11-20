@@ -48,15 +48,6 @@ enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_ENHANCED
 };
 
-// The weather the GPU map pass draws: Map rains while a lightning storm rages, snows on maps whose
-// theater sets IsArctic and draws nothing elsewhere, and Rain and Snow fall on every map.
-enum WeatherMode {
-	WEATHER_NONE,
-	WEATHER_MAP,
-	WEATHER_RAIN,
-	WEATHER_SNOW
-};
-
 // What the performance overlay shows (docs/PERFORMANCE.md): Basic the frame rates and graphs, Detailed
 // also the time of each phase and the counts.
 enum PerfOverlayLevel {
@@ -344,27 +335,6 @@ class OptionsClass {
 		// Experimental; a pass the GPU cannot draw falls back to software.
 		bool GpuRender;
 
-		// With GpuRender, shadows are drawn as one blurred mask over the ground, SoftShadowRadius
-		// pixels soft, instead of halving each pixel they cover.
-		bool SoftShadows;
-		int SoftShadowRadius;
-
-		// With GpuRender, each weapon blast sends a ring through the map picture that bends it.
-		bool Shockwaves;
-
-		// With GpuRender, lasers, lamps, fire and other emissive parts of the map glow, at
-		// BloomStrength percent.
-		bool Bloom;
-		int BloomStrength;
-
-		// With GpuRender, the water of the map ripples, at WaterRippleStrength percent.
-		bool WaterRipples;
-		int WaterRippleStrength;
-
-		// With GpuRender, the map is shaded under slowly drifting clouds, at CloudShadowStrength percent.
-		bool CloudShadows;
-		int CloudShadowStrength;
-
 		// With GpuRender, voxel objects are drawn from their voxels on the GPU (docs/GPU_DIRECT_VOXELS.md).
 		// Experimental; the software look is the reference.
 		bool GpuVoxels;
@@ -407,10 +377,6 @@ class OptionsClass {
 
 		// A ZoomOutViewLimit: the most map the player's zoom-out shows.
 		int ZoomOutView;
-
-		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
-		int Weather;
-		int WeatherStrength;
 
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.

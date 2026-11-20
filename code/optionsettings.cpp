@@ -19,14 +19,6 @@
 namespace
 {
 
-constexpr NameEntry Weather_Names[] = {
-	{ "None", WEATHER_NONE },
-	{ "Map", WEATHER_MAP },
-	{ "Rain", WEATHER_RAIN },
-	{ "Snow", WEATHER_SNOW },
-};
-
-
 constexpr NameEntry GpuVoxelLayerDepth_Names[] = {
 	{ "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED },
 	{ "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED },
@@ -53,7 +45,7 @@ constexpr NameEntry ZoomOutView_Names[] = {
 constexpr char const * GRAPHICS = "graphics";
 constexpr char const * QUALITY = "Graphics quality";
 constexpr char const * ADVANCED = "Advanced";
-constexpr char const * GPU_DRAWING = "Graphics card effects";
+constexpr char const * GPU_DRAWING = "Graphics card";
 constexpr char const * GPU_VOXELS = "Vehicles and aircraft";
 constexpr char const * VOXEL_DRAWING = "Vehicle details";
 constexpr char const * STOCK_ART = "Stock art";
@@ -62,35 +54,34 @@ constexpr char const * RENDERING = "Rendering";
 constexpr char const * PATH_SEARCHES = "Path searches";
 
 
+// Classic draws the picture and the sidebar as Yuri's Revenge does.
 constexpr SettingPresetValue Classic_Values[] = {
-	{ "GpuRender", 1 }, { "SoftShadows", 0 }, { "Shockwaves", 0 }, { "Bloom", 0 }, { "WaterRipples", 0 }, { "CloudShadows", 0 },
-	{ "Weather", WEATHER_NONE }, { "GpuVoxels", 0 }, { "GpuVoxelSmooth", 0 }, { "GpuVoxelSubpixel", 0 },
+	{ MODERN_INTERFACE_ROW, 0 }, { "GpuRender", 0 }, { "GpuVoxels", 0 }, { "GpuVoxelSmooth", 0 }, { "GpuVoxelSubpixel", 0 },
 };
 
-// Draws with the graphics card, and smooths and softens what the game draws. Nothing is added to the picture.
+// The default: the modern interface and drawing with the graphics card, which leave the picture as it was.
 constexpr SettingPresetValue Enhanced_Values[] = {
-	{ "GpuRender", 1 }, { "SoftShadows", 1 }, { "Shockwaves", 0 }, { "Bloom", 0 }, { "WaterRipples", 0 }, { "CloudShadows", 0 },
-	{ "Weather", WEATHER_NONE }, { "GpuVoxels", 1 }, { "GpuVoxelSmooth", 1 }, { "GpuVoxelSubpixel", 1 },
+	{ MODERN_INTERFACE_ROW, 1 }, { "GpuRender", 1 }, { "GpuVoxels", 0 }, { "GpuVoxelSmooth", 0 }, { "GpuVoxelSubpixel", 0 },
 };
 
-// Enhanced, and the effects that add to the picture.
-constexpr SettingPresetValue Full_Values[] = {
-	{ "GpuRender", 1 }, { "SoftShadows", 1 }, { "Shockwaves", 1 }, { "Bloom", 1 }, { "WaterRipples", 1 }, { "CloudShadows", 1 },
-	{ "Weather", WEATHER_MAP }, { "GpuVoxels", 1 }, { "GpuVoxelSmooth", 1 }, { "GpuVoxelSubpixel", 1 },
+// Enhanced, with vehicles and aircraft drawn in 3D, turning and moving smoothly, at four times the map's pixels.
+constexpr SettingPresetValue Smooth_Values[] = {
+	{ MODERN_INTERFACE_ROW, 1 }, { "GpuRender", 1 }, { "GpuVoxels", 1 }, { "GpuVoxelSmooth", 1 }, { "GpuVoxelSubpixel", 1 },
+	{ "GpuVoxelScale", 4 },
 };
 
 constexpr SettingPreset Graphics_Presets[] = {
 	{ .Label = "Classic", .Values = Classic_Values },
 	{ .Label = "Enhanced", .Values = Enhanced_Values },
-	{ .Label = "Full", .Values = Full_Values },
+	{ .Label = "Smooth", .Values = Smooth_Values },
 };
 
-// The choice shows the preset that the rows under Advanced add up to, and Custom for any other mix.
+// The choice shows the preset that the rows it names add up to, and Custom for any other mix.
 constexpr SettingPresetChoice Presets[] = {
 	{
 		.Page = GRAPHICS, .Key = "GraphicsQuality", .Group = QUALITY, .Label = "Preset",
-		.Tip = "Classic draws the picture as the original game does. Enhanced draws with the graphics card, with soft shadows and smooth vehicle turning and movement. Full adds glow, shockwaves, water ripples, cloud shadows and weather. Custom means the switches under Advanced match none of them. Needs the modern interface.",
-		.Condition = SettingCondition::MODERN_INTERFACE, .Presets = Graphics_Presets,
+		.Tip = "Classic draws the picture and the sidebar as the original game does. Enhanced, the default, adds the modern interface and draws with the graphics card, which leaves the picture as it was. The third preset also draws vehicles and aircraft in 3D, turning and moving smoothly and sharp at every zoom. Custom means the switches match none of them.",
+		.Presets = Graphics_Presets,
 	},
 };
 
@@ -110,62 +101,6 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Tip = "Draws units and effects with the graphics card instead of the processor, which keeps big battles smooth. The switches below need it. Needs the modern interface and the Direct3D 11 renderer.",
 		.Fold = ADVANCED,
 		.Condition = SettingCondition::MODERN_INTERFACE,
-	},
-	{
-		.Section = "Video", .Key = "SoftShadows",
-		.Flag = &OptionsClass::SoftShadows, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Soft shadows",
-		.Tip = "Blends every shadow on the ground, including those of buildings and trees, into one soft shadow, so overlapping shadows do not darken twice. Needs drawing with the graphics card.",
-		.Fold = ADVANCED,
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "SoftShadowRadius",
-		.Number = &OptionsClass::SoftShadowRadius, .Default = 3, .Min = 1, .Max = 16,
-	},
-	{
-		.Section = "Video", .Key = "Shockwaves",
-		.Flag = &OptionsClass::Shockwaves, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Shockwaves",
-		.Tip = "Weapon blasts send a ripple through the picture around them. Needs drawing with the graphics card.",
-		.Fold = ADVANCED,
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "Bloom",
-		.Flag = &OptionsClass::Bloom, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Glow",
-		.Tip = "Lasers, lamps, fire and other bright effects glow onto the picture around them. Needs drawing with the graphics card.",
-		.Fold = ADVANCED,
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "BloomStrength",
-		.Number = &OptionsClass::BloomStrength, .Default = 100, .Min = 1, .Max = 400,
-	},
-	{
-		.Section = "Video", .Key = "WaterRipples",
-		.Flag = &OptionsClass::WaterRipples, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Water ripples",
-		.Tip = "Sea, lakes and rivers ripple and shimmer. Needs drawing with the graphics card.",
-		.Fold = ADVANCED,
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "WaterRippleStrength",
-		.Number = &OptionsClass::WaterRippleStrength, .Default = 100, .Min = 1, .Max = 400,
-	},
-	{
-		.Section = "Video", .Key = "CloudShadows",
-		.Flag = &OptionsClass::CloudShadows, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Cloud shadows",
-		.Tip = "The shadows of slowly drifting clouds pass over the battlefield. Needs drawing with the graphics card.",
-		.Fold = ADVANCED,
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "CloudShadowStrength",
-		.Number = &OptionsClass::CloudShadowStrength, .Default = 100, .Min = 1, .Max = 400,
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxels",
@@ -218,7 +153,7 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Section = "Video", .Key = "ShadowStacking",
 		.Flag = &OptionsClass::ShadowStacking, .Default = true,
 		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Darker overlapping shadows",
-		.Tip = "Overlapping vehicle and aircraft shadows darken the ground again under each, as in the original game. Off darkens it once, so a crowd of aircraft leaves a grey patch instead of a black one. Soft shadows darken once as well.",
+		.Tip = "Overlapping vehicle and aircraft shadows darken the ground again under each, as in the original game. Off darkens it once, so a crowd of aircraft leaves a grey patch instead of a black one.",
 		.Fold = ADVANCED,
 	},
 	{
@@ -227,18 +162,6 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = GRAPHICS, .Group = STOCK_ART, .Label = "Fix stock art",
 		.Tip = "Draws stock art that the original game draws wrongly the way it was meant to look, such as the grey apartment blocks, which the original shows as speckled noise. Off draws it as the original game does.",
 		.NeedsRestart = true,
-	},
-	{
-		.Section = "Video", .Key = "Weather",
-		.Number = &OptionsClass::Weather, .Default = WEATHER_NONE, .Names = Weather_Names,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Weather",
-		.Tip = "Snow falls on snowy maps, and rain falls during a lightning storm. Needs drawing with the graphics card.",
-		.Fold = ADVANCED,
-		.Needs = "GpuRender", .SwitchOn = WEATHER_MAP,
-	},
-	{
-		.Section = "Video", .Key = "WeatherStrength",
-		.Number = &OptionsClass::WeatherStrength, .Default = 100, .Min = 1, .Max = 400,
 	},
 	{
 		.Section = "Video", .Key = "RenderThread",
