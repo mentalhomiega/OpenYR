@@ -287,10 +287,6 @@ void GpuDraw_Preload_Tile_Layer(DSurface const & tiles);
 // True between frames while the GPU has drawn the last 30 map passes, which is when a pass leaves the terrain in the tile layer.
 bool GpuDraw_Steady(void);
 
-// The render flag last given to GpuDraw_Plan. While it is false, the background pass darkens the
-// copied terrain through the shadow plane itself (shadowplane.h).
-bool GpuDraw_Planned(void);
-
 // Starts recording the blits into target until GpuDraw_End. Area is the part of the target the
 // checks compare and the GPU draws. With render set, recorded draws write no colour to target.
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render = false);
@@ -415,14 +411,6 @@ void GpuDraw_Line_End(void);
 
 // Accounts for the lock a text print has just taken on surface, whose glyph runs it records with GpuDraw_Fill.
 bool GpuDraw_Text_Begin(Surface const & surface);
-
-// Starts a shockwave ring at the world point for the GPU-drawn map; strength is the blast's damage.
-// reach is how far the ring travels, in map pixels.
-void GpuDraw_Add_Shockwave(Coord const & coord, int strength, int reach = 170);
-
-// Lights the sky of the GPU-drawn map for a moment, as a lightning bolt does, unless the last flash was
-// under 45 frames ago; only rain shows it.
-void GpuDraw_Add_Flash(void);
 
 // The gpureplay autotest step.
 void GpuDraw_Set_Replay_Check(bool enabled);

@@ -20,16 +20,6 @@
 struct GpuDrawList;
 
 
-// A shockwave ring the GPU bends the map picture around, in pixels of the pass area.
-struct GpuRipple
-{
-	float X;
-	float Y;
-	float Radius;
-	float Strength;
-};
-
-
 // A depth or alpha ring buffer as it is stored: Width * Height values, the area's top-left value at
 // Start and each next row Width values on, wrapping past the end to the beginning.
 // The most rows or columns a store of the GPU pass can have.
@@ -75,26 +65,17 @@ struct GpuMapPass
 	// is watched memory (writewatch.h) and Base and BaseChanged are unused. Values is NULL otherwise.
 	GpuRing BaseRing = {};
 
-	// At most 16 rings drawn over the finished picture, or NULL for none.
-	std::vector<GpuRipple> const * Ripples = NULL;
+	// With GPU voxels while the emissive mask is kept, the emissive plane under Area and the tiles of it that changed
+	// since the GPU last took them, sized for Area; NULL otherwise. The tiles the GPU takes are cleared.
+	std::vector<unsigned char> const * Emissive = NULL;
+	TileGridClass * EmissiveTiles = NULL;
 
-	// With soft shadows, the shadow plane of the tile layer under Area (nonzero where a shadow
-	// falls) and a flag for each of its rows that changed since the GPU last took it; NULL when
-	// the tile layer's shadows are in Base.
-	std::vector<unsigned char> const * TileShadow = NULL;
-	std::vector<unsigned char> * TileShadowChanged = NULL;
-
-	// With bloom, the emissive mask under Area and the tiles of it that changed since the GPU last took
-	// them, sized for Area; NULL for no glow. The tiles the GPU takes are cleared.
-	std::vector<unsigned char> const * Glow = NULL;
-	TileGridClass * GlowTiles = NULL;
-
-	// Set when GpuVoxels is on and the emissive mask is kept: Glow holds the mark GPU_VOXEL_MASK_MARK under
-	// the voxel parts, and the GPU builds the finished mask from Glow and the parts' layers.
+	// Set when GpuVoxels is on and the emissive mask is kept: Emissive holds the mark GPU_VOXEL_MASK_MARK under
+	// the voxel parts, and the GPU builds the finished mask from Emissive and the parts' layers.
 	bool Mask = false;
 
-	// Set when the pass listed its emissive plane writes (GpuDrawList::MaskOps): Glow holds the plane as it stood
-	// before them, and the GPU makes them before Glow is used. MaskExpected, for the maskcheck step, is the finished
+	// Set when the pass listed its emissive plane writes (GpuDrawList::MaskOps): Emissive holds the plane as it stood
+	// before them, and the GPU makes them before Emissive is used. MaskExpected, for the maskcheck step, is the finished
 	// plane under Area that the GPU's is compared with; NULL for no check.
 	bool MaskListed = false;
 	std::vector<unsigned char> const * MaskExpected = NULL;
@@ -106,14 +87,6 @@ struct GpuMapPass
 	int FadeVersion = 0;
 	int FadeWidth = 0;
 	int FadeHeight = 0;
-
-	// The map position of Area's top left pixel, in pixels, which keeps water ripples and cloud
-	// shadows fixed to the ground as the view moves.
-	int WorldX = 0;
-	int WorldY = 0;
-
-	// How bright a lightning flash lights the sky, from 0 to 1.
-	float Flash = 0.0f;
 };
 
 
@@ -131,7 +104,7 @@ bool GpuMap_Draw(GpuMapPass const & pass);
 void GpuMap_Drop(void);
 
 // Names the largest area, in map pixels, that passes will draw until the next call; 0 by 0 names none. The depth attachments and the
-// shadow masks are made for it when first needed, so a zoom step that changes the area makes none of them.
+// shadow mask are made for it when first needed, so a zoom step that changes the area makes none of them.
 void GpuMap_Reserve(int width, int height);
 
 // Makes the base store for the tile layer ring names, from what the layer holds now, and keeps it aside while the
@@ -139,33 +112,12 @@ void GpuMap_Reserve(int width, int height);
 // written to it since.
 void GpuMap_Preload_Base(GpuRing const & ring);
 
-// Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
-// 0 draws each shadow as the software does. With union_shadows the mask is used at radius 0 too, unblurred,
-// so overlapping shadows darken the ground once with hard edges.
-void GpuMap_Set_Soft_Shadows(int radius, bool union_shadows = false);
+// With union_shadows, draws the pass's shadows into one mask and darkens the base through it, so overlapping shadows
+// darken the ground once (ShadowStacking=no); otherwise draws each shadow as the software does.
+void GpuMap_Set_Union_Shadows(bool union_shadows);
 
 // True when the renderer is running and can draw map passes.
 bool GpuMap_Supported(void);
-
-// Adds a glow around the emissive parts of the picture at strength percent (at most 400); 0 adds none.
-void GpuMap_Set_Bloom(int strength);
-int GpuMap_Bloom(void);
-
-// Ripples the water of the tile layer at strength percent (at most 400); 0 leaves it still. The
-// ripples need the water marks of the shadow plane (code/shadowplane.h).
-void GpuMap_Set_Water(int strength);
-
-// Shades the map under slowly drifting clouds at strength percent (at most 400); 0 shows no clouds.
-void GpuMap_Set_Clouds(int strength);
-
-enum GpuWeather {
-	GPU_WEATHER_NONE,
-	GPU_WEATHER_RAIN,
-	GPU_WEATHER_SNOW
-};
-
-// Draws weather falling over the map, with strength percent (at most 400) of the usual amount.
-void GpuMap_Set_Weather(GpuWeather weather, int strength);
 
 // Draws the map pass, and the voxel objects in it, at scale times the map's own pixels (1 to 4). A pass whose picture
 // at that scale would be over 16384 pixels a side or 2^27 pixels is drawn at the largest scale under both. Only the

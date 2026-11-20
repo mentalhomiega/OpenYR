@@ -32,7 +32,6 @@
 #include "gpumapvoxel.h"
 #include "objtype.h"
 #include "ovrlight.h"
-#include "shadowplane.h"
 #include "surface.h"
 #include "tilediff.h"
 #include "tactical.h"
@@ -83,7 +82,6 @@ static GpuDrawList _List;
 static int _Locks = 0;
 static int _LockedBlits = 0;
 static bool _TilesLeft = false;
-static bool _Planned = false;
 // Passes in a row the GPU drew whole; the terrain copy is left out only after a run of them, since
 // a pass that falls back without it loses the draws the record does not hold.
 static int _CleanPasses = 0;
@@ -784,39 +782,18 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 
 // Brings values up to the plane under area, flagging in changed each row that differed; the part
 // of area outside the plane reads as zero. lit keeps a byte per row of values that is zero only
-// where that row is all zero. With watched_source, the plane is a watched one (SurfacePlaneTable) and only the rows its written
-// pages touch are compared; watched_source holds the plane the values were last read from.
-static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed, std::vector<unsigned char> & lit, void const ** watched_source = NULL)
+// where that row is all zero.
+static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed, std::vector<unsigned char> & lit)
 {
 	std::size_t const width = (std::size_t)area.Width;
-	static std::vector<std::pair<std::size_t, std::size_t>> runs;
-	bool listed = watched_source != NULL && WriteWatch_Take(plane.Pixels, (std::size_t)plane.Pitch * plane.Height, runs);
-	if (watched_source != NULL) {
-		// The copy matches the plane it was last read from, not another one.
-		listed = listed && *watched_source == plane.Pixels;
-		*watched_source = plane.Pixels;
-	}
 	if (values.size() != width * area.Height || (int)changed.size() != area.Height || (int)lit.size() != area.Height) {
 		values.assign(width * area.Height, 0);
 		changed.assign(area.Height, 1);
 		lit.assign(area.Height, 0);
-		listed = false;
 	}
 	int const left = std::max(area.X, 0);
 	int const right = std::min(area.X + area.Width, plane.Width);
 	if (left == area.X && right == area.X + area.Width && area.Y >= 0 && area.Y + area.Height <= plane.Height) {
-		// A row no written page touches equals the copy from the last read.
-		static std::vector<unsigned char> touched;
-		if (listed) {
-			touched.assign(area.Height, 0);
-			for (auto const & run : runs) {
-				int const first = std::max(0, (int)(run.first / plane.Pitch) - area.Y);
-				int const end = std::min(area.Height, (int)((run.second + plane.Pitch - 1) / plane.Pitch) - area.Y);
-				if (first < end) {
-					std::fill(touched.begin() + first, touched.begin() + end, (unsigned char)1);
-				}
-			}
-		}
 		for (int r = 0; r < area.Height; r++) {
 			unsigned char * copy = &values[r * width];
 			if (!Emissive_Row_Lit(plane, area.Y + r)) {
@@ -828,9 +805,6 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 				continue;
 			}
 			lit[r] = 1;
-			if (listed && touched[r] == 0) {
-				continue;
-			}
 			unsigned char const * row = plane.Pixels + (std::size_t)(area.Y + r) * plane.Pitch + area.X;
 			Sync_Row(copy, row, width, changed[r]);
 		}
@@ -1082,87 +1056,6 @@ static bool Record_Plain_Line(Surface const & surface, int color, std::vector<Po
 	}
 	GpuDraw_Line_End();
 	return(_Render);
-}
-
-
-struct Shockwave
-{
-	Coord Where;
-	int Start;
-	float Strength;
-	float Reach;
-};
-
-static std::vector<Shockwave> _Shockwaves;
-static int const SHOCKWAVE_FRAMES = 40;
-static std::size_t const SHOCKWAVE_LIMIT = 16;
-
-
-static bool Shockwave_Done(Shockwave const & wave)
-{
-	return(Frame < wave.Start || Frame - wave.Start >= SHOCKWAVE_FRAMES);
-}
-
-
-// The rings of the shockwaves still running, in pixels of the pass area.
-static std::vector<GpuRipple> Shockwave_Ripples(void)
-{
-	std::erase_if(_Shockwaves, Shockwave_Done);
-	std::vector<GpuRipple> ripples;
-	for (Shockwave const & wave : _Shockwaves) {
-		Point2D pixel;
-		TacticalMap->Coord_To_Pixel(wave.Where, pixel);
-		float const t = (float)(Frame - wave.Start) / SHOCKWAVE_FRAMES;
-		float const ease = 1.0f - (1.0f - t) * (1.0f - t);
-		GpuRipple ripple;
-		ripple.X = (float)(pixel.X + TacticalRect.X - _Area.X);
-		ripple.Y = (float)(pixel.Y + TacticalRect.Y - _Area.Y);
-		ripple.Radius = 6.0f + wave.Reach * ease;
-		ripple.Strength = wave.Strength * (1.0f - t);
-		ripples.push_back(ripple);
-	}
-	return(ripples);
-}
-
-
-/// <summary>
-/// Starts a shockwave ring at coord that the GPU map pass draws for two thirds of a second; a
-/// stronger blast bends the picture further. Only the GPU-drawn map shows it.
-/// </summary>
-void GpuDraw_Add_Shockwave(Coord const & coord, int strength, int reach)
-{
-	std::erase_if(_Shockwaves, Shockwave_Done);
-	if (_Shockwaves.size() >= SHOCKWAVE_LIMIT) {
-		_Shockwaves.erase(_Shockwaves.begin());
-	}
-	_Shockwaves.push_back({ coord, Frame, std::clamp((float)strength / 8.0f, 6.0f, 16.0f), (float)reach });
-}
-
-
-static int _FlashFrame = -1;
-static int const FLASH_FRAMES = 8;
-
-// Bolts in a storm land several times a second, so flashes closer together than this are skipped
-// to keep the picture from strobing.
-static int const FLASH_GAP = 45;
-
-
-void GpuDraw_Add_Flash(void)
-{
-	if (_FlashFrame < 0 || Frame < _FlashFrame || Frame - _FlashFrame >= FLASH_GAP) {
-		_FlashFrame = Frame;
-	}
-}
-
-
-// How bright the last lightning flash still is, from 1 as it strikes down to 0.
-static float Flash_Amount(void)
-{
-	if (_FlashFrame < 0 || Frame < _FlashFrame || Frame - _FlashFrame >= FLASH_FRAMES) {
-		return(0.0f);
-	}
-	float const fade = 1.0f - (float)(Frame - _FlashFrame) / FLASH_FRAMES;
-	return(fade * fade);
 }
 
 
@@ -1523,20 +1416,15 @@ static bool Finish_Render(Surface & target)
 	// keeps the last pass's picture, so only the rows that changed since the GPU took them go up.
 	static std::vector<unsigned short> upload[3];
 	static std::vector<unsigned char> changed;
-	static std::vector<unsigned char> tileshadow;
-	static std::vector<unsigned char> tileshadowchanged;
 	static std::vector<unsigned short> fade;
-	static std::vector<unsigned char> tileshadowlit;
-	static void const * tileshadowsource = NULL;
-	static std::vector<unsigned char> glow;
-	static TileGridClass glowtiles;
-	static std::vector<unsigned char> glowlit;
+	static std::vector<unsigned char> emissivevalues;
+	static TileGridClass emissivetiles;
+	static std::vector<unsigned char> emissivelit;
 	static Rect changedarea;
 	std::vector<unsigned short> & base = upload[0];
 	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
 		changed.clear();
-		tileshadowchanged.clear();
-		glow.clear();
+		emissivevalues.clear();
 		changedarea = _Area;
 		_BaseTiles = NULL;
 	}
@@ -1563,13 +1451,8 @@ static bool Finish_Render(Surface & target)
 			_BaseTilesCount = tiles->Change_Count();
 		}
 	}
-	// A shadow drawn into the tile layer locks it, so unchanged tiles mean an unchanged plane.
-	EmissivePlane const * plane = ShadowPlane_For(TileSurface);
-	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
-		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged, tileshadowlit, &tileshadowsource);
-	}
 	bool const voxelmask = _Voxels && Emissive_Is_Enabled();
-	EmissivePlane * emissive = GpuMap_Bloom() > 0 || voxelmask ? Emissive_Plane_For(&target) : NULL;
+	EmissivePlane * emissive = voxelmask ? Emissive_Plane_For(&target) : NULL;
 	static std::vector<unsigned char> maskexpected;
 	if (_MaskCheck && _MaskListed) {
 		Check_Mask_List();
@@ -1587,7 +1470,7 @@ static bool Finish_Render(Surface & target)
 	bool const listed = _MaskListed && emissive == _MaskPlane;
 	if (emissive != NULL) {
 		// Under the check the plane took every write at once, so the GPU starts from the copy of the plane as the pass found it.
-		Read_Plane_Tiles(listed && _MaskCheck ? Mask_Before() : *emissive, _Area, glow, glowtiles, glowlit);
+		Read_Plane_Tiles(listed && _MaskCheck ? Mask_Before() : *emissive, _Area, emissivevalues, emissivetiles, emissivelit);
 		if (listed && _MaskCheck) {
 			static std::vector<unsigned char> changed;
 			static std::vector<unsigned char> lit;
@@ -1614,18 +1497,11 @@ static bool Finish_Render(Surface & target)
 		pass.List = &_List;
 		pass.Persistent = true;
 		pass.BaseChanged = &changed;
-		pass.TileShadow = plane != NULL ? &tileshadow : NULL;
-		pass.TileShadowChanged = plane != NULL ? &tileshadowchanged : NULL;
-		pass.Glow = emissive != NULL ? &glow : NULL;
-		pass.GlowTiles = emissive != NULL ? &glowtiles : NULL;
-		pass.Mask = voxelmask && emissive != NULL;
+		pass.Emissive = emissive != NULL ? &emissivevalues : NULL;
+		pass.EmissiveTiles = emissive != NULL ? &emissivetiles : NULL;
+		pass.Mask = emissive != NULL;
 		pass.MaskListed = listed;
 		pass.MaskExpected = listed && _MaskCheck ? &maskexpected : NULL;
-		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
-		pass.Ripples = &ripples;
-		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
-		pass.WorldY = TacticalMap->TacPixelY + _Area.Y - TacticalRect.Y;
-		pass.Flash = Flash_Amount();
 		if (LayerFade_Fill(fade, pass.FadeWidth, pass.FadeHeight, _Area, pass.FadeVersion)) {
 			pass.Fade = &fade;
 		}
@@ -1646,12 +1522,6 @@ static bool Finish_Render(Surface & target)
 	_MaskListed = false;
 	if (inplace && !Read_Area(*TileSurface, _Area, base)) {
 		return(false);
-	}
-	// The recorded draws land over the ones the record does not hold, which drew in order. Without
-	// the terrain copy, those draws went to a target the base no longer comes from, and are lost.
-	// A base read from the target holds those draws over unshaded terrain, so only terrain is shaded.
-	if (TileSurface != NULL) {
-		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask(), !tilesleft);
 	}
 	Render_Voxel_Pixels();
 	if (voxelmask && emissive != NULL) {
@@ -1957,14 +1827,7 @@ void GpuDraw_Set_Voxels(bool enabled, bool smooth)
 
 void GpuDraw_Plan(bool render)
 {
-	_Planned = render;
 	_TilesLeft = render && _CleanPasses >= 30 && Backend_Is_Running();
-}
-
-
-bool GpuDraw_Planned(void)
-{
-	return(_Planned);
 }
 
 
@@ -1985,9 +1848,6 @@ static void Restore_Tiles(Surface & target)
 {
 	if (_TilesLeft && TileSurface != NULL) {
 		target.Blit_From(TacticalRect, *TileSurface, TacticalRect);
-		if (target.Bytes_Per_Pixel() == 2) {
-			ShadowPlane_Darken(target, TacticalRect, DSurface::Get_Halfbright_Mask());
-		}
 	}
 	_TilesLeft = false;
 }
@@ -2148,8 +2008,8 @@ bool GpuDraw_End(void)
 			});
 			masktiles.Resize(_Area.Width, _Area.Height);
 			masktiles.Mark_All();
-			pass.Glow = &marked;
-			pass.GlowTiles = &masktiles;
+			pass.Emissive = &marked;
+			pass.EmissiveTiles = &masktiles;
 			pass.Mask = true;
 		}
 		GpuMap_Check(pass, replayed, emissive != NULL ? &softwaremask : NULL);

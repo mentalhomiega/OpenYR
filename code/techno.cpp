@@ -206,7 +206,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
-#include "shadowplane.h"
+#include "shadowonce.h"
 #include "shapeset.h"
 #include "stimer.h"
 #include "sun.h"

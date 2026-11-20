@@ -11,19 +11,15 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 //                   w: 1 to skip the depth test
 // Kind: 0 copy, 1 darken, 2 75% source, 3 half, 4 25% source, 5 the area's base picture, 6 copy without depth test,
 // 7 a solid fill of the 565 colour in v_texcoord1.x, 8 a shadow's coverage written as 1 into the shadow mask,
-// 9 the base picture darkened by the blurred shadow mask in s_shadow, 10 a spot light's brightening factor
+// 9 the base picture darkened by the shadow mask in s_shadow, 10 a spot light's brightening factor
 // (v_texcoord1.z holds the channels it leaves alone), 11 depth-shaded line pixels whose index is the alpha
 // buffer value under each (v_texcoord1.z holds the 565 colour, w the fade; the target's weight goes out in alpha),
 // 12 additive line pixels whose index is the alpha buffer value (v_texcoord1.z holds 0xRRGGBB), 13 antialiased line
 // pixels whose index is the colour weight plus 1 (v_texcoord1.z holds 0xRRGGBB; the target's weight goes out in alpha),
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
-// the facing plus 8 for a magnetron beam or 16 for a custom colour, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
-// written as 1 into the shadow mask.
-// u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
-// u_water: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
-// each of them as scale by scale pixels),
-// y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
-// w how bright the glints of sunlight on them are.
+// the facing plus 8 for a magnetron beam or 16 for a custom colour, w the tint at amplitude 0).
+// u_scale: x the scale the target is drawn at, 1 to 4 (a blit's coordinates stay in map pixels, so the target shows
+// each of them as scale by scale pixels).
 
 #include "bgfx_shader.sh"
 #include "mapcommon.sh"
@@ -34,55 +30,11 @@ SAMPLER2D(s_base, 6);
 uniform vec4 u_basering;
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
-SAMPLER2D(s_tileshadow, 9);
-uniform vec4 u_world;
-uniform vec4 u_water;
+uniform vec4 u_scale;
 // A deferred light fade (code/layerfade.h): x is 1 while s_fade holds the scales of the base picture, yz the size in
 // map pixels that s_fade covers, w the scale a full texel stands for.
 SAMPLER2D(s_fade, 10);
 uniform vec4 u_fade;
-
-// The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
-int Plane(ivec2 p)
-{
-	return int(texelFetch(s_tileshadow, p, 0).x * 255.0 + 0.5);
-}
-
-bool Water(ivec2 p)
-{
-	return Plane(p) % 2 == 1;
-}
-
-// The base at water pixel p, shifted and shaded by two waves crossing the ground. A neighbour that
-// is not water reads as p itself, so the shore never pulls land into the water.
-vec3 Water_Base(ivec2 p, vec3 still)
-{
-	vec2 at = vec2(p) + u_world.xy;
-	// The ground is drawn at half height, so the waves run twice as fast down the screen.
-	float t = u_world.z;
-	float a = at.x * 0.045 + at.y * 0.09 + t * 1.6;
-	float b = at.x * -0.06 + at.y * 0.12 + t * 1.1;
-	vec2 shift = vec2(sin(a) + 0.6 * sin(b), 0.5 * (cos(a) - 0.6 * cos(b))) * u_water.y;
-	vec2 q = at + shift;
-	ivec2 q0 = ivec2(floor(q));
-	vec2 f = q - floor(q);
-	ivec2 last = textureSize(s_tileshadow, 0) - ivec2(1, 1);
-	vec3 c[4];
-	for (int i = 0; i < 4; i++) {
-		ivec2 t = clamp(q0 + ivec2(i % 2, i / 2), ivec2(0, 0), last);
-		c[i] = Water(t) ? Rgb565(Fetch16(s_base, Ring(t, u_basering))) : still;
-	}
-	vec3 colour = mix(mix(c[0], c[1], f.x), mix(c[2], c[3], f.x), f.y);
-	colour *= 1.0 + u_water.z * (cos(a) + 0.6 * cos(b));
-	// Three finer waves at unrelated angles meet in short-lived peaks, which show as glints along the
-	// crests of the swell; a slow wide wave thins them out in drifting patches.
-	float g = sin(at.x * 0.17 + at.y * 0.29 + t * 2.9) * sin(at.x * 0.21 - at.y * 0.37 - t * 2.3)
-		* sin(at.x * -0.26 + at.y * 0.13 + t * 1.7);
-	float crest = max(cos(a) + 0.6 * cos(b), 0.0) / 1.6;
-	float patches = max(sin(at.x * 0.013 - at.y * 0.021 + t * 0.4) + 0.3 * sin(at.x * 0.029 + at.y * 0.011 - t * 0.3), 0.0);
-	float glint = pow(max(g, 0.0) * 1.3, 6.0) * crest * crest * crest * patches;
-	return min(colour + glint * u_water.w, vec3_splat(1.0));
-}
 
 void main()
 {
@@ -92,9 +44,6 @@ void main()
 
 	if (kind == 5 || kind == 9) {
 		vec3 base = Rgb565(Fetch16(s_base, Ring(area, u_basering)));
-		if (u_water.y > 0.0 && Water(area)) {
-			base = Water_Base(area, base);
-		}
 		if (u_fade.x > 0.0) {
 			base = min(base * (texture2D(s_fade, (vec2(area) + vec2(0.5, 0.5)) / u_fade.yz).x * u_fade.w), vec3_splat(1.0));
 		}
@@ -110,15 +59,7 @@ void main()
 		return;
 	}
 
-	if (kind == 15) {
-		if (Plane(area) < 128) {
-			discard;
-		}
-		gl_FragColor = vec4_splat(1.0);
-		return;
-	}
-
-	int scale = int(u_water.x + 0.5);
+	int scale = int(u_scale.x + 0.5);
 	ivec2 sub = min(ivec2(floor(fract(v_texcoord0.zw) * float(scale))), ivec2(scale - 1, scale - 1));
 	int width = int(v_texcoord1.y + 0.5);
 	// Offsets are whole numbers, and adding 0.5 would round them from 2^23 up, where a float spaces by one.

@@ -83,7 +83,7 @@
 #include "scenario.h"
 #include "emissive.h"
 #include "emissive_surface.h"
-#include "shadowplane.h"
+#include "shadowonce.h"
 #include "dsurface.h"
 #include "video.h"
 #include "shellmap.h"
@@ -720,7 +720,7 @@ void GScreenClass::Render(void)
 	// While zoomed, the GPU draws the whole map view and the presenter scales the part that is shown, so a glide
 	// keeps the GPU's picture size.
 	Rect const gpu_area = TacticalRect;
-	GpuMap_Set_Soft_Shadows(0, !Options.ShadowStacking);
+	GpuMap_Set_Union_Shadows(!Options.ShadowStacking);
 	GpuDraw_Set_Voxels(Options.GpuVoxels && GpuMap_Supported(), Options.GpuVoxelSmooth);
 	GpuMap_Set_Voxel_Scale(Options.GpuVoxels ? Gpu_Voxel_Pass_Scale(Options.GpuVoxelScale, DisplayZoom * InterfaceScale) : 1);
 	GpuVoxel_Set_Shared_Depth(Options.GpuVoxelLayerDepth == GPU_VOXEL_LAYER_DEPTH_SHARED);

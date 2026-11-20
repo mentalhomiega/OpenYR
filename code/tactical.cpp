@@ -16,7 +16,7 @@
 
 #include "playerdisplay.h"
 #include "gpudraw.h"
-#include "shadowplane.h"
+#include "shadowonce.h"
 #include "tactical.h"
 #include "layerfade.h"
 #include "flyingtext.h"
@@ -1134,11 +1134,8 @@ static bool Scroll_Tile_Layer(int xoffset, int yoffset, Rect const & destrect, R
 	if (off || tiles == NULL || !tiles->Scroll(xoffset, yoffset)) {
 		return(false);
 	}
-	EmissivePlane * const planes[2] = { Emissive_Plane_For(TileSurface), ShadowPlane_For(TileSurface) };
-	for (EmissivePlane * plane : planes) {
-		if (plane != NULL) {
-			Emissive_Copy_Rect(*plane, destrect.X, destrect.Y, *plane, sourcerect.X, sourcerect.Y, sourcerect.Width, sourcerect.Height);
-		}
+	if (EmissivePlane * const plane = Emissive_Plane_For(TileSurface)) {
+		Emissive_Copy_Rect(*plane, destrect.X, destrect.Y, *plane, sourcerect.X, sourcerect.Y, sourcerect.Width, sourcerect.Height);
 	}
 	return(true);
 }
@@ -1382,8 +1379,6 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 
 			Emissive_After_Fill(*LogicalSurface, xpanrect);
 			Emissive_After_Fill(*LogicalSurface, ypanrect);
-			ShadowPlane_After_Fill(*LogicalSurface, fullredraw ? TacticalRect : xpanrect);
-			ShadowPlane_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
 			Note_Layer_Writes(xpanrect, ypanrect, fullredraw);
 			{
@@ -1418,9 +1413,6 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	if ((drawpass == DRAW_PASS_BACKGROUND && !GpuDraw_Tiles_Left()) || drawpass == DRAW_PASS_FULL) {
 		PerfScope tilecopy_scope(PERF_DRAW_TILECOPY);
 		LogicalSurface->Blit_From(TacticalRect, *TileSurface, TacticalRect);
-		if (drawpass == DRAW_PASS_FULL || !GpuDraw_Planned()) {
-			ShadowPlane_Darken(*LogicalSurface, TacticalRect, DSurface::Get_Halfbright_Mask());
-		}
 	} else if (drawpass == DRAW_PASS_BACKGROUND && Emissive_Is_Enabled()) {
 		// The pixels stay behind for the GPU pass, but the emissive values the last frame's objects left must go.
 		Emissive_After_Bit_Blit(*LogicalSurface, TacticalRect.X, TacticalRect.Y, *TileSurface, TacticalRect.X, TacticalRect.Y, TacticalRect.Width, TacticalRect.Height);
@@ -2099,7 +2091,7 @@ Rect Tactical::Drawn_Picture_Part(int width, int height) const
 
 /// <summary>
 /// Registers the parts of the view that a zoom change left undrawn as dirty, as far as the next draw needs them: what
-/// the presenter shows during a glide, with a margin for the GPU effects that sample around a pixel, or all of them
+/// the presenter shows during a glide, with a margin for draws that read the pixels around the ones they change, or all of them
 /// once the glide has ended, at a full redraw, a scroll or a deferred light fade.
 /// </summary>
 void Tactical::Register_Undrawn_Edges(bool fullredraw)
@@ -2107,7 +2099,7 @@ void Tactical::Register_Undrawn_Edges(bool fullredraw)
 	if (!_EdgesUndrawn) {
 		return;
 	}
-	// The bloom glow, shockwave bends and soft shadows reach at most about 40 map pixels from where they are drawn.
+	// A sonic wave reads pixels a few map pixels from the ones it changes; the margin leaves room for that.
 	int const MARGIN = 64;
 	Rect const view(0, 0, TacticalDimensions.Width, TacticalDimensions.Height);
 	Rect wanted = view;
