@@ -40,7 +40,7 @@ char const * Audio_Event_Fate_Name(AudioEventFate fate)
 {
 	static char const * const NAMES[] = {
 		"started", "delayed", "queued", "refused-limit", "refused-budget", "refused-voice", "refused-sound",
-		"refused-event", "cut-limit", "cut-budget", "stopped", "finished", "live"
+		"refused-event", "cut-limit", "cut-budget", "stopped", "finished", "live", "retarget"
 	};
 	unsigned index = (unsigned)fate;
 	return(index < sizeof(NAMES) / sizeof(NAMES[0]) ? NAMES[index] : "unknown");
@@ -193,7 +193,7 @@ AudioHandle AudioEventPoolClass::Handle_Of(EventClass const & event) const
 }
 
 
-void AudioEventPoolClass::Report(EventClass const & event, AudioEventFate fate, EventClass const * by)
+void AudioEventPoolClass::Report(EventClass const & event, AudioEventFate fate, EventClass const * by, float ramp)
 {
 	if (Observer == nullptr) {
 		return;
@@ -208,6 +208,7 @@ void AudioEventPoolClass::Report(EventClass const & event, AudioEventFate fate, 
 	report.Level = Current_Level(event);
 	report.Pan = event.Pan;
 	report.Pitch = event.Pitch;
+	report.Ramp = ramp;
 	report.Voice = event.Voice;
 	report.Stream = event.Stream != nullptr;
 	if ((fate == AudioEventFate::STARTED || fate == AudioEventFate::LIVE) && event.Type != nullptr) {
@@ -302,6 +303,8 @@ void AudioEventPoolClass::Send_Volume(EventClass & event, float volume, float ra
 	event.RequestVolume = volume;
 	if (!Push_Level(event, ramp)) {
 		event.RequestVolume = previous;
+	} else if (event.Voice >= 0) {
+		Report(event, AudioEventFate::RETARGET, nullptr, ramp);
 	}
 }
 
@@ -312,6 +315,8 @@ void AudioEventPoolClass::Send_Pan(EventClass & event, float pan, float ramp)
 	event.Pan = pan;
 	if (!Push_Pan(event, ramp)) {
 		event.Pan = previous;
+	} else if (event.Voice >= 0) {
+		Report(event, AudioEventFate::RETARGET, nullptr, ramp);
 	}
 }
 

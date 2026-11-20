@@ -117,7 +117,8 @@ enum class AudioEventFate : uint8_t {
 	CUT_BUDGET,       // its voice was taken for the event By
 	STOPPED,          // the game stopped, faded or ended it
 	FINISHED,         // its voice played to the end
-	LIVE              // already playing or waiting when Report_Live was called
+	LIVE,             // already playing or waiting when Report_Live was called
+	RETARGET          // its volume or pan changed; the report carries the new values
 };
 
 char const * Audio_Event_Fate_Name(AudioEventFate fate);
@@ -135,6 +136,7 @@ struct AudioEventReportClass {
 	float Level;                        // the event's own level: type volume, request volume and volume shift
 	float Pan;
 	float Pitch;
+	float Ramp;                         // seconds a retarget takes to reach its values
 	int Voice;
 	bool Stream;
 	char const * Sounds[AUDIO_MAX_SEQUENCE];
@@ -262,7 +264,7 @@ class AudioEventPoolClass
 		void Finish(EventClass & event);
 		AudioSampleClass * Pin(EventClass & event, unsigned sound);
 		AudioHandle Handle_Of(EventClass const & event) const;
-		void Report(EventClass const & event, AudioEventFate fate, EventClass const * by = nullptr);
+		void Report(EventClass const & event, AudioEventFate fate, EventClass const * by = nullptr, float ramp = 0.0f);
 
 		enum { DEFAULT_BUDGET = 16 };
 

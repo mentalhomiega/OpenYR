@@ -104,7 +104,12 @@ void AudioTraceObserverClass::Report(AudioEventReportClass const & report)
 	}
 	float group = report.Group < AUDIO_GROUP_COUNT ? GroupGains[report.Group] : 0.0f;
 	char const * type = report.Type != nullptr ? report.Type->Name : (report.Stream ? "<stream>" : "<clip>");
-	AudioTrace.Write("event", "%s h=%u type=%s group=%s prio=%d level=%.3f gain=%.4f pan=%.2f pitch=%.3f voice=%d by=%u sounds=%s loop=%u-%u cycles=%d",
+	if (report.Fate == AudioEventFate::RETARGET) {
+		AudioTrace.Write("event", "retarget h=%u type=%s level=%.4f gain=%.5f pan=%.3f ramp=%.3f", report.Handle.Raw(), AudioTraceClass::Word(type).c_str(),
+			report.Level, Audio_Perceptual_Gain(report.Level * group), report.Pan, report.Ramp);
+		return;
+	}
+	AudioTrace.Write("event", "%s h=%u type=%s group=%s prio=%d level=%.4f gain=%.5f pan=%.3f pitch=%.5f voice=%d by=%u sounds=%s loop=%u-%u cycles=%d",
 		Audio_Event_Fate_Name(report.Fate), report.Handle.Raw(), AudioTraceClass::Word(type).c_str(), Audio_Group_Name(report.Group),
 		report.Priority, report.Level, Audio_Perceptual_Gain(report.Level * group), report.Pan, report.Pitch, report.Voice,
 		report.By.Raw(), AudioTraceClass::Word(sounds.c_str()).c_str(), report.LoopStart, report.LoopEnd, report.Cycles);
