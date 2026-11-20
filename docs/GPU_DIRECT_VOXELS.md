@@ -226,6 +226,22 @@ The direct route draws whatever matrix it is given, so smooth facing needs no ne
 already gives `LocomotionClass::Build_Draw_Matrix` and `UnitClass::Unit_Draw_Voxel` the exact facing with
 `GpuVoxelSmooth=yes`, and the barrel pitch stays in 32 steps.
 
+### Placement between map pixels
+
+A map draw places every object on a whole map pixel, so in a zoomed-in view a slow move or a hover unit's bob goes in
+steps of several screen pixels. With `GpuVoxelSubpixel=yes` (off by default) a vehicle, aircraft or other moving object
+the GPU draws from its voxels is placed by target pixels instead. `ObjectClass::Render_Sub_Offset` works out how far
+the exact position, blended between game frames as `Render_Blend_Offset` blends it, lies from the whole pixel the draw
+uses; `ObjectClass::Render` hands it to the parts recorded during the object's draw (`GpuDraw_Set_Voxel_Shift`), and
+`GpuVoxel_Draw_Direct` moves the object's layers by that offset times the pass scale, rounded to a whole target pixel.
+The shadow layers stay where they are, and the clip of a moved layer grows by one map pixel.
+
+It changes only the drawing: the game state, the cell an object stands in and its selection box are untouched, and at
+scale 1 the offset rounds away, so the picture is the same as without the setting. In an 800x600 window at zoom 2 with
+`GpuVoxelScale=4` a hovering transport's top edge moved 29, 31, 33, 35 screen pixels over consecutive game frames
+without it and 29, 30, 31, 32, 33, 34 with it. Shapes drawn with the object (a shape turret, a muzzle flash) still
+stand on whole map pixels. No automatic test pins it yet.
+
 Tilt on a slope comes from `Get_Slope_Matrix` for the cell's ramp (`DriveLocomotionClass::Build_Draw_Matrix`,
 `code/drive.cpp`), so it changes at once at a cell edge. A smooth tilt (proposal, later, `GpuVoxelSmoothTilt`) would
 blend from the previous slope matrix by the object's progress across the cell, in the draw code only. Every blended

@@ -1676,6 +1676,17 @@ bool GpuDraw_Voxels_Wanted(void)
 }
 
 
+static float _VoxelShiftX = 0.0f;
+static float _VoxelShiftY = 0.0f;
+
+
+void GpuDraw_Set_Voxel_Shift(float x, float y)
+{
+	_VoxelShiftX = x;
+	_VoxelShiftY = y;
+}
+
+
 bool GpuDraw_Voxels_Smooth(void)
 {
 	return(_VoxelsSmooth && GpuDraw_Voxels_Wanted());
@@ -1788,6 +1799,8 @@ void GpuDraw_Voxel_Part(GpuVoxelPreparedRef const & prepared, bool software)
 	part.Pieces.push_back(std::move(piece));
 	part.Area = bounds;
 	part.Scratch = false;
+	part.ShiftX = _VoxelShiftX;
+	part.ShiftY = _VoxelShiftY;
 	if (software) {
 		if (Emissive_Is_Enabled()) {
 			Copy_Voxel_Mask(part);
@@ -1850,6 +1863,8 @@ void GpuDraw_Composite_Begin(Surface const & dest)
 	GpuVoxelPart part;
 	part.Area = Rect();
 	part.Scratch = true;
+	part.ShiftX = _VoxelShiftX;
+	part.ShiftY = _VoxelShiftY;
 	_List.Voxels.push_back(std::move(part));
 	_Composite = (int)_List.Voxels.size() - 1;
 	_CompositeRenders = GpuDraw_Is_Rendering(dest);

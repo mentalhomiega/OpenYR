@@ -15,6 +15,7 @@
 #include "ui/uireveal.h"
 #include "videodirty.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -520,6 +521,50 @@ void Test_Dirty_State(void)
 }
 
 
+// Plays a second of presents: frames end every frame_ns, a present is attempted at each frame end, and each hand-over
+// to the renderer takes hand_ns. Returns the presents made.
+int Paced_Presents(std::int64_t interval, std::int64_t frame_ns, std::int64_t hand_ns, std::int64_t jitter_ns = 0)
+{
+	VideoPresentPaceClass pace;
+	pace.Set_Interval(interval);
+	int presents = 0;
+	std::int64_t now = 0;
+	for (int frame = 0; now < 1000000000; frame++) {
+		std::int64_t const start = now + (frame % 2 == 0 ? jitter_ns : -jitter_ns);
+		if (pace.Is_Due(start)) {
+			pace.Presented(start, start + 500000, start + 500000 + hand_ns);
+			presents++;
+			now = std::max(now + frame_ns, start + 500000 + hand_ns);
+		} else {
+			now += frame_ns;
+		}
+	}
+	return(presents);
+}
+
+
+void Test_Present_Pace(void)
+{
+	std::int64_t const display = 1000000000 / 240;
+
+	int const fast = Paced_Presents(display, 500000, 100000);
+	Check(fast >= 238 && fast <= 241, "frames far faster than the display present at the display rate, never above it");
+
+	int const drawn = Paced_Presents(display, display, 100000, 300000);
+	Check(drawn >= 239, "draws spaced at the display rate each present, though their present times wobble");
+
+	int const held = Paced_Presents(display, 500000, 2000000);
+	Check(held <= 1000000000 / (display + 2500000) + 1, "a present held for the display makes the next wait a whole interval from its end");
+
+	VideoPresentPaceClass pace;
+	pace.Set_Interval(display);
+	Check(!pace.Presented(0, 0, display / 4) && pace.Presented(display * 2, display * 2, display * 2 + display / 4 + 1), "a hand-over is held when it takes over a quarter interval");
+
+	VideoPresentPaceClass unpaced;
+	Check(unpaced.Is_Due(0) && !unpaced.Presented(0, 0, 1000000) && unpaced.Is_Due(1000000), "with no interval every present is due and none is held");
+}
+
+
 void Test_Tile_Diff(void)
 {
 	int const widths[] = {100, 64, 33};
@@ -642,6 +687,7 @@ int main(void)
 	Test_Reveal();
 	Test_Magnify();
 	Test_Dirty_State();
+	Test_Present_Pace();
 	Test_Tile_Diff();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

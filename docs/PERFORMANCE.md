@@ -168,9 +168,28 @@ between two redraws that happen, so a due redraw that is skipped again and again
 | `presents busy` | Presents put off because the render thread had not finished the last frame. It stays at zero without `RenderThread`. See [RENDER_THREAD.md](RENDER_THREAD.md) |
 | `gpu voxel parts`, `gpu voxel direct`, `gpu voxel faces` | With `GpuVoxels=yes`, the voxel parts of the passes the GPU drew, those of them a blit shows, and the cube faces their draws submitted, counted only at a voxel scale above 1 and `GpuVoxelLayerDepth=Shared`. See [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md) |
 | `logic over 20 ms`, `logic over 33 ms`, `logic over 50 ms` | Game frames whose `frame.logic` took longer than 20, 33 or 50 ms. A frame over 50 ms counts in all three |
+| `presents held` | Presents whose hand-over to the renderer (`present.gpu`) took longer than a quarter of the present interval, so the display held them. See [Presents faster than the display](#presents-faster-than-the-display) |
 
 The `ring cells` counter is taken only when the cell walk runs. Each radar-map ring cell the walk visits adds one
 counter increment while recording.
+
+## Presents faster than the display
+
+A present starts at most once per present interval, which is one display refresh (or one frame of `FrameRateLimit`), timed on the nanosecond clock (`VideoPresentPaceClass` in `videodirty.h`). Presents keep to that interval on the clock: one that comes late, because the frame that reached the deadline was still drawing, lets the next come up to half an interval early, so a draw loop paced at the display rate presents on every draw. Over any stretch longer than an interval, presents average at most one per interval.
+
+When the hand-over of a frame to the renderer (`present.gpu`) takes longer than a quarter of the interval, the display held the present back, and the next present waits a whole interval from the end of that one. `presents held` counts these. Without this, presents at exactly the display's nominal rate can settle into a state where the display holds every present: one run in six did so at 3840x2160.
+
+Before, the interval was whole milliseconds: 1000 / 240 gave 4 ms on a 240 Hz display, so uncapped frames could present up to 250 times a second. The presents then outran the display, `present.gputime` read the refresh period (4.13 ms), and every present waited in `present.gpu` (about 2 ms on average) for the display to free a buffer. Whether a run fell into that state depended on how short the frames were, so a cheaper frame could make the game slower; the classic command strip document did that ([Classic command strip document](#classic-command-strip-document)). The game frame rate in that state swung between runs and between one-second windows.
+
+`tests/autotest/classic-sidebar-perf.txt` at 3840x2160, uncapped, six alternating runs of each build, medians of the runs (game frames a second over the whole run, and the medians of the one-second windows):
+
+| Build | Game frames/s, whole run | Game frames/s, windows | Presents/s | `present.gpu` ms | `present.gputime` ms |
+|---|---|---|---|---|---|
+| Before the strip document, whole-millisecond interval | 415 (285 to 543) | 281 | 239 | 1.99 | 4.13 |
+| Strip document, whole-millisecond interval | 275 (256 to 388) | 247 | 239 | 2.45 | 4.14 |
+| Strip document, paced presents | 785 (736 to 826) | 733 | 238 | 0.15 | 2.2 |
+
+With paced presents `presents held` reads 0 to 2 a second in that script. With the game frame limit on, the presents a second and their gaps are the same as before (180 a second in the same script at 45 game frames a second).
 
 ## Benchmark
 
@@ -463,8 +482,10 @@ ring. The cost was simply the size of the ring:
 That is 5 to 8 microseconds a cell, about what a scroll strip costs (4.7 microseconds a cell for 12-pixel strips on a 1600x900
 view). With GPU drawing about 40% of it is the first write to each memory page of the tile layer and the depth and alpha
 buffers after the GPU pass took their written pages: the depth reset of the ring took 1.0 ms with GPU drawing and 0.1 ms in
-software. A step also clears the ring in the depth and alpha buffers when it moves them, about 1 ms each with GPU drawing,
-and the edges are cleared again when drawn.
+software. A step also cleared the ring in the depth and alpha buffers when it moved them, about 1 ms each with GPU drawing,
+and the edges were cleared again when drawn. The step now leaves the ring as it was (`Move_Area` with `clear_edges` false in
+`ZBuffer` and `ABuffer`), since the edges are registered as dirty areas and drawing them resets those entries first. A step's
+buffer fitting fell from about 2.3 ms to under 0.1 ms at the 3840x2160 view.
 
 A glide shows the new edges only gradually, so a draw now adds only the part of them on screen (`Tactical::Register_Undrawn_Edges`).
 The largest edge drawing in one draw at the 3840x2160 view fell from 15.5 ms to about 7 ms; the total is the same, spread over
@@ -476,7 +497,26 @@ the step back to 1 made the screen tile layer's texture again; the presenter the
 textures of both tile layers, makes the map's when the map surfaces are made at load, and sends only what was written to a
 layer since it was last read ([GPU_MAP.md](GPU_MAP.md#uploads)); the first step presents in 3.7 ms. The spare map surface is
 cleared when it is put aside at the end of a glide back to 1 instead of when the first step takes it. The first step still
-copies the kept picture into the map's tile layer, about 2.8 ms.
+copies the kept picture into the map's tile layer, which took about 2.8 ms, 2 ms of it to allocate and zero the new tile
+layer's emissive and shadow masks. The masks of the spare surfaces now stay bound while the zoom is 1 and are cleared with
+the spare when it is put aside, so the copy takes about 0.5 ms and the first presented frame after the step allocates no
+mask of the composite either. With GPU drawing and soft shadows or bloom the spare masks hold about 15 MB at the default
+view (2560x1440) and 33 MB at the 4K view while the zoom is 1; a glide held them before and freed them at its end.
+`tests/autotest/zoom-spare-masks.txt` checks that they are bound and zero ([AUTOTEST.md](AUTOTEST.md)).
+
+Ten-notch glides out on ETOTAL at 3840x2160 (`InterfaceScale=Auto`, `GpuRender=yes`, no frame limit, no dev mode), two runs
+of the build before and after, alternating, with one other game running. The time of the glide's `Set_View_Dimensions`
+calls is the sum of the `Map view` log lines of the steps; the glide out takes 5 steps with the default `ZoomOutView` and
+10 with `4K`. Worst frame / total stall of the `perfwindow` line in ms:
+
+| `ZoomOutView` | Steps, before | after | Worst frame / stall, before | after |
+|---|---|---|---|---|
+| Original (2560x1440) | 12.0, 12.1 ms | 2.0, 2.0 ms | 19.4 / 130, 17.9 / 130 | 18.5 / 129, 18.7 / 133 |
+| 4K | 22.2, 21.8 ms | 1.5, 1.6 ms | 57.0 / 140, 64.1 / 242 | 55.8 / 130, 62.7 / 181 |
+
+The steps cost a tenth of what they did, and the worst frame and the stall stay within the spread of the runs: the worst
+frame of a glide is a draw, not a step. A frame of this scene takes 30 to 37 ms at this view on this machine, so the
+2 ms of a step is within the noise of one frame.
 
 Ten-notch glides out on ETOTAL after its opening scene (`InterfaceScale=Auto`, which is 2 here), two runs of the build before
 and after, alternating, with one other game running in most runs and none of ours played; longest frame / total stall in ms

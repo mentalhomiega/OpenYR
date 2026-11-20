@@ -105,6 +105,7 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_LOGIC_OVER_20,   // game frames whose logic took over 20 ms
 	PERF_COUNT_LOGIC_OVER_33,   // game frames whose logic took over 33 ms
 	PERF_COUNT_LOGIC_OVER_50,   // game frames whose logic took over 50 ms
+	PERF_COUNT_PRESENTS_HELD,   // presents whose hand-over to the renderer took over a quarter of the present interval
 	PERF_COUNTER_COUNT
 };
 

@@ -72,7 +72,7 @@ class ABuffer
 		void Release_Surface(void);
 		void Store(unsigned short * dst, int size, unsigned short value);
 		void Reset(Rect rect, unsigned short value);
-		void Move_Area(Rect const & bounds, Point2D const & offset, unsigned short value);
+		void Move_Area(Rect const & bounds, Point2D const & offset, unsigned short value, bool clear_edges = true);
 
 	public:
 		/*

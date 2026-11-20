@@ -9,6 +9,8 @@
 
 #include "videodirty.h"
 
+#include <algorithm>
+
 
 void VideoDirtyStateClass::Mark_Game(void)
 {
@@ -65,4 +67,17 @@ void VideoDirtyStateClass::Restore(VideoDirtySnapshotType const & snapshot)
 	if (!Game && !Overlay) {
 		Overlay = true;
 	}
+}
+
+
+/// <summary>
+/// Records a present that started at start and handed its frame to the renderer from handed to done, and returns whether
+/// the display held it: a hand-over longer than a quarter interval. The next present after a held one waits a whole
+/// interval from its end.
+/// </summary>
+bool VideoPresentPaceClass::Presented(std::int64_t start, std::int64_t handed, std::int64_t done)
+{
+	bool const held = Interval > 0 && done - handed > Interval / 4;
+	Next = held ? done + Interval : std::max(Next + Interval, start + Interval / 2);
+	return(held);
 }

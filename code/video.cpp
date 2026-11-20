@@ -30,6 +30,7 @@
 #include "hdrcolour.h"
 #include "hdrdisplay.h"
 #include "misc.h"
+#include "monotonic.h"
 #include "options.h"
 #include "renderthread.h"
 #include "sdl/sdlwindow.h"
@@ -92,6 +93,9 @@ static double _MapSubpixelY = 0.0;
 
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
+// Paced on the nanosecond clock: whole milliseconds round a 240 Hz display's 4.17 ms down to 4, and presents that outrun
+// the display wait for it (docs/PERFORMANCE.md, "Presents faster than the display").
+static VideoPresentPaceClass _PresentPace;
 static int _RefreshRate = 60;
 
 static unsigned int _PresentsThisSecond = 0;
@@ -140,17 +144,14 @@ static void Update_Present_Interval(int refreshrate)
 	int const limit = Options.FrameRateLimit;
 	if (limit == 0) {
 		_PresentInterval = 0;
+		_PresentPace.Set_Interval(0);
 		return;
 	}
 	int const rate = (limit > 0) ? limit : refreshrate;
 
-	_PresentInterval = (unsigned int)(1000 / rate);
-	if (_PresentInterval < 3) {
-		_PresentInterval = 3;
-	}
-	if (_PresentInterval > 100) {
-		_PresentInterval = 100;
-	}
+	std::int64_t const interval = std::clamp<std::int64_t>(1000000000 / rate, 3000000, 100000000);
+	_PresentPace.Set_Interval(interval);
+	_PresentInterval = (unsigned int)(interval / 1000000);
 }
 
 
@@ -647,6 +648,7 @@ static void Present(void)
 	PerfPresentSample present_sample;
 	PerfScope present_scope(PERF_PRESENT_TOTAL);
 	_LastPresentTime = timeGetTime();
+	std::int64_t const start = Monotonic_Nanoseconds();
 
 	_Presenting = true;
 
@@ -727,7 +729,11 @@ static void Present(void)
 	}
 	{
 		PerfScope gpu_scope(PERF_PRESENT_GPU);
+		std::int64_t const handed = Monotonic_Nanoseconds();
 		Backend_End_Frame();
+		if (_PresentPace.Presented(start, handed, Monotonic_Nanoseconds())) {
+			Perf_Count(PERF_COUNT_PRESENTS_HELD);
+		}
 	}
 	_Presenting = false;
 
@@ -772,10 +778,10 @@ void Video_Present_If_Dirty(void)
 		return;
 	}
 
-	unsigned int now = timeGetTime();
-	if ((now - _LastPresentTime) < _PresentInterval) {
+	if (!_PresentPace.Is_Due(Monotonic_Nanoseconds())) {
 		return;
 	}
+	unsigned int const now = timeGetTime();
 	if (_AwaitingMapDraw && (now - _MapDropTime) < VIDEO_MAP_DROP_HOLD_MS) {
 		return;
 	}

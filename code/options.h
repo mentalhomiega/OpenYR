@@ -372,6 +372,10 @@ class OptionsClass {
 		// With GpuVoxels, an object the GPU draws from its voxels turns to its exact facing, not the nearest of 32.
 		bool GpuVoxelSmooth;
 
+		// With GpuVoxels, a moving object the GPU draws from its voxels in a zoomed-in view is placed between whole
+		// map pixels, so it glides and bobs by screen pixels.
+		bool GpuVoxelSubpixel;
+
 		// With GpuVoxels, how many times finer than the map pixels the GPU draws the map, 1 to 4, or 0 to follow the zoom
 		// (Gpu_Voxel_Pass_Scale).
 		int GpuVoxelScale;

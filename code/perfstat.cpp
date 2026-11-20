@@ -75,7 +75,7 @@ char const * const Counter_Names[PERF_COUNTER_COUNT] = {
 	"ring cells", "cell candidates", "object evals", "area modify", "weapon selects",
 	"detach calls", "detach visits", "detach bullet", "detach anim", "detach particle", "detach techno", "detach other",
 	"draws skipped", "presents busy", "gpu voxel parts", "gpu voxel direct", "gpu voxel faces",
-	"logic over 20 ms", "logic over 33 ms", "logic over 50 ms",
+	"logic over 20 ms", "logic over 33 ms", "logic over 50 ms", "presents held",
 };
 
 // Enough for five seconds of draws at 400 a second.

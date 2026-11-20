@@ -141,6 +141,13 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Needs = "GpuRender",
 	},
 	{
+		.Section = "Video", .Key = "GpuVoxelSubpixel",
+		.Flag = &OptionsClass::GpuVoxelSubpixel, .Default = false,
+		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Smooth voxel motion when zoomed in",
+		.Tip = "In a zoomed-in view, a moving or hovering object drawn from its voxels is placed by screen pixels instead of map pixels. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Needs = "GpuRender",
+	},
+	{
 		.Section = "Video", .Key = "GpuVoxelScale",
 		.Number = &OptionsClass::GpuVoxelScale, .Default = 0, .Min = 0, .Max = GPU_VOXEL_SCALE_MAX,
 		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Voxel sharpness",
