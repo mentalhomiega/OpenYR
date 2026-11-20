@@ -5881,42 +5881,6 @@ BlockagePathDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
-Bloom:
-  key: Bloom
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: OptionsClass
-      member: Bloom
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
-BloomStrength:
-  key: BloomStrength
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '100'
-      declared_in: OptionsClass
-      member: BloomStrength
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 BlowupSound:
   key: BlowupSound
   scopes:
@@ -10333,42 +10297,6 @@ CloseRange:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-CloudShadowStrength:
-  key: CloudShadowStrength
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '100'
-      declared_in: OptionsClass
-      member: CloudShadowStrength
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
-CloudShadows:
-  key: CloudShadows
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: OptionsClass
-      member: CloudShadows
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 Cluster:
   key: Cluster
   scopes:
@@ -42684,24 +42612,6 @@ ShockTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
-Shockwaves:
-  key: Shockwaves
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: OptionsClass
-      member: Shockwaves
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 ShorePieces:
   key: ShorePieces
   scopes:
@@ -43875,42 +43785,6 @@ SnowOccupationBits:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
-SoftShadowRadius:
-  key: SoftShadowRadius
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '3'
-      declared_in: OptionsClass
-      member: SoftShadowRadius
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
-SoftShadows:
-  key: SoftShadows
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: OptionsClass
-      member: SoftShadows
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 SolidHeight:
   key: SolidHeight
   scopes:
@@ -54645,42 +54519,6 @@ WaterImage:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-WaterRippleStrength:
-  key: WaterRippleStrength
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '100'
-      declared_in: OptionsClass
-      member: WaterRippleStrength
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
-WaterRipples:
-  key: WaterRipples
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: OptionsClass
-      member: WaterRipples
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 WaterSet:
   key: WaterSet
   scopes:
@@ -55693,24 +55531,6 @@ WeaponsFactory:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-Weather:
-  key: Weather
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: string
-    status: generated
-    _provenance:
-      default_candidate: None
-      declared_in: OptionsClass
-      member: null
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 WeatherConBoltExplosion:
   key: WeatherConBoltExplosion
   scopes:
@@ -55765,24 +55585,6 @@ WeatherConClouds:
       source: code/rules.cpp
       guard: null
     level: RulesClass
-WeatherStrength:
-  key: WeatherStrength
-  scopes:
-  - applies_to:
-    - client settings
-    file: ra2md.ini
-    section:
-      kind: literal
-      name: Video
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '100'
-      declared_in: OptionsClass
-      member: WeatherStrength
-      source: code/optionsettings.cpp
-      guard: null
-    level: OptionsClass
 WebDuration:
   key: WebDuration
   scopes:

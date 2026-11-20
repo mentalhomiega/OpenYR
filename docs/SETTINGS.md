@@ -93,32 +93,36 @@ setting change: Reset to defaults leaves the fold as it is, and Back and OK igno
 
 A preset choice is a drop-down at the top of a page that sets several rows at once. It is declared in `Presets[]` in
 `code/optionsettings.cpp` as a `SettingPresetChoice`: the page, a key, the group heading, the label and tip, and a list
-of `SettingPreset`, each a label and the value it gives each of its rows. The choice is never stored and has no key in
-`RA2MD.INI`. The page reads it from the rows on every change: it shows the first preset whose values every named row
+of `SettingPreset`, each a label and the value it gives each of its rows. A preset names a declared row by its key. It
+can also name a row the page draws by hand, by a key the page answers through `UISettingOutsideRows`
+(`UI_Setting_Rows_Set_Outside`): the page reads and sets that row's pending value, and a key no row answers reads as
+not held. The choice is never stored and has no key in `RA2MD.INI`. The page reads it from the rows on every change: it shows the first preset whose values every named row
 holds, and "Custom" when none is. A settings file therefore reads as the right preset whatever build wrote it, and
 changing any covered row by hand switches the choice to Custom. Choosing Custom changes nothing. Choosing a preset
 sets its rows on the page like a hand change, so they reach `Options` on OK through the usual apply path, and Cancel
 drops them. The choice greys with the condition the declaration names.
 
-The Graphics page has one preset choice, Preset under the heading Graphics quality, over the rows of the Advanced fold
-and the Weather row. Each preset names the same ten rows. Switches no preset names, such as the sharpness slider,
-**Steady vehicle placement** and **Darker overlapping shadows**, keep their value and do not change the reading.
+The Graphics page has one preset choice, Preset under the heading Graphics quality. Its presets name the **Modern
+in-game interface** switch of the Interface group (`InterfaceStyle`, the key `ModernInterface` in the declaration) and
+rows of the Advanced fold. The third preset's name is its label in `Graphics_Presets`, so one edit renames it.
 
-| Row | Classic | Enhanced | Full |
+| Row | Classic | Enhanced | Smooth |
 |---|---|---|---|
-| Draw with the graphics card (`GpuRender`) | on | on | on |
-| Soft shadows (`SoftShadows`) | off | on | on |
-| Draw vehicles and aircraft in 3D (`GpuVoxels`) | off | on | on |
-| Smooth turning (`GpuVoxelSmooth`) | off | on | on |
-| Smooth movement when zoomed in (`GpuVoxelSubpixel`) | off | on | on |
-| Shockwaves, Glow (`Bloom`), Water ripples, Cloud shadows | off | off | on |
-| Weather (`Weather`) | None | None | Map |
+| Modern in-game interface (`InterfaceStyle`) | off | on | on |
+| Draw with the graphics card (`GpuRender`) | off | on | on |
+| Draw vehicles and aircraft in 3D (`GpuVoxels`) | off | off | on |
+| Smooth turning (`GpuVoxelSmooth`) | off | off | on |
+| Smooth movement when zoomed in (`GpuVoxelSubpixel`) | off | off | on |
+| Vehicle sharpness (`GpuVoxelScale`) | not set | not set | 4x |
 
-Classic is the default of every row it names, so a settings file with none of these keys reads as Classic, and the
-picture is the one the game drew before the presets existed. Enhanced changes how the game draws what it already
-shows: it draws with the graphics card, softens shadows, and turns and moves vehicles smoothly. Full adds effects that
-put new things in the picture. None of the rows changes the game's state, so every preset plays the same game and is
-allowed in multiplayer. A preset sets no renderer and no strength slider.
+Enhanced is the default of every row it names, so a settings file with none of these keys reads as Enhanced. Classic
+uses the classic sidebar and draws with the processor, as Yuri's Revenge does. Enhanced adds the modern interface and drawing with the
+graphics card, which leave the picture as it was. Smooth also draws vehicles and aircraft from their 3D models, turning
+and moving smoothly, at four times the map's pixels. A row a preset does not name, such as the sharpness slider under
+Classic and Enhanced, **Steady vehicle placement**, **Darker overlapping shadows**, the sidebar rows and opacity, the UI
+font and the scaling filter, keeps its value and does not change the reading. None of the rows changes the game's
+state, so every preset plays the same game and is allowed in multiplayer. A preset sets no renderer. The choice is not
+greyed in the classic interface, since Enhanced and Smooth turn the modern interface back on.
 
 ## What the table order decides
 
@@ -139,5 +143,5 @@ writes every row back when any value changed, then calls `Apply_HDR_Highlights`.
 
 ## Converted so far
 
-The `[Video]` GPU group (`GpuRender` to `WeatherStrength`, with the five GPU voxel keys), `SteadyVoxelPlacement`, `ShadowStacking`, `RenderThread`, `FastestGpu`, `PerfOverlay` and `ZoomOutView`, and the two `[Options]` path search keys `ParallelPaths` and `PathThreads`. `ClassicGameSpeeds` is declared with no row: the game controls dialog shows its switch beside the speed slider, and it changes only the frame length of a solo game. `RenderThread`, `FastestGpu` and the path search keys are the rows of the Performance page. `ZoomOutView` (`Original` or `4K`) is the Zoom out to a 4K view switch on the Graphics page: it sets the most map the player's zoom shows, 2560x1440 or 3840x2160 map pixels, and a value the file holds that is not one of the two reads as `Original`, so no setting widens the zoom past 4K. `DebugMode=yes` lifts the limit in a single-player game; scripted scenes are not held to it (docs/PERFORMANCE.md, Zoom changes). `.Names` and `.Number`
+The `[Video]` GPU group (`GpuRender` and the six GPU voxel keys), `SteadyVoxelPlacement`, `ShadowStacking`, `RenderThread`, `FastestGpu`, `PerfOverlay` and `ZoomOutView`, and the two `[Options]` path search keys `ParallelPaths` and `PathThreads`. `ClassicGameSpeeds` is declared with no row: the game controls dialog shows its switch beside the speed slider, and it changes only the frame length of a solo game. `RenderThread`, `FastestGpu` and the path search keys are the rows of the Performance page. `ZoomOutView` (`Original` or `4K`) is the Zoom out to a 4K view switch on the Graphics page: it sets the most map the player's zoom shows, 2560x1440 or 3840x2160 map pixels, and a value the file holds that is not one of the two reads as `Original`, so no setting widens the zoom past 4K. `DebugMode=yes` lifts the limit in a single-player game; scripted scenes are not held to it (docs/PERFORMANCE.md, Zoom changes). `.Names` and `.Number`
 cover the rest of `[Video]` and `[Options]` once each is moved beside the code that uses it.

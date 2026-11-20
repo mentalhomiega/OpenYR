@@ -283,3 +283,69 @@
   replacement:
     type: key
     id: GpuVoxels
+- type: key
+  id: SoftShadows
+  route: /keys/softshadows/
+  search_aliases:
+    - SoftShadows
+  summary: Blended every shadow on the ground into one soft shadow while GPU drawing was on. The GPU picture effects were removed.
+- type: key
+  id: SoftShadowRadius
+  route: /keys/softshadowradius/
+  search_aliases:
+    - SoftShadowRadius
+  summary: Set the blur radius of SoftShadows in pixels. The GPU picture effects were removed.
+- type: key
+  id: Shockwaves
+  route: /keys/shockwaves/
+  search_aliases:
+    - Shockwaves
+  summary: Sent a ring that bent the picture around each weapon blast while GPU drawing was on. The GPU picture effects were removed.
+- type: key
+  id: Bloom
+  route: /keys/bloom/
+  search_aliases:
+    - Bloom
+  summary: Made lasers, lamps, fire and other bright effects glow onto the picture while GPU drawing was on. The GPU picture effects were removed.
+- type: key
+  id: BloomStrength
+  route: /keys/bloomstrength/
+  search_aliases:
+    - BloomStrength
+  summary: Set the brightness of the Bloom glow in percent. The GPU picture effects were removed.
+- type: key
+  id: WaterRipples
+  route: /keys/waterripples/
+  search_aliases:
+    - WaterRipples
+  summary: Made the water of the map ripple and glint while GPU drawing was on. The GPU picture effects were removed.
+- type: key
+  id: WaterRippleStrength
+  route: /keys/waterripplestrength/
+  search_aliases:
+    - WaterRippleStrength
+  summary: Set the size of the WaterRipples shift and shading in percent. The GPU picture effects were removed.
+- type: key
+  id: CloudShadows
+  route: /keys/cloudshadows/
+  search_aliases:
+    - CloudShadows
+  summary: Drew the shadows of drifting clouds over the map while GPU drawing was on. The GPU picture effects were removed.
+- type: key
+  id: CloudShadowStrength
+  route: /keys/cloudshadowstrength/
+  search_aliases:
+    - CloudShadowStrength
+  summary: Set how much a cloud of CloudShadows darkened the map in percent. The GPU picture effects were removed.
+- type: key
+  id: Weather
+  route: /keys/weather/
+  search_aliases:
+    - Weather
+  summary: Drew rain or snow falling over the map while GPU drawing was on. The GPU picture effects were removed.
+- type: key
+  id: WeatherStrength
+  route: /keys/weatherstrength/
+  search_aliases:
+    - WeatherStrength
+  summary: Set how much snow or rain Weather drew in percent. The GPU picture effects were removed.

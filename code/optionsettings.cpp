@@ -54,7 +54,7 @@ constexpr char const * RENDERING = "Rendering";
 constexpr char const * PATH_SEARCHES = "Path searches";
 
 
-// Classic draws the picture and the sidebar as Yuri's Revenge does.
+// Classic uses the classic sidebar and draws with the processor, as Yuri's Revenge does.
 constexpr SettingPresetValue Classic_Values[] = {
 	{ MODERN_INTERFACE_ROW, 0 }, { "GpuRender", 0 }, { "GpuVoxels", 0 }, { "GpuVoxelSmooth", 0 }, { "GpuVoxelSubpixel", 0 },
 };
@@ -80,7 +80,7 @@ constexpr SettingPreset Graphics_Presets[] = {
 constexpr SettingPresetChoice Presets[] = {
 	{
 		.Page = GRAPHICS, .Key = "GraphicsQuality", .Group = QUALITY, .Label = "Preset",
-		.Tip = "Classic draws the picture and the sidebar as the original game does. Enhanced, the default, adds the modern interface and draws with the graphics card, which leaves the picture as it was. The third preset also draws vehicles and aircraft in 3D, turning and moving smoothly and sharp at every zoom. Custom means the switches match none of them.",
+		.Tip = "Classic uses the classic sidebar and draws with the processor, as the original game does. Enhanced, the default, adds the modern interface and draws with the graphics card, which leaves the picture as it was. The third preset also draws vehicles and aircraft in 3D, turning and moving smoothly and sharp at every zoom. Custom means the switches match none of them.",
 		.Presets = Graphics_Presets,
 	},
 };

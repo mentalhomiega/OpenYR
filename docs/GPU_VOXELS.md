@@ -40,8 +40,8 @@ The other keys need `GpuVoxels=yes`:
 | `GpuVoxelLayerDepth` (`Shared`, `Ordered`) | `Shared` | Whether layers and turret pieces hide each other by depth or by the software's draw order ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)) |
 | `GpuVoxelCloak` (`Translucent`, `Ripple`) | `Translucent` | Whether a cloaked voxel object ripples ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Cloak ripple") |
 
-While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), the GPU also draws each
-voxel's highlight strength into the mask that feeds the glow and the HDR picture, turreted vehicles included
+While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `EmissiveDebugView`), the GPU also
+draws each voxel's highlight strength into the mask that feeds the HDR picture, turreted vehicles included
 ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md), "Stage 5 (done)").
 
 ## Smooth facing
@@ -84,12 +84,12 @@ gamemd: `TechnoClass::DrawVoxelShadow` draws every shadow through a darken blit 
 near black. With `no` the ground under overlapping shadows darkens once, with hard edges. The key applies to software drawing and to every
 `GpuRender` path, and a change takes effect on the next frame. Only drawing changes: `pacing-determinism-fast.txt` gives the same 1,500 state hashes with both values.
 
-- **Software.** The three voxel shadow blits (the cached shadow, the uncached one, and the shadow of a voxel animation) run through `ShadowOnceRows` (`code/shadowplane.h`). It keeps a mark per pixel of the
+- **Software.** The three voxel shadow blits (the cached shadow, the uncached one, and the shadow of a voxel animation) run through `ShadowOnceRows` (`code/shadowonce.h`). It keeps a mark per pixel of the
   surface holding the frame number of the shadow that last darkened the pixel, and puts back a pixel that a mark from this frame covers. `Tactical::Render_Foreground` starts a frame.
   A pixel an opaque object has since covered keeps its mark, so a later shadow does not darken that object.
-- **GPU.** Every shadow in the pass goes into the shadow mask, which is not blurred, and the ground is darkened once through it. This is the `SoftShadows` path with a blur radius of 0, with `GpuVoxels` off and on. The
+- **GPU.** Every shadow in the pass goes into the shadow mask, and the ground is darkened once through it, with `GpuVoxels` off and on. The
   mask holds every darkening blit of the pass, so the shadows of shapes drawn in the pass (infantry, buildings) are unioned too, which software does not do.
-- Shadows that buildings and trees draw into the tile layer are not changed by the key; `SoftShadows` unions them.
+- Shadows that buildings and trees draw into the tile layer are not changed by the key.
 
 Classification: preserved with the default, and intentionally changed for `no`. Eight Kirovs over one cell, window brightness over a 32 by 10 patch of shadowed sand (`shadow-stack-*.txt`, `windowdark`), as a fraction of the unshadowed ground:
 
@@ -167,11 +167,10 @@ shows a part is recorded without pixels, and the map pass draws the part's layer
 zoom times the interface scale), rounded to the nearest whole number from 1 to 4, so a view shown at less than 1.5
 screen pixels a map pixel draws at scale 1. `Gpu_Voxel_Pass_Scale` (`code/gpuvoxel.cpp`) computes it for each picture.
 
-At a scale above 1, `GpuRender` draws the whole map pass at that many times the map's own pixels. The scene,
-snapshot and post textures are scale times the area in each direction, and the pass's views are scaled the same way, so
+At a scale above 1, `GpuRender` draws the whole map pass at that many times the map's own pixels. The scene
+and snapshot textures are scale times the area in each direction, and the pass's views are scaled the same way, so
 every blit keeps its map pixel coordinates and the shader shows each map pixel as a block of scale by scale pixels.
-The shadow mask, glow and tile shadow planes stay at map size; the post and glow shaders read the scene at the
-matching finer pixel. `bgfxbackend.cpp` treats the texture as scale times larger, so the presenter smooths it when it is
+The shadow mask and the emissive planes stay at map size. `bgfxbackend.cpp` treats the texture as scale times larger, so the presenter smooths it when it is
 shown smaller than that and keeps whole pixels when it is shown at that size or larger. Zooming in the map view (`viewzoom.cpp`)
 therefore shows the finer picture.
 
@@ -184,7 +183,7 @@ pixels. `tests/autotest/gpu-voxel-scale.txt` shows two tanks and a Kirov at thre
 and by edge counts.
 
 A shadow's column is drawn as its flat cell, so a shadow stays in register with its object at any scale. With
-`SoftShadows`, a shadow's layers are drawn into the map-sized mask at scale 1.
+`ShadowStacking=no`, a shadow's layers are drawn into the map-sized mask at scale 1.
 
 ## Voxel shadows on the GPU
 
@@ -194,13 +193,12 @@ While `GpuVoxels` is on, a shadow is blitted with the depth gradient of the cach
 
 `GPU_VOXEL_SHADOW shadows B pixels P darkened D twice T`
 
-`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `T` counts the pixels inside only one shadow's rectangle that show the ground darkened two or three times, to within one 8-bit step of what the darken blend gives, which a shadow drawn as overlapping cells without a once-per-blit rule leaves; it is 0 in these scenes, and about 500 at scale 1 when hard shadows are drawn without their stencil. A part of an object whose colour matches such a value in all three channels would also count. Three scripts run it with two tanks and a Kirov over sand:
+`B` is the voxel shadow blits in the pass, `P` the pixels of their rectangles, and `D` those that show half the brightness of the ground under them. `T` counts the pixels inside only one shadow's rectangle that show the ground darkened two or three times, to within one 8-bit step of what the darken blend gives, which a shadow drawn as overlapping cells without a once-per-blit rule leaves; it is 0 in these scenes, and about 500 at scale 1 when hard shadows are drawn without their stencil. A part of an object whose colour matches such a value in all three channels would also count. Two scripts run it with two tanks and a Kirov over sand:
 
 | Script | Scale | Shadows | Pixels | Darkened |
 |---|---|---|---|---|
 | `gpu-voxel-direct-shadow.txt` | 1 | 3 | 14,331 | 2,239 |
-| `gpu-voxel-shadow-bloom.txt`, under `Bloom` | 2 | 3 | 14,331 | 2,074 |
-| `gpu-voxel-direct-soft.txt`, with `SoftShadows` | 2 | 3 | 14,331 | 1,554 |
+| `gpu-voxel-shadow-mask.txt`, with the emissive mask on | 2 | 3 | 14,331 | 2,074 |
 
 With the ground gradient in place of the cached blit's, the first two scenes darkened 23 and 25 pixels, measured on the image route before a placement fix moved the two tanks over their shadows.
 

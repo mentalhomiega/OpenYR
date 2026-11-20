@@ -11,8 +11,6 @@ when_omitted:
 
 A place that got a ripple in the last 15 frames gets no second one, so a weapon that hits the same cell every few frames shows one wave at a time.
 
-While the GPU draws the map view the ring of its shockwave effect stands in for the wave, with a reach in proportion to the number. The software wave is drawn otherwise.
-
 Older Ares rules call the key [`Ripple.Radius`](/keys/ripple.radius/). We read both, and `IonCannon.Ripple` wins when a warhead sets both.
 
 Ares describes the number as the frames of effect strength. We run the wave from its start for that many frames, which is our reading of it; a comparison with Ares itself has not been made.
