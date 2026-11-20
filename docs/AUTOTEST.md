@@ -448,6 +448,25 @@ Each wait adds the frames it took to every later line, so a line keeps its spaci
 
 If `Start_Briefing` springs at frame 130, the wait ends at 130 and the move runs at frame 140. A timed-out wait counts its full timeout in the same way.
 
+## Audio
+
+These steps record and log sound for [AUDIO_TESTING.md](AUDIO_TESTING.md). Test runs start with every volume option
+at 0, so raise the ones a test needs with `volume`.
+
+| Command | Effect |
+| --- | --- |
+| `sounds <0\|1\|2>` | `1` writes each sound effect played to the log. `2` also copies each audio log line into the log with an `AUDIOLOG ` prefix; `0` stops both |
+| `audiocapture <name>` | Records the mix to `AudioTest\<name>.wav` in the user folder and writes the audio log to `AudioTest\<name>.log`. The recording follows game frames, and the run stays silent |
+| `audiocapture stop` | Ends the recording and the log, and writes the sounds and streams it used, decoded, into `AudioTest\<name>.sounds\` |
+| `audiodump <sound\|eva\|file> <name\|*>` | Writes decoded copies into `AudioTest\library\`: a sound list entry's sounds, an announcer line's sample in the current voice, or a stream file. `*` takes every sound or line. The log gets how many were written and how many were not found |
+| `volume <sound\|voice\|unitvoice\|music\|movie> <level>` | Sets that volume option, from 0 to 1, as its slider does |
+| `playsound <Sound> [x y]` | Plays that sound list entry, at the cell when one is given, as a weapon or a building would |
+| `music <theme\|number\|stop>` | Plays that score, by name or by its place in the score list, from its start; `stop` stops the music |
+| `speak <EVA name>` | Asks for that announcer line |
+| `speaknow <EVA name>` | Asks for that announcer line at once, as a line that skips the settle delay is asked for |
+| `stopspeaking` | Stops the announcer and clears its waiting lines |
+| `evalines` | Writes each announcer line with its priority, type, volume and sample in the current voice, or `-` when it has none |
+
 ## Campaign missions
 
 A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`. `-Difficulty 0`, `1` or `2` sets the campaign difficulty to Easy, Normal or Hard; the default is Normal. The game reads that difficulty from the spawn file, so `-Settings` does not change it unless its `[Settings]` section sets `DifficultyModeHuman`.

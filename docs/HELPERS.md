@@ -36,6 +36,7 @@ needs them.
 | `Mod_Folder_Own_Name(folder)` | `mods.h` | The last part of a mod folder's path, with a trailing separator ignored. The mod list and the mod signature name a mod this way. |
 | `Data_Directory()`, `User_Directory()` | `gamedirs.h` | The directories as applied. Each is empty or ends in a separator. Write nothing to the data directory. |
 | `User_File_Write_Name`, `Saved_Game_Name`, `Screenshot_Name`, `Replay_Name`, `Music_Folder` | `gamedirs.h` | Where a file the game writes belongs. Do not build these paths by hand. |
+| `Audio_Test_Name(file)` | `gamedirs.h` | Path of a recording, audio log or decoded sound in the `AudioTest` folder of the user directory. |
 | `Executable_Path(&truncated)` | `gamedirs.h` | Full path of the running executable. A path longer than `MAX_PATH` is cut and `*truncated` is set. |
 | `Extension_Start(name)` | `strutil.h` | Position of the dot that starts the extension, or `npos`. A dot in a directory name does not count. |
 | `Base_Name(path)`, `Directory_Prefix(path)` | `strutil.h` | The part of a path after its last `/` or `\`, and the part up to and including it. Each is a view into `path`. |
@@ -305,6 +306,9 @@ a default and returns it when the section or entry is missing.
 | `Unit_Voice_Effect(voc)` | `voc.h` | A unit voice response; it follows the unit-voices volume option. |
 | `Play_If_In_Range`, `Follow_Sound` | `voc.h` | Keep a placed sound going while it is in range. |
 | `Speak(voice)`, `Speak_Eva(name)` | `vox.h` | EVA speech. |
+| `Voc_Count()`, `Voc_Type_Data(voc)` | `voc.h` | The number of sound list entries, and an entry's sound data with its sample names. |
+| `AudioTrace.Write(kind, format, ...)` | `audio/audiotrace.h` | Writes an audio test log line with the game frame and audio clock. Check `AudioTrace.Is_On()` first so a run without the log pays nothing. |
+| `Audio_Write_Wav(path, samples, frames, rate, channels)`, `AudioWavWriterClass` | `audio/audiowav.h` | Writes 16-bit PCM WAV files, whole or a block at a time. |
 | `Post_Player_Message(text, ticks)` | `playerdisplay.h` | Message in the local player's scheme. |
 | `Show_Super_Message(label, style)` | `super.h` | A string-table message for ten seconds. |
 | `Planning_Refusal(label)`, `Planning_Message(label)` | `planning.h` | Planning-mode refusal (message and scold sound, at most once a frame) and message. |
