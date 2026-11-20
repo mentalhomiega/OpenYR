@@ -1360,7 +1360,7 @@ body.page-settings .setting.disabled > .caption
 body.page-settings .setting > select
 {
 	flex: 0 0 auto;
-	width: 168dp;
+	width: 184dp;
 	height: 26dp;
 	margin: 0;
 }
