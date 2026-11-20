@@ -841,6 +841,7 @@ class TechnoClass :	public RadioClass,
 		bool Is_Z_Fudge_Bridge(void) const;
 		bool Was_Z_Fudge_Bridge(void) const;
 		int Get_Z_Fudge_Column(void) const;
+		int Get_Z_Fudge_Column(bool under_bridge) const;
 		int Get_Z_Fudge_Tunnel(void) const;
 		int Get_Z_Fudge_Cliff(void) const;
 		virtual ZGradientType Get_Z_Gradient(void) const {return(ZGRAD_90DEG);}

@@ -4456,11 +4456,12 @@ int FootClass::Get_Z_Adjust(void) const
 		adjust = Locomotion->Z_Adjust();
 	}
 
-	int column = TClass->ZFudgeColumn * Get_Z_Fudge_Column();
+	bool const under_bridge = Is_Z_Fudge_Bridge();
+	int column = TClass->ZFudgeColumn * Get_Z_Fudge_Column(under_bridge);
 	int tunnel = TClass->ZFudgeTunnel * Get_Z_Fudge_Tunnel();
 	int cliff = TClass->ZFudgeCliff * Get_Z_Fudge_Cliff();
 	int bridge = 0;
-	if (Is_Z_Fudge_Bridge()) {
+	if (under_bridge) {
 		bridge = TClass->ZFudgeBridge;
 	}
 

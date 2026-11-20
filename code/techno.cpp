@@ -8283,11 +8283,21 @@ bool TechnoClass::Was_Z_Fudge_Bridge(void) const
 /// <returns>Returns with the column fudge strength, or zero if no column is in the way.</returns>
 int TechnoClass::Get_Z_Fudge_Column(void) const
 {
+	return(Get_Z_Fudge_Column(Is_Z_Fudge_Bridge()));
+}
+
+
+/// <summary>
+/// Works out the column fudge for a caller that has already asked Is_Z_Fudge_Bridge.
+/// </summary>
+/// <param name="under_bridge">The result of Is_Z_Fudge_Bridge for this object.</param>
+int TechnoClass::Get_Z_Fudge_Column(bool under_bridge) const
+{
 	Cell cell = Get_Cell();
 	int fudge = 0;
 	CellClass * cptr = &Map[cell];
 
-	if (cptr != NULL && (Is_Z_Fudge_Bridge() || Was_Z_Fudge_Bridge())) {
+	if (cptr != NULL && (under_bridge || Was_Z_Fudge_Bridge())) {
 		CellClass * south = &Map[Adjacent_Cell(cell, FACING_S)];
 		CellClass * east = &Map[Adjacent_Cell(cell, FACING_E)];
 		CellClass * south_east = &Map[Adjacent_Cell(cell, FACING_SE)];
@@ -8504,14 +8514,15 @@ int TechnoClass::Get_Z_Adjust(void) const
 		}
 	}
 
-	CellClass *ahead_right = &Map[Adjacent_Cell(cell, Facing_Add(PrimaryFacing.Current().As_Dir8(), FACING_45))];
-	CellClass *ahead_left = &Map[Adjacent_Cell(cell, Facing_Sub(PrimaryFacing.Current().As_Dir8(), FACING_45))];
+	FacingType const facing = PrimaryFacing.Current().As_Dir8();
+	CellClass *ahead_right = &Map[Adjacent_Cell(cell, Facing_Add(facing, FACING_45))];
+	CellClass *ahead_left = &Map[Adjacent_Cell(cell, Facing_Sub(facing, FACING_45))];
 
-	CellClass *ahead = &Map[Adjacent_Cell(cell, Facing_Add(PrimaryFacing.Current().As_Dir8(), FACING_0))];
-	CellClass *behind = &Map[Adjacent_Cell(cell, Facing_Sub(PrimaryFacing.Current().As_Dir8(), FACING_180))];
+	CellClass *ahead = &Map[Adjacent_Cell(cell, Facing_Add(facing, FACING_0))];
+	CellClass *behind = &Map[Adjacent_Cell(cell, Facing_Sub(facing, FACING_180))];
 
-	CellClass *behind_right = &Map[Adjacent_Cell(cell, Facing_Add(PrimaryFacing.Current().As_Dir8(), FACING_135))];
-	CellClass *behind_left = &Map[Adjacent_Cell(cell, Facing_Sub(PrimaryFacing.Current().As_Dir8(), FACING_135))];
+	CellClass *behind_right = &Map[Adjacent_Cell(cell, Facing_Add(facing, FACING_135))];
+	CellClass *behind_left = &Map[Adjacent_Cell(cell, Facing_Sub(facing, FACING_135))];
 
 	if (ahead_right != NULL && ahead_left != NULL && ahead != NULL) {
 
@@ -8526,12 +8537,12 @@ int TechnoClass::Get_Z_Adjust(void) const
 						return(zadjust + _techno_zadj_ramp1);
 					}
 
-					if (PrimaryFacing.Current().As_Dir8() == FACING_W || PrimaryFacing.Current().As_Dir8() == FACING_N) {
+					if (facing == FACING_W || facing == FACING_N) {
 						cptrs[0] = behind;
 						cptrs[1] = behind_right;
 						cptrs[2] = behind_left;
 					}
-					else if (PrimaryFacing.Current().As_Dir8() == FACING_S || PrimaryFacing.Current().As_Dir8() == FACING_E) {
+					else if (facing == FACING_S || facing == FACING_E) {
 						cptrs[0] = ahead_right;
 						cptrs[1] = ahead_left;
 						cptrs[2] = ahead;
