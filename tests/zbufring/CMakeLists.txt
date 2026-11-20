@@ -14,7 +14,7 @@ opents_add_test(ZBufRing
         _zbuffer.cpp
         emissive.cpp
         emissive_surface.cpp
-        shadowplane.cpp
+        shadowonce.cpp
         _surface.cpp
         writewatch.cpp
         tilediff.cpp

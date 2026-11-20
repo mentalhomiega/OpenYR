@@ -10,6 +10,7 @@
 #include "ui/screens/display/uidisplay.h"
 
 #include "hdrcolour.h"
+#include "optionsettings.h"
 #include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlsettingrows.h"
 #include "ui/rml/rmlview.h"
@@ -35,6 +36,20 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	PreviewedStrength = Start.ColorBlindStrength;
 	PreviewedBrightness = Start.Brightness;
 	PreviewedGamma = Start.Gamma;
+	UISettingOutsideRows outside;
+	outside.Get = [this](std::string const & key, int & value) {
+		if (key != MODERN_INTERFACE_ROW) {
+			return(false);
+		}
+		value = State.ModernInterface ? 1 : 0;
+		return(true);
+	};
+	outside.Set = [this](std::string const & key, int value) {
+		if (key == MODERN_INTERFACE_ROW) {
+			State.ModernInterface = (value != 0);
+		}
+	};
+	UI_Setting_Rows_Set_Outside(State.SettingRows, outside);
 	Refresh_Preview();
 	Refresh_Setting_Rows();
 }

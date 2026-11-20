@@ -14,8 +14,6 @@ enum BgfxViewType : unsigned short
 {
 	// The GPU map passes run first so that the present in the same frame draws their result.
 	VIEW_MAPSHADOW,
-	VIEW_MAPBLURX,
-	VIEW_MAPBLURY,
 	VIEW_MAPDRAW,
 	// Each sonic wave in a map pass continues the drawing in the next of these views.
 	VIEW_MAPWAVE,
@@ -24,10 +22,6 @@ enum BgfxViewType : unsigned short
 	VIEW_MAPPLANE,
 	// Builds the emissive mask of a pass with GPU voxels from the plane and the voxel parts.
 	VIEW_MAPMASK,
-	VIEW_MAPGLOW,
-	VIEW_MAPGLOWX,
-	VIEW_MAPGLOWY,
-	VIEW_MAPPOST,
 	VIEW_PRESCALE,
 	VIEW_PRESENT,
 	VIEW_UI,

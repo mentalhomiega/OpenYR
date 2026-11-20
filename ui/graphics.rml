@@ -20,6 +20,8 @@
 <body template="dialog" class="page-settings settings-backdrop" data-model="graphics">
 	<div id="page">
 		<div id="list">
+			<template src="setting-rows"/>
+
 			<p class="section">Picture</p>
 			<div class="setting" id="filter-row" desc="How the game image is scaled to fit the window. Pixel art keeps the edges of pixels sharp."><span class="caption">Scaling filter</span><select id="filter" data-value="filter" data-event-change="queue('filter', ev.value)">
 				<option data-for="entry : filters" data-attr-value="it_index">{{entry.label}}</option>
@@ -39,8 +41,6 @@
 			<div class="setting slider-row" id="sidebar-opacity-row" data-class-disabled="!moderninterface" desc="How solid the build panel's background is. The map shows through the rest, while the cameos, text and radar stay opaque. 100% is fully solid."><span class="caption">Sidebar opacity</span><input type="range" id="sidebar-opacity" min="0" max="100" step="5" data-attr-value="sidebaropacity" data-attrif-disabled="!moderninterface" data-event-change="queue('sidebaropacity', ev.value)"/><span class="value" id="sidebar-opacity-value">{{sidebaropacity}}%</span></div>
 			<label class="check setting" id="switch-classic-menus" desc="Uses Yuri's Revenge's own menu screens. The change takes effect when you press OK."><span class="caption">Classic menu art</span><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/></label>
 			<label class="check setting" id="switch-bitmap-font" desc="Draws the interface text with the game's bitmap font, which stays sharp at its own size."><span class="caption">Pixel-perfect UI font</span><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/></label>
-
-			<template src="setting-rows"/>
 
 			<p class="section">HDR</p>
 			<div class="setting" id="hdr-row" data-attr-desc="hdroutputtip"><span class="caption">HDR output</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">

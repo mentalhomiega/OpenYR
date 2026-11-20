@@ -942,7 +942,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
 		virtual void Set_Declared_Settings(std::vector<UISettingRow> const & rows) override
 		{
-			std::string text = "gpu effects ";
+			std::string text = "declared settings ";
 			for (UISettingRow const & row : rows) {
 				if (row.Kind == UISettingRowKind::SWITCH) {
 					text += (row.Value != row.Off) ? "1" : "0";
@@ -3109,7 +3109,7 @@ static void Send_Intent(UIPresenterClass & presenter, char const * name, int val
 // The declared rows with every switch off and every slider at its lowest value.
 static std::vector<UISettingRow> Fixture_Setting_Rows(void)
 {
-	return(UI_Setting_Rows(Option_Settings(), "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Min); }));
+	return(UI_Setting_Rows(Option_Settings(), "graphics", [](Setting<OptionsClass> const & setting) { return(setting.Min); }, Option_Setting_Presets()));
 }
 
 
@@ -3279,6 +3279,50 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 	}
 
 	{
+		// Picking a graphics quality in the drop-down sets its switches, and a hand change reads as Custom.
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Graphics_Fixture();
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the graphics view prepares for the quality choice");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::ElementFormControlSelect * quality = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("graphics-quality"));
+		auto pick = [&](int index) {
+			if (quality != nullptr) {
+				quality->SetSelection(index);
+			}
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		};
+		Check(quality != nullptr && quality->GetSelection() == 3, "the choice reads Custom when the page opens on every switch off in the modern interface");
+		pick(2);
+		Check(Fixture_Row(presenter.State, "GpuVoxels")->Value == 1 && Fixture_Row(presenter.State, "GpuVoxelScale")->Value == 4 && quality->GetSelection() == 2, "picking the third preset in the drop-down sets its rows and the choice keeps showing it");
+		pick(0);
+		Check(Fixture_Row(presenter.State, "GpuRender")->Value == 0 && !presenter.State.ModernInterface && quality->GetSelection() == 0, "picking Classic turns GPU drawing and the modern interface off");
+		pick(1);
+		Check(Fixture_Row(presenter.State, "GpuRender")->Value == 1 && Fixture_Row(presenter.State, "GpuVoxels")->Value == 0 && presenter.State.ModernInterface && quality->GetSelection() == 1, "picking Enhanced turns them on again with the vehicle switches off");
+		Rml::Element * advanced = document->GetElementById("advanced");
+		Click(context, advanced);
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Click(context, document->GetElementById("gpu-voxels"));
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Check(quality->GetSelection() == 3, "ticking one switch by hand makes the drop-down read Custom");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
 		RecordingDisplayServiceClass service;
 		UIDisplayState state = Display_Fixture();
 		state.Selected = 2;
@@ -3375,12 +3419,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 
 		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * gpu = document->GetElementById("gpu-render");
-		Rml::Element * soft = document->GetElementById("soft-shadows");
-		Rml::Element * waves = document->GetElementById("shockwaves");
-		Rml::Element * glow = document->GetElementById("bloom");
-		Rml::Element * water = document->GetElementById("water-ripples");
-		Rml::Element * clouds = document->GetElementById("cloud-shadows");
-		Rml::Element * weather = document->GetElementById("weather");
+		Rml::Element * voxels = document->GetElementById("gpu-voxels");
 		auto sync = [&](Rml::Element * element) {
 			if (element != nullptr) {
 				Click(context, element);
@@ -3389,28 +3428,29 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 				context.Update();
 			}
 		};
-		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled") && glow != nullptr && glow->HasAttribute("disabled") && water != nullptr && water->HasAttribute("disabled") && clouds != nullptr && clouds->HasAttribute("disabled") && weather != nullptr && weather->HasAttribute("disabled"), "every GPU effect switch is greyed while GPU drawing is off");
+		Rml::Element * advanced = document->GetElementById("advanced");
+		Check(advanced != nullptr && gpu != nullptr && gpu->GetClientHeight() == 0.0f, "the graphics page opens with the Advanced rows hidden");
+		Check(advanced != nullptr && advanced->GetInnerRML().find("[+] Show Advanced") != Rml::String::npos, "the Advanced button says Show with a plus mark while closed");
+		sync(advanced);
+		Check(Fixture_Row(presenter.State, "Advanced")->Value == 1 && advanced != nullptr && advanced->GetInnerRML().find("[-] Hide Advanced") != Rml::String::npos && gpu != nullptr && gpu->GetClientHeight() > 0.0f, "pressing Advanced shows its rows, and the button says Hide with a minus mark");
+		Check(gpu != nullptr && voxels != nullptr && !gpu->HasAttribute("disabled") && voxels->HasAttribute("disabled"), "the vehicle switches are greyed while GPU drawing is off");
 
-		sync(soft);
-		Check(Fixture_Row(presenter.State, "SoftShadows")->Value == 0, "a greyed soft shadows switch does not turn on");
+		sync(voxels);
+		Check(Fixture_Row(presenter.State, "GpuVoxels")->Value == 0, "a greyed vehicle switch does not turn on");
 
 		sync(gpu);
-		Check(Fixture_Row(presenter.State, "GpuRender")->Value == 1 && soft != nullptr && !soft->HasAttribute("disabled") && waves != nullptr && !waves->HasAttribute("disabled"), "ticking GPU drawing enables its effect switches live");
-		Rml::Element * voxels = document->GetElementById("gpu-voxels");
+		Check(Fixture_Row(presenter.State, "GpuRender")->Value == 1 && voxels != nullptr && !voxels->HasAttribute("disabled"), "ticking GPU drawing enables the vehicle switches live");
 		Rml::Element * smooth = document->GetElementById("gpu-voxel-smooth");
 		Rml::Element * scale = document->GetElementById("gpu-voxel-scale");
 		Rml::ElementFormControlInput * scale_slider = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(scale);
 		Check(voxels != nullptr && smooth != nullptr && scale != nullptr && !voxels->HasAttribute("disabled") && !smooth->HasAttribute("disabled") && !scale->HasAttribute("disabled"), "the GPU voxel rows are built from their declarations and follow GPU drawing");
 		Check(scale_slider != nullptr && Rml::FromString<float>(scale_slider->GetValue()) == 0.0f && Fixture_Row(presenter.State, "GpuVoxelScale")->ValueText == "Auto", "the voxel scale slider starts at 0, which its row shows as Auto");
 
-		sync(waves);
-		sync(glow);
-		sync(water);
-		sync(clouds);
-		sync(weather);
+		sync(voxels);
+		Check(Fixture_Row(presenter.State, "GraphicsQuality")->Value == 3, "ticking the vehicle switch by hand makes the graphics quality read Custom");
 		Drive(presenter, "ok");
-		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 101111100000000") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("declared settings", 0) == 0); });
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "declared settings 110000000") != service.Calls.end(), "accepting applies the declared switches together");
 
 		view->Release();
 		context.Update();
@@ -3853,9 +3893,10 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 			return(focus != nullptr && (focus == element || focus->GetParentNode() == element));
 		};
 
+		// The Advanced rows are skipped while the fold is closed.
 		char const * const order[] = {
-			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
-			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-subpixel", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking", "stock-art-fixes", "perf-overlay", "zoom-out-view", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"graphics-quality", "advanced", "stock-art-fixes", "perf-overlay", "zoom-out-view", "filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
+			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
@@ -3863,7 +3904,28 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 			Press(context, Rml::Input::KI_TAB);
 			in_order = in_order && focused(id);
 		}
-		Check(in_order, "the graphics page is tabbed through in reading order, ending on the footer");
+		Check(in_order, "the graphics page is tabbed through in reading order with Advanced closed, ending on the footer");
+
+		// Enter on the focused Advanced button opens it, and the tab order then reaches every row.
+		Rml::Element * advanced = Rml(*view).Document()->GetElementById("advanced");
+		if (advanced != nullptr) {
+			advanced->Focus();
+		}
+		Press(context, Rml::Input::KI_RETURN);
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Check(Fixture_Row(presenter.State, "Advanced")->Value == 1, "Enter on the Advanced button opens it");
+		char const * const open_order[] = {
+			"gpu-render", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-subpixel", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking", "stock-art-fixes",
+			"perf-overlay", "zoom-out-view", "filter"
+		};
+		in_order = true;
+		for (char const * id : open_order) {
+			Press(context, Rml::Input::KI_TAB);
+			in_order = in_order && focused(id);
+		}
+		Check(in_order, "with Advanced open the tab order reaches every GPU row");
 
 		view->Release();
 		context.Update();

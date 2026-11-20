@@ -362,8 +362,8 @@ in the same buffers, while a light fade is deferred and with `OPENYR_NO_ZOOM_KEE
 
 Memory the map surfaces and the depth and alpha buffers use once the zoom has changed, as the `Map view` and
 `Map surfaces` lines of the log give it. Before this change the same amount was used at the furthest zoom,
-and less at a nearer one. Each emissive or shadow plane, kept while HDR highlights, `Bloom`, `SoftShadows`
-or `WaterRipples` need them, adds one byte for each pixel of its surface's size.
+and less at a nearer one. Each emissive plane, kept while Enhanced HDR highlights need it, adds one byte for each pixel
+of its surface's size.
 
 | Screen, map | Largest view | Map surfaces | Depth and alpha | All |
 |---|---|---|---|---|
@@ -431,9 +431,9 @@ mask and the two glow pictures. In a ten-notch glide out at 3840x2160 that was 9
 `ZoomOutView=4K` and `InterfaceScale=2`. The first step also made the stores of the map surfaces and sent them whole, which
 took about 42 ms to present and 35 ms to draw.
 
-Now a texture is made when a pass first uses it. The soft shadow masks are made for the largest view the zoom allows and
-used from their corner, so a step makes none of them. The scene target, the post target, the emissive mask target and the
-depth attachments keep the exact size of the pass, because the presenter finds a map pixel by texture coordinate, and a
+Now a texture is made when a pass first uses it. The shadow mask of `ShadowStacking=no` is made for the largest view the
+zoom allows and used from its corner, so a step makes none. The scene target, the emissive mask target and the depth
+attachments keep the exact size of the pass, because the presenter finds a map pixel by texture coordinate, and a
 larger texture moves some pixels (a magnification of 1.5 puts a texel boundary on every third column). The same ten-notch
 glide makes 10 textures (150 MB), one scene target for each size the view takes. The first step presents in about 16 ms and
 draws in about 25 ms, since the map surfaces are made at load and kept as spares while the zoom is 1 (the depth and alpha
@@ -500,8 +500,8 @@ cleared when it is put aside at the end of a glide back to 1 instead of when the
 copies the kept picture into the map's tile layer, which took about 2.8 ms, 2 ms of it to allocate and zero the new tile
 layer's emissive and shadow masks. The masks of the spare surfaces now stay bound while the zoom is 1 and are cleared with
 the spare when it is put aside, so the copy takes about 0.5 ms and the first presented frame after the step allocates no
-mask of the composite either. With GPU drawing and soft shadows or bloom the spare masks hold about 15 MB at the default
-view (2560x1440) and 33 MB at the 4K view while the zoom is 1; a glide held them before and freed them at its end.
+mask of the composite either. With the emissive masks on, the spare masks hold about 7 MB at the default view (2560x1440)
+and 17 MB at the 4K view while the zoom is 1; a glide held them before and freed them at its end.
 `tests/autotest/zoom-spare-masks.txt` checks that they are bound and zero ([AUTOTEST.md](AUTOTEST.md)).
 
 Ten-notch glides out on ETOTAL at 3840x2160 (`InterfaceScale=Auto`, `GpuRender=yes`, no frame limit, no dev mode), two runs
@@ -545,37 +545,6 @@ step for this comparison against a run with `OPENYR_NO_ZOOM_KEEP=1`.
 
 We did not try showing the kept picture stretched while the edges are drawn later: such a frame would differ from a full
 redraw at that frame's zoom.
-
-### Soft shadows
-
-`SoftShadows=yes` draws the shadows of the pass and the tile layer's shadow plane into a mask, blurs the mask along x and
-then along y (radius 3 by default), and darkens the ground through it in the base pass. The mask is as large as the map
-view, so the blur grows with the pixels of the view. Measured on the large battle of `bench-large-battle-xmp04-zoomed-out.txt`
-at a 3840x2160 view (`InterfaceScale=2`, `ZoomOutView=4K`, frames 1,500 to 3,000), GPU time from bgfx's per-view timers on a
-GeForce RTX 4090 and processor time from the Perf lines, in ms a pass or draw:
-
-| Part | Before | After |
-|---|---|---|
-| Mask draw (GPU) | 0.028 | 0.028 |
-| Blur along x and y (GPU) | 0.076 + 0.076 | 0.038 + 0.038 |
-| Submitting the shadow draws (CPU) | 0.02 | 0.005 |
-| Reading the shadow plane, `draw.gpumap` (CPU) | 0.33 | 0.02 |
-| Recording the shadow blits, in `draw.objects` (CPU) | 0.2 | 0.2 |
-
-All three passes run for every pass the GPU draws, whether or not a shadow changed. They run at the map's own pixels, whatever
-the voxel scale. The cost with the setting on was therefore mostly on the processor: the shadow plane (one byte for each pixel
-of the tile layer) was compared with its copy row by row whenever the tile layer changed. The plane now lives in
-write-watched memory and only the rows its written pages touch are compared. The blur was already separable. Its loop runs
-over the radius and no longer over 33 taps, and the mask draws of one run of shadow blits go in one draw call; the picture is
-the same, because the taps are summed in the same order and every mask draw writes the same value.
-
-We left out two cuts. Skipping the blur where the mask has no coverage needs the coverage of the tile layer's plane, and at
-0.08 ms of GPU time on this card the bookkeeping would cost more processor time than it saves. Reusing the last blurred mask
-is exact only while no shadow blit changed, and the mask also depends on the depth buffer, the shape atlas and the voxel parts,
-so any moving object changes it.
-
-An option that changes the picture, not shipped: blurring a half-size mask when the view is zoomed out would cut the blur to
-a quarter of its pixels, but it moves the edge of every shadow by up to a pixel, and we have not measured its gain.
 
 ### Checking the pictures
 

@@ -1,0 +1,39 @@
+; Shots of the Graphics tab with each quality preset, the Advanced rows closed and open, and checks that the buttons stay
+; on the screen. Each `AUTOTEST inside` line ends in 1 while the element lies wholly inside the screen; the footer and the
+; preset choice are always checked, and the Advanced button and its first row when it is open.
+; Run: scripts/run_autotest.ps1 -Script src-agent30/tests/autotest/graphics-presets-shots.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 120 -Filter 'AUTOTEST inside|no such|Exception'
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-graphics
+ui wait 900
+ui inside footer-ok
+ui inside footer-cancel
+ui inside footer-reset
+ui inside graphics-quality
+ui inside advanced
+ui shot gp-enhanced-closed
+ui click advanced
+ui wait 600
+ui inside gpu-render list
+ui shot gp-enhanced-open
+ui set graphics-quality 0
+ui wait 800
+ui shot gp-classic-open
+ui click advanced
+ui wait 600
+ui shot gp-classic-closed
+ui set graphics-quality 2
+ui wait 800
+ui shot gp-smooth-closed
+ui click advanced
+ui wait 600
+ui shot gp-smooth-open
+ui click gpu-voxel-smooth
+ui wait 600
+ui shot gp-custom-open
+ui click advanced
+ui wait 600
+ui shot gp-custom-closed
+ui quit

@@ -36,7 +36,7 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
-#include "shadowplane.h"
+#include "shadowonce.h"
 #include "sun.h"
 #include "tactical.h"
 #include "techno.h"

@@ -1,6 +1,6 @@
 ; Checks the emissive plane writes that a pass the GPU draws lists instead of making (docs/EMISSIVE_MASK.md): a Prism tower and a Tesla coil fire at tanks, a blast, a burning factory, a light post and voxel vehicles, under maskcheck.
-; With GpuVoxels and Bloom the GPU builds the plane from the list, so the summary line counts both the passes whose list differs from the plane the CPU made at once and the planes the GPU built that differ.
-; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/emissive-mask-list.txt -Width 1024 -Height 768 -Seconds 240 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nEmissiveDebugView=yes`nBloom=yes`nHDRHighlights=Classic" -Filter "MASK_CHECK|Exception|AUTOTEST quit" -Uncapped
+; With GpuVoxels and the mask kept (EmissiveDebugView) the GPU builds the plane from the list, so the summary line counts both the passes whose list differs from the plane the CPU made at once and the planes the GPU built that differ.
+; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/emissive-mask-list.txt -Width 1024 -Height 768 -Seconds 240 -Settings "[Video]`nGpuRender=yes`nGpuVoxels=yes`nEmissiveDebugView=yes`nHDRHighlights=Classic" -Filter "MASK_CHECK|Exception|AUTOTEST quit" -Uncapped
 1 maskcheck 1
 60 view 62 62
 70 reveal

@@ -19,14 +19,6 @@
 namespace
 {
 
-constexpr NameEntry Weather_Names[] = {
-	{ "None", WEATHER_NONE },
-	{ "Map", WEATHER_MAP },
-	{ "Rain", WEATHER_RAIN },
-	{ "Snow", WEATHER_SNOW },
-};
-
-
 constexpr NameEntry GpuVoxelLayerDepth_Names[] = {
 	{ "Shared", GPU_VOXEL_LAYER_DEPTH_SHARED },
 	{ "Ordered", GPU_VOXEL_LAYER_DEPTH_ORDERED },
@@ -51,13 +43,47 @@ constexpr NameEntry ZoomOutView_Names[] = {
 
 
 constexpr char const * GRAPHICS = "graphics";
-constexpr char const * GPU_DRAWING = "GPU drawing";
-constexpr char const * GPU_VOXELS = "GPU voxels";
-constexpr char const * VOXEL_DRAWING = "Voxel drawing";
+constexpr char const * QUALITY = "Graphics quality";
+constexpr char const * ADVANCED = "Advanced";
+constexpr char const * GPU_DRAWING = "Graphics card";
+constexpr char const * GPU_VOXELS = "Vehicles and aircraft";
+constexpr char const * VOXEL_DRAWING = "Vehicle details";
 constexpr char const * STOCK_ART = "Stock art";
 constexpr char const * PERFORMANCE = "performance";
 constexpr char const * RENDERING = "Rendering";
 constexpr char const * PATH_SEARCHES = "Path searches";
+
+
+// Classic uses the classic sidebar and draws with the processor, as Yuri's Revenge does.
+constexpr SettingPresetValue Classic_Values[] = {
+	{ MODERN_INTERFACE_ROW, 0 }, { "GpuRender", 0 }, { "GpuVoxels", 0 }, { "GpuVoxelSmooth", 0 }, { "GpuVoxelSubpixel", 0 },
+};
+
+// The default: the modern interface and drawing with the graphics card, which leave the picture as it was.
+constexpr SettingPresetValue Enhanced_Values[] = {
+	{ MODERN_INTERFACE_ROW, 1 }, { "GpuRender", 1 }, { "GpuVoxels", 0 }, { "GpuVoxelSmooth", 0 }, { "GpuVoxelSubpixel", 0 },
+};
+
+// Enhanced, with vehicles and aircraft drawn in 3D, turning and moving smoothly, at four times the map's pixels.
+constexpr SettingPresetValue Smooth_Values[] = {
+	{ MODERN_INTERFACE_ROW, 1 }, { "GpuRender", 1 }, { "GpuVoxels", 1 }, { "GpuVoxelSmooth", 1 }, { "GpuVoxelSubpixel", 1 },
+	{ "GpuVoxelScale", 4 },
+};
+
+constexpr SettingPreset Graphics_Presets[] = {
+	{ .Label = "Classic", .Values = Classic_Values },
+	{ .Label = "Enhanced", .Values = Enhanced_Values },
+	{ .Label = "Smooth", .Values = Smooth_Values },
+};
+
+// The choice shows the preset that the rows it names add up to, and Custom for any other mix.
+constexpr SettingPresetChoice Presets[] = {
+	{
+		.Page = GRAPHICS, .Key = "GraphicsQuality", .Group = QUALITY, .Label = "Preset",
+		.Tip = "Classic uses the classic sidebar and draws with the processor, as the original game does. Enhanced, the default, adds the modern interface and draws with the graphics card, which leaves the picture as it was. The third preset also draws vehicles and aircraft in 3D, turning and moving smoothly and sharp at every zoom. Custom means the switches match none of them.",
+		.Presets = Graphics_Presets,
+	},
+};
 
 
 // To add a page, add an entry here and name its Id in the .Page of its rows.
@@ -71,87 +97,41 @@ constexpr Setting<OptionsClass> Settings[] = {
 	{
 		.Section = "Video", .Key = "GpuRender",
 		.Flag = &OptionsClass::GpuRender, .Default = true,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Draw units on the GPU",
-		.Tip = "Draws units and effects with the graphics card instead of the processor. Needs the modern interface and the Direct3D 11 renderer.",
+		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Draw with the graphics card",
+		.Tip = "Draws units and effects with the graphics card instead of the processor, which keeps big battles smooth. The switches below need it. Needs the modern interface and the Direct3D 11 renderer.",
+		.Fold = ADVANCED,
 		.Condition = SettingCondition::MODERN_INTERFACE,
-	},
-	{
-		.Section = "Video", .Key = "SoftShadows",
-		.Flag = &OptionsClass::SoftShadows, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Soft shadows",
-		.Tip = "Blends every shadow on the ground, including those of buildings and trees, into one soft shadow, so overlapping shadows do not darken twice. Needs GPU drawing.",
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "SoftShadowRadius",
-		.Number = &OptionsClass::SoftShadowRadius, .Default = 3, .Min = 1, .Max = 16,
-	},
-	{
-		.Section = "Video", .Key = "Shockwaves",
-		.Flag = &OptionsClass::Shockwaves, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Shockwaves",
-		.Tip = "Weapon blasts send a ripple through the picture around them. Needs GPU drawing.",
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "Bloom",
-		.Flag = &OptionsClass::Bloom, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Glow",
-		.Tip = "Lasers, lamps, fire and other bright effects glow onto the picture around them. Needs GPU drawing.",
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "BloomStrength",
-		.Number = &OptionsClass::BloomStrength, .Default = 100, .Min = 1, .Max = 400,
-	},
-	{
-		.Section = "Video", .Key = "WaterRipples",
-		.Flag = &OptionsClass::WaterRipples, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Water ripples",
-		.Tip = "Sea, lakes and rivers ripple and shimmer. Needs GPU drawing.",
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "WaterRippleStrength",
-		.Number = &OptionsClass::WaterRippleStrength, .Default = 100, .Min = 1, .Max = 400,
-	},
-	{
-		.Section = "Video", .Key = "CloudShadows",
-		.Flag = &OptionsClass::CloudShadows, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Cloud shadows",
-		.Tip = "The shadows of slowly drifting clouds pass over the battlefield. Needs GPU drawing.",
-		.Needs = "GpuRender",
-	},
-	{
-		.Section = "Video", .Key = "CloudShadowStrength",
-		.Number = &OptionsClass::CloudShadowStrength, .Default = 100, .Min = 1, .Max = 400,
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxels",
 		.Flag = &OptionsClass::GpuVoxels, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Draw voxels on the GPU",
-		.Tip = "Draws vehicles and aircraft from their voxels with the graphics card, so turrets and barrels hide each other by depth. Experimental. Needs GPU drawing.",
+		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Draw vehicles and aircraft in 3D",
+		.Tip = "Draws vehicles and aircraft from their 3D models with the graphics card, so turrets and barrels hide each other by depth. The next three rows work with it. Needs drawing with the graphics card.",
+		.Fold = ADVANCED,
 		.Needs = "GpuRender",
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelSmooth",
 		.Flag = &OptionsClass::GpuVoxelSmooth, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Smooth voxel turning",
-		.Tip = "An object drawn from its voxels turns to its exact facing instead of the nearest of 32. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Smooth turning",
+		.Tip = "A vehicle or aircraft drawn in 3D turns to its exact facing instead of the nearest of 32. Works with Draw vehicles and aircraft in 3D. Needs drawing with the graphics card.",
+		.Fold = ADVANCED,
 		.Needs = "GpuRender",
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelSubpixel",
 		.Flag = &OptionsClass::GpuVoxelSubpixel, .Default = false,
-		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Smooth voxel motion when zoomed in",
-		.Tip = "In a zoomed-in view, a moving or hovering object drawn from its voxels is placed by screen pixels instead of map pixels. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Smooth movement when zoomed in",
+		.Tip = "In a zoomed-in view, a moving or hovering vehicle or aircraft drawn in 3D is placed by screen pixels instead of map pixels, so it glides instead of stepping. Works with Draw vehicles and aircraft in 3D. Needs drawing with the graphics card.",
+		.Fold = ADVANCED,
 		.Needs = "GpuRender",
 	},
 	{
 		.Section = "Video", .Key = "GpuVoxelScale",
 		.Number = &OptionsClass::GpuVoxelScale, .Default = 0, .Min = 0, .Max = GPU_VOXEL_SCALE_MAX,
-		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Voxel sharpness",
-		.Tip = "Draws the map at this many times its pixels, so voxel objects stay sharp in a zoomed view. Auto follows the zoom. Works with Draw voxels on the GPU. Needs GPU drawing.",
+		.Page = GRAPHICS, .Group = GPU_VOXELS, .Label = "Vehicle sharpness",
+		.Tip = "Draws the map at this many times its pixels, so vehicles and aircraft drawn in 3D stay sharp in a zoomed view. Auto follows the zoom. Works with Draw vehicles and aircraft in 3D. Needs drawing with the graphics card.",
+		.Fold = ADVANCED,
 		.Needs = "GpuRender", .Unit = "x", .ZeroText = "Auto",
 	},
 	{
@@ -165,14 +145,16 @@ constexpr Setting<OptionsClass> Settings[] = {
 	{
 		.Section = "Video", .Key = "SteadyVoxelPlacement",
 		.Flag = &OptionsClass::SteadyVoxelPlacement, .Default = true,
-		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Steady voxel placement",
+		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Steady vehicle placement",
 		.Tip = "A turning vehicle or aircraft stays in place instead of wobbling by a pixel. Off places it as the original game does.",
+		.Fold = ADVANCED,
 	},
 	{
 		.Section = "Video", .Key = "ShadowStacking",
 		.Flag = &OptionsClass::ShadowStacking, .Default = true,
-		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Stacked shadows",
+		.Page = GRAPHICS, .Group = VOXEL_DRAWING, .Label = "Darker overlapping shadows",
 		.Tip = "Overlapping vehicle and aircraft shadows darken the ground again under each, as in the original game. Off darkens it once, so a crowd of aircraft leaves a grey patch instead of a black one.",
+		.Fold = ADVANCED,
 	},
 	{
 		.Section = "Video", .Key = "StockArtFixes",
@@ -180,17 +162,6 @@ constexpr Setting<OptionsClass> Settings[] = {
 		.Page = GRAPHICS, .Group = STOCK_ART, .Label = "Fix stock art",
 		.Tip = "Draws stock art that the original game draws wrongly the way it was meant to look, such as the grey apartment blocks, which the original shows as speckled noise. Off draws it as the original game does.",
 		.NeedsRestart = true,
-	},
-	{
-		.Section = "Video", .Key = "Weather",
-		.Number = &OptionsClass::Weather, .Default = WEATHER_NONE, .Names = Weather_Names,
-		.Page = GRAPHICS, .Group = GPU_DRAWING, .Label = "Weather",
-		.Tip = "Snow falls on snowy maps, and rain falls during a lightning storm. Needs GPU drawing.",
-		.Needs = "GpuRender", .SwitchOn = WEATHER_MAP,
-	},
-	{
-		.Section = "Video", .Key = "WeatherStrength",
-		.Number = &OptionsClass::WeatherStrength, .Default = 100, .Min = 1, .Max = 400,
 	},
 	{
 		.Section = "Video", .Key = "RenderThread",
@@ -246,6 +217,12 @@ constexpr Setting<OptionsClass> Settings[] = {
 std::span<Setting<OptionsClass> const> Option_Settings(void)
 {
 	return(Settings);
+}
+
+
+std::span<SettingPresetChoice const> Option_Setting_Presets(void)
+{
+	return(Presets);
 }
 
 

@@ -32,13 +32,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "shaders/mapdraw/fs_mapblur.bin.h"
 #include "shaders/mapdraw/fs_mapclear.bin.h"
 #include "shaders/mapdraw/fs_mapdraw.bin.h"
-#include "shaders/mapdraw/fs_mapglow.bin.h"
 #include "shaders/mapdraw/fs_mapmask.bin.h"
 #include "shaders/mapdraw/fs_mapplane.bin.h"
-#include "shaders/mapdraw/fs_mappost.bin.h"
 #include "shaders/mapdraw/vs_mapclear.bin.h"
 #include "shaders/mapdraw/vs_mapdraw.bin.h"
 
@@ -46,9 +43,6 @@
 static const bgfx::EmbeddedShader _MapShaders[] = {
 	BGFX_EMBEDDED_SHADER_D3D11(vs_mapdraw),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapdraw),
-	BGFX_EMBEDDED_SHADER_D3D11(fs_mapblur),
-	BGFX_EMBEDDED_SHADER_D3D11(fs_mappost),
-	BGFX_EMBEDDED_SHADER_D3D11(fs_mapglow),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapmask),
 	BGFX_EMBEDDED_SHADER_D3D11(fs_mapplane),
 	BGFX_EMBEDDED_SHADER_D3D11(vs_mapclear),
@@ -60,7 +54,7 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 // Width of the textures that hold byte arenas; fs_mapdraw.sc uses the same value.
 static int const ARENA_WIDTH = 4096;
 static int const TEXTURE_LIMIT = GPU_MAP_STORE_ROWS;
-// The most pixels a scaled pass's scene, snapshot and post textures may each have: a little over a 3840x2160 view at
+// The most pixels a scaled pass's scene and snapshot textures may each have: a little over a 3840x2160 view at
 // scale 4, 536.9 MB a texture in RGBA8.
 static std::int64_t const SCALED_PIXEL_LIMIT = std::int64_t(1) << 27;
 // The index texture holds the atlas in its top rows and the pass's arena below them.
@@ -84,9 +78,9 @@ enum ShaderKind
 	KIND_ADDITIVE_LINE,
 	KIND_ANTIALIASED_LINE,
 	KIND_SONIC,
-	KIND_TILE_SHADOW,
-	// Only fs_voxelscene.sc draws this kind: a voxel's highlight strength into the emissive mask.
-	KIND_VOXEL_STRENGTH,
+	// Only fs_voxelscene.sc draws this kind, which it knows by this number: a voxel's highlight strength into the
+	// emissive mask.
+	KIND_VOXEL_STRENGTH = 16,
 };
 
 enum SamplerSlot
@@ -129,25 +123,13 @@ static int _TargetScale = 1;
 // The scale GpuMap_Set_Voxel_Scale asked for; a pass the check reads back is drawn at 1, and a large one lower (Pass_Scale).
 static int _VoxelScale = 1;
 
-// Soft shadows: shadows are drawn into a mask, the mask is blurred, and the base is darkened through it.
-// With one shadow darkening the ground once (ShadowStacking=no) the mask is drawn and not blurred.
-static int _SoftShadowRadius = 0;
+// Shadows that darken the ground once (ShadowStacking=no): every shadow of the pass is drawn into a mask, and the base is
+// darkened through it.
 static bool _UnionShadows = false;
-static bgfx::ProgramHandle _BlurProgram = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _BlurUniform = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _MaskSampler = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _ShadowSampler = BGFX_INVALID_HANDLE;
-static bgfx::TextureHandle _ShadowTexture[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
-static bgfx::FrameBufferHandle _ShadowTarget[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
+static bgfx::TextureHandle _ShadowTexture = BGFX_INVALID_HANDLE;
+static bgfx::FrameBufferHandle _ShadowTarget = BGFX_INVALID_HANDLE;
 
-static int const RIPPLE_LIMIT = 16;
-static bgfx::ProgramHandle _PostProgram = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _SceneSampler = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _RippleUniform = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _RippleInfoUniform = BGFX_INVALID_HANDLE;
-static bgfx::TextureHandle _PostTexture = BGFX_INVALID_HANDLE;
-static bgfx::FrameBufferHandle _PostTarget = BGFX_INVALID_HANDLE;
-static bool _PostShown = false;
 // Set while the target holds a picture the GPU drew.
 static bool _TargetDrawn = false;
 // Set when the kept pass could not be submitted; the next pass is then drawn in software.
@@ -164,33 +146,17 @@ static int _FadeVersion = 0;
 // Whether the base store holds the tile layer's memory as it lies, instead of the area's picture.
 static bool _BaseInPlace = false;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
-// The tile layer's shadow plane, kept between passes so only changed rows go up.
-static bgfx::UniformHandle _TileShadowSampler = BGFX_INVALID_HANDLE;
-static bgfx::TextureHandle _TileShadow = BGFX_INVALID_HANDLE;
-static bool _TileShadowTracked = false;
-
-// Water ripples read the water marks from the same plane as the tile shadows.
-static int _WaterStrength = 0;
-static bgfx::UniformHandle _WaterUniform = BGFX_INVALID_HANDLE;
-static int _CloudStrength = 0;
-static bgfx::UniformHandle _WorldUniform = BGFX_INVALID_HANDLE;
-static GpuWeather _Weather = GPU_WEATHER_NONE;
-static int _WeatherStrength = 0;
-static bgfx::UniformHandle _WeatherUniform = BGFX_INVALID_HANDLE;
-
-// Bloom: the emissive mask, kept between passes like the tile shadows, weights the picture into a
-// quarter-size glow that is blurred and added back in the post pass.
-static int _BloomStrength = 0;
-static int const GLOW_RADIUS = 6;
-static bgfx::ProgramHandle _GlowProgram = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _GlowUniform = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _GlowMaskSampler = BGFX_INVALID_HANDLE;
-static bgfx::UniformHandle _GlowSampler = BGFX_INVALID_HANDLE;
-static bgfx::TextureHandle _GlowMask = BGFX_INVALID_HANDLE;
-static bool _GlowMaskTracked = false;
-static bgfx::TextureHandle _GlowTexture[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
-static bgfx::FrameBufferHandle _GlowTarget[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
 static bgfx::TextureHandle _Snapshot = BGFX_INVALID_HANDLE;
+// The scale the target is drawn at, for fs_mapdraw.sc.
+static bgfx::UniformHandle _ScaleUniform = BGFX_INVALID_HANDLE;
+// The time that moves the ripple of a cloaked voxel object (GpuVoxelCloak=Ripple).
+static bgfx::UniformHandle _WorldUniform = BGFX_INVALID_HANDLE;
+
+// The emissive plane under the area, kept between passes so that only changed tiles go up. The shaders read it as
+// s_glowmask.
+static bgfx::UniformHandle _EmissivePlaneSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _EmissivePlane = BGFX_INVALID_HANDLE;
+static bool _EmissivePlaneTracked = false;
 
 // The emissive mask of a pass with GPU voxels, built from the CPU plane and the voxel parts' layers; made on first use.
 static bgfx::ProgramHandle _MaskProgram = BGFX_INVALID_HANDLE;
@@ -202,7 +168,7 @@ static bgfx::FrameBufferHandle _MaskTarget = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _MaskReadback = BGFX_INVALID_HANDLE;
 static bool _MaskBuilt = false;
 
-// The emissive plane of a pass that listed its plane writes, built from Glow and the list; made on first use.
+// The emissive plane of a pass that listed its plane writes, built from GpuMapPass::Emissive and the list; made on first use.
 static bgfx::ProgramHandle _PlaneProgram = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _MaskValueSampler = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _PlaneTexture = BGFX_INVALID_HANDLE;
@@ -287,35 +253,14 @@ static bool Start(void)
 		_Samplers[slot] = bgfx::createUniform(_SamplerNames[slot], bgfx::UniformType::Sampler);
 	}
 	_ShadowSampler = bgfx::createUniform("s_shadow", bgfx::UniformType::Sampler);
-	_MaskSampler = bgfx::createUniform("s_mask", bgfx::UniformType::Sampler);
-	_BlurUniform = bgfx::createUniform("u_blur", bgfx::UniformType::Vec4);
-	_BlurProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapblur");
-	_SceneSampler = bgfx::createUniform("s_scene", bgfx::UniformType::Sampler);
-	_RippleUniform = bgfx::createUniform("u_ripples", bgfx::UniformType::Vec4, RIPPLE_LIMIT);
-	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
 	_BaseRingUniform = bgfx::createUniform("u_basering", bgfx::UniformType::Vec4);
 	_FadeSampler = bgfx::createUniform("s_fade", bgfx::UniformType::Sampler);
 	_FadeUniform = bgfx::createUniform("u_fade", bgfx::UniformType::Vec4);
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
-	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
-	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
+	_ScaleUniform = bgfx::createUniform("u_scale", bgfx::UniformType::Vec4);
 	_WorldUniform = bgfx::createUniform("u_world", bgfx::UniformType::Vec4);
-	_WeatherUniform = bgfx::createUniform("u_weather", bgfx::UniformType::Vec4);
-	_PostProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mappost");
-	_GlowProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapglow");
-	_GlowUniform = bgfx::createUniform("u_glow", bgfx::UniformType::Vec4);
-	_GlowMaskSampler = bgfx::createUniform("s_glowmask", bgfx::UniformType::Sampler);
-	_GlowSampler = bgfx::createUniform("s_glow", bgfx::UniformType::Sampler);
-	// The GPU map cannot draw its shadows or shockwaves without the blur and shockwave programs, so Start fails
-	// without them. The glow pass checks its program before it submits, so a missing glow program only turns glow off.
-	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram)) {
-		DebugString("GPU_DIFF unavailable: the shadow blur or shockwave program did not build\n");
-		return(false);
-	}
-	if (!bgfx::isValid(_GlowProgram)) {
-		DebugString("GPU_DIFF: the glow program did not build, so the glow pass is off\n");
-	}
+	_EmissivePlaneSampler = bgfx::createUniform("s_glowmask", bgfx::UniformType::Sampler);
 	_MaskProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapmask");
 	if (!bgfx::isValid(_MaskProgram)) {
 		DebugString("GPU_DIFF: the voxel mask program did not build, so GPU voxels add no emissive mask\n");
@@ -342,14 +287,13 @@ static bool Start(void)
 
 // Sampler flags of the render targets and planes the passes read by pixel position.
 static uint64_t const POINT_CLAMP = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
-static uint64_t const LINEAR_CLAMP = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 
 
 // The targets the presenter samples, their depth attachments (a frame buffer needs attachments of one size) and the
 // textures that a shader bounds by their size are made at the pass's own size and again when it changes: the presenter
-// finds a pixel by its texture coordinate, and a larger texture rounds some of them to other texels. The shadow masks are
-// read by pixel position inside the area, so they are made for the largest area a pass has had or the view GpuMap_Reserve
-// named, and a pass uses their top left corner; a zoom step makes none of them. The other textures are made when a pass
+// finds a pixel by its texture coordinate, and a larger texture rounds some of them to other texels. The shadow mask is
+// read by pixel position inside the area, so it is made for the largest area a pass has had or the view GpuMap_Reserve
+// named, and a pass uses its top left corner; a zoom step makes none. The other textures are made when a pass
 // first uses them.
 static int _ReservedWidth = 0;
 static int _ReservedHeight = 0;
@@ -393,18 +337,13 @@ static bool Make_Depth(bgfx::TextureHandle & texture, int width, int height)
 
 
 // Destroys what depends on the area's size or on the scene target: the targets, the planes and the readbacks. The
-// depth attachments and shadow masks stay for the next size.
+// depth attachments and the shadow mask stay for the next size.
 static void Destroy_Scene(void)
 {
-	Release_Colour_Target(_PostTexture, _PostTarget);
-	_PostShown = false;
 	_TargetDrawn = false;
 	_ReadyWidth = 0;
-	for (int i = 0; i < 2; i++) {
-		Release_Colour_Target(_GlowTexture[i], _GlowTarget[i]);
-	}
-	Release_Handle(_GlowMask);
-	_GlowMaskTracked = false;
+	Release_Handle(_EmissivePlane);
+	_EmissivePlaneTracked = false;
 	Release_Handle(_MaskTarget);
 	Release_Handle(_MaskTexture);
 	Release_Handle(_MaskReadback);
@@ -416,8 +355,6 @@ static void Destroy_Scene(void)
 	Release_Handle(_Readback);
 	Release_Handle(_ShadowCount.Readback);
 	Release_Handle(_Snapshot);
-	Release_Handle(_TileShadow);
-	_TileShadowTracked = false;
 	Release_Handle(_Fade);
 	_FadeWidth = 0;
 	_FadeHeight = 0;
@@ -430,9 +367,7 @@ static void Destroy_Scene(void)
 static void Destroy_Target(void)
 {
 	Destroy_Scene();
-	for (int i = 0; i < 2; i++) {
-		Release_Colour_Target(_ShadowTexture[i], _ShadowTarget[i]);
-	}
+	Release_Colour_Target(_ShadowTexture, _ShadowTarget);
 	_DepthWanted = false;
 	_MaskDepthWanted = false;
 	_ShadowWidth = 0;
@@ -505,41 +440,16 @@ static bool Ensure_Readback(void)
 }
 
 
-// The post pass's target, which the presenter shows in place of the scene while the post pass runs.
-static bool Ensure_Post_Target(void)
+// The mask the shadows are drawn in, as large as the biggest area so far.
+static bool Ensure_Shadow_Target(void)
 {
-	return(bgfx::isValid(_PostTarget) || Make_Colour_Target(_PostTexture, _PostTarget, _TargetWidth * _TargetScale, _TargetHeight * _TargetScale, bgfx::TextureFormat::RGBA8, POINT_CLAMP));
-}
-
-
-// The two quarter-size pictures the glow is reduced and blurred in.
-static bool Ensure_Glow_Targets(void)
-{
-	for (int i = 0; i < 2; i++) {
-		if (!bgfx::isValid(_GlowTarget[i]) && !Make_Colour_Target(_GlowTexture[i], _GlowTarget[i], (_TargetWidth + 3) / 4, (_TargetHeight + 3) / 4, bgfx::TextureFormat::RGBA8, LINEAR_CLAMP)) {
-			return(false);
-		}
-	}
-	return(true);
-}
-
-
-// The two masks the shadows are drawn and blurred in, as large as the biggest area so far.
-static bool Ensure_Shadow_Targets(void)
-{
-	bool const fits = bgfx::isValid(_ShadowTarget[0]) && bgfx::isValid(_ShadowTarget[1]) && _ShadowWidth >= _TargetWidth && _ShadowHeight >= _TargetHeight;
-	if (fits) {
+	if (bgfx::isValid(_ShadowTarget) && _ShadowWidth >= _TargetWidth && _ShadowHeight >= _TargetHeight) {
 		return(true);
 	}
 	_ShadowWidth = std::max(_TargetWidth, _ReservedWidth);
 	_ShadowHeight = std::max(_TargetHeight, _ReservedHeight);
-	for (int i = 0; i < 2; i++) {
-		Release_Colour_Target(_ShadowTexture[i], _ShadowTarget[i]);
-		if (!Make_Colour_Target(_ShadowTexture[i], _ShadowTarget[i], _ShadowWidth, _ShadowHeight, bgfx::TextureFormat::R8, POINT_CLAMP)) {
-			return(false);
-		}
-	}
-	return(true);
+	Release_Colour_Target(_ShadowTexture, _ShadowTarget);
+	return(Make_Colour_Target(_ShadowTexture, _ShadowTarget, _ShadowWidth, _ShadowHeight, bgfx::TextureFormat::R8, POINT_CLAMP));
 }
 
 
@@ -927,20 +837,6 @@ static bool Fill_R16_Changed(Store & store, unsigned short const * values, int w
 }
 
 
-// Uploads the rows of a plane kept in texture that changed since the GPU last took them, and clears
-// their flags. Tracked is cleared when the texture is remade, which sends every row.
-static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vector<unsigned char> const & values, int width, int rows, std::vector<unsigned char> & changed)
-{
-	if (!tracked || (int)changed.size() != rows) {
-		changed.assign(rows, 1);
-		tracked = true;
-	}
-	For_Each_Changed_Run(changed, rows, [&](int first, int end) {
-		Update_Texture(texture, 0, first, width, end - first, bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
-	});
-}
-
-
 // Uploads the tiles of a plane kept in texture that changed since the GPU last took them, and clears
 // their marks. Tracked is cleared when the texture is remade, which sends the whole plane.
 static void Upload_Plane_Tiles(bgfx::TextureHandle texture, bool & tracked, std::vector<unsigned char> const & values, int width, int rows, TileGridClass & tiles)
@@ -1086,10 +982,9 @@ static void Bind_Stores(float const * ring)
 }
 
 
-// Draws every shadow's coverage, with the tile layer's shadows when tileshadow is set, into the first
-// shadow mask and, with a soft radius, blurs it there through the second. A voxel part's shadow is drawn from its layers at scale 1,
-// the mask's own scale.
-static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
+// Draws every shadow's coverage into the shadow mask. A voxel part's shadow is drawn from its layers at scale 1, the
+// mask's own scale.
+static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & area, float const * projection, float const * ring, int shadowquads)
 {
 	bgfx::TransientVertexBuffer buffer;
 	bgfx::allocTransientVertexBuffer(&buffer, shadowquads * 6, _Layout);
@@ -1103,13 +998,6 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 	// The blit each quad draws, NULL for the whole-area quads.
 	std::vector<GpuBlit const *> blits(shadowquads, NULL);
 	int quad = 1;
-	if (tileshadow) {
-		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
-		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-		float const t3[4] = { 0.0f, -1.0f, (float)KIND_TILE_SHADOW, 1.0f };
-		Set_Quad(vertex + 6, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
-		quad++;
-	}
 	for (GpuBlit const & blit : list.Blits) {
 		if (blit.Class() != GPU_BLIT_SHADOW) {
 			continue;
@@ -1122,7 +1010,7 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 		quad++;
 	}
 
-	Set_Map_View(VIEW_MAPSHADOW, _ShadowTarget[0], area, projection);
+	Set_Map_View(VIEW_MAPSHADOW, _ShadowTarget, area, projection);
 	bgfx::setViewClear(VIEW_MAPSHADOW, BGFX_CLEAR_COLOR, 0x00000000);
 	float const shadow_scale[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
 	auto const is_voxel = [&](int index) { return(blits[index] != NULL && blits[index]->Voxel >= 0); };
@@ -1143,63 +1031,12 @@ static void Submit_Shadows(GpuDrawList const & list, int scale, Rect const & are
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
-		bgfx::setUniform(_WaterUniform, shadow_scale);
-		if (tileshadow) {
-			bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
-		}
+		bgfx::setUniform(_ScaleUniform, shadow_scale);
 		bgfx::setUniform(_RingUniform, ring, 2);
 		bgfx::setUniform(_BaseRingUniform, ring + 8);
 		bgfx::setState(BGFX_STATE_WRITE_RGB);
 		bgfx::submit(VIEW_MAPSHADOW, _Program);
 		i = end;
-	}
-
-	if (_SoftShadowRadius == 0) {
-		return;
-	}
-	bgfx::ViewId const views[2] = { VIEW_MAPBLURX, VIEW_MAPBLURY };
-	for (int pass = 0; pass < 2; pass++) {
-		Set_Map_View(views[pass], _ShadowTarget[1 - pass], area, projection);
-		float const blur[4] = { pass == 0 ? 1.0f : 0.0f, pass == 0 ? 0.0f : 1.0f, (float)_SoftShadowRadius, (float)(pass == 0 ? area.Width : area.Height) };
-		bgfx::setUniform(_BlurUniform, blur);
-		bgfx::setVertexBuffer(0, &buffer, 0, 6);
-		bgfx::setTexture(0, _MaskSampler, _ShadowTexture[pass]);
-		bgfx::setState(BGFX_STATE_WRITE_RGB);
-		bgfx::submit(views[pass], _BlurProgram);
-	}
-}
-
-
-// Weights the drawn picture by the emissive mask into the first glow picture, a quarter of the size,
-// and blurs it there through the second.
-static void Submit_Glow(bgfx::TextureHandle mask, Rect const & area, int scale)
-{
-	Rect const quarter(0, 0, (area.Width + 3) / 4, (area.Height + 3) / 4);
-	float projection[16];
-	Backend_Build_Ortho_Projection(projection, quarter.Width, quarter.Height);
-	bgfx::TransientVertexBuffer buffer;
-	bgfx::allocTransientVertexBuffer(&buffer, 6, _Layout);
-	float const t[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	Set_Quad((MapVertex *)buffer.data, quarter, 0, 0, quarter.Width, quarter.Height, t, t, t);
-
-	Set_Map_View(VIEW_MAPGLOW, _GlowTarget[0], quarter, projection);
-	float const prepare[4] = { (float)area.Width, (float)area.Height, (float)scale, 0.0f };
-	bgfx::setUniform(_GlowUniform, prepare);
-	bgfx::setVertexBuffer(0, &buffer, 0, 6);
-	bgfx::setTexture(0, _SceneSampler, _TargetTexture);
-	bgfx::setTexture(1, _GlowMaskSampler, mask);
-	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-	bgfx::submit(VIEW_MAPGLOW, _GlowProgram);
-
-	bgfx::ViewId const views[2] = { VIEW_MAPGLOWX, VIEW_MAPGLOWY };
-	for (int step = 0; step < 2; step++) {
-		Set_Map_View(views[step], _GlowTarget[1 - step], quarter, projection);
-		float const blur[4] = { step == 0 ? 1.0f : 0.0f, step == 0 ? 0.0f : 1.0f, (float)GLOW_RADIUS, 1.0f };
-		bgfx::setUniform(_GlowUniform, blur);
-		bgfx::setVertexBuffer(0, &buffer, 0, 6);
-		bgfx::setTexture(0, _SceneSampler, _GlowTexture[step]);
-		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-		bgfx::submit(views[step], _GlowProgram);
 	}
 }
 
@@ -1271,8 +1108,8 @@ static int Count_Plane_Quads(GpuDrawList const & list)
 }
 
 
-// Builds the emissive plane of a pass that listed its plane writes into _PlaneTexture: Glow, the plane as the pass found
-// it, then each write in order. No quad tests or writes depth, so the writes land in their order in one draw.
+// Builds the emissive plane of a pass that listed its plane writes into _PlaneTexture: the plane as the pass found it,
+// then each write in order. No quad tests or writes depth, so the writes land in their order in one draw.
 static bool Submit_Plane(GpuMapPass const & pass, float const * projection, float const * ring)
 {
 	GpuDrawList const & list = *pass.List;
@@ -1316,7 +1153,7 @@ static bool Submit_Plane(GpuMapPass const & pass, float const * projection, floa
 	Set_Map_View(VIEW_MAPPLANE, _PlaneTarget, area, projection);
 	bgfx::setVertexBuffer(0, &buffer, 0, (uint32_t)quads * 6);
 	Bind_Stores(ring);
-	bgfx::setTexture(SLOT_COUNT, _GlowMaskSampler, _GlowMask);
+	bgfx::setTexture(SLOT_COUNT, _EmissivePlaneSampler, _EmissivePlane);
 	bgfx::setTexture(SLOT_COUNT + 1, _MaskValueSampler, _MaskValueStore.Handle);
 	bgfx::setState(BGFX_STATE_WRITE_R);
 	bgfx::submit(VIEW_MAPPLANE, _PlaneProgram);
@@ -1396,7 +1233,7 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 	int slices = 0;
 	for (int i = 0; i < quads; i++) {
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
-		bgfx::setTexture(0, _GlowMaskSampler, plane);
+		bgfx::setTexture(0, _EmissivePlaneSampler, plane);
 		bgfx::setState(BGFX_STATE_WRITE_R);
 		bgfx::submit(VIEW_MAPMASK, _MaskProgram);
 		GpuBlit const * blit = blits[i];
@@ -1412,18 +1249,11 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 			drawn.State = BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LEQUAL;
 			GpuVoxel_Draw_Direct(list, drawn, 1, VIEW_MAPMASK, [ring, plane]() {
 				Bind_Stores(ring);
-				bgfx::setTexture(DIRECT_PLANE_STAGE, _GlowMaskSampler, plane);
+				bgfx::setTexture(DIRECT_PLANE_STAGE, _EmissivePlaneSampler, plane);
 			});
 		}
 	}
 	return(true);
-}
-
-
-// True while shadows go into the mask, blurred or not.
-static bool Shadow_Mask_On(void)
-{
-	return(_SoftShadowRadius > 0 || _UnionShadows);
 }
 
 
@@ -1487,7 +1317,7 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	}
 	int const shadows = Count_Shadow_Blits(list);
 	// At most the vertices Submit_Pass takes, which allocates them later in the same frame.
-	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (Shadow_Mask_On() ? shadows + 2 : 0) + (pass.Mask ? Count_Mask_Quads(list) : 0)
+	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (_UnionShadows ? shadows + 1 : 0) + (pass.Mask ? Count_Mask_Quads(list) : 0)
 		+ (pass.MaskListed ? Count_Plane_Quads(list) : 0)) * 6);
 	return(bgfx::getAvailTransientVertexBuffer(vertices, _Layout) >= vertices);
 }
@@ -1795,7 +1625,7 @@ static bool Joins_Draw(GpuDrawList const & list, std::vector<int> const & kinds,
 // Draws the base quad and then each blit's quad into the target, in blit order; a voxel blit submits its part's layers
 // instead. A sonic wave copies the target first, so it reads everything drawn before it. Neighbouring blit quads with
 // the same blend state go in one draw.
-static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water, bool faded)
+static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool faded)
 {
 	int const quads = (int)list.Blits.size() + 1;
 	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection, scale);
@@ -1860,18 +1690,11 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
 		if (i == 0 && shadowed) {
-			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
+			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture);
 		}
 		if (i == 0) {
-			float water_params[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
-			if (water) {
-				water_params[1] = 1.5f * _WaterStrength / 100.0f;
-				water_params[2] = 0.06f * _WaterStrength / 100.0f;
-				water_params[3] = 0.4f * _WaterStrength / 100.0f;
-				bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
-			}
-			bgfx::setUniform(_WaterUniform, water_params);
-			bgfx::setUniform(_WorldUniform, world);
+			float const scale_params[4] = { (float)scale, 0.0f, 0.0f, 0.0f };
+			bgfx::setUniform(_ScaleUniform, scale_params);
 			float const fade_params[4] = { faded ? 1.0f : 0.0f, (float)LAYER_FADE_DIVISOR * _FadeWidth, (float)LAYER_FADE_DIVISOR * _FadeHeight, 65535.0f / LAYER_FADE_UNIT };
 			bgfx::setUniform(_FadeUniform, fade_params);
 			if (faded) {
@@ -1887,41 +1710,6 @@ static void Submit_Draws(GpuDrawList const & list, int scale, std::vector<int> c
 		bgfx::setState(state);
 		bgfx::submit(view, _Program);
 		i += joined - 1;
-	}
-}
-
-
-// Draws the ripples, bloom, clouds and weather over the picture the draws left in the target. The
-// pass is shown only when one of those effects applies.
-static void Submit_Post(GpuMapPass const & pass, int scale, Rect const & area, float const * projection, bgfx::TransientVertexBuffer const & buffer, float const * world, bool glow, bool clouds, bool weather)
-{
-	_PostShown = false;
-	bool const ripple = pass.Ripples != NULL && !pass.Ripples->empty();
-	if ((ripple || glow || clouds || weather) && Ensure_Post_Target()) {
-		int const count = ripple ? std::min((int)pass.Ripples->size(), RIPPLE_LIMIT) : 0;
-		float ripples[RIPPLE_LIMIT * 4] = {};
-		for (int i = 0; i < count; i++) {
-			GpuRipple const & entry = (*pass.Ripples)[i];
-			ripples[i * 4 + 0] = entry.X;
-			ripples[i * 4 + 1] = entry.Y;
-			ripples[i * 4 + 2] = entry.Radius;
-			ripples[i * 4 + 3] = entry.Strength;
-		}
-		float const info[4] = { (float)count, (float)area.Width, (float)area.Height, glow ? 1.2f * (float)_BloomStrength / 100.0f : 0.0f };
-		Set_Map_View(VIEW_MAPPOST, _PostTarget, area, projection, scale);
-		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)std::max(count, 1));
-		bgfx::setUniform(_RippleInfoUniform, info);
-		bgfx::setUniform(_WorldUniform, world);
-		float const falling[4] = { weather ? (float)_Weather : 0.0f, _WeatherStrength / 100.0f, pass.Flash, (float)scale };
-		bgfx::setUniform(_WeatherUniform, falling);
-		bgfx::setVertexBuffer(0, &buffer, 0, 6);
-		bgfx::setTexture(0, _SceneSampler, _TargetTexture);
-		if (glow) {
-			bgfx::setTexture(1, _GlowSampler, _GlowTexture[0]);
-		}
-		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-		bgfx::submit(VIEW_MAPPOST, _PostProgram);
-		_PostShown = true;
 	}
 }
 
@@ -1957,32 +1745,23 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	Set_Ring(ring + 8, 0, 0, area.Width, area.Height);
 	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
-	int const shadows = Shadow_Mask_On() ? Count_Shadow_Blits(list) : 0;
+	int const shadows = _UnionShadows ? Count_Shadow_Blits(list) : 0;
 	int const waves = Count_Sonic_Waves(list);
 	if (waves > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
 		return(false);
 	}
-	bool const plane = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && pass.TileShadow->size() == (std::size_t)area.Width * area.Height
-		&& (_SoftShadowRadius > 0 || _WaterStrength > 0) && Ensure_Plane_Texture(_TileShadow, _TileShadowTracked);
-	bool const tileshadow = plane && _SoftShadowRadius > 0;
-	bool const water = plane && _WaterStrength > 0;
-	if (tileshadow || water) {
-		Upload_Plane(_TileShadow, _TileShadowTracked, *pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
-	}
 	bool const faded = Upload_Fade(pass);
-	bool const shadowed = (shadows > 0 || tileshadow) && Ensure_Shadow_Targets();
-	bool const clouds = _CloudStrength > 0;
-	bool const weather = _Weather != GPU_WEATHER_NONE && _WeatherStrength > 0;
-	float world[4] = { (float)pass.WorldX, (float)pass.WorldY, 0.0f, clouds ? 0.3f * _CloudStrength / 100.0f : 0.0f };
-	if (water || clouds || weather || GpuVoxel_Cloak_Ripple()) {
+	bool const shadowed = shadows > 0 && Ensure_Shadow_Target();
+	float world[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	if (GpuVoxel_Cloak_Ripple()) {
 		// Wrapped every 1,000 seconds, so the float keeps its precision.
 		long long const ms = Monotonic_Milliseconds();
 		world[2] = (float)(ms % 1000000) / 1000.0f;
 	}
 	int const quads = (int)list.Blits.size() + 1;
-	int const shadowquads = shadowed ? shadows + 1 + (tileshadow ? 1 : 0) : 0;
-	bool const planed = pass.Glow != NULL && pass.GlowTiles != NULL && pass.Glow->size() == (std::size_t)area.Width * area.Height && Ensure_Plane_Texture(_GlowMask, _GlowMaskTracked);
+	int const shadowquads = shadowed ? shadows + 1 : 0;
+	bool const planed = pass.Emissive != NULL && pass.EmissiveTiles != NULL && pass.Emissive->size() == (std::size_t)area.Width * area.Height && Ensure_Plane_Texture(_EmissivePlane, _EmissivePlaneTracked);
 	// A listed plane is built before anything is drawn from it, so a pass whose plane cannot be built is not drawn.
 	bool const listed = planed && pass.MaskListed;
 	int const maskquads = (pass.Mask ? Count_Mask_Quads(list) : 0) + (listed ? Count_Plane_Quads(list) : 0);
@@ -2008,24 +1787,19 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, area.Width, area.Height);
 	if (shadowed) {
-		Submit_Shadows(list, scale, area, projection, ring, shadowquads, tileshadow);
+		Submit_Shadows(list, scale, area, projection, ring, shadowquads);
 	}
-	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, water, faded);
+	Submit_Draws(list, scale, kinds, buffer, area, projection, ring, world, shadowed, faded);
 
-	bgfx::TextureHandle emissive = _GlowMask;
+	bgfx::TextureHandle emissive = _EmissivePlane;
 	if (planed) {
-		Upload_Plane_Tiles(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowTiles);
+		Upload_Plane_Tiles(_EmissivePlane, _EmissivePlaneTracked, *pass.Emissive, area.Width, area.Height, *pass.EmissiveTiles);
 	}
 	if (listed && Submit_Plane(pass, projection, ring)) {
 		emissive = _PlaneTexture;
 		Read_Plane_Back(pass);
 	}
 	_MaskBuilt = planed && pass.Mask && bgfx::isValid(_MaskProgram) && Submit_Voxel_Mask(pass, projection, ring, emissive);
-	bool const glow = planed && _BloomStrength > 0 && bgfx::isValid(_GlowProgram) && Ensure_Glow_Targets();
-	if (glow) {
-		Submit_Glow(_MaskBuilt ? _MaskTexture : emissive, area, scale);
-	}
-	Submit_Post(pass, scale, area, projection, buffer, world, glow, clouds, weather);
 	return(true);
 }
 
@@ -2033,7 +1807,6 @@ static bool Submit_Pass(GpuMapPass const & pass, int scale)
 // Only the pass kept last before a frame is presented is drawn, because passes drawn in one frame
 // share the views and the uploaded buffers.
 static GpuMapPass _Kept;
-static std::vector<GpuRipple> _KeptRipples;
 static bool _HasKept = false;
 
 
@@ -2050,8 +1823,6 @@ bool GpuMap_Draw(GpuMapPass const & pass)
 		return(false);
 	}
 	_Kept = pass;
-	_KeptRipples = pass.Ripples != NULL ? *pass.Ripples : std::vector<GpuRipple>();
-	_Kept.Ripples = &_KeptRipples;
 	_HasKept = true;
 	return(true);
 }
@@ -2134,34 +1905,9 @@ void GpuMap_Reserve(int width, int height)
 }
 
 
-void GpuMap_Set_Soft_Shadows(int radius, bool union_shadows)
+void GpuMap_Set_Union_Shadows(bool union_shadows)
 {
-	_SoftShadowRadius = std::clamp(radius, 0, 16);
 	_UnionShadows = union_shadows;
-}
-
-
-void GpuMap_Set_Bloom(int strength)
-{
-	_BloomStrength = std::clamp(strength, 0, 400);
-}
-
-
-int GpuMap_Bloom(void)
-{
-	return(_BloomStrength);
-}
-
-
-void GpuMap_Set_Water(int strength)
-{
-	_WaterStrength = std::clamp(strength, 0, 400);
-}
-
-
-void GpuMap_Set_Clouds(int strength)
-{
-	_CloudStrength = std::clamp(strength, 0, 400);
 }
 
 
@@ -2174,13 +1920,6 @@ void GpuMap_Set_Voxel_Scale(int scale)
 int GpuMap_Scale(void)
 {
 	return(_TargetScale);
-}
-
-
-void GpuMap_Set_Weather(GpuWeather weather, int strength)
-{
-	_Weather = weather;
-	_WeatherStrength = std::clamp(strength, 0, 400);
 }
 
 
@@ -2307,7 +2046,7 @@ std::uint16_t GpuMap_Texture(void)
 			}
 		}
 	}
-	return(_PostShown ? _PostTexture.idx : _TargetTexture.idx);
+	return(_TargetTexture.idx);
 }
 
 
@@ -2445,12 +2184,11 @@ void GpuMap_Shutdown(void)
 		Release_Handle(read.Texture);
 		read = PlaneRead();
 	}
-	for (bgfx::ProgramHandle * program : { &_BlurProgram, &_PostProgram, &_GlowProgram, &_MaskProgram, &_PlaneProgram, &_ClearProgram }) {
+	for (bgfx::ProgramHandle * program : { &_MaskProgram, &_PlaneProgram, &_ClearProgram }) {
 		Release_Handle(*program);
 	}
-	for (bgfx::UniformHandle * uniform : { &_BlurUniform, &_MaskSampler, &_ShadowSampler, &_SceneSampler, &_RippleUniform, &_RippleInfoUniform,
-		&_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_TileShadowSampler, &_FadeSampler, &_FadeUniform, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
-		&_GlowMaskSampler, &_GlowSampler, &_MaskValueSampler }) {
+	for (bgfx::UniformHandle * uniform : { &_ShadowSampler, &_RingUniform, &_BaseRingUniform, &_SnapshotSampler, &_FadeSampler, &_FadeUniform,
+		&_ScaleUniform, &_WorldUniform, &_EmissivePlaneSampler, &_MaskValueSampler }) {
 		Release_Handle(*uniform);
 	}
 	_Ready = false;

@@ -1,8 +1,8 @@
-; Zoom spare masks: the emissive and shadow masks of the spare map surfaces stay bound, and zero, while the zoom is 1, so the
-; first zoom out allocates and clears none. Ten wheel steps out and ten back in on XMP22S8 with GPU drawing, soft shadows and
-; bloom on; spareplanes logs the masks of the spare surfaces before the first glide and after each glide has ended and the
+; Zoom spare masks: the emissive masks of the spare map surfaces stay bound, and zero, while the zoom is 1, so the first
+; zoom out allocates and clears none. Ten wheel steps out and ten back in on XMP22S8 with GPU drawing and the masks kept
+; (EmissiveDebugView); spareplanes logs the masks of the spare surfaces before the first glide and after each glide has ended and the
 ; surfaces were put aside again by a zoom step to 1 (the glide in ends beyond it). mapbuffers must show no surface or buffer made after the first zoom out.
-; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/zoom-spare-masks.txt -Map XMP22S8.MAP -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nGpuRender=yes`nSoftShadows=yes`nBloom=yes`nZoomOutView=4K" -Filter "AUTOTEST (?!perfwindow )|Exception"
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/zoom-spare-masks.txt -Map XMP22S8.MAP -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nGpuRender=yes`nEmissiveDebugView=yes`nZoomOutView=4K" -Filter "AUTOTEST (?!perfwindow )|Exception"
 2 reveal
 100 zoom 1.0
 200 spareplanes

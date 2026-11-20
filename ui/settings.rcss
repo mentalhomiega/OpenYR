@@ -144,6 +144,42 @@
 	margin-top: 0;
 }
 
+/* The heading that opens and closes a fold of rows: a full-width button whose text says what pressing it does, with a + or - mark. */
+.page-settings .fold-row
+{
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0 0 10dp 0;
+}
+
+.page-settings .fold-row > button.fold
+{
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: 30dp;
+	padding: 0 12dp;
+	line-height: 30dp;
+	text-align: left;
+	font-size: 15dp;
+	background-color: #2a2145;
+	border: 2dp #8b78c4;
+	border-radius: 4dp;
+}
+
+.page-settings .fold-row > button.fold:hover, .page-settings .fold-row > button.fold:focus
+{
+	background-color: #3b2f63;
+	border-color: #c8b8ff;
+}
+
+/* A row inside a closed fold is not drawn and cannot be tabbed to. */
+.page-settings #list .folded
+{
+	display: none;
+}
+
 /* A message that spans both columns, set off by a bar down its left edge. */
 .page-settings .notice
 {

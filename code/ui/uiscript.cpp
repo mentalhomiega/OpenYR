@@ -23,9 +23,11 @@
 #include "windowevent.hh"
 
 #include <RmlUi/Core.h>
+#include <RmlUi/Core/Elements/ElementFormControl.h>
 
 #include "globals.h"
 #include "goptions.h"
+#include "optionsettings.h"
 #include "hangwatch.h"
 #include "hud.h"
 #include "init.h"
@@ -320,8 +322,8 @@ bool Step_Press(Rml::Context * context, UIStepType const & step, long long now)
 }
 
 
-// "id value" sets the value of a slider, as dragging it would, or the text of a text
-// box, as typing it and leaving the box would.
+// "id value" sets the value of a slider, as dragging it would, the text of a text
+// box, as typing it and leaving the box would, or the chosen item of a drop-down, by its value.
 bool Step_Set(Rml::Context * context, UIStepType const & step, long long now)
 {
 	std::size_t const space = step.Argument.find(' ');
@@ -335,7 +337,7 @@ bool Step_Set(Rml::Context * context, UIStepType const & step, long long now)
 	// A text box given no value is emptied.
 	std::string const value = space == std::string::npos ? std::string() : step.Argument.substr(space + 1);
 	element->SetAttribute("value", value);
-	if (element->GetAttribute<Rml::String>("type", "") == "text") {
+	if (element->GetAttribute<Rml::String>("type", "") == "text" || element->GetTagName() == "select") {
 		Rml::Dictionary parameters;
 		parameters["value"] = Rml::Variant(value);
 		element->DispatchEvent(Rml::EventId::Change, parameters);
@@ -560,6 +562,34 @@ bool Step_Inside(Rml::Context * context, UIStepType const & step, long long)
 }
 
 
+// "id" logs the value a drop-down or other form control holds: AUTOTEST value <id> <value>.
+bool Step_Value(Rml::Context * context, UIStepType const & step, long long)
+{
+	Rml::Element * element = Find_Element(context, step.Argument);
+	Rml::ElementFormControl * control = rmlui_dynamic_cast<Rml::ElementFormControl *>(element);
+	if (control == nullptr) {
+		Log_No_Element(step, "");
+	} else {
+		DebugString("AUTOTEST value %s %s\n", step.Argument.c_str(), control->GetValue().c_str());
+	}
+	return(false);
+}
+
+
+// "Key Key ..." logs the value each named client setting holds now: AUTOTEST setting <Key> <value>, in one line.
+bool Step_Setting(Rml::Context *, UIStepType const & step, long long)
+{
+	std::string line = "AUTOTEST setting";
+	std::istringstream keys(step.Argument);
+	for (std::string key; keys >> key; ) {
+		auto const found = std::find_if(Option_Settings().begin(), Option_Settings().end(), [&](Setting<OptionsClass> const & setting) { return(key == setting.Key); });
+		line += " " + key + "=" + (found == Option_Settings().end() ? std::string("?") : std::to_string(Setting_Value(*found, Options)));
+	}
+	DebugString("%s\n", line.c_str());
+	return(false);
+}
+
+
 bool Step_Hudrows(Rml::Context *, UIStepType const &, long long)
 {
 	DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
@@ -611,6 +641,8 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"movie", Step_Movie},
 		{"checked", Step_Checked},
 		{"inside", Step_Inside},
+		{"value", Step_Value},
+		{"setting", Step_Setting},
 		{"hudrows", Step_Hudrows},
 		{"updatecheck", Step_Updatecheck},
 		{"quit", Step_Quit},

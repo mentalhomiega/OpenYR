@@ -188,18 +188,18 @@ direct route, not a copy of the software's.
 ### Shadows
 
 A voxel shadow is one flat layer of occupied columns (`Gpu_Voxel_Walk_Shadow`, `VoxelLibrary::Setup_Shadow`), blitted
-with the darken kind, or, under `SoftShadows`, drawn into the shadow mask (`Submit_Shadows`). We keep that geometry: each
+with the darken kind, or, with `ShadowStacking=no`, drawn into the shadow mask (`Submit_Shadows`). We keep that geometry: each
 column becomes its flat cell, as at scale 2 and up today, drawn straight into the scene or the mask.
 
 Cells of one shadow overlap, and darken must apply once per shadow blit, as the tile gives today. We propose the stencil:
 shadow blit n draws with reference `n % 255 + 1`, passes where the stencil differs and replaces it, so each pixel
 darkens once per blit, and two different shadows still darken twice, as in the software. Every 255 shadow blits a
-stencil-only quad resets the stencil. Under `SoftShadows` the mask's `max` of 1 already makes overlaps harmless.
+stencil-only quad resets the stencil. With `ShadowStacking=no` the mask's `max` of 1 already makes overlaps harmless.
 
 The row depth of a shadow stays as `Techno_Render_Voxel_Shadow` sets it (the object's gradient while `GpuVoxels` is on).
 Real shadow mapping onto the ground needs GPU terrain and is not part of this design.
 
-### Highlights, bloom and HDR
+### Highlights and HDR
 
 We propose a second scene attachment, RG8 at scene size: highlight strength and the low byte of the part's ordinal.
 Direct voxel draws write it with the same strength formula as `vs_mapvoxel.sc`; every other map fragment shader writes
@@ -213,9 +213,9 @@ software's mask copy gives). At scale above 1 the mask takes the centre of each 
 If writing a second output from every map shader proves awkward, the alternative is a second draw of the direct
 geometry with `EQUAL` depth into a separate target, paid only while the mask is on.
 
-The glow (`Submit_Glow`), the post pass and the HDR composite ([EMISSIVE_MASK.md](EMISSIVE_MASK.md)) read the finished
-mask and do not change. A composite writes no mask on the image route because the scratch surface has none; a direct
-composite writes one, so turreted vehicles glow too. That is a deliberate change from the software.
+The HDR composite ([EMISSIVE_MASK.md](EMISSIVE_MASK.md)) reads the finished mask and does not change. A composite
+writes no mask on the image route because the scratch surface has none; a direct composite writes one, so turreted
+vehicles get highlights too. That is a deliberate change from the software.
 
 Stage 5 built the alternative above in place of the RG8 attachment: a second draw of the direct geometry, into the
 mask target, with that target's own depth attachment; "Stage 5 (done)" describes it.
@@ -263,7 +263,7 @@ rounded to the nearest whole number from 1 to 4, which `Pass_Scale` then lowers 
 | Large scale with many large units | Unchanged | Draws the largest parts at a lower scale, down to 1 | No voxel image to overflow, so every part keeps the scale; the remaining limit is the face store, about 4 million faces at the proposed size |
 | Hull, turret and barrel | Order by turret facing | Same | Depth decides |
 | Cloaked unit | Plain translucent (the predator offset is not applied) | Plain translucent | Plain translucent, or a ripple with `GpuVoxelCloak=Ripple` |
-| Turreted vehicle under Glow or HDR Enhanced | No highlight | No highlight | Highlights |
+| Turreted vehicle under HDR Enhanced | No highlight | No highlight | Highlights |
 | Turning and tilt | 32 facings | Exact facing with `GpuVoxelSmooth` | Same; smooth tilt as a later option |
 | Main thread | Software voxel drawing | Tile hashing, shelf placement, part signatures | No tiles or signatures; per-layer uniforms only |
 | GPU | None | Draws only parts not in the image (5% to 37% of parts a second in the Cost runs of GPU_VOXELS.md) | Draws every visible voxel every pass; we expect it to cost more at scale 1 and less where tiles were redrawn often |
@@ -983,7 +983,7 @@ pass itself is not drawn on the GPU.
 
 - `Shared` layer depth is the default, so turret and barrel overlap by real depth. `Ordered` stays as the developer key
   the exact checks use.
-- Turreted vehicles get highlights under Glow and HDR Enhanced in the GPU look. The software look keeps none, as in
+- Turreted vehicles get highlights under HDR Enhanced in the GPU look. The software look keeps none, as in
   gamemd.
 - `GpuVoxels` keeps its default `no`.
 - Stage 8 deleted the image route. The software renderer is the only classic reference.

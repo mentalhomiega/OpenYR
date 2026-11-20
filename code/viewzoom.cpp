@@ -37,7 +37,6 @@
 #include "rules.h"
 #include "session.h"
 #include "sidebar.h"
-#include "shadowplane.h"
 #include "tactical.h"
 #include "video.h"
 #include "vidscale.h"
@@ -261,7 +260,7 @@ void Log_Map_Buffer_Counts(void)
 }
 
 
-// Copies an area of a tile layer's picture, with its emissive and shadow planes, to the same place in another layer.
+// Copies an area of a tile layer's picture, with its emissive plane, to the same place in another layer.
 static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const & from, Point2D const & to)
 {
 	Rect const area(to.X, to.Y, from.Width, from.Height);
@@ -270,11 +269,7 @@ static void Copy_Tile_Layer(Surface & dest, Surface const & source, Rect const &
 		Point2D const size = dest.Get_Capacity();
 		Emissive_Bind(&dest, size.X, size.Y);
 	}
-	if (ShadowPlane_For(&source) != NULL) {
-		ShadowPlane_Bind(dest);
-	}
 	Emissive_After_Bit_Blit(dest, to.X, to.Y, source, from.X, from.Y, from.Width, from.Height);
-	ShadowPlane_After_Bit_Blit(dest, to.X, to.Y, source, from.X, from.Y, from.Width, from.Height);
 	if (DSurface * const layer = dynamic_cast<DSurface *>(&dest)) {
 		layer->Note_Written(area);
 	}
@@ -308,10 +303,8 @@ static bool Reframe_Map_Surfaces(KeptMapPicture const * kept, int width, int hei
 	composite->Reframe(0, 0, width, height);
 	if (move.X != 0 || move.Y != 0) {
 		Rect const from = kept->From + TacticalRect.Top_Left();
-		for (EmissivePlane * plane : { Emissive_Plane_For(tiles), ShadowPlane_For(tiles) }) {
-			if (plane != NULL) {
-				Emissive_Copy_Rect(*plane, from.X + move.X, from.Y + move.Y, *plane, from.X, from.Y, from.Width, from.Height);
-			}
+		if (EmissivePlane * const plane = Emissive_Plane_For(tiles)) {
+			Emissive_Copy_Rect(*plane, from.X + move.X, from.Y + move.Y, *plane, from.X, from.Y, from.Width, from.Height);
 		}
 	}
 	return(true);
@@ -338,13 +331,11 @@ Surface const * Map_Or_Spare_Tiles(void)
 }
 
 
-// Sets the emissive and shadow masks of a surface to zero, as a plane allocated for it would be.
+// Sets the emissive mask of a surface to zero, as a plane allocated for it would be.
 static void Clear_Masks(Surface const & surface)
 {
-	for (EmissivePlane * plane : { Emissive_Plane_For(&surface), ShadowPlane_For(&surface) }) {
-		if (plane != NULL) {
-			Emissive_Fill_Rect(*plane, 0, 0, plane->Width, plane->Height, 0);
-		}
+	if (EmissivePlane * const plane = Emissive_Plane_For(&surface)) {
+		Emissive_Fill_Rect(*plane, 0, 0, plane->Width, plane->Height, 0);
 	}
 }
 

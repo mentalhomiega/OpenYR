@@ -1,0 +1,62 @@
+; The Graphics tab walks its quality presets in the real page: a fresh settings file reads as Enhanced, each preset sets its
+; rows on OK, a hand change reads as Custom, and the Advanced rows start hidden and open on a click. `AUTOTEST value
+; graphics-quality` is the position of the choice (0 Classic, 1 Enhanced, 2 the third preset, 3 Custom), and each `AUTOTEST
+; setting` line holds the values the covered settings have after the last OK. Classic also turns the modern interface off,
+; which the page reopened afterwards shows by reading as Classic. The shots show the page with Advanced closed and open.
+; Run: scripts/run_autotest.ps1 -Script src-agent30/tests/autotest/graphics-presets-page.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 120 -Filter 'AUTOTEST (value|setting)|no such|Exception'
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-graphics
+ui wait 900
+ui value graphics-quality
+ui shot presets-enhanced-closed
+ui click advanced
+ui wait 500
+ui shot presets-enhanced-open
+ui click advanced
+ui wait 300
+ui set graphics-quality 2
+ui wait 800
+ui value graphics-quality
+ui click footer-ok
+ui wait 1000
+ui setting GpuRender GpuVoxels GpuVoxelSmooth GpuVoxelSubpixel GpuVoxelScale
+ui press Options
+ui wait 1500
+ui click tab-graphics
+ui wait 900
+ui value graphics-quality
+ui click advanced
+ui wait 500
+ui shot presets-smooth-open
+ui click gpu-voxel-smooth
+ui wait 500
+ui value graphics-quality
+ui shot presets-custom-open
+ui click footer-ok
+ui wait 1000
+ui setting GpuRender GpuVoxels GpuVoxelSmooth GpuVoxelSubpixel GpuVoxelScale
+ui press Options
+ui wait 1500
+ui click tab-graphics
+ui wait 900
+ui value graphics-quality
+ui set graphics-quality 0
+ui wait 800
+ui value graphics-quality
+ui click footer-ok
+ui wait 1000
+ui setting GpuRender GpuVoxels GpuVoxelSmooth GpuVoxelSubpixel GpuVoxelScale
+ui press Options
+ui wait 1500
+ui click tab-graphics
+ui wait 900
+ui value graphics-quality
+ui set graphics-quality 1
+ui wait 800
+ui click footer-ok
+ui wait 1000
+ui setting GpuRender GpuVoxels GpuVoxelSmooth GpuVoxelSubpixel GpuVoxelScale
+ui quit

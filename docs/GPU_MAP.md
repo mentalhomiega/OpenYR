@@ -11,7 +11,7 @@ page of the settings, to draw in software everywhere.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow), `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), `vs_mapclear.sc` with `fs_mapclear.sc` (emptying depth and stencil in the middle of a pass), and `vs_voxelscene.sc` and `vs_voxelface.sc` with `fs_voxelscene.sc` (voxel parts drawn straight into the pass as lines, cube outlines and faces, [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)), each compiled into a `.bin.h` header. `mapcommon.sh`, `voxelwalk.sh` and `voxelshade.sh` hold the code those shaders share. |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapplane.sc` (the emissive plane of a pass that listed its writes), `fs_mapmask.sc` (the emissive mask of a pass with GPU voxels), `vs_mapclear.sc` with `fs_mapclear.sc` (emptying depth and stencil in the middle of a pass), and `vs_voxelscene.sc` and `vs_voxelface.sc` with `fs_voxelscene.sc` (voxel parts drawn straight into the pass as lines, cube outlines and faces, [GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)), each compiled into a `.bin.h` header. `mapcommon.sh`, `voxelwalk.sh` and `voxelshade.sh` hold the code those shaders share. |
 | Voxel renderer | `code/gpumapvoxel.cpp` | Draws the voxel parts of a pass straight into it, at the place of their blits ([GPU_DIRECT_VOXELS.md](GPU_DIRECT_VOXELS.md)). |
 
 Voxel objects that are blitted straight into the map view can be drawn on the GPU from their voxels with
@@ -21,11 +21,7 @@ their own thread; [RENDER_THREAD.md](RENDER_THREAD.md) describes it.
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
 the alpha buffer, then draws the objects over it. When the map view is drawn more than once before
-a frame is presented, only the last pass goes to the GPU. With `SoftShadows`, a shadow drawn into the
-tile layer marks a mask kept beside the layer instead of darkening its pixels, and the GPU pass
-darkens the ground through that mask. With `WaterRipples`, the same mask marks the pixels of water
-tiles that no later tile, extra tile image or opaque draw in the layer covers, and the GPU pass
-ripples the ground only there, before it draws the objects. A shadow on the water ripples with it.
+a frame is presented, only the last pass goes to the GPU.
 
 After 30 passes in a row that the GPU drew, the tile layer is no longer copied into the frame; the
 GPU reads it from the tile layer directly. On Windows the GPU keeps a texture of the tile layer's
@@ -62,7 +58,7 @@ outside every named rectangle goes up as whole rows, so a draw that names nothin
 unless it shares a page of 4,096 bytes with a named rectangle. More than 512 rectangles named between two
 passes count as the whole buffer.
 
-The emissive mask under the map view goes to the GPU with `Bloom`, and with `GpuVoxels` while the mask is kept
+The emissive mask under the map view goes to the GPU with `GpuVoxels` while the mask is kept
 ([EMISSIVE_MASK.md](EMISSIVE_MASK.md)). A pass compares it with the copy the GPU holds in tiles of 32 by 16 pixels
 and sends only the tiles that changed.
 
@@ -77,12 +73,13 @@ direction under the check.
 
 ## Textures
 
-A pass makes a texture when it first needs it. The scene target, which the presenter shows, and the post, glow and emissive
-mask targets have the size of the pass's area, with a depth attachment of the same size when voxel parts are drawn, because
+A pass makes a texture when it first needs it. The scene target, which the presenter shows, and the emissive
+mask target have the size of the pass's area, with a depth attachment of the same size when voxel parts are drawn, because
 the presenter finds a pixel by its texture coordinate and a larger texture would round some pixels to other texels. They are
-made again when the area changes, so a zoom step makes the scene target of its size. The two soft shadow masks are read by
-pixel position, so they are made for the largest area so far or the view `GpuMap_Reserve` names, which the map surfaces
-([PERFORMANCE.md](PERFORMANCE.md#zoom-changes)) set to the largest view the zoom limit allows, and a pass uses their corner.
+made again when the area changes, so a zoom step makes the scene target of its size. The shadow mask of
+`ShadowStacking=no` is read by pixel position, so it is made for the largest area so far or the view `GpuMap_Reserve`
+names, which the map surfaces ([PERFORMANCE.md](PERFORMANCE.md#zoom-changes)) set to the largest view the zoom limit
+allows, and a pass uses its corner.
 The readback and the snapshot exist only for `gpucheck` and for sonic waves and rippled cloaks. The `gpumemory` autotest step
 logs what is held and how many textures have been made ([AUTOTEST.md](AUTOTEST.md)).
 
@@ -116,33 +113,25 @@ the deferral with a full redraw. `OPENYR_NO_FADE_DEFER=1` in the environment tur
 
 ## Settings
 
-All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
-Graphics page of the settings set `GpuRender`, `SoftShadows`, `Shockwaves`, `Bloom` (the **Glow**
-switch), `WaterRipples`, `CloudShadows` and `Weather` when the page is accepted. The **GPU voxels**
-group sets `GpuVoxels`, `GpuVoxelSmooth` and `GpuVoxelScale`. The game writes every key in the table
-back to `RA2MD.INI`. The effect switches and the voxel rows are greyed out until GPU drawing is
-ticked, and GPU drawing is greyed out without the modern interface. Ticking **Weather** sets
-`Weather=Map` unless `RA2MD.INI` already chose `Rain` or `Snow`, and clearing it sets `None`.
-The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTINGS.md) describes it.
-`SoftShadowRadius`, `BloomStrength`, `WaterRippleStrength`, `CloudShadowStrength` and
-`WeatherStrength` have no switch.
+All keys are in the `[Video]` section and are read at startup. The Graphics page of the settings has a
+**Preset** choice (Classic, Enhanced, Smooth or Custom) that sets several of these keys and the interface style
+together, and an **Advanced** fold, closed when the page opens, with one row for each key. The **Graphics card** group
+sets `GpuRender` when the page is accepted, and the **Vehicles and aircraft** group sets `GpuVoxels`, `GpuVoxelSmooth`,
+`GpuVoxelSubpixel` and `GpuVoxelScale`. The game writes every key in the table back to `RA2MD.INI`. The vehicle rows
+are greyed out until **Draw with the graphics card** is ticked, and it is greyed out without the modern interface.
+[SETTINGS.md](SETTINGS.md#folds-and-presets) lists what each preset sets. The rows and keys are declared in
+`code/optionsettings.cpp`; [SETTINGS.md](SETTINGS.md) describes it.
+
+Earlier builds had GPU picture effects: `SoftShadows`, `SoftShadowRadius`, `Shockwaves`, `Bloom`, `BloomStrength`,
+`WaterRipples`, `WaterRippleStrength`, `CloudShadows`, `CloudShadowStrength`, `Weather` and `WeatherStrength`. They
+are gone, and a settings file that still holds them loads as before: the game ignores those keys and leaves their
+lines in the file.
 
 | Key | Default | Effect |
 |---|---|---|
-| `GpuRender` | `yes` | Draws the object pass on the GPU. A pass holding a draw the recorder does not support is drawn in software instead and shows no soft shadows or shockwaves. |
-| `SoftShadows` | `no` | With `GpuRender`, the shadows of objects drawn in the pass and the shadows of buildings and trees in the tile layer go into one mask that is blurred and darkens the ground once, so overlapping shadows do not darken twice. A pass drawn in software shows the same shadows hard. Changing the switch redraws the whole tile layer. |
-| `SoftShadowRadius` | `3` | The blur radius of `SoftShadows` in pixels, from 1 to 16. |
-| `ShadowStacking` | `yes` | `no` puts the shadows of the pass into the same mask without the blur, so overlapping shadows darken the ground once with hard edges; it also applies in software ([GPU_VOXELS.md](GPU_VOXELS.md#stacked-shadows)). |
-| `Shockwaves` | `no` | With `GpuRender`, each weapon impact that shows a blast animation sends a ring across the ground that bends the picture under it for 40 game frames. Up to 16 rings run at once; a newer one replaces the oldest. |
-| `Bloom` | `no` | With `GpuRender`, the parts of the map marked in the emissive mask, such as lasers, electric bolts, lamps and fire, glow onto the picture around them, about 24 pixels out. It turns the emissive mask on, which [EMISSIVE_MASK.md](EMISSIVE_MASK.md) describes, so an object or animation glows only when the mask marks it. The mask does not change HDR highlights: `HDRHighlights=Classic` still shows classic highlights. A pass drawn in software has no glow. |
-| `BloomStrength` | `100` | The brightness of the `Bloom` glow in percent, from 1 to 400. |
-| `WaterRipples` | `no` | With `GpuRender`, the water of the map ripples: two slow waves shift the ground under the water by up to 2.4 pixels sideways and 1.2 pixels up or down, and lighten or darken it by up to 10%, and sunlight glints in drifting patches along the crests. Ships, units and effects on the water are drawn after the ripple and do not move with it. Shore tiles that are part land do not ripple, and a pass drawn in software shows still water. Changing the switch redraws the whole tile layer. |
-| `WaterRippleStrength` | `100` | The size of the `WaterRipples` shift and shading and the brightness of its glints, in percent, from 1 to 400. |
-| `CloudShadows` | `no` | With `GpuRender`, the shadows of clouds a few hundred pixels across drift slowly over the map, about 10 pixels a second, and darken everything the pass draws under them, units included, by up to 30%. They cover about a third of the map and stay fixed to the ground as the view scrolls. A pass drawn in software shows no clouds. |
-| `CloudShadowStrength` | `100` | How much a cloud darkens the map in percent, from 1 to 400; 400 darkens it completely. |
-| `Weather` | `None` | With `GpuRender`, `Map` makes rain fall over the whole map while a lightning storm rages and otherwise makes snow fall on maps whose theater sets `IsArctic=yes`, which in Yuri's Revenge is the snow theater; other maps show no weather. `Snow` and `Rain` fall on every map; rain also dims the picture, by 6% at the usual amount and at most 12%. Under rain, each lightning storm bolt brightens the picture for 8 game frames, at most once every 45 game frames. The flakes and drops are drawn over everything in the pass, fall in two or three layers at different speeds, and move with the ground as the view scrolls. A pass drawn in software shows no weather. |
-| `WeatherStrength` | `100` | How much snow or rain falls, in percent, from 1 to 400. |
-| `GpuVoxels` | `no` | With `GpuRender`, vehicles, aircraft, their shadows, voxel animations and bullets are drawn from their voxels on the GPU, and vehicles and aircraft with no turret feed their highlights to `Bloom` and HDR Enhanced. The Graphics page sets it. See [GPU_VOXELS.md](GPU_VOXELS.md). |
+| `GpuRender` | `yes` | Draws the object pass on the GPU. A pass holding a draw the recorder does not support is drawn in software instead. |
+| `ShadowStacking` | `yes` | `no` puts the shadows of the pass into one mask, so overlapping shadows darken the ground once; it also applies in software ([GPU_VOXELS.md](GPU_VOXELS.md#stacked-shadows)). |
+| `GpuVoxels` | `no` | With `GpuRender`, vehicles, aircraft, their shadows, voxel animations and bullets are drawn from their voxels on the GPU, and vehicles and aircraft with no turret feed their highlights to HDR Enhanced. The Graphics page sets it. See [GPU_VOXELS.md](GPU_VOXELS.md). |
 | `GpuVoxelSmooth` | `no` | With `GpuVoxels`, an object the GPU draws from its voxels turns to its exact facing instead of the nearest of 32. See [GPU_VOXELS.md](GPU_VOXELS.md). |
 | `GpuVoxelScale` | `0` | With `GpuVoxels`, 1 to 4: draws the map pass at that many times the map's pixels, with each voxel as its cube, so voxel objects stay sharp in a zoomed map view. 0, shown as **Auto**, takes the scale from the zoom: the screen pixels a map pixel covers, rounded to the nearest whole number from 1 to 4. A very large map view draws at a lower scale (Limits). See [GPU_VOXELS.md](GPU_VOXELS.md). |
 
@@ -182,8 +171,7 @@ The rows and keys are declared in `code/optionsettings.cpp`; [SETTINGS.md](SETTI
   picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 254 pictures per second
   with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 175 in
-  software. With `SoftShadows` it drew 243, with `Bloom` 255, with `WaterRipples` 250, with
-  `CloudShadows` and `Weather=Snow` 244, and with every effect on 230; no effect added more than half a millisecond of processor time to a picture. Each pass uploads only
+  software. Each pass uploads only
   the parts of the base picture, the depth buffer and the alpha buffer that changed since the last
   drawn pass ([Uploads](#uploads)). Outside Windows the depth and alpha buffers cannot list the pages written to them,
   so those two go up whole every pass. With the frame rate uncapped (`FrameRateLimit=0`, `VSync=no`)

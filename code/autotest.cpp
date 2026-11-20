@@ -161,7 +161,6 @@
 #include "mapgen.h"
 #include "strutil.h"
 #include "emissive.h"
-#include "shadowplane.h"
 #include "surface.h"
 #include "dsurface.h"
 #include "truecolour.h"
@@ -7362,16 +7361,14 @@ static void Log_Mask(char const * name, EmissivePlane const * plane)
 }
 
 
-// spareplanes: while the zoom is 1, logs the emissive and shadow masks bound to the spare map surfaces that wait for the
-// next zoom out, which must be bound and zero so that the first step allocates and clears none.
+// spareplanes: while the zoom is 1, logs the emissive masks bound to the spare map surfaces that wait for the next zoom
+// out, which must be bound and zero so that the first step allocates and clears none.
 static void Spareplanes_Step(StepType const &)
 {
 	Surface const * const composite = Map_Or_Spare_Composite();
 	Surface const * const tiles = Map_Or_Spare_Tiles();
 	Log_Mask("composite emissive", Emissive_Plane_For(composite));
-	Log_Mask("composite shadow", ShadowPlane_For(composite));
 	Log_Mask("tiles emissive", Emissive_Plane_For(tiles));
-	Log_Mask("tiles shadow", ShadowPlane_For(tiles));
 }
 
 

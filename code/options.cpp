@@ -598,14 +598,13 @@ static char const * Scale_Mode_Name(int mode)
 
 
 /// <summary>
-/// Turns the emissive masks on for Enhanced highlights while HDR output is on, for GPU bloom, and for
-/// the debug view.
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, and for the debug view.
 /// The masks follow the renderer, so this is called again once the renderer has started.
 /// </summary>
 void Apply_HDR_Highlights(void)
 {
 	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
-	Emissive_Set_Enabled(enhanced || Emissive_Debug_View() || (Options.GpuRender && Options.Bloom));
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
 }
 
 

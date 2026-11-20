@@ -86,11 +86,11 @@ and each copy with the values it copies; a copy of one value throughout is
 listed as a fill. The list keeps the order of the writes, so it gives the same
 mask as the writes made one by one:
 
-- When the pass is drawn on the GPU and a GPU step reads the mask (the voxel
-  mask with `GpuVoxels`, or `Bloom`), the GPU builds the mask from the mask as
-  the pass found it and the list, in order, with the shapes' depth test
-  (`fs_mapplane.sc`). The voxel mask and the glow read the built mask where they
-  read the processor's mask before, and get the same values.
+- When the pass is drawn on the GPU and the voxel mask of `GpuVoxels` reads the
+  mask, the GPU builds the mask from the mask as the pass found it and the list,
+  in order, with the shapes' depth test (`fs_mapplane.sc`). The voxel mask reads
+  the built mask where it read the processor's mask before, and gets the same
+  values.
 - When the GPU scene target does not have the pass's size, or was made less
   than two frames before, the processor makes the listed writes and the GPU
   reads its mask as before. With `RenderThread=yes`, a mask the GPU built in

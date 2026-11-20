@@ -12,7 +12,6 @@
 #include "ionblast.h"
 #include "autotest.h"
 #include "dbgprint.h"
-#include "gpudraw.h"
 
 #include "_rect.h"
 #include "_rules.h"
@@ -113,13 +112,6 @@ void IonBlastClass::Ripple(Coord const & coord, int frames)
 
 	AUTOTEST_LOG("ripple frame %d at %d,%d for %d frames\n", Frame, coord.X, coord.Y, frames);
 
-	// While the GPU draws the map view its own ring stands in for the wave: the software wave would take every
-	// frame it shows away from the GPU. The ring travels as far as the wave gets in that many frames.
-	if (GpuDraw_Steady()) {
-		int const RING_STRENGTH = 80;
-		GpuDraw_Add_Shockwave(coord, RING_STRENGTH, (int)(WaveReach * std::min(frames, (int)WAVE_FRAMES) / WAVE_FRAMES));
-		return;
-	}
 	new IonBlastClass(coord, true, frames);
 }
 

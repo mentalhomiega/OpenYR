@@ -56,7 +56,6 @@
 #include "gpudraw.h"
 #include "gpumap.h"
 #include "misc.h"
-#include "shadowplane.h"
 #include "video.h"
 #include "writewatch.h"
 
@@ -328,7 +327,6 @@ DSurface::~DSurface(void)
 {
 	// The emissive plane is keyed by this address, which a later surface may be allocated at.
 	Emissive_Forget(this);
-	ShadowPlane_Forget(this);
 
 	/*
 	 * GDI will not free a bitmap that is still selected into a context, so the one the
@@ -774,7 +772,7 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 	if (GDIBuffer == NULL || !fillrect.Is_Valid()) return(false);
 
 	Rect const area = Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect()));
-	// A fill the GPU draws still clears the glow and shadow planes under it.
+	// A fill the GPU draws still clears the emissive plane under it.
 	bool result = GpuDraw_Fill(*this, area, (unsigned short)color) || BASECLASS::Fill_Rect(cliprect, fillrect, color);
 
 	if (result) {

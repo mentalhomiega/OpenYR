@@ -154,7 +154,6 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
-#include "shadowplane.h"
 #include "shapeset.h"
 #include "sun.h"
 #include "swizzle.h"
@@ -2991,7 +2990,7 @@ bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect c
 	if (IsSinking || SinkingYOffset > 0 || Is_Warp_Fading() || Is_Composite_Fudged() || Visual_Character() != VISUAL_NORMAL || Mirage_Shimmer_Flags() != 0) {
 		return(false);
 	}
-	if ((Emissive_Is_Enabled() && Emissive_Draw_Strength != 0) || ShadowPlane_Is_Enabled() || entry.Width == 0 || entry.Height == 0) {
+	if ((Emissive_Is_Enabled() && Emissive_Draw_Strength != 0) || entry.Width == 0 || entry.Height == 0) {
 		return(false);
 	}
 

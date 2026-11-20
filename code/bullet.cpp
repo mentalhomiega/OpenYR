@@ -1635,10 +1635,6 @@ void BulletClass::Detonate(Coord const & coord)
 		Combat_Lighting(blast_coord, Strength, Warhead, true, disabled);
 	}
 
-	if (anim != NULL && !nullified && Options.Shockwaves) {
-		GpuDraw_Add_Shockwave(blast_coord, Strength);
-	}
-
 	if (anim != NULL) {
 		AnimClass * aptr = new AnimClass(anim, blast_coord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(blast_coord));
 		/*
