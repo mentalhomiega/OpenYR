@@ -14,31 +14,31 @@
 52 own SMIN 80 43
 300 enter HTNK 82 45
 301 enter SMIN 82 45
-400 where SAPC
-401 where HTNK
-402 where SMIN
-420 unload 82 45
-500 where SAPC
-501 where HTNK
-502 where SMIN
-520 kill HTNK 1
-521 kill SMIN 1
-530 kill SAPC 1
-540 own SAPC 82 45
-541 own HTNK 80 44
-542 own SMIN 80 43
-700 enter HTNK 82 45
-701 enter SMIN 82 45
-750 select SAPC
-751 order SAPC 88 45
-900 where SAPC
-901 where HTNK
-902 where SMIN
-920 unload 88 45
-1100 where SAPC
-1101 where HTNK
-1102 where SMIN
-1300 where SAPC
-1301 where HTNK
-1302 where SMIN
-1400 quit
+460 where SAPC
+461 where HTNK
+462 where SMIN
+480 unload 82 45
+560 where SAPC
+561 where HTNK
+562 where SMIN
+580 kill HTNK 1
+581 kill SMIN 1
+590 kill SAPC 1
+600 own SAPC 82 45
+601 own HTNK 80 44
+602 own SMIN 80 43
+760 enter HTNK 82 45
+761 enter SMIN 82 45
+810 select SAPC
+811 order SAPC 88 45
+960 where SAPC
+961 where HTNK
+962 where SMIN
+980 unload 88 45
+1160 where SAPC
+1161 where HTNK
+1162 where SMIN
+1360 where SAPC
+1361 where HTNK
+1362 where SMIN
+1460 quit

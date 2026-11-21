@@ -5,7 +5,7 @@
 ; endless AttachEffect playing RING1, and gives RING1 Damage=2 with the warhead TestDustWH (AffectsAllies=no, CellSpread 3).
 ; A civilian truck (TRUCKA) of the computer stands next to the tank.
 ; Expected: the tank keeps its full strength of 400 at every probe, and the truck, which drives off, is listed at 161, 93
-; and 27 at frames 100, 200 and 300. Before the fix the animation dealt FlameDamage2 (Fire2) with no owner, which hits
+; and 93 at frames 100, 200 and 300 (it drives out of the dust field after frame 200). Before the fix the animation dealt FlameDamage2 (Fire2) with no owner, which hits
 ; the tank as well.
 ; This happens only in Ares rules: the mod tests/autotest/ares-rules declares an armor type; anim-damage-stock.txt checks
 ; the stock game without it.

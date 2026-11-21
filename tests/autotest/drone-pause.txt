@@ -1,11 +1,11 @@
 ; Terror Drone pause after a kill: a player's Terror Drone (DRON) infects a computer Rhino (HTNK) three cells east at frame 160.
-; Its bites (DroneJump, ROF 60, 50 damage) take the Rhino from 400 strength to 0. The last bite lands on frame 609, and the Rhino is gone by frame 610.
-; The drone comes out on 62,62 on frame 610. An order to move it (order DRON 60 66) is given on frame 611, then again on 700, 760, 788, 790 and 800.
+; Its bites (DroneJump, ROF 60, 50 damage) take the Rhino from 400 strength to 0. The last bite lands on frame 611, and the Rhino is gone by frame 612.
+; The drone comes out on 61,62 on frame 612. An order to move it (order DRON 60 66) is given on frame 613, then again on 702, 762, 790, 792 and 802.
 ; gamemd's victim-death exit (ParasiteClass::PointerExpired, 0x62A260) does not write the parasite's ParalysisTimer. Only ParasiteClass::ExitUnit (0x62A4A0)
-; sets it, to ROF x 3 frames, so a drone released by its victim's death takes the frame-611 order.
-; Before the fix: where DRON shows paralysis 180 on frame 610, the order on 611 is dropped (mission Guard), paralysis counts down to 0 by frame 790,
-; and the order on 790 starts the move (mission Move on frame 792).
-; After the fix: paralysis is 0 throughout, the order on 611 starts the move (mission Move on frame 612), and the drone reaches 60,66 by frame 780.
+; sets it, to ROF x 3 frames, so a drone released by its victim's death takes the frame-613 order.
+; Before the fix: where DRON shows paralysis 180 on frame 612, the order on 613 is dropped (mission Guard), paralysis counts down to 0 by frame 792,
+; and the order on 792 starts the move (mission Move on frame 794).
+; After the fix: paralysis is 0 throughout, the order on 613 starts the move (mission Move on frame 614), and the drone reaches 60,66 by frame 660.
 ; Run: scripts/run_autotest.ps1 -Build agent21 -Script E:/Claude ra2 decomp/src-agent21/tests/autotest/drone-pause.txt -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST|Exception"
 1 view 62 62
 2 zoom 2.5
@@ -41,12 +41,8 @@
 540 where HTNK
 570 where DRON
 570 where HTNK
-600 where DRON
-600 where HTNK
-604 where DRON
-604 where HTNK
-605 where DRON
-605 where HTNK
+602 where DRON
+602 where HTNK
 606 where DRON
 606 where HTNK
 607 where DRON
@@ -59,18 +55,21 @@
 610 where HTNK
 611 where DRON
 611 where HTNK
-611 order DRON 60 66
 612 where DRON
 612 where HTNK
 613 where DRON
 613 where HTNK
+613 order DRON 60 66
 614 where DRON
 614 where HTNK
 615 where DRON
 615 where HTNK
 616 where DRON
 616 where HTNK
+617 where DRON
+617 where HTNK
 618 where DRON
+618 where HTNK
 620 where DRON
 622 where DRON
 624 where DRON
@@ -112,8 +111,8 @@
 696 where DRON
 698 where DRON
 700 where DRON
-700 order DRON 60 66
 702 where DRON
+702 order DRON 60 66
 704 where DRON
 706 where DRON
 708 where DRON
@@ -143,8 +142,8 @@
 756 where DRON
 758 where DRON
 760 where DRON
-760 order DRON 60 66
 762 where DRON
+762 order DRON 60 66
 764 where DRON
 766 where DRON
 768 where DRON
@@ -158,13 +157,14 @@
 784 where DRON
 786 where DRON
 788 where DRON
-788 order DRON 60 66
 790 where DRON
 790 order DRON 60 66
 792 where DRON
+792 order DRON 60 66
 794 where DRON
 796 where DRON
 798 where DRON
 800 where DRON
-800 order DRON 60 66
-802 quit
+802 where DRON
+802 order DRON 60 66
+804 quit

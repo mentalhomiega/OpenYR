@@ -2,13 +2,14 @@
 ; the node the house builds next, as gamemd does (BuildingClass::KickOutUnit, 0x443C60, with the node choice at 0x42EB50).
 ; The mod in tests/autotest/ai-hostless-upgrade plans TESTUPG, a power upgrade for the Allied barracks, and holds a lost
 ; barracks back for 100000 frames, so the barracks node stays unbuilt ahead of the upgrade node. The script destroys the
-; barracks after the upgrade is on it. Expected: BUILDTRACE shows "finds no place for TESTUPG" once, at frame 5421, then
-; "drops TESTUPG node 8 after 1 failed searches", and the computer lays its walls (aisummary at frame 8000: next GAWALL of 52
-; nodes). When the drop compared against the first unbuilt node instead, the upgrade search failed 47 times by frame 8000
-; and no wall was started.
+; barracks after the upgrade is on it. Expected: BUILDTRACE shows "finds no place for TESTUPG" once, at frame 8430, then
+; "drops TESTUPG node 26 after 1 failed searches", and the computer goes on with its plan (aisummary at frame 11000: 10 structures,
+; next GAPILE of 52 nodes). The computer lays its ring of walls before it reaches the upgrade, so the upgrade is placed at frame 8102
+; and the barracks is destroyed at frame 8200. When the drop compared against the first unbuilt node instead, the upgrade search failed
+; 47 times by frame 8000 and no wall was started (observed on 2026-11-12, when the walls came later in the plan).
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/ai-hostless-upgrade.txt -Mods "E:\Claude ra2 decomp\src-agent31\tests\autotest\ai-hostless-upgrade" -AICountries 0 -Uncapped -Seconds 400 -Filter "BUILDTRACE.*(TESTUPG|drops)|kill|aisummary|Exception"
 10 buildtrace 1
 30 command CenterBase
-5200 kill GAPILE
-8000 aisummary
-8001 quit
+8200 kill GAPILE
+11000 aisummary
+11001 quit

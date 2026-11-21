@@ -10,3 +10,5 @@ ui wait 3000
 ui click cancel
 ui wait 1500
 ui quit
+; Without -Menus (as regress runs it) no menu step runs and a game starts; this step ends that game at once.
+30 quit
