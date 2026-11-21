@@ -736,7 +736,10 @@ RadioMessageType BuildingClass::Receive_Docking(RadioClass * from, intptr_t & pa
 	if (Transmit_Message(RADIO_NEED_TO_MOVE, from) == RADIO_ROGER || needs_to_move) {
 		param = (intptr_t)this;
 		if (Class->IsDockUnload || Class->IsWeeder) {
-			param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
+			// The harvester stops at the first column its refinery lets it drive on, in the middle row. For the stock
+			// 4x3 refineries that is cell 3,1 of the foundation, one cell short of the dock coordinate (cell 2,1), which is where
+			// gamemd's harvesters were measured to start unloading.
+			param = (intptr_t)&Map[Get_Cell() + (Class->IsWeeder ? Cell(2, 1) : Cell(Class->Width() - 1, Class->Height(0) / 2))];
 
 			/*
 			**	Tell the harvester to move to the docking pad of the building.
