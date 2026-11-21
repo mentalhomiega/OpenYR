@@ -1,8 +1,8 @@
 ; Terror Drone bite rock: a player's Terror Drone (DRON) strikes a computer Rhino (HTNK) three cells east at frame 160.
 ; Each bite (DroneJump ROF 60, 50 damage) rolls the Rhino sideways for 16 to 22 frames, to a side the synchronized random number generator picks.
 ; The rock lines give the Rhino's sideways and forwards tilt in radians, the tilt per frame still to come, its facing, strength and parasite flag, every 2 frames.
-; Expected in the 800x600 run on XMP29U2.MAP: the first kick at frame 190 is about -0.0171 rad per frame with a sideways peak near -0.081 rad by frame 200.
-; Screenshots at frames 186, 192 and 200 (first bite) and 370, 376 and 382 (fourth bite, rolled right) show the tilt on the voxel.
+; Expected in the 800x600 run on XMP29U2.MAP: the first kick at frame 192 is about -0.0171 rad per frame with a sideways peak near -0.081 rad by frame 202.
+; Screenshots at frames 188, 194 and 202 (first bite) and 372, 378 and 384 (fourth bite, rolled right) show the tilt on the voxel.
 ; Run: scripts/run_autotest.ps1 -Script <this file> -Build agent11 -Width 800 -Height 600 -Seconds 150 -ShotDir <dir> -Filter "AUTOTEST   rock|AUTOTEST   grapple|AUTOTEST spawn|AUTOTEST strike|Exception"
 1 view 62 62
 2 zoom 2.5
@@ -30,18 +30,18 @@
 182 rock HTNK
 184 rock HTNK
 186 rock HTNK
-186 command ScreenCapture
 188 rock HTNK
+188 command ScreenCapture
 190 rock HTNK
 192 rock HTNK
-192 command ScreenCapture
 194 rock HTNK
+194 command ScreenCapture
 196 rock HTNK
 198 rock HTNK
 200 rock HTNK
-200 command ScreenCapture
 200 where DRON
 202 rock HTNK
+202 command ScreenCapture
 204 rock HTNK
 206 rock HTNK
 208 rock HTNK
@@ -134,17 +134,17 @@
 366 rock HTNK
 368 rock HTNK
 370 rock HTNK
-370 command ScreenCapture
 372 rock HTNK
+372 command ScreenCapture
 374 rock HTNK
 376 rock HTNK
-376 command ScreenCapture
 378 rock HTNK
+378 command ScreenCapture
 380 rock HTNK
 380 where DRON
 382 rock HTNK
-382 command ScreenCapture
 384 rock HTNK
+384 command ScreenCapture
 386 rock HTNK
 388 rock HTNK
 390 rock HTNK

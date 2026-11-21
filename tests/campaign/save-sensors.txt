@@ -2,7 +2,7 @@
 ; loaded at frame 200 (the load crashed in FootClass::Serialize before the radius was restored after loading).
 ; Expect the load to finish, the sensors lines to show 44 units laying coverage with a radius again, the
 ; coverage to follow the submarines once they move at frame 300, and the cells sensed for the player to
-; match a run without the save and load: 199 at frame 100, 496 at 260, 307 at 500, 285 at 700.
+; match a run without the save and load: 199 at frame 100, 480 at 260, 390 at 500, 229 at 700 (as recorded on 2026-11-21).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/save-sensors.txt -Campaign -Map SOV05UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sensor|sensors|game over)|SAVING GAME|LOADING|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 ui briefing

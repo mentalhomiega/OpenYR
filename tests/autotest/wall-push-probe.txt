@@ -1,7 +1,7 @@
 ; Armed vehicles ordered at a neutral GAPILL behind a vertical wall segment of seven cells at x 63, the vehicle at x 56 and the target at x 66.
 ; The walls leave both ends open. The ring tests in wall-breakers.txt cover a target walled in on all sides.
 ;   row 40: a Rhino 120mm (AP, Wall=yes) against GAWALL, a connecting wall (FootClass::ApproachTarget, 0x4D5690; TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
-;           Expected: the Rhino stops at 61 40, its shells strike the wall, and the cells at 63 40 and 63 41 are clear by frame 1100.
+;           Expected: the Rhino stops at 61 40, its shells strike the wall, and the cell at 63 40 is clear by frame 1100 (63 39 and 63 41 keep their walls since the shell flight change of 2026-11-20).
 ;   row 52: a Grizzly 105mm against GASAND, which ConnectsToOverlay (0x480510) does not count as a wall (only overlay indices 2, 26 and 243 count).
 ;           Expected: the Grizzly drives to 64 48, round the end of the segment, and fires from there; the sandbags stay.
 ;   row 76: an Apocalypse against NAWALL, a connecting wall. Expected: it stops at 61 76 and shoots the wall away.

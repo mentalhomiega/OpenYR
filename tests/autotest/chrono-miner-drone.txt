@@ -1,10 +1,10 @@
 ; Chrono Miner (CMIN) with a Terror Drone (DRON) inside. An enemy drone is placed next to the miner while it harvests;
 ; it infects the miner (ParasiteEatingMe on the miner, ParasiteImUsing on the drone).
-; When the miner's load is full it goes back to the refinery by teleport (TeleportLocomotionClass::Start_Warp, "warp order" at frame 744).
+; When the miner's load is full it goes back to the refinery by teleport (TeleportLocomotionClass::Start_Warp, "warp order" at frame 771).
 ; gamemd releases the parasite in the jump (ParasiteClass::ExitUnit, 0x62A4A0, called at 0x7195CF in the locomotor's Process, 0x7192F0).
 ; The drone is set down on the nearest cell it can enter, because the miner still occupies its own cell at that moment.
 ; Before the fix the drone stays limbo inside the miner (where DRON limbo 1, dump "parasite DRON inside").
-; After the fix the drone is on the map with limbo 0 and mission Guard, and the cell lines at frame 755 show it on 61,36.
+; After the fix the drone is on the map with limbo 0 and mission Guard, and the where lines from frame 795 show it at 62,35.
 ; Run: scripts/run_autotest.ps1 -Build agent18 -Script E:/Claude ra2 decomp/src-agent18/tests/autotest/chrono-miner-drone.txt -Width 800 -Height 600 -Seconds 200 -ShotDir <dir> -Filter "AUTOTEST|Exception"
 1 reveal
 2 view 60 38
@@ -84,27 +84,27 @@
 700 where DRON
 720 where CMIN
 720 where DRON
-730 command ScreenCapture
-740 where CMIN
-740 where DRON
-750 command ScreenCapture
-755 cell 62 34
-755 cell 61 36
-760 where CMIN
-760 where DRON
-780 where CMIN
-780 where DRON
-800 where CMIN
-800 where DRON
-800 command ScreenCapture
-820 where CMIN
-820 where DRON
-840 where CMIN
-840 where DRON
-860 where CMIN
-860 where DRON
-880 where CMIN
-880 where DRON
-900 where CMIN
-900 where DRON
-900 quit
+765 command ScreenCapture
+775 where CMIN
+775 where DRON
+785 command ScreenCapture
+790 cell 62 34
+790 cell 61 36
+795 where CMIN
+795 where DRON
+815 where CMIN
+815 where DRON
+835 where CMIN
+835 where DRON
+835 command ScreenCapture
+855 where CMIN
+855 where DRON
+875 where CMIN
+875 where DRON
+895 where CMIN
+895 where DRON
+915 where CMIN
+915 where DRON
+935 where CMIN
+935 where DRON
+935 quit
