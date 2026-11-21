@@ -313,6 +313,10 @@ int SampleInterval = 0;
 // The frames between the sampleprod step's logs, 0 when it is off.
 int ProductionSampleInterval = 0;
 
+// The frames between the sampleharvest step's logs, 0 when it is off, and the block of cells whose tiberium it counts.
+int HarvestSampleInterval = 0;
+Rect HarvestSampleBlock;
+
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
 
@@ -1178,6 +1182,52 @@ static void Log_Production(void)
 static void Sampleprod_Step(StepType const & step)
 {
 	ProductionSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs each harvester's load (the bails it carries) and the tiberium in the sampled block of cells: how many cells
+/// hold any, how many bails and what they are worth. The gamemd comparison harness reads the same values from
+/// Yuri's Revenge, so the fields and their units must stay as they are.
+/// </summary>
+static void Log_Harvest(void)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {return(!techno->IsInLimbo && techno->What_Am_I() == RTTI_UNIT && static_cast<UnitClass *>(techno)->Class->IsToHarvest);},
+		[&](TechnoClass * techno) {
+			DebugString("AUTOTEST harvload frame %d id %d type %s load %d\n", Frame, techno->ID, techno->TClass->Name(), techno->Storage.Get_Total_Amount());
+		});
+	int cells = 0, bails = 0, value = 0;
+	std::string list;
+	for (int y = HarvestSampleBlock.Y; y < HarvestSampleBlock.Y + HarvestSampleBlock.Height; y++) {
+		for (int x = HarvestSampleBlock.X; x < HarvestSampleBlock.X + HarvestSampleBlock.Width; x++) {
+			Cell const cell(x, y);
+			if (!Map.Is_Valid(cell) || Map[cell].Tiberium_Value() <= 0) continue;
+			cells++;
+			bails += Map[cell].OverlayData + 1;
+			value += Map[cell].Tiberium_Value();
+			list += " " + std::to_string(x) + "," + std::to_string(y) + ":" + std::to_string(Map[cell].OverlayData + 1);
+		}
+	}
+	// The first sample also lists the cells, so a field can be checked cell by cell.
+	static int listed_frame = -1;
+	if (listed_frame < 0) {
+		listed_frame = Frame;
+		DebugString("AUTOTEST harvcells frame %d%s\n", Frame, list.c_str());
+	}
+	DebugString("AUTOTEST harvore frame %d cells %d bails %d value %d\n", Frame, cells, bails, value);
+}
+
+
+int Number(std::vector<std::string> const & words, std::size_t index, int fallback);
+
+
+// sampleharvest <interval> x y width height: logs every harvester's load and the tiberium in that block of cells on
+// each frame that is a multiple of the interval; 0 stops.
+static void Sampleharvest_Step(StepType const & step)
+{
+	HarvestSampleInterval = std::max(0, step.Argument_Int());
+	HarvestSampleBlock = Rect(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
 }
 
 
@@ -8449,6 +8499,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"speed", Speed_Probe},
 		{"sample", Sample_Step},
 		{"sampleprod", Sampleprod_Step},
+		{"sampleharvest", Sampleharvest_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
 		{"scatter", Scatter_Step},
@@ -9204,6 +9255,10 @@ void AutoTest_Frame(void)
 
 	if (ProductionSampleInterval > 0 && (Frame % ProductionSampleInterval) == 0) {
 		Log_Production();
+	}
+
+	if (HarvestSampleInterval > 0 && (Frame % HarvestSampleInterval) == 0) {
+		Log_Harvest();
 	}
 }
 
