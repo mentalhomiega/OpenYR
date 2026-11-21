@@ -3442,7 +3442,8 @@ int CellClass::Tiberium_Adjust(bool pregame)
 			for (FacingType face = FACING_FIRST; face < FACING_COUNT; face++) {
 				CellClass & adjc = Adjacent_Cell(face);
 
-				if (adjc.Tiberium_Type_Here() == tibtype) {
+				// Only an overlay counts: a tree that seeds tiberium does not, as gamemd's count (0x4818E0) reads overlays.
+				if (Which_Tiberium_Type(adjc.Overlay) == tibtype) {
 					count++;
 				}
 			}

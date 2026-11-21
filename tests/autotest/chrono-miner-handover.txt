@@ -1,0 +1,19 @@
+; A miner handed to the player while it mines. On XMP08T2 the player gets an Allied refinery at 35,70 and, once the computer
+; player's base stands, a Chrono Miner (CMIN) and a War Miner (HARV) beside the ore field at 39 to 46, 68 to 77, both on the
+; Harvest mission. Both go to the computer player (lose) and straight back (transfer), the path a mind control or a trigger
+; takes. gamemd measured the Chrono Miner going on mining through the change of house while the War Miner stood guard (the
+; comparison harness, harvest_2: the first load comes 217 frames after the start, not 140).
+; Expected: the where lines at 346 name CMIN mission Harvest (before the fix: Guard) and HARV mission Guard.
+; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/chrono-miner-handover.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   where"
+4 own GAREFN 35 70
+290 own CMIN 37 74
+290 own HARV 38 76
+292 harvestmission CMIN
+292 harvestmission HARV
+340 lose CMIN
+340 lose HARV
+342 transfer CMIN
+342 transfer HARV
+346 where CMIN
+346 where HARV
+350 quit

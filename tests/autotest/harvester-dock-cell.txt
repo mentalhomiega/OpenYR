@@ -1,0 +1,21 @@
+; The cell where a harvester unloads at an Allied refinery. A full harvester (HARV) is sent into a GAREFN at 70,22 (a 4x3
+; foundation with NumberImpassableRows=3, so its three west columns stop a vehicle). gamemd measured it driving to the first
+; column it can drive on, in the middle row (cell 73,23), where it turns and unloads; it did not drive on to the dock coordinate
+; in cell 72,23. The where lines at 580 and 620 show the harvester at the unload.
+; Expected: the where lines at 580 and 620 name cell 73,23 (before the fix 72,23), and the docks line is at frame 598 (before
+; 662). The harvester also starts its approach from where it stands once the refinery's centre is within HarvesterTooFarDistance,
+; measured from the centre of the foundation as gamemd does, not from its first cell.
+; Run: scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/harvester-dock-cell.txt -Seconds 120 -Filter "AUTOTEST   where|Harvester: frame"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAREFN 70 22
+303 own HARV 66 25
+310 load HARV
+320 enter HARV 70 22
+580 where HARV
+620 where HARV
+640 where HARV
+700 where HARV
+750 quit

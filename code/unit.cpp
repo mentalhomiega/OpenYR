@@ -4494,9 +4494,9 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				**	Since the refinery said it was ok to load, establish radio
 				**	contact with the refinery and then await docking orders.
 				*/
-				if (freebay != NULL && Get_Coord().Gamemd_Distance_To(freebay->Get_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
+				if (freebay != NULL && Get_Coord().Gamemd_Distance_To(freebay->Center_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
 					Status = HEADINGHOME;
-				} else if (anybay != NULL && (Class->IsTeleporter || Get_Coord().Gamemd_Distance_To(anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
+				} else if (anybay != NULL && (Class->IsTeleporter || Get_Coord().Gamemd_Distance_To(anybay->Center_Coord()) > 3 * CELL_LEPTON)) {
 					Cell cell = Cell(anybay->Get_Coord()) + Cell(anybay->Class->QueueingCell.X, anybay->Class->QueueingCell.Y);
 					Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, -1, MZONE_NORMAL, false, Point2D(1, 1), false, false, false, true);
 					if (nearby != CELL_NONE) {

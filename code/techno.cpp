@@ -7006,7 +7006,12 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 	Assign_Destination(NULL);
 
 	bool const unloading = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && CurrentMission == MISSION_UNLOAD;
-	if (!unloading && CurrentMission != MISSION_DECONSTRUCTION) {
+
+	// A Chrono Miner that is mining keeps its Harvest mission through a change of house: gamemd's miner went on mining at the
+	// ore it chose while a War Miner in the same handover stood guard (measured by the comparison harness). Only its
+	// destination is dropped, so it picks its ore again at once.
+	bool const keeps_harvest = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && ((UnitClass *)this)->Class->IsTeleporter && CurrentMission == MISSION_HARVEST;
+	if (!unloading && !keeps_harvest && CurrentMission != MISSION_DECONSTRUCTION) {
 		Assign_Mission(MISSION_GUARD);
 	}
 	if (SpawnManager) {
