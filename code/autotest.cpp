@@ -753,6 +753,18 @@ static void Repairmission_Step(StepType const & step)
 }
 
 
+// harvestmission <TypeID>: puts the player's foot objects of that type on the Harvest mission, as a harvester placed by a map starts.
+static void Harvestmission_Step(StepType const & step)
+{
+	std::string const & name = step.Argument;
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Is_Foot() && Is_Player_Techno_Named(techno, name));},
+		[](TechnoClass * techno) {
+			static_cast<FootClass *>(techno)->Assign_Mission(MISSION_HARVEST);
+		});
+}
+
+
 /// <summary>
 /// Queues the Stop command's idle event for the player's objects of that type that can move or fire.
 /// </summary>
@@ -8576,6 +8588,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"cmove", [](StepType const & step) {Computer_Move(step.Argument, step.X, step.Y);}},
 		{"hunt", Hunt_Step},
 		{"repairmission", Repairmission_Step},
+		{"harvestmission", Harvestmission_Step},
 		{"attack", Attack_Step},
 		{"strike", Strike_Step},
 		{"planmove", Planmove_Step},
