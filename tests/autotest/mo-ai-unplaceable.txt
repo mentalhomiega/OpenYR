@@ -1,7 +1,8 @@
 ; Needs the Mental Omega files in game\Mods\MentalOmega. Four computer players on combatzone.map (Europeans, Latin,
 ; ScorpionCell, Guild2) with a spectator. ScorpionCell's base has no room for its Fake Pandora Hub and Guild2's for a new
-; refinery. Expected: BUILDTRACE "drops YATXCH node 23 after 3 failed searches" at frame 17806 (the log no longer shows the Guild2 refinery
-; drop); aisummary at frame 25000 shows ScorpionCell with 29 structures and Guild2 with 20.
+; refinery. Expected: BUILDTRACE "drops YATXCH node 36 after 3 failed searches" at frame 18058 (ScorpionCell), and every other
+; unplaceable node, such as Guild2's FAWEAPB at frame 20448 and its refinery FAREFN at frame 23752, is dropped after 3 failed searches too;
+; aisummary at frame 25000 shows ScorpionCell with 27 structures (22 at frame 20000). Guild2 stays at 12 structures while its army fights on.
 ; Before the bound both retried without end (YATXCH 25 times from frame 17331) and stayed at 22 and 13 structures from
 ; frame 20000 to 25000.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/mo-ai-unplaceable.txt -Mods MentalOmega -Map combatzone.map -Country 0 -AICountries 1,4,7,10 -AIPlayers 4 -Uncapped -Seconds 900 -Settings "[Settings]`nIsSpectator=yes" -Filter "BUILDTRACE.*(drops|no place)|aisummary|Exception"
