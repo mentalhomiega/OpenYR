@@ -393,16 +393,20 @@ BuildingClass::~BuildingClass(void)
 	Limbo();
 	Buildings.Delete(this);
 	End_Anim(BANIM_ALL);
-	Class->Free_Buildup_Data();
+	if (Class != NULL) {
+		Class->Free_Buildup_Data();
+	}
 
 	if (GameActive && Class != NULL) {
 		Collapse_Cloak_Field();
 	}
 
-	House->Update_Present_Super_Weapons();
+	if (House != NULL) {
+		House->Update_Present_Super_Weapons();
+	}
 
 	if (GameActive) {
-		if (Strength != LastStrength) {
+		if (House != NULL && Strength != LastStrength) {
 			House->RecalcPower = true;
 		}
 		if (GameActive && Class) {
@@ -420,7 +424,7 @@ BuildingClass::~BuildingClass(void)
 	FactoryPtrTracker.Delete(this);
 	TargetTracker.Remove_Index(Fetch_ID());
 
-	if (Class->IsCanUnitRepair) {
+	if (Class != NULL && Class->IsCanUnitRepair) {
 		UnitRepairFacilities.Delete(this);
 	}
 
@@ -13218,7 +13222,7 @@ HouseClass * BuildingClass::Initial_Owner(void) const
 bool BuildingClass::Is_Tech_Structure(void) const
 {
 	HouseClass const * first = Initial_Owner();
-	return(first != NULL && first->Class->IsMultiplayPassive);
+	return(first != NULL && first->Class != NULL && first->Class->IsMultiplayPassive);
 }
 
 
