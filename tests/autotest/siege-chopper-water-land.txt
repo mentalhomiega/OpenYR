@@ -1,4 +1,4 @@
-; Siege Chopper (SCHP, SpeedType=Hover) given a move order to the lake shore at cell 86,73 of XMP08T2, then the deploy
+; Siege Chopper (SCHP, SpeedType=Hover) given a move order to the lake shore at cell 86,73 (the script makes it water, on the default map XMP29U2), then the deploy
 ; command there. A DeployToLand unit does not land on water or beach: it comes down on the nearest free land cell of the eight
 ; around it, here 87,72, and deploys there (mission Guard, height 0). It is not cancelled, because a land cell is free. The airborne probe
 ; logs the height above ground each time.
