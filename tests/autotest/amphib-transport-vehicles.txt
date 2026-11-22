@@ -10,6 +10,8 @@
 ; Observed on the final build: HTNK and SMIN board the beach and the water transport; MGTK and E1 stay outside those trials,
 ; which is the open part of the radio handshake. In the land trial no passenger left its starting cell (Guard), so that
 ; result is not a load result: the start cells may be cut off from the transport, and the layout has not been checked.
+; Each trial waits 600 frames after its enter orders before the where lines: a passenger that boards in time has limbo 1, and one that does not
+; has stopped or reached its final mission by then, so the log no longer depends on how far a unit had walked at a fixed earlier frame.
 30 command CenterBase
 35 reveal
 36 command DebugRevealMap
@@ -25,47 +27,47 @@
 301 enter SMIN 78 45
 302 enter MGTK 78 45
 303 enter E1 78 45
-450 where SAPC
-451 where HTNK
-452 where SMIN
-453 where MGTK
-454 where E1
-460 kill HTNK 1
-461 kill SMIN 1
-462 kill MGTK 1
-463 kill E1 1
-600 own SAPC 80 47
-601 own HTNK 78 46
-602 own SMIN 78 47
-603 own MGTK 79 44
-604 own E1 77 46
-620 terrain 80 47
-630 enter HTNK 80 47
-631 enter SMIN 80 47
-632 enter MGTK 80 47
-633 enter E1 80 47
-1000 where SAPC
-1001 where HTNK
-1002 where SMIN
-1003 where MGTK
-1004 where E1
-1010 kill HTNK 1
-1011 kill SMIN 1
-1012 kill MGTK 1
-1013 kill E1 1
-1150 own SAPC 82 45
-1151 own HTNK 80 44
-1152 own SMIN 80 43
-1153 own MGTK 81 44
-1154 own E1 81 43
-1170 terrain 82 45
-1180 enter HTNK 82 45
-1181 enter SMIN 82 45
-1182 enter MGTK 82 45
-1183 enter E1 82 45
-1500 where SAPC
-1501 where HTNK
-1502 where SMIN
-1503 where MGTK
-1504 where E1
-1600 quit
+900 where SAPC
+901 where HTNK
+902 where SMIN
+903 where MGTK
+904 where E1
+910 kill HTNK 1
+911 kill SMIN 1
+912 kill MGTK 1
+913 kill E1 1
+1100 own SAPC 80 47
+1101 own HTNK 78 46
+1102 own SMIN 78 47
+1103 own MGTK 79 44
+1104 own E1 77 46
+1120 terrain 80 47
+1130 enter HTNK 80 47
+1131 enter SMIN 80 47
+1132 enter MGTK 80 47
+1133 enter E1 80 47
+1730 where SAPC
+1731 where HTNK
+1732 where SMIN
+1733 where MGTK
+1734 where E1
+1740 kill HTNK 1
+1741 kill SMIN 1
+1742 kill MGTK 1
+1743 kill E1 1
+1900 own SAPC 82 45
+1901 own HTNK 80 44
+1902 own SMIN 80 43
+1903 own MGTK 81 44
+1904 own E1 81 43
+1920 terrain 82 45
+1930 enter HTNK 82 45
+1931 enter SMIN 82 45
+1932 enter MGTK 82 45
+1933 enter E1 82 45
+2530 where SAPC
+2531 where HTNK
+2532 where SMIN
+2533 where MGTK
+2534 where E1
+2600 quit
