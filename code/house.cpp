@@ -8910,6 +8910,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	Add_Plan_Nodes(Base.Nodes, finalqueue);
 
+	// gamemd (0x5054B0) never plans a wall node, so this Tiberian Sun step runs only when the rules set AIBuildsWalls=yes.
 	if (builds_walls) {
 		Base.Nodes.Add(BaseNodeClass((StructType)-3, Cell(0, 0)));
 	}

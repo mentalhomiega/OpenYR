@@ -1,0 +1,11 @@
+; The stock computer player (Americans) plans no wall ring of its own: gamemd's HouseClass::Make_Base_Nodes (0x5054B0) never plans a wall node,
+; and its walls come from the AIPickWallDefensePercent roll on a defense turn (AI_BaseConstructionUpdate, 0x4FE3E0).
+; The mod in tests/autotest/ai-no-wall-ring sets AIPickWallDefensePercent=0,0,0, so that roll never adds a ring.
+; Expected: the plans written at frames 100 and 8000 hold no -3 node and no GAWALL, and BUILDTRACE shows no GAWALL started.
+; With the stock roll (25 percent on Normal) the computer lays a ring of 19 walls from frame 2330 on.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/ai-no-wall-ring.txt -Mods "E:\Claude ra2 decomp\src-agent33\tests\autotest\ai-no-wall-ring" -AICountries 0 -Uncapped -Seconds 200 -Filter "BUILDTRACE.*GAWALL|AUTOTEST   plan|Exception"
+10 buildtrace 1
+30 command CenterBase
+100 plan
+8000 plan
+8001 quit

@@ -1,0 +1,8 @@
+; A computer player whose side has no base defense count list plans no wall node unless the rules ask for one, as gamemd's HouseClass::Make_Base_Nodes
+; (0x5054B0) never plans a wall node. The mod in tests/autotest/ai-wall-node-default empties AlliedBaseDefenseCounts, which gives the Americans the
+; Tiberian Sun plan, and leaves AIBuildsWalls at its default.
+; Expected: the plan written at frame 100 holds no -3 node (compare ai-wall-node-key.txt, where it ends with one).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/ai-wall-node-default.txt -Mods "E:\Claude ra2 decomp\src-agent33\tests\autotest\ai-wall-node-default" -AICountries 0 -Uncapped -Seconds 200 -Filter "BUILDTRACE.*GAWALL|AUTOTEST   plan|aisummary|Exception"
+30 command CenterBase
+100 plan
+101 quit

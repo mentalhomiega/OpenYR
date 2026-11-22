@@ -373,7 +373,7 @@ RulesClass::RulesClass(void) :
 	IsShroudedSubteranneanMovesAllowed(false),
 	IsShroudGrow(false),
 	NodAIBuildsWalls(true),
-	AIBuildsWalls(true),
+	AIBuildsWalls(false),
 	UseMinDefenseRule(true),
 	EMPulseSparkles(NULL),
 	WebbedInfantry(NULL),
