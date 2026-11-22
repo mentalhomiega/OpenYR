@@ -1,0 +1,31 @@
+; A Soviet player's Service Depot (NADEPT) at 60,22 is 6 cells north of a damaged Rhino (HTNK) at 60,28. repairmission puts the Rhino on the repair mission.
+; gamemd keeps every type in [General] RepairBay (stock: GADEPT, NADEPT, CAOUTP), so the depot search of UnitClass::Do_MISSION_REPAIR finds the Soviet depot (FootClass::TryNearestDockBuilding, 0x4DF040).
+; Expected: at frame 211 the Rhino's mission is Enter and the depot has radio 1. The Rhino stays at 60,28 as in repair-allied-depot.txt, so its repair is not checked.
+; With only the first RepairBay name (GADEPT) kept, the Rhino goes idle (mission Guard) and the depot never gets radio 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/repair-soviet-depot.txt -Map XMP29U2.MAP -Country 8 -Seconds 200 -Filter "AUTOTEST frame|AUTOTEST   where|AUTOTEST   recloak|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 own NADEPT 60 22
+102 own HTNK 60 28
+104 reveal
+105 view 61 23
+200 damage HTNK 200
+205 where HTNK
+210 repairmission HTNK
+211 where HTNK
+212 where NADEPT
+240 where HTNK
+280 where HTNK
+320 where HTNK
+360 where HTNK
+400 where HTNK
+440 where HTNK
+480 where HTNK
+520 where HTNK
+560 where HTNK
+600 where HTNK
+640 where HTNK
+680 where HTNK
+720 where HTNK
+400 where NADEPT
+720 quit

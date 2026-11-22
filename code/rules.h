@@ -1539,10 +1539,10 @@ class RulesClass
 		TypeList<SmudgeTypeClass const *> Craters;
 
 		/*
-		 * This is the service depot that units and aircraft dock with in order to be
+		 * These are the service depots that units and aircraft dock with in order to be
 		 * repaired or sold back.
 		 */
-		BuildingTypeClass const * RepairBay;
+		TypeList<BuildingTypeClass const *> RepairBay;
 
 		/*
 		 * These are the gate buildings for each side. The first of each pair closes an
