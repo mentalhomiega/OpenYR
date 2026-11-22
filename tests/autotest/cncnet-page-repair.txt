@@ -8,3 +8,5 @@ ui shot cncnet-repair
 ui press OK
 ui wait 1000
 ui quit
+; Without -Menus (as regress runs it) no menu step runs and a game starts; this step ends that game at once.
+30 quit
