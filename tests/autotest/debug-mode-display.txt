@@ -1,6 +1,6 @@
 ; Options > Game with the Debug mode switch. Run with the menus and the modern menu style; the picture is
 ; written as debug-mode-display.tga in the autotest Screenshots folder.
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-display.txt -Menus -MenuStyle Modern -Width 1024 -Height 768 -Seconds 90
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-display.txt -Menus -MenuStyle Modern -Width 1024 -Height 768 -Seconds 90 -Filter "UISCRIPT [a-z]|no such|Exception"
 ui waitfor backdrop
 ui wait 2000
 ui press Options

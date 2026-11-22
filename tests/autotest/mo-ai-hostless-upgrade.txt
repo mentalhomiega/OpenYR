@@ -1,9 +1,10 @@
 ; Needs the Mental Omega files in game\Mods\MentalOmega. Six computer players on avalanche.map (Europeans, Chinese,
-; ScorpionCell, Guild1, UnitedStates, Headquaters) with a spectator. UnitedStates loses its Airforce Command while an earlier
-; lost structure waits to be replaced, and starts the Drop Control upgrade with nothing to put it on. Expected: BUILDTRACE
-; "drops GAAIRC_D node 14 after 1 failed searches" at frame 11102; aisummary shows UnitedStates with 12 structures at frames
-; 15000 and 14 at 20000. Before, it started and abandoned GAAIRC_D 19 times and fell to 5 and 4 structures.
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/mo-ai-hostless-upgrade.txt -Mods MentalOmega -Map avalanche.map -Country 0 -AICountries 1,5,7,9,0,8 -AIPlayers 6 -Uncapped -Seconds 900 -Settings "[Settings]`nIsSpectator=yes" -Filter "BUILDTRACE.*(drops|no place)|aisummary|Exception"
+; ScorpionCell, Guild1, UnitedStates, Headquaters) with a spectator, at Seed=5. UnitedStates loses its Airforce Command while an earlier
+; lost structure waits to be replaced, and starts the Drop Control upgrade (GAAIRC_D) with nothing to put it on. Expected: BUILDTRACE
+; "drops GAAIRC_D node 19 after 2 failed searches" at frame 13335, after two starts that each find no place; aisummary shows UnitedStates
+; with 14 structures at frame 15000 and 7 at 20000. Before, it started and abandoned GAAIRC_D 19 times and fell to 5 and 4 structures.
+; Seed 1 no longer shows the case: UnitedStates is destroyed by its neighbours at frame 4000, before it builds the Airforce Command.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/mo-ai-hostless-upgrade.txt -Mods MentalOmega -Map avalanche.map -Country 0 -AICountries 1,5,7,9,0,8 -AIPlayers 6 -Uncapped -Seconds 900 -Settings "[Settings]`nIsSpectator=yes`nSeed=5" -Filter "BUILDTRACE.*(drops|no place)|aisummary|Exception"
 10 buildtrace 1
 15000 aisummary
 20000 aisummary
