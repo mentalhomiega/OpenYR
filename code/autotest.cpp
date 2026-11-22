@@ -313,6 +313,9 @@ int SampleInterval = 0;
 // The frames between the sampleprod step's logs, 0 when it is off.
 int ProductionSampleInterval = 0;
 
+// The frames between the samplevet step's logs, 0 when it is off.
+int VeterancySampleInterval = 0;
+
 // The frames between the sampleharvest step's logs, 0 when it is off, and the block of cells whose tiberium it counts.
 int HarvestSampleInterval = 0;
 Rect HarvestSampleBlock;
@@ -1194,6 +1197,32 @@ static void Log_Production(void)
 static void Sampleprod_Step(StepType const & step)
 {
 	ProductionSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs the experience of each object of the sampled types: its veterancy value (below 1 a rookie, 1 and above a veteran,
+/// 2 and above elite). The gamemd comparison harness reads the same value from Yuri's Revenge, so the fields and
+/// their units must stay as they are.
+/// </summary>
+static void Log_Veterancy(void)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {
+			return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
+				[&](std::string const & name) {return(Is_Techno_Named(techno, name));}));
+		},
+		[&](TechnoClass * techno) {
+			DebugString("AUTOTEST vet frame %d id %d experience %.4f\n", Frame, techno->ID, techno->Veterancy.Experience);
+		});
+}
+
+
+// samplevet <interval>: logs the veterancy of every sampled object (see the sample step) on each frame that is a
+// multiple of the interval; 0 stops.
+static void Samplevet_Step(StepType const & step)
+{
+	VeterancySampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8511,6 +8540,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"speed", Speed_Probe},
 		{"sample", Sample_Step},
 		{"sampleprod", Sampleprod_Step},
+		{"samplevet", Samplevet_Step},
 		{"sampleharvest", Sampleharvest_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
@@ -9268,6 +9298,10 @@ void AutoTest_Frame(void)
 
 	if (ProductionSampleInterval > 0 && (Frame % ProductionSampleInterval) == 0) {
 		Log_Production();
+	}
+
+	if (VeterancySampleInterval > 0 && (Frame % VeterancySampleInterval) == 0) {
+		Log_Veterancy();
 	}
 
 	if (HarvestSampleInterval > 0 && (Frame % HarvestSampleInterval) == 0) {
