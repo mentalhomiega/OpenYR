@@ -8368,6 +8368,19 @@ static void Graphic_Step(StepType const & step)
 }
 
 
+static void Paralyze_Step(StepType const & step)
+{
+	// paralyze <TypeID> <frames>: holds the player's foot objects of that type still for that many frames, as a Giant Squid's grip does, and writes the timer.
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && techno->Is_Foot() && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			static_cast<FootClass *>(techno)->ParalysisTimer = step.X;
+			DebugString("AUTOTEST   paralyze %s at %d,%d for %d: timer %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)static_cast<FootClass *>(techno)->ParalysisTimer);
+		}
+	}
+}
+
+
 static void Lighting_Step(StepType const & step)
 {
 	// lighting: the ambient light now and wanted, whether a lightning storm, a dominator blast or an ion storm is on, and the tint the first tile drawer wears.
@@ -8486,6 +8499,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"lighting", Lighting_Step},
 		{"link", Link_Step},
 		{"lose", Lose_Step},
+		{"paralyze", Paralyze_Step},
 		{"maphelp", Maphelp_Step},
 		{"scenarios", Scenarios_Step},
 		{"seatflh", Seatflh_Step},
