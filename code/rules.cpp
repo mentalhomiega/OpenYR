@@ -762,7 +762,7 @@ RulesClass::RulesClass(void) :
 	Scorches3(),
 	Scorches4(),
 	Craters(),
-	RepairBay(NULL),
+	RepairBay(),
 	GDIGateOne(NULL),
 	GDIGateTwo(NULL),
 	NodGateOne(NULL),
@@ -2060,16 +2060,16 @@ bool RulesClass::General(CCINIClass const & ini)
 		CameraRange = ini.Get_Lepton(GENERAL, "CameraRange", CameraRange);
 		FlightLevel = ini.Get_Int(GENERAL, "FlightLevel", FlightLevel);
 		/*
-		**	Yuri's Revenge gives RepairBay as a list of buildings. This engine uses one, so it takes the
-		**	first of them that exists and never makes a building type out of the whole list.
+		**	RepairBay is a list of buildings. Only names that already exist are kept, so the list is never
+		**	made into a building type of its own.
 		*/
 		char repair_bays[128];
 		if (ini.Get_String(GENERAL, "RepairBay", "", repair_bays, sizeof(repair_bays)) != 0) {
+			RepairBay.Clear();
 			for (char * name = strtok(repair_bays, ", \t"); name != NULL; name = strtok(NULL, ", \t")) {
 				StructType const bay = BuildingTypeClass::From_Name(name);
 				if (bay != STRUCT_NONE) {
-					RepairBay = BuildingTypes[bay];
-					break;
+					RepairBay.Add(BuildingTypes[bay]);
 				}
 			}
 		}
@@ -4067,7 +4067,7 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	Detach_Pointer(target, AlliedCrew);
 	Detach_Pointer(target, SovietCrew);
 	Detach_Pointer(target, ThirdCrew);
-	Detach_Pointer(target, RepairBay);
+	RepairBay.Delete((BuildingTypeClass const *)target);
 	Detach_Pointer(target, GDIGateOne);
 	Detach_Pointer(target, GDIGateTwo);
 	Detach_Pointer(target, NodGateOne);

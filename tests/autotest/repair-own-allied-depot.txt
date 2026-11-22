@@ -1,0 +1,29 @@
+; An American player's Service Depot (GADEPT) at 60,22 is 6 cells north of a damaged Grizzly (MTNK) at 60,28. repairmission puts the Grizzly on the repair mission.
+; Expected: at frame 211 the Grizzly's mission is Enter and the depot has radio 1, as for any listed RepairBay depot. The Grizzly stays at 60,28, so its repair is not checked.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/repair-own-allied-depot.txt -Map XMP29U2.MAP -Seconds 200 -Filter "AUTOTEST frame|AUTOTEST   where|AUTOTEST   recloak|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 own GADEPT 60 22
+102 own MTNK 60 28
+104 reveal
+105 view 61 23
+200 damage MTNK 200
+205 where MTNK
+210 repairmission MTNK
+211 where MTNK
+212 where GADEPT
+240 where MTNK
+280 where MTNK
+320 where MTNK
+360 where MTNK
+400 where MTNK
+440 where MTNK
+480 where MTNK
+520 where MTNK
+560 where MTNK
+600 where MTNK
+640 where MTNK
+680 where MTNK
+720 where MTNK
+400 where GADEPT
+720 quit

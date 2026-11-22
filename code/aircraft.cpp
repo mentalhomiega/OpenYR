@@ -3481,7 +3481,7 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	if (!House->Is_Human_Player() && House->Available_Money() >= 100 && HealthRatio <= Rule->ConditionYellow) {
 		if (!In_Radio_Contact() ||
 			(HeightAGL == 0 &&
-				(Contact_With_Whom()->RTTI != RTTI_BUILDING || ((BuildingClass *)Contact_With_Whom())->Class_Of() != Rule->RepairBay))) {
+				(Contact_With_Whom()->RTTI != RTTI_BUILDING || !Rule->RepairBay.Is_In_List(((BuildingClass *)Contact_With_Whom())->Class)))) {
 
 			BuildingClass * building = Find_Docking_Bay(Rule->RepairBay, true);
 			if (building != NULL) {
