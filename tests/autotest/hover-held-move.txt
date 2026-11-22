@@ -1,0 +1,49 @@
+; A player's Soviet Amphibious Transport (SAPC, Hover locomotor) drives across the lake of XMP08T2 and is held still by the paralyze step for 150 frames
+; (the same ParalysisTimer a Giant Squid's grip sets). gamemd's HoverLocomotionClass::While_Moving (0x514F70) returns at its start for a paralysed unit, so a
+; held transport takes no step to a new cell and keeps its place until the timer runs out, then drives on.
+; Expected: the where lines at 370 to 510 all name cell 82,65 and the one at 530 names 83,65; before the fix the transport kept crossing the lake while held and was at 90,64 by 510.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Map XMP08T2.MAP -Script src-agent29/tests/autotest/hover-held-move.txt -Seconds 150 -Filter "AUTOTEST   (where|facing|paralyze) SAPC|Exception"
+30 command CenterBase
+300 grantunit SAPC 80 66
+302 select SAPC
+310 planmove SAPC 92 66
+350 paralyze SAPC 150
+350 where SAPC
+350 animlog SAPC
+370 where SAPC
+370 animlog SAPC
+390 where SAPC
+390 animlog SAPC
+410 where SAPC
+410 animlog SAPC
+430 where SAPC
+430 animlog SAPC
+450 where SAPC
+450 animlog SAPC
+470 where SAPC
+470 animlog SAPC
+490 where SAPC
+490 animlog SAPC
+510 where SAPC
+510 animlog SAPC
+530 where SAPC
+530 animlog SAPC
+550 where SAPC
+550 animlog SAPC
+570 where SAPC
+570 animlog SAPC
+590 where SAPC
+590 animlog SAPC
+610 where SAPC
+610 animlog SAPC
+630 where SAPC
+630 animlog SAPC
+650 where SAPC
+650 animlog SAPC
+670 where SAPC
+670 animlog SAPC
+690 where SAPC
+690 animlog SAPC
+710 where SAPC
+710 animlog SAPC
+760 quit
