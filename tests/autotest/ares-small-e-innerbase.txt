@@ -1,8 +1,10 @@
 ; AIInnerBase with the ares-small-e-keys mod, which gives the Soviet War Factory (NAWEAP) AIInnerBase=yes. The computer house (Africans) builds
-; its base from a fixed seed and logs each placement with buildtrace. The placements are the same up to the war factory; with the mod
-; BUILDTRACE frame 3686 houses the war factory at 57,93, and without -Mods at 51,101 (the war factory takes the ranking a cloak generator
-; takes, by distance from the house's start). A structure without the key, and a CloakGenerator=yes one, keep their stock placement.
-; Run from the repository root, with and without -Mods:
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-innerbase.txt -Mods tests/autotest/ares-small-e-keys -Seconds 400 -Filter "BUILDTRACE|Exception"
+; its base from a fixed seed on Barrel.mmx and logs each placement with buildtrace. With the mod the war factory takes the ranking a cloak
+; generator takes, by distance from the house's start, and without it the stock one: it lands at 76,113 with the mod and at 73,123 without
+; (ares-small-e-innerbase-stock.txt is the run without -Mods). A structure without the key, and a CloakGenerator=yes one, keep their stock
+; placement. The default map XMP29U2.MAP no longer tells the rankings apart, since the computer lays its ring of walls before the war factory;
+; both runs placed it at 51,102 there, so Barrel.mmx is used.
+; Run from the repository root:
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script tests/autotest/ares-small-e-innerbase.txt -Map Barrel.mmx -Mods tests/autotest/ares-small-e-keys -Seconds 400 -Uncapped -Filter "BUILDTRACE.*NAWEAP|Exception"
 1 buildtrace 1
-6000 quit
+8000 quit

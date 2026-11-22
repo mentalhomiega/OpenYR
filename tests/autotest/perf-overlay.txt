@@ -6,3 +6,4 @@
 90 perfoverlay 2
 150 perfoverlay report
 160 perfoverlay 0
+170 quit

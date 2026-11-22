@@ -1,0 +1,10 @@
+; The stock case of ares-small-e-innerbase.txt: the same run without -Mods, so the War Factory has no AIInnerBase key and takes the stock ranking.
+; its base from a fixed seed on Barrel.mmx and logs each placement with buildtrace. With the mod the war factory takes the ranking a cloak
+; generator takes, by distance from the house's start, and without it the stock one: it lands at 76,113 with the mod and at 73,123 without
+; (ares-small-e-innerbase-stock.txt is the run without -Mods). A structure without the key, and a CloakGenerator=yes one, keep their stock
+; placement. The default map XMP29U2.MAP no longer tells the rankings apart, since the computer lays its ring of walls before the war factory;
+; both runs placed it at 51,102 there, so Barrel.mmx is used.
+; Run from the repository root:
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script tests/autotest/ares-small-e-innerbase-stock.txt -Map Barrel.mmx -Seconds 400 -Uncapped -Filter "BUILDTRACE.*NAWEAP|Exception"
+1 buildtrace 1
+8000 quit

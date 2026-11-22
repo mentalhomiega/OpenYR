@@ -28,3 +28,5 @@ ui shot match-idle-match
 ui wait 30000
 ui shot match-idle-after
 ui quit
+; Without -Menus (as regress runs it) no menu step runs and a game starts; this step ends that game at once.
+30 quit

@@ -310,7 +310,7 @@ AIBuildsWalls:
     value_type: boolean
     status: needs_review
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: 'no'
       declared_in: RulesClass
       member: AIBuildsWalls
       source: code/rules.cpp

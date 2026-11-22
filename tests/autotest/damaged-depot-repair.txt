@@ -78,3 +78,4 @@
 1200 command ScreenCapture
 1201 where MTNK
 1220 banimstate GADEPT
+1221 quit

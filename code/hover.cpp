@@ -171,6 +171,9 @@ bool HoverLocomotionClass::Process(void)
 	if (Is_Moving() && Is_Moving1()) {
 		Motion_AI();
 
+		// Motion_AI can remove the object (a crate picked up at the next cell); gamemd then ends the update.
+		if (!LinkedTo->IsActive) return(false);
+
 		int height = LinkedTo->Height;
 		int speed = LinkedTo->Current_Speed() * Acceleration;
 		DirType direction = Direction(LinkedTo->Center_Coord(), HeadToCoord);
@@ -191,9 +194,14 @@ bool HoverLocomotionClass::Process(void)
 				HeadToCoord = COORD_NONE;
 			}
 
-			if (DestinationCoord != COORD_NONE) {
+			// An object with no destination still takes this step when it stands on the dock cell of its radio contact.
+			TechnoClass const * const contact = LinkedTo->Contact_With_Whom();
+			bool const at_contact = contact != NULL && LinkedTo->PositionCell == contact->Docking_Coord().As_Cell();
+
+			if (DestinationCoord != COORD_NONE || at_contact) {
 				MoveType ok = While_Moving(true);
-				if (!LinkedTo->IsActive || LinkedTo->IsInLimbo || LinkedTo->IsFalling) return(MOVE_NO);
+				// gamemd returns a non-zero byte (7) here, which its caller reads as still moving.
+				if (!LinkedTo->IsActive || LinkedTo->IsInLimbo || LinkedTo->IsFalling) return(true);
 				if (ok == MOVE_OK && HeadToCoord == COORD_NONE) {
 					/*
 					**	Perform "per cell" activities.
@@ -392,6 +400,11 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 	if (HeadToCoord != COORD_NONE) {
 		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
 		HeadToCoord = COORD_NONE;
+	}
+
+	// A paralysed object takes no step, and the caller sees a move that did not finish.
+	if (LinkedTo->ParalysisTimer != 0) {
+		return(MOVE_CLOAK);
 	}
 
 	/*

@@ -4523,7 +4523,8 @@ int UnitClass::Do_MISSION_HARVEST(void)
 		*/
 		case GOINGTOIDLE:
 			if (IsUseless) {
-				if (House->BQuantity.Value(Rule->RepairBay->HeapID) > 0) {
+				// gamemd (0x73E6EA) queues Repair when any listed depot would take it, ignoring who is using it.
+				if (Find_Docking_Bay(Rule->RepairBay, false, false) != NULL) {
 					Assign_Mission(MISSION_REPAIR);
 				} else {
 					Assign_Mission(MISSION_HUNT);
@@ -5712,17 +5713,16 @@ InfantryTypeClass const * UnitClass::Crew_Type(void) const
 int UnitClass::Do_MISSION_REPAIR(void)
 {
 	// Only the unit's own depots; gamemd's FootClass::FindCloserDockBuilding (0x4DEE80) walks Owner->Buildings.
-	BuildingClass * nearest = Find_Docking_Bay(Rule->RepairBay, false);
+	BuildingClass * nearest = Find_Docking_Bay(Rule->RepairBay, false, true);
 
 	IsHarvesting = false;
 
 	/*
-	**	If there is no available repair facility, then check to see if there
-	**	are any repair facilities at all. If not, then enter this unit
-	**	into idle state.
+	**	If no listed depot is free, look again ignoring who is using it. A busy depot that
+	**	this unit could reach sends it idle (gamemd 0x740EF0); with none at all it keeps polling.
 	*/
 	if (nearest == NULL) {
-		if (!(House->BQuantity.Value(Rule->RepairBay->HeapID))) {
+		if (Find_Docking_Bay(Rule->RepairBay, false, false) != NULL) {
 			Enter_Idle_Mode();
 		}
 	} else {

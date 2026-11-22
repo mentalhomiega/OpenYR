@@ -77,6 +77,6 @@ The missions no kind acts on differ in what ends them:
 - A repair bay repairs and reloads the vehicle in radio contact with it.
 - A hospital heals the infantryman it holds, and an armory promotes one instead.
 - A construction yard plays its production animation and does nothing else.
-- A vehicle looks for a building of the type [`RepairBay`](/keys/repairbay/) names and switches to `Enter` once one accepts it. Until then it keeps searching. If its house owns no building of that type, the vehicle switches to its idle mission.
+- A vehicle looks for a free building of a type [`RepairBay`](/keys/repairbay/) lists and switches to `Enter` once one accepts it. Until then it keeps searching. If every listed depot of its house is busy, the vehicle switches to its idle mission.
 
 `Rescue` sends an infantryman, vehicle or aircraft to clear threats near a spot, then on to a cell its house picks. Once there, or at once if the house picks no cell, it switches to `Area Guard`. A computer house puts most of the defenders it calls up [when its base is attacked](/systems/base-attacked/) on `Rescue`, with the object under attack as the spot.

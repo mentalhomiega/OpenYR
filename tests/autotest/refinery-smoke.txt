@@ -4,6 +4,7 @@
 ; Expected: each pass of the dump starts two SmallGreySSys systems on GAREFN, one at each offset (cell 70,22 plus -92,-208,312
 ; and -92,208,312). The partsys lines after the unload show systems with a lifetime below 50 that counts down, in pairs, and the
 ; last pass, which finds the harvester empty, starts a second pair.
+; The harvester docks at frame 598, unloads at 614 and is empty at 629 (2026-11-22), so the dump passes run at frames 626 to 686.
 ; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/refinery-smoke.txt -Seconds 120 -Filter "AUTOTEST|Harvester"
 30 command CenterBase
 40 select AMCV
@@ -13,9 +14,9 @@
 303 own HARV 66 25
 310 load HARV
 320 enter HARV 70 22
-690 partsys
-696 partsys
-700 partsys
-728 partsys
-750 partsys
+626 partsys
+632 partsys
+636 partsys
+664 partsys
+686 partsys
 900 quit

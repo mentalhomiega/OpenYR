@@ -1,0 +1,7 @@
+; With AIBuildsWalls=yes, a computer player whose side has no base defense count list ends its plan with a -3 wall node (the Tiberian Sun plan).
+; The mod in tests/autotest/ai-wall-node-key empties AlliedBaseDefenseCounts and sets AIBuildsWalls=yes.
+; Expected: the plan written at frame 100 ends with -3.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/ai-wall-node-key.txt -Mods "E:\Claude ra2 decomp\src-agent33\tests\autotest\ai-wall-node-key" -AICountries 0 -Uncapped -Seconds 200 -Filter "BUILDTRACE.*GAWALL|AUTOTEST   plan|aisummary|Exception"
+30 command CenterBase
+100 plan
+101 quit

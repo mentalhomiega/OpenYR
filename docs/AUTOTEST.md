@@ -116,6 +116,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `fall <TypeID> <height>` | puts the player's objects of that type that high in the air, falling, with or without a parachute as the type's animations decide |
 | `flash <TypeID>` | writes the flash count of each object of that type, whoever owns it |
 | `forceshield <TypeID> <frames>` | puts the player's objects of that type under the Force Shield for that many frames, as the superweapon does, and writes the frames each has left |
+| `paralyze <TypeID> <frames>` | holds the player's foot objects of that type still for that many frames, as a Giant Squid's grip does (`ParalysisTimer`), and writes the timer |
 | `graphic <TypeID>` | writes the art name the type draws and reads its art keys from |
 | `lighting` | writes the ambient light now and wanted, whether a storm or dominator blast lights the map, and the tint the tile palette wears |
 | `link <kind>:<TypeA>:<TypeB>` | ties the player's objects for a test: spawn (TypeA is TypeB's spawner), mindcontrol (TypeA controls TypeB), passenger (TypeB fires from inside TypeA, an open-topped transport) or airstrike (TypeB is a plane of TypeA's air strike) |
