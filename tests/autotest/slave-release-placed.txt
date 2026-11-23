@@ -1,0 +1,14 @@
+; A Slave Miner structure the map places (YAREFN beside the ore at 62,38) lets its slaves out only from its
+; working state, last node first and only as many as the dock cell has free spots. gamemd measured (frames after
+; the structure appears; SlaveManagerClass::Update 0x6AF5F0, release 0x6B04C0 inside 0x6AFD60 state 5): the manager
+; starts working at 8 to 9, three slaves go out at 18 or 19 (nodes 4, 3 and 2) and two at 28 or 29 (nodes 1 and 0).
+; The "slaves" lines (sampleslaves 1) show the manager state (5 is working) and each node (status 0 is docked,
+; 1 scanning). Before the change all five nodes leave status 0 together at the first update, 10 frames in.
+; Run: scripts/run_autotest.ps1 -Script "E:/Claude ra2 decomp/src-agent30/tests/autotest/slave-release-placed.txt" -Country 9 -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST slaves|AUTOTEST own|Slave: |Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 sampleslaves 1
+41 own YAREFN 61 39
+100 quit

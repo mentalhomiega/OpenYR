@@ -33,6 +33,7 @@
 #include "unittype.h"
 
 #include <cstring>
+#include <string>
 
 
 namespace {
@@ -226,7 +227,7 @@ void SlaveManagerClass::AI(void)
 
 		switch (node.Status) {
 			case NODE_READY:
-				Node_Ready(node, working);
+				// A docked slave comes out only when the miner's state machine releases it (Release_Slaves).
 				break;
 
 			case NODE_SCANNING:
@@ -267,16 +268,24 @@ void SlaveManagerClass::AI(void)
 }
 
 
-void SlaveManagerClass::Node_Ready(NodeType & node, bool working)
+/// <summary>
+/// Lets the docked slaves out, last node first, each onto a free infantry spot of the dock cell. A slave
+/// that finds no spot stays docked until the next update (0x6B04C0). A released slave starts on a Move order, as in gamemd.
+/// </summary>
+void SlaveManagerClass::Release_Slaves(void)
 {
-	if (!working) {
-		return;
-	}
-	InfantryClass * slave = node.Slave;
-	Cell const dock = Dock_Cell();
-	Cell const cell = Map.Nearby_Location(dock, SPEED_FOOT);
-	if (cell != CELL_NONE && slave->Unlimbo(Map[cell].Center_Coord(), DIR_E)) {
+	CellClass & dock = Map[Dock_Cell()];
+	for (int index = (int)Nodes.size() - 1; index >= 0; index--) {
+		NodeType & node = Nodes[index];
+		if (node.Status != NODE_READY || node.Slave == NULL) {
+			continue;
+		}
+		Coord const spot = dock.Closest_Free_Spot(dock.Center_Coord());
+		if (spot == COORD_NONE || !node.Slave->Unlimbo(spot, DIR_E)) {
+			continue;
+		}
 		node.Status = NODE_SCANNING;
+		node.Slave->Assign_Mission(MISSION_MOVE);
 	}
 }
 
@@ -383,7 +392,7 @@ void SlaveManagerClass::Node_Returning(NodeType & node)
 
 /// <summary>
 /// The richest ore cell within radius cells of the miner, searching outward ring by ring and
-/// stopping at the first ring that has any; CELL_NONE when there is none.
+/// stopping at the first ring that has any (the first of equally rich cells in the scan's order); CELL_NONE when there is none.
 /// </summary>
 Cell SlaveManagerClass::Find_Ore(int radius) const
 {
@@ -394,7 +403,8 @@ Cell SlaveManagerClass::Find_Ore(int radius) const
 	Cell best = CELL_NONE;
 	int bestvalue = -1;
 	for (int ring = 1; ring < radius && best == CELL_NONE; ring++) {
-		For_Each_Ring_Offset(ring, [&](int x, int y) {
+		// The order TechnoClass::ScanForTiberium (0x70F8F0) visits a ring in decides which of equally rich cells wins.
+		auto consider = [&](int x, int y) {
 			Cell const cell = center + Cell(x, y);
 			if (!Map.In_Radar(cell) || Map[cell].Land_Type() != LAND_TIBERIUM) {
 				return;
@@ -404,7 +414,13 @@ Cell SlaveManagerClass::Find_Ore(int radius) const
 				bestvalue = value;
 				best = cell;
 			}
-		});
+		};
+		for (int x = -ring; x <= ring; x++) {
+			consider(x, -ring);
+			consider(x, ring);
+			consider(-ring, x);
+			consider(ring, x);
+		}
 	}
 	return(best);
 }
@@ -628,7 +644,8 @@ void SlaveManagerClass::Miner_Deploying(void)
 {
 	bool const deployed = Owner->RTTI == RTTI_BUILDING;
 	bool const mobile = Owner->RTTI == RTTI_UNIT;
-	if (deployed) {
+	// The structure's build-up has to end first (0x6AFD60, state 4).
+	if (deployed && ((BuildingClass const *)Owner)->BState != BSTATE_CONSTRUCTION) {
 		MinerStatus = MINER_WORKING;
 		DebugString("Slave: %s (%s) deploys at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), Owner->Get_Cell().X, Owner->Get_Cell().Y);
 	} else if (mobile && !((UnitClass *)Owner)->IsDeploying && Owner->Get_Mission() != MISSION_UNLOAD) {
@@ -646,16 +663,14 @@ void SlaveManagerClass::Miner_Working(void)
 		return;
 	}
 	if (Find_Ore(Rule->SlaveMinerShortScan / CELL_LEPTON_W) != CELL_NONE) {
+		Release_Slaves();
 		return;
 	}
 	Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
 	Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
-	if (spot == CELL_NONE) {
-		return;
-	}
 	Cell const here = Dock_Cell();
-	int const distance = std::max(std::abs(spot.X - here.X), std::abs(spot.Y - here.Y));
-	if (distance <= Rule->SlaveMinerScanCorrection / CELL_LEPTON_W) {
+	if (spot == CELL_NONE || std::max(std::abs(spot.X - here.X), std::abs(spot.Y - here.Y)) <= Rule->SlaveMinerScanCorrection / CELL_LEPTON_W) {
+		Release_Slaves();
 		return;
 	}
 	Owner->ArchiveTarget = &Map[spot];
@@ -769,6 +784,25 @@ bool SlaveManagerClass::Is_Dock_Cell_For(InfantryClass const * slave, CellClass 
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Writes one AUTOTEST slaves line: the owner's object number, type and kind, the miner state and, for each node, its
+/// status number and its slave's object number (0 for none). The gamemd comparison harness reads the same fields from
+/// Yuri's Revenge, so keep their order and meaning.
+/// </summary>
+void SlaveManagerClass::Log_Sample(void) const
+{
+	if (Owner == NULL) {
+		return;
+	}
+	std::string nodes;
+	for (NodeType const & node : Nodes) {
+		nodes += (nodes.empty() ? "" : ",") + std::to_string(node.Status) + ":" + std::to_string(node.Slave != NULL ? (int)node.Slave->ID : 0);
+	}
+	DebugString("AUTOTEST slaves frame %d owner %d type %s kind %s state %d nodes %s\n", Frame, (int)Owner->ID, Owner->TClass->Name(),
+		Owner->RTTI == RTTI_BUILDING ? "building" : "unit", MinerStatus, nodes.c_str());
 }
 
 
