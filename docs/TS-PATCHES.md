@@ -165,7 +165,7 @@ A row's link goes to the change record, or where there is none, to the manual pa
 
 | ts-patches file | What it did | In OpenTS |
 | --- | --- | --- |
-| `factory_rallypoints.asm` | Set a rally point with a plain click. `AltToRally` restored the old modifier. | Ported, with the same `AltToRally` setting. [rally-point-on-a-plain-click] |
+| `factory_rallypoints.asm` | Set a rally point with a plain click. | Ported. The old-modifier setting `AltToRally` was dropped. [rally-point-on-a-plain-click] |
 | `alt_to_undeploy.asm` | With `MoveToUndeploy=no` in `SUN.INI`, required Alt to move or undeploy a building. | Reworked: a building with a rally point moves or undeploys on the force-move key. There is no setting. [rally-point-on-a-plain-click] |
 | `alt_scout_fix.asm` | Refused a rally point in the shroud for every factory except a barracks. | Reworked: a unit that cannot enter the shroud ignores a rally point that is still shrouded when it leaves the factory. [rally-point-into-shroud] |
 | `no_guard_cursor_for_repair_vehicles.asm` | Showed the deploy cursor instead of the guard cursor on a repair vehicle pointing at itself, which also took the guard cursor from repair vehicles that cannot deploy. | Reworked: only a repair vehicle that can deploy is affected. [deploy-cursor-on-a-repair-vehicle] |

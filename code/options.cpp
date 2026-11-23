@@ -229,7 +229,6 @@ OptionsClass::OptionsClass(void) :
 	MenuTheme(MENU_THEME_RANDOM),
 	MenuBattle(true),
 	ToolTips(true),
-	AltToRally(false),
 	AircraftBodyPick(true),
 	PrioritySelectionFiltering(true),
 	CombatSelectionFirst(true),
@@ -712,9 +711,6 @@ void OptionsClass::Load_Settings(void)
 	}
 	DebugString("RecordReplays is %s\n", On_Off(Replay_Is_Recording_Enabled()));
 
-	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
-	DebugString("AltToRally is %s\n", On_Off(AltToRally));
-
 	AircraftBodyPick = ConfigINI.Get_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	DebugString("AircraftBodyPick is %s\n", On_Off(AircraftBodyPick));
 	PrioritySelectionFiltering = ConfigINI.Get_Bool("Options", "PrioritySelectionFiltering", PrioritySelectionFiltering);
@@ -924,7 +920,6 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
 	ConfigINI.Put_String("Options", "PlayerColors", Enum_Name(Player_Color_View_Names, PlayerColorView, "Default"));
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
-	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	ConfigINI.Put_Bool("Options", "PrioritySelectionFiltering", PrioritySelectionFiltering);
 	ConfigINI.Put_Bool("Options", "CombatSelectionFirst", CombatSelectionFirst);

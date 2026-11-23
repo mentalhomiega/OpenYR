@@ -6551,8 +6551,8 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 
 		if (Is_Move_Override()) {
 
-			// AltToRally swaps the plain click and the force-move key.
-			if (!disallow_force && altdown == Options.AltToRally) {
+			// A plain click sets the rally point; the force-move key keeps its move meaning.
+			if (!disallow_force && !altdown) {
 				return(ACTION_RALLY_TO_POINT);
 			}
 			if (!Can_Player_Move()) {

@@ -1,7 +1,7 @@
 ---
 key: SimulateWhileUnfocused
 summary: Keeps a campaign or skirmish running while another program has the focus.
-see_also: [ToolTips, AltToRally]
+see_also: [ToolTips]
 when_omitted:
   kind: value
   value: "no"

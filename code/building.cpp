@@ -4783,7 +4783,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 			action = ACTION_SELECT;
 		} else if (Is_Move_Override()) {
 			bool altdown = (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
-			if (altdown != Options.AltToRally) {
+			if (altdown) {
 				action = ACTION_SELECT;
 			} else {
 				Cell cell = object->Center_Coord().As_Cell();

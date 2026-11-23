@@ -3,7 +3,6 @@ title: Production and factories
 summary: "How houses order, build, pay for and release objects, and which rules limit what they can build."
 category: buildings-economy
 keys:
-  - AltToRally
   - Armory
   - BuildLimit
   - BuildSpeed
@@ -368,7 +367,7 @@ A [`HoverPad=yes`](/keys/hoverpad/) structure also receives the first [`PadAircr
 
 ## Rally points
 
-A structure whose [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType` can hold a rally point. Select it and click the ground to set one. Holding the force-move key instead gives the structure a move order, which packs up a structure that names an [`UndeploysInto`](/keys/undeploysinto/) type. [`AltToRally=yes`](/keys/alttorally/) swaps the two.
+A structure whose [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType` can hold a rally point. Select it and click the ground to set one. Holding the force-move key instead gives the structure a move order, which packs up a structure that names an [`UndeploysInto`](/keys/undeploysinto/) type.
 
 The rally point is not always the clicked cell. The engine records the nearest cell to it where infantry could stand, or where an aircraft could fly for an aircraft factory, searched within the structure's movement zone. A `Naval=yes` structure searches for a cell an amphibious unit can enter instead, so a water cell can be its rally point. If there is no such cell, no rally point is set. With [EVAMD.INI](/formats/eva-ini/), the owner hears `EVA_NewRallyPointEstablished` when a rally point is set.
 

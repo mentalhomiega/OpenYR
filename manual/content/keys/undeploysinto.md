@@ -1,7 +1,7 @@
 ---
 key: UndeploysInto
 summary: The UnitType a structure turns back into when it is taken down.
-see_also: ["DeploysInto", "UnloadingClass", AltToRally]
+see_also: ["DeploysInto", "UnloadingClass"]
 when_omitted:
   kind: value
   value: none
@@ -30,7 +30,7 @@ Except for a construction yard, a structure that names a type counts as a [deplo
 
 Except while an EM pulse has stunned it, the player can give the structure a move order. The move cursor appears over an empty cell that the structure's type could be built on, and over any cell of the playable area while Shift is held. A [`ConstructionYard=yes`](/keys/constructionyard/) structure takes a move order only outside a campaign, for a human player, in a session with the MCV redeploy option on.
 
-If the structure's [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType`, a plain click on the ground sets its rally point, and a move order needs the force-move key. [`AltToRally=yes`](/keys/alttorally/) swaps the two. Any other structure, including a construction yard, takes the move order on a plain click.
+If the structure's [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType`, a plain click on the ground sets its rally point, and a move order needs the force-move key. Any other structure, including a construction yard, takes the move order on a plain click.
 
 A name that matches no registered UnitType registers a new, unconfigured vehicle type under that name. The values `none` and `<none>` clear the key, so the structure names no vehicle.
 

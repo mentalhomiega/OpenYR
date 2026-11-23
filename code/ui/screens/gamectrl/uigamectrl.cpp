@@ -48,8 +48,6 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.ShowHidden = (intent.Value != 0);
 	} else if (intent.Name == "defencerange") {
 		State.ShowDefenceRange = (intent.Value != 0);
-	} else if (intent.Name == "rally") {
-		State.AltToRally = (intent.Value != 0);
 	} else if (intent.Name == "airpick") {
 		State.AircraftBodyPick = (intent.Value != 0);
 	} else if (intent.Name == "flatgrid") {
@@ -95,7 +93,6 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.EdgeScroll = true;
 		State.ShowHidden = false;
 		State.ShowDefenceRange = State.ModernInterface;
-		State.AltToRally = false;
 		State.SimulateUnfocused = false;
 		State.FlatPlacementGrid = true;
 		State.CombatSelectionFirst = true;
@@ -139,9 +136,6 @@ void UIGameControlsPresenterClass::Apply(void)
 	Service.Set_Show_Defence_Range(State.ShowDefenceRange);
 	if (State.HasDifficulty) {
 		Service.Set_Difficulty(State.Difficulty);
-	}
-	if (State.AltToRally != Start.AltToRally) {
-		Service.Set_Alt_To_Rally(State.AltToRally);
 	}
 	if (State.SimulateUnfocused != Start.SimulateUnfocused) {
 		Service.Set_Simulate_Unfocused(State.SimulateUnfocused);
@@ -224,7 +218,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 		virtual void Sync(void) override
 		{
 			Dirty({"speed", "scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
-				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname", "rally",
+				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname",
 				"airpick", "flatgrid", "combatfirst", "background", "sorting", "debugmode", "replays", "autosave", "classicspeeds", "hasspeed"});
 		}
 
@@ -249,7 +243,6 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("speedname", &state.SpeedName)
 				&& model.Bind("leavelabel", &state.LeaveLabel)
 				&& model.Bind("extras", &state.Extras)
-				&& model.Bind("rally", &state.AltToRally)
 				&& model.Bind("airpick", &state.AircraftBodyPick)
 				&& model.Bind("flatgrid", &state.FlatPlacementGrid)
 				&& model.Bind("combatfirst", &state.CombatSelectionFirst)

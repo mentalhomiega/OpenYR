@@ -113,11 +113,6 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.Difficulty = difficulty;
 		}
 
-		virtual void Set_Alt_To_Rally(bool on) override
-		{
-			Options.AltToRally = on;
-		}
-
 		virtual void Set_Simulate_Unfocused(bool on) override
 		{
 			Options.SimulateWhileUnfocused = on;
@@ -229,7 +224,6 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	Fetch_Names(state.DetailNames, GameDetailLevelNames, OptionsClass::MAX_DETAIL_SETTING);
 	state.DifficultyNames = UI_Difficulty_Names();
 
-	state.AltToRally = Options.AltToRally;
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
 	state.AircraftBodyPick = Options.AircraftBodyPick;
 	state.FlatPlacementGrid = Options.FlatPlacementGrid;
