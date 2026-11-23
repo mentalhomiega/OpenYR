@@ -1121,6 +1121,25 @@ static TypeReadMarks TypeMarks;
 
 
 /// <summary>
+/// Whether the [Tiberiums] list of the INI names the type.
+/// gamemd reads a tiberium type only from an INI whose [Tiberiums] section lists it
+/// (TiberiumClass::Process, 0x721D10), so a map without that section never changes a type.
+/// </summary>
+static bool Tiberium_Is_Listed(CCINIClass const & ini, TiberiumClass const * tiberium)
+{
+	static char const * const TIBERIUMS = "Tiberiums";
+	char buffer[32];
+	int count = ini.Entry_Count(TIBERIUMS);
+	for (int i = 0; i < count; i++) {
+		if (ini.Get_String(TIBERIUMS, ini.Get_Entry(TIBERIUMS, i), "", buffer, sizeof(buffer)) && stricmp(buffer, tiberium->Name()) == 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Reads the types of one list that were created after the mark, and moves the mark to the end.
 /// </summary>
 /// <returns>The number of types read.</returns>
@@ -1129,6 +1148,11 @@ static int Read_Types_From(LIST & list, int & mark, CCINIClass const & ini)
 {
 	int read = 0;
 	for (; mark < list.Count(); mark++) {
+		if constexpr (std::is_same_v<LIST, DynamicVectorClass<TiberiumClass *>>) {
+			if (!Tiberium_Is_Listed(ini, list[mark])) {
+				continue;
+			}
+		}
 		if (ini.Is_Present(list[mark]->Name())) {
 			DebugString("Rules: [%s] was created after its list was read; reading its section now.\n", list[mark]->Name());
 		}
@@ -4307,7 +4331,9 @@ bool RulesClass::Objects(CCINIClass const & ini)
 	TypeMarks.VoxelAnims = VoxelAnimTypes.Count();
 
 	for (int tibindex = 0; tibindex < Tiberiums.Count(); tibindex++) {
-		Tiberiums[tibindex]->Read_INI(ini);
+		if (Tiberium_Is_Listed(ini, Tiberiums[tibindex])) {
+			Tiberiums[tibindex]->Read_INI(ini);
+		}
 	}
 	TypeMarks.Tiberiums = Tiberiums.Count();
 

@@ -1,0 +1,9 @@
+; Tiberium types are read only through the [Tiberiums] list of an INI (TiberiumClass::Process, 0x721D10, called last by RulesClass::Read_File,
+; 0x668BF0, for the rules INI and again for the map INI). A map that changes [Riparius] with no [Tiberiums] section of its own is
+; ignored, and a map that lists Riparius under [Tiberiums] has it applied. Both maps are the rmg-temperate map plus a [Riparius] section with
+; Value=100 (stock Riparius is worth 25 a bail), so the census value is 57850 when the section is ignored and 231400 when it is applied (the same 344 cells).
+; Map: TIBLISTED.MAP, [Tiberiums] lists Riparius. Expected: ore Riparius cells 344 density 2375 value 231400.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/tiberium-map-listed.txt -Mods src-agent29/tests/autotest/tiberium-map-list -Map TIBLISTED.MAP -Seconds 150 -Filter "AUTOTEST   ore|Exception"
+2 randommap
+2 census ore
+3 quit
