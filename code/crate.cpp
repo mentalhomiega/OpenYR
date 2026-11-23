@@ -44,6 +44,8 @@
 #include "_tactica.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "dbgprint.h"
+#include "globals.h"
 #include "overlay.h"
 #include "rules.h"
 #include "tactical.h"
@@ -71,6 +73,18 @@ bool CrateClass::Remove_It(void)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Writes one AUTOTEST crate line for a crate on the map: its slot, its cell and the frames left on its timer. The
+/// gamemd comparison harness reads the same fields from Yuri's Revenge, so keep their order and units.
+/// </summary>
+void CrateClass::Log_Sample(int slot) const
+{
+	if (Is_Valid()) {
+		DebugString("AUTOTEST crate frame %d slot %d x %d y %d left %d\n", Frame, slot, Location.X, Location.Y, Timer.Value());
+	}
 }
 
 

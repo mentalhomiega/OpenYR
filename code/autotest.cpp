@@ -323,6 +323,15 @@ int SuperSampleInterval = 0;
 // The frames between the samplebullets step's logs, 0 when it is off.
 int BulletSampleInterval = 0;
 
+// The frames between the sampleslaves step's logs, 0 when it is off.
+int SlaveSampleInterval = 0;
+
+// The frames between the samplecrates step's logs, 0 when it is off.
+int CrateSampleInterval = 0;
+
+// The frames between the sampleai step's logs, 0 when it is off.
+int AiSampleInterval = 0;
+
 // The frames between the sampleharvest step's logs, 0 when it is off, and the block of cells whose tiberium it counts.
 int HarvestSampleInterval = 0;
 Rect HarvestSampleBlock;
@@ -1328,6 +1337,65 @@ static void Log_Bullets(void)
 static void Samplebullets_Step(StepType const & step)
 {
 	BulletSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs the expert system timer of every computer house: the frames left until its next AI pass, which is when it fires a
+/// charged super weapon. The gamemd comparison harness reads the same field from Yuri's Revenge, so the fields must stay as
+/// they are.
+/// </summary>
+static void Log_Ai_Timers(void)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		if (!house->Is_Human_Player() && !house->Class->IsMultiplayPassive) {
+			DebugString("AUTOTEST ai frame %d house %s left %d\n", Frame, house->Class->Name(), house->AITimer.Value());
+		}
+	}
+}
+
+
+// sampleai <interval>: logs the AI timer of every computer house (see Log_Ai_Timers) on each frame that is a multiple of the interval; 0 stops.
+static void Sampleai_Step(StepType const & step)
+{
+	AiSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs every crate on the map: its slot, cell and the frames left on its timer. The gamemd comparison harness reads the
+/// same fields from Yuri's Revenge, so the fields must stay as they are.
+/// </summary>
+static void Log_Crates(void)
+{
+	Map.Log_Crates();
+}
+
+
+// samplecrates <interval>: logs every crate on the map (see Log_Crates) on each frame that is a multiple of the interval; 0 stops.
+static void Samplecrates_Step(StepType const & step)
+{
+	CrateSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs the slave manager of every object that has one (see SlaveManagerClass::Log_Sample). The gamemd comparison
+/// harness reads the same fields from Yuri's Revenge, so the fields must stay as they are.
+/// </summary>
+static void Log_Slaves(void)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->SlaveManager.has_value());},
+		[&](TechnoClass * techno) {techno->SlaveManager->Log_Sample();});
+}
+
+
+// sampleslaves <interval>: logs every slave manager (see Log_Slaves) on each frame that is a multiple of the interval; 0 stops.
+static void Sampleslaves_Step(StepType const & step)
+{
+	SlaveSampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8730,6 +8798,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"samplevet", Samplevet_Step},
 		{"samplesuper", Samplesuper_Step},
 		{"samplebullets", Samplebullets_Step},
+		{"sampleslaves", Sampleslaves_Step},
+		{"samplecrates", Samplecrates_Step},
+		{"sampleai", Sampleai_Step},
 		{"sampleharvest", Sampleharvest_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
@@ -9511,6 +9582,18 @@ void AutoTest_Frame(void)
 
 	if (BulletSampleInterval > 0 && (Frame % BulletSampleInterval) == 0) {
 		Log_Bullets();
+	}
+
+	if (SlaveSampleInterval > 0 && (Frame % SlaveSampleInterval) == 0) {
+		Log_Slaves();
+	}
+
+	if (CrateSampleInterval > 0 && (Frame % CrateSampleInterval) == 0) {
+		Log_Crates();
+	}
+
+	if (AiSampleInterval > 0 && (Frame % AiSampleInterval) == 0) {
+		Log_Ai_Timers();
 	}
 }
 

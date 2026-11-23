@@ -33,6 +33,7 @@
 #include "unittype.h"
 
 #include <cstring>
+#include <string>
 
 
 namespace {
@@ -769,6 +770,25 @@ bool SlaveManagerClass::Is_Dock_Cell_For(InfantryClass const * slave, CellClass 
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Writes one AUTOTEST slaves line: the owner's object number, type and kind, the miner state and, for each node, its
+/// status number and its slave's object number (0 for none). The gamemd comparison harness reads the same fields from
+/// Yuri's Revenge, so keep their order and meaning.
+/// </summary>
+void SlaveManagerClass::Log_Sample(void) const
+{
+	if (Owner == NULL) {
+		return;
+	}
+	std::string nodes;
+	for (NodeType const & node : Nodes) {
+		nodes += (nodes.empty() ? "" : ",") + std::to_string(node.Status) + ":" + std::to_string(node.Slave != NULL ? (int)node.Slave->ID : 0);
+	}
+	DebugString("AUTOTEST slaves frame %d owner %d type %s kind %s state %d nodes %s\n", Frame, (int)Owner->ID, Owner->TClass->Name(),
+		Owner->RTTI == RTTI_BUILDING ? "building" : "unit", MinerStatus, nodes.c_str());
 }
 
 

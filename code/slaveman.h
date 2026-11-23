@@ -42,6 +42,7 @@ class SlaveManagerClass
 		void Detach(AbstractClass const * target);
 		bool Is_Dock_Cell_For(InfantryClass const * slave, CellClass const * cell) const;
 		void Serialize(SaveStreamClass & stream);
+		void Log_Sample(void) const;
 
 	private:
 		enum NodeStatusType {

@@ -2460,6 +2460,17 @@ bool MapClass::Place_Random_Crate(void)
 
 
 /// <summary>
+/// Writes an AUTOTEST crate line for each crate on the map (CrateClass::Log_Sample).
+/// </summary>
+void MapClass::Log_Crates(void) const
+{
+	for (int index = 0; index < ARRAY_SIZE(Crates); index++) {
+		Crates[index].Log_Sample(index);
+	}
+}
+
+
+/// <summary>
 /// Places a crate on the nearest free cell to the one given and returns whether one was placed
 /// (MapClass::PlacePowerupCrate, 0x56BEC0). A powerup of CRATE_FIRST up to CRATE_COUNT fixes what
 /// the crate gives; any other value leaves it random.

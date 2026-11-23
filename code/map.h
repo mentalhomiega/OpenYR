@@ -134,6 +134,7 @@ class MapClass: public GScreenClass
 		int Cell_Threat(Cell const & cell, HouseClass const & house);
 		Cell Pick_Random_Location(void) const;
 		bool Place_Random_Crate(void);
+		void Log_Crates(void) const;
 		bool Place_Crate(Cell const & cell, int powerup);
 		bool Remove_Crate(Cell const & cell);
 		void Shroud_The_Map(HouseClass * house);
