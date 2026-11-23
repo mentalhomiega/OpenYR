@@ -4,7 +4,7 @@
 ; then the nearest to the Kremlin (CARUS03 at 125,122). Destroying the four tagged Apocalypse tanks and BadGuy3's Tesla coil,
 ; flak cannons and sentry guns around the Kremlin springs "Kremlin Secured 1", and the chain ends in "Mission Victory".
 ; The Kremlin itself must stand ("Kremlin is Destroyed" loses the mission); the tanks never target it.
-; Expected: "AUTOTEST game over frame N: won" (frame 4931 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 5049 in the last run; the frame moves a little as the game changes).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all12.txt -Campaign -Map ALL12S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
