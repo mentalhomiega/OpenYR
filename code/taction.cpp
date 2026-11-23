@@ -1692,14 +1692,15 @@ bool TActionClass::TAction_SUB_TIMER(HouseClass * , ObjectClass * , TriggerClass
 
 /// <summary>
 /// Starts the mission timer running.
-/// The timer is set to the number of seconds the action calls for and EVA announces
-/// the countdown to the player.
+/// The timer is set to the number of seconds the action calls for, EVA announces
+/// the countdown to the player, and a label that Timer Text gave goes back to the default.
 /// </summary>
 bool TActionClass::TAction_SET_TIMER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Speak(VOX_TIMER_STARTED);
 	Scen->MissionTimer = Data.Value * TICKS_PER_SECOND;
 	Scen->MissionTimer.Start();
+	Scen->MissionTimerText[0] = '\0';
 	Map.Redraw_Tab();
 	return(true);
 }
