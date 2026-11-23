@@ -3877,6 +3877,16 @@ int BuildingClass::Exit_Structure(TechnoClass * base)
 				}
 
 				/*
+				**	A wall piece joins the walls of its owner in line with it, as the player's wall does: each
+				**	gap of up to the wall's guard range in cells is filled at once (MapClass::BuildingToWall,
+				**	0x588750, called by BuildingClass::KickOutUnit). The ring of a base plan is so built from
+				**	a few pieces.
+				*/
+				if (buildingtype->ToOverlay != NULL && buildingtype->ToOverlay->IsWall && !buildingtype->IsFirestormWall) {
+					Map.Place_Wall(placementcoord.As_Cell(), House, buildingtype);
+				}
+
+				/*
 				 * When a wall tower is placed, the next base defense node is
 				 * moved to the spot the tower actually appeared at.
 				 */

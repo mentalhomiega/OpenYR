@@ -1,0 +1,11 @@
+; A computer player that places a wall piece joins it to its other walls in line, so its ring of 19 wall nodes is walled from a few pieces:
+; gamemd's BuildingClass::KickOutUnit (0x443C60) calls MapClass::BuildingToWall (0x588750) after each placed wall, which fills the cells between the
+; piece and a wall of the same house up to the wall's GuardRange (5 cells) away. The mod in tests/autotest/ai-wall-ring-fill makes every defense turn roll a ring.
+; Measured in gamemd (yrcompare ai_build_allied): about 4 wall pieces are built while the 20-cell ring ends up walled.
+; Expected: 4 BUILDTRACE lines place GAWALL (the corners, from frame 2222 on) and the wall census at frame 6000 holds the 94 walls of the map and the 20 of the ring (loaded 114).
+; Before the fix every node got its own piece: 21 BUILDTRACE lines up to frame 5383, tying up the construction yard, with the same 114 walls at the end.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ai-wall-ring-fill.txt -Mods src-agent30/tests/autotest/ai-wall-ring-fill -AICountries 0 -Uncapped -Seconds 200 -Filter "BUILDTRACE.*places GAWALL|AUTOTEST wallcensus|Exception"
+10 buildtrace 1
+30 command CenterBase
+6000 wallcensus
+6001 quit
