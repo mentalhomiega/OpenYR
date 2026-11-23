@@ -1,0 +1,14 @@
+; The casualty counts that the Destroyed, Buildings and Units events (15 and 16) read leave out an object of a DontScore=yes type:
+; gamemd's RegisterDestruction (0x702D40) returns before it adds to the house's totals. The player loses a GI (DontScore) and a Conscript
+; (E2), so the lost units count is 1.
+; Expected: `counts Americans ... lost 0/0` at frame 51 and `lost 0/1` at frame 81. Before the fix: `lost 0/1` and `lost 0/2`.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/events-lost-dontscore.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   counts Americans|Exception"
+1 rules events-lost-dontscore.ini
+30 command CenterBase
+40 own E1 60 60
+41 own E2 61 60
+50 kill E1 1
+51 houses
+80 kill E2 1
+81 houses
+100 quit

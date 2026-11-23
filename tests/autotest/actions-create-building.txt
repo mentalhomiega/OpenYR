@@ -1,0 +1,18 @@
+; Create Building (action 125) sets the structure down as gamemd's BuildingClass::ForceCreate does (0x458A80). Vehicles and soldiers on the
+; foundation are lifted off and set down on the nearest free cells, and a structure already on the foundation makes the action fail.
+; Two tanks and a soldier stand on waypoint 1 (65,20), and a construction yard stands on waypoint 0 (52,97). Expected:
+;   Frame 55: the action is done. At frames 56 to 58 the power plant (GAPOWR) stands on 65,20 and the tanks and the soldier do not.
+;   Frame 70: the action for waypoint 0 fails and no second power plant stands anywhere. Before the fix it was done, the tanks stayed
+;   on the power plant's cell and a second power plant stood on the construction yard's cell.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/actions-create-building.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (trigactionline|where (GAPOWR|MTNK|E1))|Exception"
+30 command CenterBase
+50 own MTNK 65 20
+51 own MTNK 65 20
+52 own E1 65 20
+55 trigactionline 1,125,10,GAPOWR,0,0,0,0,B
+56 where GAPOWR
+57 where MTNK
+58 where E1
+70 trigactionline 1,125,10,GAPOWR,0,0,0,0,A
+71 where GAPOWR
+80 quit

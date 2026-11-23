@@ -94,20 +94,20 @@ static Cell FiredCell;
 
 
 /// <summary>
-/// Counts the vehicles a house owns that are, or are not, naval. A naval vehicle that carries
-/// passengers counts as not naval, as the owned navy count leaves it out (HouseClass::AddTracking).
+/// Counts the naval vehicles a house owns, as gamemd's owned navy count does (HouseClass::AddTracking,
+/// 0x4FF700). A naval vehicle that carries passengers is left out, and so is a type that is Insignificant
+/// or DontScore, which no owned count takes in.
 /// </summary>
 /// <param name="house">The house whose vehicles are counted.</param>
-/// <param name="naval">Whether to count the naval vehicles or the others.</param>
-/// <returns>int; How many vehicles of that kind the house owns.</returns>
-static int Count_Units_Of_House(HouseClass const * house, bool naval)
+/// <returns>int; How many naval vehicles the house owns.</returns>
+static int Count_Naval_Units_Of_House(HouseClass const * house)
 {
 	int count = 0;
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass const * unit = Units[index];
 		if (unit == NULL || !unit->IsActive || unit->House != house) continue;
-		bool const counts_as_naval = unit->Class->IsNaval && unit->Class->MaxPassengers == 0;
-		if (counts_as_naval == naval) {
+		if (unit->Class->IsInsignificant || unit->Class->IsDontScore) continue;
+		if (unit->Class->IsNaval && unit->Class->MaxPassengers == 0) {
 			count++;
 		}
 	}
@@ -640,14 +640,16 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 			**	Verify that no naval unit is left.
 			*/
 			case TEVENT_NAVAL_UNITS_DESTROYED:
-				if (Count_Units_Of_House(house, true) > 0) return(false);
+				if (Count_Naval_Units_Of_House(house) > 0) return(false);
 				break;
 
 			/*
-			**	Verify that no land unit or infantry is left.
+			**	Verify that no land unit or infantry is left. The vehicles are the owned units less the naval
+			**	ones (0x71F16F), so a structure that counts as a vehicle, such as a deployed Slave Miner,
+			**	is a unit here.
 			*/
 			case TEVENT_LAND_UNITS_DESTROYED:
-				if (house->CurInfantry > 0 || Count_Units_Of_House(house, false) > 0) return(false);
+				if (house->CurUnits - Count_Naval_Units_Of_House(house) > 0 || house->CurInfantry > 0) return(false);
 				break;
 
 			/*

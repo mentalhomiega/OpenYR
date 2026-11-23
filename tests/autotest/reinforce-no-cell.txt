@@ -1,0 +1,9 @@
+; A reinforcement with no cell to arrive at is discarded, as gamemd's does (0x65E010 deletes the group when the cell is empty). The team
+; type has no waypoint and none is given, so ours used to put the group on a map edge.
+; Expected: the reinforce step answers 1, and no `count E1` line follows (it read 2 before the fix).
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/reinforce-no-cell.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (reinforce|count E1)|Exception"
+30 command CenterBase
+40 teamini reinforce-gamemd.ini
+50 reinforce TSTRNOWP
+51 count E1
+100 quit

@@ -1,0 +1,12 @@
+; Trigger event Land Units Destroyed (56) for the computer house, Africans (house 5), once every vehicle and soldier of it is dead and a
+; tank with DontScore=yes has been put on its side. gamemd reads the house's owned vehicle count (0x71F16F), which leaves out a DontScore
+; type (HouseClass::AddTracking, 0x4FF700), so the event springs. Ours counted every vehicle of the house, so it did not.
+; Expected: "sprung ATEV1" shortly after frame 60. Before the fix it never springs.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/events-land-units-destroyed.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV|counts Africans)|Exception"
+1 rules events-land-units-destroyed.ini
+30 command CenterBase
+40 killhouse Africans 2
+50 enemy MTNK 70 70
+60 tagevent general 56,0,5
+62 houses
+100 quit

@@ -1,0 +1,8 @@
+; The reinforcement action asks for no announcer line in gamemd (0x65D8E0 speaks nothing, and the exe has no EVA_ReinforcementsHaveArrived).
+; Ours used to ask for EVA_ReinforcementsHaveArrived when an allied team arrived. The team of two GIs comes to the cell 60,60 for the player.
+; Expected: the reinforce step answers 1 and the log has no `Speech: request EVA_ReinforcementsHaveArrived` line.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/reinforce-no-eva.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   reinforce|Speech: request|Exception"
+30 command CenterBase
+40 teamini reinforce-gamemd.ini
+50 reinforce TSTRNOWP 60 60
+100 quit
