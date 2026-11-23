@@ -1,0 +1,20 @@
+; Iron Curtain against a chronoshifting tank. A Rhino tank (HTNK) is sphered at frame 60 and the warp fires at frame 70 to 46,40, so the
+; tank waits at 40,40 until frame 130 (ChronoDelay=60). An Iron Curtain on 40,40 at frame 122 passes it by (SuperClass::Launch, 0x6CD008
+; skips a foot whose IsImmobilized flag is set until the warp-out starts). The tank lands at 46,40 at frame 130 and a curtain on 46,40 at frame 150 covers it.
+; Expected: the lift line at frame 128 reads ironcurtain 0 and the line at frame 160 reads ironcurtain 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/sw-curtain-chrono-delay.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   lift|AUTOTEST   chrono|Exception"
+20 own GAPOWR 56 40
+30 own HTNK 40 40
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 46 40
+120 grant IronCurtainSpecial
+122 fire IronCurtainSpecial 40 40
+128 lift HTNK
+131 where HTNK
+145 grant IronCurtainSpecial
+150 fire IronCurtainSpecial 46 40
+160 lift HTNK
+200 quit

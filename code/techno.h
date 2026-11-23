@@ -821,6 +821,8 @@ class TechnoClass :	public RadioClass,
 		virtual bool Is_Chrono_Warping(void) const {return(false);}
 		// Warping out, or held by a chrono teleport.
 		bool Is_Warp_Fading(void) const {return(IsBeingWarpedOut || Is_Chrono_Warping());}
+		// Ordered to chronoshift and still waiting on its cell: gamemd's IsImmobilized flag (0x27C), set by the chrono order and cleared when the unit leaves.
+		bool Is_Chrono_Immobilized(void) const {return(IsBeingWarpedOut && Is_Chrono_Warping());}
 		void Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon = NULL);
 		int Bomb_Delay(void) const;
 		bool Can_Detonate_Bomb(void) const;

@@ -911,6 +911,10 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 		if (!object->Is_Techno()) {
 			return;
 		}
+		// A foot ordered to chronoshift stays uncovered until it leaves its cell (SuperClass::Launch, 0x6CCFFE).
+		if (static_cast<TechnoClass *>(object)->Is_Chrono_Immobilized()) {
+			return;
+		}
 		HouseClass const * owner = object->Owner_HouseClass();
 		SuperRules::Occupant const kind = object->RTTI == RTTI_BUILDING ? SuperRules::Occupant::Building : (object->RTTI == RTTI_INFANTRY ? SuperRules::Occupant::Infantry : SuperRules::Occupant::Unit);
 		if (owner != NULL && !SuperRules::House_Passes(Class->Keys.AffectsHouse, owner == House, House->Is_Ally(owner))) {

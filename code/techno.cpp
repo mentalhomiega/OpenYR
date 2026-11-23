@@ -4725,6 +4725,11 @@ FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon,
 		return(FIRE_ILLEGAL);
 	}
 
+	// A computer house's weapons leave an Iron Curtained object alone (TechnoClass::GetFireError, 0x6FC24D).
+	if (techno != NULL && !House->Is_Human_Player() && techno->Is_Iron_Curtained()) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A bomb disarming weapon fires only at an object that carries a bomb.
 	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsBombDisarm && (techno == NULL || techno->BombDetonateFrame == -1)) {
 		return(FIRE_ILLEGAL);
