@@ -1,0 +1,18 @@
+; A computer temporal gun whose bullet can hit aircraft (the temporal-parity mod's HTK) guards beside a player Kirov
+; Airship (ZEP) that flies up to it and a player Grizzly (MTNK) that stays out of range until frame 500. gamemd's BulletClass::Detonate (0x469210) lets a
+; temporal warhead start its warp only on a foot in the ground layer (the layer test at 0x46967C), so the Kirov in
+; flight is not warped. The Grizzly is the control and is warped as usual.
+; Expected: the Kirov is in the air from frame 90 on, within range of the gun from about frame 300, a "warp start MTNK" line, and no "warp start ZEP" line.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/temporal-air-ignored.txt -Mods src-agent26/tests/autotest/temporal-parity -Seconds 60 -Filter "AUTOTEST warp|AUTOTEST   airborne|Exception"
+30 command CenterBase
+35 reveal
+40 spawn HTK 60 36
+41 grantunit ZEP 70 36
+42 own MTNK 60 45
+45 move ZEP 62 36
+90 airborne ZEP
+130 airborne ZEP
+300 airborne ZEP
+450 airborne ZEP
+500 move MTNK 60 40
+650 quit

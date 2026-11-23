@@ -5211,6 +5211,11 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		return(false);
 	}
 
+	// A structure that changes hands loses an Ivan bomb, unless soldiers can garrison it (BuildingClass::SetOwningHouse, 0x448260).
+	if (BombDetonateFrame != -1 && !Class->IsCanBeOccupied) {
+		Disarm_Bomb();
+	}
+
 	Grant_Cloak_And_Clear_Spy_Bits(newowner);
 
 	// SetOwningHouse (0x448260) clears the primary before the owner changes.
