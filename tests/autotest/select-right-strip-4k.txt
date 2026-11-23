@@ -1,0 +1,53 @@
+; Selection in the strip right of the map view and below the Modern panel at 3840x2160, zoom the default (a 1920x1080 frame at interface scale 2). Four infantry stand on one row at the left, centre, right (below the panel) and far right.
+; Each is caught by a band dragged across it, which starts on the map, and by a click. The band presses 60 px left of the unit and releases beyond it; the clicks follow the bands.
+; Expected: 'selected 1: E1', 'E2', 'ENGINEER', 'DOG' after the four bands, then the same four after the four clicks. A dead region shows as 'selected 0:' or a repeated type.
+; The units were placed by their window pixels with cellpixel: about x 12%, 50%, 88% and 98% of the view width, at mid height (below the panel, which ends near y 410).
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/select-right-strip-4k.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 3840 -Height 2160 -Seconds 90 -Settings "[Options]`nInterfaceStyle=Modern`nSidebarOpacity=80`nDebugMode=yes" -Filter "AUTOTEST   selected|Exception"
+1 glideclock
+1 view 75 75
+2 reveal
+30 grantunit E1 97 145
+31 grantunit E2 115 115
+32 grantunit ENGINEER 138 93
+33 grantunit DOG 146 84
+60 windowcell press 97 145 -120 -120
+61 hold 01
+62 windowcell move 97 145
+63 windowcell move 97 145 40 120
+64 windowcell move 97 145 40 120
+65 windowcell release 97 145 40 120
+66 release 01
+68 selected
+75 windowcell press 115 115 -120 -120
+76 hold 01
+77 windowcell move 115 115
+78 windowcell move 115 115 40 120
+79 windowcell move 115 115 40 120
+80 windowcell release 115 115 40 120
+81 release 01
+83 selected
+90 windowcell press 138 93 -120 -120
+91 hold 01
+92 windowcell move 138 93
+93 windowcell move 138 93 40 120
+94 windowcell move 138 93 40 120
+95 windowcell release 138 93 40 120
+96 release 01
+98 selected
+105 windowcell press 146 84 -120 -120
+106 hold 01
+107 windowcell move 146 84
+108 windowcell move 146 84 40 120
+109 windowcell move 146 84 40 120
+110 windowcell release 146 84 40 120
+111 release 01
+113 selected
+130 windowcell click 97 145
+131 selected
+136 windowcell click 115 115
+137 selected
+142 windowcell click 138 93
+143 selected
+148 windowcell click 146 84
+149 selected
+159 quit
