@@ -8,7 +8,8 @@ valid_values:
 caveats:
   - "The storm is the one the Lightning Storm super weapon calls. It breaks [`LightningDeferment`](/keys/lightningdeferment/) frames later and lasts [`LightningStormDuration`](/keys/lightningstormduration/) frames."
   - "The trigger's house is the storm's owner: houses that are not its allies lose their radar while the storm rages."
-  - "The action fails while a storm is raging, or when the waypoint does not exist. A storm that has been called but has not yet broken does not stop another call."
+  - "The action fails while a storm is raging. A storm that has been called but has not yet broken does not stop another call."
+  - "A waypoint the map does not place sends the storm to a random cell on the map."
   - "No super weapon is used, so the trigger's house needs no Lightning Storm, power or charge."
 related:
   - type: action

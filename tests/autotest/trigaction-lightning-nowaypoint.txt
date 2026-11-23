@@ -1,0 +1,6 @@
+; Lightning Storm strike (action 102) with a waypoint the map does not place. gamemd does not check the
+; waypoint, so the storm breaks over a random cell and the action succeeds (TActionClass::Execute, 0x6dda9e).
+; Expected: done at frame 30 with the storm pending and no waypoint cell.
+30 trigaction 102 0 90
+40 trigaction 0 0 1
+60 quit

@@ -4131,45 +4131,40 @@ class CenterBaseCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 
+			// Walks the lists from the back, as gamemd does (0x7315A0): of several yards the earliest one
+			// listed wins, and the base center the house keeps beats any other structure.
 			Coord conyard_coord = COORD_NONE;
 			Coord any_building_coord = COORD_NONE;
-			int index = 0;
-			bool none = true;
 
-			if (PlayerPtr->CurBuildings) {
-				for (index = 0; index < Buildings.Count(); index++) {
-					none = false;
-					BuildingClass * building = Buildings[index];
+			for (int index = Buildings.Count() - 1; index >= 0; index--) {
+				BuildingClass * building = Buildings[index];
 
-					if (building != NULL && !building->IsInLimbo && building->House->Is_Player_Control()) {
-						if (Rule->BuildConst.Is_In_List(building->Class)) {
-							conyard_coord = building->Center_Coord();
-							if (building->IsLeader) {
-								break;
-							}
-						} else if (any_building_coord == COORD_NONE) {
-							any_building_coord = building->Center_Coord();
-						}
+				if (building == NULL || building->IsInLimbo || building->House != PlayerPtr) {
+					continue;
+				}
+				if (building->Class->IsConstructionYard) {
+					conyard_coord = building->Center_Coord();
+					if (building->IsLeader) {
+						break;
+					}
+				} else if (any_building_coord == COORD_NONE) {
+					any_building_coord = building->Center_Coord();
+				}
+			}
+
+			if (conyard_coord == COORD_NONE && any_building_coord == COORD_NONE && PlayerPtr->CurUnits) {
+				for (int index = Units.Count() - 1; index >= 0; index--) {
+					UnitClass * unit = Units[index];
+					if (unit != NULL && !unit->IsInLimbo && unit->House->Is_Player_Control() && Rule->BaseUnit.Is_In_List(unit->Class)) {
+						conyard_coord = unit->Center_Coord();
+						break;
 					}
 				}
 			}
 
-			if (!none) {
-				if (any_building_coord == COORD_NONE && conyard_coord == COORD_NONE) {
-					none = true;
-				}
-			}
-
-			if (none) {
-				if (PlayerPtr->CurUnits) {
-					for (index = 0; index < Units.Count(); index++) {
-						UnitClass * unit = Units[index];
-						if (unit != NULL && !unit->IsInLimbo && unit->House->Is_Player_Control() && Rule->BaseUnit.Is_In_List(unit->Class)) {
-							conyard_coord = unit->Center_Coord();
-							break;
-						}
-					}
-				}
+			Coord const base_center = PlayerPtr->Starting_Coord_Or_Default();
+			if (base_center != COORD_NONE) {
+				any_building_coord = base_center;
 			}
 
 			if (conyard_coord != COORD_NONE) {

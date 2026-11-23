@@ -1,0 +1,10 @@
+; Mind Control Base (action 123) naming the trigger's own house runs the same loop over its own structures (gamemd
+; 0x50d290 has no check for it): the action succeeds and the structures stay with the house.
+; Expected: done, and the power plant still listed for the player in the dump.
+30 command CenterBase
+40 own GAPOWR 60 40
+50 trigaction 123 0 0
+60 dump
+70 trigaction 124 0 0
+80 dump
+100 quit

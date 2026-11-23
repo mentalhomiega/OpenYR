@@ -1,0 +1,6 @@
+; Chrono Screen Effect (action 127) with no frames to run for starts nothing but still counts as carried out
+; (TActionClass::Execute, 0x6dfabf returns true after ChronoScreenEffect::Start, which ignores a count of none or less).
+; Expected: done for a number of 0 and for -5.
+30 trigaction 127 0 0
+40 trigaction 127 -5 0
+60 quit

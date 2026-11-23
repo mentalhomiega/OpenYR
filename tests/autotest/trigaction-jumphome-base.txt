@@ -1,0 +1,14 @@
+; Jump Camera Home (action 145) runs the CenterBase code of gamemd (0x7315a0): it walks the player's structures from
+; the back of the list, takes the earliest construction yard listed (the one with the primary flag wins at once),
+; and with no yard goes to the base center the house keeps rather than to the first other structure.
+; Expected: the view after frame 60 centers on the average of the two non-yard buildings, the one after frame 100
+; on the first of the two yards, not the second.
+30 own GAPOWR 60 56
+31 own GAPILE 74 44
+40 view 10 10
+50 trigaction 145 0 0
+70 own GACNST 62 70
+71 own GACNST 90 30
+80 view 10 10
+90 trigaction 145 0 0
+110 quit

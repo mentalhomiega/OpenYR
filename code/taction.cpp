@@ -3383,15 +3383,17 @@ bool TActionClass::TAction_IRON_CURTAIN_AT(HouseClass * , ObjectClass * , Trigge
 /// <summary>
 /// Calls a lightning storm centered on the waypoint for the trigger's house, as the Lightning
 /// Storm super weapon does with LightningStormDuration and LightningDeferment. The storm rages
-/// after the warning period, and the house's enemies lose their radar while it lasts.
+/// after the warning period, and the house's enemies lose their radar while it lasts. A waypoint
+/// the map does not place sends the storm to a random cell on the map.
 /// </summary>
-/// <returns>bool; Was the storm called? It fails while another storm is raging or the waypoint does not exist.</returns>
+/// <returns>bool; Was the storm called? It fails while another storm is raging.</returns>
 bool TActionClass::TAction_LIGHTNING_STORM_STRIKE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (LightningStormClass::Is_Active() || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (LightningStormClass::Is_Active()) {
 		return(false);
 	}
-	LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, Scen->Get_Waypoint_Cell(EffectLocation), house);
+	Cell const target = Scen->Is_Valid_Waypoint(EffectLocation) ? Scen->Get_Waypoint_Cell(EffectLocation) : Cell(0, 0);
+	LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, target, house);
 	return(true);
 }
 
@@ -3418,7 +3420,8 @@ HouseClass * TActionClass::Named_House(TriggerClass const * trig) const
 /// <summary>
 /// The trigger's house takes every structure of the named house, with their cargo and the
 /// vehicles docked at them, until Restore Mind Controlled Base gives them back. Nothing is
-/// announced.
+/// announced. A house that names itself marks its own structures as mind controlled, which keeps
+/// engineers from capturing them.
 /// </summary>
 /// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
 bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * , TriggerClass * trig, Cell const & )
@@ -3427,9 +3430,7 @@ bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * ,
 	if (target == NULL) {
 		return(false);
 	}
-	if (target != house) {
-		house->Mind_Control_Base(target);
-	}
+	house->Mind_Control_Base(target);
 	return(true);
 }
 
@@ -3943,14 +3944,12 @@ bool TActionClass::TAction_STOP_SOUNDS_AT(HouseClass * , ObjectClass * , Trigger
 /// <summary>
 /// Twirls the battlefield into white and back, as the chronoshift screen effect does. Each
 /// swirl lasts the number of frames the action gives, with 45 frames of white between them. The
-/// player's input is locked while the effect runs, unless it was locked already.
+/// player's input is locked while the effect runs, unless it was locked already. A number of
+/// frames of none or less starts nothing.
 /// </summary>
-/// <returns>bool; Was there a number of frames to run for?</returns>
+/// <returns>bool; Always true.</returns>
 bool TActionClass::TAction_CHRONO_SCREEN_EFFECT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (Data.Value <= 0) {
-		return(false);
-	}
 	Start_Chrono_Screen_Effect(Data.Value);
 	return(true);
 }
