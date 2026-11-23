@@ -86,6 +86,7 @@
 #include "tiberium.h"
 #include "scheme.h"
 #include "side.h"
+#include "revent.h"
 #include "rules.h"
 #include "saveload.h"
 #include "syncrechook.h"
@@ -5760,6 +5761,17 @@ static void Reaction_Step(StepType const & step)
 }
 
 
+// radarevents: writes each radar event now in play with its kind and cell, then how many there are.
+static void Radarevents_Step(StepType const &)
+{
+	for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
+		RadarEventClass const * event = RadarEventClass::RadarEvents[index];
+		DebugString("AUTOTEST   radarevent kind %d at %d,%d\n", (int)event->Type, (int)event->Location.X, (int)event->Location.Y);
+	}
+	DebugString("AUTOTEST   radarevents %d\n", RadarEventClass::RadarEvents.Count());
+}
+
+
 static void Clickcell_Step(StepType const & step)
 {
 	Cell const cell(step.X, step.Y);
@@ -9054,6 +9066,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"canrepair", Canrepair_Step},
 		{"overpower", Overpower_Step},
 		{"reaction", Reaction_Step},
+		{"radarevents", Radarevents_Step},
 		{"ruleanims", Ruleanims_Step},
 		{"canfire", Canfire_Step},
 		{"blast", Blast_Step},

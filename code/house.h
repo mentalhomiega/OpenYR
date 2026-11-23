@@ -1291,7 +1291,6 @@ class HouseClass : public AbstractClass
 		**	variables are used as countdown timers so that these announcements are paced
 		**	far enough apart to reduce annoyance.
 		*/
-		CDTimerClass<FrameTimerClass> SpeakAttackDelay;
 		CDTimerClass<FrameTimerClass> SpeakPowerDelay;
 		CDTimerClass<FrameTimerClass> SpeakMoneyDelay;
 		CDTimerClass<FrameTimerClass> SpeakMaxedDelay;

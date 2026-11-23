@@ -1,0 +1,13 @@
+; A second hit on the player's structure raises the base-attacked radar event again once the first event has run its course. gamemd's HouseClass::BuildingUnderAttack
+; (0x4F93E0) keeps no timer between alerts, so SpeakDelay (2 minutes) holds back nothing; only a live event of the same kind within 8 cells suppresses a new one.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/radar-attacked-no-speak-timer.txt -Seconds 90 -Uncapped -Filter "AUTOTEST   radarevent|AUTOTEST   hit|Exception"
+; Expected: after the first hit one event of kind 3 (base attacked) is in play; at frame 1000 the first has expired and the second hit raises a new one, so the line at frame 1010
+; reads "radarevents 1". Before the fix it read "radarevents 0", since the alert waited for the 2 minute timer.
+10 own GAPOWR 60 52
+11 houseunit E1@#1 63 40
+40 hit GAPOWR:HE@E1 10
+60 radarevents
+900 radarevents
+1000 hit GAPOWR:HE@E1 10
+1010 radarevents
+1020 quit
