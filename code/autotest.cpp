@@ -4095,6 +4095,19 @@ static void Selectadd_Step(StepType const & step)
 }
 
 
+// selectany <TypeID>: adds every object of that type to the selection whoever owns it, as a click on a visible enemy does, and
+// writes whether each one took the selection.
+static void Selectany_Step(StepType const & step)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {return(!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0);},
+		[&](TechnoClass * techno) {
+			bool const selected = techno->Select();
+			DebugString("AUTOTEST   selectany %s of %s at %d,%d: selected %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)selected);
+		});
+}
+
+
 static void Produce_Step(StepType const & step)
 {
 	TechnoTypeClass const * type = Find_Type(step.Argument);
@@ -8786,6 +8799,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"command", Command_Step},
 		{"select", Select_Step},
 		{"selectadd", Selectadd_Step},
+		{"selectany", Selectany_Step},
 		{"produce", Produce_Step},
 		{"produceai", Produceai_Step},
 		{"place", Place_Step},

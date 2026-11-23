@@ -1390,6 +1390,12 @@ void TechnoClass::Try_To_Cloak(void)
 	int i;
 
 	CellClass & cell = Map[Center_Coord().As_Cell()];
+
+	// A cloaked object of another house drops out of the player's selection when the player no longer senses its cell
+	// (TechnoClass::Sensed, 0x6F4EB0).
+	if (Cloak == CLOAKED && PlayerPtr != NULL && House != PlayerPtr && !cell.Is_Sensed(PlayerPtr)) {
+		Unselect();
+	}
 	if (cell.Is_Cloaked(House) && Is_Ready_To_Cloak()) {
 		DynamicVectorClass<TechnoClass *> targeting_me;
 		for (i = Technos.Count() - 1; i >= 0; i--) {
