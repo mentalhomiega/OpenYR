@@ -1736,12 +1736,14 @@ bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * w
 	}
 
 	/*
-	 * A temporal warhead starts its firer's warp on the target instead of hurting it
-	 * (BulletClass::Detonate, 0x469210).
+	 * A temporal warhead starts its firer's warp on the target instead of hurting it. A foot that
+	 * is not in the ground layer, such as an aircraft in flight, is left alone
+	 * (BulletClass::Detonate, 0x469210 and 0x46967C).
 	 */
 	else if (warhead->IsTemporal) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (Payback != NULL && Payback->TemporalImUsing && target != NULL) {
+		bool const on_ground = target == NULL || !target->Is_Foot() || static_cast<FootClass *>(target)->In_Which_Layer() == LAYER_GROUND;
+		if (Payback != NULL && Payback->TemporalImUsing && target != NULL && on_ground) {
 			Payback->TemporalImUsing->Fire(target);
 		}
 	}
