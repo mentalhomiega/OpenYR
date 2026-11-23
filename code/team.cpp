@@ -3495,15 +3495,10 @@ void TeamClass::TMission_LOSE(TeamMissionClass * mission, bool)
 
 /// <summary>
 /// Handles the play speech team mission.
-/// This routine has the announcer speak the scripted line.
+/// gamemd speaks nothing for this line: it ends at once (0x6E94BA), whatever the argument.
 /// </summary>
-void TeamClass::TMission_PLAY_SPEECH(TeamMissionClass * mission, bool)
+void TeamClass::TMission_PLAY_SPEECH(TeamMissionClass *, bool)
 {
-	if (Is_Eva_Loaded()) {
-		Speak_Eva_Index((int)mission->Data.Speech);
-	} else {
-		Speak(mission->Data.Speech);
-	}
 	IsNextMission = true;
 }
 
