@@ -1,0 +1,15 @@
+; A neutral machine shop (CAMACH, which soldiers cannot garrison) carries an Ivan bomb planted at frame 50, due at frame
+; 500, and the player's engineer captures it at about frame 100. gamemd's BuildingClass::SetOwningHouse (0x448260)
+; disarms the bomb of a structure that changes hands unless the structure can be occupied, so the bomb never goes off.
+; Expected: "plantbomb CAMACH ... detonates at frame 500", the machine shop owned by the player's house at frame 400, and
+; no "bomb on CAMACH goes off" line.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/ivan-bomb-capture-disarm.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   plantbomb|AUTOTEST bomb|AUTOTEST   where|Exception"
+30 command CenterBase
+35 reveal
+40 grantunit E1 56 30
+41 grantunit ENGINEER 60 36
+42 neutral CAMACH 64 36
+50 plantbombany CAMACH
+60 capture ENGINEER 64 36
+400 where CAMACH
+700 quit

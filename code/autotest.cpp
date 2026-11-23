@@ -4166,8 +4166,8 @@ static void Planmove_Step(StepType const & step)
 }
 
 
-// plantbomb <TypeID>: fixes an Ivan bomb to each of the player's objects of that type, planted by the player's first soldier.
-static void Plantbomb_Step(StepType const & step)
+// Fixes an Ivan bomb, planted by the player's first soldier, to each object of the type that passes the owner test.
+static void Plant_Bomb_On_Named(StepType const & step, bool any_owner)
 {
 	TechnoClass * planter = NULL;
 	for (int index = 0; planter == NULL && index < Infantry.Count(); index++) {
@@ -4177,11 +4177,25 @@ static void Plantbomb_Step(StepType const & step)
 	}
 	if (planter == NULL) return;
 	For_Technos(
-		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {return(any_owner ? Is_Techno_On_Map_Named(techno, step.Argument) : Is_Player_Techno_Named(techno, step.Argument));},
 		[&](TechnoClass * techno) {
 			techno->Plant_Bomb(planter);
 			DebugString("AUTOTEST   plantbomb %s at %d,%d detonates at frame %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->BombDetonateFrame);
 		});
+}
+
+
+// plantbomb <TypeID>: fixes an Ivan bomb to each of the player's objects of that type, planted by the player's first soldier.
+static void Plantbomb_Step(StepType const & step)
+{
+	Plant_Bomb_On_Named(step, false);
+}
+
+
+// plantbombany <TypeID>: the same, for the objects of that type on the map whoever owns them.
+static void Plantbombany_Step(StepType const & step)
+{
+	Plant_Bomb_On_Named(step, true);
 }
 
 
@@ -8800,6 +8814,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"strike", Strike_Step},
 		{"planmove", Planmove_Step},
 		{"plantbomb", Plantbomb_Step},
+		{"plantbombany", Plantbombany_Step},
 		{"planguard", Planguard_Step},
 		{"forceattack", Forceattack_Step},
 		{"counts", Counts_Step},
