@@ -1,0 +1,15 @@
+; Trigger actions that name an animation, a particle system or a super weapon by number must not crash when the number is
+; not in the rules. Meteor Shower (58) looks up METLARGE and METSMALL by name, which Yuri's Revenge rules do not define, and
+; used the failed lookup as an index. Meteor Impact (43), Particle Anim (88) and the two super weapon grants (33, 34) used
+; their number unchecked. gamemd reads those lists without a range check (0x6E2520, 0x6E2C40); ours skips the missing entry.
+; Expected: every line ends "done" or "failed" and the game reaches quit.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/trigaction-meteor-missing-anim.txt -Seconds 60 -Filter "AUTOTEST   trigaction|Exception"
+30 trigaction 43 0 1
+35 trigaction 43 9999 1
+40 trigaction 58 0 1
+45 trigaction 58 3 1
+50 trigaction 58 99 1
+55 trigaction 88 9999 1
+60 trigaction 33 9999 1
+65 trigaction 34 9999 1
+100 quit

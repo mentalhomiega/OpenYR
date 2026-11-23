@@ -1,0 +1,13 @@
+; Move to Cell (team script line 4) reads its cell as 128 * Y + X, as gamemd does (0x6E95B3), although the skirmish map
+; says NewINIFormat=4. The team's tank starts at 70,60 and its line says 8011, cell 75,62. Before the change the line was
+; read as 1000 * Y + X, which is cell 11,8, so the tank went there instead. Expected: the `where MTNK` lines show the tank
+; at or beside 75,62. No stock map uses a Move to Cell line.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/teams-movecell.txt -AICountries 1 -Seconds 90 -Filter "AUTOTEST   where MTNK|TEAMTRACE|Exception"
+30 command CenterBase
+1 teamtrace 1
+300 spawn MTNK 70 60
+310 teamini teams-movecell.ini
+320 team TSTMCT
+800 where MTNK
+1200 where MTNK
+1300 quit

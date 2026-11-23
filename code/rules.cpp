@@ -107,6 +107,7 @@
 #include "vector.h"
 #include "warhead.h"
 #include "warheadrules.h"
+#include "tmission.h"
 #include "weapon.h"
 
 #include "bench.hh"
@@ -846,6 +847,8 @@ RulesClass::RulesClass(void) :
 	IsKeepWarheadVersesSet(false),
 	IsEMEffectPulse(true),
 	IsEMEffectPulseSet(false),
+	IsMoveToCellWide(false),
+	IsMoveToCellWideSet(false),
 	PrismType(NULL),
 	PrismSupportModifier(100),
 	PrismSupportMax(8),
@@ -1944,6 +1947,11 @@ bool RulesClass::General(CCINIClass const & ini)
 			IsKeepWarheadVerses = ini.Get_Bool(GENERAL, "KeepWarheadVerses", IsKeepWarheadVerses);
 		}
 		IsKeepWarheadVerses = WarheadRules::Keeps_Warhead_Verses(IsKeepWarheadVersesSet, IsKeepWarheadVerses, Armor_Type_Count() - ARMOR_COUNT);
+		if (ini.Is_Present(GENERAL, "MoveToCellWide")) {
+			IsMoveToCellWideSet = true;
+			IsMoveToCellWide = ini.Get_Bool(GENERAL, "MoveToCellWide", IsMoveToCellWide);
+		}
+		IsMoveToCellWide = Move_To_Cell_Is_Wide(IsMoveToCellWideSet, IsMoveToCellWide, Armor_Type_Count() - ARMOR_COUNT);
 		if (ini.Is_Present(GENERAL, "EMEffectPulse")) {
 			IsEMEffectPulseSet = true;
 			IsEMEffectPulse = ini.Get_Bool(GENERAL, "EMEffectPulse", IsEMEffectPulse);

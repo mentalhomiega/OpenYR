@@ -1803,6 +1803,10 @@ class RulesClass
 		bool IsEMEffectPulse;
 		bool IsEMEffectPulseSet;
 
+		// Whether a Move to Cell team script line reads its cell as 1000 * Y + X on a map with NewINIFormat 4 or higher.
+		bool IsMoveToCellWide;
+		bool IsMoveToCellWideSet;
+
 		/*
 		 * The structure type whose towers charge each other before firing, the percent of extra
 		 * damage each supporting tower adds, how many may support one shot, the frames a
