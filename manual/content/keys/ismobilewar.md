@@ -22,4 +22,4 @@ The flag has these further effects:
 - When a vehicle deploys into a mobile war factory, a [`VehicleThief=yes`](/keys/vehiclethief/) infantryman targeting that vehicle drops its target. Every other object targeting the vehicle switches to the new structure.
 - The first time the structure finishes deploying, it takes [primary factory](/systems/production/#the-primary-factory) status unless it already has it.
 
-A mobile war factory that sets [`Factory=UnitType`](/keys/factory/) has a [rally point](/systems/production/#rally-points). A plain click on the ground sets the rally point, and a click with the force-move key held packs the structure up and drives it to the clicked point. [`AltToRally=yes`](/keys/alttorally/) swaps the two clicks.
+A mobile war factory that sets [`Factory=UnitType`](/keys/factory/) has a [rally point](/systems/production/#rally-points). A plain click on the ground sets the rally point, and a click with the force-move key held packs the structure up and drives it to the clicked point.

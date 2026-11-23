@@ -316,7 +316,6 @@ SystemCursor=no
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
-| [`AltToRally`](../manual/content/keys/alttorally.md) | `no` | Makes the force-move key set a factory's rally point and the plain click move the structure. | OpenTS |
 | [`AutoSaveInterval`](../manual/content/keys/autosaveinterval.md) | `10800` | How many frames pass between one automatic save and the next in a game started from the menu, or zero for none. | OpenTS |
 | [`BitmapSystemFont`](../manual/content/keys/bitmapsystemfont--client-settings.md) | `no` | `BitmapSystemFont=yes` draws the lists, text boxes, tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the ... | OpenTS |
 | [`DebugMode`](../manual/content/keys/debugmode--client-settings.md) | `no` | `DebugMode=yes` turns on the debug cheat commands for single-player games, which are campaign and skirmish games. | OpenYR |

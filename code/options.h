@@ -246,11 +246,6 @@ class OptionsClass {
 		bool ToolTips;
 
 		/*
-		 * If true, the force-move key sets a rally point and the plain click moves the structure.
-		 */
-		bool AltToRally;
-
-		/*
 		 * If true, an airborne object, such as an aircraft or a flying Kirov, is picked by the area its
 		 * drawn body covers, and it wins over a building or ground unit under that area. If false, it is
 		 * picked only near the point its voxel is drawn from, as gamemd does.

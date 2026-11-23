@@ -33,7 +33,6 @@ class UIGameControlsServiceClass
 		virtual void Set_Show_Hidden(bool on) = 0;
 		virtual void Set_Show_Defence_Range(bool on) = 0;
 		virtual void Set_Difficulty(int difficulty) = 0;
-		virtual void Set_Alt_To_Rally(bool on) = 0;
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
 		virtual void Set_Aircraft_Body_Pick(bool on) = 0;
 		virtual void Set_Flat_Placement_Grid(bool on) = 0;
@@ -76,7 +75,6 @@ struct UIGameControlsState
 
 	// The settings Yuri's Revenge never offered, shown on the Settings tabs only.
 	bool Extras = false;
-	bool AltToRally = false;
 	bool SimulateUnfocused = false;
 	bool AircraftBodyPick = true;
 	bool FlatPlacementGrid = true;

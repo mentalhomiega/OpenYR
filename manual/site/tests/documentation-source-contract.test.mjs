@@ -1392,8 +1392,8 @@ test('A rally point is set with the plain click', () => {
 
 	assertOrdered(
 		action,
-		['if (Is_Move_Override()) {', 'if (!disallow_force && altdown == Options.AltToRally) {', 'return(ACTION_RALLY_TO_POINT);'],
-		'the key the rally point answers to comes from the setting rather than from the force-move key alone',
+		['if (Is_Move_Override()) {', 'if (!disallow_force && !altdown) {', 'return(ACTION_RALLY_TO_POINT);'],
+		'the rally point answers to the plain click, not to the force-move key',
 	);
 
 	const clicked = functionBody(
@@ -1403,15 +1403,10 @@ test('A rally point is set with the plain click', () => {
 
 	assertOrdered(
 		clicked,
-		['} else if (Is_Move_Override()) {', 'if (altdown != Options.AltToRally) {'],
-		'a click on an object asks the same question of the same predicate',
+		['} else if (Is_Move_Override()) {', 'if (altdown) {'],
+		'a click on an object leaves the force-move key to the move order',
 	);
 
-	assert.match(
-		functionBody(source('code/options.cpp'), 'void OptionsClass::Load_Settings(void)'),
-		/AltToRally = ConfigINI\.Get_Bool\("Options", "AltToRally", AltToRally\);/,
-		'and the player owns it in their own settings file',
-	);
 });
 
 test('An EM pulse can be refused by type', () => {

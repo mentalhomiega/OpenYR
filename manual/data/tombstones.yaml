@@ -349,3 +349,9 @@
   search_aliases:
     - WeatherStrength
   summary: Set how much snow or rain Weather drew in percent. The GPU picture effects were removed.
+- type: key
+  id: AltToRally
+  route: /keys/alttorally/
+  search_aliases:
+    - AltToRally
+  summary: Swapped the plain click and the force-move key for rally points. A plain click sets the rally point and the force-move key moves the structure.
