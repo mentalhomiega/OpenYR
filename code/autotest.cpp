@@ -320,6 +320,9 @@ int VeterancySampleInterval = 0;
 // The frames between the samplesuper step's logs, 0 when it is off.
 int SuperSampleInterval = 0;
 
+// The frames between the samplebullets step's logs, 0 when it is off.
+int BulletSampleInterval = 0;
+
 // The frames between the sampleharvest step's logs, 0 when it is off, and the block of cells whose tiberium it counts.
 int HarvestSampleInterval = 0;
 Rect HarvestSampleBlock;
@@ -1150,7 +1153,7 @@ static void Log_Samples(void)
 	For_Technos(
 		[&](TechnoClass * techno) {
 			return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
-				[&](std::string const & name) {return(Is_Techno_Named(techno, name));}));
+				[&](std::string const & name) {return(name == "*" || Is_Techno_Named(techno, name));}));
 		},
 		[&](TechnoClass * techno) {
 			Coord const at = techno->Center_Coord();
@@ -1162,7 +1165,7 @@ static void Log_Samples(void)
 }
 
 
-// sample <TypeID> <interval>: adds the type to the sampled types, which are logged on every frame that is a multiple
+// sample <TypeID> <interval>: adds the type (or * for every type) to the sampled types, which are logged on every frame that is a multiple
 // of the interval. An interval of 0 stops the samples and clears the types.
 static void Sample_Step(StepType const & step)
 {
@@ -1219,9 +1222,21 @@ static void Log_Production(void)
 {
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass const * house = Houses[index];
-		DebugString("AUTOTEST prodhouse frame %d house %s credits %d power %d drain %d barracks %d warfactories %d conyards %d\n",
+		DebugString("AUTOTEST prodhouse frame %d house %s credits %d power %d drain %d barracks %d warfactories %d conyards %d nodes %d\n",
 			Frame, house->Class->Name(), house->Credits, house->Power, house->Drain, house->Factory_Count(RTTI_INFANTRYTYPE),
-			house->Factory_Count(RTTI_UNITTYPE), house->Factory_Count(RTTI_BUILDINGTYPE));
+			house->Factory_Count(RTTI_UNITTYPE), house->Factory_Count(RTTI_BUILDINGTYPE), house->Base.Nodes.Count());
+		// The base plan is written whenever its length changes: a structure's name, or -1 for a defense and -3 for a wall.
+		static std::map<int, int> logged;
+		int const nodes = house->Base.Nodes.Count();
+		if (nodes > 0 && logged[index] != nodes) {
+			logged[index] = nodes;
+			std::string plan;
+			for (int n = 0; n < nodes; n++) {
+				int const type = (int)house->Base.Nodes[n].Type;
+				plan += (n > 0 ? "," : "") + (type >= 0 && type < BuildingTypes.Count() ? std::string(BuildingTypes[type]->Name()) : std::to_string(type));
+			}
+			DebugString("AUTOTEST basenodes frame %d house %s count %d plan %s\n", Frame, house->Class->Name(), nodes, plan.c_str());
+		}
 	}
 	for (int index = 0; index < Factories.Count(); index++) {
 		FactoryClass * factory = Factories[index];
@@ -1291,6 +1306,28 @@ static void Log_Supers(void)
 static void Samplesuper_Step(StepType const & step)
 {
 	SuperSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs each live projectile: its object number, type and position in leptons. The gamemd comparison harness reads the
+/// same values from Yuri's Revenge's projectile list, so the fields and their units must stay as they are.
+/// </summary>
+static void Log_Bullets(void)
+{
+	for (int index = 0; index < Bullets.Count(); index++) {
+		BulletClass const * bullet = Bullets[index];
+		if (bullet->Class == NULL) continue;
+		Coord const at = bullet->Center_Coord();
+		DebugString("AUTOTEST bullet frame %d id %d type %s x %d y %d z %d\n", Frame, bullet->ID, bullet->Class->Name(), at.X, at.Y, at.Z);
+	}
+}
+
+
+// samplebullets <interval>: logs every live projectile (see Log_Bullets) on each frame that is a multiple of the interval; 0 stops.
+static void Samplebullets_Step(StepType const & step)
+{
+	BulletSampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8633,6 +8670,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"sampleprod", Sampleprod_Step},
 		{"samplevet", Samplevet_Step},
 		{"samplesuper", Samplesuper_Step},
+		{"samplebullets", Samplebullets_Step},
 		{"sampleharvest", Sampleharvest_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
@@ -9407,6 +9445,10 @@ void AutoTest_Frame(void)
 
 	if (SuperSampleInterval > 0 && (Frame % SuperSampleInterval) == 0) {
 		Log_Supers();
+	}
+
+	if (BulletSampleInterval > 0 && (Frame % BulletSampleInterval) == 0) {
+		Log_Bullets();
 	}
 }
 
