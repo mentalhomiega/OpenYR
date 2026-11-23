@@ -3189,8 +3189,59 @@ bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * 
 
 
 /// <summary>
+/// Sets a building down on its waypoint as gamemd's BuildingClass::ForceCreate does (0x458A80). The foundation must hold
+/// nothing but soldiers, vehicles and aircraft: a structure, a tree or anything else that is not one of those makes the
+/// building impossible. Those that stand there are lifted off, and once the building is up each is set down again on the
+/// nearest cell it can stand on, or destroyed when there is none. If the building cannot go up they are put back.
+/// </summary>
+/// <param name="building">The building that has been created and not yet placed.</param>
+/// <param name="coord">The coordinate its first foundation cell is at.</param>
+/// <returns>bool; Is the building on the map?</returns>
+static bool Force_Create_Building(BuildingClass * building, Coord const & coord)
+{
+	Cell const origin = coord.As_Cell();
+	std::vector<FootClass *> lifted;
+	for (Cell const * offset = building->Class->Occupy_List(true); *offset != REFRESH_EOL; offset++) {
+		for (ObjectClass * object = Map[origin + *offset].Cell_Occupier(); object != NULL; object = object->Next) {
+			if (!object->Is_Foot()) {
+				return(false);
+			}
+			if (std::find(lifted.begin(), lifted.end(), object) == lifted.end()) {
+				lifted.push_back(static_cast<FootClass *>(object));
+			}
+		}
+	}
+
+	std::vector<Coord> places;
+	for (FootClass * foot : lifted) {
+		places.push_back(foot->Center_Coord());
+		foot->Limbo();
+	}
+
+	if (!building->Unlimbo(coord)) {
+		for (std::size_t index = lifted.size(); index-- > 0;) {
+			if (!lifted[index]->Unlimbo(places[index])) {
+				lifted[index]->Delete_Me();
+			}
+		}
+		return(false);
+	}
+
+	for (std::size_t index = lifted.size(); index-- > 0;) {
+		FootClass * foot = lifted[index];
+		Cell const nearby = Map.Nearby_Location(places[index].As_Cell(), foot->TClass->Speed);
+		if (nearby == CELL_NONE || !foot->Unlimbo(Map[nearby].Cell_Coord())) {
+			foot->Delete_Me();
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Places the building the action names for the trigger's house at the action's waypoint, as
-/// Yuri's Revenge's action 125 does. The building goes straight up without a build-up.
+/// Yuri's Revenge's action 125 does. The building goes straight up without a build-up. Soldiers
+/// and vehicles that stand on its foundation are moved aside; any other object there stops it.
 /// </summary>
 /// <returns>bool; Was the building placed?</returns>
 bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
@@ -3206,7 +3257,7 @@ bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , T
 
 	ScenarioInitScope const scope;
 	BuildingClass * building = new BuildingClass(BuildingTypes[type], house);
-	bool placed = building != nullptr && building->Unlimbo(Coord(Scen->Get_Waypoint_Cell(EffectLocation)));
+	bool placed = building != nullptr && Force_Create_Building(building, Coord(Scen->Get_Waypoint_Cell(EffectLocation)));
 	if (!placed) delete building;
 	return(placed);
 }
