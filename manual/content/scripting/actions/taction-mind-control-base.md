@@ -4,7 +4,7 @@ id: TACTION_MIND_CONTROL_BASE
 title: "Mind Control Base of..."
 summary: "The trigger's house takes every structure of another house."
 valid_values:
-  - "A house by number, either a country or a spawn house. `8997` names the trigger's own house, which leaves the action with nothing to take."
+  - "A house by number, either a country or a spawn house. `8997` names the triggering house, the owner of the object that last entered the trigger's cell, zone or line."
 caveats:
   - "Every structure the named house owns changes owner, together with what a structure carries or has docked. The structures keep their place, strength and veterancy, and their production queues are dropped."
   - "No capture announcement is played and no trigger attached to a structure for `Entered by...` springs."

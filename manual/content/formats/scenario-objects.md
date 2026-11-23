@@ -65,6 +65,8 @@ A scenario can add a section named after a spawn house, `[Spawn1]` through `[Spa
 
 Trigger events, trigger actions, and team script missions that take a house by number read `50` through `57`, and `4475` through `4482`, as `Spawn1` through `Spawn8`. Any other number selects the country with that index, so `58` through `60` have no special meaning.
 
+A trigger action that takes a house by number also reads `8997` as the triggering house: the owner of the object that last satisfied one of the trigger's [Entered by](/mapping/events/tevent-player-entered/), zone entry, line-crossing or entered-or-overflown events. It names no house while no such event has been satisfied, and an event with no object never sets one. The house stays until another such event replaces it. The actions that read it are Production Begins, All Hunt, Fire Sale, Autocreate, Change House, All Change House, Make Ally, Make Enemy, Begin and Stop AI Triggers, Cheer, the four Destroy All actions, Mind Control Base, Restore Mind Controlled Base and the two Restore Starting actions. Trigger events do not read it.
+
 A house number can name no house, because nobody holds the position or nobody plays the country. What happens then depends on the entry. Some events are never satisfied and others are always satisfied. Most actions and missions do nothing, but [Winner is...](/mapping/actions/taction-win/) makes the player lose and [Loser is...](/mapping/actions/taction-lose/) makes the player win. Each entry's page states its case.
 
 ## Vehicle follower IDs

@@ -4,7 +4,7 @@ id: TACTION_RESTORE_MIND_CONTROLLED_BASE
 title: "Restore Mind Controlled Base to..."
 summary: "The trigger's house gives back the structures it took from a house with Mind Control Base."
 valid_values:
-  - "A house by number, either a country or a spawn house. `8997` names the trigger's own house."
+  - "A house by number, either a country or a spawn house. `8997` names the triggering house."
 caveats:
   - "Only structures the trigger's house took from the named house with [Mind Control Base](/mapping/actions/taction-mind-control-base/) go back. A structure the trigger's house has since captured, bought or lost to a third house is left alone."
   - "No capture announcement is played and no trigger attached to a structure for `Entered by...` springs."

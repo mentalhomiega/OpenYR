@@ -229,7 +229,8 @@ TEventClass::TEventClass(void) :
 	Event(TEVENT_NONE),
 	Team(NULL),
 	TechnoType(NULL),
-	IsTechnoTypeResolved(false)
+	IsTechnoTypeResolved(false),
+	TriggeringHouse(HOUSE_NONE)
 {
 	TechnoName[0] = '\0';
 	Events.Add(this);
@@ -422,6 +423,7 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 			if (owner == NULL || object->Owner() != owner->HeapID) return(false);
 		}
 		tripped = true;
+		TriggeringHouse = object->Owner();
 		return(true);
 	}
 	else if (Event == TEVENT_NEAR_WAYPOINT) {
@@ -1127,6 +1129,7 @@ void TEventClass::Serialize(SaveStreamClass & stream)
 	 */
 	stream.Serialize_Bytes(&Data, sizeof(Data));
 	stream.Serialize_Bytes(TechnoName, sizeof(TechnoName));
+	stream.Serialize(TriggeringHouse);
 	TechnoType = NULL;
 	IsTechnoTypeResolved = false;
 }

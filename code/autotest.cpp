@@ -1748,7 +1748,7 @@ static void Trigger_Action_Step(StepType const & step)
 
 // tagevent <TypeID|general>[@<House>] <event fields> [<persistence> [x y]]: makes a trigger owned by the house (the
 // player's when none is named) that waits on the one event, written as a map's [Events] line writes it after the
-// count, such as 81,2,1,GAPOWR. Its tag rides on every object of the type, only the one on cell x,y when a cell is
+// count, such as 81,2,1,GAPOWR. The next trigaction runs with this trigger. Its tag rides on every object of the type, only the one on cell x,y when a cell is
 // given, or with "general" joins the general tags that are polled every frame, or with "cell" rides on the cell x,y
 // itself. The persistence is 0 (volatile, the default), 1 or 2, as a map's [Tags] gives it. The trigger has no actions; the log gets an AUTOTEST sprung line
 // each time it springs.
@@ -1807,6 +1807,7 @@ static void Tag_Event_Step(StepType const & step)
 			}
 		}
 	}
+	TaggedTrigger = Find_Or_Make(trigtype);
 	DebugString("AUTOTEST   tagevent %s event %s house %s on %s: %d attached\n", name.c_str(), fields.c_str(), house->Class->Name(), target.c_str(), attached);
 }
 

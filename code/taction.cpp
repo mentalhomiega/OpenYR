@@ -1347,7 +1347,7 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 {
 	bool success = false;
 
-	HouseClass * newowner = House_From_HousesType(Data.House);
+	HouseClass * newowner = Named_House(trig);
 	if (newowner == NULL) {
 		return(false);
 	}
@@ -1392,7 +1392,7 @@ bool TActionClass::TAction_ALL_CHANGE_HOUSE(HouseClass * house, ObjectClass * , 
 {
 	bool retval = false;
 
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr == NULL) {
 		return(false);
 	}
@@ -1449,7 +1449,7 @@ bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerCl
 /// </summary>
 bool TActionClass::TAction_MAKE_ALLY(HouseClass * house, ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * house2 = House_From_HousesType(Data.House);
+	HouseClass * house2 = Named_House(trig);
 	if (house2 != NULL) {
 		house->Make_Ally(house2);
 		house2->Make_Ally(house);
@@ -1465,7 +1465,7 @@ bool TActionClass::TAction_MAKE_ALLY(HouseClass * house, ObjectClass * , Trigger
 /// </summary>
 bool TActionClass::TAction_MAKE_ENEMY(HouseClass * house, ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * house2 = House_From_HousesType(Data.House);
+	HouseClass * house2 = Named_House(trig);
 	if (house2 != NULL) {
 		house->Make_Enemy(house2);
 		house2->Make_Enemy(house);
@@ -1929,7 +1929,7 @@ bool TActionClass::TAction_LOSE(HouseClass * , ObjectClass * , TriggerClass * tr
 /// </summary>
 bool TActionClass::TAction_BEGIN_PRODUCTION(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr != NULL) {
 		hptr->Begin_Production();
 	}
@@ -1944,7 +1944,7 @@ bool TActionClass::TAction_BEGIN_PRODUCTION(HouseClass * , ObjectClass * , Trigg
 /// </summary>
 bool TActionClass::TAction_FIRE_SALE(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr != NULL) {
 		hptr->State = STATE_ENDGAME;
 	}
@@ -1959,7 +1959,7 @@ bool TActionClass::TAction_FIRE_SALE(HouseClass * , ObjectClass * , TriggerClass
 /// </summary>
 bool TActionClass::TAction_AUTOCREATE(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr != NULL) {
 		hptr->IsAlerted = true;
 	}
@@ -2151,7 +2151,7 @@ bool TActionClass::TAction_REINFORCEMENTS_SPECIAL(HouseClass * , ObjectClass * ,
 /// </summary>
 bool TActionClass::TAction_ALL_HUNT(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr == NULL) {
 		return(false);
 	}
@@ -2719,7 +2719,7 @@ bool TActionClass::TAction_SET_AMBIENT_LIGHT(HouseClass * , ObjectClass * , Trig
 /// </summary>
 bool TActionClass::TAction_BEGIN_AI_TRIGGERS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr != NULL) {
 		hptr->IsAITriggersOn = true;
 	}
@@ -2734,7 +2734,7 @@ bool TActionClass::TAction_BEGIN_AI_TRIGGERS(HouseClass * , ObjectClass * , Trig
 /// </summary>
 bool TActionClass::TAction_STOP_AI_TRIGGERS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
+	HouseClass * hptr = Named_House(trig);
 	if (hptr != NULL) {
 		hptr->IsAITriggersOn = false;
 	}
@@ -3147,10 +3147,9 @@ bool TActionClass::TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * 
 	return(true);
 }
 
-// Returns false and runs nothing when the house type names no house.
-static bool Run_On_House_Of(HousesType house_type, void (HouseClass::* action)(void))
+// Returns false and runs nothing when there is no house.
+static bool Run_On_House_Of(HouseClass * hptr, void (HouseClass::* action)(void))
 {
-	HouseClass * hptr = House_From_HousesType(house_type);
 	if (hptr == NULL) {
 		return(false);
 	}
@@ -3163,9 +3162,9 @@ static bool Run_On_House_Of(HousesType house_type, void (HouseClass::* action)(v
 /// Makes the infantry of the named house cheer, as Yuri's Revenge's action 113 does.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	return(Run_On_House_Of(Data.House, &HouseClass::Cheer));
+	return(Run_On_House_Of(Named_House(trig), &HouseClass::Cheer));
 }
 
 
@@ -3173,9 +3172,9 @@ bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * ,
 /// Destroys everything the named house owns, without marking the house as defeated.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All));
+	return(Run_On_House_Of(Named_House(trig), &HouseClass::Destroy_All));
 }
 
 
@@ -3183,9 +3182,9 @@ bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerCla
 /// Destroys every building the named house owns.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Buildings));
+	return(Run_On_House_Of(Named_House(trig), &HouseClass::Destroy_All_Buildings));
 }
 
 
@@ -3193,9 +3192,9 @@ bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , 
 /// Destroys every infantry, aircraft and vehicle the named house owns, apart from the naval ones.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Non_Buildings_Non_Naval));
+	return(Run_On_House_Of(Named_House(trig), &HouseClass::Destroy_All_Non_Buildings_Non_Naval));
 }
 
 
@@ -3203,9 +3202,9 @@ bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * ,
 /// Destroys every naval vehicle the named house owns.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Non_Buildings_Naval));
+	return(Run_On_House_Of(Named_House(trig), &HouseClass::Destroy_All_Non_Buildings_Naval));
 }
 
 
@@ -3398,14 +3397,16 @@ bool TActionClass::TAction_LIGHTNING_STORM_STRIKE(HouseClass * house, ObjectClas
 
 
 /// <summary>
-/// Fetches the house the action names. Number 8997 names the trigger's own house.
+/// Fetches the house the action names. Number 8997 names the triggering house, the owner of
+/// the object that last satisfied one of the trigger's entry, zone or line-crossing events.
 /// </summary>
-/// <param name="trigger_house">The house that owns the trigger.</param>
-/// <returns>HouseClass *; The house, or NULL when the action names none in play.</returns>
-HouseClass * TActionClass::Named_House(HouseClass * trigger_house) const
+/// <param name="trig">The trigger the action runs for.</param>
+/// <returns>HouseClass *; The house, or NULL when the action names none in play. Number 8997
+/// names none while the trigger is missing or no such event has been satisfied.</returns>
+HouseClass * TActionClass::Named_House(TriggerClass const * trig) const
 {
 	if (Data.Value == 8997) {
-		return(trigger_house);
+		return(trig != NULL ? trig->Triggering_House() : NULL);
 	}
 	if (Data.Value == -1) {
 		return(NULL);
@@ -3420,9 +3421,9 @@ HouseClass * TActionClass::Named_House(HouseClass * trigger_house) const
 /// announced.
 /// </summary>
 /// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
-bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * target = Named_House(house);
+	HouseClass * target = Named_House(trig);
 	if (target == NULL) {
 		return(false);
 	}
@@ -3438,9 +3439,9 @@ bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * ,
 /// Base. Structures that changed hands another way since stay where they are.
 /// </summary>
 /// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
-bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * target = Named_House(house);
+	HouseClass * target = Named_House(trig);
 	if (target == NULL) {
 		return(false);
 	}
@@ -3454,9 +3455,9 @@ bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, Obje
 /// structures, vehicles, infantry and aircraft, each in its starting cell.
 /// </summary>
 /// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
-bool TActionClass::TAction_RESTORE_STARTING_UNITS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_RESTORE_STARTING_UNITS(HouseClass * house, ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	HouseClass * target = Named_House(house);
+	HouseClass * target = Named_House(trig);
 	if (target == NULL) {
 		return(false);
 	}
@@ -3864,9 +3865,9 @@ bool TActionClass::TAction_RESHROUD_AT(HouseClass * , ObjectClass * , TriggerCla
 /// is built again where it stood, and one that still stands is mended.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
-bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
 {
-	return(Run_On_House_Of(Data.House, &HouseClass::Restore_Starting_Buildings));
+	return(Run_On_House_Of(Named_House(trig), &HouseClass::Restore_Starting_Buildings));
 }
 
 

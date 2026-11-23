@@ -4,7 +4,7 @@ id: TACTION_RESTORE_STARTING_UNITS
 title: "Restore Starting Units of..."
 summary: "Puts back what a house had on the map when the scenario loaded."
 valid_values:
-  - "A house by number, either a country or a spawn house. `8997` names the trigger's own house."
+  - "A house by number, either a country or a spawn house. `8997` names the triggering house."
 caveats:
   - "The house's starting objects are its structures, vehicles, infantry and aircraft that stood on the map as the scenario finished loading. Objects that were carried inside another or were off the map are not among them."
   - "Each starting object is created again for the house, at full strength and facing north, in the cell it first stood on. A structure is not placed when a structure already fills the cell, so a structure that still stands is not doubled."

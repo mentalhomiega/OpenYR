@@ -108,6 +108,13 @@ class TEventClass : public AbstractClass
 		TechnoTypeClass const * TechnoType;
 		bool IsTechnoTypeResolved;
 
+		/*
+		 * The heap ID of the house that owns the object which last satisfied one of the entry,
+		 * zone or line-crossing events, or HOUSE_NONE until one has. The trigger keeps it for
+		 * actions that name house 8997.
+		 */
+		int TriggeringHouse;
+
 		union {
 			StructType				Structure;	// Used for structure type checking.
 			UnitType				Unit;		// Used for unit type checking.
