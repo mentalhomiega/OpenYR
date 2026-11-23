@@ -1827,7 +1827,7 @@ void Tactical::Draw_Placement_Range(void)
 
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (is_same_type(building) && distance_to(building) == nearest && building->Is_Powered_On() && building->House->Is_Player_Control()) {
+		if (is_same_type(building) && distance_to(building) == nearest && building->IsOn && building->House->Is_Player_Control()) {
 			Draw_Range_Ring(building->Center_Coord(), range, House_Display_RGB(building->House));
 		}
 	}

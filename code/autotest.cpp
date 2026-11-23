@@ -7404,6 +7404,19 @@ static void Banims_Step(StepType const &)
 }
 
 
+// poweronline <TypeID>: for each building of that type, whether it is in service (Is_Powered_On, BuildingClass::IsPowerOnline 0x4555D0),
+// its mission and building state, whether its gap field runs and whether its sensor array is switched on.
+static void Poweronline_Step(StepType const & step)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+		DebugString("AUTOTEST   poweronline %s at %d,%d mission %d bstate %d online %d gap %d sensing %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+			(int)building->Mission, (int)building->BState, (int)building->Is_Powered_On(), (int)building->IsGeneratingGap, (int)building->IsSensing);
+	}
+}
+
+
 // banimstate <TypeID>: for each building of that type, the animation in each slot with its stage, rate and whether it is held still.
 static void Banimstate_Step(StepType const & step)
 {
@@ -9134,6 +9147,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"teams", Teams_Step},
 		{"banims", Banims_Step},
 		{"banimstate", Banimstate_Step},
+		{"poweronline", Poweronline_Step},
 		{"bshape", Bshape_Step},
 		{"bshadow", Bshadow_Step},
 		{"infstate", Infstate_Step},
