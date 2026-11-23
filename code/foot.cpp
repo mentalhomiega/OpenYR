@@ -2884,69 +2884,67 @@ void FootClass::Per_Cell_Process(PCPType why)
 		/*
 		**	Trigger event associated with the player entering the cell.
 		*/
-		if (Cloak != CLOAKED) {
-			TagClass * tag = cellptr->Tag;
-			int x = cell.X;
-			int y = cell.Y;
-			if (((!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) || IsOnBridge) && tag != NULL) {
-				tag->Spring(TEVENT_PLAYER_ENTERED, this, PositionCell);
+		TagClass * tag = cellptr->Tag;
+		int x = cell.X;
+		int y = cell.Y;
+		if (((!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) || IsOnBridge) && tag != NULL) {
+			tag->Spring(TEVENT_PLAYER_ENTERED, this, PositionCell);
 
-				/*
-				**	Yuri's Revenge has a second entry event that aircraft overflying the cell also
-				**	spring. The tag may have gone with the first event, so it is fetched again.
-				*/
+			/*
+			**	Yuri's Revenge has a second entry event that aircraft overflying the cell also
+			**	spring. The tag may have gone with the first event, so it is fetched again.
+			*/
+			if (cellptr->Tag != NULL) {
+				cellptr->Tag->Spring(TEVENT_ENTERED_OR_OVERFLOWN, this, PositionCell);
+			}
+
+			// gamemd offers the spy events to the cell's tag only when a disguised infantryman enters.
+			if (RTTI == RTTI_INFANTRY && DisguiseType != NULL && DisguiseHouse != NULL && cellptr->Tag != NULL) {
+				cellptr->Tag->Spring(TEVENT_SPY_ENTERING_AS_HOUSE, this, PositionCell);
 				if (cellptr->Tag != NULL) {
-					cellptr->Tag->Spring(TEVENT_ENTERED_OR_OVERFLOWN, this, PositionCell);
-				}
-
-				// gamemd offers the spy events to the cell's tag only when a disguised infantryman enters.
-				if (RTTI == RTTI_INFANTRY && DisguiseType != NULL && DisguiseHouse != NULL && cellptr->Tag != NULL) {
-					cellptr->Tag->Spring(TEVENT_SPY_ENTERING_AS_HOUSE, this, PositionCell);
-					if (cellptr->Tag != NULL) {
-						cellptr->Tag->Spring(TEVENT_SPY_ENTERING_AS_INFANTRY, this, PositionCell);
-					}
+					cellptr->Tag->Spring(TEVENT_SPY_ENTERING_AS_INFANTRY, this, PositionCell);
 				}
 			}
+		}
 
-			/*
-			**	Check for horizontal trigger crossing.
-			*/
-			if (cellptr->IsHorizontalLine) {
-				for (int index = 0; index < Map.MapRect.Width; index++) {
-					cellptr = &Map[Cell(index+Map.MapRect.X, y)];
-					tag = cellptr->Tag;
-					if (tag != NULL) {
-						if (tag->Is_Cross_Horizontal()) {
-							tag->Spring(TEVENT_CROSS_HORIZONTAL, this, PositionCell);
-						}
-					}
-				}
-			}
-
-			/*
-			**	Check for vertical trigger crossing.
-			*/
-			if (cellptr->IsVerticalLine) {
-				for (int index = 0; index < Map.MapRect.Height; index++) {
-					tag = Map[Cell(x, index+Map.MapRect.Y)].Tag;
-					if (tag != NULL) {
-						if (tag->Is_Cross_Vertical()) {
-							tag->Spring(TEVENT_CROSS_VERTICAL, this, PositionCell);
-						}
-					}
-				}
-			}
-
-			/*
-			**	Check for zone entry trigger events.
-			*/
-			for (MapTriggerID = 0; MapTriggerID < MapTags.Count(); MapTriggerID++) {
-				tag = MapTags[MapTriggerID];
+		/*
+		**	Check for horizontal trigger crossing.
+		*/
+		if (cellptr->IsHorizontalLine) {
+			for (int index = 0; index < Map.MapRect.Width; index++) {
+				cellptr = &Map[Cell(index+Map.MapRect.X, y)];
+				tag = cellptr->Tag;
 				if (tag != NULL) {
-					if (tag->Is_Enters_Zone()) {
-						if (Map.Is_Same_Cell_Zone(tag->Get_Position(), Destination_Coord().As_Cell(), TClass->MZone, Map[tag->Get_Position()].IsUnderBridge, Is_Moving_Onto_Bridge())) {
-							tag->Spring(TEVENT_ENTERS_ZONE, this, Destination_Coord().As_Cell());
-						}
+					if (tag->Is_Cross_Horizontal()) {
+						tag->Spring(TEVENT_CROSS_HORIZONTAL, this, PositionCell);
+					}
+				}
+			}
+		}
+
+		/*
+		**	Check for vertical trigger crossing.
+		*/
+		if (cellptr->IsVerticalLine) {
+			for (int index = 0; index < Map.MapRect.Height; index++) {
+				tag = Map[Cell(x, index+Map.MapRect.Y)].Tag;
+				if (tag != NULL) {
+					if (tag->Is_Cross_Vertical()) {
+						tag->Spring(TEVENT_CROSS_VERTICAL, this, PositionCell);
+					}
+				}
+			}
+		}
+
+		/*
+		**	Check for zone entry trigger events.
+		*/
+		for (MapTriggerID = 0; MapTriggerID < MapTags.Count(); MapTriggerID++) {
+			tag = MapTags[MapTriggerID];
+			if (tag != NULL) {
+				if (tag->Is_Enters_Zone()) {
+					if (Map.Is_Same_Cell_Zone(tag->Get_Position(), Destination_Coord().As_Cell(), TClass->MZone, Map[tag->Get_Position()].IsUnderBridge, Is_Moving_Onto_Bridge())) {
+						tag->Spring(TEVENT_ENTERS_ZONE, this, Destination_Coord().As_Cell());
 					}
 				}
 			}
