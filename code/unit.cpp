@@ -4929,10 +4929,11 @@ std::optional<MoveType> UnitClass::Building_Occupant_Verdict(ObjectClass * obj, 
 	}
 
 	/*
-	 * A unit entering a repair bay drives over the bay's blocked cells, as the ENTER check
-	 * of UnitClass::CanReach (0x73F0A0) allows. Any other unit stops at them.
+	 * A unit entering a UnitAbsorb structure drives over its blocked cells, as the ENTER check of
+	 * UnitClass::CanReach (0x73F0A0, type flag 0x16AE) allows. A repair bay keeps its blocked columns closed
+	 * to it and is entered from the cells beside them.
 	 */
-	if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Mission == MISSION_ENTER && obj == NavCom) {
+	if (dir != FACING_NONE && bptr->Class->IsUnitAbsorb && Mission == MISSION_ENTER && obj == NavCom) {
 		skip = true;
 		return(std::nullopt);
 	}

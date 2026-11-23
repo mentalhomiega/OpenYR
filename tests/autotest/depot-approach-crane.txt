@@ -1,0 +1,22 @@
+; Soviet Service Depot (NADEPT) at 60,22 on the XMP29U2 land. Its crane tower fills the west column (60,22-60,24, NumberImpassableRows=1)
+; and its pad is 62,23. A damaged Grizzly (MTNK) west of the depot at 53,24 and a damaged Rhino (HTNK) north-west of it at 55,18 are ordered
+; to enter it one after the other. A repair bay's blocked column stops a vehicle on its Enter mission too (UnitClass::CanReach, 0x73F0A0, lets
+; only a UnitAbsorb structure be crossed), so each vehicle goes round the tower to the pad.
+; Expected: no `sample` line puts either vehicle on 60,22, 60,23 or 60,24 (x 15360 to 15615 and y 5632 to 6399 leptons). Before the fix the
+; Grizzly drove through 60,23 and 61,23 to the pad.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/depot-approach-crane.txt -Map XMP29U2.MAP -Country 8 -Seconds 120 -Uncapped -Filter "AUTOTEST sample|AUTOTEST where|Exception"
+30 command CenterBase
+300 own NADEPT 60 22
+302 own MTNK 53 24
+303 own HTNK 55 18
+304 reveal
+305 view 61 23
+310 damage MTNK 200
+310 damage HTNK 200
+320 enter MTNK 60 22
+320 sample MTNK 4
+320 sample HTNK 4
+380 enter HTNK 60 22
+900 where MTNK
+900 where HTNK
+901 quit
