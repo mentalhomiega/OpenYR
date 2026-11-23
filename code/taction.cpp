@@ -1632,13 +1632,12 @@ bool TActionClass::TAction_REVEAL_ALL(HouseClass * , ObjectClass * , TriggerClas
 
 /// <summary>
 /// Starts the mission countdown timer.
-/// This routine handles the trigger action that sets a timed objective running. The player
-/// is told over the EVA channel and the tab is refreshed so the clock appears.
+/// This routine handles the trigger action that sets a timed objective running. The tab is
+/// refreshed so the clock appears. A timer that is already running is left as it is.
 /// </summary>
 bool TActionClass::TAction_START_TIMER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	if (!Scen->MissionTimer.Is_Active()) {
-		Speak(VOX_TIMER_STARTED);
 		Scen->MissionTimer.Start();
 		Map.Redraw_Tab();
 	}
@@ -1648,13 +1647,12 @@ bool TActionClass::TAction_START_TIMER(HouseClass * , ObjectClass * , TriggerCla
 
 /// <summary>
 /// Stops the mission countdown timer.
-/// This routine handles the trigger action that calls off a timed objective. The player is
-/// told over the EVA channel and the tab is refreshed so the clock disappears.
+/// This routine handles the trigger action that calls off a timed objective. The tab is
+/// refreshed so the clock disappears.
 /// </summary>
 bool TActionClass::TAction_STOP_TIMER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	if (Scen->MissionTimer.Is_Active()) {
-		Speak(VOX_TIMER_STOPPED);
 		Scen->MissionTimer.Stop();
 		Map.Redraw_Tab();
 	}
@@ -1692,12 +1690,11 @@ bool TActionClass::TAction_SUB_TIMER(HouseClass * , ObjectClass * , TriggerClass
 
 /// <summary>
 /// Starts the mission timer running.
-/// The timer is set to the number of seconds the action calls for, EVA announces
-/// the countdown to the player, and a label that Timer Text gave goes back to the default.
+/// The timer is set to the number of seconds the action calls for, and a label that Timer
+/// Text gave goes back to the default.
 /// </summary>
 bool TActionClass::TAction_SET_TIMER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Speak(VOX_TIMER_STARTED);
 	Scen->MissionTimer = Data.Value * TICKS_PER_SECOND;
 	Scen->MissionTimer.Start();
 	Scen->MissionTimerText[0] = '\0';
@@ -2213,8 +2210,7 @@ bool TActionClass::TAction_CHANGE_ZOOM(HouseClass * , ObjectClass * , TriggerCla
 /// Resizes the playable area of the map.
 /// This routine is used to open up (or close down) part of the map part way through a
 /// mission. The cells, movement zones, radar and every building's radar position are
-/// brought back into step with the new bounds, and EVA tells the player that new
-/// terrain is available.
+/// brought back into step with the new bounds.
 /// </summary>
 bool TActionClass::TAction_RESIZE_PLAYER_VIEW(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
@@ -2243,7 +2239,6 @@ bool TActionClass::TAction_RESIZE_PLAYER_VIEW(HouseClass * , ObjectClass * , Tri
 		Buildings[i]->Update_Radar_Position(true);
 	}
 
-	Speak(VOX_NEW_TERRAIN);
 	return(true);
 }
 
@@ -2312,8 +2307,7 @@ bool TActionClass::TAction_DO_EXPLOSION(HouseClass * , ObjectClass * , TriggerCl
 
 /// <summary>
 /// Drops a meteor onto the trigger's waypoint.
-/// The meteor lands at ground level, or on top of a bridge if one covers the cell,
-/// and EVA warns the player that a meteor storm is under way.
+/// The meteor lands at ground level, or on top of a bridge if one covers the cell.
 /// </summary>
 bool TActionClass::TAction_METEOR_IMPACT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
@@ -2324,8 +2318,6 @@ bool TActionClass::TAction_METEOR_IMPACT(HouseClass * , ObjectClass * , TriggerC
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
 	new VoxelAnimClass(VoxelAnimTypes[Data.VAnim], coord, NULL);
-
-	Speak(VOX_METEOR_STORM);
 	return(true);
 }
 
@@ -2365,12 +2357,10 @@ bool TActionClass::TAction_ION_STORM_STOP(HouseClass * , ObjectClass * , Trigger
 /// Takes control of the game away from the player.
 /// This routine is used ahead of a scripted sequence so that the player cannot
 /// interfere with it. Any pending build placement or special mouse mode is cleared
-/// first, and EVA announces that control has been taken.
+/// first.
 /// </summary>
 bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Speak(VOX_CONTROL_ESTABLISHED);
-
 	Map.PendingObjectPtr = NULL;
 	Map.PendingObject = NULL;
 	Map.PendingHouse = HOUSE_NONE;
@@ -2630,8 +2620,7 @@ bool TActionClass::TAction_CLEAR_LOCAL(HouseClass * , ObjectClass * , TriggerCla
 
 /// <summary>
 /// Rains a shower of meteors down around the action's waypoint.
-/// The meteors are scattered about the waypoint in a mixture of sizes, and the player is
-/// warned that the storm has begun.
+/// The meteors are scattered about the waypoint in a mixture of sizes.
 /// </summary>
 bool TActionClass::TAction_METEOR_SHOWER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
@@ -2656,7 +2645,6 @@ bool TActionClass::TAction_METEOR_SHOWER(HouseClass * , ObjectClass * , TriggerC
 		new AnimClass(AnimTypes[abs(Scen->RandomNumber) % 2 ? met_large : met_small], meteor_coord);
 	}
 
-	Speak(VOX_METEOR_STORM);
 	return(true);
 }
 

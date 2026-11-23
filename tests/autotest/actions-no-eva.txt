@@ -1,0 +1,19 @@
+; Trigger actions Start Timer (23), Stop Timer (24), Set Timer (27), Lock Input (46) and Unlock Input (47) ask for no announcer line in
+; gamemd (TActionClass::Execute), and neither do Resize Player View (40), Meteor Impact (43) and Meteor Shower (58). Ours used to ask for
+; EVA_TimerStarted, EVA_TimerStopped, EVA_EstablishBattlefieldControl, EVA_NewTerrainDiscovered and EVA_MeteorStorm. The one speak at the end
+; shows that the audio log sees a line.
+; Expected: no "eva" audio log line until frame 170, where EVA_UnitLost starts.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/actions-no-eva.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST frame 1[0-9]0: |AUDIOLOG.* eva |Exception"
+30 command CenterBase
+90 stopspeaking
+95 sounds 2
+95 audiocapture actions-no-eva
+96 volume voice 1
+100 trigaction 23 0 0
+110 trigaction 24 0 0
+120 trigaction 27 60 0
+130 trigaction 46 0 0
+140 trigaction 47 0 0
+170 speak EVA_UnitLost
+250 audiocapture stop
+260 quit
