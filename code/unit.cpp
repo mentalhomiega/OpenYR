@@ -1295,6 +1295,8 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
 			// A vehicle with a parasite inside it may not board (UnitClass radio handler, 0x737602).
 			if (from->Is_Foot() && ((FootClass *)from)->ParasiteEatingMe != NULL) return(RADIO_STATIC);
+			// A mind controller holding units may not board either (0x737602).
+			if (from->Is_Foot() && ((FootClass *)from)->CaptureManager && ((FootClass *)from)->CaptureManager->Controlled_Count() > 0) return(RADIO_NEGATIVE);
 			if (Can_Fit_Passenger(from)) {
 				return(RADIO_ROGER);
 			}

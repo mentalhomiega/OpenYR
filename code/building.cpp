@@ -502,7 +502,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				// gamemd refuses an infantry that holds a mind-controlled unit or is mind controlled (QueryCanEnter, 0x43C2D0).
 				TechnoClass const * infantry = (TechnoClass const *)from;
 				bool const controlling = infantry->CaptureManager && infantry->CaptureManager->Controlled_Count() > 0;
-				bool const controlled = infantry->MindControlledBy != NULL || infantry->IsPermaControlled;
+				bool const controlled = infantry->Is_Mind_Controlled();
 				if (!controlling && !controlled && Ammo != 0 && Mission != MISSION_REPAIR) {
 					return(RADIO_ROGER);
 				}
@@ -10162,7 +10162,7 @@ bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
 	if (House != infantry->House && !House->Class->IsMultiplayPassive) {
 		return(false);
 	}
-	if (infantry->MindControlledBy != NULL) {
+	if (infantry->Is_Mind_Controlled()) {
 		return(false);
 	}
 	return(Occupants.Count() < Class->MaxNumberOccupants && HealthRatio > Rule->ConditionRed);

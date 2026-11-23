@@ -1,0 +1,15 @@
+; A Master Mind that holds units may not board a transport: the UnitClass radio handler's CAN_LOAD case (0x73758A) refuses a passenger
+; whose capture manager is controlling something (CaptureManagerClass::IsControllingSomething, 0x4722C0). The player's Master Mind
+; and Armored Transport (SAPC) stand apart, and the click of the Master Mind on the transport is probed before it takes an enemy GI
+; (frame 80) and after (frame 250).
+; Expected: Enter at frame 80, no Enter at frame 250. Before the fix both show Enter.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/mind-control-controller-transport.txt -Width 800 -Height 600 -Seconds 90 -Country 8 -Filter "AUTOTEST   action|mind control|Exception"
+30 command CenterBase
+35 reveal
+40 own MIND 64 40
+41 enemy E1 64 36
+42 own SAPC 70 40
+80 action MIND 70 40
+100 strike MIND 64 36
+250 action MIND 70 40
+260 quit

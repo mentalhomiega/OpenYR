@@ -384,7 +384,7 @@ static bool Send_To_Grinder(FootClass * foot, bool absorber)
 
 /// <summary>
 /// Decides what a unit does on changing hands (CaptureManagerClass::DecideUnitFate, 0x4723B0).
-/// It leaves its team. A unit now owned by a computer house then rolls against the AICapture
+/// It leaves its team and lets go of a unit it is warping. A unit now owned by a computer house then rolls against the AICapture
 /// weights that fit the controlling house's money and power and the unit's health, or follows
 /// the controller's team's MindControlDecision: 1 joins the controller's team, 2 goes to a
 /// grinder, 3 goes to a bio reactor, 5 does nothing, and anything else, or a choice that cannot be
@@ -394,6 +394,10 @@ void CaptureManagerClass::Decide_Unit_Fate(TechnoClass * unit) const
 {
 	if (unit->Is_Foot() && ((FootClass *)unit)->Team != NULL) {
 		((FootClass *)unit)->Team->Remove((FootClass *)unit);
+	}
+	if (unit->TemporalImUsing && unit->TemporalImUsing->Target != nullptr) {
+		AUTOTEST_LOG("mind control %s lets go of the warp on %s\n", unit->TClass->Name(), unit->TemporalImUsing->Target->TClass->Name());
+		unit->TemporalImUsing->Let_Go();
 	}
 	if (unit->House->Is_Human_Player() || !unit->Is_Foot()) {
 		return;
