@@ -1,9 +1,9 @@
 ; A computer player whose country lists a power plant upgrade in AI.PowerPlants (Ares) builds the upgrade only while one of its
 ; power plants has a free slot, and otherwise builds the regular plant. The mod in tests/autotest/ai-power-upgrade gives the
 ; Allied power plant one upgrade slot and lists TESTPOWRUP after GAPOWR for the Americans. The player is a spectator, so the match goes
-; on with no human to lose it. Expected: BUILDTRACE places TESTPOWRUP on the first power plant at frame 9405 (the computer lays a ring of
-; walls first, so it starts the upgrade at frame 9133); the next power shortage, at frame 12438, starts GAPOWR; the log has no "Abandoning
-; production of Test Power Upgrade" line. Without the slot check the computer starts TESTPOWRUP at frame 12438 and abandons it
+; on with no human to lose it. Expected: BUILDTRACE places TESTPOWRUP on the first power plant at frame 6675 (the computer lays a ring of
+; walls first, so it starts the upgrade at frame 6403); the next power shortage, at frame 9752, starts GAPOWR; the log has no "Abandoning
+; production of Test Power Upgrade" line. Without the slot check the computer starts TESTPOWRUP at frame 9752 and abandons it
 ; every 270 frames or so. (As the walls and the economy drift, the frames move; what must hold is the order: upgrade, then GAPOWR, no abandon.)
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/ai-power-upgrade.txt -Mods "E:\Claude ra2 decomp\src-agent30\tests\autotest\ai-power-upgrade" -AICountries 0 -Uncapped -Seconds 400 -Settings "[Settings]`nIsSpectator=yes" -Filter "BUILDTRACE.*(TESTPOWRUP|GAPOWR)|Abandoning|aisummary|Exception"
 10 buildtrace 1

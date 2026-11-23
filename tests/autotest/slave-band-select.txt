@@ -2,7 +2,7 @@
 ; gamemd's rubber band callback (FUN_004AC2B0 at 0x4AC2B0) calls TechnoClass::CanBeSelectedNow (0x6FC030) through
 ; vtable slot 0x13C at 0x4AC2D9, so a slave whose SlaveOwner is set is passed over. The second band covers the slaves only
 ; and should select nothing. Expected: "selected" after the first band lists YAREFN (the deployed miner) and HTNK, and
-; after the second band lists nothing. Before the band gate, both bands also listed three SLAV.
+; after the second band lists nothing. Before the band gate, both bands also listed the five SLAV.
 ; A band is dragged with windowpress, hold 01 (virtual-key 1, the left button, held for the drag), windowmove steps and
 ; windowrelease, then release 01. Coordinates are window pixels at 800x600.
 ; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/slave-band-select.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception"

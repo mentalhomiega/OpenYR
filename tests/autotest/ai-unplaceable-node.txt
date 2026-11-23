@@ -1,8 +1,8 @@
 ; A computer player drops a base node whose structure no placement search can place, after AIPlacementSearchFailures
 ; failed searches (3 by default), and goes on with its plan. The mod in tests/autotest/ai-unplaceable-node plans TESTNOPLACE,
 ; a WaterBound structure the search, which takes only dry land, never places. Expected: BUILDTRACE shows "finds no place for
-; TESTNOPLACE" at frames 5666, 5722 and 5778, then "drops TESTNOPLACE node 25 after 3 failed searches" (the computer lays a ring
-; of walls first, so the node comes late); aisummary shows 5 structures at frame 6000, 7 at frame 8000 and 10 at frame 10000. With AIPlacementSearchFailures=0 the search failed 132 times by frame 10000
+; TESTNOPLACE" at frames 3534, 3590 and 3646, then "drops TESTNOPLACE node 25 after 3 failed searches" (the computer lays a ring
+; of walls first, so the node comes late); aisummary shows 6 structures at frame 6000, 11 at frame 8000 and 14 at frame 10000. With AIPlacementSearchFailures=0 the search failed 132 times by frame 10000
 ; and the computer stayed at 6 and 7 structures.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/ai-unplaceable-node.txt -Mods "E:\Claude ra2 decomp\src-agent31\tests\autotest\ai-unplaceable-node" -AICountries 0 -Uncapped -Seconds 400 -Filter "BUILDTRACE.*(TESTNOPLACE|drops)|aisummary|Exception"
 10 buildtrace 1
