@@ -6019,29 +6019,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				Eject_Occupants(true);
 			}
 
-			/*
-			**	Special check for the repair bay which has the ability to sell
-			**	whatever is on it. If there is something on the repair bay, then
-			**	it will be sold. If there is nothing on the repair bay, then
-			**	the repair bay itself will be sold.
-			*/
-			if (Class->IsCanUnitRepair) {
-				bool sold = false;
-				for (int slot = 0; slot < Link_Count(); slot++) {
-					TechnoClass * tech = Link(slot);
-					if (tech != NULL && Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && ::Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON / 2) {
-						Transmit_Message(RADIO_OVER_OUT, tech);
-						if (IsOwnedByPlayer) Speak(VOX_UNIT_SOLD);
-						tech->Sell_Back(1);
-						sold = true;
-					}
-				}
-				if (sold) {
-					Assign_Mission(MISSION_GUARD);
-					return(1);
-				}
-			}
-
+			// A service depot is sold like any other structure. A vehicle on its pad is sent away with the other dockers below and is not sold with it (BuildingClass::Mission_Selling, 0x449C30).
 			if (UpgradeLevel) {
 				const BuildingTypeClass *upgrade = Upgrades[UpgradeLevel - 1];
 				BuildingClass *uptr = (BuildingClass *)upgrade->Create_One_Of(House);

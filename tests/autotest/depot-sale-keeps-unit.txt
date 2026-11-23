@@ -1,0 +1,22 @@
+; An American Service Depot (GADEPT) at 60,22 has a damaged Grizzly (MTNK) on its repair pad. The player sells the depot (sell 60 22).
+; gamemd's Mission_Selling (0x449C30) sells the structure and sends its dockers away; it never sells a vehicle on the pad.
+; Expected: after the sale (frame 610) counts Player shows buildings 0 and units 2, and the Grizzly is still on the map. Before the fix the sale also sold the Grizzly: units 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/depot-sale-keeps-unit.txt -Map XMP29U2.MAP -Seconds 200 -Filter "AUTOTEST frame|AUTOTEST   where|AUTOTEST   counts|AUTOTEST counts|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 own GADEPT 60 22
+102 own MTNK 60 28
+104 reveal
+105 view 61 23
+200 damage MTNK 200
+210 enter MTNK 60 22
+300 where MTNK
+360 where MTNK
+420 where MTNK
+430 where GADEPT
+440 counts Player
+450 sell 60 22
+600 where MTNK
+610 counts Player
+620 where GADEPT
+700 quit
