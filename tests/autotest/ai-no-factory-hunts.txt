@@ -1,0 +1,30 @@
+; A computer house with no factory building hunts, even when it owns no building at all (HouseClass AI tick 0x4FD500, urgency at 0x4FD88A-0x4FD8B2:
+; CRITICAL when the house owns no building whose type is a factory, with no requirement that it owns any building; then the fire sale 0x5013A0
+; and all-to-hunt 0x501400). The computer's base is destroyed (killhouse kind 1, buildings only) and two Engineers are put on its side next to
+; a GAPOWR of the player. The AI is not in the attacked state after frame 900 of its last loss.
+; Expected: until frame 880 both Engineers stay on Guard. At frame 1000 both are on Capture of the GAPOWR (nav and target 61,53). At 1100
+; the GAPOWR belongs to Africans and is on mission Selling, one Engineer is left on Hunt, and at 1300 the GAPOWR is gone.
+; Before the fix the Engineers stay on Guard to the end and the GAPOWR stays the player's, because the fire sale and the hunt both required
+; the house to own a building.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/ai-no-factory-hunts.txt -AICountries 5 -Seconds 150 -Uncapped -Filter "AUTOTEST   where|AUTOTEST   aisummary|Exception"
+30 command CenterBase
+40 own GAPOWR 60 52
+42 houseunit ENGINEER@#1 58 54
+43 houseunit ENGINEER@#1 58 55
+50 killhouse #1 1
+70 where ENGINEER
+70 where GAPOWR
+880 where ENGINEER
+880 where GAPOWR
+1000 where ENGINEER
+1000 where GAPOWR
+1000 aisummary
+1100 where ENGINEER
+1100 where GAPOWR
+1100 aisummary
+1300 where ENGINEER
+1300 where GAPOWR
+1300 aisummary
+1700 where GAPOWR
+1700 aisummary
+1800 quit

@@ -5006,9 +5006,9 @@ int HouseClass::Expert_AI(void)
 
 /// <summary>
 /// Determines how urgently this house should sell off its base.
-/// This routine is part of the computer's emergency handling. A house that still holds
-/// buildings but has nothing left that can produce is finished, and there is no reason to
-/// leave the base standing.
+/// This routine is part of the computer's emergency handling. A house with no building
+/// that can produce is finished, whether it owns other buildings or none, and there is no
+/// reason to leave the base standing (gamemd 0x4FD88A-0x4FD8B2).
 /// </summary>
 /// <returns>Returns with the urgency of selling the base off.</returns>
 UrgencyType HouseClass::Check_Fire_Sale(void)
@@ -5017,7 +5017,7 @@ UrgencyType HouseClass::Check_Fire_Sale(void)
 	**	If there are no more factories at all, then sell everything off because the game
 	**	is basically over at this point.
 	*/
-	if (State != STATE_ATTACKED && CurBuildings > 0) {
+	if (State != STATE_ATTACKED) {
 		for (int i = 0; i < Buildings.Count(); i++) {
 			BuildingClass * bptr = Buildings[i];
 			if (bptr != NULL && bptr->IsActive && !bptr->IsInLimbo && this == bptr->House && bptr->Class->ToBuild != RTTI_NONE) {
@@ -5156,7 +5156,7 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 /// <returns>bool; Was the fire sale ordered?</returns>
 bool HouseClass::AI_Fire_Sale(UrgencyType urgency)
 {
-	if (CurBuildings > 0 && urgency == URGENCY_CRITICAL) {
+	if (urgency == URGENCY_CRITICAL) {
 		Fire_Sale();
 		All_To_Hunt();
 		return(true);

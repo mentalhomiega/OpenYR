@@ -1,0 +1,21 @@
+; A random temperate night map for tiberium-map-unlisted.txt.
+[Basic]
+Name=Random temperate night
+RandomMap=yes
+
+[RandomMap]
+Width=1
+Height=1
+NumPlayers=2
+Biome=2
+Time=3
+WaterAmount=20
+Tiberium=50
+TiberiumLayout=50
+Vegetation=80
+UrbanPresence=0
+
+; The map changes Riparius, but has no [Tiberiums] list, so gamemd ignores the section.
+[Riparius]
+Value=100
+Growth=999
