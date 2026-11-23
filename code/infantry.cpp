@@ -3432,6 +3432,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 					if (!bldg->Class->IsEngineerRepairable && !bldg->Class->IsMobileWar) {
 						return(ACTION_SELECT);
 					}
+					// A wounded engineer offers to go into a hospital before the wrench is offered over it (InfantryClass::MouseOverObject, 0x51E3B0).
+					if (bldg->Class->IsHospital && HealthRatio < Rule->ConditionGreen) {
+						return(ACTION_ENTER);
+					}
 					if (bldg->HealthRatio == Rule->ConditionGreen) {
 						return(ACTION_NO_GREPAIR);
 					}
