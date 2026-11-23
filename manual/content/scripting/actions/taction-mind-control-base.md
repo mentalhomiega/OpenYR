@@ -10,6 +10,7 @@ caveats:
   - "No capture announcement is played and no trigger attached to a structure for `Entered by...` springs."
   - "Each structure remembers the house it came from until [Restore Mind Controlled Base](/mapping/actions/taction-restore-mind-controlled-base/) returns it. Another house's mind control unit cannot take a structure while it is held this way."
   - "Vehicles, infantry and aircraft of the named house are not taken."
+  - "When the named house is the trigger's own house, its structures keep their owner but are marked as taken, and no mind control unit can take them until Restore Mind Controlled Base runs."
   - "The action fails when the trigger has no house or the named house is not in play."
 related:
   - type: action

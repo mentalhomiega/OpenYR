@@ -6,7 +6,7 @@ summary: "Twirls the battlefield into white and back, as a chronoshift does."
 valid_values:
   - "A number of frames, which is how long each swirl lasts. The picture stays white for 45 frames between the two swirls."
 caveats:
-  - "A number of `0` or less does nothing, and the action fails."
+  - "A number of `0` or less does nothing, and the action still succeeds."
   - "The picture is swirled as it stood when the action ran, then whitened, then swirled back from the picture as it stands after the white. The swirl grows stronger and whitens during the first swirl, and unwinds and clears during the second."
   - "The swirl covers the whole map view. In the modern layout that reaches the bottom edge of the screen; in the classic layout the command bar below the map is not swirled."
   - "The player's input is locked while the effect runs, unless it was already locked before the action."
