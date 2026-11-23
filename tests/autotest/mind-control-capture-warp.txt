@@ -1,0 +1,13 @@
+; A unit taken by mind control lets go of the unit it is warping (CaptureManagerClass::DecideUnitFate, 0x4723B0: TemporalImUsing->Target
+; set, TemporalClass::LetGo). An enemy Chrono Legionnaire (CLEG) warps the player's Grizzly (MTNK); the player's Master Mind then takes the
+; legionnaire.
+; Expected: "warp start MTNK", then "mind control CLEG lets go of the warp on MTNK". Before the fix the second line is missing.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/mind-control-capture-warp.txt -Width 800 -Height 600 -Seconds 90 -Country 8 -Filter "AUTOTEST warp|mind control|Exception"
+30 command CenterBase
+35 reveal
+40 own MTNK 64 38
+41 enemy CLEG 64 36
+42 own MIND 60 44
+50 enemystrike CLEG 64 38
+60 strike MIND 64 36
+200 quit
