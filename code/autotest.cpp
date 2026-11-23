@@ -5678,6 +5678,20 @@ static void Hit_Step(StepType const & step)
 }
 
 
+// reaction <TypeID>: writes each object of the type, whoever owns it, with its mission, its target, and whether that target was
+// chosen by an on-the-move scan (gamemd's ShouldLoseTargetNow). Put it after a hit step to see whether the object turned on its attacker.
+static void Reaction_Step(StepType const & step)
+{
+	For_Technos(
+		[&](TechnoClass const * techno) {return(!techno->IsInLimbo && Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			ObjectClass const * target = dynamic_cast<ObjectClass const *>(techno->TarCom);
+			DebugString("AUTOTEST   reaction %s of %s mission %s tarcom %s opportunity %d\n", techno->TClass->Name(), techno->House->Class->Name(),
+				MissionClass::Mission_Name(techno->Get_Mission()), target != NULL ? target->Class_Of()->Name() : "-", (int)techno->IsOpportunityTarget);
+		});
+}
+
+
 static void Clickcell_Step(StepType const & step)
 {
 	Cell const cell(step.X, step.Y);
@@ -8968,6 +8982,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"loadgems", Loadgems_Step},
 		{"canrepair", Canrepair_Step},
 		{"overpower", Overpower_Step},
+		{"reaction", Reaction_Step},
 		{"ruleanims", Ruleanims_Step},
 		{"canfire", Canfire_Step},
 		{"blast", Blast_Step},

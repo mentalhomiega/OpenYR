@@ -174,6 +174,14 @@ class TechnoClass :	public RadioClass,
 		CDTimerClass<FrameTimerClass> TargetingTimer;
 
 		/*
+		 * Set when the on-the-move scan of a Move, Harvest or Guard mission replaced this object's target
+		 * (gamemd's ShouldLoseTargetNow). Such a target is dropped at the next scan once the weapon cannot
+		 * fire at it or reach it, and at once when the mission becomes one that takes no target. Any
+		 * assignment of a target clears it.
+		 */
+		bool IsOpportunityTarget;
+
+		/*
 		 * While the Iron Curtain timer runs, this object takes no damage. The tint stage and
 		 * its timer step the object's brightness through the curtain's pulse.
 		 */

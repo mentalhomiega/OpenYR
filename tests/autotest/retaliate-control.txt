@@ -1,0 +1,10 @@
+; The control for carrier-no-retaliate: a soldier of the player on Guard turns on a neutral soldier that hits it (TechnoClass::ReceiveDamage, 0x701900).
+; The player's E1 at 64,24 of XMP29U2 is hit by a neutral E2 at 61,24. Expected: the reaction line after the hit shows mission Attack with target E2.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/retaliate-control.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   reaction|AUTOTEST   hit|Exception"
+10 command CenterBase
+40 own E1 64 24
+41 neutral E2 61 24
+60 reaction E1
+62 hit E1:AP@E2 5
+63 reaction E1
+120 quit
