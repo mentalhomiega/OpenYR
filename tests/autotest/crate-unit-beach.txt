@@ -1,0 +1,11 @@
+; A unit crate on water or a beach gives money instead (CellClass::CollectCrate 0x481C4A: land type 2 or 6 for the unit and squad powerups).
+; Lostlake has a beach at 42,112. A hover transport (LCRF) stands next to it and drives onto a unit crate that the crateat step lays there.
+; Expected: the crateat line shows land 6 and the debug log has "contains money" for the crate; before the fix it has "contains a unit".
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/crate-unit-beach.txt -Map Lostlake.mmx -Seconds 60 -Filter "AUTOTEST crateat|Crate at|Exception"
+10 command CenterBase
+100 own LCRF 42 114
+200 crateat unit 42 112
+210 move LCRF 42 112
+300 waitcell LCRF 42 112 0 300
+400 where LCRF
+410 quit
