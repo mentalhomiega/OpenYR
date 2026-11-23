@@ -1,0 +1,256 @@
+; Band selection in the column under the Modern panel, 1 mouse-wheel steps (-0.1 each) out from the default zoom, in a 1920x1080 frame shown in a 2560x1440 window (the player's setup).
+; Six infantry stand in the column below the panel (frame x 1760-1840, y 480-1020). Each gets four bands wholly inside the column, one per drag direction, then a band that starts on the map left of the column.
+; Expected: 'selected 1: <type>' for each of the 24 column bands in the order E1, E2, GGI, ENGINEER, DOG, BORIS (four each); the last six, from the left, select that unit and may also catch a neighbour (E1 E2 at the first).
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/band-column-wheel1.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1920 -Height 1080 -WindowWidth 2560 -WindowHeight 1440 -Seconds 120 -Settings "[Options]`nInterfaceStyle=Modern`nSidebarOpacity=80`nDebugMode=yes" -Filter "AUTOTEST   selected|Exception"
+1 glideclock
+1 view 75 75
+2 reveal
+10 wheel -0.1
+32 grantunit E1 112 82
+33 grantunit E2 113 80
+34 grantunit GGI 121 90
+35 grantunit ENGINEER 129 99
+36 grantunit DOG 130 97
+37 grantunit BORIS 134 103
+91 cellpixel 112 82
+92 windowcell press 112 82 -48 -48
+93 hold 01
+94 windowcell move 112 82
+95 windowcell move 112 82 48 48
+96 windowcell move 112 82 48 48
+97 windowcell release 112 82 48 48
+98 release 01
+100 selected
+104 windowcell press 112 82 48 48
+105 hold 01
+106 windowcell move 112 82
+107 windowcell move 112 82 -48 -48
+108 windowcell move 112 82 -48 -48
+109 windowcell release 112 82 -48 -48
+110 release 01
+112 selected
+116 windowcell press 112 82 48 -48
+117 hold 01
+118 windowcell move 112 82
+119 windowcell move 112 82 -48 48
+120 windowcell move 112 82 -48 48
+121 windowcell release 112 82 -48 48
+122 release 01
+124 selected
+128 windowcell press 112 82 -48 48
+129 hold 01
+130 windowcell move 112 82
+131 windowcell move 112 82 48 -48
+132 windowcell move 112 82 48 -48
+133 windowcell release 112 82 48 -48
+134 release 01
+136 selected
+140 windowcell press 113 80 -48 -48
+141 hold 01
+142 windowcell move 113 80
+143 windowcell move 113 80 48 48
+144 windowcell move 113 80 48 48
+145 windowcell release 113 80 48 48
+146 release 01
+148 selected
+152 windowcell press 113 80 48 48
+153 hold 01
+154 windowcell move 113 80
+155 windowcell move 113 80 -48 -48
+156 windowcell move 113 80 -48 -48
+157 windowcell release 113 80 -48 -48
+158 release 01
+160 selected
+164 windowcell press 113 80 48 -48
+165 hold 01
+166 windowcell move 113 80
+167 windowcell move 113 80 -48 48
+168 windowcell move 113 80 -48 48
+169 windowcell release 113 80 -48 48
+170 release 01
+172 selected
+176 windowcell press 113 80 -48 48
+177 hold 01
+178 windowcell move 113 80
+179 windowcell move 113 80 48 -48
+180 windowcell move 113 80 48 -48
+181 windowcell release 113 80 48 -48
+182 release 01
+184 selected
+188 windowcell press 121 90 -48 -48
+189 hold 01
+190 windowcell move 121 90
+191 windowcell move 121 90 48 48
+192 windowcell move 121 90 48 48
+193 windowcell release 121 90 48 48
+194 release 01
+196 selected
+200 windowcell press 121 90 48 48
+201 hold 01
+202 windowcell move 121 90
+203 windowcell move 121 90 -48 -48
+204 windowcell move 121 90 -48 -48
+205 windowcell release 121 90 -48 -48
+206 release 01
+208 selected
+212 windowcell press 121 90 48 -48
+213 hold 01
+214 windowcell move 121 90
+215 windowcell move 121 90 -48 48
+216 windowcell move 121 90 -48 48
+217 windowcell release 121 90 -48 48
+218 release 01
+220 selected
+224 windowcell press 121 90 -48 48
+225 hold 01
+226 windowcell move 121 90
+227 windowcell move 121 90 48 -48
+228 windowcell move 121 90 48 -48
+229 windowcell release 121 90 48 -48
+230 release 01
+232 selected
+236 windowcell press 129 99 -48 -48
+237 hold 01
+238 windowcell move 129 99
+239 windowcell move 129 99 48 48
+240 windowcell move 129 99 48 48
+241 windowcell release 129 99 48 48
+242 release 01
+244 selected
+248 windowcell press 129 99 48 48
+249 hold 01
+250 windowcell move 129 99
+251 windowcell move 129 99 -48 -48
+252 windowcell move 129 99 -48 -48
+253 windowcell release 129 99 -48 -48
+254 release 01
+256 selected
+260 windowcell press 129 99 48 -48
+261 hold 01
+262 windowcell move 129 99
+263 windowcell move 129 99 -48 48
+264 windowcell move 129 99 -48 48
+265 windowcell release 129 99 -48 48
+266 release 01
+268 selected
+272 windowcell press 129 99 -48 48
+273 hold 01
+274 windowcell move 129 99
+275 windowcell move 129 99 48 -48
+276 windowcell move 129 99 48 -48
+277 windowcell release 129 99 48 -48
+278 release 01
+280 selected
+284 windowcell press 130 97 -48 -48
+285 hold 01
+286 windowcell move 130 97
+287 windowcell move 130 97 48 48
+288 windowcell move 130 97 48 48
+289 windowcell release 130 97 48 48
+290 release 01
+292 selected
+296 windowcell press 130 97 48 48
+297 hold 01
+298 windowcell move 130 97
+299 windowcell move 130 97 -48 -48
+300 windowcell move 130 97 -48 -48
+301 windowcell release 130 97 -48 -48
+302 release 01
+304 selected
+308 windowcell press 130 97 48 -48
+309 hold 01
+310 windowcell move 130 97
+311 windowcell move 130 97 -48 48
+312 windowcell move 130 97 -48 48
+313 windowcell release 130 97 -48 48
+314 release 01
+316 selected
+320 windowcell press 130 97 -48 48
+321 hold 01
+322 windowcell move 130 97
+323 windowcell move 130 97 48 -48
+324 windowcell move 130 97 48 -48
+325 windowcell release 130 97 48 -48
+326 release 01
+328 selected
+332 windowcell press 134 103 -48 -48
+333 hold 01
+334 windowcell move 134 103
+335 windowcell move 134 103 48 48
+336 windowcell move 134 103 48 48
+337 windowcell release 134 103 48 48
+338 release 01
+340 selected
+344 windowcell press 134 103 48 48
+345 hold 01
+346 windowcell move 134 103
+347 windowcell move 134 103 -48 -48
+348 windowcell move 134 103 -48 -48
+349 windowcell release 134 103 -48 -48
+350 release 01
+352 selected
+356 windowcell press 134 103 48 -48
+357 hold 01
+358 windowcell move 134 103
+359 windowcell move 134 103 -48 48
+360 windowcell move 134 103 -48 48
+361 windowcell release 134 103 -48 48
+362 release 01
+364 selected
+368 windowcell press 134 103 -48 48
+369 hold 01
+370 windowcell move 134 103
+371 windowcell move 134 103 48 -48
+372 windowcell move 134 103 48 -48
+373 windowcell release 134 103 48 -48
+374 release 01
+376 selected
+380 windowcell press 112 82 -213 -48
+381 hold 01
+382 windowcell move 112 82 -48 0
+383 windowcell move 112 82 48 48
+384 windowcell move 112 82 48 48
+385 windowcell release 112 82 48 48
+386 release 01
+388 selected
+392 windowcell press 113 80 -213 -48
+393 hold 01
+394 windowcell move 113 80 -48 0
+395 windowcell move 113 80 48 48
+396 windowcell move 113 80 48 48
+397 windowcell release 113 80 48 48
+398 release 01
+400 selected
+404 windowcell press 121 90 -213 -48
+405 hold 01
+406 windowcell move 121 90 -48 0
+407 windowcell move 121 90 48 48
+408 windowcell move 121 90 48 48
+409 windowcell release 121 90 48 48
+410 release 01
+412 selected
+416 windowcell press 129 99 -213 -48
+417 hold 01
+418 windowcell move 129 99 -48 0
+419 windowcell move 129 99 48 48
+420 windowcell move 129 99 48 48
+421 windowcell release 129 99 48 48
+422 release 01
+424 selected
+428 windowcell press 130 97 -213 -48
+429 hold 01
+430 windowcell move 130 97 -48 0
+431 windowcell move 130 97 48 48
+432 windowcell move 130 97 48 48
+433 windowcell release 130 97 48 48
+434 release 01
+436 selected
+440 windowcell press 134 103 -213 -48
+441 hold 01
+442 windowcell move 134 103 -48 0
+443 windowcell move 134 103 48 48
+444 windowcell move 134 103 48 48
+445 windowcell release 134 103 48 48
+446 release 01
+448 selected
+452 quit
