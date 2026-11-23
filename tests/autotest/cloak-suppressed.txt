@@ -1,0 +1,22 @@
+; A cloaked soldier that a paralysis grips drops its cloak (TechnoClass::ShouldNotBeCloaked, 0x6FBC90, answers yes while the object is
+; under EMP, paralysed, being warped out or warping in), and does not cloak again until the grip ends.
+; The cloak-suppressed-rules mod makes the GI (E1) cloakable; it cloaks when idle. At frame 300 it is paralysed for 150 frames.
+; Expected: at frame 280 it shows cloak 2. After frame 300 it is decloaking (cloak 3) and then visible (cloak 0), and never cloak 2 or 1
+; while the paralysis lasts, which is until frame 450. A build that ignores the paralysis shows cloak 2 throughout.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/cloak-suppressed.txt -Mods "E:\Claude ra2 decomp\src-agent29\tests\autotest\cloak-suppressed-rules" -Seconds 120 -Filter "AUTOTEST   cloak|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 66 24
+280 where E1
+300 paralyze E1 150
+303 where E1
+310 where E1
+320 where E1
+340 where E1
+360 where E1
+380 where E1
+420 where E1
+440 where E1
+460 where E1
+520 where E1
+560 quit

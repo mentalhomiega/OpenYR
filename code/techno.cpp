@@ -4406,7 +4406,7 @@ void TechnoClass::Cloaking_AI(bool)
 	**	is a good time do so, then begin cloaking.
 	*/
 	if (Cloak == UNCLOAKED) {
-		if ((Is_Allowed_To_Recloak() && !Is_Immobilized()) || Has_Ability(ABILITY_CLOAK)) {
+		if ((Is_Allowed_To_Recloak() && !Is_Cloak_Suppressed()) || Has_Ability(ABILITY_CLOAK)) {
 			RadioClass * radio = Contact_With_Whom();
 			if (radio == NULL || !(radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory)) {
 				CloakingDevice.Graphic_Logic();
@@ -4527,6 +4527,16 @@ void TechnoClass::Cloaking_AI(bool)
 
 
 /// <summary>
+/// Does something keep this object from cloaking, or force it out of its cloak?
+/// An EMP, a paralysis, and a chrono or temporal warp do (TechnoClass::ShouldNotBeCloaked, 0x6FBC90).
+/// </summary>
+bool TechnoClass::Is_Cloak_Suppressed(void) const
+{
+	return(StunDuration > 0 || (Is_Foot() && static_cast<FootClass const *>(this)->ParalysisTimer != 0) || IsBeingWarpedOut || Is_Chrono_Warping());
+}
+
+
+/// <summary>
 /// Should this object drop its cloak?
 /// An object that has lost the right to stay hidden -- because it may no longer recloak, is
 /// not a cloaking type at all, or has been immobilized -- must decloak, unless it carries
@@ -4539,7 +4549,7 @@ bool TechnoClass::Should_Uncloak(void) const
 		return(true);
 	}
 	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House);
-	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Immobilized()) {
+	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Cloak_Suppressed()) {
 		if (Has_Ability(ABILITY_CLOAK)) return(false);
 		if (!cloaked) return(true);
 	}
