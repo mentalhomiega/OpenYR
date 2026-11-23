@@ -1,0 +1,16 @@
+; A computer house does not fire at an Iron Curtained target (TechnoClass::GetFireError, 0x6FC24D region: a firer whose house is not
+; human gets FIRE_ILLEGAL against a target that is curtained). The player's Apocalypse tank (HTNK) at 70,40 is curtained at frame 60;
+; the computer's Apocalypse tank at 73,40 is ordered to attack it from frame 65.
+; Expected: no "curtain flash" line, because no shot reaches the curtained tank. Before the fix the computer fires and every hit logs a flash.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/ai-ignores-curtain.txt -Seconds 120 -Filter "AUTOTEST curtain|AUTOTEST aistrike|AUTOTEST   where|Exception"
+30 command CenterBase
+35 reveal
+40 own HTNK 70 40
+41 enemy HTNK 73 40
+45 grant IronCurtainSpecial
+60 fire IronCurtainSpecial 70 40
+65 aistrike HTNK 70 40
+100 where HTNK
+150 where HTNK
+200 where HTNK
+210 quit
