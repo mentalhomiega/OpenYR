@@ -7940,7 +7940,11 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		killer->House->PointTotal += value;
 	}
 
-	Count_The_Kill(killer != NULL ? killer->House : NULL);
+	// A type with DontScore is not counted as lost either: gamemd's RegisterDestruction (0x702D40) returns before
+	// it adds to the casualty counts that the Destroyed, Buildings and Units events read.
+	if (!TClass->IsDontScore) {
+		Count_The_Kill(killer != NULL ? killer->House : NULL);
+	}
 
 	/*
 	**	Since we lost an object, we lose the associated points as well.
