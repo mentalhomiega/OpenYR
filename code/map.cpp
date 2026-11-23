@@ -2406,6 +2406,19 @@ static int Free_Crate_Slot(CrateClass const * crates, int count)
 }
 
 
+/*
+ * The cell a crate aimed at the given cell is placed on: the nearest cell that a boat can float
+ * on when the aim is water, and that a tracked vehicle can drive on otherwise. A cell holding an
+ * overlay is not skipped here; placing a crate on it fails instead (MapClass::PlacePowerupCrate,
+ * 0x56BEC0, and CellClass::FindRandomLandingCell, 0x56BD40).
+ */
+static Cell Crate_Target_Cell(Cell const & aim)
+{
+	SpeedType speed = Map[aim].Land_Type() == LAND_WATER ? SPEED_FLOAT : SPEED_TRACK;
+	return(Map.Nearby_Location(aim, speed, -1, MZONE_NORMAL, false, Point2D(1, 1), false));
+}
+
+
 /***********************************************************************************************
  * MapClass::Place_Random_Crate -- Places a crate at random location on map.                   *
  *                                                                                             *
@@ -2436,9 +2449,9 @@ bool MapClass::Place_Random_Crate(void)
 	**	Give a good effort to scan for and place a crate down on the map.
 	*/
 	for (int index = 0; index < 1000; index++) {
-		Cell cell = Map.Pick_Random_Location();
+		Cell cell = Crate_Target_Cell(Map.Pick_Random_Location());
 
-		if (Crates[crateindex].Create_Crate(cell)) {
+		if (cell != CELL_NONE && Crates[crateindex].Create_Crate(cell)) {
 			return(true);
 		}
 	}
@@ -2458,10 +2471,8 @@ bool MapClass::Place_Crate(Cell const & cell, int powerup)
 		return(false);
 	}
 
-	SpeedType speed = (*this)[cell].Land_Type() == LAND_WATER ? SPEED_FLOAT : SPEED_TRACK;
-	Cell place = Nearby_Location(cell, speed, -1, MZONE_NORMAL, false, Point2D(1, 1), true);
-	// Unlike a random crate, this one is not moved elsewhere when its cell already holds an overlay.
-	if (place == CELL_NONE || (*this)[place].Overlay != OVERLAY_NONE || !Crates[crateindex].Create_Crate(place)) {
+	Cell place = Crate_Target_Cell(cell);
+	if (place == CELL_NONE || !Crates[crateindex].Create_Crate(place)) {
 		return(false);
 	}
 	if (powerup >= CRATE_FIRST && powerup < CRATE_COUNT) {

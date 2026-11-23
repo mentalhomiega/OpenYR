@@ -3732,6 +3732,28 @@ static void Crate_Step(StepType const & step)
 }
 
 
+// cratecensus <count>: places that many random crates, as the crate timers and the map start do, then writes each crate on the map
+// with its cell, the land type of the cell and its overlay.
+static void Cratecensus_Step(StepType const & step)
+{
+	int placed = 0;
+	for (int index = 0; index < step.Argument_Int(); index++) {
+		placed += Map.Place_Random_Crate() ? 1 : 0;
+	}
+	int found = 0;
+	Map.Reset_Iterator();
+	for (CellClass * cptr = Map.Iterate(); cptr != NULL; cptr = Map.Iterate()) {
+		if (cptr->Overlay != OVERLAY_NONE && OverlayTypes[cptr->Overlay]->IsCrate) {
+			DebugString("AUTOTEST   crate at %d,%d land %d overlay %s\n", (int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->Land_Type(), OverlayTypes[cptr->Overlay]->Name());
+			found++;
+		}
+	}
+	DebugString("AUTOTEST cratecensus: placed %d, found %d, wood %s, silver %s, water %s (crate %d)\n", placed, found,
+		Rule->WoodCrateImg != NULL ? Rule->WoodCrateImg->Name() : "none", Rule->CrateImg != NULL ? Rule->CrateImg->Name() : "none",
+		Rule->WaterCrateImg != NULL ? Rule->WaterCrateImg->Name() : "none", Rule->WaterCrateImg != NULL ? (int)Rule->WaterCrateImg->IsCrate : -1);
+}
+
+
 // occupy <TypeID> x y: puts the first object of that type (an infantry unit) inside the structure on that cell, without walking there.
 static void Occupy_Step(StepType const & step)
 {
@@ -8681,6 +8703,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"infiltrate", Infiltrate_Step},
 		{"iq", Iq_Step},
 		{"crate", Crate_Step},
+		{"cratecensus", Cratecensus_Step},
 		{"occupy", Occupy_Step},
 		{"rank", Rank_Step},
 		{"veterancy", Veterancy_Step},

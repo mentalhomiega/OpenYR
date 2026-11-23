@@ -1,0 +1,10 @@
+; Random crate placement (MapClass::PlacePowerupCrate 0x56BEC0, CellClass::FindRandomLandingCell 0x56BD40, CellClass::SpawnCrateOverlay 0x4A18F0,
+; OverlayClass::Mark 0x5FC570). A crate aimed at water goes to the nearest cell a boat floats on and is the water crate overlay (WCRATE); a crate aimed
+; at land goes to the nearest cell a tracked vehicle drives on and is the wood crate overlay; a cell that already holds an overlay refuses a crate.
+; 120 random crates are placed on Lostlake, a map with a lake, then every crate on the map is listed with its cell, land type (2 is water) and overlay.
+; Expected: the cratecensus line has "found" equal to "placed", every "land 2" line names WCRATE, and no other line does.
+; Before the fix about half of the crates are missing from the map (the water crate could not be marked down on water, and the first one was put on land).
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/crate-placement.txt -Map Lostlake.mmx -Seconds 90 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+100 cratecensus 120
+200 quit

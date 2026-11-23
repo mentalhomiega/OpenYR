@@ -58,7 +58,7 @@ class CrateClass {
 		}
 
 	private:
-		static bool Put_Crate(Cell & cell);
+		static bool Put_Crate(Cell const & cell);
 		static bool Get_Crate(Cell const & cell);
 
 		void Make_Invalid(void) {Location = CELL_NONE;Timer.Stop();}

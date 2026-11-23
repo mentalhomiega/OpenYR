@@ -100,10 +100,9 @@ bool CrateClass::Create_Crate(Cell const & cell)
 	/*
 	**	Try to place a new crate at the cell specified.
 	*/
-	Cell loc = cell;
-	if (Put_Crate(loc)) {
+	if (Put_Crate(cell)) {
 		TacticalMap->Flag_Cell(Map[cell]);
-		Location = loc;
+		Location = cell;
 		Timer = int(Random_Double(Rule->CrateTime * (TICKS_PER_MINUTE/2), Rule->CrateTime * (TICKS_PER_MINUTE*2)));
 		Timer.Start();
 		return(true);
@@ -116,7 +115,9 @@ bool CrateClass::Create_Crate(Cell const & cell)
  * CrateClass::Put_Crate -- Generates crate overlay at cell specified.                         *
  *                                                                                             *
  *    This helpter routine will examine the cell and place the appropriate crate type into     *
- *    the cell specified. If the overlay could not be generated, then 'false' is returned.     *
+ *    the cell specified: the water crate on water and the wood crate elsewhere. A cell that   *
+ *    is outside the map or already holds an overlay is refused (CellClass::SpawnCrateOverlay, *
+ *    0x4A18F0), and 'false' is returned.                                                      *
  *                                                                                             *
  * INPUT:   cell  -- The cell to generate the crate overlay in.                                *
  *                                                                                             *
@@ -128,7 +129,7 @@ bool CrateClass::Create_Crate(Cell const & cell)
  *   08/26/1996 JLB : Created.                                                                 *
  *   10/14/1996 JLB : Takes reference to cell so that tracking can occur.                      *
  *=============================================================================================*/
-bool CrateClass::Put_Crate(Cell & cell)
+bool CrateClass::Put_Crate(Cell const & cell)
 {
 	int old = ScenarioInit;
 	ScenarioInit = 0;
@@ -136,15 +137,16 @@ bool CrateClass::Put_Crate(Cell & cell)
 	if (Map.In_Local_Radar(cell)) {
 		CellClass * cellptr = &Map[cell];
 
-		while (cellptr->Overlay != OVERLAY_NONE && !cellptr->Is_Clear_To_Build(SPEED_FLOAT) && !cellptr->Is_Clear_To_Build(SPEED_FOOT)) {
-			cell = Map.Pick_Random_Location();
-			cell = Map.Nearby_Location(cell, SPEED_TRACK);
-			if (cell != CELL_NONE) {
-				cellptr = &Map[cell];
-			}
+		if (cellptr->Overlay != OVERLAY_NONE) {
+			ScenarioInit = old;
+			return(false);
 		}
 
-		new OverlayClass(Rule->WoodCrateImg, cell);
+		OverlayTypeClass const * image = Rule->WoodCrateImg;
+		if (cellptr->Land_Type() == LAND_WATER && Rule->WaterCrateImg != NULL) {
+			image = Rule->WaterCrateImg;
+		}
+		new OverlayClass(image, cell);
 
 		Rect rect = Union(cellptr->Overlay_Render_Rect(), cellptr->Overlay_Shadow_Render_Rect());
 		Point2D pt = TacticalRect.Top_Left();
@@ -180,7 +182,8 @@ bool CrateClass::Get_Crate(Cell const & cell)
 
 		if (cellptr->Overlay != OVERLAY_NONE) {
 			if (OverlayTypes[cellptr->Overlay] == Rule->WoodCrateImg ||
-				OverlayTypes[cellptr->Overlay] == Rule->CrateImg) {
+				OverlayTypes[cellptr->Overlay] == Rule->CrateImg ||
+				OverlayTypes[cellptr->Overlay] == Rule->WaterCrateImg) {
 
 				Rect dirty = Union(cellptr->Overlay_Render_Rect(), cellptr->Overlay_Shadow_Render_Rect());
 				dirty.Y -= TacticalRect.Y;
