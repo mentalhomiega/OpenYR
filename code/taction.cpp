@@ -2639,7 +2639,10 @@ bool TActionClass::TAction_METEOR_SHOWER(HouseClass * , ObjectClass * , TriggerC
 
 	int distance = count * _scale;
 	for (int i = 0; i < count; i++) {
-		Coord meteor_coord = coord + Coord(Scen->RandomNumber % distance, Scen->RandomNumber % distance);
+		// The east-west offset is drawn before the north-south one, as in gamemd (0x6E2C40).
+		int const x_offset = Scen->RandomNumber % distance;
+		int const y_offset = Scen->RandomNumber % distance;
+		Coord meteor_coord = coord + Coord(x_offset, y_offset);
 		meteor_coord.Z = Map.Get_Height_GL(meteor_coord);
 
 		new AnimClass(AnimTypes[abs(Scen->RandomNumber) % 2 ? met_large : met_small], meteor_coord);
