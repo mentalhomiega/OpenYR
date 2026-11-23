@@ -338,6 +338,8 @@ Rect HarvestSampleBlock;
 
 // The frames between the sampletrace step's logs, 0 when it is off.
 int TraceSampleInterval = 0;
+// The frames between the sampletarget step's logs, 0 when it is off.
+int TargetSampleInterval = 0;
 
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
@@ -1218,6 +1220,38 @@ static void Log_Trace(void)
 static void Sampletrace_Step(StepType const & step)
 {
 	TraceSampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs each object of the sampled types with what it is targeting: its mission, its target's object number and type (0
+/// and "-" for none, -1 and "cell" for a cell), the frames left on its rearm timer, its opportunity target flag and its
+/// position in leptons. The gamemd comparison harness reads the same fields from Yuri's Revenge, so the fields and their
+/// units must stay as they are.
+/// </summary>
+static void Log_Targets(void)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {
+			return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
+				[&](std::string const & name) {return(name == "*" || Is_Techno_Named(techno, name));}));
+		},
+		[&](TechnoClass * techno) {
+			Coord const at = techno->Center_Coord();
+			TechnoClass * target = techno->TarCom != NULL ? techno->TarCom->As_TechnoClass() : NULL;
+			int const targetID = target != NULL ? target->ID : (techno->TarCom != NULL ? -1 : 0);
+			char const * targetType = target != NULL ? target->TClass->Name() : (techno->TarCom != NULL ? "cell" : "-");
+			DebugString("AUTOTEST target frame %d id %d type %s house %s mission %d tid %d ttype %s rearm %d lose %d x %d y %d\n",
+				Frame, techno->ID, techno->TClass->Name(), techno->House->Class->Name(), (int)techno->Get_Mission(), targetID, targetType,
+				(int)techno->Arm.Value(), (int)techno->IsOpportunityTarget, at.X, at.Y);
+		});
+}
+
+
+// sampletarget <interval>: logs the targets of the sampled types on every frame that is a multiple of the interval; 0 stops.
+static void Sampletarget_Step(StepType const & step)
+{
+	TargetSampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8851,6 +8885,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"speed", Speed_Probe},
 		{"sample", Sample_Step},
 		{"sampletrace", Sampletrace_Step},
+		{"sampletarget", Sampletarget_Step},
 		{"sampleprod", Sampleprod_Step},
 		{"samplevet", Samplevet_Step},
 		{"samplesuper", Samplesuper_Step},
@@ -9622,6 +9657,10 @@ void AutoTest_Frame(void)
 
 	if (TraceSampleInterval > 0 && (Frame % TraceSampleInterval) == 0) {
 		Log_Trace();
+	}
+
+	if (TargetSampleInterval > 0 && (Frame % TargetSampleInterval) == 0) {
+		Log_Targets();
 	}
 
 	if (ProductionSampleInterval > 0 && (Frame % ProductionSampleInterval) == 0) {
