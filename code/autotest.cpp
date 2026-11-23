@@ -5243,6 +5243,14 @@ static void Rules_Step(StepType const & step)
 }
 
 
+// mpainodes <yes|no>: sets the scenario's UseMPAIBaseNodes flag, as a map's [Basic] section would.
+static void Mpainodes_Step(StepType const & step)
+{
+	Scen->IsMPAIBaseNodes = (step.Argument == "yes");
+	DebugString("AUTOTEST   mpainodes %d\n", (int)Scen->IsMPAIBaseNodes);
+}
+
+
 // reload: reads the rules, art and map overrides again, as the Reload rules command does.
 static void Reload_Step(StepType const &)
 {
@@ -8786,6 +8794,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"setlocal", [](StepType const & step) {Set_Scenario_Variable(step, false);}},
 		{"setglobal", [](StepType const & step) {Set_Scenario_Variable(step, true);}},
 		{"killhouse", Killhouse_Step},
+		{"mpainodes", Mpainodes_Step},
 		{"killtag", Killtag_Step},
 		{"price", Price_Step},
 		{"buildtime", Buildtime_Step},

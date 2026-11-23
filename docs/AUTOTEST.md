@@ -103,6 +103,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `landed <TypeID>` | Writes the live objects of the type that are on the map and not in limbo, then how many of them lie outside the usable area (`inlocal 0` in `where`), with the cell of each one that does |
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. Kind 3 destroys only the vehicles, soldiers and aircraft on cells the player can see. An underscore in the name stands for a space |
+| `mpainodes yes` or `mpainodes no` | Sets the scenario's `UseMPAIBaseNodes` flag, as a map's `[Basic]` section would |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
 | `allies <House>` | Writes one line for each house the named house counts as an ally. An underscore in the name stands for a space, and `#<n>` names the house at position `n` in the house list |
 | `counts <House>` | Writes the house's owned unit, building, infantry and aircraft counts (`CurUnits` and so on), then its active unit and soldier counts, which the Destroyed all units and Destroyed all events read and which leave out soldiers held inside a building; an underscore in the name stands for a space |

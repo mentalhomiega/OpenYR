@@ -4946,7 +4946,11 @@ int HouseClass::Expert_AI(void)
 		}
 	}
 
-	if (!Scen->Is_Campaign_Base_AI()) {
+	/*
+	**	gamemd gates the emergency strategies on the game mode alone (0x4FD848), so a
+	**	skirmish map that follows a base plan (UseMPAIBaseNodes) still runs them.
+	*/
+	if (Session.Type != GAME_NORMAL) {
 		/*
 		**	Records the urgency of all actions possible.
 		*/
@@ -11583,7 +11587,8 @@ bool HouseClass::Is_Human_Player(void) const
 /// <returns>bool; Is the location acceptable to build at?</returns>
 bool HouseClass::Can_Build_Here(BuildingTypeClass *building, Cell const & cell)
 {
-	if (Scen->Is_Campaign_Base_AI()) {
+	// gamemd returns true on the game mode alone (0x50B760).
+	if (Session.Type == GAME_NORMAL) {
 		return(true);
 	}
 
