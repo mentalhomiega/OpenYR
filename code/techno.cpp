@@ -5953,13 +5953,19 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		}
 	}
 
+	// The occupants of a garrison take turns to fire. The turn passes on as the shot leaves, so the reload below is
+	// worked out from the next occupant's weapon (TechnoClass::Fire, 0x6FDD50, moves the index before it calls GetROF).
+	bool const garrison_fire = Is_Firing_Garrison();
+	if (garrison_fire) {
+		garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
+	}
+
 	LastFireFrame = Frame;
 	BurstIndex++;
 	Arm = IsBerzerk ? (int)(Rearm_Delay(which) * Rule->BerserkROFMultiplier) : Rearm_Delay(which);
 	ChargeTurretDelay = (int)Arm;
 	BurstIndex %= weapon->Burst;
 
-	bool const garrison_fire = Is_Firing_Garrison();
 	Play_Fire_Anim_And_Sound(weapon, fire_coord, garrison, garrison_fire);
 
 	// A DistributedFire object moves on to another target after each shot, unless it was
@@ -5970,11 +5976,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			AttackedTargets.push_back(shot);
 		}
 		Assign_Target(NULL);
-	}
-
-	// The occupants of a garrison take turns to fire.
-	if (garrison_fire) {
-		garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
 	}
 
 	Start_Beam_Effects(target, weapon, which, fire_coord, target_coord);
