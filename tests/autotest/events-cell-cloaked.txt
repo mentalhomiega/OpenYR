@@ -1,0 +1,15 @@
+; Trigger event Entered by (1) on a cell tag. A cloaked unit that walks onto the cell springs it: gamemd's per-cell update
+; of a foot object (the one that raises events 1 and 59) raises the cell's events with no test of the unit's cloak. The mod tests/autotest/cloak-rules makes
+; the GI cloakable. The GI is left alone until it has cloaked (the where lines show cloak 2), then walks onto the tagged cell.
+; Expected: the where line before the move shows cloak 2 and "sprung ATEV1" follows within a few frames of the GI reaching cell 63,36.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/events-cell-cloaked.txt -Mods tests/autotest/cloak-rules -Map XMP29U2.MAP -Seconds 90 -Filter "AUTOTEST   (tagevent|sprung ATEV|cloak|where E1)|Exception"
+30 command CenterBase
+300 own E1 60 36
+310 reveal
+500 where E1
+505 tagevent cell 1,0,-1 0 63 36
+510 move E1 63 36
+560 where E1
+620 where E1
+700 where E1
+760 quit

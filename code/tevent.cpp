@@ -390,6 +390,8 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 	**	necessary to check for those trigger events that are presumed to be
 	**	true just by the fact that this routine is called with the appropriate
 	**	event identifier.
+	**	Unlike the other build events, Yuri's Revenge tests Build Aircraft (22) against the
+	**	event it is called with as well; nothing in the game calls with 22, so it never springs.
 	*/
 	if (Event != TEVENT_ATTACKED_BY &&
 		Event != TEVENT_PLAYER_ENTERED &&
@@ -401,7 +403,6 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 		Event != TEVENT_BUILD &&
 		Event != TEVENT_BUILD_UNIT &&
 		Event != TEVENT_BUILD_INFANTRY &&
-		Event != TEVENT_BUILD_AIRCRAFT &&
 		Is_Time_Based()) {
 		if ((event != Event) || Debug_Map) {
 			return(false);

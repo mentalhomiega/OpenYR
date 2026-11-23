@@ -10,7 +10,6 @@ caveats:
   - The soldier must be disguised as the named type when it enters the cell. A soldier disguised as another type does not satisfy it.
   - The soldier must be disguised when it enters the cell. A hit that wounds it ends the disguise, unless its type is [`PermaDisguise=yes`](/keys/permadisguise/).
   - A soldier that is not disguised never satisfies the event, even when its own type is the named one.
-  - A fully cloaked soldier crosses the cell without satisfying the event.
   - The event attaches to a cell. Attaching it to a structure or a unit leaves it unsatisfied.
   - A cell under a bridge offers the event only to a soldier on the bridge deck, as [Entered by...](/mapping/events/tevent-player-entered/) does.
 related:

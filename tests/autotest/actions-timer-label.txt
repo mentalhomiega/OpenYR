@@ -1,0 +1,13 @@
+; Trigger action 27 (Set Timer) puts the mission timer's label back to the default one: gamemd's TActionClass::Execute case 0x1B
+; (0x6DD8B0) sets MissionTimerTextCSF to the empty label as it starts the timer, where action 103 (Timer Text) had set a label.
+; Expected missiontimer lines: running with label '' after the first Set Timer, label 'GUI:Hello' after Timer Text, and label '' again
+; after the second Set Timer.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/actions-timer-label.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (trigactionline|missiontimer)|Exception"
+30 command CenterBase
+100 trigactionline 1,27,0,60,0,0,0,0,A
+110 missiontimer
+120 trigactionline 1,103,4,GUI:Hello,0,0,0,0,A
+130 missiontimer
+140 trigactionline 1,27,0,60,0,0,0,0,A
+150 missiontimer
+200 quit

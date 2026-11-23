@@ -81,18 +81,18 @@ Every event is either standing or temporal, and the difference decides which off
 
 A **standing event** tests a condition that can be checked at any moment, such as a credit total, a global variable, the ambient light level or whether a house still has a factory. It gives the same answer whatever the offer names. Elapsed time and random delay are standing events too: they test the trigger's countdown.
 
-A **temporal event** describes a moment, such as an object destroyed, a crate collected or a line crossed. Nothing in the world afterwards proves the moment happened, so the event accepts only an offer that names it. An offer that names anything else, or nothing, leaves the event unsatisfied even if what it describes has already happened. Apart from the [ten exempt events](#the-exempt-events), a temporal event is satisfied when **all of:**
+A **temporal event** describes a moment, such as an object destroyed, a crate collected or a line crossed. Nothing in the world afterwards proves the moment happened, so the event accepts only an offer that names it. An offer that names anything else, or nothing, leaves the event unsatisfied even if what it describes has already happened. Apart from the [nine exempt events](#the-exempt-events), a temporal event is satisfied when **all of:**
 
 - the offer names this event;
 - any further test the event applies passes.
 
 A standing event needs no offer written for it. Each one puts its tag on a house list or on the general list, and both lists are offered something every frame, so the event is examined every frame. The null event is the exception, because nothing satisfies it.
 
-A temporal event is satisfied only if the part of the game that produces the occurrence makes an offer naming it. Three temporal events have no such offer and [can never be satisfied](#three-events-that-cannot-be-reached).
+A temporal event is satisfied only if the part of the game that produces the occurrence makes an offer naming it. Four temporal events have no such offer and [can never be satisfied](#three-events-that-cannot-be-reached).
 
 ### The exempt events
 
-All ten exempt events are temporal. Four of them are fully exempt: Build Building Type, Build Unit Type, Build Infantry Type and Build Aircraft Type. Each compares the type it names with the last type of that kind recorded for its house, and accepts any offer. These events put their tag on the house list, which is offered something every frame. The event is therefore satisfied from the frame the named type is recorded until the house records a different type of that kind. The event pages say what records a type.
+All nine exempt events are temporal. Three of them are fully exempt: Build Building Type, Build Unit Type and Build Infantry Type. Each compares the type it names with the last type of that kind recorded for its house, and accepts any offer. These events put their tag on the house list, which is offered something every frame. The event is therefore satisfied from the frame the named type is recorded until the house records a different type of that kind. The event pages say what records a type.
 
 The other six also require the offer to name them, so they behave like any other temporal event. They are cell entry, the two line crossings, zone entry, the proximity event and the attacked-by-house event.
 
@@ -104,7 +104,7 @@ Four parts of the game make offers, each on a different schedule:
 | --- | --- | --- |
 | The general list | Once at the start of every logic frame, before teams, objects and houses are processed | Elapsed time and random delay, every frame. Crate collection, a global or local variable change, an ambient light change and mission timer expiry, only when one has happened since the previous pass |
 | A house's list | Once per house every frame, after teams and objects have been processed | Nothing in particular. [Damage to a base](/systems/base-attacked/) also offers the attacked event to this list when it happens |
-| Cells, and the zone list | Each time an uncloaked infantry or vehicle finishes moving into a cell | Cell entry, to that cell's tag. The two line crossings, to every cell along the row or column whose tag watches for that crossing, when the cell entered is on a crossing line. Zone entry, to each zone tag whose cell shares a [movement zone](/glossary/#movement-zone) with the destination of the infantry or vehicle |
+| Cells, and the zone list | Each time an infantry or vehicle finishes moving into a cell | Cell entry, to that cell's tag. The two line crossings, to every cell along the row or column whose tag watches for that crossing, when the cell entered is on a crossing line. Zone entry, to each zone tag whose cell shares a [movement zone](/glossary/#movement-zone) with the destination of the infantry or vehicle |
 | An object's tag | At the moment the occurrence happens to that object | The one event that has just happened |
 
 Team processing also offers the team-left-map event to every tag on the general list when it disposes of an empty team that was leaving the map. [Leaves map (team)...](/mapping/events/tevent-leaves-map/) says when that happens.
@@ -200,17 +200,17 @@ Five actions work on triggers and tags by name, not on whatever sprang them. [En
 
 Force Trigger does not fire a disabled trigger or one already marked for destruction.
 
-## Three events that cannot be reached
+## Four events that cannot be reached
 
-:::caution[Spied upon, Thieved by... and Civilians Evacuated can never be satisfied]
-[Spied upon](/mapping/events/tevent-spied/), [Thieved by...](/mapping/events/tevent-thieved/) and [Civilians Evacuated](/mapping/events/tevent-evac-civilian/) are temporal and not exempt, so each needs an offer that names it. No part of the game makes one. Every offer that reaches such a trigger names another event or nothing in particular.
+:::caution[Spied upon, Thieved by..., Civilians Evacuated and Build Aircraft Type can never be satisfied]
+[Spied upon](/mapping/events/tevent-spied/), [Thieved by...](/mapping/events/tevent-thieved/), [Civilians Evacuated](/mapping/events/tevent-evac-civilian/) and [Build Aircraft Type...](/mapping/events/tevent-build-aircraft/) are temporal and not exempt, so each needs an offer that names it. No part of the game makes one. Every offer that reaches such a trigger names another event or nothing in particular.
 
 A trigger with any of these events never fires unless forced, even when its other events work, because every event on a trigger must be satisfied.
 :::
 
-The house conditions that two of these events test are still recorded, which makes the events look usable. Losing a structure to an engineer [marks the losing house as robbed](/systems/capture/#capturing-a-non-allied-structure). An aircraft that retreats out of the playable area with [a civilian](/keys/civilian/) aboard marks that passenger's house as having evacuated a civilian. Neither mark is ever cleared, and nothing reads either one except these unreachable events.
+The house conditions that two of these events test are still recorded, which makes the events look usable. Build Aircraft Type also looks usable, because the house records the last aircraft type it produced. Losing a structure to an engineer [marks the losing house as robbed](/systems/capture/#capturing-a-non-allied-structure). An aircraft that retreats out of the playable area with [a civilian](/keys/civilian/) aboard marks that passenger's house as having evacuated a civilian. Neither mark is ever cleared, and nothing reads either one except these unreachable events.
 
-[Force Trigger](/mapping/actions/taction-force-trigger/) is the only way to run the actions of a trigger that uses one of the three.
+[Force Trigger](/mapping/actions/taction-force-trigger/) is the only way to run the actions of a trigger that uses one of the four.
 
 ## Difficulty
 

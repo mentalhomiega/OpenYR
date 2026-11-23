@@ -1749,8 +1749,8 @@ static void Trigger_Action_Step(StepType const & step)
 // tagevent <TypeID|general>[@<House>] <event fields> [<persistence> [x y]]: makes a trigger owned by the house (the
 // player's when none is named) that waits on the one event, written as a map's [Events] line writes it after the
 // count, such as 81,2,1,GAPOWR. Its tag rides on every object of the type, only the one on cell x,y when a cell is
-// given, or with "general" joins the general tags that are polled every frame. The persistence is 0 (volatile, the
-// default), 1 or 2, as a map's [Tags] gives it. The trigger has no actions; the log gets an AUTOTEST sprung line
+// given, or with "general" joins the general tags that are polled every frame, or with "cell" rides on the cell x,y
+// itself. The persistence is 0 (volatile, the default), 1 or 2, as a map's [Tags] gives it. The trigger has no actions; the log gets an AUTOTEST sprung line
 // each time it springs.
 std::string Word(std::vector<std::string> const & words, std::size_t index);
 
@@ -1793,6 +1793,11 @@ static void Tag_Event_Step(StepType const & step)
 	if (stricmp(target.c_str(), "general") == 0) {
 		LogicTags.Add(Find_Or_Make(tagtype));
 		attached = 1;
+	} else if (stricmp(target.c_str(), "cell") == 0) {
+		if (on_cell) {
+			Map[cell].Attach_Tag(Find_Or_Make(tagtype));
+			attached = 1;
+		}
 	} else {
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
@@ -4369,6 +4374,13 @@ static void Forceattack_Step(StepType const & step)
 				techno->Player_Assign_Mission(MISSION_ATTACK, target);
 			}
 		});
+}
+
+
+// missiontimer: writes whether the mission timer runs, the frames it has left and its label key (empty for the default label).
+static void Mission_Timer_Step(StepType const &)
+{
+	DebugString("AUTOTEST   missiontimer %s left %d label '%s'\n", Scen->MissionTimer.Is_Active() ? "running" : "stopped", Scen->MissionTimer.Value(), Scen->MissionTimerText);
 }
 
 
@@ -9008,6 +9020,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"planguard", Planguard_Step},
 		{"forceattack", Forceattack_Step},
 		{"counts", Counts_Step},
+		{"missiontimer", Mission_Timer_Step},
 		{"allies", Allies_Step},
 		{"listhouse", Listhouse_Step},
 		{"enemies", Enemies_Step},

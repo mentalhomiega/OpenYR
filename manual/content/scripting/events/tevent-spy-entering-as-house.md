@@ -9,7 +9,6 @@ caveats:
   - Only infantry satisfy this event. A disguised vehicle or aircraft that enters the cell does not.
   - The soldier must be disguised when it enters the cell. A hit that wounds it ends the disguise, unless its type is [`PermaDisguise=yes`](/keys/permadisguise/).
   - A soldier that is not disguised never satisfies the event, even when its own house is the named one.
-  - A fully cloaked soldier crosses the cell without satisfying the event.
   - The event attaches to a cell. Attaching it to a structure or a unit leaves it unsatisfied.
   - A house number that names no house leaves the event unsatisfied.
   - A cell under a bridge offers the event only to a soldier on the bridge deck, as [Entered by...](/mapping/events/tevent-player-entered/) does.

@@ -1,0 +1,10 @@
+; Trigger events Build Aircraft (22) and Build Infantry (21), each on a general tag and each naming type -1, which is what the house's
+; just-built aircraft and infantry hold until something is produced. gamemd tests event 22 against the event the tag is raised with, as
+; it does for most events (TEventClass check, the switch that holds 0x16 and not 0x13 to 0x15), and nothing raises 22, so ATEV1 never
+; springs. Build Infantry has no such test, so ATEV2 springs on the first poll.
+; Expected: "sprung ATEV2" and no "sprung ATEV1".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/events-build-aircraft.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   (tagevent|sprung ATEV)|Exception" -Uncapped -StopAfterSteps
+30 command CenterBase
+40 tagevent general 22,0,-1
+41 tagevent general 21,0,-1
+100 quit
