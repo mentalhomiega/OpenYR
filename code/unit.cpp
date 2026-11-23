@@ -1024,6 +1024,13 @@ void UnitClass::Firing_AI(void)
 				// its target does (UnitClass::UpdateFiring, 0x736DF0).
 				IsFiring = false;
 				break;
+
+			case FIRE_CANT:
+				// A spawner that cannot fire recalls its spawns (UnitClass::UpdateFiring, 0x736DF0, case 6).
+				if (SpawnManager) {
+					SpawnManager->Reset_Target();
+				}
+				break;
 		}
 
 		/*

@@ -1,0 +1,22 @@
+; An aircraft carrier (CARRIER, Spawns=HORNET, SpawnsNumber=3) at 86,70 on the lake of XMP08T2 strikes a neutral destroyer (DEST)
+; at 75,65, and its Hornets leave. At frame 220 a Giant Squid's grip is simulated on the carrier (paralyze), so its weapons report
+; FIRE_CANT. Expected: gamemd's UnitClass::UpdateFiring (0x736DF0, case 6) calls SpawnManagerClass::ResetTarget, so the spawncycle
+; lines show target -1,-1 and status 0 within a few frames of frame 220 while the carrier still holds its target; the Hornets
+; then turn back to the carrier.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/carrier-cant-fire-recall.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   spawncycle|AUTOTEST   paralyze|Exception"
+30 reveal
+40 own CARRIER 86 70
+41 neutral DEST 75 65
+110 strike CARRIER 75 65
+200 spawns CARRIER
+210 spawns CARRIER
+220 paralyze CARRIER 600
+221 spawns CARRIER
+222 spawns CARRIER
+223 spawns CARRIER
+224 spawns CARRIER
+226 spawns CARRIER
+230 spawns CARRIER
+240 spawns CARRIER
+260 spawns CARRIER
+300 quit
