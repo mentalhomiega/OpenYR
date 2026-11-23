@@ -1,0 +1,15 @@
+; Play speech (script line 24) says nothing in gamemd: its handler only ends the line (0x6E94BA), whatever the argument.
+; The script runs the line with argument 1, which the test mod's announcer list (audio-eva-rules) gives to EVA_TestShort.
+; Expected log: the team's script runs lines 0 and 1 and ends, and no "eva start" line appears. Before the fix the log had
+; "eva start line=EVA_TestShort". Run with -AICountries 1 and the audio-eva-rules mod.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/teams-play-speech.txt -Mods tests/autotest/audio-eva-rules -AICountries 1 -Width 800 -Height 600 -Seconds 90 -Uncapped -Filter "AUTOTEST|TEAMTRACE|AUDIOLOG.* eva |Exception"
+10 sounds 2
+20 volume voice 1
+30 command CenterBase
+31 teamtrace 1
+300 spawn MTNK 70 60
+310 teamini teams-play-speech.ini
+320 team TSTSPET
+600 teams
+700 sounds 0
+710 quit

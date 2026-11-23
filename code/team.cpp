@@ -3495,15 +3495,10 @@ void TeamClass::TMission_LOSE(TeamMissionClass * mission, bool)
 
 /// <summary>
 /// Handles the play speech team mission.
-/// This routine has the announcer speak the scripted line.
+/// gamemd speaks nothing for this line: it ends at once (0x6E94BA), whatever the argument.
 /// </summary>
-void TeamClass::TMission_PLAY_SPEECH(TeamMissionClass * mission, bool)
+void TeamClass::TMission_PLAY_SPEECH(TeamMissionClass *, bool)
 {
-	if (Is_Eva_Loaded()) {
-		Speak_Eva_Index((int)mission->Data.Speech);
-	} else {
-		Speak(mission->Data.Speech);
-	}
 	IsNextMission = true;
 }
 
@@ -3559,27 +3554,27 @@ void TeamClass::TMission_REDUCE_TIBERIUM(TeamMissionClass * mission, bool)
 
 /// <summary>
 /// Handles the begin production team mission.
-/// This routine wakes up the team type's house so that it starts building for itself.
+/// This routine wakes up the house the team belongs to so that it starts building for itself (0x6E99C8
+/// sets the team's owner, which is not always the team type's house).
 /// </summary>
 void TeamClass::TMission_BEGIN_PRODUCTION(TeamMissionClass * mission, bool)
 {
-	if (Class->House != NULL) {
-		Class->House->IsStarted = true;
-	}
+	House->IsStarted = true;
+	DebugString("Team %s begins production for house %s\n", Class->Name(), House->Class->Name());
 	IsNextMission = true;
 }
 
 
 /// <summary>
 /// Handles the fire sale team mission.
-/// This routine puts the team type's house into its endgame state, so that it sells off its
-/// base and throws everything it has left at the enemy.
+/// This routine puts the house the team belongs to into its endgame state, so that it sells off its
+/// base and throws everything it has left at the enemy (0x6E99E1 sets the team's owner, which is not
+/// always the team type's house).
 /// </summary>
 void TeamClass::TMission_FIRE_SALE(TeamMissionClass * mission, bool)
 {
-	if (Class->House != NULL) {
-		Class->House->State = STATE_ENDGAME;
-	}
+	House->State = STATE_ENDGAME;
+	DebugString("Team %s starts a fire sale for house %s\n", Class->Name(), House->Class->Name());
 	IsNextMission = true;
 }
 
