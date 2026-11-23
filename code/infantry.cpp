@@ -698,9 +698,6 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				Fear = FEAR_MAXIMUM;
 			} else if (!Class->IsFearless && !Has_Ability(ABILITY_FEARLESS)) {
 				Fear = FEAR_SCARED;
-				if (Class->IsDoggie && HealthRatio <= Rule->ConditionRed) {
-					Fear = FEAR_PANIC;
-				}
 			}
 		} else {
 
@@ -1468,8 +1465,6 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 	**	means that movement is more important than safety. Get up and run!
 	*/
 	if (House->Is_Human_Player() && target != NULL && NavCom == target && IsProne && !Class->IsFraidyCat && !Class->IsCyborg) {
-		Do_Action(DO_GET_UP);
-	} else if (Class->IsDoggie && IsProne && target != NULL) {
 		Do_Action(DO_GET_UP);
 	}
 
@@ -4206,27 +4201,6 @@ void InfantryClass::Fear_AI(void)
 	*/
 	if (Fear > 0) {
 
-		if (Class->IsDoggie) {
-			if (Fear >= FEAR_PANIC) {
-				if (!Locomotion->Is_Moving() && NavCom == NULL) {
-					if (Map[(Coord const &)PositionCoord].Land_Type() == LAND_TIBERIUM) {
-						Do_Action(DO_LIE_DOWN);
-					} else {
-						Goto_Tiberium(16);
-						if (NavCom != NULL) {
-							Assign_Target(NULL);
-							Assign_Mission(MISSION_MOVE);
-							Commence();
-						}
-					}
-				}
-			}
-			if (!Class->IsFearless) {
-				Fear--;
-			}
-			return;
-		}
-
 		if (!Class->IsFearless) {
 			Fear--;
 		}
@@ -5358,15 +5332,6 @@ int InfantryClass::Do_MISSION_GUARD(void)
 	int const deploy_delay = Do_Guard_Deploy();
 	if (deploy_delay >= 0) {
 		return(deploy_delay);
-	}
-
-	if (!IsProne && TarCom == NULL && NavCom == NULL && !PrimaryFacing.Is_Rotating() && Class->IsDoggie && Get_Cell_Ptr()->Land_Type() == LAND_TIBERIUM) {
-		if (PrimaryFacing.Current().As_Dir8() != FACING_E) {
-			DirType dir(DIR_E);
-			Locomotion->Do_Turn(dir);
-		} else {
-			Do_Action(DO_LIE_DOWN);
-		}
 	}
 
 	return(BASECLASS::Do_MISSION_GUARD());

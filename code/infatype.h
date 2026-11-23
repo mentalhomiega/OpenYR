@@ -223,9 +223,8 @@ class InfantryTypeClass : public TechnoTypeClass
 		VocType LeaveWaterSound;
 
 		/*
-		 * If this infantry type is an attack dog rather than a soldier, then this flag will
-		 * be true. A dog beds down in tiberium while guarding, panics outright once badly
-		 * wounded, and has a burning death animation of its own.
+		 * The Doggie= flag. gamemd reads it (InfantryTypeClass::LoadFromINI, 0x5240A0) and no
+		 * code uses it, so it changes nothing here either.
 		 */
 		bool IsDoggie;
 

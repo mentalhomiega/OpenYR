@@ -1,0 +1,10 @@
+; A soldier with Doggie=yes behaves as any other soldier. gamemd reads the flag in InfantryTypeClass::LoadFromINI (0x5240A0) and no code uses it, so a
+; hit from a source takes the soldier's fear to 100 (InfantryClass::ReceiveDamage, 0x517FA0) however little health is left; a dog flag that sent it to 200 was not kept.
+; Run with the mod infantry-doggie-rules, which sets Doggie=yes on E1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Mods "<full path of>	estsutotest\infantry-doggie-rules" -Script src-agent26/tests/autotest/infantry-doggie-ignored.txt -Seconds 60 -Filter "AUTOTEST   infstate|AUTOTEST   hit|Exception"
+; Expected: E1 is hit down to 25 strength at frame 40 and its infstate line at frame 41 shows prone 1 and fear 99 (100 less one frame of decay). Before the fix it showed prone 0 and fear 199.
+10 own E1 66 66
+10 own E2 70 66
+40 hit E1:SA@E2 100
+41 infstate E1
+60 quit
