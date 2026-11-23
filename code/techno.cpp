@@ -7012,7 +7012,9 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 	}
 
 	UnitClass * const miner = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest ? (UnitClass *)this : NULL;
-	bool const unloading = miner != NULL && CurrentMission == MISSION_UNLOAD;
+	// A simple deployer in Unload is deploying and keeps that mission (gamemd tests the type flag at +0xE13, IsSimpleDeployer); the harvester case is ours.
+	bool const deploying = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsSimpleDeployer && CurrentMission == MISSION_UNLOAD;
+	bool const unloading = (miner != NULL && CurrentMission == MISSION_UNLOAD) || deploying;
 
 	// Guard is queued and starts at once when the object is ready for a new mission, as QueueMission (0x5B35E0) with its start flag does,
 	// so a mission that is under way ends before the idle mode below chooses the next one.
@@ -7020,7 +7022,9 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 	// miner_handover_*, while a War Miner's did. The decompile does not show what separates them.
 	bool const keeps_mining = miner != NULL && miner->Class->IsTeleporter && (CurrentMission == MISSION_HARVEST || unloading);
 	if (keeps_mining) {
-		Assign_Mission(MISSION_HARVEST);
+		if (unloading) {
+			Assign_Mission(MISSION_HARVEST);
+		}
 	} else if (!unloading && CurrentMission != MISSION_DECONSTRUCTION) {
 		Assign_Mission(MISSION_GUARD);
 		if (Ready_To_Commence()) {
