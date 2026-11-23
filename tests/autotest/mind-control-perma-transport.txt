@@ -1,0 +1,17 @@
+; A unit taken for good (the psychic dominator, or MindControl.Permanent here) is mind controlled for the rules that bar such units
+; from a transport: gamemd's TechnoClass::IsMindControlled (0x7105E0) is true for MindControlledBy and for MindControlledByAUnit, and the
+; UnitClass radio handler (CAN_LOAD, 0x73758A) refuses a passenger it holds true for. The overlay mind-control-permanent.ini gives the
+; Master Mind a weapon that takes its target for good. It takes an enemy GI, and the click of that GI on the player's Armored
+; Transport (SAPC) must then offer no enter action.
+; Expected: "taken for good" for E1, and the action at frame 250 is not Enter. Before the fix it is Enter.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/mind-control-perma-transport.txt -Width 800 -Height 600 -Seconds 90 -Country 8 -Filter "AUTOTEST   action|mind control|Exception"
+10 rules mind-control-permanent.ini
+30 command CenterBase
+35 reveal
+40 own MIND 64 40
+41 enemy E1 64 36
+42 own SAPC 70 40
+100 strike MIND 64 36
+240 view 66 38
+250 action E1 70 40
+260 quit

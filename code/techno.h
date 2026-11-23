@@ -193,6 +193,7 @@ class TechnoClass :	public RadioClass,
 		std::optional<CaptureManagerClass> CaptureManager;
 		TechnoClass * MindControlledBy;
 		bool IsPermaControlled;
+		bool Is_Mind_Controlled(void) const {return(MindControlledBy != NULL || IsPermaControlled);}
 
 		// Whether the owner's infantry count includes this soldier. An InfantryAbsorb structure drops it while the soldier is inside.
 		bool CountedAsOwnedInfantry;
