@@ -1,13 +1,14 @@
 ; House number 8997 in a trigger action names the triggering house: the owner of the object that last satisfied one of the
 ; trigger's Entered by (1), zone, line-crossing or Entered or overflown events. The trigger here has the event only; the
 ; scripted Destroy All Land Units (121) runs with it. Before anyone enters, no house is triggering and the action fails.
+; The trigger repeats, so the game keeps it after it springs.
 ; The player's GI walks onto the tagged cell; afterwards the action finds the player's house and the GI is destroyed.
 ; Expected: failed with the count unchanged before the move, "sprung ATEV1" at the cell, then done with no E1 left for the player.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/trigaction-triggering-house.txt -Map XMP29U2.MAP -Seconds 90 -Filter "AUTOTEST   (count|tagevent|sprung ATEV|trigaction 121)|Exception"
 30 command CenterBase
 300 own E1 60 36
 310 reveal
-500 tagevent cell 1,0,-1 0 63 36
+500 tagevent cell 1,0,-1 2 63 36
 510 count E1
 520 trigaction 121 8997 0
 530 count E1

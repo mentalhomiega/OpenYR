@@ -1673,6 +1673,12 @@ static HouseClass * Named_House(std::string name)
 static TriggerClass * TaggedTrigger = NULL;
 static TechnoClass * TaggedObject = NULL;
 
+// TaggedTrigger while the game still holds it; a trigger that does not repeat is deleted once it has sprung.
+static TriggerClass * Live_Tagged_Trigger(void)
+{
+	return(Triggers.ID(TaggedTrigger) != -1 ? TaggedTrigger : NULL);
+}
+
 // tagtype <TypeID>: attaches one test tag, with one test trigger, to every object of the type whoever owns it, so that
 // an action that works on the objects attached to its trigger has some. The trigger belongs to no map; trigaction
 // passes it to the action along with the first object tagged.
@@ -1711,7 +1717,7 @@ static void Trigger_Action_Line_Step(StepType const & step)
 	std::strtok(text.data(), ",");
 	TActionClass * action = new TActionClass;
 	action->Read_INI();
-	bool const done = (*action)(PlayerPtr, TaggedObject, TaggedTrigger, Cell(0, 0));
+	bool const done = (*action)(PlayerPtr, TaggedObject, Live_Tagged_Trigger(), Cell(0, 0));
 	DebugString("AUTOTEST   trigactionline %s: action %d, value %d, extra %d, %s\n", step.Argument.c_str(), (int)action->Action, action->Data.Value, action->Extra, done ? "done" : "failed");
 	delete action;
 }
@@ -1735,7 +1741,7 @@ static void Trigger_Action_Step(StepType const & step)
 	if (at != std::string::npos) {
 		house = Named_House(step.Argument.substr(at + 1));
 	}
-	bool const done = house != NULL && (*action)(house, TaggedObject, TaggedTrigger, Cell(0, 0));
+	bool const done = house != NULL && (*action)(house, TaggedObject, Live_Tagged_Trigger(), Cell(0, 0));
 	Point2D const view = TacticalMap->Get_Tactical_Position();
 	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d, scenario tint %d,%d,%d, first tile tint %d,%d,%d, waypoint cell %d,%d, lightning storm active %d pending %d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y,
 		Scen->RedTint, Scen->GreenTint, Scen->BlueTint,
