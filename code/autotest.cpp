@@ -316,6 +316,9 @@ int ProductionSampleInterval = 0;
 // The frames between the samplevet step's logs, 0 when it is off.
 int VeterancySampleInterval = 0;
 
+// The frames between the samplesuper step's logs, 0 when it is off.
+int SuperSampleInterval = 0;
+
 // The frames between the sampleharvest step's logs, 0 when it is off, and the block of cells whose tiberium it counts.
 int HarvestSampleInterval = 0;
 Rect HarvestSampleBlock;
@@ -1223,6 +1226,33 @@ static void Log_Veterancy(void)
 static void Samplevet_Step(StepType const & step)
 {
 	VeterancySampleInterval = std::max(0, step.Argument_Int());
+}
+
+
+/// <summary>
+/// Logs every present super weapon of every house: its type, whether it is ready or suspended, and the frames left on its
+/// charge timer. The gamemd comparison harness reads the same fields from Yuri's Revenge, so the fields and their
+/// units must stay as they are.
+/// </summary>
+static void Log_Supers(void)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
+			SuperClass const * super = house->SuperWeapon[s];
+			if (super == NULL || !super->Is_Present()) continue;
+			DebugString("AUTOTEST super frame %d house %s type %s ready %d suspended %d left %d\n", Frame, house->Class->Name(),
+				super->Class->Name(), (int)super->Is_Charged(), (int)super->Is_Suspended(), super->Control.Value());
+		}
+	}
+}
+
+
+// samplesuper <interval>: logs every present super weapon (see Log_Supers) on each frame that is a multiple of the
+// interval; 0 stops.
+static void Samplesuper_Step(StepType const & step)
+{
+	SuperSampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8555,6 +8585,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"sample", Sample_Step},
 		{"sampleprod", Sampleprod_Step},
 		{"samplevet", Samplevet_Step},
+		{"samplesuper", Samplesuper_Step},
 		{"sampleharvest", Sampleharvest_Step},
 		{"stop", Stop_Step},
 		{"strikeobj", Strikeobj_Step},
@@ -9320,6 +9351,10 @@ void AutoTest_Frame(void)
 
 	if (HarvestSampleInterval > 0 && (Frame % HarvestSampleInterval) == 0) {
 		Log_Harvest();
+	}
+
+	if (SuperSampleInterval > 0 && (Frame % SuperSampleInterval) == 0) {
+		Log_Supers();
 	}
 }
 
