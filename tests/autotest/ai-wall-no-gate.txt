@@ -2,9 +2,9 @@
 ; The mod in tests/autotest/ai-wall-no-gate lists only gates the Americans cannot build. Run from the repository root with an
 ; American computer player and a long game, so the plan reaches its wall step:
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent2 -Script src-agent2/tests/autotest/ai-wall-no-gate.txt -Mods tests/autotest/ai-wall-no-gate -AICountries 0 -Seconds 240 -Filter "BUILDTRACE.*(GAWALL|GAGATE)|AUTOTEST   census|Exception"
-; The run ends at frame 12000 with a census line of the computer's structures (concrete walls are overlays, so it does not list them);
+; The run ends at frame 9000 with a census line of the computer's structures (concrete walls are overlays, so it does not list them);
 ; the BUILDTRACE lines show the wall laid from frame 2330 on, with no gate among them.
 10 buildtrace 1
 30 command CenterBase
-12000 census
-12001 quit
+9000 census
+9001 quit
