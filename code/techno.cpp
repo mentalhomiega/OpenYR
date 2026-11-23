@@ -7005,14 +7005,31 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 	Assign_Target(NULL);
 	Assign_Destination(NULL);
 
-	bool const unloading = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && CurrentMission == MISSION_UNLOAD;
+	// The remembered cell goes with the old orders, except a vehicle that is deploying keeps it (gamemd tests the flags at unit +0x6E1 and +0x6E2).
+	// Without this a vehicle that was sent to a depot and is handed over stays on Guard: its idle check wants no archive target.
+	if (RTTI != RTTI_UNIT || !((UnitClass *)this)->IsDeploying) {
+		ArchiveTarget = NULL;
+	}
 
-	// A Chrono Miner that is mining keeps its Harvest mission through a change of house: gamemd's miner went on mining at the
-	// ore it chose while a War Miner in the same handover stood guard (measured by the comparison harness). Only its
-	// destination is dropped, so it picks its ore again at once.
-	bool const keeps_harvest = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && ((UnitClass *)this)->Class->IsTeleporter && CurrentMission == MISSION_HARVEST;
-	if (!unloading && !keeps_harvest && CurrentMission != MISSION_DECONSTRUCTION) {
+	UnitClass * const miner = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest ? (UnitClass *)this : NULL;
+	// A simple deployer in Unload is deploying and keeps that mission (gamemd tests the type flag at +0xE13, IsSimpleDeployer); the harvester case is ours.
+	bool const deploying = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsSimpleDeployer && CurrentMission == MISSION_UNLOAD;
+	bool const unloading = (miner != NULL && CurrentMission == MISSION_UNLOAD) || deploying;
+
+	// Guard is queued and starts at once when the object is ready for a new mission, as QueueMission (0x5B35E0) with its start flag does,
+	// so a mission that is under way ends before the idle mode below chooses the next one.
+	// A Chrono Miner keeps mining, or goes back to it from an unload: gamemd's never showed a pending Guard in any state of the comparison scenarios
+	// miner_handover_*, while a War Miner's did. The decompile does not show what separates them.
+	bool const keeps_mining = miner != NULL && miner->Class->IsTeleporter && (CurrentMission == MISSION_HARVEST || unloading);
+	if (keeps_mining) {
+		if (unloading) {
+			Assign_Mission(MISSION_HARVEST);
+		}
+	} else if (!unloading && CurrentMission != MISSION_DECONSTRUCTION) {
 		Assign_Mission(MISSION_GUARD);
+		if (Ready_To_Commence()) {
+			Commence();
+		}
 	}
 	if (SpawnManager) {
 		SpawnManager->Kill_Nodes();

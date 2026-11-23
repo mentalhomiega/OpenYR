@@ -79,6 +79,7 @@
 #include "movie.h"
 #include "logic.h"
 #include "fly.h"
+#include "hover.h"
 #include "jumpjet.h"
 #include "teleport.h"
 #include "tactical.h"
@@ -322,6 +323,9 @@ int SuperSampleInterval = 0;
 // The frames between the sampleharvest step's logs, 0 when it is off, and the block of cells whose tiberium it counts.
 int HarvestSampleInterval = 0;
 Rect HarvestSampleBlock;
+
+// The frames between the sampletrace step's logs, 0 when it is off.
+int TraceSampleInterval = 0;
 
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
@@ -1168,6 +1172,40 @@ static void Sample_Step(StepType const & step)
 		return;
 	}
 	SampleTypes.push_back(step.Argument);
+}
+
+
+/// <summary>
+/// Logs the mission state and the hover drive of each foot object of the sampled types: its current and queued mission, its
+/// NavCom cell, and for a hover drive the destination, the next stop and the throttle asked for, applied and boosted. The gamemd
+/// comparison harness reads the same fields from Yuri's Revenge, so the fields and their units must stay as they are.
+/// </summary>
+static void Log_Trace(void)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {
+			return(!techno->IsInLimbo && techno->Is_Foot() && std::any_of(SampleTypes.begin(), SampleTypes.end(),
+				[&](std::string const & name) {return(Is_Techno_Named(techno, name));}));
+		},
+		[&](TechnoClass * techno) {
+			FootClass * foot = static_cast<FootClass *>(techno);
+			Cell const nav = Cell_Or_None(foot->NavCom);
+			HoverLocomotionClass * hover = dynamic_cast<HoverLocomotionClass *>(foot->Locomotion.get());
+			Coord const dest = hover != NULL ? hover->Destination() : COORD_NONE;
+			Coord const head = hover != NULL ? hover->Head_To_Coord() : COORD_NONE;
+			DebugString("AUTOTEST trace frame %d id %d type %s mission %d queued %d nav %d,%d dest %d,%d,%d head %d,%d,%d demand %.4f speed %.4f boost %.4f\n",
+				Frame, techno->ID, techno->TClass->Name(), (int)techno->Get_Mission(), (int)techno->MissionQueue, nav.X, nav.Y,
+				dest.X, dest.Y, dest.Z, head.X, head.Y, head.Z, hover != NULL ? hover->Throttle_Demand() : 0.0,
+				hover != NULL ? hover->Throttle_Applied() : 0.0, hover != NULL ? hover->Throttle_Boost() : 0.0);
+		});
+}
+
+
+// sampletrace <interval>: logs the mission state and hover drive of the sampled types on every frame that is a multiple
+// of the interval; 0 stops.
+static void Sampletrace_Step(StepType const & step)
+{
+	TraceSampleInterval = std::max(0, step.Argument_Int());
 }
 
 
@@ -8591,6 +8629,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"swaim", Swaim_Step},
 		{"speed", Speed_Probe},
 		{"sample", Sample_Step},
+		{"sampletrace", Sampletrace_Step},
 		{"sampleprod", Sampleprod_Step},
 		{"samplevet", Samplevet_Step},
 		{"samplesuper", Samplesuper_Step},
@@ -9348,6 +9387,10 @@ void AutoTest_Frame(void)
 
 	if (SampleInterval > 0 && (Frame % SampleInterval) == 0) {
 		Log_Samples();
+	}
+
+	if (TraceSampleInterval > 0 && (Frame % TraceSampleInterval) == 0) {
+		Log_Trace();
 	}
 
 	if (ProductionSampleInterval > 0 && (Frame % ProductionSampleInterval) == 0) {
