@@ -594,6 +594,8 @@ class HouseClass : public AbstractClass
 		int InfantryFactories;
 		int UnitFactories;
 		int BuildingFactories;
+		// Ship factories (naval yards) are counted apart from the war factories (HouseClass 0x5388 in gamemd).
+		int NavalFactories;
 
 		/*
 		**	This is the accumulation of the total power and drain factors. From these
@@ -920,8 +922,8 @@ class HouseClass : public AbstractClass
 		static void Computer_Paranoid(void);
 		bool Is_Allowed_To_Ally(HouseClass * house) const;
 		void Super_Weapon_Handler(void);
-		int * Factory_Counter(RTTIType rtti);
-		int Factory_Count(RTTIType rtti) const;
+		int * Factory_Counter(RTTIType rtti, bool naval = false);
+		int Factory_Count(RTTIType rtti, bool naval = false) const;
 		DiffType Assign_Handicap(DiffType handicap);
 		UnitClass * Find_Nearest_Enemy_Unit_In_Spread(Coord const & coord) const;
 		Cell Where_To_Go(FootClass const * object) const;

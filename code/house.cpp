@@ -337,6 +337,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	InfantryFactories(0),
 	UnitFactories(0),
 	BuildingFactories(0),
+	NavalFactories(0),
 	Power(0),
 	Drain(0),
 	AuxiliaryPower(0),
@@ -1253,10 +1254,8 @@ static int Build_Limit_Result(HouseClass const & house, ObjectTypeClass const * 
 			if (utype->BuildLimit <= 0) {
 				return(house.PUQuantity.Value(type->Fetch_Heap_ID()) < abs(utype->BuildLimit));
 			}
+			// Only the unit's own count enters (HouseClass::CanBuild, 0x4F7870): the structure it deploys into is not added.
 			int count = house.UQuantity.Value(type->Fetch_Heap_ID());
-			if (utype->DeploysInto != NULL) {
-				count += house.BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
-			}
 			if (count < utype->BuildLimit) {
 				return(1);
 			}
@@ -1686,7 +1685,7 @@ void HouseClass::AI(void)
 	*/
 	if (PlayerPtr == this) {
 
-		if (SpeakMaxedDelay == 0 && Available_Money() < 100 && UnitFactories+BuildingFactories+InfantryFactories > 0) {
+		if (SpeakMaxedDelay == 0 && Available_Money() < 100 && UnitFactories+NavalFactories+BuildingFactories+InfantryFactories > 0) {
 			Speak(VOX_NO_CASH);
 			Map.Flash_Money();
 			SpeakMaxedDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
@@ -3570,25 +3569,34 @@ void HouseClass::Just_Built(TechnoClass * product)
 		Sound_Effect(sound, product->PositionCoord);
 	}
 
+	// A DontScore type is left out of the produced tally that a negative BuildLimit reads (HouseClass::RegisterJustBuilt, 0x4FB6B0).
 	switch (product->Fetch_RTTI()) {
 		case RTTI_UNIT:
 			JustBuiltUnit = (UnitType)ttype->Fetch_Heap_ID();
-			PUQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PUQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_INFANTRY:
 			JustBuiltInfantry = (InfantryType)ttype->Fetch_Heap_ID();
-			PIQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PIQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_BUILDING:
 			JustBuiltStructure = (StructType)ttype->Fetch_Heap_ID();
-			PBQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PBQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_AIRCRAFT:
 			JustBuiltAircraft = (AircraftType)ttype->Fetch_Heap_ID();
-			PAQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PAQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 	}
 	IsRecalcNeeded = true;
@@ -6104,6 +6112,7 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
  *    examining the number of factories as well as adjusting their number.                     *
  *                                                                                             *
  * INPUT:   rtti  -- The RTTI of the object that could be produced.                            *
+ *          naval -- Is the object a ship? Ship factories are counted apart from vehicle ones. *
  *                                                                                             *
  * OUTPUT:  Returns with the number of factories owned by this house that could produce the    *
  *          object of the type specified.                                                      *
@@ -6113,12 +6122,12 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
  * HISTORY:                                                                                    *
  *   07/30/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-int * HouseClass::Factory_Counter(RTTIType rtti)
+int * HouseClass::Factory_Counter(RTTIType rtti, bool naval)
 {
 	switch (rtti) {
 		case RTTI_UNITTYPE:
 		case RTTI_UNIT:
-			return(&UnitFactories);
+			return(naval ? &NavalFactories : &UnitFactories);
 
 		case RTTI_AIRCRAFTTYPE:
 		case RTTI_AIRCRAFT:
@@ -6157,7 +6166,7 @@ int * HouseClass::Factory_Counter(RTTIType rtti)
 void HouseClass::Active_Remove(TechnoClass const * techno)
 {
 	if (techno->RTTI == RTTI_BUILDING) {
-		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild);
+		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild, ((BuildingClass *)techno)->Class->IsNaval);
 		if (fptr != NULL) {
 			*fptr = *fptr - 1;
 		}
@@ -6183,7 +6192,7 @@ void HouseClass::Active_Remove(TechnoClass const * techno)
 void HouseClass::Active_Add(TechnoClass const * techno)
 {
 	if (techno->RTTI == RTTI_BUILDING) {
-		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild);
+		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild, ((BuildingClass *)techno)->Class->IsNaval);
 		if (fptr != NULL) {
 			*fptr = *fptr + 1;
 		}
@@ -6576,9 +6585,9 @@ void HouseClass::Set_Factory(RTTIType rtti, BuildCatType buildcat, bool naval, F
  * HISTORY:                                                                                    *
  *   07/30/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-int HouseClass::Factory_Count(RTTIType rtti) const
+int HouseClass::Factory_Count(RTTIType rtti, bool naval) const
 {
-	int const * ptr = ((HouseClass *)this)->Factory_Counter(rtti);
+	int const * ptr = ((HouseClass *)this)->Factory_Counter(rtti, naval);
 	if (ptr != NULL) {
 		return(*ptr);
 	}
@@ -7926,6 +7935,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(InfantryFactories);
 	crc(UnitFactories);
 	crc(BuildingFactories);
+	crc(NavalFactories);
 	crc(Power);
 	crc(Drain);
 	crc(WhoLastHurtMe);
@@ -8090,6 +8100,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InfantryFactories);
 	stream.Serialize(UnitFactories);
 	stream.Serialize(BuildingFactories);
+	stream.Serialize(NavalFactories);
 	stream.Serialize(Power);
 	stream.Serialize(Drain);
 	stream.Serialize(AuxiliaryPower);

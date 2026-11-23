@@ -4705,7 +4705,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 		}
 	} else if (action == ACTION_SELF) {
 		int index;
-		if (StunDuration == 0 && Class->Is_Factory() && PlayerPtr == House && *House->Factory_Counter(Class->ToBuild) > 1) {
+		if (StunDuration == 0 && Class->Is_Factory() && PlayerPtr == House && *House->Factory_Counter(Class->ToBuild, Class->IsNaval) > 1) {
 			switch (Class->ToBuild) {
 				case RTTI_INFANTRYTYPE:
 				case RTTI_INFANTRY:

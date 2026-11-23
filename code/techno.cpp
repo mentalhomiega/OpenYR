@@ -1039,7 +1039,9 @@ int TechnoClass::Time_To_Build(void) const
 	// The zero-speed floor is gamemd's float32 0.01 (TechnoClass::TimeToBuild, 0x7F4E34), not the double.
 	val = ProductionRules::Low_Power_Build_Time(val, House->Power_Fraction(), Rule->LowPowerPenaltyModifier, Rule->MinLowPowerProductionSpeed, Rule->MaxLowPowerProductionSpeed);
 
-	int extra = House->Factory_Count(RTTI) - 1;
+	// A ship counts the ship factories alone and a vehicle the vehicle factories alone (HouseClass 0x500910, read by TechnoClass::TimeToBuild).
+	bool const naval = RTTI == RTTI_UNIT && TClass != NULL && TClass->IsNaval;
+	int extra = House->Factory_Count(RTTI, naval) - 1;
 	if (Rule->MultipleFactoryCap > 0) {
 		extra = std::min(extra, Rule->MultipleFactoryCap - 1);
 	}
