@@ -7011,14 +7011,21 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 		ArchiveTarget = NULL;
 	}
 
-	bool const unloading = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && CurrentMission == MISSION_UNLOAD;
+	UnitClass * const miner = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest ? (UnitClass *)this : NULL;
+	bool const unloading = miner != NULL && CurrentMission == MISSION_UNLOAD;
 
-	// A Chrono Miner that is mining keeps its Harvest mission through a change of house: gamemd's miner went on mining at the
-	// ore it chose while a War Miner in the same handover stood guard (measured by the comparison harness). Only its
-	// destination is dropped, so it picks its ore again at once.
-	bool const keeps_harvest = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && ((UnitClass *)this)->Class->IsTeleporter && CurrentMission == MISSION_HARVEST;
-	if (!unloading && !keeps_harvest && CurrentMission != MISSION_DECONSTRUCTION) {
+	// Guard is queued and starts at once when the object is ready for a new mission, as QueueMission (0x5B35E0) with its start flag does,
+	// so a mission that is under way ends before the idle mode below chooses the next one.
+	// A Chrono Miner keeps mining, or goes back to it from an unload: gamemd's never showed a pending Guard in any state of the comparison scenarios
+	// miner_handover_*, while a War Miner's did. The decompile does not show what separates them.
+	bool const keeps_mining = miner != NULL && miner->Class->IsTeleporter && (CurrentMission == MISSION_HARVEST || unloading);
+	if (keeps_mining) {
+		Assign_Mission(MISSION_HARVEST);
+	} else if (!unloading && CurrentMission != MISSION_DECONSTRUCTION) {
 		Assign_Mission(MISSION_GUARD);
+		if (Ready_To_Commence()) {
+			Commence();
+		}
 	}
 	if (SpawnManager) {
 		SpawnManager->Kill_Nodes();
