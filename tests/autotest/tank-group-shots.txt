@@ -1,0 +1,60 @@
+; Tank group shots: groups of four player tanks (two Rhino HTNK, an Apocalypse APOC and a Grizzly MTNK) stand side by side on level
+; ground and attack a computer Gattling tank 7 cells west of them, on ground at the same height and one and two levels above and below,
+; as in a play session where the group's shells missed. Every projectile that bursts writes a SHOTTRACE line.
+; Expected: every group damages its Gattling tank, so each `where YTNK` line at frame 1500 shows a strength below 60000, and the
+; SHOTTRACE lines of the Cannon shells all read "hit".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent33 -Script src-agent33/tests/autotest/tank-group-shots.txt -Mods src-agent33/tests/autotest/tank-group-shots-rules -Map XMP08T2.MAP -Seconds 200 -Uncapped -Filter "SHOTTRACE|AUTOTEST|Exception"
+10 raise 40 76 40 40 4 0
+400 shotlog 1
+10 raise 50 77 14 4 4 0
+10 raise 50 81 14 4 5 0
+10 raise 50 85 14 4 6 0
+10 raise 50 89 14 4 3 0
+10 raise 50 93 14 4 2 0
+400 own HTNK 70 78
+400 own HTNK 71 78
+400 own APOC 70 79
+400 own MTNK 71 79
+400 enemy YTNK 63 78
+400 own HTNK 70 82
+400 own HTNK 71 82
+400 own APOC 70 83
+400 own MTNK 71 83
+400 enemy YTNK 63 82
+400 own HTNK 70 86
+400 own HTNK 71 86
+400 own APOC 70 87
+400 own MTNK 71 87
+400 enemy YTNK 63 86
+400 own HTNK 70 90
+400 own HTNK 71 90
+400 own APOC 70 91
+400 own MTNK 71 91
+400 enemy YTNK 63 90
+400 own HTNK 70 94
+400 own HTNK 71 94
+400 own APOC 70 95
+400 own MTNK 71 95
+400 enemy YTNK 63 94
+420 cellattack 70 78 63 78
+420 cellattack 71 78 63 78
+420 cellattack 70 79 63 78
+420 cellattack 71 79 63 78
+420 cellattack 70 82 63 82
+420 cellattack 71 82 63 82
+420 cellattack 70 83 63 82
+420 cellattack 71 83 63 82
+420 cellattack 70 86 63 86
+420 cellattack 71 86 63 86
+420 cellattack 70 87 63 86
+420 cellattack 71 87 63 86
+420 cellattack 70 90 63 90
+420 cellattack 71 90 63 90
+420 cellattack 70 91 63 90
+420 cellattack 71 91 63 90
+420 cellattack 70 94 63 94
+420 cellattack 71 94 63 94
+420 cellattack 70 95 63 94
+420 cellattack 71 95 63 94
+1500 where YTNK
+1501 quit
