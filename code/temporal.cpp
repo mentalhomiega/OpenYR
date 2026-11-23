@@ -88,14 +88,17 @@ static void Flag_Building_Recalc(TechnoClass * target)
 
 
 /// <summary>
-/// Starts warping the target (TemporalClass::Fire, 0x71AF20). The owner first lets go of
-/// anything it held, and the target lets go of what it holds by mind control or a warp of
-/// its own. The first firer on a target sets the warp to ten times the target type's
+/// Starts warping the target (TemporalClass::Fire, 0x71AF20). The target first releases the
+/// spawns it launched and the units it mind controls, and the owner lets go of anything it
+/// held. The target also lets go of what it holds by a warp of its own. The first firer on a target sets the warp to ten times the target type's
 /// Strength; a later firer joins the chain and speeds the count up. Nothing happens to a
 /// target that cannot be warped, or while the owner is itself being warped.
 /// </summary>
 void TemporalClass::Fire(TechnoClass * target)
 {
+	if (target != nullptr && target->SpawnManager) {
+		target->SpawnManager->Kill_Nodes();
+	}
 	if (target != nullptr && target->CaptureManager) {
 		target->CaptureManager->Free_All();
 	}

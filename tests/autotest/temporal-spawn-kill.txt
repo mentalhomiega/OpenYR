@@ -1,0 +1,14 @@
+; A temporal gun fires at a vehicle that holds two Hornets (the temporal-parity mod gives the Grizzly a spawn manager).
+; gamemd's TemporalClass::Fire (0x71AF20) first calls SpawnManagerClass::KillNodes on its target, so the docked Hornets
+; are removed when the warp starts, 30 frames before the Grizzly itself is erased. Expected: "where HORNET" lists two Hornets
+; at frame 45 and none at frame 65, while "where MTNK" at frame 66 still lists the warped Grizzly.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/temporal-spawn-kill.txt -Mods src-agent26/tests/autotest/temporal-parity -Seconds 60 -Filter "AUTOTEST warp|AUTOTEST   where HORNET|AUTOTEST   where MTNK|Exception"
+30 command CenterBase
+35 reveal
+40 own HTNK 60 36
+41 spawn MTNK 66 36
+45 where HORNET
+50 strike HTNK 66 36
+65 where HORNET
+66 where MTNK
+200 quit
