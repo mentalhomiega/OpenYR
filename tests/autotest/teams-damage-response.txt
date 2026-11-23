@@ -1,0 +1,20 @@
+; A computer team of two soldiers moves west along the route of teams-aggr-move, past a Grizzly of the player that
+; stands at 62,36 on Guard and shoots them (run with -AICountries 1). Stock rules have no TeamRetaliate key, and
+; gamemd's response to a damaged member (TeamClass response at 0x6EB380) never takes the attacker as the team's
+; target: the soldiers keep mission Move and their navigation cell 40,36. Ours used to turn the team on the tank,
+; which cleared each member's destination (nav -1,-1) and sent it at the tank.
+1 teamtrace 1
+300 own MTNK 62 36
+310 spawn E1 72 38
+311 spawn E1 73 38
+320 teamini teams-damage-response.ini
+330 team TSTDMGT
+450 where E1
+520 where E1
+580 where E1
+640 where E1
+700 where E1
+800 where E1
+900 where E1
+1000 where MTNK
+1100 quit

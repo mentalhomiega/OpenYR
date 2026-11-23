@@ -2139,10 +2139,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		IsFirestormTriggerHumans = ini.Get_Bool(GENERAL, "FirestormTriggerHumans", IsFirestormTriggerHumans);
-		if (ini.Is_Present(GENERAL, "TeamRetaliate")) {
-			IsTeamRetaliateSet = true;
-			IsTeamRetaliate = ini.Get_Bool(GENERAL, "TeamRetaliate", IsTeamRetaliate);
-		}
+		IsTeamRetaliate = ini.Get_Bool(GENERAL, "TeamRetaliate", IsTeamRetaliate);
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
 		SovietBaseDefenseCounts = ini.Get_IntList(GENERAL, "SovietBaseDefenseCounts", SovietBaseDefenseCounts);
 		ThirdBaseDefenseCounts = ini.Get_IntList(GENERAL, "ThirdBaseDefenseCounts", ThirdBaseDefenseCounts);
@@ -4006,7 +4003,6 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTogglePowerAllowed);
 	stream.Serialize(IsEnemyWrench);
 	stream.Serialize(GenericPrerequisites);
-	stream.Serialize(IsTeamRetaliateSet);
 	stream.Serialize(IsTeamRetaliate);
 	stream.Serialize(IsFirestormTriggerHumans);
 	stream.Serialize(IsAllowParallelAIQueues);
