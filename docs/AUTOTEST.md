@@ -313,6 +313,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `garrisons` | writes every structure that can be garrisoned |
 | `radarall <TypeID>` | writes each object of that type whoever owns it, with its owner and whether Is_Radar_Visible plots it |
 | `stripfill <column> <count>` | offers building types 0 to count-1 to that sidebar strip and writes how many it took |
+| `reaction <TypeID>` | writes each object of the type, whoever owns it, with its mission, the type of its target, and `opportunity 1` when an on-the-move scan chose that target and gamemd would drop it once it is out of reach. A `reaction` line after a `hit` step shows whether the object turned on its attacker |
 | `aiscan` | writes each foot object no player owns with its mission, team, target, range and area scan picks, and the nearest player object with whether it is in range and can be fired at |
 | `lockscan` | writes each object outside limbo whose IsLocked flag is clear, whoever owns it, with whether its cell is in the local radar now, then the count of such objects and how many of them are in the local radar |
 | `gattling <TypeID>` | writes each object of that type, whoever owns it, with its primary facing and the facing it turns to, a building's aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret animation frame, target cell, and a building's turret and barrel frame counts |

@@ -1,0 +1,11 @@
+; A carrier does not turn on its attacker, as gamemd's TechnoClass::CanRetaliateToAttacker (0x7087C0) refuses an object with a spawn manager.
+; The player's carrier (CARRIER, Spawns=HORNET) sits at 86,70 on the lake of XMP08T2 and a neutral submarine (SUB) at 80,67 hits it.
+; Expected: the reaction line after the hit keeps mission Guard with no target. Before the change the carrier took the submarine as its target.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/carrier-no-retaliate.txt -Map XMP08T2.MAP -Seconds 60 -Filter "AUTOTEST   reaction|AUTOTEST   hit|Exception"
+30 reveal
+40 own CARRIER 86 70
+41 neutral SUB 80 67
+60 reaction CARRIER
+62 hit CARRIER:AP@SUB 5
+63 reaction CARRIER
+120 quit

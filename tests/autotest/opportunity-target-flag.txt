@@ -1,0 +1,12 @@
+; A target an on-the-move scan chose is marked, as gamemd's ShouldLoseTargetNow (set in TechnoClass::Update, 0x6FA65A) is.
+; The player's E1 at 64,24 of XMP29U2 stays on Guard and takes the computer's E2, spawned three cells away at 61,24, by its own scan.
+; Expected: the first reaction lines show no target; once E1 holds E2 the line shows opportunity 1. Before the change there was no mark.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/opportunity-target-flag.txt -Map XMP29U2.MAP -Seconds 90 -Filter "AUTOTEST   reaction|Exception"
+10 command CenterBase
+40 own E1 64 24
+41 spawn E2 61 24
+60 reaction E1
+80 reaction E1
+100 reaction E1
+140 reaction E1
+200 quit

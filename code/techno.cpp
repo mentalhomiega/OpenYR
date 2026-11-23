@@ -301,6 +301,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	RadarFlashTimer(),
 	SelfHealDelayTimer(),
 	TargetingTimer(45),
+	IsOpportunityTarget(false),
 	IronCurtainTimer(),
 	IronTintTimer(),
 	IronTintStage(10),
@@ -3290,7 +3291,8 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 			} else {
 				crange = std::max(Weapon_Range(0), Weapon_Range(1)) / CELL_LEPTON;
 			}
-			crange++;
+			// The scan reaches AirRangeBonus farther, in whole cells (TechnoClass::GreatestThreat, 0x6F8DF0).
+			crange += 1 + TClass->AirRangeBonus / CELL_LEPTON;
 		}
 
 		// A garrison searches OccupyWeaponRange cells beyond half its narrower side, as
@@ -4165,6 +4167,28 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	// A target the on-the-move scan chose is dropped once the mission is one that fires at nothing (TechnoClass::Update, 0x6FA5F0).
+	if (TarCom != NULL && IsOpportunityTarget) {
+		switch (CurrentMission) {
+			case MISSION_SLEEP:
+			case MISSION_ENTER:
+			case MISSION_STOP:
+			case MISSION_AMBUSH:
+			case MISSION_UNLOAD:
+			case MISSION_CONSTRUCTION:
+			case MISSION_DECONSTRUCTION:
+			case MISSION_REPAIR:
+			case MISSION_MISSILE:
+			case MISSION_HARMLESS:
+			case MISSION_WAIT:
+			case MISSION_OPEN:
+				Assign_Target(NULL);
+				break;
+			default:
+				break;
+		}
+	}
+
 	MissionAccumulateTime++;
 	BASECLASS::AI();
 
@@ -4177,7 +4201,10 @@ void TechnoClass::AI(void)
 	 * FootClass::Do_MISSION_ATTACK_MOVE. The attack-move mega mission check that gamemd runs first is not mirrored here.
 	 */
 	if (Targeting_Timer_Finished() && (Mission == MISSION_MOVE || Mission == MISSION_HARVEST || Mission == MISSION_GUARD) && Can_Opportunity_Fire()) {
-		Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE);
+		AbstractClass * const before = TarCom;
+		if (Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE) && TarCom != before) {
+			IsOpportunityTarget = true;
+		}
 	}
 
 	/*
@@ -5055,6 +5082,8 @@ void TechnoClass::Assign_Target(AbstractClass * target)
 
 	AbstractClass * old_target = TarCom;
 
+	// Every assignment clears the flag, the same target included (TechnoClass::SetTarget, 0x6FCDB0).
+	IsOpportunityTarget = false;
 	if (target == TarCom) return;
 
 	Clear_Airstrike_Designation();
@@ -7711,7 +7740,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				if (target != NULL) {
 					int which = What_Weapon_Should_I_Use(target);
-					bool retaliate = In_Range(target, which);
+					// The weapon must reach the attacker with a clear line (TechnoClass::ReceiveDamage, 0x701900, IsCloseEnough).
+					bool retaliate = Is_Close_Enough(target, which);
 					if (!retaliate) {
 						if (House->Is_Human_Player()) {
 							retaliate = ((double)(int)Distance(target->Center_Coord()) <= ((double)TClass->SightRange + 0.5) * CELL_LEPTON);
@@ -10400,6 +10430,12 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	// Neither a slave nor a miner that keeps slaves fires back (TechnoClass::CanRetaliateToAttacker).
 	if (SlaveOwner != NULL || SlaveManager) return(false);
 
+	// A computer object draining power, a controller that cannot take another victim, and a carrier do not fire back
+	// either (TechnoClass::CanRetaliateToAttacker, 0x7087C0).
+	if (DrainTarget != NULL && !House->Is_Human_Player()) return(false);
+	if (CaptureManager.has_value() && CaptureManager->Cannot_Control_Any_More()) return(false);
+	if (SpawnManager.has_value()) return(false);
+
 	bool has_navqueue = Is_Foot() && ((FootClass const *)this)->NavCom != NULL;
 	if (warhead != NULL && warhead->IsVeinhole && (!has_navqueue || !House->Is_Human_Player())) {
 		return(true);
@@ -10945,19 +10981,7 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 {
 	threat = ThreatType(threat & (THREAT_RANGE|THREAT_AREA));
 
-	/*
-	**	Determine that if there is an existing target it is still legal
-	**	and within range.
-	*/
-	if (TarCom != NULL) {
-		if ((threat & THREAT_RANGE)) {
-			int primary = What_Weapon_Should_I_Use(TarCom);
-			if (!In_Range(TarCom, primary)) {
-				Assign_Target(NULL);
-			}
-		}
-	}
-
+	// An existing target is kept unless Target_And_Estimate_Damage gave it up as an on-the-move choice that is now out of reach.
 	/*
 	**	If there is no target, then try to find one and assign it as
 	**	the target for this unit.
@@ -10992,6 +11016,18 @@ bool TechnoClass::Target_And_Estimate_Damage(Coord const & coord, ThreatType thr
 {
 	int const delay = Mission == MISSION_GUARD_AREA ? Rule->GuardAreaTargetingDelay : Rule->NormalTargetingDelay;
 	TargetingTimer = delay + Random_Pick(0, 2);
+
+	// A target the on-the-move scan chose is given up when the weapon cannot fire at it or reach it. A carrier
+	// whose weapon is merely disabled recalls its spawn and keeps the target.
+	if (TarCom != NULL && IsOpportunityTarget) {
+		FireErrorType const error = Can_Fire(TarCom, What_Weapon_Should_I_Use(TarCom));
+		if (error == FIRE_CANT && SpawnManager) {
+			SpawnManager->Reset_Target();
+		} else if (error == FIRE_ILLEGAL || error == FIRE_CANT || error == FIRE_RANGE) {
+			Assign_Target(NULL);
+		}
+	}
+
 	return(Target_Something_Nearby(coord, threat, true));
 }
 
@@ -12168,6 +12204,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadarFlashTimer);
 	stream.Serialize(SelfHealDelayTimer);
 	stream.Serialize(TargetingTimer);
+	stream.Serialize(IsOpportunityTarget);
 	stream.Serialize(IronCurtainTimer);
 	stream.Serialize(IronTintTimer);
 	stream.Serialize(IronTintStage);
