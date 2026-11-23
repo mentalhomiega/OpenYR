@@ -1,0 +1,18 @@
+; Ship factories are counted apart from vehicle factories (HouseClass 0x5388 and 0x5380, read by TechnoClass::TimeToBuild through 0x500910).
+; Allied skirmish on the XMP08T2 lake. Three power plants and a War Factory, a Grizzly (MTNK) on the beach and a Destroyer (DEST) on the water.
+; The Naval Shipyard (GAYARD) at 82,70 comes after the first reading. Expected: the Grizzly's build time at frame 340 equals the one at frame 310,
+; because the yard is not a vehicle factory, and the Destroyer's at frame 340 equals the build time a house with one ship factory pays.
+; Before the fix the yard counted as a second vehicle factory too, so the Grizzly's and the Destroyer's times fell by the MultipleFactory discount.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/production-naval-factory-count.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   buildtime|Exception"
+30 command CenterBase
+300 own GAPOWR 70 62
+301 own GAPOWR 70 65
+302 own GAPOWR 74 62
+303 own GAWEAP 66 70
+304 own MTNK 76 70
+305 own DEST 86 73
+310 buildtime MTNK
+320 own GAYARD 82 70
+340 buildtime MTNK
+341 buildtime DEST
+400 quit

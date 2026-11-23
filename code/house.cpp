@@ -337,6 +337,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	InfantryFactories(0),
 	UnitFactories(0),
 	BuildingFactories(0),
+	NavalFactories(0),
 	Power(0),
 	Drain(0),
 	AuxiliaryPower(0),
@@ -1253,6 +1254,7 @@ static int Build_Limit_Result(HouseClass const & house, ObjectTypeClass const * 
 			if (utype->BuildLimit <= 0) {
 				return(house.PUQuantity.Value(type->Fetch_Heap_ID()) < abs(utype->BuildLimit));
 			}
+			// Only the unit's own count enters (HouseClass::CanBuild, 0x4F7870): the structure it deploys into is not added.
 			int count = house.UQuantity.Value(type->Fetch_Heap_ID());
 			if (utype->DeploysInto != NULL) {
 				count += house.BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
@@ -1686,7 +1688,7 @@ void HouseClass::AI(void)
 	*/
 	if (PlayerPtr == this) {
 
-		if (SpeakMaxedDelay == 0 && Available_Money() < 100 && UnitFactories+BuildingFactories+InfantryFactories > 0) {
+		if (SpeakMaxedDelay == 0 && Available_Money() < 100 && UnitFactories+NavalFactories+BuildingFactories+InfantryFactories > 0) {
 			Speak(VOX_NO_CASH);
 			Map.Flash_Money();
 			SpeakMaxedDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
@@ -3567,6 +3569,7 @@ void HouseClass::Just_Built(TechnoClass * product)
 		sound = ttype->CreateSound;
 	}
 	if (sound != VOC_NONE) {
+	// A DontScore type is left out of the produced tally that a negative BuildLimit reads (HouseClass::RegisterJustBuilt, 0x4FB6B0).
 		Sound_Effect(sound, product->PositionCoord);
 	}
 
@@ -6109,16 +6112,17 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
  *          object of the type specified.                                                      *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
+ *          naval -- Is the object a ship? Ship factories are counted apart from vehicle ones. *
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   07/30/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-int * HouseClass::Factory_Counter(RTTIType rtti)
+int * HouseClass::Factory_Counter(RTTIType rtti, bool naval)
 {
 	switch (rtti) {
 		case RTTI_UNITTYPE:
 		case RTTI_UNIT:
-			return(&UnitFactories);
+			return(naval ? &NavalFactories : &UnitFactories);
 
 		case RTTI_AIRCRAFTTYPE:
 		case RTTI_AIRCRAFT:
@@ -6157,7 +6161,7 @@ int * HouseClass::Factory_Counter(RTTIType rtti)
 void HouseClass::Active_Remove(TechnoClass const * techno)
 {
 	if (techno->RTTI == RTTI_BUILDING) {
-		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild);
+		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild, ((BuildingClass *)techno)->Class->IsNaval);
 		if (fptr != NULL) {
 			*fptr = *fptr - 1;
 		}
@@ -6183,7 +6187,7 @@ void HouseClass::Active_Remove(TechnoClass const * techno)
 void HouseClass::Active_Add(TechnoClass const * techno)
 {
 	if (techno->RTTI == RTTI_BUILDING) {
-		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild);
+		int * fptr = Factory_Counter(((BuildingClass *)techno)->Class->ToBuild, ((BuildingClass *)techno)->Class->IsNaval);
 		if (fptr != NULL) {
 			*fptr = *fptr + 1;
 		}
@@ -6576,9 +6580,9 @@ void HouseClass::Set_Factory(RTTIType rtti, BuildCatType buildcat, bool naval, F
  * HISTORY:                                                                                    *
  *   07/30/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-int HouseClass::Factory_Count(RTTIType rtti) const
+int HouseClass::Factory_Count(RTTIType rtti, bool naval) const
 {
-	int const * ptr = ((HouseClass *)this)->Factory_Counter(rtti);
+	int const * ptr = ((HouseClass *)this)->Factory_Counter(rtti, naval);
 	if (ptr != NULL) {
 		return(*ptr);
 	}
@@ -7931,6 +7935,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(WhoLastHurtMe);
 	crc(Enemy);
 	crc((int)Base_Edge);
+	crc(NavalFactories);
 	crc((int)OwnCountry);
 	crc(CountResourceGatherers);
 	crc(CountResourceDestinations);
@@ -8095,6 +8100,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AuxiliaryPower);
 	stream.Serialize(AircraftFactory);
 	stream.Serialize(InfantryFactory);
+	stream.Serialize(NavalFactories);
 	stream.Serialize(UnitFactory);
 	stream.Serialize(BuildingFactory);
 	stream.Serialize(DefenseFactory);
