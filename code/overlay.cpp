@@ -327,7 +327,10 @@ bool OverlayClass::Mark(MarkType mark)
 			{
 				bool clear;
 				if (!ScenarioInit) {
-					if (Class == Rule->CrateImg || Class == Rule->WoodCrateImg) {
+					if (Class == Rule->WaterCrateImg) {
+						// The water crate needs a cell a boat can float on (OverlayClass::Mark, 0x5FC570).
+						clear = cellptr->Is_Clear_To_Move(SPEED_FLOAT, false, false);
+					} else if (Class == Rule->CrateImg || Class == Rule->WoodCrateImg) {
 						clear = cellptr->Is_Clear_To_Move(SPEED_TRACK, false, false);
 					} else {
 						if (Class->HeapID == OVERLAY_BRIDGE1 || Class->HeapID == OVERLAY_BRIDGE2 ||

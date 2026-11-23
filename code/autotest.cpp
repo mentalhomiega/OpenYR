@@ -3704,8 +3704,8 @@ static void Infiltrate_Step(StepType const & step)
 }
 
 
-// crate <Powerup> x y: puts a crate that holds that powerup on the nearest free cell to the cell.
-static void Crate_Step(StepType const & step)
+// The powerup a crate step names, as the crate list spells it, or -1 when there is none such.
+static int Crate_Powerup_From_Name(std::string const & name)
 {
 	static struct {
 		char const * Name;
@@ -3719,16 +3719,61 @@ static void Crate_Step(StepType const & step)
 	};
 	int powerup = -1;
 	for (auto const & entry : powerups) {
-		if (stricmp(entry.Name, step.Argument.c_str()) == 0) {
+		if (stricmp(entry.Name, name.c_str()) == 0) {
 			powerup = entry.Powerup;
 		}
 	}
+	return(powerup);
+}
+
+
+// crate <Powerup> x y: puts a crate that holds that powerup on the nearest free cell to the cell.
+static void Crate_Step(StepType const & step)
+{
+	int const powerup = Crate_Powerup_From_Name(step.Argument);
 	if (powerup >= 0) {
 		bool const placed = Map.Place_Crate(Cell(step.X, step.Y), powerup);
 		DebugString("AUTOTEST crate %s near %d,%d: %s\n", step.Argument.c_str(), step.X, step.Y, placed ? "placed" : "failed");
 	} else {
 		DebugString("AUTOTEST crate %s: no such powerup\n", step.Argument.c_str());
 	}
+}
+
+
+// crateat <Powerup> x y: sets the cell's overlay to the wood crate holding that powerup, whatever the cell is, as a map's overlay would.
+static void Crateat_Step(StepType const & step)
+{
+	int const powerup = Crate_Powerup_From_Name(step.Argument);
+	if (powerup >= 0 && Rule->WoodCrateImg != NULL) {
+		CellClass & cell = Map[Cell(step.X, step.Y)];
+		cell.Overlay = Rule->WoodCrateImg->HeapID;
+		cell.OverlayData = (unsigned char)powerup;
+		DebugString("AUTOTEST crateat %s at %d,%d: land %d\n", step.Argument.c_str(), step.X, step.Y, (int)cell.Land_Type());
+	} else {
+		DebugString("AUTOTEST crateat %s: no such powerup\n", step.Argument.c_str());
+	}
+}
+
+
+// cratecensus <count>: places that many random crates, as the crate timers and the map start do, then writes each crate on the map
+// with its cell, the land type of the cell and its overlay.
+static void Cratecensus_Step(StepType const & step)
+{
+	int placed = 0;
+	for (int index = 0; index < step.Argument_Int(); index++) {
+		placed += Map.Place_Random_Crate() ? 1 : 0;
+	}
+	int found = 0;
+	Map.Reset_Iterator();
+	for (CellClass * cptr = Map.Iterate(); cptr != NULL; cptr = Map.Iterate()) {
+		if (cptr->Overlay != OVERLAY_NONE && OverlayTypes[cptr->Overlay]->IsCrate) {
+			DebugString("AUTOTEST   crate at %d,%d land %d overlay %s\n", (int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->Land_Type(), OverlayTypes[cptr->Overlay]->Name());
+			found++;
+		}
+	}
+	DebugString("AUTOTEST cratecensus: placed %d, found %d, wood %s, silver %s, water %s (crate %d)\n", placed, found,
+		Rule->WoodCrateImg != NULL ? Rule->WoodCrateImg->Name() : "none", Rule->CrateImg != NULL ? Rule->CrateImg->Name() : "none",
+		Rule->WaterCrateImg != NULL ? Rule->WaterCrateImg->Name() : "none", Rule->WaterCrateImg != NULL ? (int)Rule->WaterCrateImg->IsCrate : -1);
 }
 
 
@@ -8681,6 +8726,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"infiltrate", Infiltrate_Step},
 		{"iq", Iq_Step},
 		{"crate", Crate_Step},
+		{"crateat", Crateat_Step},
+		{"cratecensus", Cratecensus_Step},
 		{"occupy", Occupy_Step},
 		{"rank", Rank_Step},
 		{"veterancy", Veterancy_Step},

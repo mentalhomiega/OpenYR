@@ -3575,7 +3575,8 @@ bool CellClass::Goodie_Check(FootClass * object)
 				*/
 				switch (powerup) {
 					case CRATE_UNIT:
-						if (object->House->CurUnits > 50) powerup = CRATE_MONEY;
+						// A unit has no room on water or on a beach (CellClass::CollectCrate, 0x481C4A).
+						if (object->House->CurUnits > 50 || Land_Type() == LAND_WATER || Land_Type() == LAND_BEACH) powerup = CRATE_MONEY;
 						break;
 
 					case CRATE_SQUAD:
