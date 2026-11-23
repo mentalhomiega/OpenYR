@@ -303,7 +303,7 @@ class TActionClass : public AbstractClass
 		bool TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_JUMP_CAMERA(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_JUMP_CAMERA_HOME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
-		HouseClass * Named_House(HouseClass * trigger_house) const;
+		HouseClass * Named_House(TriggerClass const * trig) const;
 		bool TAction_SET_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_CLEAR_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_PAUSE_GAME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);

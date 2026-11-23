@@ -83,6 +83,7 @@
 TriggerClass::TriggerClass(TriggerTypeClass * trigtype) :
 	Class(trigtype),
 	LinkedTo(NULL),
+	TriggeringHouse(HOUSE_NONE),
 	IsTripped(0),
 	IsToDelete(false),
 	IsActive(true),
@@ -305,6 +306,9 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 						Flag_Event_Tripped(index);
 					}
 				}
+				if (tevent->TriggeringHouse != HOUSE_NONE) {
+					TriggeringHouse = tevent->TriggeringHouse;
+				}
 			} else {
 				all_sprung = false;
 			}
@@ -318,6 +322,19 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 	}
 
 	return(all_sprung);
+}
+
+
+/// <summary>
+/// Fetches the house whose object last satisfied one of this trigger's entry, zone or line-crossing events.
+/// </summary>
+/// <returns>HouseClass *; The house, or NULL while no such event has been satisfied.</returns>
+HouseClass * TriggerClass::Triggering_House(void) const
+{
+	if (TriggeringHouse < 0 || TriggeringHouse >= Houses.Count()) {
+		return(NULL);
+	}
+	return(Houses[TriggeringHouse]);
 }
 
 
@@ -523,6 +540,7 @@ void TriggerClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(Class);
 	stream.Serialize(LinkedTo);
+	stream.Serialize(TriggeringHouse);
 	stream.Serialize(IsToDelete);
 	stream.Serialize(Timer);
 	stream.Serialize(IsTripped);

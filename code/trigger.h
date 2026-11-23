@@ -39,6 +39,7 @@
 #include "dialog.hh"
 #include "tevent.hh"
 
+class HouseClass;
 class ObjectClass;
 class TriggerTypeClass;
 template<class T> class DynamicVectorClass;
@@ -60,6 +61,12 @@ class TriggerClass : public AbstractClass
 		TriggerClass * LinkedTo;
 
 		/*
+		 * The heap ID of the house whose object last satisfied one of this trigger's entry, zone or
+		 * line-crossing events, or HOUSE_NONE until one has. Actions that name house 8997 mean it.
+		 */
+		int TriggeringHouse;
+
+		/*
 		**	Constructor/Destructor
 		*/
 		TriggerClass(TriggerTypeClass * trigtype=NULL);
@@ -72,6 +79,7 @@ class TriggerClass : public AbstractClass
 		/*
 		**	Processing routines
 		*/
+		HouseClass * Triggering_House(void) const;
 		bool Spring(ObjectClass * object=0, Cell cell=CELL_NONE);
 		bool Should_Spring(TEventType event=TEVENT_ANY, ObjectClass * object=0, bool forced = false, bool persistent = false, TechnoClass * source=NULL, HouseClass const * source_house=NULL);
 		virtual void Detach(AbstractClass const * target, bool all=true) override;
