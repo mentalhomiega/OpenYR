@@ -9,6 +9,7 @@ caveats:
   - "The label shows only while the mission timer runs. The timer is drawn at the bottom right of the battlefield, ahead of any super weapon timers, as the label and then the time left."
   - "The timer turns red once less than `TimerWarning` minutes are left."
   - "The label is kept in a [save game](/formats/save-games/) and returns after a load."
+  - "[Timer Set...](/mapping/actions/taction-set-timer/) takes the label away again each time it runs. Timer Start, Timer Stop, Timer Extend and Timer Shorten leave it."
 related:
   - type: action
     id: TACTION_SET_TIMER
