@@ -4060,7 +4060,8 @@ void TechnoClass::AI(void)
 			int const sound = BombWeapon != NULL && BombWeapon->IvanTickingSound != WeaponTypeClass::IVAN_SOUND_UNSET ? BombWeapon->IvanTickingSound : Rule->BombTickingSound;
 			Play_If_In_Range((VocType)sound, Center_Coord(), &BombSound, true);
 		}
-		if (Frame > BombDetonateFrame) {
+		// A bomb on an object that is off the map, such as a soldier in a transport, waits and goes off once the object is back (TechnoClass::Update, 0x6F9E50).
+		if (Frame > BombDetonateFrame && !IsInLimbo) {
 			Detonate_Bomb();
 			if (!IsActive) {
 				return;
