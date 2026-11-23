@@ -59,6 +59,11 @@ class HoverLocomotionClass : public LocomotionClass
 		virtual void Mark_All_Occupation_Bits(int mark) override;
 		virtual bool Is_Moving_Here(Coord to) override;
 
+		// The throttle asked for, the throttle applied and the straight-run boost, as the comparison harness logs them.
+		double Throttle_Demand(void) const {return(Height);}
+		double Throttle_Applied(void) const {return(Acceleration);}
+		double Throttle_Boost(void) const {return(Boost);}
+
 	private:
 
 		/*
