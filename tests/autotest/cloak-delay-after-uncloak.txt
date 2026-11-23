@@ -1,0 +1,36 @@
+; The delay before a soldier cloaks again starts when its decloak ends, not when it begins (TechnoClass::UpdateCloak, 0x6FB740,
+; the end of the UNCLOAKING state sets CloakDelayTimer to [General] CloakDelay minutes; TechnoClass::Uncloak, 0x7036C0, sets none).
+; The cloak-keys-rules mod makes the GI (E1) cloakable with the stock nine stages. It cloaks when idle, and a hit at frame 300
+; starts its decloak.
+; Expected: while the decloak runs (stage above 0) the visual line shows delay 0. In the first frame after it ends (character 0)
+; it shows the full delay of 18 frames, and the delay then counts down before the GI cloaks again.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/cloak-delay-after-uncloak.txt -Mods tests/autotest/cloak-keys-rules -Seconds 120 -Filter "AUTOTEST   visual|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 66 24
+43 own FV 74 24
+200 where E1
+300 hit E1:HE@FV 1
+301 where E1
+303 where E1
+306 where E1
+309 where E1
+312 where E1
+315 where E1
+318 where E1
+321 where E1
+324 where E1
+327 where E1
+330 where E1
+333 where E1
+336 where E1
+339 where E1
+342 where E1
+345 where E1
+348 where E1
+351 where E1
+354 where E1
+357 where E1
+360 where E1
+380 where E1
+400 quit

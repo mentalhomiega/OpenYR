@@ -25,6 +25,7 @@
 template<class T> class DynamicVectorClass;
 class CellClass;
 class Cell;
+class FootClass;
 class HouseClass;
 class ObjectClass;
 class RGBClass;
@@ -203,6 +204,7 @@ class Tactical : public AbstractClass
 		void Draw_Mind_Control_Links(void);
 		void Draw_Mind_Control_Link(Coord const & from, Coord const & to, RGBClass const & rgb);
 		void Draw_Psychic_Lines(void);
+		static bool Is_Psychic_Seen(FootClass const & foot);
 		void Draw_Airstrike_Lines(void);
 		void Draw_Airstrike_Line(Coord const & from, Coord const & to, int brightness);
 		void Draw_Hidden_Markers(void);

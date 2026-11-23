@@ -1,0 +1,19 @@
+; An enemy soldier that is selected leaves the selection when it cloaks, and again when it is selected while cloaked and the player
+; does not sense its cell (TechnoClass::Cloak, 0x703770, deselects an object of another house; TechnoClass::Sensed, 0x6F4EB0,
+; does the same for a cloaked one, and the AI calls it each frame for a cloaked object outside a cloak field).
+; The cloak-keys-rules mod makes the GI (E1) cloakable. The enemy GI cloaks as soon as it stands idle. The script selects it in the
+; frame it appears, then again at frame 200 once it is cloaked.
+; Expected: "selected 0:" at frames 45, 100 and 201. A build that keeps the selection shows "selected 1:E1".
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/cloak-enemy-deselect.txt -Mods tests/autotest/cloak-keys-rules -Seconds 120 -Filter "AUTOTEST   (selectany|selected|cloak)|Exception"
+30 command CenterBase
+35 reveal
+40 enemy E1 60 50
+40 selectany E1
+41 selected
+45 selected
+100 selected
+150 where E1
+200 selectany E1
+201 selected
+210 selected
+230 quit

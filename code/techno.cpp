@@ -1390,6 +1390,12 @@ void TechnoClass::Try_To_Cloak(void)
 	int i;
 
 	CellClass & cell = Map[Center_Coord().As_Cell()];
+
+	// A cloaked object of another house drops out of the player's selection when the player no longer senses its cell
+	// (TechnoClass::Sensed, 0x6F4EB0).
+	if (Cloak == CLOAKED && PlayerPtr != NULL && House != PlayerPtr && !cell.Is_Sensed(PlayerPtr)) {
+		Unselect();
+	}
 	if (cell.Is_Cloaked(House) && Is_Ready_To_Cloak()) {
 		DynamicVectorClass<TechnoClass *> targeting_me;
 		for (i = Technos.Count() - 1; i >= 0; i--) {
@@ -4407,7 +4413,7 @@ void TechnoClass::Cloaking_AI(bool)
 	**	is a good time do so, then begin cloaking.
 	*/
 	if (Cloak == UNCLOAKED) {
-		if ((Is_Allowed_To_Recloak() && !Is_Immobilized()) || Has_Ability(ABILITY_CLOAK)) {
+		if ((Is_Allowed_To_Recloak() && !Is_Cloak_Suppressed()) || Has_Ability(ABILITY_CLOAK)) {
 			RadioClass * radio = Contact_With_Whom();
 			if (radio == NULL || !(radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory)) {
 				CloakingDevice.Graphic_Logic();
@@ -4441,7 +4447,8 @@ void TechnoClass::Cloaking_AI(bool)
 						CloakingDevice.Set_Rate(0);
 						CloakingDevice.Set_Stage(0);	// re-start the stage counter
 						Cloak = UNCLOAKED;
-						// A longer delay that a Sonar.Duration hit or a sonar pulse set stays.
+						// The delay before the next cloak starts when the decloak ends (TechnoClass::UpdateCloak, 0x6FB740);
+						// a longer delay that a Sonar.Duration hit or a sonar pulse set stays.
 						if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
 							CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
 						}
@@ -4527,6 +4534,16 @@ void TechnoClass::Cloaking_AI(bool)
 
 
 /// <summary>
+/// Does something keep this object from cloaking, or force it out of its cloak?
+/// An EMP, a paralysis, and a chrono or temporal warp do (TechnoClass::ShouldNotBeCloaked, 0x6FBC90).
+/// </summary>
+bool TechnoClass::Is_Cloak_Suppressed(void) const
+{
+	return(StunDuration > 0 || (Is_Foot() && static_cast<FootClass const *>(this)->ParalysisTimer != 0) || IsBeingWarpedOut || Is_Chrono_Warping());
+}
+
+
+/// <summary>
 /// Should this object drop its cloak?
 /// An object that has lost the right to stay hidden -- because it may no longer recloak, is
 /// not a cloaking type at all, or has been immobilized -- must decloak, unless it carries
@@ -4539,7 +4556,7 @@ bool TechnoClass::Should_Uncloak(void) const
 		return(true);
 	}
 	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House);
-	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Immobilized()) {
+	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Cloak_Suppressed()) {
 		if (Has_Ability(ABILITY_CLOAK)) return(false);
 		if (!cloaked) return(true);
 	}
@@ -8098,10 +8115,6 @@ Cell TechnoClass::Nearby_Location(TechnoClass const * techno) const
  *=============================================================================================*/
 void TechnoClass::Do_Uncloak(bool silent)
 {
-	if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
-		CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
-	}
-
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
 		CloakingDevice.Set_Stage(Cloaking_Stages() - 1);
