@@ -1,0 +1,22 @@
+; A V3 launcher (V3, Spawns=V3ROCKET) of a neutral house stands at 66,36 with its missile docked. A Chrono Legionnaire (CLEG) of the
+; player at 62,36 strikes it with its temporal gun at frame 100. Expected: gamemd's TemporalClass::Fire (0x71AF20) calls
+; SpawnManagerClass::KillNodes on its target before the warp starts, so the spawncycle line shows the missile node as 7 (dead) from
+; the frame the warp starts instead of 0 (docked).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/spawner-warped-kills-spawns.txt -Seconds 90 -Filter "AUTOTEST   spawncycle|AUTOTEST warp|Exception"
+10 command CenterBase
+20 reveal
+30 view 64 36
+40 neutral V3 66 36
+41 own CLEG 62 36
+60 spawns V3
+100 strike CLEG 66 36
+110 spawns V3
+115 spawns V3
+120 spawns V3
+125 spawns V3
+130 spawns V3
+135 spawns V3
+140 spawns V3
+150 spawns V3
+160 spawns V3
+200 quit
