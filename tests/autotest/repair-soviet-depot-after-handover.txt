@@ -1,0 +1,15 @@
+; A damaged vehicle of the computer player is repaired at the Soviet Service Depot (NADEPT) after it changed house. The comparison scenario repair_depot_soviet showed gamemd sending such a vehicle to the depot after the change (UnitClass::Update, 0x7360C0)
+; and repairing it there, while ours left it on Guard because it kept its ArchiveTarget (see repair-depot-after-handover.txt). The depot is in [General] RepairBay (GADEPT, NADEPT, CAOUTP).
+; On XMP08T2 the computer player gets a Soviet depot, a power plant and a Grizzly (MTNK) once its base stands. They are built for it (enemy), so it keeps them. The Grizzly is made damaged through the player and handed back.
+; Expected: the where line at 1000 names MTNK at strength 300 (full), after 8 points every 15 frames (before: strength 100, mission Guard).
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/repair-soviet-depot-after-handover.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   where"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+290 enemy NADEPT 35 70
+290 enemy NAPOWR 31 70
+290 enemy MTNK 44 70
+291 transfer MTNK
+292 damage MTNK 200
+293 lose MTNK
+400 where MTNK
+1000 where MTNK
+1005 quit
