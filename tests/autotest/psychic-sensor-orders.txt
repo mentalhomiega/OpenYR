@@ -1,0 +1,31 @@
+; The Psychic Sensor shows an enemy's order when what it is ordered to attack or go to lies within PsychicDetectionRadius of a working
+; sensor of the player (the psychic range test at 0x43B150, called from Tactical::Render at 0x6D4766 before the order line is drawn).
+; The test covers the target, the destination of an object with no target, and a destination far from the sensor. A sensor of the
+; player's ally or of the enemy itself never shows the order.
+; A Yuri Psychic Sensor (NAPSIS) stands at 60,40 beside its power plant, and a GI stands at 63,40. The enemy Rhino (HTNK) at 82,40 is
+; ordered to attack the GI, the enemy Grizzly (MTNK) at 82,44 to move to 62,44 beside the sensor, and the enemy Conscript (E2) at 82,48 to
+; move to 110,48, far from it.
+; Expected: seen 1 for the Rhino (target), seen 1 for the Grizzly (destination only), seen 0 for the Conscript. Before the order is given
+; (frame 50) all three show seen 0.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/psychic-sensor-orders.txt -Seconds 120 -Filter "AUTOTEST   psychic|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPOWR 56 40
+41 own NAPSIS 60 40
+42 own E1 63 40
+43 enemy HTNK 82 40
+44 enemy MTNK 82 44
+45 enemy E2 82 48
+50 psychic HTNK
+50 psychic MTNK
+50 psychic E2
+60 enemystrike HTNK 63 40
+61 enemymove MTNK 62 44
+62 enemymove E2 110 48
+70 psychic HTNK
+70 psychic MTNK
+70 psychic E2
+120 psychic HTNK
+120 psychic MTNK
+120 psychic E2
+140 quit

@@ -3006,6 +3006,21 @@ static void Enemy_Strike_Step(StepType const & step)
 }
 
 
+// enemymove <TypeID> x y: orders the first foot object of that type that the player does not own to move to that cell.
+static void Enemy_Move_Step(StepType const & step)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House != PlayerPtr && techno->Is_Foot() && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			techno->Assign_Target(NULL);
+			static_cast<FootClass *>(techno)->Assign_Destination(&Map[Cell(step.X, step.Y)]);
+			techno->Assign_Mission(MISSION_MOVE);
+			return;
+		}
+	}
+}
+
+
 /// <summary>
 /// Logs the action the player's object of a type gets over the building on a cell, under the label. With click, the object then clicks
 /// that building with the action, through the object path a real click takes.
@@ -4092,6 +4107,20 @@ static void Select_Step(StepType const & step)
 static void Selectadd_Step(StepType const & step)
 {
 	Select_Add_Type(step.Argument);
+}
+
+
+// psychic <TypeID>: for each foot object of that type, whoever owns it, writes whether the player's psychic detectors cover what it
+// is ordered to attack or go to, so its order line is drawn (Tactical::Is_Psychic_Seen).
+static void Psychic_Step(StepType const & step)
+{
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Is_Foot() && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0);},
+		[&](TechnoClass * techno) {
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			DebugString("AUTOTEST   psychic %s of %s at %d,%d: seen %d target %d destination %d queued %d\n", techno->TClass->Name(), techno->House->Class->Name(),
+				techno->Get_Cell().X, techno->Get_Cell().Y, (int)Tactical::Is_Psychic_Seen(*foot), (int)(foot->TarCom != NULL), (int)(foot->NavCom != NULL), foot->NavQueue.Count());
+		});
 }
 
 
@@ -8699,6 +8728,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"passable", Passable_Step},
 		{"targetaction", Target_Action_Step},
 		{"enemystrike", Enemy_Strike_Step},
+		{"enemymove", Enemy_Move_Step},
 		{"hutaction", Hut_Action_Step},
 		{"hutclick", Hut_Click_Step},
 		{"cloudcheck", Cloud_Check_Step},
@@ -8800,6 +8830,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"select", Select_Step},
 		{"selectadd", Selectadd_Step},
 		{"selectany", Selectany_Step},
+		{"psychic", Psychic_Step},
 		{"produce", Produce_Step},
 		{"produceai", Produceai_Step},
 		{"place", Place_Step},

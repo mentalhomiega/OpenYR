@@ -5244,44 +5244,54 @@ void Tactical::Draw_Hidden_Markers(void)
 
 
 /// <summary>
-/// Shows the player the targets of enemy vehicles, infantry and aircraft whose target lies
-/// within the PsychicDetectionRadius of one of the player's working structures, by drawing a
-/// line from each such enemy to its target (Tactical::Render, 0x6D4766, and
-/// BuildingClass::IsWithinPsychicRange, 0x43B150).
+/// Does one of the player's working psychic detectors cover what this enemy soldier or vehicle is
+/// ordered to go to or attack (BuildingClass psychic range test, 0x43B150)? The player's allies and
+/// houses the player controls are never shown. The object's target counts, and so does a foot's
+/// last queued destination, or its destination when none is queued. A detector covers a place
+/// within PsychicDetectionRadius cells of its center, in three dimensions.
+/// </summary>
+bool Tactical::Is_Psychic_Seen(FootClass const & foot)
+{
+	if (PlayerPtr == NULL || PlayerPtr->Is_Ally(foot.House) || foot.House->Is_Player_Control() || foot.IsInLimbo) {
+		return(false);
+	}
+
+	AbstractClass const * const queued = foot.NavQueue.Count() > 0 ? foot.NavQueue[foot.NavQueue.Count() - 1] : foot.NavCom;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * detector = Buildings[index];
+		if (detector->House != PlayerPtr || detector->Class->PsychicDetectionRadius <= 0 || detector->IsInLimbo || !detector->Is_Powered_On()) {
+			continue;
+		}
+		Coord const center = detector->Center_Coord();
+		int const reach = detector->Class->PsychicDetectionRadius * CELL_LEPTON_W;
+		AbstractClass const * const goals[2] = {foot.TarCom, queued};
+		for (AbstractClass const * goal : goals) {
+			if (goal == NULL || (goal->RTTI != RTTI_CELL && !goal->Is_Techno())) {
+				continue;
+			}
+			Coord const place = goal->Center_Coord();
+			double const dx = center.X - place.X;
+			double const dy = center.Y - place.Y;
+			double const dz = center.Z - place.Z;
+			if ((int)std::sqrt(dx * dx + dy * dy + dz * dz) <= reach) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Shows the player the orders of enemy vehicles, infantry and aircraft that a psychic detector
+/// covers, by drawing each order line (Tactical::Render, 0x6D4766).
 /// </summary>
 void Tactical::Draw_Psychic_Lines(void)
 {
-	if (PlayerPtr == NULL) {
-		return;
-	}
-
-	std::vector<BuildingClass const *> sensors;
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->House == PlayerPtr && building->Class->PsychicDetectionRadius > 0 && !building->IsInLimbo && building->Is_Powered_On()) {
-			sensors.push_back(building);
-		}
-	}
-	if (sensors.empty()) {
-		return;
-	}
-
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass const * techno = Technos[index];
-		if (!techno->Is_Foot() || techno->IsInLimbo || techno->TarCom == NULL || techno->House->Is_Ally(PlayerPtr)) {
-			continue;
-		}
-		Coord const target = techno->TarCom->Center_Coord();
-		bool sensed = false;
-		for (BuildingClass const * sensor : sensors) {
-			int const reach = sensor->Class->PsychicDetectionRadius * CELL_LEPTON_W;
-			if ((Point2D(target) - Point2D(sensor->Center_Coord())).Length() <= reach) {
-				sensed = true;
-				break;
-			}
-		}
-		if (sensed) {
-			Draw_Action_Line_Segment(*LogicalSurface, techno->Center_Coord(), target, UIControls.Target_Line_Style(), 3, 4, 64);
+		if (techno->Is_Foot() && Is_Psychic_Seen(*static_cast<FootClass const *>(techno))) {
+			static_cast<FootClass const *>(techno)->Draw_Order_Line(*LogicalSurface);
 		}
 	}
 }

@@ -4944,6 +4944,22 @@ void FootClass::Draw_Action_Line(void) const
 
 
 /// <summary>
+/// Draws one line for this object's order, whatever the action line settings say: the line from its
+/// turret to its target, or when it has none, the line to the last queued destination, or to its
+/// destination when none is queued (FootClass action line, 0x4DC340).
+/// </summary>
+void FootClass::Draw_Order_Line(Surface & surface) const
+{
+	if (TarCom != NULL) {
+		Draw_Action_Line_Segment(surface, Turret_Coord(), Predict_Target_Coord(), UIControls.Target_Line_Style(), 3, 4, 64);
+	} else if (NavCom != NULL || NavQueue.Count() > 0) {
+		AbstractClass const * destination = NavQueue.Count() > 0 ? NavQueue[NavQueue.Count() - 1] : NavCom;
+		Draw_Action_Line_Segment(surface, PositionCoord, Action_Line_Coord(destination), UIControls.Movement_Line_Style(), 3, 4, 128);
+	}
+}
+
+
+/// <summary>
 /// Draws the queued destinations as a chain of lines that starts at the coordinate given.
 /// </summary>
 void FootClass::Draw_Navigation_Queue_Lines(Coord const & from) const

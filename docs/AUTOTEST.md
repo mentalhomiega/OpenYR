@@ -28,6 +28,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
 | `selectadd <TypeID>` | Adds the player's objects of that type, structures included, to the selection, as a shift-click would |
 | `selectany <TypeID>` | Adds every object of that type to the selection, whoever owns it, as a click on a visible enemy does. It writes `selectany <type> of <house> at x,y: selected <0/1>` for each; an object the player has not discovered refuses |
+| `psychic <TypeID>` | For each foot object of that type, whoever owns it, writes `psychic <type> of <house> at x,y: seen <0/1> target <0/1> destination <0/1> queued <n>`: whether the player's working psychic detectors cover what it is ordered to attack or go to, so that its order line is drawn |
 | `loadgems <TypeID>` | Puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type. It logs how much each holds |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
 | `produceai <TypeID> x y` | Starts building that type in the structure on that cell, as `BuildingClass::Factory_AI` starts a computer house's production. The structure's own factory then holds the object, so a spied factory has a cameo to show. A structure already producing is left alone; the log says `started` or `refused`. Changes this copy only |
@@ -254,6 +255,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `bridgefix x y` | repairs the bridge near the cell as an engineer at a repair hut does (MapClass::Repair_Concrete_Bridge, which falls back to Repair_Bridge) and writes the cell |
 | `passable x y` | writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell |
 | `targetaction <AttackerTypeID> <TargetTypeID>` | writes the action the player's first object of the attacker type gets over the first live enemy object of the target type, with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it |
+| `enemymove <TypeID> x y` | orders the first foot object of that type that the player does not own to move to that cell |
 | `enemystrike <TypeID> x y` | orders the first computer-owned object of that type to attack what stands on that cell |
 | `hutaction <TypeID> x y` | writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes |
 | `hutclick <TypeID> x y` | clicks the building on that cell with the player's object of that type, through the object path a real click takes |
