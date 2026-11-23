@@ -1,0 +1,35 @@
+; A garrisonable structure fires only through its occupants (BuildingClass::GetFireError, 0x447F10). The overlay
+; garrison-no-occupy-fire.ini gives the Battle Bunker (NABNKR) a primary weapon of its own and CanOccupyFire=no. The bunker
+; at 58,44 holds three soldiers and enemy soldiers stand within that weapon's range near 61,44.
+; Expected: the garrison lines show fire 0 and arm 0 on every frame: the bunker may pick a target but takes no shot, so its reload never starts.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/garrison-no-occupy-fire.txt -Map XMP08T2.MAP -Seconds 150 -Filter "AUTOTEST   garrison|Exception"
+10 rules garrison-no-occupy-fire.ini
+30 reveal
+40 own NABNKR 58 44
+50 own E1 52 40
+51 own E1 52 41
+52 own E1 52 42
+60 occupy E1 58 44
+61 occupy E1 58 44
+62 occupy E1 58 44
+80 spawn E1 61 44
+81 spawn E1 61 45
+82 spawn E1 61 43
+150 garrisons
+155 garrisons
+160 garrisons
+165 garrisons
+170 garrisons
+175 garrisons
+180 garrisons
+185 garrisons
+190 garrisons
+195 garrisons
+200 garrisons
+205 garrisons
+210 garrisons
+215 garrisons
+220 garrisons
+225 garrisons
+230 garrisons
+400 quit
