@@ -1256,9 +1256,6 @@ static int Build_Limit_Result(HouseClass const & house, ObjectTypeClass const * 
 			}
 			// Only the unit's own count enters (HouseClass::CanBuild, 0x4F7870): the structure it deploys into is not added.
 			int count = house.UQuantity.Value(type->Fetch_Heap_ID());
-			if (utype->DeploysInto != NULL) {
-				count += house.BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
-			}
 			if (count < utype->BuildLimit) {
 				return(1);
 			}
@@ -3569,29 +3566,37 @@ void HouseClass::Just_Built(TechnoClass * product)
 		sound = ttype->CreateSound;
 	}
 	if (sound != VOC_NONE) {
-	// A DontScore type is left out of the produced tally that a negative BuildLimit reads (HouseClass::RegisterJustBuilt, 0x4FB6B0).
 		Sound_Effect(sound, product->PositionCoord);
 	}
 
+	// A DontScore type is left out of the produced tally that a negative BuildLimit reads (HouseClass::RegisterJustBuilt, 0x4FB6B0).
 	switch (product->Fetch_RTTI()) {
 		case RTTI_UNIT:
 			JustBuiltUnit = (UnitType)ttype->Fetch_Heap_ID();
-			PUQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PUQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_INFANTRY:
 			JustBuiltInfantry = (InfantryType)ttype->Fetch_Heap_ID();
-			PIQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PIQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_BUILDING:
 			JustBuiltStructure = (StructType)ttype->Fetch_Heap_ID();
-			PBQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PBQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_AIRCRAFT:
 			JustBuiltAircraft = (AircraftType)ttype->Fetch_Heap_ID();
-			PAQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				PAQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 	}
 	IsRecalcNeeded = true;
@@ -6107,12 +6112,12 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
  *    examining the number of factories as well as adjusting their number.                     *
  *                                                                                             *
  * INPUT:   rtti  -- The RTTI of the object that could be produced.                            *
+ *          naval -- Is the object a ship? Ship factories are counted apart from vehicle ones. *
  *                                                                                             *
  * OUTPUT:  Returns with the number of factories owned by this house that could produce the    *
  *          object of the type specified.                                                      *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
- *          naval -- Is the object a ship? Ship factories are counted apart from vehicle ones. *
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   07/30/1996 JLB : Created.                                                                 *
@@ -7930,12 +7935,12 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(InfantryFactories);
 	crc(UnitFactories);
 	crc(BuildingFactories);
+	crc(NavalFactories);
 	crc(Power);
 	crc(Drain);
 	crc(WhoLastHurtMe);
 	crc(Enemy);
 	crc((int)Base_Edge);
-	crc(NavalFactories);
 	crc((int)OwnCountry);
 	crc(CountResourceGatherers);
 	crc(CountResourceDestinations);
@@ -8095,12 +8100,12 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InfantryFactories);
 	stream.Serialize(UnitFactories);
 	stream.Serialize(BuildingFactories);
+	stream.Serialize(NavalFactories);
 	stream.Serialize(Power);
 	stream.Serialize(Drain);
 	stream.Serialize(AuxiliaryPower);
 	stream.Serialize(AircraftFactory);
 	stream.Serialize(InfantryFactory);
-	stream.Serialize(NavalFactories);
 	stream.Serialize(UnitFactory);
 	stream.Serialize(BuildingFactory);
 	stream.Serialize(DefenseFactory);

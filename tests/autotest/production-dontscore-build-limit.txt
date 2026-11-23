@@ -1,0 +1,15 @@
+; A DontScore type is left out of the tally of objects ever produced that a negative BuildLimit reads (HouseClass::RegisterJustBuilt, 0x4FB6B0).
+; Americans on the skirmish map, with BuildLimit=-1 and DontScore=yes on the GI (E1, production-dontscore-build-limit.ini).
+; Expected: "can 1" at frame 60, before the first GI. The GI is built and released at frame 700. "can 1" at frame 720: the GI did not count,
+; so another may be built. Before the fix frame 720 read "can 0", because the GI counted as the one the limit allows.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/production-dontscore-build-limit.txt -Seconds 120 -Filter "AUTOTEST   canbuild E1 house Americans|AUTOTEST   count|Exception"
+1 rules production-dontscore-build-limit.ini
+30 command CenterBase
+40 own GAPOWR 56 40
+42 own GAPILE 60 44
+60 canbuild E1
+61 produce E1
+700 place E1
+720 canbuild E1
+721 count E1
+800 quit
