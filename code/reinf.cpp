@@ -503,7 +503,6 @@ bool Do_Reinforcements(TeamTypeClass * teamtype, WAYPOINT wp)
 		Cell const start = (teamtype->UseTransportOrigin && teamtype->TransportWaypoint != -1) ? Scen->Get_Waypoint_Cell(teamtype->TransportWaypoint) : CELL_NONE;
 		if (plane != NULL && teamtype->House->Send_Plane(plane, MISSION_PARADROP_APPROACH, origin, NULL, 0, NULL, object, start) != NULL && teamtype->House->Is_Ally(PlayerPtr)) {
 			Push_Radar_Event_Cell(origin);
-			Speak(VOX_REINFORCEMENTS);
 		}
 		return(true);
 	}
@@ -535,7 +534,6 @@ bool Do_Reinforcements(TeamTypeClass * teamtype, WAYPOINT wp)
 	*/
 	if (Create_Reinforcement(teamtype, object, origin, atwaypoint) && teamtype->House->Is_Ally(PlayerPtr)) {
 		Push_Radar_Event_Cell(origin);
-		Speak(VOX_REINFORCEMENTS);
 	}
 
 	return(true);
@@ -677,14 +675,11 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 
 		/*
 		**	A group with a cell is placed on that cell, facing its house's edge. A group
-		**	with no cell takes an edge cell.
+		**	with no cell is discarded, as gamemd's reinforcement does (0x65E010).
 		*/
 		SourceType source = teamtype->House->Starting_Edge();
 
 		eface = (FacingType)(source << 1);
-		if (cell == CELL_NONE) {
-			cell = Map.Calculated_Cell(source, cell, CELL_NONE, object->TClass->Speed);
-		}
 	} else {
 		cell = Map.Nearby_Location(cell, object->TClass->Speed);
 	}
@@ -797,6 +792,14 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 				o = (FootClass *)(ObjectClass *)object->Next;
 				object->Next = NULL;
 			}
+		}
+
+		/*
+		**	When the placing stopped for want of a cell, the member it had moved on to is
+		**	destroyed along with the rest.
+		*/
+		if (object != NULL) {
+			delete object;
 		}
 
 	/*
