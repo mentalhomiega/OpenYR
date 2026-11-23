@@ -1023,6 +1023,10 @@ bool TActionClass::TAction_REMOVE_PARTICLE_ANIM(HouseClass * , ObjectClass * , T
 /// </summary>
 bool TActionClass::TAction_PARTICLE_ANIM(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	if ((unsigned)Data.PAnim >= (unsigned)ParticleSystemTypes.Count()) {
+		DebugString("TAction: particle system %d is not in the particle system list\n", (int)Data.PAnim);
+		return(true);
+	}
 	Cell cell2 = Scen->Get_Waypoint_Cell(EffectLocation);
 	Coord coord = Coord(cell2);
 	coord.Z = Map.Get_Height_GL(cell2);
@@ -1830,6 +1834,9 @@ bool TActionClass::TAction_PLAY_SPEECH(HouseClass * , ObjectClass * , TriggerCla
 /// </summary>
 bool TActionClass::TAction_1_SPECIAL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
+	if (Super_Of_House(house) == NULL) {
+		return(false);
+	}
 	house->SuperWeapon[Data.Special]->Enable(true, false);
 
 	if (PlayerPtr == house) {
@@ -1847,6 +1854,9 @@ bool TActionClass::TAction_1_SPECIAL(HouseClass * house, ObjectClass * , Trigger
 /// </summary>
 bool TActionClass::TAction_FULL_SPECIAL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
+	if (Super_Of_House(house) == NULL) {
+		return(false);
+	}
 	house->SuperWeapon[Data.Special]->Enable(false, false);
 	house->SuperWeapon[Data.Special]->NeedsBuilding = false;
 
@@ -2311,6 +2321,10 @@ bool TActionClass::TAction_DO_EXPLOSION(HouseClass * , ObjectClass * , TriggerCl
 /// </summary>
 bool TActionClass::TAction_METEOR_IMPACT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	if ((unsigned)Data.VAnim >= (unsigned)VoxelAnimTypes.Count()) {
+		DebugString("TAction: meteor voxel animation %d is not in the voxel animation list\n", (int)Data.VAnim);
+		return(true);
+	}
 	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
 	Coord coord = Coord (waypoint);
 	coord.Z = Map.Get_Height_GL(coord);
@@ -2633,6 +2647,10 @@ bool TActionClass::TAction_METEOR_SHOWER(HouseClass * , ObjectClass * , TriggerC
 	if ( Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge ) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
+	if ((unsigned)Data.MeteorShower >= (unsigned)SHOWER_COUNT) {
+		DebugString("TAction: meteor shower size %d is not a known size\n", (int)Data.MeteorShower);
+		return(true);
+	}
 	int count = _counts[Data.MeteorShower] + abs(Scen->RandomNumber) % 3;
 	AnimType met_large = Anim_From_Name("METLARGE");
 	AnimType met_small = Anim_From_Name("METSMALL");
@@ -2645,7 +2663,10 @@ bool TActionClass::TAction_METEOR_SHOWER(HouseClass * , ObjectClass * , TriggerC
 		Coord meteor_coord = coord + Coord(x_offset, y_offset);
 		meteor_coord.Z = Map.Get_Height_GL(meteor_coord);
 
-		new AnimClass(AnimTypes[abs(Scen->RandomNumber) % 2 ? met_large : met_small], meteor_coord);
+		AnimType const meteor = abs(Scen->RandomNumber) % 2 ? met_large : met_small;
+		if ((unsigned)meteor < (unsigned)AnimTypes.Count()) {
+			new AnimClass(AnimTypes[meteor], meteor_coord);
+		}
 	}
 
 	return(true);

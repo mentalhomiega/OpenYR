@@ -18,7 +18,9 @@
 #include "globals.h"
 #include "houstype.h"
 #include "mission.h"
+#include "_rules.h"
 #include "quarry.h"
+#include "rules.h"
 #include "teamtype.h"
 
 #include "need.hh"
@@ -193,6 +195,16 @@ char const * const UnloadTypeNames[UNLOAD_COUNT] = {
 
 
 /// <summary>
+/// Whether the Move to Cell value in the scenario's text is 1000 * Y + X. Team missions keep that form in memory;
+/// text in gamemd's 128 * Y + X is converted as it is read and written.
+/// </summary>
+static bool Move_Cell_Text_Is_Wide()
+{
+	return(NewINIFormat >= 4 && Rule != NULL && Rule->IsMoveToCellWide);
+}
+
+
+/// <summary>
 /// Fills in this team mission from its INI text form.
 /// This routine is used while a team type is being read from the scenario file. The
 /// entry carries the mission and its associated data value as a comma separated pair.
@@ -210,7 +222,7 @@ void TeamMissionClass::Fill_In(char const * entry)
 
 		sscanf(entry, "%d,%d", &tmission, &value);
 
-		if (tmission == TMISSION_MOVECELL && NewINIFormat < 4) {
+		if (tmission == TMISSION_MOVECELL && !Move_Cell_Text_Is_Wide()) {
 			value = (value % 128) + ((value / 128) * 1000);
 		}
 
@@ -234,7 +246,11 @@ void TeamMissionClass::Fill_In(char const * entry)
 int TeamMissionClass::Build_INI_Entry(char * ptr) const
 {
 	if (ptr != NULL) {
-		sprintf(ptr, "%d,%d", Mission, Data.Value);
+		int value = Data.Value;
+		if (Mission == TMISSION_MOVECELL && !Move_Cell_Text_Is_Wide()) {
+			value = (value % 1000) + ((value / 1000) * 128);
+		}
+		sprintf(ptr, "%d,%d", Mission, value);
 		return(strlen(ptr));
 	}
 

@@ -26,6 +26,14 @@
 #include "vox.hh"
 #include "vq.hh"
 
+/// Whether Move to Cell lines on a map with NewINIFormat 4 or higher carry their cell as 1000 * Y + X instead of
+/// gamemd's 128 * Y + X. [General] MoveToCellWide= decides when set; otherwise rules that declare Ares armor
+/// types read the wide form and others keep gamemd's, whatever the stock maps' own NewINIFormat of 4 says.
+inline bool Move_To_Cell_Is_Wide(bool key_set, bool key_value, int declared_armor_types)
+{
+	return(key_set ? key_value : declared_armor_types > 0);
+}
+
 /*
 **	This structure contains one team mission value & its argument.
 */
