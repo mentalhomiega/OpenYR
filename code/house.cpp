@@ -393,7 +393,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	DamageTime(TICKS_PER_MINUTE * Rule->DamageDelay),
 	TeamTime(1),
 	TriggerTime(0),
-	SpeakAttackDelay(1),
 	SpeakPowerDelay(1),
 	SpeakMoneyDelay(1),
 	SpeakMaxedDelay(1),
@@ -2104,8 +2103,9 @@ void HouseClass::Attacked(BuildingClass * source, bool miner_alert)
 	if (source != NULL && source->Considered_Vehicle()) return;
 
 	bool const miner = source != NULL && source->Class->UndeploysInto != NULL && source->Class->IsResourceGatherer;
-	if (SpeakAttackDelay == 0 && !(miner && !miner_alert && Is_Player_Control())) {
-		// Gamemd (HouseClass::BuildingUnderAttack, 0x4F93E0) plays the line only when its radar event is created.
+	if (!(miner && !miner_alert && Is_Player_Control())) {
+		// Gamemd (HouseClass::BuildingUnderAttack, 0x4F93E0) plays the line only when its radar event is created, and
+		// keeps no timer between lines: SpeakDelay does not pace the base, miner and ally alerts.
 		if (Is_Player_Control()) {
 			// A gatherer that can undeploy raises the harvester event and line instead of the base one.
 			if (miner) {
@@ -2115,12 +2115,10 @@ void HouseClass::Attacked(BuildingClass * source, bool miner_alert)
 			} else if (Submit_Radar_Event(RADAREVENT_BASE_ATTACKED, source->Center_Coord().As_Cell())) {
 				Speak(VOX_BASE_UNDER_ATTACK);
 			}
-			SpeakAttackDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 		} else if (Is_Ally(PlayerPtr) && (Session.Type == GAME_NORMAL || !source->House->Class->IsMultiplayPassive)) {
 			if (Submit_Radar_Event(RADAREVENT_ALLY_ATTACKED, source->Center_Coord().As_Cell())) {
 				Speak(VOX_ALLY_ATTACK);
 			}
-			SpeakAttackDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 		}
 	}
 
@@ -8179,7 +8177,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageTime);
 	stream.Serialize(TeamTime);
 	stream.Serialize(TriggerTime);
-	stream.Serialize(SpeakAttackDelay);
 	stream.Serialize(SpeakPowerDelay);
 	stream.Serialize(SpeakMoneyDelay);
 	stream.Serialize(SpeakMaxedDelay);
