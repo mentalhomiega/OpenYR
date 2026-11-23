@@ -5016,6 +5016,12 @@ Coord BuildingClass::Destination_Coord_For(RadioClass const * docker) const
  *=============================================================================================*/
 FireErrorType BuildingClass::Can_Fire(AbstractClass * target, int which) const
 {
+	// A garrisonable structure fires only through its occupants: one with no occupant, or whose type has CanOccupyFire=no,
+	// does not fire its own weapon either (BuildingClass::GetFireError, 0x447F10).
+	if (Class->IsCanBeOccupied && !Can_Occupy_Fire()) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A structure under a drain weapon is disabled until the drain ends (BuildingClass::GetFireError, 0x447F10).
 	if (DrainingMe != NULL) {
 		return(FIRE_ILLEGAL);
