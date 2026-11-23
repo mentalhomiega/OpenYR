@@ -1,0 +1,12 @@
+; Begin production and Fire sale (script lines 29 and 30) act on the house the team belongs to (gamemd 0x6E99C8 and
+; 0x6E99E1 use the team's owner), not on the house its team type names. The team here belongs to the computer house
+; while its type names Americans. The log must name the computer house (Alliance) in both lines; before the fix it named
+; Americans, so the computer house went on idle and the player's house was put into a fire sale. Run with -AICountries 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script tests/autotest/teams-begin-production-owner.txt -AICountries 1 -Seconds 90 -Filter "begins production|fire sale|AUTOTEST   teams|Exception"
+30 command CenterBase
+1 teamtrace 1
+300 spawn MTNK 70 60
+310 teamini teams-begin-production-owner.ini
+320 team TSTBEGT
+330 teams
+600 quit
