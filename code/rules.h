@@ -2244,9 +2244,8 @@ class RulesClass
 		*/
 		TypeList<int> TeamDelays;
 
-		// [General] TeamRetaliate (Ares): set, an idle team turns on whoever hurts a member (yes) or keeps its orders
-		// (no). Unset keeps the engine's own response (docs/LOBBY_MODES.md).
-		bool IsTeamRetaliateSet = false;
+		// [General] TeamRetaliate (Ares): yes makes an idle team turn on whoever hurts a member. The default, no, is
+		// gamemd's response, which only regroups an annoyed team.
 		bool IsTeamRetaliate = false;
 
 		// [General] FirestormTriggerHumans (ours): the Activate and Deactivate Firestorm trigger actions also work on a

@@ -1709,9 +1709,10 @@ void TeamClass::Took_Damage(FootClass * , ResultType result, TechnoClass * sourc
 
 		} else {
 			/*
-			** Respond to the attack, but not if we're an aircraft or a LST.
+			** gamemd (0x6EB380) does nothing but regroup an annoyed team when a member is hurt. The attacker
+			** becomes the team's target only with [General] TeamRetaliate=yes, which is an Ares key.
 			*/
-			if (source && !House->Is_Ally(source) && !Is_A_Member(source) && Member && Member->RTTI != RTTI_AIRCRAFT && Member->PrimaryWeapon != NULL) {
+			if (source && !Is_A_Member(source) && Member && Member->RTTI != RTTI_AIRCRAFT && Member->PrimaryWeapon != NULL) {
 				if (Target != source) {
 
 					if (Class->IsAnnoyance) {
@@ -1720,27 +1721,10 @@ void TeamClass::Took_Damage(FootClass * , ResultType result, TechnoClass * sourc
 						Zone = NULL;
 					}
 
-					// TeamRetaliate=no plays gamemd's response, which never takes the attacker as the target (0x6EB380).
-					// TeamRetaliate=yes plays Ares': an aircraft or a parasite is ignored, and a team with a target keeps it.
-					if (Rule->IsTeamRetaliateSet) {
-						if (!Rule->IsTeamRetaliate || Target != NULL || source->Techno_Type_Class()->IsConsideredAircraft
-							|| (source->ParasiteImUsing && source->ParasiteImUsing->Victim != NULL)) {
-							return;
-						}
-					}
-
-					/*
-					**	Don't change target if the team's target is one that can fire as well. There is
-					**	no point in endlessly shuffling between targets that have firepower.
-					*/
-					if (Target != NULL) {
-						TechnoClass * techno = Dynamic_Cast<TechnoClass *>(Target);
-
-						if (techno != NULL && techno->PrimaryWeapon != NULL) {
-							if (Zone == NULL || techno->In_Range(Zone->Center_Coord())) {
-								return;
-							}
-						}
+					// TeamRetaliate=yes plays Ares': an ally, an aircraft or a parasite is ignored, and a team with a target keeps it.
+					if (!Rule->IsTeamRetaliate || House->Is_Ally(source) || Target != NULL || source->Techno_Type_Class()->IsConsideredAircraft
+						|| (source->ParasiteImUsing && source->ParasiteImUsing->Victim != NULL)) {
+						return;
 					}
 
 					/*
