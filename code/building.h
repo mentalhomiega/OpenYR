@@ -552,8 +552,7 @@ class BuildingClass : public TechnoClass
 		bool Is_Powered_On(void) const;
 		void Release_Clones(TechnoClass const * base);
 		void Release_Vehicle_Clones(TechnoClass const * product);
-		// Powered on and neither being built nor sold.
-		bool Is_Online(void) const {return(Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION);}
+		void Start_Powered_Functions(void);
 		bool Is_Radar_Jammed(void) const;
 		SuperWeaponType Fetch_Super_Weapon(void) const;
 		SuperWeaponType Fetch_Super_Weapon2(void) const;

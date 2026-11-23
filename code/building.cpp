@@ -2027,7 +2027,7 @@ void BuildingClass::AI(void)
 void BuildingClass::Update_Service_State(void)
 {
 	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
-	bool const online = Is_Online();
+	bool const online = Is_Powered_On();
 	if (Class->PowersUnit != NULL) {
 		Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
 	}
@@ -2041,7 +2041,33 @@ void BuildingClass::Update_Service_State(void)
 			CaptureManager->Free_All();
 		}
 		Update_Power_Anims(online);
+		if (online) {
+			Start_Powered_Functions();
+		}
 		WasOnline = online;
+	}
+}
+
+
+/// <summary>
+/// Starts what a structure that has just come into service does with power. A cloak generator grows its
+/// field again as BuildingClass::UpdatePowerState (0x4549B0) does. The fence post, sensor array and disguise
+/// detector are brought up here too, because the activation when the build-up ends finds the structure
+/// still out of service (BuildingClass::IsPowerOnline, 0x4555D0, tests the current mission).
+/// </summary>
+void BuildingClass::Start_Powered_Functions(void)
+{
+	if (Class->IsCloakGenerator && CloakGeneratorState <= 0 && CurrentCloakRadius != Class->CloakRadiusInCells) {
+		Enable_Cloak_Generator();
+	}
+	if (Class->IsLaserFencePost) {
+		Toggle_Laser_Fence_Post(false);
+	}
+	if (Class->IsSensorArray) {
+		Enable_Sensor_Array();
+	}
+	if (Class->IsDetectDisguise) {
+		Disguise_Detector(true);
 	}
 }
 
@@ -2882,7 +2908,8 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					**	Generate a random rotation effect since there is nothing else that this
 					**	building can do.
 					*/
-					if (!PrimaryFacing.Is_Rotating()) {
+					// Only a structure in service turns (BuildingClass::ReceiveDamage, 0x442230, IsPowerOnline).
+					if (!PrimaryFacing.Is_Rotating() && Is_Powered_On()) {
 						PrimaryFacing.Set_Desired(Random_Dir(DIR_N, DIR_MAX));
 					}
 				}
@@ -3273,10 +3300,9 @@ AbstractClass * BuildingClass::Rally_Point_For(TechnoClass const * techno) const
  *=============================================================================================*/
 void BuildingClass::Assign_Target(AbstractClass * target)
 {
-	if (CurrentMission == MISSION_DECONSTRUCTION) {
-		if (target != NULL) {
-			target = NULL;
-		}
+	// A structure that is being sold, or is out of service, takes no target (BuildingClass::SetTarget, 0x443B90).
+	if (CurrentMission == MISSION_DECONSTRUCTION || !Is_Powered_On()) {
+		target = NULL;
 	} else {
 		// A target the weapon cannot reach with a clear line is refused (BuildingClass::SetTarget, 0x443B90, IsCloseEnoughToAttack).
 		if (target != NULL && PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiAircraft && !Is_Close_Enough_With_Selected_Weapon(target)) {
@@ -11321,11 +11347,11 @@ void BuildingClass::Toggle_Laser_Fence_Post(bool force)
 		range = std::max(range, 1);
 
 		/*
-		 * The fence should be up only if this post is powered up, online, and
-		 * not in the process of construction or deconstruction.
+		 * The fence should be up only if this post is in service (which excludes
+		 * construction and deconstruction) and switched on.
 		 */
 		bool on = false;
-		if (Is_Powered_On() && IsPoweredOn && Mission != MISSION_DECONSTRUCTION && Mission != MISSION_CONSTRUCTION) {
+		if (Is_Powered_On() && IsPoweredOn) {
 			on = true;
 		}
 
@@ -11375,8 +11401,7 @@ void BuildingClass::Toggle_Laser_Fence_Post(bool force)
 			 * fence run is also powered up and online.
 			 */
 			bool post_on = false;
-			if (on && post != NULL && post->Is_Powered_On() && post->IsPoweredOn
-					&& post->Mission != MISSION_DECONSTRUCTION && post->Mission != MISSION_CONSTRUCTION) {
+			if (on && post != NULL && post->Is_Powered_On() && post->IsPoweredOn) {
 
 				post_on = true;
 				switch (dir) {
@@ -12213,8 +12238,8 @@ bool BuildingClass::Is_Damaged_Art(void) const
 /// <summary>
 /// Is this building up and running?
 /// A building is only considered operational when the player has not switched it off, it
-/// is not stunned, it is still standing, and the owning house is supplying enough power to
-/// run it.
+/// is not stunned, it is still standing, the owning house is supplying enough power to
+/// run it, and it is neither being built up nor sold.
 /// </summary>
 /// <returns>bool; Is the building powered on and able to perform its function?</returns>
 bool BuildingClass::Is_Powered_On(void) const
@@ -12240,6 +12265,10 @@ bool BuildingClass::Is_Powered_On(void) const
 	}
 	// A NeedsEngineer structure is out of service until an engineer has captured it (IsPowerOnline, 0x455686).
 	if (Class->IsNeedsEngineer && !HasEngineer) {
+		return(false);
+	}
+	// A structure under construction or being sold is out of service (IsPowerOnline, 0x4555D0, on the current mission).
+	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
 		return(false);
 	}
 	return(true);
@@ -12842,7 +12871,8 @@ void BuildingClass::Draw_Radial_Indicator(void) const
 	if (Class->RadialIndicatorRadius > 0.0) {
 		range = Class->RadialIndicatorRadius;
 	}
-	if (range <= 0 || !Is_Powered_On() || !House->Is_Player_Control()) {
+	// gamemd tests the structure's own switch here, not its power supply (BuildingClass::DrawRadialIndicator, 0x456750).
+	if (range <= 0 || !IsOn || !House->Is_Player_Control()) {
 		return;
 	}
 

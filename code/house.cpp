@@ -2695,7 +2695,7 @@ bool HouseClass::Has_Working_Building(TypeList<BuildingTypeClass const *> const 
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
-		if (building->House == this && !building->IsInLimbo && building->Strength > 0 && types.Is_In_List(building->Class) && building->Is_Online()) {
+		if (building->House == this && !building->IsInLimbo && building->Strength > 0 && types.Is_In_List(building->Class) && building->Is_Powered_On()) {
 			return(true);
 		}
 	}

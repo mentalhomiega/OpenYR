@@ -1,0 +1,25 @@
+; gamemd's BuildingClass::IsPowerOnline (0x4555D0) is false while a structure is in the Construction or Selling mission. The overlay gives the Allied
+; Construction Yard (GACNST) a gap field that needs power. An MCV deploys into it, then the player sells it. poweronline lists `online` and `gap` at each stage.
+; Expected: online 0 and gap 0 while the build-up plays (mission 18) and while the sale plays (mission 19); online 1 and gap 1 in between.
+; Before the mission clause the structure counted as in service from placement, so online was 1 and the gap field ran through both.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/power-online-buildup.txt -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST   poweronline|AUTOTEST sell|Exception"
+10 rules power-online-buildup.ini
+20 own GAPOWR 46 32
+30 select AMCV
+31 command CenterBase
+45 command DeployObject
+47 poweronline GACNST
+50 poweronline GACNST
+53 poweronline GACNST
+58 poweronline GACNST
+80 poweronline GACNST
+100 poweronline GACNST
+130 poweronline GACNST
+160 poweronline GACNST
+200 sell 64 19
+202 poweronline GACNST
+205 poweronline GACNST
+210 poweronline GACNST
+230 poweronline GACNST
+260 poweronline GACNST
+300 quit
