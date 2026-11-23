@@ -1899,9 +1899,9 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 /// <summary>
 /// Finds a structure this aircraft can dock at.
 /// An airport-bound aircraft keeps heading for the structure it chose earlier for as long
-/// as that structure can still take it. Otherwise the types in the aircraft's Dock list are
-/// tried in order, and the first type with a structure that can take the aircraft supplies
-/// the result, which is remembered as the new choice.
+/// as that structure can still take it. Otherwise the nearest free structure of any type in
+/// the aircraft's Dock list is chosen, a primary structure winning over a nearer one, and is
+/// remembered as the new choice.
 /// </summary>
 /// <returns>Returns with the structure, or NULL if no docking structure can take the aircraft.</returns>
 BuildingClass * AircraftClass::Find_Dock_Building(void)
@@ -1913,13 +1913,7 @@ BuildingClass * AircraftClass::Find_Dock_Building(void)
 		DockNowHeadingTo = NULL;
 	}
 
-	BuildingClass * building = NULL;
-	for (int index = 0; index < Class->Dock.Count(); index++) {
-		building = Find_Docking_Bay(Class->Dock[index], false, false);
-		if (building != NULL) {
-			break;
-		}
-	}
+	BuildingClass * building = Find_Docking_Bay(Class->Dock, false, true);
 	DockNowHeadingTo = building;
 	return(building);
 }
@@ -3475,25 +3469,6 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	//if (House->IsHuman) return(MissionControl[Mission].Normal_Delay());
 
 	/*
-	**	If the aircraft is very badly damaged, then it will search for a
-	**	repair bay first.
-	*/
-	if (!House->Is_Human_Player() && House->Available_Money() >= 100 && HealthRatio <= Rule->ConditionYellow) {
-		if (!In_Radio_Contact() ||
-			(HeightAGL == 0 &&
-				(Contact_With_Whom()->RTTI != RTTI_BUILDING || !Rule->RepairBay.Is_In_List(((BuildingClass *)Contact_With_Whom())->Class)))) {
-
-			BuildingClass * building = Find_Docking_Bay(Rule->RepairBay, true);
-			if (building != NULL) {
-				Assign_Mission(MISSION_ENTER);
-				Assign_Destination(building);
-				Assign_Target(NULL);
-				return(1);
-			}
-		}
-	}
-
-	/*
 	**	If the aircraft is armed and has used up any of its ammo, then abort
 	**	any normal guard logic in order to look for a helipad or airfield
 	**	to rearm. Like the original, this applies to every owner.
@@ -3701,13 +3676,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 						ArchiveTarget = dest;
 
 						if (destination->Class->IsHelipad) {
-							dest = NULL;
-							for (int index = 0; index < Class->Dock.Count(); index++) {
-								dest = Find_Docking_Bay(Class->Dock[index], false, true);
-								if (dest != NULL) {
-									break;
-								}
-							}
+							dest = Find_Dock_Building();
 
 							Assign_Destination(NULL);
 
@@ -4489,11 +4458,6 @@ bool AircraftClass::Considered_Vehicle(void) const
 /// <returns>bool; Was the aircraft sent into a crash?</returns>
 bool AircraftClass::Crash(TechnoClass * source)
 {
-	// A type that may not crash is destroyed where it flies, as one on the ground is.
-	if (!Class->IsCrashable) {
-		return(false);
-	}
-
 	// A vehicle a locomotor warhead holds or is dropping has the holder's jumpjet carrier in place of its flight locomotor, and
 	// the carrier has no crash flight for an aircraft. It is destroyed where it hangs, as a held vehicle that cannot crash is
 	// (UnitClass::Destroy, 0x737C90), so it is not left in the air with no strength.

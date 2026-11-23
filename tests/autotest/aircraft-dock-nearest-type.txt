@@ -1,0 +1,26 @@
+; An aircraft chooses its dock among every type in its Dock list, and the nearest free structure wins. gamemd's
+; FootClass::TryNearestDockBuilding (0x4DF040) asks FindCloserDockBuilding about each listed type in turn and keeps the
+; closest result, so a Dock list of GAAIRC,GAPOWR does not give the first type priority. The overlay lists the Air Force
+; Command first and makes a power plant a one-dock pad. The Harrier starts empty at 62,45 with the Air Force Command at 60,40 and the
+; pad at 62,49. Expected: the Harrier flies to the pad (contact GAPOWR). Before the fix it flew to the Air Force Command, the
+; first type in the list that had a free structure.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/aircraft-dock-nearest-type.txt -Seconds 200 -Filter "AUTOTEST   wpstate|AUTOTEST.*refused|Exception"
+5 rules aircraft-dock-nearest-type.ini
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+303 own GAPOWR 62 49
+310 grantunit ORCA 62 45
+320 view 60 45
+400 wpstate ORCA
+460 wpstate ORCA
+520 wpstate ORCA
+580 wpstate ORCA
+640 wpstate ORCA
+700 wpstate ORCA
+800 wpstate ORCA
+900 wpstate ORCA
+950 quit

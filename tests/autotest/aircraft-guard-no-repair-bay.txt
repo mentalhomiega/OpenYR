@@ -1,0 +1,15 @@
+; A damaged computer aircraft does not go looking for a repair bay on Guard. gamemd's AircraftClass::Mission_Guard (0x419E50)
+; sends an aircraft away from guarding only to rearm; the Tiberian Sun test for a health ratio at or below ConditionYellow
+; with a Service Depot was not kept. The computer's Harrier is hit down to about 30% health and rests on the ground next to the
+; computer's Service Depot, with full ammunition and the computer's money above 100. Expected: its mission stays Guard
+; with no radio contact at every wpstate line. Before the fix it took the Enter mission and docked with GADEPT.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/aircraft-guard-no-repair-bay.txt -Seconds 120 -Filter "AUTOTEST   wpstate|AUTOTEST   hit|Exception|no such"
+30 houseunit GADEPT@#1 70 60
+31 houseunit ORCA@#1 74 60
+40 hit ORCA:AP 150
+60 wpstate ORCA
+120 wpstate ORCA
+180 wpstate ORCA
+240 wpstate ORCA
+300 wpstate ORCA
+360 quit
