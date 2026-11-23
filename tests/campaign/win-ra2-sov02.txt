@@ -1,9 +1,9 @@
 ; Campaign win check for Soviet 2 (Red Alert 2). Thirty Apocalypse tanks and six Dreadnoughts (grantunit) join the force the mission gives, standing in for the army a player would
 ; build; everything after is an order. The tanks destroy the German refineries and harvester next to the start, then drive south, destroy the American base soldier by
-; soldier and building by building (strikeobj, nearest first), and the Dreadnoughts on the east coast sink the American destroyers. The win waits for every German and
+; soldier and building by building (strikeobj, nearest first), and the Dreadnoughts on the east coast sink the American destroyers (strikeobj from frame 300 on: a Dreadnought neither picks targets nor returns fire). The win waits for every German and
 ; American structure, vehicle, ship and soldier, which includes the harvester that drives away from the refineries and the engineers that run out of a dead yard.
 ; The American Chrono Miners keep working (teleporters reissue their destination on Enter, as gamemd does), so the American base rebuilds and Rhino tanks run out before it falls; Apocalypse tanks outlast it.
-; Expected: "AUTOTEST game over frame N: won" (frame 19813 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 22517 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov02.txt -Campaign -Map SOV02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
@@ -45,30 +45,57 @@ ui briefing
 63 grantunit DRED 112 103
 64 grantunit DRED 115 103
 65 grantunit DRED 118 103
+300 strikeobj DEST 118 92 40 naval
+600 strikeobj DEST 118 92 40 naval
+900 strikeobj DEST 118 92 40 naval
 1000 strikeobj GAREFN 63 62 8 land
+1200 strikeobj DEST 118 92 40 naval
 1300 strikeobj GAREFN 61 55 8 land
+1500 strikeobj DEST 118 92 40 naval
 1600 strikeobj CMIN 68 60 8 land
+1800 strikeobj DEST 118 92 40 naval
 1900 strikeobj GAREFN 63 62 8 land
+2100 strikeobj DEST 118 92 40 naval
 2200 strikeobj GAREFN 61 55 8 land
+2400 strikeobj DEST 118 92 40 naval
 2500 strikeobj CMIN 68 60 8 land
 2800 move APOC 80 105
 2806 waitcell APOC 80 105 6 2500
 2811 strikeobj GAPILL 77 113 50 land
+3000 strikeobj DEST 118 92 40 naval
 3161 strikeobj GAPILL 73 113 50 land
+3300 strikeobj DEST 118 92 40 naval
 3511 strikeobj GAPILL 90 131 50 land
+3600 strikeobj DEST 118 92 40 naval
 3861 strikeobj GAPILL 84 125 50 land
+3900 strikeobj DEST 118 92 40 naval
+4200 strikeobj DEST 118 92 40 naval
 4211 strikeobj E1 79 125 50 land
+4500 strikeobj DEST 118 92 40 naval
 4561 strikeobj MTNK 78 115 50 land
+4800 strikeobj DEST 118 92 40 naval
 4911 strikeobj GAPOWR 93 140 50 land
+5100 strikeobj DEST 118 92 40 naval
 5261 strikeobj GAPOWR 90 142 50 land
+5400 strikeobj DEST 118 92 40 naval
 5611 strikeobj GAPILE 78 119 50 land
+5700 strikeobj DEST 118 92 40 naval
 5961 strikeobj GAYARD 89 119 50 land
+6000 strikeobj DEST 118 92 40 naval
+6300 strikeobj DEST 118 92 40 naval
 6311 strikeobj GAWEAP 83 135 50 land
+6600 strikeobj DEST 118 92 40 naval
 6661 strikeobj GAREFN 96 142 50 land
+6900 strikeobj DEST 118 92 40 naval
 7011 strikeobj GAPOWR 93 143 50 land
+7200 strikeobj DEST 118 92 40 naval
 7361 strikeobj GAPOWR 90 139 50 land
+7500 strikeobj DEST 118 92 40 naval
 7711 strikeobj GACNST 79 129 50 land
+7800 strikeobj DEST 118 92 40 naval
 8061 strikeobj CMIN 99 143 50 land
+8100 strikeobj DEST 118 92 40 naval
+8400 strikeobj DEST 118 92 40 naval
 8411 strikeobj ENGINEER 78 133 50 land
 8761 strikeobj DEST 105 110 60 naval
 9061 strikeobj DEST 105 110 60 naval
