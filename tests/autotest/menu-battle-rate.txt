@@ -1,0 +1,10 @@
+; The menu battle runs at 30 frames a second whatever the render rate and the player's game speed are. The battle's frame count is
+; read over 15 seconds, and the rate must lie within 28 to 32 (the step once lasted a whole second, so the battle ran at 1).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent24/tests/autotest/menu-battle-rate.txt -InstallDir build-agent24/bin/Release -Menus -Width 1280 -Height 720 -RenderFrameRate 240 -Settings "[MenuBattle]`r`nInTests=yes`r`n[Options]`r`nGameSpeed=4" -Seconds 60 -Filter "UISCRIPT battle rate|Exception"
+; Regress: capped its menu steps wait in real time, so the game plays at normal speed and the script ends with its own quit
+ui waitfor backdrop
+ui wait 3000
+ui battlerate start
+ui wait 15000
+ui battlerate 28 32
+ui quit

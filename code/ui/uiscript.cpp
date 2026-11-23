@@ -281,6 +281,31 @@ bool Step_Frames(Rml::Context *, UIStepType const &, long long now)
 }
 
 
+// "battlerate start" marks the menu battle's frame count and the clock; "battlerate MIN MAX" logs the frames a second since the mark and
+// PASS when that lies within MIN to MAX, FAIL when it does not.
+bool Step_Battlerate(Rml::Context *, UIStepType const & step, long long now)
+{
+	static std::uint64_t startFrames = 0;
+	static long long startTime = 0;
+	std::uint64_t const frames = Shellmap_Frame_Count();
+	if (step.Argument == "start") {
+		startFrames = frames;
+		startTime = now;
+		return(false);
+	}
+
+	std::istringstream fields(step.Argument);
+	double low = 0.0;
+	double high = 0.0;
+	fields >> low >> high;
+	double const seconds = std::max(1, (int)(now - startTime)) / 1000.0;
+	double const rate = (frames - startFrames) / seconds;
+	DebugString("UISCRIPT battle rate %.2f frames a second over %.1f seconds, expected %.1f to %.1f: %s\n", rate, seconds, low, high,
+		rate >= low && rate <= high ? "PASS" : "FAIL");
+	return(false);
+}
+
+
 bool Step_Ids(Rml::Context * context, UIStepType const &, long long)
 {
 	for (int index = 0; index < context->GetNumDocuments(); index++) {
@@ -632,6 +657,7 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"wait", Step_Wait},
 		{"shot", Step_Shot},
 		{"frames", Step_Frames},
+		{"battlerate", Step_Battlerate},
 		{"ids", Step_Ids},
 		{"box", Step_Box},
 		{"click", Step_Click},
@@ -692,7 +718,7 @@ bool UIScript_Pending(void)
 /// press (a button's label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only
 /// inside the element with that id), key (escape, return, tab, space, page up or down, an arrow, a letter, a digit, shift
 /// or ctrl, with ctrl+, shift+ or alt+ in front to hold that key),
-/// frames (logs the game frame count and the clock), keydown and keyup (a key name, pressed or released, with the
+/// frames (logs the game frame count and the clock), battlerate (start, or the lowest and highest frames a second the menu battle may have run at since the start: logs PASS or FAIL), keydown and keyup (a key name, pressed or released, with the
 /// shift, ctrl and alt keys that keydown holds), inside (an element id and optionally a container id: logs whether the element lies wholly inside the container, or the screen), shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does), stall (milliseconds to hold the main thread

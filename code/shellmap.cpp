@@ -90,7 +90,7 @@ bool Restarting = false;
 // Set while a match runs in another process, so the battle runs no frames and draws nothing.
 bool Paused = false;
 
-unsigned int LastLogic = 0;
+double LastLogic = 0.0;
 std::uint64_t LastPresent = ~std::uint64_t(0);
 unsigned int Started = 0;
 
@@ -640,7 +640,7 @@ bool Load_Battle(void)
 	}
 
 	Started = timeGetTime();
-	LastLogic = 0;
+	LastLogic = 0.0;
 	LastCamera = 0;
 	LastPresent = ~std::uint64_t(0);
 	Focus = COORD_NONE;
@@ -716,8 +716,10 @@ void Shellmap_Service(void)
 		BattleScope scope;
 
 		unsigned int const now = timeGetTime();
-		unsigned int const step = (unsigned int)std::max<std::int64_t>(1, NetTiming::Solo_Frame_Period(MENU_BATTLE_GAME_SPEED, false, Options.ClassicGameSpeeds).Nanoseconds / 1000000);
-		if (LastLogic == 0) {
+		// The period spans Frames frames, so one frame lasts Nanoseconds / Frames. It is kept in fractional milliseconds so 30 frames a second stay 30.
+		NetTiming::FramePeriod const period = NetTiming::Solo_Frame_Period(MENU_BATTLE_GAME_SPEED, false, Options.ClassicGameSpeeds);
+		double const step = std::max(1.0, period.Nanoseconds / 1e6 / std::max(1u, period.Frames));
+		if (LastLogic == 0.0) {
 			LastLogic = now;
 		}
 
@@ -736,7 +738,7 @@ void Shellmap_Service(void)
 
 		if (Video_Present_Count() != LastPresent) {
 			LastPresent = Video_Present_Count();
-			RenderBlend = Options.Render_Frame_Rate() > 0 ? std::clamp((double)(now - LastLogic) / step, 0.0, 1.0) : 1.0;
+			RenderBlend = Options.Render_Frame_Rate() > 0 ? std::clamp((now - LastLogic) / step, 0.0, 1.0) : 1.0;
 			TacticalMap->AI();
 			Update_Fogged_Objects();
 			// The presenter shifts the map by the camera's part past the whole pixel the view is drawn at.
@@ -822,5 +824,5 @@ void Shellmap_Pause(void)
 void Shellmap_Resume(void)
 {
 	Paused = false;
-	LastLogic = 0;
+	LastLogic = 0.0;
 }
