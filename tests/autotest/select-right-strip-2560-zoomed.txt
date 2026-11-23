@@ -1,0 +1,54 @@
+; Selection in the strip right of the map view and below the Modern panel at 2560x1440, zoom 0.5 (debug-mode zoom-out). Four infantry stand on one row at the left, centre, right (below the panel) and far right.
+; Each is caught by a band dragged across it, which starts on the map, and by a click. The band presses 60 px left of the unit and releases beyond it; the clicks follow the bands.
+; Expected: 'selected 1: E1', 'E2', 'ENGINEER', 'DOG' after the four bands, then the same four after the four clicks. A dead region shows as 'selected 0:' or a repeated type.
+; The units were placed by their window pixels with cellpixel: about x 12%, 50%, 88% and 98% of the view width, at mid height (below the panel, which ends near y 410).
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/select-right-strip-2560-zoomed.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 2560 -Height 1440 -Seconds 90 -Settings "[Options]`nInterfaceStyle=Modern`nSidebarOpacity=80`nDebugMode=yes" -Filter "AUTOTEST   selected|Exception"
+1 glideclock
+1 view 75 75
+2 reveal
+10 zoom 0.5
+30 grantunit E1 95 159
+31 grantunit E2 127 127
+32 grantunit ENGINEER 160 94
+33 grantunit DOG 169 85
+60 windowcell press 95 159 -60 -60
+61 hold 01
+62 windowcell move 95 159
+63 windowcell move 95 159 20 60
+64 windowcell move 95 159 20 60
+65 windowcell release 95 159 20 60
+66 release 01
+68 selected
+75 windowcell press 127 127 -60 -60
+76 hold 01
+77 windowcell move 127 127
+78 windowcell move 127 127 20 60
+79 windowcell move 127 127 20 60
+80 windowcell release 127 127 20 60
+81 release 01
+83 selected
+90 windowcell press 160 94 -60 -60
+91 hold 01
+92 windowcell move 160 94
+93 windowcell move 160 94 20 60
+94 windowcell move 160 94 20 60
+95 windowcell release 160 94 20 60
+96 release 01
+98 selected
+105 windowcell press 169 85 -60 -60
+106 hold 01
+107 windowcell move 169 85
+108 windowcell move 169 85 20 60
+109 windowcell move 169 85 20 60
+110 windowcell release 169 85 20 60
+111 release 01
+113 selected
+130 windowcell click 95 159
+131 selected
+136 windowcell click 127 127
+137 selected
+142 windowcell click 160 94
+143 selected
+148 windowcell click 169 85
+149 selected
+159 quit

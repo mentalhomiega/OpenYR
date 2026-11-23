@@ -3578,8 +3578,8 @@ void Tactical::Modify_Rubber_Band(Point2D const & point)
 /// proper screen rectangle, handed to the region selector, and then cleared.
 /// </summary>
 /// <param name="select_callback">Routine to call for each object the band caught.</param>
-/// <param name="keep_out">View rectangle, such as the modern build panel, whose objects the band passes over; NULL for none.</param>
-void Tactical::Select_Rubber_Band(void (*select_callback)(ObjectClass * object), Rect const * keep_out)
+/// <param name="blocked">Tells whether an object at a view point lies under an opaque part of the modern build panel, which the band passes over; NULL for none.</param>
+void Tactical::Select_Rubber_Band(void (*select_callback)(ObjectClass * object), bool (*blocked)(Point2D const & view_point))
 {
 	if (RubberBandStart != Point2D(0, 0)) {
 
@@ -3597,7 +3597,7 @@ void Tactical::Select_Rubber_Band(void (*select_callback)(ObjectClass * object),
 			std::swap(start.Y, end.Y);
 		}
 
-		Select_These(Rect(start, end.X - start.X + 1, end.Y - start.Y + 1), select_callback, keep_out);
+		Select_These(Rect(start, end.X - start.X + 1, end.Y - start.Y + 1), select_callback, blocked);
 		RubberBandStart = Point2D(0, 0);
 	}
 }
@@ -3839,7 +3839,7 @@ std::vector<bool> Combat_Selection_Kept(std::vector<ObjectClass *> const & caugh
  *   04/25/1995 JLB : Limited to non-building type.                                            *
  *   03/06/1996 JLB : Allows selection of aircraft with bounding box.                          *
  *=============================================================================================*/
-void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object), Rect const * keep_out)
+void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object), bool (*blocked)(Point2D const & view_point))
 {
 	// A callback's selection decides for itself whether its objects speak.
 	if (select_callback == NULL) {
@@ -3873,8 +3873,8 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 				continue;
 			}
 
-			// An object under the keep-out area is not caught, even where the region covers it.
-			if (keep_out != NULL && keep_out->Is_Point_Within(pos)) {
+			// An object under an opaque part of the panel is not caught, even where the region covers it.
+			if (blocked != NULL && blocked(pos)) {
 				continue;
 			}
 

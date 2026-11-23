@@ -1,0 +1,144 @@
+; Band and click selection under the Modern panel at 4 rows, 0 mouse-wheel steps (-0.1 each) out, in a 1920x1080 frame in a 2560x1440 window, SidebarOpacity=80.
+; An Allied Construction Yard gives the build tab one cameo (GAPOWR, slot 0).
+; Expected: bands and clicks catch what shows through the panel. Per set of six (E1, E2, GGI, ENGINEER, DOG, BORIS): E1 and E2 stand under empty cameo slots and BORIS under the background, so 'selected 1: <type>' for them;
+; GGI stands under the one filled cameo and ENGINEER under the radar, so they are never caught ('selected 0:' or the earlier unit stays); DOG stands on open map below the panel and is always caught. Sets: bands from the map into the panel, bands wholly inside the panel, clicks.
+; Before the fix the panel's whole rectangle blocked the map, so E1, E2 and BORIS were never caught.
+; Run: scripts/run_autotest.ps1 -Build agent32 -Script src-agent32/tests/autotest/panel-see-through-wheel0.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1920 -Height 1080 -WindowWidth 2560 -WindowHeight 1440 -Seconds 120 -Settings "[Options]`nInterfaceStyle=Modern`nSidebarOpacity=80`nSidebarRows=4`nDebugMode=yes" -Filter "AUTOTEST   selected|Exception"
+1 glideclock
+1 view 75 75
+2 reveal
+5 own GACNST 70 70
+20 grantunit E1 104 76
+21 grantunit E2 104 78
+22 grantunit GGI 99 73
+23 grantunit ENGINEER 96 68
+24 grantunit DOG 113 85
+25 grantunit BORIS 104 74
+78 cameos
+80 log E1
+80 windowcell press 104 76 -266 -40
+81 hold 01
+82 windowcell move 104 76
+83 windowcell move 104 76 20 40
+84 windowcell move 104 76 20 40
+85 windowcell release 104 76 20 40
+86 release 01
+88 selected
+92 log E2
+92 windowcell press 104 78 -266 -40
+93 hold 01
+94 windowcell move 104 78
+95 windowcell move 104 78 20 40
+96 windowcell move 104 78 20 40
+97 windowcell release 104 78 20 40
+98 release 01
+100 selected
+104 log GGI
+104 windowcell press 99 73 -266 -40
+105 hold 01
+106 windowcell move 99 73
+107 windowcell move 99 73 20 40
+108 windowcell move 99 73 20 40
+109 windowcell release 99 73 20 40
+110 release 01
+112 selected
+116 log ENGINEER
+116 windowcell press 96 68 -266 -40
+117 hold 01
+118 windowcell move 96 68
+119 windowcell move 96 68 20 40
+120 windowcell move 96 68 20 40
+121 windowcell release 96 68 20 40
+122 release 01
+124 selected
+128 log DOG
+128 windowcell press 113 85 -266 -40
+129 hold 01
+130 windowcell move 113 85
+131 windowcell move 113 85 20 40
+132 windowcell move 113 85 20 40
+133 windowcell release 113 85 20 40
+134 release 01
+136 selected
+140 log BORIS
+140 windowcell press 104 74 -266 -40
+141 hold 01
+142 windowcell move 104 74
+143 windowcell move 104 74 20 40
+144 windowcell move 104 74 20 40
+145 windowcell release 104 74 20 40
+146 release 01
+148 selected
+152 log E1
+152 windowcell press 104 76 -20 -20
+153 hold 01
+154 windowcell move 104 76
+155 windowcell move 104 76 20 20
+156 windowcell move 104 76 20 20
+157 windowcell release 104 76 20 20
+158 release 01
+160 selected
+164 log E2
+164 windowcell press 104 78 -20 -20
+165 hold 01
+166 windowcell move 104 78
+167 windowcell move 104 78 20 20
+168 windowcell move 104 78 20 20
+169 windowcell release 104 78 20 20
+170 release 01
+172 selected
+176 log GGI
+176 windowcell press 99 73 -20 -20
+177 hold 01
+178 windowcell move 99 73
+179 windowcell move 99 73 20 20
+180 windowcell move 99 73 20 20
+181 windowcell release 99 73 20 20
+182 release 01
+184 selected
+188 log ENGINEER
+188 windowcell press 96 68 -20 -20
+189 hold 01
+190 windowcell move 96 68
+191 windowcell move 96 68 20 20
+192 windowcell move 96 68 20 20
+193 windowcell release 96 68 20 20
+194 release 01
+196 selected
+200 log DOG
+200 windowcell press 113 85 -20 -20
+201 hold 01
+202 windowcell move 113 85
+203 windowcell move 113 85 20 20
+204 windowcell move 113 85 20 20
+205 windowcell release 113 85 20 20
+206 release 01
+208 selected
+212 log BORIS
+212 windowcell press 104 74 -20 -20
+213 hold 01
+214 windowcell move 104 74
+215 windowcell move 104 74 20 20
+216 windowcell move 104 74 20 20
+217 windowcell release 104 74 20 20
+218 release 01
+220 selected
+224 log E1
+224 windowcell click 104 76
+226 selected
+232 log E2
+232 windowcell click 104 78
+234 selected
+240 log GGI
+240 windowcell click 99 73
+242 selected
+248 log ENGINEER
+248 windowcell click 96 68
+250 selected
+256 log DOG
+256 windowcell click 113 85
+258 selected
+264 log BORIS
+264 windowcell click 104 74
+266 selected
+272 quit
