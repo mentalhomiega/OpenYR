@@ -1294,6 +1294,57 @@ void SidebarClass::Draw_Build_Area(void)
 
 
 /// <summary>
+/// Does the modern build panel block the map at this screen point?
+/// The panel is drawn from pieces (Blit_Hud_Panel): the radar, buttons and options are solid, the
+/// readouts, power bar, tabs, scroll arrows and shown cameos are drawn over it, and the rest is background
+/// that lets the map show at Options.SidebarOpacity. Only a point on a piece, on the frame, or anywhere
+/// when the panel is fully opaque blocks the map; the empty cameo slots and the gaps pass clicks to it.
+/// </summary>
+/// <param name="screen_point">The point in screen pixels.</param>
+/// <returns>bool; Is the point on the panel and not on a see-through part of it?</returns>
+bool SidebarClass::Panel_Blocks_Point(Point2D const & screen_point) const
+{
+	HudLayout const layout = Hud_Layout();
+	if (!layout.Panel.Is_Point_Within(screen_point)) {
+		return(false);
+	}
+	if (Options.SidebarOpacity >= 100) {
+		return(true);
+	}
+
+	Point2D const point = screen_point - layout.Panel.Top_Left();
+	int const frame = 2;
+	if (!Rect(frame, frame, layout.Panel.Width - frame * 2, layout.Panel.Height - frame * 2).Is_Point_Within(point)) {
+		return(true);
+	}
+
+	Rect const pieces[] = {layout.Radar, layout.Buttons, layout.Options, layout.Readouts, layout.Power, layout.Arrows};
+	for (Rect const & piece : pieces) {
+		if (piece.Is_Point_Within(point)) {
+			return(true);
+		}
+	}
+	for (ShapeButtonClass const & tab : TabButton) {
+		if (Rect(tab.X + tab.DrawOffsetX, tab.Y + tab.DrawOffsetY, tab.Width, tab.Height).Is_Point_Within(point)) {
+			return(true);
+		}
+	}
+
+	StripClass const & strip = Column[ActiveTab];
+	for (int slot = 0; slot < layout.Rows * HUD_GRID_COLUMNS; slot++) {
+		if (slot + strip.TopIndex >= strip.BuildableCount) {
+			break;
+		}
+		Point2D const origin = Cameo_Slot_Origin(slot, HUD_GRID_COLUMNS, layout.Grid.Top_Left());
+		if (Rect(origin.X, origin.Y, StripClass::OBJECT_WIDTH, StripClass::OBJECT_HEIGHT).Is_Point_Within(point)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Copies the build panel onto the frame at its place on the right, over the map, for the modern
 /// interface. The panel's background lets the map show through at Options.SidebarOpacity.
 /// </summary>

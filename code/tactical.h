@@ -182,7 +182,7 @@ class Tactical : public AbstractClass
 		/*
 		 * Object selection and the rubber band.
 		 */
-		void Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object) = NULL, Rect const * keep_out = NULL);
+		void Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object) = NULL, bool (*blocked)(Point2D const & view_point) = NULL);
 		ObjectClass * Get_Selectable_Object(Point2D const & point);
 
 		bool Contains_Selectable_Buildings(Rect rect);
@@ -198,7 +198,7 @@ class Tactical : public AbstractClass
 
 		void Start_Rubber_Band(Point2D const & point);
 		void Modify_Rubber_Band(Point2D const & point);
-		void Select_Rubber_Band(void (*select_callback)(ObjectClass * object), Rect const * keep_out = NULL);
+		void Select_Rubber_Band(void (*select_callback)(ObjectClass * object), bool (*blocked)(Point2D const & view_point) = NULL);
 		void End_Rubber_Band(void);
 		void Draw_Rubber_Band(void);
 		void Draw_Mind_Control_Links(void);

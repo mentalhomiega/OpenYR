@@ -12,6 +12,7 @@
 #include "hud.h"
 
 #include "_mixfile.h"
+#include "_map.h"
 #include "_rect.h"
 #include "bsurface.h"
 #include "csf.h"
@@ -90,7 +91,7 @@ bool Point_Over_Map(Point2D const & point)
 	if (!Modern_Interface()) {
 		return(true);
 	}
-	if (Hud_Layout().Panel.Is_Point_Within(point)) {
+	if (Map.Panel_Blocks_Point(point)) {
 		return(false);
 	}
 	return(!TabClass::Command_Bar_Frame().Is_Point_Within(point));

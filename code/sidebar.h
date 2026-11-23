@@ -159,6 +159,11 @@ class SidebarClass : public PowerClass
 		// Makes the cameo of the object type given flash for a number of frames.
 		void Flash_Cameo(TechnoTypeClass const * type, int frames);
 
+		// Does the modern build panel block the map at this screen point? Only its drawn opaque pieces do: the radar,
+		// buttons, readouts, power bar, tabs, scroll arrows, frame and the cameos that are shown. The empty cameo slots and the
+		// backing between pieces let the map show through, so they pass clicks and bands to it, unless the panel is fully opaque.
+		bool Panel_Blocks_Point(Point2D const & screen_point) const;
+
 		// The tab currently shown.
 		int ActiveTab;
 

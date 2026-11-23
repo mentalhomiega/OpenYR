@@ -2194,20 +2194,15 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 void Bandbox_Selection_Callback(ObjectClass *object);
 
 /// <summary>
-/// Gives the part of the tactical view that the modern build panel covers, in view coordinates.
-/// A rubber band passes over this area without selecting what is drawn under it.
+/// Tells whether an object at a view point lies under an opaque piece of the modern build panel.
+/// A rubber band passes over such an object without selecting it, and catches one that shows through the
+/// panel's empty slots and background.
 /// </summary>
-/// <returns>The panel's rectangle, or an empty rectangle in the classic layout, whose sidebar
-/// is outside the view.</returns>
-static Rect Modern_Panel_View_Rect(void)
+/// <param name="view_point">The point in view coordinates.</param>
+/// <returns>bool; Does an opaque piece of the panel hide the point? Always false in the classic layout, whose sidebar is outside the view.</returns>
+static bool Under_Opaque_Panel(Point2D const & view_point)
 {
-	if (!Modern_Interface()) {
-		return(Rect(0, 0, 0, 0));
-	}
-	Rect const panel = Hud_Layout().Panel;
-	Point2D const top_left = Screen_To_View_Point(Point2D(panel.X, panel.Y));
-	Point2D const bottom_right = Screen_To_View_Point(Point2D(panel.X + panel.Width, panel.Y + panel.Height));
-	return(Rect(top_left.X, top_left.Y, bottom_right.X - top_left.X, bottom_right.Y - top_left.Y));
+	return(Modern_Interface() && Map.Panel_Blocks_Point(View_To_Screen_Point(view_point)));
 }
 
 /***********************************************************************************************
@@ -2323,9 +2318,8 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 				Unselect_All();
 			}
 
-			Rect const panel = Modern_Panel_View_Rect();
 			BandCaught.clear();
-			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback, panel.Is_Valid() ? &panel : NULL);
+			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback, Under_Opaque_Panel);
 			Select_Band_Caught();
 			TechnoClass::Reset_Action_Line_Timer();
 

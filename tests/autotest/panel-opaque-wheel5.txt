@@ -1,0 +1,147 @@
+; Band and click selection under the Modern panel at 4 rows, 5 mouse-wheel steps (-0.1 each) out, in a 1920x1080 frame in a 2560x1440 window, SidebarOpacity=100.
+; An Allied Construction Yard gives the build tab one cameo (GAPOWR, slot 0).
+; With the panel fully opaque (SidebarOpacity=100) nothing shows through it, so the same six units under it are all blocked: only DOG, on open map below the panel, is ever selected.
+; Run: scripts/run_autotest.ps1 -Build agent32 -Script src-agent32/tests/autotest/panel-opaque-wheel5.txt -Map XMP04T8.MAP -AIPlayers 0 -Width 1920 -Height 1080 -WindowWidth 2560 -WindowHeight 1440 -Seconds 120 -Settings "[Options]`nInterfaceStyle=Modern`nSidebarOpacity=100`nSidebarRows=4`nDebugMode=yes" -Filter "AUTOTEST   selected|Exception"
+1 glideclock
+1 view 75 75
+2 reveal
+10 wheel -0.1
+22 wheel -0.1
+34 wheel -0.1
+46 wheel -0.1
+58 wheel -0.1
+5 own GACNST 70 70
+80 grantunit E1 131 74
+81 grantunit E2 131 78
+82 grantunit GGI 119 66
+83 grantunit ENGINEER 113 58
+84 grantunit DOG 148 92
+85 grantunit BORIS 130 70
+138 cameos
+140 log E1
+140 windowcell press 131 74 -266 -40
+141 hold 01
+142 windowcell move 131 74
+143 windowcell move 131 74 20 40
+144 windowcell move 131 74 20 40
+145 windowcell release 131 74 20 40
+146 release 01
+148 selected
+152 log E2
+152 windowcell press 131 78 -266 -40
+153 hold 01
+154 windowcell move 131 78
+155 windowcell move 131 78 20 40
+156 windowcell move 131 78 20 40
+157 windowcell release 131 78 20 40
+158 release 01
+160 selected
+164 log GGI
+164 windowcell press 119 66 -266 -40
+165 hold 01
+166 windowcell move 119 66
+167 windowcell move 119 66 20 40
+168 windowcell move 119 66 20 40
+169 windowcell release 119 66 20 40
+170 release 01
+172 selected
+176 log ENGINEER
+176 windowcell press 113 58 -266 -40
+177 hold 01
+178 windowcell move 113 58
+179 windowcell move 113 58 20 40
+180 windowcell move 113 58 20 40
+181 windowcell release 113 58 20 40
+182 release 01
+184 selected
+188 log DOG
+188 windowcell press 148 92 -266 -40
+189 hold 01
+190 windowcell move 148 92
+191 windowcell move 148 92 20 40
+192 windowcell move 148 92 20 40
+193 windowcell release 148 92 20 40
+194 release 01
+196 selected
+200 log BORIS
+200 windowcell press 130 70 -266 -40
+201 hold 01
+202 windowcell move 130 70
+203 windowcell move 130 70 20 40
+204 windowcell move 130 70 20 40
+205 windowcell release 130 70 20 40
+206 release 01
+208 selected
+212 log E1
+212 windowcell press 131 74 -20 -20
+213 hold 01
+214 windowcell move 131 74
+215 windowcell move 131 74 20 20
+216 windowcell move 131 74 20 20
+217 windowcell release 131 74 20 20
+218 release 01
+220 selected
+224 log E2
+224 windowcell press 131 78 -20 -20
+225 hold 01
+226 windowcell move 131 78
+227 windowcell move 131 78 20 20
+228 windowcell move 131 78 20 20
+229 windowcell release 131 78 20 20
+230 release 01
+232 selected
+236 log GGI
+236 windowcell press 119 66 -20 -20
+237 hold 01
+238 windowcell move 119 66
+239 windowcell move 119 66 20 20
+240 windowcell move 119 66 20 20
+241 windowcell release 119 66 20 20
+242 release 01
+244 selected
+248 log ENGINEER
+248 windowcell press 113 58 -20 -20
+249 hold 01
+250 windowcell move 113 58
+251 windowcell move 113 58 20 20
+252 windowcell move 113 58 20 20
+253 windowcell release 113 58 20 20
+254 release 01
+256 selected
+260 log DOG
+260 windowcell press 148 92 -20 -20
+261 hold 01
+262 windowcell move 148 92
+263 windowcell move 148 92 20 20
+264 windowcell move 148 92 20 20
+265 windowcell release 148 92 20 20
+266 release 01
+268 selected
+272 log BORIS
+272 windowcell press 130 70 -20 -20
+273 hold 01
+274 windowcell move 130 70
+275 windowcell move 130 70 20 20
+276 windowcell move 130 70 20 20
+277 windowcell release 130 70 20 20
+278 release 01
+280 selected
+284 log E1
+284 windowcell click 131 74
+286 selected
+292 log E2
+292 windowcell click 131 78
+294 selected
+300 log GGI
+300 windowcell click 119 66
+302 selected
+308 log ENGINEER
+308 windowcell click 113 58
+310 selected
+316 log DOG
+316 windowcell click 148 92
+318 selected
+324 log BORIS
+324 windowcell click 130 70
+326 selected
+332 quit
