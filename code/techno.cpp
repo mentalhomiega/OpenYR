@@ -4440,7 +4440,8 @@ void TechnoClass::Cloaking_AI(bool)
 						CloakingDevice.Set_Rate(0);
 						CloakingDevice.Set_Stage(0);	// re-start the stage counter
 						Cloak = UNCLOAKED;
-						// A longer delay that a Sonar.Duration hit or a sonar pulse set stays.
+						// The delay before the next cloak starts when the decloak ends (TechnoClass::UpdateCloak, 0x6FB740);
+						// a longer delay that a Sonar.Duration hit or a sonar pulse set stays.
 						if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
 							CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
 						}
@@ -8097,10 +8098,6 @@ Cell TechnoClass::Nearby_Location(TechnoClass const * techno) const
  *=============================================================================================*/
 void TechnoClass::Do_Uncloak(bool silent)
 {
-	if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
-		CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
-	}
-
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
 		CloakingDevice.Set_Stage(Cloaking_Stages() - 1);
