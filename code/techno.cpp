@@ -7005,6 +7005,12 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 	Assign_Target(NULL);
 	Assign_Destination(NULL);
 
+	// The remembered cell goes with the old orders, except a vehicle that is deploying keeps it (gamemd tests the flags at unit +0x6E1 and +0x6E2).
+	// Without this a vehicle that was sent to a depot and is handed over stays on Guard: its idle check wants no archive target.
+	if (RTTI != RTTI_UNIT || !((UnitClass *)this)->IsDeploying) {
+		ArchiveTarget = NULL;
+	}
+
 	bool const unloading = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && CurrentMission == MISSION_UNLOAD;
 
 	// A Chrono Miner that is mining keeps its Harvest mission through a change of house: gamemd's miner went on mining at the
