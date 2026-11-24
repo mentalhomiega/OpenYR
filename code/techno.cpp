@@ -2572,7 +2572,8 @@ bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int r
 	**	If the object is further away than allowed, bail.
 	*/
 	if (range >= 0) {
-		int dist = Distance_To(object);
+		// An airborne candidate is measured on the ground plane, a candidate on the ground in all three axes (TechnoClass::Evaluate_Object, 0x6F7CA0).
+		int const dist = object->In_Air() ? Point2D(Center_Coord()).Gamemd_Distance_To(Point2D(object->Center_Coord())) : Distance_To(object);
 		if (range > 0 && dist > range) {
 			return(false);
 		}
