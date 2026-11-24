@@ -115,7 +115,7 @@ A node can leave its cell open, and its type can be an instruction instead of a 
 
 A scenario stores a house's node list in that house's section of the map file. [`NodeCount`](/keys/nodecount/) gives the number of entries, which use the zero-padded keys `000`, `001` and so on, read in order. Each entry is a BuildingType ID followed by the cell X and Y of the structure's north-west foundation corner. An entry that starts with `-` is one of the instructions above. Structures the scenario starts with are ordinary map objects, and a node counts as built when a matching structure already stands on its cell.
 
-A **house following a map plan** is either of these:
+A house reads its plan from the map in either of these cases:
 
 - a campaign house, which reads its list from the section named after it, such as `[GDI]`;
 - a skirmish or multiplayer house on a map that sets [`UseMPAIBaseNodes=yes`](/keys/usempaibasenodes/). The house holding start position N, counted from zero, reads its list from the [spawn house](/formats/scenario-objects/#spawn-houses) section `[Spawn<N+1>]`.
@@ -266,9 +266,9 @@ The first position looked at lies `AIBaseSpacing` cells beyond the edge cell, on
 
 ### The compactness test
 
-The compactness test always passes in a campaign game, so a campaign base spreads wherever the other tests allow.
+The compactness test always passes in a campaign game, so a base there spreads wherever the other tests allow.
 
-In a skirmish or multiplayer game the test applies to every house, including one following a map plan. It requires a cell this house has reserved near the candidate position. The area checked is the footprint grown by `AIBaseSpacing`, plus a ring outside it. The ring is one cell wide on the north and west sides and `AIBaseSpacing` plus one cells wide on the south and east. This keeps a skirmish or multiplayer base joined to what it already holds.
+In any other game, the test requires a cell this house has reserved near the candidate position. The area checked is the footprint grown by `AIBaseSpacing`, plus a ring outside it. The ring is one cell wide on the north and west sides and `AIBaseSpacing` plus one cells wide on the south and east. This keeps a skirmish or multiplayer base joined to what it already holds.
 
 ### Clearing the site
 
@@ -371,7 +371,7 @@ When the roll fails, or no structure qualifies, the turn fills the defense as th
 
 ## Power and money interventions
 
-A house that is not following a map plan checks power before it starts a structure. It inserts a power plant node just before the current node when all of these hold:
+A computer house checks power before it starts a structure, in every game mode. It inserts a power plant node just before the current node when all of these hold:
 
 - the node's drain added to the house's current drain exceeds its current power output;
 - the node is not a [`BuildConst`](/keys/buildconst/) construction yard;
@@ -387,7 +387,7 @@ The plant comes from the acted side. When the country the house acts as sets [`A
 
 With no plant to insert, the node is built as it stands.
 
-In a skirmish or multiplayer game, a house also sells its base when it cannot make money, whether or not it follows a map plan. A house can make money in these cases, checked in this order:
+In a skirmish or multiplayer game, a computer house also sells its base when it cannot make money. A house can make money in these cases, checked in this order:
 
 - It owns a [`ResourceDestination`](/keys/resourcedestination/) object and a [`ResourceGatherer`](/keys/resourcegatherer/) object.
 - Its country lists no [`HarvesterUnit`](/keys/harvesterunit/), a refinery can be built, and it owns a gatherer. Or it owns a construction yard or a [`BaseUnit`](/keys/baseunit/), and its money covers a refinery.
@@ -442,8 +442,8 @@ A house with no construction yard builds nothing, so a lost construction yard is
 
 When a structure that matches a node is taken off the map, every other node on its cell loses its cell. What happens to a base defense's node depends on the house:
 
-- A house that is not following a map plan turns an `IsBaseDefense=yes` node back into a `-1` placeholder, so the planner picks a fresh type and cell.
-- A house following a map plan keeps the node and rebuilds the same defense on the same cell.
+- In a skirmish or multiplayer game, the house turns an `IsBaseDefense=yes` node back into a `-1` placeholder, so the planner picks a fresh type and cell. A map that sets `UseMPAIBaseNodes=yes` does not change this.
+- In a campaign game, the house keeps the node and rebuilds the same defense on the same cell.
 
 ## Parsed settings without effect
 
