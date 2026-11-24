@@ -15,6 +15,7 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 
 namespace
@@ -32,6 +33,7 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
+			Sync_Rows();
 			Model.DirtyVariable("rows");
 			Model.DirtyVariable("difficulties");
 			Model.DirtyVariable("difficulty");
@@ -48,6 +50,7 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
+			Sync_Rows();
 			Rml::StructHandle<UIBrowserRow> row = model.RegisterStruct<UIBrowserRow>();
 			Rml::StructHandle<UIChoice> option = model.RegisterStruct<UIChoice>();
 			if (!row || !option) {
@@ -64,7 +67,7 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 			UIMissionBrowserState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIBrowserRow>>()
 				&& model.RegisterArray<std::vector<UIChoice>>()
-				&& model.Bind("rows", &state.Rows)
+				&& model.Bind("rows", &Shown_Rows)
 				&& model.Bind("difficulties", &state.Difficulties)
 				&& model.Bind("difficulty", &state.Difficulty)
 				&& model.Bind("title", &state.Title)
@@ -78,10 +81,26 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 
 	private:
 		/// <summary>
+		/// Copies the rows into the list the page shows, which never gets shorter. RmlUi updates a removed row's classes
+		/// before it removes the row, so a shorter list would read rows that no longer exist; the surplus rows have no
+		/// index and the page hides them.
+		/// </summary>
+		void Sync_Rows(void)
+		{
+			Shown_Rows = Data.State.Rows;
+			if (Shown_Rows.size() < Row_Count) {
+				Shown_Rows.resize(Row_Count);
+			}
+			Row_Count = Shown_Rows.size();
+		}
+
+		/// <summary>
 		/// Shows the selected mission's picture once per change. An empty picture clears the surface.
 		/// </summary>
 		UIMissionBrowserPresenterClass & Data;
 		int Shown;
+		std::vector<UIBrowserRow> Shown_Rows;
+		std::size_t Row_Count = 0;
 };
 
 }

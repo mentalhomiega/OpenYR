@@ -443,6 +443,8 @@ The menu script step `ui hudrows` logs `AUTOTEST hud rows <rows> saved <setting>
 rows the build panel uses at that moment, including a preview still open. The second is the `SidebarRows` setting.
 Use it to check a settings screen after a `ui choose`, `ui click` or cancel.
 
+The menu script step `ui problems` logs `AUTOTEST ui problems <count>`, the number of warnings and errors RmlUi has reported since the game started. `tests/autotest/mission-browser-rows.txt` uses it to check that opening and closing a mission group reports none.
+
 The menu script step `ui value <id>` logs `AUTOTEST value <id> <value>` for a drop-down or other form control: for a drop-down, the value of the chosen item. `ui setting <Key> [<Key> ...]` logs `AUTOTEST setting <Key>=<value> ...` in one line, the value each named client setting of `code/optionsettings.cpp` holds now (a switch is 0 or 1, a named setting its number, and an unknown key `?`). `ui set <id> <value>` on a drop-down picks the item with that value as a click on it would, which `ui choose` does not do reliably for every drop-down. `tests/autotest/graphics-presets-page.txt` uses these three steps to walk the Graphics quality presets and log the switches each one sets, and `tests/autotest/graphics-presets-shots.txt` takes shots of the page for each preset with Advanced closed and open.
 
 The menu script step `ui checked <id>` logs `AUTOTEST checked <id> 1` or `0`, for whether the element has its `checked`
