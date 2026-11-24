@@ -88,7 +88,7 @@ A **temporal event** describes a moment, such as an object destroyed, a crate co
 
 A standing event needs no offer written for it. Each one puts its tag on a house list or on the general list, and both lists are offered something every frame, so the event is examined every frame. The null event is the exception, because nothing satisfies it.
 
-A temporal event is satisfied only if the part of the game that produces the occurrence makes an offer naming it. Four temporal events have no such offer and [can never be satisfied](#three-events-that-cannot-be-reached).
+A temporal event is satisfied only if the part of the game that produces the occurrence makes an offer naming it. Four temporal events have no such offer and [can never be satisfied](#four-events-that-cannot-be-reached).
 
 ### The exempt events
 

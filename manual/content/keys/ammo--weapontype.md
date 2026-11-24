@@ -8,7 +8,7 @@ when_omitted:
   value: "1"
 ---
 
-`Ammo` on a weapon is an Ares key: the number of rounds of its firer's [`Ammo`](#scope-aircrafttype) one shot of this weapon uses. Each shot of a [`Burst`](/keys/burst/) uses them again. An object holding fewer rounds than the weapon needs does not fire it and waits for its rounds to reload. An object with unlimited ammunition, `Ammo=-1` on its type, fires whatever the weapon's value.
+`Ammo` on a weapon is an Ares key: the number of rounds of its firer's [`Ammo`](/keys/ammo/#scope-aircrafttype) one shot of this weapon uses. Each shot of a [`Burst`](/keys/burst/) uses them again. An object holding fewer rounds than the weapon needs does not fire it and waits for its rounds to reload. An object with unlimited ammunition, `Ammo=-1` on its type, fires whatever the weapon's value.
 
 `Ammo=0` uses no rounds, so the weapon fires even from an empty object, and its shots do not restart the object's [`Reload`](/keys/reload/) countdown. A negative value counts as `0`.
 
