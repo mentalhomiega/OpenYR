@@ -1,0 +1,15 @@
+; A computer Grizzly (MTNK at 48,20) whose only weapon is anti-air (RedEye2, via the aa-vehicle-rules mod) and a player Kirov (ZEP)
+; hovering at 63,25, 15.8 cells away on the ground plane. The area scan reaches 16 cells (twice the 12-cell weapon range, at the cap).
+; The Kirov hovers about 750 leptons up, so its distance in 3D is 4117, past the cap, while its distance on the ground plane is 4048.
+; An airborne candidate is measured on the ground plane (TechnoClass::Evaluate_Object, 0x6F7CA0).
+; Expected: "threatscan MTNK of Africans picks ZEP at 63,25" for the Air|Area scan (flags 6) at frame 300; before the fix it picks "-".
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/airborne-scan-range.txt -Mods src-agent27/tests/autotest/aa-vehicle-rules -Map XMP29U2.MAP -Seconds 120
+30 command CenterBase
+35 reveal
+40 spawn MTNK 48 20
+45 grantunit ZEP 63 25
+50 move ZEP 63 26
+51 move ZEP 63 25
+290 airborne ZEP
+300 threatscan MTNK 6
+320 quit
