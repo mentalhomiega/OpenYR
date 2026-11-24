@@ -1,0 +1,22 @@
+; A wreck (a vehicle destroyed with DeathFrames) cannot fire. gamemd's UnitClass::GetFireError (0x740FD0) tests the death frame
+; counter first and returns error 6 (FIRE_CANT) once it is 0 or more, before the launching, DirectRocker and base checks. The base
+; check (Is_Immobilized) already refuses a wreck, except a Visceroid type, so the overlay wreck-no-fire.ini makes the IFV (FV) a
+; LargeVisceroid with DeathFrames that keeps its passengers. An E1 aboard gives it a weapon; a neutral civilian (CIV1) stands
+; three cells west. The FV takes a hit of 5000 points of AP at frame 110 and stays on the map as a wreck.
+; Expected: the canfire line at frame 100 shows fire 0; at frames 130 and 160 it shows fire 6 and the FV is still listed at strength 1.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/wreck-no-fire.txt -Map XMP29U2.MAP -Seconds 120 -Filter "AUTOTEST   (canfire|where)|Exception"
+10 command CenterBase
+30 reveal
+40 own FV 60 20
+41 own E1 59 20
+42 own E1 59 21
+43 neutral CIV1 57 20
+50 enter E1 60 20
+55 face 192 60 20
+60 art wreck-no-fire.ini
+100 canfire FV 57 20
+110 hit FV:AP 5000
+130 canfire FV 57 20
+130 where FV
+160 canfire FV 57 20
+170 quit

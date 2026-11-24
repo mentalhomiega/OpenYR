@@ -5804,6 +5804,11 @@ DirType UnitClass::Fire_Direction(void) const
  *=============================================================================================*/
 FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 {
+	// A wreck in its death animation cannot fire (UnitClass::GetFireError, 0x740FD0, error 6).
+	if (DeathCounter >= 0) {
+		return(FIRE_CANT);
+	}
+
 	// A unit with a missile still leaving it is busy for every weapon (UnitClass::GetFireError, 0x740FD0, error 10).
 	if (SpawnManager && SpawnManager->Launching_Count() > 0) {
 		return(FIRE_BUSY);
