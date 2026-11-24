@@ -295,6 +295,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `canrepair x y` | writes whether the structure on that cell can be repaired with the repair cursor |
 | `overpower x y` | writes how many objects charge the structure on that cell and whether it is overpowered |
 | `ruleanims` | writes the animations some rules settings resolved to |
+| `cloakcell <x> <y>` | writes `cloaked 1` when a cloak generator of the player's house marks that cell, else `cloaked 0` |
 | `canfire <TypeID> x y` | writes whether the player's object of that type could fire its primary weapon at the object on that cell now, and why not, then the weapon it would choose and whether that one could fire |
 | `weapons <TypeID>` | writes each weapon slot of the type with its bullet's AA and AG flags and range |
 | `waypoint <any> x y` | places a waypoint on the cell on the selected path, as a click in waypoint mode does |

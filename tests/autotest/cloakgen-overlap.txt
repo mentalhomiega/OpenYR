@@ -1,0 +1,31 @@
+; Two cloak generators of the player (GAPOWR at 60,60 and NAPOWR at 65,60, five cells each with the cloakgen-overlap-rules mod) cover the
+; cells between them. Once both fields are up, the NAPOWR is destroyed. gamemd keeps one cloak flag per house on a cell (CellClass
+; 0x487110 sets it, 0x487130 clears it), so the collapsing field clears the cells the GAPOWR also covers; when the collapse ends,
+; BuildingClass::UpdateCloak (0x454DB0) sends every other settled generator within twice its reach back to growing from the centre.
+; Expected: cloakcell 62,60 reads 1 at frame 119, 0 at 121 and 122, and 1 again from 123; 57,60 (GAPOWR only) stays 1 and 68,60 (NAPOWR only) reads 0 from 121 on.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/cloakgen-overlap.txt -Mods src-agent29/tests/autotest/cloakgen-overlap-rules -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST   cloakcell|AUTOTEST kill|Exception"
+30 command CenterBase
+30 reveal
+40 own GAPOWR 60 60
+40 own NAPOWR 65 60
+100 cloakcell 62 60
+100 cloakcell 68 60
+100 cloakcell 57 60
+119 cloakcell 62 60
+120 kill NAPOWR 1
+121 cloakcell 62 60
+122 cloakcell 62 60
+123 cloakcell 62 60
+124 cloakcell 62 60
+125 cloakcell 62 60
+126 cloakcell 62 60
+127 cloakcell 62 60
+128 cloakcell 62 60
+129 cloakcell 62 60
+130 cloakcell 62 60
+131 cloakcell 62 60
+121 cloakcell 68 60
+125 cloakcell 57 60
+140 cloakcell 62 60
+140 cloakcell 68 60
+200 quit

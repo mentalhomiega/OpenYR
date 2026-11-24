@@ -421,12 +421,6 @@ class BuildingClass : public TechnoClass
 		void Set_Gap_Charge(bool charged);
 
 		/*
-		 * These mark the cells of the cloaking grid around a cloak generator that its own field
-		 * covers, so its cover is counted on and off without disturbing another generator's.
-		 */
-		std::vector<std::uint8_t> CloakFieldCells;
-
-		/*
 		 * Has this sensor array counted its coverage on the map? The coverage is counted once,
 		 * however often the array is switched on.
 		 */
@@ -717,7 +711,7 @@ class BuildingClass : public TechnoClass
 		void Enable_Cloak_Generator(void);
 		void Disable_Cloak_Generator(void);
 		void Collapse_Cloak_Field(void);
-		bool Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover);
+		void Restart_Overlapping_Cloak_Generators(Cell const & center) const;
 		void Disable_Sensor_Array(void);
 		void Enable_Sensor_Array(void);
 

@@ -5921,6 +5921,14 @@ static void Ruleanims_Step(StepType const &)
 }
 
 
+// cloakcell <x> <y>: whether the cell carries the player's cloak generator mark.
+static void Cloakcell_Step(StepType const & step)
+{
+	Cell const cell = step.Argument_Cell();
+	DebugString("AUTOTEST   cloakcell %d,%d cloaked %d\n", cell.X, cell.Y, (int)Map[cell].Is_Cloaked(PlayerPtr));
+}
+
+
 static void Canfire_Step(StepType const & step)
 {
 	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
@@ -9137,6 +9145,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"radarevents", Radarevents_Step},
 		{"ruleanims", Ruleanims_Step},
 		{"canfire", Canfire_Step},
+		{"cloakcell", Cloakcell_Step},
 		{"blast", Blast_Step},
 		{"shake", Shake_Step},
 		{"screen", Screen_Step},

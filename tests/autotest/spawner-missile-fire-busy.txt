@@ -1,0 +1,25 @@
+; A V3 launcher on the XMP08T2 shore faces a neutral tank (HTNK) eight cells west and strikes it, as in v3-move-while-launching.txt. Its rocket
+; launches at frame 120 and stays on the pad (PREPARING, then TAKEOFF) for about 60 frames. gamemd's UnitClass::GetFireError (0x740FD0)
+; returns error 10 (FIRE_BUSY) for every weapon while SpawnManagerClass::CountLaunchingSpawns (0x6B7D80) is nonzero. Expected: the canfire
+; lines show fire 0 before the launch, fire 10 from the launch until the rocket has left its pad, then fire 3 (rearm) once no spawn is alive.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/spawner-missile-fire-busy.txt -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST   (canfire|spawncycle)|Exception"
+10 command CenterBase
+30 reveal
+40 own V3 100 80
+41 face 192 100 80
+42 neutral HTNK 92 80
+50 view 97 79
+100 strike V3 92 80
+110 canfire V3 92 80
+118 canfire V3 92 80
+121 canfire V3 92 80
+130 canfire V3 92 80
+150 spawns V3
+160 canfire V3 92 80
+170 canfire V3 92 80
+180 canfire V3 92 80
+190 spawns V3
+200 canfire V3 92 80
+230 canfire V3 92 80
+260 canfire V3 92 80
+300 quit
