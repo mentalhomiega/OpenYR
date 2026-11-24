@@ -1,0 +1,14 @@
+; A computer house inserts a power plant ahead of a structure it cannot power in every game mode (HouseClass::AI_BaseConstructionUpdate,
+; 0x4FE3E0, tests no session type). The map flag UseMPAIBaseNodes (the mpainodes step, set at frame 5) only changes where the plan is read
+; from, so a skirmish with the flag still inserts plants. The computer is Africans (-AICountries 5).
+; Expected: BUILDTRACE shows NAPOWR started at frames 26 and 5413, and NANRCT at 7580; power output is 300 at frame 6000 and 2300 at
+; frame 10000, above the drain (135 and 310). Before the fix the flag suppressed the insertion: the output stayed at 150 and the drain
+; climbed to 585 by frame 16000.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/ai-mpai-nodes-power.txt -AICountries 5 -Seconds 300 -Uncapped -Filter "AUTOTEST   (aisummary|mpainodes)|BUILDTRACE.*(starts (NAPOWR|NANRCT)|finds)|Exception"
+5 mpainodes yes
+10 buildtrace 1
+30 command CenterBase
+6000 aisummary
+10000 aisummary
+16000 aisummary
+16001 quit

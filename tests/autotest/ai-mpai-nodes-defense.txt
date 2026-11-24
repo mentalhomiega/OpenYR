@@ -1,0 +1,12 @@
+; A computer house retires the base node of a destroyed base defense in every skirmish or multiplayer game (HouseClass::Invalidate_Base_Node_Position,
+; 0x50A490, returns early only in a campaign), so the planner picks a fresh type and cell. The map flag UseMPAIBaseNodes (the mpainodes
+; step, set at frame 5) does not keep the node. The computer is Africans (-AICountries 5); the kill step destroys its NAFLAK defenses at 13700.
+; Expected: the aisummary at frame 13760 names the first unbuilt node as -1, a defense placeholder (2 NAFLAK lost). Before the fix the flag kept
+; the nodes and the summary named NAFLAK, which the house then rebuilt on the same cell.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/ai-mpai-nodes-defense.txt -AICountries 5 -Seconds 300 -Uncapped -Filter "AUTOTEST   (kill|aisummary)|BUILDTRACE.*NAFLAK|Exception"
+5 mpainodes yes
+10 buildtrace 1
+30 command CenterBase
+13700 kill NAFLAK
+13760 aisummary
+13761 quit

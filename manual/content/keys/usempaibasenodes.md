@@ -11,12 +11,7 @@ With the key set to `yes`, the house at start waypoint N reads its base node lis
 
 The list is read for every house at a start waypoint, including a human player's, so a house the computer takes over later follows it too. A section for a waypoint no house starts at is not read. A house that started on open ground because the map's start waypoints ran out is at no start waypoint and reads no list.
 
-With the key set, every computer house builds as a campaign house does. [AI base planning and building](/systems/ai-base-building/) owns the details:
-
-- A node's cell is used as written; it does not have to touch ground the house already holds.
-- No power plant is inserted ahead of a node the house cannot power.
-- The money-raising and fire-sale interventions are off.
-- A destroyed base defense is rebuilt as the same type on the same cell.
+The key changes only where the plan comes from. The house still builds under the rules of its game mode: it inserts power plants, sells its base to raise money, retires a destroyed base defense's node and keeps its structures next to its base, as in any skirmish. [AI base planning and building](/systems/ai-base-building/) owns the details.
 
 A house that reads no node list, or whose section sets no `NodeCount`, starts with an empty list. It generates its own plan when its construction vehicle deploys, and it still builds under the rules above.
 

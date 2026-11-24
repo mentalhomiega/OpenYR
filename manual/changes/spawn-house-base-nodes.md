@@ -23,6 +23,6 @@ credit:
 
 A skirmish or multiplayer map that sets `UseMPAIBaseNodes=yes` under `[Basic]` gives each house the base nodes written in the section of the start position it holds, `[Spawn1]` through `[Spawn8]`. A computer house builds those structures where they are written.
 
-On such a map every computer house builds its base as a campaign house does: no power plant is inserted ahead of a planned structure, it does not sell its base to raise money, and it rebuilds a lost base defense in place. Maps without the key play as before.
+Only the plan changes: a computer house on such a map still inserts power plants, sells its base to raise money and replaces a lost base defense with a new pick, as in any skirmish. Maps without the key play as before.
 
 Rampastring and CCHyper are credited for the Vinifera implementation this one follows.

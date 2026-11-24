@@ -8,4 +8,4 @@ when_omitted:
   value: "50"
 ---
 
-A computer house plans power with no spare margin, whatever this setting holds. When it is not following a map plan, it [adds a power plant](/systems/ai-base-building/#power-and-money-interventions) as soon as a planned structure's drain would exceed its power output.
+A computer house plans power with no spare margin, whatever this setting holds. It [adds a power plant](/systems/ai-base-building/#power-and-money-interventions) as soon as a planned structure's drain would exceed its power output.

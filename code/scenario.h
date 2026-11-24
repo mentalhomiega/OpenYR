@@ -110,8 +110,6 @@ class ScenarioClass {
 
 		void Compute_CRC(CRCEngine & crc) const;
 
-		bool Is_Campaign_Base_AI(void) const;
-
 		Cell Get_Waypoint_Cell(WAYPOINT waypoint) const;
 		Coord Get_Waypoint_Coord(WAYPOINT waypoint) const;
 		CellClass * Get_Waypoint_CellClass(WAYPOINT waypoint) const;

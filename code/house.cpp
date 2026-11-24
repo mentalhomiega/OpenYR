@@ -5469,9 +5469,9 @@ int HouseClass::AI_Building(void)
 
 	/*
 	**	Try to build a power plant if there is insufficient power. A house in a power blackout, or
-	**	one with a power plant being drained, inserts no plant.
+	**	one with a power plant being drained, inserts no plant. gamemd does so in every game mode (0x4FE3E0).
 	*/
-	if (!Scen->Is_Campaign_Base_AI() && b->Drain + Drain > Power - PowerSurplus && !Rule->BuildConst.Is_In_List(b) && b->Drain > 0 && !Is_Power_Blackout() && !Is_Being_Drained()) {
+	if (b->Drain + Drain > Power - PowerSurplus && !Rule->BuildConst.Is_In_List(b) && b->Drain > 0 && !Is_Power_Blackout() && !Is_Being_Drained()) {
 
 		SideClass const * side = Acted_Side();
 		BuildingTypeClass const * regular = side != NULL ? side->RegularPowerPlant : NULL;
@@ -11031,8 +11031,8 @@ void HouseClass::AI_Chem_Missile(SuperClass * super)
 /// Invalidates the base node that a building occupies.
 /// This routine is called when a building leaves the map. Any other node laying claim to
 /// the same spot is released so the computer may build there again, and base defense
-/// nodes are retired outright when the computer is not following a scenario's base plan,
-/// since it then picks those spots for itself.
+/// nodes are retired outright outside a campaign, since the computer then picks those spots
+/// for itself (0x50A490).
 /// </summary>
 /// <param name="building">The building whose base node location is to be invalidated.</param>
 void HouseClass::Invalidate_Base_Node_Position(BuildingClass * building)
@@ -11047,7 +11047,7 @@ void HouseClass::Invalidate_Base_Node_Position(BuildingClass * building)
 						Base.Nodes[j].CellID = CELL_NONE;
 					}
 				}
-				if (building->Class->IsBaseDefense && !Scen->Is_Campaign_Base_AI()) {
+				if (building->Class->IsBaseDefense && Session.Type != GAME_NORMAL) {
 					Base.Nodes[i].Type = STRUCT_NONE;
 					Base.Nodes[i].CellID = CELL_NONE;
 				}

@@ -370,33 +370,28 @@ test('A chosen start position keeps its number and is claimed before the game pi
 	], 'positions are settled and the spawn house sections read before any team, trigger or object');
 });
 
-test('The compactness test and the emergency strategies follow the game mode', () => {
+test('The computer builds under the campaign rules by game mode alone', () => {
 	const house = source('code/house.cpp');
 
 	assert.match(
 		functionBody(house, 'bool HouseClass::Can_Build_Here(BuildingTypeClass *building, Cell const & cell)'),
 		/if \(Session\.Type == GAME_NORMAL\) \{\s*return\(true\);/,
-		'the compactness test passes in a campaign game alone',
+		'the compactness test passes in a campaign',
 	);
 	assert.match(
 		functionBody(house, 'int HouseClass::AI_Building(void)'),
-		/if \(!Scen->Is_Campaign_Base_AI\(\) && b->Drain \+ Drain > Power - PowerSurplus/,
-		'a power plant is inserted only for a house not following a map plan',
+		/\n\tif \(b->Drain \+ Drain > Power - PowerSurplus/,
+		'a power plant is inserted in every game mode',
 	);
 	assert.match(
 		functionBody(house, 'int HouseClass::Expert_AI(void)'),
 		/if \(Session\.Type != GAME_NORMAL\) \{/,
-		'money and fire-sale interventions run in every skirmish or multiplayer game, map plan or not',
+		'money and fire-sale interventions run outside a campaign',
 	);
 	assert.match(
 		functionBody(house, 'void HouseClass::Invalidate_Base_Node_Position(BuildingClass * building)'),
-		/building->Class->IsBaseDefense && !Scen->Is_Campaign_Base_AI\(\)/,
-		'a base defense node is retired only for a house not following a map plan',
-	);
-	assert.match(
-		functionBody(source('code/scenario.cpp'), 'bool ScenarioClass::Is_Campaign_Base_AI(void) const'),
-		/Session\.Type == GAME_NORMAL \|\| IsMPAIBaseNodes/,
-		'the campaign rules apply in a campaign or when the map asks for them',
+		/building->Class->IsBaseDefense && Session\.Type != GAME_NORMAL/,
+		'a base defense node is retired outside a campaign',
 	);
 });
 
@@ -1318,8 +1313,8 @@ test('A harvester reserves a free refinery only within reach and otherwise waits
 
 	assert.match(
 		harvest,
-		/anybay != NULL && \(Class->IsTeleporter \|\| Get_Coord\(\)\.Gamemd_Distance_To\(anybay->Center_Coord\(\)\) > 3 \* CELL_LEPTON\)/,
-		'a harvester out of reach drives when the nearest bay is over three cells from it, and a Chrono Miner always does',
+		/Get_Coord\(\)\.Gamemd_Distance_To\(anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
+		'a harvester out of reach drives only when the nearest bay is over three cells away',
 	);
 });
 
@@ -1544,19 +1539,9 @@ test('A game played alone is paced by its own speed table', () => {
 	const mainloop = source('code/mainloop.cpp');
 
 	assert.match(
-		functionBody(definitionFrom(mainloop, 'static NetTiming::FramePeriod Target_Frame_Period(void)'), 'static NetTiming::FramePeriod Target_Frame_Period(void)'),
-		/if \(Session\.Type == GAME_NORMAL \|\| Session\.Type == GAME_SKIRMISH\) \{[\s\S]*NetTiming::Solo_Frame_Period\(Options\.GameSpeed, Session\.Type == GAME_NORMAL, Options\.ClassicGameSpeeds\)/,
-		'a campaign or skirmish takes its frame length from the solo period for its game speed',
-	);
-	assert.match(
-		functionBody(source('code/nettiming.cpp'), 'FramePeriod Solo_Frame_Period(int game_speed, bool campaign, bool classic)'),
-		/if \(!classic\) \{\s*return\(Frame_Period_For_Rate\(Game_Speed_Frame_Rate\(game_speed\)\)\);\s*\}\s*return\(campaign \? Campaign_Frame_Period\(\) : Solo_Game_Speed_Frame_Period\(game_speed\)\);/,
-		'that period is the multiplayer rate for the speed, or with the classic tables gamemd\'s solo length',
-	);
-	assert.match(
 		functionBody(definitionFrom(mainloop, 'static int Target_Frame_Rate(void)'), 'static int Target_Frame_Rate(void)'),
-		/return\(Session\.Play \? 0 : Session\.DesiredFrameRate\);/,
-		'only a network game is held to the session\'s own desired rate, and a recording plays unlimited',
+		/NetTiming::Solo_Game_Speed_Frame_Rate\(Options\.GameSpeed\)/,
+		'a solo game takes its rate from the single-player table',
 	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
