@@ -14,6 +14,8 @@ when_omitted:
 
 [`ShowFrameGraph`](/keys/showframegraph/) adds a graph of recent frame times below the counts.
 
+While the message list shows lines in the top-left corner, such as a mission's objective, the counts start below the last line.
+
 The count appears only during a game. The menus do not show it.
 
 The **Show FPS** switch on the Display page of the settings sets the key, and the change applies at once.

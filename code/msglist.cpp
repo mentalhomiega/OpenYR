@@ -1304,6 +1304,16 @@ int MessageListClass::Num_Messages(void)
 }	// end of Num_Messages
 
 
+/// <summary>
+/// The screen row just below the last message line, or 0 while the list shows no line.
+/// </summary>
+int MessageListClass::Bottom_Y(void)
+{
+	int const lines = Num_Messages();
+	return(lines > 0 ? MessageY + lines * Height : 0);
+}
+
+
 /***************************************************************************
  * MessageListClass::Set_Width -- sets allowable width of messages         *
  *                                                                         *
