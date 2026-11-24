@@ -1171,8 +1171,8 @@ static int Read_Types_From(LIST & list, int & mark, CCINIClass const & ini)
 /// A type that only a rule key names (a DeathWeapon, a special weapon's projectile) is created after
 /// its list's read pass, so without this it would keep its defaults and its section would be ignored.
 /// Reading a type can create another, so the lists are read again until none grows.
-/// gamemd (RulesClass::Read_File, 0x668A40) never reads such a type; its weapon is left with no
-/// projectile and crashes the first time it is used.
+/// Only [General] ReadLateTypes=yes does this. gamemd (RulesClass::Read_File, 0x668A40) never reads such a type;
+/// its weapon is left with no projectile and crashes the first time it is used.
 /// </summary>
 static void Read_Late_Types(CCINIClass const & ini)
 {
@@ -1259,9 +1259,14 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Radiation(ini);
 	Elevation_Model(ini);
 
-	// Combat_Damage and the sections after Objects can create types after the read loops in Objects.
-	// Those types have not been read yet, so they are read now, and a weapon that still names no projectile takes the defaults.
-	Read_Late_Types(ini);
+	// Combat_Damage and the sections after Objects can create types after the read loops in Objects. gamemd never reads
+	// them, so by default they keep their defaults, and a weapon that still names no projectile takes the default one.
+	if (IsReadLateTypes) {
+		Read_Late_Types(ini);
+	} else {
+		// TiberiumClass::Process runs at the end of gamemd's rules read.
+		Read_Types_From(Tiberiums, TypeMarks.Tiberiums, ini);
+	}
 	for (int windex = 0; windex < Weapons.Count(); windex++) {
 		Weapons[windex]->Ensure_Defaults();
 		Weapons[windex]->Init_Max_Speed();
@@ -2148,6 +2153,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		IsFirestormTriggerHumans = ini.Get_Bool(GENERAL, "FirestormTriggerHumans", IsFirestormTriggerHumans);
 		IsTeamRetaliate = ini.Get_Bool(GENERAL, "TeamRetaliate", IsTeamRetaliate);
+		IsReadLateTypes = ini.Get_Bool(GENERAL, "ReadLateTypes", IsReadLateTypes);
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
 		SovietBaseDefenseCounts = ini.Get_IntList(GENERAL, "SovietBaseDefenseCounts", SovietBaseDefenseCounts);
 		ThirdBaseDefenseCounts = ini.Get_IntList(GENERAL, "ThirdBaseDefenseCounts", ThirdBaseDefenseCounts);
@@ -4284,18 +4290,18 @@ bool RulesClass::Objects(CCINIClass const & ini)
 	}
 	TypeMarks.Infantry = InfantryTypes.Count();
 
-	// A projectile's AirburstWeapon can create a weapon that nothing else named, and a weapon
-	// can create a projectile, so the lists are read again from where they stood until neither grows.
+	// The weapons are read before the projectiles, as in gamemd, so a weapon that a projectile's AirburstWeapon or
+	// ShrapnelWeapon creates is not read unless ReadLateTypes asks for the lists to be read again until neither grows.
 	int windex = 0;
 	int proj = 0;
-	while (windex < Weapons.Count() || proj < BulletTypes.Count()) {
+	do {
 		for (; windex < Weapons.Count(); windex++) {
 			Weapons[windex]->Read_INI(ini);
 		}
 		for (; proj < BulletTypes.Count(); proj++) {
 			BulletTypes[proj]->Read_INI(ini);
 		}
-	}
+	} while (IsReadLateTypes && (windex < Weapons.Count() || proj < BulletTypes.Count()));
 	TypeMarks.Weapons = windex;
 	TypeMarks.Bullets = proj;
 

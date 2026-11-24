@@ -3,17 +3,19 @@
 ; Warhead=. The pillbox (GAPILL) fires GhostGun, and a Conscript attacks it. The mod also makes the Mobile Grizzly (MTNK)
 ; explode with no weapon, so its death sets off the rules' DeathWeapon, UndefinedDeath, which has no section. A later
 ; rules step, at frame 125, sets DeathWeapon to LateDeath, a weapon nothing declared before. That file is read last, so
-; no read pass reaches LateDeath; the second Grizzly, killed after it, must still fire it.
+; no read pass reaches LateDeath and it has no section; the second Grizzly, killed after it, must still fire it.
 ; gamemd (WeaponTypeClass::LoadFromINI, 0x772080) leaves a weapon with no section with a NULL projectile, and the range test
 ; (FootClass::ApproachTarget, 0x4D5690, calls FUN_006F7220) reads that projectile without a NULL check, so gamemd crashes.
 ; Ours gives such a weapon the default projectile and warhead and logs one line for it.
 ; A second rules step, at frame 150, names SectionDeath, a projectile SectionBullet and a warhead SectionWarhead through rule
-; keys that are read after the type lists, with a section for each in the same file. Each type must read its own section:
-; SectionDeath uses InvisibleLow and HE, SectionBullet has ROT 9 and High, SectionWarhead has spread 4. The log notes each of
-; the three as created after its list was read. gamemd leaves such a type unread.
+; keys that are read after the type lists, with a section for each in the same file. As in gamemd, the weapon and the
+; projectile keep their defaults (SectionDeath fires the default projectile and warhead, SectionBullet has ROT 0), and
+; [SpecialWeapons] reads every warhead again, so SectionWarhead has spread 4. late-types.txt covers [General] ReadLateTypes=yes.
 ; Expected: one log line for each of GhostGun, KeylessGun, NoWarheadGun, UndefinedDeath and LateDeath, a where report for each
 ; unit and the pillbox, "Death weapon: MTNK sets off UndefinedDeath" and "Death weapon: MTNK sets off LateDeath" for the first two
 ; Grizzlies, "sets off SectionDeath" for the third, no Exception, and "AUTOTEST quit". Before the fix the LateDeath line is missing, and its log line too.
+; The typedump lines at frames 151 to 153 give SectionDeath the projectile and warhead "<missing>", SectionBullet rot 0 and
+; SectionWarhead spread 4.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Mods src-agent15/tests/autotest/undefined-weapon-rules -Script src-agent15/tests/autotest/undefined-weapon.txt -Seconds 90 -Filter "\] has no|AUTOTEST   where|AUTOTEST   kill|Death weapon|typedump|created after|AUTOTEST quit|Exception"
 30 command CenterBase
 35 reveal
@@ -39,7 +41,7 @@
 130 own MTNK 70 65
 140 kill MTNK 1
 141 where MTNK
-150 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/undefined-weapon-section-last.ini
+150 rules undefined-weapon-section-last.ini
 151 typedump SectionDeath
 152 typedump SectionBullet
 153 typedump SectionWarhead

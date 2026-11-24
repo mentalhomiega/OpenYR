@@ -38615,6 +38615,24 @@ RatioTeamUnits:
       source: code/house.cpp
       guard: null
     level: HouseClass
+ReadLateTypes:
+  key: ReadLateTypes
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: IsReadLateTypes
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ReadinessReductionMultiplier:
   key: ReadinessReductionMultiplier
   scopes:
