@@ -142,12 +142,13 @@ A house that passes to the computer also has its new plan fitted to the base it 
 
 These steps generate a plan for a house that has none. They never change a list the scenario supplied.
 
-Several steps take "the first entry the country may own" from a rules list. That is the first type whose [`Owner`](/keys/owner/) includes the country the house acts as, whose [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow the house's own country, and whose [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side.
+Several steps take "the first entry the country may own" from a rules list. That is the first type whose [`Owner`](/keys/owner/) includes the country the house acts as, whose [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow the house's own country, and whose [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side. While the match's superweapons option is off, a structure whose [`SuperWeapon`](/keys/superweapon/) is [`DisableableFromShell=yes`](/keys/disableablefromshell/) is skipped, unless [`BuildTech`](/keys/buildtech/) lists it.
 
 1. **Candidates.** A BuildingType is a candidate when all of these hold:
    - its [`Owner`](/keys/owner/) includes the country this house [acts as](/keys/actslike/);
    - its [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side, and its [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow the house's own country;
    - it is [`AIBuildThis=yes`](/keys/aibuildthis/);
+   - its superweapon is not withheld: with the superweapons option off, it has no [`SuperWeapon`](/keys/superweapon/) with [`DisableableFromShell=yes`](/keys/disableablefromshell/), or [`BuildTech`](/keys/buildtech/) lists it;
    - its [`TechLevel`](/keys/techlevel/) is within the house's tech level;
    - it is not [`Weeder=yes`](/keys/weeder/), unless the map has a veinhole monster;
    - it is not the excluded plug. When the Firestorm addon is enabled, one of the hard-coded IDs `GAPLUG2`, `GAPLUG3` and `GAPLUG4` is picked at random and left out.

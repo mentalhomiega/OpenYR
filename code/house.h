@@ -33,6 +33,7 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "_house.h"
@@ -1405,6 +1406,9 @@ inline int HouseClass::Count_Owned(CounterClass const & tally, TypeList<T const 
 }
 
 
+bool Is_Withheld_Superweapon_Building(BuildingTypeClass const * type);
+
+
 // Whether the country this house builds for may own the entry and plan for it: the Ownable,
 // RequiredHouses, ForbiddenHouses and AIBasePlanningSide tests that Get_First_Acted applies.
 template<typename T>
@@ -1420,12 +1424,16 @@ inline bool HouseClass::Is_Acted_Candidate(T const * type) const
 
 
 // The first entry the country this house builds for may own and plan for, or NULL when there is
-// none (HouseClass::FirstBuildableFromArray, 0x5051E0 in gamemd).
+// none (HouseClass::FirstBuildableFromArray, 0x5051E0 in gamemd). A structure whose superweapon the
+// game option withholds is skipped.
 template<typename T>
 inline T const * HouseClass::Get_First_Acted(DynamicVectorClass<T const *> const & list) const
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T const * type = list[index];
+		if constexpr (std::is_same_v<T, BuildingTypeClass>) {
+			if (Is_Withheld_Superweapon_Building(type)) continue;
+		}
 		if (Is_Acted_Candidate(type)) {
 			return(type);
 		}

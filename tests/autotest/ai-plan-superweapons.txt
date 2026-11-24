@@ -1,0 +1,10 @@
+; A computer house plans its base from the first entry of BuildPower= that it may build (HouseClass::FirstBuildableFromArray, 0x5051E0). While
+; the game option Super Weapons is off, that function skips a structure with SuperWeapon= whose superweapon has DisableableFromShell=yes and is not
+; listed in BuildTech=, so the plan takes the next entry. The mod in tests/autotest/ai-plan-superweapons lists NAMISL (the Missile Silo, which grants
+; NukeSpecial) before NAPOWR. The computer is Africans (-AICountries 5). Run once with the option off (SuperWeapons=no in the spawn settings) and
+; once with it on.
+; Expected, option off: the basenodes line at frame 50 reads NACNST,NAPOWR,NAHAND,... with no NAMISL. Option on: it reads NACNST,NAPOWR,NAMISL,NAHAND,...
+; Before the fix the option-off plan also had NAMISL in third place, the structure the first BuildPower= entry named.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/ai-plan-superweapons.txt -Mods "E:\Claude ra2 decomp\src-agent24\tests\autotest\ai-plan-superweapons" -AICountries 5 -Uncapped -Seconds 120 -Settings "[Settings]`nSuperWeapons=no" -Filter "AUTOTEST basenodes|Exception"
+5 sampleprod 50
+60 quit

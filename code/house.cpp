@@ -1012,7 +1012,7 @@ HouseStaticClass::HouseStaticClass(void) :
 /// superweapon the shell can disable. Withheld, it cannot be built, and its superweapon is not
 /// granted, while the option is off. A building the rules list in BuildTech is never withheld.
 /// </summary>
-static bool Is_Withheld_Superweapon_Building(BuildingTypeClass const * type)
+bool Is_Withheld_Superweapon_Building(BuildingTypeClass const * type)
 {
 	if (Session.Options.SWAllowed || type->SuperWeapon == SUPER_NONE) return(false);
 	if (Rule->BuildTech.Is_In_List(type)) return(false);
