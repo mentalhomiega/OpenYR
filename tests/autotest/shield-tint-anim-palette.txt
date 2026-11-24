@@ -1,0 +1,23 @@
+; The animation of a structure takes the Force Shield color on whichever palette it draws through, not only when the structure's house
+; colours draw it (AnimClass::Draw_It 0x423340 passes the color of the structure on the animation's cell to the shape draw next to the
+; converter the animation chose). The mod shield-tint-anim-palette (pass it with -Mods) sets ShouldUseCellDrawer=no on NARADR_A, the dish of
+; the Soviet Radar Tower, so the dish draws through the shared animation palette ANIM.PAL. The radar stands at 75,40 and the Force Shield is
+; fired at 73,40 (frame 60). A Tesla Reactor at 70,40 supplies the power.
+; Expected: in the anim line of the radar, drawn anim before frame 60 and after the shield ends (frame 580), and drawn tinted while the shield
+; holds (frames 62 to 540). Before the fix the dish drew through ANIM.PAL untinted (drawn anim) throughout.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/shield-tint-anim-palette.txt -Mods "E:\Claude ra2 decomp\src-agent26\tests\autotest\shield-tint-anim-palette" -Country 8 -AIPlayers 0 -Width 800 -Height 600 -Seconds 200 -RenderFrameRate 30 -Filter "AUTOTEST   shield|AUTOTEST     anim|Exception"
+10 reveal
+20 view 80 40
+30 own NAPOWR 70 40
+31 own NARADR 75 40
+40 grant ForceShieldSpecial
+50 windowshot shield-anim-a0-before
+55 shield NARADR
+60 fire ForceShieldSpecial 73 40
+62 shield NARADR
+66 windowshot shield-anim-b1-force
+200 shield NARADR
+540 shield NARADR
+580 shield NARADR
+650 windowshot shield-anim-c2-after
+700 quit

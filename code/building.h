@@ -767,6 +767,7 @@ class BuildingClass : public TechnoClass
 		void Set_Anim_Damage_State(bool damaged);
 		void Set_Anim_Drawer(ConvertClass * drawer, int brightness);
 		void Update_Anim_Appearance(void);
+		bool Effect_Tint(int & red, int & green, int & blue) const;
 		ConvertClass * Tinted_Converter(ConvertClass * converter) const;
 		ConvertClass * Anim_Converter(void) const;
 		void Update_Temporal_Anims(void);

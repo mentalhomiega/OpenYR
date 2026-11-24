@@ -9700,17 +9700,10 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 			animptr->Disable();
 		}
 
-		if (animptr->Class->IsShouldUseCellDrawer) {
+		// The animations of a structure with an art Palette are drawn through it too.
+		if (animptr->Class->IsShouldUseCellDrawer || Palette_Converter() != NULL) {
 			animptr->AlternativeDrawer = Anim_Converter();
 			animptr->AlternativeBrightness = Apparent_Brightness();
-		}
-
-		// The animations of a structure with an art Palette are drawn through it too.
-		if (!Class->PaletteName.empty()) {
-			if (ConvertClass * custom = Palette_Scheme_Drawer(Class->PaletteName, House_Display_Scheme(House))) {
-				animptr->AlternativeDrawer = custom;
-				animptr->AlternativeBrightness = Apparent_Brightness();
-			}
 		}
 
 		if (anim == BANIM_TURRET && Class->IsBarrelAnimAVoxel) {
@@ -9908,17 +9901,18 @@ void BuildingClass::Set_Anim_Damage_State(bool damaged)
 
 /// <summary>
 /// Sets the drawer that this building's animations render with.
-/// Only the animations that ask for the cell drawer are affected -- the rest keep
-/// their own appearance.
+/// Only the animations that ask for the cell drawer are affected, or all of them when the
+/// structure has a Palette=; the rest keep their own appearance.
 /// </summary>
 /// <param name="drawer">The color converter for the animations to draw with.</param>
 /// <param name="brightness">The brightness level to draw the animations at.</param>
 void BuildingClass::Set_Anim_Drawer(ConvertClass * drawer, int brightness)
 {
+	bool const palette = Palette_Converter() != NULL;
 	for (int i = 0; i < BANIM_COUNT; i++) {
 		AnimClass * anim = Anims[i];
 		if (anim != NULL) {
-			if (anim->Class->IsShouldUseCellDrawer) {
+			if (anim->Class->IsShouldUseCellDrawer || palette) {
 				anim->AlternativeDrawer = drawer;
 				anim->AlternativeBrightness = brightness;
 			}
@@ -9947,37 +9941,37 @@ void BuildingClass::Update_Anim_Appearance(void)
 
 /// <summary>
 /// Returns the converter that this structure's cell-drawn animations are drawn with: its Palette= when it
-/// names one, otherwise its house's colour scheme with the shield tint added.
+/// names one, otherwise its house's colour scheme, with the colours the structure's state adds to either
+/// (AnimClass::Draw_It, 0x423340).
 /// </summary>
 ConvertClass * BuildingClass::Anim_Converter(void) const
 {
 	ConvertClass * converter = Palette_Converter();
 	if (converter == NULL) {
 		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
-
-		// The animations take the tint the body gets (AnimClass::Draw_It, 0x423340). A palette converter
-		// carries no such tint, so only house-coloured animations take it.
-		converter = Tinted_Converter(converter);
 	}
-	return(converter);
+	return(Tinted_Converter(converter));
 }
 
 
 /// <summary>
-/// Returns the converter that draws this structure with the colours its state adds:
-/// LaserTargetColor while an airstrike marks it and ForceShieldColor while a Force Shield
-/// holds it, combined as BuildingClass::DrawIt (0x43D290) combines them. A structure in the
-/// terrain palette takes neither, and neither does one whose centre cell is shrouded.
+/// Gets the colours this structure's state adds to its drawing: LaserTargetColor while an airstrike
+/// marks it and ForceShieldColor while a Force Shield holds it, combined as BuildingClass::DrawIt
+/// (0x43D290) combines them. The shape draw adds them to whatever palette draws, a Palette= included.
+/// A structure in the terrain palette takes neither, and neither does one whose centre cell is shrouded.
 /// </summary>
-/// <param name="converter">The converter to use when no colour is added.</param>
-ConvertClass * BuildingClass::Tinted_Converter(ConvertClass * converter) const
+/// <param name="red">Receives the red to add, in 8-bit palette units.</param>
+/// <param name="green">Receives the green to add, in 8-bit palette units.</param>
+/// <param name="blue">Receives the blue to add, in 8-bit palette units.</param>
+/// <returns>Returns true when any colour is added.</returns>
+bool BuildingClass::Effect_Tint(int & red, int & green, int & blue) const
 {
+	red = 0;
+	green = 0;
+	blue = 0;
 	if (Class->IsTerrainPalette) {
-		return(converter);
+		return(false);
 	}
-	int red = 0;
-	int green = 0;
-	int blue = 0;
 	auto add_entry = [&red, &green, &blue](int index) {
 		if (index >= 0 && index < (int)Rule->ColorAdd.size()) {
 			RGBClass const & add = Rule->ColorAdd[index];
@@ -9993,10 +9987,34 @@ ConvertClass * BuildingClass::Tinted_Converter(ConvertClass * converter) const
 		add_entry(Rule->ForceShieldColor);
 	}
 	if ((red == 0 && green == 0 && blue == 0) || Map.Is_Shrouded(Center_Coord())) {
+		red = green = blue = 0;
+		return(false);
+	}
+	// The table's red and blue are 5-bit and green 6-bit; the palettes are 8-bit, so they are scaled up to it.
+	red *= 8;
+	green *= 4;
+	blue *= 8;
+	return(true);
+}
+
+
+/// <summary>
+/// Returns the converter that draws this structure with the colours Effect_Tint adds. A structure
+/// with a Palette= keeps it, tinted.
+/// </summary>
+/// <param name="converter">The converter to use when no colour is added.</param>
+ConvertClass * BuildingClass::Tinted_Converter(ConvertClass * converter) const
+{
+	int red;
+	int green;
+	int blue;
+	if (!Effect_Tint(red, green, blue)) {
 		return(converter);
 	}
-	// The table's red and blue are 5-bit and green 6-bit; the scheme palette is 8-bit, so they are scaled up to it.
-	ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(red * 8, green * 4, blue * 8);
+	if (ConvertClass * custom = Palette_Converter(red, green, blue)) {
+		return(custom);
+	}
+	ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(red, green, blue);
 	return(tinted != NULL ? tinted : converter);
 }
 

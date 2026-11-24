@@ -204,6 +204,24 @@ void ColorScheme::Build_Light_Converters(const PaletteClass & base, const Palett
 
 
 /// <summary>
+/// Adds an amount to the red, green and blue of every entry of a palette, each gun held at 255.
+/// </summary>
+/// <param name="palette">The palette to change.</param>
+/// <param name="red">The amount added to each entry's red, in 8-bit palette units.</param>
+/// <param name="green">The amount added to each entry's green, in 8-bit palette units.</param>
+/// <param name="blue">The amount added to each entry's blue, in 8-bit palette units.</param>
+void Add_To_Palette(PaletteClass & palette, int red, int green, int blue)
+{
+	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
+		RGBClass & color = palette[index];
+		color.Set_Red((unsigned char)std::min(color.Get_Red() + red, 255));
+		color.Set_Green((unsigned char)std::min(color.Get_Green() + green, 255));
+		color.Set_Blue((unsigned char)std::min(color.Get_Blue() + blue, 255));
+	}
+}
+
+
+/// <summary>
 /// Returns the scheme's converter with an amount added to every palette entry. It draws a structure
 /// that an airstrike designator marks, and a unit wearing an Iron Curtain or berserk tint. A converter
 /// is built the first time an amount is asked for and reused after that until Converter is rebuilt.
@@ -223,12 +241,7 @@ ConvertClass * ColorScheme::Designated_Converter(int red, int green, int blue)
 	}
 
 	PaletteClass * tinted = new PaletteClass(Palette);
-	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-		RGBClass & color = (*tinted)[index];
-		color.Set_Red((unsigned char)std::min(color.Get_Red() + red, 255));
-		color.Set_Green((unsigned char)std::min(color.Get_Green() + green, 255));
-		color.Set_Blue((unsigned char)std::min(color.Get_Blue() + blue, 255));
-	}
+	Add_To_Palette(*tinted, red, green, blue);
 
 	int tint_red = 1000;
 	int tint_green = 1000;
