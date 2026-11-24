@@ -1,5 +1,5 @@
 ---
-title: Send slaves back to a free cell beside the deployed miner
+title: Send slaves back to the deployed miner's dock cell
 category: fix
 release: 0.2.0
 targets:
@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Slaves returning to a deployed miner now walk to the free cell nearest its dock and unload once within one cell of the dock, or within two cells if they have stopped. Before, they were sent to the dock cell inside the structure and could stall short of it when the cells around it were crowded, so a computer player's miner delivered no ore for long stretches.
+Slaves returning to a deployed miner walk to its dock cell and unload once they stand on it with no destination left, as in Yuri's Revenge. A slave in its miner's dock cell is no longer scattered out of it while guarding, and it takes the spot nearest its coordinate there even when another slave holds that spot. Before, slaves unloaded from within one or two cells of the dock.

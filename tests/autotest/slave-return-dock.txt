@@ -1,0 +1,16 @@
+; A deployed Slave Miner's slaves return to the dock cell and unload there, as gamemd's SlaveManagerClass::Update
+; (0x6AF6C0, state 4) has them do: a returning slave is sent to the dock cell, unloads once it stands on that cell with no
+; destination left, and is sent again otherwise. The dock is the structure's top-left cell plus (width - 1, height / 2).
+; Two gamemd rules keep a slave in that cell. InfantryClass::Update (0x51BD7F) does not scatter a Guard slave from a
+; building cell that is its own miner's dock, and the walk locomotor's spot choice (0x75C240) takes the spot nearest the
+; slave's coordinate in that cell even when another slave holds it. Without them the slaves wander in and out of the dock and
+; the five of them unload 3 times in 3000 frames; with them they unload 5 times in 1500, 8 in 2000 and 15 in 3100.
+; The player's miner deploys by itself near the ore at 62,38. The "slaves" line at 1500 shows the nodes and each "Slave:" line is one unload.
+; Run: scripts/run_autotest.ps1 -Script "E:/Claude ra2 decomp/src-agent26/tests/autotest/slave-return-dock.txt" -Build agent26 -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST slaves|Slave: |Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 sampleslaves 1500
+41 own SMIN 62 38
+1501 quit
