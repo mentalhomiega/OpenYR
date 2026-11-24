@@ -3915,16 +3915,6 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Does the computer build as it does in a campaign: from the scenario's base plan, at the
-/// plan's cells, with no skirmish power or money interventions?
-/// </summary>
-bool ScenarioClass::Is_Campaign_Base_AI(void) const
-{
-	return(Session.Type == GAME_NORMAL || IsMPAIBaseNodes);
-}
-
-
 /***********************************************************************************************
  * ScenarioClass::Set_Global_To -- Set scenario global to value specified.                     *
  *                                                                                             *

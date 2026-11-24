@@ -370,33 +370,28 @@ test('A chosen start position keeps its number and is claimed before the game pi
 	], 'positions are settled and the spawn house sections read before any team, trigger or object');
 });
 
-test('A house following a map plan builds under the campaign rules', () => {
+test('The computer builds under the campaign rules by game mode alone', () => {
 	const house = source('code/house.cpp');
 
 	assert.match(
 		functionBody(house, 'bool HouseClass::Can_Build_Here(BuildingTypeClass *building, Cell const & cell)'),
-		/if \(Scen->Is_Campaign_Base_AI\(\)\) \{\s*return\(true\);/,
-		'the compactness test passes for a house following a map plan',
+		/if \(Session\.Type == GAME_NORMAL\) \{\s*return\(true\);/,
+		'the compactness test passes in a campaign',
 	);
 	assert.match(
 		functionBody(house, 'int HouseClass::AI_Building(void)'),
-		/if \(!Scen->Is_Campaign_Base_AI\(\) && b->Drain \+ Drain > Power - PowerSurplus/,
-		'a power plant is inserted only for a house not following a map plan',
+		/\n\tif \(b->Drain \+ Drain > Power - PowerSurplus/,
+		'a power plant is inserted in every game mode',
 	);
 	assert.match(
 		functionBody(house, 'int HouseClass::Expert_AI(void)'),
-		/if \(!Scen->Is_Campaign_Base_AI\(\)\) \{/,
-		'money and fire-sale interventions run only for a house not following a map plan',
+		/if \(Session\.Type != GAME_NORMAL\) \{/,
+		'money and fire-sale interventions run outside a campaign',
 	);
 	assert.match(
 		functionBody(house, 'void HouseClass::Invalidate_Base_Node_Position(BuildingClass * building)'),
-		/building->Class->IsBaseDefense && !Scen->Is_Campaign_Base_AI\(\)/,
-		'a base defense node is retired only for a house not following a map plan',
-	);
-	assert.match(
-		functionBody(source('code/scenario.cpp'), 'bool ScenarioClass::Is_Campaign_Base_AI(void) const'),
-		/Session\.Type == GAME_NORMAL \|\| IsMPAIBaseNodes/,
-		'the campaign rules apply in a campaign or when the map asks for them',
+		/building->Class->IsBaseDefense && Session\.Type != GAME_NORMAL/,
+		'a base defense node is retired outside a campaign',
 	);
 });
 
