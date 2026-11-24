@@ -65,10 +65,12 @@ An aircraft attacks in one of three styles, chosen by its primary weapon and its
 | Style | Applies when | What the aircraft does |
 | --- | --- | --- |
 | Strafing run | The weapon's projectile has no guidance (`ROT=1` or less) and is visible | Flies straight at the target and fires the weapon's [`Strafing.Shots`](/keys/strafing.shots/) in a row, five by default; the pass uses one point of [`Ammo`](/keys/ammo/) |
-| Fighter pass | The projectile is guided and the type sets [`Fighter=yes`](/keys/fighter/) | Heads for a firing position, fires as soon as it is in range and facing the target, flies on without turning for the weapon's `ROF` delay, then picks its next position or returns to land |
+| Fighter pass | The projectile is guided and the type sets [`Fighter=yes`](/keys/fighter/) | Heads for a firing position, fires as soon as it is in range, at any heading, flies on without turning for the weapon's `ROF` delay, then picks its next position or returns to land |
 | Hover attack | The projectile is guided and the type is not a fighter | Flies to a firing position, stops, turns to face the target and fires from a hover |
 
 A hover attack and a fighter pass both start from a firing position chosen on a ring around the target, inside the weapon's range, at one of the two positions nearest the aircraft.
+
+An aircraft that is not a fighter also has to be turned to within about 11 degrees of its target before it fires. Every other reason an aircraft cannot fire, such as reloading or a target out of range, is judged first, so it takes precedence over a wrong heading.
 
 ## Landing at a structure
 

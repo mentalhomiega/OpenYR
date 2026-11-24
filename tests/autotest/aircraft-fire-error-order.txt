@@ -1,0 +1,20 @@
+; AircraftClass::GetFireError (0x41A9E0) runs TechnoClass::GetFireError first, then the empty-cargo test (error 1), then the facing test,
+; which it skips when the aircraft is a fighter (IFlyControl::Is_Fighter, vtable offset 0x1C of the subobject at +0x6C0). The facing limit
+; is 0x800. Before the fix the facing test came first and applied to fighters too.
+; The player's aircraft stand on the ground facing north; each target stands south of them. The overlay makes the Orca a fighter and the
+; Black Eagle an ordinary aircraft.
+; Expected (after): Orca (fighter) at an enemy 3 cells behind: fire 0. Black Eagle at an enemy 3 cells behind: fire 2 (FIRE_FACING); at an
+; enemy 25 cells behind, out of range: fire 8 (FIRE_RANGE, the base error). Before the fix: 2, 2, 2.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/aircraft-fire-error-order.txt -Seconds 90 -Filter "AUTOTEST   canfire|Exception"
+5 rules aircraft-fire-error-order.ini
+30 command CenterBase
+35 reveal
+40 own ORCA 60 38
+41 own BEAG 66 38
+42 enemy E1 60 41
+43 enemy E1 66 41
+44 enemy E1 66 63
+70 canfire ORCA 60 41
+70 canfire BEAG 66 41
+70 canfire BEAG 66 63
+80 quit

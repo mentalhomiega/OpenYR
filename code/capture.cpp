@@ -442,7 +442,8 @@ void CaptureManagerClass::Decide_Unit_Fate(TechnoClass * unit) const
 	switch (decision) {
 		case 1:
 			if (!otherhouse && Owner->Is_Foot() && ((FootClass *)Owner)->Team != NULL) {
-				done = ((FootClass *)Owner)->Team->Add(foot);
+				done = ((FootClass *)Owner)->Team->Add(foot, true);
+				AUTOTEST_LOG("mind control %s joins the team of %s: %d\n", unit->TClass->Name(), Owner->TClass->Name(), (int)done);
 			}
 			break;
 		case 2:

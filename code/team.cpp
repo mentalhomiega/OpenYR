@@ -979,6 +979,9 @@ bool TeamClass::Recalc_Strength(void)
  *                                                                                             *
  * INPUT:   obj      -- Pointer to the object that is to be assigned to this team.             *
  *                                                                                             *
+ *          force    -- Skip the task force membership and quantity tests and leave the       *
+ *                      per-type count alone (the mind control capture join).                  *
+ *                                                                                             *
  * OUTPUT:  bool; Was the unit added to the team?                                              *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -988,12 +991,12 @@ bool TeamClass::Recalc_Strength(void)
  *   01/02/1995 JLB : Initiation flag setup.                                                   *
  *   08/06/1995 JLB : Allows member stealing from lesser priority teams.                       *
  *=============================================================================================*/
-bool TeamClass::Add(FootClass * obj)
+bool TeamClass::Add(FootClass * obj, bool force)
 {
 	if (!obj) return(false);
 
 	int typeindex;
-	if (!Can_Add(obj, typeindex)) return(false);
+	if (!Can_Add(obj, typeindex, force)) return(false);
 
 	/*
 	**	All is ok to add the object to the team, but if the object is already part of
@@ -1006,7 +1009,9 @@ bool TeamClass::Add(FootClass * obj)
 	/*
 	**	Actually add the object to the team.
 	*/
-	Quantity[typeindex]++;
+	if (!force) {
+		Quantity[typeindex]++;
+	}
 	obj->IsInitiated = (Member == NULL);
 	obj->Member = Member;
 	Member = obj;
@@ -1058,7 +1063,7 @@ bool TeamClass::Add(FootClass * obj)
  * HISTORY:                                                                                    *
  *   02/27/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
+bool TeamClass::Can_Add(FootClass * obj, int & typeindex, bool force) const
 {
 	/*
 	**	Trying to add the team member to itself is an error condition.
@@ -1120,7 +1125,7 @@ bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
 	}
 
 	TaskForceClass *tptr = Class->TaskForce;
-	if (typeindex == tptr->ClassCount) {
+	if (typeindex == tptr->ClassCount && !force) {
 		return(false);
 	}
 
@@ -1128,7 +1133,7 @@ bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
 	**	If the team is already full of this type, then adding the object is not allowed.
 	**	Return with a failure flag in this case.
 	*/
-	if (Quantity[typeindex] >= tptr->Members[typeindex].Quantity) {
+	if (!force && Quantity[typeindex] >= tptr->Members[typeindex].Quantity) {
 		return(false);
 	}
 	return(true);
