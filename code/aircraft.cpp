@@ -3603,8 +3603,11 @@ bool AircraftClass::Can_Player_Fire(void) const
  *=============================================================================================*/
 FireErrorType AircraftClass::Can_Fire(AbstractClass * target, int which) const
 {
-	if (IonStormClass::Is_Ion_Storm_Active()) {
-		return(FIRE_CANT);
+	// The base tests come first (AircraftClass::GetFireError, 0x41A9E0), so a cloaked aircraft out of range
+	// reports FIRE_CLOAKED, and the strafing run treats that as a move toward the target.
+	FireErrorType const fire = BASECLASS::Can_Fire(target, which);
+	if (fire != FIRE_OK) {
+		return(fire);
 	}
 
 	if (Passenger && !Cargo.Is_Something_Attached()) {
@@ -3614,20 +3617,16 @@ FireErrorType AircraftClass::Can_Fire(AbstractClass * target, int which) const
 	/*
 	**	Double check to make sure that the facing is roughly toward
 	**	the target. If the difference is too great, then firing is
-	**	temporarily postponed.
+	**	temporarily postponed. A fighter fires at any angle.
 	*/
-	DirType dir = SecondaryFacing.Current();
-	dir -= Direction(target);
-	if (DIR_STEP_32 < dir) {
-		return(FIRE_FACING);
+	if (!Class->IsFighter) {
+		DirType dir = SecondaryFacing.Current();
+		dir -= Direction(target);
+		if (DIR_STEP_32 < dir) {
+			return(FIRE_FACING);
+		}
 	}
-
-	// An aircraft out of range stays FIRE_RANGE when cloaked, because its strafing runs approach on that result.
-	FireErrorType const fire = BASECLASS::Can_Fire(target, which);
-	if (fire == FIRE_CLOAKED && !In_Range(target, which)) {
-		return(FIRE_RANGE);
-	}
-	return(fire);
+	return(FIRE_OK);
 }
 
 
