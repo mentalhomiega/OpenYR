@@ -1,0 +1,32 @@
+; Weapons, projectiles and warheads first named by rule keys read before and after their type lists. The mod
+; late-types-rules gives each type a section. gamemd (RulesClass::Read_File, 0x668A40, then LoadTypesFromINI, 0x66A210)
+; reads the weapon list, the projectile list and the warhead list once each, in that order, after [General] and the
+; object types, so a type those passes create or have already passed is read only when it was created earlier. A type
+; named by a key read after them keeps its defaults, except a warhead created before [SpecialWeapons] is read, which
+; reads every warhead again.
+; Read (damage 41 to 47, projectile ROT 7, warheads spread 2 to 4): ReadPodGun (DropPodWeapon), ReadDeathGun (DeathWeapon of
+; a unit), ReadEliteGun (ElitePrimary), ReadOccupyGun and ReadEliteOccupyGun (OccupyWeapon, EliteOccupyWeapon), ReadSuperGun
+; (WeaponType of a superweapon), ReadCarrierGun (Primary), ReadBullet, ReadWarhead, ReadFlameWarhead and ReadPulseWarhead.
+; Left at their defaults: LateDeathGun ([CombatDamage] DeathWeapon), LateAirburstGun and LateShrapnelGun (named by
+; ReadBullet, which is read after the weapons) and LateNukeBullet ([SpecialWeapons] NukeProjectile). A weapon left unread
+; has damage 0 and takes the default projectile and warhead (gamemd would crash when it fired).
+; With the mod late-types-on-rules first, ReadLateTypes=yes reads the four late types as well: damage 51, 52 and 53, ROT 9.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Mods src-agent27/tests/autotest/late-types-rules -Script src-agent27/tests/autotest/late-types.txt -Seconds 60 -Filter "typedump (weapon|projectile) (Read|Late)|typedump warhead (Read|Late)|AUTOTEST quit|Exception"
+; Run with the switch: pass -Mods src-agent27/tests/autotest/late-types-on-rules,src-agent27/tests/autotest/late-types-rules
+30 command CenterBase
+35 typedump ReadPodGun
+35 typedump ReadDeathGun
+35 typedump ReadEliteGun
+35 typedump ReadOccupyGun
+35 typedump ReadEliteOccupyGun
+35 typedump ReadSuperGun
+35 typedump ReadCarrierGun
+35 typedump ReadBullet
+35 typedump ReadWarhead
+35 typedump ReadFlameWarhead
+35 typedump ReadPulseWarhead
+35 typedump LateDeathGun
+35 typedump LateAirburstGun
+35 typedump LateShrapnelGun
+35 typedump LateNukeBullet
+40 quit
