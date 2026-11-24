@@ -1,0 +1,22 @@
+; A soldier in a death sequence cannot fire. gamemd's InfantryClass::GetFireError (0x51C8B0) returns error 6 (FIRE_CANT) first while the
+; sequence is one of Die1 to Die5, WetDie1, WetDie2 or the air death sequences. A rifleman (E1, NotHuman=yes in the overlay infantry-death-no-fire.ini, so that its own death sequence plays) faces a neutral civilian (CIV1) three
+; cells west with a conscript (E2) beside it. The E1 takes a hit of 5000 points of AP at frame 110 and plays its death sequence.
+; Expected: the canfire line at frame 100 shows fire 0. From frame 111 the E1 is still listed with strength 0 and every canfire line
+; shows fire 6. Without the check the dying soldier reads fire 0.
+; Run: scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/infantry-death-no-fire.txt -Map XMP29U2.MAP -Seconds 120 -Filter "AUTOTEST   (canfire|where)|Exception"
+10 rules infantry-death-no-fire.ini
+10 command CenterBase
+30 reveal
+40 own E1 60 20
+41 own E2 61 22
+42 neutral CIV1 57 20
+50 view 59 20
+55 face 192 60 20
+100 canfire E1 57 20
+110 hit E1:AP 5000
+111 canfire E1 57 20
+111 where E1
+113 canfire E1 57 20
+116 canfire E1 57 20
+120 canfire E1 57 20
+130 quit
