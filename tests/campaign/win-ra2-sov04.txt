@@ -1,6 +1,7 @@
 ; Campaign win check for Soviet 4 (Red Alert 2). Twenty-five Apocalypse tanks and fourteen Dreadnoughts (grantunit) stand in for the army and fleet a player would build;
 ; the tanks stand on the beach at the Allied landing zones (121,40 to 123,56) and the Dreadnoughts in the channel the landing craft sail. The tanks sink the Allied fleet's landing craft and kill the landing parties as they come ashore without orders; a Dreadnought (CanPassiveAquire=no, and a spawner never returns fire, gamemd's TechnoClass::CanRetaliateToAttacker 0x7087C0) fires only on order, so strikeobj sends them at the destroyers from frame 12400 on, and the win trigger fires once every Allied unit and structure is dead (Win Timer, enabled when the fleet arrives).
-; Expected: "AUTOTEST game over frame N: won" (frame 16261 in the last run).
+; A lone Allied soldier left on the shore at 96,133 shoots at a Dreadnought that never fires back unordered, so strikeobj sends the Dreadnoughts at it from frame 16000 on.
+; Expected: "AUTOTEST game over frame N: won" (frame 16517 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov04.txt -Campaign -Map SOV04S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 450 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui briefing step clicks through the briefing page, waiting for it to show; the mission needs a window of at least 800x600.
 0 requirera2
@@ -60,3 +61,14 @@ ui briefing
 15400 strikeobj DEST 120 90 80 naval
 15700 strikeobj DEST 120 90 80 naval
 16000 strikeobj DEST 120 90 80 naval
+16000 strikeobj E1 96 133 8 naval DRED
+16300 strikeobj E1 96 133 8 naval DRED
+16600 strikeobj E1 96 133 8 naval DRED
+16900 strikeobj E1 96 133 8 naval DRED
+17200 strikeobj E1 96 133 8 naval DRED
+17500 strikeobj E1 96 133 8 naval DRED
+17800 strikeobj E1 96 133 8 naval DRED
+18100 strikeobj E1 96 133 8 naval DRED
+18400 strikeobj E1 96 133 8 naval DRED
+18700 strikeobj E1 96 133 8 naval DRED
+19000 strikeobj E1 96 133 8 naval DRED
