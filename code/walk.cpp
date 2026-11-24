@@ -24,12 +24,14 @@
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
+#include "infantry.h"
 #include "inline.h"
 #include "overtype.h"
 #include "pathahead.h"
 #include "rules.h"
 #include "saveload.h"
 #include "savestream.h"
+#include "slaveman.h"
 #include "tactical.h"
 #include "tube.h"
 #include "unit.h"
@@ -591,6 +593,13 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 			if (building != NULL && Map[coord].Cell_Building() == building) {
 				any_spot = true;
 			}
+		}
+
+		// A slave walking into its miner's dock cell takes the spot nearest its coordinate whether or not another occupies it (0x75C240).
+		InfantryClass * slave = dynamic_cast<InfantryClass *>(LinkedTo);
+		if (slave != NULL && slave->SlaveOwner != NULL && slave->SlaveOwner->SlaveManager.has_value()
+			&& Map[coord].Cell_Techno() == slave->SlaveOwner && slave->SlaveOwner->SlaveManager->Is_Dock_Cell_For(slave, &Map[coord])) {
+			any_spot = true;
 		}
 
 		bool isbridge = Map[crd].IsUnderBridge && LinkedTo->PositionCoord.Z > 3 * LEVEL_LEPTON_H + Map.Get_Height_GL(crd);

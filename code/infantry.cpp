@@ -1807,6 +1807,11 @@ void InfantryClass::AI(void)
 					}
 				}
 
+				// A slave standing in its deployed miner's dock cell stays there (InfantryClass::Update, 0x51BD7F).
+				if (scatter && SlaveOwner != NULL && building == SlaveOwner && SlaveOwner->SlaveManager.has_value() && SlaveOwner->SlaveManager->Is_Dock_Cell_For(this, Get_Cell_Ptr())) {
+					scatter = false;
+				}
+
 				if (scatter) {
 					Scatter(COORD_NONE, true, true);
 				}

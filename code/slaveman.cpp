@@ -157,27 +157,12 @@ void SlaveManagerClass::Go_Idle(void)
 }
 
 
-/// <summary>
-/// The cell a returning slave walks to: the dock cell of a mobile miner, or the free cell nearest
-/// to the dock of a deployed one, as the dock lies inside the miner's footprint.
-/// </summary>
-Cell SlaveManagerClass::Home_Cell(void) const
-{
-	Cell const dock = Dock_Cell();
-	if (Owner->RTTI != RTTI_BUILDING) {
-		return(dock);
-	}
-	Cell const nearby = Map.Nearby_Location(dock, SPEED_FOOT, Map.Get_Cell_Zone(dock, MZONE_NORMAL), MZONE_NORMAL, false, Point2D(1, 1));
-	return(nearby != CELL_NONE ? nearby : dock);
-}
-
-
 void SlaveManagerClass::Send_Home(NodeType & node) const
 {
 	node.Status = NODE_RETURNING;
 	node.Start_Timer(0);
 	node.Slave->Assign_Target(NULL);
-	node.Slave->Assign_Destination(&Map[Home_Cell()]);
+	node.Slave->Assign_Destination(&Map[Dock_Cell()]);
 	node.Slave->Assign_Mission(MISSION_MOVE);
 }
 
@@ -361,10 +346,8 @@ void SlaveManagerClass::Node_Returning(NodeType & node)
 {
 	InfantryClass * slave = node.Slave;
 	Cell const dock = Dock_Cell();
-	Cell const here = slave->Get_Cell();
-	int const distance = std::max(std::abs(here.X - dock.X), std::abs(here.Y - dock.Y));
-	// A slave that stops within two cells of a dock crowded by its mates has come as close as it can.
-	if (distance <= 1 || (slave->NavCom == NULL && distance <= 2 && Frame - node.Timer.Start >= 30)) {
+	// A slave unloads only once it stands on the dock cell with no destination left.
+	if (slave->Get_Cell() == dock && slave->NavCom == NULL) {
 		Unload(node);
 		// Limbo detaches the slave from this manager as if it had died, so keep it.
 		slave->Limbo();
@@ -378,13 +361,12 @@ void SlaveManagerClass::Node_Returning(NodeType & node)
 	bool strayed = false;
 	if (slave->NavCom != NULL) {
 		Cell const there = slave->NavCom->Center_Coord().As_Cell();
-		Cell const home = Home_Cell();
-		int const dx = there.X - home.X;
-		int const dy = there.Y - home.Y;
+		int const dx = there.X - dock.X;
+		int const dy = there.Y - dock.Y;
 		strayed = Rule->ApproachTargetResetMultiplier < Gamemd_Length_2D(dx, dy);
 	}
 	if (slave->NavCom == NULL || strayed) {
-		slave->Assign_Destination(&Map[Home_Cell()]);
+		slave->Assign_Destination(&Map[Dock_Cell()]);
 		slave->Assign_Mission(MISSION_MOVE);
 	}
 }
