@@ -266,9 +266,9 @@ The first position looked at lies `AIBaseSpacing` cells beyond the edge cell, on
 
 ### The compactness test
 
-The compactness test always passes for a house following a map plan, so its base spreads wherever the other tests allow.
+The compactness test always passes in a campaign game, so a campaign base spreads wherever the other tests allow.
 
-For every other house, the test requires a cell this house has reserved near the candidate position. The area checked is the footprint grown by `AIBaseSpacing`, plus a ring outside it. The ring is one cell wide on the north and west sides and `AIBaseSpacing` plus one cells wide on the south and east. This keeps a skirmish or multiplayer base joined to what it already holds.
+In a skirmish or multiplayer game the test applies to every house, including one following a map plan. It requires a cell this house has reserved near the candidate position. The area checked is the footprint grown by `AIBaseSpacing`, plus a ring outside it. The ring is one cell wide on the north and west sides and `AIBaseSpacing` plus one cells wide on the south and east. This keeps a skirmish or multiplayer base joined to what it already holds.
 
 ### Clearing the site
 
@@ -387,7 +387,7 @@ The plant comes from the acted side. When the country the house acts as sets [`A
 
 With no plant to insert, the node is built as it stands.
 
-A house that is not following a map plan also sells its base when it cannot make money. A house can make money in these cases, checked in this order:
+In a skirmish or multiplayer game, a house also sells its base when it cannot make money, whether or not it follows a map plan. A house can make money in these cases, checked in this order:
 
 - It owns a [`ResourceDestination`](/keys/resourcedestination/) object and a [`ResourceGatherer`](/keys/resourcegatherer/) object.
 - Its country lists no [`HarvesterUnit`](/keys/harvesterunit/), a refinery can be built, and it owns a gatherer. Or it owns a construction yard or a [`BaseUnit`](/keys/baseunit/), and its money covers a refinery.

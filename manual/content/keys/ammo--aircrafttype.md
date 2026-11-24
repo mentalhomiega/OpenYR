@@ -9,7 +9,7 @@ when_omitted:
   value: "-1"
 ---
 
-Each object starts with a full pool of shots, unless its type sets [`InitialAmmo`](/keys/initialammo/). Each shot spends the rounds its weapon's [`Ammo`](#scope-weapontype) names, one by default, and an object with fewer rounds than its weapon needs cannot fire that weapon. An aircraft always spends one round a shot. A pool that starts below zero never reaches zero, so the default of `-1` gives an unlimited supply. `Ammo=0` leaves the object unable to fire at all.
+Each object starts with a full pool of shots, unless its type sets [`InitialAmmo`](/keys/initialammo/). Each shot spends the rounds its weapon's [`Ammo`](/keys/ammo/#scope-weapontype) names, one by default, and an object with fewer rounds than its weapon needs cannot fire that weapon. An aircraft always spends one round a shot. A pool that starts below zero never reaches zero, so the default of `-1` gives an unlimited supply. `Ammo=0` leaves the object unable to fire at all.
 
 How an empty pool refills depends on the object:
 
