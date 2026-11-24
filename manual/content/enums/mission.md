@@ -14,7 +14,7 @@ values:
   - { constant: MISSION_MOVE, value: 2, input: "2", meaning: "Move toward the assigned destination." }
   - { constant: MISSION_QMOVE, value: 3, input: "3", meaning: "Rewritten to Move before the mission is queued." }
   - { constant: MISSION_RETREAT, value: 4, input: "4", meaning: "Head for a map edge. Infantry and vehicles prefer the edge their team came from; an aircraft flies to its owner's edge and is removed once off the map." }
-  - { constant: MISSION_GUARD, value: 5, input: "5", meaning: "Hold position and guard." }
+  - { constant: MISSION_GUARD, value: 5, input: "5", meaning: "Hold position and guard. An infantryman standing in a structure's cell on this mission or on Guard Area walks out of it. It stays in the cell of an invisible structure, an open gate, a laser fence segment on frame 8 or 12 of its animation, and a Firestorm wall while its owner's firestorm is off." }
   - { constant: MISSION_STICKY, value: 6, input: "6", meaning: "Guard in place, dropping a target that moves out of range instead of chasing it. A vehicle on this mission never scatters. An infantryman, vehicle or aircraft standing still on this mission ignores a mission that a script or trigger gives it later." }
   - { constant: MISSION_ENTER, value: 7, input: "7", meaning: "Enter another object cooperatively." }
   - { constant: MISSION_CAPTURE, value: 8, input: "8", meaning: "Enter a target to capture it." }

@@ -1765,19 +1765,8 @@ void InfantryClass::AI(void)
 
 	// Only a death sequence keeps a dead soldier at zero strength. gamemd's list is Die1 to Die5, WetDie1, WetDie2
 	// and the air death sequences (InfantryClass::Update, 0x51BAB0); any other sequence resets the strength to 1.
-	if (Strength <= 0) {
-		if (Doing != DO_GUN_DEATH &&
-			Doing != DO_EXPLOSION_DEATH &&
-			Doing != DO_EXPLOSION2_DEATH &&
-			Doing != DO_GRENADE_DEATH &&
-			Doing != DO_FIRE_DEATH &&
-			Doing != DO_WET_DIE1 &&
-			Doing != DO_WET_DIE2 &&
-			Doing != DO_AIR_DEATH_START &&
-			Doing != DO_AIR_DEATH_FALLING &&
-			Doing != DO_AIR_DEATH_FINISH) {
-			Strength = 1;
-		}
+	if (Strength <= 0 && !In_Death_Sequence()) {
+		Strength = 1;
 	}
 
 	BASECLASS::AI();
@@ -1789,7 +1778,7 @@ void InfantryClass::AI(void)
 	// Soldiers regain ammunition as vehicles do, which stock gamemd never lets them (Ares bug fix).
 	Reload_Ammunition();
 
-	if (Mission == MISSION_GUARD) {
+	if (!IsInLimbo && (Mission == MISSION_GUARD || Mission == MISSION_GUARD_AREA)) {
 		BuildingClass *building = Map[(Coord const &)PositionCoord].Cell_Building();
 		if (building != NULL) {
 
@@ -2360,6 +2349,11 @@ std::optional<MoveType> InfantryClass::Occupant_Verdict(ObjectClass * obj, Techn
  *=============================================================================================*/
 FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 {
+	// A soldier in a death sequence cannot fire (InfantryClass::GetFireError, 0x51C8B0, error 6).
+	if (In_Death_Sequence()) {
+		return(FIRE_CANT);
+	}
+
 	// A healer refuses a patient it cannot mend and one that is already whole, so that it
 	// does not stand over a finished target healing it forever.
 	if (Combat_Damage() < 0) {
@@ -2406,6 +2400,28 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	return(FIRE_OK);
+}
+
+
+/// <summary>
+/// Is the soldier playing one of the sequences that end in its death?
+/// </summary>
+bool InfantryClass::In_Death_Sequence(void) const
+{
+	switch (Doing) {
+		case DO_GUN_DEATH:
+		case DO_EXPLOSION_DEATH:
+		case DO_EXPLOSION2_DEATH:
+		case DO_GRENADE_DEATH:
+		case DO_FIRE_DEATH:
+		case DO_WET_DIE1:
+		case DO_WET_DIE2:
+		case DO_AIR_DEATH_START:
+		case DO_AIR_DEATH_FALLING:
+		case DO_AIR_DEATH_FINISH:
+			return(true);
+	}
+	return(false);
 }
 
 

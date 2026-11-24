@@ -266,6 +266,7 @@ class InfantryClass : public FootClass
 		virtual void Scatter(Coord const & threat, bool forced=false, bool nokidding=false) override;
 		virtual Coord Turret_Coord(int which=0, TPoint3D<int> base=TPoint3D<int>(0, 0, 0)) const override;
 		virtual bool Is_Immobilized(void) const override;
+		bool In_Death_Sequence(void) const;
 		virtual int Current_Speed(void) override;
 		virtual void Approach_Target(void) override;
 		virtual void Stop_Movement_Animation(void) override;
