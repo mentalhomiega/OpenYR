@@ -11685,7 +11685,6 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageFireAnims);
 	stream.Serialize(IsRequiresDamageFires);
 	stream.Serialize(GapShroudedHouses);
-	stream.Serialize(CloakFieldCells);
 	stream.Serialize(IsSensing);
 	stream.Serialize(IsDetectingDisguise);
 	stream.Serialize(TranslucencyLevel);
@@ -11937,17 +11936,28 @@ void Cloak_Cell_Occupiers(CellClass * cellptr)
 
 
 /// <summary>
-/// Marks a cell of the cloaking grid as covered by this generator's field, or not, and counts
-/// the change on the cell. A cell already in that state is left alone.
+/// Sends every other settled cloak generator within twice this one's reach back to growing its field.
+/// A collapsing field clears the cloak mark on cells another generator also covers, so the neighbour redraws its field
+/// from the centre (0x454DB0).
 /// </summary>
-/// <returns>bool; Did the house's cloak on the cell switch on or off?</returns>
-bool BuildingClass::Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover)
+void BuildingClass::Restart_Overlapping_Cloak_Generators(Cell const & center) const
 {
-	if ((CloakFieldCells[index] != 0) == cover) {
-		return(false);
+	int const reach = (Class->CloakRadiusInCells + 2) * 2;
+	for (int i = 0; i < Buildings.Count(); i++) {
+		BuildingClass * other = Buildings[i];
+		if (!other->IsActive || other == this || !other->Class->IsCloakGenerator || !other->Is_Powered_On() || other->CloakGeneratorState != CLOAK_SETTLED) {
+			continue;
+		}
+		Cell const cell = other->Center_Coord().As_Cell();
+		int const dx = center.X - cell.X;
+		int const dy = center.Y - cell.Y;
+		if (dx * dx + dy * dy < reach * reach) {
+			other->Enable_Cloak_Generator();
+			if (other->CurrentCloakRadius != 0) {
+				other->CurrentCloakRadius--;
+			}
+		}
 	}
-	CloakFieldCells[index] = cover ? 1 : 0;
-	return(cover ? cellptr->Add_Cloak(House) : cellptr->Remove_Cloak(House));
 }
 
 
@@ -12152,7 +12162,6 @@ void BuildingClass::Cloaking_AI(bool fast)
 		BSurface * cloaking_surface = CloakingSurface;
 		int width = cloaking_surface->Get_Width();
 		int width_half = width / 2;
-		CloakFieldCells.resize(width * width);
 
 		if (CloakGeneratorState > 0) {
 			if (CurrentCloakRadius == Class->CloakRadiusInCells) {
@@ -12176,7 +12185,7 @@ void BuildingClass::Cloaking_AI(bool fast)
 						if (*data++ != 0) {
 							Cell current = origin + Cell(x, y);
 							CellClass * cellptr = &Map[current];
-							if (Cover_Cloak_Cell(y * width + x, cellptr, true)) {
+							if (cellptr->Add_Cloak(House)) {
 								Cloak_Cell_Occupiers(cellptr);
 								BuildingClass * building = cellptr->Cell_Building();
 								if (building != NULL && building->House->HeapID == houseid) {
@@ -12210,7 +12219,7 @@ void BuildingClass::Cloaking_AI(bool fast)
 					if (*data++ == 0) {
 						Cell current = origin + Cell(x, y);
 						CellClass * cellptr = &Map[current];
-						if (Cover_Cloak_Cell(y * width + x, cellptr, false)) {
+						if (cellptr->Remove_Cloak(House)) {
 							Cloak_Cell_Occupiers(cellptr);
 							BuildingClass * building = cellptr->Cell_Building();
 							if (building != NULL && building->House->HeapID == houseid) {
@@ -12222,6 +12231,9 @@ void BuildingClass::Cloaking_AI(bool fast)
 						}
 					}
 				}
+			}
+			if (CurrentCloakRadius == 0) {
+				Restart_Overlapping_Cloak_Generators(center);
 			}
 		}
 	}

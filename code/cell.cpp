@@ -6141,26 +6141,26 @@ bool CellClass::Is_Sensed(HouseClass const * house) const
 
 
 /// <summary>
-/// Counts one more cloak generator of the house specified over this cell.
+/// Marks this cell as cloaked by the house specified. Generators of one house overlapping on the cell share the mark.
 /// </summary>
 /// <returns>bool; Was the cell not cloaked by that house before?</returns>
 bool CellClass::Add_Cloak(HouseClass const * house)
 {
-	return(++CloakCount[house] == 1);
+	bool const was_clear = CloakCount[house] == 0;
+	CloakCount[house] = 1;
+	return(was_clear);
 }
 
 
 /// <summary>
-/// Counts one cloak generator of the house specified off this cell.
+/// Clears the house's cloak mark on this cell, whichever generator set it.
 /// </summary>
-/// <returns>bool; Is the cell no longer cloaked by that house?</returns>
+/// <returns>bool; Was the cell cloaked by that house before?</returns>
 bool CellClass::Remove_Cloak(HouseClass const * house)
 {
-	assert(CloakCount[house] > 0);
-	if (CloakCount[house] == 0) {
-		return(false);
-	}
-	return(--CloakCount[house] == 0);
+	bool const was_set = CloakCount[house] != 0;
+	CloakCount[house] = 0;
+	return(was_set);
 }
 
 

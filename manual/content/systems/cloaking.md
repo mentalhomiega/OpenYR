@@ -49,6 +49,8 @@ Cloakable=yes          ; the vehicle can hide by itself
 CloakingSpeed=5        ; how many frames it spends on each fade stage
 ```
 
+A cloaking field grows one cell of radius at a time and collapses the same way. A collapsing field removes the cloak from every cell it reached, including cells another generator of the house also covers. When the collapse ends, each other powered generator of the house within two times the field radius plus 4 cells and with a finished field regrows its field from its centre, so the shared cells are cloaked again after a short gap.
+
 ## Hiding an object
 
 ### The four states
