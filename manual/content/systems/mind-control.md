@@ -122,7 +122,7 @@ The computer rolls a number from 1 to 100 and adds the weights in order until th
 4. hunt;
 5. do nothing.
 
-If the weights add up to less than the roll, or the roll is not reached within six weights, the unit is left as it is. Otherwise, if the firer is a member of a team whose [`MindControlDecision`](/keys/mindcontroldecision/) is not `0`, that value replaces the choice. The unit joins the firer's team only when it now belongs to the firer's house and the firer is in a team. When the choice cannot be carried out, or is any value other than 1 to 5, the unit hunts.
+If the weights add up to less than the roll, or the roll is not reached within six weights, the unit is left as it is. Otherwise, if the firer is a member of a team whose [`MindControlDecision`](/keys/mindcontroldecision/) is not `0`, that value replaces the choice. The unit joins the firer's team only when it now belongs to the firer's house and the firer is in a team. It joins even when the team's task force does not list its type or already has the quantity it asks for, and it is not counted against the task force. When the choice cannot be carried out, or is any value other than 1 to 5, the unit hunts.
 
 ```ini title="rulesmd.ini"
 [General]
