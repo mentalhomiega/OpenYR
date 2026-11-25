@@ -3,8 +3,9 @@
 ; The test covers the target, the destination of an object with no target, and a destination far from the sensor. A sensor of the
 ; player's ally or of the enemy itself never shows the order.
 ; A Yuri Psychic Sensor (NAPSIS) stands at 60,40 beside its power plant, and a GI stands at 63,40. The enemy Rhino (HTNK) at 82,40 is
-; ordered to attack the GI, the enemy Grizzly (MTNK) at 82,44 to move to 62,44 beside the sensor, and the enemy Conscript (E2) at 82,48 to
-; move to 110,48, far from it.
+; ordered to attack the GI, the enemy Grizzly (MTNK) at 82,44 to move to 62,44 beside the sensor, and the enemy Conscript (E2) at 82,52 to
+; move to 110,52, far from it. The Conscript stands clear of the 4x4 building CASTL02 (80,47 to 83,50): a soldier on Area
+; Guard inside a structure's cell scatters out of it (InfantryClass::Update, 0x51BAB0).
 ; Expected: seen 1 for the Rhino (target), seen 1 for the Grizzly (destination only), seen 0 for the Conscript. Before the order is given
 ; (frame 50) all three show seen 0.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/psychic-sensor-orders.txt -Seconds 120 -Filter "AUTOTEST   psychic|Exception"
@@ -15,13 +16,13 @@
 42 own E1 63 40
 43 enemy HTNK 82 40
 44 enemy MTNK 82 44
-45 enemy E2 82 48
+45 enemy E2 82 52
 50 psychic HTNK
 50 psychic MTNK
 50 psychic E2
 60 enemystrike HTNK 63 40
 61 enemymove MTNK 62 44
-62 enemymove E2 110 48
+62 enemymove E2 110 52
 70 psychic HTNK
 70 psychic MTNK
 70 psychic E2
