@@ -22,6 +22,9 @@
 # runs of one Game.exe take turns, and at most four games run at once on the machine. Only the
 # PIDs this runner started are stopped.
 #
+# Each port the run uses is held by a machine-wide lock. When no port parameter is given, a run whose
+# default ports are locked or bound by another program moves all of its ports up by 100, up to 15 times.
+#
 # -SpawnStyle CnCNet writes each launch file the way the CnCNet client does, as far as its
 # WriteSpawnIni code is known (see New-CnCNetSpawnIni for the placeholders). The copies then get
 # only the client's -SPAWN plus the harness switches, and the sync log comes from RA2MD.INI.
@@ -34,7 +37,8 @@
 # address, because the engine ignores BindAddress there; the runner's listing shows that address.
 #
 # Exit codes: 0 both sides in sync over the common ticks; 3 a desync was reported or the check
-# values differ; 4 the match produced no common ticks; 1 the runner itself could not start.
+# values differ; 4 the match produced no common ticks; 1 the runner itself could not start, or a copy
+# could not bind its port (RESULT: PORT IN USE).
 param(
     [int]$Seconds = 120,
     [string]$Map = 'XMP29U2.MAP',
@@ -80,6 +84,9 @@ param(
     [ValidateSet('Runner', 'CnCNet')][string]$SpawnStyle = 'Runner',
     # The in-game interface both copies run, as [Options] InterfaceStyle. Modern is the game's default from Beta 24.
     [ValidateSet('Classic', 'Modern')][string]$InterfaceStyle = 'Classic',
+    # Writes HudFramework=yes into both copies' RA2MD.INI, so the HUD documents and, in the modern style, the radar at
+    # screen resolution run during the match.
+    [switch]$HudFramework,
     # Routes both copies through a local tunnel: one bridge port per copy, and the relay that
     # scripts/cncnet_tunnel_relay.py runs on RelayPort. The copies then name each other by tunnel
     # number, as the client's V3 tunnel does. -LatencyMs, -JitterMs and -LossPercent apply to the relay hop.
@@ -206,6 +213,42 @@ while ($held.Count -lt $slotsNeeded) {
     }
     if ($held.Count -lt $slotsNeeded) {
         if ((Get-Date) -gt $slotDeadline) { "netsync gave up: fewer than $slotsNeeded game slots free for $lockMinutes minutes"; exit 1 }
+        Start-Sleep -Seconds 2
+    }
+}
+
+# Runs of different builds can overlap, and a copy that finds its port taken by another run's copy
+# would play that copy's match instead. Each port is held by a machine-wide lock for the run. Ports the
+# caller left at their defaults move together in steps of 100 until every one is free.
+$portNames = @('PortA', 'PortB')
+if ($ThirdSeat) { $portNames += 'PortC' }
+if ($Tunnel) { $portNames += @('RelayPort', 'BridgePortA', 'BridgePortB') }
+$explicitPorts = @($portNames | Where-Object { $PSBoundParameters.ContainsKey($_) }).Count -gt 0
+$portShifts = if ($explicitPorts) { @(0) } else { 0..15 | ForEach-Object { $_ * 100 } }
+$portLocks = @()
+$portDeadline = (Get-Date).AddMinutes($lockMinutes)
+while ($portLocks.Count -eq 0) {
+    foreach ($shift in $portShifts) {
+        $ports = @($portNames | ForEach-Object { (Get-Variable $_ -ValueOnly) + $shift })
+        $bound = @(Get-NetUDPEndpoint -LocalPort $ports -ErrorAction SilentlyContinue)
+        if ($bound.Count -gt 0) { continue }
+        $taken = @()
+        foreach ($port in $ports) {
+            $lock = New-Object System.Threading.Mutex($false, "Global\OpenYRNetsyncPort$port")
+            $got = $false
+            try { $got = $lock.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $got = $true }
+            if (-not $got) { $lock.Dispose(); break }
+            $taken += $lock
+        }
+        if ($taken.Count -eq $ports.Count) {
+            $portLocks = $taken
+            for ($i = 0; $i -lt $portNames.Count; $i++) { Set-Variable $portNames[$i] $ports[$i] }
+            break
+        }
+        foreach ($lock in $taken) { $lock.ReleaseMutex(); $lock.Dispose() }
+    }
+    if ($portLocks.Count -eq 0) {
+        if ((Get-Date) -gt $portDeadline) { "netsync gave up: the ports stayed in use for $lockMinutes minutes"; exit 1 }
         Start-Sleep -Seconds 2
     }
 }
@@ -372,6 +415,7 @@ Play=no
 GameSpeed=$GameSpeed
 MenuStyle=Modern
 InterfaceStyle=$InterfaceStyle
+HudFramework=$(if ($HudFramework) { 'yes' } else { 'no' })
 ReportUpload=never
 $syncLogLine
 
@@ -677,7 +721,16 @@ if ($common.Count -gt 0) {
     "netsync: compared $($common.Count) common ticks, frames $($common[0])-$($common[-1])"
 }
 
-if ($null -ne $firstMismatch -or $outOfSync.Count -gt 0) {
+# A copy that could not bind its port leaves its partner to play whatever answers on the peer port,
+# so the run says nothing about sync. The Debug folder holds only this run's logs.
+$bindFailures = @(Get-ChildItem (Join-Path $logs 'DEBUG_*.LOG') -ErrorAction SilentlyContinue |
+    Where-Object { (Read-SharedLines $_.FullName) -match 'Failed to bind the UDP socket' })
+foreach ($f in $bindFailures) { "netsync: a copy could not bind its port; see $($f.FullName)" }
+
+if ($bindFailures.Count -gt 0) {
+    "RESULT: PORT IN USE; the run is void"
+    $exitCode = 1
+} elseif ($null -ne $firstMismatch -or $outOfSync.Count -gt 0) {
     "RESULT: DESYNC"
     $exitCode = 3
 } elseif ($common.Count -eq 0) {
@@ -710,6 +763,7 @@ if ($KeepDir) {
 } finally {
     if ($relayProc -and -not $relayProc.HasExited) { Stop-Process -Id $relayProc.Id -Force -ErrorAction SilentlyContinue }
     foreach ($m in $held) { $m.ReleaseMutex() }
+    foreach ($lock in $portLocks) { $lock.ReleaseMutex(); $lock.Dispose() }
     $gameSlots | ForEach-Object { $_.Dispose() }
     $buildLock.ReleaseMutex()
     $buildLock.Dispose()

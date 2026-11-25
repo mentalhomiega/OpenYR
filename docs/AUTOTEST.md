@@ -737,7 +737,9 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 | `-AICountries` | the game's choice | Countries for the computer players in seat order, such as `5,6` |
 | `-ScriptA`, `-ScriptB` | none | An autotest script for one copy |
 | `-Seed` | `1` | The match seed, the same on both copies |
-| `-PortA`, `-PortB` | `24601`, `24602` | The loopback ports the copies listen on |
+| `-PortA`, `-PortB` | `24601`, `24602` | The loopback ports the copies listen on. Without any port parameter, a run moves all its ports up by 100 while another run or program holds them |
+| `-InterfaceStyle` | `Classic` | The in-game interface style both copies run, `Classic` or `Modern` |
+| `-HudFramework` | off | Turns `HudFramework` on in both copies, so the HUD documents run during the match; with `-InterfaceStyle Modern` the radar is also drawn at screen resolution |
 | `-KeepDir` | none | A folder that receives both debug logs and any out-of-sync reports |
 | `-ForceDesyncB` | `0` | Corrupts side B's check value at that frame, as `-DESYNCTEST=` does, to test the detection |
 | `-SpawnStyle` | `Runner` | `CnCNet` writes the launch files the way the CnCNet client does, as [CnCNet style and tunnels](#cncnet-style-and-tunnels) describes |
@@ -760,6 +762,7 @@ Each copy has its own user folder, `side-a-user` or `side-b-user` in the work fo
 - `[Settings] BindAddress=127.0.0.1` makes each socket listen on loopback only, so nothing listens on the network.
 - The runner writes `0 log NETSYNC_SIDE_A` (or `_B`) as the first line of each copy's script, and finds each copy's debug log by that marker.
 - Both copies write to the build's `Debug` folder. Each run deletes the `DEBUG_*.LOG` and `SYNC_*.LOG` files there first, so use `-KeepDir` to keep a run's logs.
+- Runs of different builds can run at once, so each port a run uses is held by a machine-wide lock for the run. A run given no port parameter moves all of its ports (game, third seat, relay and bridges) up by 100, up to 15 times, until none is locked or bound. A run given a port waits for that port instead. If a copy still fails to bind its port, the runner prints `RESULT: PORT IN USE` and exits with `1`: the other copy would otherwise play whatever program answers on the peer port, which once let two overlapping runs of different builds play each other and report a desync.
 - Runs of one `Game.exe` take turns. The runner holds two of four game slots that every runner on the machine shares, so at most four copies run at once.
 
 ### Orders in a network game
