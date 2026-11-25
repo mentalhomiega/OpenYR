@@ -2647,33 +2647,26 @@ void Tactical::Draw_Shroud(Rect const & area)
 
 	Cell base(origin.X - 2, origin.Y);
 
-	if (MainWindow != NULL) {
-		int ix, iy;
-		for (iy = 0; iy < ycount; iy++) {
-			Cell step(iy / 2, (iy + 1) / 2);
-			Cell cell = base + step;
+	for (int iy = 0; MainWindow != NULL && iy < ycount; iy++) {
+		Cell cell = base + Cell(iy / 2, (iy + 1) / 2);
+		for (int ix = xcount; ix > 0; ix--, cell += Cell(1, -1)) {
+			bool const inside = Map.In_Radar(cell);
+			if (!inside && !Edge_Cell_Shrouded(cell)) {
+				continue;
+			}
+			Point2D pixel;
+			Coord_To_Pixel(Coord_Whole(Coord(cell)), pixel);
+			pixel.X += ISO_TILE_PIXEL_W / -2;
 
-			for (ix = xcount; ix > 0; ix--) {
-				bool const inside = Map.In_Radar(cell);
-				if (inside || Edge_Cell_Shrouded(cell)) {
-					Coord coord = Coord_Whole(Coord(cell));
-					Point2D pixel;
-					Coord_To_Pixel(coord, pixel);
-					pixel.X += ISO_TILE_PIXEL_W / -2;
-
-					Rect cellrect(pixel.X, TacticalRect.Y + pixel.Y, ISO_TILE_PIXEL_W, ISO_TILE_PIXEL_H);
-					Rect inter = Intersect(cellrect, area);
-					Rect drawrect = Intersect(TacticalRect, inter);
-
-					if (drawrect.Is_Valid()) {
-						if (inside) {
-							Map[cell].Draw_Shroud_And_Fog(pixel + TacticalRect.Top_Left(), drawrect);
-						} else {
-							CellClass::Draw_Shroud_Or_Fog_Shape(pixel + TacticalRect.Top_Left(), drawrect, FULL_SHROUD_FRAME);
-						}
-					}
-				}
-				cell += Cell(1, -1);
+			Rect const cellrect(pixel.X, TacticalRect.Y + pixel.Y, ISO_TILE_PIXEL_W, ISO_TILE_PIXEL_H);
+			Rect const drawrect = Intersect(TacticalRect, Intersect(cellrect, area));
+			if (!drawrect.Is_Valid()) {
+				continue;
+			}
+			if (inside) {
+				Map[cell].Draw_Shroud_And_Fog(pixel + TacticalRect.Top_Left(), drawrect);
+			} else {
+				CellClass::Draw_Shroud_Or_Fog_Shape(pixel + TacticalRect.Top_Left(), drawrect, FULL_SHROUD_FRAME);
 			}
 		}
 	}
