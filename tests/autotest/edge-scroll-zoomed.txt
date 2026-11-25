@@ -1,7 +1,7 @@
 ; Regress: capped edge scrolling distance depends on the system clock
 ; Edge scrolling works at every map zoom: with the pointer resting on each edge of the screen the view moves that way. The
 ; pointer is tested where it is on the screen; taken into the zoomed view and back it lands a pixel short of the right and
-; bottom edges. Expected: each camera line after a rest shows the view moved toward that edge, at zoom 0.75 and 1.5.
+; bottom edges. The pointer keeps the scroll arrow while it rests on an edge: each second shapechanges line of a pair reads 0, and so does the line at frame 99, while the view coasts after the pointer left the edge. Expected: each camera line after a rest shows the view moved toward that edge, at zoom 0.75 and 1.5.
 ; Run: scripts/run_autotest.ps1 -Build agent31 -Script src-agent31/tests/autotest/edge-scroll-zoomed.txt -Width 800 -Height 600 -Seconds 120 -Country 0 -Filter "AUTOTEST|Exception"
 30 view 46 40
 35 reveal
@@ -9,12 +9,18 @@
 40 view 46 40
 43 camera
 44 windowmove 799 300
+50 shapechanges
 80 camera
+81 shapechanges
 85 windowmove 400 300
+88 shapechanges
+99 shapechanges
 100 view 46 40
 103 camera
 104 windowmove 400 599
+110 shapechanges
 140 camera
+141 shapechanges
 145 windowmove 400 300
 160 view 46 40
 163 camera

@@ -395,6 +395,33 @@ ActionType ScrollClass::What_Action(Cell const & cell, ObjectClass * object, boo
 }
 
 
+// When the edge scroll last gave the pointer its arrow, by the system clock; 0 while the pointer is off the edges.
+static unsigned _EdgeArrowSetAt = 0;
+
+
+/// <summary>
+/// Whether the pointer rests on a scrolling screen edge and shows the scroll arrow. The side panel, the radar and the hover
+/// code each ask for their own shape on every input poll; while this holds the arrow stays, so the two never swap.
+/// It lapses a tenth of a second after the last edge scroll, as when a dialog stops the map's input.
+/// </summary>
+bool Edge_Scroll_Holds_Pointer(void)
+{
+	return(_EdgeArrowSetAt != 0 && Get_Game_Time() - _EdgeArrowSetAt < 100);
+}
+
+
+/// <summary>
+/// Whether a screen point rests on an edge of the screen, where the map scrolls. The screen point itself is tested: a
+/// point taken into the zoomed view and back can land a pixel short of the right or bottom edge.
+/// </summary>
+static bool At_Screen_Edge(Point2D const & point)
+{
+	int const w = VisibleRect.Width - 1;
+	int const h = CompositeSurface->Get_Height() - 1;
+	return(point.Y <= 0 || point.X == 0 || point.X >= w || point.Y >= h);
+}
+
+
 /// <summary>
 /// Handles scrolling the map when the mouse rests against a screen edge.
 /// The direction is taken from where the cursor sits, biased toward the cardinal directions
@@ -415,13 +442,10 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 		bool noscroll = false;
 
 		if (!noscroll) {
-			// The screen point itself is tested: a point taken into the zoomed view and back can land a pixel short of the edge.
 			int x = point.X;
 			int y = point.Y;
-			int w = VisibleRect.Width - 1;
-			int h = CompositeSurface->Get_Height() - 1;
 
-			bool at_screen_edge = (y <= 0 || x == 0 || x >= w || y >= h);
+			bool at_screen_edge = At_Screen_Edge(point);
 
 			bool player_scrolled=false;
 
@@ -509,10 +533,18 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 
 				int distance = 1;
 
+				if (player_scrolled) {
+					_EdgeArrowSetAt = std::max(1u, (unsigned)Get_Game_Time());
+				}
+				// The arrow shows only while the pointer rests on the edge; the coast after it leaves keeps the pointer's own shape.
 				if (!Scroll_Map(facing, distance, false)) {
-					Override_Mouse_Shape((MouseType)(MOUSE_NO_N+control), false);
+					if (player_scrolled) {
+						Override_Mouse_Shape((MouseType)(MOUSE_NO_N+control), false);
+					}
 				} else {
-					Override_Mouse_Shape((MouseType)(MOUSE_N+control), false);
+					if (player_scrolled) {
+						Override_Mouse_Shape((MouseType)(MOUSE_N+control), false);
+					}
 
 					int step = int(_rate[rate] * Rule->ScrollMultiplier);
 					double scaled = step * _ScrollFraction + _EdgeScrollRemainder;
@@ -568,7 +600,14 @@ void ScrollClass::Scroll_AI(void)
 			ObjectClass *	object /*= 0*/;				// what object is in the cell
 			bool			fog;						/// is the cell in fog or not
 			bool			shadow;						// is the cell in shadow or not
-			if (Point_Over_Map(mouse) && Resolve_Point(point, cell, coord, object, fog, shadow)) {
+			// On a scrolling edge the scroll arrow is the pointer's shape; setting the hover shape first would swap the two on every poll.
+			bool const edge_scroll = Options.AutoScroll && !Debug_Map && At_Screen_Edge(mouse);
+			if (!edge_scroll) {
+				_EdgeArrowSetAt = 0;
+			}
+			if (edge_scroll) {
+				HoverObject = NULL;
+			} else if (Point_Over_Map(mouse) && Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				HoverObject = object;
 				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
 			} else {
