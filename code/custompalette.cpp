@@ -37,8 +37,19 @@ namespace {
 
 std::map<std::string, std::unique_ptr<ConvertClass>> Drawers;
 
+// A drawer is built over a palette that outlives it, so the two are kept together.
+struct SchemeDrawer
+{
+	PaletteClass palette;
+	std::unique_ptr<ConvertClass> drawer;
+};
+
 // A null entry records a palette file that is missing, so the file is looked for once.
-std::map<std::tuple<std::string, int, int, int, int>, std::unique_ptr<ConvertClass>> PaletteSchemes;
+// The key is the file, the scheme, the lighting tint of the scheme and the amount added.
+std::map<std::tuple<std::string, int, int, int, int, int, int, int>, std::unique_ptr<SchemeDrawer>> PaletteSchemes;
+
+std::map<ConvertClass const *, std::unique_ptr<PaletteClass>> DrawerPalettes;
+std::map<std::tuple<ConvertClass const *, int, int, int>, std::unique_ptr<SchemeDrawer>> TintedDrawers;
 
 }
 
@@ -124,6 +135,7 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	if (data != NULL && VisibleSurface != NULL) {
 		PaletteClass const palette = Widen_Six_Bit_Palette(data);
 		drawer = std::make_unique<ConvertClass>(palette, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
+		Remember_Drawer_Palette(drawer.get(), palette);
 	} else {
 		DebugString("Custom palette %s not found; the normal palette is used.\n", name.c_str());
 	}
@@ -131,7 +143,7 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 }
 
 
-ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme)
+ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme, int red, int green, int blue)
 {
 	if (filename.empty() || Scen == NULL || VisibleSurface == NULL) {
 		return(NULL);
@@ -144,26 +156,67 @@ ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme)
 
 	// The palette takes the lighting tint of the house scheme it stands for, so its brightness follows the map.
 	ColorScheme const * house = ColorSchemes[scheme];
-	int red = NORMAL_LIGHT;
-	int green = NORMAL_LIGHT;
-	int blue = NORMAL_LIGHT;
-	house->Converter->Get_Tint(red, green, blue);
+	int light_red = NORMAL_LIGHT;
+	int light_green = NORMAL_LIGHT;
+	int light_blue = NORMAL_LIGHT;
+	house->Converter->Get_Tint(light_red, light_green, light_blue);
 
-	auto const key = std::make_tuple(name, scheme, red, green, blue);
-	auto found = PaletteSchemes.find(key);
-	if (found != PaletteSchemes.end()) {
-		return(found->second.get());
+	auto const plain_key = std::make_tuple(name, scheme, light_red, light_green, light_blue, 0, 0, 0);
+	auto found = PaletteSchemes.find(plain_key);
+	if (found == PaletteSchemes.end()) {
+		std::unique_ptr<SchemeDrawer> entry;
+		void const * data = MFCD::Retrieve(name.c_str());
+		if (data != NULL) {
+			entry = std::make_unique<SchemeDrawer>();
+			HSVClass hsv = house->HSV;
+			entry->drawer.reset(Build_Light_Converter(hsv, Widen_Six_Bit_Palette(data), GamePalette, &entry->palette, *VisibleSurface, house->IntensityLevels, light_red, light_green, light_blue, _indexes));
+		} else {
+			DebugString("Palette %s not found; the normal palette is used.\n", name.c_str());
+		}
+		found = PaletteSchemes.emplace(plain_key, std::move(entry)).first;
+	}
+	SchemeDrawer * plain = found->second.get();
+	if (plain == NULL || (red == 0 && green == 0 && blue == 0)) {
+		return(plain != NULL ? plain->drawer.get() : NULL);
 	}
 
-	std::unique_ptr<ConvertClass> drawer;
-	void const * data = MFCD::Retrieve(name.c_str());
-	if (data != NULL) {
-		PaletteClass const palette = Widen_Six_Bit_Palette(data);
-		PaletteClass remapped;
-		HSVClass hsv = house->HSV;
-		drawer.reset(Build_Light_Converter(hsv, palette, GamePalette, &remapped, *VisibleSurface, house->IntensityLevels, red, green, blue, _indexes));
-	} else {
-		DebugString("Palette %s not found; the normal palette is used.\n", name.c_str());
+	auto const tinted_key = std::make_tuple(name, scheme, light_red, light_green, light_blue, red, green, blue);
+	auto tinted_found = PaletteSchemes.find(tinted_key);
+	if (tinted_found == PaletteSchemes.end()) {
+		auto entry = std::make_unique<SchemeDrawer>();
+		entry->palette = plain->palette;
+		Add_To_Palette(entry->palette, red, green, blue);
+		entry->drawer = std::make_unique<LightConvertClass>(entry->palette, GamePalette, *VisibleSurface, light_red, light_green, light_blue, false, _indexes, house->IntensityLevels);
+		tinted_found = PaletteSchemes.emplace(tinted_key, std::move(entry)).first;
 	}
-	return((PaletteSchemes[key] = std::move(drawer)).get());
+	return(tinted_found->second->drawer.get());
+}
+
+
+void Remember_Drawer_Palette(ConvertClass const * drawer, PaletteClass const & palette)
+{
+	for (auto it = TintedDrawers.begin(); it != TintedDrawers.end();) {
+		it = std::get<0>(it->first) == drawer ? TintedDrawers.erase(it) : std::next(it);
+	}
+	DrawerPalettes[drawer] = std::make_unique<PaletteClass>(palette);
+}
+
+
+ConvertClass * Tinted_Drawer(ConvertClass * drawer, int red, int green, int blue)
+{
+	auto palette = DrawerPalettes.find(drawer);
+	if (drawer == NULL || palette == DrawerPalettes.end() || VisibleSurface == NULL || (red == 0 && green == 0 && blue == 0)) {
+		return(drawer);
+	}
+
+	auto const key = std::make_tuple((ConvertClass const *)drawer, red, green, blue);
+	auto found = TintedDrawers.find(key);
+	if (found == TintedDrawers.end()) {
+		auto entry = std::make_unique<SchemeDrawer>();
+		entry->palette = *palette->second;
+		Add_To_Palette(entry->palette, red, green, blue);
+		entry->drawer = std::make_unique<ConvertClass>(entry->palette, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
+		found = TintedDrawers.emplace(key, std::move(entry)).first;
+	}
+	return(found->second->drawer.get());
 }
