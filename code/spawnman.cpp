@@ -176,9 +176,7 @@ void SpawnManagerClass::Detach(AbstractClass const * target)
 		if (node.Unit->Strength > 0 && !node.Unit->IsKamikaze && !node.IsMissile) {
 			return;
 		}
-		node.Unit = NULL;
-		node.Status = NODE_DEAD;
-		node.Start_Timer(RegenRate);
+		Lose_Node(node);
 		return;
 	}
 
@@ -186,6 +184,29 @@ void SpawnManagerClass::Detach(AbstractClass const * target)
 		Kill_Nodes();
 		Reset_Target();
 	}
+}
+
+
+/// <summary>
+/// Forgets a spawn that is deleted while it still has strength, which Detach keeps because a docking
+/// spawn is limboed the same way. The spawn is replaced after the regeneration delay.
+/// </summary>
+void SpawnManagerClass::Spawn_Deleted(AircraftClass const * unit)
+{
+	for (NodeType & node : Nodes) {
+		if (node.Unit == unit) {
+			Lose_Node(node);
+			return;
+		}
+	}
+}
+
+
+void SpawnManagerClass::Lose_Node(NodeType & node)
+{
+	node.Unit = NULL;
+	node.Status = NODE_DEAD;
+	node.Start_Timer(RegenRate);
 }
 
 
