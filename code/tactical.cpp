@@ -1365,7 +1365,8 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 					Cells_Under(ypanrect, fade_cells);
 				}
 				for (int index = 0; index < DirtyAreas.Count(); index++) {
-					Rect redraw = DirtyAreas[index].Area;
+					// The pan moves the areas in Wipe_Depth below, and they are drawn where it puts them.
+					Rect redraw = DirtyAreas[index].Area + Point2D(xoffset, yoffset);
 					redraw.Y += TacticalRect.Y;
 					redraw = Intersect(TacticalRect, redraw);
 					if (redraw.Is_Valid()) {

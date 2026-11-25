@@ -6611,6 +6611,16 @@ static void Shroudholes_Step(StepType const & step)
 }
 
 
+// dirtyarea <x> <y> <w> <h>: asks for that rectangle of the map view to be redrawn into the tile layer, in view pixels as the last
+// drawn frame placed them, as a change to the ground there does.
+static void Dirtyarea_Step(StepType const & step)
+{
+	Rect const area(Number(step.Words, 2, 0), Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0));
+	TacticalMap->Register_Dirty_Area(area);
+	DebugString("AUTOTEST   dirtyarea %d,%d %dx%d\n", area.X, area.Y, area.Width, area.Height);
+}
+
+
 // tilecheck [tile ...]: logs how the map's tiles stand once it is loaded: the cells the playing area holds, how many of
 // them hold a tile type with no artwork, how many the map lets ice grow on, and whether the theater's ice behavior is
 // on. Each tile number after the command also gets the count of cells that hold it. A map tile that was rewritten
@@ -9400,6 +9410,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"helptext", Helptext_Step},
 		{"cellpixel", Cellpixel_Step},
 		{"shroudholes", Shroudholes_Step},
+		{"dirtyarea", Dirtyarea_Step},
 		{"tilecheck", Tilecheck_Step},
 		{"settile", Settile_Step},
 		{"hoverat", Hoverat_Step},
