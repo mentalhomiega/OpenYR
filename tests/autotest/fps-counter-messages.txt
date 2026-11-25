@@ -1,7 +1,7 @@
 ; The ShowFPS counts start below the message list: a message shown at the top left, such as a mission objective, no longer
 ; prints over them. Expected fpslayout lines: counts 4 with no messages, then counts at or below the messages' bottom row,
-; overlap 0, with three lines showing. The screenshot shows the counts under the three message lines.
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/fps-counter-messages.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST fpslayout|Exception"
+; overlap 0, with three lines showing. The message step logs each whole text: AUTOTEST message "Objective: Locate Premier Romanov before Yuri's troops do" (not only its first word). The screenshot shows the counts under the three message lines.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/fps-counter-messages.txt -Map XMP29U2.MAP -Seconds 60 -Filter "AUTOTEST (fpslayout|message)|Exception"
 30 showfps 1
 40 fpslayout
 50 message Objective: Locate Premier Romanov before Yuri's troops do
