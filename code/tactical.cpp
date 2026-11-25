@@ -3434,7 +3434,8 @@ void Tactical::Register_Dirty_Buildings(Rect area)
 		if (obj->RTTI == RTTI_BUILDING && obj->IsToDisplay) {
 			Rect render = obj->Get_Render_Rect();
 			if (area.Is_Overlapping(render + Point2D(TacticalRect.X, TacticalRect.Y))) {
-				Register_Dirty_Area(render);
+				// The dirty areas are kept where the last drawn picture had them, and the pan moves them on.
+				Register_Dirty_Area(render - Drawn_Picture_Offset());
 				obj->IsToDisplay = false;
 			}
 		}
