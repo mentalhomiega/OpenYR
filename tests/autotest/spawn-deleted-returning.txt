@@ -1,0 +1,21 @@
+; An aircraft carrier (CARRIER, Spawns=HORNET, SpawnsNumber=3) at 86,70 on the lake of XMP08T2 strikes a neutral destroyer
+; (DEST) at 75,65 at frame 110. At frame 400, while the three Hornets fly back to the carrier, the trigger action Delete Object (161) removes every
+; HORNET without destroying it, the way a temporal warp erases a target or a map trigger deletes one. Expected: the deleted
+; Hornets' nodes read 7 (lost) in the spawncycle line right after the deletion and new Hornets replace them after the
+; regeneration delay; the carrier strikes again at frame 700 and the game runs to frame 1200 with no exception. Before the
+; fix the nodes kept the deleted Hornets (status 4) and the carrier read them after they were freed.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/spawn-deleted-returning.txt -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST   (spawncycle|tagtype|trigaction)|Exception"
+30 reveal
+40 own CARRIER 86 70
+41 neutral DEST 75 65
+110 strike CARRIER 75 65
+399 spawns CARRIER
+400 tagtype HORNET
+400 trigaction 161 0 0
+401 spawns CARRIER
+420 spawns CARRIER
+600 spawns CARRIER
+700 strike CARRIER 75 65
+800 spawns CARRIER
+1000 spawns CARRIER
+1200 quit

@@ -9389,6 +9389,14 @@ void TechnoClass::Delete_Me(void)
 	}
 	Disarm_Bomb();
 	Stop_Gattling_Sound();
+	// The removal broadcast keeps the node of a spawn that still has strength, so a spawn deleted without dying is dropped here.
+	if (RTTI == RTTI_AIRCRAFT) {
+		for (int index = 0; index < Technos.Count(); index++) {
+			if (Technos[index]->SpawnManager) {
+				Technos[index]->SpawnManager->Spawn_Deleted((AircraftClass *)this);
+			}
+		}
+	}
 	BASECLASS::Delete_Me();
 }
 

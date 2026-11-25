@@ -34,6 +34,7 @@ class SpawnManagerClass
 		void Reset_Target(void);
 		void Kill_Nodes(void);
 		void Detach(AbstractClass const * target);
+		void Spawn_Deleted(AircraftClass const * unit);
 		int Docked_Count(void) const;
 		int Launching_Count(void) const;
 		// Read by the autotest probes; the cycle state is otherwise private.
@@ -77,6 +78,7 @@ class SpawnManagerClass
 
 		AircraftClass * Create_Spawn(NodeType & node) const;
 		void Launch(NodeType & node, int index);
+		void Lose_Node(NodeType & node);
 		void Release_To_Kamikaze(AircraftClass * unit);
 		void Send_Home(AircraftClass * unit) const;
 

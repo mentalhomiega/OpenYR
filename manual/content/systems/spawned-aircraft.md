@@ -42,7 +42,7 @@ A target that goes out of range before the launch is dropped. A new target given
 
 An aircraft that runs out of ammunition, or whose target is gone, flies back. It docks once it is within one and a half cells of the object, whatever its height, and after [`SpawnReloadRate`](/keys/spawnreloadrate/#scope-aircrafttype) frames it has its full ammunition and strength back and can launch again.
 
-An aircraft that is destroyed, and a missile once it has taken off, is replaced after [`SpawnRegenRate`](/keys/spawnregenrate/#scope-aircrafttype) frames. When the object is destroyed or removed, its docked and reloading aircraft, and any missile still taking off, are removed with it, and its aircraft in flight crash. Any other missile carries on to its target.
+An aircraft that is destroyed or removed without being destroyed, such as by a temporal weapon or a trigger's Delete Object action, and a missile once it has taken off, is replaced after [`SpawnRegenRate`](/keys/spawnregenrate/#scope-aircrafttype) frames. When the object is destroyed or removed, its docked and reloading aircraft, and any missile still taking off, are removed with it, and its aircraft in flight crash. Any other missile carries on to its target.
 
 ## Missiles
 
