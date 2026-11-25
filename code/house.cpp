@@ -298,6 +298,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsSpied(false),
 	IsThieved(false),
 	IsBuiltSomething(false),
+	IsLowPowerAnnounced(false),
 	IsResigner(false),
 	IsGiverUpper(false),
 	IsAllToHunt(false),
@@ -1644,33 +1645,6 @@ void HouseClass::AI(void)
 	}
 
 	/*
-	**	If there is insufficient power, then all buildings that are above
-	**	half strength take a little bit of damage.
-	*/
-	if (DamageTime == 0) {
-
-		/*
-		**	When the power is below required, then the buildings will take damage over
-		**	time.
-		*/
-		if (Power_Fraction() < 1) {
-			for (int index = 0; index < Buildings.Count(); index++) {
-				BuildingClass & b = *Buildings[index];
-
-				if (b.House == this && b.HealthRatio > Rule->ConditionYellow) {
-					// BG: Only damage buildings that require power, to keep the
-					//     land mines from blowing up under low-power conditions
-					if (b.Class->Drain) {
-						int damage = 1;
-						b.Take_Damage(damage, 0, Rule->C4Warhead, 0);
-					}
-				}
-			}
-		}
-		DamageTime = int(TICKS_PER_MINUTE * Rule->DamageDelay);
-	}
-
-	/*
 	**	If there are no more buildings to sell, then automatically cancel the
 	**	sell mode.
 	*/
@@ -1697,13 +1671,14 @@ void HouseClass::AI(void)
 				SpeakMaxedDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 			}
 		}
-		if (SpeakPowerDelay == 0 && Power_Fraction() < 1) {
-			if (Owns_Any(ABQuantity, Rule->BuildConst)) {
-				Speak(VOX_LOW_POWER);
-				SpeakPowerDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
-//				Map.Flash_Power();
-				Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_LOW_POWER), House_Display_Scheme(this), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
-			}
+		// The warning plays once for each spell of low power (gamemd HouseClass::Update, 0x4F8D02); full power rearms it. It
+		// needs one of the first three construction yard types, as gamemd looks no further down the BuildConst list.
+		if (Power_Fraction() >= 1) {
+			IsLowPowerAnnounced = false;
+		} else if (Owns_Any(ABQuantity, Rule->BuildConst, 3) && !IsLowPowerAnnounced) {
+			Speak(VOX_LOW_POWER);
+			Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_LOW_POWER), House_Display_Scheme(this), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
+			IsLowPowerAnnounced = true;
 		}
 	}
 

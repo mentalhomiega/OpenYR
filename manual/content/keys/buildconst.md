@@ -23,7 +23,7 @@ A vehicle whose [`DeploysInto`](/keys/deploysinto/) names a listed type is an MC
 - On the hunt mission, a computer house's MCV drives to open ground and deploys there instead of attacking.
 - A base-building computer house's MCV that is on guard tries to deploy where it stands. If the spot is refused, the MCV goes on the hunt mission outside a campaign game; in a campaign game it stays on guard and tries again.
 
-The list also decides where the [Center Base](/commands/centerbase/) command goes, whether the player hears the [low-power warning](/systems/power/#player-feedback), which vehicles the computer values as MCVs when it [aims an ion cannon](/keys/aiioncannonmcvvalue/), and where a house that [passes to the computer](/systems/ai-base-building/#where-the-plan-comes-from) centers its new plan.
+The list also decides where the [Center Base](/commands/centerbase/) command goes, whether the player hears the [low-power warning](/systems/power/#player-feedback), which counts only the first three entries, which vehicles the computer values as MCVs when it [aims an ion cannon](/keys/aiioncannonmcvvalue/), and where a house that [passes to the computer](/systems/ai-base-building/#where-the-plan-comes-from) centers its new plan.
 
 :::caution[Building lists are split on commas alone]
 Names are matched without regard to case. The value is trimmed at its ends, but the split is on commas alone, so `GAPOWR, NAPOWR` looks for a type whose ID begins with a space. A name that matches no BuildingType ID adds a new BuildingType with that name. When no section of that name exists, no house may own the new type. When one does, such as a UnitType's section, it is read as a BuildingType, `Owner` included.

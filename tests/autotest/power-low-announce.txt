@@ -1,0 +1,23 @@
+; The "Low power" announcement (EVA_LowPower) and its message play once for each spell of low power, not on a timer.
+; gamemd's HouseClass::Update (0x4F8C97-0x4F8DAB) checks the local player's power every frame: while it is short and the house owns one of the
+; first three BuildConst structure types, the flag at 0xA8F040 decides, and the warning plays only when the flag is clear and then sets it.
+; Full power clears the flag. The timer at HouseClass+0x57BC that the same code restarts with SpeakDelay is never read (no other code touches it).
+; A war factory (drain 25) with no power plant keeps the house short from frame 32. A plant at frame 400 ends the shortage (houses at 500 shows
+; power 200). Killing it at frame 600 starts a second one.
+; Expected: one "Speech: request EVA_LowPower" in the first shortage (just after frame 32) and none until the second starts at frame 600, where one
+; follows at once. Before the fix the line repeated while short (three times before frame 400, then twice after frame 600), spaced by SpeakDelay.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/power-low-announce.txt -Country 0 -Width 800 -Height 600 -Seconds 120 -Filter "Speech: request EVA_LowPower|AUTOTEST   house Americans|AUTOTEST frame \d+: (own|kill)|Exception"
+20 rules power-low-announce.ini
+30 own GACNST 50 30
+31 command CenterBase
+32 own GAWEAP 54 30
+100 houses
+250 houses
+399 houses
+400 own GAPOWR 46 32
+500 houses
+599 houses
+600 kill GAPOWR 1
+601 houses
+800 houses
+900 quit

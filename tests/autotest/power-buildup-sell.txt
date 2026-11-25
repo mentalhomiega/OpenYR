@@ -1,0 +1,122 @@
+; Power readout frame by frame while an Allied Power Plant (GAPOWR) plays its build-up (frames 701-747) and while it is sold (frames 901-949).
+; gamemd's HouseClass::UpdatePower (0x508C30) sums BuildingClass::GetPowerOutput (0x44E7B0) and GetPowerDrain (0x44E880) over every structure out of limbo with IsOnMap set,
+; and neither function nor UpdatePower reads the mission. The plant therefore adds its 200 from the frame it is placed (mission 18) through the whole build-up and
+; through the whole sale (mission 19) until it leaves the map. Only IsPowerOnline (0x4555D0) is false in those two missions, shown as `online 0`.
+; A war factory (drain 25) is placed first, so the house is short of power (fraction 0.00) until the plant counts, at frame 701.
+; Expected: output 200 and house power 200 on every line from 701 to 949; online 0 for missions 18 and 19 and 1 at mission 5; house fraction 0.00 at 690 and 1.00 at 800 and 0.00 at 1000.
+; Already matched gamemd when written; the test guards it. Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/power-buildup-sell.txt -Country 0 -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   powerreadout|AUTOTEST   house Americans|Exception"
+20 own GACNST 50 30
+30 command CenterBase
+40 command DebugInfiniteMoney
+41 command DebugUnlockAll
+42 command DebugInstantBuild
+43 command DebugRevealMap
+100 produce GAPOWR
+680 own GAWEAP 54 30
+690 houses
+698 powerreadout GAPOWR
+700 place GAPOWR
+701 powerreadout GAPOWR
+703 powerreadout GAPOWR
+705 powerreadout GAPOWR
+707 powerreadout GAPOWR
+709 powerreadout GAPOWR
+711 powerreadout GAPOWR
+713 powerreadout GAPOWR
+715 powerreadout GAPOWR
+717 powerreadout GAPOWR
+719 powerreadout GAPOWR
+721 powerreadout GAPOWR
+723 powerreadout GAPOWR
+725 powerreadout GAPOWR
+727 powerreadout GAPOWR
+729 powerreadout GAPOWR
+731 powerreadout GAPOWR
+733 powerreadout GAPOWR
+735 powerreadout GAPOWR
+737 powerreadout GAPOWR
+739 powerreadout GAPOWR
+741 powerreadout GAPOWR
+743 powerreadout GAPOWR
+745 powerreadout GAPOWR
+747 powerreadout GAPOWR
+749 powerreadout GAPOWR
+751 powerreadout GAPOWR
+753 powerreadout GAPOWR
+755 powerreadout GAPOWR
+757 powerreadout GAPOWR
+759 powerreadout GAPOWR
+761 powerreadout GAPOWR
+763 powerreadout GAPOWR
+765 powerreadout GAPOWR
+767 powerreadout GAPOWR
+769 powerreadout GAPOWR
+771 powerreadout GAPOWR
+773 powerreadout GAPOWR
+775 powerreadout GAPOWR
+777 powerreadout GAPOWR
+779 powerreadout GAPOWR
+781 powerreadout GAPOWR
+783 powerreadout GAPOWR
+785 powerreadout GAPOWR
+787 powerreadout GAPOWR
+789 powerreadout GAPOWR
+791 powerreadout GAPOWR
+793 powerreadout GAPOWR
+795 powerreadout GAPOWR
+797 powerreadout GAPOWR
+799 powerreadout GAPOWR
+800 houses
+900 sell 49 28
+901 powerreadout GAPOWR
+903 powerreadout GAPOWR
+905 powerreadout GAPOWR
+907 powerreadout GAPOWR
+909 powerreadout GAPOWR
+911 powerreadout GAPOWR
+913 powerreadout GAPOWR
+915 powerreadout GAPOWR
+917 powerreadout GAPOWR
+919 powerreadout GAPOWR
+921 powerreadout GAPOWR
+923 powerreadout GAPOWR
+925 powerreadout GAPOWR
+927 powerreadout GAPOWR
+929 powerreadout GAPOWR
+931 powerreadout GAPOWR
+933 powerreadout GAPOWR
+935 powerreadout GAPOWR
+937 powerreadout GAPOWR
+939 powerreadout GAPOWR
+941 powerreadout GAPOWR
+943 powerreadout GAPOWR
+945 powerreadout GAPOWR
+947 powerreadout GAPOWR
+949 powerreadout GAPOWR
+951 powerreadout GAPOWR
+953 powerreadout GAPOWR
+955 powerreadout GAPOWR
+957 powerreadout GAPOWR
+959 powerreadout GAPOWR
+961 powerreadout GAPOWR
+963 powerreadout GAPOWR
+965 powerreadout GAPOWR
+967 powerreadout GAPOWR
+969 powerreadout GAPOWR
+971 powerreadout GAPOWR
+973 powerreadout GAPOWR
+975 powerreadout GAPOWR
+977 powerreadout GAPOWR
+979 powerreadout GAPOWR
+981 powerreadout GAPOWR
+983 powerreadout GAPOWR
+985 powerreadout GAPOWR
+987 powerreadout GAPOWR
+989 powerreadout GAPOWR
+991 powerreadout GAPOWR
+993 powerreadout GAPOWR
+995 powerreadout GAPOWR
+997 powerreadout GAPOWR
+999 powerreadout GAPOWR
+1000 houses
+1010 quit

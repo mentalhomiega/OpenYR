@@ -1,0 +1,18 @@
+; A house short of power does not damage its structures. gamemd reads DamageDelay once, in the HouseClass constructor (0x4F5CA7), to start a
+; timer (HouseClass+0x578C) that no other code reads, and HouseClass::Update (0x4F8..) never touches C4Warhead, so nothing hurts a structure for lack of power.
+; A war factory (drain 25) with no power plant keeps the house short throughout; the overlay sets the tick to 18 frames, which takes hold after the
+; house's first timer runs out at frame 900 (the constructor sets it from the rules read before the overlay). banimstate gives the factory's health.
+; Expected: GAWEAP health 1000/1000 at frames 100, 800, 1200 and 1500. Before the fix it lost 1 point every 18 frames from frame 900 while the
+; house was short (982/1000 at 1200, 964/1000 at 1500), down to the yellow condition (ConditionYellow) and no further.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/power-low-no-damage.txt -Country 0 -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   banimstate GAWEAP|AUTOTEST   house Americans|Exception"
+20 rules power-low-no-damage.ini
+30 own GACNST 50 30
+31 command CenterBase
+32 own GAWEAP 54 30
+100 houses
+101 banimstate GAWEAP
+800 banimstate GAWEAP
+1200 banimstate GAWEAP
+1500 banimstate GAWEAP
+1501 houses
+1600 quit

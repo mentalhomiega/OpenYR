@@ -7498,6 +7498,19 @@ static void Poweronline_Step(StepType const & step)
 }
 
 
+// powerreadout <TypeID>: for each building of that type, its mission and what it adds to its house (Power_Output, Power_Drain, whether it is in service),
+// then the house's power, drain and whether the house is short of power. Reads the totals gamemd's HouseClass::UpdatePower (0x508C30) sums.
+static void Powerreadout_Step(StepType const & step)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+		HouseClass const * house = building->House;
+		DebugString("AUTOTEST   powerreadout %s frame %d mission %d bstate %d output %d drain %d online %d house power %d drain %d low %d\n", building->Class->Name(), (int)Frame, (int)building->Mission, (int)building->BState, building->Power_Output(), building->Power_Drain(), (int)building->Is_Powered_On(), house->Power, house->Drain, (int)(house->Power_Fraction() < 1.0));
+	}
+}
+
+
 // banimstate <TypeID>: for each building of that type, the animation in each slot with its stage, rate and whether it is held still.
 static void Banimstate_Step(StepType const & step)
 {
@@ -9232,6 +9245,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"trails", Trails_Step},
 		{"ammo", Ammo_Step},
 		{"houses", Houses_Step},
+		{"powerreadout", Powerreadout_Step},
 		{"country", Country_Step},
 		{"census", Census_Step},
 		{"count", Count_Step},

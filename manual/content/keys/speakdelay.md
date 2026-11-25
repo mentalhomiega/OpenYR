@@ -11,9 +11,8 @@ After EVA announces one of these warnings, the same warning waits this many minu
 
 - the player's base is under attack, or an ally's base is under attack;
 - funds are low;
-- Tiberium storage is nearly full;
-- [power is low](/systems/power/#player-feedback).
+- Tiberium storage is nearly full.
 
-The funds and storage warnings share one wait, so either one holds back the other. The attack warnings and the power warning each wait separately. A larger value spaces the warnings further apart.
+The funds and storage warnings share one wait, so either one holds back the other. The attack warnings wait separately. The [low power warning](/systems/power/#player-feedback) does not use this wait: it plays once for each spell of low power. A larger value spaces the warnings further apart.
 
 The wait is scaled by the game speed setting, so it lasts roughly the same real time at any speed.

@@ -37,8 +37,6 @@ The other events deal an explosion around a point. The warhead's `Verses` table,
 - the [Apply 100 damage at...](/mapping/actions/taction-damage/) trigger action;
 - the animation named `INVISO`, which deals its [`Damage`](/keys/damage/#scope-animtype) through this warhead.
 
-The [structure damage tick](/systems/power/#the-structure-damage-tick) a house takes while short of power also uses this warhead without forcing it, so `Verses` and `Immune=yes` apply to it.
-
 An aircraft that falls while it still has strength, a stranded vehicle, a destroyed Tiberium-spawning terrain object, a failed drop pod, an explosive crate and a `TiberiumChainReaction=yes` animation show explosions chosen from the warhead's [`AnimList`](/keys/animlist/). Over water, a falling aircraft and a stranded vehicle use [`SplashList`](/keys/splashlist/) instead when the warhead sets [`Conventional=yes`](/keys/conventional/).
 
 :::danger[Set `C4Warhead` to a warhead with an `AnimList`]
