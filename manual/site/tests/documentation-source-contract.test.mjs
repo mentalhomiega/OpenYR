@@ -141,7 +141,7 @@ test('Tiberium types register by name, stop at four, and read every rules file',
 		['Do_ParticleSystemTypes(ini);', 'Do_Tiberiums(ini);', 'Objects(ini);'],
 		'Tiberium registration order',
 	);
-	assert.doesNotMatch(addition, /TiberiumClass::/);
+	assert.doesNotMatch(addition, /TiberiumClass::\w+\(/);
 
 	const register = functionBody(rules, 'bool RulesClass::Do_Tiberiums(CCINIClass const & ini)');
 	assert.match(register, /TiberiumClass::Find_Or_Make\(buffer\);/);
@@ -1313,8 +1313,8 @@ test('A harvester reserves a free refinery only within reach and otherwise waits
 
 	assert.match(
 		harvest,
-		/Get_Coord\(\)\.Gamemd_Distance_To\(anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
-		'a harvester out of reach drives only when the nearest bay is over three cells away',
+		/anybay != NULL && \(Class->IsTeleporter \|\| Get_Coord\(\)\.Gamemd_Distance_To\(anybay->Center_Coord\(\)\) > 3 \* CELL_LEPTON\)/,
+		'a harvester out of reach drives when the nearest bay is over three cells from it, and a Chrono Miner always does',
 	);
 });
 
@@ -1539,9 +1539,19 @@ test('A game played alone is paced by its own speed table', () => {
 	const mainloop = source('code/mainloop.cpp');
 
 	assert.match(
+		functionBody(definitionFrom(mainloop, 'static NetTiming::FramePeriod Target_Frame_Period(void)'), 'static NetTiming::FramePeriod Target_Frame_Period(void)'),
+		/if \(Session\.Type == GAME_NORMAL \|\| Session\.Type == GAME_SKIRMISH\) \{[\s\S]*NetTiming::Solo_Frame_Period\(Options\.GameSpeed, Session\.Type == GAME_NORMAL, Options\.ClassicGameSpeeds\)/,
+		'a campaign or skirmish takes its frame length from the solo period for its game speed',
+	);
+	assert.match(
+		functionBody(source('code/nettiming.cpp'), 'FramePeriod Solo_Frame_Period(int game_speed, bool campaign, bool classic)'),
+		/if \(!classic\) \{\s*return\(Frame_Period_For_Rate\(Game_Speed_Frame_Rate\(game_speed\)\)\);\s*\}\s*return\(campaign \? Campaign_Frame_Period\(\) : Solo_Game_Speed_Frame_Period\(game_speed\)\);/,
+		'that period is the multiplayer rate for the speed, or with the classic tables gamemd\'s solo length',
+	);
+	assert.match(
 		functionBody(definitionFrom(mainloop, 'static int Target_Frame_Rate(void)'), 'static int Target_Frame_Rate(void)'),
-		/NetTiming::Solo_Game_Speed_Frame_Rate\(Options\.GameSpeed\)/,
-		'a solo game takes its rate from the single-player table',
+		/return\(Session\.Play \? 0 : Session\.DesiredFrameRate\);/,
+		'only a network game is held to the session\'s own desired rate, and a recording plays unlimited',
 	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
