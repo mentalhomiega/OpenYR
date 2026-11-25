@@ -2624,6 +2624,30 @@ void Tactical::Draw_Overlays(Rect const & area)
 }
 
 
+// The shroud frame that covers a whole cell, as Draw_Shroud_And_Fog draws it for a cell with no mapped neighbour.
+static int const FULL_SHROUD_FRAME = 15;
+
+
+// Whether a cell just outside the map's cells borders the map only where the player has mapped nothing, so that it takes the
+// full shroud: the shroud shapes of the map's edge cells stop a pixel short of the tiles there, which would leave a line of ground.
+static bool Edge_Cell_Shrouded(Cell const & cell)
+{
+	bool borders = false;
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			Cell const next = cell + Cell(dx, dy);
+			if ((dx != 0 || dy != 0) && Map.In_Radar(next)) {
+				if (Map[next].IsMapped[PlayerPtr]) {
+					return(false);
+				}
+				borders = true;
+			}
+		}
+	}
+	return(borders);
+}
+
+
 /// <summary>
 /// Draws the shroud and fog for the iso tiles whose visual footprint falls within the given
 /// clip rectangle. The rectangle origin is projected back into cell space to find the start
@@ -2649,9 +2673,8 @@ void Tactical::Draw_Shroud(Rect const & area)
 			Cell cell = base + step;
 
 			for (ix = xcount; ix > 0; ix--) {
-				if (Map.In_Radar(cell)) {
-					CellClass * cellptr = &Map[cell];
-
+				bool const inside = Map.In_Radar(cell);
+				if (inside || Edge_Cell_Shrouded(cell)) {
 					Coord coord = Coord_Whole(Coord(cell));
 					Point2D pixel;
 					Coord_To_Pixel(coord, pixel);
@@ -2662,7 +2685,11 @@ void Tactical::Draw_Shroud(Rect const & area)
 					Rect drawrect = Intersect(TacticalRect, inter);
 
 					if (drawrect.Is_Valid()) {
-						cellptr->Draw_Shroud_And_Fog(pixel + TacticalRect.Top_Left(), drawrect);
+						if (inside) {
+							Map[cell].Draw_Shroud_And_Fog(pixel + TacticalRect.Top_Left(), drawrect);
+						} else {
+							CellClass::Draw_Shroud_Or_Fog_Shape(pixel + TacticalRect.Top_Left(), drawrect, FULL_SHROUD_FRAME);
+						}
 					}
 				}
 				cell += Cell(1, -1);

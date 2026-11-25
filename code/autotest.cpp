@@ -6557,8 +6557,9 @@ static void Cellpixel_Step(StepType const & step)
 }
 
 
-// shroudholes <name>: logs how many cells of the map view lie in solid shroud (the cell and its eight neighbours fully
-// shrouded for the player) and how many of them show ground in the cached tile layer, which they should cover in black.
+// shroudholes <name>: logs how many cells of the map view lie in solid shroud (the cell and those of its eight neighbours that
+// are on the map fully shrouded for the player) and how many of them show ground in the cached tile layer through
+// their corners or across the seams with their neighbours, which the shroud should cover in black.
 // The tile layer holds the same picture whichever way it was drawn, so this sees shroud missing from both a strip and a full draw.
 static void Shroudholes_Step(StepType const & step)
 {
@@ -6571,7 +6572,8 @@ static void Shroudholes_Step(StepType const & step)
 	auto solid = [](Cell const & cell) {
 		for (int dy = -1; dy <= 1; dy++) {
 			for (int dx = -1; dx <= 1; dx++) {
-				if (TacticalMap->Cell_Shadow(cell + Cell(dx, dy), false, PlayerPtr) != -2) {
+				Cell const next = cell + Cell(dx, dy);
+				if (Map.In_Radar(next) && TacticalMap->Cell_Shadow(next, false, PlayerPtr) != -2) {
 					return(false);
 				}
 			}
@@ -6592,7 +6594,21 @@ static void Shroudholes_Step(StepType const & step)
 			continue;
 		}
 		shrouded++;
-		if (tiles->Get_Pixel(middle + TacticalRect.Top_Left()) != 0) {
+		// A column through the cell's top and bottom corners and rows through its side corners, reaching half a cell into the
+		// neighbours, which are shrouded too or off the map: a seam between the cell and its neighbour shows there.
+		auto ground = [&](int x, int y) {
+			return(x >= 0 && y >= 0 && x < TacticalRect.Width && y < TacticalRect.Height && tiles->Get_Pixel(Point2D(x, y) + TacticalRect.Top_Left()) != 0);
+		};
+		bool bare = false;
+		for (int y = pixel.Y - ISO_TILE_PIXEL_H / 2; y < pixel.Y + ISO_TILE_PIXEL_H * 3 / 2 && !bare; y++) {
+			bare = ground(pixel.X, y);
+		}
+		for (int row : { pixel.Y, middle.Y }) {
+			for (int x = pixel.X - ISO_TILE_PIXEL_W * 3 / 4; x <= pixel.X + ISO_TILE_PIXEL_W * 3 / 4 && !bare; x++) {
+				bare = ground(x, row);
+			}
+		}
+		if (bare) {
 			open++;
 			left = std::min(left, middle.X);
 			right = std::max(right, middle.X);
