@@ -33,7 +33,7 @@ The frame rate limit is checked on the main thread before the busy test, as it i
 |---|---|
 | Shutdown | `bgfx::shutdown` finishes the frames in hand, then the thread ends. A renderer that fails to start ends its thread the same way, so the SDR retry after an HDR failure starts a new one. |
 | Resize | `bgfx::reset` and the rebuilt targets are recorded like any other call and take effect with the next frame. |
-| Device loss | The bgfx callback raises the fatal error on the render thread. The crash filter covers every thread, so the report and exit are the same. |
+| Device loss | The bgfx callback records the loss on the render thread, and the main thread stops the thread with the renderer and starts both again ([DEVICE_LOSS.md](DEVICE_LOSS.md)). |
 | Screenshots | A `windowshot` is written by the render thread after the frame it was requested in, so the file can appear after the step has returned. An autotest script holds until the file is written (`docs/AUTOTEST.md`). Under HDR the game writes the file from the read-back pixels on the main thread. |
 | `framedump` | The game has no such path. |
 

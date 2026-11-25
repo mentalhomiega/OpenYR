@@ -768,6 +768,32 @@ void UIShellClass::On_Video_Change(void)
 }
 
 
+void UIShellClass::Release_Device_Resources(void)
+{
+	if (!Ready) {
+		return;
+	}
+
+	Rml::ReleaseTextures(Render.get());
+	Rml::ReleaseCompiledGeometry(Render.get());
+	UIDev_Release_Textures(*Render);
+	Render->Shutdown();
+}
+
+
+void UIShellClass::Restore_Device_Resources(void)
+{
+	if (!Ready) {
+		return;
+	}
+
+	if (!Render->Init()) {
+		Log("UI: the overlay renderer did not start again after the graphics device was restarted\n");
+	}
+	Host.Mark_Overlay_Dirty();
+}
+
+
 /// <summary>
 /// Drops the pictures, style sheets, templates and dialog font read from the archives. A
 /// screen already shown keeps what it was built with; the next one opened is built anew.

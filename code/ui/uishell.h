@@ -58,6 +58,11 @@ class UIShellClass
 		void Play_Click(void);
 
 		void On_Video_Change(void);
+		// Around a renderer restart after a lost graphics device: the first frees every renderer resource the
+		// interface holds, and the second makes the renderer's own again; pictures and text are made again as
+		// they are next drawn.
+		void Release_Device_Resources(void);
+		void Restore_Device_Resources(void);
 		void On_Menu_Style_Change(void);
 		void On_Archives_Change(int side);
 		std::string Side_Sheet(void) const;

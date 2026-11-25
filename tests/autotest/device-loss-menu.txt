@@ -1,0 +1,45 @@
+; The menus survive a lost graphics device: on the title menu, twice in a row, on the Settings screen, while the
+; window counts as minimised, and during a movie. Each devicestate line after a loss shows `lost 0` and one more
+; restart; each shot after a loss shows the same screen as the shot before it, apart from the menu battle behind it.
+; Run: scripts/run_autotest.ps1 -Script src-agent27/tests/autotest/device-loss-menu.txt -Build agent27 -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 120 -Filter 'AUTOTEST|UISCRIPT|Video:|Exception'
+ui waitfor backdrop
+ui wait 2500
+ui shot devloss-menu-before
+ui devicelost
+ui wait 1000
+ui devicestate
+ui shot devloss-menu-after
+ui devicelost
+ui wait 30
+ui devicelost
+ui wait 1000
+ui devicestate
+ui shot devloss-menu-twice
+ui press Options
+ui wait 1500
+ui shot devloss-options-before
+ui devicelost
+ui wait 1000
+ui devicestate
+ui shot devloss-options-after
+ui key escape
+ui wait 1000
+ui minimised 1
+ui devicelost
+ui wait 500
+ui devicestate
+ui minimised 0
+ui wait 1000
+ui devicestate
+ui shot devloss-menu-minimised
+ui movie RENEGADE.BIK
+ui wait 1500
+ui shot devloss-movie-before
+ui devicelost
+ui wait 1000
+ui devicestate
+ui shot devloss-movie-after
+ui key escape
+ui wait 1000
+ui devicestate
+ui quit

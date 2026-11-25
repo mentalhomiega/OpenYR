@@ -313,6 +313,22 @@ static void Log_Measure(unsigned char const * data, uint32_t width, uint32_t hei
 }
 
 
+// Set when the renderer reports a lost device, on whichever thread presents; the main thread then restarts the
+// renderer (Backend_Release_Lost_Device, Backend_Restart). The reason is written before the flag is set.
+static std::atomic<bool> _DeviceLost{false};
+static char _LostReason[512] = "";
+
+
+static void Note_Device_Lost(char const * reason)
+{
+	if (_DeviceLost.load()) {
+		return;
+	}
+	std::snprintf(_LostReason, sizeof(_LostReason), "%s", reason != NULL ? reason : "no reason given");
+	_DeviceLost.store(true);
+}
+
+
 // bgfx reports lost devices and shader failures through this rather than a return code,
 // so the engine would otherwise present to a black window with no explanation.
 class BackendCallback : public bgfx::CallbackI
@@ -329,6 +345,13 @@ class BackendCallback : public bgfx::CallbackI
 			if (code == bgfx::Fatal::DebugCheck) {
 				DebugString("Renderer check failed at %s(%u): %s\n",
 							filepath != NULL ? filepath : "", (unsigned)line, str != NULL ? str : "");
+				return;
+			}
+
+			// bgfx carries on with its no-op renderer after a lost device, so the game keeps running until the
+			// main thread restarts the renderer.
+			if (code == bgfx::Fatal::DeviceLost) {
+				Note_Device_Lost(str);
 				return;
 			}
 
@@ -1237,10 +1260,11 @@ static bool Fastest_Graphics_Card(uint16_t & vendor, uint16_t & device, char * n
 
 
 /// <summary>
-/// Starts the renderer on the window, with an HDR10 back buffer when hdr is set.
+/// Starts the renderer on the window, with an HDR10 back buffer when hdr is set. With fallback, a graphics API
+/// that does not start gives way to the next one bgfx ranks; without it only the API asked for is tried.
 /// </summary>
 /// <returns>bool; Did the renderer start with the back buffer asked for? Nothing is left running on false.</returns>
-static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread, bool fastestgpu)
+static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread, bool fastestgpu, bool fallback)
 {
 	_HdrActive = false;
 	_Routed = false;
@@ -1260,6 +1284,8 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 	}
 	init.callback = &_Callback;
 	init.allocator = &_Allocator;
+	// With fallback, an API that fails to start is struck off for the rest of the process and another one starts.
+	init.fallback = fallback;
 
 	switch (renderer) {
 		case BACKEND_RENDERER_D3D11:
@@ -1347,6 +1373,64 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 }
 
 
+// Starts the renderer with an HDR10 back buffer when hdr is set and the renderer can give one, and SDR otherwise.
+static bool Init_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr, bool renderthread, bool fastestgpu, bool fallback)
+{
+	if (!renderthread) {
+		bgfx::renderFrame();
+	}
+
+	_DrawableWidth = drawablewidth;
+	_DrawableHeight = drawableheight;
+
+	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true, renderthread, fastestgpu, fallback)) {
+		return(true);
+	}
+	if (hdr) {
+		DebugString("HDR: starting the SDR back buffer instead\n");
+	}
+	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false, renderthread, fastestgpu, fallback));
+}
+
+
+static BackendRenderer Running_Renderer(void)
+{
+	switch (bgfx::getRendererType()) {
+		case bgfx::RendererType::Direct3D11:
+			return(BACKEND_RENDERER_D3D11);
+		case bgfx::RendererType::Direct3D12:
+			return(BACKEND_RENDERER_D3D12);
+		case bgfx::RendererType::Vulkan:
+			return(BACKEND_RENDERER_VULKAN);
+		case bgfx::RendererType::OpenGL:
+			return(BACKEND_RENDERER_OPENGL);
+		default:
+			return(BACKEND_RENDERER_AUTO);
+	}
+}
+
+
+// What the renderer runs with, kept so a restart after a lost device asks for the same graphics API and back buffer.
+struct StartRequest
+{
+	NativeWindow Window;
+	BackendRenderer Renderer;
+	bool Hdr;
+	bool RenderThread;
+	bool FastestGpu;
+};
+static StartRequest _Started = { {NATIVE_WINDOW_DEFAULT, NULL, NULL}, BACKEND_RENDERER_AUTO, false, false, false };
+
+// Set from Backend_Release_Lost_Device until a restart succeeds, with the frame size the restart makes again.
+static bool _Down = false;
+static int _DownFrameWidth = 0;
+static int _DownFrameHeight = 0;
+
+// The devicelost autotest step: a loss reported after the next frame, and the restarts to refuse after it.
+static bool _SimulateLoss = false;
+static int _RefusedRestarts = 0;
+
+
 /// <summary>
 /// Starts the renderer on an existing window. An HDR10 request that the renderer cannot honour starts
 /// the SDR back buffer instead.
@@ -1366,20 +1450,73 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 		return(true);
 	}
 
-	if (!renderthread) {
-		bgfx::renderFrame();
+	if (!Init_Renderer(window, drawablewidth, drawableheight, renderer, vsync, hdr, renderthread, fastestgpu, true)) {
+		return(false);
 	}
+	_Started = { window, Running_Renderer(), _HdrActive, renderthread, fastestgpu };
+	return(true);
+}
 
-	_DrawableWidth = drawablewidth;
-	_DrawableHeight = drawableheight;
 
-	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true, renderthread, fastestgpu)) {
+bool Backend_Device_Lost(void)
+{
+	return(_DeviceLost.load() || _Down);
+}
+
+
+char const * Backend_Lost_Reason(void)
+{
+	return(_LostReason);
+}
+
+
+void Backend_Release_Lost_Device(void)
+{
+	if (_Down) {
+		return;
+	}
+	_DownFrameWidth = _FrameWidth;
+	_DownFrameHeight = _FrameHeight;
+	// A capture waiting for the lost device's pixels is dropped; a step that asked for one fails on its timeout.
+	_ReadbackPending = false;
+	{
+		std::lock_guard<std::mutex> lock(_MeasuresLock);
+		_Measures.clear();
+	}
+	Backend_Shutdown();
+	_DeviceLost.store(false);
+	_Down = true;
+}
+
+
+bool Backend_Restart(void)
+{
+	if (!_Down) {
 		return(true);
 	}
-	if (hdr) {
-		DebugString("HDR: starting the SDR back buffer instead\n");
+	if (_RefusedRestarts > 0) {
+		_RefusedRestarts--;
+		DebugString("Video: a test refuses this restart; %d more will be refused\n", _RefusedRestarts);
+		return(false);
 	}
-	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false, renderthread, fastestgpu));
+	bool const vsync = (_ResetFlags & BGFX_RESET_VSYNC) != 0;
+	if (!Init_Renderer(_Started.Window, _DrawableWidth, _DrawableHeight, _Started.Renderer, vsync, _Started.Hdr, _Started.RenderThread, _Started.FastestGpu, false)) {
+		return(false);
+	}
+	_Down = false;
+	if (_DownFrameWidth > 0 && _DownFrameHeight > 0 && !Backend_Set_Frame_Size(_DownFrameWidth, _DownFrameHeight)) {
+		Backend_Shutdown();
+		_Down = true;
+		return(false);
+	}
+	return(true);
+}
+
+
+void Backend_Simulate_Device_Loss(int refusals)
+{
+	_SimulateLoss = true;
+	_RefusedRestarts = std::max(refusals, 0);
 }
 
 
@@ -1433,6 +1570,11 @@ void Backend_Shutdown(void)
 /// <returns>bool; Is a texture of that size ready to receive frames?</returns>
 bool Backend_Set_Frame_Size(int width, int height)
 {
+	if (_Down && width > 0 && height > 0) {
+		_DownFrameWidth = width;
+		_DownFrameHeight = height;
+		return(true);
+	}
 	if (!_Initialized || width <= 0 || height <= 0) {
 		return(false);
 	}
@@ -1473,7 +1615,15 @@ bool Backend_Set_Frame_Size(int width, int height)
 /// </summary>
 void Backend_On_Resize(int drawablewidth, int drawableheight)
 {
-	if (!_Initialized || drawablewidth <= 0 || drawableheight <= 0) {
+	if (drawablewidth <= 0 || drawableheight <= 0) {
+		return;
+	}
+	if (_Down) {
+		_DrawableWidth = drawablewidth;
+		_DrawableHeight = drawableheight;
+		return;
+	}
+	if (!_Initialized) {
 		return;
 	}
 
@@ -1803,6 +1953,11 @@ void Backend_End_Frame(void)
 	}
 	_MaskDrawn = false;
 	_LastFrame = Submit_Frame();
+	// The test reports the loss through the callback at the point a failed present of this frame would.
+	if (_SimulateLoss) {
+		_SimulateLoss = false;
+		_Callback.fatal(__FILE__, (uint16_t)__LINE__, bgfx::Fatal::DeviceLost, "Device is lost. FAILED HRESULT(887a0005) DXGI_ERROR_DEVICE_REMOVED (simulated)");
+	}
 	GpuMap_After_Frame(_LastFrame);
 	if (Perf_Enabled) {
 		bgfx::Stats const * stats = bgfx::getStats();

@@ -8155,6 +8155,31 @@ static void Gpumemory_Step(StepType const & step)
 }
 
 
+// devicelost [refusals]: the next present reports a lost graphics device, as a failed Direct3D 11 present would, and
+// the next refusals restarts of the renderer fail.
+static void Devicelost_Step(StepType const & step)
+{
+	int const refusals = std::atoi(step.Argument.c_str());
+	DebugString("AUTOTEST devicelost simulated, %d restarts refused\n", refusals);
+	Video_Simulate_Device_Loss(refusals);
+}
+
+
+static void Devicestate_Step(StepType const &)
+{
+	Video_Log_Device_State();
+}
+
+
+// minimised <0|1>: presents are skipped as for a minimised window while it is 1.
+static void Minimised_Step(StepType const & step)
+{
+	bool const minimised = std::atoi(step.Argument.c_str()) != 0;
+	DebugString("AUTOTEST minimised %d\n", minimised ? 1 : 0);
+	Video_Pretend_Minimized(minimised);
+}
+
+
 static long long _TexturesAtStart = 0;
 
 // texturecheck start | texturecheck <most> <label>: start remembers how many textures the map passes and the presenter have made; the
@@ -9444,6 +9469,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"lansession", Lansession_Step},
 		{"zoomlevel", Zoomlevel_Step},
 		{"gpumemory", Gpumemory_Step},
+		{"devicelost", Devicelost_Step},
+		{"devicestate", Devicestate_Step},
+		{"minimised", Minimised_Step},
 		{"texturecheck", Texturecheck_Step},
 		{"mapbuffers", Mapbuffers_Step},
 		{"spareplanes", Spareplanes_Step},
