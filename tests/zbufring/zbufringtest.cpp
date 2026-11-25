@@ -170,55 +170,40 @@ void Run(char const * name, unsigned short reset)
 	 * cross the end. A run that starts on an odd entry writes that one on its own to reach
 	 * an int boundary before the wide loop takes over.
 	 */
-	struct SetCase {
-		int Start;			/// Entry the run begins at.
-		int Size;			/// Entries the run covers.
-		int Written;		/// Entries the run actually writes.
-		char const * Note;
-	};
-
 	/*
-	 * The two runs that write less than they were asked for are the buffer's long standing
-	 * behavior, not a mistake in the expectation: the tail write is skipped whenever the
-	 * wide loop never ran, so a run of one aligned entry writes nothing at all.
+	 * Every width from 0 to 9 writes exactly its own entries at the buffer start, one entry
+	 * in, the middle of the buffer (both alignments) and the end of the buffer. A width of
+	 * one aligned entry and an unaligned pair once lost their last entry.
 	 */
-	SetCase const setcases[] = {
-		{0, 0, 0, "an empty run writes nothing"},
-		{0, 1, 0, "a single aligned entry writes nothing"},
-		{1, 1, 1, "a single unaligned entry writes one"},
-		{0, 2, 2, "an aligned pair writes both"},
-		{1, 2, 1, "an unaligned pair writes only the first"},
-		{0, 3, 3, "an aligned odd run writes all of it"},
-		{0, 4, 4, "an aligned even run writes all of it"},
-		{1, 5, 5, "an unaligned odd run writes all of it"},
-		{BUFFER_W * BUFFER_H - 4, 4, 4, "a run ending at the buffer end writes all of it"},
-	};
+	int const total = BUFFER_W * BUFFER_H;
+	int const starts[] = {0, 1, total / 2, total / 2 + 1, total - 9, total - 8};
+	for (int start : starts) {
+		for (int size = 0; size <= 9; size++) {
+			if (start + size > total) continue;
 
-	for (int i = 0; i < (int)(sizeof(setcases) / sizeof(setcases[0])); i++) {
-		SetCase const & test = setcases[i];
+			Fill_Marker(buffer);
+			buffer.Set((Addr)(base + start * BPP), size, reset);
 
-		Fill_Marker(buffer);
-		buffer.Set((Addr)(base + test.Start * BPP), test.Size, reset);
-
-		unsigned short * entries = Entries(buffer);
-		int written = 0;
-		int outside = 0;
-		for (int e = 0; e < BUFFER_W * BUFFER_H; e++) {
-			if (entries[e] == MARKER) continue;
-			written++;
-			if (e < test.Start || e >= test.Start + test.Size) {
-				outside++;
+			unsigned short * entries = Entries(buffer);
+			int written = 0;
+			int outside = 0;
+			for (int e = 0; e < total; e++) {
+				if (entries[e] == MARKER) continue;
+				written++;
+				if (e < start || e >= start + size) {
+					outside++;
+				}
 			}
-		}
 
-		std::snprintf(what, sizeof(what), "%s: %s", name, test.Note);
-		Check(written == test.Written && outside == 0, what);
+			std::snprintf(what, sizeof(what), "%s: a run of %d at entry %d writes exactly its entries", name, size, start);
+			Check(written == size && outside == 0, what);
+		}
 	}
 
 	/*
 	 * Update resets a region through the pan offset, splitting the run when it straddles
 	 * the wrap point. Updating the whole covered area reaches every entry wherever the
-	 * origin sits, so long as the split does not leave a tail of exactly one entry.
+	 * origin sits.
 	 */
 	int const pans[] = {0, 7, BUFFER_W, BUFFER_W + 3};
 	for (int i = 0; i < (int)(sizeof(pans) / sizeof(pans[0])); i++) {
@@ -233,18 +218,18 @@ void Run(char const * name, unsigned short reset)
 	}
 
 	/*
-	 * A pan of one entry puts the wrap one entry into the last row, so the tail of the split
-	 * is a single entry beginning at the buffer start. Set does not write a lone entry that
-	 * began aligned, which the run cases above pin directly, so that entry keeps its old
-	 * value and the update leaves the buffer one short.
+	 * A row that straddles the wrap point is split in two runs, and either run can be as
+	 * short as one entry. Every width of the tail from 1 to 9 resets its entries.
 	 */
-	BufferT tail(Rect(0, 0, BUFFER_W, BUFFER_H));
-	tail.Pan(1, 0, MARKER);
-	tail.Fill(MARKER);
-	tail.Update(Rect(0, 0, BUFFER_W, BUFFER_H));
+	for (int tailwidth = 1; tailwidth <= 9; tailwidth++) {
+		BufferT tail(Rect(0, 0, BUFFER_W, BUFFER_H));
+		tail.Pan(tailwidth, 0, MARKER);
+		tail.Fill(MARKER);
+		tail.Update(Rect(0, 0, BUFFER_W, BUFFER_H));
 
-	std::snprintf(what, sizeof(what), "%s: an update whose split leaves one entry does not reset it", name);
-	Check(Count_Entries(tail, reset) == BUFFER_W * BUFFER_H - 1, what);
+		std::snprintf(what, sizeof(what), "%s: an update whose split leaves %d entries resets all of them", name, tailwidth);
+		Check(Count_Entries(tail, reset) == total, what);
+	}
 
 	/*
 	 * A pan slides the origin rather than moving the entries, so the point that was at the

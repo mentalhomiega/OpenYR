@@ -1,0 +1,41 @@
+; Drags Soviet 4 with the right button as a player scrolls, then compares the map view as the last frames left it with the view drawn afresh.
+; The map starts under shroud and the view moves into it, so each drag brings shroud and map strips into the cached tile layer. A strip the scroll
+; left stale shows as differing pixels in a windowcompare line. The drags are slow (a few pixels past the drag threshold), medium and fast, in every
+; direction and diagonally, and two are compared while the button is still held. The sidebar is left out of the compared area.
+; The scene that locks the player's input at the start lasts until frame 2400 or so, so the drags begin at 2500.
+; Expected: every `AUTOTEST windowcompare` line ends in `stale columns 0 stale rows 0` (a few differing pixels are animation: lights and sparkles).
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/rightdrag-scroll-shroud.txt -Campaign -Map SOV04DMD.MAP -Width 1280 -Height 720 -Seconds 900 -Filter "AUTOTEST +(windowcompare|rightdrag)|Exception|: quit"
+; Also run it with -Settings "[Options]`nGpuVoxels=yes".
+ui briefing
+2500 windowcompare start 0 0 1024 720
+2504 rightdrag 14 0 20 120
+2649 windowcompare slow-right 0 0 1024 720
+2653 rightdrag 0 14 20 120
+2798 windowcompare slow-down 0 0 1024 720
+2802 rightdrag 12 12 20 120
+2947 windowcompare slow-diag 0 0 1024 720
+2951 rightdrag -14 0 20 120
+3096 windowcompare slow-left 0 0 1024 720
+3100 rightdrag 0 -14 20 120
+3245 windowcompare slow-up 0 0 1024 720
+3249 rightdrag -12 -12 20 120
+3394 windowcompare slow-diag-back 0 0 1024 720
+3398 rightdrag 60 0 20 60
+3483 windowcompare medium-right 0 0 1024 720
+3487 rightdrag 0 60 20 60
+3572 windowcompare medium-down 0 0 1024 720
+3576 rightdrag 60 -60 20 60
+3661 windowcompare medium-diag 0 0 1024 720
+3665 rightdrag 300 0 10 30
+3710 windowcompare fast-right 0 0 1024 720
+3714 rightdrag 0 300 10 30
+3759 windowcompare fast-down 0 0 1024 720
+3763 rightdrag -250 -250 10 30
+3808 windowcompare fast-diag 0 0 1024 720
+3812 rightdrag -300 0 10 30
+3857 windowcompare fast-left 0 0 1024 720
+3861 rightdrag 14 0 20 200
+3963 windowcompare held-slow-right 0 0 1024 720
+4107 rightdrag 0 -14 20 200
+4209 windowcompare held-slow-up 0 0 1024 720
+4353 quit

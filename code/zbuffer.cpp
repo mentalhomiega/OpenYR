@@ -133,13 +133,12 @@ void ZBuffer::Store(unsigned short * dst, int size, unsigned short value)
 	}
 
 	int size_half = size >> 1;
-	unsigned int *dst_ptr = NULL;
+	unsigned int *dst_ptr = (unsigned int *)dst;
 
 	/// Duplicate the value into both halves of an int and write the bulk of the run two
 	/// entries at a time. This loop becomes a memset32.
 	if (size_half) {
 		int val = (value * (2 * ZBUFFER_MAX)) + value;
-		dst_ptr = (unsigned int *)dst;
 		while (size_half) {
 			*dst_ptr = val;
 			dst_ptr++;
@@ -147,12 +146,10 @@ void ZBuffer::Store(unsigned short * dst, int size, unsigned short value)
 		}
 	}
 
-	/// Write the odd entry left over at the end. A run of a single entry that began
-	/// aligned never sets dst_ptr, so it writes nothing.
+	/// Write the odd entry left over at the end. This also covers a run of one aligned
+	/// entry and an unaligned pair, where the wide loop never ran.
 	if (size & 1) {
-		if (dst_ptr != NULL) {
-			*(unsigned short *)dst_ptr = value;
-		}
+		*(unsigned short *)dst_ptr = value;
 	}
 }
 
