@@ -14,6 +14,7 @@
 #include "_ui.h"
 #include "bgfxbackend.h"
 #include "ui/uishell.h"
+#include "ui/rml/rmlsystem.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
 #include "movie.h"
@@ -616,6 +617,14 @@ bool Step_Setting(Rml::Context *, UIStepType const & step, long long)
 }
 
 
+// Logs how many warnings and errors RmlUi has reported so far, as AUTOTEST ui problems <count>.
+bool Step_Problems(Rml::Context *, UIStepType const &, long long)
+{
+	DebugString("AUTOTEST ui problems %d\n", UI_Problem_Count());
+	return(false);
+}
+
+
 bool Step_Hudrows(Rml::Context *, UIStepType const &, long long)
 {
 	DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
@@ -678,6 +687,7 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"inside", Step_Inside},
 		{"value", Step_Value},
 		{"setting", Step_Setting},
+		{"problems", Step_Problems},
 		{"hudrows", Step_Hudrows},
 		{"battleview", Step_Battleview},
 		{"updatecheck", Step_Updatecheck},

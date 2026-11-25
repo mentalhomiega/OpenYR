@@ -599,6 +599,17 @@ static void Draw_Frame_Graph(Surface & surface, Point2D const & origin)
 
 
 /// <summary>
+/// The screen row where the ShowFPS counts start: the top of the view, or just below the message list while it
+/// shows a line, so the counts never print over a message.
+/// </summary>
+int Frame_Rates_Top(void)
+{
+	constexpr int margin = 4;
+	return(std::max(margin, Session.Messages.Bottom_Y() + margin));
+}
+
+
+/// <summary>
 /// Draws the ShowFPS counts at the top left of the game view.
 /// The first line is the rendered rate: the presents per second that reached the display in
 /// the last complete second. The second line is the game rate: the game frames run in about the
@@ -608,15 +619,16 @@ static void Draw_Frame_Graph(Surface & surface, Point2D const & origin)
 static void Draw_Frame_Rates(Surface & surface)
 {
 	char buffer[32];
+	int const top = Frame_Rates_Top();
 
 	snprintf(buffer, sizeof(buffer), "Render %u FPS", Video_Presents_Per_Second());
-	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 4),Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, top),Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	snprintf(buffer, sizeof(buffer), "Game %u ticks/s", GameTicksPerSecond);
-	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 14), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, top + 10), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	if (Options.ShowFrameGraph) {
-		Draw_Frame_Graph(surface, Point2D(4, 26));
+		Draw_Frame_Graph(surface, Point2D(4, top + 22));
 	}
 }
 

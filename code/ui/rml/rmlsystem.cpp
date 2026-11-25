@@ -19,6 +19,15 @@
 #include <cstring>
 
 
+static int Problems = 0;
+
+
+int UI_Problem_Count(void)
+{
+	return(Problems);
+}
+
+
 UIRmlSystemClass::UIRmlSystemClass(UIShellHostClass & host) :
 	Host(host),
 	Start(std::chrono::steady_clock::now())
@@ -40,15 +49,18 @@ bool UIRmlSystemClass::LogMessage(Rml::Log::Type type, Rml::String const & messa
 		case Rml::Log::LT_ERROR:
 			level = "error";
 			Errors++;
+			Problems++;
 			break;
 
 		case Rml::Log::LT_ASSERT:
 			level = "assert";
 			Errors++;
+			Problems++;
 			break;
 
 		case Rml::Log::LT_WARNING:
 			level = "warning";
+			Problems++;
 			break;
 
 		case Rml::Log::LT_DEBUG:

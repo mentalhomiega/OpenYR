@@ -153,3 +153,4 @@ class GScreenClass
 };
 
 void Update_Visible_Surface(Surface *surface = HiddenSurface, Rect *rect = NULL);
+int Frame_Rates_Top(void);

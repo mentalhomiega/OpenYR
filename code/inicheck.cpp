@@ -600,6 +600,13 @@ static void Follow_References(std::vector<Section> const & sections, KindMap & k
 }
 
 
+// TaskForceClass::Read_INI reads its members from the keys 0 to 5, each a count and a type name.
+static bool Is_Task_Force_Slot(std::string const & key)
+{
+	return(key.size() == 1 && key[0] >= '0' && key[0] <= '5');
+}
+
+
 /// <summary>
 /// Checks INI sections against the catalog scopes for the files given. Sections named in a rules list such as
 /// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
@@ -639,6 +646,9 @@ static Report Check_Sections(Catalog const & catalog, std::vector<Section> const
 		}
 
 		for (Entry const & entry : section.Entries) {
+			if (is_object && kind->second.contains("TaskForce") && Is_Task_Force_Slot(entry.Key)) {
+				continue;
+			}
 			std::vector<KeyScope const *> matches;
 			for (KeyScope const * scope : catalog.Find_All(entry.Key)) {
 				if (!files.contains(scope->File)) {

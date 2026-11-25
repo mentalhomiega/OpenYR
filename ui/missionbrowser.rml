@@ -21,7 +21,7 @@
 		<div id="list-column" class="frame">
 			<span class="caption" id="list-caption">Missions</span>
 			<div id="missions" class="list"><div class="rows">
-				<div class="item" data-for="row : rows" data-class-header="row.header" data-class-selected="row.selected" data-class-disabled="row.disabled" data-event-click="queue('rowclick', it_index)" data-event-dblclick="queue('rowplay', it_index)">{{row.text}}</div>
+				<div class="item" data-for="row : rows" data-class-header="row.header" data-class-padding="row.index < 0" data-class-selected="row.selected" data-class-disabled="row.disabled" data-event-click="queue('rowclick', it_index)" data-event-dblclick="queue('rowplay', it_index)">{{row.text}}</div>
 			</div></div>
 		</div>
 		<div id="info-column">
