@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -444,6 +445,12 @@ class HouseClass : public AbstractClass
 		**	be set to true.
 		*/
 		bool IsBuiltSomething;
+
+		/*
+		**	Has the local player been told about the current spell of low power? It is
+		**	not saved, as the announcement is only speech and a message.
+		*/
+		bool IsLowPowerAnnounced;
 
 		/*
 		**	Did this house lose via resignation?
@@ -1016,7 +1023,7 @@ class HouseClass : public AbstractClass
 		int Count_Resource_Gatherers(void) const;
 		bool Is_Harvester_Unit(UnitTypeClass const * type) const;
 		template<typename T> T const * Get_Preferred(DynamicVectorClass<T const *> const & list) const;
-		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const;
+		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list, int first = -1) const;
 		template<typename T> int Count_Owned(CounterClass const & tally, TypeList<T const *> const & list) const;
 		bool Team_Breaks_Build_Limit(TeamTypeClass const & team) const;
 		bool AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVectorClass<BuildingTypeClass const *> & owned, int ownedcount) const;
@@ -1272,8 +1279,7 @@ class HouseClass : public AbstractClass
 		HouseSet Allies;
 
 		/*
-		**	General low-power related damaged is doled out whenever this timer
-		**	expires.
+		**	Low power no longer damages structures, so nothing reads this timer.
 		*/
 		CDTimerClass<FrameTimerClass> DamageTime;
 
@@ -1292,7 +1298,7 @@ class HouseClass : public AbstractClass
 		**	variables are used as countdown timers so that these announcements are paced
 		**	far enough apart to reduce annoyance.
 		*/
-		CDTimerClass<FrameTimerClass> SpeakPowerDelay;
+		CDTimerClass<FrameTimerClass> SpeakPowerDelay;			// Not read: the low power warning repeats only after power returns.
 		CDTimerClass<FrameTimerClass> SpeakMoneyDelay;
 		CDTimerClass<FrameTimerClass> SpeakMaxedDelay;
 
@@ -1384,9 +1390,10 @@ class HouseClass : public AbstractClass
 
 // The caller's tally decides whether a type still under construction counts.
 template<typename T>
-inline bool HouseClass::Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const
+inline bool HouseClass::Owns_Any(CounterClass const & tally, TypeList<T const *> const & list, int first) const
 {
-	for (int index = 0; index < list.Count(); index++) {
+	int const count = first < 0 ? list.Count() : std::min(first, list.Count());
+	for (int index = 0; index < count; index++) {
 		if (tally.Value(list[index]->HeapID) > 0) {
 			return(true);
 		}

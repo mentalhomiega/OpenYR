@@ -1,0 +1,12 @@
+; The low power announcement looks only at the first three BuildConst types (gamemd HouseClass::Update 0x4F8C97-0x4F8D02 tests the list's first, second
+; and third entries and no more). The overlay puts GACNST fourth and the player owns only it (and a war factory, which is no BuildConst type; BuildConst sits under [AI]), so a
+; house that is short of power says nothing. Before the fix any entry counted and the warning played.
+; Expected: no "Speech: request EVA_LowPower" line; the houses lines show the house short (power 0, drain 25). Before the fix any BuildConst entry counted, so the warning played.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/power-low-announce-buildconst.txt -Country 0 -Width 800 -Height 600 -Seconds 120 -Filter "Speech: request EVA_LowPower|AUTOTEST   house Americans|Exception"
+20 rules power-low-announce-buildconst.ini
+30 own GACNST 50 30
+31 command CenterBase
+32 own GAWEAP 54 30
+100 houses
+300 houses
+400 quit

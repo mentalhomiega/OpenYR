@@ -1,0 +1,26 @@
+; A factory's step delay under low power, as TechnoClass::TimeToBuild (0x6F47A0) and the factory rate update (0x4CA6E0: divide by 54, clamp to 1-255) give it.
+; The player builds an Allied Power Plant (GAPOWR) on infinite money while the house's power fraction goes 0 (no plant), 0.4, 0.8 and 1 (the overlay makes the
+; war factory drain 250 and each plant give 100). The stock rules give a minimum speed of 0.5, a maximum of 0.8 and a penalty modifier of 1, so the speed
+; is 0.5 at fractions 0 and 0.4 (the shortfall's speed, 0 and 0.4, is raised to the minimum), 0.8 at 0.8 and 1 at full power. The prodfactory lines give the
+; step delay ("rate") a factory has: the build time divided by the speed and by 54, each cut to a whole number.
+; Expected: rate 18 from frame 110 to 300 (fractions 0 and 0.4), 11 at frame 350 and 400 (fraction 0.8), 9 at 450 and 500 (fraction 1). That fits a build time
+; of 486 to 512 frames at full power; for 504, 504 / 0.5 / 54 is 18, 504 / 0.8 / 54 is 11 and 504 / 54 is 9. Already matched gamemd when written; the test guards it.
+; The plants stand at 46,32, 44,32 and 56,33 (trees block 46,28 and 46,36).
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/power-low-build-rate.txt -Country 0 -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST prodfactory frame \d+ id \d+ house Americans|AUTOTEST   house Americans|Exception"
+20 rules power-low-build-rate.ini
+30 own GACNST 50 30
+31 command CenterBase
+32 command DebugInfiniteMoney
+33 command DebugUnlockAll
+34 own GAWEAP 54 30
+100 produce GAPOWR
+110 sampleprod 50
+111 houses
+220 own GAPOWR 46 32
+221 houses
+330 own GAPOWR 44 32
+331 houses
+440 own GAPOWR 56 33
+441 houses
+550 sampleprod 0
+560 quit

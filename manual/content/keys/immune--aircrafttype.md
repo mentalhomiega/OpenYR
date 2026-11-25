@@ -15,5 +15,3 @@ Two kinds of object ignore forced damage too when their type is immune:
 
 - A TerrainType can be damaged only by a warhead marked [`Wood=yes`](/keys/wood/), and an immune one takes no damage at all. A vehicle armed with a `Wood=yes` warhead normally plans to shoot a TerrainType out of its path, but treats an immune one as impassable.
 - A [`BridgeRepairHut=yes`](/keys/bridgerepairhut/) structure takes no damage at all.
-
-The [low-power damage tick](/systems/power/#the-structure-damage-tick) is not forced, so `Immune=yes` keeps a structure that draws power from being worn down while its house is short of power.

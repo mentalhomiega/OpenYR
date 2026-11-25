@@ -26,5 +26,3 @@ The same threshold changes several behaviors at or below it:
 - Between this fraction and `ConditionRed`, [`ConditionYellowSparkingProbability`](/keys/conditionyellowsparkingprobability/) sets the chance of damage sparks.
 
 An object's damage smoke goes out once repair or healing takes it above this fraction.
-
-A power shortfall damages only structures above this fraction, so it [wears a base down](/systems/power/#the-structure-damage-tick) to this fraction and stops there. Raising the value leaves structures stronger after a long shortfall; lowering it lets a shortfall take them closer to destruction.

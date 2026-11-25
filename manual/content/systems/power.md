@@ -7,10 +7,8 @@ keys:
   - ElectricAssault
   - BuildSpeed
   - BuildTime
-  - C4Warhead
   - CloakGenerator
   - CloakRadiusInCells
-  - ConditionYellow
   - DamageDelay
   - FreeRadar
   - Immune
@@ -30,7 +28,6 @@ keys:
   - SpeakDelay
   - TogglePower
   - Upgrades
-  - Verses
   - WallBuildSpeedCoefficient
 related:
   - type: system
@@ -70,7 +67,6 @@ PowersUpBuilding=MYPOWER
 Power=50         ; added to the host's output before damage scaling
 
 [General]
-DamageDelay=2                   ; game minutes between damage ticks while short of power
 MinLowPowerProductionSpeed=0.5  ; lowest production speed a house can have
 MaxLowPowerProductionSpeed=0.8  ; highest production speed a house short of power can have
 LowPowerPenaltyModifier=1       ; scales the shortfall before it sets the speed
@@ -166,22 +162,6 @@ While a player-controlled house's structure is switched off, a marker is drawn o
 Each effect below applies to every house, computer houses included, unless noted.
 
 A computer house that is not following a map plan also tries to avoid a shortfall. It builds a power plant before a structure that would leave it short; [AI base planning](/systems/ai-base-building/#power-and-money-interventions) covers that rule and the margin it keeps.
-
-### The structure damage tick
-
-While a house is short of power, its structures that consume power take 1 point of damage every [`DamageDelay`](/keys/damagedelay/) game minutes. The house's timer runs whether or not the house is short, so the first tick lands anywhere up to `DamageDelay` minutes after a shortfall begins. A shortfall that ends before the next expiry costs no damage.
-
-When the timer expires while the house is short, each structure that passes all of these tests takes 1 point of damage through [`C4Warhead`](/keys/c4warhead/):
-
-- the house owns it;
-- its strength is strictly above [`ConditionYellow`](/keys/conditionyellow/) of its maximum;
-- its type has drain.
-
-The tick ignores the on/off switch. A switched-off structure still takes damage, although it no longer adds to the drain. The drain test reads the structure's type only, so a structure whose drain comes entirely from its plugs is never damaged.
-
-A shortfall wears a base down to `ConditionYellow` and stops there. With a 1-point tick, it destroys nothing.
-
-The tick is not forced damage, so the warhead's [`Verses`](/keys/verses/) table applies. The 1-point hit is multiplied by the entry for the structure's armor and rounded down, so any entry below 100 percent turns the tick into nothing.
 
 ### Production
 
@@ -287,11 +267,11 @@ A power change does not remove sensor coverage. A [`SensorArray=yes`](/keys/sens
 The game announces low power while all of these hold:
 
 - the house is the local player's;
-- the house's announcement timer has expired;
 - the house is short of power;
-- it owns at least one structure of a [`BuildConst`](/keys/buildconst/) type, switched on or not.
+- the house owns a switched-on or switched-off structure of one of the first three [`BuildConst`](/keys/buildconst/) types, and later entries in the list do not count;
+- the announcement has not already played during this spell of low power.
 
-The announcement plays the warning, shows its on-screen text for [`MessageDelay`](/keys/messagedelay/) minutes, and restarts the timer with [`SpeakDelay`](/keys/speakdelay/) minutes.
+The announcement plays the warning and shows its on-screen text for [`MessageDelay`](/keys/messagedelay/) minutes. It does not repeat: the next one waits until the house has had full power again and then falls short once more. [`SpeakDelay`](/keys/speakdelay/) does not space it. A house that falls short before it owns one of those structures says nothing at that point, and says it as soon as it owns one while still short.
 
 The height of the sidebar power bar grows with the size of the `Power=` rating of every structure the player owns, producers and consumers alike, leaving out plugs. A damaged or switched-off structure still adds its full rating to the height.
 
@@ -306,3 +286,5 @@ The [Turn off building](/mapping/actions/taction-turn-off-attached/) and [Turn o
 ## Parsed settings without effect
 
 [`WorstLowPowerBuildRateCoefficient`](/keys/worstlowpowerbuildratecoefficient/) and [`BestLowPowerBuildRateCoefficient`](/keys/bestlowpowerbuildratecoefficient/) in `[General]` are read but never used. The production speed above does not depend on either.
+
+[`DamageDelay`](/keys/damagedelay/) in `[General]` is read and likewise unused: a house short of power takes no damage to its structures.
