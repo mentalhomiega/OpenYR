@@ -262,6 +262,8 @@ class AudioEventPoolClass
 		void Reap_Voices(unsigned now);
 		void Kill(EventClass & event, float fade, AudioEventFate fate = AudioEventFate::STOPPED, EventClass const * by = nullptr);
 		void Finish(EventClass & event);
+		// Ends the event's sequence the way mode says, or stops it at once while it is still waiting to start.
+		void End_Sequence(EventClass & event, AudioEndMode mode);
 		AudioSampleClass * Pin(EventClass & event, unsigned sound);
 		AudioHandle Handle_Of(EventClass const & event) const;
 		void Report(EventClass const & event, AudioEventFate fate, EventClass const * by = nullptr, float ramp = 0.0f);

@@ -1035,6 +1035,19 @@ void SuperClass::Force_Shield(Cell const & cell)
 }
 
 
+// Puts up to number new soldiers of the type, owned by house, into the carrier's hold; it stops at the first that cannot be made.
+static void Board_Troopers(AircraftClass & carrier, InfantryTypeClass const & type, int number, HouseClass * house)
+{
+	for (int count = 0; count < number; count++) {
+		FootClass * trooper = static_cast<FootClass *>(type.Create_One_Of(house));
+		if (trooper == NULL) {
+			return;
+		}
+		carrier.Cargo.Attach(trooper);
+	}
+}
+
+
 /// <summary>
 /// Calls in the planes for a paradrop or spy plane shot, as the ParaDrop, AmerParaDrop and
 /// SpyPlane cases of SuperClass::Launch (0x6CC390) do. A paradrop aimed at water lands at the
@@ -1131,13 +1144,7 @@ void SuperClass::Paradrop(Cell const & cell) const
 					if (carrier == NULL) {
 						carrier = House->Send_Plane(aircraft, MISSION_PARADROP_APPROACH, target, trooper_type, number);
 					} else {
-						for (int count = 0; count < number; count++) {
-							FootClass * trooper = static_cast<FootClass *>(trooper_type->Create_One_Of(House));
-							if (trooper == NULL) {
-								break;
-							}
-							carrier->Cargo.Attach(trooper);
-						}
+						Board_Troopers(*carrier, *trooper_type, number, House);
 					}
 				}
 			}

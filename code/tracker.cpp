@@ -222,22 +222,30 @@ void Untrack_Anim_Holder(AbstractClass * holder)
 }
 
 
+// Detaches target from holder and returns whether that changed any of the holder's first size bytes. A size of 0,
+// for a holder of unknown size, counts as a change.
+static bool Detach_Changes_Holder(AbstractClass * holder, size_t size, AbstractClass const * target, bool all)
+{
+	static std::vector<unsigned char> before;
+	before.assign((unsigned char const *)holder, (unsigned char const *)holder + size);
+	holder->Detach(target, all);
+	return(size == 0 || memcmp(before.data(), holder, size) != 0);
+}
+
+
 // The check for the holders an animation's removal skipped; `visited` is the one holder that was not skipped.
 static void Check_Unheld_Anim(AbstractClass const * target, bool all, AbstractClass const * visited)
 {
 	static long long checks = 0;
 	static long long differences = 0;
-	std::vector<unsigned char> before;
 	for (int index = 0; index < AnimPtrTracker.Count(); index++) {
 		AbstractClass * holder = AnimPtrTracker[index];
 		if (holder == visited) {
 			continue;
 		}
 		size_t const size = Anim_Holder_Size(holder);
-		before.assign((unsigned char const *)holder, (unsigned char const *)holder + size);
-		holder->Detach(target, all);
 		checks++;
-		if (size == 0 || memcmp(before.data(), holder, size) != 0) {
+		if (Detach_Changes_Holder(holder, size, target, all)) {
 			differences++;
 			DebugString("DETACH CHECK DIFFERENCE frame %d holder rtti %d size %d\n", Frame, (int)holder->RTTI, (int)size);
 			Detach_Check_Failed();
@@ -378,12 +386,8 @@ static void Check_Skipped_Holder(AbstractClass * holder, AbstractClass const * t
 {
 	static long long checks = 0;
 	static long long differences = 0;
-	static std::vector<unsigned char> before;
-	size_t const size = Skipped_Holder_Size(holder);
-	before.assign((unsigned char const *)holder, (unsigned char const *)holder + size);
-	holder->Detach(target, all);
 	checks++;
-	if (size == 0 || memcmp(before.data(), holder, size) != 0) {
+	if (Detach_Changes_Holder(holder, Skipped_Holder_Size(holder), target, all)) {
 		differences++;
 		DebugString("DETACH CHECK DIFFERENCE frame %d holder rtti %d target rtti %d\n", Frame, (int)holder->RTTI, (int)target->RTTI);
 		Detach_Check_Failed();

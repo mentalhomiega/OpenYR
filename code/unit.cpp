@@ -5727,10 +5727,7 @@ int UnitClass::Do_MISSION_REPAIR(void)
 
 	IsHarvesting = false;
 
-	/*
-	**	If no listed depot is free, look again ignoring who is using it. A busy depot that
-	**	this unit could reach sends it idle (gamemd 0x740EF0); with none at all it keeps polling.
-	*/
+	// With no free depot, a busy one this unit could reach sends it idle (gamemd 0x740EF0); with none at all it keeps polling.
 	if (nearest == NULL) {
 		if (Find_Docking_Bay(Rule->RepairBay, false, false) != NULL) {
 			Enter_Idle_Mode();
@@ -5933,10 +5930,7 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 
 		if (bullet != NULL) {
 
-			/*
-			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340),
-			**	except a shot that used no rounds (Ares weapon Ammo=0).
-			*/
+			// Every shot that used rounds restarts the reload timer of a unit short of ammunition (UnitClass::Fire, 0x741340).
 			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload && Rounds_Per_Shot(weap) != 0) {
 				Start_Reloading();
 			}

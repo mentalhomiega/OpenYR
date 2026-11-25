@@ -304,6 +304,16 @@ Through a tunnel, each `Port` entry of `[Settings]` and `[OtherN]` holds a tunne
 
 `MeasuredMaxAhead=yes` sets the look-ahead from the measured round trip instead of the default timing's formula, under the chosen or default send period. See [Measured look-ahead](/systems/network-synchronization/#measured-look-ahead). It is read only without a chosen `MaxAhead` and under protocol 2. `StartRoundTrip` is a round trip in milliseconds, `0` to `5000`, that sets the starting look-ahead by the same rule; `0` or no key starts with the default timing's look-ahead. It is read only with `MeasuredMaxAhead=yes`. The built-in CnCNet lobby writes both keys when the host chose a send period and no look-ahead. Both change the session identity when `MeasuredMaxAhead=yes`.
 
+`PeerCheck` in `[Settings]` sets what happens when another player runs a different game build, different mods, or different rules, art or AI files:
+
+| Value | Effect |
+| --- | --- |
+| `Refuse`, the default, also any other text | The game shows a message naming each player who differs and how, writes it to the log, and exits without starting the match. |
+| `Warn` | The game writes the same lines to the log and starts the match, which is then likely to go out of sync. |
+| `Off` | The game sends no report and checks none. |
+
+Each machine reads its own value, so the key does not change the session identity. A machine on `Warn` or `Off` still starts while another on `Refuse` exits, so set the same value on every machine.
+
 Each machine applies its own waits, so files that differ do not put the match out of step. Writing the same values everywhere is still the better choice, since the machine with the shortest wait is the first to drop a slow machine.
 
 ## When something is wrong

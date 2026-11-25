@@ -8,6 +8,7 @@ opents_add_test(ZBufRing
     ENGINE
         zbuffer.cpp
         abuffer.cpp
+        ringbuffer.cpp
         xsurface.cpp
         blit.cpp
         buff.cpp

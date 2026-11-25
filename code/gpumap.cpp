@@ -939,6 +939,21 @@ static void Set_Quad(MapVertex * vertex, Rect const & area, int x, int y, int wi
 }
 
 
+// Allocates quads quads in buffer with the first covering all of area, or returns NULL when the transient vertex
+// buffer has no room for them.
+static MapVertex * Alloc_Area_Quads(bgfx::TransientVertexBuffer & buffer, Rect const & area, int quads)
+{
+	if (bgfx::getAvailTransientVertexBuffer((uint32_t)quads * 6, _Layout) < (uint32_t)quads * 6) {
+		return(NULL);
+	}
+	bgfx::allocTransientVertexBuffer(&buffer, (uint32_t)quads * 6, _Layout);
+	MapVertex * vertex = (MapVertex *)buffer.data;
+	float const none[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, none, none, none);
+	return(vertex);
+}
+
+
 // The projection maps area pixels, so a view of scale times the area's size draws the same quads finer.
 static void Set_Map_View(bgfx::ViewId view, bgfx::FrameBufferHandle target, Rect const & area, float const * projection, int scale = 1)
 {
@@ -1117,15 +1132,14 @@ static bool Submit_Plane(GpuMapPass const & pass, float const * projection, floa
 	int const quads = Count_Plane_Quads(list);
 	// No write reads the store when the pass copied no values, so a store from an earlier pass serves.
 	bool const novalues = list.MaskValues.empty() && bgfx::isValid(_MaskValueStore.Handle);
-	if (!Size_Plane_Target(area) || !(novalues || Fill_Arena(_MaskValueStore, list.MaskValues.data(), list.MaskValues.size()))
-		|| bgfx::getAvailTransientVertexBuffer((uint32_t)quads * 6, _Layout) < (uint32_t)quads * 6) {
+	if (!Size_Plane_Target(area) || !(novalues || Fill_Arena(_MaskValueStore, list.MaskValues.data(), list.MaskValues.size()))) {
 		return(false);
 	}
 	bgfx::TransientVertexBuffer buffer;
-	bgfx::allocTransientVertexBuffer(&buffer, (uint32_t)quads * 6, _Layout);
-	MapVertex * vertex = (MapVertex *)buffer.data;
-	float const none[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, none, none, none);
+	MapVertex * vertex = Alloc_Area_Quads(buffer, area, quads);
+	if (vertex == NULL) {
+		return(false);
+	}
 	for (std::size_t i = 0; i < list.MaskOps.size(); i++) {
 		GpuMaskOp const & op = list.MaskOps[i];
 		float t1[4] = { 0.0f, (float)op.Width, (float)op.Value, 0.0f };
@@ -1202,14 +1216,11 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 		return(false);
 	}
 	int const quads = Count_Mask_Quads(list);
-	if (bgfx::getAvailTransientVertexBuffer((uint32_t)quads * 6, _Layout) < (uint32_t)quads * 6) {
+	bgfx::TransientVertexBuffer buffer;
+	MapVertex * vertex = Alloc_Area_Quads(buffer, area, quads);
+	if (vertex == NULL) {
 		return(false);
 	}
-	bgfx::TransientVertexBuffer buffer;
-	bgfx::allocTransientVertexBuffer(&buffer, (uint32_t)quads * 6, _Layout);
-	MapVertex * vertex = (MapVertex *)buffer.data;
-	float const none[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, none, none, none);
 	// The blit each quad draws, NULL for the copy of the plane.
 	std::vector<GpuBlit const *> blits(quads, NULL);
 	int quad = 1;
@@ -1218,6 +1229,7 @@ static bool Submit_Voxel_Mask(GpuMapPass const & pass, float const * projection,
 			continue;
 		}
 		float const zero[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+		float const none[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, zero, none, none);
 		blits[quad] = &blit;
 		quad++;
