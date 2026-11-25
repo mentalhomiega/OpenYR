@@ -39,6 +39,7 @@
 #include "queue.h"
 #include "rocket.h"
 #include "_rules.h"
+#include "_surface.h"
 #include "_tactica.h"
 #include "audio/audioengine.h"
 #include "audio/audiotrace.h"
@@ -65,6 +66,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "gscreen.h"
+#include "inline.h"
 #include "playerdisplay.h"
 #include "gpudraw.h"
 #include "gpumap.h"
@@ -6555,6 +6557,60 @@ static void Cellpixel_Step(StepType const & step)
 }
 
 
+// shroudholes <name>: logs how many cells of the map view lie in solid shroud (the cell and its eight neighbours fully
+// shrouded for the player) and how many of them show ground in the cached tile layer, which they should cover in black.
+// The tile layer holds the same picture whichever way it was drawn, so this sees shroud missing from both a strip and a full draw.
+static void Shroudholes_Step(StepType const & step)
+{
+	std::string const name = step.Words.size() > 2 ? step.Words[2] : step.Argument;
+	Surface const * const tiles = (MapTileSurface != NULL) ? MapTileSurface : TileSurface;
+	if (TacticalMap == NULL || tiles == NULL) {
+		DebugString("AUTOTEST shroudholes %s FAILED no map view\n", name.c_str());
+		return;
+	}
+	auto solid = [](Cell const & cell) {
+		for (int dy = -1; dy <= 1; dy++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				if (TacticalMap->Cell_Shadow(cell + Cell(dx, dy), false, PlayerPtr) != -2) {
+					return(false);
+				}
+			}
+		}
+		return(true);
+	};
+	int shrouded = 0;
+	int open = 0;
+	int left = TacticalRect.Width, right = -1, top = TacticalRect.Height, bottom = -1;
+	Map.Reset_Iterator();
+	for (CellClass const * cellptr = Map.Iterate(); cellptr != NULL; cellptr = Map.Iterate()) {
+		Cell const cell = cellptr->Fetch_CellID();
+		Point2D pixel;
+		TacticalMap->Coord_To_Pixel(Coord_Whole(Coord(cell)), pixel);
+		// The middle of the flat diamond that Draw_Shroud covers for the cell.
+		Point2D const middle(pixel.X, pixel.Y + ISO_TILE_PIXEL_H / 2);
+		if (middle.X < 0 || middle.Y < 0 || middle.X >= TacticalRect.Width || middle.Y >= TacticalRect.Height || !Map.In_Radar(cell) || !solid(cell)) {
+			continue;
+		}
+		shrouded++;
+		if (tiles->Get_Pixel(middle + TacticalRect.Top_Left()) != 0) {
+			open++;
+			left = std::min(left, middle.X);
+			right = std::max(right, middle.X);
+			top = std::min(top, middle.Y);
+			bottom = std::max(bottom, middle.Y);
+		}
+	}
+	// The cells under the view's top corners, in leptons over 256, show how far the view reaches past the map's cells.
+	Point2D const topleft = TacticalMap->Pixel_To_Lepton(Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+	Point2D const topright = TacticalMap->Pixel_To_Lepton(Point2D(TacticalMap->TacPixelX + TacticalRect.Width, TacticalMap->TacPixelY));
+	DebugString("AUTOTEST shroudholes %s shrouded %d open %d corners %.1f,%.1f %.1f,%.1f\n", name.c_str(), shrouded, open,
+		topleft.X / 256.0, topleft.Y / 256.0, topright.X / 256.0, topright.Y / 256.0);
+	if (open != 0) {
+		DebugString("AUTOTEST   shroudholes %s open cells lie in x %d-%d y %d-%d of the view\n", name.c_str(), left, right, top, bottom);
+	}
+}
+
+
 // tilecheck [tile ...]: logs how the map's tiles stand once it is loaded: the cells the playing area holds, how many of
 // them hold a tile type with no artwork, how many the map lets ice grow on, and whether the theater's ice behavior is
 // on. Each tile number after the command also gets the count of cells that hold it. A map tile that was rewritten
@@ -9343,6 +9399,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"pickable", Pickable_Step},
 		{"helptext", Helptext_Step},
 		{"cellpixel", Cellpixel_Step},
+		{"shroudholes", Shroudholes_Step},
 		{"tilecheck", Tilecheck_Step},
 		{"settile", Settile_Step},
 		{"hoverat", Hoverat_Step},

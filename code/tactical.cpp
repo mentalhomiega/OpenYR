@@ -2564,10 +2564,7 @@ CellClass * Tactical::Find_Bridge_Owner_Cell(Cell const & cell)
 void Tactical::Draw_Overlays(Rect const & area)
 {
 	Coord lepton = Coord(Pixel_To_Lepton(Point2D(TacPixelX, TacPixelY) + area.Top_Left() - TacticalRect.Top_Left()), 0);
-	if (lepton.X < 0) lepton.X = 0;
-	if (lepton.Y < 0) lepton.Y = 0;
-
-	Cell origin = Map[lepton].CellID;
+	Cell origin = lepton.As_Cell();
 
 	int ycount = area.Height / (ISO_TILE_PIXEL_H / 2) + 20;
 	int xcount = area.Width / ISO_TILE_PIXEL_W + 4;
@@ -2637,10 +2634,7 @@ void Tactical::Draw_Overlays(Rect const & area)
 void Tactical::Draw_Shroud(Rect const & area)
 {
 	Coord lepton = Coord(Pixel_To_Lepton(Point2D(TacPixelX, TacPixelY) + area.Top_Left() - TacticalRect.Top_Left()), 0);
-	if (lepton.Y < 0) lepton.Y = 0;
-	if (lepton.X < 0) lepton.X = 0;
-
-	Cell origin = Map[lepton].CellID;
+	Cell origin = lepton.As_Cell();
 
 	int ycount = area.Height / (ISO_TILE_PIXEL_H / 2) + 17;
 	int xcount = area.Width / ISO_TILE_PIXEL_W + 4;
