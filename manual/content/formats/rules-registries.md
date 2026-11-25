@@ -82,16 +82,16 @@ A weapon that neither list names is created like a projectile, the first time on
 
 ### When a created type is read
 
-A rules file is read in this order: `[General]` and the registration lists, then the superweapons, animations, structures, aircraft, vehicles and infantry, then the weapons, the projectiles, the warheads and the remaining kinds. `[CombatDamage]`, `[SpecialWeapons]` and the other sections follow. A type's section is read only when the type exists by the time its kind is read, so these types are read:
+A rules file is read in this order: `[General]` and the registration lists, then the superweapons, animations, structures, aircraft, vehicles and infantry, then the weapons, the projectiles, the warheads and the remaining kinds. `[CombatDamage]`, `[SpecialWeapons]` and the other sections follow. Each kind's pass reads the types that exist by then, so these types are read in that pass:
 
 - A weapon that `[General]` (`DropPodWeapon=`), an object type (`Primary=`, `ElitePrimary=`, `DeathWeapon=`, `OccupyWeapon=`) or a superweapon (`WeaponType=`) names.
 - A projectile and a warhead that such a weapon names.
 - Every warhead created before `[SpecialWeapons]` is read, because that section reads all warheads again. `[CombatDamage]` warhead keys such as `FlameDamage=` and the `[SpecialWeapons]` warhead keys count.
 
-These types are created too late for their kind's read, so they keep the built-in defaults of their kind:
+These types are created too late for their kind's pass:
 
 - A weapon that `[CombatDamage]` `DeathWeapon=` names.
 - A weapon that a projectile's `AirburstWeapon=` or `ShrapnelWeapon=` names, because the weapons are read before the projectiles.
 - A projectile that a `[SpecialWeapons]` key names, such as `NukeProjectile=`.
 
-A late type is read when a rules file read afterwards names it in a section of its own: each file reads every registered type from its own sections. The section in the file that created it is not read. A weapon left at its defaults has `Damage=0` and fires the default projectile and warhead, where gamemd would crash when it fires. List the weapon in `[Weapons]` or attach it to an object type to have its section read, or set [`ReadLateTypes=yes`](/keys/readlatetypes/#scope-global-rules).
+By default the game reads the sections of these late types after the other sections of the same rules file, and then any type those reads create. With [`ReadLateTypes=no`](/keys/readlatetypes/#scope-global-rules), as in gamemd, they keep the built-in defaults of their kind until a rules file read afterwards reads them: each file reads every registered type from its own sections, but the section in the file that created the type is not read. A weapon left at its defaults has `Damage=0` and fires the default projectile and warhead, where gamemd would crash when it fires. To have its section read under `ReadLateTypes=no`, list the weapon in `[Weapons]` or attach it to an object type.

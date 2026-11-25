@@ -1,5 +1,5 @@
 ---
-title: Leave a type that a rule key names late at its defaults
+title: Read the section of a type that only a rule key names
 category: fix
 release: 0.2.0
 targets:
@@ -20,4 +20,4 @@ credit:
 - MentalHomiega
 ---
 
-A weapon or projectile that first appears in a key read after its type list, such as [`DeathWeapon=`](/keys/deathweapon/#scope-global-rules) in `[CombatDamage]`, `NukeProjectile=` in `[SpecialWeapons]`, or a projectile's [`AirburstWeapon=`](/keys/airburstweapon/), keeps its defaults, as in gamemd. [`ReadLateTypes=yes`](/keys/readlatetypes/#scope-global-rules) reads the sections of such types. Warheads that `[CombatDamage]` and `[SpecialWeapons]` name are still read, and stock rules are unaffected.
+A weapon, projectile, warhead, animation or other type that appears first in a rules key read late, such as [`DeathWeapon=`](/keys/deathweapon/#scope-global-rules) in `[CombatDamage]`, `NukeProjectile=` in `[SpecialWeapons]` or a projectile's [`AirburstWeapon=`](/keys/airburstweapon/), now reads its own section. Before, it kept its defaults, so a `DeathWeapon` with `Projectile=` and `Warhead=` in its section was given the default projectile and warhead instead. gamemd never reads such a section; [`ReadLateTypes=no`](/keys/readlatetypes/#scope-global-rules) selects that single pass. Stock rules are unaffected.

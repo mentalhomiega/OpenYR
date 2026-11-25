@@ -2256,9 +2256,9 @@ class RulesClass
 		// house a player controls. Ares supports them for computer houses only, which is the default.
 		bool IsFirestormTriggerHumans = false;
 
-		// [General] ReadLateTypes (ours): yes reads the section of every type that a rule key names after its list was read.
-		// The default, no, is gamemd's: such a type keeps its defaults. Used while the rules load; not saved.
-		bool IsReadLateTypes = false;
+		// [General] ReadLateTypes (ours): the default, yes, reads the section of every type that a rule key names after its list
+		// was read. no is gamemd's single pass: such a type keeps its defaults. Used while the rules load; not saved.
+		bool IsReadLateTypes = true;
 
 		// [GlobalControls] AllowParallelAIQueues (Ares): no lets a computer house build in one factory of a kind at a time.
 		bool IsAllowParallelAIQueues = true;
