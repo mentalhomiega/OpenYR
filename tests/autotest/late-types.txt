@@ -1,18 +1,15 @@
 ; Weapons, projectiles and warheads first named by rule keys read before and after their type lists. The mod
 ; late-types-rules gives each type a section. gamemd (RulesClass::Read_File, 0x668A40, then LoadTypesFromINI, 0x66A210)
 ; reads the weapon list, the projectile list and the warhead list once each, in that order, after [General] and the
-; object types, so a type those passes create or have already passed is read only when it was created earlier. A type
-; named by a key read after them keeps its defaults, except a warhead created before [SpecialWeapons] is read, which
-; reads every warhead again.
+; object types, so a type those passes create or have already passed is read only when it was created earlier. Ours, with
+; the default [General] ReadLateTypes=yes, also reads the section of every type created later; late-types-strict.txt
+; covers ReadLateTypes=no, gamemd's single pass.
 ; Read (damage 41 to 47, projectile ROT 7, warheads spread 2 to 4): ReadPodGun (DropPodWeapon), ReadDeathGun (DeathWeapon of
 ; a unit), ReadEliteGun (ElitePrimary), ReadOccupyGun and ReadEliteOccupyGun (OccupyWeapon, EliteOccupyWeapon), ReadSuperGun
 ; (WeaponType of a superweapon), ReadCarrierGun (Primary), ReadBullet, ReadWarhead, ReadFlameWarhead and ReadPulseWarhead.
-; Left at their defaults: LateDeathGun ([CombatDamage] DeathWeapon), LateAirburstGun and LateShrapnelGun (named by
-; ReadBullet, which is read after the weapons) and LateNukeBullet ([SpecialWeapons] NukeProjectile). A weapon left unread
-; has damage 0 and takes the default projectile and warhead (gamemd would crash when it fired).
-; With the mod late-types-on-rules first, ReadLateTypes=yes reads the four late types as well: damage 51, 52 and 53, ROT 9.
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Mods src-agent27/tests/autotest/late-types-rules -Script src-agent27/tests/autotest/late-types.txt -Seconds 60 -Filter "typedump (weapon|projectile) (Read|Late)|typedump warhead (Read|Late)|AUTOTEST quit|Exception"
-; Run with the switch: pass -Mods src-agent27/tests/autotest/late-types-on-rules,src-agent27/tests/autotest/late-types-rules
+; Read as well by default: LateDeathGun ([CombatDamage] DeathWeapon), LateAirburstGun and LateShrapnelGun (named by
+; ReadBullet, which is read after the weapons) and LateNukeBullet ([SpecialWeapons] NukeProjectile): damage 51, 52 and 53, ROT 9.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Mods src-agent29/tests/autotest/late-types-rules -Script src-agent29/tests/autotest/late-types.txt -Seconds 60 -Filter "typedump (weapon|projectile) (Read|Late)|typedump warhead (Read|Late)|AUTOTEST quit|Exception"
 30 command CenterBase
 35 typedump ReadPodGun
 35 typedump ReadDeathGun

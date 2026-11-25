@@ -1171,7 +1171,7 @@ static int Read_Types_From(LIST & list, int & mark, CCINIClass const & ini)
 /// A type that only a rule key names (a DeathWeapon, a special weapon's projectile) is created after
 /// its list's read pass, so without this it would keep its defaults and its section would be ignored.
 /// Reading a type can create another, so the lists are read again until none grows.
-/// Only [General] ReadLateTypes=yes does this. gamemd (RulesClass::Read_File, 0x668A40) never reads such a type;
+/// [General] ReadLateTypes=no turns this off. gamemd (RulesClass::Read_File, 0x668A40) never reads such a type;
 /// its weapon is left with no projectile and crashes the first time it is used.
 /// </summary>
 static void Read_Late_Types(CCINIClass const & ini)
@@ -1259,8 +1259,8 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Radiation(ini);
 	Elevation_Model(ini);
 
-	// Combat_Damage and the sections after Objects can create types after the read loops in Objects. gamemd never reads
-	// them, so by default they keep their defaults, and a weapon that still names no projectile takes the default one.
+	// Combat_Damage and the sections after Objects can create types after the read loops in Objects. They are read unless
+	// ReadLateTypes=no keeps them at their defaults, as gamemd does; a weapon that still names no projectile takes the default one.
 	if (IsReadLateTypes) {
 		Read_Late_Types(ini);
 	} else {
@@ -4291,7 +4291,7 @@ bool RulesClass::Objects(CCINIClass const & ini)
 	TypeMarks.Infantry = InfantryTypes.Count();
 
 	// The weapons are read before the projectiles, as in gamemd, so a weapon that a projectile's AirburstWeapon or
-	// ShrapnelWeapon creates is not read unless ReadLateTypes asks for the lists to be read again until neither grows.
+	// ShrapnelWeapon creates is read only because ReadLateTypes, by default, reads the lists again until neither grows.
 	int windex = 0;
 	int proj = 0;
 	do {
