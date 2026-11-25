@@ -1,0 +1,21 @@
+; Soviet 4: the player orders Romanov to a cell that enemy units have surrounded (docs/SOV04_PLAYTHROUGH_REVIEW.md, finding 6).
+; The cell and the road cell he stands on are in one zone, so the hierarchical pass finds a corridor, but the regular
+; search cannot enter the ring of enemy tanks. gamemd's FootClass::Basic_Path then stops the driver and a human's unit goes
+; to Guard, which is what we log. The debug log line "Regular findpath failure: (95,50) to (93, 46) RMNV Computer Move zones 2 2"
+; is the only trace, since the player's house is nicknamed Computer in a campaign. An enclosed cell is the only way found
+; to make the pair fail; a lone tank on the destination does not (Romanov walks to a cell beside it).
+; Expected: the failure line, then "where RMNV ... cell 95,50 mission Guard" at frame 152.
+; Run: scripts/run_autotest.ps1 -Script src-agent27/tests/campaign/sov04-romanov-enclosed.txt -Build agent27 -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 400 -Filter "where RMNV|findpath|Exception"
+ui briefing
+100 houseunit HTNK@YuriCountry 94 47
+102 houseunit HTNK@YuriCountry 93 47
+104 houseunit HTNK@YuriCountry 92 47
+106 houseunit HTNK@YuriCountry 92 46
+108 houseunit HTNK@YuriCountry 92 45
+110 houseunit HTNK@YuriCountry 93 45
+112 houseunit HTNK@YuriCountry 94 45
+114 houseunit HTNK@YuriCountry 94 46
+150 grantunit RMNV 95 50
+151 move RMNV 93 46
+152 where RMNV
+400 quit

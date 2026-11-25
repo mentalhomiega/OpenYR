@@ -8468,6 +8468,7 @@ static void Gamespeed_Step(StepType const & step)
 // message <text>: shows the text in the message list for ten seconds, as a mission's text action does.
 static void Message_Step(StepType const & step)
 {
+	DebugString("AUTOTEST message \"%s\"\n", step.Argument.c_str());
 	Post_Player_Message(step.Argument.c_str(), TICKS_PER_SECOND * 10);
 }
 
@@ -9522,7 +9523,7 @@ static bool Takes_Rest_Of_Line(char const * command)
 {
 	static std::set<std::string_view> const names = {"rules", "art", "pcxcameo", "truecolourdir", "exportshape", "exportpal", "teamini",
 		"searchdir", "statedump", "extract", "log", "beacontext", "wintype", "key", "winkey", "hold", "release", "cameopress",
-		"binding", "scheme"};
+		"binding", "scheme", "message"};
 	return(names.contains(command));
 }
 
