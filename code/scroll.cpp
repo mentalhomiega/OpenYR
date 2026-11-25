@@ -402,7 +402,7 @@ ActionType ScrollClass::What_Action(Cell const & cell, ObjectClass * object, boo
 /// scroll arrow, or its barred version when the map cannot travel that way. Scrolling gathers
 /// speed the longer the cursor is held at the edge and coasts back down once it leaves.
 /// </summary>
-/// <param name="point">The current mouse position, relative to the tactical view.</param>
+/// <param name="point">The current mouse position on the screen.</param>
 void ScrollClass::Scroll_Edge(Point2D const & point)
 {
 	/*
@@ -415,9 +415,9 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 		bool noscroll = false;
 
 		if (!noscroll) {
-			Point2D p = View_To_Screen_Point(point);
-			int x = p.X;
-			int y = p.Y;
+			// The screen point itself is tested: a point taken into the zoomed view and back can land a pixel short of the edge.
+			int x = point.X;
+			int y = point.Y;
 			int w = VisibleRect.Width - 1;
 			int h = CompositeSurface->Get_Height() - 1;
 
@@ -578,7 +578,7 @@ void ScrollClass::Scroll_AI(void)
 				}
 			}
 			if (Options.AutoScroll && !Debug_Map) {
-				Scroll_Edge(point);
+				Scroll_Edge(mouse);
 			}
 		}
 	}
