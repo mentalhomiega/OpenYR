@@ -8259,6 +8259,8 @@ struct PendingCapture
 	bool Red = false;
 	// A shot as the view stands is taken without a full redraw too.
 	bool AsIs = false;
+	// The second capture of a windowcompare holds the path of the first, which it is compared with once it is written.
+	std::string ComparePath;
 };
 static std::deque<PendingCapture> PendingCaptures;
 
@@ -8274,6 +8276,138 @@ static void Windowshot_Step(StepType const & step)
 	std::string const name = step.Words.size() > 2 ? step.Words[2] : step.Argument;
 	bool const asis = step.Words.size() > 3 && step.Words[3] == "asis";
 	PendingCaptures.push_back({false, Rect(), name, Screenshot_Name((name + ".tga").c_str()), 0, false, asis});
+}
+
+
+// Reads an uncompressed true colour TGA, as the window capture writes it. False when the file is missing or of another kind.
+static bool Read_Tga(std::string const & path, int & width, int & height, std::vector<unsigned char> & pixels)
+{
+	FILE * file = std::fopen(path.c_str(), "rb");
+	if (file == NULL) {
+		return(false);
+	}
+	unsigned char header[18];
+	bool ok = std::fread(header, 1, sizeof(header), file) == sizeof(header) && header[2] == 2 && (header[16] == 24 || header[16] == 32);
+	if (ok) {
+		width = header[12] | (header[13] << 8);
+		height = header[14] | (header[15] << 8);
+		std::fseek(file, header[0], SEEK_CUR);
+		pixels.resize((std::size_t)width * height * (header[16] / 8));
+		ok = std::fread(pixels.data(), 1, pixels.size(), file) == pixels.size();
+	}
+	std::fclose(file);
+	return(ok);
+}
+
+
+// Logs how the two captures of a windowcompare differ: the pixels that differ, and the rectangle and first column they cover.
+static void Compare_Captures(std::string const & label, std::string const & first, std::string const & second, Rect const & area)
+{
+	int width = 0, height = 0, otherwidth = 0, otherheight = 0;
+	std::vector<unsigned char> before, after;
+	if (!Read_Tga(first, width, height, before) || !Read_Tga(second, otherwidth, otherheight, after) || width != otherwidth || height != otherheight || before.size() != after.size()) {
+		DebugString("AUTOTEST windowcompare %s FAILED could not read two captures of one size\n", label.c_str());
+		return;
+	}
+	std::size_t const bytes = before.size() / ((std::size_t)width * height);
+	int differing = 0;
+	std::vector<int> columns(width, 0);
+	std::vector<int> rows(height, 0);
+	int left = width, top = height, right = -1, bottom = -1;
+	Rect const region = area.Is_Valid() ? Intersect(area, Rect(0, 0, width, height)) : Rect(0, 0, width, height);
+	for (int y = region.Y; y < region.Y + region.Height; y++) {
+		for (int x = region.X; x < region.X + region.Width; x++) {
+			std::size_t const at = ((std::size_t)y * width + x) * bytes;
+			if (std::memcmp(&before[at], &after[at], 3) != 0) {
+				differing++;
+				columns[x]++;
+				rows[y]++;
+				left = std::min(left, x);
+				right = std::max(right, x);
+				top = std::min(top, y);
+				bottom = std::max(bottom, y);
+			}
+		}
+	}
+	// A strip a scroll left stale makes whole columns or rows differ, where an animation changes a few scattered pixels.
+	int const stale_line = 48;
+	int const stale_columns = (int)std::count_if(columns.begin(), columns.end(), [&](int count) {return(count >= stale_line);});
+	int const stale_rows = (int)std::count_if(rows.begin(), rows.end(), [&](int count) {return(count >= stale_line);});
+	DebugString("AUTOTEST windowcompare %s %dx%d differing %d stale columns %d stale rows %d\n", label.c_str(), width, height, differing, stale_columns, stale_rows);
+	if (differing != 0) {
+		DebugString("AUTOTEST   windowcompare %s differs in x %d-%d y %d-%d\n", label.c_str(), left, right, top, bottom);
+	}
+}
+
+
+// windowcompare <name> [x y w h]: captures the window as the last frames left it, then drawn afresh, and logs one `AUTOTEST windowcompare` line
+// with the number of pixels that differ and the rectangle they cover. A window rectangle limits the pixels compared. A part of the tile layer that a scroll left stale shows as a difference.
+static void Windowcompare_Step(StepType const & step)
+{
+	std::string const name = step.Words.size() > 2 ? step.Words[2] : step.Argument;
+	std::string const first = Screenshot_Name((name + "-asis.tga").c_str());
+	std::string const second = Screenshot_Name((name + "-fresh.tga").c_str());
+	Rect const area(Number(step.Words, 3, 0), Number(step.Words, 4, 0), Number(step.Words, 5, 0), Number(step.Words, 6, 0));
+	PendingCaptures.push_back({false, area, name, first, 0, false, true});
+	PendingCaptures.push_back({false, area, name, second, 0, false, false, first});
+}
+
+
+// The right button drag a rightdrag step is playing, one move of the pointer per game frame.
+struct RightDrag
+{
+	bool Active = false;
+	Point2D Start;
+	Point2D Offset;
+	int Ramp = 0;
+	int Hold = 0;
+	int Frame = 0;
+};
+static RightDrag Drag;
+
+
+// rightdrag <dx> <dy> <ramp> [hold]: presses the right button in the middle of the map view, as a player starts a drag scroll, then
+// moves the pointer toward that offset in equal steps over ramp game frames, one move a frame, keeps it there for hold frames
+// and releases. The map scrolls through the coast scroll the mouse drives. The offset sets the speed: a few pixels past the
+// drag threshold is slow, a few hundred is fast.
+static void Rightdrag_Step(StepType const & step)
+{
+	Point2D centre = View_To_Screen_Point(Point2D(TacticalRect.Width / 2, TacticalRect.Height / 2));
+	Game_Point_To_Window(centre);
+	Drag.Start = centre;
+	Drag.Offset = Point2D(Number(step.Words, 2, 0), Number(step.Words, 3, 0));
+	Drag.Ramp = std::max(Number(step.Words, 4, 1), 1);
+	Drag.Hold = std::max(Number(step.Words, 5, 0), 0);
+	Drag.Frame = 0;
+	Drag.Active = true;
+	ScriptHeldKeys[VK_RBUTTON] = true;
+	WindowEvent event = Move_Pointer(centre.X, centre.Y);
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	event.Button = WINDOW_BUTTON_RIGHT;
+	event.Clicks = 1;
+	Send_Window_Event(event, ScriptReceiver::GAME_WINDOW);
+	DebugString("AUTOTEST   rightdrag start at window %d,%d offset %d,%d ramp %d hold %d view %d,%d\n", centre.X, centre.Y, Drag.Offset.X, Drag.Offset.Y, Drag.Ramp, Drag.Hold, TacticalMap->Get_Tactical_Position().X, TacticalMap->Get_Tactical_Position().Y);
+}
+
+
+// Moves the pointer of a rightdrag one step, and releases the button after the last.
+static void Advance_Right_Drag(void)
+{
+	if (!Drag.Active) {
+		return;
+	}
+	Drag.Frame++;
+	int const along = std::min(Drag.Frame, Drag.Ramp);
+	WindowEvent event = Move_Pointer(Drag.Start.X + Drag.Offset.X * along / Drag.Ramp, Drag.Start.Y + Drag.Offset.Y * along / Drag.Ramp);
+	if (Drag.Frame >= Drag.Ramp + Drag.Hold) {
+		event.Type = WINDOW_EVENT_MOUSE_UP;
+		event.Button = WINDOW_BUTTON_RIGHT;
+		event.Clicks = 1;
+		ScriptHeldKeys[VK_RBUTTON] = false;
+		Send_Window_Event(event, ScriptReceiver::GAME_WINDOW);
+		Drag.Active = false;
+		DebugString("AUTOTEST   rightdrag released view %d,%d\n", TacticalMap->Get_Tactical_Position().X, TacticalMap->Get_Tactical_Position().Y);
+	}
 }
 
 
@@ -9305,6 +9439,8 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"shellmaps", Shellmaps_Step},
 		{"options", Options_Step},
 		{"windowshot", Windowshot_Step},
+		{"windowcompare", Windowcompare_Step},
+		{"rightdrag", Rightdrag_Step},
 		{"windowdark", Windowdark_Step},
 		{"windowred", Windowred_Step},
 		{"laserpin", Laserpin_Step},
@@ -9654,6 +9790,9 @@ bool AutoTest_Capture_Hold(void)
 			return(!PendingCaptures.empty());
 		}
 	} else if (!Backend_Window_Capture_Pending()) {
+		if (!capture.ComparePath.empty()) {
+			Compare_Captures(capture.Label, capture.ComparePath, capture.Path, capture.Area);
+		}
 		PendingCaptures.pop_front();
 		return(!PendingCaptures.empty());
 	} else if (timeGetTime() - capture.Started > Capture_Timeout) {
@@ -9680,6 +9819,7 @@ void AutoTest_Frame(void)
 		DebugString("AUTOTEST steps done\n");
 		std::exit(0);
 	}
+	Advance_Right_Drag();
 	while (Next < Steps.size() && Steps[Next].Frame + WaitShift <= Frame) {
 		StepType const & step = Steps[Next];
 		if (Is_Wait_Command(step.Command)) {
