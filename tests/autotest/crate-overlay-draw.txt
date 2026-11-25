@@ -1,0 +1,22 @@
+; Places crates on Soviet 4 as a mission or a multiplayer game does and compares the map view as the frames drew it with a fresh draw.
+; A crate's OverlayData holds its powerup (255 while it is random), and gamemd draws and measures every crate with frame 0 of its shape
+; (CellClass::DrawOverlay 0x47F6A0, DrawOverlayShadow 0x47F510, GetContainingRect 0x47FB90, ShapeRect 0x47FDE0). The powerup used to be
+; taken as the frame, so the dirty area a new crate registered was empty and only the bottom of the crate reached the tile layer, and a
+; crate whose powerup has no frame of that number was not drawn at all. A crate that a tank picks up must leave no crate behind.
+; Expected: every `AUTOTEST windowcompare` line ends in `stale columns 0 stale rows 0` with no differing pixels at the crates, and the
+; `crates` windowshot shows four whole crates.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/crate-overlay-draw.txt -Campaign -Map SOV04DMD.MAP -Width 1920 -Height 1080 -Seconds 300 -Filter "AUTOTEST +(windowcompare|crate)|Exception|: quit"
+ui briefing
+2490 reveal
+2492 view 77 121
+2500 windowcompare start 0 0 1660 1080
+2650 crate money 87 113
+2652 crate armor 84 116
+2654 crate speed 81 119
+2656 crate firepower 90 110
+2700 windowcompare crates 0 0 1660 1080
+2702 windowshot crates asis
+2706 grantunit HTNK 78 116
+2708 move HTNK 84 116
+2900 windowcompare picked-up 0 0 1660 1080
+2904 quit

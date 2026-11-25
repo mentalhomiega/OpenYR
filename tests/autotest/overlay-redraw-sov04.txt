@@ -1,0 +1,21 @@
+; Changes overlays on Soviet 4 as a game does and compares the map view as the frames drew it with a fresh draw after each change: a
+; concrete bridge is knocked down and repaired, three walls are built, and two crates appear, one of them with a powerup whose number is
+; not a frame of the crate's shape. Each change must reach the tile layer whole.
+; Expected: the `bridge-repaired`, `walls` and `crates` windowcompare lines end in `stale columns 0 stale rows 0` with no differing pixels
+; near the changes (the `start` line may show a few animated pixels at the top right).
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/overlay-redraw-sov04.txt -Map SOV04DMD.MAP -Width 1280 -Height 720 -Seconds 150 -Filter "AUTOTEST +(windowcompare|grantunit|crate|bridgefix|concretehit)|Exception"
+30 reveal
+31 view 96 50
+40 windowcompare start
+60 concretehit 96 50
+61 concretehit 96 50
+130 bridgefix 96 50
+190 windowcompare bridge-repaired
+200 grantunit NAWALL 92 54
+201 grantunit NAWALL 93 54
+202 grantunit NAWALL 94 54
+260 windowcompare walls
+270 crate money 99 47
+272 crate armor 100 46
+320 windowcompare crates
+324 quit
