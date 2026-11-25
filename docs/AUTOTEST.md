@@ -56,7 +56,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `musicopen <n>` | Opens the n-th custom track's stream at no volume, counting from 0, logs `opened` or `failed`, and closes it |
 | `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
 | `perfwindow <start\|report> [name]` | `start` marks the start of a window. `report` logs `AUTOTEST perfwindow <name> <ms> ms frames N avg A worst W stall S presents P gap avg G worst H`: the game frame intervals and the gaps between presents recorded since the mark, in milliseconds, with the stall, the time the frames take beyond the window's median frame, as the `Pacing` and `Perf gap` lines measure them. Recording must be on (`perflog 1`). The numbers depend on the machine |
-| `message <text>` | Shows the whole rest of the line (spaces kept) in the message list for ten seconds, as a mission's text action does, and logs `AUTOTEST message "<text>"` |
+| `missiontext <text>` | Shows the whole rest of the line (spaces kept) in the message list for ten seconds, as a mission's text action does, and logs `AUTOTEST message "<text>"` |
 | `showfps <0\|1>` | Sets the `ShowFPS` option |
 | `fpslayout` | Logs `AUTOTEST fpslayout counts <row> messages <row> overlap <0\|1>`: the row where the `ShowFPS` counts start, the row below the message list (0 when it is empty), and whether the counts start above that row. `tests/autotest/fps-counter-messages.txt` expects overlap 0 |
 | `gamespeed <0-6>` | Sets the game speed option, as the game controls slider does. The pacer and the animation delay tables read it |

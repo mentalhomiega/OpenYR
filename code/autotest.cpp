@@ -8624,10 +8624,10 @@ static void Gamespeed_Step(StepType const & step)
 }
 
 
-// message <text>: shows the text in the message list for ten seconds, as a mission's text action does.
-static void Message_Step(StepType const & step)
+// missiontext <text>: shows the text in the message list for ten seconds, as a mission's text action does.
+static void Missiontext_Step(StepType const & step)
 {
-	DebugString("AUTOTEST message \"%s\"\n", step.Argument.c_str());
+	DebugString("AUTOTEST missiontext \"%s\"\n", step.Argument.c_str());
 	Post_Player_Message(step.Argument.c_str(), TICKS_PER_SECOND * 10);
 }
 
@@ -9500,7 +9500,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"perfoverlay", Perfoverlay_Step},
 		{"perfwindow", Perfwindow_Step},
 		{"gamespeed", Gamespeed_Step},
-		{"message", Message_Step},
+		{"missiontext", Missiontext_Step},
 		{"showfps", Showfps_Step},
 		{"fpslayout", Fpslayout_Step},
 		{"classicspeeds", Classicspeeds_Step},
@@ -9687,7 +9687,7 @@ static bool Takes_Rest_Of_Line(char const * command)
 {
 	static std::set<std::string_view> const names = {"rules", "art", "pcxcameo", "truecolourdir", "exportshape", "exportpal", "teamini",
 		"searchdir", "statedump", "extract", "log", "beacontext", "wintype", "key", "winkey", "hold", "release", "cameopress",
-		"binding", "scheme", "message"};
+		"binding", "scheme", "missiontext"};
 	return(names.contains(command));
 }
 
