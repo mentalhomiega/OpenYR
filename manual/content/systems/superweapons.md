@@ -360,7 +360,7 @@ The second section needs no structure, charge or cameo of its own. It fires only
 
 A computer house fires its ready superweapons during its periodic AI pass, which runs every 7 to 7.5 seconds. Outside a campaign, the pass always fires them. In a campaign, it fires them only when the house's [`IQ=`](/keys/iq/) is at least [`SuperWeapons`](/keys/superweapons/) in `[IQ]`. A campaign house takes its `IQ=` from its section in the scenario, and has 0 when the section sets none.
 
-Each ready weapon goes to the handler for its `Type=`. There is no handler for `EMPulse` or `Firestorm`, so the computer never fires either on its own. Its firestorm wall goes up only through the [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) trigger action.
+Each ready weapon goes to the handler for its `Type=`. Yuri's Revenge has handlers for the multi missile, lightning storm, paradrop, American paradrop, spy plane, psychic reveal, psychic dominator, genetic mutator and force shield only. The handlers for the chem missile, hunter seeker, drop pods and ion cannon below are ours, for Tiberian Sun weapons that Yuri's Revenge does not have. There is no handler for `EMPulse` or `Firestorm`, so the computer never fires either on its own. Its firestorm wall goes up only through the [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) trigger action.
 
 Every handler waits until the house has a [declared enemy](/systems/base-attacked/#picking-a-first-enemy). In a campaign the computer does not pick an enemy on its own, so a campaign house has none until damage or a trigger makes it angry at someone. Until then its superweapons stay charged and unused.
 
@@ -374,7 +374,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it. We do not fire it while a trigger has aimed the house's weapons.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running. We hold it while a trigger has aimed the house's weapons.
 
-The computer fires the force shield only in [defense of its base](#the-computers-force-shield), and never fires the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/mapping/missions/tmission-chrono-prep-abwp/) and [Chrono prep for AQ](/mapping/missions/tmission-chrono-prep-aq/) script lines.
+The computer fires the force shield only in [defense of its base](#the-computers-force-shield), and never fires the Iron Curtain or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/mapping/missions/tmission-chrono-prep-abwp/) and [Chrono prep for AQ](/mapping/missions/tmission-chrono-prep-aq/) script lines.
 
 The ion cannon's rating is the only one with settings. We use it for the nuke as well, and for the lightning storm, while the preferred target is Anything.
 
@@ -505,7 +505,7 @@ A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininv
 
 A protected object takes no damage, except from damage that ignores armor, such as a demolition charge going off. Healing still reaches it. Infantry cannot plant a demolition charge on a protected structure or walk into one, so an engineer cannot capture it.
 
-A protected object pulses dark while the protection lasts: it flashes bright as the protection starts, throbs dark, and flashes bright again in its last second. A vehicle drawn as a voxel also takes the `[ColorAdd]` entry that `IronCurtainColor=` names, added to its colours. The stock rules name entry 0, which adds nothing, so the pulse is the only visible change until a mod names another entry. Infantry do not take the tint, because the curtain destroys them.
+A protected object pulses dark while the protection lasts: it flashes bright as the protection starts, throbs dark, and flashes bright again in its last second. A vehicle drawn as a voxel also takes the `[ColorAdd]` entry that `IronCurtainColor=` names, added to its colours, or to its [`Palette=`](/keys/palette/) when its art names one. The stock rules name entry 0, which adds nothing, so the pulse is the only visible change until a mod names another entry. Infantry do not take the tint, because the curtain destroys them.
 
 ```ini title="rulesmd.ini"
 [MyCurtainSpecial]
@@ -563,7 +563,7 @@ A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: ea
 
 A `Type=ForceShield` weapon plays [`ForceShieldInvokeAnim`](/keys/forceshieldinvokeanim/) over the target and the weapon's [`StartSound`](/keys/startsound/#scope-superweapontype). Every structure of the firing house or its allies whose center is less than [`ForceShieldRadius`](/keys/forceshieldradius/) cells from the target is protected for [`ForceShieldDuration`](/keys/forceshieldduration/) frames, exactly as the [Iron Curtain](#iron-curtain) protects it. The firing house then makes no power for [`ForceShieldBlackoutDuration`](/keys/forceshieldblackoutduration/) frames. The weapon's [`SpecialSound`](/keys/specialsound/) plays [`ForceShieldPlayFadeSoundTime`](/keys/forceshieldplayfadesoundtime/) frames before the protection ends.
 
-A shielded structure is drawn with `ForceShieldColor`, on its body and its animations. The animations a structure's `Palette=` draws are not tinted.
+A shielded structure is drawn with `ForceShieldColor`, on its body and its animations. A structure with a [`Palette=`](/keys/palette/) keeps that palette, with the color added to it, and so do its animations.
 
 ### Psychic dominator
 

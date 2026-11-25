@@ -17,6 +17,12 @@
 class UIShellHostClass;
 
 
+/// <summary>
+/// The number of warnings, errors and assertions RmlUi has logged since the game started.
+/// </summary>
+int UI_Problem_Count(void);
+
+
 class UIRmlSystemClass : public Rml::SystemInterface
 {
 	public:

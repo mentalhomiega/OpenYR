@@ -12946,19 +12946,13 @@ int TechnoClass::Airstrike_Tint_Brightness(int brightness) const
 /// Returns the converter that draws this object, with the palette tinted by the colour of the
 /// effect it is under. A voxel vehicle under the Iron Curtain takes IronCurtainColor, and a
 /// berserk vehicle or infantryman takes BerserkColor. Shape vehicles take no tint, as
-/// UnitClass::DrawAsSHP (0x73C5F0) draws them without one.
+/// UnitClass::DrawAsSHP (0x73C5F0) draws them without one. A type with an art Palette keeps that
+/// palette, with the tint added to it.
 /// </summary>
 /// <param name="scheme">The color scheme of the house the object is drawn for.</param>
 /// <returns>Returns with the tinted converter, or the scheme's own converter when no tint applies.</returns>
 ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
 {
-	// A type with an art Palette is drawn through that palette, shaded for the house colour (no tint applies to it).
-	if (!TClass->PaletteName.empty()) {
-		if (ConvertClass * custom = Palette_Scheme_Drawer(TClass->PaletteName, scheme->ID)) {
-			return(custom);
-		}
-	}
-
 	int red = 0;
 	int green = 0;
 	int blue = 0;
@@ -12983,26 +12977,40 @@ ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
 		add_entry(Rule->BerserkColor);
 	}
 
+	red = std::min(red, 255);
+	green = std::min(green, 255);
+	blue = std::min(blue, 255);
+
+	// A type with an art Palette is drawn through that palette, shaded for the house colour, with the tint added to it.
+	if (!TClass->PaletteName.empty()) {
+		if (ConvertClass * custom = Palette_Scheme_Drawer(TClass->PaletteName, scheme->ID, red, green, blue)) {
+			return(custom);
+		}
+	}
+
 	if (red == 0 && green == 0 && blue == 0) {
 		return(scheme->Converter);
 	}
 
-	ConvertClass * tinted = scheme->Designated_Converter(std::min(red, 255), std::min(green, 255), std::min(blue, 255));
+	ConvertClass * tinted = scheme->Designated_Converter(red, green, blue);
 	return(tinted != NULL ? tinted : scheme->Converter);
 }
 
 
 /// <summary>
-/// Returns the converter that draws this object's animations through its type's Palette=, or null when
-/// the type names none or its palette file is missing. A null result means the house colour scheme applies.
+/// Returns the converter that draws this object through its type's Palette=, or null when the type
+/// names none or its palette file is missing. A null result means the house colour scheme applies.
 /// </summary>
-ConvertClass * TechnoClass::Palette_Converter(void) const
+/// <param name="red">The amount added to each palette entry's red, in 8-bit palette units.</param>
+/// <param name="green">The amount added to each palette entry's green, in 8-bit palette units.</param>
+/// <param name="blue">The amount added to each palette entry's blue, in 8-bit palette units.</param>
+ConvertClass * TechnoClass::Palette_Converter(int red, int green, int blue) const
 {
 	TechnoTypeClass const * type = Techno_Type_Class();
 	if (type == NULL || type->PaletteFile.empty() || House == NULL) {
 		return(NULL);
 	}
-	return(Palette_Scheme_Drawer(type->PaletteFile, House_Display_Scheme(House)));
+	return(Palette_Scheme_Drawer(type->PaletteFile, House_Display_Scheme(House), red, green, blue));
 }
 
 

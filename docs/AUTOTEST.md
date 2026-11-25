@@ -56,6 +56,9 @@ A command runs once the game frame reaches its frame, in file order.
 | `musicopen <n>` | Opens the n-th custom track's stream at no volume, counting from 0, logs `opened` or `failed`, and closes it |
 | `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
 | `perfwindow <start\|report> [name]` | `start` marks the start of a window. `report` logs `AUTOTEST perfwindow <name> <ms> ms frames N avg A worst W stall S presents P gap avg G worst H`: the game frame intervals and the gaps between presents recorded since the mark, in milliseconds, with the stall, the time the frames take beyond the window's median frame, as the `Pacing` and `Perf gap` lines measure them. Recording must be on (`perflog 1`). The numbers depend on the machine |
+| `message <text>` | Shows the text in the message list for ten seconds, as a mission's text action does |
+| `showfps <0\|1>` | Sets the `ShowFPS` option |
+| `fpslayout` | Logs `AUTOTEST fpslayout counts <row> messages <row> overlap <0\|1>`: the row where the `ShowFPS` counts start, the row below the message list (0 when it is empty), and whether the counts start above that row. `tests/autotest/fps-counter-messages.txt` expects overlap 0 |
 | `gamespeed <0-6>` | Sets the game speed option, as the game controls slider does. The pacer and the animation delay tables read it |
 | `classicspeeds <0\|1>` | Sets the `ClassicGameSpeeds` option, which picks gamemd's solo frame lengths in place of the multiplayer table. `pace` logs the table it used |
 | `pace` | Logs `AUTOTEST pace speed <n> <skirmish\|campaign\|network> target <ms> ms <fps> fps`: the frame length the pacer aims at now. It reads the target, not the clock, so the log is the same on every machine |
@@ -442,6 +445,8 @@ table above. A command missing from the handler table writes `unknown command` t
 The menu script step `ui hudrows` logs `AUTOTEST hud rows <rows> saved <setting>`. The first value is the sidebar
 rows the build panel uses at that moment, including a preview still open. The second is the `SidebarRows` setting.
 Use it to check a settings screen after a `ui choose`, `ui click` or cancel.
+
+The menu script step `ui problems` logs `AUTOTEST ui problems <count>`, the number of warnings and errors RmlUi has reported since the game started. `tests/autotest/mission-browser-rows.txt` uses it to check that opening and closing a mission group reports none.
 
 The menu script step `ui value <id>` logs `AUTOTEST value <id> <value>` for a drop-down or other form control: for a drop-down, the value of the chosen item. `ui setting <Key> [<Key> ...]` logs `AUTOTEST setting <Key>=<value> ...` in one line, the value each named client setting of `code/optionsettings.cpp` holds now (a switch is 0 or 1, a named setting its number, and an unknown key `?`). `ui set <id> <value>` on a drop-down picks the item with that value as a click on it would, which `ui choose` does not do reliably for every drop-down. `tests/autotest/graphics-presets-page.txt` uses these three steps to walk the Graphics quality presets and log the switches each one sets, and `tests/autotest/graphics-presets-shots.txt` takes shots of the page for each preset with Advanced closed and open.
 

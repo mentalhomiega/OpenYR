@@ -113,6 +113,7 @@
 #include "command.h"
 #include "conquer.h"
 #include "csf.h"
+#include "custompalette.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "debugmode.h"
@@ -2839,6 +2840,7 @@ static bool Bootstrap(void)
 
 	Read_Palette(pal, "ANIM.PAL");
 	AnimDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
+	Remember_Drawer_Palette(AnimDrawer, pal);
 
 	Read_Palette(pal, "PALETTE.PAL");
 	NormalDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);

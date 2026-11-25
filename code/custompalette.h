@@ -12,6 +12,7 @@
 #include <string>
 
 class ConvertClass;
+class PaletteClass;
 
 /*
  * The drawer for a palette file a type names (Ares CustomPalette), built on first use and kept
@@ -34,4 +35,17 @@ std::string Palette_File_Name(std::string const & filename);
  * temperate map. The converter takes the scheme's HSV and lighting tint, and it is built on first use
  * and kept for each name, scheme and tint. Null for an empty name, a missing file or no scenario.
  */
-ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme);
+ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme, int red = 0, int green = 0, int blue = 0);
+
+/*
+ * Records the palette a plain drawer was built from, so Tinted_Drawer can build a copy of it with colours added.
+ * Custom_Palette_Drawer records its own drawers; the drawer of a shared palette such as ANIM.PAL is recorded by its owner.
+ */
+void Remember_Drawer_Palette(ConvertClass const * drawer, PaletteClass const & palette);
+
+/*
+ * The drawer with an amount added to the red, green and blue of every palette entry (8-bit units), as the shape draw adds
+ * a ColorAdd tint to the colours of whatever palette draws. Built on first use and kept for each drawer and amount. A drawer
+ * whose palette was not recorded, and an amount of zero, give the drawer itself.
+ */
+ConvertClass * Tinted_Drawer(ConvertClass * drawer, int red, int green, int blue);

@@ -157,6 +157,7 @@ class MessageListClass {
 		int Input (KeyNumType &input);
 		void Draw(void);
 		int Num_Messages(void);
+		int Bottom_Y(void);
 		void Set_Width(int width);
 		void Set_Edit_Focus(void);
 		bool Has_Edit_Focus(void);

@@ -61,6 +61,11 @@ body.missionbrowser #content
 	overflow: hidden;
 }
 
+#missions .item.padding
+{
+	display: none;
+}
+
 #missions .item.header
 {
 	margin-top: 6dp;

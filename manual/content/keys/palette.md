@@ -12,7 +12,7 @@ A vehicle, infantryman or aircraft that sets `Palette=` has its [parachute](/key
 
 If the file is not found, the animations above keep their house colors, and the debug log names the file.
 
-The palette takes the map's lighting. The airstrike and Force Shield tints do not reach a structure's animations.
+The palette takes the map's lighting. The [airstrike](/keys/airstrike/) and [Force Shield](/keys/forceshieldcolor/) colors are added to it, on the structure and on its animations, as they are to the house colors.
 
 ```ini title="artmd.ini"
 [MYSTATUE] ; example BuildingType art section

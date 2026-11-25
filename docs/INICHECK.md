@@ -21,6 +21,7 @@ overlay is placed through the lists in the rules file, in earlier mods' overlays
 overlay itself. A map's type sections are placed through the rules lists in the map or the rules
 file, and its house, team and task force sections through the map's `[Houses]`, `[TeamTypes]`
 and `[TaskForces]` lists.
+A task force section's keys 0 to 5 are its member lines (a count and a type name); the check does not report them.
 
 Stock Yuri's Revenge files give about 900 findings in the rules and 1,200 in the art, most of
 them keys the engine does not read yet, so we use the lists as a to-do list for engine work.

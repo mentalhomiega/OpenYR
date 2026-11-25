@@ -64,6 +64,8 @@
 #include "event.h"
 #include "globals.h"
 #include "goptions.h"
+#include "gscreen.h"
+#include "playerdisplay.h"
 #include "gpudraw.h"
 #include "gpumap.h"
 #include "hangwatch.h"
@@ -1555,13 +1557,19 @@ static void Shield_Step(StepType const & step)
 		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
 		ConvertClass * scheme = building->Remap_Converter();
 		ConvertClass * tinted = building->Tinted_Converter(scheme);
-		DebugString("AUTOTEST   shield %s at %d,%d curtain %d forceshield %d tinted flag %d body tinted %d stage %d timer %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
-			(int)building->Is_Iron_Curtained(), (int)building->IsForceShielded, (int)building->IsShieldTinted, tinted != scheme, building->IronTintStage, (int)building->IronTintTimer);
+		int red;
+		int green;
+		int blue;
+		ConvertClass * palette_tinted = building->Effect_Tint(red, green, blue) ? building->Palette_Converter(red, green, blue) : NULL;
+		DebugString("AUTOTEST   shield %s at %d,%d curtain %d forceshield %d tinted flag %d body tinted %d palette %d tinted palette %d stage %d timer %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+			(int)building->Is_Iron_Curtained(), (int)building->IsForceShielded, (int)building->IsShieldTinted, tinted != scheme, building->Palette_Converter() != NULL, palette_tinted != NULL && tinted == palette_tinted, building->IronTintStage, (int)building->IronTintTimer);
 		for (int slot = 0; slot < BANIM_COUNT; slot++) {
 			AnimClass const * anim = building->Anims[slot];
 			if (anim == NULL) continue;
 			char const * drawer = anim->AlternativeDrawer == NULL ? "none" : (anim->AlternativeDrawer == tinted && tinted != scheme ? "shield" : (anim->AlternativeDrawer == scheme ? "scheme" : "other"));
-			DebugString("AUTOTEST     anim %s slot %d cell drawer %d drawer %s brightness %d\n", anim->Class->Name(), slot, (int)anim->Class->IsShouldUseCellDrawer, drawer, (int)anim->AlternativeBrightness);
+			ConvertClass const * drawn = anim->Draw_Converter();
+			char const * drawn_by = drawn == AnimDrawer ? "anim" : (drawn == ColorSchemes[0]->Converter ? "alt" : (drawn == Custom_Palette_Drawer(anim->Class->CustomPalette) ? "custom" : (drawn == scheme ? "scheme" : "tinted")));
+			DebugString("AUTOTEST     anim %s slot %d cell drawer %d drawer %s drawn %s brightness %d\n", anim->Class->Name(), slot, (int)anim->Class->IsShouldUseCellDrawer, drawer, drawn_by, (int)anim->AlternativeBrightness);
 		}
 	}
 }
@@ -8444,6 +8452,29 @@ static void Gamespeed_Step(StepType const & step)
 }
 
 
+// message <text>: shows the text in the message list for ten seconds, as a mission's text action does.
+static void Message_Step(StepType const & step)
+{
+	Post_Player_Message(step.Argument.c_str(), TICKS_PER_SECOND * 10);
+}
+
+
+// showfps <0|1>: sets the ShowFPS option, which draws the render and game rates at the top left.
+static void Showfps_Step(StepType const & step)
+{
+	Options.ShowFPS = step.Argument_Int() != 0;
+}
+
+
+// fpslayout: logs the row where the ShowFPS counts start and the row below the message list, and whether they overlap.
+static void Fpslayout_Step(StepType const &)
+{
+	int const messages = Session.Messages.Bottom_Y();
+	int const counts = Frame_Rates_Top();
+	DebugString("AUTOTEST fpslayout counts %d messages %d overlap %d\n", counts, messages, (int)(counts < messages));
+}
+
+
 // classicspeeds <0|1>: sets the ClassicGameSpeeds option, which picks gamemd's own solo frame lengths.
 static void Classicspeeds_Step(StepType const & step)
 {
@@ -9290,6 +9321,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"perfoverlay", Perfoverlay_Step},
 		{"perfwindow", Perfwindow_Step},
 		{"gamespeed", Gamespeed_Step},
+		{"message", Message_Step},
+		{"showfps", Showfps_Step},
+		{"fpslayout", Fpslayout_Step},
 		{"classicspeeds", Classicspeeds_Step},
 		{"pace", Pace_Step},
 		{"paceprobe", Paceprobe_Step},

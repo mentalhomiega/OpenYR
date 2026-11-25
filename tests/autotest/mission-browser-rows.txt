@@ -1,0 +1,24 @@
+; Mission browser list: opens the Testing group (the list grows to 17 rows) and closes it again (it shrinks to 5), logging
+; how many warnings RmlUi has reported at each point. A shrinking list used to report rows that no longer exist, so the
+; count rose on the second toggle; it stays at its first value now. Check the shots too: the closed list holds no blank rows.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/mission-browser-rows.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 100 -Filter "AUTOTEST ui problems|UISCRIPT choose"
+ui waitfor backdrop
+ui wait 1500
+ui press Single Player
+ui wait 1200
+ui press New Campaign
+ui waitfor missions
+ui wait 800
+ui problems
+ui choose [+] Testing (12)
+ui wait 800
+ui shot mission-browser-rows-open
+ui problems
+ui choose [-] Testing (12)
+ui wait 800
+ui shot mission-browser-rows-closed
+ui problems
+ui choose [+] Testing (12)
+ui wait 800
+ui problems
+ui quit

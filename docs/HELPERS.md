@@ -78,6 +78,8 @@ needs them.
 | `Put_U16_LE(out, value)`, `Put_U32_LE(out, value)` | `littleendian.h` | Append a value least significant byte first to any `push_back` container (`std::vector<std::uint8_t>`, `std::string`). |
 | `Rgb565_Widen(pixel, r, g, b)` | `rgb565.h` | Widens a 16-bit RGB565 pixel to 8 bits per channel, with the top level giving 255. |
 | `Widen_Six_Bit_Palette(palette)` | `palette.h` | Widens 256 six-bit guns (0 to 63) to a `PaletteClass`. |
+| `Add_To_Palette(palette, red, green, blue)` | `scheme.h` | Adds an amount to every entry of a palette, each gun held at 255. |
+| `Tinted_Drawer(drawer, red, green, blue)` | `custompalette.h` | A cached copy of a plain drawer with colours added to its palette; the drawer's palette is recorded with `Remember_Drawer_Palette`. |
 | `Bytes_Equal(a, b, count)`, `Bytes_Are_Zero(values, count)`, `Bytes_Are_All(values, count, value)` | `tilediff.h` | Compare a run of bytes with another, with zero or with one value 64 and 16 bytes at a time. Use them for picture and plane rows, where the inlined `std::memcmp` of the 32-bit build compares 4 bytes at a time. |
 
 ## Time and clocks

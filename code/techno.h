@@ -788,7 +788,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual TechnoTypeClass const * Techno_Type_Class(void) const override;
 
-		ConvertClass * Palette_Converter(void) const;
+		ConvertClass * Palette_Converter(int red = 0, int green = 0, int blue = 0) const;
 		ConvertClass * Remap_Converter(void) const;
 
 		virtual bool Is_Move_Override(void) const;

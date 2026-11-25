@@ -1,0 +1,31 @@
+; A structure whose art sets Palette= keeps that palette under the Force Shield, with ForceShieldColor added to it, on its body and its
+; animations (BuildingClass::DrawIt 0x43D290 passes the tint to the shape draw next to the converter that TechnoClass::GetDrawer 0x705D70
+; picks, and AnimClass::Draw_It 0x423340 does the same for the animations of a structure). The mod shield-tint-palette (pass it with
+; -Mods) gives the Soviet Radar Tower (NARADR) the palette lib; the Tesla Reactor (NAPOWR) beside it keeps its house colours as the control.
+; The radar stands at 75,40 and the reactor at 70,40; the Force Shield is fired at 73,40 (frame 60) and covers both.
+; Expected: in the shield lines of the radar, palette 1 throughout. Before frame 60, body tinted 0. While the shield holds (frames 62 to 540),
+; body tinted 1 and tinted palette 1, and each animation shows drawer shield. Before the fix the radar's body drew in the house colours
+; under the tint (tinted palette 0) and left the library palette. The reactor, with palette 0, shows body tinted 1 while the shield holds. After
+; the shield ends (frame 580) both read body tinted 0 again. The windowshot files show the radar in the library palette, tinted, then plain.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/shield-tint-palette.txt -Mods "E:\Claude ra2 decomp\src-agent26\tests\autotest\shield-tint-palette" -Country 8 -AIPlayers 0 -Width 800 -Height 600 -Seconds 200 -RenderFrameRate 30 -Filter "AUTOTEST|Exception"
+10 reveal
+20 view 80 40
+30 own NAPOWR 70 40
+31 own NARADR 75 40
+40 grant ForceShieldSpecial
+50 windowshot shield-palette-a0-before
+55 shield NARADR
+55 shield NAPOWR
+60 fire ForceShieldSpecial 73 40
+62 shield NARADR
+62 shield NAPOWR
+66 windowshot shield-palette-b1-force
+90 windowshot shield-palette-b2-force
+200 shield NARADR
+200 shield NAPOWR
+540 shield NARADR
+565 windowshot shield-palette-c1-ending
+580 shield NARADR
+580 shield NAPOWR
+650 windowshot shield-palette-c2-after
+700 quit

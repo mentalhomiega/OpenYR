@@ -1173,6 +1173,7 @@ void AnimClass::AI(void)
 /// <summary>
 /// The converter this animation's picture draws through. A palette file named by the type's CustomPalette key
 /// replaces the converter of every animation except a vein, one held by a cell and one that carries a house or Tiberium tint.
+/// The animation of a structure takes the colours the structure is drawn with, on whichever palette it uses.
 /// </summary>
 ConvertClass * AnimClass::Draw_Converter(void) const
 {
@@ -1189,10 +1190,24 @@ ConvertClass * AnimClass::Draw_Converter(void) const
 	if (AlternativeDrawer != NULL) {
 		return(AlternativeDrawer);
 	}
-	if (ConvertClass * custom = Custom_Palette_Drawer(Class->CustomPalette)) {
-		return(custom);
+	ConvertClass * drawer = Custom_Palette_Drawer(Class->CustomPalette);
+	if (drawer == NULL) {
+		drawer = Class->IsAltPalette ? ColorSchemes[0]->Converter : AnimDrawer;
 	}
-	return(Class->IsAltPalette ? ColorSchemes[0]->Converter : AnimDrawer);
+	if (IsBuildingAnim) {
+		BuildingClass const * building = Map[Render_Coord().As_Cell()].Cell_Building();
+		int red;
+		int green;
+		int blue;
+		if (building != NULL && building->Effect_Tint(red, green, blue)) {
+			if (drawer == ColorSchemes[0]->Converter) {
+				ConvertClass * tinted = ColorSchemes[0]->Designated_Converter(red, green, blue);
+				return(tinted != NULL ? tinted : drawer);
+			}
+			return(Tinted_Drawer(drawer, red, green, blue));
+		}
+	}
+	return(drawer);
 }
 
 

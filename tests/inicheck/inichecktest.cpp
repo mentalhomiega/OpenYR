@@ -549,6 +549,23 @@ void Test_Map_Listing(void)
 }
 
 
+void Test_Task_Force_Members(void)
+{
+	IniCheck::Catalog const catalog = Load_Catalog();
+	char const map[] =
+		"[TaskForces]\n"
+		"0=ONE\n"
+		"[ONE]\n"
+		"0=1,POLARB\n"
+		"5=2,E1\n"
+		"6=1,E1\n"
+		"Bogus=1\n";
+	IniCheck::Report const report = IniCheck::Check_Map(catalog, map, "");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "0", 4) && !Has(report, IniCheck::FindingType::UNKNOWN_KEY, "5", 5), "a task force's member slots 0 to 5 are read keys");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "6", 6) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Bogus", 7), "a task force key past slot 5 or with another name is still reported");
+}
+
+
 void Test_Rules_Overlay(void)
 {
 	IniCheck::Catalog const catalog = Load_Catalog();
@@ -578,6 +595,7 @@ int main(void)
 	Test_Rules();
 	Test_Art();
 	Test_Map_Listing();
+	Test_Task_Force_Members();
 	Test_Rules_Overlay();
 	Test_References();
 	Test_Difficulty();
