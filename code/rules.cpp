@@ -2096,10 +2096,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		WindDirection = (FacingType)ini.Get_Int(GENERAL, "WindDirection", WindDirection);
 		CameraRange = ini.Get_Lepton(GENERAL, "CameraRange", CameraRange);
 		FlightLevel = ini.Get_Int(GENERAL, "FlightLevel", FlightLevel);
-		/*
-		**	RepairBay is a list of buildings. Only names that already exist are kept, so the list is never
-		**	made into a building type of its own.
-		*/
+		// RepairBay keeps only the names of building types that already exist, so the list never becomes a type of its own.
 		char repair_bays[128];
 		if (ini.Get_String(GENERAL, "RepairBay", "", repair_bays, sizeof(repair_bays)) != 0) {
 			RepairBay.Clear();

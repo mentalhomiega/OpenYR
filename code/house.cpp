@@ -4927,10 +4927,8 @@ int HouseClass::Expert_AI(void)
 		}
 	}
 
-	/*
-	**	gamemd gates the emergency strategies on the game mode alone (0x4FD848), so a
-	**	skirmish map that follows a base plan (UseMPAIBaseNodes) still runs them.
-	*/
+	// gamemd gates the emergency strategies on the game mode alone (0x4FD848), so a skirmish map that follows a base
+	// plan (UseMPAIBaseNodes) still runs them.
 	if (Session.Type != GAME_NORMAL) {
 		/*
 		**	Records the urgency of all actions possible.

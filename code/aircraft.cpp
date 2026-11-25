@@ -3614,11 +3614,7 @@ FireErrorType AircraftClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_AMMO);
 	}
 
-	/*
-	**	Double check to make sure that the facing is roughly toward
-	**	the target. If the difference is too great, then firing is
-	**	temporarily postponed. A fighter fires at any angle.
-	*/
+	// An aircraft that is not a fighter waits to fire until it faces roughly toward the target.
 	if (!Class->IsFighter) {
 		DirType dir = SecondaryFacing.Current();
 		dir -= Direction(target);

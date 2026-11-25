@@ -446,10 +446,7 @@ class HouseClass : public AbstractClass
 		*/
 		bool IsBuiltSomething;
 
-		/*
-		**	Has the local player been told about the current spell of low power? It is
-		**	not saved, as the announcement is only speech and a message.
-		*/
+		// Set once the local player has been told about the current spell of low power. Not saved.
 		bool IsLowPowerAnnounced;
 
 		/*
@@ -613,10 +610,7 @@ class HouseClass : public AbstractClass
 		int Power;					// Current power output.
 		int Drain;					// Power consumption.
 
-		/*
-		**	Power the house always has, whatever its buildings make. The Auxiliary Power trigger action
-		**	adds to it, and a negative total is a standing drain.
-		*/
+		// Power the house has whatever its buildings make, from the Auxiliary Power trigger action; below zero it drains.
 		int AuxiliaryPower;
 
 		/*
@@ -1278,9 +1272,7 @@ class HouseClass : public AbstractClass
 		*/
 		HouseSet Allies;
 
-		/*
-		**	Low power no longer damages structures, so nothing reads this timer.
-		*/
+		// Nothing reads this timer; it stays for the save format.
 		CDTimerClass<FrameTimerClass> DamageTime;
 
 		/*
