@@ -2159,6 +2159,14 @@ static bool Rubble_Image(CellClass const & cell, ShapeSet const * & image, int &
 }
 
 
+// A crate's OverlayData holds its powerup, so a crate always shows frame 0 of its shape (gamemd's CellClass::DrawOverlay,
+// 0x47F6A0, DrawOverlayShadow, 0x47F510, GetContainingRect, 0x47FB90, and ShapeRect, 0x47FDE0).
+static int Overlay_Frame(CellClass const & cell)
+{
+	return((cell.Overlay != OVERLAY_NONE && OverlayTypes[cell.Overlay]->IsCrate) ? 0 : cell.OverlayData);
+}
+
+
 /// <summary>
 /// Draws the shadow cast by the overlay on this cell.
 /// This routine is the darkened companion pass to Draw_Overlay, drawing the shadow artwork
@@ -2210,7 +2218,7 @@ void CellClass::Draw_Overlay_Shadow(Point2D const & xpoint, Rect const & cliprec
 		*LogicalSurface,
 		*Drawer,
 		shape,
-		OverlayData + shape->Get_Count() / 2,
+		Overlay_Frame(*this) + shape->Get_Count() / 2,
 		point,
 		cliprect,
 		ShapeFlags_Type(SHAPE_ZWRITE|SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_DARKEN),
@@ -2320,7 +2328,7 @@ void CellClass::Draw_Overlay(Point2D const & xpoint, Rect const & cliprect)
 		if (otype->IsARock) {
 			offsetY = 0;
 		}
-		Draw_Shape(*LogicalSurface, *Drawer, shape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, offsetY - yoffset - 2, otype->IsDrawFlat ? ZGRAD_GROUND : ZGRAD_90DEG, TileBrightness);
+		Draw_Shape(*LogicalSurface, *Drawer, shape, Overlay_Frame(*this), point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, offsetY - yoffset - 2, otype->IsDrawFlat ? ZGRAD_GROUND : ZGRAD_90DEG, TileBrightness);
 	}
 }
 
@@ -2386,7 +2394,7 @@ Rect CellClass::Overlay_Render_Rect(void) const
 	int height = image->Get_Height() / 2;
 	Point2D rect_point = point;
 	rect_point -= Point2D(width, height);
-	return(image->Get_Rect(OverlayData) + rect_point);
+	return(image->Get_Rect(Overlay_Frame(*this)) + rect_point);
 }
 
 
@@ -2419,7 +2427,7 @@ Rect CellClass::Overlay_Shadow_Render_Rect(void) const
 		return(Rect(0, 0, 0, 0));
 	}
 
-	int frame = OverlayData + image->Get_Count() / 2;
+	int frame = Overlay_Frame(*this) + image->Get_Count() / 2;
 
 	Point2D point;
 	TacticalMap->Coord_To_Pixel(Coord_Whole(CellID), point);

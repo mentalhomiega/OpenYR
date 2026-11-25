@@ -1,0 +1,42 @@
+; A hand-written campaign map for the shroud edge tests. It is not a game map and holds no game data.
+; The playing area is 50 cells wide and 20 tall, so at 1920x1080 the view is taller than the map and reaches past its cells at the top.
+[Basic]
+Name=Shroud edge test
+Player=Russians
+NewINIFormat=4
+Percent=0
+IsSinglePlayer=yes
+
+[Map]
+Theater=TEMPERATE
+Size=0,0,50,20
+LocalSize=0,0,50,20
+
+[Houses]
+0=Americans
+1=Russians
+
+[Americans]
+IQ=0
+Edge=West
+Color=DarkBlue
+Allies=Americans
+Credits=0
+TechLevel=10
+PlayerControl=no
+
+[Russians]
+IQ=0
+Edge=East
+Color=DarkRed
+Allies=Russians
+Credits=0
+TechLevel=10
+PlayerControl=yes
+
+[Waypoints]
+0=35035
+
+[Units]
+0=Russians,HTNK,256,35,35,0,Guard,None,0,0,0,0
+1=Americans,MTNK,256,20,40,0,Guard,None,0,0,0,0

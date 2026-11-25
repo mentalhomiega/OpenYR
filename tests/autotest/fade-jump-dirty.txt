@@ -1,0 +1,23 @@
+; Jumps the view of Soviet 4 1000 pixels right in one frame while the ambient light is dimmed from 75 to 30 and the tile layer keeps its picture
+; of 75 (docs/GPU_MAP.md#light-fades). In the same frame a dirty area on the right of the view (x 1250-1550) asks for the ground there to be
+; redrawn; the pan moves it to x 250-550. The cells of a dirty area are redrawn at the light the layer keeps. They used to be looked up where
+; the area was before the pan moved it, which for a pan of more than about 300 pixels missed the cells it is drawn over, so that ground was
+; drawn at the dim light. The light then comes back to 75, which needs no redraw, so ground drawn at the wrong light still shows.
+; Expected: `layer fade ... keeps its picture of ambient 75` with no redraw line, and the `after-jump` windowcompare line ends in
+; `stale columns 0 stale rows 0` (a few differing pixels are animation).
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/fade-jump-dirty.txt -Campaign -Map SOV04DMD.MAP -Width 1920 -Height 1080 -Seconds 300 -Filter "AUTOTEST +(windowcompare|layer fade|panview|dirtyarea|lighting)|Exception|: quit"
+ui briefing
+2490 reveal
+2492 view 77 121
+2500 windowcompare start 0 0 1660 1080
+2502 trigaction 71 1028443341 0
+2503 trigaction 72 990057071 0
+2504 trigaction 73 30 0
+2640 lighting
+2650 dirtyarea 1250 300 300 400
+2650 panview 1000 0
+2652 trigaction 73 75 0
+2790 lighting
+2800 windowcompare after-jump 0 0 1660 1080
+2802 windowshot after-jump-shot asis
+2804 quit

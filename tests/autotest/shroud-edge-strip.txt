@@ -1,0 +1,24 @@
+; Scrolls a map that is lower than the view (SHROUDEDGE.MAP, 50 by 20 cells, at 1920x1080) to its right and left ends, where the view's top
+; corners lie up to 8 cells outside the map's cells. The map is shrouded except around one tank. Draw_Shroud used to clamp the strip's first cell
+; to the map's cells, which moved the cells it covered away from the strip, so the strip a scroll brought in at the right showed bare ground in
+; the shroud, and a full draw at the left end left the left edge bare. The shroudholes lines count cells in solid shroud whose middle shows
+; ground in the tile layer; the windowshots show the frames.
+; The cells of the map's top row also used to keep a line of ground along their top edges, since nothing outside the map's cells
+; drew shroud over the tiles' edge pixels there.
+; Expected: every `AUTOTEST shroudholes` line has `open 0` (before the strip fix: right 160, left 220, left-fresh 120; before the
+; edge fix: 64 in every line, all in the top row).
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/shroud-edge-strip.txt -Mods src-agent30/tests/autotest/shroud-edge -Campaign -Map SHROUDEDGE.MAP -Width 1920 -Height 1080 -Seconds 120 -Filter "AUTOTEST +shroudholes|Exception|: quit"
+ui briefing
+10 shroudholes start
+12 windowshot edge-start asis
+14 rightdrag 300 0 10 60
+90 shroudholes right
+92 windowshot edge-right asis
+94 windowshot edge-right-fresh
+96 shroudholes right-fresh
+98 rightdrag -300 0 10 80
+190 shroudholes left
+192 windowshot edge-left asis
+194 windowshot edge-left-fresh
+196 shroudholes left-fresh
+200 quit

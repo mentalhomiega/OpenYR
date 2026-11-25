@@ -1,0 +1,31 @@
+; Reveals shroud on Soviet 4 while the view scrolls, in the owner's setup (1920x1080, 240 drawn frames a second). First a tank is placed in the
+; shroud in the same frame as a 30-pixel scroll, after the scroll was applied, so the cells its sight reveals register their redraw with the
+; scrolled view; then tanks and drones drive into the shroud while slow drags follow them east and back, so cells are revealed between the
+; scroll and the draw of many frames. The shroudholes lines check that no cell still in solid shroud shows ground, the windowcompare lines that
+; nothing the reveals changed was left stale.
+; Expected: every `AUTOTEST shroudholes` line has `open 0` and every `AUTOTEST windowcompare` line ends in `stale columns 0 stale rows 0`.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/rightdrag-reveal-owner-setup.txt -Campaign -Map SOV04DMD.MAP -Width 1920 -Height 1080 -RenderFrameRate 240 -Seconds 300 -Settings "[Video]`nGpuVoxels=yes" -Filter "AUTOTEST +(windowcompare|shroudholes|panview|grantunit)|Exception|: quit"
+ui briefing
+2500 windowcompare start 0 0 1660 1080
+2502 view 77 126
+2510 panview 30 0
+2510 grantunit HTNK 95 110
+2512 shroudholes placed
+2514 windowcompare placed 0 0 1660 1080
+2520 grantunit HTK 80 126
+2520 grantunit HTK 80 128
+2520 grantunit DRON 80 124
+2520 grantunit DRON 77 130
+2522 move HTK 100 120
+2522 move DRON 100 110
+2524 rightdrag 28 -14 20 200
+2600 shroudholes drag-held
+2602 windowcompare drag-held 0 0 1660 1080
+2760 shroudholes drag-east
+2762 windowcompare drag-east 0 0 1660 1080
+2766 move HTK 70 150
+2766 move DRON 60 140
+2768 rightdrag -28 28 20 200
+3000 shroudholes drag-back
+3002 windowcompare drag-back 0 0 1660 1080
+3006 quit

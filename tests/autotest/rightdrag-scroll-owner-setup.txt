@@ -1,0 +1,60 @@
+; Drags Soviet 4 with the right button in the setup the streaks were seen in: a 1920x1080 frame shown in a 3840x2160 window, 240 drawn frames a second,
+; GPU voxels, Debug mode (for the deeper zoom out) and the modern panel at 80% opacity, so the map under the panel is compared too. The drags run at zoom 1,
+; while a zoom glides out and in, at a deep zoom out, back and forth, in short starts and stops, and along the map's top and right edges, with the upload check on.
+; Expected: every `AUTOTEST windowcompare` line ends in `stale columns 0 stale rows 0` (a few differing pixels are animation), then `UPLOAD_CHECK differences 0`.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/rightdrag-scroll-owner-setup.txt -Campaign -Map SOV04DMD.MAP -Width 1920 -Height 1080 -WindowWidth 3840 -WindowHeight 2160 -RenderFrameRate 240 -Seconds 900 -Settings "[Options]`nDebugMode=yes`nSidebarOpacity=80`n[Video]`nGpuVoxels=yes" -Filter "AUTOTEST +(windowcompare|rightdrag)|UPLOAD_CHECK|Exception|: quit"
+; Also run it with RenderThread=yes added under [Video].
+ui briefing
+2490 uploadcheck 1
+2500 windowcompare start
+2504 rightdrag 28 0 20 120
+2649 windowcompare z1-slow-right
+2653 rightdrag 0 28 20 120
+2798 windowcompare z1-slow-down
+2802 rightdrag -28 -28 20 120
+2947 windowcompare z1-slow-diag
+2951 rightdrag 28 0 20 160
+2981 wheel -0.1
+3011 wheel -0.1
+3136 windowcompare glide-out-right
+3140 rightdrag 0 -28 20 120
+3285 windowcompare z08-slow-up
+3289 rightdrag -28 0 20 120
+3434 windowcompare z08-slow-left
+3438 rightdrag 28 28 20 160
+3468 wheel 0.1
+3623 windowcompare glide-in-diag
+3627 wheel -0.2
+3657 wheel -0.2
+3687 rightdrag 28 0 20 120
+3832 windowcompare deep-slow-right
+3836 rightdrag 0 28 20 120
+3981 windowcompare deep-slow-down
+3985 rightdrag -28 -28 6 30
+4025 rightdrag 28 28 6 30
+4065 rightdrag -28 0 6 30
+4109 windowcompare deep-reversals
+4113 rightdrag -28 0 20 160
+4133 wheel 0.2
+4153 wheel 0.2
+4173 wheel 0.1
+4308 windowcompare glide-back-left
+4312 rightdrag 20 12 3 4
+4324 rightdrag 20 12 3 4
+4336 rightdrag 20 12 3 4
+4348 rightdrag 20 12 3 4
+4360 rightdrag 20 12 3 4
+4372 rightdrag 20 12 3 4
+4388 windowcompare start-stop
+4392 rightdrag 0 -600 10 120
+4532 windowcompare edge-top
+4536 rightdrag 28 0 20 160
+4721 windowcompare along-top-right
+4725 rightdrag 600 0 10 200
+4945 windowcompare top-right-corner
+4949 rightdrag 0 28 20 160
+5134 windowcompare along-right-down
+5138 rightdrag -28 0 20 160
+5323 windowcompare off-right-left
+5327 uploadcheck 0
+5331 quit
