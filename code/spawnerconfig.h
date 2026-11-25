@@ -152,6 +152,10 @@ class SpawnerConfigClass
 		// TimingPolicy=Adaptive selects the adaptive rung table. Any other value, and the default, plays
 		// gamemd's timing. Each machine's own, like the timeouts.
 		bool AdaptiveTiming = false;
+		// PeerCheck says what a player whose game build, data or mods differ from another's brings about: Refuse (the default)
+		// ends the start, Warn plays on after logging it, Off sends no report and judges none. Each machine's own, so it is
+		// left out of the session identity.
+		std::string PeerCheck;
 		// The send period and look-ahead the host chose, from FrameSendRate and MaxAhead. The CnCNet client writes
 		// its default send period (7) with no look-ahead when its host chose nothing, which reads as no choice.
 		// Shared by every machine, so it is part of the session identity. Unset plays gamemd's timing.

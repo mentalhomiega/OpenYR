@@ -1433,6 +1433,9 @@ restart:
 	DebugString("IsTSpread = %d\n", Special.IsTSpread);
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.Play) {
+		if (!Spawner_Verify_Peers()) {
+			return(false);
+		}
 		Session.Create_Connections();
 		Spawner_Announce_Master();
 		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);

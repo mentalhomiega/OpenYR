@@ -55,7 +55,7 @@ Command-line switches are matched exactly, or by a fixed prefix, in `Parse_Comma
 
 The client compares `CnCNetYRLauncher.exe`, `gamemd.exe` and `gamemd-spawn.exe`. Its log also lists `Resources\clientdx.exe`. `Game.exe` is not in the stock list, so two testers on different OpenYR builds would not be refused. The setup script adds `Game.exe` to `CompatibilityCheckExecutables`. Whether the client then refuses a mismatched join is not verified.
 
-Both testers still run the same build, as the tester guide says.
+Both testers still run the same build, as the tester guide says. Our build also checks this itself: each player sends the others its game build, data and mods when the match starts, and a player whose build, data or mods differ ends the start with a message that names the difference ([Peer check](NETCODE.md#peer-check)). The client's own check is not needed for this.
 
 ## Setting up a separate copy
 

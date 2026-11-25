@@ -259,6 +259,9 @@ namespace NetGlobal
 			case NET_LOAD_GAME:
 				return(HEADER_SIZE + sizeof(GlobalPacketType::LoadGame));
 
+			case NET_PEER_CHECK:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::PeerCheck));
+
 			default:
 				// File chunks use their own layout, and an unknown command is not trimmed.
 				return(PACKET_SIZE);
@@ -332,6 +335,7 @@ namespace NetGlobal
 			case NET_DESYNC_HEARTBEAT:
 			case NET_DESYNC_CONTINUE:
 			case NET_LOAD_GAME:
+			case NET_PEER_CHECK:
 				return(true);
 
 			default:
@@ -379,6 +383,12 @@ namespace NetGlobal
 			case NET_PROGRESS_REPORT:
 				if (packet.Progress.Percent < 0 || packet.Progress.Percent > 100) {
 					return(DecodeError::INVALID_PROGRESS);
+				}
+				break;
+
+			case NET_PEER_CHECK:
+				if (!Has_Terminator(packet.PeerCheck.Mods, sizeof(packet.PeerCheck.Mods))) {
+					return(DecodeError::UNTERMINATED_MODS);
 				}
 				break;
 
@@ -665,6 +675,7 @@ namespace NetGlobal
 			case DecodeError::INVALID_SAVE_SLOT: return("invalid saved game slot");
 			case DecodeError::UNTERMINATED_SERIAL: return("unterminated serial");
 			case DecodeError::UNTERMINATED_OPTIONS: return("unterminated game options");
+			case DecodeError::UNTERMINATED_MODS: return("unterminated mod list");
 			case DecodeError::INVALID_GAMEOPT: return("invalid game options value");
 			case DecodeError::INVALID_HOUSE: return("invalid house");
 			case DecodeError::INVALID_FILE_INFO: return("invalid file offer");

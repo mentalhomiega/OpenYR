@@ -293,6 +293,7 @@ A lower look-ahead does not remove the slack that the leading machine never had,
 | `MeasuredMaxAhead` | `yes` plays the [measured look-ahead](#measured-look-ahead) under gamemd's timing. Read only without a chosen `MaxAhead` and under protocol 2. The built-in lobby writes it when the host chose a send period and no look-ahead. Part of the session identity when it holds. |
 | `StartRoundTrip` | The lobby's round-trip estimate in milliseconds, 0 to 5000, for the start look-ahead. Read only with `MeasuredMaxAhead=yes`, and then part of the session identity. |
 | `Protocol` | `0` plays protocol 0, only with `HostTiming=yes`. Any other value plays protocol 2. |
+| `PeerCheck` | `Refuse`, `Warn` or `Off`; see [Peer check](#peer-check). Each machine reads its own value, so the key is left out of the session identity. |
 | `ParallelPaths` | `yes` searches unit paths in batches on several threads ([Parallel path searches](PERFORMANCE.md#parallel-path-searches)). Every player's file must hold the same value. `yes` is part of the session identity; a file without the key, or with `no`, keeps the identity it had. |
 | `PreCalcMaxAhead` | Not read. |
 
@@ -432,6 +433,30 @@ in milliseconds. The delay can be up to FSR − 1 frames longer.
 
 At 50, 100 and 200 ms with 45 fps the choice is rung 1, rung 1 and rung 3. Rung 1 keeps a 4-frame
 delay until the round trip passes 133 ms.
+
+## Peer check
+
+Every player of a launch-file network match, whether it came from the CnCNet client or from our built-in lobby, sends every other player a `NET_PEER_CHECK` message as soon as the network opens. The message carries the game build number, the identities of the rules, art and AI files, and the mod signature ([`code/modsync.h`](../code/modsync.h)), the same facts a LAN host compares when a player joins. Each machine keeps its own facts from that moment, so a rules overlay that the scenario loads later changes nothing.
+
+After the scenario has loaded and before the connections are created, each machine compares its own facts with every other player's report. The first difference found is named, coarsest first:
+
+| Level | Text names |
+| --- | --- |
+| Game build | The other player's build number and ours |
+| Mod list | The mods each side runs, which mods one side lacks, mods whose files differ, and a different order |
+| Game data | Which of the rules, art and AI files differ, when the mods are the same |
+
+A player who sent no report, as every build before this check does, is logged as unknown and does not stop the match. The wait for that report is at most two seconds, so an older build adds that delay to every start.
+
+`PeerCheck` in `[Settings]` is each machine's own choice and is left out of the session identity:
+
+| Value | Effect |
+| --- | --- |
+| `Refuse` (default, also any other text) | Shows a message that names each player who differs and how, writes it to the debug log as `[PeerCheck]` lines, and ends the start. `Game.exe` exits, so the client or lobby that started it sees it go. Every machine that sees a difference ends its own start, so all players get a message. A machine that ends the start keeps its network open for up to three seconds so that the others receive its report. |
+| `Warn` | Writes the same `[PeerCheck]` lines and starts the match. It is likely to go out of sync. |
+| `Off` | Sends no report and judges none, like an older build. |
+
+A machine set to `Warn` or `Off` still plays on while another machine on `Refuse` leaves, so testers who change the key should change it on every machine. The packet is ignored by older builds, which log it as an invalid command. A game started from a save with a multiplayer load is checked the same way.
 
 ## Log lines
 

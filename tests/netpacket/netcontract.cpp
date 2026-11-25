@@ -954,6 +954,17 @@ void Test_Global_Packets(void)
 	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_SLOT,
 		"a load request needs a slot the numbered saves can hold");
 
+	packet = Global_Packet(NET_PEER_CHECK);
+	Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
+		"a peer check from a source outside Session.Players is refused");
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::NONE,
+		"any member may send a peer check");
+	Check(NetGlobal::Required_Length(&packet, packet_size) == offsetof(GlobalPacketType, PeerCheck) + sizeof(packet.PeerCheck),
+		"a peer check is sent in full");
+	std::memset(packet.PeerCheck.Mods, 'x', sizeof(packet.PeerCheck.Mods));
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::UNTERMINATED_MODS,
+		"a peer check whose mod list has no terminator is refused");
+
 	NetGlobal::RejectionCounters counters;
 	NetGlobal::RejectionRecord first = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);
 	NetGlobal::RejectionRecord second = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);

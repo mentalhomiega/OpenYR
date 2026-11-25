@@ -15,6 +15,7 @@
 #include "spawner.h"
 
 #include "spawnerconfig.h"
+#include "spawnpeers.h"
 
 #include "addon.h"
 #include "autotest.h"
@@ -70,9 +71,9 @@ static MPModeType SpawnMode;
 /// </summary>
 /// <param name="fault">A printf style description of the fault.</param>
 /// <returns>false, so a caller can refuse and return in one statement.</returns>
-static bool Spawner_Refuse(char const * fault, ...)
+bool Spawner_Refuse(char const * fault, ...)
 {
-	char buffer[256];
+	char buffer[768];
 
 	va_list args;
 	va_start(args, fault);
@@ -420,7 +421,23 @@ static bool Spawner_Wire_Network(void)
 	// default 33 ms retry floods a slow link.
 	Ipx.Set_Timing(TIMER_SECOND, (unsigned int)-1, 10 * TIMER_SECOND);
 
+	Peers_Announce(PeerCheck::Mode_From_Text(SpawnConfig.PeerCheck));
+
 	return(true);
+}
+
+
+/// <summary>
+/// Judges the other players' game build, data and mods once the scenario has loaded and every
+/// machine has had time to report.
+/// </summary>
+/// <returns>bool; May the match start?</returns>
+bool Spawner_Verify_Peers(void)
+{
+	if (!Spawner_Is_Active() || Session.Type != GAME_INTERNET) {
+		return(true);
+	}
+	return(Peers_Verify());
 }
 
 
