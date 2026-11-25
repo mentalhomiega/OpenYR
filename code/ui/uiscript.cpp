@@ -653,6 +653,29 @@ bool Step_Updatecheck(Rml::Context *, UIStepType const & step, long long)
 }
 
 
+// "[refusals]": the next present reports a lost graphics device, and the next refusals restarts fail.
+bool Step_Devicelost(Rml::Context *, UIStepType const & step, long long)
+{
+	Video_Simulate_Device_Loss(std::atoi(step.Argument.c_str()));
+	return(false);
+}
+
+
+bool Step_Devicestate(Rml::Context *, UIStepType const &, long long)
+{
+	Video_Log_Device_State();
+	return(false);
+}
+
+
+// "0" or "1": presents are skipped as for a minimised window while it is 1.
+bool Step_Minimised(Rml::Context *, UIStepType const & step, long long)
+{
+	Video_Pretend_Minimized(std::atoi(step.Argument.c_str()) != 0);
+	return(false);
+}
+
+
 bool Step_Quit(Rml::Context *, UIStepType const &, long long)
 {
 	DebugString("UISCRIPT quit\n");
@@ -691,6 +714,9 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"hudrows", Step_Hudrows},
 		{"battleview", Step_Battleview},
 		{"updatecheck", Step_Updatecheck},
+		{"devicelost", Step_Devicelost},
+		{"devicestate", Step_Devicestate},
+		{"minimised", Step_Minimised},
 		{"quit", Step_Quit},
 	};
 	for (auto const & entry : handlers) {
@@ -835,6 +861,11 @@ bool UIScript_Fullscreen_Tick(void)
 			Backend_Request_Window_Capture(ShotPath.c_str());
 			Video_Mark_Overlay_Dirty();
 			WaitUntil = now + 500;
+			return(false);
+		} else if (step.Command == "devicelost" || step.Command == "devicestate") {
+			Next++;
+			DebugString("UISCRIPT %s %s\n", step.Command.c_str(), step.Argument.c_str());
+			Find_Step_Handler(step.Command)(nullptr, step, now);
 			return(false);
 		} else if (step.Command == "key" && step.Argument == "escape") {
 			Next++;

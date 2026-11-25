@@ -145,6 +145,16 @@ unsigned int Video_Frame_Time(int index);
 std::uint64_t Video_Present_Count(void);
 std::uint64_t Video_Frame_Upload_Count(void);
 
+// How many times the renderer has been restarted after a lost graphics device since the game started.
+unsigned int Video_Device_Restarts(void);
+
+// For the devicelost autotest step: the next present reports a lost device, and the next refusals restarts fail.
+void Video_Simulate_Device_Loss(int refusals);
+// Logs `AUTOTEST devicestate lost <0|1> restarts <n> renderer <name>`.
+void Video_Log_Device_State(void);
+// For the minimised autotest step: presents are skipped as for a minimised window, without touching the window.
+void Video_Pretend_Minimized(bool minimized);
+
 // The presentdigest autotest step: on logs a PRESENT_DIGEST line at each present that reaches the presenter.
 void Video_Set_Present_Digest(bool enabled);
 // Logs the PRESENT_DIGEST line for a present while the step is on; layer is NULL when no map layer is drawn.

@@ -36,6 +36,20 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 void Backend_Shutdown(void);
 bool Backend_Is_Running(void);
 
+// True from the moment the renderer reports a lost graphics device until Backend_Restart succeeds.
+bool Backend_Device_Lost(void);
+// The renderer's description of the last lost device.
+char const * Backend_Lost_Reason(void);
+// Releases what the renderer holds and shuts it down after a lost device. Every other holder of renderer
+// resources releases them first. Backend_Is_Running is false until Backend_Restart succeeds.
+void Backend_Release_Lost_Device(void);
+// Starts the renderer again on the same window with the graphics API, back buffer and frame size it had,
+// never another API. False while the device cannot be made; nothing is left running then.
+bool Backend_Restart(void);
+// For the devicelost autotest step: reports a lost device after the next frame, as a failed present would, and
+// refuses the next refusals restarts.
+void Backend_Simulate_Device_Loss(int refusals);
+
 // True when the frame reaches the window as HDR10, through the composite pass.
 bool Backend_HDR_Active(void);
 

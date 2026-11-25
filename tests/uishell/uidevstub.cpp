@@ -42,6 +42,11 @@ void UIDev_Shutdown(UIRmlRenderClass &)
 }
 
 
+void UIDev_Release_Textures(UIRmlRenderClass &)
+{
+}
+
+
 void UIDev_Mouse_Position(int, int)
 {
 }

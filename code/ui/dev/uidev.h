@@ -24,6 +24,8 @@ void UIDev_Toggle(UIRmlRenderClass const & render);
 void UIDev_Tick(UIRmlRenderClass const & render);
 void UIDev_Render(UIRmlRenderClass & render);
 void UIDev_Shutdown(UIRmlRenderClass & render);
+// Frees the overlay's textures; it makes them again from the pixels it keeps when it next draws.
+void UIDev_Release_Textures(UIRmlRenderClass & render);
 
 void UIDev_Mouse_Position(int x, int y);
 bool UIDev_Mouse_Button(int button, bool down);

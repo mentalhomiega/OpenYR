@@ -19,6 +19,7 @@
 #include "_surface.h"
 #include "_ui.h"
 #include "_xmouse.h"
+#include "autotest.h"
 #include "bgfxbackend.h"
 #include "blit.h"
 #include "colourblind.h"
@@ -40,6 +41,7 @@
 #include "wwmouse.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -47,6 +49,7 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -119,6 +122,20 @@ static int _PendingHeight = 0;
 
 static std::uint64_t _PresentCount = 0;
 static std::uint64_t _FrameUploadCount = 0;
+
+// A lost graphics device: when it was noticed, when the next restart is tried and the wait after that one,
+// and how many restarts have succeeded since the game started.
+static bool _DeviceDown = false;
+static unsigned int _DeviceDownSince = 0;
+static unsigned int _NextRestart = 0;
+static unsigned int _RestartWait = 0;
+static unsigned int _DeviceRestarts = 0;
+constexpr unsigned int VIDEO_RESTART_FIRST_WAIT_MS = 250;
+constexpr unsigned int VIDEO_RESTART_LONGEST_WAIT_MS = 4000;
+constexpr unsigned int VIDEO_RESTART_GIVE_UP_MS = 60000;
+
+// Set by the minimised autotest step: presents behave as though the window were minimised.
+static bool _PretendMinimized = false;
 
 
 static void Refresh_Mouse_Pointer(void)
@@ -627,12 +644,82 @@ static void Layer_Destination(BackendLayer & layer)
 }
 
 
+// After a minute without a graphics device, asks the player whether to keep waiting. An unattended test quits.
+static void Ask_About_Lost_Device(void)
+{
+	DebugString("Video: the renderer could not be restarted for %u seconds\n", VIDEO_RESTART_GIVE_UP_MS / 1000);
+	if (AutoTest_Active()) {
+		DebugString("Video: quitting, since the test runs unattended\n");
+		exit(EXIT_FAILURE);
+	}
+	if (!Main_Window_Confirm_Box("Graphics device lost",
+			"The graphics card stopped responding, and the game has not been able to start it again for a minute.\n\n"
+			"Check that the display is switched on and connected. Choose Keep waiting to go on trying, or Quit to close the game.",
+			"Keep waiting", "Quit")) {
+		exit(EXIT_FAILURE);
+	}
+	_DeviceDownSince = timeGetTime();
+}
+
+
+/// <summary>
+/// Restarts the renderer after a lost graphics device: the interface and the renderer release what they hold,
+/// and the renderer starts again, tried again at growing intervals while that fails. Returns true while the
+/// renderer runs. A call that returns false waits one present interval, so a loop that keeps presenting does
+/// not spin a core.
+/// </summary>
+static bool Keep_Device(void)
+{
+	if (!Backend_Device_Lost()) {
+		return(true);
+	}
+
+	unsigned int const now = timeGetTime();
+	if (!_DeviceDown) {
+		DebugString("Video: the graphics device was lost (%s); restarting the renderer\n", Backend_Lost_Reason());
+		UIShell.Release_Device_Resources();
+		Backend_Release_Lost_Device();
+		// The frame stays marked until a present succeeds, so presents, and with them the restarts, go on.
+		_Dirty.Invalidate_Frame();
+		_DeviceDown = true;
+		_DeviceDownSince = now;
+		_NextRestart = now;
+		_RestartWait = VIDEO_RESTART_FIRST_WAIT_MS;
+	}
+
+	if ((int)(now - _NextRestart) >= 0) {
+		if (Backend_Restart()) {
+			UIShell.Restore_Device_Resources();
+			_DeviceDown = false;
+			_DeviceRestarts++;
+			// Everything the window showed lived in the lost device, so the next present sends the frame and map layer whole.
+			_Dirty.Invalidate_Frame();
+			_Dirty.Mark_Overlay();
+			_LayerFresh = (_LayerSurface != NULL);
+			DebugString("Video: the renderer restarted after %u ms on %s\n", timeGetTime() - _DeviceDownSince, Backend_Renderer_Name());
+			return(true);
+		}
+		_NextRestart = timeGetTime() + _RestartWait;
+		_RestartWait = std::min(_RestartWait * 2, VIDEO_RESTART_LONGEST_WAIT_MS);
+	}
+
+	if (now - _DeviceDownSince >= VIDEO_RESTART_GIVE_UP_MS) {
+		Ask_About_Lost_Device();
+	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(std::max(_PresentInterval, 10u)));
+	return(false);
+}
+
+
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
 	}
-	if (Main_Window_Minimized()) {
+	if (!Keep_Device()) {
+		return;
+	}
+	if (Main_Window_Minimized() || _PretendMinimized) {
 		return;
 	}
 
@@ -736,6 +823,11 @@ static void Present(void)
 		}
 	}
 	_Presenting = false;
+
+	// A device lost in this present is restarted at once, so the next present draws on the new one.
+	if (Backend_Device_Lost()) {
+		Keep_Device();
+	}
 
 	if (presented) {
 		if (_LastPresentTime - _PresentSecondStart >= 1000) {
@@ -847,6 +939,31 @@ std::uint64_t Video_Present_Count(void)
 std::uint64_t Video_Frame_Upload_Count(void)
 {
 	return(_FrameUploadCount);
+}
+
+
+unsigned int Video_Device_Restarts(void)
+{
+	return(_DeviceRestarts);
+}
+
+
+void Video_Simulate_Device_Loss(int refusals)
+{
+	Backend_Simulate_Device_Loss(refusals);
+}
+
+
+void Video_Log_Device_State(void)
+{
+	DebugString("AUTOTEST devicestate lost %d restarts %u renderer %s\n", Backend_Device_Lost() ? 1 : 0, _DeviceRestarts, Backend_Renderer_Name());
+}
+
+
+void Video_Pretend_Minimized(bool minimized)
+{
+	_PretendMinimized = minimized;
+	Video_Mark_Overlay_Dirty();
 }
 
 

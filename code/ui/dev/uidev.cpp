@@ -514,6 +514,14 @@ void UIDev_Shutdown(UIRmlRenderClass & render)
 }
 
 
+void UIDev_Release_Textures(UIRmlRenderClass & render)
+{
+	if (_Context != NULL) {
+		render.Destroy_ImGui_Textures();
+	}
+}
+
+
 void UIDev_Mouse_Position(int x, int y)
 {
 	if (!UIDev_Active()) {

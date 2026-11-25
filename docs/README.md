@@ -27,6 +27,8 @@ The developer guides are split by subject:
   its key, default, range, settings row and greying.
 - [HDR output](HDR.md) — the HDR10 back buffer, the composite pass that keeps
   the SDR colours, its settings and how it falls back to SDR.
+- [Graphics device loss](DEVICE_LOSS.md) � how the game restarts its renderer
+  when the graphics device is lost, and what the devicelost test step covers.
 - [Colour-blind correction](COLOURBLIND.md) — the colour-blind matrices, the Daltonize correction and its limits.
 - [ts-patches in OpenTS](TS-PATCHES.md) — each CnCNet ts-patches patch and
   what OpenTS does in its place.

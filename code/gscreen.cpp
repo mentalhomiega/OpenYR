@@ -674,6 +674,13 @@ void GScreenClass::Render(void)
 	Surface * oldpage = LogicalSurface;
 	LogicalSurface = CompositeSurface;
 
+	// A renderer restarted after a lost graphics device holds none of the map's pictures.
+	static unsigned int restarts_drawn = 0;
+	if (Video_Device_Restarts() != restarts_drawn) {
+		restarts_drawn = Video_Device_Restarts();
+		Flag_To_Redraw(GS_REDRAW_ALL);
+	}
+
 	bool const redraw = DrawFlags != GS_REDRAW_DIRTY;
 	bool complete = DrawFlags == GS_REDRAW_ALL;
 
