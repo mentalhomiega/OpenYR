@@ -115,3 +115,6 @@ class ScrollClass: public TabClass
 		void Scroll_Edge(Point2D const & point);
 		void Scroll_Coast(Point2D const & point);
 };
+
+
+bool Edge_Scroll_Holds_Pointer(void);

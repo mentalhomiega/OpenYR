@@ -146,3 +146,7 @@ class MouseClass: public ScrollClass
 		static CDTimerClass<SystemTimerClass> Timer;
 		int Frame;
 };
+
+
+// How many times the pointer's shape or size has changed since the game started, for tests that watch for a flickering pointer.
+unsigned Mouse_Shape_Changes(void);

@@ -3522,6 +3522,17 @@ static void Shape_Step(StepType const &)
 }
 
 
+// shapechanges: logs how many times the pointer's shape changed since the last shapechanges step. A pointer that rests in
+// one place keeps one shape, so a count above 1 over many frames means two pieces of code are swapping it.
+static void Shapechanges_Step(StepType const &)
+{
+	static unsigned last = 0;
+	unsigned const now = Mouse_Shape_Changes();
+	DebugString("AUTOTEST   shapechanges %u\n", now - last);
+	last = now;
+}
+
+
 // tilecells: logs how many cells the tile layer has drawn since the game started, and how many since the last tilecells step.
 static void Tilecells_Step(StepType const & step)
 {
@@ -9219,6 +9230,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"wpcell", Wpcell_Step},
 		{"cursor", Cursor_Step},
 		{"shape", Shape_Step},
+		{"shapechanges", Shapechanges_Step},
 		{"swaim", Swaim_Step},
 		{"speed", Speed_Probe},
 		{"sample", Sample_Step},

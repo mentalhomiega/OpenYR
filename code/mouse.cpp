@@ -258,9 +258,23 @@ Point2D MouseClass::Get_Mouse_Hotspot(MouseType mouse) const
  *   06/03/1994 JLB : Made into member function.                                               *
  *   12/24/1994 JLB : Added small control parameter.                                           *
  *=============================================================================================*/
+static unsigned _ShapeChanges = 0;
+
+
+unsigned Mouse_Shape_Changes(void)
+{
+	return(_ShapeChanges);
+}
+
+
 bool MouseClass::Override_Mouse_Shape(MouseType mouse, bool wsmall)
 {
 	assert((unsigned)mouse < MOUSE_COUNT + CustomControl.size());
+
+	bool const is_scroll_arrow = mouse >= MOUSE_N && mouse <= MOUSE_NO_NW;
+	if (!is_scroll_arrow && Edge_Scroll_Holds_Pointer()) {
+		return(false);
+	}
 
 	MouseStruct const * control = &Control_For(mouse);
 	static bool startup = false;
@@ -279,6 +293,7 @@ bool MouseClass::Override_Mouse_Shape(MouseType mouse, bool wsmall)
 	*/
 	if (!startup || (MouseShapes && ((mouse != CurrentMouseShape) || (wsmall != IsSmall)))) {
 		startup = true;
+		_ShapeChanges++;
 
 		Timer = control->FrameRate;
 		Frame = 0;
