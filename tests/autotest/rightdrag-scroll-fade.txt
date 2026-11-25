@@ -1,0 +1,38 @@
+; Drags Soviet 4 with the right button while the ambient light fades, in the setup of rightdrag-scroll-owner-setup.txt. The mission's light is 75; it dips to 30 and
+; comes back to 75 while the view scrolls, so the tile layer keeps its picture of 75 throughout and every strip a scroll brings in is drawn at that light
+; (docs/GPU_MAP.md#light-fades). Back at 75 no redraw follows, so a strip drawn at the wrong light, or not drawn, differs from the fresh draw. A shallow fade
+; to 55 and back follows, which ends in the redraw after the fade.
+; Expected: two `layer fade ... keeps its picture of ambient 75` lines, `after-dip` and `after-shallow` windowcompare lines that end in `stale columns 0 stale rows 0`
+; (a few differing pixels are animation), then `UPLOAD_CHECK differences 0`.
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/rightdrag-scroll-fade.txt -Campaign -Map SOV04DMD.MAP -Width 1920 -Height 1080 -WindowWidth 3840 -WindowHeight 2160 -RenderFrameRate 240 -Seconds 900 -Settings "[Options]`nDebugMode=yes`nSidebarOpacity=80`n[Video]`nGpuVoxels=yes" -Filter "AUTOTEST +(windowcompare|rightdrag|lighting|layer fade)|UPLOAD_CHECK|Exception|: quit"
+ui briefing
+2490 uploadcheck 1
+2492 windowcompare start 0 0 3300 2160
+2496 trigaction 71 1028443341 0
+2497 trigaction 72 990057071 0
+2498 trigaction 73 30 0
+2499 lighting
+2500 rightdrag 28 0 20 60
+2585 lighting
+2586 rightdrag 0 28 20 60
+2671 rightdrag -28 -28 20 60
+2756 rightdrag 300 0 10 30
+2801 rightdrag 0 300 10 30
+2846 rightdrag -28 0 20 60
+2931 lighting
+2932 trigaction 73 75 0
+2934 rightdrag 0 -28 20 60
+3019 lighting
+3020 rightdrag 28 28 20 40
+3100 lighting
+3101 windowcompare after-dip 0 0 3300 2160
+3105 trigaction 71 1017370378 0
+3106 trigaction 73 55 0
+3108 rightdrag 28 0 20 60
+3193 rightdrag 0 -28 20 60
+3278 trigaction 73 75 0
+3280 rightdrag -28 28 20 60
+3365 lighting
+3366 windowcompare after-shallow 0 0 3300 2160
+3370 uploadcheck 0
+3374 quit

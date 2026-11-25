@@ -1,0 +1,25 @@
+; Drags Soviet 4 with the right button while a mouse-wheel zoom out glides, then compares the map view as the last frames left it with the view drawn afresh.
+; A zoom out leaves the new edges of the larger view undrawn and draws them as the glide shows them; a scroll in the glide must draw them where the scroll moved them.
+; Expected: every `AUTOTEST windowcompare` line ends in `stale columns 0 stale rows 0` (a few differing pixels are animation: lights and sparkles).
+; Run: scripts/run_autotest.ps1 -Build agent30 -Script src-agent30/tests/autotest/rightdrag-scroll-zoom-glide.txt -Campaign -Map SOV04DMD.MAP -Width 1280 -Height 720 -Seconds 900 -Filter "AUTOTEST +(windowcompare|rightdrag)|Exception|: quit"
+ui briefing
+1 glideclock
+2500 windowcompare start 0 0 1024 720
+2504 rightdrag 30 0 4 60
+2510 wheel -0.1
+2570 windowcompare glide-out-right 0 0 1024 720
+2574 rightdrag 0 30 4 60
+2580 wheel -0.1
+2640 windowcompare glide-out-down 0 0 1024 720
+2644 rightdrag -30 -30 4 60
+2650 wheel -0.1
+2652 wheel -0.1
+2710 windowcompare glide-out-diag 0 0 1024 720
+2714 rightdrag -30 0 4 60
+2720 wheel 0.1
+2780 windowcompare glide-in-left 0 0 1024 720
+2784 rightdrag 14 14 20 120
+2800 wheel -0.1
+2804 wheel -0.1
+2930 windowcompare glide-out-slow 0 0 1024 720
+2934 quit
