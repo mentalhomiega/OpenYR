@@ -49,7 +49,7 @@ Each house keeps two totals: its **output**, the power its structures produce, a
 
 ## How the balance is computed
 
-A house's totals include every structure it owns that is placed on the map and not in [limbo](/glossary/#limbo). A structure counts as soon as it is placed, so one still playing its buildup animation already adds both its output and its drain.
+A house's totals include every structure it owns that is placed on the map and not in [limbo](/glossary/#limbo). A structure counts as soon as it is placed, so one still playing its buildup animation already adds both its output and its drain, and one being sold keeps adding both until it leaves the map. A structure is not operational during the buildup or the sale; [Defenses](#defenses) lists what that stops.
 
 In a campaign game, a structure owned by a player-controlled house counts only after the player has discovered it. A base handed to the player by a trigger therefore adds nothing until the player sees it.
 
@@ -249,6 +249,7 @@ Three separate tests decide whether low power stops a defense. `TogglePower` doe
 
    - it is switched off, and fewer than two soldiers charge it;
    - it is stunned;
+   - it is playing its buildup animation or being sold;
    - its strength has reached zero;
    - **All of:** its type is `Powered=yes`, its type has drain, its house is short of power, and fewer than two soldiers charge it.
 
