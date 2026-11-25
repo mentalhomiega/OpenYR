@@ -780,6 +780,10 @@ The out-of-sync comparison is positional: it compares line N of one report with 
 
 `-ForceDesyncB` is the check that the runner detects a desync. With `-ForceDesyncB 400`, the first mismatching tick is 400 and the runner exits with `3`.
 
+### Different mods and the peer check
+
+`-ModB <folder>` starts side B with `-MOD=<folder>`, so the two copies run different mods. `-PeerCheckA` and `-PeerCheckB` write the `PeerCheck` key (`Refuse`, `Warn` or `Off`) into a copy's launch file; `Off` makes that copy behave like a build without the [peer check](NETCODE.md#peer-check). The `[PeerCheck]` lines in each copy's debug log show what it learned. `tests/autotest/peer-check-mod` is a mod whose rules overlay changes one cost. With `-ModB tests/autotest/peer-check-mod`, side A refuses the start and both copies exit without playing a frame; with `-PeerCheckB Off` as well, side A logs side B as unknown and the match runs.
+
 ### CnCNet style and tunnels
 
 `-SpawnStyle CnCNet` writes the launch files the way the CnCNet client writes them, for the keys whose values are known. `UIGameMode`, `BroadcastedGameOptionValues` and `GamePackageVersion` are placeholders, `GameID` is a placeholder, and `MapSHA1` is empty. The client copies the map to `spawnmap.ini`; here `Scenario` names the map in the game data instead. Each copy gets `-SPAWN` as the client passes it, plus the harness switches `-DATADIR`, `-USERDIR`, `-WIN`, `-MULTIINSTANCE` and `-AUTOTEST`. The sync log comes from `SyncLog=yes` in `RA2MD.INI`, not from `-SYNCLOG`. A direct copy gets `BindAddress=127.0.0.1`, which the client does not write, so the copy listens on loopback only.

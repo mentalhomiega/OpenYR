@@ -45,7 +45,7 @@ char const * const READ_SETTINGS[] = {
 	"AutoSaveGame", "NextSPAutoSaveId", "NextSkirmishAutoSaveId", "Bases", "Credits", "BridgeDestroy", "Crates", "ShortGame",
 	"BuildOffAlly", "SuperWeapons", "GameSpeed", "MultiEngineer", "UnitCount", "AIPlayers", "AIDifficulty", "AlliesAllowed",
 	"GameMode", "HarvesterTruce", "FogOfWar", "MCVRedeploy", "AutoDeployMCV", "Seed", "TechLevel", "Firestorm",
-	"DifficultyModeHuman", "DifficultyModeComputer", "Port", "BindAddress", "ConnTimeout", "ReconnectTimeout", "TimingPolicy",
+	"DifficultyModeHuman", "DifficultyModeComputer", "Port", "BindAddress", "ConnTimeout", "ReconnectTimeout", "TimingPolicy", "PeerCheck",
 	"FrameSendRate", "MaxAhead", "Protocol", "HostTiming", "MeasuredMaxAhead", "StartRoundTrip", "QuickMatch", "SkipScoreScreen", "DifficultyBasedAINames",
 	"CoachMode", "AutoSurrender", "AttackNeutralUnits", "ScrapMetal", "ParallelPaths", "PlayMoviesInMultiplayer",
 	"CustomLoadScreen", "DifficultyName", "SyncLog", "CustomLoadScreenPos", "Name", "Color", "ColorRGB", "Side",
@@ -604,6 +604,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	ConnTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ConnTimeout", ConnTimeout));
 	ReconnectTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout));
 	AdaptiveTiming = Read_Text(ini, SETTINGS, "TimingPolicy", "") == "Adaptive";
+	PeerCheck = Read_Text(ini, SETTINGS, "PeerCheck", "");
 
 	// A value outside the range the game accepts is passed over, like a key it does not know.
 	int const frame_send_rate = ini.Get_Int(SETTINGS, "FrameSendRate", 0);

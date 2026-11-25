@@ -168,6 +168,7 @@ enum NetCommandType {
 	NET_DESYNC_HEARTBEAT,		// Sent every second while the out-of-sync dialog halts the game.
 	NET_DESYNC_CONTINUE,		// The master's decision to play on without the players out of sync.
 	NET_LOAD_GAME,				// The master names the multiplayer save every machine loads.
+	NET_PEER_CHECK,				// A launch file's player tells every other player which game build, data and mods it runs.
 };
 
 //---------------------------------------------------------------------------
@@ -395,6 +396,18 @@ struct GlobalPacketType {
 		struct {
 			unsigned short Slot;
 		} LoadGame;
+
+		/*
+		 * This gives the game build, the rules, art and AI file identities and the mods the sender
+		 * runs, the same facts a LAN join request carries. It accompanies NET_PEER_CHECK.
+		 */
+		struct {
+			unsigned int BuildNumber;
+			int RulesID;
+			int ArtID;
+			int AIID;
+			char Mods[MOD_SIGNATURE_MAX];		// As ModSync writes them.
+		} PeerCheck;
 	};
 };
 #pragma pack()

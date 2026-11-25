@@ -20,6 +20,14 @@ bool Spawner_Is_Requested(void);
 bool Spawner_Is_Active(void);
 bool Spawner_Prepare(bool & gameloaded);
 int Spawner_Session_Identity(void);
+
+// Tells the player why a launch cannot go ahead and leaves the reason in the log. Answers false, so a caller can
+// refuse and return in one statement.
+bool Spawner_Refuse(char const * fault, ...);
+
+// Judges the other players' game build, data and mods before the first frame of a launch-file network match.
+// Answers false after telling the player, when the match must not start.
+bool Spawner_Verify_Peers(void);
 void Spawner_Announce_Master(void);
 
 // The launch file text that starts the skirmish the session now describes, as a menu committed it;

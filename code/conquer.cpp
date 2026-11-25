@@ -71,6 +71,7 @@
 #include "_palette.h"
 #include "replay.h"
 #include "spawner.h"
+#include "spawnpeers.h"
 #include "startuptrace.h"
 #include "_rules.h"
 #include "_source.h"
@@ -752,6 +753,10 @@ void IPX_Call_Back(void)
 
 						case NET_LOAD_GAME:
 							SaveManager.Multiplayer_Load_Receive(Session.GPacket.LoadGame.Slot);
+							break;
+
+						case NET_PEER_CHECK:
+							Peers_Receive(sender_index, Session.GPacket);
 							break;
 
 						case NET_PROGRESS_REPORT:

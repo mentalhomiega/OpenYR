@@ -106,7 +106,13 @@ param(
     # host chose a send period and no look-ahead. -StartRoundTripMs writes StartRoundTrip, the lobby's round-trip
     # estimate for the start look-ahead; 0 writes no key.
     [switch]$MeasuredMaxAhead,
-    [ValidateRange(0, 5000)][int]$StartRoundTripMs = 0
+    [ValidateRange(0, 5000)][int]$StartRoundTripMs = 0,
+    # A mod folder only side B loads (-MOD=), so the two copies run different mods. Side B then differs from side A
+    # in its mod list and its rules, which the launch-file peer check refuses.
+    [string]$ModB = '',
+    # The PeerCheck key written into each copy's launch file: Refuse, Warn or Off. Empty writes no key (Refuse).
+    [string]$PeerCheckA = '',
+    [string]$PeerCheckB = ''
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -233,6 +239,8 @@ if ($AICountries -and $AI -gt 0) {
 
 # Both copies seat the same two people and the same computer players, so their houses line up.
 # With -Tunnel, Port names the copy's tunnel number, and a [Tunnel] section points it at its bridge.
+function New-PeerCheckLine([string]$Value) { if ($Value) { "PeerCheck=$Value`r`n" } else { '' } }
+
 function New-SpawnIni([string]$Name, [int]$Side, [int]$Color, [int]$Port, [string]$HostFlag,
                       [string]$PeerName, [int]$PeerSide, [int]$PeerColor, [int]$PeerPort, [int]$BridgePort = 0) {
 $tunnelBlock = if ($BridgePort -gt 0) { "`r`n[Tunnel]`r`nIp=127.0.0.1`r`nPort=$BridgePort`r`n" } else { '' }
@@ -398,6 +406,8 @@ function Add-ColorRGB([string]$Ini, [string]$Own, [string]$Peer) {
     if ($Peer) { $Ini = $Ini -replace '(\[Other1\]\r?\n)', ('$1ColorRGB=' + $Peer + [Environment]::NewLine) }
     return $Ini
 }
+$iniA = $iniA -replace '(\[Settings\]\r?\n)', ('$1' + (New-PeerCheckLine $PeerCheckA))
+$iniB = $iniB -replace '(\[Settings\]\r?\n)', ('$1' + (New-PeerCheckLine $PeerCheckB))
 $iniA = Add-ColorRGB $iniA $ColorRGBA $ColorRGBB
 $iniB = Add-ColorRGB $iniB $ColorRGBB $ColorRGBA
 if ($ThirdSeat) {
@@ -426,12 +436,13 @@ if ($ThirdSeat) {
 Remove-Item (Join-Path $logs 'DEBUG_*.LOG') -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $logs 'SYNC_*.LOG') -ErrorAction SilentlyContinue
 
-function New-GameArgs([string]$user, [string]$script, [int]$forceDesync = 0) {
+function New-GameArgs([string]$user, [string]$script, [int]$forceDesync = 0, [string]$mod = '') {
     # The CnCNet style adds only the harness switches; its sync log comes from RA2MD.INI.
     $gameArgs = @("-DATADIR=`"$DataDir`"", "-USERDIR=`"$user`"", '-SPAWN', '-WIN', '-MULTIINSTANCE',
       "-AUTOTEST=`"$script`"")
     if ($SpawnStyle -eq 'Runner') { $gameArgs += '-SYNCLOG' }
     if ($forceDesync -gt 0) { $gameArgs += "-DESYNCTEST=$forceDesync" }
+    if ($mod) { $gameArgs += "-MOD=`"$mod`"" }
     return $gameArgs
 }
 
@@ -470,7 +481,7 @@ if ($Tunnel) {
 
 $start = Get-Date
 $procA = Start-Process -FilePath $exe -WorkingDirectory $bin -PassThru -ArgumentList (New-GameArgs $userA $scriptPathA)
-$procB = Start-Process -FilePath $exe -WorkingDirectory $bin -PassThru -ArgumentList (New-GameArgs $userB $scriptPathB $ForceDesyncB)
+$procB = Start-Process -FilePath $exe -WorkingDirectory $bin -PassThru -ArgumentList (New-GameArgs $userB $scriptPathB $ForceDesyncB $ModB)
 if ($ForceDesyncB -gt 0) { "netsync: side B checksum is corrupted on frame $ForceDesyncB (positive control)" }
 "netsync: started side A (pid $($procA.Id)) and side B (pid $($procB.Id))"
 

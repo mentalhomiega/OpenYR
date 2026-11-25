@@ -280,6 +280,24 @@ int main(void)
 	}
 
 	/*
+	 * PeerCheck is each machine's own, so it stays out of the identity and is not reported as unread.
+	 */
+	{
+		char const warn[] =
+			"[Settings]\n"
+			"PeerCheck=Warn\n";
+		char const none[] =
+			"[Settings]\n"
+			"PeerCheck=Off\n";
+		SpawnerConfigClass const warn_config = Read(warn, sizeof(warn) - 1);
+		SpawnerConfigClass const none_config = Read(none, sizeof(none) - 1);
+
+		Check(warn_config.PeerCheck == "Warn", "PeerCheck is read");
+		Check(none_config.PeerCheck == "Off", "PeerCheck keeps the text the file gives");
+		Check(warn_config.Session_Identity_CRC() == none_config.Session_Identity_CRC(), "the peer check is left out of the session identity");
+	}
+
+	/*
 	 * A departing player's base is destroyed unless the file asks for the computer to take it.
 	 */
 	{

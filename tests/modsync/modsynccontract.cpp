@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "modsync.h"
+#include "peercheck.h"
 
 namespace {
 
@@ -249,6 +250,52 @@ int main(void)
 		Check(!ModSync::Decode("#x=12345678", read), "a digest with a bad count is refused");
 		Check(read.Mods.empty(), "refused text reads as no mods");
 		Check(ModSync::Decode("Alpha=0000abcd,Beta=FFFFFFFF", read) && read.Mods.size() == 2 && read.Mods[1].Hash == 0xFFFFFFFFu, "upper and lower case hex both read");
+	}
+
+	/*
+	 * A launch-file match judges the build, the mods and the data, coarsest first.
+	 */
+	{
+		PeerCheck::Facts here;
+		here.Build = 7;
+		here.Rules = 11;
+		here.Art = 12;
+		here.AI = 13;
+		here.Mods = Sign({alpha});
+		PeerCheck::Facts there = here;
+		Check(PeerCheck::Judge(here, there, "Bob").Differs == PeerCheck::Level::SAME, "equal facts are the same");
+		Check(PeerCheck::Judge(here, there, "Bob").Text.empty(), "equal facts give no text");
+
+		there.Rules = 99;
+		PeerCheck::Verdict verdict = PeerCheck::Judge(here, there, "Bob");
+		Check(verdict.Differs == PeerCheck::Level::DATA, "different rules with the same mods are a data difference");
+		Check_Text(verdict.Text, "Bob has different game data. These files differ: rules.", "the data text names the file");
+		there.AI = 5;
+		Check_Text(PeerCheck::Judge(here, there, "Bob").Text, "Bob has different game data. These files differ: rules, AI.", "the data text lists each file");
+
+		there.Mods = Sign({alpha, beta});
+		verdict = PeerCheck::Judge(here, there, "Bob");
+		Check(verdict.Differs == PeerCheck::Level::MODS, "a different mod list outranks data");
+		Check(verdict.Text.find("You lack: Beta") != std::string::npos, "the mod text names the missing mod");
+
+		there.Build = 8;
+		verdict = PeerCheck::Judge(here, there, "Bob");
+		Check(verdict.Differs == PeerCheck::Level::BUILD, "a different build outranks everything");
+		Check_Text(verdict.Text, "Bob runs game build 8. You run build 7.", "the build text gives both builds");
+
+		Check(PeerCheck::Mode_From_Text("") == PeerCheck::Mode::REFUSE, "no key refuses");
+		Check(PeerCheck::Mode_From_Text("nonsense") == PeerCheck::Mode::REFUSE, "an unknown value refuses");
+		Check(PeerCheck::Mode_From_Text("Warn") == PeerCheck::Mode::WARN, "Warn warns");
+		Check(PeerCheck::Mode_From_Text("OFF") == PeerCheck::Mode::OFF, "Off turns the check off");
+
+		PeerCheck::Roster roster;
+		Check(!roster.Has(1), "a seat that sent nothing is unknown");
+		roster.Note(1, there);
+		Check(roster.Has(1) && roster.Get(1).Build == 8, "a noted report is kept");
+		roster.Note(PeerCheck::Roster::SEATS, there);
+		Check(!roster.Has(PeerCheck::Roster::SEATS), "a seat past the limit is ignored");
+		roster.Clear();
+		Check(!roster.Has(1), "clearing forgets every report");
 	}
 
 	std::filesystem::remove_all(root);
