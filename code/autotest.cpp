@@ -43,6 +43,7 @@
 #include "_tactica.h"
 #include "audio/audioengine.h"
 #include "audio/audiotrace.h"
+#include "audio/audiowav.h"
 #include "aircraft.h"
 #include "airctype.h"
 #include "animtype.h"
@@ -490,6 +491,19 @@ static void For_Techno_Pairs(OuterFilter outer_filter, PairFilter pair_filter, A
 				[&](TechnoClass * other) {return(other != techno && pair_filter(techno, other));},
 				[&](TechnoClass * other) {action(techno, other);});
 		});
+}
+
+
+// Runs the action on every building on the map, of any owner, whose type has that ID, in list order.
+template<class Action>
+static void For_Placed_Buildings_Named(std::string const & name, Action action)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (!building->IsInLimbo && stricmp(building->Class->Name(), name.c_str()) == 0) {
+			action(building);
+		}
+	}
 }
 
 
@@ -1159,6 +1173,14 @@ static void Speed_Probe(StepType const & step)
 }
 
 
+// Whether the techno is on the map and of a type a sample step named, or any type when it named *.
+static bool Is_Sampled(TechnoClass * techno)
+{
+	return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
+		[&](std::string const & name) {return(name == "*" || Is_Techno_Named(techno, name));}));
+}
+
+
 /// <summary>
 /// Logs one line for each object of the sampled types on the map, whoever owns it: its exact position in leptons,
 /// strength, mission number and raw body and turret facings. The gamemd comparison harness reads the same values
@@ -1167,10 +1189,7 @@ static void Speed_Probe(StepType const & step)
 static void Log_Samples(void)
 {
 	For_Technos(
-		[&](TechnoClass * techno) {
-			return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
-				[&](std::string const & name) {return(name == "*" || Is_Techno_Named(techno, name));}));
-		},
+		Is_Sampled,
 		[&](TechnoClass * techno) {
 			Coord const at = techno->Center_Coord();
 			DebugString("AUTOTEST sample frame %d id %d type %s house %s x %d y %d z %d health %d mission %d facing %d turret %d\n",
@@ -1237,10 +1256,7 @@ static void Sampletrace_Step(StepType const & step)
 static void Log_Targets(void)
 {
 	For_Technos(
-		[&](TechnoClass * techno) {
-			return(!techno->IsInLimbo && std::any_of(SampleTypes.begin(), SampleTypes.end(),
-				[&](std::string const & name) {return(name == "*" || Is_Techno_Named(techno, name));}));
-		},
+		Is_Sampled,
 		[&](TechnoClass * techno) {
 			Coord const at = techno->Center_Coord();
 			TechnoClass * target = techno->TarCom != NULL ? techno->TarCom->As_TechnoClass() : NULL;
@@ -1554,9 +1570,7 @@ void Log_Ore_Cells(int limit, Cell const * from)
 // shield <TypeID>: for each building of that type, its Iron Curtain and Force Shield state, the shield tint flag, whether its body draws with the shield tint, and each animation's drawer.
 static void Shield_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+	For_Placed_Buildings_Named(step.Argument, [&](BuildingClass const * building) {
 		ConvertClass * scheme = building->Remap_Converter();
 		ConvertClass * tinted = building->Tinted_Converter(scheme);
 		int red;
@@ -1573,7 +1587,7 @@ static void Shield_Step(StepType const & step)
 			char const * drawn_by = drawn == AnimDrawer ? "anim" : (drawn == ColorSchemes[0]->Converter ? "alt" : (drawn == Custom_Palette_Drawer(anim->Class->CustomPalette) ? "custom" : (drawn == scheme ? "scheme" : "tinted")));
 			DebugString("AUTOTEST     anim %s slot %d cell drawer %d drawer %s drawn %s brightness %d\n", anim->Class->Name(), slot, (int)anim->Class->IsShouldUseCellDrawer, drawer, drawn_by, (int)anim->AlternativeBrightness);
 		}
-	}
+	});
 }
 
 
@@ -5284,26 +5298,12 @@ static void Musicstage_Step(StepType const &)
 			continue;
 		}
 		unsigned const rate = 22050, channels = stereo ? 2 : 1, frames = rate;
-		std::vector<unsigned char> wav;
-		wav.insert(wav.end(), { 'R', 'I', 'F', 'F' });
-		Put_U32_LE(wav, 36 + frames * channels * 2);
-		wav.insert(wav.end(), { 'W', 'A', 'V', 'E', 'f', 'm', 't', ' ' });
-		Put_U32_LE(wav, 16);
-		Put_U16_LE(wav, 1);
-		Put_U16_LE(wav, channels);
-		Put_U32_LE(wav, rate);
-		Put_U32_LE(wav, rate * channels * 2);
-		Put_U16_LE(wav, channels * 2);
-		Put_U16_LE(wav, 16);
-		wav.insert(wav.end(), { 'd', 'a', 't', 'a' });
-		Put_U32_LE(wav, frames * channels * 2);
+		std::vector<int16_t> pcm;
 		for (unsigned frame = 0; frame < frames; frame++) {
-			int const sample = ((frame / 25) & 1) ? 6000 : -6000;
-			for (unsigned channel = 0; channel < channels; channel++) {
-				Put_U16_LE(wav, (unsigned)(sample & 0xFFFF));
-			}
+			int16_t const sample = ((frame / 25) & 1) ? 6000 : -6000;
+			pcm.insert(pcm.end(), channels, sample);
 		}
-		Write_Binary_File(path, wav.data(), wav.size());
+		Audio_Write_Wav(path, pcm.data(), frames, rate, channels);
 	}
 	Write_Disk_File(folder + "Stage Empty.mp3", "");
 	Write_Disk_File(folder + "Stage Broken.ogg", "This is not an Ogg file.");
@@ -7571,12 +7571,10 @@ static void Banims_Step(StepType const &)
 // its mission and building state, whether its gap field runs and whether its sensor array is switched on.
 static void Poweronline_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+	For_Placed_Buildings_Named(step.Argument, [&](BuildingClass const * building) {
 		DebugString("AUTOTEST   poweronline %s at %d,%d mission %d bstate %d online %d gap %d sensing %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 			(int)building->Mission, (int)building->BState, (int)building->Is_Powered_On(), (int)building->IsGeneratingGap, (int)building->IsSensing);
-	}
+	});
 }
 
 
@@ -7584,21 +7582,17 @@ static void Poweronline_Step(StepType const & step)
 // then the house's power, drain and whether the house is short of power. Reads the totals gamemd's HouseClass::UpdatePower (0x508C30) sums.
 static void Powerreadout_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+	For_Placed_Buildings_Named(step.Argument, [&](BuildingClass const * building) {
 		HouseClass const * house = building->House;
 		DebugString("AUTOTEST   powerreadout %s frame %d mission %d bstate %d output %d drain %d online %d house power %d drain %d low %d\n", building->Class->Name(), (int)Frame, (int)building->Mission, (int)building->BState, building->Power_Output(), building->Power_Drain(), (int)building->Is_Powered_On(), house->Power, house->Drain, (int)(house->Power_Fraction() < 1.0));
-	}
+	});
 }
 
 
 // banimstate <TypeID>: for each building of that type, the animation in each slot with its stage, rate and whether it is held still.
 static void Banimstate_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+	For_Placed_Buildings_Named(step.Argument, [&](BuildingClass const * building) {
 		DebugString("AUTOTEST   banimstate %s at %d,%d health %d/%d bstate %d stage %d rate %d power %d house %s\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 			(int)building->Strength, (int)building->Class->MaxStrength, (int)building->BState, building->Fetch_Stage(), building->Fetch_Rate(), (int)building->Is_Powered_On(), building->House->Class->Name());
 		DebugString("AUTOTEST     buildup start %d count %d rate %d ready %d mission %d queue %d\n", building->Class->Anims[BSTATE_CONSTRUCTION].Start, building->Class->Anims[BSTATE_CONSTRUCTION].Count,
@@ -7610,35 +7604,31 @@ static void Banimstate_Step(StepType const & step)
 			DebugString("AUTOTEST     slot %d wants %s damaged %s: %s stage %d rate %d disabled %d\n", slot, wanted, building->Class->AnimData[slot].AnimDamaged,
 				anim != NULL ? anim->Class->Name() : "(none)", anim != NULL ? anim->Fetch_Stage() : -1, anim != NULL ? anim->Fetch_Rate() : -1, anim != NULL ? (int)anim->Is_Disabled() : -1);
 		}
-	}
+	});
 }
 
 
 // bshape <TypeID>: for each building of that type, its health, state and mission, whether its animations are the damaged forms, and the body frame drawn, as BuildingClass::Body_Frame gives it for the image's frame count.
 static void Bshape_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+	For_Placed_Buildings_Named(step.Argument, [&](BuildingClass const * building) {
 		ShapeSet const * image = (ShapeSet const *)building->Get_Image_Data();
 		int shape = building->Shape_Number();
 		int frames = image != NULL ? image->Get_Count() : 0;
 		int drawn = frames > 0 ? building->Body_Frame(frames) : shape;
 		DebugString("AUTOTEST   bshape %s at %d,%d health %.3f yellow %.3f bstate %d mission %d shape %d drawn %d frames %d damaged anims %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 			building->HealthRatio, Rule->ConditionYellow, (int)building->BState, (int)building->Mission, shape, drawn, frames, (int)building->IsDamagedAnims);
-	}
+	});
 }
 
 
 // bshadow <TypeID>: for each building of that type, the frame its body is drawn from, the frame its shadow is drawn from (half the image's frames further on), and how many pixels that shadow frame sets.
 static void Bshadow_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+	For_Placed_Buildings_Named(step.Argument, [&](BuildingClass const * building) {
 		ShapeSet const * image = (ShapeSet const *)building->Get_Image_Data();
 		int const frames = image != NULL ? image->Get_Count() : 0;
-		if (frames == 0) continue;
+		if (frames == 0) return;
 
 		int const body = building->Body_Frame(frames);
 		int const shadow = body + frames / 2;
@@ -7661,7 +7651,7 @@ static void Bshadow_Step(StepType const & step)
 		}
 		DebugString("AUTOTEST   bshadow %s at %d,%d body frame %d shadow frame %d of %d is %dx%d with %d pixels\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 			body, shadow, frames, rect.Width, rect.Height, pixels);
-	}
+	});
 }
 
 

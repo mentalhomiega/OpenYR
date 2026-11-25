@@ -14,6 +14,7 @@ opents_add_test(ShadowOnce
         xsurface.cpp
         zbuffer.cpp
         abuffer.cpp
+        ringbuffer.cpp
         _zbuffer.cpp
         writewatch.cpp
         tilediff.cpp

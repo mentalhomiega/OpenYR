@@ -1000,29 +1000,35 @@ void AudioEventPoolClass::Cut(AudioHandle handle, int ms)
 }
 
 
+void AudioEventPoolClass::End_Sequence(EventClass & event, AudioEndMode mode)
+{
+	event.EndRequested = true;
+	if (event.State == AUDIO_EVENT_PENDING) {
+		Report(event, AudioEventFate::STOPPED);
+		Finish(event);
+		return;
+	}
+	if (event.State == AUDIO_EVENT_GAP) {
+		// The decay, if any, plays at the next service instead of after the gap.
+		event.NextStart = LastNow;
+		return;
+	}
+	AudioCommand command = {};
+	command.Type = AudioCommandType::END_SEQUENCE;
+	command.Slot = (uint8_t)event.Voice;
+	command.Generation = event.VoiceGeneration;
+	command.Mode = (uint8_t)mode;
+	Mixer->Push(command);
+}
+
+
 void AudioEventPoolClass::End(AudioHandle handle)
 {
 	EventClass * event = Lookup(handle);
 	if (event == nullptr) {
 		return;
 	}
-	event->EndRequested = true;
-	if (event->State == AUDIO_EVENT_PENDING) {
-		Report(*event, AudioEventFate::STOPPED);
-		Finish(*event);
-		return;
-	}
-	if (event->State == AUDIO_EVENT_GAP) {
-		// The decay, if any, plays at the next service instead of after the gap.
-		event->NextStart = LastNow;
-		return;
-	}
-	AudioCommand command = {};
-	command.Type = AudioCommandType::END_SEQUENCE;
-	command.Slot = (uint8_t)event->Voice;
-	command.Generation = event->VoiceGeneration;
-	command.Mode = (uint8_t)AudioEndMode::NOW;
-	Mixer->Push(command);
+	End_Sequence(*event, AudioEndMode::NOW);
 }
 
 
@@ -1036,22 +1042,7 @@ void AudioEventPoolClass::End_Looping(AudioHandle handle)
 	if (!loops) {
 		return;
 	}
-	event->EndRequested = true;
-	if (event->State == AUDIO_EVENT_PENDING) {
-		Report(*event, AudioEventFate::STOPPED);
-		Finish(*event);
-		return;
-	}
-	if (event->State == AUDIO_EVENT_GAP) {
-		event->NextStart = LastNow;
-		return;
-	}
-	AudioCommand command = {};
-	command.Type = AudioCommandType::END_SEQUENCE;
-	command.Slot = (uint8_t)event->Voice;
-	command.Generation = event->VoiceGeneration;
-	command.Mode = (uint8_t)AudioEndMode::AFTER_CYCLE;
-	Mixer->Push(command);
+	End_Sequence(*event, AudioEndMode::AFTER_CYCLE);
 }
 
 

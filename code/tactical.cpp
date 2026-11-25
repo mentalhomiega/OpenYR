@@ -1884,6 +1884,29 @@ void Tactical::Draw_Super_Range(void)
 
 
 /// <summary>
+/// Lays the placement preview shape over the count cells next to cell in the facing direction.
+/// </summary>
+void Tactical::Draw_Placement_Run(bool drawtrans, Cell cell, FacingType facing, int count)
+{
+	int flags = drawtrans ? (SHAPE_ZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75)
+						  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
+	Cell drawcell = Adjacent_Cell(cell, facing);
+	for (int i = count; i > 0; i--) {
+		int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
+		int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
+		Coord coord = Coord_Whole(Coord(drawcell));
+		Point2D pixel;
+		Coord_To_Pixel(coord, pixel);
+		Point2D point;
+		point.X = ISO_TILE_PIXEL_W / -2 + pixel.X + ISO_TILE_PIXEL_W / 2;
+		point.Y = pixel.Y + yoff;
+		Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)DisplayClass::PlacementShapes, 0, point, TacticalRect, (ShapeFlags_Type)flags, 0, zoff);
+		drawcell = Adjacent_Cell(drawcell, facing);
+	}
+}
+
+
+/// <summary>
 /// Draws the placement preview for a laser-fence connecting from the pending fence to any
 /// player-owned laser fence posts in the four cardinal directions, up to the fence's range.
 /// </summary>
@@ -1932,21 +1955,7 @@ void Tactical::Draw_Fence_Placement(bool drawtrans, Cell cell)
 		 * Lay the preview shape over every cell of the run that was walked.
 		 */
 		if (found && building->Class->IsLaserFencePost && building->House->Is_Player_Control() && count > 0) {
-			int flags = drawtrans ? (SHAPE_ZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75)
-								  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
-			Cell drawcell = Adjacent_Cell(cell, facing);
-			for (int i = count; i > 0; i--) {
-				int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
-				int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
-				Coord coord = Coord_Whole(Coord(drawcell));
-				Point2D pixel;
-				Coord_To_Pixel(coord, pixel);
-				Point2D point;
-				point.X = ISO_TILE_PIXEL_W / -2 + pixel.X + ISO_TILE_PIXEL_W / 2;
-				point.Y = pixel.Y + yoff;
-				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)DisplayClass::PlacementShapes, 0, point, TacticalRect, (ShapeFlags_Type)flags, 0, zoff);
-				drawcell = Adjacent_Cell(drawcell, facing);
-			}
+			Draw_Placement_Run(drawtrans, cell, facing, count);
 		}
 	}
 }
@@ -1994,21 +2003,7 @@ void Tactical::Draw_Firestorm_Wall_Placement(bool drawtrans, Cell cell)
 		 * Lay the preview shape over every cell of the run that was walked.
 		 */
 		if (found && count > 0) {
-			int flags = drawtrans ? (SHAPE_ZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75)
-								  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
-			Cell drawcell = Adjacent_Cell(cell, facing);
-			for (int i = count; i > 0; i--) {
-				int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
-				int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
-				Coord coord = Coord_Whole(Coord(drawcell));
-				Point2D pixel;
-				Coord_To_Pixel(coord, pixel);
-				Point2D point;
-				point.X = ISO_TILE_PIXEL_W / -2 + pixel.X + ISO_TILE_PIXEL_W / 2;
-				point.Y = pixel.Y + yoff;
-				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)DisplayClass::PlacementShapes, 0, point, TacticalRect, (ShapeFlags_Type)flags, 0, zoff);
-				drawcell = Adjacent_Cell(drawcell, facing);
-			}
+			Draw_Placement_Run(drawtrans, cell, facing, count);
 		}
 	}
 }
@@ -2060,21 +2055,7 @@ void Tactical::Draw_Wall_Placement(bool drawtrans, Cell cell)
 		 * Lay the preview shape over every cell of the run that was walked.
 		 */
 		if (found && count > 0) {
-			int flags = drawtrans ? (SHAPE_ZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75)
-								  : (SHAPE_NONZERO_ALPHA | SHAPE_WIN_REL | SHAPE_CENTER | SHAPE_TRANSLUCENT75);
-			Cell drawcell = Adjacent_Cell(cell, facing);
-			for (int i = count; i > 0; i--) {
-				int yoff = -1 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
-				int zoff = -2 - LEVEL_PIXEL_H_1 * Placement_Mark_Level(drawcell);
-				Coord coord = Coord_Whole(Coord(drawcell));
-				Point2D pixel;
-				Coord_To_Pixel(coord, pixel);
-				Point2D point;
-				point.X = ISO_TILE_PIXEL_W / -2 + pixel.X + ISO_TILE_PIXEL_W / 2;
-				point.Y = pixel.Y + yoff;
-				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)DisplayClass::PlacementShapes, 0, point, TacticalRect, (ShapeFlags_Type)flags, 0, zoff);
-				drawcell = Adjacent_Cell(drawcell, facing);
-			}
+			Draw_Placement_Run(drawtrans, cell, facing, count);
 		}
 	}
 }

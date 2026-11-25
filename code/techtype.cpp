@@ -1650,17 +1650,12 @@ void TechnoTypeClass::Read_Production_INI(CCINIClass const & ini)
 
 	// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
 	BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
-	if (ini.Get_String(Name(), "Survivor.Side0", "", value, sizeof(value)) > 0) {
-		SurvivorSide[0] = strcmpi(value, "<none>") == 0 ? "" : value;
-	}
-	if (ini.Get_String(Name(), "Survivor.Side1", "", value, sizeof(value)) > 0) {
-		SurvivorSide[1] = strcmpi(value, "<none>") == 0 ? "" : value;
-	}
-	if (ini.Get_String(Name(), "Survivor.Side2", "", value, sizeof(value)) > 0) {
-		SurvivorSide[2] = strcmpi(value, "<none>") == 0 ? "" : value;
-	}
-	if (ini.Get_String(Name(), "Survivor.Side3", "", value, sizeof(value)) > 0) {
-		SurvivorSide[3] = strcmpi(value, "<none>") == 0 ? "" : value;
+	for (int side = 0; side < (int)std::size(SurvivorSide); side++) {
+		char key[32];
+		snprintf(key, sizeof(key), "Survivor.Side%d", side);
+		if (ini.Get_String(Name(), key, "", value, sizeof(value)) > 0) {
+			SurvivorSide[side] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
 	}
 	CrewTechnicianChance = ini.Get_Int(Name(), "Crew.TechnicianChance", CrewTechnicianChance);
 	CrewEngineerChance = ini.Get_Int(Name(), "Crew.EngineerChance", CrewEngineerChance);
