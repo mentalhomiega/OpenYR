@@ -11,9 +11,11 @@ without patching the original executable.
 OpenYR is an independent community project. It is not affiliated with or endorsed by Electronic
 Arts, and it contains no game assets: you need your own copy of Yuri's Revenge to play.
 
-> **Status: early development.** OpenYR runs skirmish games against the computer on Yuri's
-> Revenge maps, but it is not yet a full replacement for the original game. Expect missing
-> features and bugs.
+> **Status: play-test.** OpenYR plays skirmish and campaign missions of Yuri's Revenge and the
+> Red Alert 2 missions, with a classic and a modern menu style. Scripts take every one of
+> these missions to a win and check menu layouts, and testers have played builds on their own PCs.
+> A person has not played every mission to its end, so expect bugs and missing features. It is
+> not yet a full replacement for the original game.
 
 ## What works
 
@@ -41,7 +43,7 @@ About 1,290 of the 1,585 rules keys that Yuri's Revenge reads are supported.
 OpenYR needs the data files of an installed copy of Yuri's Revenge, for example from
 *Command & Conquer: The Ultimate Collection* on Steam or the EA App.
 
-1. Build OpenYR as described below. There are no prebuilt releases yet.
+1. Build OpenYR as described below. Play-test builds are also published on this repository's GitHub releases page.
 2. Start `Game.exe`, naming the Yuri's Revenge folder with `-DATADIR` and a folder for your
    settings and saves with `-USERDIR`:
 
@@ -69,8 +71,12 @@ Multi2=1
 ```
 
 `Side` and the `HouseCountries` entries are country numbers: 0 America, 1 Korea, 2 France,
-3 Germany, 4 Great Britain, 5 Libya, 6 Iraq, 7 Cuba, 8 Russia and 9 Yuri. The campaigns and the
-in-game menus have not been tested.
+3 Germany, 4 Great Britain, 5 Libya, 6 Iraq, 7 Cuba, 8 Russia and 9 Yuri.
+
+Campaign missions start from the in-game menu (Single Player, New Campaign). Scripted tests in
+`tests/campaign` take all 14 Yuri's Revenge missions to a win by forcing what each map's triggers
+wait for, and the menus have layout tests. Neither replaces a person playing a mission through;
+the play-test notes shipped with each build list what testers have been asked to play.
 
 ## Building
 
