@@ -29813,6 +29813,24 @@ MenuBattle:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+MenuBattleViewHeight:
+  key: MenuBattleViewHeight
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1080'
+      declared_in: RulesClass
+      member: MenuBattleViewHeight
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MenuStyle:
   key: MenuStyle
   scopes:
