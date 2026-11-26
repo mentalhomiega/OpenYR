@@ -1785,7 +1785,6 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Game_Speed(int speed) override { Calls.push_back("speed " + std::to_string(speed)); }
 		virtual void Set_Scroll_Rate(int rate) override { Calls.push_back("scroll " + std::to_string(rate)); }
 		virtual void Set_Detail_Level(int level) override { Calls.push_back("detail " + std::to_string(level)); }
-		virtual void Set_Cameo_Text(bool on) override { Calls.push_back(on ? "cameo on" : "cameo off"); }
 		virtual void Set_Action_Lines(bool on) override { Calls.push_back(on ? "lines on" : "lines off"); }
 		virtual void Set_Tool_Tips(bool on) override { Calls.push_back(on ? "tooltips on" : "tooltips off"); }
 		virtual void Set_Scroll_Coasting(bool on) override { Calls.push_back(on ? "coasting on" : "coasting off"); }
@@ -1845,16 +1844,15 @@ void Test_Game_Controls_Presenter(void)
 
 		Drive(presenter, "speed", 5);
 		Drive(presenter, "detail", 9);
-		Drive(presenter, "cameo", 1);
 		Drive(presenter, "edge", 1);
 		Drive(presenter, "difficulty", 2);
-		Check(presenter.State.Speed == 5 && presenter.State.Detail == 2 && presenter.State.CameoText && presenter.State.EdgeScroll, "edits are held in the state and clamped");
+		Check(presenter.State.Speed == 5 && presenter.State.Detail == 2 && presenter.State.EdgeScroll, "edits are held in the state and clamped");
 		Check(presenter.State.SpeedName == "Slower" && presenter.State.DetailName == "High", "an edit renames the slider position, the speed by how far along the slider it lies");
 		Check(service.Calls.empty(), "nothing is applied before the player accepts");
 
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "OK accepts the game controls");
-		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; hidden off; defencerange off; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
+		Check(service.Joined() == "speed 5; scroll 3; detail 2; lines off; tooltips off; coasting off; edge on; hidden off; defencerange off; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
 	}
 
 	{
@@ -1871,7 +1869,7 @@ void Test_Game_Controls_Presenter(void)
 		presenter.State.SoundEnabled = true;
 		Drive(presenter, "sound");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts and names the sound options next");
-		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save", "an Internet game applies no game speed and no difficulty");
+		Check(service.Joined() == "scroll 0; detail 0; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save", "an Internet game applies no game speed and no difficulty");
 	}
 
 	{
@@ -1896,7 +1894,7 @@ void Test_Game_Controls_Presenter(void)
 		Drive(presenter, "sorting", 1);
 		Drive(presenter, "autosave", 0);
 		Drive(presenter, "ok");
-		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; background on; sorting on; autosave 0; save",
+		Check(service.Joined() == "scroll 0; detail 0; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; background on; sorting on; autosave 0; save",
 			"accepting applies the changed background, sorting and autosave settings");
 	}
 
@@ -1942,7 +1940,7 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "autosave", 7);
 		Drive(presenter, "ok");
-		Check(presenter.State.Autosave == 1 && service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save",
+		Check(presenter.State.Autosave == 1 && service.Joined() == "scroll 0; detail 0; lines off; tooltips off; coasting off; edge off; hidden off; defencerange off; save",
 			"unchanged extra settings are not applied and an unknown autosave choice keeps the starting one");
 	}
 
@@ -2813,7 +2811,6 @@ UIGameControlsState Game_Controls_Fixture(void)
 	state.Scroll = 2;
 	state.Detail = 1;
 	state.Difficulty = 2;
-	state.CameoText = true;
 	state.ToolTips = true;
 	state.SpeedNames = { "Slowest", "Slower", "Slow", "Medium", "Fast", "Faster", "Fastest" };
 	state.ScrollNames = state.SpeedNames;
@@ -2875,20 +2872,13 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 			Check(presenter.State.Speed == 1 && speed_name->GetInnerRML() == "Faster" && service.Calls.empty(), "dragging the speed slider changes the held speed and its name and applies nothing");
 		}
 
-		Rml::Element * cameo = document->GetElementById("cameo");
-		if (cameo != nullptr) {
-			Click(context, cameo);
-			presenter.Drain();
-			view->Sync();
-			context.Update();
-			Check(!presenter.State.CameoText && !cameo->HasAttribute("checked"), "a click on the cameo text switch turns it off and shows it");
-		}
+		Check(document->GetElementById("cameo") == nullptr && document->GetElementById("switch-cameo") == nullptr, "the game controls screen has no cameo names switch, which the settings file alone sets");
 
 		if (sound != nullptr) {
 			Click(context, sound);
 			presenter.Drain();
 			Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts the screen and names the sound options next");
-			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; save", "the Sound button applies the edited settings in order and saves");
+			Check(service.Joined() == "speed 1; scroll 2; detail 1; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; save", "the Sound button applies the edited settings in order and saves");
 		}
 
 		view->Release();
@@ -2994,7 +2984,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
 
 		view->Release();
 		context.Update();
@@ -3471,7 +3461,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Check(Fixture_Row(presenter.State, "GraphicsQuality")->Value == 3, "ticking the vehicle switch by hand makes the graphics quality read Custom");
 		Drive(presenter, "ok");
 		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("declared settings", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "declared settings 110000000") != service.Calls.end(), "accepting applies the declared switches together");
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "declared settings 11000000") != service.Calls.end(), "accepting applies the declared switches together");
 
 		view->Release();
 		context.Update();
@@ -3916,7 +3906,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		// The Advanced rows are skipped while the fold is closed.
 		char const * const order[] = {
-			"graphics-quality", "advanced", "stock-art-fixes", "perf-overlay", "zoom-out-view", "filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
+			"graphics-quality", "advanced", "perf-overlay", "zoom-out-view", "filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
 			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
@@ -3938,7 +3928,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		context.Update();
 		Check(Fixture_Row(presenter.State, "Advanced")->Value == 1, "Enter on the Advanced button opens it");
 		char const * const open_order[] = {
-			"gpu-render", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-subpixel", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking", "stock-art-fixes",
+			"gpu-render", "gpu-voxels", "gpu-voxel-smooth", "gpu-voxel-subpixel", "gpu-voxel-scale", "steady-voxel-placement", "shadow-stacking",
 			"perf-overlay", "zoom-out-view", "filter"
 		};
 		in_order = true;
@@ -4707,11 +4697,11 @@ void Test_Settings_Tab_Buttons(void)
 {
 	struct { char const * Name; int Tab; } const builtin[] = {
 		{ "game", UI_TAB_GAME }, { "display", UI_TAB_DISPLAY }, { "graphics", UI_TAB_GRAPHICS }, { "audio", UI_TAB_AUDIO },
-		{ "keyboard", UI_TAB_KEYBOARD }, { "accessibility", UI_TAB_ACCESSIBILITY }, { "mods", UI_TAB_MODS },
+		{ "keyboard", UI_TAB_KEYBOARD }, { "accessibility", UI_TAB_ACCESSIBILITY },
 	};
 
 	std::vector<UISettingsTabEntry> const bar = UI_Settings_Tab_Bar(Option_Setting_Pages(), ~0u);
-	bool listed = bar.size() == std::size(builtin) + Option_Setting_Pages().size();
+	bool listed = bar.size() == std::size(builtin) + Option_Setting_Pages().size() + 1;
 	for (std::size_t index = 0; listed && index < std::size(builtin); index++) {
 		listed = bar[index].Name == builtin[index].Name && bar[index].Tab == builtin[index].Tab;
 	}
@@ -4720,6 +4710,7 @@ void Test_Settings_Tab_Buttons(void)
 	bool const performance = bar.size() > std::size(builtin) && bar[std::size(builtin)].Name == "performance"
 		&& bar[std::size(builtin)].Label == "Performance" && bar[std::size(builtin)].Tab == UI_Settings_Declared_Tab(0);
 	Check(performance, "the declared Performance page follows them as a tab of its own");
+	Check(bar.back().Name == "mods" && bar.back().Tab == UI_TAB_MODS && bar[bar.size() - 2].Name == "performance", "the Mods tab comes after the Performance tab");
 
 	unsigned const offered = UI_Tab_Bit(UI_TAB_GAME) | UI_Tab_Bit(UI_TAB_AUDIO) | UI_Tab_Bit(UI_Settings_Declared_Tab(0));
 	std::vector<UISettingsTabEntry> const some = UI_Settings_Tab_Bar(Option_Setting_Pages(), offered);
@@ -4903,10 +4894,10 @@ void Test_Classic_Options_Presenter(void)
 	{
 		RecordingClassicOptionsPartsClass parts;
 		UIClassicOptionsPresenterClass presenter = Classic_Options_Presenter(parts);
-		Drive(presenter, "cameo", 0);
+		Drive(presenter, "lines", 0);
 		Drive(presenter, "keyboard");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Next == UIClassicOptionsPresenterClass::NEXT_KEYBOARD, "the Keyboard button applies the page and names the keyboard screen next");
-		Check(parts.Game.Joined().find("cameo off") != std::string::npos, "the Keyboard button keeps what was set");
+		Check(parts.Game.Joined().find("lines off") != std::string::npos, "the Keyboard button keeps what was set");
 	}
 
 	{
@@ -4938,6 +4929,8 @@ void Test_Classic_Options_Screen(Rml::Context & context, CountingSystemInterface
 	for (char const * id : ids) {
 		Check(document != nullptr && document->GetElementById(id) != nullptr, (std::string("the classic options page has ") + id).c_str());
 	}
+
+	Check(document != nullptr && document->GetElementById("cameo") == nullptr && document->GetElementById("switch-cameo") == nullptr, "the classic options page has no cameo names switch");
 
 	std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
 	Check(rows.size() == 3 && rows[1]->IsClassSet("selected"), "the page lists the resolutions with the current one selected");
@@ -8181,16 +8174,14 @@ void Test_Shell(void)
 		shell.Run_Modal(*view, [&](void) {
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
-			Rml::Element * cameo = document->GetElementById("cameo");
 			Rml::Element * speed = document->GetElementById("speed");
 			Rml::Element * name = document->GetElementById("speed-name");
 			Rml::Element * sound = document->GetElementById("sound");
-			found = cameo != nullptr && speed != nullptr && name != nullptr && sound != nullptr;
+			found = document->GetElementById("cameo") == nullptr && speed != nullptr && name != nullptr && sound != nullptr;
 			if (!found) {
 				return(true);
 			}
 			if (passes == 2) {
-				Click_Through_Hook(shell, host, cameo);
 				dragged = Drag_Slider_To_End(shell, host, speed);
 			}
 			if (passes == 3) {
@@ -8202,8 +8193,8 @@ void Test_Shell(void)
 		});
 
 		Check(found && dragged && presenter.State.Speed == 0 && named == "Fastest", "the speed slider runs backwards, so dragging it to the far end takes the fastest setting");
-		Check(!presenter.State.CameoText && quiet, "a switch and a slider change the screen without reaching the engine");
-		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
+		Check(quiet, "a slider changes the screen without reaching the engine");
+		Check(service.Joined() == "speed 0; scroll 2; detail 1; lines off; tooltips on; coasting off; edge off; hidden off; defencerange off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "and asks for the screen its button names");
 	}
 

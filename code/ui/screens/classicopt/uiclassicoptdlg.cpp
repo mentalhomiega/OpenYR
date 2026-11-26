@@ -47,7 +47,6 @@ void UI_Classic_Options_Labels(UIClassicOptionsLabels & labels)
 	labels.Keyboard = StringTable.Find_UTF8("GUI:Keyboard", "Keyboard");
 	labels.Mods = "Mods";
 	labels.More = "More Options";
-	labels.CameoText = "Cameo names";
 	labels.EdgeScroll = "Edge Scrolling";
 	labels.Coasting = "Scroll Coasting";
 	labels.Stretch = "Stretch videos to fill the screen";

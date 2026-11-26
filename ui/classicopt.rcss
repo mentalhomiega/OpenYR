@@ -152,7 +152,7 @@ button:active
 	left: 636dp;
 	top: 290dp;
 	width: 160dp;
-	height: 220dp;
+	height: 196dp;
 	font-size: 14dp;
 	background-color: #0a0612e0;
 	border: 1dp #7d5cb8;
@@ -181,17 +181,16 @@ button:active
 	line-height: 17dp;
 }
 
-#switch-cameo { top: 28dp; }
-#switch-edge { top: 52dp; }
-#switch-coasting { top: 76dp; }
-#switch-stretch { top: 100dp; }
-#switch-system-cursor { top: 124dp; }
-#switch-classic-menus { top: 148dp; }
+#switch-edge { top: 28dp; }
+#switch-coasting { top: 52dp; }
+#switch-stretch { top: 76dp; }
+#switch-system-cursor { top: 100dp; }
+#switch-classic-menus { top: 124dp; }
 
 #scale-label
 {
 	left: 8dp;
-	top: 176dp;
+	top: 152dp;
 	width: 96dp;
 	height: 24dp;
 	line-height: 24dp;
@@ -200,7 +199,7 @@ button:active
 #scale
 {
 	left: 104dp;
-	top: 176dp;
+	top: 152dp;
 	width: 48dp;
 }
 

@@ -13,8 +13,8 @@ A value that starts with `NOSTR:` is not a label: the game shows the text after 
 
 The name appears in these places:
 
-- the text under a sidebar cameo, when the player has cameo names turned on;
-- the tooltip over a cameo, which shows the name and the cost, or only the cost when cameo names are on;
+- the text under a sidebar cameo, when [`SidebarCameoText`](/keys/sidebarcameotext/) is on;
+- the tooltip over a cameo, which shows the name and the cost, or only the cost when it is on;
 - the label of a superweapon's countdown on the tactical view;
 - the name of an object on the map, such as in the tooltip over it, including the name a disguised spy shows.
 

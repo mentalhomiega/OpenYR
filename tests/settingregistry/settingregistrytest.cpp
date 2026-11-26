@@ -392,10 +392,17 @@ void Test_Real_Table(void)
 		"Graphics card", "Draw with the graphics card",
 		"Vehicles and aircraft", "Draw vehicles and aircraft in 3D", "Smooth turning", "Smooth movement when zoomed in", "Vehicle sharpness",
 		"Vehicle details", "Steady vehicle placement", "Darker overlapping shadows",
-		"Stock art", "Fix stock art",
 		"Diagnostics", "Performance overlay",
 		"Camera", "Zoom out to a 4K view",
 	};
+	for (std::string const & label : labels) {
+		Check(label != "Stock art" && label != "Fix stock art", "the Graphics page has no stock art row");
+	}
+	for (Setting<OptionsClass> const & setting : settings) {
+		if (std::strcmp(setting.Key, "StockArtFixes") == 0) {
+			Check(setting.Label == nullptr && setting.Flag != nullptr && setting.Default, "StockArtFixes is still read from the settings file, on by default, with no menu row");
+		}
+	}
 	Check(labels == page_order, "the Graphics page shows the quality choice, then the Advanced fold with the GPU drawing row and the vehicle rows after it, then the other groups");
 	std::vector<std::string> folded;
 	for (UISettingRow const & row : rows) {

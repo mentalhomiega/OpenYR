@@ -25,7 +25,6 @@ class UIGameControlsServiceClass
 		virtual void Set_Game_Speed(int speed) = 0;
 		virtual void Set_Scroll_Rate(int rate) = 0;
 		virtual void Set_Detail_Level(int level) = 0;
-		virtual void Set_Cameo_Text(bool on) = 0;
 		virtual void Set_Action_Lines(bool on) = 0;
 		virtual void Set_Tool_Tips(bool on) = 0;
 		virtual void Set_Scroll_Coasting(bool on) = 0;
@@ -52,7 +51,6 @@ struct UIGameControlsState
 	int Scroll = 0;
 	int Detail = 0;
 	int Difficulty = 0;
-	bool CameoText = false;
 	bool ActionLines = false;
 	bool ToolTips = false;
 	bool Coasting = false;

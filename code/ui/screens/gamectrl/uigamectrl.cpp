@@ -34,8 +34,6 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.Detail = std::clamp(intent.Value, 0, DETAIL_LEVELS - 1);
 	} else if (intent.Name == "difficulty") {
 		State.Difficulty = std::clamp(intent.Value, 0, DIFFICULTY_LEVELS - 1);
-	} else if (intent.Name == "cameo") {
-		State.CameoText = (intent.Value != 0);
 	} else if (intent.Name == "lines") {
 		State.ActionLines = (intent.Value != 0);
 	} else if (intent.Name == "tooltips") {
@@ -86,7 +84,6 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.Scroll = 3;
 		State.Detail = 2;
 		State.Difficulty = 1;	// DIFF_NORMAL
-		State.CameoText = false;
 		State.ActionLines = true;
 		State.ToolTips = true;
 		State.Coasting = true;
@@ -127,7 +124,6 @@ void UIGameControlsPresenterClass::Apply(void)
 	}
 	Service.Set_Scroll_Rate(State.Scroll);
 	Service.Set_Detail_Level(State.Detail);
-	Service.Set_Cameo_Text(State.CameoText);
 	Service.Set_Action_Lines(State.ActionLines);
 	Service.Set_Tool_Tips(State.ToolTips);
 	Service.Set_Scroll_Coasting(State.Coasting);
@@ -189,7 +185,6 @@ bool UI_Bind_Game_Controls(Rml::DataModelConstructor & model, UIGameControlsStat
 	return(model.Bind("scroll", &state.Scroll)
 		&& model.Bind("detail", &state.Detail)
 		&& model.Bind("difficulty", &state.Difficulty)
-		&& model.Bind("cameo", &state.CameoText)
 		&& model.Bind("lines", &state.ActionLines)
 		&& model.Bind("tooltips", &state.ToolTips)
 		&& model.Bind("coasting", &state.Coasting)
@@ -217,7 +212,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Dirty({"speed", "scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
+			Dirty({"speed", "scroll", "detail", "difficulty", "lines", "tooltips", "coasting", "edge",
 				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname",
 				"airpick", "flatgrid", "combatfirst", "background", "sorting", "debugmode", "replays", "autosave", "classicspeeds", "hasspeed"});
 		}

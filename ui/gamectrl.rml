@@ -28,7 +28,6 @@
 			</select></div>
 
 			<p class="section">Interface</p>
-			<label class="check setting" id="switch-cameo" desc="Shows the name of each unit on its sidebar cameo."><span class="caption">Cameo names</span><input type="checkbox" id="cameo" data-attrif-checked="cameo" data-event-click="queue('cameo', cameo ? 0 : 1)"/></label>
 			<label class="check setting" id="switch-lines" desc="Draws lines for where selected units are heading and what they are attacking."><span class="caption">Movement and target lines</span><input type="checkbox" id="lines" data-attrif-checked="lines" data-event-click="queue('lines', lines ? 0 : 1)"/></label>
 			<label class="check setting" id="switch-edge" desc="Scrolls the view when the pointer reaches the edge of the screen."><span class="caption">Edge Scrolling</span><input type="checkbox" id="edge" data-attrif-checked="edge" data-event-click="queue('edge', edge ? 0 : 1)"/></label>
 			<label class="check setting" id="switch-tooltips" desc="Shows a short description when the pointer rests on a button or a unit."><span class="caption">Tooltips</span><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/></label>

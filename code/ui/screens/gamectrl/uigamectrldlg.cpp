@@ -66,14 +66,6 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			}
 		}
 
-		virtual void Set_Cameo_Text(bool on) override
-		{
-			if (Options.SidebarCameoText != on) {
-				Options.SidebarCameoText = on;
-				Map.Toggle_Cameo_Text(on);
-			}
-		}
-
 		virtual void Set_Action_Lines(bool on) override
 		{
 			Options.ActionLines = on;
@@ -200,7 +192,6 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.Scroll = Options.ScrollRate;
 	state.Detail = Options.DetailLevel;
 	state.Difficulty = Options.Difficulty;
-	state.CameoText = Options.SidebarCameoText;
 	state.ActionLines = Options.ActionLines;
 	state.ToolTips = Options.ToolTips;
 	state.Coasting = (Options.ScrollMethod == 0);

@@ -76,7 +76,7 @@ Some parts stay written by hand:
 - The Graphics page is its own screen (`code/ui/screens/display/`), and the rows on `graphics` are listed among its
   hand-written rows, below the preset choice and the Advanced fold. It is not in `Pages[]`.
 - The built-in tabs (Game, Display, Graphics, Audio, Keyboard, Accessibility, Mods) keep their `UISettingsTab` values,
-  their entries in `UI_Settings_Tab_Bar` (`code/ui/uisettingshost.cpp`) and their presenters in `Build_Session`
+  their entries in `UI_Settings_Tab_Bar` (`code/ui/uisettingshost.cpp`, which puts Mods after the declared pages) and their presenters in `Build_Session`
   (`code/ui/uisettings.cpp`). The tab bar is built from that list: the menu style's frame holds an empty `#tabs`, and
   no tab button is written in markup.
 - A tab number is held in a 32-bit mask, so at most 25 declared pages get a tab; a page past that is left out.

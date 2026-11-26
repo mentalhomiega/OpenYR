@@ -48,7 +48,6 @@ constexpr char const * ADVANCED = "Advanced";
 constexpr char const * GPU_DRAWING = "Graphics card";
 constexpr char const * GPU_VOXELS = "Vehicles and aircraft";
 constexpr char const * VOXEL_DRAWING = "Vehicle details";
-constexpr char const * STOCK_ART = "Stock art";
 constexpr char const * PERFORMANCE = "performance";
 constexpr char const * RENDERING = "Rendering";
 constexpr char const * PATH_SEARCHES = "Path searches";
@@ -159,9 +158,7 @@ constexpr Setting<OptionsClass> Settings[] = {
 	{
 		.Section = "Video", .Key = "StockArtFixes",
 		.Flag = &OptionsClass::StockArtFixes, .Default = true,
-		.Page = GRAPHICS, .Group = STOCK_ART, .Label = "Fix stock art",
-		.Tip = "Draws stock art that the original game draws wrongly the way it was meant to look, such as the grey apartment blocks, which the original shows as speckled noise. Off draws it as the original game does.",
-		.NeedsRestart = true,
+		// No row of its own: set in the settings file only, and read when the art is read.
 	},
 	{
 		.Section = "Video", .Key = "RenderThread",

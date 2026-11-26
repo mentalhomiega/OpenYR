@@ -52,7 +52,6 @@ struct UIClassicOptionsLabels
 	std::string Keyboard;
 	std::string Mods;
 	std::string More;
-	std::string CameoText;
 	std::string EdgeScroll;
 	std::string Coasting;
 	std::string Stretch;

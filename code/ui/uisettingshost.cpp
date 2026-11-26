@@ -25,7 +25,6 @@ std::vector<UISettingsTabEntry> UI_Settings_Tab_Bar(std::span<SettingPage const>
 		{ UI_TAB_AUDIO, "audio", "Audio" },
 		{ UI_TAB_KEYBOARD, "keyboard", "Keyboard" },
 		{ UI_TAB_ACCESSIBILITY, "accessibility", "Accessibility" },
-		{ UI_TAB_MODS, "mods", "Mods" },
 	};
 
 	std::vector<UISettingsTabEntry> bar;
@@ -39,6 +38,9 @@ std::vector<UISettingsTabEntry> UI_Settings_Tab_Bar(std::span<SettingPage const>
 		if ((offered & UI_Tab_Bit(tab)) != 0) {
 			bar.push_back({ tab, pages[index].Id, pages[index].Label });
 		}
+	}
+	if ((offered & UI_Tab_Bit(UI_TAB_MODS)) != 0) {
+		bar.push_back({ UI_TAB_MODS, "mods", "Mods" });
 	}
 	return(bar);
 }

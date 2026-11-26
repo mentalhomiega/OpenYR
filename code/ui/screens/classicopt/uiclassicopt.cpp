@@ -34,7 +34,7 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 {
 	UIIntent forwarded = intent;
 
-	if (intent.Name == "scroll" || intent.Name == "detail" || intent.Name == "difficulty" || intent.Name == "cameo"
+	if (intent.Name == "scroll" || intent.Name == "detail" || intent.Name == "difficulty"
 			|| intent.Name == "lines" || intent.Name == "tooltips" || intent.Name == "coasting" || intent.Name == "edge"
 			|| intent.Name == "hidden" || intent.Name == "defencerange") {
 		Game.Execute(forwarded);
@@ -98,7 +98,7 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Dirty({"scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
+			Dirty({"scroll", "detail", "difficulty", "lines", "tooltips", "coasting", "edge",
 				"hidden", "defencerange", "scrollname", "detailname", "difficultyname", "music", "sfx",
 				"voice", "unit", "movie", "selected", "stretch", "systemcursor", "classicmenus", "scale"});
 		}
@@ -135,7 +135,6 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			labels.RegisterMember("keyboard", &UIClassicOptionsLabels::Keyboard);
 			labels.RegisterMember("mods", &UIClassicOptionsLabels::Mods);
 			labels.RegisterMember("more", &UIClassicOptionsLabels::More);
-			labels.RegisterMember("cameotext", &UIClassicOptionsLabels::CameoText);
 			labels.RegisterMember("edgescroll", &UIClassicOptionsLabels::EdgeScroll);
 			labels.RegisterMember("coasting", &UIClassicOptionsLabels::Coasting);
 			labels.RegisterMember("stretch", &UIClassicOptionsLabels::Stretch);

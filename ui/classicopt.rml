@@ -60,7 +60,6 @@
 	<button id="mods" data-event-click="queue('mods')">{{labels.mods}}</button>
 	<div id="more">
 		<p class="caption" id="more-heading">{{labels.more}}</p>
-		<label class="check" id="switch-cameo"><input type="checkbox" id="cameo" data-attrif-checked="cameo" data-event-click="queue('cameo', cameo ? 0 : 1)"/>{{labels.cameotext}}</label>
 		<label class="check" id="switch-edge"><input type="checkbox" id="edge" data-attrif-checked="edge" data-event-click="queue('edge', edge ? 0 : 1)"/>{{labels.edgescroll}}</label>
 		<label class="check" id="switch-coasting"><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/>{{labels.coasting}}</label>
 		<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>{{labels.stretch}}</label>
