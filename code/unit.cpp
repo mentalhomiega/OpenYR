@@ -79,7 +79,6 @@
  *   UnitClass::Set_Speed -- Initiate unit movement physics.                                   *
  *   UnitClass::Shape_Number -- Fetch the shape number to use for this unit.                   *
  *   UnitClass::Should_Crush_It -- Determines if this unit should crush an object.             *
- *   UnitClass::Sort_Y -- Give Y coordinate sort value for unit.                               *
  *   UnitClass::Start_Driver -- Starts driving and reserves destination cell.                  *
  *   UnitClass::Take_Damage -- Inflicts damage points on a unit.                               *
  *   UnitClass::Tiberium_Check -- Search for and head toward nearest available Tiberium patch. *
@@ -7963,19 +7962,6 @@ DirType UnitClass::Turret_Facing(void) const
 	} else {
 		return(PrimaryFacing.Current());
 	}
-}
-
-
-/// <summary>
-/// Draws a vehicle in a bunker after the bunker and its raised walls, whose animations sort up
-/// to their YSort ahead of the bunker.
-/// </summary>
-int UnitClass::Sort_Y(void) const
-{
-	if (Is_Bunkered()) {
-		return(BunkerLinkedItem->Sort_Y() + 2000);
-	}
-	return(BASECLASS::Sort_Y());
 }
 
 

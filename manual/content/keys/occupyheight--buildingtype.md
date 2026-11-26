@@ -1,16 +1,16 @@
 ---
 key: OccupyHeight
 scope: buildingtype
-label: 'Bunkered vehicle draw height'
-see_also: [Bunker, CanHideThings, "system:tank-bunkers"]
+label: 'Covered cells behind the structure'
+see_also: [CanHideThings, "system:tank-bunkers"]
 when_omitted:
   kind: value
   value: "0"
 ---
 
-A vehicle in this [`Bunker=yes`](/keys/bunker/#scope-buildingtype) structure is drawn in front of it as if it stood this many height levels higher, so less of it is hidden behind the bunker's floor. Its position and height in the game do not change. Set the key in the structure's art section.
+The height of the structure in height levels. Set the key in the structure's art section. It does not change how a vehicle in a [`Bunker=yes`](/keys/bunker/#scope-buildingtype) structure is drawn: the bunker's wall animations, their `ZAdjust` and `YSort`, put the walls over the vehicle's lower hull.
 
-For a [`CanHideThings=yes`](/keys/canhidethings/#scope-buildingtype) structure, this key also sets how far back its cover reaches: each foundation cell and the cells behind it, `OccupyHeight` minus one in all and at least one, are covered.
+For a [`CanHideThings=yes`](/keys/canhidethings/#scope-buildingtype) structure, this key sets how far back its cover reaches: each foundation cell and the cells behind it, `OccupyHeight` minus one in all and at least one, are covered.
 
 ```ini title="artmd.ini"
 [MYBUNKER] ; example art section

@@ -34,7 +34,7 @@ While it is inside, the vehicle can be selected again and stays on the map. It t
 | [`BunkerROFMultiplier`](/keys/bunkerrofmultiplier/#scope-global-rules) | Divides the delay after each burst. |
 | [`BunkerWeaponRangeBonus`](/keys/bunkerweaponrangebonus/#scope-global-rules) | Adds whole cells to the reach of weapons without arcing projectiles. |
 
-[`OccupyHeight`](/keys/occupyheight/#scope-buildingtype) in the bunker's art section lets the vehicle show over the bunker's floor.
+The vehicle sits sunk in the bunker: the bunker's front wall animation, with its art `ZAdjust` and `YSort`, draws over the vehicle's tracks and lower hull, and only the turret and upper hull show above the walls.
 
 ## Leaving
 

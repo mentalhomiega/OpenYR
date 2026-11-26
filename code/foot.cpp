@@ -4454,9 +4454,6 @@ int FootClass::Get_Z_Adjust(void) const
 
 	adjust += BASECLASS::Get_Z_Adjust();
 	adjust += max_fudge;
-	if (Is_Bunkered() && BunkerLinkedItem->RTTI == RTTI_BUILDING) {
-		adjust -= TacticalMap->Z_Lepton_To_Pixel(((BuildingClass const *)BunkerLinkedItem)->Class->OccupyHeight * LEVEL_LEPTON_H);
-	}
 	return(adjust);
 }
 

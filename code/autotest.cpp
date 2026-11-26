@@ -4528,6 +4528,15 @@ static void Bunkers_Step(StepType const &)
 		if (bunker->Class->IsBunker && !bunker->IsInLimbo) {
 			TechnoClass const * inside = bunker->BunkerLinkedItem;
 			DebugString("AUTOTEST   bunker %s cell %d,%d holds %s\n", bunker->Class->Name(), bunker->Get_Cell().X, bunker->Get_Cell().Y, inside != NULL ? inside->TClass->Name() : "nothing");
+			if (inside != NULL) {
+				DebugString("AUTOTEST   bunker %s sort %d, %s sort %d zadjust %d\n", bunker->Class->Name(), bunker->Sort_Y(), inside->TClass->Name(), inside->Sort_Y(), inside->Get_Z_Adjust());
+			}
+			for (int anim = BANIM_SPECIAL_ONE; anim <= BANIM_SPECIAL_TWO; anim++) {
+				AnimClass const * wall = bunker->Anims[anim];
+				if (wall != NULL) {
+					DebugString("AUTOTEST   bunker %s wall anim %d %s sort %d zadjust %d ysort %d\n", bunker->Class->Name(), anim, wall->Class->Name(), wall->Sort_Y(), wall->ZAdjust, wall->YSortAdjust);
+				}
+			}
 		}
 	}
 }
