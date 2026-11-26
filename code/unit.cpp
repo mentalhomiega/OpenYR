@@ -6371,6 +6371,8 @@ void UnitClass::Update_Teleporter_Locomotor(AbstractClass const * target)
 				if (IsLocomotorProcessing) {
 					IsPiggybackEndPending = true;
 				} else {
+					// The driver gives up the cell it had reserved ahead; dropped as it is, it would leave that cell reserved for good.
+					Locomotion->Mark_All_Occupation_Bits(0);
 					Locomotion = piggy->End_Piggyback();
 					Assign_Mission(MISSION_ENTER);
 				}

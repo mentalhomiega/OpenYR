@@ -4280,6 +4280,7 @@ void FootClass::AI(void)
 				IsPiggybackEndPending = false;
 				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 				if (piggy != NULL && piggy->Is_Piggybacking()) {
+					Locomotion->Mark_All_Occupation_Bits(0);
 					Locomotion = piggy->End_Piggyback();
 					Assign_Mission(MISSION_ENTER);
 				}
