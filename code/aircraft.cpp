@@ -3019,6 +3019,14 @@ bool AircraftClass::Cell_Seems_Ok(Cell const & cell, bool strict) const
 		return(true);
 	}
 
+	// A spawned aircraft may land where its spawner or another spawned aircraft is (AircraftClass::Cell_Seems_Ok, 0x419B00).
+	if (Class->IsSpawned) {
+		TechnoClass const * occupier = Map[cell].Cell_Techno();
+		if (occupier != NULL && (occupier->SpawnManager || occupier->TClass->IsSpawned)) {
+			return(true);
+		}
+	}
+
 	bool is_toting = (Class->IsCarryall && NavCom != NULL && NavCom->RTTI == RTTI_UNIT && ((UnitClass const *)NavCom)->Class->IsTotable);
 
 	/*

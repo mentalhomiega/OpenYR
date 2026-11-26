@@ -1,0 +1,24 @@
+; A Destroyer (DEST, Spawns=ASW) at 87,71 on the lake of XMP08T2 strikes a neutral submarine (SUB) at 84,71 with its Osprey (ASW),
+; and an aircraft carrier (CARRIER, Spawns=HORNET) at 86,60 strikes a neutral destroyer at 75,65 with its Hornets. The spawntrack step
+; logs, on every frame a spawn is returning, its horizontal distance from the ship, its height above the ship and its move since the
+; frame before, and the frame it is taken into the ship (the "limbo 1" line).
+; gamemd (SpawnManagerClass::Update, 0x6B7230, status 4) takes a returning spawn in only once it is in the ship's cell and within
+; 20 leptons of the ship's height. The spawn comes down onto the ship to get there: FootClass::IsLandZoneClear (0x4DDC60) and
+; AircraftClass::Cell_Seems_Ok (0x419B00) let a spawned aircraft land on its spawner. Expected: every "limbo 1" line has
+; height 0 and dist under 10, and the height before it falls by at most 50 leptons per frame (the descent runs 50 then 20 a frame).
+; Before the fix the spawns were taken in as soon as they were within a cell and a half of the ship, still at height 1500, and the
+; log shows the jump from 1500 to 0 in one frame. With only the docking check changed, they never docked: each approach turned
+; back up at about height 950, because the ship's cell was refused as a landing zone.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent29 -Script src-agent29/tests/autotest/spawn-return-lands.txt -Map XMP08T2.MAP -Seconds 200 -Filter "AUTOTEST   (spawntrack|spawncycle)|Exception"
+30 reveal
+40 own DEST 87 71
+41 own CARRIER 86 60
+42 neutral DEST 75 65
+43 neutral SUB 84 71
+100 spawntrack DEST
+101 spawntrack CARRIER
+110 strike DEST 84 71
+111 strike CARRIER 75 65
+1300 spawns DEST
+1301 spawns CARRIER
+1400 quit

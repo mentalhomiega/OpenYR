@@ -5502,7 +5502,10 @@ bool FootClass::Is_LZ_Clear(AbstractClass * target) const
 		if (Contact_With_Whom() == object) {
 			return(true);
 		}
-		return(false);
+
+		// A spawned aircraft may land on its spawner or on another spawned aircraft (FootClass::IsLandZoneClear, 0x4DDC60).
+		TechnoClass const * occupier = object->As_TechnoClass();
+		return(TClass->IsSpawned && occupier != NULL && (occupier->SpawnManager || occupier->TClass->IsSpawned));
 	}
 
 	if (!Map[cell].Is_Clear_To_Move(SPEED_TRACK, false, false)) return(false);
