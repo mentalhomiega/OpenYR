@@ -10,6 +10,8 @@ related:
     id: ScriptedCameraZoom
   - type: key
     id: ScriptedCameraHeight
+  - type: key
+    id: MenuBattleViewHeight
   - type: command
     id: ScreenCapture
 ---
@@ -54,6 +56,10 @@ How the player's zoom comes back depends on whether the action took the input:
 While the input is taken, the mouse wheel does not zoom the map. The Zoom in trigger action is a separate effect and does not change the scene zoom.
 
 [`ScriptedCameraZoom=no`](/keys/scriptedcamerazoom/) turns the scene zoom off. A save game does not hold the player's zoom. A game loaded in a locked scene keeps the zoom on screen when control returns.
+
+## The main menu battle
+
+The battle behind the main menu shows [`MenuBattleViewHeight`](/keys/menubattleviewheight/) map pixels of height, 1080 by default, on a screen of any size. That is a zoom of 1 at 1920x1080, 2 at 3840x2160 and 0.667 at 1280x720, and the width follows the screen's aspect ratio. The player's zoom does not apply to the battle and the mouse wheel does not change it, and the player's own zoom comes back when a game starts. Like a scripted scene's zoom, it is held only to the zoom the game allows at all and the map's visible area, so a small map is never shown past its edges.
 
 ## Trigger zoom
 

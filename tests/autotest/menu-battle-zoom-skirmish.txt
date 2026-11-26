@@ -1,6 +1,6 @@
 ; The menu battle keeps its own zoom and speed. A skirmish played at zoom 2 and game speed 5 is won and the game
-; returns to the lobby: the battle that starts behind it must show the map at zoom 1 (every "battle 1" viewstate line
-; reads zoom 1.000 and the view as large as the screen), at its own game speed 2 (speed 2 session 2, 30 frames a second),
+; returns to the lobby: the battle that starts behind it must show the map at the zoom that the screen size gives (every "battle 1" viewstate line
+; reads zoom 0.556, which shows 1080 map pixels of height at 800x600), at its own game speed 2 (speed 2 session 2, 30 frames a second),
 ; while the player's game speed option stays 5. The next skirmish started from that lobby then plays at zoom 2 and game
 ; speed 5 again, as the player left them. The first game steps use frames up to 150; the last ones run in the second
 ; game, whose frame count starts over.

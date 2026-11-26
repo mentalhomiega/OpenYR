@@ -1,0 +1,11 @@
+; The menu battle shows the same area of map at any window size: the height set by MenuBattleViewHeight (1080 map
+; pixels by default), so the viewworld line reads zoom 1.000 and world 1920x1080 at 1920x1080, zoom 2.000 and world
+; 1920x1080 at 3840x2160 and zoom 0.667 and world 1920x1080 at 1280x720, and the same map is on screen at each size.
+; Run it once per size and compare the "world" fields of the battle 1 lines.
+; Run: scripts/run_autotest.ps1 -Script src-agent29/tests/autotest/menu-battle-view-size.txt -Menus -MenuStyle Modern -Width 3840 -Height 2160 -Seconds 90 -Settings "[MenuBattle]`nInTests=yes`nMap=XMP29U2.MAP" -Filter 'AUTOTEST viewworld|Menu battle: (stopped|over)|Exception'
+ui waitfor backdrop
+ui wait 4000
+ui battleview
+ui wait 3000
+ui battleview
+ui quit

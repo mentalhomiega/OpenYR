@@ -734,6 +734,7 @@ void Shellmap_Service(void)
 
 		restart = Battle_Over();
 
+		Apply_Menu_Battle_View_Zoom();
 		Move_Camera(now);
 
 		if (Video_Present_Count() != LastPresent) {
@@ -779,6 +780,11 @@ void Shellmap_Log_View(void)
 	DebugString("AUTOTEST viewstate battle %d held %d zoom %.3f display %.3f view %dx%d screen %dx%d speed %d session %d player speed %d battle rate %.2f fps\n",
 		Running ? 1 : 0, Player_View_Zoom_Held() ? 1 : 0, ViewZoom * InterfaceScale, DisplayZoom * InterfaceScale, TacticalRect.Width, TacticalRect.Height,
 		ScreenTacticalRect.Width, ScreenTacticalRect.Height, speed, session_speed, Options.GameSpeed, fps);
+
+	// The map area the view shows, in map pixels; the menu battle holds it to the same size at any window size.
+	Rect const shown = Shown_Map_Rect();
+	DebugString("AUTOTEST viewworld battle %d zoom %.3f world %dx%d screen %dx%d\n", Running ? 1 : 0, ViewZoom * InterfaceScale, shown.Width, shown.Height,
+		ScreenTacticalRect.Width, ScreenTacticalRect.Height);
 }
 
 

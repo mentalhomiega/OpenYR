@@ -472,6 +472,11 @@ menu battle shows. `tests/autotest/menu-battle-zoom-skirmish.txt` and `menu-batt
 and game speed 5, return to the menus, and check that the battle behind them shows zoom 1 at its own speed while the
 player's game speed option and zoom come back for the next match.
 
+The `viewstate` step also logs `AUTOTEST viewworld battle <0|1> zoom <z> world <w>x<h> screen <w>x<h>`; `world` is the map area the view shows, in map pixels. The menu battle shows the
+rules' `MenuBattleViewHeight` (1080) map pixels of height at any window size, so its `zoom` is the screen's height over
+1080 (1.000 at 1920x1080, 2.000 at 3840x2160, 0.667 at 1280x720) and `world` stays the same. `tests/autotest/menu-battle-view-size.txt`
+logs it; run it at two sizes with `-Width`/`-Height` and compare the `viewworld battle 1` lines.
+
 ### File paths
 
 The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.
