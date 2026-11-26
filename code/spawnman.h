@@ -44,6 +44,7 @@ class SpawnManagerClass
 		int Next_Spawn_Frame(void) const { return NextSpawnFrame; }
 		int Node_Count(void) const { return (int)Nodes.size(); }
 		int Node_Status(int index) const { return Nodes[index].Status; }
+		AircraftClass const * Node_Unit(int index) const { return Nodes[index].Unit; }
 		int Alive_Count(void) const;
 		void Serialize(SaveStreamClass & stream);
 

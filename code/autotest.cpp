@@ -347,6 +347,9 @@ int TraceSampleInterval = 0;
 // The frames between the sampletarget step's logs, 0 when it is off.
 int TargetSampleInterval = 0;
 
+// The types whose spawns the spawntrack step logs each frame while they return; empty when it is off.
+std::vector<std::string> SpawnTrackTypes;
+
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
 
@@ -1266,6 +1269,56 @@ static void Log_Targets(void)
 				Frame, techno->ID, techno->TClass->Name(), techno->House->Class->Name(), (int)techno->Get_Mission(), targetID, targetType,
 				(int)techno->Arm.Value(), (int)techno->IsOpportunityTarget, at.X, at.Y);
 		});
+}
+
+
+// spawntrack <TypeID|off>: on every frame, one line per spawn of the objects of the added types while the spawn is returning to its owner or
+// when it docks: the frame, owner and spawn type, node status, the horizontal distance in leptons from the spawn to the owner's centre,
+// the spawn's height above the owner's coordinate, and how far each moved since the frame before (step is the spawn's move, in
+// leptons, and ownerstep is the owner's). The line with status 6 and unit limbo 1 is the frame the spawn was taken into the owner.
+static void Log_Spawn_Track(void)
+{
+	static std::map<std::pair<int, int>, Coord> last_spawn;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * owner = Technos[index];
+		if (!owner->SpawnManager || std::none_of(SpawnTrackTypes.begin(), SpawnTrackTypes.end(), [&](std::string const & name) { return stricmp(owner->TClass->Name(), name.c_str()) == 0; })) continue;
+		for (int node = 0; node < owner->SpawnManager->Node_Count(); node++) {
+			AircraftClass const * unit = owner->SpawnManager->Node_Unit(node);
+			int const status = owner->SpawnManager->Node_Status(node);
+			std::pair<int, int> const key(owner->ID, node);
+			bool const docked = unit != NULL && unit->IsInLimbo && status == 6 && last_spawn.count(key) != 0;
+			if (unit == NULL || (status != 4 && !docked)) {
+				last_spawn.erase(key);
+				continue;
+			}
+			Coord const home = owner->Center_Coord();
+			Coord const here = unit->Get_Coord();
+			int const dist = (int)std::hypot(double(here.X - home.X), double(here.Y - home.Y));
+			int const height = here.Z - owner->Get_Coord().Z;
+			int step = -1;
+			auto const previous = last_spawn.find(key);
+			if (previous != last_spawn.end()) {
+				step = (int)std::hypot(double(here.X - previous->second.X), double(here.Y - previous->second.Y), double(here.Z - previous->second.Z));
+			}
+			DebugString("AUTOTEST   spawntrack frame %d %s %s status %d limbo %d dist %d height %d step %d loco %d dest %d,%d\n", Frame, owner->TClass->Name(), unit->Class->Name(), status, (int)unit->IsInLimbo, dist, height, step, unit->Locomotion->Get_Status(), unit->Locomotion->Destination().X, unit->Locomotion->Destination().Y);
+			if (docked) {
+				last_spawn.erase(key);
+			} else {
+				last_spawn[key] = here;
+			}
+		}
+	}
+}
+
+
+// spawntrack <TypeID|off>: adds the type to those Log_Spawn_Track follows, or stops following any.
+static void Spawn_Track_Step(StepType const & step)
+{
+	if (stricmp(step.Argument.c_str(), "off") == 0) {
+		SpawnTrackTypes.clear();
+	} else {
+		SpawnTrackTypes.push_back(step.Argument);
+	}
 }
 
 
@@ -9235,6 +9288,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"sample", Sample_Step},
 		{"sampletrace", Sampletrace_Step},
 		{"sampletarget", Sampletarget_Step},
+		{"spawntrack", Spawn_Track_Step},
 		{"sampleprod", Sampleprod_Step},
 		{"samplevet", Samplevet_Step},
 		{"samplesuper", Samplesuper_Step},
@@ -10029,6 +10083,10 @@ void AutoTest_Frame(void)
 
 	if (TargetSampleInterval > 0 && (Frame % TargetSampleInterval) == 0) {
 		Log_Targets();
+	}
+
+	if (!SpawnTrackTypes.empty()) {
+		Log_Spawn_Track();
 	}
 
 	if (ProductionSampleInterval > 0 && (Frame % ProductionSampleInterval) == 0) {

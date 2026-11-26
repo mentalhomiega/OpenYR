@@ -388,10 +388,9 @@ void SpawnManagerClass::AI(void)
 					unit->Assign_Mission(MISSION_ATTACK);
 					break;
 				}
-				// An aircraft docks once it is over its owner, at whatever height it flies.
-				Coord const home = Owner->Center_Coord();
-				Coord const here = unit->Get_Coord();
-				if (std::hypot(double(home.X - here.X), double(home.Y - here.Y)) < CELL_LEPTON * 3 / 2) {
+				// An aircraft docks once it is in its owner's cell and has come down to within 20 leptons of the
+				// owner's height (SpawnManagerClass::Update, 0x6B7230, status 4).
+				if (unit->Get_Cell() == Owner->Get_Cell() && unit->Get_Coord().Z - Owner->Get_Coord().Z < 20) {
 					unit->Limbo();
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
