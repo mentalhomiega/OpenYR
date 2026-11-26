@@ -539,12 +539,12 @@ std::wstring Megabytes(std::uint64_t bytes)
  */
 int Run_Update(OptionsType const & options)
 {
-	unsigned number = 0;
-	if (!launcher::Parse_Beta(options.Tag, number) || options.Folder.empty() || options.SetupUrl.empty() || options.SumUrl.empty()) {
+	launcher::BetaVersionType version;
+	if (!launcher::Parse_Beta(options.Tag, version) || options.Folder.empty() || options.SetupUrl.empty() || options.SumUrl.empty()) {
 		Tell(options, options.Log, L"The update did not start: the launcher was given an incomplete update request.", true);
 		return 1;
 	}
-	std::wstring const label = launcher::Beta_Label(number);
+	std::wstring const label = launcher::Beta_Label(version);
 
 	std::wstring const self_folder = launcher::Folder_Of(launcher::Module_Path());
 	std::wstring const setup = self_folder + L"\\OpenYR-" + options.Tag + L"-Setup.exe";

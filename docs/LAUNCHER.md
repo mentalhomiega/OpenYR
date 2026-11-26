@@ -81,14 +81,14 @@ The update copy also takes switches the launcher writes itself: `/UPDATE=`, `/SE
 
 ## Release assets
 
-A release is named by its beta, for example `beta23`. It has two assets:
+A release is named by its beta, for example `beta23`. A hotfix to a beta adds a dot and a number of 1 or more, for example `beta34.1`; its assets are `OpenYR-beta34.1-Setup.exe` and `.sha256`. It has two assets:
 
 | Asset | Contents |
 | --- | --- |
 | `OpenYR-beta23-Setup.exe` | The setup with its package, as the packager writes it. |
 | `OpenYR-beta23-Setup.exe.sha256` | The SHA-256 digest of the setup as 64 hex digits. A file name after the digest, as `sha256sum` writes, is allowed. The file is refused if a later line holds text or any control character other than tab and line ends. |
 
-The feed is the latest release. A tag that is not a beta name is never offered. Beta numbers compare as numbers, so `beta9` is older than `beta22`.
+The feed is the latest release. A tag that is not a beta name is never offered. Beta numbers compare as numbers, so `beta9` is older than `beta22`. Within a beta the hotfix number decides: `beta34` is older than `beta34.1`, which is older than `beta35`. `beta34.0`, `beta34.` and `beta34.1.2` are not beta names. The label shows `Beta 34` or `Beta 34.1`.
 
 The checksum comes from the same release as the setup. It catches a damaged or cut-short download. It does not protect against a release that was changed on GitHub; we do not sign releases yet.
 

@@ -375,6 +375,12 @@ a default and returns it when the section or entry is missing.
 | `UI_Rml_Setting_Rows_Bind(model, name, rows)` | `ui/rml/rmlsettingrows.h` | Binds the rows for a page's markup. |
 | `Enum_Name(table, value, fallback)`, `Enum_From_Name(table, text, fallback)` | `nametable.h` | Name of an enum value from a table of file names, and the reverse. Each also takes a `std::span`. |
 
+## Release names
+
+| Helper | Header | Use |
+|---|---|---|
+| `launcher::Parse_Beta`, `launcher::BetaVersionType`, `launcher::Beta_Label` | `tools/launcher/launcher_core.h` | Parse `betaN` and `betaN.M` into major and hotfix, compare them with `<`, and print "Beta N" or "Beta N.M". The launcher, setup and the in-game update panel all use them. |
+
 ## Local to one file
 
 These are written once, in a `.cpp`, and nothing else can call them. Move one

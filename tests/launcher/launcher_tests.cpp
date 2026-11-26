@@ -70,23 +70,38 @@ char const * const Digest = "9f2c1a7b4e0d3c58a16b7f90e2d4c3b1a0f9e8d7c6b5a493827
 
 void Test_Beta_Names(void)
 {
-	unsigned number = 0;
-	Check(launcher::Parse_Beta(L"beta23", number) && number == 23, "beta23 is the beta number 23");
-	Check(launcher::Parse_Beta(L"beta9", number) && number == 9, "beta9 is the beta number 9");
-	Check(launcher::Parse_Beta(L"Beta100", number) && number == 100, "the word is read without regard to case");
-	Check(!launcher::Parse_Beta(L"beta", number), "the word alone is not a beta name");
-	Check(!launcher::Parse_Beta(L"beta2x", number), "a beta name with a letter in the number is refused");
-	Check(!launcher::Parse_Beta(L"2026-10-14i", number), "a date build is not a beta name");
-	Check(!launcher::Parse_Beta(L"beta99999999999", number), "a number too large to compare is refused");
+	using launcher::BetaVersionType;
+	BetaVersionType v;
+	Check(launcher::Parse_Beta(L"beta23", v) && v.Major == 23 && v.Hotfix == 0, "beta23 is major 23, hotfix 0");
+	Check(launcher::Parse_Beta(L"beta9", v) && v.Major == 9, "beta9 is major 9");
+	Check(launcher::Parse_Beta(L"Beta100", v) && v.Major == 100, "the word is read without regard to case");
+	Check(launcher::Parse_Beta(L"beta34.1", v) && v.Major == 34 && v.Hotfix == 1, "beta34.1 is major 34, hotfix 1");
+	Check(launcher::Parse_Beta(L"beta34.12", v) && v.Major == 34 && v.Hotfix == 12, "a hotfix may have two digits");
+	Check(!launcher::Parse_Beta(L"beta", v), "the word alone is not a beta name");
+	Check(!launcher::Parse_Beta(L"beta2x", v), "a beta name with a letter in the number is refused");
+	Check(!launcher::Parse_Beta(L"2026-10-14i", v), "a date build is not a beta name");
+	Check(!launcher::Parse_Beta(L"beta99999999999", v), "a number too large to compare is refused");
+	Check(!launcher::Parse_Beta(L"beta34.", v), "a dot with no hotfix is refused");
+	Check(!launcher::Parse_Beta(L"beta34.1.2", v), "a second dot is refused");
+	Check(!launcher::Parse_Beta(L"beta.1", v), "a hotfix with no major is refused");
+	Check(!launcher::Parse_Beta(L"beta34.0", v), "an explicit hotfix 0 is refused");
+	Check(!launcher::Parse_Beta(L"xbeta34.1", v), "leading text is refused");
+	Check(!launcher::Parse_Beta(L"beta34.1a", v), "trailing text is refused");
 
-	unsigned nine = 0;
-	unsigned twenty_two = 0;
-	unsigned hundred = 0;
+	BetaVersionType nine, twenty_two, hundred, b34, b34_1, b34_2, b35;
 	launcher::Parse_Beta(L"beta9", nine);
 	launcher::Parse_Beta(L"beta22", twenty_two);
 	launcher::Parse_Beta(L"beta100", hundred);
+	launcher::Parse_Beta(L"beta34", b34);
+	launcher::Parse_Beta(L"beta34.1", b34_1);
+	launcher::Parse_Beta(L"beta34.2", b34_2);
+	launcher::Parse_Beta(L"beta35", b35);
 	Check(nine < twenty_two && twenty_two < hundred, "beta9 < beta22 < beta100 compares by number, not by text");
-	Check(launcher::Beta_Label(23) == L"Beta 23", "the label reads Beta 23");
+	Check(b34 < b34_1 && b34_1 < b34_2 && b34_2 < b35, "beta34 < beta34.1 < beta34.2 < beta35");
+	Check(b34 == BetaVersionType{34, 0}, "beta34 is the same version as 34.0");
+
+	Check(launcher::Beta_Label(BetaVersionType{23, 0}) == L"Beta 23", "the label reads Beta 23");
+	Check(launcher::Beta_Label(b34_1) == L"Beta 34.1", "the label reads Beta 34.1");
 }
 
 
@@ -244,11 +259,24 @@ void Test_Decision(void)
 	launcher::Parse_Release(Release_Json, release, error);
 
 	launcher::UpdateType newer = launcher::Decide_Update(L"beta22", release);
-	Check(newer.Offer && newer.Installed == 22 && newer.Offered == 23, "beta22 installed and beta23 released offers the update");
+	Check(newer.Offer && newer.Installed.Major == 22 && newer.Offered.Major == 23, "beta22 installed and beta23 released offers the update");
 	Check(newer.Setup.Name == L"OpenYR-beta23-Setup.exe" && newer.Checksum.Url.size() > 0, "the offer carries both assets");
 
 	Check(!launcher::Decide_Update(L"beta23", release).Offer, "the same beta is not offered again");
 	Check(!launcher::Decide_Update(L"beta24", release).Offer, "an older release is not offered");
+
+	launcher::ReleaseType hotfix = release;
+	hotfix.Tag = L"beta34.1";
+	hotfix.Assets[0].Name = L"OpenYR-beta34.1-Setup.exe";
+	hotfix.Assets[1].Name = L"OpenYR-beta34.1-Setup.exe.sha256";
+	launcher::UpdateType fix = launcher::Decide_Update(L"beta34", hotfix);
+	Check(fix.Offer && fix.Offered.Hotfix == 1 && fix.Tag == L"beta34.1", "an installed beta34 is offered beta34.1");
+	Check(!launcher::Decide_Update(L"beta34.1", hotfix).Offer, "beta34.1 is not offered again");
+	Check(!launcher::Decide_Update(L"beta35", hotfix).Offer, "beta35 is not offered beta34.1");
+	Check(launcher::Decide_Update(L"beta33", hotfix).Offer, "beta33 is offered beta34.1");
+	hotfix.Tag = L"beta34";
+	Check(!launcher::Decide_Update(L"beta34", hotfix).Offer, "an installed beta34 is not offered beta34");
+	Check(!launcher::Decide_Update(L"beta34.1", hotfix).Offer, "beta34.1 is not offered beta34");
 
 	launcher::ReleaseType nine = release;
 	nine.Tag = L"beta100";

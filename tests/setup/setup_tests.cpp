@@ -737,6 +737,8 @@ void Test_Config_File(void)
 	// A second install does not add lines; it keeps the file the first one left.
 	Check(Install(folder, Package("engine", "beta23", false, false), false, error), "an update over the merged file succeeds");
 	Check(Read_Text(config) == text, "an update that changes nothing in the file leaves its text as it was");
+	Check(Install(folder, Package("engine", "beta23.1", false, false), false, error), "a hotfix build installs over the beta");
+	Check(Read_Text(Path_Of(folder, L"openyr-install.ini")).find("Build=beta23.1\r\n") != std::string::npos, "the install record names the hotfix build");
 
 	// Uninstall keeps the player's keys, and removes the setup's own lines from the file.
 	setup::UninstallType request;
