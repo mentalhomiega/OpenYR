@@ -85,6 +85,15 @@ void Hold_Player_View_Zoom(void);
 void Release_Player_View_Zoom(void);
 bool Player_View_Zoom_Held(void);
 
+// While the player's zoom is held aside, the menu battle shows the map at the zoom the rules' MenuBattleViewHeight gives,
+// 1080 map pixels tall by default, so a 4K screen shows the map twice as large as a 1080p one and the same area of it.
+// Call it each frame the battle runs, inside the battle's scope: it follows a change of the screen's size and keeps
+// the zoom inside the map's edges. The player's wheel does not zoom the battle.
+void Apply_Menu_Battle_View_Zoom(void);
+
+// The zoom (as the zoom step gives it, from 1 at the screen's own pixels) the menu battle is asked to show on this screen.
+double Menu_Battle_View_Zoom(void);
+
 // Brings the zoom in to the player's zoom-out limit without a glide, for a new screen area whose map surfaces are not
 // made yet, so that they are made for the view the limit allows rather than for the wider one the game started at.
 void Hold_View_Zoom_To_Limit(void);

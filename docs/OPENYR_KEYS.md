@@ -239,6 +239,7 @@ Bounty.Value=200
 | [`ChronoInfantryCrush`](../manual/content/keys/chronoinfantrycrush.md) | `yes` | Sets whether a chronoshifted infantryman destroys a vehicle or aircraft on its landing cell, or dies instead. | Ares |
 | [`EnemyInsignia`](../manual/content/keys/enemyinsignia.md) | `yes` | Whether players not allied with an object's owner see its rank insignia, unless the type decides. | Ares, Phobos |
 | [`LargeSidebarStrips`](../manual/content/keys/largesidebarstrips--global-rules.md) | `no` | Lets each sidebar strip hold 225 cameos instead of 75. | OpenYR |
+| [`MenuBattleViewHeight`](../manual/content/keys/menubattleviewheight.md) | `1080` | The height, in map pixels, that the main menu's background battle shows. | OpenYR |
 | [`MoveToCellWide`](../manual/content/keys/movetocellwide--global-rules.md) | computed | Whether a Move to Cell team script line on a map with `NewINIFormat=4` or higher gives its cell as `1000 * Y + X`. | OpenYR |
 | [`MultipleFactoryCap`](../manual/content/keys/multiplefactorycap--global-rules.md) | `0` | The most factories of one category that count toward the MultipleFactory build-time adjustment. | OpenTS |
 | [`MutateFriendly`](../manual/content/keys/mutatefriendly.md) | `yes` | Whether the genetic mutator also mutates infantry of the firing house and its allies. | OpenYR |

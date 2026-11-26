@@ -664,6 +664,27 @@ void Hold_Player_View_Zoom(void)
 }
 
 
+double Menu_Battle_View_Zoom(void)
+{
+	// ScreenTacticalRect is in frame pixels, so its height over the wanted map height is the zoom in ViewZoom units; the
+	// step's units are the screen's own pixels, which is that times the interface scale.
+	if (Rule == NULL || Rule->MenuBattleViewHeight <= 0 || ScreenTacticalRect.Height <= 0) {
+		return(1.0);
+	}
+	return(ScreenTacticalRect.Height * InterfaceScale / double(Rule->MenuBattleViewHeight));
+}
+
+
+void Apply_Menu_Battle_View_Zoom(void)
+{
+	if (!_HasAside || _Drawing || TacticalMap == NULL || Rule == NULL || Rule->MenuBattleViewHeight <= 0) {
+		return;
+	}
+	// A zoom held to the map's edges stays where it is clamped to, so this does nothing once it is there.
+	Set_View_Zoom(Menu_Battle_View_Zoom(), true);
+}
+
+
 void Release_Player_View_Zoom(void)
 {
 	if (!_HasAside) {
@@ -741,7 +762,7 @@ bool Set_View_Zoom(double zoom, bool scene)
 void Request_View_Zoom_Step(double step, Point2D const & screen_point)
 {
 	// Map clicks are dropped while input is ignored, and so is the wheel, so a scripted scene keeps its zoom.
-	if (IgnoreInput) {
+	if (IgnoreInput || _HasAside) {
 		return;
 	}
 	_PendingZoomStep += step * View_Zoom_Native();
@@ -843,6 +864,9 @@ static void SetScriptedZoomAtOnce(double zoom, bool scene)
 void Scripted_View_Zoom(bool input_locked)
 {
 	if (!Options.ScriptedCameraZoom || TacticalMap == NULL || Rule->ScriptedCameraHeight <= 0 || ScreenTacticalRect.Height <= 0) {
+		return;
+	}
+	if (_HasAside) {
 		return;
 	}
 	if (input_locked && !_ScriptedZoomSaved) {

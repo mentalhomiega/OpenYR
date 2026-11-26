@@ -891,6 +891,13 @@ class RulesClass
 		int ScriptedCameraHeight;
 
 		/*
+		 * This is the height, in map pixels, that the main menu's background battle shows. The map view
+		 * zooms so that this many map pixels fill its height on a screen of any size, and its width follows
+		 * the screen's aspect ratio. Zero or less shows the map at the screen's own pixels.
+		 */
+		int MenuBattleViewHeight;
+
+		/*
 		 * This is the chance each frame that an object damaged below the ConditionRed
 		 * health level throws off a spark.
 		 */

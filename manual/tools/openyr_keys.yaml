@@ -102,6 +102,7 @@ records:
   spawn-house-base-nodes: OpenYR
   totable: OpenYR
   scripted-camera-zoom: OpenYR
+  menu-battle-same-view-area: OpenYR
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
