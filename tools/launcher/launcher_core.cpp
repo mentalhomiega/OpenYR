@@ -371,31 +371,60 @@ std::wstring Trim_Wide(std::wstring const & text)
 }
 
 
-bool Parse_Beta(std::wstring const & name, unsigned & number)
+namespace {
+
+// Reads the digits from index to the end or to a dot, at most 1000000, and moves index past them.
+bool Read_Number(std::wstring const & name, std::wstring::size_type & index, unsigned & value)
+{
+	std::wstring::size_type const start = index;
+	unsigned long total = 0;
+	while (index < name.size() && name[index] >= L'0' && name[index] <= L'9') {
+		total = total * 10 + static_cast<unsigned long>(name[index] - L'0');
+		if (total > 1000000ul) {
+			return false;
+		}
+		index++;
+	}
+	value = static_cast<unsigned>(total);
+	return index > start;
+}
+
+}
+
+
+bool Parse_Beta(std::wstring const & name, BetaVersionType & version)
 {
 	if (name.size() < 5 || _wcsnicmp(name.c_str(), L"beta", 4) != 0) {
 		return false;
 	}
 
-	unsigned long value = 0;
-	for (std::wstring::size_type index = 4; index < name.size(); index++) {
-		if (name[index] < L'0' || name[index] > L'9') {
+	BetaVersionType parsed;
+	std::wstring::size_type index = 4;
+	if (!Read_Number(name, index, parsed.Major)) {
+		return false;
+	}
+	if (index < name.size()) {
+		if (name[index] != L'.') {
 			return false;
 		}
-		value = value * 10 + static_cast<unsigned long>(name[index] - L'0');
-		if (value > 1000000ul) {
+		index++;
+		if (!Read_Number(name, index, parsed.Hotfix) || index != name.size() || parsed.Hotfix == 0) {
 			return false;
 		}
 	}
 
-	number = static_cast<unsigned>(value);
+	version = parsed;
 	return true;
 }
 
 
-std::wstring Beta_Label(unsigned number)
+std::wstring Beta_Label(BetaVersionType const & version)
 {
-	return L"Beta " + std::to_wstring(number);
+	std::wstring label = L"Beta " + std::to_wstring(version.Major);
+	if (version.Hotfix != 0) {
+		label += L"." + std::to_wstring(version.Hotfix);
+	}
+	return label;
 }
 
 

@@ -28,11 +28,22 @@ wchar_t const * const DefaultFeedUrl = L"https://api.github.com/repos/mentalhomi
 // The name of the launcher's own log file, kept in the user directory.
 wchar_t const * const LogFileName = L"OpenYR-Launcher.log";
 
-// "beta23" gives 23. False for any other name, including "beta" with no digits.
-bool Parse_Beta(std::wstring const & name, unsigned & number);
+// A release name: "beta34" is major 34 with hotfix 0, "beta34.1" is major 34 with hotfix 1. Versions
+// compare by major, then by hotfix.
+struct BetaVersionType
+{
+	unsigned Major = 0;
+	unsigned Hotfix = 0;
 
-// "Beta 23", for the dialog and the log.
-std::wstring Beta_Label(unsigned number);
+	auto operator<=>(BetaVersionType const &) const = default;
+};
+
+// "beta23" gives 23.0 and "beta34.1" gives 34.1. The hotfix is a number of 1 or more after one dot.
+// False for any other name, including "beta" with no digits, "beta34." and "beta34.1.2".
+bool Parse_Beta(std::wstring const & name, BetaVersionType & version);
+
+// "Beta 23" for hotfix 0, "Beta 34.1" otherwise, for the dialog and the log.
+std::wstring Beta_Label(BetaVersionType const & version);
 
 // A parsed JSON value. Members keep the order the document gave them; a repeated key is found first.
 struct JsonValueType
@@ -83,8 +94,8 @@ bool Parse_Checksum(std::string const & text, std::string & digest);
 struct UpdateType
 {
 	bool Offer = false;
-	unsigned Installed = 0;
-	unsigned Offered = 0;
+	BetaVersionType Installed;
+	BetaVersionType Offered;
 	std::wstring Tag;
 	AssetType Setup;
 	AssetType Checksum;
